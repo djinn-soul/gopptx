@@ -72,12 +72,14 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 	if err != nil {
 		return err
 	}
+	chartParts := buildChartParts(slides)
+	chartBySlide := chartPartBySlide(chartParts)
 
 	files := []struct {
 		name    string
 		content string
 	}{
-		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions())},
+		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions(), len(chartParts))},
 		{"_rels/.rels", pptxxml.RootRelationships()},
 		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount)},
 		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount)},
@@ -97,6 +99,9 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 	}
 
 	if err := writeMediaFiles(zw, mediaCatalog); err != nil {
+		return err
+	}
+	if err := writeChartFiles(zw, chartParts); err != nil {
 		return err
 	}
 
@@ -123,24 +128,6 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 		}
 
-		var chartSpec *pptxxml.BarChartSpec
-		if slide.Chart != nil {
-			categories := make([]string, len(slide.Chart.Categories))
-			copy(categories, slide.Chart.Categories)
-			values := make([]float64, len(slide.Chart.Values))
-			copy(values, slide.Chart.Values)
-			chartSpec = &pptxxml.BarChartSpec{
-				Title:      slide.Chart.Title,
-				Categories: categories,
-				Values:     values,
-				X:          slide.Chart.X,
-				Y:          slide.Chart.Y,
-				CX:         slide.Chart.CX,
-				CY:         slide.Chart.CY,
-				BarColor:   slide.Chart.BarColor,
-			}
-		}
-
 		imageRefs := make([]pptxxml.ImageRef, 0, len(slide.Images))
 		imageTargets := make([]string, 0, len(slide.Images))
 		for imageIndex, image := range slide.Images {
@@ -160,14 +147,31 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
 		}
 
-		slideXML := pptxxml.SlideWithContent(slide.Title, slide.Bullets, tableSpec, chartSpec, imageRefs)
+		var chartFrame *pptxxml.ChartFrame
+		var chartRel *pptxxml.ChartRel
+		if part, ok := chartBySlide[i]; ok {
+			rid := fmt.Sprintf("rId%d", len(imageTargets)+2)
+			chartFrame = &pptxxml.ChartFrame{
+				RelID: rid,
+				X:     part.spec.X,
+				Y:     part.spec.Y,
+				CX:    part.spec.CX,
+				CY:    part.spec.CY,
+			}
+			chartRel = &pptxxml.ChartRel{
+				RID:    rid,
+				Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
+			}
+		}
+
+		slideXML := pptxxml.SlideWithContent(slide.Title, slide.Bullets, tableSpec, chartFrame, imageRefs)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {
 			return err
 		}
 
 		relsPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", slideNumber)
-		if err := writeFile(zw, relsPath, pptxxml.SlideRelationships(imageTargets)); err != nil {
+		if err := writeFile(zw, relsPath, pptxxml.SlideRelationships(imageTargets, chartRel)); err != nil {
 			return err
 		}
 	}

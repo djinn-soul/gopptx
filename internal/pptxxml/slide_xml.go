@@ -6,7 +6,7 @@ import (
 )
 
 const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>
 <p:bg>
 <p:bgRef idx="1001">
@@ -41,7 +41,7 @@ func SlideWithContent(
 	title string,
 	bullets []string,
 	table *TableSpec,
-	chart *BarChartSpec,
+	chart *ChartFrame,
 	images []ImageRef,
 ) string {
 	var b strings.Builder
@@ -58,9 +58,8 @@ func SlideWithContent(
 	}
 
 	if chart != nil {
-		chartXML, used := barChartShape(chart, nextID)
-		b.WriteString(chartXML)
-		nextID += used
+		b.WriteString(chartFrameShape(chart, nextID))
+		nextID++
 	}
 
 	for i, image := range images {
@@ -71,7 +70,12 @@ func SlideWithContent(
 }
 
 // SlideRelationships renders ppt/slides/_rels/slideN.xml.rels.
-func SlideRelationships(imageTargets []string) string {
+type ChartRel struct {
+	RID    string
+	Target string
+}
+
+func SlideRelationships(imageTargets []string, chartRel *ChartRel) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -80,6 +84,13 @@ func SlideRelationships(imageTargets []string) string {
 		rid := i + 2
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, rid, Escape(target)))
+	}
+	if chartRel != nil {
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="%s"/>`,
+			Escape(chartRel.RID),
+			Escape(chartRel.Target),
+		))
 	}
 	b.WriteString(`
 </Relationships>`)

@@ -11,6 +11,7 @@ type SlideContent struct {
 	Images  []Image
 	Table   *Table
 	Chart   *BarChart
+	Line    *LineChart
 }
 
 // NewSlide creates a new slide with a title.
@@ -39,6 +40,14 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 // WithBarChart sets one bar chart for the slide.
 func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
 	s.Chart = &chart
+	s.Line = nil
+	return s
+}
+
+// WithLineChart sets one line chart for the slide.
+func (s SlideContent) WithLineChart(chart LineChart) SlideContent {
+	s.Line = &chart
+	s.Chart = nil
 	return s
 }
 
@@ -65,6 +74,14 @@ func validateSlide(s SlideContent, index int) error {
 		if err := validateBarChart(*s.Chart, index); err != nil {
 			return err
 		}
+	}
+	if s.Line != nil {
+		if err := validateLineChart(*s.Line, index); err != nil {
+			return err
+		}
+	}
+	if s.Chart != nil && s.Line != nil {
+		return fmt.Errorf("slide %d cannot have both bar and line charts", index)
 	}
 	return nil
 }

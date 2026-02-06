@@ -22,11 +22,7 @@ type BarChart struct {
 
 // NewBarChart creates a bar chart with default layout and style.
 func NewBarChart(categories []string, values []float64) BarChart {
-	cats := make([]string, len(categories))
-	copy(cats, categories)
-	vals := make([]float64, len(values))
-	copy(vals, values)
-
+	cats, vals := copyChartData(categories, values)
 	return BarChart{
 		Title:      "Chart",
 		Categories: cats,
@@ -65,50 +61,159 @@ func (c BarChart) WithBarColor(color string) BarChart {
 	return c
 }
 
+// LineChart is a simple categorical line chart.
+type LineChart struct {
+	Title      string
+	Categories []string
+	Values     []float64
+	X          int64
+	Y          int64
+	CX         int64
+	CY         int64
+	LineColor  string
+}
+
+// NewLineChart creates a line chart with default layout and style.
+func NewLineChart(categories []string, values []float64) LineChart {
+	cats, vals := copyChartData(categories, values)
+	return LineChart{
+		Title:      "Chart",
+		Categories: cats,
+		Values:     vals,
+		X:          685800,
+		Y:          1800000,
+		CX:         7772400,
+		CY:         4114800,
+		LineColor:  "C0504D",
+	}
+}
+
+// Position sets chart position in EMU.
+func (c LineChart) Position(x int64, y int64) LineChart {
+	c.X = x
+	c.Y = y
+	return c
+}
+
+// Size sets chart size in EMU.
+func (c LineChart) Size(cx int64, cy int64) LineChart {
+	c.CX = cx
+	c.CY = cy
+	return c
+}
+
+// WithTitle sets the chart title.
+func (c LineChart) WithTitle(title string) LineChart {
+	c.Title = title
+	return c
+}
+
+// WithLineColor sets the line color using RGB hex.
+func (c LineChart) WithLineColor(color string) LineChart {
+	c.LineColor = normalizeHexColor(color)
+	return c
+}
+
 func validateBarChart(chart BarChart, slideIndex int) error {
-	if chart.X < 0 || chart.Y < 0 {
+	if err := validateChartCore(
+		slideIndex,
+		chart.Title,
+		chart.Categories,
+		chart.Values,
+		chart.X,
+		chart.Y,
+		chart.CX,
+		chart.CY,
+	); err != nil {
+		return err
+	}
+	if !isHexColor(chart.BarColor) {
+		return fmt.Errorf("slide %d bar chart color must be 6-digit RGB hex", slideIndex)
+	}
+	return nil
+}
+
+func validateLineChart(chart LineChart, slideIndex int) error {
+	if err := validateChartCore(
+		slideIndex,
+		chart.Title,
+		chart.Categories,
+		chart.Values,
+		chart.X,
+		chart.Y,
+		chart.CX,
+		chart.CY,
+	); err != nil {
+		return err
+	}
+	if !isHexColor(chart.LineColor) {
+		return fmt.Errorf("slide %d line chart color must be 6-digit RGB hex", slideIndex)
+	}
+	return nil
+}
+
+func validateChartCore(
+	slideIndex int,
+	title string,
+	categories []string,
+	values []float64,
+	x int64,
+	y int64,
+	cx int64,
+	cy int64,
+) error {
+	if x < 0 || y < 0 {
 		return fmt.Errorf("slide %d chart position cannot be negative", slideIndex)
 	}
-	if chart.CX <= 0 || chart.CY <= 0 {
+	if cx <= 0 || cy <= 0 {
 		return fmt.Errorf("slide %d chart size must be > 0", slideIndex)
 	}
-	if strings.TrimSpace(chart.Title) == "" {
+	if strings.TrimSpace(title) == "" {
 		return fmt.Errorf("slide %d chart title cannot be empty", slideIndex)
 	}
-	if len(chart.Categories) == 0 {
+	if len(categories) == 0 {
 		return fmt.Errorf("slide %d chart must define at least one category", slideIndex)
 	}
-	if len(chart.Categories) != len(chart.Values) {
+	if len(categories) != len(values) {
 		return fmt.Errorf(
 			"slide %d chart category/value length mismatch (%d vs %d)",
 			slideIndex,
-			len(chart.Categories),
-			len(chart.Values),
+			len(categories),
+			len(values),
 		)
 	}
 
 	hasPositive := false
-	for i := range chart.Categories {
-		if strings.TrimSpace(chart.Categories[i]) == "" {
+	for i := range categories {
+		if strings.TrimSpace(categories[i]) == "" {
 			return fmt.Errorf("slide %d chart category %d cannot be empty", slideIndex, i+1)
 		}
-		if chart.Values[i] < 0 {
+		if values[i] < 0 {
 			return fmt.Errorf("slide %d chart value %d cannot be negative", slideIndex, i+1)
 		}
-		if chart.Values[i] > 0 {
+		if values[i] > 0 {
 			hasPositive = true
 		}
 	}
 	if !hasPositive {
 		return fmt.Errorf("slide %d chart requires at least one positive value", slideIndex)
 	}
-	if !hexColorPattern.MatchString(normalizeHexColor(chart.BarColor)) {
-		return fmt.Errorf("slide %d chart color must be 6-digit RGB hex", slideIndex)
-	}
 	return nil
+}
+
+func copyChartData(categories []string, values []float64) ([]string, []float64) {
+	cats := make([]string, len(categories))
+	copy(cats, categories)
+	vals := make([]float64, len(values))
+	copy(vals, values)
+	return cats, vals
 }
 
 func normalizeHexColor(color string) string {
 	clean := strings.TrimPrefix(strings.TrimSpace(color), "#")
 	return strings.ToUpper(clean)
+}
+
+func isHexColor(color string) bool {
+	return hexColorPattern.MatchString(normalizeHexColor(color))
 }

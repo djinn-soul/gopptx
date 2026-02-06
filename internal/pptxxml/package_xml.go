@@ -28,7 +28,7 @@ var imageContentTypes = map[string]string{
 }
 
 // ContentTypes renders [Content_Types].xml.
-func ContentTypes(slideCount int, imageExtensions []string) string {
+func ContentTypes(slideCount int, imageExtensions []string, chartCount int) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -48,6 +48,11 @@ func ContentTypes(slideCount int, imageExtensions []string) string {
 	for i := 1; i <= slideCount; i++ {
 		b.WriteString(fmt.Sprintf(`
 <Override PartName="/ppt/slides/slide%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`, i))
+	}
+
+	for i := 1; i <= chartCount; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Override PartName="/ppt/charts/chart%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`, i))
 	}
 
 	b.WriteString(`
