@@ -1,0 +1,48 @@
+{
+    "Test function": {
+        "prefix": "test",
+        "body": [
+            "func Test${1:Name}(t *testing.T) {",
+            "    tests := []struct{",
+            "        name string",
+            "        input ${2:type}",
+            "        want ${3:type}",
+            "    }{",
+            "        {",
+            "            name: \"${4:test case}\",",
+            "            input: ${5:value},",
+            "            want: ${6:value},",
+            "        },",
+            "    }",
+            "",
+            "    for _, tt := range tests {",
+            "        t.Run(tt.name, func(t *testing.T) {",
+            "            got := ${7:function}(tt.input)",
+            "            if got != tt.want {",
+            "                t.Errorf(\"got %v, want %v\", got, tt.want)",
+            "            }",
+            "        })",
+            "    }",
+            "}"
+        ],
+        "description": "Create a new test function with table-driven tests"
+    },
+    "Error check": {
+        "prefix": "errcheck",
+        "body": [
+            "if err != nil {",
+            "    return err",
+            "}"
+        ],
+        "description": "Quick error check pattern"
+    },
+    "Panic on error": {
+        "prefix": "errpanic",
+        "body": [
+            "if err != nil {",
+            "    panic(err)",
+            "}"
+        ],
+        "description": "Panic on error pattern"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "ms-vscode.go",
+        "golang.Go",
+        "github.gitlens",
+        "primetimetran.go-test-explorer",
+        "eamodio.gitlens",
+        "golang.go"
+    ]
+}

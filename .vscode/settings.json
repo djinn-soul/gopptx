@@ -1,0 +1,66 @@
+{
+    "go.toolsManagement.autoUpdate": true,
+    "go.useLanguageServer": true,
+    "go.addTags": {
+        "tags": "json",
+        "options": "json=omitempty",
+        "promptForTags": false,
+        "transform": "snakecase"
+    },
+    "gopls": {
+        "formatting.gofumpt": true,
+        "usePlaceholders": true,
+        "ui.semanticTokens": true,
+        "staticcheck": false
+    },
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast",
+        "--timeout",
+        "5m",
+        "--fix"
+    ],
+    "go.testFlags": [
+        "-cover",
+        "-race",
+        "-count=1",
+        "-v",
+        "-s",
+        "-benchtime=5s",
+        "-timeout=5m"
+    ],
+    "go.enableCodeLens": {
+        "runtest": true
+    },
+    "[go]": {
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "file",
+        "editor.stickyScroll.enabled": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always",
+            "source.fixAll": "always"
+        }
+    },
+    "go.inlayHints.compositeLiteralFields": true,
+    "go.inlayHints.compositeLiteralTypes": true,
+    "go.inlayHints.functionTypeParameters": true,
+    "go.inlayHints.parameterNames": true,
+    "go.inlayHints.rangeVariableTypes": true,
+    "go.inlayHints.constantValues": true,
+    "go.diagnostic.vulncheck": "Imports",
+    "go.toolsEnvVars": {
+        "GOFLAGS": "-buildvcs=false"
+    },
+    "git.ignoreRebaseWarning": true,
+    "workbench.colorTheme": "One Dark Pro",
+    "git.replaceTagsWhenPull": true,
+    "telemetry.telemetryLevel": "off",
+    "makefile.configureOnOpen": true,
+    "workbench.tree.indent": 20,
+    "editor.autoIndent": "full",
+    "editor.fontFamily": "'Fira Code'",
+    "editor.fontLigatures": true,
+    "editor.cursorStyle": "line",
+    "editor.cursorBlinking": "smooth"
+}
