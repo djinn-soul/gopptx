@@ -169,3 +169,81 @@ func TestCreateWithSlidesImageAndChartRelationshipOrder(t *testing.T) {
 		t.Fatalf("expected chart frame to reference rId3")
 	}
 }
+
+func TestCreateWithSlidesBarChartStyleOptions(t *testing.T) {
+	chart := NewBarChart(
+		[]string{"Q1", "Q2"},
+		[]float64{3, 7},
+	).
+		WithTitle("Styled Bar").
+		WithSeriesName("Revenue").
+		WithLegend(true).
+		WithAxisTitles("Quarter", "USD").
+		WithMajorGridlines(false)
+
+	slides := []SlideContent{
+		NewSlide("Styled").WithBarChart(chart),
+	}
+	data, err := CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	chartXML := readZipFile(t, zr, "ppt/charts/chart1.xml")
+	checks := []string{
+		`<c:v>Revenue</c:v>`,
+		`<c:legendPos val="r"/>`,
+		`<a:t>Quarter</a:t>`,
+		`<a:t>USD</a:t>`,
+	}
+	for _, needle := range checks {
+		if !strings.Contains(chartXML, needle) {
+			t.Fatalf("expected %q in chart XML", needle)
+		}
+	}
+	if strings.Contains(chartXML, "<c:majorGridlines/>") {
+		t.Fatalf("did not expect major gridlines when disabled")
+	}
+}
+
+func TestCreateWithSlidesLineChartSmoothOption(t *testing.T) {
+	chart := NewLineChart(
+		[]string{"W1", "W2", "W3"},
+		[]float64{1, 2, 3},
+	).WithSmooth(true)
+
+	slides := []SlideContent{
+		NewSlide("Smooth").WithLineChart(chart),
+	}
+	data, err := CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+	chartXML := readZipFile(t, zr, "ppt/charts/chart1.xml")
+	if !strings.Contains(chartXML, `<c:smooth val="1"/>`) {
+		t.Fatalf("expected smooth line flag in chart XML")
+	}
+}
+
+func TestCreateWithSlidesRejectsEmptySeriesName(t *testing.T) {
+	chart := NewBarChart(
+		[]string{"A"},
+		[]float64{1},
+	).WithSeriesName("   ")
+	slides := []SlideContent{
+		NewSlide("Broken").WithBarChart(chart),
+	}
+
+	_, err := CreateWithSlides("Demo", slides)
+	if err == nil {
+		t.Fatalf("expected validation error for empty series name")
+	}
+}

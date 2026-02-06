@@ -12,6 +12,7 @@ type SlideContent struct {
 	Table   *Table
 	Chart   *BarChart
 	Line    *LineChart
+	Pie     *PieChart
 }
 
 // NewSlide creates a new slide with a title.
@@ -41,6 +42,7 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
 	s.Chart = &chart
 	s.Line = nil
+	s.Pie = nil
 	return s
 }
 
@@ -48,6 +50,15 @@ func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
 func (s SlideContent) WithLineChart(chart LineChart) SlideContent {
 	s.Line = &chart
 	s.Chart = nil
+	s.Pie = nil
+	return s
+}
+
+// WithPieChart sets one pie chart for the slide.
+func (s SlideContent) WithPieChart(chart PieChart) SlideContent {
+	s.Pie = &chart
+	s.Chart = nil
+	s.Line = nil
 	return s
 }
 
@@ -80,8 +91,23 @@ func validateSlide(s SlideContent, index int) error {
 			return err
 		}
 	}
-	if s.Chart != nil && s.Line != nil {
-		return fmt.Errorf("slide %d cannot have both bar and line charts", index)
+	if s.Pie != nil {
+		if err := validatePieChart(*s.Pie, index); err != nil {
+			return err
+		}
+	}
+	chartKinds := 0
+	if s.Chart != nil {
+		chartKinds++
+	}
+	if s.Line != nil {
+		chartKinds++
+	}
+	if s.Pie != nil {
+		chartKinds++
+	}
+	if chartKinds > 1 {
+		return fmt.Errorf("slide %d cannot have more than one chart kind", index)
 	}
 	return nil
 }

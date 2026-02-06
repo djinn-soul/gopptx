@@ -8,30 +8,53 @@ import (
 
 var hexColorPattern = regexp.MustCompile(`^[0-9A-F]{6}$`)
 
+const (
+	LegendPositionRight  = "r"
+	LegendPositionLeft   = "l"
+	LegendPositionTop    = "t"
+	LegendPositionBottom = "b"
+)
+
 // BarChart is a simple categorical bar chart.
 type BarChart struct {
-	Title      string
-	Categories []string
-	Values     []float64
-	X          int64
-	Y          int64
-	CX         int64
-	CY         int64
-	BarColor   string
+	Title              string
+	Categories         []string
+	Values             []float64
+	X                  int64
+	Y                  int64
+	CX                 int64
+	CY                 int64
+	BarColor           string
+	SeriesName         string
+	ShowLegend         bool
+	LegendPosition     string
+	ShowDataLabels     bool
+	ShowMajorGridlines bool
+	CategoryAxisTitle  string
+	ValueAxisTitle     string
+	ValueFormat        string
+	MinValue           *float64
+	MaxValue           *float64
 }
 
 // NewBarChart creates a bar chart with default layout and style.
 func NewBarChart(categories []string, values []float64) BarChart {
 	cats, vals := copyChartData(categories, values)
 	return BarChart{
-		Title:      "Chart",
-		Categories: cats,
-		Values:     vals,
-		X:          685800,
-		Y:          1800000,
-		CX:         7772400,
-		CY:         4114800,
-		BarColor:   "4F81BD",
+		Title:              "Chart",
+		Categories:         cats,
+		Values:             vals,
+		X:                  685800,
+		Y:                  1800000,
+		CX:                 7772400,
+		CY:                 4114800,
+		BarColor:           "4F81BD",
+		SeriesName:         "Series 1",
+		ShowLegend:         false,
+		LegendPosition:     LegendPositionRight,
+		ShowDataLabels:     false,
+		ShowMajorGridlines: true,
+		ValueFormat:        "General",
 	}
 }
 
@@ -63,28 +86,46 @@ func (c BarChart) WithBarColor(color string) BarChart {
 
 // LineChart is a simple categorical line chart.
 type LineChart struct {
-	Title      string
-	Categories []string
-	Values     []float64
-	X          int64
-	Y          int64
-	CX         int64
-	CY         int64
-	LineColor  string
+	Title              string
+	Categories         []string
+	Values             []float64
+	X                  int64
+	Y                  int64
+	CX                 int64
+	CY                 int64
+	LineColor          string
+	SeriesName         string
+	ShowLegend         bool
+	LegendPosition     string
+	ShowDataLabels     bool
+	ShowMajorGridlines bool
+	CategoryAxisTitle  string
+	ValueAxisTitle     string
+	ValueFormat        string
+	MinValue           *float64
+	MaxValue           *float64
+	Smooth             bool
 }
 
 // NewLineChart creates a line chart with default layout and style.
 func NewLineChart(categories []string, values []float64) LineChart {
 	cats, vals := copyChartData(categories, values)
 	return LineChart{
-		Title:      "Chart",
-		Categories: cats,
-		Values:     vals,
-		X:          685800,
-		Y:          1800000,
-		CX:         7772400,
-		CY:         4114800,
-		LineColor:  "C0504D",
+		Title:              "Chart",
+		Categories:         cats,
+		Values:             vals,
+		X:                  685800,
+		Y:                  1800000,
+		CX:                 7772400,
+		CY:                 4114800,
+		LineColor:          "C0504D",
+		SeriesName:         "Series 1",
+		ShowLegend:         false,
+		LegendPosition:     LegendPositionRight,
+		ShowDataLabels:     false,
+		ShowMajorGridlines: true,
+		ValueFormat:        "General",
+		Smooth:             false,
 	}
 }
 
@@ -130,6 +171,18 @@ func validateBarChart(chart BarChart, slideIndex int) error {
 	if !isHexColor(chart.BarColor) {
 		return fmt.Errorf("slide %d bar chart color must be 6-digit RGB hex", slideIndex)
 	}
+	if strings.TrimSpace(chart.SeriesName) == "" {
+		return fmt.Errorf("slide %d bar chart series name cannot be empty", slideIndex)
+	}
+	if !isLegendPosition(chart.LegendPosition) {
+		return fmt.Errorf("slide %d bar chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if strings.TrimSpace(chart.ValueFormat) == "" {
+		return fmt.Errorf("slide %d bar chart value format cannot be empty", slideIndex)
+	}
+	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -148,6 +201,18 @@ func validateLineChart(chart LineChart, slideIndex int) error {
 	}
 	if !isHexColor(chart.LineColor) {
 		return fmt.Errorf("slide %d line chart color must be 6-digit RGB hex", slideIndex)
+	}
+	if strings.TrimSpace(chart.SeriesName) == "" {
+		return fmt.Errorf("slide %d line chart series name cannot be empty", slideIndex)
+	}
+	if !isLegendPosition(chart.LegendPosition) {
+		return fmt.Errorf("slide %d line chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if strings.TrimSpace(chart.ValueFormat) == "" {
+		return fmt.Errorf("slide %d line chart value format cannot be empty", slideIndex)
+	}
+	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
+		return err
 	}
 	return nil
 }
@@ -209,11 +274,12 @@ func copyChartData(categories []string, values []float64) ([]string, []float64) 
 	return cats, vals
 }
 
-func normalizeHexColor(color string) string {
-	clean := strings.TrimPrefix(strings.TrimSpace(color), "#")
-	return strings.ToUpper(clean)
-}
-
-func isHexColor(color string) bool {
-	return hexColorPattern.MatchString(normalizeHexColor(color))
+func validateValueRange(minValue *float64, maxValue *float64, slideIndex int) error {
+	if (minValue == nil) != (maxValue == nil) {
+		return fmt.Errorf("slide %d chart value range requires both min and max", slideIndex)
+	}
+	if minValue != nil && maxValue != nil && *minValue >= *maxValue {
+		return fmt.Errorf("slide %d chart value range requires min < max", slideIndex)
+	}
+	return nil
 }
