@@ -3,6 +3,8 @@ package pptx
 import (
 	"archive/zip"
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -105,4 +107,140 @@ func TestCreateWithSlidesValidation(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error for empty title")
 	}
+}
+
+func TestCreateWithSlidesEmbedsImage(t *testing.T) {
+	tmpDir := t.TempDir()
+	imgPath := filepath.Join(tmpDir, "sample.png")
+	if err := os.WriteFile(imgPath, tinyPNG, 0o600); err != nil {
+		t.Fatalf("write image: %v", err)
+	}
+
+	slides := []SlideContent{
+		NewSlide("Image Slide").AddImage(NewImage(imgPath, 1200000, 1700000, 2400000, 1800000)),
+	}
+
+	data, err := CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	if !zipHasFile(zr, "ppt/media/image1.png") {
+		t.Fatalf("missing embedded media file")
+	}
+
+	relsXML := readZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
+	if !strings.Contains(relsXML, `relationships/image"`) {
+		t.Fatalf("expected image relationship in slide rels")
+	}
+	if !strings.Contains(relsXML, `Target="../media/image1.png"`) {
+		t.Fatalf("expected image media target in slide rels")
+	}
+
+	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	if !strings.Contains(slideXML, `a:blip r:embed="rId2"`) {
+		t.Fatalf("expected image embed reference in slide xml")
+	}
+}
+
+func TestCreateWithSlidesFailsForMissingImage(t *testing.T) {
+	slides := []SlideContent{
+		NewSlide("Image Slide").AddImage(NewImage("does-not-exist.png", 1, 1, 1, 1)),
+	}
+	_, err := CreateWithSlides("Demo", slides)
+	if err == nil {
+		t.Fatalf("expected error for missing image file")
+	}
+}
+
+func TestCreateWithSlidesEmbedsTable(t *testing.T) {
+	table := NewTable([]int64{2743400, 2743400, 2743400}).
+		AddRow([]string{"Name", "Status", "Owner"}).
+		AddRow([]string{"Parser", "Done", "Core Team"})
+
+	slides := []SlideContent{
+		NewSlide("Table Slide").WithTable(table),
+	}
+
+	data, err := CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	if !strings.Contains(slideXML, "<a:tbl>") {
+		t.Fatalf("expected table XML in slide")
+	}
+	if !strings.Contains(slideXML, "<a:t>Name</a:t>") {
+		t.Fatalf("expected table cell text in slide")
+	}
+	if strings.Contains(slideXML, `name="Content"`) {
+		t.Fatalf("unexpected bullet content shape when table is present")
+	}
+}
+
+func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
+	table := NewTable([]int64{2000000, 2000000}).
+		AddRow([]string{"A"})
+
+	slides := []SlideContent{
+		NewSlide("Broken Table").WithTable(table),
+	}
+
+	_, err := CreateWithSlides("Demo", slides)
+	if err == nil {
+		t.Fatalf("expected table validation error")
+	}
+}
+
+func zipHasFile(zr *zip.Reader, name string) bool {
+	for _, f := range zr.File {
+		if f.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func readZipFile(t *testing.T, zr *zip.Reader, name string) string {
+	t.Helper()
+	for _, f := range zr.File {
+		if f.Name != name {
+			continue
+		}
+		r, err := f.Open()
+		if err != nil {
+			t.Fatalf("open %s: %v", name, err)
+		}
+		defer r.Close()
+		buf := new(bytes.Buffer)
+		if _, err := buf.ReadFrom(r); err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		return buf.String()
+	}
+	t.Fatalf("file %s not found in zip", name)
+	return ""
+}
+
+var tinyPNG = []byte{
+	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+	0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+	0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+	0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+	0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41,
+	0x54, 0x78, 0x9c, 0x63, 0xf8, 0xcf, 0xc0, 0x00,
+	0x00, 0x03, 0x01, 0x01, 0x00, 0xc9, 0xfe, 0x92,
+	0xef, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e,
+	0x44, 0xae, 0x42, 0x60, 0x82,
 }

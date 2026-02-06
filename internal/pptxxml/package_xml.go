@@ -17,14 +17,33 @@ func Escape(value string) string {
 	return replacer.Replace(value)
 }
 
+var imageContentTypes = map[string]string{
+	"png":  "image/png",
+	"jpg":  "image/jpeg",
+	"jpeg": "image/jpeg",
+	"gif":  "image/gif",
+	"bmp":  "image/bmp",
+	"tif":  "image/tiff",
+	"tiff": "image/tiff",
+}
+
 // ContentTypes renders [Content_Types].xml.
-func ContentTypes(slideCount int) string {
+func ContentTypes(slideCount int, imageExtensions []string) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
+
+	for _, ext := range imageExtensions {
+		contentType, ok := imageContentTypes[ext]
+		if !ok {
+			panic(fmt.Sprintf("unsupported image extension in content types: %s", ext))
+		}
+		b.WriteString(fmt.Sprintf(`
+<Default Extension="%s" ContentType="%s"/>`, ext, contentType))
+	}
 
 	for i := 1; i <= slideCount; i++ {
 		b.WriteString(fmt.Sprintf(`

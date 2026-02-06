@@ -8,6 +8,9 @@ import (
 type SlideContent struct {
 	Title   string
 	Bullets []string
+	Images  []Image
+	Table   *Table
+	Chart   *BarChart
 }
 
 // NewSlide creates a new slide with a title.
@@ -21,6 +24,24 @@ func (s SlideContent) AddBullet(text string) SlideContent {
 	return s
 }
 
+// AddImage appends one image and returns the updated slide.
+func (s SlideContent) AddImage(image Image) SlideContent {
+	s.Images = append(s.Images, image)
+	return s
+}
+
+// WithTable sets one table for the slide.
+func (s SlideContent) WithTable(table Table) SlideContent {
+	s.Table = &table
+	return s
+}
+
+// WithBarChart sets one bar chart for the slide.
+func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
+	s.Chart = &chart
+	return s
+}
+
 func validateSlide(s SlideContent, index int) error {
 	if s.Title == "" {
 		return fmt.Errorf("slide %d title cannot be empty", index)
@@ -28,6 +49,21 @@ func validateSlide(s SlideContent, index int) error {
 	for bulletIndex, bullet := range s.Bullets {
 		if bullet == "" {
 			return fmt.Errorf("slide %d bullet %d cannot be empty", index, bulletIndex+1)
+		}
+	}
+	for imageIndex, image := range s.Images {
+		if err := validateImage(image, index, imageIndex+1); err != nil {
+			return err
+		}
+	}
+	if s.Table != nil {
+		if err := validateTable(*s.Table, index); err != nil {
+			return err
+		}
+	}
+	if s.Chart != nil {
+		if err := validateBarChart(*s.Chart, index); err != nil {
+			return err
 		}
 	}
 	return nil

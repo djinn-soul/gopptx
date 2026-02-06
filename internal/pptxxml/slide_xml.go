@@ -1,6 +1,9 @@
 package pptxxml
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
@@ -33,24 +36,54 @@ const slideFooter = `
 </p:clrMapOvr>
 </p:sld>`
 
-// SlideWithContent renders a title+bullets slide.
-func SlideWithContent(title string, bullets []string) string {
+// SlideWithContent renders a title+bullets slide with optional table, chart, and images.
+func SlideWithContent(
+	title string,
+	bullets []string,
+	table *TableSpec,
+	chart *BarChartSpec,
+	images []ImageRef,
+) string {
 	var b strings.Builder
 	b.WriteString(slideHeader)
 	b.WriteString(titleShape(title))
-	if len(bullets) > 0 {
-		b.WriteString(contentShape(bullets))
+
+	nextID := 3
+	if table != nil {
+		b.WriteString(tableShape(table, nextID))
+		nextID++
+	} else if len(bullets) > 0 {
+		b.WriteString(contentShape(bullets, nextID))
+		nextID++
+	}
+
+	if chart != nil {
+		chartXML, used := barChartShape(chart, nextID)
+		b.WriteString(chartXML)
+		nextID += used
+	}
+
+	for i, image := range images {
+		b.WriteString(imageShape(image, nextID+i))
 	}
 	b.WriteString(slideFooter)
 	return b.String()
 }
 
 // SlideRelationships renders ppt/slides/_rels/slideN.xml.rels.
-func SlideRelationships() string {
-	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+func SlideRelationships(imageTargets []string) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-</Relationships>`
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`)
+	for i, target := range imageTargets {
+		rid := i + 2
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, rid, Escape(target)))
+	}
+	b.WriteString(`
+</Relationships>`)
+	return b.String()
 }
 
 func titleShape(title string) string {
@@ -84,12 +117,12 @@ func titleShape(title string) string {
 </p:sp>`
 }
 
-func contentShape(bullets []string) string {
+func contentShape(bullets []string, shapeID int) string {
 	var b strings.Builder
-	b.WriteString(`
+	b.WriteString(fmt.Sprintf(`
 <p:sp>
 <p:nvSpPr>
-<p:cNvPr id="3" name="Content"/>
+<p:cNvPr id="%d" name="Content"/>
 <p:cNvSpPr txBox="1"/>
 <p:nvPr/>
 </p:nvSpPr>
@@ -103,7 +136,7 @@ func contentShape(bullets []string) string {
 </p:spPr>
 <p:txBody>
 <a:bodyPr wrap="square" rtlCol="0"/>
-<a:lstStyle/>`)
+<a:lstStyle/>`, shapeID))
 
 	for _, bullet := range bullets {
 		b.WriteString(bulletParagraph(bullet))

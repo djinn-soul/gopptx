@@ -68,11 +68,16 @@ func WriteFile(path string, title string, slides []SlideContent) error {
 }
 
 func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slideCount int) error {
+	mediaCatalog, err := buildMediaCatalog(slides)
+	if err != nil {
+		return err
+	}
+
 	files := []struct {
 		name    string
 		content string
 	}{
-		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount)},
+		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions())},
 		{"_rels/.rels", pptxxml.RootRelationships()},
 		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount)},
 		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount)},
@@ -91,16 +96,78 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		}
 	}
 
+	if err := writeMediaFiles(zw, mediaCatalog); err != nil {
+		return err
+	}
+
 	for i, slide := range slides {
 		slideNumber := i + 1
-		slideXML := pptxxml.SlideWithContent(slide.Title, slide.Bullets)
+
+		var tableSpec *pptxxml.TableSpec
+		if slide.Table != nil {
+			rows := make([][]string, 0, len(slide.Table.Rows))
+			for _, srcRow := range slide.Table.Rows {
+				row := make([]string, len(srcRow))
+				copy(row, srcRow)
+				rows = append(rows, row)
+			}
+			columnWidths := make([]int64, len(slide.Table.ColumnWidths))
+			copy(columnWidths, slide.Table.ColumnWidths)
+			tableSpec = &pptxxml.TableSpec{
+				X:            slide.Table.X,
+				Y:            slide.Table.Y,
+				CX:           slide.Table.CX,
+				CY:           slide.Table.CY,
+				ColumnWidths: columnWidths,
+				Rows:         rows,
+			}
+		}
+
+		var chartSpec *pptxxml.BarChartSpec
+		if slide.Chart != nil {
+			categories := make([]string, len(slide.Chart.Categories))
+			copy(categories, slide.Chart.Categories)
+			values := make([]float64, len(slide.Chart.Values))
+			copy(values, slide.Chart.Values)
+			chartSpec = &pptxxml.BarChartSpec{
+				Title:      slide.Chart.Title,
+				Categories: categories,
+				Values:     values,
+				X:          slide.Chart.X,
+				Y:          slide.Chart.Y,
+				CX:         slide.Chart.CX,
+				CY:         slide.Chart.CY,
+				BarColor:   slide.Chart.BarColor,
+			}
+		}
+
+		imageRefs := make([]pptxxml.ImageRef, 0, len(slide.Images))
+		imageTargets := make([]string, 0, len(slide.Images))
+		for imageIndex, image := range slide.Images {
+			mediaName, ok := mediaCatalog.mediaNameForPath(image.Path)
+			if !ok {
+				return fmt.Errorf("slide %d image %d was not registered", slideNumber, imageIndex+1)
+			}
+			relID := fmt.Sprintf("rId%d", imageIndex+2)
+			imageRefs = append(imageRefs, pptxxml.ImageRef{
+				RelID: relID,
+				Name:  fmt.Sprintf("Picture %d", imageIndex+1),
+				X:     image.X,
+				Y:     image.Y,
+				CX:    image.CX,
+				CY:    image.CY,
+			})
+			imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
+		}
+
+		slideXML := pptxxml.SlideWithContent(slide.Title, slide.Bullets, tableSpec, chartSpec, imageRefs)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {
 			return err
 		}
 
 		relsPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", slideNumber)
-		if err := writeFile(zw, relsPath, pptxxml.SlideRelationships()); err != nil {
+		if err := writeFile(zw, relsPath, pptxxml.SlideRelationships(imageTargets)); err != nil {
 			return err
 		}
 	}
@@ -115,4 +182,18 @@ func writeFile(zw *zip.Writer, path string, content string) error {
 	}
 	_, err = w.Write([]byte(content))
 	return err
+}
+
+func writeMediaFiles(zw *zip.Writer, catalog *mediaCatalog) error {
+	for _, asset := range catalog.ordered {
+		path := fmt.Sprintf("ppt/media/%s", asset.mediaName)
+		w, err := zw.Create(path)
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(asset.data); err != nil {
+			return err
+		}
+	}
+	return nil
 }

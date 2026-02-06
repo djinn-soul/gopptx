@@ -1,10 +1,42 @@
 repos:
-- repo: https://github.com/TekWizely/pre-commit-golang
-  rev: v1.0.0-rc.4 # Use the latest revision
-  hooks:
-    - id: go-fmt
-    - id: go-imports
-    - id: go-vet
-    - id: golangci-lint
-    - id: go-mod-tidy
-    - id: go-unit-tests
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: gofmt
+        entry: gofmt
+        language: system
+        types: [go]
+
+      - id: go-imports
+        name: goimports
+        entry: goimports
+        language: system
+        types: [go]
+
+      - id: go-vet
+        name: go vet
+        entry: go
+        language: system
+        pass_filenames: false
+        args: ["vet", "./..."]
+
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint
+        language: system
+        pass_filenames: false
+        args: ["run", "./..."]
+
+      - id: go-mod-tidy
+        name: go mod tidy
+        entry: go
+        language: system
+        pass_filenames: false
+        args: ["mod", "tidy"]
+
+      - id: go-test
+        name: go test
+        entry: go
+        language: system
+        pass_filenames: false
+        args: ["test", "./..."]
