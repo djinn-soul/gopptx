@@ -33,3 +33,5 @@ go.work.sum
 ppt-*
 C*.md
 A*.md
+.gemini/
+gha-creds-*.json
