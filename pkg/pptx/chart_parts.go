@@ -124,6 +124,27 @@ func slideChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 			ShowDataLabels: slide.Pie.ShowDataLabels,
 		}, true
 	}
+	if slide.Dough != nil {
+		categories := make([]string, len(slide.Dough.Categories))
+		copy(categories, slide.Dough.Categories)
+		values := make([]float64, len(slide.Dough.Values))
+		copy(values, slide.Dough.Values)
+		return &pptxxml.ChartSpec{
+			Kind:           pptxxml.ChartKindDoughnut,
+			Title:          slide.Dough.Title,
+			Categories:     categories,
+			Values:         values,
+			X:              slide.Dough.X,
+			Y:              slide.Dough.Y,
+			CX:             slide.Dough.CX,
+			CY:             slide.Dough.CY,
+			SeriesName:     slide.Dough.SeriesName,
+			ShowLegend:     slide.Dough.ShowLegend,
+			LegendPosition: slide.Dough.LegendPosition,
+			ShowDataLabels: slide.Dough.ShowDataLabels,
+			HoleSize:       slide.Dough.HoleSize,
+		}, true
+	}
 	return nil, false
 }
 

@@ -13,6 +13,7 @@ type SlideContent struct {
 	Chart   *BarChart
 	Line    *LineChart
 	Pie     *PieChart
+	Dough   *DoughnutChart
 }
 
 // NewSlide creates a new slide with a title.
@@ -43,6 +44,7 @@ func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
 	s.Chart = &chart
 	s.Line = nil
 	s.Pie = nil
+	s.Dough = nil
 	return s
 }
 
@@ -51,6 +53,7 @@ func (s SlideContent) WithLineChart(chart LineChart) SlideContent {
 	s.Line = &chart
 	s.Chart = nil
 	s.Pie = nil
+	s.Dough = nil
 	return s
 }
 
@@ -59,6 +62,16 @@ func (s SlideContent) WithPieChart(chart PieChart) SlideContent {
 	s.Pie = &chart
 	s.Chart = nil
 	s.Line = nil
+	s.Dough = nil
+	return s
+}
+
+// WithDoughnutChart sets one doughnut chart for the slide.
+func (s SlideContent) WithDoughnutChart(chart DoughnutChart) SlideContent {
+	s.Dough = &chart
+	s.Chart = nil
+	s.Line = nil
+	s.Pie = nil
 	return s
 }
 
@@ -96,6 +109,11 @@ func validateSlide(s SlideContent, index int) error {
 			return err
 		}
 	}
+	if s.Dough != nil {
+		if err := validateDoughnutChart(*s.Dough, index); err != nil {
+			return err
+		}
+	}
 	chartKinds := 0
 	if s.Chart != nil {
 		chartKinds++
@@ -104,6 +122,9 @@ func validateSlide(s SlideContent, index int) error {
 		chartKinds++
 	}
 	if s.Pie != nil {
+		chartKinds++
+	}
+	if s.Dough != nil {
 		chartKinds++
 	}
 	if chartKinds > 1 {

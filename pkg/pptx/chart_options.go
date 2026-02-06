@@ -131,3 +131,33 @@ func (c PieChart) WithDataLabels(show bool) PieChart {
 	c.ShowDataLabels = show
 	return c
 }
+
+// WithSeriesName sets the single-series label in chart legends.
+func (c DoughnutChart) WithSeriesName(name string) DoughnutChart {
+	c.SeriesName = strings.TrimSpace(name)
+	return c
+}
+
+// WithLegend toggles legend visibility.
+func (c DoughnutChart) WithLegend(show bool) DoughnutChart {
+	c.ShowLegend = show
+	return c
+}
+
+// WithLegendPosition sets legend position as r/l/t/b.
+func (c DoughnutChart) WithLegendPosition(position string) DoughnutChart {
+	c.LegendPosition = strings.ToLower(strings.TrimSpace(position))
+	return c
+}
+
+// WithDataLabels toggles data labels on doughnut slices.
+func (c DoughnutChart) WithDataLabels(show bool) DoughnutChart {
+	c.ShowDataLabels = show
+	return c
+}
+
+// WithHoleSize sets the center hole size percentage (10-90).
+func (c DoughnutChart) WithHoleSize(size int) DoughnutChart {
+	c.HoleSize = size
+	return c
+}

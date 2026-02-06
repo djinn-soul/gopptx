@@ -20,6 +20,7 @@ type ChartSpec struct {
 	ShowLegend         bool
 	LegendPosition     string
 	ShowDataLabels     bool
+	HoleSize           int
 	ShowMajorGridlines bool
 	CategoryAxisTitle  string
 	ValueAxisTitle     string
@@ -30,9 +31,10 @@ type ChartSpec struct {
 }
 
 const (
-	ChartKindBar  = "bar"
-	ChartKindLine = "line"
-	ChartKindPie  = "pie"
+	ChartKindBar      = "bar"
+	ChartKindLine     = "line"
+	ChartKindPie      = "pie"
+	ChartKindDoughnut = "doughnut"
 )
 
 // ChartPartXML renders a chart part (`ppt/charts/chartN.xml`).
@@ -42,6 +44,9 @@ func ChartPartXML(chart *ChartSpec) string {
 	}
 	if chart.Kind == ChartKindPie {
 		return pieChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindDoughnut {
+		return doughnutChartPartXML(chart)
 	}
 	return barChartPartXML(chart)
 }
