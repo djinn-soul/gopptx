@@ -1,0 +1,9 @@
+.git
+.gitignore
+ppt-rs
+**/*.pptx
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.webp
