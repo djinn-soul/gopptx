@@ -12,6 +12,8 @@ type SlideContent struct {
 	Table   *Table
 	Chart   *BarChart
 	Line    *LineChart
+	Scatter *ScatterChart
+	Area    *AreaChart
 	Pie     *PieChart
 	Dough   *DoughnutChart
 }
@@ -43,6 +45,8 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
 	s.Chart = &chart
 	s.Line = nil
+	s.Scatter = nil
+	s.Area = nil
 	s.Pie = nil
 	s.Dough = nil
 	return s
@@ -52,6 +56,30 @@ func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
 func (s SlideContent) WithLineChart(chart LineChart) SlideContent {
 	s.Line = &chart
 	s.Chart = nil
+	s.Scatter = nil
+	s.Area = nil
+	s.Pie = nil
+	s.Dough = nil
+	return s
+}
+
+// WithScatterChart sets one scatter chart for the slide.
+func (s SlideContent) WithScatterChart(chart ScatterChart) SlideContent {
+	s.Scatter = &chart
+	s.Chart = nil
+	s.Line = nil
+	s.Area = nil
+	s.Pie = nil
+	s.Dough = nil
+	return s
+}
+
+// WithAreaChart sets one area chart for the slide.
+func (s SlideContent) WithAreaChart(chart AreaChart) SlideContent {
+	s.Area = &chart
+	s.Chart = nil
+	s.Line = nil
+	s.Scatter = nil
 	s.Pie = nil
 	s.Dough = nil
 	return s
@@ -62,6 +90,8 @@ func (s SlideContent) WithPieChart(chart PieChart) SlideContent {
 	s.Pie = &chart
 	s.Chart = nil
 	s.Line = nil
+	s.Scatter = nil
+	s.Area = nil
 	s.Dough = nil
 	return s
 }
@@ -71,6 +101,8 @@ func (s SlideContent) WithDoughnutChart(chart DoughnutChart) SlideContent {
 	s.Dough = &chart
 	s.Chart = nil
 	s.Line = nil
+	s.Scatter = nil
+	s.Area = nil
 	s.Pie = nil
 	return s
 }
@@ -104,6 +136,16 @@ func validateSlide(s SlideContent, index int) error {
 			return err
 		}
 	}
+	if s.Scatter != nil {
+		if err := validateScatterChart(*s.Scatter, index); err != nil {
+			return err
+		}
+	}
+	if s.Area != nil {
+		if err := validateAreaChart(*s.Area, index); err != nil {
+			return err
+		}
+	}
 	if s.Pie != nil {
 		if err := validatePieChart(*s.Pie, index); err != nil {
 			return err
@@ -119,6 +161,12 @@ func validateSlide(s SlideContent, index int) error {
 		chartKinds++
 	}
 	if s.Line != nil {
+		chartKinds++
+	}
+	if s.Scatter != nil {
+		chartKinds++
+	}
+	if s.Area != nil {
 		chartKinds++
 	}
 	if s.Pie != nil {

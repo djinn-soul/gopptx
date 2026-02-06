@@ -10,6 +10,7 @@ type ChartSpec struct {
 	Kind               string
 	Title              string
 	Categories         []string
+	XValues            []float64
 	Values             []float64
 	X                  int64
 	Y                  int64
@@ -17,6 +18,7 @@ type ChartSpec struct {
 	CY                 int64
 	Color              string
 	SeriesName         string
+	ScatterStyle       string
 	ShowLegend         bool
 	LegendPosition     string
 	ShowDataLabels     bool
@@ -33,6 +35,8 @@ type ChartSpec struct {
 const (
 	ChartKindBar      = "bar"
 	ChartKindLine     = "line"
+	ChartKindScatter  = "scatter"
+	ChartKindArea     = "area"
 	ChartKindPie      = "pie"
 	ChartKindDoughnut = "doughnut"
 )
@@ -41,6 +45,12 @@ const (
 func ChartPartXML(chart *ChartSpec) string {
 	if chart.Kind == ChartKindLine {
 		return lineChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindScatter {
+		return scatterChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindArea {
+		return areaChartPartXML(chart)
 	}
 	if chart.Kind == ChartKindPie {
 		return pieChartPartXML(chart)

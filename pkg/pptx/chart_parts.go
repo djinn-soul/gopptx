@@ -104,6 +104,61 @@ func slideChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 			Smooth:             slide.Line.Smooth,
 		}, true
 	}
+	if slide.Scatter != nil {
+		xValues := make([]float64, len(slide.Scatter.XValues))
+		copy(xValues, slide.Scatter.XValues)
+		yValues := make([]float64, len(slide.Scatter.YValues))
+		copy(yValues, slide.Scatter.YValues)
+		return &pptxxml.ChartSpec{
+			Kind:               pptxxml.ChartKindScatter,
+			Title:              slide.Scatter.Title,
+			XValues:            xValues,
+			Values:             yValues,
+			X:                  slide.Scatter.X,
+			Y:                  slide.Scatter.Y,
+			CX:                 slide.Scatter.CX,
+			CY:                 slide.Scatter.CY,
+			Color:              normalizeHexColor(slide.Scatter.LineColor),
+			SeriesName:         slide.Scatter.SeriesName,
+			ScatterStyle:       slide.Scatter.ScatterStyle,
+			ShowLegend:         slide.Scatter.ShowLegend,
+			LegendPosition:     slide.Scatter.LegendPosition,
+			ShowDataLabels:     slide.Scatter.ShowDataLabels,
+			ShowMajorGridlines: slide.Scatter.ShowMajorGridlines,
+			CategoryAxisTitle:  slide.Scatter.CategoryAxisTitle,
+			ValueAxisTitle:     slide.Scatter.ValueAxisTitle,
+			ValueFormat:        slide.Scatter.ValueFormat,
+			MinValue:           copyFloat64Pointer(slide.Scatter.MinValue),
+			MaxValue:           copyFloat64Pointer(slide.Scatter.MaxValue),
+		}, true
+	}
+	if slide.Area != nil {
+		categories := make([]string, len(slide.Area.Categories))
+		copy(categories, slide.Area.Categories)
+		values := make([]float64, len(slide.Area.Values))
+		copy(values, slide.Area.Values)
+		return &pptxxml.ChartSpec{
+			Kind:               pptxxml.ChartKindArea,
+			Title:              slide.Area.Title,
+			Categories:         categories,
+			Values:             values,
+			X:                  slide.Area.X,
+			Y:                  slide.Area.Y,
+			CX:                 slide.Area.CX,
+			CY:                 slide.Area.CY,
+			Color:              normalizeHexColor(slide.Area.AreaColor),
+			SeriesName:         slide.Area.SeriesName,
+			ShowLegend:         slide.Area.ShowLegend,
+			LegendPosition:     slide.Area.LegendPosition,
+			ShowDataLabels:     slide.Area.ShowDataLabels,
+			ShowMajorGridlines: slide.Area.ShowMajorGridlines,
+			CategoryAxisTitle:  slide.Area.CategoryAxisTitle,
+			ValueAxisTitle:     slide.Area.ValueAxisTitle,
+			ValueFormat:        slide.Area.ValueFormat,
+			MinValue:           copyFloat64Pointer(slide.Area.MinValue),
+			MaxValue:           copyFloat64Pointer(slide.Area.MaxValue),
+		}, true
+	}
 	if slide.Pie != nil {
 		categories := make([]string, len(slide.Pie.Categories))
 		copy(categories, slide.Pie.Categories)
