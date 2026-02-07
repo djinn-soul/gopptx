@@ -20,6 +20,7 @@ func TestCreateWithSlidesEmbedsStockHLCChart(t *testing.T) {
 		`<c:v>High</c:v>`,
 		`<c:v>Low</c:v>`,
 		`<c:v>Close</c:v>`,
+		`<c:hiLowLines>`,
 	})
 }
 
@@ -51,6 +52,8 @@ func TestCreateWithSlidesEmbedsStockOHLCChart(t *testing.T) {
 		`<c:v>High</c:v>`,
 		`<c:v>Low</c:v>`,
 		`<c:v>Close</c:v>`,
+		`<c:hiLowLines>`,
+		`<c:upDownBars>`,
 	})
 }
 
