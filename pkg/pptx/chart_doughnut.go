@@ -8,6 +8,7 @@ import (
 // DoughnutChart is a simple categorical doughnut chart.
 type DoughnutChart struct {
 	Title          string
+	TitleOverlay   bool
 	Categories     []string
 	Values         []float64
 	X              int64
@@ -17,6 +18,7 @@ type DoughnutChart struct {
 	SeriesName     string
 	ShowLegend     bool
 	LegendPosition string
+	LegendOverlay  bool
 	ShowDataLabels bool
 	HoleSize       int
 }

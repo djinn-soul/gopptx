@@ -7,44 +7,48 @@ import (
 
 // AreaChart is a simple categorical area chart.
 type AreaChart struct {
-	Title              string
-	Categories         []string
-	Values             []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	AreaColor          string
-	SeriesName         string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
+	Title                 string
+	TitleOverlay          bool
+	Categories            []string
+	Values                []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	AreaColor             string
+	SeriesName            string
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
 }
 
 // NewAreaChart creates an area chart with default layout and style.
 func NewAreaChart(categories []string, values []float64) AreaChart {
 	cats, vals := copyChartData(categories, values)
 	return AreaChart{
-		Title:              "Chart",
-		Categories:         cats,
-		Values:             vals,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		AreaColor:          "9BBB59",
-		SeriesName:         "Series 1",
-		ShowLegend:         false,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
+		Title:                 "Chart",
+		Categories:            cats,
+		Values:                vals,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		AreaColor:             "9BBB59",
+		SeriesName:            "Series 1",
+		ShowLegend:            false,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -98,6 +102,9 @@ func validateAreaChart(chart AreaChart, slideIndex int) error {
 	}
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d area chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d area chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
 	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
 		return err

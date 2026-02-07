@@ -8,6 +8,7 @@ import (
 // PieChart is a simple categorical pie chart.
 type PieChart struct {
 	Title          string
+	TitleOverlay   bool
 	Categories     []string
 	Values         []float64
 	X              int64
@@ -17,6 +18,7 @@ type PieChart struct {
 	SeriesName     string
 	ShowLegend     bool
 	LegendPosition string
+	LegendOverlay  bool
 	ShowDataLabels bool
 }
 

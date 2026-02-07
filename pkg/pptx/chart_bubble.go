@@ -8,26 +8,29 @@ import (
 
 // BubbleChart is a bubble chart using x/y coordinates and bubble sizes.
 type BubbleChart struct {
-	Title              string
-	XValues            []float64
-	YValues            []float64
-	BubbleSizes        []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	LineColor          string
-	SeriesName         string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
-	BubbleScale        int
+	Title                 string
+	TitleOverlay          bool
+	XValues               []float64
+	YValues               []float64
+	BubbleSizes           []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	LineColor             string
+	SeriesName            string
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
+	BubbleScale           int
 }
 
 func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64) BubbleChart {
@@ -38,22 +41,23 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 	bs := make([]float64, len(bubbleSizes))
 	copy(bs, bubbleSizes)
 	return BubbleChart{
-		Title:              "Chart",
-		XValues:            xs,
-		YValues:            ys,
-		BubbleSizes:        bs,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		LineColor:          "4F81BD",
-		SeriesName:         "Series 1",
-		ShowLegend:         false,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
-		BubbleScale:        100,
+		Title:                 "Chart",
+		XValues:               xs,
+		YValues:               ys,
+		BubbleSizes:           bs,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		LineColor:             "4F81BD",
+		SeriesName:            "Series 1",
+		ShowLegend:            false,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
+		BubbleScale:           100,
 	}
 }
 
@@ -106,6 +110,9 @@ func validateBubbleChart(chart BubbleChart, slideIndex int) error {
 	}
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d bubble chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d bubble chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
 	if chart.BubbleScale < 1 || chart.BubbleScale > 300 {
 		return fmt.Errorf("slide %d bubble chart scale must be between 1 and 300", slideIndex)

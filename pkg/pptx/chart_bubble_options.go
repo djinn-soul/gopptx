@@ -17,6 +17,16 @@ func (c BubbleChart) WithLegendPosition(position string) BubbleChart {
 	return c
 }
 
+func (c BubbleChart) WithTitleOverlay(overlay bool) BubbleChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+func (c BubbleChart) WithLegendOverlay(overlay bool) BubbleChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 func (c BubbleChart) WithDataLabels(show bool) BubbleChart {
 	c.ShowDataLabels = show
 	return c
@@ -35,6 +45,11 @@ func (c BubbleChart) WithMajorGridlines(show bool) BubbleChart {
 
 func (c BubbleChart) WithValueFormat(format string) BubbleChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+func (c BubbleChart) WithValueAxisCrossBetween(mode string) BubbleChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 

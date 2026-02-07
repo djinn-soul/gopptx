@@ -13,48 +13,55 @@ const (
 	LegendPositionLeft   = "l"
 	LegendPositionTop    = "t"
 	LegendPositionBottom = "b"
+
+	ValueAxisCrossBetweenBetween     = "between"
+	ValueAxisCrossBetweenMidCategory = "midCat"
 )
 
 // BarChart is a simple categorical bar chart.
 type BarChart struct {
-	Title              string
-	Categories         []string
-	Values             []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	BarColor           string
-	SeriesName         string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
+	Title                 string
+	TitleOverlay          bool
+	Categories            []string
+	Values                []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	BarColor              string
+	SeriesName            string
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
 }
 
 // NewBarChart creates a bar chart with default layout and style.
 func NewBarChart(categories []string, values []float64) BarChart {
 	cats, vals := copyChartData(categories, values)
 	return BarChart{
-		Title:              "Chart",
-		Categories:         cats,
-		Values:             vals,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		BarColor:           "4F81BD",
-		SeriesName:         "Series 1",
-		ShowLegend:         false,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
+		Title:                 "Chart",
+		Categories:            cats,
+		Values:                vals,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		BarColor:              "4F81BD",
+		SeriesName:            "Series 1",
+		ShowLegend:            false,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -86,46 +93,50 @@ func (c BarChart) WithBarColor(color string) BarChart {
 
 // LineChart is a simple categorical line chart.
 type LineChart struct {
-	Title              string
-	Categories         []string
-	Values             []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	LineColor          string
-	SeriesName         string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
-	Smooth             bool
+	Title                 string
+	TitleOverlay          bool
+	Categories            []string
+	Values                []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	LineColor             string
+	SeriesName            string
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
+	Smooth                bool
 }
 
 // NewLineChart creates a line chart with default layout and style.
 func NewLineChart(categories []string, values []float64) LineChart {
 	cats, vals := copyChartData(categories, values)
 	return LineChart{
-		Title:              "Chart",
-		Categories:         cats,
-		Values:             vals,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		LineColor:          "C0504D",
-		SeriesName:         "Series 1",
-		ShowLegend:         false,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
-		Smooth:             false,
+		Title:                 "Chart",
+		Categories:            cats,
+		Values:                vals,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		LineColor:             "C0504D",
+		SeriesName:            "Series 1",
+		ShowLegend:            false,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
+		Smooth:                false,
 	}
 }
 
@@ -180,6 +191,9 @@ func validateBarChart(chart BarChart, slideIndex int) error {
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d bar chart value format cannot be empty", slideIndex)
 	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d bar chart value-axis crossBetween must be between or midCat", slideIndex)
+	}
 	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
 		return err
 	}
@@ -210,6 +224,9 @@ func validateLineChart(chart LineChart, slideIndex int) error {
 	}
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d line chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d line chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
 	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
 		return err

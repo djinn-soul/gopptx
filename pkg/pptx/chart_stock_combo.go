@@ -8,24 +8,27 @@ import (
 
 // StockHLCChart is a stock chart with High/Low/Close series.
 type StockHLCChart struct {
-	Title              string
-	Categories         []string
-	HighValues         []float64
-	LowValues          []float64
-	CloseValues        []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
+	Title                 string
+	TitleOverlay          bool
+	Categories            []string
+	HighValues            []float64
+	LowValues             []float64
+	CloseValues           []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
 }
 
 func NewStockHLCChart(categories []string, high []float64, low []float64, close []float64) StockHLCChart {
@@ -34,20 +37,21 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, close 
 	lowVals := append([]float64(nil), low...)
 	closeVals := append([]float64(nil), close...)
 	return StockHLCChart{
-		Title:              "Chart",
-		Categories:         cats,
-		HighValues:         highVals,
-		LowValues:          lowVals,
-		CloseValues:        closeVals,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		ShowLegend:         true,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
+		Title:                 "Chart",
+		Categories:            cats,
+		HighValues:            highVals,
+		LowValues:             lowVals,
+		CloseValues:           closeVals,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		ShowLegend:            true,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -74,40 +78,44 @@ func NewStockOHLCChart(
 
 // ComboChart mixes bar and line series on one category axis.
 type ComboChart struct {
-	Title              string
-	Categories         []string
-	BarSeries          []Series
-	LineSeries         []Series
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
+	Title                 string
+	TitleOverlay          bool
+	Categories            []string
+	BarSeries             []Series
+	LineSeries            []Series
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
 }
 
 func NewComboChart(categories []string, barSeries []Series, lineSeries []Series) ComboChart {
 	return ComboChart{
-		Title:              "Chart",
-		Categories:         append([]string(nil), categories...),
-		BarSeries:          copySeriesList(barSeries),
-		LineSeries:         copySeriesList(lineSeries),
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		ShowLegend:         true,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
+		Title:                 "Chart",
+		Categories:            append([]string(nil), categories...),
+		BarSeries:             copySeriesList(barSeries),
+		LineSeries:            copySeriesList(lineSeries),
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		ShowLegend:            true,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -122,6 +130,7 @@ func validateStockHLCChart(chart StockHLCChart, slideIndex int) error {
 		chart.CY,
 		chart.ValueFormat,
 		chart.LegendPosition,
+		chart.ValueAxisCrossBetween,
 		chart.MinValue,
 		chart.MaxValue,
 	); err != nil {
@@ -165,6 +174,9 @@ func validateComboChart(chart ComboChart, slideIndex int) error {
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d combo chart value format cannot be empty", slideIndex)
 	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d combo chart value-axis crossBetween must be between or midCat", slideIndex)
+	}
 	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
 		return err
 	}
@@ -207,6 +219,7 @@ func validateStockCore(
 	cy int64,
 	valueFormat string,
 	legendPosition string,
+	valueAxisCrossBetween string,
 	minValue *float64,
 	maxValue *float64,
 ) error {
@@ -224,6 +237,9 @@ func validateStockCore(
 	}
 	if strings.TrimSpace(valueFormat) == "" {
 		return fmt.Errorf("slide %d stock chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(valueAxisCrossBetween) {
+		return fmt.Errorf("slide %d stock chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
 	if err := validateValueRange(minValue, maxValue, slideIndex); err != nil {
 		return err

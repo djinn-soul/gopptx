@@ -19,3 +19,12 @@ func isLegendPosition(position string) bool {
 		return false
 	}
 }
+
+func isValueAxisCrossBetween(mode string) bool {
+	switch strings.TrimSpace(mode) {
+	case ValueAxisCrossBetweenBetween, ValueAxisCrossBetweenMidCategory:
+		return true
+	default:
+		return false
+	}
+}

@@ -26,6 +26,18 @@ func (c ScatterChart) WithLegendPosition(position string) ScatterChart {
 	return c
 }
 
+// WithTitleOverlay toggles title overlay on chart plot area.
+func (c ScatterChart) WithTitleOverlay(overlay bool) ScatterChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+// WithLegendOverlay toggles legend overlay on chart plot area.
+func (c ScatterChart) WithLegendOverlay(overlay bool) ScatterChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 // WithDataLabels toggles value labels on chart points.
 func (c ScatterChart) WithDataLabels(show bool) ScatterChart {
 	c.ShowDataLabels = show
@@ -48,6 +60,12 @@ func (c ScatterChart) WithMajorGridlines(show bool) ScatterChart {
 // WithValueFormat sets the value-axis number format code.
 func (c ScatterChart) WithValueFormat(format string) ScatterChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+// WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
+func (c ScatterChart) WithValueAxisCrossBetween(mode string) ScatterChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 

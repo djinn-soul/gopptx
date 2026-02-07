@@ -44,7 +44,13 @@ func ChartPartXML(chart *ChartSpec) string {
 func barChartPartXML(chart *ChartSpec) string {
 	series := chartSeriesXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:barChart>
 <c:barDir val="%s"/>
 <c:grouping val="%s"/>
@@ -53,7 +59,8 @@ func barChartPartXML(chart *ChartSpec) string {
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:barChart>
-%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, chartAxesXML(chart)))
+%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, chartAxesXML(chart)),
+	)
 }
 
 func lineChartPartXML(chart *ChartSpec) string {
@@ -63,7 +70,13 @@ func lineChartPartXML(chart *ChartSpec) string {
 	if chart.Smooth {
 		smooth = "1"
 	}
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:lineChart>
 <c:grouping val="%s"/>
 <c:varyColors val="0"/>%s
@@ -72,17 +85,25 @@ func lineChartPartXML(chart *ChartSpec) string {
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:lineChart>
-%s`, Escape(chart.Grouping), series, labels, smooth, chartAxesXML(chart)))
+%s`, Escape(chart.Grouping), series, labels, smooth, chartAxesXML(chart)),
+	)
 }
 
-func chartPartEnvelope(title string, showLegend bool, legendPosition string, plotXML string) string {
+func chartPartEnvelope(
+	title string,
+	titleOverlay bool,
+	showLegend bool,
+	legendPosition string,
+	legendOverlay bool,
+	plotXML string,
+) string {
 	legend := ""
 	if showLegend {
 		legendPos := normalizedLegendPosition(legendPosition)
 		legend = `
 <c:legend>
 <c:legendPos val="` + legendPos + `"/>
-<c:overlay val="0"/>
+<c:overlay val="` + boolToOneZero(legendOverlay) + `"/>
 </c:legend>`
 	}
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -91,7 +112,7 @@ func chartPartEnvelope(title string, showLegend bool, legendPosition string, plo
 <c:chart>
 <c:title>
 <c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p></c:rich></c:tx>
-<c:overlay val="0"/>
+<c:overlay val="%s"/>
 </c:title>
 <c:autoTitleDeleted val="0"/>
 <c:plotArea>
@@ -100,7 +121,7 @@ func chartPartEnvelope(title string, showLegend bool, legendPosition string, plo
 %s
 <c:plotVisOnly val="1"/>
 </c:chart>
-</c:chartSpace>`, Escape(title), plotXML, legend)
+</c:chartSpace>`, Escape(title), boolToOneZero(titleOverlay), plotXML, legend)
 }
 
 func chartSeriesXML(chart *ChartSpec) string {
@@ -174,6 +195,7 @@ func chartAxesXML(chart *ChartSpec) string {
 	valueAxisTitle := chartAxisTitleXML(chart.ValueAxisTitle)
 	valueScaling := valueAxisScalingXML(chart.MinValue, chart.MaxValue)
 	valueFormat := chartValueFormatXML(chart.ValueFormat)
+	crossBetween := normalizedValueAxisCrossBetween(chart.ValueAxisCrossBetween)
 	majorGrid := ""
 	if chart.ShowMajorGridlines {
 		majorGrid = "<c:majorGridlines/>"
@@ -204,13 +226,14 @@ func chartAxesXML(chart *ChartSpec) string {
 <c:tickLblPos val="nextTo"/>
 <c:crossAx val="48650112"/>
 <c:crosses val="autoZero"/>
-<c:crossBetween val="between"/>
+<c:crossBetween val="%s"/>
 </c:valAx>`,
 		categoryAxisTitle,
 		valueScaling,
 		valueAxisTitle,
 		valueFormat,
 		majorGrid,
+		crossBetween,
 	)
 }
 
@@ -249,4 +272,20 @@ func valueAxisScalingXML(minValue *float64, maxValue *float64) string {
 		maxXML = fmt.Sprintf(`<c:max val="%.6f"/>`, *maxValue)
 	}
 	return `<c:scaling><c:orientation val="minMax"/>` + minXML + maxXML + `</c:scaling>`
+}
+
+func normalizedValueAxisCrossBetween(mode string) string {
+	switch strings.TrimSpace(mode) {
+	case "midCat":
+		return "midCat"
+	default:
+		return "between"
+	}
+}
+
+func boolToOneZero(value bool) string {
+	if value {
+		return "1"
+	}
+	return "0"
 }

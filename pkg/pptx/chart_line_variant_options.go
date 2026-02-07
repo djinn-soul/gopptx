@@ -35,6 +35,16 @@ func (c LineMarkersChart) WithLegendPosition(position string) LineMarkersChart {
 	return c
 }
 
+func (c LineMarkersChart) WithTitleOverlay(overlay bool) LineMarkersChart {
+	c.LineChart = c.LineChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c LineMarkersChart) WithLegendOverlay(overlay bool) LineMarkersChart {
+	c.LineChart = c.LineChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c LineMarkersChart) WithDataLabels(show bool) LineMarkersChart {
 	c.LineChart = c.LineChart.WithDataLabels(show)
 	return c
@@ -52,6 +62,11 @@ func (c LineMarkersChart) WithMajorGridlines(show bool) LineMarkersChart {
 
 func (c LineMarkersChart) WithValueFormat(format string) LineMarkersChart {
 	c.LineChart = c.LineChart.WithValueFormat(format)
+	return c
+}
+
+func (c LineMarkersChart) WithValueAxisCrossBetween(mode string) LineMarkersChart {
+	c.LineChart = c.LineChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 
@@ -95,6 +110,16 @@ func (c LineStackedChart) WithLegendPosition(position string) LineStackedChart {
 	return c
 }
 
+func (c LineStackedChart) WithTitleOverlay(overlay bool) LineStackedChart {
+	c.LineChart = c.LineChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c LineStackedChart) WithLegendOverlay(overlay bool) LineStackedChart {
+	c.LineChart = c.LineChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c LineStackedChart) WithDataLabels(show bool) LineStackedChart {
 	c.LineChart = c.LineChart.WithDataLabels(show)
 	return c
@@ -112,6 +137,11 @@ func (c LineStackedChart) WithMajorGridlines(show bool) LineStackedChart {
 
 func (c LineStackedChart) WithValueFormat(format string) LineStackedChart {
 	c.LineChart = c.LineChart.WithValueFormat(format)
+	return c
+}
+
+func (c LineStackedChart) WithValueAxisCrossBetween(mode string) LineStackedChart {
+	c.LineChart = c.LineChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 

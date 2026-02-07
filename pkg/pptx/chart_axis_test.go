@@ -73,3 +73,45 @@ func TestCreateWithSlidesRejectsEmptyValueFormat(t *testing.T) {
 		t.Fatalf("expected value-format validation error")
 	}
 }
+
+func TestCreateWithSlidesValueAxisCrossBetweenMidCategory(t *testing.T) {
+	chart := NewBarChart(
+		[]string{"P1", "P2", "P3"},
+		[]float64{1, 2, 3},
+	).WithValueAxisCrossBetween(ValueAxisCrossBetweenMidCategory)
+
+	slides := []SlideContent{
+		NewSlide("Bar").WithBarChart(chart),
+	}
+
+	data, err := CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	chartXML := readZipFile(t, zr, "ppt/charts/chart1.xml")
+	if !strings.Contains(chartXML, `<c:crossBetween val="midCat"/>`) {
+		t.Fatalf("expected midCat crossBetween in chart XML")
+	}
+}
+
+func TestCreateWithSlidesRejectsInvalidValueAxisCrossBetween(t *testing.T) {
+	chart := NewBarChart(
+		[]string{"A"},
+		[]float64{1},
+	).WithValueAxisCrossBetween("middle")
+
+	slides := []SlideContent{
+		NewSlide("Bad").WithBarChart(chart),
+	}
+
+	_, err := CreateWithSlides("Demo", slides)
+	if err == nil {
+		t.Fatalf("expected crossBetween validation error")
+	}
+}

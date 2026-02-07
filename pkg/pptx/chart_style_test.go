@@ -81,3 +81,30 @@ func TestCreateWithSlidesRejectsInvalidLegendPosition(t *testing.T) {
 		t.Fatalf("expected legend position validation error")
 	}
 }
+
+func TestCreateWithSlidesChartTitleAndLegendOverlay(t *testing.T) {
+	chart := NewBarChart(
+		[]string{"Q1", "Q2"},
+		[]float64{3, 7},
+	).
+		WithLegend(true).
+		WithTitleOverlay(true).
+		WithLegendOverlay(true)
+
+	slides := []SlideContent{
+		NewSlide("Overlay").WithBarChart(chart),
+	}
+	data, err := CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	chartXML := readZipFile(t, zr, "ppt/charts/chart1.xml")
+	if strings.Count(chartXML, `<c:overlay val="1"/>`) != 2 {
+		t.Fatalf("expected title and legend overlay values to be enabled")
+	}
+}

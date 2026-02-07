@@ -29,6 +29,16 @@ func (c StockHLCChart) WithLegendPosition(position string) StockHLCChart {
 	return c
 }
 
+func (c StockHLCChart) WithTitleOverlay(overlay bool) StockHLCChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+func (c StockHLCChart) WithLegendOverlay(overlay bool) StockHLCChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 func (c StockHLCChart) WithDataLabels(show bool) StockHLCChart {
 	c.ShowDataLabels = show
 	return c
@@ -47,6 +57,11 @@ func (c StockHLCChart) WithMajorGridlines(show bool) StockHLCChart {
 
 func (c StockHLCChart) WithValueFormat(format string) StockHLCChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+func (c StockHLCChart) WithValueAxisCrossBetween(mode string) StockHLCChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 
@@ -81,6 +96,16 @@ func (c StockOHLCChart) WithLegendPosition(position string) StockOHLCChart {
 	return c
 }
 
+func (c StockOHLCChart) WithTitleOverlay(overlay bool) StockOHLCChart {
+	c.StockHLCChart = c.StockHLCChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c StockOHLCChart) WithLegendOverlay(overlay bool) StockOHLCChart {
+	c.StockHLCChart = c.StockHLCChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c StockOHLCChart) WithDataLabels(show bool) StockOHLCChart {
 	c.StockHLCChart = c.StockHLCChart.WithDataLabels(show)
 	return c
@@ -98,6 +123,11 @@ func (c StockOHLCChart) WithMajorGridlines(show bool) StockOHLCChart {
 
 func (c StockOHLCChart) WithValueFormat(format string) StockOHLCChart {
 	c.StockHLCChart = c.StockHLCChart.WithValueFormat(format)
+	return c
+}
+
+func (c StockOHLCChart) WithValueAxisCrossBetween(mode string) StockOHLCChart {
+	c.StockHLCChart = c.StockHLCChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 
@@ -133,6 +163,16 @@ func (c ComboChart) WithLegendPosition(position string) ComboChart {
 	return c
 }
 
+func (c ComboChart) WithTitleOverlay(overlay bool) ComboChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+func (c ComboChart) WithLegendOverlay(overlay bool) ComboChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 func (c ComboChart) WithDataLabels(show bool) ComboChart {
 	c.ShowDataLabels = show
 	return c
@@ -151,6 +191,11 @@ func (c ComboChart) WithMajorGridlines(show bool) ComboChart {
 
 func (c ComboChart) WithValueFormat(format string) ComboChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+func (c ComboChart) WithValueAxisCrossBetween(mode string) ComboChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 

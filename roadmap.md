@@ -28,6 +28,10 @@
 - Added full variant catalog comparisons for `bar`, `line`, `area`, `pie`, `doughnut`, `scatter` (3 styles), `bubble`, `radar`, `stock`, and `combo`.
 - Updated `tools/ppt-rs-chart-signatures` and `scripts/compare_chart_parity_with_ppt_rs` to emit/compare 21 deterministic chart signatures.
 - Added explicit normalization for known `ppt-rs` bar token quirks so semantic checks remain strict and stable.
+- Completed chart style-controls parity slice:
+- Added title/legend overlay controls across chart families (`WithTitleOverlay`, `WithLegendOverlay`).
+- Added value-axis polish control (`WithValueAxisCrossBetween("between"|"midCat")`) with strict validation and OOXML rendering.
+- Added integration coverage for overlay output and `crossBetween` behavior in `pkg/pptx/chart_style_test.go` and `pkg/pptx/chart_axis_test.go`.
 
 1. `StockHLC` / `StockOHLC` visual parity enhancement:
 - Added `<c:hiLowLines>` for stock charts.

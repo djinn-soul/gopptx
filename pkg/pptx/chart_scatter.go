@@ -14,25 +14,28 @@ const (
 
 // ScatterChart is a simple XY scatter chart.
 type ScatterChart struct {
-	Title              string
-	XValues            []float64
-	YValues            []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	LineColor          string
-	SeriesName         string
-	ScatterStyle       string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
+	Title                 string
+	TitleOverlay          bool
+	XValues               []float64
+	YValues               []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	LineColor             string
+	SeriesName            string
+	ScatterStyle          string
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
 }
 
 // NewScatterChart creates a scatter chart with default layout and style.
@@ -42,21 +45,22 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 	ys := make([]float64, len(yValues))
 	copy(ys, yValues)
 	return ScatterChart{
-		Title:              "Chart",
-		XValues:            xs,
-		YValues:            ys,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		LineColor:          "4F81BD",
-		SeriesName:         "Series 1",
-		ScatterStyle:       ScatterStyleMarker,
-		ShowLegend:         false,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
+		Title:                 "Chart",
+		XValues:               xs,
+		YValues:               ys,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		LineColor:             "4F81BD",
+		SeriesName:            "Series 1",
+		ScatterStyle:          ScatterStyleMarker,
+		ShowLegend:            false,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -124,6 +128,9 @@ func validateScatterChart(chart ScatterChart, slideIndex int) error {
 	}
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d scatter chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d scatter chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
 	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
 		return err

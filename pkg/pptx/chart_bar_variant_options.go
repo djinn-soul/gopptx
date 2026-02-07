@@ -35,6 +35,16 @@ func (c BarHorizontalChart) WithLegendPosition(position string) BarHorizontalCha
 	return c
 }
 
+func (c BarHorizontalChart) WithTitleOverlay(overlay bool) BarHorizontalChart {
+	c.BarChart = c.BarChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c BarHorizontalChart) WithLegendOverlay(overlay bool) BarHorizontalChart {
+	c.BarChart = c.BarChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c BarHorizontalChart) WithDataLabels(show bool) BarHorizontalChart {
 	c.BarChart = c.BarChart.WithDataLabels(show)
 	return c
@@ -52,6 +62,11 @@ func (c BarHorizontalChart) WithMajorGridlines(show bool) BarHorizontalChart {
 
 func (c BarHorizontalChart) WithValueFormat(format string) BarHorizontalChart {
 	c.BarChart = c.BarChart.WithValueFormat(format)
+	return c
+}
+
+func (c BarHorizontalChart) WithValueAxisCrossBetween(mode string) BarHorizontalChart {
+	c.BarChart = c.BarChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 
@@ -95,6 +110,16 @@ func (c BarStackedChart) WithLegendPosition(position string) BarStackedChart {
 	return c
 }
 
+func (c BarStackedChart) WithTitleOverlay(overlay bool) BarStackedChart {
+	c.BarChart = c.BarChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c BarStackedChart) WithLegendOverlay(overlay bool) BarStackedChart {
+	c.BarChart = c.BarChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c BarStackedChart) WithDataLabels(show bool) BarStackedChart {
 	c.BarChart = c.BarChart.WithDataLabels(show)
 	return c
@@ -112,6 +137,11 @@ func (c BarStackedChart) WithMajorGridlines(show bool) BarStackedChart {
 
 func (c BarStackedChart) WithValueFormat(format string) BarStackedChart {
 	c.BarChart = c.BarChart.WithValueFormat(format)
+	return c
+}
+
+func (c BarStackedChart) WithValueAxisCrossBetween(mode string) BarStackedChart {
+	c.BarChart = c.BarChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 
@@ -155,6 +185,16 @@ func (c BarStacked100Chart) WithLegendPosition(position string) BarStacked100Cha
 	return c
 }
 
+func (c BarStacked100Chart) WithTitleOverlay(overlay bool) BarStacked100Chart {
+	c.BarChart = c.BarChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c BarStacked100Chart) WithLegendOverlay(overlay bool) BarStacked100Chart {
+	c.BarChart = c.BarChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c BarStacked100Chart) WithDataLabels(show bool) BarStacked100Chart {
 	c.BarChart = c.BarChart.WithDataLabels(show)
 	return c
@@ -172,6 +212,11 @@ func (c BarStacked100Chart) WithMajorGridlines(show bool) BarStacked100Chart {
 
 func (c BarStacked100Chart) WithValueFormat(format string) BarStacked100Chart {
 	c.BarChart = c.BarChart.WithValueFormat(format)
+	return c
+}
+
+func (c BarStacked100Chart) WithValueAxisCrossBetween(mode string) BarStacked100Chart {
+	c.BarChart = c.BarChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 

@@ -12,45 +12,49 @@ const (
 
 // RadarChart is a radar chart using marker style.
 type RadarChart struct {
-	Title              string
-	Categories         []string
-	Values             []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	LineColor          string
-	SeriesName         string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
-	RadarStyle         string
+	Title                 string
+	TitleOverlay          bool
+	Categories            []string
+	Values                []float64
+	X                     int64
+	Y                     int64
+	CX                    int64
+	CY                    int64
+	LineColor             string
+	SeriesName            string
+	ShowLegend            bool
+	LegendPosition        string
+	LegendOverlay         bool
+	ShowDataLabels        bool
+	ShowMajorGridlines    bool
+	CategoryAxisTitle     string
+	ValueAxisTitle        string
+	ValueFormat           string
+	ValueAxisCrossBetween string
+	MinValue              *float64
+	MaxValue              *float64
+	RadarStyle            string
 }
 
 func NewRadarChart(categories []string, values []float64) RadarChart {
 	cats, vals := copyChartData(categories, values)
 	return RadarChart{
-		Title:              "Chart",
-		Categories:         cats,
-		Values:             vals,
-		X:                  685800,
-		Y:                  1800000,
-		CX:                 7772400,
-		CY:                 4114800,
-		LineColor:          "4F81BD",
-		SeriesName:         "Series 1",
-		ShowLegend:         false,
-		LegendPosition:     LegendPositionRight,
-		ShowDataLabels:     false,
-		ShowMajorGridlines: true,
-		ValueFormat:        "General",
-		RadarStyle:         RadarStyleMarker,
+		Title:                 "Chart",
+		Categories:            cats,
+		Values:                vals,
+		X:                     685800,
+		Y:                     1800000,
+		CX:                    7772400,
+		CY:                    4114800,
+		LineColor:             "4F81BD",
+		SeriesName:            "Series 1",
+		ShowLegend:            false,
+		LegendPosition:        LegendPositionRight,
+		ShowDataLabels:        false,
+		ShowMajorGridlines:    true,
+		ValueFormat:           "General",
+		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
+		RadarStyle:            RadarStyleMarker,
 	}
 }
 
@@ -100,6 +104,9 @@ func validateRadarChart(chart RadarChart, slideIndex int) error {
 	}
 	if strings.TrimSpace(chart.ValueFormat) == "" {
 		return fmt.Errorf("slide %d radar chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d radar chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
 	if chart.RadarStyle != RadarStyleMarker && chart.RadarStyle != RadarStyleFilled {
 		return fmt.Errorf("slide %d radar chart style must be marker or filled", slideIndex)

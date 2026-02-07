@@ -8,11 +8,18 @@ import (
 func pieChartPartXML(chart *ChartSpec) string {
 	series := chartPieSeriesXML(chart)
 	labels := chartPieDataLabelsXML(chart.ShowDataLabels)
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:pieChart>
 <c:varyColors val="1"/>%s
 %s
-</c:pieChart>`, series, labels))
+</c:pieChart>`, series, labels),
+	)
 }
 
 func chartPieDataLabelsXML(show bool) string {

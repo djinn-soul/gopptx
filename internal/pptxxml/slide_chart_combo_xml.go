@@ -10,7 +10,13 @@ func comboChartPartXML(chart *ChartSpec) string {
 	lineSeries := comboSeriesXML(chart, chart.LineSeries, len(chart.BarSeries))
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
 
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:barChart>
 <c:barDir val="col"/>
 <c:grouping val="clustered"/>%s
@@ -23,7 +29,8 @@ func comboChartPartXML(chart *ChartSpec) string {
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:lineChart>
-%s`, barSeries, lineSeries, labels, chartAxesXML(chart)))
+%s`, barSeries, lineSeries, labels, chartAxesXML(chart)),
+	)
 }
 
 func comboSeriesXML(chart *ChartSpec, series []ChartSeries, start int) string {

@@ -35,6 +35,16 @@ func (c AreaStackedChart) WithLegendPosition(position string) AreaStackedChart {
 	return c
 }
 
+func (c AreaStackedChart) WithTitleOverlay(overlay bool) AreaStackedChart {
+	c.AreaChart = c.AreaChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c AreaStackedChart) WithLegendOverlay(overlay bool) AreaStackedChart {
+	c.AreaChart = c.AreaChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c AreaStackedChart) WithDataLabels(show bool) AreaStackedChart {
 	c.AreaChart = c.AreaChart.WithDataLabels(show)
 	return c
@@ -52,6 +62,11 @@ func (c AreaStackedChart) WithMajorGridlines(show bool) AreaStackedChart {
 
 func (c AreaStackedChart) WithValueFormat(format string) AreaStackedChart {
 	c.AreaChart = c.AreaChart.WithValueFormat(format)
+	return c
+}
+
+func (c AreaStackedChart) WithValueAxisCrossBetween(mode string) AreaStackedChart {
+	c.AreaChart = c.AreaChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 
@@ -95,6 +110,16 @@ func (c AreaStacked100Chart) WithLegendPosition(position string) AreaStacked100C
 	return c
 }
 
+func (c AreaStacked100Chart) WithTitleOverlay(overlay bool) AreaStacked100Chart {
+	c.AreaChart = c.AreaChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c AreaStacked100Chart) WithLegendOverlay(overlay bool) AreaStacked100Chart {
+	c.AreaChart = c.AreaChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c AreaStacked100Chart) WithDataLabels(show bool) AreaStacked100Chart {
 	c.AreaChart = c.AreaChart.WithDataLabels(show)
 	return c
@@ -112,6 +137,11 @@ func (c AreaStacked100Chart) WithMajorGridlines(show bool) AreaStacked100Chart {
 
 func (c AreaStacked100Chart) WithValueFormat(format string) AreaStacked100Chart {
 	c.AreaChart = c.AreaChart.WithValueFormat(format)
+	return c
+}
+
+func (c AreaStacked100Chart) WithValueAxisCrossBetween(mode string) AreaStacked100Chart {
+	c.AreaChart = c.AreaChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 

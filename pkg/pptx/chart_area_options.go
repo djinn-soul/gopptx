@@ -20,6 +20,18 @@ func (c AreaChart) WithLegendPosition(position string) AreaChart {
 	return c
 }
 
+// WithTitleOverlay toggles title overlay on chart plot area.
+func (c AreaChart) WithTitleOverlay(overlay bool) AreaChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+// WithLegendOverlay toggles legend overlay on chart plot area.
+func (c AreaChart) WithLegendOverlay(overlay bool) AreaChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 // WithDataLabels toggles value labels on chart points.
 func (c AreaChart) WithDataLabels(show bool) AreaChart {
 	c.ShowDataLabels = show
@@ -42,6 +54,12 @@ func (c AreaChart) WithMajorGridlines(show bool) AreaChart {
 // WithValueFormat sets the value-axis number format code.
 func (c AreaChart) WithValueFormat(format string) AreaChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+// WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
+func (c AreaChart) WithValueAxisCrossBetween(mode string) AreaChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 

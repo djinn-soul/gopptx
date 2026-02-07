@@ -20,14 +20,21 @@ func stockChartPartXML(chart *ChartSpec) string {
 	visuals := stockVisualsXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
 
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:stockChart>%s
 %s
 %s
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:stockChart>
-%s`, strings.Join(seriesParts, ""), visuals, labels, chartAxesXML(chart)))
+%s`, strings.Join(seriesParts, ""), visuals, labels, chartAxesXML(chart)),
+	)
 }
 
 func chartSeriesWithValues(chart *ChartSpec, seriesName string, values []float64, idx int) string {

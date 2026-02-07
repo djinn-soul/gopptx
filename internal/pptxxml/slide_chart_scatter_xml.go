@@ -8,14 +8,21 @@ import (
 func scatterChartPartXML(chart *ChartSpec) string {
 	series := chartScatterSeriesXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:scatterChart>
 <c:scatterStyle val="%s"/>%s
 %s
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:scatterChart>
-%s`, Escape(chart.ScatterStyle), series, labels, scatterAxesXML(chart)))
+%s`, Escape(chart.ScatterStyle), series, labels, scatterAxesXML(chart)),
+	)
 }
 
 func chartScatterSeriesXML(chart *ChartSpec) string {
@@ -58,6 +65,7 @@ func scatterAxesXML(chart *ChartSpec) string {
 	yAxisTitle := chartAxisTitleXML(chart.ValueAxisTitle)
 	yScaling := valueAxisScalingXML(chart.MinValue, chart.MaxValue)
 	yFormat := chartValueFormatXML(chart.ValueFormat)
+	crossBetween := normalizedValueAxisCrossBetween(chart.ValueAxisCrossBetween)
 	majorGrid := ""
 	if chart.ShowMajorGridlines {
 		majorGrid = "<c:majorGridlines/>"
@@ -86,11 +94,13 @@ func scatterAxesXML(chart *ChartSpec) string {
 <c:tickLblPos val="nextTo"/>
 <c:crossAx val="48650112"/>
 <c:crosses val="autoZero"/>
+<c:crossBetween val="%s"/>
 </c:valAx>`,
 		xAxisTitle,
 		yScaling,
 		yAxisTitle,
 		yFormat,
 		majorGrid,
+		crossBetween,
 	)
 }

@@ -17,6 +17,16 @@ func (c RadarChart) WithLegendPosition(position string) RadarChart {
 	return c
 }
 
+func (c RadarChart) WithTitleOverlay(overlay bool) RadarChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+func (c RadarChart) WithLegendOverlay(overlay bool) RadarChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 func (c RadarChart) WithDataLabels(show bool) RadarChart {
 	c.ShowDataLabels = show
 	return c
@@ -35,6 +45,11 @@ func (c RadarChart) WithMajorGridlines(show bool) RadarChart {
 
 func (c RadarChart) WithValueFormat(format string) RadarChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+func (c RadarChart) WithValueAxisCrossBetween(mode string) RadarChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 
@@ -79,6 +94,16 @@ func (c RadarFilledChart) WithLegendPosition(position string) RadarFilledChart {
 	return c
 }
 
+func (c RadarFilledChart) WithTitleOverlay(overlay bool) RadarFilledChart {
+	c.RadarChart = c.RadarChart.WithTitleOverlay(overlay)
+	return c
+}
+
+func (c RadarFilledChart) WithLegendOverlay(overlay bool) RadarFilledChart {
+	c.RadarChart = c.RadarChart.WithLegendOverlay(overlay)
+	return c
+}
+
 func (c RadarFilledChart) WithDataLabels(show bool) RadarFilledChart {
 	c.RadarChart = c.RadarChart.WithDataLabels(show)
 	return c
@@ -96,6 +121,11 @@ func (c RadarFilledChart) WithMajorGridlines(show bool) RadarFilledChart {
 
 func (c RadarFilledChart) WithValueFormat(format string) RadarFilledChart {
 	c.RadarChart = c.RadarChart.WithValueFormat(format)
+	return c
+}
+
+func (c RadarFilledChart) WithValueAxisCrossBetween(mode string) RadarFilledChart {
+	c.RadarChart = c.RadarChart.WithValueAxisCrossBetween(mode)
 	return c
 }
 

@@ -8,7 +8,13 @@ import (
 func bubbleChartPartXML(chart *ChartSpec) string {
 	series := chartBubbleSeriesXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
-	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
+	return chartPartEnvelope(
+		chart.Title,
+		chart.TitleOverlay,
+		chart.ShowLegend,
+		chart.LegendPosition,
+		chart.LegendOverlay,
+		fmt.Sprintf(`
 <c:bubbleChart>
 <c:varyColors val="0"/>
 <c:bubbleScale val="%d"/>%s
@@ -16,7 +22,8 @@ func bubbleChartPartXML(chart *ChartSpec) string {
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:bubbleChart>
-%s`, chart.BubbleScale, series, labels, scatterAxesXML(chart)))
+%s`, chart.BubbleScale, series, labels, scatterAxesXML(chart)),
+	)
 }
 
 func chartBubbleSeriesXML(chart *ChartSpec) string {

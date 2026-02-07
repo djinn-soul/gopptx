@@ -20,6 +20,18 @@ func (c BarChart) WithLegendPosition(position string) BarChart {
 	return c
 }
 
+// WithTitleOverlay toggles title overlay on chart plot area.
+func (c BarChart) WithTitleOverlay(overlay bool) BarChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+// WithLegendOverlay toggles legend overlay on chart plot area.
+func (c BarChart) WithLegendOverlay(overlay bool) BarChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 // WithDataLabels toggles value labels on chart points.
 func (c BarChart) WithDataLabels(show bool) BarChart {
 	c.ShowDataLabels = show
@@ -42,6 +54,12 @@ func (c BarChart) WithMajorGridlines(show bool) BarChart {
 // WithValueFormat sets the value-axis number format code.
 func (c BarChart) WithValueFormat(format string) BarChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+// WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
+func (c BarChart) WithValueAxisCrossBetween(mode string) BarChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 
@@ -70,6 +88,18 @@ func (c LineChart) WithLegendPosition(position string) LineChart {
 	return c
 }
 
+// WithTitleOverlay toggles title overlay on chart plot area.
+func (c LineChart) WithTitleOverlay(overlay bool) LineChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+// WithLegendOverlay toggles legend overlay on chart plot area.
+func (c LineChart) WithLegendOverlay(overlay bool) LineChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 // WithDataLabels toggles value labels on chart points.
 func (c LineChart) WithDataLabels(show bool) LineChart {
 	c.ShowDataLabels = show
@@ -92,6 +122,12 @@ func (c LineChart) WithMajorGridlines(show bool) LineChart {
 // WithValueFormat sets the value-axis number format code.
 func (c LineChart) WithValueFormat(format string) LineChart {
 	c.ValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+// WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
+func (c LineChart) WithValueAxisCrossBetween(mode string) LineChart {
+	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
 	return c
 }
 
@@ -126,6 +162,18 @@ func (c PieChart) WithLegendPosition(position string) PieChart {
 	return c
 }
 
+// WithTitleOverlay toggles title overlay on chart plot area.
+func (c PieChart) WithTitleOverlay(overlay bool) PieChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+// WithLegendOverlay toggles legend overlay on chart plot area.
+func (c PieChart) WithLegendOverlay(overlay bool) PieChart {
+	c.LegendOverlay = overlay
+	return c
+}
+
 // WithDataLabels toggles data labels on pie slices.
 func (c PieChart) WithDataLabels(show bool) PieChart {
 	c.ShowDataLabels = show
@@ -147,6 +195,18 @@ func (c DoughnutChart) WithLegend(show bool) DoughnutChart {
 // WithLegendPosition sets legend position as r/l/t/b.
 func (c DoughnutChart) WithLegendPosition(position string) DoughnutChart {
 	c.LegendPosition = strings.ToLower(strings.TrimSpace(position))
+	return c
+}
+
+// WithTitleOverlay toggles title overlay on chart plot area.
+func (c DoughnutChart) WithTitleOverlay(overlay bool) DoughnutChart {
+	c.TitleOverlay = overlay
+	return c
+}
+
+// WithLegendOverlay toggles legend overlay on chart plot area.
+func (c DoughnutChart) WithLegendOverlay(overlay bool) DoughnutChart {
+	c.LegendOverlay = overlay
 	return c
 }
 
