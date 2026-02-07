@@ -203,6 +203,49 @@ func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
 	}
 }
 
+func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
+	table := NewTable([]int64{2743400, 2743400}).
+		AddStyledRow([]TableCell{
+			NewTableCell("Header").WithBold(true).WithBackgroundColor("1F497D"),
+			NewTableCell("Value"),
+		}).
+		AddRow([]string{"Row 1", "Plain"})
+
+	data, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Styled Table").WithTable(table)})
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	checks := []string{
+		`<a:rPr lang="en-US" dirty="0" b="1"/>`,
+		`<a:tcPr><a:solidFill><a:srgbClr val="1F497D"/></a:solidFill></a:tcPr>`,
+		`<a:t>Header</a:t>`,
+	}
+	for _, needle := range checks {
+		if !strings.Contains(slideXML, needle) {
+			t.Fatalf("expected %q in table XML", needle)
+		}
+	}
+}
+
+func TestCreateWithSlidesRejectsStyledTableInvalidColor(t *testing.T) {
+	table := NewTable([]int64{2743400}).
+		AddStyledRow([]TableCell{
+			NewTableCell("Header").WithBackgroundColor("NOTHEX"),
+		})
+
+	_, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Broken Styled Table").WithTable(table)})
+	if err == nil {
+		t.Fatalf("expected styled table color validation error")
+	}
+}
+
 func zipHasFile(zr *zip.Reader, name string) bool {
 	for _, f := range zr.File {
 		if f.Name == name {

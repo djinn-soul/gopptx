@@ -13,6 +13,18 @@ type TableSpec struct {
 	CY           int64
 	ColumnWidths []int64
 	Rows         [][]string
+	StyledRows   [][]TableCellSpec
+}
+
+// TableCellSpec describes one table cell with optional style.
+type TableCellSpec struct {
+	Text            string
+	Bold            bool
+	BackgroundColor string
+	Align           string
+	VAlign          string
+	BorderColor     string
+	BorderWidth     int64
 }
 
 func tableShape(table *TableSpec, shapeID int) string {
@@ -50,11 +62,12 @@ func tableShape(table *TableSpec, shapeID int) string {
 	b.WriteString(`
 </a:tblGrid>`)
 
-	rowHeight := table.CY / int64(len(table.Rows))
+	rows := tableStyledRows(table)
+	rowHeight := table.CY / int64(len(rows))
 	if rowHeight <= 0 {
 		rowHeight = 1
 	}
-	for _, row := range table.Rows {
+	for _, row := range rows {
 		b.WriteString(fmt.Sprintf(`
 <a:tr h="%d">`, rowHeight))
 		for _, cell := range row {
@@ -64,14 +77,15 @@ func tableShape(table *TableSpec, shapeID int) string {
 <a:bodyPr/>
 <a:lstStyle/>
 <a:p>
+%s
 <a:r>
-<a:rPr lang="en-US" dirty="0"/>
+<a:rPr lang="en-US" dirty="0"%s/>
 <a:t>%s</a:t>
 </a:r>
 </a:p>
 </a:txBody>
-<a:tcPr/>
-</a:tc>`, Escape(cell)))
+%s
+</a:tc>`, tableCellParagraphPropsXML(cell.Align), tableCellBoldAttr(cell.Bold), Escape(cell.Text), tableCellPropsXML(cell)))
 		}
 		b.WriteString(`
 </a:tr>`)
@@ -83,4 +97,77 @@ func tableShape(table *TableSpec, shapeID int) string {
 </a:graphic>
 </p:graphicFrame>`)
 	return b.String()
+}
+
+func tableStyledRows(table *TableSpec) [][]TableCellSpec {
+	if len(table.StyledRows) == len(table.Rows) && len(table.StyledRows) > 0 {
+		rows := make([][]TableCellSpec, len(table.StyledRows))
+		for i := range table.StyledRows {
+			row := make([]TableCellSpec, len(table.StyledRows[i]))
+			copy(row, table.StyledRows[i])
+			rows[i] = row
+		}
+		return rows
+	}
+
+	rows := make([][]TableCellSpec, len(table.Rows))
+	for i := range table.Rows {
+		cells := make([]TableCellSpec, len(table.Rows[i]))
+		for j, text := range table.Rows[i] {
+			cells[j] = TableCellSpec{Text: text}
+		}
+		rows[i] = cells
+	}
+	return rows
+}
+
+func tableCellBoldAttr(bold bool) string {
+	if bold {
+		return ` b="1"`
+	}
+	return ""
+}
+
+func tableCellParagraphPropsXML(align string) string {
+	if strings.TrimSpace(align) == "" {
+		return ""
+	}
+	return `<a:pPr algn="` + Escape(align) + `"/>`
+}
+
+func tableCellPropsXML(cell TableCellSpec) string {
+	hasFill := strings.TrimSpace(cell.BackgroundColor) != ""
+	hasVAlign := strings.TrimSpace(cell.VAlign) != ""
+	hasBorder := cell.BorderWidth > 0 && strings.TrimSpace(cell.BorderColor) != ""
+	if !hasFill && !hasVAlign && !hasBorder {
+		return "<a:tcPr/>"
+	}
+
+	var b strings.Builder
+	b.WriteString("<a:tcPr")
+	if hasVAlign {
+		b.WriteString(` anchor="`)
+		b.WriteString(Escape(cell.VAlign))
+		b.WriteString(`"`)
+	}
+	b.WriteString(">")
+
+	if hasFill {
+		b.WriteString(`<a:solidFill><a:srgbClr val="`)
+		b.WriteString(Escape(cell.BackgroundColor))
+		b.WriteString(`"/></a:solidFill>`)
+	}
+	if hasBorder {
+		b.WriteString(tableCellBorderXML("lnL", cell.BorderWidth, cell.BorderColor))
+		b.WriteString(tableCellBorderXML("lnR", cell.BorderWidth, cell.BorderColor))
+		b.WriteString(tableCellBorderXML("lnT", cell.BorderWidth, cell.BorderColor))
+		b.WriteString(tableCellBorderXML("lnB", cell.BorderWidth, cell.BorderColor))
+	}
+
+	b.WriteString("</a:tcPr>")
+	return b.String()
+}
+
+func tableCellBorderXML(side string, width int64, color string) string {
+	return `<a:` + side + ` w="` + fmt.Sprintf("%d", width) + `"><a:solidFill><a:srgbClr val="` + Escape(color) + `"/></a:solidFill><a:prstDash val="solid"/></a:` + side + `>`
 }

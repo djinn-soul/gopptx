@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+const (
+	slideLayoutTitleAndContent = "titleAndContent"
+	slideLayoutTitleOnly       = "titleOnly"
+	slideLayoutBlank           = "blank"
+)
+
 const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>
@@ -44,15 +50,32 @@ func SlideWithContent(
 	chart *ChartFrame,
 	images []ImageRef,
 ) string {
-	var b strings.Builder
-	b.WriteString(slideHeader)
-	b.WriteString(titleShape(title))
+	return SlideWithLayout(slideLayoutTitleAndContent, title, bullets, table, chart, images)
+}
 
-	nextID := 3
+// SlideWithLayout renders a slide using an explicit layout mode.
+func SlideWithLayout(
+	layout string,
+	title string,
+	bullets []string,
+	table *TableSpec,
+	chart *ChartFrame,
+	images []ImageRef,
+) string {
+	var b strings.Builder
+	layoutMode := normalizeSlideLayoutMode(layout)
+	b.WriteString(slideHeader)
+
+	nextID := 2
+	if layoutMode != slideLayoutBlank {
+		b.WriteString(titleShape(title))
+		nextID = 3
+	}
+
 	if table != nil {
 		b.WriteString(tableShape(table, nextID))
 		nextID++
-	} else if len(bullets) > 0 {
+	} else if layoutMode == slideLayoutTitleAndContent && len(bullets) > 0 {
 		b.WriteString(contentShape(bullets, nextID))
 		nextID++
 	}
@@ -76,10 +99,14 @@ type ChartRel struct {
 }
 
 func SlideRelationships(imageTargets []string, chartRel *ChartRel) string {
+	return SlideRelationshipsWithLayout("../slideLayouts/slideLayout1.xml", imageTargets, chartRel)
+}
+
+func SlideRelationshipsWithLayout(layoutTarget string, imageTargets []string, chartRel *ChartRel) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="` + Escape(layoutTarget) + `"/>`)
 	for i, target := range imageTargets {
 		rid := i + 2
 		b.WriteString(fmt.Sprintf(`
@@ -95,6 +122,17 @@ func SlideRelationships(imageTargets []string, chartRel *ChartRel) string {
 	b.WriteString(`
 </Relationships>`)
 	return b.String()
+}
+
+func normalizeSlideLayoutMode(layout string) string {
+	switch strings.ToLower(strings.TrimSpace(layout)) {
+	case slideLayoutTitleOnly, "title_only", "title-only", "titleonly":
+		return slideLayoutTitleOnly
+	case slideLayoutBlank:
+		return slideLayoutBlank
+	default:
+		return slideLayoutTitleAndContent
+	}
 }
 
 func titleShape(title string) string {

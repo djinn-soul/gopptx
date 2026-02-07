@@ -83,8 +83,12 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		{"_rels/.rels", pptxxml.RootRelationships()},
 		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount)},
 		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount)},
-		{"ppt/slideLayouts/slideLayout1.xml", pptxxml.SlideLayout()},
+		{"ppt/slideLayouts/slideLayout1.xml", pptxxml.SlideLayoutTitleAndContent()},
 		{"ppt/slideLayouts/_rels/slideLayout1.xml.rels", pptxxml.SlideLayoutRelationships()},
+		{"ppt/slideLayouts/slideLayout2.xml", pptxxml.SlideLayoutTitleOnly()},
+		{"ppt/slideLayouts/_rels/slideLayout2.xml.rels", pptxxml.SlideLayoutRelationships()},
+		{"ppt/slideLayouts/slideLayout3.xml", pptxxml.SlideLayoutBlank()},
+		{"ppt/slideLayouts/_rels/slideLayout3.xml.rels", pptxxml.SlideLayoutRelationships()},
 		{"ppt/slideMasters/slideMaster1.xml", pptxxml.SlideMaster()},
 		{"ppt/slideMasters/_rels/slideMaster1.xml.rels", pptxxml.SlideMasterRelationships()},
 		{"ppt/theme/theme1.xml", pptxxml.Theme()},
@@ -110,11 +114,26 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 
 		var tableSpec *pptxxml.TableSpec
 		if slide.Table != nil {
-			rows := make([][]string, 0, len(slide.Table.Rows))
-			for _, srcRow := range slide.Table.Rows {
+			styledRows := tableRowsForRender(*slide.Table)
+			rows := make([][]string, 0, len(styledRows))
+			styledSpecRows := make([][]pptxxml.TableCellSpec, 0, len(styledRows))
+			for _, srcRow := range styledRows {
 				row := make([]string, len(srcRow))
-				copy(row, srcRow)
+				specRow := make([]pptxxml.TableCellSpec, len(srcRow))
+				for i, cell := range srcRow {
+					row[i] = cell.Text
+					specRow[i] = pptxxml.TableCellSpec{
+						Text:            cell.Text,
+						Bold:            cell.Bold,
+						BackgroundColor: cell.BackgroundColor,
+						Align:           cell.Align,
+						VAlign:          cell.VAlign,
+						BorderColor:     cell.BorderColor,
+						BorderWidth:     cell.borderWidthEMU(),
+					}
+				}
 				rows = append(rows, row)
+				styledSpecRows = append(styledSpecRows, specRow)
 			}
 			columnWidths := make([]int64, len(slide.Table.ColumnWidths))
 			copy(columnWidths, slide.Table.ColumnWidths)
@@ -125,6 +144,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 				CY:           slide.Table.CY,
 				ColumnWidths: columnWidths,
 				Rows:         rows,
+				StyledRows:   styledSpecRows,
 			}
 		}
 
@@ -164,14 +184,21 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 		}
 
-		slideXML := pptxxml.SlideWithContent(slide.Title, slide.Bullets, tableSpec, chartFrame, imageRefs)
+		slideXML := pptxxml.SlideWithLayout(
+			slideLayoutXMLMode(slide.Layout),
+			slide.Title,
+			slide.Bullets,
+			tableSpec,
+			chartFrame,
+			imageRefs,
+		)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {
 			return err
 		}
 
 		relsPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", slideNumber)
-		if err := writeFile(zw, relsPath, pptxxml.SlideRelationships(imageTargets, chartRel)); err != nil {
+		if err := writeFile(zw, relsPath, pptxxml.SlideRelationshipsWithLayout(slideLayoutTarget(slide.Layout), imageTargets, chartRel)); err != nil {
 			return err
 		}
 	}

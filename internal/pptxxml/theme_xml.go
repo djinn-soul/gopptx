@@ -2,9 +2,28 @@ package pptxxml
 
 // SlideLayout renders ppt/slideLayouts/slideLayout1.xml.
 func SlideLayout() string {
+	return SlideLayoutTitleAndContent()
+}
+
+// SlideLayoutTitleAndContent renders a title-and-content layout.
+func SlideLayoutTitleAndContent() string {
+	return slideLayout("titleAndContent", "Title and Content")
+}
+
+// SlideLayoutTitleOnly renders a title-only layout.
+func SlideLayoutTitleOnly() string {
+	return slideLayout("titleOnly", "Title Only")
+}
+
+// SlideLayoutBlank renders a blank layout.
+func SlideLayoutBlank() string {
+	return slideLayout("blank", "Blank")
+}
+
+func slideLayout(layoutType string, name string) string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1">
-<p:cSld name="Blank">
+<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="` + layoutType + `" preserve="1">
+<p:cSld name="` + Escape(name) + `">
 <p:spTree>
 <p:nvGrpSpPr>
 <p:cNvPr id="1" name=""/>
@@ -64,6 +83,8 @@ func SlideMaster() string {
 <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
 <p:sldLayoutIdLst>
 <p:sldLayoutId id="2147483649" r:id="rId1"/>
+<p:sldLayoutId id="2147483650" r:id="rId2"/>
+<p:sldLayoutId id="2147483651" r:id="rId3"/>
 </p:sldLayoutIdLst>
 </p:sldMaster>`
 }
@@ -73,7 +94,9 @@ func SlideMasterRelationships() string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout2.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout3.xml"/>
+<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>
 </Relationships>`
 }
 

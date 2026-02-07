@@ -7,6 +7,7 @@ import (
 // SlideContent describes the user-visible content of a slide.
 type SlideContent struct {
 	Title          string
+	Layout         string
 	Bullets        []string
 	Images         []Image
 	Table          *Table
@@ -33,7 +34,10 @@ type SlideContent struct {
 
 // NewSlide creates a new slide with a title.
 func NewSlide(title string) SlideContent {
-	return SlideContent{Title: title}
+	return SlideContent{
+		Title:  title,
+		Layout: SlideLayoutTitleAndContent,
+	}
 }
 
 // AddBullet appends one bullet item and returns the updated slide.
@@ -55,8 +59,8 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 }
 
 func validateSlide(s SlideContent, index int) error {
-	if s.Title == "" {
-		return fmt.Errorf("slide %d title cannot be empty", index)
+	if err := validateSlideLayout(s, index); err != nil {
+		return err
 	}
 	for bulletIndex, bullet := range s.Bullets {
 		if bullet == "" {
