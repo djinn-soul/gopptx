@@ -1,0 +1,167 @@
+package main
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
+	"testing"
+)
+
+func TestCLI_CreateSubcommand(t *testing.T) {
+	outPath := filepath.Join(t.TempDir(), "create.pptx")
+	stdout, stderr, code := runCLI(t, "create", "-out", outPath, "-title", "CLI Deck", "-slides", "2")
+	if code != exitOK {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, "OK: wrote") {
+		t.Fatalf("expected success output, got %q", stdout)
+	}
+	if info, err := os.Stat(outPath); err != nil {
+		t.Fatalf("expected output file: %v", err)
+	} else if info.Size() == 0 {
+		t.Fatalf("expected non-empty pptx file")
+	}
+}
+
+func TestCLI_MD2PPTSubcommand_DefaultOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	inPath := filepath.Join(tmpDir, "deck.md")
+	markdown := "# Intro\n- one\n- two\n"
+	if err := os.WriteFile(inPath, []byte(markdown), 0o600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, "md2ppt", "-in", inPath, "-title", "From Markdown")
+	if code != exitOK {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+
+	outPath := filepath.Join(tmpDir, "deck.pptx")
+	if _, err := os.Stat(outPath); err != nil {
+		t.Fatalf("expected derived output file %s: %v", outPath, err)
+	}
+}
+
+func TestCLI_InfoAndValidateSubcommands(t *testing.T) {
+	outPath := filepath.Join(t.TempDir(), "info.pptx")
+	_, stderr, code := runCLI(t, "create", "-out", outPath, "-title", "Info Deck", "-slides", "1")
+	if code != exitOK {
+		t.Fatalf("create failed: exit=%d stderr=%s", code, stderr)
+	}
+
+	infoStdout, infoStderr, infoCode := runCLI(t, "info", "-file", outPath)
+	if infoCode != exitOK {
+		t.Fatalf("info failed: exit=%d stderr=%s", infoCode, infoStderr)
+	}
+	if strings.TrimSpace(infoStderr) != "" {
+		t.Fatalf("expected empty info stderr, got %q", infoStderr)
+	}
+	if !strings.Contains(infoStdout, "Slide count: 1") {
+		t.Fatalf("expected slide count in info output, got %q", infoStdout)
+	}
+
+	validateStdout, validateStderr, validateCode := runCLI(t, "validate", "-file", outPath)
+	if validateCode != exitOK {
+		t.Fatalf("validate failed: exit=%d stderr=%s", validateCode, validateStderr)
+	}
+	if strings.TrimSpace(validateStderr) != "" {
+		t.Fatalf("expected empty validate stderr, got %q", validateStderr)
+	}
+	if !strings.Contains(strings.ToLower(validateStdout), "validation passed") {
+		t.Fatalf("expected validation success output, got %q", validateStdout)
+	}
+}
+
+func TestCLI_ValidateSubcommand_InvalidZip(t *testing.T) {
+	badPath := filepath.Join(t.TempDir(), "bad.pptx")
+	if err := os.WriteFile(badPath, []byte("not-a-zip"), 0o600); err != nil {
+		t.Fatalf("write bad file: %v", err)
+	}
+
+	stdout, stderr, code := runCLI(t, "validate", "-file", badPath)
+	if code != exitValidate {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitValidate, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout on validation failure, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "not a valid ZIP archive") {
+		t.Fatalf("expected zip validation error, got %q", stderr)
+	}
+}
+
+func runCLI(t *testing.T, args ...string) (stdout string, stderr string, exitCode int) {
+	t.Helper()
+
+	cmd := exec.Command(cliBinary(t), args...)
+
+	var outBuf bytes.Buffer
+	var errBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
+
+	err := cmd.Run()
+	if err == nil {
+		return outBuf.String(), errBuf.String(), exitOK
+	}
+
+	var ee *exec.ExitError
+	if !os.IsNotExist(err) && strings.Contains(err.Error(), "executable file not found") {
+		t.Fatalf("failed to run CLI binary: %v", err)
+	}
+	if errors.As(err, &ee) {
+		return outBuf.String(), errBuf.String(), ee.ExitCode()
+	}
+	t.Fatalf("unexpected run error: %v", err)
+	return "", "", exitInternal
+}
+
+var (
+	cliBuildOnce sync.Once
+	cliBuildErr  error
+	cliBinPath   string
+)
+
+func cliBinary(t *testing.T) string {
+	t.Helper()
+
+	cliBuildOnce.Do(func() {
+		tmpDir, err := os.MkdirTemp("", "goppt-pptcli-*")
+		if err != nil {
+			cliBuildErr = err
+			return
+		}
+
+		name := "pptcli-test-bin"
+		if runtime.GOOS == "windows" {
+			name += ".exe"
+		}
+		cliBinPath = filepath.Join(tmpDir, name)
+
+		build := exec.Command("go", "build", "-o", cliBinPath, ".")
+		build.Dir = "."
+		var buildOut bytes.Buffer
+		build.Stdout = &buildOut
+		build.Stderr = &buildOut
+		if err := build.Run(); err != nil {
+			cliBuildErr = fmt.Errorf("build failed: %w: %s", err, buildOut.String())
+		}
+	})
+
+	if cliBuildErr != nil {
+		t.Fatalf("failed to build CLI binary: %v", cliBuildErr)
+	}
+	return cliBinPath
+}

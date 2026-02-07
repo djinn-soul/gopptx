@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/vegito/goppt/pkg/pptx"
+	"github.com/djinn09/goppt/pkg/pptx"
 )
 
 var chartOrder = []string{

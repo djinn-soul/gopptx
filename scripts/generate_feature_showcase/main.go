@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/vegito/goppt/pkg/pptx"
+	"github.com/djinn09/goppt/pkg/pptx"
 )
 
 const (

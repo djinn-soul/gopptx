@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/vegito/goppt/internal/pptxxml"
+import "github.com/djinn09/goppt/internal/pptxxml"
 
 func slideScatterChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 	if slide.Scatter == nil {

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/vegito/goppt/pkg/pptx"
+import "github.com/djinn09/goppt/pkg/pptx"
 
 func bubbleSlide() pptx.SlideContent {
 	chart := pptx.NewBubbleChart(

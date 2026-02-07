@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/vegito/goppt/internal/pptxxml"
+	"github.com/djinn09/goppt/internal/pptxxml"
 )
 
 // Create builds a valid PPTX with generated slide titles.

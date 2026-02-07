@@ -147,3 +147,10 @@
 - Added concurrent notes rendering pipeline in `pkg/pptx/notes_parts.go` (goroutine fan-out, deterministic compaction back to slide order).
 - Added notes parts writer in `pkg/pptx/notes_package.go`.
 - Added integration tests in `pkg/pptx/presentation_notes_test.go` for both direct notes API and markdown blockquote persistence.
+
+15. CLI command parity slice:
+- Refactored `cmd/pptcli` into modular command handlers with explicit exit codes.
+- Added subcommands: `create`, `md2ppt`, `info`, `validate`.
+- Preserved legacy flag mode (`-out`, `-md`, `-title`) for backward compatibility.
+- Added deterministic CLI integration tests in `cmd/pptcli/main_test.go`.
+- Added command documentation and usage examples in `cmd/pptcli/README.md`.

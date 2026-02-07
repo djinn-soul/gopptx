@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 
-	"github.com/vegito/goppt/internal/pptxxml"
+	"github.com/djinn09/goppt/internal/pptxxml"
 )
 
 type chartPart struct {
