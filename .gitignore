@@ -41,3 +41,4 @@ logs/
 scripts/*.py
 tools/*
 testdata/
+.tmp/*

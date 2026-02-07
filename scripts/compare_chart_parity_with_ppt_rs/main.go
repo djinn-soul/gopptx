@@ -15,6 +15,21 @@ import (
 )
 
 var chartOrder = []string{
+	"bar",
+	"barHorizontal",
+	"barStacked",
+	"barStacked100",
+	"line",
+	"lineMarkers",
+	"lineStacked",
+	"area",
+	"areaStacked",
+	"areaStacked100",
+	"pie",
+	"doughnut",
+	"scatter",
+	"scatterLines",
+	"scatterSmooth",
 	"bubble",
 	"radar",
 	"radarFilled",
@@ -24,6 +39,23 @@ var chartOrder = []string{
 }
 
 var signatureTokens = []string{
+	`<c:barChart`,
+	`<c:barDir val="bar"/>`,
+	`<c:barDir val="col"/>`,
+	`<c:grouping val="clustered"/>`,
+	`<c:grouping val="stacked"/>`,
+	`<c:grouping val="percentStacked"/>`,
+	`<c:lineChart`,
+	`<c:grouping val="standard"/>`,
+	`<c:marker><c:symbol val="circle"/>`,
+	`<c:areaChart`,
+	`<c:pieChart`,
+	`<c:doughnutChart`,
+	`<c:holeSize`,
+	`<c:scatterChart`,
+	`<c:scatterStyle val="marker"/>`,
+	`<c:scatterStyle val="lineMarker"/>`,
+	`<c:scatterStyle val="smoothMarker"/>`,
 	`<c:bubbleChart`,
 	`<c:varyColors val="0"/>`,
 	`<c:bubbleScale`,
@@ -38,10 +70,20 @@ var signatureTokens = []string{
 	`<c:tx><c:v>High</c:v></c:tx>`,
 	`<c:tx><c:v>Low</c:v></c:tx>`,
 	`<c:tx><c:v>Close</c:v></c:tx>`,
-	`<c:barChart`,
-	`<c:lineChart`,
-	`<c:grouping val="clustered"`,
-	`<c:grouping val="standard"`,
+}
+
+var requiredTokenOverrides = map[string]map[string]string{
+	"bar": {
+		`<c:barDir val="bar"/>`: `<c:barDir val="col"/>`,
+	},
+	"barStacked": {
+		`<c:barDir val="bar"/>`:         `<c:barDir val="col"/>`,
+		`<c:grouping val="clustered"/>`: `<c:grouping val="stacked"/>`,
+	},
+	"barStacked100": {
+		`<c:barDir val="bar"/>`:         `<c:barDir val="col"/>`,
+		`<c:grouping val="clustered"/>`: `<c:grouping val="percentStacked"/>`,
+	},
 }
 
 type compareResult struct {
@@ -87,7 +129,14 @@ func main() {
 }
 
 func loadReferenceXML() (map[string]string, error) {
-	cmd := exec.Command("cargo", "run", "--quiet", "--manifest-path", "tools/ppt-rs-chart-signatures/Cargo.toml")
+	cmd := exec.Command(
+		"cargo",
+		"run",
+		"--quiet",
+		"--manifest-path",
+		"scripts/compare_chart_parity_with_ppt_rs/ppt_rs_chart_signatures/Cargo.toml",
+	)
+	cmd.Env = append(os.Environ(), "CARGO_TARGET_DIR=.tmp/cargo-target/ppt-rs-chart-signatures")
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -106,12 +155,27 @@ func loadGoPPTXML() (map[string]string, error) {
 	out := make(map[string]string, len(chartOrder))
 
 	entries := map[string]pptx.SlideContent{
-		"bubble":      bubbleSlide(),
-		"radar":       radarSlide(),
-		"radarFilled": radarFilledSlide(),
-		"stockHLC":    stockHLCSlide(),
-		"stockOHLC":   stockOHLCSlide(),
-		"combo":       comboSlide(),
+		"bar":            barSlide(),
+		"barHorizontal":  barHorizontalSlide(),
+		"barStacked":     barStackedSlide(),
+		"barStacked100":  barStacked100Slide(),
+		"line":           lineSlide(),
+		"lineMarkers":    lineMarkersSlide(),
+		"lineStacked":    lineStackedSlide(),
+		"area":           areaSlide(),
+		"areaStacked":    areaStackedSlide(),
+		"areaStacked100": areaStacked100Slide(),
+		"pie":            pieSlide(),
+		"doughnut":       doughnutSlide(),
+		"scatter":        scatterMarkerSlide(),
+		"scatterLines":   scatterLinesSlide(),
+		"scatterSmooth":  scatterSmoothSlide(),
+		"bubble":         bubbleSlide(),
+		"radar":          radarSlide(),
+		"radarFilled":    radarFilledSlide(),
+		"stockHLC":       stockHLCSlide(),
+		"stockOHLC":      stockOHLCSlide(),
+		"combo":          comboSlide(),
 	}
 
 	for key, slide := range entries {
@@ -165,7 +229,7 @@ func compare(reference map[string]string, ours map[string]string) []compareResul
 		}
 		ourXML := ours[key]
 
-		required := requiredTokensFromReference(refXML)
+		required := normalizeRequiredTokens(key, requiredTokensFromReference(refXML))
 		missing := missingTokens(required, ourXML)
 
 		refSeries := strings.Count(refXML, "<c:ser>")
@@ -203,6 +267,33 @@ func missingTokens(required []string, xml string) []string {
 		}
 	}
 	return missing
+}
+
+func normalizeRequiredTokens(chart string, required []string) []string {
+	overrides, ok := requiredTokenOverrides[chart]
+	if !ok {
+		return required
+	}
+
+	normalized := make([]string, len(required))
+	copy(normalized, required)
+	for i := range normalized {
+		if replacement, exists := overrides[normalized[i]]; exists {
+			normalized[i] = replacement
+		}
+	}
+
+	seen := make(map[string]struct{}, len(normalized))
+	unique := make([]string, 0, len(normalized))
+	for _, token := range normalized {
+		if _, exists := seen[token]; exists {
+			continue
+		}
+		seen[token] = struct{}{}
+		unique = append(unique, token)
+	}
+	sort.Strings(unique)
+	return unique
 }
 
 func renderReport(results []compareResult) string {

@@ -131,11 +131,9 @@ func SlideWithLayout(
 	}
 	nextID += len(images)
 
-	shapeIDs := make([]int, len(shapes))
-	for i, shape := range shapes {
-		id := nextID + i
-		shapeIDs[i] = id
-		b.WriteString(customShapeXML(shape, id))
+	shapeIDs, shapeXMLParts := renderCustomShapeXMLConcurrently(shapes, nextID)
+	for _, part := range shapeXMLParts {
+		b.WriteString(part)
 	}
 	nextID += len(shapes)
 

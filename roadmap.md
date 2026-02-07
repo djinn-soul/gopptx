@@ -9,6 +9,7 @@
 - `Radar`, `RadarFilled`
 - `StockHLC`, `StockOHLC`
 - `Combo`
+- Deterministic chart parity signature report now covers 21 chart variants (`reports/chart_parity_report.md`, `21/21` pass).
 - Table parity includes styled cell support:
 - Bold cell text
 - Cell background fill color (RGB hex)
@@ -23,6 +24,11 @@
 2. Expand slide surface parity beyond layout selection (placeholder-level controls).
 
 ## Completed recently
+- Expanded chart parity report coverage beyond the prior 6-signature slice:
+- Added full variant catalog comparisons for `bar`, `line`, `area`, `pie`, `doughnut`, `scatter` (3 styles), `bubble`, `radar`, `stock`, and `combo`.
+- Updated `tools/ppt-rs-chart-signatures` and `scripts/compare_chart_parity_with_ppt_rs` to emit/compare 21 deterministic chart signatures.
+- Added explicit normalization for known `ppt-rs` bar token quirks so semantic checks remain strict and stable.
+
 1. `StockHLC` / `StockOHLC` visual parity enhancement:
 - Added `<c:hiLowLines>` for stock charts.
 - Added `<c:upDownBars>` for OHLC charts.
@@ -213,3 +219,21 @@
 - Added automatic shape text sizing based on shape bounds and text length heuristics.
 - Wired shape text bodies to emit `<a:spAutoFit/>` and dynamic run-size values in OOXML.
 - Added integration coverage in `pkg/pptx/shape_text_autofit_test.go` to assert long text renders with smaller font size than short text.
+
+22. Shape XML parallel rendering slice:
+- Added deterministic concurrent shape rendering helper in `internal/pptxxml` for large slides.
+- Preserved stable shape ID ordering while computing each `p:sp` block in parallel goroutines.
+- Wired `SlideWithLayout` to use the parallel helper before connector emission.
+- Added focused deterministic-order coverage in `internal/pptxxml/slide_drawings_parallel_xml_test.go`.
+
+23. Extensible shape interface parity slice:
+- Added `ShapeDefinition` interface in `pkg/pptx` to support pluggable shape builders.
+- Implemented `Shape.ToShape()` for backward compatibility with existing fluent usage.
+- Updated `SlideContent.AddShape(...)` to accept interface-backed shape definitions.
+- Added integration coverage in `pkg/pptx/shape_definition_test.go` using a custom external shape type.
+
+24. Connector site-selection optimization slice:
+- Replaced dominant-axis heuristic with geometry-aware nearest-anchor selection across edge/corner/center sites.
+- Optimized anchor resolution to use shape-local candidate points and squared-distance comparisons (no floating-point cost).
+- Preserved deterministic behavior and backward compatibility with explicit site overrides.
+- Added diagonal-flow parity coverage in `pkg/pptx/connector_auto_sites_test.go` to validate corner-site inference.

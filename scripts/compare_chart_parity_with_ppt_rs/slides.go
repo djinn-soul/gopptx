@@ -2,6 +2,126 @@ package main
 
 import "github.com/djinn09/goppt/pkg/pptx"
 
+func barSlide() pptx.SlideContent {
+	chart := pptx.NewBarChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{12, 18, 24},
+	).WithTitle("Bar")
+	return pptx.NewSlide("Bar").WithBarChart(chart)
+}
+
+func barHorizontalSlide() pptx.SlideContent {
+	chart := pptx.NewBarHorizontalChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{12, 18, 24},
+	).WithTitle("Bar Horizontal")
+	return pptx.NewSlide("Bar Horizontal").WithBarHorizontalChart(chart)
+}
+
+func barStackedSlide() pptx.SlideContent {
+	chart := pptx.NewBarStackedChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{12, 18, 24},
+	).WithTitle("Bar Stacked")
+	return pptx.NewSlide("Bar Stacked").WithBarStackedChart(chart)
+}
+
+func barStacked100Slide() pptx.SlideContent {
+	chart := pptx.NewBarStacked100Chart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{12, 18, 24},
+	).WithTitle("Bar Stacked 100")
+	return pptx.NewSlide("Bar Stacked 100").WithBarStacked100Chart(chart)
+}
+
+func lineSlide() pptx.SlideContent {
+	chart := pptx.NewLineChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{10, 16, 22},
+	).WithTitle("Line")
+	return pptx.NewSlide("Line").WithLineChart(chart)
+}
+
+func lineMarkersSlide() pptx.SlideContent {
+	chart := pptx.NewLineMarkersChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{10, 16, 22},
+	).WithTitle("Line Markers")
+	return pptx.NewSlide("Line Markers").WithLineMarkersChart(chart)
+}
+
+func lineStackedSlide() pptx.SlideContent {
+	chart := pptx.NewLineStackedChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{10, 16, 22},
+	).WithTitle("Line Stacked")
+	return pptx.NewSlide("Line Stacked").WithLineStackedChart(chart)
+}
+
+func areaSlide() pptx.SlideContent {
+	chart := pptx.NewAreaChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{14, 17, 23},
+	).WithTitle("Area")
+	return pptx.NewSlide("Area").WithAreaChart(chart)
+}
+
+func areaStackedSlide() pptx.SlideContent {
+	chart := pptx.NewAreaStackedChart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{14, 17, 23},
+	).WithTitle("Area Stacked")
+	return pptx.NewSlide("Area Stacked").WithAreaStackedChart(chart)
+}
+
+func areaStacked100Slide() pptx.SlideContent {
+	chart := pptx.NewAreaStacked100Chart(
+		[]string{"Q1", "Q2", "Q3"},
+		[]float64{14, 17, 23},
+	).WithTitle("Area Stacked 100")
+	return pptx.NewSlide("Area Stacked 100").WithAreaStacked100Chart(chart)
+}
+
+func pieSlide() pptx.SlideContent {
+	chart := pptx.NewPieChart(
+		[]string{"A", "B", "C"},
+		[]float64{30, 45, 25},
+	).WithTitle("Pie")
+	return pptx.NewSlide("Pie").WithPieChart(chart)
+}
+
+func doughnutSlide() pptx.SlideContent {
+	chart := pptx.NewDoughnutChart(
+		[]string{"A", "B", "C"},
+		[]float64{30, 45, 25},
+	).WithTitle("Doughnut")
+	return pptx.NewSlide("Doughnut").WithDoughnutChart(chart)
+}
+
+func scatterMarkerSlide() pptx.SlideContent {
+	chart := pptx.NewScatterChart(
+		[]float64{1, 2, 3},
+		[]float64{10, 15, 20},
+	).WithTitle("Scatter Marker").WithScatterStyle(pptx.ScatterStyleMarker)
+	return pptx.NewSlide("Scatter Marker").WithScatterChart(chart)
+}
+
+func scatterLinesSlide() pptx.SlideContent {
+	chart := pptx.NewScatterChart(
+		[]float64{1, 2, 3},
+		[]float64{10, 15, 20},
+	).WithTitle("Scatter Lines").WithScatterStyle(pptx.ScatterStyleLineMarker)
+	return pptx.NewSlide("Scatter Lines").WithScatterChart(chart)
+}
+
+func scatterSmoothSlide() pptx.SlideContent {
+	chart := pptx.NewScatterChart(
+		[]float64{1, 2, 3},
+		[]float64{10, 15, 20},
+	).WithTitle("Scatter Smooth").WithScatterStyle(pptx.ScatterStyleSmoothMarker)
+	return pptx.NewSlide("Scatter Smooth").WithScatterChart(chart)
+}
+
 func bubbleSlide() pptx.SlideContent {
 	chart := pptx.NewBubbleChart(
 		[]float64{1, 2, 3},

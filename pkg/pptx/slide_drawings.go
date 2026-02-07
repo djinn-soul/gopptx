@@ -1,8 +1,8 @@
 package pptx
 
 // AddShape appends one custom shape and returns the updated slide.
-func (s SlideContent) AddShape(shape Shape) SlideContent {
-	s.Shapes = append(s.Shapes, shape)
+func (s SlideContent) AddShape(shape ShapeDefinition) SlideContent {
+	s.Shapes = append(s.Shapes, shape.ToShape())
 	return s
 }
 
