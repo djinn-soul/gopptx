@@ -34,6 +34,9 @@ func TestSlidesFromMarkdown_Basic(t *testing.T) {
 	if slides[1].Bullets[1] != "Validate" {
 		t.Fatalf("expected numbered bullet parsing, got %#v", slides[1].Bullets)
 	}
+	if slides[1].BulletStyles[0].BulletStyle != BulletStyleNumber {
+		t.Fatalf("expected numbered style for markdown ordered list, got %#v", slides[1].BulletStyles[0])
+	}
 }
 
 func TestSlidesFromMarkdown_FailsWhenContentPrecedesHeading(t *testing.T) {

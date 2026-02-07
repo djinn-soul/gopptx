@@ -6,38 +6,41 @@ import (
 
 // SlideContent describes the user-visible content of a slide.
 type SlideContent struct {
-	Title          string
-	Layout         string
-	Bullets        []string
-	BulletRuns     [][]TextRun
-	Images         []Image
-	Table          *Table
-	Chart          *BarChart
-	BarHorizontal  *BarHorizontalChart
-	BarStacked     *BarStackedChart
-	BarStacked100  *BarStacked100Chart
-	Line           *LineChart
-	LineMarkers    *LineMarkersChart
-	LineStacked    *LineStackedChart
-	Scatter        *ScatterChart
-	Area           *AreaChart
-	AreaStacked    *AreaStackedChart
-	AreaStacked100 *AreaStacked100Chart
-	Pie            *PieChart
-	Dough          *DoughnutChart
-	Bubble         *BubbleChart
-	Radar          *RadarChart
-	RadarFilled    *RadarFilledChart
-	StockHLC       *StockHLCChart
-	StockOHLC      *StockOHLCChart
-	Combo          *ComboChart
+	Title              string
+	Layout             string
+	DefaultBulletStyle TextParagraphStyle
+	Bullets            []string
+	BulletRuns         [][]TextRun
+	BulletStyles       []TextParagraphStyle
+	Images             []Image
+	Table              *Table
+	Chart              *BarChart
+	BarHorizontal      *BarHorizontalChart
+	BarStacked         *BarStackedChart
+	BarStacked100      *BarStacked100Chart
+	Line               *LineChart
+	LineMarkers        *LineMarkersChart
+	LineStacked        *LineStackedChart
+	Scatter            *ScatterChart
+	Area               *AreaChart
+	AreaStacked        *AreaStackedChart
+	AreaStacked100     *AreaStacked100Chart
+	Pie                *PieChart
+	Dough              *DoughnutChart
+	Bubble             *BubbleChart
+	Radar              *RadarChart
+	RadarFilled        *RadarFilledChart
+	StockHLC           *StockHLCChart
+	StockOHLC          *StockOHLCChart
+	Combo              *ComboChart
 }
 
 // NewSlide creates a new slide with a title.
 func NewSlide(title string) SlideContent {
 	return SlideContent{
-		Title:  title,
-		Layout: SlideLayoutTitleAndContent,
+		Title:              title,
+		Layout:             SlideLayoutTitleAndContent,
+		DefaultBulletStyle: defaultTextParagraphStyle(),
 	}
 }
 
@@ -45,6 +48,7 @@ func NewSlide(title string) SlideContent {
 func (s SlideContent) AddBullet(text string) SlideContent {
 	s.Bullets = append(s.Bullets, text)
 	s.BulletRuns = append(s.BulletRuns, nil)
+	s.BulletStyles = append(s.BulletStyles, s.DefaultBulletStyle)
 	return s
 }
 
@@ -70,6 +74,9 @@ func validateSlide(s SlideContent, index int) error {
 		}
 	}
 	if err := validateSlideTextRuns(s, index); err != nil {
+		return err
+	}
+	if err := validateSlideTextParagraphStyles(s, index); err != nil {
 		return err
 	}
 	for imageIndex, image := range s.Images {

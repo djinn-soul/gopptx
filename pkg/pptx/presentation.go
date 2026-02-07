@@ -189,11 +189,13 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 		}
 
+		bulletStyles := toXMLBulletParagraphStyles(slide.BulletStyles)
 		bulletRuns := toXMLTextRunRows(slide.BulletRuns)
 		slideXML := pptxxml.SlideWithLayout(
 			slideLayoutXMLMode(slide.Layout),
 			slide.Title,
 			slide.Bullets,
+			bulletStyles,
 			bulletRuns,
 			tableSpec,
 			chartFrame,
@@ -270,6 +272,25 @@ func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
 			})
 		}
 		out[i] = runs
+	}
+	return out
+}
+
+func toXMLBulletParagraphStyles(styles []TextParagraphStyle) []pptxxml.BulletParagraphSpec {
+	if len(styles) == 0 {
+		return nil
+	}
+	out := make([]pptxxml.BulletParagraphSpec, len(styles))
+	for i, style := range styles {
+		out[i] = pptxxml.BulletParagraphSpec{
+			Align:          normalizeTextAlign(style.Align),
+			SpaceBeforePt:  style.SpaceBeforePt,
+			SpaceAfterPt:   style.SpaceAfterPt,
+			LineSpacingPct: style.LineSpacingPct,
+			BulletStyle:    normalizeBulletStyle(style.BulletStyle),
+			BulletChar:     style.BulletChar,
+			Level:          style.Level,
+		}
 	}
 	return out
 }

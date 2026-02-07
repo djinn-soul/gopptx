@@ -46,12 +46,13 @@ const slideFooter = `
 func SlideWithContent(
 	title string,
 	bullets []string,
+	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
 ) string {
-	return SlideWithLayout(slideLayoutTitleAndContent, title, bullets, bulletRuns, table, chart, images)
+	return SlideWithLayout(slideLayoutTitleAndContent, title, bullets, bulletStyles, bulletRuns, table, chart, images)
 }
 
 // SlideWithLayout renders a slide using an explicit layout mode.
@@ -59,6 +60,7 @@ func SlideWithLayout(
 	layout string,
 	title string,
 	bullets []string,
+	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
 	table *TableSpec,
 	chart *ChartFrame,
@@ -78,7 +80,7 @@ func SlideWithLayout(
 		b.WriteString(tableShape(table, nextID))
 		nextID++
 	} else if layoutMode == slideLayoutTitleAndContent && len(bullets) > 0 {
-		b.WriteString(contentShape(bullets, bulletRuns, nextID))
+		b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, nextID))
 		nextID++
 	}
 
@@ -168,7 +170,7 @@ func titleShape(title string) string {
 </p:sp>`
 }
 
-func contentShape(bullets []string, bulletRuns [][]TextRunSpec, shapeID int) string {
+func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, shapeID int) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(`
 <p:sp>
@@ -190,12 +192,13 @@ func contentShape(bullets []string, bulletRuns [][]TextRunSpec, shapeID int) str
 <a:lstStyle/>`, shapeID))
 
 	for i, bullet := range bullets {
+		style := bulletStyleAt(bulletStyles, i)
 		runs := bulletRunsAt(bulletRuns, i)
 		if len(runs) > 0 {
-			b.WriteString(bulletParagraphRuns(runs))
+			b.WriteString(bulletParagraphRuns(runs, style))
 			continue
 		}
-		b.WriteString(bulletParagraph(bullet))
+		b.WriteString(bulletParagraph(bullet, style))
 	}
 
 	b.WriteString(`
@@ -204,11 +207,11 @@ func contentShape(bullets []string, bulletRuns [][]TextRunSpec, shapeID int) str
 	return b.String()
 }
 
-func bulletParagraph(text string) string {
+func bulletParagraph(text string, style BulletParagraphSpec) string {
 	escaped := Escape(text)
 	return `
 <a:p>
-<a:pPr lvl="0" marL="457200" indent="-457200"><a:buChar char="•"/></a:pPr>
+` + bulletParagraphPropsXML(style) + `
 <a:r>
 <a:rPr lang="en-US" sz="2800" b="0" i="0" dirty="0"/>
 <a:t>` + escaped + `</a:t>

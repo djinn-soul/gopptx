@@ -80,3 +80,22 @@
 - Added run validation in `pkg/pptx/text_runs_validation.go` (RGB color + size bounds).
 - Refined OOXML run rendering in `internal/pptxxml/slide_text_runs_xml.go` with deterministic run-property ordering and style emission.
 - Added integration tests in `pkg/pptx/text_runs_test.go` and updated markdown OOXML assertions in `pkg/pptx/markdown_test.go`.
+
+9. Text formatting parity slice (paragraph-level):
+- Added paragraph style API in `pkg/pptx/text_paragraph.go`:
+- Alignment (`l|ctr|r|just`)
+- Spacing controls (`space-before`, `space-after`, `line-spacing`)
+- Added paragraph style validation in `pkg/pptx/text_paragraph_validation.go`.
+- Extended slide XML rendering with paragraph style tags in `internal/pptxxml/slide_text_paragraph_xml.go`.
+- Wired paragraph style mapping in `pkg/pptx/presentation.go`.
+- Added integration coverage in `pkg/pptx/text_paragraph_test.go`.
+
+10. Bullet styles parity slice:
+- Added bullet style model in `pkg/pptx/text_bullet_style.go`:
+- `bullet`, `number`, `letter_lower`, `letter_upper`, `roman_lower`, `roman_upper`, `custom`, `none`
+- Added helper bullet APIs in `pkg/pptx`:
+- `WithBulletStyle`, `AddStyledBullet`, `AddNumbered`, `AddLettered`, `AddRomanLower`, `AddRomanUpper`, `AddCustomBullet`, `AddSubBullet`
+- Extended paragraph style model and validation in `pkg/pptx/text_paragraph.go` + `pkg/pptx/text_paragraph_validation.go` for bullet style, custom char, and level (`0..8`).
+- Extended OOXML paragraph rendering in `internal/pptxxml/slide_text_paragraph_xml.go` for `buAutoNum`, `buChar`, `buNone`, and level-based indentation.
+- Added integration coverage in `pkg/pptx/bullet_styles_test.go`.
+- Updated markdown ordered-list parsing in `pkg/pptx/markdown.go` to emit numbered bullet style.

@@ -9,6 +9,11 @@ import (
 
 var numberedListPattern = regexp.MustCompile(`^\d+\.\s+(.+)$`)
 
+type parsedMarkdownBullet struct {
+	text  string
+	style TextParagraphStyle
+}
+
 // SlidesFromMarkdown converts a markdown document into slide content.
 //
 // Supported syntax:
@@ -61,18 +66,21 @@ func SlidesFromMarkdown(markdown string) ([]SlideContent, error) {
 			if current == nil {
 				return nil, fmt.Errorf("line %d: content found before first slide title", lineNumber)
 			}
-			appendMarkdownBullet(current, strings.TrimSpace(strings.TrimPrefix(line, "## ")))
+			appendMarkdownBullet(current, strings.TrimSpace(strings.TrimPrefix(line, "## ")), defaultTextParagraphStyle())
 			continue
 		}
 
-		bullet := parseBulletLine(line)
-		if bullet == "" {
-			bullet = line
+		bullet, ok := parseBulletLine(line)
+		if !ok {
+			bullet = parsedMarkdownBullet{
+				text:  line,
+				style: defaultTextParagraphStyle(),
+			}
 		}
 		if current == nil {
 			return nil, fmt.Errorf("line %d: content found before first slide title", lineNumber)
 		}
-		appendMarkdownBullet(current, bullet)
+		appendMarkdownBullet(current, bullet.text, bullet.style)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -86,27 +94,33 @@ func SlidesFromMarkdown(markdown string) ([]SlideContent, error) {
 	return slides, nil
 }
 
-func parseBulletLine(line string) string {
+func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
 	for _, marker := range []string{"- ", "* ", "+ "} {
 		if strings.HasPrefix(line, marker) {
-			return strings.TrimSpace(strings.TrimPrefix(line, marker))
+			return parsedMarkdownBullet{
+				text:  strings.TrimSpace(strings.TrimPrefix(line, marker)),
+				style: defaultTextParagraphStyle(),
+			}, true
 		}
 	}
 
 	matches := numberedListPattern.FindStringSubmatch(line)
 	if len(matches) == 2 {
-		return strings.TrimSpace(matches[1])
+		return parsedMarkdownBullet{
+			text:  strings.TrimSpace(matches[1]),
+			style: defaultTextParagraphStyle().WithNumbered(),
+		}, true
 	}
-	return ""
+	return parsedMarkdownBullet{}, false
 }
 
-func appendMarkdownBullet(slide *SlideContent, text string) {
+func appendMarkdownBullet(slide *SlideContent, text string, style TextParagraphStyle) {
 	runs, rich := parseInlineTextRuns(text)
 	if rich {
-		*slide = slide.AddBulletRuns(runs)
+		*slide = slide.AddBulletRunsWithStyle(runs, style)
 		return
 	}
-	*slide = slide.AddBullet(text)
+	*slide = slide.AddBulletWithStyle(text, style)
 }
 
 func parseInlineTextRuns(text string) ([]TextRun, bool) {

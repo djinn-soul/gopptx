@@ -26,11 +26,11 @@ func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
 	return allRuns[index]
 }
 
-func bulletParagraphRuns(runs []TextRunSpec) string {
+func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec) string {
 	var b strings.Builder
 	b.WriteString(`
 <a:p>
-<a:pPr lvl="0" marL="457200" indent="-457200"><a:buChar char="•"/></a:pPr>`)
+` + bulletParagraphPropsXML(style))
 	for _, run := range runs {
 		if strings.TrimSpace(run.Text) == "" {
 			continue

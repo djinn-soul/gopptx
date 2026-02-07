@@ -66,6 +66,7 @@ func (s SlideContent) AddBulletRuns(runs []TextRun) SlideContent {
 	normalized := normalizeTextRuns(runs)
 	s.Bullets = append(s.Bullets, runsToPlainText(normalized))
 	s.BulletRuns = append(s.BulletRuns, normalized)
+	s.BulletStyles = append(s.BulletStyles, s.DefaultBulletStyle)
 	return s
 }
 
