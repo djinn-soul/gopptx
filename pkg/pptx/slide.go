@@ -6,16 +6,29 @@ import (
 
 // SlideContent describes the user-visible content of a slide.
 type SlideContent struct {
-	Title   string
-	Bullets []string
-	Images  []Image
-	Table   *Table
-	Chart   *BarChart
-	Line    *LineChart
-	Scatter *ScatterChart
-	Area    *AreaChart
-	Pie     *PieChart
-	Dough   *DoughnutChart
+	Title          string
+	Bullets        []string
+	Images         []Image
+	Table          *Table
+	Chart          *BarChart
+	BarHorizontal  *BarHorizontalChart
+	BarStacked     *BarStackedChart
+	BarStacked100  *BarStacked100Chart
+	Line           *LineChart
+	LineMarkers    *LineMarkersChart
+	LineStacked    *LineStackedChart
+	Scatter        *ScatterChart
+	Area           *AreaChart
+	AreaStacked    *AreaStackedChart
+	AreaStacked100 *AreaStacked100Chart
+	Pie            *PieChart
+	Dough          *DoughnutChart
+	Bubble         *BubbleChart
+	Radar          *RadarChart
+	RadarFilled    *RadarFilledChart
+	StockHLC       *StockHLCChart
+	StockOHLC      *StockOHLCChart
+	Combo          *ComboChart
 }
 
 // NewSlide creates a new slide with a title.
@@ -41,72 +54,6 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 	return s
 }
 
-// WithBarChart sets one bar chart for the slide.
-func (s SlideContent) WithBarChart(chart BarChart) SlideContent {
-	s.Chart = &chart
-	s.Line = nil
-	s.Scatter = nil
-	s.Area = nil
-	s.Pie = nil
-	s.Dough = nil
-	return s
-}
-
-// WithLineChart sets one line chart for the slide.
-func (s SlideContent) WithLineChart(chart LineChart) SlideContent {
-	s.Line = &chart
-	s.Chart = nil
-	s.Scatter = nil
-	s.Area = nil
-	s.Pie = nil
-	s.Dough = nil
-	return s
-}
-
-// WithScatterChart sets one scatter chart for the slide.
-func (s SlideContent) WithScatterChart(chart ScatterChart) SlideContent {
-	s.Scatter = &chart
-	s.Chart = nil
-	s.Line = nil
-	s.Area = nil
-	s.Pie = nil
-	s.Dough = nil
-	return s
-}
-
-// WithAreaChart sets one area chart for the slide.
-func (s SlideContent) WithAreaChart(chart AreaChart) SlideContent {
-	s.Area = &chart
-	s.Chart = nil
-	s.Line = nil
-	s.Scatter = nil
-	s.Pie = nil
-	s.Dough = nil
-	return s
-}
-
-// WithPieChart sets one pie chart for the slide.
-func (s SlideContent) WithPieChart(chart PieChart) SlideContent {
-	s.Pie = &chart
-	s.Chart = nil
-	s.Line = nil
-	s.Scatter = nil
-	s.Area = nil
-	s.Dough = nil
-	return s
-}
-
-// WithDoughnutChart sets one doughnut chart for the slide.
-func (s SlideContent) WithDoughnutChart(chart DoughnutChart) SlideContent {
-	s.Dough = &chart
-	s.Chart = nil
-	s.Line = nil
-	s.Scatter = nil
-	s.Area = nil
-	s.Pie = nil
-	return s
-}
-
 func validateSlide(s SlideContent, index int) error {
 	if s.Title == "" {
 		return fmt.Errorf("slide %d title cannot be empty", index)
@@ -126,56 +73,10 @@ func validateSlide(s SlideContent, index int) error {
 			return err
 		}
 	}
-	if s.Chart != nil {
-		if err := validateBarChart(*s.Chart, index); err != nil {
-			return err
-		}
+	if err := validateSlideCharts(s, index); err != nil {
+		return err
 	}
-	if s.Line != nil {
-		if err := validateLineChart(*s.Line, index); err != nil {
-			return err
-		}
-	}
-	if s.Scatter != nil {
-		if err := validateScatterChart(*s.Scatter, index); err != nil {
-			return err
-		}
-	}
-	if s.Area != nil {
-		if err := validateAreaChart(*s.Area, index); err != nil {
-			return err
-		}
-	}
-	if s.Pie != nil {
-		if err := validatePieChart(*s.Pie, index); err != nil {
-			return err
-		}
-	}
-	if s.Dough != nil {
-		if err := validateDoughnutChart(*s.Dough, index); err != nil {
-			return err
-		}
-	}
-	chartKinds := 0
-	if s.Chart != nil {
-		chartKinds++
-	}
-	if s.Line != nil {
-		chartKinds++
-	}
-	if s.Scatter != nil {
-		chartKinds++
-	}
-	if s.Area != nil {
-		chartKinds++
-	}
-	if s.Pie != nil {
-		chartKinds++
-	}
-	if s.Dough != nil {
-		chartKinds++
-	}
-	if chartKinds > 1 {
+	if chartKindCount(s) > 1 {
 		return fmt.Errorf("slide %d cannot have more than one chart kind", index)
 	}
 	return nil

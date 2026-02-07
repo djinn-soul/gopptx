@@ -5,51 +5,22 @@ import (
 	"strings"
 )
 
-// ChartSpec describes one chart written as a chart part.
-type ChartSpec struct {
-	Kind               string
-	Title              string
-	Categories         []string
-	XValues            []float64
-	Values             []float64
-	X                  int64
-	Y                  int64
-	CX                 int64
-	CY                 int64
-	Color              string
-	SeriesName         string
-	ScatterStyle       string
-	ShowLegend         bool
-	LegendPosition     string
-	ShowDataLabels     bool
-	HoleSize           int
-	ShowMajorGridlines bool
-	CategoryAxisTitle  string
-	ValueAxisTitle     string
-	ValueFormat        string
-	MinValue           *float64
-	MaxValue           *float64
-	Smooth             bool
-}
-
-const (
-	ChartKindBar      = "bar"
-	ChartKindLine     = "line"
-	ChartKindScatter  = "scatter"
-	ChartKindArea     = "area"
-	ChartKindPie      = "pie"
-	ChartKindDoughnut = "doughnut"
-)
-
 // ChartPartXML renders a chart part (`ppt/charts/chartN.xml`).
 func ChartPartXML(chart *ChartSpec) string {
-	if chart.Kind == ChartKindLine {
+	if chart.Kind == ChartKindBar || chart.Kind == ChartKindBarHorizontal ||
+		chart.Kind == ChartKindBarStacked || chart.Kind == ChartKindBarStacked100 {
+		return barChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindLine || chart.Kind == ChartKindLineMarkers || chart.Kind == ChartKindLineStacked {
 		return lineChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindBubble {
+		return bubbleChartPartXML(chart)
 	}
 	if chart.Kind == ChartKindScatter {
 		return scatterChartPartXML(chart)
 	}
-	if chart.Kind == ChartKindArea {
+	if chart.Kind == ChartKindArea || chart.Kind == ChartKindAreaStacked || chart.Kind == ChartKindAreaStacked100 {
 		return areaChartPartXML(chart)
 	}
 	if chart.Kind == ChartKindPie {
@@ -58,7 +29,16 @@ func ChartPartXML(chart *ChartSpec) string {
 	if chart.Kind == ChartKindDoughnut {
 		return doughnutChartPartXML(chart)
 	}
-	return barChartPartXML(chart)
+	if chart.Kind == ChartKindRadar || chart.Kind == ChartKindRadarFilled {
+		return radarChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindStockHLC || chart.Kind == ChartKindStockOHLC {
+		return stockChartPartXML(chart)
+	}
+	if chart.Kind == ChartKindCombo {
+		return comboChartPartXML(chart)
+	}
+	panic(fmt.Sprintf("unsupported chart kind: %s", chart.Kind))
 }
 
 func barChartPartXML(chart *ChartSpec) string {
@@ -66,18 +46,18 @@ func barChartPartXML(chart *ChartSpec) string {
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
 	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
 <c:barChart>
-<c:barDir val="col"/>
-<c:grouping val="clustered"/>
+<c:barDir val="%s"/>
+<c:grouping val="%s"/>
 <c:varyColors val="0"/>%s
 %s
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:barChart>
-%s`, series, labels, chartAxesXML(chart)))
+%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, chartAxesXML(chart)))
 }
 
 func lineChartPartXML(chart *ChartSpec) string {
-	series := chartSeriesXML(chart)
+	series := chartLineSeriesXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
 	smooth := "0"
 	if chart.Smooth {
@@ -85,14 +65,14 @@ func lineChartPartXML(chart *ChartSpec) string {
 	}
 	return chartPartEnvelope(chart.Title, chart.ShowLegend, chart.LegendPosition, fmt.Sprintf(`
 <c:lineChart>
-<c:grouping val="standard"/>
+<c:grouping val="%s"/>
 <c:varyColors val="0"/>%s
 %s
 <c:smooth val="%s"/>
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:lineChart>
-%s`, series, labels, smooth, chartAxesXML(chart)))
+%s`, Escape(chart.Grouping), series, labels, smooth, chartAxesXML(chart)))
 }
 
 func chartPartEnvelope(title string, showLegend bool, legendPosition string, plotXML string) string {
@@ -125,9 +105,6 @@ func chartPartEnvelope(title string, showLegend bool, legendPosition string, plo
 
 func chartSeriesXML(chart *ChartSpec) string {
 	seriesName := chart.SeriesName
-	if strings.TrimSpace(seriesName) == "" {
-		seriesName = "Series 1"
-	}
 	var b strings.Builder
 	b.WriteString(`
 <c:ser>
@@ -158,6 +135,19 @@ func chartSeriesXML(chart *ChartSpec) string {
 	</c:numLit></c:val>
 </c:ser>`)
 	return b.String()
+}
+
+func chartLineSeriesXML(chart *ChartSpec) string {
+	base := chartSeriesXML(chart)
+	if !chart.ShowMarkers {
+		return base
+	}
+	return strings.Replace(
+		base,
+		"</c:ser>",
+		"<c:marker><c:symbol val=\"circle\"/></c:marker></c:ser>",
+		1,
+	)
 }
 
 func chartDataLabelsXML(show bool) string {
