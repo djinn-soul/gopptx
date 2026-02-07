@@ -1,0 +1,107 @@
+package pptxxml
+
+import (
+	"strconv"
+	"strings"
+)
+
+const defaultBulletRunSize = 2800
+
+// TextRunSpec describes one rich text run in a bullet paragraph.
+type TextRunSpec struct {
+	Text      string
+	Bold      bool
+	Italic    bool
+	Underline bool
+	Color     string
+	Font      string
+	SizePt    int
+	Code      bool
+}
+
+func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
+	if len(allRuns) == 0 || index < 0 || index >= len(allRuns) {
+		return nil
+	}
+	return allRuns[index]
+}
+
+func bulletParagraphRuns(runs []TextRunSpec) string {
+	var b strings.Builder
+	b.WriteString(`
+<a:p>
+<a:pPr lvl="0" marL="457200" indent="-457200"><a:buChar char="•"/></a:pPr>`)
+	for _, run := range runs {
+		if strings.TrimSpace(run.Text) == "" {
+			continue
+		}
+		b.WriteString(richTextRun(run))
+	}
+	b.WriteString(`
+</a:p>`)
+	return b.String()
+}
+
+func richTextRun(run TextRunSpec) string {
+	var b strings.Builder
+	b.WriteString(`
+<a:r>
+<a:rPr lang="en-US" sz="`)
+	b.WriteString(runSizeValue(run.SizePt))
+	b.WriteString(`" b="`)
+	b.WriteString(boolToFlag(run.Bold))
+	b.WriteString(`" i="`)
+	b.WriteString(boolToFlag(run.Italic))
+	b.WriteString(`" u="`)
+	b.WriteString(runUnderlineValue(run.Underline))
+	b.WriteString(`" dirty="0">`)
+
+	if color := strings.TrimSpace(run.Color); color != "" {
+		b.WriteString(`<a:solidFill><a:srgbClr val="`)
+		b.WriteString(Escape(color))
+		b.WriteString(`"/></a:solidFill>`)
+	}
+	if font := strings.TrimSpace(runFont(run)); font != "" {
+		b.WriteString(`<a:latin typeface="`)
+		b.WriteString(Escape(font))
+		b.WriteString(`"/>`)
+	}
+
+	b.WriteString(`</a:rPr>
+<a:t>`)
+	b.WriteString(Escape(run.Text))
+	b.WriteString(`</a:t>
+</a:r>`)
+	return b.String()
+}
+
+func runSizeValue(sizePt int) string {
+	if sizePt <= 0 {
+		return strconv.Itoa(defaultBulletRunSize)
+	}
+	return strconv.Itoa(sizePt * 100)
+}
+
+func runFont(run TextRunSpec) string {
+	if strings.TrimSpace(run.Font) != "" {
+		return run.Font
+	}
+	if run.Code {
+		return "Consolas"
+	}
+	return ""
+}
+
+func runUnderlineValue(underline bool) string {
+	if underline {
+		return "sng"
+	}
+	return "none"
+}
+
+func boolToFlag(enabled bool) string {
+	if enabled {
+		return "1"
+	}
+	return "0"
+}

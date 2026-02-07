@@ -46,11 +46,12 @@ const slideFooter = `
 func SlideWithContent(
 	title string,
 	bullets []string,
+	bulletRuns [][]TextRunSpec,
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
 ) string {
-	return SlideWithLayout(slideLayoutTitleAndContent, title, bullets, table, chart, images)
+	return SlideWithLayout(slideLayoutTitleAndContent, title, bullets, bulletRuns, table, chart, images)
 }
 
 // SlideWithLayout renders a slide using an explicit layout mode.
@@ -58,6 +59,7 @@ func SlideWithLayout(
 	layout string,
 	title string,
 	bullets []string,
+	bulletRuns [][]TextRunSpec,
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
@@ -76,7 +78,7 @@ func SlideWithLayout(
 		b.WriteString(tableShape(table, nextID))
 		nextID++
 	} else if layoutMode == slideLayoutTitleAndContent && len(bullets) > 0 {
-		b.WriteString(contentShape(bullets, nextID))
+		b.WriteString(contentShape(bullets, bulletRuns, nextID))
 		nextID++
 	}
 
@@ -166,7 +168,7 @@ func titleShape(title string) string {
 </p:sp>`
 }
 
-func contentShape(bullets []string, shapeID int) string {
+func contentShape(bullets []string, bulletRuns [][]TextRunSpec, shapeID int) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(`
 <p:sp>
@@ -187,7 +189,12 @@ func contentShape(bullets []string, shapeID int) string {
 <a:bodyPr wrap="square" rtlCol="0"/>
 <a:lstStyle/>`, shapeID))
 
-	for _, bullet := range bullets {
+	for i, bullet := range bullets {
+		runs := bulletRunsAt(bulletRuns, i)
+		if len(runs) > 0 {
+			b.WriteString(bulletParagraphRuns(runs))
+			continue
+		}
 		b.WriteString(bulletParagraph(bullet))
 	}
 

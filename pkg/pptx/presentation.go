@@ -189,10 +189,12 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 		}
 
+		bulletRuns := toXMLTextRunRows(slide.BulletRuns)
 		slideXML := pptxxml.SlideWithLayout(
 			slideLayoutXMLMode(slide.Layout),
 			slide.Title,
 			slide.Bullets,
+			bulletRuns,
 			tableSpec,
 			chartFrame,
 			imageRefs,
@@ -243,4 +245,31 @@ func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec 
 		Color: normalizeHexColor(border.Color),
 		Dash:  normalizeTableBorderDash(border.Dash),
 	}
+}
+
+func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([][]pptxxml.TextRunSpec, len(rows))
+	for i := range rows {
+		if len(rows[i]) == 0 {
+			continue
+		}
+		runs := make([]pptxxml.TextRunSpec, 0, len(rows[i]))
+		for _, run := range rows[i] {
+			runs = append(runs, pptxxml.TextRunSpec{
+				Text:      run.Text,
+				Bold:      run.Bold,
+				Italic:    run.Italic,
+				Underline: run.Underline,
+				Color:     normalizeHexColor(run.Color),
+				Font:      run.Font,
+				SizePt:    run.SizePt,
+				Code:      run.Code,
+			})
+		}
+		out[i] = runs
+	}
+	return out
 }

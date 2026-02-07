@@ -61,7 +61,7 @@ func SlidesFromMarkdown(markdown string) ([]SlideContent, error) {
 			if current == nil {
 				return nil, fmt.Errorf("line %d: content found before first slide title", lineNumber)
 			}
-			current.Bullets = append(current.Bullets, strings.TrimSpace(strings.TrimPrefix(line, "## ")))
+			appendMarkdownBullet(current, strings.TrimSpace(strings.TrimPrefix(line, "## ")))
 			continue
 		}
 
@@ -72,7 +72,7 @@ func SlidesFromMarkdown(markdown string) ([]SlideContent, error) {
 		if current == nil {
 			return nil, fmt.Errorf("line %d: content found before first slide title", lineNumber)
 		}
-		current.Bullets = append(current.Bullets, bullet)
+		appendMarkdownBullet(current, bullet)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -98,4 +98,101 @@ func parseBulletLine(line string) string {
 		return strings.TrimSpace(matches[1])
 	}
 	return ""
+}
+
+func appendMarkdownBullet(slide *SlideContent, text string) {
+	runs, rich := parseInlineTextRuns(text)
+	if rich {
+		*slide = slide.AddBulletRuns(runs)
+		return
+	}
+	*slide = slide.AddBullet(text)
+}
+
+func parseInlineTextRuns(text string) ([]TextRun, bool) {
+	input := strings.TrimSpace(text)
+	if input == "" {
+		return nil, false
+	}
+
+	runs := make([]TextRun, 0, 4)
+	hasStyled := false
+	for i := 0; i < len(input); {
+		if input[i] == '`' {
+			close := strings.Index(input[i+1:], "`")
+			if close >= 0 {
+				end := i + 1 + close
+				if end > i+1 {
+					runs = append(runs, TextRun{Text: input[i+1 : end], Code: true})
+					hasStyled = true
+				}
+				i = end + 1
+				continue
+			}
+			runs = append(runs, TextRun{Text: input[i : i+1]})
+			i++
+			continue
+		}
+
+		if strings.HasPrefix(input[i:], "**") {
+			close := strings.Index(input[i+2:], "**")
+			if close >= 0 {
+				end := i + 2 + close
+				if end > i+2 {
+					runs = append(runs, TextRun{Text: input[i+2 : end], Bold: true})
+					hasStyled = true
+				}
+				i = end + 2
+				continue
+			}
+			runs = append(runs, TextRun{Text: input[i : i+1]})
+			i++
+			continue
+		}
+
+		if input[i] == '*' {
+			close := strings.Index(input[i+1:], "*")
+			if close >= 0 {
+				end := i + 1 + close
+				if end > i+1 {
+					runs = append(runs, TextRun{Text: input[i+1 : end], Italic: true})
+					hasStyled = true
+				}
+				i = end + 1
+				continue
+			}
+			runs = append(runs, TextRun{Text: input[i : i+1]})
+			i++
+			continue
+		}
+
+		next := nextInlineMarkerOffset(input[i:])
+		if next < 0 {
+			runs = append(runs, TextRun{Text: input[i:]})
+			break
+		}
+		if next == 0 {
+			runs = append(runs, TextRun{Text: input[i : i+1]})
+			i++
+			continue
+		}
+		runs = append(runs, TextRun{Text: input[i : i+next]})
+		i += next
+	}
+
+	return normalizeTextRuns(runs), hasStyled
+}
+
+func nextInlineMarkerOffset(input string) int {
+	next := -1
+	for _, marker := range []string{"`", "*"} {
+		idx := strings.Index(input, marker)
+		if idx < 0 {
+			continue
+		}
+		if next < 0 || idx < next {
+			next = idx
+		}
+	}
+	return next
 }

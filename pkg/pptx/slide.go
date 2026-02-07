@@ -9,6 +9,7 @@ type SlideContent struct {
 	Title          string
 	Layout         string
 	Bullets        []string
+	BulletRuns     [][]TextRun
 	Images         []Image
 	Table          *Table
 	Chart          *BarChart
@@ -43,6 +44,7 @@ func NewSlide(title string) SlideContent {
 // AddBullet appends one bullet item and returns the updated slide.
 func (s SlideContent) AddBullet(text string) SlideContent {
 	s.Bullets = append(s.Bullets, text)
+	s.BulletRuns = append(s.BulletRuns, nil)
 	return s
 }
 
@@ -66,6 +68,9 @@ func validateSlide(s SlideContent, index int) error {
 		if bullet == "" {
 			return fmt.Errorf("slide %d bullet %d cannot be empty", index, bulletIndex+1)
 		}
+	}
+	if err := validateSlideTextRuns(s, index); err != nil {
+		return err
 	}
 	for imageIndex, image := range s.Images {
 		if err := validateImage(image, index, imageIndex+1); err != nil {

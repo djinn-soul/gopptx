@@ -35,3 +35,4 @@ C*.md
 A*.md
 .gemini/
 gha-creds-*.json
+tasks/

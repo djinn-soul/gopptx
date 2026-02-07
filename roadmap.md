@@ -67,3 +67,16 @@
 - Extended table XML model/rendering in `internal/pptxxml/slide_table_xml.go` to emit only configured border sides with side-specific dash styles.
 - Added strict validation for per-side width/color/dash semantics in `pkg/pptx/table_validation.go`.
 - Added integration coverage for side overrides and dash rendering in `pkg/pptx/table_alignment_border_test.go`.
+
+7. Markdown inline rich-text parity slice:
+- Added markdown inline parsing for `**bold**`, `*italic*`, and `` `code` `` in `pkg/pptx/markdown.go`.
+- Added additive rich text model/API for bullets in `pkg/pptx/text_runs.go` and `pkg/pptx/slide.go` (`TextRun`, `AddBulletRuns`).
+- Added run-aware slide XML rendering in `internal/pptxxml/slide_xml.go` with code font mapping (`Consolas`).
+- Wired run mapping in `pkg/pptx/presentation.go`.
+- Added parser + XML integration tests in `pkg/pptx/markdown_test.go`.
+
+8. Text formatting parity slice (run-level):
+- Extended `TextRun` API in `pkg/pptx/text_runs.go` with `underline`, `color`, `font`, and `size` controls.
+- Added run validation in `pkg/pptx/text_runs_validation.go` (RGB color + size bounds).
+- Refined OOXML run rendering in `internal/pptxxml/slide_text_runs_xml.go` with deterministic run-property ordering and style emission.
+- Added integration tests in `pkg/pptx/text_runs_test.go` and updated markdown OOXML assertions in `pkg/pptx/markdown_test.go`.
