@@ -83,6 +83,21 @@ func toXMLShapeSpecs(shapes []Shape) []pptxxml.ShapeSpec {
 				TransparencyPct: shape.Fill.TransparencyPct,
 			}
 		}
+		if shape.GradientFill != nil {
+			stops := make([]pptxxml.ShapeGradientStopSpec, 0, len(shape.GradientFill.Stops))
+			for _, stop := range shape.GradientFill.Stops {
+				stops = append(stops, pptxxml.ShapeGradientStopSpec{
+					PositionPct:     stop.PositionPct,
+					Color:           normalizeHexColor(stop.Color),
+					TransparencyPct: stop.TransparencyPct,
+				})
+			}
+			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{
+				Type:     normalizeShapeGradientType(shape.GradientFill.Type),
+				Stops:    stops,
+				AngleDeg: shape.GradientFill.AngleDeg,
+			}
+		}
 		if shape.Line != nil {
 			spec.Line = &pptxxml.ShapeLineSpec{
 				Color: normalizeHexColor(shape.Line.Color),
@@ -96,7 +111,7 @@ func toXMLShapeSpecs(shapes []Shape) []pptxxml.ShapeSpec {
 	return specs
 }
 
-func toXMLConnectorSpecs(connectors []Connector) []pptxxml.ConnectorSpec {
+func toXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.ConnectorSpec {
 	if len(connectors) == 0 {
 		return nil
 	}
@@ -120,14 +135,7 @@ func toXMLConnectorSpecs(connectors []Connector) []pptxxml.ConnectorSpec {
 			EndShapeIndex:   connector.EndShapeIndex,
 			Label:           connector.Label,
 		}
-		if idx, ok := connectionSiteIndex(connector.StartSite); ok {
-			value := idx
-			spec.StartSiteIndex = &value
-		}
-		if idx, ok := connectionSiteIndex(connector.EndSite); ok {
-			value := idx
-			spec.EndSiteIndex = &value
-		}
+		spec.StartSiteIndex, spec.EndSiteIndex = resolveConnectorSiteIndices(connector, shapes)
 		specs = append(specs, spec)
 	}
 	return specs

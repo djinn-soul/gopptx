@@ -11,6 +11,20 @@ type ShapeFillSpec struct {
 	TransparencyPct *int
 }
 
+// ShapeGradientStopSpec describes one gradient stop for a custom shape.
+type ShapeGradientStopSpec struct {
+	PositionPct     int
+	Color           string
+	TransparencyPct *int
+}
+
+// ShapeGradientFillSpec describes gradient fill properties for a custom shape.
+type ShapeGradientFillSpec struct {
+	Type     string
+	Stops    []ShapeGradientStopSpec
+	AngleDeg *int
+}
+
 // ShapeLineSpec describes line properties for a custom shape or connector.
 type ShapeLineSpec struct {
 	Color string
@@ -20,15 +34,16 @@ type ShapeLineSpec struct {
 
 // ShapeSpec describes one custom shape rendered as p:sp.
 type ShapeSpec struct {
-	Type        string
-	X           int64
-	Y           int64
-	CX          int64
-	CY          int64
-	Fill        *ShapeFillSpec
-	Line        *ShapeLineSpec
-	Text        string
-	RotationDeg *int
+	Type         string
+	X            int64
+	Y            int64
+	CX           int64
+	CY           int64
+	Fill         *ShapeFillSpec
+	GradientFill *ShapeGradientFillSpec
+	Line         *ShapeLineSpec
+	Text         string
+	RotationDeg  *int
 }
 
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.
@@ -79,7 +94,9 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 		Escape(shape.Type),
 	))
 
-	if shape.Fill != nil {
+	if shape.GradientFill != nil {
+		b.WriteString(shapeGradientFillXML(*shape.GradientFill))
+	} else if shape.Fill != nil {
 		b.WriteString(shapeSolidFillXML(*shape.Fill))
 	} else {
 		b.WriteString(`
@@ -101,12 +118,12 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	} else {
 		b.WriteString(`
 <p:txBody>
-<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"><a:spAutoFit/></a:bodyPr>
 <a:lstStyle/>
 <a:p>
 <a:pPr algn="ctr"/>
 <a:r>
-<a:rPr lang="en-US" sz="1800" b="0" i="0" u="none" dirty="0"/>
+<a:rPr lang="en-US" sz="` + shapeTextSizeXML(shape) + `" b="0" i="0" u="none" dirty="0">` + shapeTextRunPropertiesXML(shape) + `</a:rPr>
 <a:t>` + Escape(shape.Text) + `</a:t>
 </a:r>
 </a:p>

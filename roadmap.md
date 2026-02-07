@@ -178,3 +178,38 @@
 - per-cell wrap mode on `<a:bodyPr wrap="...">`
 - Added integration validation coverage in `pkg/pptx/table_alignment_border_test.go` for row heights, margins, wrap output, and invalid margin/row-height cases.
 - Added deterministic table parity report pipeline in `scripts/compare_table_parity_with_ppt_rs/main.go` with generated output at `reports/table_parity_report.md`.
+
+18. Shape gradient fill parity slice:
+- Added gradient fill model/API in `pkg/pptx`:
+- `ShapeGradientFill` and `ShapeGradientStop`
+- gradient types: `linear`, `radial`, `rectangular`, `path`
+- fluent API: `WithGradientFill(...)` and `WithLinearAngle(...)`
+- Added strict shape validation in `pkg/pptx/slide_drawings_validation.go`:
+- fail-fast for unsupported gradient types
+- requires at least two strictly-increasing stops in `[0..100]`
+- validates stop colors/transparency and linear-angle constraints
+- Added OOXML rendering in `internal/pptxxml`:
+- emits `<a:gradFill>` + `<a:gsLst>` stop nodes
+- emits linear vector (`<a:lin>`) and non-linear path modes (`circle|rect|shape`)
+- Added integration coverage in `pkg/pptx/shape_gradient_test.go`.
+
+19. Connector auto-site parity slice:
+- Added connector auto-anchor APIs in `pkg/pptx`:
+- `ConnectStartAuto(shapeIndex)` and `ConnectEndAuto(shapeIndex)`
+- Added relative-position site inference for anchored connectors:
+- horizontal dominance -> `left|right`
+- vertical dominance -> `top|bottom`
+- Wired auto-site resolution into XML spec conversion so empty anchored sites emit deterministic `stCxn/endCxn` indices.
+- Updated connector validation to allow anchored connectors with empty sites (auto mode) while preserving invalid-site fail-fast behavior.
+- Added flow-layout integration tests in `pkg/pptx/connector_auto_sites_test.go` for horizontal and vertical anchor inference.
+
+20. Shape text-contrast parity slice:
+- Added automatic text-color contrast selection for shape text based on fill luminance and WCAG-style contrast ratio.
+- Supports both solid fills (including transparency blending) and gradient fills (average stop color with per-stop transparency).
+- Wired contrast-aware text run rendering into shape XML output (`a:rPr` + `a:solidFill`).
+- Added integration tests in `pkg/pptx/shape_text_contrast_test.go` for dark/light solid fills and dark-gradient fills.
+
+21. Shape text auto-fit parity slice:
+- Added automatic shape text sizing based on shape bounds and text length heuristics.
+- Wired shape text bodies to emit `<a:spAutoFit/>` and dynamic run-size values in OOXML.
+- Added integration coverage in `pkg/pptx/shape_text_autofit_test.go` to assert long text renders with smaller font size than short text.

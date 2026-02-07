@@ -81,15 +81,16 @@ func (l ShapeLine) WithDash(dash string) ShapeLine {
 
 // Shape is one auto shape rendered as p:sp in slide XML.
 type Shape struct {
-	Type        string
-	X           int64
-	Y           int64
-	CX          int64
-	CY          int64
-	Fill        *ShapeFill
-	Line        *ShapeLine
-	Text        string
-	RotationDeg *int
+	Type         string
+	X            int64
+	Y            int64
+	CX           int64
+	CY           int64
+	Fill         *ShapeFill
+	GradientFill *ShapeGradientFill
+	Line         *ShapeLine
+	Text         string
+	RotationDeg  *int
 }
 
 // NewShape creates one shape with explicit preset type, position, and size.
@@ -107,6 +108,7 @@ func NewShape(shapeType string, x int64, y int64, cx int64, cy int64) Shape {
 func (s Shape) WithFill(fill ShapeFill) Shape {
 	value := fill
 	s.Fill = &value
+	s.GradientFill = nil
 	return s
 }
 

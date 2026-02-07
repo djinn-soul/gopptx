@@ -22,7 +22,7 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 		nil,
 		nil,
 		toXMLShapeSpecs(slide.Shapes),
-		toXMLConnectorSpecs(slide.Connectors),
+		toXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 	)
 	relsXML := pptxxml.SlideRelationshipsWithLayoutAndNotes(
 		slideLayoutTarget(slide.Layout),

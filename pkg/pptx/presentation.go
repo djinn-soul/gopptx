@@ -231,7 +231,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		bulletStyles := toXMLBulletParagraphStyles(slide.BulletStyles)
 		bulletRuns := toXMLTextRunRows(slide.BulletRuns)
 		shapeSpecs := toXMLShapeSpecs(slide.Shapes)
-		connectorSpecs := toXMLConnectorSpecs(slide.Connectors)
+		connectorSpecs := toXMLConnectorSpecs(slide.Connectors, slide.Shapes)
 		slideXML := pptxxml.SlideWithLayout(
 			slideLayoutXMLMode(slide.Layout),
 			slide.Title,

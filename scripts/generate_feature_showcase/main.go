@@ -42,7 +42,8 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 			AddBullet("Chart parity (13 variants)").
 			AddBullet("Slide layouts (title/content, title-only, blank)").
 			AddBullet("Table styling + deep border semantics").
-			AddBullet("Markdown inline rich text and text-run formatting"),
+			AddBullet("Markdown inline rich text and text-run formatting").
+			AddBullet("Shapes/connectors with gradient fill rendering"),
 
 		pptx.NewSlide("Title Only Layout").WithTitleOnlyLayout(),
 		pptx.NewSlide("").WithBlankLayout(),
@@ -78,6 +79,37 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 					pptx.NewTableCell("XML emits only configured sides").WithAlignLeft(),
 				}),
 		),
+
+		pptx.NewSlide("").WithBlankLayout().
+			AddShape(
+				pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(0.9), pptx.Inches(1.8), pptx.Inches(2.6), pptx.Inches(1.1)).
+					WithText("Input").
+					WithFill(pptx.NewShapeFill("D9E1F2")).
+					WithLine(pptx.NewShapeLine("5B9BD5", pptx.Points(1.5))),
+			).
+			AddShape(
+				pptx.NewShape(pptx.ShapeTypeFlowChartDecision, pptx.Inches(4.1), pptx.Inches(1.6), pptx.Inches(2.8), pptx.Inches(1.6)).
+					WithText("Validate").
+					WithGradientFill(
+						pptx.NewShapeGradientFill(
+							pptx.ShapeGradientTypeLinear,
+							[]pptx.ShapeGradientStop{
+								pptx.NewShapeGradientStop(0, "4472C4"),
+								pptx.NewShapeGradientStop(100, "8FB9E0").WithTransparency(20),
+							},
+						).WithLinearAngle(35),
+					).
+					WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.5))),
+			).
+			AddConnector(
+				pptx.NewElbowConnector(pptx.Inches(3.5), pptx.Inches(2.35), pptx.Inches(4.1), pptx.Inches(2.35)).
+					WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.1)).WithDash(pptx.LineDashDashDot)).
+					WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle).
+					WithArrowSize(pptx.ArrowSizeLarge).
+					ConnectStartAuto(1).
+					ConnectEndAuto(2).
+					WithLabel("next"),
+			),
 
 		pptx.NewSlide("Chart Sample (Combo)").WithComboChart(
 			pptx.NewComboChart(

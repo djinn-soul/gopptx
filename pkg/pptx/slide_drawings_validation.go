@@ -29,6 +29,9 @@ func validateShape(shape Shape, slideIndex int, shapeIndex int) error {
 	if shape.CX <= 0 || shape.CY <= 0 {
 		return fmt.Errorf("slide %d shape %d size must be > 0", slideIndex, shapeIndex)
 	}
+	if shape.Fill != nil && shape.GradientFill != nil {
+		return fmt.Errorf("slide %d shape %d cannot set both solid and gradient fill", slideIndex, shapeIndex)
+	}
 	if shape.Fill != nil {
 		if !isHexColor(shape.Fill.Color) {
 			return fmt.Errorf("slide %d shape %d fill color must be 6-digit RGB hex", slideIndex, shapeIndex)
@@ -37,6 +40,11 @@ func validateShape(shape Shape, slideIndex int, shapeIndex int) error {
 			if *shape.Fill.TransparencyPct < 0 || *shape.Fill.TransparencyPct > 100 {
 				return fmt.Errorf("slide %d shape %d fill transparency must be in [0,100]", slideIndex, shapeIndex)
 			}
+		}
+	}
+	if shape.GradientFill != nil {
+		if err := validateShapeGradientFill(*shape.GradientFill, slideIndex, shapeIndex); err != nil {
+			return err
 		}
 	}
 	if shape.Line != nil {
@@ -59,6 +67,70 @@ func validateShape(shape Shape, slideIndex int, shapeIndex int) error {
 			return fmt.Errorf("slide %d shape %d rotation must be in [-360,360]", slideIndex, shapeIndex)
 		}
 	}
+	return nil
+}
+
+func validateShapeGradientFill(fill ShapeGradientFill, slideIndex int, shapeIndex int) error {
+	if !isShapeGradientType(fill.Type) {
+		return fmt.Errorf("slide %d shape %d gradient type %q is not supported", slideIndex, shapeIndex, fill.Type)
+	}
+	if len(fill.Stops) < 2 {
+		return fmt.Errorf("slide %d shape %d gradient must contain at least 2 stops", slideIndex, shapeIndex)
+	}
+
+	lastPosition := -1
+	for stopIndex, stop := range fill.Stops {
+		if stop.PositionPct < 0 || stop.PositionPct > 100 {
+			return fmt.Errorf(
+				"slide %d shape %d gradient stop %d position must be in [0,100]",
+				slideIndex,
+				shapeIndex,
+				stopIndex+1,
+			)
+		}
+		if stop.PositionPct <= lastPosition {
+			return fmt.Errorf(
+				"slide %d shape %d gradient stop positions must be strictly increasing",
+				slideIndex,
+				shapeIndex,
+			)
+		}
+		lastPosition = stop.PositionPct
+		if !isHexColor(stop.Color) {
+			return fmt.Errorf(
+				"slide %d shape %d gradient stop %d color must be 6-digit RGB hex",
+				slideIndex,
+				shapeIndex,
+				stopIndex+1,
+			)
+		}
+		if stop.TransparencyPct != nil && (*stop.TransparencyPct < 0 || *stop.TransparencyPct > 100) {
+			return fmt.Errorf(
+				"slide %d shape %d gradient stop %d transparency must be in [0,100]",
+				slideIndex,
+				shapeIndex,
+				stopIndex+1,
+			)
+		}
+	}
+
+	if fill.AngleDeg != nil {
+		if normalizeShapeGradientType(fill.Type) != ShapeGradientTypeLinear {
+			return fmt.Errorf(
+				"slide %d shape %d gradient angle is only supported for linear gradients",
+				slideIndex,
+				shapeIndex,
+			)
+		}
+		if *fill.AngleDeg < -360 || *fill.AngleDeg > 360 {
+			return fmt.Errorf(
+				"slide %d shape %d gradient angle must be in [-360,360]",
+				slideIndex,
+				shapeIndex,
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -132,6 +204,9 @@ func validateConnectorAnchor(
 			shapeIndex,
 			shapeCount,
 		)
+	}
+	if strings.TrimSpace(site) == "" {
+		return nil
 	}
 	if _, ok := connectionSiteIndex(site); !ok {
 		return fmt.Errorf(
