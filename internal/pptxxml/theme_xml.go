@@ -20,6 +20,21 @@ func SlideLayoutBlank() string {
 	return slideLayout("blank", "Blank")
 }
 
+// SlideLayoutCenteredTitle renders a centered-title layout.
+func SlideLayoutCenteredTitle() string {
+	return slideLayout("title", "Centered Title")
+}
+
+// SlideLayoutTitleAndBigContent renders a title-and-big-content layout.
+func SlideLayoutTitleAndBigContent() string {
+	return slideLayout("titleAndObj", "Title and Big Content")
+}
+
+// SlideLayoutTwoColumn renders a two-column layout.
+func SlideLayoutTwoColumn() string {
+	return slideLayout("twoObj", "Two Column")
+}
+
 func slideLayout(layoutType string, name string) string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="` + layoutType + `" preserve="1">
@@ -85,6 +100,9 @@ func SlideMaster() string {
 <p:sldLayoutId id="2147483649" r:id="rId1"/>
 <p:sldLayoutId id="2147483650" r:id="rId2"/>
 <p:sldLayoutId id="2147483651" r:id="rId3"/>
+<p:sldLayoutId id="2147483652" r:id="rId4"/>
+<p:sldLayoutId id="2147483653" r:id="rId5"/>
+<p:sldLayoutId id="2147483654" r:id="rId6"/>
 </p:sldLayoutIdLst>
 </p:sldMaster>`
 }
@@ -96,7 +114,10 @@ func SlideMasterRelationships() string {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout2.xml"/>
 <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout3.xml"/>
-<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>
+<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout4.xml"/>
+<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout5.xml"/>
+<Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout6.xml"/>
+<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>
 </Relationships>`
 }
 

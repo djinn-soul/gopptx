@@ -9,6 +9,9 @@ const (
 	slideLayoutTitleAndContent = "titleAndContent"
 	slideLayoutTitleOnly       = "titleOnly"
 	slideLayoutBlank           = "blank"
+	slideLayoutCenteredTitle   = "centeredTitle"
+	slideLayoutTitleBigContent = "titleAndBigContent"
+	slideLayoutTwoColumn       = "twoColumn"
 )
 
 const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -72,16 +75,36 @@ func SlideWithLayout(
 
 	nextID := 2
 	if layoutMode != slideLayoutBlank {
-		b.WriteString(titleShape(title))
+		if layoutMode == slideLayoutCenteredTitle {
+			b.WriteString(centeredTitleShape(title))
+		} else {
+			b.WriteString(titleShape(title))
+		}
 		nextID = 3
 	}
 
 	if table != nil {
 		b.WriteString(tableShape(table, nextID))
 		nextID++
-	} else if layoutMode == slideLayoutTitleAndContent && len(bullets) > 0 {
-		b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, nextID))
-		nextID++
+	} else if len(bullets) > 0 {
+		switch layoutMode {
+		case slideLayoutTitleAndContent:
+			b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, nextID))
+			nextID++
+		case slideLayoutTitleBigContent:
+			b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, nextID))
+			nextID++
+		case slideLayoutTwoColumn:
+			leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)
+			leftStyles, rightStyles := splitBulletStylesForTwoColumns(bulletStyles, len(leftBullets))
+			leftRuns, rightRuns := splitBulletRunsForTwoColumns(bulletRuns, len(leftBullets))
+			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, nextID))
+			nextID++
+			if len(rightBullets) > 0 {
+				b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, nextID))
+				nextID++
+			}
+		}
 	}
 
 	if chart != nil {
@@ -134,87 +157,13 @@ func normalizeSlideLayoutMode(layout string) string {
 		return slideLayoutTitleOnly
 	case slideLayoutBlank:
 		return slideLayoutBlank
+	case slideLayoutCenteredTitle, "centered_title", "centered-title", "centeredtitle":
+		return slideLayoutCenteredTitle
+	case slideLayoutTitleBigContent, "title_and_big_content", "title-and-big-content", "titleandbigcontent":
+		return slideLayoutTitleBigContent
+	case slideLayoutTwoColumn, "two_column", "two-column", "twocolumn":
+		return slideLayoutTwoColumn
 	default:
 		return slideLayoutTitleAndContent
 	}
-}
-
-func titleShape(title string) string {
-	escaped := Escape(title)
-	return `
-<p:sp>
-<p:nvSpPr>
-<p:cNvPr id="2" name="Title"/>
-<p:cNvSpPr txBox="1"/>
-<p:nvPr/>
-</p:nvSpPr>
-<p:spPr>
-<a:xfrm>
-<a:off x="457200" y="274638"/>
-<a:ext cx="8230200" cy="1143000"/>
-</a:xfrm>
-<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-<a:noFill/>
-</p:spPr>
-<p:txBody>
-<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
-<a:lstStyle/>
-<a:p>
-<a:pPr algn="l"/>
-<a:r>
-<a:rPr lang="en-US" sz="4400" b="1" i="0" dirty="0"/>
-<a:t>` + escaped + `</a:t>
-</a:r>
-</a:p>
-</p:txBody>
-</p:sp>`
-}
-
-func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, shapeID int) string {
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`
-<p:sp>
-<p:nvSpPr>
-<p:cNvPr id="%d" name="Content"/>
-<p:cNvSpPr txBox="1"/>
-<p:nvPr/>
-</p:nvSpPr>
-<p:spPr>
-<a:xfrm>
-<a:off x="457200" y="1600200"/>
-<a:ext cx="8230200" cy="4572000"/>
-</a:xfrm>
-<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-<a:noFill/>
-</p:spPr>
-<p:txBody>
-<a:bodyPr wrap="square" rtlCol="0"/>
-<a:lstStyle/>`, shapeID))
-
-	for i, bullet := range bullets {
-		style := bulletStyleAt(bulletStyles, i)
-		runs := bulletRunsAt(bulletRuns, i)
-		if len(runs) > 0 {
-			b.WriteString(bulletParagraphRuns(runs, style))
-			continue
-		}
-		b.WriteString(bulletParagraph(bullet, style))
-	}
-
-	b.WriteString(`
-</p:txBody>
-</p:sp>`)
-	return b.String()
-}
-
-func bulletParagraph(text string, style BulletParagraphSpec) string {
-	escaped := Escape(text)
-	return `
-<a:p>
-` + bulletParagraphPropsXML(style) + `
-<a:r>
-<a:rPr lang="en-US" sz="2800" b="0" i="0" dirty="0"/>
-<a:t>` + escaped + `</a:t>
-</a:r>
-</a:p>`
 }
