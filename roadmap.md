@@ -154,3 +154,14 @@
 - Preserved legacy flag mode (`-out`, `-md`, `-title`) for backward compatibility.
 - Added deterministic CLI integration tests in `cmd/pptcli/main_test.go`.
 - Added command documentation and usage examples in `cmd/pptcli/README.md`.
+
+16. Read/modify existing PPTX API slice:
+- Added `PresentationEditor` API in `pkg/pptx` for opening existing PPTX packages with `archive/zip`.
+- Added parsed metadata surfaces (`PresentationMetadata`, `SlideMetadata`) with concurrent slide-title extraction.
+- Added editing operations:
+- `AddSlide`
+- `UpdateSlide` (fail-fast on unsupported external slide relationships)
+- `RemoveSlide`
+- `MergeFromFile` / `MergeFromEditor`
+- Added round-trip save pipeline preserving untouched package parts while rewriting slide list/relationships/content-types entries.
+- Added fixture-backed regression tests in `pkg/pptx/editor_test.go` for open/edit/save, merge, preservation, and corruption handling.

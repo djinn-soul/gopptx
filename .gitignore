@@ -28,14 +28,16 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
+.idea/
 # .vscode/
-ppt-*
+ppt-rs
 C*.md
 A*.md
 .gemini/
 gha-creds-*.json
 tasks/
-*pptx
+p*-pptx
 logs/
 scripts/*.py
+tools/*
+testdata/
