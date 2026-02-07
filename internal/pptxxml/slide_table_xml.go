@@ -25,6 +25,24 @@ type TableCellSpec struct {
 	VAlign          string
 	BorderColor     string
 	BorderWidth     int64
+	BorderLeft      *TableCellBorderSpec
+	BorderRight     *TableCellBorderSpec
+	BorderTop       *TableCellBorderSpec
+	BorderBottom    *TableCellBorderSpec
+}
+
+// TableCellBorderSpec describes one table border side style.
+type TableCellBorderSpec struct {
+	Width int64
+	Color string
+	Dash  string
+}
+
+type tableCellBorderSet struct {
+	Left   *TableCellBorderSpec
+	Right  *TableCellBorderSpec
+	Top    *TableCellBorderSpec
+	Bottom *TableCellBorderSpec
 }
 
 func tableShape(table *TableSpec, shapeID int) string {
@@ -136,9 +154,10 @@ func tableCellParagraphPropsXML(align string) string {
 }
 
 func tableCellPropsXML(cell TableCellSpec) string {
+	borders := tableCellBordersForRender(cell)
 	hasFill := strings.TrimSpace(cell.BackgroundColor) != ""
 	hasVAlign := strings.TrimSpace(cell.VAlign) != ""
-	hasBorder := cell.BorderWidth > 0 && strings.TrimSpace(cell.BorderColor) != ""
+	hasBorder := borders.Left != nil || borders.Right != nil || borders.Top != nil || borders.Bottom != nil
 	if !hasFill && !hasVAlign && !hasBorder {
 		return "<a:tcPr/>"
 	}
@@ -158,16 +177,72 @@ func tableCellPropsXML(cell TableCellSpec) string {
 		b.WriteString(`"/></a:solidFill>`)
 	}
 	if hasBorder {
-		b.WriteString(tableCellBorderXML("lnL", cell.BorderWidth, cell.BorderColor))
-		b.WriteString(tableCellBorderXML("lnR", cell.BorderWidth, cell.BorderColor))
-		b.WriteString(tableCellBorderXML("lnT", cell.BorderWidth, cell.BorderColor))
-		b.WriteString(tableCellBorderXML("lnB", cell.BorderWidth, cell.BorderColor))
+		if borders.Left != nil {
+			b.WriteString(tableCellBorderXML("lnL", *borders.Left))
+		}
+		if borders.Right != nil {
+			b.WriteString(tableCellBorderXML("lnR", *borders.Right))
+		}
+		if borders.Top != nil {
+			b.WriteString(tableCellBorderXML("lnT", *borders.Top))
+		}
+		if borders.Bottom != nil {
+			b.WriteString(tableCellBorderXML("lnB", *borders.Bottom))
+		}
 	}
 
 	b.WriteString("</a:tcPr>")
 	return b.String()
 }
 
-func tableCellBorderXML(side string, width int64, color string) string {
-	return `<a:` + side + ` w="` + fmt.Sprintf("%d", width) + `"><a:solidFill><a:srgbClr val="` + Escape(color) + `"/></a:solidFill><a:prstDash val="solid"/></a:` + side + `>`
+func tableCellBordersForRender(cell TableCellSpec) tableCellBorderSet {
+	borders := tableCellBorderSet{
+		Left:   cloneTableCellBorderSpec(cell.BorderLeft),
+		Right:  cloneTableCellBorderSpec(cell.BorderRight),
+		Top:    cloneTableCellBorderSpec(cell.BorderTop),
+		Bottom: cloneTableCellBorderSpec(cell.BorderBottom),
+	}
+	if borders.Left == nil && borders.Right == nil && borders.Top == nil && borders.Bottom == nil {
+		if cell.BorderWidth > 0 && strings.TrimSpace(cell.BorderColor) != "" {
+			legacy := &TableCellBorderSpec{Width: cell.BorderWidth, Color: cell.BorderColor, Dash: "solid"}
+			borders.Left = cloneTableCellBorderSpec(legacy)
+			borders.Right = cloneTableCellBorderSpec(legacy)
+			borders.Top = cloneTableCellBorderSpec(legacy)
+			borders.Bottom = cloneTableCellBorderSpec(legacy)
+		}
+	}
+	return borders
+}
+
+func cloneTableCellBorderSpec(border *TableCellBorderSpec) *TableCellBorderSpec {
+	if border == nil {
+		return nil
+	}
+	clone := *border
+	return &clone
+}
+
+func tableCellBorderXML(side string, border TableCellBorderSpec) string {
+	dash := tableCellBorderDash(border.Dash)
+	return `<a:` + side +
+		` w="` + fmt.Sprintf("%d", border.Width) +
+		`"><a:solidFill><a:srgbClr val="` + Escape(border.Color) +
+		`"/></a:solidFill><a:prstDash val="` + Escape(dash) + `"/></a:` + side + `>`
+}
+
+func tableCellBorderDash(dash string) string {
+	switch strings.ToLower(strings.TrimSpace(dash)) {
+	case "", "solid":
+		return "solid"
+	case "dash":
+		return "dash"
+	case "dot":
+		return "dot"
+	case "dashdot", "dash-dot", "dash_dot":
+		return "dashDot"
+	case "lgdash", "lg-dash", "longdash", "long-dash", "long_dash":
+		return "lgDash"
+	default:
+		return strings.TrimSpace(dash)
+	}
 }

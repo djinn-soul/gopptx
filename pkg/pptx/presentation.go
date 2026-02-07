@@ -121,6 +121,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 				row := make([]string, len(srcRow))
 				specRow := make([]pptxxml.TableCellSpec, len(srcRow))
 				for i, cell := range srcRow {
+					borders := cell.bordersForRender()
 					row[i] = cell.Text
 					specRow[i] = pptxxml.TableCellSpec{
 						Text:            cell.Text,
@@ -129,7 +130,11 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 						Align:           cell.Align,
 						VAlign:          cell.VAlign,
 						BorderColor:     cell.BorderColor,
-						BorderWidth:     cell.borderWidthEMU(),
+						BorderWidth:     tableBorderWidthEMU(cell.BorderWidthPt),
+						BorderLeft:      toXMLTableBorderSpec(borders.Left),
+						BorderRight:     toXMLTableBorderSpec(borders.Right),
+						BorderTop:       toXMLTableBorderSpec(borders.Top),
+						BorderBottom:    toXMLTableBorderSpec(borders.Bottom),
 					}
 				}
 				rows = append(rows, row)
@@ -227,4 +232,15 @@ func writeMediaFiles(zw *zip.Writer, catalog *mediaCatalog) error {
 		}
 	}
 	return nil
+}
+
+func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {
+	if border == nil {
+		return nil
+	}
+	return &pptxxml.TableCellBorderSpec{
+		Width: border.widthEMU(),
+		Color: normalizeHexColor(border.Color),
+		Dash:  normalizeTableBorderDash(border.Dash),
+	}
 }

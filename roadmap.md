@@ -15,10 +15,11 @@
 - Cell horizontal alignment (`l|ctr|r|just`)
 - Cell vertical alignment (`t|ctr|b`)
 - Deterministic uniform cell borders (width + RGB hex color)
+- Per-side cell border controls (`left|right|top|bottom`) with independent width/color
+- Per-side border dash styles (`solid|dash|dot|dashDot|lgDash`)
 
 ## Active parity backlog
 1. Next parity target (to choose):
-- Deepen table visual parity (advanced border semantics, mixed-edge styling).
 - Expand slide surface parity beyond layout selection (placeholder-level controls).
 
 ## Completed recently
@@ -56,3 +57,13 @@
 - Layout-specific slide rel target selection.
 - Layout-aware slide shape rendering.
 - Added integration coverage in `pkg/pptx/slide_layout_test.go`.
+
+6. Deep table border semantics parity slice:
+- Added per-side border APIs in `pkg/pptx/table.go`:
+- `WithLeftBorder*`, `WithRightBorder*`, `WithTopBorder*`, `WithBottomBorder*`
+- Added dashed border style APIs (`With*BorderStyle`) with allowed dash values:
+- `solid`, `dash`, `dot`, `dashDot`, `lgDash`
+- Preserved backward compatibility of `WithBorder(widthPt, color)` by mapping to explicit side borders.
+- Extended table XML model/rendering in `internal/pptxxml/slide_table_xml.go` to emit only configured border sides with side-specific dash styles.
+- Added strict validation for per-side width/color/dash semantics in `pkg/pptx/table_validation.go`.
+- Added integration coverage for side overrides and dash rendering in `pkg/pptx/table_alignment_border_test.go`.

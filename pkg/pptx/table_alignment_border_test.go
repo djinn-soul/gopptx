@@ -89,7 +89,7 @@ func TestCreateWithSlidesRejectsStyledTableInvalidBorder(t *testing.T) {
 		{
 			name: "missing width",
 			cell: NewTableCell("Header").WithBorder(0, "112233"),
-			msg:  "border width must be > 0 when border color is set",
+			msg:  "border width must be > 0 when",
 		},
 		{
 			name: "negative width",
@@ -111,5 +111,86 @@ func TestCreateWithSlidesRejectsStyledTableInvalidBorder(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 		})
+	}
+}
+
+func TestCreateWithSlidesEmbedsPerSideTableBorderStyles(t *testing.T) {
+	table := NewTable([]int64{2743400}).
+		AddStyledRow([]TableCell{
+			NewTableCell("Edge").
+				WithBorder(1.0, "112233").
+				WithLeftBorderStyle(2.0, "AA0000", TableBorderDashDash).
+				WithRightBorderStyle(1.5, "00AA00", TableBorderDashDot).
+				WithTopBorderStyle(1.0, "0000AA", TableBorderDashLongDash).
+				WithBottomBorderStyle(0.5, "ABCDEF", TableBorderDashDashDot),
+		})
+
+	data, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Border Sides").WithTable(table)})
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	checks := []string{
+		`<a:lnL w="25400"><a:solidFill><a:srgbClr val="AA0000"/></a:solidFill><a:prstDash val="dash"/></a:lnL>`,
+		`<a:lnR w="19050"><a:solidFill><a:srgbClr val="00AA00"/></a:solidFill><a:prstDash val="dot"/></a:lnR>`,
+		`<a:lnT w="12700"><a:solidFill><a:srgbClr val="0000AA"/></a:solidFill><a:prstDash val="lgDash"/></a:lnT>`,
+		`<a:lnB w="6350"><a:solidFill><a:srgbClr val="ABCDEF"/></a:solidFill><a:prstDash val="dashDot"/></a:lnB>`,
+	}
+	for _, needle := range checks {
+		if !strings.Contains(slideXML, needle) {
+			t.Fatalf("expected %q in table XML", needle)
+		}
+	}
+}
+
+func TestCreateWithSlidesEmbedsOnlyConfiguredBorderSides(t *testing.T) {
+	table := NewTable([]int64{2743400}).
+		AddStyledRow([]TableCell{
+			NewTableCell("Edge").WithLeftBorder(1.0, "112233"),
+		})
+
+	data, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Border Left").WithTable(table)})
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	if !strings.Contains(slideXML, `<a:lnL w="12700">`) {
+		t.Fatalf("expected left border in table XML")
+	}
+	if strings.Contains(slideXML, `<a:lnR w="`) {
+		t.Fatalf("did not expect right border in table XML")
+	}
+	if strings.Contains(slideXML, `<a:lnT w="`) {
+		t.Fatalf("did not expect top border in table XML")
+	}
+	if strings.Contains(slideXML, `<a:lnB w="`) {
+		t.Fatalf("did not expect bottom border in table XML")
+	}
+}
+
+func TestCreateWithSlidesRejectsStyledTableInvalidBorderDash(t *testing.T) {
+	table := NewTable([]int64{2743400}).
+		AddStyledRow([]TableCell{
+			NewTableCell("Header").WithLeftBorderStyle(1.0, "112233", "zigzag"),
+		})
+
+	_, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Broken Styled Table").WithTable(table)})
+	if err == nil {
+		t.Fatalf("expected styled table border dash validation error")
+	}
+	if !strings.Contains(err.Error(), "left border dash style must be one of solid|dash|dot|dashDot|lgDash") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

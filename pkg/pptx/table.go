@@ -1,10 +1,6 @@
 package pptx
 
-import (
-	"fmt"
-	"math"
-	"strings"
-)
+import "math"
 
 const (
 	// TableAlignLeft sets horizontal text alignment to left.
@@ -24,7 +20,40 @@ const (
 	TableVAlignBottom = "b"
 )
 
-const tableBorderPtToEMU = 12700.0
+const (
+	// TableBorderDashSolid emits a solid line.
+	TableBorderDashSolid = "solid"
+	// TableBorderDashDash emits a dashed line.
+	TableBorderDashDash = "dash"
+	// TableBorderDashDot emits a dotted line.
+	TableBorderDashDot = "dot"
+	// TableBorderDashDashDot emits dash-dot line.
+	TableBorderDashDashDot = "dashDot"
+	// TableBorderDashLongDash emits long-dash line.
+	TableBorderDashLongDash = "lgDash"
+)
+
+const (
+	tableBorderPtToEMU = 12700.0
+	borderSideLeft     = "left"
+	borderSideRight    = "right"
+	borderSideTop      = "top"
+	borderSideBottom   = "bottom"
+)
+
+// TableCellBorder describes one side border for a table cell.
+type TableCellBorder struct {
+	WidthPt float64
+	Color   string
+	Dash    string
+}
+
+func (b *TableCellBorder) widthEMU() int64 {
+	if b == nil {
+		return 0
+	}
+	return tableBorderWidthEMU(b.WidthPt)
+}
 
 // TableCell stores text and optional style for one table cell.
 type TableCell struct {
@@ -33,8 +62,22 @@ type TableCell struct {
 	BackgroundColor string
 	Align           string
 	VAlign          string
-	BorderColor     string
-	BorderWidthPt   float64
+
+	// Legacy uniform border fields (kept for backward compatibility).
+	BorderColor   string
+	BorderWidthPt float64
+
+	BorderLeft   *TableCellBorder
+	BorderRight  *TableCellBorder
+	BorderTop    *TableCellBorder
+	BorderBottom *TableCellBorder
+}
+
+type tableCellBorders struct {
+	Left   *TableCellBorder
+	Right  *TableCellBorder
+	Top    *TableCellBorder
+	Bottom *TableCellBorder
 }
 
 // NewTableCell creates a styled table cell with text.
@@ -101,18 +144,129 @@ func (c TableCell) WithVAlignBottom() TableCell {
 	return c.WithVAlign(TableVAlignBottom)
 }
 
-// WithBorder sets a uniform border (all 4 sides) in points and RGB hex color.
+// WithBorder sets uniform border with default dash style.
 func (c TableCell) WithBorder(widthPt float64, color string) TableCell {
+	return c.WithBorderStyle(widthPt, color, TableBorderDashSolid)
+}
+
+// WithBorderStyle sets uniform border on all sides.
+func (c TableCell) WithBorderStyle(widthPt float64, color string, dash string) TableCell {
+	normalizedColor := normalizeHexColor(color)
+	normalizedDash := normalizeTableBorderDash(dash)
 	c.BorderWidthPt = widthPt
-	c.BorderColor = normalizeHexColor(color)
+	c.BorderColor = normalizedColor
+	c.BorderLeft = &TableCellBorder{WidthPt: widthPt, Color: normalizedColor, Dash: normalizedDash}
+	c.BorderRight = &TableCellBorder{WidthPt: widthPt, Color: normalizedColor, Dash: normalizedDash}
+	c.BorderTop = &TableCellBorder{WidthPt: widthPt, Color: normalizedColor, Dash: normalizedDash}
+	c.BorderBottom = &TableCellBorder{WidthPt: widthPt, Color: normalizedColor, Dash: normalizedDash}
 	return c
 }
 
-func (c TableCell) borderWidthEMU() int64 {
-	if c.BorderWidthPt <= 0 {
+// WithLeftBorder sets left border with default dash style.
+func (c TableCell) WithLeftBorder(widthPt float64, color string) TableCell {
+	return c.WithLeftBorderStyle(widthPt, color, TableBorderDashSolid)
+}
+
+// WithLeftBorderStyle sets left border with explicit dash style.
+func (c TableCell) WithLeftBorderStyle(widthPt float64, color string, dash string) TableCell {
+	return c.withSideBorder(borderSideLeft, widthPt, color, dash)
+}
+
+// WithRightBorder sets right border with default dash style.
+func (c TableCell) WithRightBorder(widthPt float64, color string) TableCell {
+	return c.WithRightBorderStyle(widthPt, color, TableBorderDashSolid)
+}
+
+// WithRightBorderStyle sets right border with explicit dash style.
+func (c TableCell) WithRightBorderStyle(widthPt float64, color string, dash string) TableCell {
+	return c.withSideBorder(borderSideRight, widthPt, color, dash)
+}
+
+// WithTopBorder sets top border with default dash style.
+func (c TableCell) WithTopBorder(widthPt float64, color string) TableCell {
+	return c.WithTopBorderStyle(widthPt, color, TableBorderDashSolid)
+}
+
+// WithTopBorderStyle sets top border with explicit dash style.
+func (c TableCell) WithTopBorderStyle(widthPt float64, color string, dash string) TableCell {
+	return c.withSideBorder(borderSideTop, widthPt, color, dash)
+}
+
+// WithBottomBorder sets bottom border with default dash style.
+func (c TableCell) WithBottomBorder(widthPt float64, color string) TableCell {
+	return c.WithBottomBorderStyle(widthPt, color, TableBorderDashSolid)
+}
+
+// WithBottomBorderStyle sets bottom border with explicit dash style.
+func (c TableCell) WithBottomBorderStyle(widthPt float64, color string, dash string) TableCell {
+	return c.withSideBorder(borderSideBottom, widthPt, color, dash)
+}
+
+func (c TableCell) withSideBorder(side string, widthPt float64, color string, dash string) TableCell {
+	border := &TableCellBorder{
+		WidthPt: widthPt,
+		Color:   normalizeHexColor(color),
+		Dash:    normalizeTableBorderDash(dash),
+	}
+	switch side {
+	case borderSideLeft:
+		c.BorderLeft = border
+	case borderSideRight:
+		c.BorderRight = border
+	case borderSideTop:
+		c.BorderTop = border
+	case borderSideBottom:
+		c.BorderBottom = border
+	}
+	return c
+}
+
+func (c TableCell) bordersForRender() tableCellBorders {
+	borders := tableCellBorders{
+		Left:   cloneTableCellBorder(c.BorderLeft),
+		Right:  cloneTableCellBorder(c.BorderRight),
+		Top:    cloneTableCellBorder(c.BorderTop),
+		Bottom: cloneTableCellBorder(c.BorderBottom),
+	}
+	if borders.Left == nil && borders.Right == nil && borders.Top == nil && borders.Bottom == nil {
+		if legacy := c.uniformLegacyBorder(); legacy != nil {
+			borders.Left = cloneTableCellBorder(legacy)
+			borders.Right = cloneTableCellBorder(legacy)
+			borders.Top = cloneTableCellBorder(legacy)
+			borders.Bottom = cloneTableCellBorder(legacy)
+		}
+	}
+	return borders
+}
+
+func (c TableCell) hasExplicitBorderSides() bool {
+	return c.BorderLeft != nil || c.BorderRight != nil || c.BorderTop != nil || c.BorderBottom != nil
+}
+
+func (c TableCell) uniformLegacyBorder() *TableCellBorder {
+	if c.BorderWidthPt <= 0 && normalizeHexColor(c.BorderColor) == "" {
+		return nil
+	}
+	return &TableCellBorder{
+		WidthPt: c.BorderWidthPt,
+		Color:   normalizeHexColor(c.BorderColor),
+		Dash:    TableBorderDashSolid,
+	}
+}
+
+func cloneTableCellBorder(border *TableCellBorder) *TableCellBorder {
+	if border == nil {
+		return nil
+	}
+	clone := *border
+	return &clone
+}
+
+func tableBorderWidthEMU(widthPt float64) int64 {
+	if widthPt <= 0 {
 		return 0
 	}
-	width := int64(math.Round(c.BorderWidthPt * tableBorderPtToEMU))
+	width := int64(math.Round(widthPt * tableBorderPtToEMU))
 	if width < 1 {
 		return 1
 	}
@@ -182,143 +336,4 @@ func (t Table) Size(cx int64, cy int64) Table {
 	t.CX = cx
 	t.CY = cy
 	return t
-}
-
-func validateTable(table Table, slideIndex int) error {
-	if table.X < 0 || table.Y < 0 {
-		return fmt.Errorf("slide %d table position cannot be negative", slideIndex)
-	}
-	if table.CX <= 0 || table.CY <= 0 {
-		return fmt.Errorf("slide %d table size must be > 0", slideIndex)
-	}
-	if len(table.ColumnWidths) == 0 {
-		return fmt.Errorf("slide %d table must define at least one column", slideIndex)
-	}
-	for columnIndex, width := range table.ColumnWidths {
-		if width <= 0 {
-			return fmt.Errorf("slide %d table column %d width must be > 0", slideIndex, columnIndex+1)
-		}
-	}
-
-	rows := tableRowsForRender(table)
-	if len(rows) == 0 {
-		return fmt.Errorf("slide %d table must define at least one row", slideIndex)
-	}
-	for rowIndex, row := range rows {
-		if len(row) != len(table.ColumnWidths) {
-			return fmt.Errorf(
-				"slide %d table row %d has %d cells; expected %d",
-				slideIndex,
-				rowIndex+1,
-				len(row),
-				len(table.ColumnWidths),
-			)
-		}
-		for cellIndex, cell := range row {
-			if err := validateTableCell(cell, slideIndex, rowIndex+1, cellIndex+1); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex int) error {
-	if color := strings.TrimSpace(cell.BackgroundColor); color != "" && !isHexColor(color) {
-		return fmt.Errorf("slide %d table row %d cell %d background color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex)
-	}
-	if align := strings.TrimSpace(cell.Align); align != "" && !isTableAlign(align) {
-		return fmt.Errorf("slide %d table row %d cell %d align must be one of l|ctr|r|just", slideIndex, rowIndex, cellIndex)
-	}
-	if vAlign := strings.TrimSpace(cell.VAlign); vAlign != "" && !isTableVAlign(vAlign) {
-		return fmt.Errorf("slide %d table row %d cell %d valign must be one of t|ctr|b", slideIndex, rowIndex, cellIndex)
-	}
-	if math.IsNaN(cell.BorderWidthPt) || math.IsInf(cell.BorderWidthPt, 0) {
-		return fmt.Errorf("slide %d table row %d cell %d border width must be finite", slideIndex, rowIndex, cellIndex)
-	}
-	if cell.BorderWidthPt < 0 {
-		return fmt.Errorf("slide %d table row %d cell %d border width must be >= 0", slideIndex, rowIndex, cellIndex)
-	}
-	if cell.BorderWidthPt > 0 && !isHexColor(cell.BorderColor) {
-		return fmt.Errorf("slide %d table row %d cell %d border color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex)
-	}
-	if strings.TrimSpace(cell.BorderColor) != "" && cell.BorderWidthPt <= 0 {
-		return fmt.Errorf("slide %d table row %d cell %d border width must be > 0 when border color is set", slideIndex, rowIndex, cellIndex)
-	}
-	return nil
-}
-
-func tableRowsForRender(table Table) [][]TableCell {
-	if len(table.renderRows) > 0 {
-		return copyTableRows(table.renderRows)
-	}
-	if len(table.StyledRows) > 0 && len(table.StyledRows) == len(table.Rows) {
-		rows := make([][]TableCell, len(table.Rows))
-		for i := range table.Rows {
-			styled := copyTableCells(table.StyledRows[i])
-			if len(styled) == len(table.Rows[i]) {
-				rows[i] = styled
-				continue
-			}
-			rows[i] = plainRowToCells(table.Rows[i])
-		}
-		return rows
-	}
-	if len(table.StyledRows) > 0 && len(table.Rows) == 0 {
-		return copyTableRows(table.StyledRows)
-	}
-
-	rows := make([][]TableCell, len(table.Rows))
-	for i := range table.Rows {
-		rows[i] = plainRowToCells(table.Rows[i])
-	}
-	return rows
-}
-
-func plainRowToCells(cells []string) []TableCell {
-	row := make([]TableCell, len(cells))
-	for i, text := range cells {
-		row[i] = TableCell{Text: text}
-	}
-	return row
-}
-
-func copyTableRows(rows [][]TableCell) [][]TableCell {
-	out := make([][]TableCell, len(rows))
-	for i := range rows {
-		out[i] = copyTableCells(rows[i])
-	}
-	return out
-}
-
-func copyTableCells(cells []TableCell) []TableCell {
-	row := make([]TableCell, len(cells))
-	copy(row, cells)
-	return row
-}
-
-func normalizeTableAlign(align string) string {
-	return strings.ToLower(strings.TrimSpace(align))
-}
-
-func normalizeTableVAlign(vAlign string) string {
-	return strings.ToLower(strings.TrimSpace(vAlign))
-}
-
-func isTableAlign(align string) bool {
-	switch normalizeTableAlign(align) {
-	case TableAlignLeft, TableAlignCenter, TableAlignRight, TableAlignJustify:
-		return true
-	default:
-		return false
-	}
-}
-
-func isTableVAlign(vAlign string) bool {
-	switch normalizeTableVAlign(vAlign) {
-	case TableVAlignTop, TableVAlignMiddle, TableVAlignBottom:
-		return true
-	default:
-		return false
-	}
 }
