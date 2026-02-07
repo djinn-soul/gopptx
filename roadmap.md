@@ -112,3 +112,38 @@
 - `baseline="-25000"` / `baseline="30000"`
 - `<a:highlight><a:srgbClr .../></a:highlight>`
 - Added integration coverage in `pkg/pptx/text_runs_test.go`.
+
+12. Foundational drawings slice (shapes + connectors):
+- Added public shape model/API in `pkg/pptx/shape.go`:
+- baseline shape preset enum/constants
+- fill, line, transparency, rotation, and text setters
+- Added public connector model/API in `pkg/pptx/connector.go`:
+- straight/elbow/curved connector types
+- dash + arrowhead + arrow-size controls
+- shape-anchor connection API (`ConnectStart`/`ConnectEnd`)
+- Added strict drawing validation in `pkg/pptx/slide_drawings_validation.go` (types, geometry, colors, dash/arrow values, anchor range/site checks).
+- Wired drawing specs in `pkg/pptx/presentation_xml_specs.go` and slide assembly in `pkg/pptx/presentation.go`.
+- Added custom shape/connector OOXML rendering in `internal/pptxxml/slide_drawings_xml.go` and integrated it into `internal/pptxxml/slide_xml.go`.
+- Added EMU helper building blocks in `pkg/pptx/units.go` (`Inches`, `Centimeters`, `Points`).
+- Added integration tests in `pkg/pptx/shape_connector_test.go`.
+
+13. Markdown parity expansion slice:
+- Refactored markdown parsing into modular components:
+- parser state machine in `pkg/pptx/markdown_parser.go`
+- block parsers in `pkg/pptx/markdown_blocks.go`
+- code/mermaid handlers in `pkg/pptx/markdown_code_mermaid.go`
+- Added GFM table parsing into native `Table` model with styled header rows.
+- Added fenced code-block parsing with language-tagged, no-bullet code paragraphs and deterministic line coloring.
+- Added Mermaid fenced-block parsing for supported diagram directives with typed placeholder shapes.
+- Added blockquote parsing into slide speaker notes (`SlideContent.Notes`).
+- Added end-to-end fixture coverage using upstream `md2ppt_demo.md` in `pkg/pptx/testdata/ppt_rs/md2ppt_demo.md` and `pkg/pptx/markdown_blocks_test.go`.
+
+14. Speaker-notes persistence slice:
+- Added notes-slide XML generation in `internal/pptxxml/notes_xml.go`.
+- Added notes package wiring in `pkg/pptx/presentation.go`:
+- notes-slide content type overrides
+- notes-master relationship and package parts
+- per-slide `notesSlide` relationship attachment when notes exist
+- Added concurrent notes rendering pipeline in `pkg/pptx/notes_parts.go` (goroutine fan-out, deterministic compaction back to slide order).
+- Added notes parts writer in `pkg/pptx/notes_package.go`.
+- Added integration tests in `pkg/pptx/presentation_notes_test.go` for both direct notes API and markdown blockquote persistence.

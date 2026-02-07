@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -55,7 +56,18 @@ func SlideWithContent(
 	chart *ChartFrame,
 	images []ImageRef,
 ) string {
-	return SlideWithLayout(slideLayoutTitleAndContent, title, bullets, bulletStyles, bulletRuns, table, chart, images)
+	return SlideWithLayout(
+		slideLayoutTitleAndContent,
+		title,
+		bullets,
+		bulletStyles,
+		bulletRuns,
+		table,
+		chart,
+		images,
+		nil,
+		nil,
+	)
 }
 
 // SlideWithLayout renders a slide using an explicit layout mode.
@@ -68,6 +80,8 @@ func SlideWithLayout(
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
+	shapes []ShapeSpec,
+	connectors []ConnectorSpec,
 ) string {
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
@@ -115,6 +129,21 @@ func SlideWithLayout(
 	for i, image := range images {
 		b.WriteString(imageShape(image, nextID+i))
 	}
+	nextID += len(images)
+
+	shapeIDs := make([]int, len(shapes))
+	for i, shape := range shapes {
+		id := nextID + i
+		shapeIDs[i] = id
+		b.WriteString(customShapeXML(shape, id))
+	}
+	nextID += len(shapes)
+
+	for i, connector := range connectors {
+		startShapeID := shapeAnchorID(shapeIDs, connector.StartShapeIndex)
+		endShapeID := shapeAnchorID(shapeIDs, connector.EndShapeIndex)
+		b.WriteString(connectorXML(connector, nextID+i, startShapeID, endShapeID))
+	}
 	b.WriteString(slideFooter)
 	return b.String()
 }
@@ -130,20 +159,38 @@ func SlideRelationships(imageTargets []string, chartRel *ChartRel) string {
 }
 
 func SlideRelationshipsWithLayout(layoutTarget string, imageTargets []string, chartRel *ChartRel) string {
+	return SlideRelationshipsWithLayoutAndNotes(layoutTarget, imageTargets, chartRel, "")
+}
+
+func SlideRelationshipsWithLayoutAndNotes(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="` + Escape(layoutTarget) + `"/>`)
+	maxRID := 1
 	for i, target := range imageTargets {
 		rid := i + 2
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, rid, Escape(target)))
+		if rid > maxRID {
+			maxRID = rid
+		}
 	}
 	if chartRel != nil {
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="%s"/>`,
 			Escape(chartRel.RID),
 			Escape(chartRel.Target),
+		))
+		if rid := ridNumber(chartRel.RID); rid > maxRID {
+			maxRID = rid
+		}
+	}
+	if strings.TrimSpace(notesTarget) != "" {
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="%s"/>`,
+			maxRID+1,
+			Escape(notesTarget),
 		))
 	}
 	b.WriteString(`
@@ -166,4 +213,22 @@ func normalizeSlideLayoutMode(layout string) string {
 	default:
 		return slideLayoutTitleAndContent
 	}
+}
+
+func shapeAnchorID(shapeIDs []int, shapeIndex int) int {
+	if shapeIndex <= 0 || shapeIndex > len(shapeIDs) {
+		return 0
+	}
+	return shapeIDs[shapeIndex-1]
+}
+
+func ridNumber(rid string) int {
+	if !strings.HasPrefix(rid, "rId") {
+		return 0
+	}
+	n, err := strconv.Atoi(strings.TrimPrefix(rid, "rId"))
+	if err != nil {
+		return 0
+	}
+	return n
 }

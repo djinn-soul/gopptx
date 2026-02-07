@@ -1,7 +1,6 @@
 package pptx
 
 import (
-	"bufio"
 	"fmt"
 	"regexp"
 	"strings"
@@ -21,77 +20,16 @@ type parsedMarkdownBullet struct {
 // - "-", "*", "+" bullet lines become bullet points
 // - numbered lines like "1. item" become bullet points
 // - "---" ends the current slide
+// - GFM tables are mapped to native table elements
+// - fenced code blocks are rendered as no-bullet code paragraphs
+// - fenced mermaid blocks are converted to placeholder shapes
+// - blockquotes are parsed into slide speaker notes
 func SlidesFromMarkdown(markdown string) ([]SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
 		return nil, fmt.Errorf("markdown content cannot be empty")
 	}
-
-	scanner := bufio.NewScanner(strings.NewReader(markdown))
-	var slides []SlideContent
-	var current *SlideContent
-	lineNumber := 0
-
-	flushCurrent := func() {
-		if current != nil {
-			slides = append(slides, *current)
-			current = nil
-		}
-	}
-
-	for scanner.Scan() {
-		lineNumber++
-		line := strings.TrimSpace(scanner.Text())
-
-		if line == "" {
-			continue
-		}
-		if line == "---" {
-			if current == nil {
-				return nil, fmt.Errorf("line %d: slide separator found before any slide", lineNumber)
-			}
-			flushCurrent()
-			continue
-		}
-		if strings.HasPrefix(line, "# ") {
-			title := strings.TrimSpace(strings.TrimPrefix(line, "# "))
-			if title == "" {
-				return nil, fmt.Errorf("line %d: slide title cannot be empty", lineNumber)
-			}
-			flushCurrent()
-			slide := NewSlide(title)
-			current = &slide
-			continue
-		}
-		if strings.HasPrefix(line, "## ") {
-			if current == nil {
-				return nil, fmt.Errorf("line %d: content found before first slide title", lineNumber)
-			}
-			appendMarkdownBullet(current, strings.TrimSpace(strings.TrimPrefix(line, "## ")), defaultTextParagraphStyle())
-			continue
-		}
-
-		bullet, ok := parseBulletLine(line)
-		if !ok {
-			bullet = parsedMarkdownBullet{
-				text:  line,
-				style: defaultTextParagraphStyle(),
-			}
-		}
-		if current == nil {
-			return nil, fmt.Errorf("line %d: content found before first slide title", lineNumber)
-		}
-		appendMarkdownBullet(current, bullet.text, bullet.style)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	flushCurrent()
-
-	if len(slides) == 0 {
-		return nil, fmt.Errorf("markdown did not produce any slides")
-	}
-	return slides, nil
+	parser := newMarkdownParser(markdown)
+	return parser.parse()
 }
 
 func parseBulletLine(line string) (parsedMarkdownBullet, bool) {

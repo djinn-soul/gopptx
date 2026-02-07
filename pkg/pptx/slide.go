@@ -12,7 +12,10 @@ type SlideContent struct {
 	Bullets            []string
 	BulletRuns         [][]TextRun
 	BulletStyles       []TextParagraphStyle
+	Notes              string
 	Images             []Image
+	Shapes             []Shape
+	Connectors         []Connector
 	Table              *Table
 	Chart              *BarChart
 	BarHorizontal      *BarHorizontalChart
@@ -83,6 +86,9 @@ func validateSlide(s SlideContent, index int) error {
 		if err := validateImage(image, index, imageIndex+1); err != nil {
 			return err
 		}
+	}
+	if err := validateSlideDrawings(s, index); err != nil {
+		return err
 	}
 	if s.Table != nil {
 		if err := validateTable(*s.Table, index); err != nil {

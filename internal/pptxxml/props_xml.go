@@ -20,7 +20,7 @@ func CoreProperties(title string) string {
 }
 
 // AppProperties renders docProps/app.xml.
-func AppProperties(slideCount int) string {
+func AppProperties(slideCount int, notesCount int) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
 <TotalTime>0</TotalTime>
@@ -29,7 +29,7 @@ func AppProperties(slideCount int) string {
 <PresentationFormat>On-screen Show (4:3)</PresentationFormat>
 <Paragraphs>0</Paragraphs>
 <Slides>%d</Slides>
-<Notes>0</Notes>
+<Notes>%d</Notes>
 <HiddenSlides>0</HiddenSlides>
 <MMClips>0</MMClips>
 <ScaleCrop>false</ScaleCrop>
@@ -37,5 +37,5 @@ func AppProperties(slideCount int) string {
 <SharedDoc>false</SharedDoc>
 <HyperlinksChanged>false</HyperlinksChanged>
 <AppVersion>1.0000</AppVersion>
-</Properties>`, slideCount)
+</Properties>`, slideCount, notesCount)
 }

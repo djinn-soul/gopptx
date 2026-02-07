@@ -74,14 +74,17 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 	}
 	chartParts := buildChartParts(slides)
 	chartBySlide := chartPartBySlide(chartParts)
+	notesParts := buildRenderedNotesParts(slides)
+	notesTargets := notesTargetBySlide(notesParts)
+	hasNotes := len(notesParts) > 0
 
 	files := []struct {
 		name    string
 		content string
 	}{
-		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions(), len(chartParts))},
+		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions(), len(chartParts), notesSlideNumbers(notesParts), hasNotes)},
 		{"_rels/.rels", pptxxml.RootRelationships()},
-		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount)},
+		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes)},
 		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount)},
 		{"ppt/slideLayouts/slideLayout1.xml", pptxxml.SlideLayoutTitleAndContent()},
 		{"ppt/slideLayouts/_rels/slideLayout1.xml.rels", pptxxml.SlideLayoutRelationships()},
@@ -99,7 +102,19 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		{"ppt/slideMasters/_rels/slideMaster1.xml.rels", pptxxml.SlideMasterRelationships()},
 		{"ppt/theme/theme1.xml", pptxxml.Theme()},
 		{"docProps/core.xml", pptxxml.CoreProperties(title)},
-		{"docProps/app.xml", pptxxml.AppProperties(slideCount)},
+		{"docProps/app.xml", pptxxml.AppProperties(slideCount, len(notesParts))},
+	}
+	if hasNotes {
+		files = append(files,
+			struct {
+				name    string
+				content string
+			}{"ppt/notesMasters/notesMaster1.xml", pptxxml.NotesMaster()},
+			struct {
+				name    string
+				content string
+			}{"ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships()},
+		)
 	}
 
 	for _, item := range files {
@@ -112,6 +127,9 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		return err
 	}
 	if err := writeChartFiles(zw, chartParts); err != nil {
+		return err
+	}
+	if err := writeNotesFiles(zw, notesParts); err != nil {
 		return err
 	}
 
@@ -204,6 +222,8 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 
 		bulletStyles := toXMLBulletParagraphStyles(slide.BulletStyles)
 		bulletRuns := toXMLTextRunRows(slide.BulletRuns)
+		shapeSpecs := toXMLShapeSpecs(slide.Shapes)
+		connectorSpecs := toXMLConnectorSpecs(slide.Connectors)
 		slideXML := pptxxml.SlideWithLayout(
 			slideLayoutXMLMode(slide.Layout),
 			slide.Title,
@@ -213,6 +233,8 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			tableSpec,
 			chartFrame,
 			imageRefs,
+			shapeSpecs,
+			connectorSpecs,
 		)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {
@@ -220,7 +242,16 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		}
 
 		relsPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", slideNumber)
-		if err := writeFile(zw, relsPath, pptxxml.SlideRelationshipsWithLayout(slideLayoutTarget(slide.Layout), imageTargets, chartRel)); err != nil {
+		if err := writeFile(
+			zw,
+			relsPath,
+			pptxxml.SlideRelationshipsWithLayoutAndNotes(
+				slideLayoutTarget(slide.Layout),
+				imageTargets,
+				chartRel,
+				notesTargets[slideNumber],
+			),
+		); err != nil {
 			return err
 		}
 	}
@@ -249,65 +280,4 @@ func writeMediaFiles(zw *zip.Writer, catalog *mediaCatalog) error {
 		}
 	}
 	return nil
-}
-
-func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {
-	if border == nil {
-		return nil
-	}
-	return &pptxxml.TableCellBorderSpec{
-		Width: border.widthEMU(),
-		Color: normalizeHexColor(border.Color),
-		Dash:  normalizeTableBorderDash(border.Dash),
-	}
-}
-
-func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
-	if len(rows) == 0 {
-		return nil
-	}
-	out := make([][]pptxxml.TextRunSpec, len(rows))
-	for i := range rows {
-		if len(rows[i]) == 0 {
-			continue
-		}
-		runs := make([]pptxxml.TextRunSpec, 0, len(rows[i]))
-		for _, run := range rows[i] {
-			runs = append(runs, pptxxml.TextRunSpec{
-				Text:          run.Text,
-				Bold:          run.Bold,
-				Italic:        run.Italic,
-				Underline:     run.Underline,
-				Strikethrough: run.Strikethrough,
-				Subscript:     run.Subscript,
-				Superscript:   run.Superscript,
-				Color:         normalizeHexColor(run.Color),
-				Highlight:     normalizeHexColor(run.Highlight),
-				Font:          run.Font,
-				SizePt:        run.SizePt,
-				Code:          run.Code,
-			})
-		}
-		out[i] = runs
-	}
-	return out
-}
-
-func toXMLBulletParagraphStyles(styles []TextParagraphStyle) []pptxxml.BulletParagraphSpec {
-	if len(styles) == 0 {
-		return nil
-	}
-	out := make([]pptxxml.BulletParagraphSpec, len(styles))
-	for i, style := range styles {
-		out[i] = pptxxml.BulletParagraphSpec{
-			Align:          normalizeTextAlign(style.Align),
-			SpaceBeforePt:  style.SpaceBeforePt,
-			SpaceAfterPt:   style.SpaceAfterPt,
-			LineSpacingPct: style.LineSpacingPct,
-			BulletStyle:    normalizeBulletStyle(style.BulletStyle),
-			BulletChar:     style.BulletChar,
-			Level:          style.Level,
-		}
-	}
-	return out
 }
