@@ -261,14 +261,18 @@ func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
 		runs := make([]pptxxml.TextRunSpec, 0, len(rows[i]))
 		for _, run := range rows[i] {
 			runs = append(runs, pptxxml.TextRunSpec{
-				Text:      run.Text,
-				Bold:      run.Bold,
-				Italic:    run.Italic,
-				Underline: run.Underline,
-				Color:     normalizeHexColor(run.Color),
-				Font:      run.Font,
-				SizePt:    run.SizePt,
-				Code:      run.Code,
+				Text:          run.Text,
+				Bold:          run.Bold,
+				Italic:        run.Italic,
+				Underline:     run.Underline,
+				Strikethrough: run.Strikethrough,
+				Subscript:     run.Subscript,
+				Superscript:   run.Superscript,
+				Color:         normalizeHexColor(run.Color),
+				Highlight:     normalizeHexColor(run.Highlight),
+				Font:          run.Font,
+				SizePt:        run.SizePt,
+				Code:          run.Code,
 			})
 		}
 		out[i] = runs

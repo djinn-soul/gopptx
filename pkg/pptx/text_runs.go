@@ -4,14 +4,18 @@ import "strings"
 
 // TextRun represents one inline text segment with optional formatting.
 type TextRun struct {
-	Text      string
-	Bold      bool
-	Italic    bool
-	Underline bool
-	Color     string
-	Font      string
-	SizePt    int
-	Code      bool
+	Text          string
+	Bold          bool
+	Italic        bool
+	Underline     bool
+	Strikethrough bool
+	Subscript     bool
+	Superscript   bool
+	Color         string
+	Highlight     string
+	Font          string
+	SizePt        int
+	Code          bool
 }
 
 // NewTextRun creates one text run with plain styling.
@@ -37,9 +41,39 @@ func (r TextRun) WithUnderline(enabled bool) TextRun {
 	return r
 }
 
+// WithStrikethrough sets strikethrough style for this run.
+func (r TextRun) WithStrikethrough(enabled bool) TextRun {
+	r.Strikethrough = enabled
+	return r
+}
+
+// WithSubscript sets subscript baseline for this run.
+func (r TextRun) WithSubscript(enabled bool) TextRun {
+	r.Subscript = enabled
+	if enabled {
+		r.Superscript = false
+	}
+	return r
+}
+
+// WithSuperscript sets superscript baseline for this run.
+func (r TextRun) WithSuperscript(enabled bool) TextRun {
+	r.Superscript = enabled
+	if enabled {
+		r.Subscript = false
+	}
+	return r
+}
+
 // WithColor sets RGB text color for this run.
 func (r TextRun) WithColor(color string) TextRun {
 	r.Color = normalizeHexColor(color)
+	return r
+}
+
+// WithHighlight sets RGB highlight color for this run.
+func (r TextRun) WithHighlight(color string) TextRun {
+	r.Highlight = normalizeHexColor(color)
 	return r
 }
 
@@ -89,14 +123,18 @@ func normalizeTextRuns(runs []TextRun) []TextRun {
 			continue
 		}
 		out = append(out, TextRun{
-			Text:      run.Text,
-			Bold:      run.Bold,
-			Italic:    run.Italic,
-			Underline: run.Underline,
-			Color:     normalizeHexColor(run.Color),
-			Font:      strings.TrimSpace(run.Font),
-			SizePt:    run.SizePt,
-			Code:      run.Code,
+			Text:          run.Text,
+			Bold:          run.Bold,
+			Italic:        run.Italic,
+			Underline:     run.Underline,
+			Strikethrough: run.Strikethrough,
+			Subscript:     run.Subscript,
+			Superscript:   run.Superscript,
+			Color:         normalizeHexColor(run.Color),
+			Highlight:     normalizeHexColor(run.Highlight),
+			Font:          strings.TrimSpace(run.Font),
+			SizePt:        run.SizePt,
+			Code:          run.Code,
 		})
 	}
 	if len(out) == 0 {

@@ -27,6 +27,12 @@ func validateSlideTextRuns(s SlideContent, slideIndex int) error {
 			if run.Color != "" && !isHexColor(run.Color) {
 				return fmt.Errorf("slide %d bullet %d run %d color must be 6-digit RGB hex", slideIndex, bulletIndex+1, runIndex+1)
 			}
+			if run.Highlight != "" && !isHexColor(run.Highlight) {
+				return fmt.Errorf("slide %d bullet %d run %d highlight must be 6-digit RGB hex", slideIndex, bulletIndex+1, runIndex+1)
+			}
+			if run.Subscript && run.Superscript {
+				return fmt.Errorf("slide %d bullet %d run %d cannot be both subscript and superscript", slideIndex, bulletIndex+1, runIndex+1)
+			}
 		}
 	}
 	return nil

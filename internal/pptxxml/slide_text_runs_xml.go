@@ -9,14 +9,18 @@ const defaultBulletRunSize = 2800
 
 // TextRunSpec describes one rich text run in a bullet paragraph.
 type TextRunSpec struct {
-	Text      string
-	Bold      bool
-	Italic    bool
-	Underline bool
-	Color     string
-	Font      string
-	SizePt    int
-	Code      bool
+	Text          string
+	Bold          bool
+	Italic        bool
+	Underline     bool
+	Strikethrough bool
+	Subscript     bool
+	Superscript   bool
+	Color         string
+	Highlight     string
+	Font          string
+	SizePt        int
+	Code          bool
 }
 
 func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
@@ -54,7 +58,22 @@ func richTextRun(run TextRunSpec) string {
 	b.WriteString(boolToFlag(run.Italic))
 	b.WriteString(`" u="`)
 	b.WriteString(runUnderlineValue(run.Underline))
-	b.WriteString(`" dirty="0">`)
+	b.WriteString(`"`)
+	if run.Strikethrough {
+		b.WriteString(` strike="sngStrike"`)
+	}
+	if run.Subscript {
+		b.WriteString(` baseline="-25000"`)
+	} else if run.Superscript {
+		b.WriteString(` baseline="30000"`)
+	}
+	b.WriteString(` dirty="0">`)
+
+	if highlight := strings.TrimSpace(run.Highlight); highlight != "" {
+		b.WriteString(`<a:highlight><a:srgbClr val="`)
+		b.WriteString(Escape(highlight))
+		b.WriteString(`"/></a:highlight>`)
+	}
 
 	if color := strings.TrimSpace(run.Color); color != "" {
 		b.WriteString(`<a:solidFill><a:srgbClr val="`)

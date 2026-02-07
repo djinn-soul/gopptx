@@ -19,8 +19,8 @@
 - Per-side border dash styles (`solid|dash|dot|dashDot|lgDash`)
 
 ## Active parity backlog
-1. Next parity target (to choose):
-- Expand slide surface parity beyond layout selection (placeholder-level controls).
+1. Add fixture parity checks for styled bullet and enhanced-text decks from `ppt-rs` examples.
+2. Expand slide surface parity beyond layout selection (placeholder-level controls).
 
 ## Completed recently
 1. `StockHLC` / `StockOHLC` visual parity enhancement:
@@ -99,3 +99,16 @@
 - Extended OOXML paragraph rendering in `internal/pptxxml/slide_text_paragraph_xml.go` for `buAutoNum`, `buChar`, `buNone`, and level-based indentation.
 - Added integration coverage in `pkg/pptx/bullet_styles_test.go`.
 - Updated markdown ordered-list parsing in `pkg/pptx/markdown.go` to emit numbered bullet style.
+
+11. Text enhancements parity slice:
+- Extended `TextRun` API in `pkg/pptx/text_runs.go`:
+- `WithStrikethrough`, `WithHighlight`, `WithSubscript`, `WithSuperscript`
+- Added ppt-rs-comparable run-size presets in `pkg/pptx/text_size_presets.go`.
+- Added strict validation in `pkg/pptx/text_runs_validation.go`:
+- highlight color must be RGB hex
+- subscript + superscript cannot both be true
+- Extended OOXML run rendering in `internal/pptxxml/slide_text_runs_xml.go`:
+- `strike="sngStrike"`
+- `baseline="-25000"` / `baseline="30000"`
+- `<a:highlight><a:srgbClr .../></a:highlight>`
+- Added integration coverage in `pkg/pptx/text_runs_test.go`.
