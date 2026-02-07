@@ -114,7 +114,10 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 
 		var tableSpec *pptxxml.TableSpec
 		if slide.Table != nil {
-			styledRows := tableRowsForRender(*slide.Table)
+			styledRows, err := tableRowsWithMerges(*slide.Table, slideNumber)
+			if err != nil {
+				return err
+			}
 			rows := make([][]string, 0, len(styledRows))
 			styledSpecRows := make([][]pptxxml.TableCellSpec, 0, len(styledRows))
 			for _, srcRow := range styledRows {
@@ -129,6 +132,10 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 						BackgroundColor: cell.BackgroundColor,
 						Align:           cell.Align,
 						VAlign:          cell.VAlign,
+						RowSpan:         cell.RowSpan,
+						ColSpan:         cell.ColSpan,
+						VMerge:          cell.VMerge,
+						HMerge:          cell.HMerge,
 						BorderColor:     cell.BorderColor,
 						BorderWidth:     tableBorderWidthEMU(cell.BorderWidthPt),
 						BorderLeft:      toXMLTableBorderSpec(borders.Left),

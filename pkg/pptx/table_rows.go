@@ -30,7 +30,7 @@ func tableRowsForRender(table Table) [][]TableCell {
 func plainRowToCells(cells []string) []TableCell {
 	row := make([]TableCell, len(cells))
 	for i, text := range cells {
-		row[i] = TableCell{Text: text}
+		row[i] = NewTableCell(text)
 	}
 	return row
 }

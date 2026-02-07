@@ -42,10 +42,19 @@ func validateTable(table Table, slideIndex int) error {
 			}
 		}
 	}
+	if _, err := tableRowsWithMerges(table, slideIndex); err != nil {
+		return err
+	}
 	return nil
 }
 
 func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex int) error {
+	if cell.RowSpan <= 0 {
+		return fmt.Errorf("slide %d table row %d cell %d row span must be >= 1", slideIndex, rowIndex, cellIndex)
+	}
+	if cell.ColSpan <= 0 {
+		return fmt.Errorf("slide %d table row %d cell %d col span must be >= 1", slideIndex, rowIndex, cellIndex)
+	}
 	if color := strings.TrimSpace(cell.BackgroundColor); color != "" && !isHexColor(color) {
 		return fmt.Errorf("slide %d table row %d cell %d background color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex)
 	}

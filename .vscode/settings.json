@@ -53,7 +53,7 @@
         "GOFLAGS": "-buildvcs=false"
     },
     "git.ignoreRebaseWarning": true,
-    "workbench.colorTheme": "Dracula Theme",
+    "workbench.colorTheme": "Default Dark Modern",
     "git.replaceTagsWhenPull": true,
     "telemetry.telemetryLevel": "off",
     "makefile.configureOnOpen": true,

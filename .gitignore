@@ -36,3 +36,6 @@ A*.md
 .gemini/
 gha-creds-*.json
 tasks/
+*pptx
+logs/
+scripts/*.py

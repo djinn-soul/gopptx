@@ -23,6 +23,10 @@ type TableCellSpec struct {
 	BackgroundColor string
 	Align           string
 	VAlign          string
+	RowSpan         int
+	ColSpan         int
+	VMerge          bool
+	HMerge          bool
 	BorderColor     string
 	BorderWidth     int64
 	BorderLeft      *TableCellBorderSpec
@@ -90,7 +94,7 @@ func tableShape(table *TableSpec, shapeID int) string {
 <a:tr h="%d">`, rowHeight))
 		for _, cell := range row {
 			b.WriteString(fmt.Sprintf(`
-<a:tc>
+%s
 <a:txBody>
 <a:bodyPr/>
 <a:lstStyle/>
@@ -103,7 +107,7 @@ func tableShape(table *TableSpec, shapeID int) string {
 </a:p>
 </a:txBody>
 %s
-</a:tc>`, tableCellParagraphPropsXML(cell.Align), tableCellBoldAttr(cell.Bold), Escape(cell.Text), tableCellPropsXML(cell)))
+</a:tc>`, tableCellOpenTag(cell), tableCellParagraphPropsXML(cell.Align), tableCellBoldAttr(cell.Bold), Escape(cell.Text), tableCellPropsXML(cell)))
 		}
 		b.WriteString(`
 </a:tr>`)
@@ -151,6 +155,29 @@ func tableCellParagraphPropsXML(align string) string {
 		return ""
 	}
 	return `<a:pPr algn="` + Escape(align) + `"/>`
+}
+
+func tableCellOpenTag(cell TableCellSpec) string {
+	var b strings.Builder
+	b.WriteString("<a:tc")
+	if cell.RowSpan > 1 {
+		b.WriteString(` rowSpan="`)
+		b.WriteString(fmt.Sprintf("%d", cell.RowSpan))
+		b.WriteString(`"`)
+	}
+	if cell.ColSpan > 1 {
+		b.WriteString(` gridSpan="`)
+		b.WriteString(fmt.Sprintf("%d", cell.ColSpan))
+		b.WriteString(`"`)
+	}
+	if cell.VMerge {
+		b.WriteString(` vMerge="1"`)
+	}
+	if cell.HMerge {
+		b.WriteString(` hMerge="1"`)
+	}
+	b.WriteString(">")
+	return b.String()
 }
 
 func tableCellPropsXML(cell TableCellSpec) string {
