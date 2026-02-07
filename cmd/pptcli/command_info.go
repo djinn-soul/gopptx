@@ -50,16 +50,16 @@ func runInfoCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitIO
 	}
 
-	fmt.Fprintf(stdout, "Path: %s\n", info.path)
-	fmt.Fprintf(stdout, "Size: %d bytes\n", info.size)
-	fmt.Fprintf(stdout, "Modified: %s\n", info.modifiedAt.Format(time.RFC3339))
+	_, _ = fmt.Fprintf(stdout, "Path: %s\n", info.path)
+	_, _ = fmt.Fprintf(stdout, "Size: %d bytes\n", info.size)
+	_, _ = fmt.Fprintf(stdout, "Modified: %s\n", info.modifiedAt.Format(time.RFC3339))
 	if info.isPPTXZip {
-		fmt.Fprintln(stdout, "Format: valid ZIP package")
-		fmt.Fprintf(stdout, "Slide count: %d\n", info.slideCount)
-		fmt.Fprintf(stdout, "Chart parts: %d\n", info.chartCount)
-		fmt.Fprintf(stdout, "Media items: %d\n", info.imageCount)
+		_, _ = fmt.Fprintln(stdout, "Format: valid ZIP package")
+		_, _ = fmt.Fprintf(stdout, "Slide count: %d\n", info.slideCount)
+		_, _ = fmt.Fprintf(stdout, "Chart parts: %d\n", info.chartCount)
+		_, _ = fmt.Fprintf(stdout, "Media items: %d\n", info.imageCount)
 	} else {
-		fmt.Fprintln(stdout, "Format: not a valid PPTX zip package")
+		_, _ = fmt.Fprintln(stdout, "Format: not a valid PPTX zip package")
 	}
 
 	return exitOK
@@ -83,7 +83,7 @@ func inspectPPTX(path string) (pptxFileInfo, error) {
 	if err != nil {
 		return out, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	zr, err := zip.NewReader(file, meta.Size())
 	if err != nil {
@@ -109,5 +109,5 @@ func inspectPPTX(path string) (pptxFileInfo, error) {
 }
 
 func printInfoUsage(w io.Writer) {
-	fmt.Fprintln(w, "Usage: pptcli info -file file.pptx")
+	_, _ = fmt.Fprintln(w, "Usage: pptcli info -file file.pptx")
 }

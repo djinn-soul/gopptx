@@ -122,6 +122,6 @@ func NewRadarFilledChart(categories []string, values []float64) RadarFilledChart
 }
 
 func validateRadarFilledChart(chart RadarFilledChart, slideIndex int) error {
-	chart.RadarChart.RadarStyle = RadarStyleFilled
+	chart.RadarStyle = RadarStyleFilled
 	return validateRadarChart(chart.RadarChart, slideIndex)
 }

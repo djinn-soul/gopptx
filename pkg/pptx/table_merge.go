@@ -126,6 +126,12 @@ func isTableMergePlaceholderCell(cell TableCell) bool {
 	if cell.BorderLeft != nil || cell.BorderRight != nil || cell.BorderTop != nil || cell.BorderBottom != nil {
 		return false
 	}
+	if cell.MarginLeftPt != nil || cell.MarginRightPt != nil || cell.MarginTopPt != nil || cell.MarginBottomPt != nil {
+		return false
+	}
+	if cell.WrapText != nil {
+		return false
+	}
 	if cell.RowSpan != 1 || cell.ColSpan != 1 {
 		return false
 	}

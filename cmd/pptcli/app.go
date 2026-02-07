@@ -34,18 +34,18 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func printRootUsage(w io.Writer) {
-	fmt.Fprintln(w, "goppt CLI")
-	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "Usage:")
-	fmt.Fprintln(w, "  pptcli create   -out file.pptx [-title TITLE] [-slides N]")
-	fmt.Fprintln(w, "  pptcli md2ppt   -in deck.md [-out file.pptx] [-title TITLE]")
-	fmt.Fprintln(w, "  pptcli info     -file file.pptx")
-	fmt.Fprintln(w, "  pptcli validate -file file.pptx")
-	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "Legacy mode:")
-	fmt.Fprintln(w, "  pptcli [-out output.pptx] [-md input.md] [-title TITLE]")
+	_, _ = fmt.Fprintln(w, "goppt CLI")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Usage:")
+	_, _ = fmt.Fprintln(w, "  pptcli create   -out file.pptx [-title TITLE] [-slides N]")
+	_, _ = fmt.Fprintln(w, "  pptcli md2ppt   -in deck.md [-out file.pptx] [-title TITLE]")
+	_, _ = fmt.Fprintln(w, "  pptcli info     -file file.pptx")
+	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "Legacy mode:")
+	_, _ = fmt.Fprintln(w, "  pptcli [-out output.pptx] [-md input.md] [-title TITLE]")
 }
 
 func printErrorf(w io.Writer, format string, args ...any) {
-	fmt.Fprintf(w, "ERROR: "+format+"\n", args...)
+	_, _ = fmt.Fprintf(w, "ERROR: "+format+"\n", args...)
 }

@@ -12,6 +12,7 @@ type TableSpec struct {
 	CX           int64
 	CY           int64
 	ColumnWidths []int64
+	RowHeights   []int64
 	Rows         [][]string
 	StyledRows   [][]TableCellSpec
 }
@@ -23,6 +24,11 @@ type TableCellSpec struct {
 	BackgroundColor string
 	Align           string
 	VAlign          string
+	MarginLeft      *int64
+	MarginRight     *int64
+	MarginTop       *int64
+	MarginBottom    *int64
+	WrapText        *bool
 	RowSpan         int
 	ColSpan         int
 	VMerge          bool
@@ -85,18 +91,15 @@ func tableShape(table *TableSpec, shapeID int) string {
 </a:tblGrid>`)
 
 	rows := tableStyledRows(table)
-	rowHeight := table.CY / int64(len(rows))
-	if rowHeight <= 0 {
-		rowHeight = 1
-	}
-	for _, row := range rows {
+	rowHeights := tableRowHeightsForRender(table, len(rows))
+	for rowIndex, row := range rows {
 		b.WriteString(fmt.Sprintf(`
-<a:tr h="%d">`, rowHeight))
+<a:tr h="%d">`, rowHeights[rowIndex]))
 		for _, cell := range row {
 			b.WriteString(fmt.Sprintf(`
 %s
 <a:txBody>
-<a:bodyPr/>
+%s
 <a:lstStyle/>
 <a:p>
 %s
@@ -107,7 +110,7 @@ func tableShape(table *TableSpec, shapeID int) string {
 </a:p>
 </a:txBody>
 %s
-</a:tc>`, tableCellOpenTag(cell), tableCellParagraphPropsXML(cell.Align), tableCellBoldAttr(cell.Bold), Escape(cell.Text), tableCellPropsXML(cell)))
+</a:tc>`, tableCellOpenTag(cell), tableCellBodyPrXML(cell), tableCellParagraphPropsXML(cell.Align), tableCellBoldAttr(cell.Bold), Escape(cell.Text), tableCellPropsXML(cell)))
 		}
 		b.WriteString(`
 </a:tr>`)
@@ -184,8 +187,9 @@ func tableCellPropsXML(cell TableCellSpec) string {
 	borders := tableCellBordersForRender(cell)
 	hasFill := strings.TrimSpace(cell.BackgroundColor) != ""
 	hasVAlign := strings.TrimSpace(cell.VAlign) != ""
+	hasMargins := hasTableCellMargins(cell)
 	hasBorder := borders.Left != nil || borders.Right != nil || borders.Top != nil || borders.Bottom != nil
-	if !hasFill && !hasVAlign && !hasBorder {
+	if !hasFill && !hasVAlign && !hasMargins && !hasBorder {
 		return "<a:tcPr/>"
 	}
 
@@ -196,6 +200,7 @@ func tableCellPropsXML(cell TableCellSpec) string {
 		b.WriteString(Escape(cell.VAlign))
 		b.WriteString(`"`)
 	}
+	appendTableCellMarginAttrs(&b, cell)
 	b.WriteString(">")
 
 	if hasFill {

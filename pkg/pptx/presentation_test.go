@@ -265,7 +265,7 @@ func readZipFile(t *testing.T, zr *zip.Reader, name string) string {
 		if err != nil {
 			t.Fatalf("open %s: %v", name, err)
 		}
-		defer r.Close()
+		defer func() { _ = r.Close() }()
 		buf := new(bytes.Buffer)
 		if _, err := buf.ReadFrom(r); err != nil {
 			t.Fatalf("read %s: %v", name, err)

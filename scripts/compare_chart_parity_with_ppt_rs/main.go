@@ -145,7 +145,7 @@ func readZipFile(zr *zip.Reader, name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		defer r.Close()
+		defer func() { _ = r.Close() }()
 		buf := new(bytes.Buffer)
 		if _, err := buf.ReadFrom(r); err != nil {
 			return "", err

@@ -2,7 +2,6 @@ package pptx
 
 import (
 	"fmt"
-	"path"
 	"strings"
 )
 
@@ -201,13 +200,4 @@ func validateEditorSlideContent(slide SlideContent) error {
 		return err
 	}
 	return nil
-}
-
-func normalizeSlideRelationshipTarget(slidePart string, target string) string {
-	clean := strings.TrimSpace(strings.ReplaceAll(target, "\\", "/"))
-	if strings.HasPrefix(clean, "/") {
-		return canonicalPartPath(strings.TrimPrefix(clean, "/"))
-	}
-	base := path.Dir(slidePart)
-	return canonicalPartPath(path.Clean(path.Join(base, clean)))
 }

@@ -165,3 +165,16 @@
 - `MergeFromFile` / `MergeFromEditor`
 - Added round-trip save pipeline preserving untouched package parts while rewriting slide list/relationships/content-types entries.
 - Added fixture-backed regression tests in `pkg/pptx/editor_test.go` for open/edit/save, merge, preservation, and corruption handling.
+
+17. Advanced table controls + parity reporting slice:
+- Added explicit row-height controls via `Table.WithRowHeights([]int64)` with strict validation.
+- Added per-cell text layout controls in `TableCell`:
+- `WithMarginsPt`
+- `WithMarginLeftPt` / `WithMarginRightPt` / `WithMarginTopPt` / `WithMarginBottomPt`
+- `WithWrap(bool)`
+- Extended OOXML table rendering to emit:
+- per-row `<a:tr h="...">` from explicit row heights
+- per-cell `marL/marR/marT/marB` on `<a:tcPr>`
+- per-cell wrap mode on `<a:bodyPr wrap="...">`
+- Added integration validation coverage in `pkg/pptx/table_alignment_border_test.go` for row heights, margins, wrap output, and invalid margin/row-height cases.
+- Added deterministic table parity report pipeline in `scripts/compare_table_parity_with_ppt_rs/main.go` with generated output at `reports/table_parity_report.md`.

@@ -64,10 +64,10 @@ func runMD2PPTCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitIO
 	}
 
-	fmt.Fprintf(stdout, "OK: wrote %s from %s (%d slide(s))\n", strings.TrimSpace(outPath), inPath, len(slides))
+	_, _ = fmt.Fprintf(stdout, "OK: wrote %s from %s (%d slide(s))\n", strings.TrimSpace(outPath), inPath, len(slides))
 	return exitOK
 }
 
 func printMD2PPTUsage(w io.Writer) {
-	fmt.Fprintln(w, "Usage: pptcli md2ppt -in deck.md [-out file.pptx] [-title TITLE]")
+	_, _ = fmt.Fprintln(w, "Usage: pptcli md2ppt -in deck.md [-out file.pptx] [-title TITLE]")
 }

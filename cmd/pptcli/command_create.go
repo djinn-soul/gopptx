@@ -41,10 +41,10 @@ func runCreateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitIO
 	}
 
-	fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), slideCount)
+	_, _ = fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), slideCount)
 	return exitOK
 }
 
 func printCreateUsage(w io.Writer) {
-	fmt.Fprintln(w, "Usage: pptcli create -out file.pptx [-title TITLE] [-slides N]")
+	_, _ = fmt.Fprintln(w, "Usage: pptcli create -out file.pptx [-title TITLE] [-slides N]")
 }

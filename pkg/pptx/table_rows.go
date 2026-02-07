@@ -45,6 +45,17 @@ func copyTableRows(rows [][]TableCell) [][]TableCell {
 
 func copyTableCells(cells []TableCell) []TableCell {
 	row := make([]TableCell, len(cells))
-	copy(row, cells)
+	for i := range cells {
+		row[i] = cells[i]
+		row[i].BorderLeft = cloneTableCellBorder(cells[i].BorderLeft)
+		row[i].BorderRight = cloneTableCellBorder(cells[i].BorderRight)
+		row[i].BorderTop = cloneTableCellBorder(cells[i].BorderTop)
+		row[i].BorderBottom = cloneTableCellBorder(cells[i].BorderBottom)
+		row[i].MarginLeftPt = cloneFloat64Pointer(cells[i].MarginLeftPt)
+		row[i].MarginRightPt = cloneFloat64Pointer(cells[i].MarginRightPt)
+		row[i].MarginTopPt = cloneFloat64Pointer(cells[i].MarginTopPt)
+		row[i].MarginBottomPt = cloneFloat64Pointer(cells[i].MarginBottomPt)
+		row[i].WrapText = cloneBoolPointer(cells[i].WrapText)
+	}
 	return row
 }

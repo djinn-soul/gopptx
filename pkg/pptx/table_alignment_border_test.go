@@ -3,6 +3,7 @@ package pptx
 import (
 	"archive/zip"
 	"bytes"
+	"math"
 	"strings"
 	"testing"
 )
@@ -192,5 +193,92 @@ func TestCreateWithSlidesRejectsStyledTableInvalidBorderDash(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "left border dash style must be one of solid|dash|dot|dashDot|lgDash") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCreateWithSlidesEmbedsTableRowHeightsMarginsAndWrap(t *testing.T) {
+	table := NewTable([]int64{2743400, 2743400}).
+		AddStyledRow([]TableCell{
+			NewTableCell("No wrap").
+				WithMarginsPt(1.0).
+				WithWrap(false),
+			NewTableCell("Wrap enabled").
+				WithMarginLeftPt(0.5).
+				WithMarginRightPt(0.5).
+				WithWrap(true),
+		}).
+		AddRow([]string{"R2C1", "R2C2"}).
+		WithRowHeights([]int64{500000, 650000})
+
+	data, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Advanced Table").WithTable(table)})
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	checks := []string{
+		`<a:tr h="500000">`,
+		`<a:tr h="650000">`,
+		`<a:bodyPr wrap="none"/>`,
+		`<a:bodyPr wrap="square"/>`,
+		`<a:tcPr marL="12700" marR="12700" marT="12700" marB="12700">`,
+		`<a:tcPr marL="6350" marR="6350">`,
+	}
+	for _, needle := range checks {
+		if !strings.Contains(slideXML, needle) {
+			t.Fatalf("expected %q in table XML", needle)
+		}
+	}
+}
+
+func TestCreateWithSlidesRejectsInvalidTableRowHeightsAndMargins(t *testing.T) {
+	tests := []struct {
+		name  string
+		table Table
+		msg   string
+	}{
+		{
+			name: "row heights count mismatch",
+			table: NewTable([]int64{2000000}).
+				AddRow([]string{"A"}).
+				WithRowHeights([]int64{200000, 300000}),
+			msg: "row heights count",
+		},
+		{
+			name: "row height must be positive",
+			table: NewTable([]int64{2000000}).
+				AddRow([]string{"A"}).
+				WithRowHeights([]int64{0}),
+			msg: "height must be > 0",
+		},
+		{
+			name: "negative margin",
+			table: NewTable([]int64{2000000}).
+				AddStyledRow([]TableCell{NewTableCell("A").WithMarginLeftPt(-1)}),
+			msg: "left margin must be >= 0",
+		},
+		{
+			name: "non-finite margin",
+			table: NewTable([]int64{2000000}).
+				AddStyledRow([]TableCell{NewTableCell("A").WithMarginTopPt(math.NaN())}),
+			msg: "top margin must be finite",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Invalid Advanced Table").WithTable(tc.table)})
+			if err == nil {
+				t.Fatalf("expected validation error")
+			}
+			if !strings.Contains(err.Error(), tc.msg) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
 	}
 }

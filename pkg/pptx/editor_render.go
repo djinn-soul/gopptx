@@ -56,6 +56,11 @@ func renderEditorTableSpec(slide SlideContent, slideNumber int) (*pptxxml.TableS
 				BackgroundColor: cell.BackgroundColor,
 				Align:           cell.Align,
 				VAlign:          cell.VAlign,
+				MarginLeft:      tableMarginEMU(cell.MarginLeftPt),
+				MarginRight:     tableMarginEMU(cell.MarginRightPt),
+				MarginTop:       tableMarginEMU(cell.MarginTopPt),
+				MarginBottom:    tableMarginEMU(cell.MarginBottomPt),
+				WrapText:        cloneBoolPointer(cell.WrapText),
 				RowSpan:         cell.RowSpan,
 				ColSpan:         cell.ColSpan,
 				VMerge:          cell.VMerge,
@@ -74,12 +79,15 @@ func renderEditorTableSpec(slide SlideContent, slideNumber int) (*pptxxml.TableS
 
 	columnWidths := make([]int64, len(slide.Table.ColumnWidths))
 	copy(columnWidths, slide.Table.ColumnWidths)
+	rowHeights := make([]int64, len(slide.Table.RowHeights))
+	copy(rowHeights, slide.Table.RowHeights)
 	return &pptxxml.TableSpec{
 		X:            slide.Table.X,
 		Y:            slide.Table.Y,
 		CX:           slide.Table.CX,
 		CY:           slide.Table.CY,
 		ColumnWidths: columnWidths,
+		RowHeights:   rowHeights,
 		Rows:         rows,
 		StyledRows:   specRows,
 	}, nil

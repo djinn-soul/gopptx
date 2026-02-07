@@ -82,7 +82,7 @@ func loadPackageParts(filePath string) (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	zr, err := zip.NewReader(file, meta.Size())
 	if err != nil {
@@ -155,12 +155,8 @@ func resolveSlideReferences(
 
 func normalizePresentationTarget(target string) string {
 	clean := strings.TrimSpace(strings.ReplaceAll(target, "\\", "/"))
-	if strings.HasPrefix(clean, "/") {
-		clean = strings.TrimPrefix(clean, "/")
-	}
-	if strings.HasPrefix(clean, "ppt/") {
-		clean = strings.TrimPrefix(clean, "ppt/")
-	}
+	clean = strings.TrimPrefix(clean, "/")
+	clean = strings.TrimPrefix(clean, "ppt/")
 	return path.Clean(clean)
 }
 

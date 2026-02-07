@@ -51,12 +51,12 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(issues) > 0 {
 		sort.Strings(issues)
 		for _, issue := range issues {
-			fmt.Fprintf(stderr, "ERROR: %s\n", issue)
+			_, _ = fmt.Fprintf(stderr, "ERROR: %s\n", issue)
 		}
 		return exitValidate
 	}
 
-	fmt.Fprintln(stdout, "OK: validation passed")
+	_, _ = fmt.Fprintln(stdout, "OK: validation passed")
 	return exitOK
 }
 
@@ -73,7 +73,7 @@ func validatePPTXFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	zr, err := zip.NewReader(file, meta.Size())
 	if err != nil {
@@ -117,7 +117,7 @@ func validateEntryXML(entry *zip.File) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
@@ -140,5 +140,5 @@ func validateEntryXML(entry *zip.File) error {
 }
 
 func printValidateUsage(w io.Writer) {
-	fmt.Fprintln(w, "Usage: pptcli validate -file file.pptx")
+	_, _ = fmt.Fprintln(w, "Usage: pptcli validate -file file.pptx")
 }

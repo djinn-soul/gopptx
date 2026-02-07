@@ -58,7 +58,7 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 			printErrorf(stderr, "failed to write %q: %v", outPath, err)
 			return exitIO
 		}
-		fmt.Fprintf(stdout, "OK: wrote %s from %s (%d slide(s))\n", strings.TrimSpace(outPath), markdownPath, len(slides))
+		_, _ = fmt.Fprintf(stdout, "OK: wrote %s from %s (%d slide(s))\n", strings.TrimSpace(outPath), markdownPath, len(slides))
 		return exitOK
 	}
 
@@ -75,6 +75,6 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 		printErrorf(stderr, "failed to write %q: %v", outPath, err)
 		return exitIO
 	}
-	fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), len(slides))
+	_, _ = fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), len(slides))
 	return exitOK
 }

@@ -45,6 +45,7 @@ type Table struct {
 	CX           int64
 	CY           int64
 	ColumnWidths []int64
+	RowHeights   []int64
 	Rows         [][]string
 	StyledRows   [][]TableCell
 	renderRows   [][]TableCell
@@ -60,6 +61,7 @@ func NewTable(columnWidths []int64) Table {
 		CX:           8230200,
 		CY:           3200400,
 		ColumnWidths: widths,
+		RowHeights:   nil,
 		Rows:         make([][]string, 0),
 		StyledRows:   make([][]TableCell, 0),
 		renderRows:   make([][]TableCell, 0),
@@ -100,5 +102,17 @@ func (t Table) Position(x int64, y int64) Table {
 func (t Table) Size(cx int64, cy int64) Table {
 	t.CX = cx
 	t.CY = cy
+	return t
+}
+
+// WithRowHeights sets explicit row heights in EMU. Length must match row count.
+func (t Table) WithRowHeights(heights []int64) Table {
+	if len(heights) == 0 {
+		t.RowHeights = nil
+		return t
+	}
+	out := make([]int64, len(heights))
+	copy(out, heights)
+	t.RowHeights = out
 	return t
 }

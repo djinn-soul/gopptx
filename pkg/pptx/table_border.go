@@ -14,3 +14,14 @@ func tableBorderWidthEMU(widthPt float64) int64 {
 	}
 	return width
 }
+
+func tableMarginEMU(marginPt *float64) *int64 {
+	if marginPt == nil {
+		return nil
+	}
+	value := tableBorderWidthEMU(*marginPt)
+	if *marginPt == 0 {
+		value = 0
+	}
+	return &value
+}

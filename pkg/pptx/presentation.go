@@ -156,6 +156,11 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 						BackgroundColor: cell.BackgroundColor,
 						Align:           cell.Align,
 						VAlign:          cell.VAlign,
+						MarginLeft:      tableMarginEMU(cell.MarginLeftPt),
+						MarginRight:     tableMarginEMU(cell.MarginRightPt),
+						MarginTop:       tableMarginEMU(cell.MarginTopPt),
+						MarginBottom:    tableMarginEMU(cell.MarginBottomPt),
+						WrapText:        cloneBoolPointer(cell.WrapText),
 						RowSpan:         cell.RowSpan,
 						ColSpan:         cell.ColSpan,
 						VMerge:          cell.VMerge,
@@ -173,12 +178,15 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 			columnWidths := make([]int64, len(slide.Table.ColumnWidths))
 			copy(columnWidths, slide.Table.ColumnWidths)
+			rowHeights := make([]int64, len(slide.Table.RowHeights))
+			copy(rowHeights, slide.Table.RowHeights)
 			tableSpec = &pptxxml.TableSpec{
 				X:            slide.Table.X,
 				Y:            slide.Table.Y,
 				CX:           slide.Table.CX,
 				CY:           slide.Table.CY,
 				ColumnWidths: columnWidths,
+				RowHeights:   rowHeights,
 				Rows:         rows,
 				StyledRows:   styledSpecRows,
 			}

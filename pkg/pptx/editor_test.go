@@ -222,7 +222,7 @@ func readZipFileBytes(t *testing.T, zipPath string, entryName string) []byte {
 		if err != nil {
 			t.Fatalf("open zip entry %s: %v", entryName, err)
 		}
-		defer rc.Close()
+		defer func() { _ = rc.Close() }()
 		content, err := io.ReadAll(rc)
 		if err != nil {
 			t.Fatalf("read zip entry %s: %v", entryName, err)

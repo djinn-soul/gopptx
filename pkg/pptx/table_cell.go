@@ -21,6 +21,11 @@ type TableCell struct {
 	BackgroundColor string
 	Align           string
 	VAlign          string
+	MarginLeftPt    *float64
+	MarginRightPt   *float64
+	MarginTopPt     *float64
+	MarginBottomPt  *float64
+	WrapText        *bool
 
 	// Merge model fields.
 	RowSpan int

@@ -26,6 +26,21 @@ func validateTable(table Table, slideIndex int) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("slide %d table must define at least one row", slideIndex)
 	}
+	if len(table.RowHeights) > 0 {
+		if len(table.RowHeights) != len(rows) {
+			return fmt.Errorf(
+				"slide %d table row heights count %d must match row count %d",
+				slideIndex,
+				len(table.RowHeights),
+				len(rows),
+			)
+		}
+		for rowIndex, height := range table.RowHeights {
+			if height <= 0 {
+				return fmt.Errorf("slide %d table row %d height must be > 0", slideIndex, rowIndex+1)
+			}
+		}
+	}
 	for rowIndex, row := range rows {
 		if len(row) != len(table.ColumnWidths) {
 			return fmt.Errorf(
@@ -63,6 +78,18 @@ func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex i
 	}
 	if vAlign := strings.TrimSpace(cell.VAlign); vAlign != "" && !isTableVAlign(vAlign) {
 		return fmt.Errorf("slide %d table row %d cell %d valign must be one of t|ctr|b", slideIndex, rowIndex, cellIndex)
+	}
+	if err := validateTableCellMargin(cell.MarginLeftPt, slideIndex, rowIndex, cellIndex, "left"); err != nil {
+		return err
+	}
+	if err := validateTableCellMargin(cell.MarginRightPt, slideIndex, rowIndex, cellIndex, "right"); err != nil {
+		return err
+	}
+	if err := validateTableCellMargin(cell.MarginTopPt, slideIndex, rowIndex, cellIndex, "top"); err != nil {
+		return err
+	}
+	if err := validateTableCellMargin(cell.MarginBottomPt, slideIndex, rowIndex, cellIndex, "bottom"); err != nil {
+		return err
 	}
 
 	if cell.hasExplicitBorderSides() {
@@ -113,6 +140,31 @@ func validateTableCellBorder(border *TableCellBorder, slideIndex int, rowIndex i
 			rowIndex,
 			cellIndex,
 			fieldPrefix,
+		)
+	}
+	return nil
+}
+
+func validateTableCellMargin(marginPt *float64, slideIndex int, rowIndex int, cellIndex int, side string) error {
+	if marginPt == nil {
+		return nil
+	}
+	if math.IsNaN(*marginPt) || math.IsInf(*marginPt, 0) {
+		return fmt.Errorf(
+			"slide %d table row %d cell %d %s margin must be finite",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			side,
+		)
+	}
+	if *marginPt < 0 {
+		return fmt.Errorf(
+			"slide %d table row %d cell %d %s margin must be >= 0",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			side,
 		)
 	}
 	return nil
