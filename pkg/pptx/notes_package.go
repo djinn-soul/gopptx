@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 func writeNotesFiles(zw *zip.Writer, parts []renderedNotesPart) error {
@@ -27,3 +27,6 @@ func writeNotesFiles(zw *zip.Writer, parts []renderedNotesPart) error {
 	}
 	return nil
 }
+
+
+

@@ -1,4 +1,4 @@
-# goppt Roadmap
+# gopptx Roadmap
 
 ## Current parity status
 - Chart variant parity with `ppt-rs` is implemented for:
@@ -241,3 +241,6 @@
 - Optimized anchor resolution to use shape-local candidate points and squared-distance comparisons (no floating-point cost).
 - Preserved deterministic behavior and backward compatibility with explicit site overrides.
 - Added diagonal-flow parity coverage in `pkg/pptx/connector_auto_sites_test.go` to validate corner-site inference.
+
+
+

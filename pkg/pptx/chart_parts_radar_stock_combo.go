@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/djinn09/goppt/internal/pptxxml"
+import "github.com/djinn09/gopptx/internal/pptxxml"
 
 func slideRadarChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 	if slide.Radar == nil {
@@ -158,3 +158,6 @@ func slideComboChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 		MaxValue:              copyFloat64Pointer(chart.MaxValue),
 	}, true
 }
+
+
+

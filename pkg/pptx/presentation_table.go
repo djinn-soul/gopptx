@@ -1,7 +1,7 @@
 package pptx
 
 import (
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 func buildTableSpec(table Table, slideNumber int) (*pptxxml.TableSpec, error) {
@@ -59,3 +59,6 @@ func buildTableSpec(table Table, slideNumber int) (*pptxxml.TableSpec, error) {
 		StyledRows:   styledSpecRows,
 	}, nil
 }
+
+
+

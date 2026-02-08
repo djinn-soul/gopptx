@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 type tableCase struct {
@@ -231,7 +231,7 @@ func missingTokens(required []string, xml string) []string {
 
 func renderReport(results []tableResult) string {
 	var b strings.Builder
-	b.WriteString("# Table Parity Report (goppt vs ppt-rs)\n\n")
+	b.WriteString("# Table Parity Report (gopptx vs ppt-rs)\n\n")
 	b.WriteString("| Case | Status | Rows (ref/our) | Cols (ref/our) | Missing tokens |\n")
 	b.WriteString("|---|---|---:|---:|---|\n")
 	for _, result := range results {
@@ -264,3 +264,6 @@ func fail(step string, err error) {
 	_, _ = fmt.Fprintf(os.Stderr, "error: %s: %v\n", step, err)
 	os.Exit(1)
 }
+
+
+

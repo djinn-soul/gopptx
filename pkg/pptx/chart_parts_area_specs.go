@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/djinn09/goppt/internal/pptxxml"
+import "github.com/djinn09/gopptx/internal/pptxxml"
 
 func slideAreaChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 	if slide.Area == nil {
@@ -97,3 +97,6 @@ func slideAreaStacked100ChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool)
 		Grouping:              "percentStacked",
 	}, true
 }
+
+
+

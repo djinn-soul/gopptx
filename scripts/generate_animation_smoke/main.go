@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 const (
@@ -34,7 +34,7 @@ func run() error {
 	slides := []pptx.SlideContent{
 		// Slide 1: Title
 		pptx.NewSlide("Animations & Transitions Demo").
-			AddBullet("This presentation demonstrates new features in goppt.").
+			AddBullet("This presentation demonstrates new features in gopptx.").
 			AddBullet("Slide Transitions").
 			AddBullet("Shape Animations"),
 
@@ -84,3 +84,6 @@ func run() error {
 	fmt.Printf("Generated %s\n", path)
 	return nil
 }
+
+
+

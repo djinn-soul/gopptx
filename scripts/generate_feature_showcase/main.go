@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 const (
 	outputDir  = "smoke_samples"
-	outputFile = "goppt_feature_showcase.pptx"
+	outputFile = "gopptx_feature_showcase.pptx"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 		fail("build slides", err)
 	}
 
-	data, err := pptx.CreateWithSlides("goppt Feature Showcase", slides)
+	data, err := pptx.CreateWithSlides("gopptx Feature Showcase", slides)
 	if err != nil {
 		fail("create presentation", err)
 	}
@@ -38,7 +38,7 @@ func main() {
 
 func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 	slides := []pptx.SlideContent{
-		pptx.NewSlide("goppt Feature Showcase").
+		pptx.NewSlide("gopptx Feature Showcase").
 			AddBullet("Chart parity (13 variants)").
 			AddBullet("Slide layouts (title/content, title-only, blank)").
 			AddBullet("Table styling + deep border semantics").
@@ -144,3 +144,6 @@ func fail(step string, err error) {
 	fmt.Fprintf(os.Stderr, "error: %s: %v\n", step, err)
 	os.Exit(1)
 }
+
+
+

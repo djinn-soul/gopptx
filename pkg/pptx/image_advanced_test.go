@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 func TestImageAdvancedSources(t *testing.T) {
@@ -58,3 +58,6 @@ func TestImageAdvancedSources(t *testing.T) {
 	// In a real scenario we'd unzip and check relationships and xml content
 	// using helpers similar to those in parity_fixture_test.go
 }
+
+
+

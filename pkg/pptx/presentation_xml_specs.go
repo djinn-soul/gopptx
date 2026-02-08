@@ -1,7 +1,7 @@
 package pptx
 
 import (
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {
@@ -163,3 +163,6 @@ func toXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.Conne
 	}
 	return specs
 }
+
+
+

@@ -3,7 +3,7 @@ package pptx
 import (
 	"fmt"
 
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget string) (string, string, error) {
@@ -144,3 +144,6 @@ func buildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*Hyperlink]s
 
 	return hyperlinkRIDs, hyperlinks, nextRID
 }
+
+
+

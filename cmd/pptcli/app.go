@@ -34,7 +34,7 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func printRootUsage(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "goppt CLI")
+	_, _ = fmt.Fprintln(w, "gopptx CLI")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Usage:")
 	_, _ = fmt.Fprintln(w, "  pptcli create   -out file.pptx [-title TITLE] [-slides N]")
@@ -49,3 +49,5 @@ func printRootUsage(w io.Writer) {
 func printErrorf(w io.Writer, format string, args ...any) {
 	_, _ = fmt.Fprintf(w, "ERROR: "+format+"\n", args...)
 }
+
+

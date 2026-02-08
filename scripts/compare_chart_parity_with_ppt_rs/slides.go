@@ -1,6 +1,6 @@
 package main
 
-import "github.com/djinn09/goppt/pkg/pptx"
+import "github.com/djinn09/gopptx/pkg/pptx"
 
 func barSlide() pptx.SlideContent {
 	chart := pptx.NewBarChart(
@@ -176,3 +176,6 @@ func comboSlide() pptx.SlideContent {
 	).WithTitle("Combo")
 	return pptx.NewSlide("Combo").WithComboChart(chart)
 }
+
+
+

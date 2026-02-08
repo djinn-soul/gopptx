@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 type chartPart struct {
@@ -89,3 +89,6 @@ func copyFloat64Pointer(value *float64) *float64 {
 	v := *value
 	return &v
 }
+
+
+

@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/djinn09/goppt/internal/pptxxml"
+import "github.com/djinn09/gopptx/internal/pptxxml"
 
 func slideBarChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 	if slide.Chart == nil {
@@ -231,3 +231,6 @@ func slideLineStackedChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 		Grouping:              "stacked",
 	}, true
 }
+
+
+

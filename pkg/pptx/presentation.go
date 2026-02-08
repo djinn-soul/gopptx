@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 // Create builds a valid PPTX with generated slide titles.
@@ -321,3 +321,6 @@ func writeMediaFiles(zw *zip.Writer, catalog *mediaCatalog) error {
 	}
 	return nil
 }
+
+
+

@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 func main() {
@@ -20,9 +20,9 @@ func main() {
 		fail("load ppt-rs reference XML", err)
 	}
 
-	ourXML, err := loadGoPPTXML()
+	ourXML, err := loadGoPPTXXML()
 	if err != nil {
-		fail("generate goppt chart XML", err)
+		fail("generate gopptx chart XML", err)
 	}
 
 	results := compare(referenceXML, ourXML)
@@ -69,7 +69,7 @@ func loadReferenceXML() (map[string]string, error) {
 	return out, nil
 }
 
-func loadGoPPTXML() (map[string]string, error) {
+func loadGoPPTXXML() (map[string]string, error) {
 	out := make(map[string]string, len(chartOrder))
 
 	entries := map[string]pptx.SlideContent{
@@ -216,7 +216,7 @@ func normalizeRequiredTokens(chart string, required []string) []string {
 
 func renderReport(results []compareResult) string {
 	var b strings.Builder
-	b.WriteString("# Chart Parity Report (goppt vs ppt-rs)\n\n")
+	b.WriteString("# Chart Parity Report (gopptx vs ppt-rs)\n\n")
 	b.WriteString("| Chart | Status | Series (ref/our) | Missing tokens |\n")
 	b.WriteString("|---|---|---:|---|\n")
 	for _, r := range results {
@@ -257,3 +257,6 @@ func fail(step string, err error) {
 	fmt.Fprintf(os.Stderr, "error: %s: %v\n", step, err)
 	os.Exit(1)
 }
+
+
+

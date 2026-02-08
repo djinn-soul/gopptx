@@ -366,12 +366,12 @@ func slideAnimationsXML(s SlideContent, shapeIDs []int) string {
 func calculateShapeIDs(s SlideContent) []int {
 	// Shape IDs start at 2 (Title = 2).
 	// If layout has content placeholder (bullets, table, chart), that takes ID 3.
-	// However, goppt's slide_xml.go renders title (ID 2), then body/content (ID 3), then images/charts/tables if mixed?
+	// However, gopptx's slide_xml.go renders title (ID 2), then body/content (ID 3), then images/charts/tables if mixed?
 	// Actually, looking at slide_xml.go SlideWithLayout:
 	// 1. Title (ID 2)
 	// 2. Body/Content (ID 3) - this is for bullets, or if table/chart is the *main* content of the layout.
 	//
-	// In existing goppt logic, NewSlide creates "titleAndContent" layout.
+	// In existing gopptx logic, NewSlide creates "titleAndContent" layout.
 	// - If we add bullets, they go into the body placeholder (ID 3).
 	// - If we add a table/chart via WithTable/WithChart, they might replace the body or be added as separate objects?
 	//
@@ -441,3 +441,5 @@ func calculateShapeIDs(s SlideContent) []int {
 	}
 	return shapeIDs
 }
+
+

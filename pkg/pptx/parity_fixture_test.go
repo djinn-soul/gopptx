@@ -37,7 +37,7 @@ func TestBasicParityFixtureAgainstPptRsSimpleDeck(t *testing.T) {
 		`<a:t>Theme support</a:t>`,
 	}
 	assertContainsTokens(t, "ppt-rs simple fixture", reference, tokens)
-	assertContainsTokens(t, "goppt basic parity deck", ours, tokens)
+	assertContainsTokens(t, "gopptx basic parity deck", ours, tokens)
 }
 
 func TestTextFormattingParityFixtureAgainstPptRsProfessionalDeck(t *testing.T) {
@@ -58,7 +58,7 @@ func TestTextFormattingParityFixtureAgainstPptRsProfessionalDeck(t *testing.T) {
 		`<a:srgbClr val="FF6600"/>`,
 	}
 	assertContainsTokens(t, "ppt-rs professional fixture", reference, tokens)
-	assertContainsTokens(t, "goppt text-format parity deck", ours, tokens)
+	assertContainsTokens(t, "gopptx text-format parity deck", ours, tokens)
 }
 
 func TestBulletStylesParityFixtureAgainstPptRsDeck(t *testing.T) {
@@ -80,7 +80,7 @@ func TestBulletStylesParityFixtureAgainstPptRsDeck(t *testing.T) {
 		`<a:buChar char="`,
 	}
 	assertContainsTokens(t, "ppt-rs bullet fixture", reference, tokens)
-	assertContainsTokens(t, "goppt bullet parity deck", ours, tokens)
+	assertContainsTokens(t, "gopptx bullet parity deck", ours, tokens)
 }
 
 func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T) {
@@ -101,7 +101,7 @@ func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T
 		`<a:buChar char="`,
 	}
 	assertContainsTokens(t, "ppt-rs text-enhancement fixture", reference, tokens)
-	assertContainsTokens(t, "goppt text-enhancement parity deck", ours, tokens)
+	assertContainsTokens(t, "gopptx text-enhancement parity deck", ours, tokens)
 }
 
 func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
@@ -248,3 +248,5 @@ func assertContainsTokens(t *testing.T, label string, xml string, tokens []strin
 		}
 	}
 }
+
+

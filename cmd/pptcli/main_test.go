@@ -138,7 +138,7 @@ func cliBinary(t *testing.T) string {
 	t.Helper()
 
 	cliBuildOnce.Do(func() {
-		tmpDir, err := os.MkdirTemp("", "goppt-pptcli-*")
+		tmpDir, err := os.MkdirTemp("", "gopptx-pptcli-*")
 		if err != nil {
 			cliBuildErr = err
 			return
@@ -165,3 +165,5 @@ func cliBinary(t *testing.T) string {
 	}
 	return cliBinPath
 }
+
+

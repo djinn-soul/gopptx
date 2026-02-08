@@ -118,5 +118,7 @@ func TestTableMergeParityFixtureAgainstPptRs(t *testing.T) {
 		`vMerge="1"`,
 	}
 	assertContainsTokens(t, "ppt-rs merged-cells fixture", reference, tokens)
-	assertContainsTokens(t, "goppt merged-cells parity deck", ours, tokens)
+	assertContainsTokens(t, "gopptx merged-cells parity deck", ours, tokens)
 }
+
+

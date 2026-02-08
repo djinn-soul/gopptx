@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 func main() {
@@ -450,3 +450,6 @@ func generateHyperlinks() ([]byte, error) {
 
 	return pptx.CreateWithSlides("Task 31: Hyperlinks", []pptx.SlideContent{slide})
 }
+
+
+

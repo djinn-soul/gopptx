@@ -1,6 +1,6 @@
 # pptcli
 
-`pptcli` is the command-line entrypoint for generating and validating PPTX files in `goppt`.
+`pptcli` is the command-line entrypoint for generating and validating PPTX files in `gopptx`.
 
 ## Commands
 
@@ -46,3 +46,6 @@ The historical flag-only entrypoint is still supported:
 go run ./cmd/pptcli -out output.pptx
 go run ./cmd/pptcli -md deck.md -title "Deck Title" -out output.pptx
 ```
+
+
+

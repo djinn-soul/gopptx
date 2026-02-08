@@ -100,6 +100,8 @@ func TestSlideLayoutParityFixturesAgainstPptRsLayoutDemo(t *testing.T) {
 		reference := fixtureSlideXML(t, "layout_demo.pptx", tc.referenceSlide)
 		ours := readZipFile(t, zr, tc.generatedSlide)
 		assertContainsTokens(t, "ppt-rs layout fixture "+tc.referenceSlide, reference, tc.tokens)
-		assertContainsTokens(t, "goppt layout parity "+tc.generatedSlide, ours, tc.tokens)
+		assertContainsTokens(t, "gopptx layout parity "+tc.generatedSlide, ours, tc.tokens)
 	}
 }
+
+

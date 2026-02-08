@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 // runLegacyFlags preserves the historical flag-only mode:
@@ -78,3 +78,6 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 	_, _ = fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), len(slides))
 	return exitOK
 }
+
+
+

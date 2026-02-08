@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/djinn09/goppt/internal/pptxxml"
+import "github.com/djinn09/gopptx/internal/pptxxml"
 
 func copyStringSlice(values []string) []string {
 	out := make([]string, len(values))
@@ -24,3 +24,6 @@ func toXMLSeries(series []Series) []pptxxml.ChartSeries {
 	}
 	return out
 }
+
+
+

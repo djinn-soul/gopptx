@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/djinn09/goppt/internal/pptxxml"
+	"github.com/djinn09/gopptx/internal/pptxxml"
 )
 
 type renderedNotesPart struct {
@@ -69,3 +69,6 @@ func notesTargetBySlide(parts []renderedNotesPart) map[int]string {
 	}
 	return targets
 }
+
+
+

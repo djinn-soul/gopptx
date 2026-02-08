@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/djinn09/goppt/pkg/pptx"
+	"github.com/djinn09/gopptx/pkg/pptx"
 )
 
 const outputDir = "smoke_samples"
@@ -159,3 +159,6 @@ func fail(step string, err error) {
 	fmt.Fprintf(os.Stderr, "error: %s: %v\n", step, err)
 	os.Exit(1)
 }
+
+
+
