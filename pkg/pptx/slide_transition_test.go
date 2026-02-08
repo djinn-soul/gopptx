@@ -62,7 +62,7 @@ func TestCreateWithSlidesRejectsUnknownTransition(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected unknown transition validation error")
 	}
-	if !strings.Contains(err.Error(), `transition must be one of none|cut|fade|push|wipe|split|reveal|cover|zoom`) {
+	if !strings.Contains(err.Error(), `unsupported transition type`) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -146,4 +146,40 @@ func loadTransitionParityFixture(t *testing.T) []transitionParityFixtureEntry {
 		t.Fatalf("decode transition fixture %s: %v", path, err)
 	}
 	return entries
+}
+
+func TestTransitionOptions(t *testing.T) {
+	cases := []struct {
+		name      string
+		options   TransitionOptions
+		expectXML string
+	}{
+		{
+			name: "push right auto advance",
+			options: TransitionOptions{
+				Type:                  TransitionPush,
+				Direction:             TransitionDirRight,
+				DisableAdvanceOnClick: true,
+				AdvanceAfterMS:        2000,
+			},
+			expectXML: `<p:transition advClick="0" advTm="2000"><p:push dir="r"/></p:transition>`,
+		},
+		{
+			name: "fade advance on click",
+			options: TransitionOptions{
+				Type: TransitionFade,
+				// DisableAdvanceOnClick default is false (enabled)
+			},
+			expectXML: `<p:transition><p:fade/></p:transition>`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			slideXML := transitionSlideXML(t, NewSlide("Options").WithTransitionOptions(tc.options))
+			if !strings.Contains(slideXML, tc.expectXML) {
+				t.Errorf("expected transition XML %s not found in: %s", tc.expectXML, slideXML)
+			}
+		})
+	}
 }

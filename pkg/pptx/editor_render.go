@@ -11,9 +11,12 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 	if err != nil {
 		return "", "", err
 	}
+	layoutMode := slideLayoutXMLMode(slide.Layout)
+	shapeIDs := calculateShapeIDs(slide)
+	animationsXML := slideAnimationsXML(slide, shapeIDs)
 
 	slideXML := pptxxml.SlideWithLayout(
-		slideLayoutXMLMode(slide.Layout),
+		layoutMode,
 		slide.Title,
 		slide.Bullets,
 		toXMLBulletParagraphStyles(slide.BulletStyles),
@@ -24,6 +27,7 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 		toXMLShapeSpecs(slide.Shapes),
 		toXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 		slideTransitionXML(slide),
+		animationsXML,
 	)
 	relsXML := pptxxml.SlideRelationshipsWithLayoutAndNotes(
 		slideLayoutTarget(slide.Layout),

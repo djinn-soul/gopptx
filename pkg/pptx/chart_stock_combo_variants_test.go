@@ -20,7 +20,7 @@ func TestCreateWithSlidesEmbedsStockHLCChart(t *testing.T) {
 		`<c:v>High</c:v>`,
 		`<c:v>Low</c:v>`,
 		`<c:v>Close</c:v>`,
-		`<c:hiLowLines>`,
+		`<c:hiLowLines/>`,
 	})
 }
 
@@ -52,9 +52,14 @@ func TestCreateWithSlidesEmbedsStockOHLCChart(t *testing.T) {
 		`<c:v>High</c:v>`,
 		`<c:v>Low</c:v>`,
 		`<c:v>Close</c:v>`,
-		`<c:hiLowLines>`,
+		`<c:hiLowLines/>`,
 		`<c:upDownBars>`,
+		`<c:upBars/>`,
+		`<c:downBars/>`,
 	})
+	if strings.Contains(xml, `<c:upBars><c:spPr/></c:upBars>`) || strings.Contains(xml, `<c:downBars><c:spPr/></c:downBars>`) {
+		t.Fatalf("expected stock OHLC bars without inline spPr")
+	}
 }
 
 func TestCreateWithSlidesRejectsInvalidStockOHLCChart(t *testing.T) {

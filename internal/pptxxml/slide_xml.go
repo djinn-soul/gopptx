@@ -42,10 +42,12 @@ const slideContentFooter = `
 </p:spTree>
 </p:cSld>`
 
-const slideFooter = `
+const slideFooterClrMap = `
 <p:clrMapOvr>
 <a:masterClrMapping/>
-</p:clrMapOvr>
+</p:clrMapOvr>`
+
+const slideFooterEnd = `
 </p:sld>`
 
 // SlideWithContent renders a title+bullets slide with optional table, chart, and images.
@@ -58,6 +60,7 @@ func SlideWithContent(
 	chart *ChartFrame,
 	images []ImageRef,
 	transitionXML string,
+	animationsXML string,
 ) string {
 	return SlideWithLayout(
 		slideLayoutTitleAndContent,
@@ -71,6 +74,7 @@ func SlideWithContent(
 		nil,
 		nil,
 		transitionXML,
+		animationsXML,
 	)
 }
 
@@ -87,6 +91,7 @@ func SlideWithLayout(
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
 	transitionXML string,
+	animationsXML string,
 ) string {
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
@@ -148,11 +153,16 @@ func SlideWithLayout(
 		b.WriteString(connectorXML(connector, nextID+i, startShapeID, endShapeID))
 	}
 	b.WriteString(slideContentFooter)
+	b.WriteString(slideFooterClrMap)
 	if tx := strings.TrimSpace(transitionXML); tx != "" {
 		b.WriteString("\n")
 		b.WriteString(tx)
 	}
-	b.WriteString(slideFooter)
+	if ax := strings.TrimSpace(animationsXML); ax != "" {
+		b.WriteString("\n")
+		b.WriteString(ax)
+	}
+	b.WriteString(slideFooterEnd)
 	return b.String()
 }
 

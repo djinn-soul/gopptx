@@ -72,7 +72,7 @@ func TestStockHLCParitySignature(t *testing.T) {
 		`<c:tx><c:v>High</c:v></c:tx>`,
 		`<c:tx><c:v>Low</c:v></c:tx>`,
 		`<c:tx><c:v>Close</c:v></c:tx>`,
-		`<c:hiLowLines>`,
+		`<c:hiLowLines/>`,
 	})
 	if strings.Contains(xml, `<c:upDownBars>`) {
 		t.Fatalf("did not expect up/down bars for HLC")
@@ -94,9 +94,14 @@ func TestStockOHLCParitySignature(t *testing.T) {
 		`<c:tx><c:v>High</c:v></c:tx>`,
 		`<c:tx><c:v>Low</c:v></c:tx>`,
 		`<c:tx><c:v>Close</c:v></c:tx>`,
-		`<c:hiLowLines>`,
+		`<c:hiLowLines/>`,
 		`<c:upDownBars>`,
+		`<c:upBars/>`,
+		`<c:downBars/>`,
 	})
+	if strings.Contains(xml, `<c:upBars><c:spPr/></c:upBars>`) || strings.Contains(xml, `<c:downBars><c:spPr/></c:downBars>`) {
+		t.Fatalf("expected stock OHLC bars without inline spPr")
+	}
 }
 
 func TestComboChartParitySignature(t *testing.T) {

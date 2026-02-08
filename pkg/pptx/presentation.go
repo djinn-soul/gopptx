@@ -232,8 +232,13 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		bulletRuns := toXMLTextRunRows(slide.BulletRuns)
 		shapeSpecs := toXMLShapeSpecs(slide.Shapes)
 		connectorSpecs := toXMLConnectorSpecs(slide.Connectors, slide.Shapes)
+
+		layoutMode := slideLayoutXMLMode(slide.Layout)
+		shapeIDs := calculateShapeIDs(slide)
+		animationsXML := slideAnimationsXML(slide, shapeIDs)
+
 		slideXML := pptxxml.SlideWithLayout(
-			slideLayoutXMLMode(slide.Layout),
+			layoutMode,
 			slide.Title,
 			slide.Bullets,
 			bulletStyles,
@@ -244,6 +249,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			shapeSpecs,
 			connectorSpecs,
 			slideTransitionXML(slide),
+			animationsXML,
 		)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {

@@ -69,15 +69,13 @@ func chartSeriesWithValues(chart *ChartSpec, seriesName string, values []float64
 func stockVisualsXML(chart *ChartSpec) string {
 	var b strings.Builder
 	b.WriteString(`
-<c:hiLowLines>
-<c:spPr/>
-</c:hiLowLines>`)
+<c:hiLowLines/>`)
 	if chart.Kind == ChartKindStockOHLC {
 		b.WriteString(`
 <c:upDownBars>
 <c:gapWidth val="150"/>
-<c:upBars><c:spPr/></c:upBars>
-<c:downBars><c:spPr/></c:downBars>
+<c:upBars/>
+<c:downBars/>
 </c:upDownBars>`)
 	}
 	return b.String()

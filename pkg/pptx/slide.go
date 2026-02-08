@@ -37,6 +37,13 @@ type SlideContent struct {
 	StockHLC           *StockHLCChart
 	StockOHLC          *StockOHLCChart
 	Combo              *ComboChart
+	Animations         []Animation
+}
+
+// AddAnimation appends one animation effect and returns the updated slide.
+func (s SlideContent) AddAnimation(animation Animation) SlideContent {
+	s.Animations = append(s.Animations, animation)
+	return s
 }
 
 // NewSlide creates a new slide with a title.
@@ -92,6 +99,9 @@ func validateSlide(s SlideContent, index int) error {
 		}
 	}
 	if err := validateSlideDrawings(s, index); err != nil {
+		return err
+	}
+	if err := validateSlideAnimations(s, index); err != nil {
 		return err
 	}
 	if s.Table != nil {
