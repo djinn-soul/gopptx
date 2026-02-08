@@ -89,15 +89,21 @@ func buildMediaCatalog(slides []SlideContent) (*mediaCatalog, error) {
 			if err != nil {
 				return fmt.Errorf("fetch error: %w", err)
 			}
-			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
+				if closeErr := resp.Body.Close(); closeErr != nil {
+					return fmt.Errorf("fetch failed with status: %s (close body error: %w)", resp.Status, closeErr)
+				}
 				return fmt.Errorf("fetch failed with status: %s", resp.Status)
 			}
 
-			downloaded, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("read body error: %w", err)
+			downloaded, readErr := io.ReadAll(resp.Body)
+			closeErr := resp.Body.Close()
+			if readErr != nil {
+				return fmt.Errorf("read body error: %w", readErr)
+			}
+			if closeErr != nil {
+				return fmt.Errorf("close body error: %w", closeErr)
 			}
 			data = downloaded
 
@@ -173,17 +179,6 @@ func normalizeExtension(ext string) string {
 		return ext[1:]
 	}
 	return ext
-}
-
-func (c *mediaCatalog) mediaNameForPath(path string) (string, bool) {
-	// Only works for file paths legacy
-	cleanPath := filepath.Clean(path)
-	key := "path:" + cleanPath
-	asset, ok := c.byKey[key]
-	if !ok {
-		return "", false
-	}
-	return asset.mediaName, true
 }
 
 func (c *mediaCatalog) mediaNameForImage(image Image) (string, bool) {

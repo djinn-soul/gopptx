@@ -170,7 +170,6 @@ func SlideWithLayout(
 	for i, ph := range placeholders {
 		b.WriteString(placeholderShape(ph, nextID+i))
 	}
-	nextID += len(placeholders)
 
 	if tx := strings.TrimSpace(transitionXML); tx != "" {
 		b.WriteString("\n")

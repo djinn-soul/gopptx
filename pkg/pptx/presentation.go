@@ -229,7 +229,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 		}
 
-		hyperlinkRIDs, hyperlinks, nextRID := buildSlideHyperlinkRels(slide, nextRID)
+		hyperlinkRIDs, hyperlinks, _ := buildSlideHyperlinkRels(slide, nextRID)
 
 		bulletStyles := toXMLBulletParagraphStyles(slide.BulletStyles)
 		bulletRuns := toXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs)

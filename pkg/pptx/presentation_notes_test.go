@@ -28,6 +28,7 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		"ppt/notesSlides/_rels/notesSlide1.xml.rels",
 		"ppt/notesMasters/notesMaster1.xml",
 		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
+		"ppt/theme/theme2.xml",
 	}
 	for _, name := range required {
 		if !zipHasFile(zr, name) {
@@ -44,6 +45,7 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		`presentationml.notesSlide+xml`,
 		`/ppt/notesMasters/notesMaster1.xml`,
 		`presentationml.notesMaster+xml`,
+		`/ppt/theme/theme2.xml`,
 	} {
 		if !strings.Contains(contentTypes, needle) {
 			t.Fatalf("expected %q in [Content_Types].xml", needle)
@@ -87,6 +89,11 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		if !strings.Contains(notesRels, needle) {
 			t.Fatalf("expected %q in notes slide rels", needle)
 		}
+	}
+
+	notesMasterRels := readZipFile(t, zr, "ppt/notesMasters/_rels/notesMaster1.xml.rels")
+	if !strings.Contains(notesMasterRels, `Target="../theme/theme2.xml"`) {
+		t.Fatalf("expected notes master to reference dedicated notes theme")
 	}
 
 	appXML := readZipFile(t, zr, "docProps/app.xml")

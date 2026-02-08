@@ -18,7 +18,9 @@ func TestImageAdvancedSources(t *testing.T) {
 	// 2. Setup a mock HTTP server for URL testing
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
-		w.Write(redPixelPNG)
+		if _, err := w.Write(redPixelPNG); err != nil {
+			return
+		}
 	}))
 	defer ts.Close()
 
@@ -46,7 +48,11 @@ func TestImageAdvancedSources(t *testing.T) {
 	if err := pptx.WriteFile(pptxFile, "Image Test", []pptx.SlideContent{slide}); err != nil {
 		t.Fatalf("failed to write pptx: %v", err)
 	}
-	defer os.Remove(pptxFile)
+	defer func() {
+		if err := os.Remove(pptxFile); err != nil && !os.IsNotExist(err) {
+			t.Fatalf("failed to cleanup test pptx: %v", err)
+		}
+	}()
 
 	// 5. Verify the file was created and is a valid zip (basic check)
 	// In a real scenario we'd unzip and check relationships and xml content

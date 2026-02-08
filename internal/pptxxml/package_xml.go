@@ -61,6 +61,8 @@ func ContentTypes(slideCount int, imageExtensions []string, chartCount int, note
 	if includeNotesMaster {
 		b.WriteString(`
 <Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>`)
+		b.WriteString(`
+<Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`)
 	}
 
 	b.WriteString(`
@@ -127,7 +129,7 @@ func Presentation(title string, slideCount int, includeNotesMaster bool) string 
 		rid := slideCount + 3
 		b.WriteString(fmt.Sprintf(`
 <p:notesMasterIdLst>
-<p:notesMasterId id="2147483664" r:id="rId%d"/>
+<p:notesMasterId r:id="rId%d"/>
 </p:notesMasterIdLst>`, rid))
 	}
 
