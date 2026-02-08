@@ -243,6 +243,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			imageRefs,
 			shapeSpecs,
 			connectorSpecs,
+			slideTransitionXML(slide),
 		)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {

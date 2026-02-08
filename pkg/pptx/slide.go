@@ -8,6 +8,7 @@ import (
 type SlideContent struct {
 	Title              string
 	Layout             string
+	Transition         SlideTransition
 	DefaultBulletStyle TextParagraphStyle
 	Bullets            []string
 	BulletRuns         [][]TextRun
@@ -69,6 +70,9 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 
 func validateSlide(s SlideContent, index int) error {
 	if err := validateSlideLayout(s, index); err != nil {
+		return err
+	}
+	if err := validateSlideTransition(s, index); err != nil {
 		return err
 	}
 	for bulletIndex, bullet := range s.Bullets {

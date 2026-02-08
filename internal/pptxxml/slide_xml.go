@@ -38,9 +38,11 @@ const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </a:xfrm>
 </p:grpSpPr>`
 
-const slideFooter = `
+const slideContentFooter = `
 </p:spTree>
-</p:cSld>
+</p:cSld>`
+
+const slideFooter = `
 <p:clrMapOvr>
 <a:masterClrMapping/>
 </p:clrMapOvr>
@@ -55,6 +57,7 @@ func SlideWithContent(
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
+	transitionXML string,
 ) string {
 	return SlideWithLayout(
 		slideLayoutTitleAndContent,
@@ -67,6 +70,7 @@ func SlideWithContent(
 		images,
 		nil,
 		nil,
+		transitionXML,
 	)
 }
 
@@ -82,6 +86,7 @@ func SlideWithLayout(
 	images []ImageRef,
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
+	transitionXML string,
 ) string {
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
@@ -141,6 +146,11 @@ func SlideWithLayout(
 		startShapeID := shapeAnchorID(shapeIDs, connector.StartShapeIndex)
 		endShapeID := shapeAnchorID(shapeIDs, connector.EndShapeIndex)
 		b.WriteString(connectorXML(connector, nextID+i, startShapeID, endShapeID))
+	}
+	b.WriteString(slideContentFooter)
+	if tx := strings.TrimSpace(transitionXML); tx != "" {
+		b.WriteString("\n")
+		b.WriteString(tx)
 	}
 	b.WriteString(slideFooter)
 	return b.String()
