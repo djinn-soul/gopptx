@@ -59,6 +59,3 @@ func buildTableSpec(table Table, slideNumber int) (*pptxxml.TableSpec, error) {
 		StyledRows:   styledSpecRows,
 	}, nil
 }
-
-
-

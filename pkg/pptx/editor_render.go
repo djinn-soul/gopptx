@@ -144,6 +144,3 @@ func buildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*Hyperlink]s
 
 	return hyperlinkRIDs, hyperlinks, nextRID
 }
-
-
-

@@ -97,6 +97,3 @@ func slideAreaStacked100ChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool)
 		Grouping:              "percentStacked",
 	}, true
 }
-
-
-

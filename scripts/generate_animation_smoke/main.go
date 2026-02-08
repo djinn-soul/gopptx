@@ -84,6 +84,3 @@ func run() error {
 	fmt.Printf("Generated %s\n", path)
 	return nil
 }
-
-
-

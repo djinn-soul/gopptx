@@ -248,5 +248,3 @@ func assertContainsTokens(t *testing.T, label string, xml string, tokens []strin
 		}
 	}
 }
-
-

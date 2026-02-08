@@ -165,5 +165,3 @@ func cliBinary(t *testing.T) string {
 	}
 	return cliBinPath
 }
-
-

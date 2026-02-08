@@ -158,6 +158,3 @@ func slideComboChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 		MaxValue:              copyFloat64Pointer(chart.MaxValue),
 	}, true
 }
-
-
-

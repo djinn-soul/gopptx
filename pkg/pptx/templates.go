@@ -194,7 +194,6 @@ type TechnicalTemplate struct {
 	Benchmarks   string // Performance or comparison data
 }
 
-
 // Build generates slides for TechnicalTemplate.
 func (t TechnicalTemplate) Build() ([]SlideContent, error) {
 	if t.Title == "" {

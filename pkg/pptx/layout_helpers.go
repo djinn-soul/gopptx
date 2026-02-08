@@ -107,11 +107,12 @@ func Stack(orientation string, start Point, gap int64, elements ...Size) ([]Poin
 
 	for _, el := range elements {
 		points = append(points, Point{currentX, currentY})
-		if orientation == OrientationHorizontal {
+		switch orientation {
+		case OrientationHorizontal:
 			currentX += el.CX + gap
-		} else if orientation == OrientationVertical {
+		case OrientationVertical:
 			currentY += el.CY + gap
-		} else {
+		default:
 			return nil, fmt.Errorf("invalid orientation: %s", orientation)
 		}
 	}
@@ -127,23 +128,28 @@ func Distribute(orientation string, bounds Box, count int, elementSize int64) ([
 		return nil, fmt.Errorf("count must be greater than zero")
 	}
 	if count == 1 {
-		if orientation == OrientationHorizontal {
+		switch orientation {
+		case OrientationHorizontal:
 			x, _ := CenterInBox(elementSize, 0, bounds)
 			return []int64{x}, nil
+		case OrientationVertical:
+			_, y := CenterInBox(0, elementSize, bounds)
+			return []int64{y}, nil
+		default:
+			// Fallthrough for error handling later if needed, but for now we follow original logic
 		}
-		_, y := CenterInBox(0, elementSize, bounds)
-		return []int64{y}, nil
 	}
 
 	var totalAvailable int64
 	var startCoord int64
-	if orientation == OrientationHorizontal {
+	switch orientation {
+	case OrientationHorizontal:
 		totalAvailable = bounds.CX
 		startCoord = bounds.X
-	} else if orientation == OrientationVertical {
+	case OrientationVertical:
 		totalAvailable = bounds.CY
 		startCoord = bounds.Y
-	} else {
+	default:
 		return nil, fmt.Errorf("invalid orientation: %s", orientation)
 	}
 

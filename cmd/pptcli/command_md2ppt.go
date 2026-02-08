@@ -71,6 +71,3 @@ func runMD2PPTCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 func printMD2PPTUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage: pptcli md2ppt -in deck.md [-out file.pptx] [-title TITLE]")
 }
-
-
-

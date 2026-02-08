@@ -450,6 +450,3 @@ func generateHyperlinks() ([]byte, error) {
 
 	return pptx.CreateWithSlides("Task 31: Hyperlinks", []pptx.SlideContent{slide})
 }
-
-
-

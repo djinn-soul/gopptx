@@ -264,6 +264,3 @@ func fail(step string, err error) {
 	_, _ = fmt.Fprintf(os.Stderr, "error: %s: %v\n", step, err)
 	os.Exit(1)
 }
-
-
-

@@ -78,6 +78,3 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 	_, _ = fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), len(slides))
 	return exitOK
 }
-
-
-

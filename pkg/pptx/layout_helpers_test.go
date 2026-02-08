@@ -90,6 +90,58 @@ func TestDistribute(t *testing.T) {
 	}
 }
 
+func TestCenterInBox(t *testing.T) {
+	bounds := Box{X: 100, Y: 100, CX: 1000, CY: 1000}
+	cx, cy := int64(400), int64(200)
+	x, y := CenterInBox(cx, cy, bounds)
+
+	expectedX := int64(100 + (1000-400)/2) // 100 + 300 = 400
+	expectedY := int64(100 + (1000-200)/2) // 100 + 400 = 500
+
+	if x != expectedX || y != expectedY {
+		t.Errorf("CenterInBox(%d, %d, bounds) = (%d, %d); expected (%d, %d)", cx, cy, x, y, expectedX, expectedY)
+	}
+}
+
+func TestDistributeVertical(t *testing.T) {
+	bounds := Box{X: 0, Y: 0, CX: 1000, CY: 1000}
+	count := 3
+	elSize := int64(200)
+
+	// Distribute vertically
+	coords, err := Distribute(OrientationVertical, bounds, count, elSize)
+	if err != nil {
+		t.Fatalf("Vertical Distribute failed: %v", err)
+	}
+
+	if coords[1] != 400 {
+		t.Errorf("expected second coord 400, got %d", coords[1])
+	}
+}
+
+func TestDistributeSingleElement(t *testing.T) {
+	bounds := Box{X: 0, Y: 0, CX: 1000, CY: 1000}
+	elSize := int64(200)
+
+	// Horizontal
+	coords, err := Distribute(OrientationHorizontal, bounds, 1, elSize)
+	if err != nil {
+		t.Fatalf("Horizontal Single Distribute failed: %v", err)
+	}
+	if coords[0] != 400 {
+		t.Errorf("expected coord 400, got %d", coords[0])
+	}
+
+	// Vertical
+	coords, err = Distribute(OrientationVertical, bounds, 1, elSize)
+	if err != nil {
+		t.Fatalf("Vertical Single Distribute failed: %v", err)
+	}
+	if coords[0] != 400 {
+		t.Errorf("expected coord 400, got %d", coords[0])
+	}
+}
+
 func TestLayoutHelpersErrors(t *testing.T) {
 	_, err := Grid(0, 1, 0)
 	if err == nil {

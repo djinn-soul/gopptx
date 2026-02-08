@@ -27,6 +27,3 @@ func writeNotesFiles(zw *zip.Writer, parts []renderedNotesPart) error {
 	}
 	return nil
 }
-
-
-

@@ -69,6 +69,3 @@ func notesTargetBySlide(parts []renderedNotesPart) map[int]string {
 	}
 	return targets
 }
-
-
-

@@ -48,6 +48,3 @@ func runCreateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 func printCreateUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage: pptcli create -out file.pptx [-title TITLE] [-slides N]")
 }
-
-
-

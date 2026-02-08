@@ -113,6 +113,3 @@ func slideBubbleChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 		BubbleScale:           chart.BubbleScale,
 	}, true
 }
-
-
-

@@ -29,10 +29,10 @@ func TestSimpleTemplate(t *testing.T) {
 
 func TestProposalTemplate(t *testing.T) {
 	tmpl := ProposalTemplate{
-		Title:   "Big Project",
-		Context: "The problem",
+		Title:    "Big Project",
+		Context:  "The problem",
 		Solution: "The solution",
-		Pricing: []string{"$100", "$200"},
+		Pricing:  []string{"$100", "$200"},
 		Timeline: "Next month",
 	}
 

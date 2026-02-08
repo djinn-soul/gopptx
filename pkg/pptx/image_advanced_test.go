@@ -58,6 +58,3 @@ func TestImageAdvancedSources(t *testing.T) {
 	// In a real scenario we'd unzip and check relationships and xml content
 	// using helpers similar to those in parity_fixture_test.go
 }
-
-
-

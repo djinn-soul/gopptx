@@ -49,5 +49,3 @@ func printRootUsage(w io.Writer) {
 func printErrorf(w io.Writer, format string, args ...any) {
 	_, _ = fmt.Fprintf(w, "ERROR: "+format+"\n", args...)
 }
-
-

@@ -103,5 +103,3 @@ func TestSlideLayoutParityFixturesAgainstPptRsLayoutDemo(t *testing.T) {
 		assertContainsTokens(t, "gopptx layout parity "+tc.generatedSlide, ours, tc.tokens)
 	}
 }
-
-

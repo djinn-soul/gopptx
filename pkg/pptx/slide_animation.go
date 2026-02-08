@@ -441,5 +441,3 @@ func calculateShapeIDs(s SlideContent) []int {
 	}
 	return shapeIDs
 }
-
-

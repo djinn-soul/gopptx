@@ -144,6 +144,3 @@ func fail(step string, err error) {
 	fmt.Fprintf(os.Stderr, "error: %s: %v\n", step, err)
 	os.Exit(1)
 }
-
-
-

@@ -89,6 +89,3 @@ func copyFloat64Pointer(value *float64) *float64 {
 	v := *value
 	return &v
 }
-
-
-

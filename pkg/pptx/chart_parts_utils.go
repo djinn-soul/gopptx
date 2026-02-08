@@ -24,6 +24,3 @@ func toXMLSeries(series []Series) []pptxxml.ChartSeries {
 	}
 	return out
 }
-
-
-

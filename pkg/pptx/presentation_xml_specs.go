@@ -163,6 +163,3 @@ func toXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.Conne
 	}
 	return specs
 }
-
-
-

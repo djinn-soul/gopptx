@@ -39,5 +39,3 @@ func AppProperties(slideCount int, notesCount int) string {
 <AppVersion>1.0000</AppVersion>
 </Properties>`, slideCount, notesCount)
 }
-
-

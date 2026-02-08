@@ -176,6 +176,3 @@ func comboSlide() pptx.SlideContent {
 	).WithTitle("Combo")
 	return pptx.NewSlide("Combo").WithComboChart(chart)
 }
-
-
-

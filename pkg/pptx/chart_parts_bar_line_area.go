@@ -231,6 +231,3 @@ func slideLineStackedChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 		Grouping:              "stacked",
 	}, true
 }
-
-
-
