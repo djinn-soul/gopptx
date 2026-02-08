@@ -160,4 +160,3 @@ func chartKindCount(s SlideContent) int {
 	}
 	return count
 }
-

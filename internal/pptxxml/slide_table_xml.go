@@ -56,8 +56,7 @@ type tableCellBorderSet struct {
 }
 
 func tableShape(table *TableSpec, shapeID int) string {
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`
+	return fmt.Sprintf(`
 <p:graphicFrame>
 <p:nvGraphicFramePr>
 <p:cNvPr id="%d" name="Table 1"/>
@@ -68,19 +67,27 @@ func tableShape(table *TableSpec, shapeID int) string {
 <a:off x="%d" y="%d"/>
 <a:ext cx="%d" cy="%d"/>
 </p:xfrm>
+%s
+</p:graphicFrame>`,
+		shapeID,
+		table.X,
+		table.Y,
+		table.CX,
+		table.CY,
+		tableGraphicXML(table),
+	)
+}
+
+func tableGraphicXML(table *TableSpec) string {
+	var b strings.Builder
+	b.WriteString(`
 <a:graphic>
 <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
 <a:tbl>
 <a:tblPr firstRow="1" bandRow="1">
 <a:tableStyleId>{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}</a:tableStyleId>
 </a:tblPr>
-<a:tblGrid>`,
-		shapeID,
-		table.X,
-		table.Y,
-		table.CX,
-		table.CY,
-	))
+<a:tblGrid>`)
 
 	for _, width := range table.ColumnWidths {
 		b.WriteString(fmt.Sprintf(`
@@ -119,8 +126,7 @@ func tableShape(table *TableSpec, shapeID int) string {
 	b.WriteString(`
 </a:tbl>
 </a:graphicData>
-</a:graphic>
-</p:graphicFrame>`)
+</a:graphic>`)
 	return b.String()
 }
 

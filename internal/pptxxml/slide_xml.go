@@ -15,6 +15,15 @@ const (
 	slideLayoutTwoColumn       = "twoColumn"
 )
 
+// PlaceholderOverrideSpec describes content override for a placeholder.
+type PlaceholderOverrideSpec struct {
+	Index int
+	Type  string
+	Text  string
+	Image *ImageRef
+	Table *TableSpec
+}
+
 const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>
@@ -73,6 +82,7 @@ func SlideWithContent(
 		images,
 		nil,
 		nil,
+		nil,
 		transitionXML,
 		animationsXML,
 	)
@@ -90,6 +100,7 @@ func SlideWithLayout(
 	images []ImageRef,
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
+	placeholders []PlaceholderOverrideSpec,
 	transitionXML string,
 	animationsXML string,
 ) string {
@@ -154,6 +165,13 @@ func SlideWithLayout(
 	}
 	b.WriteString(slideContentFooter)
 	b.WriteString(slideFooterClrMap)
+
+	// Placeholders
+	for i, ph := range placeholders {
+		b.WriteString(placeholderShape(ph, nextID+i))
+	}
+	nextID += len(placeholders)
+
 	if tx := strings.TrimSpace(transitionXML); tx != "" {
 		b.WriteString("\n")
 		b.WriteString(tx)
@@ -180,7 +198,19 @@ func SlideRelationshipsWithLayout(layoutTarget string, imageTargets []string, ch
 	return SlideRelationshipsWithLayoutAndNotes(layoutTarget, imageTargets, chartRel, "")
 }
 
+// HyperlinkRel describes a hyperlink relationship for slide rels.
+type HyperlinkRel struct {
+	RID      string
+	Target   string
+	External bool
+}
+
 func SlideRelationshipsWithLayoutAndNotes(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string) string {
+	return SlideRelationshipsWithHyperlinks(layoutTarget, imageTargets, chartRel, notesTarget, nil)
+}
+
+// SlideRelationshipsWithHyperlinks extends slide relationships to include hyperlinks.
+func SlideRelationshipsWithHyperlinks(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string, hyperlinks []HyperlinkRel) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -201,6 +231,12 @@ func SlideRelationshipsWithLayoutAndNotes(layoutTarget string, imageTargets []st
 			Escape(chartRel.Target),
 		))
 		if rid := ridNumber(chartRel.RID); rid > maxRID {
+			maxRID = rid
+		}
+	}
+	for _, hl := range hyperlinks {
+		b.WriteString(HyperlinkRelationshipXML(hl.RID, hl.Target, hl.External))
+		if rid := ridNumber(hl.RID); rid > maxRID {
 			maxRID = rid
 		}
 	}

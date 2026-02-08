@@ -16,6 +16,7 @@ type TextRun struct {
 	Font          string
 	SizePt        int
 	Code          bool
+	Hyperlink     *Hyperlink
 }
 
 // NewTextRun creates one text run with plain styling.
@@ -95,6 +96,12 @@ func (r TextRun) WithCode(enabled bool) TextRun {
 	return r
 }
 
+// WithHyperlink attaches a clickable hyperlink to the text run.
+func (r TextRun) WithHyperlink(hyperlink Hyperlink) TextRun {
+	r.Hyperlink = &hyperlink
+	return r
+}
+
 // AddBulletRuns appends one bullet built from rich text runs.
 func (s SlideContent) AddBulletRuns(runs []TextRun) SlideContent {
 	normalized := normalizeTextRuns(runs)
@@ -135,6 +142,7 @@ func normalizeTextRuns(runs []TextRun) []TextRun {
 			Font:          strings.TrimSpace(run.Font),
 			SizePt:        run.SizePt,
 			Code:          run.Code,
+			Hyperlink:     run.Hyperlink,
 		})
 	}
 	if len(out) == 0 {

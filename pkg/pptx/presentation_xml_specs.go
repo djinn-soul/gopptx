@@ -1,6 +1,8 @@
 package pptx
 
-import "github.com/djinn09/goppt/internal/pptxxml"
+import (
+	"github.com/djinn09/goppt/internal/pptxxml"
+)
 
 func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {
 	if border == nil {
@@ -13,7 +15,7 @@ func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec 
 	}
 }
 
-func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
+func toXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*Hyperlink]string) [][]pptxxml.TextRunSpec {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -24,7 +26,7 @@ func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
 		}
 		runs := make([]pptxxml.TextRunSpec, 0, len(rows[i]))
 		for _, run := range rows[i] {
-			runs = append(runs, pptxxml.TextRunSpec{
+			spec := pptxxml.TextRunSpec{
 				Text:          run.Text,
 				Bold:          run.Bold,
 				Italic:        run.Italic,
@@ -37,7 +39,18 @@ func toXMLTextRunRows(rows [][]TextRun) [][]pptxxml.TextRunSpec {
 				Font:          run.Font,
 				SizePt:        run.SizePt,
 				Code:          run.Code,
-			})
+			}
+			if run.Hyperlink != nil {
+				if rid, ok := hyperlinkRIDs[run.Hyperlink]; ok {
+					spec.Hyperlink = &pptxxml.HyperlinkSpec{
+						RelID:          rid,
+						Tooltip:        run.Hyperlink.Tooltip,
+						HighlightClick: run.Hyperlink.HighlightClick,
+						Action:         run.Hyperlink.Action.ActionType(),
+					}
+				}
+			}
+			runs = append(runs, spec)
 		}
 		out[i] = runs
 	}
@@ -63,7 +76,7 @@ func toXMLBulletParagraphStyles(styles []TextParagraphStyle) []pptxxml.BulletPar
 	return out
 }
 
-func toXMLShapeSpecs(shapes []Shape) []pptxxml.ShapeSpec {
+func toXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*Hyperlink]string) []pptxxml.ShapeSpec {
 	if len(shapes) == 0 {
 		return nil
 	}
@@ -106,6 +119,16 @@ func toXMLShapeSpecs(shapes []Shape) []pptxxml.ShapeSpec {
 			}
 		}
 		spec.RotationDeg = shape.RotationDeg
+		if shape.Hyperlink != nil {
+			if rid, ok := hyperlinkRIDs[shape.Hyperlink]; ok {
+				spec.Hyperlink = &pptxxml.HyperlinkSpec{
+					RelID:          rid,
+					Tooltip:        shape.Hyperlink.Tooltip,
+					HighlightClick: shape.Hyperlink.HighlightClick,
+					Action:         shape.Hyperlink.Action.ActionType(),
+				}
+			}
+		}
 		specs = append(specs, spec)
 	}
 	return specs

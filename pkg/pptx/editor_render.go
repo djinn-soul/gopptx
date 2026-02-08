@@ -12,6 +12,7 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 		return "", "", err
 	}
 	layoutMode := slideLayoutXMLMode(slide.Layout)
+	hyperlinkRIDs, hyperlinks, _ := buildSlideHyperlinkRels(slide, 2)
 	shapeIDs := calculateShapeIDs(slide)
 	animationsXML := slideAnimationsXML(slide, shapeIDs)
 
@@ -20,20 +21,22 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 		slide.Title,
 		slide.Bullets,
 		toXMLBulletParagraphStyles(slide.BulletStyles),
-		toXMLTextRunRows(slide.BulletRuns),
+		toXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
 		tableSpec,
 		nil,
 		nil,
-		toXMLShapeSpecs(slide.Shapes),
+		toXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		toXMLConnectorSpecs(slide.Connectors, slide.Shapes),
+		nil,
 		slideTransitionXML(slide),
 		animationsXML,
 	)
-	relsXML := pptxxml.SlideRelationshipsWithLayoutAndNotes(
+	relsXML := pptxxml.SlideRelationshipsWithHyperlinks(
 		slideLayoutTarget(slide.Layout),
 		nil,
 		nil,
 		notesTarget,
+		hyperlinks,
 	)
 	return slideXML, relsXML, nil
 }
@@ -104,4 +107,40 @@ func editorEnsureSlideRelsExist(parts map[string][]byte, slidePart string) error
 		return nil
 	}
 	return fmt.Errorf("missing slide relationships part %q", relsPath)
+}
+
+func buildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*Hyperlink]string, []pptxxml.HyperlinkRel, int) {
+	hyperlinkRIDs := make(map[*Hyperlink]string)
+	hyperlinks := make([]pptxxml.HyperlinkRel, 0)
+	nextRID := firstRID
+
+	addHyperlink := func(h *Hyperlink) {
+		if h == nil {
+			return
+		}
+		if _, exists := hyperlinkRIDs[h]; exists {
+			return
+		}
+
+		rid := fmt.Sprintf("rId%d", nextRID)
+		hyperlinkRIDs[h] = rid
+		nextRID++
+
+		hyperlinks = append(hyperlinks, pptxxml.HyperlinkRel{
+			RID:      rid,
+			Target:   h.Action.RelationshipTarget(),
+			External: h.Action.IsExternal(),
+		})
+	}
+
+	for _, shape := range slide.Shapes {
+		addHyperlink(shape.Hyperlink)
+	}
+	for _, runRow := range slide.BulletRuns {
+		for _, run := range runRow {
+			addHyperlink(run.Hyperlink)
+		}
+	}
+
+	return hyperlinkRIDs, hyperlinks, nextRID
 }

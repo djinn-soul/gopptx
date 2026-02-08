@@ -85,7 +85,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions(), len(chartParts), notesSlideNumbers(notesParts), hasNotes)},
 		{"_rels/.rels", pptxxml.RootRelationships()},
 		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes)},
-		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount)},
+		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount, hasNotes)},
 		{"ppt/slideLayouts/slideLayout1.xml", pptxxml.SlideLayoutTitleAndContent()},
 		{"ppt/slideLayouts/_rels/slideLayout1.xml.rels", pptxxml.SlideLayoutRelationships()},
 		{"ppt/slideLayouts/slideLayout2.xml", pptxxml.SlideLayoutTitleOnly()},
@@ -138,83 +138,84 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 
 		var tableSpec *pptxxml.TableSpec
 		if slide.Table != nil {
-			styledRows, err := tableRowsWithMerges(*slide.Table, slideNumber)
+			spec, err := buildTableSpec(*slide.Table, slideNumber)
 			if err != nil {
 				return err
 			}
-			rows := make([][]string, 0, len(styledRows))
-			styledSpecRows := make([][]pptxxml.TableCellSpec, 0, len(styledRows))
-			for _, srcRow := range styledRows {
-				row := make([]string, len(srcRow))
-				specRow := make([]pptxxml.TableCellSpec, len(srcRow))
-				for i, cell := range srcRow {
-					borders := cell.bordersForRender()
-					row[i] = cell.Text
-					specRow[i] = pptxxml.TableCellSpec{
-						Text:            cell.Text,
-						Bold:            cell.Bold,
-						BackgroundColor: cell.BackgroundColor,
-						Align:           cell.Align,
-						VAlign:          cell.VAlign,
-						MarginLeft:      tableMarginEMU(cell.MarginLeftPt),
-						MarginRight:     tableMarginEMU(cell.MarginRightPt),
-						MarginTop:       tableMarginEMU(cell.MarginTopPt),
-						MarginBottom:    tableMarginEMU(cell.MarginBottomPt),
-						WrapText:        cloneBoolPointer(cell.WrapText),
-						RowSpan:         cell.RowSpan,
-						ColSpan:         cell.ColSpan,
-						VMerge:          cell.VMerge,
-						HMerge:          cell.HMerge,
-						BorderColor:     cell.BorderColor,
-						BorderWidth:     tableBorderWidthEMU(cell.BorderWidthPt),
-						BorderLeft:      toXMLTableBorderSpec(borders.Left),
-						BorderRight:     toXMLTableBorderSpec(borders.Right),
-						BorderTop:       toXMLTableBorderSpec(borders.Top),
-						BorderBottom:    toXMLTableBorderSpec(borders.Bottom),
-					}
-				}
-				rows = append(rows, row)
-				styledSpecRows = append(styledSpecRows, specRow)
-			}
-			columnWidths := make([]int64, len(slide.Table.ColumnWidths))
-			copy(columnWidths, slide.Table.ColumnWidths)
-			rowHeights := make([]int64, len(slide.Table.RowHeights))
-			copy(rowHeights, slide.Table.RowHeights)
-			tableSpec = &pptxxml.TableSpec{
-				X:            slide.Table.X,
-				Y:            slide.Table.Y,
-				CX:           slide.Table.CX,
-				CY:           slide.Table.CY,
-				ColumnWidths: columnWidths,
-				RowHeights:   rowHeights,
-				Rows:         rows,
-				StyledRows:   styledSpecRows,
-			}
+			tableSpec = spec
 		}
 
 		imageRefs := make([]pptxxml.ImageRef, 0, len(slide.Images))
 		imageTargets := make([]string, 0, len(slide.Images))
 		for imageIndex, image := range slide.Images {
-			mediaName, ok := mediaCatalog.mediaNameForPath(image.Path)
+			mediaName, ok := mediaCatalog.mediaNameForImage(image)
 			if !ok {
 				return fmt.Errorf("slide %d image %d was not registered", slideNumber, imageIndex+1)
 			}
 			relID := fmt.Sprintf("rId%d", imageIndex+2)
+
+			var crop *pptxxml.ImageCropRef
+			if image.Crop != (ImageCrop{}) {
+				crop = &pptxxml.ImageCropRef{
+					Left:   int64(image.Crop.Left * 100000),
+					Right:  int64(image.Crop.Right * 100000),
+					Top:    int64(image.Crop.Top * 100000),
+					Bottom: int64(image.Crop.Bottom * 100000),
+				}
+			}
+
 			imageRefs = append(imageRefs, pptxxml.ImageRef{
-				RelID: relID,
-				Name:  fmt.Sprintf("Picture %d", imageIndex+1),
-				X:     image.X,
-				Y:     image.Y,
-				CX:    image.CX,
-				CY:    image.CY,
+				RelID:    relID,
+				Name:     fmt.Sprintf("Picture %d", imageIndex+1),
+				X:        image.X,
+				Y:        image.Y,
+				CX:       image.CX,
+				CY:       image.CY,
+				Rotation: int64(image.Rotation * 60000),
+				FlipH:    image.FlipH,
+				FlipV:    image.FlipV,
+				Crop:     crop,
 			})
 			imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
+		}
+
+		// Process placeholder images to generate RIDs
+		placeholderImageRefs := make(map[int]*pptxxml.ImageRef)
+		placeholderTableSpecs := make(map[int]*pptxxml.TableSpec)
+		nextRID := len(imageTargets) + 2
+		for _, override := range slide.PlaceholderOverrides {
+			if override.Image != nil {
+				mediaName, ok := mediaCatalog.mediaNameForImage(*override.Image)
+				if !ok {
+					// Fallback or error? buildMediaCatalog should have caught it.
+					continue
+				}
+				rid := fmt.Sprintf("rId%d", nextRID)
+				nextRID++
+				imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
+
+				ref := &pptxxml.ImageRef{
+					RelID: rid,
+					Name:  "Placeholder Picture",
+					FlipH: override.Image.FlipH,
+					FlipV: override.Image.FlipV,
+				}
+				placeholderImageRefs[override.Index] = ref
+			}
+			if override.Table != nil {
+				spec, err := buildTableSpec(*override.Table, slideNumber)
+				if err != nil {
+					return err
+				}
+				placeholderTableSpecs[override.Index] = spec
+			}
 		}
 
 		var chartFrame *pptxxml.ChartFrame
 		var chartRel *pptxxml.ChartRel
 		if part, ok := chartBySlide[i]; ok {
-			rid := fmt.Sprintf("rId%d", len(imageTargets)+2)
+			rid := fmt.Sprintf("rId%d", nextRID)
+			nextRID++
 			chartFrame = &pptxxml.ChartFrame{
 				RelID: rid,
 				X:     part.spec.X,
@@ -228,10 +229,32 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 		}
 
+		hyperlinkRIDs, hyperlinks, nextRID := buildSlideHyperlinkRels(slide, nextRID)
+
 		bulletStyles := toXMLBulletParagraphStyles(slide.BulletStyles)
-		bulletRuns := toXMLTextRunRows(slide.BulletRuns)
-		shapeSpecs := toXMLShapeSpecs(slide.Shapes)
+		bulletRuns := toXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs)
+		shapeSpecs := toXMLShapeSpecs(slide.Shapes, hyperlinkRIDs)
 		connectorSpecs := toXMLConnectorSpecs(slide.Connectors, slide.Shapes)
+
+		placeholderSpecs := make([]pptxxml.PlaceholderOverrideSpec, 0, len(slide.PlaceholderOverrides))
+		for _, override := range slide.PlaceholderOverrides {
+			var imageRef *pptxxml.ImageRef
+			if ref, ok := placeholderImageRefs[override.Index]; ok {
+				imageRef = ref
+			}
+			var tableRef *pptxxml.TableSpec
+			if spec, ok := placeholderTableSpecs[override.Index]; ok {
+				tableRef = spec
+			}
+
+			placeholderSpecs = append(placeholderSpecs, pptxxml.PlaceholderOverrideSpec{
+				Index: override.Index,
+				Type:  override.Type,
+				Text:  override.Text,
+				Image: imageRef,
+				Table: tableRef,
+			})
+		}
 
 		layoutMode := slideLayoutXMLMode(slide.Layout)
 		shapeIDs := calculateShapeIDs(slide)
@@ -248,6 +271,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			imageRefs,
 			shapeSpecs,
 			connectorSpecs,
+			placeholderSpecs,
 			slideTransitionXML(slide),
 			animationsXML,
 		)
@@ -260,11 +284,12 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		if err := writeFile(
 			zw,
 			relsPath,
-			pptxxml.SlideRelationshipsWithLayoutAndNotes(
+			pptxxml.SlideRelationshipsWithHyperlinks(
 				slideLayoutTarget(slide.Layout),
 				imageTargets,
 				chartRel,
 				notesTargets[slideNumber],
+				hyperlinks,
 			),
 		); err != nil {
 			return err

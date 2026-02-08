@@ -21,6 +21,7 @@ type TextRunSpec struct {
 	Font          string
 	SizePt        int
 	Code          bool
+	Hyperlink     *HyperlinkSpec
 }
 
 func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
@@ -68,6 +69,10 @@ func richTextRun(run TextRunSpec) string {
 		b.WriteString(` baseline="30000"`)
 	}
 	b.WriteString(` dirty="0">`)
+
+	if run.Hyperlink != nil {
+		b.WriteString(HyperlinkXML(*run.Hyperlink))
+	}
 
 	if highlight := strings.TrimSpace(run.Highlight); highlight != "" {
 		b.WriteString(`<a:highlight><a:srgbClr val="`)

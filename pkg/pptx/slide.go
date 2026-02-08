@@ -6,43 +6,81 @@ import (
 
 // SlideContent describes the user-visible content of a slide.
 type SlideContent struct {
-	Title              string
-	Layout             string
-	Transition         SlideTransition
-	DefaultBulletStyle TextParagraphStyle
-	Bullets            []string
-	BulletRuns         [][]TextRun
-	BulletStyles       []TextParagraphStyle
-	Notes              string
-	Images             []Image
-	Shapes             []Shape
-	Connectors         []Connector
-	Table              *Table
-	Chart              *BarChart
-	BarHorizontal      *BarHorizontalChart
-	BarStacked         *BarStackedChart
-	BarStacked100      *BarStacked100Chart
-	Line               *LineChart
-	LineMarkers        *LineMarkersChart
-	LineStacked        *LineStackedChart
-	Scatter            *ScatterChart
-	Area               *AreaChart
-	AreaStacked        *AreaStackedChart
-	AreaStacked100     *AreaStacked100Chart
-	Pie                *PieChart
-	Dough              *DoughnutChart
-	Bubble             *BubbleChart
-	Radar              *RadarChart
-	RadarFilled        *RadarFilledChart
-	StockHLC           *StockHLCChart
-	StockOHLC          *StockOHLCChart
-	Combo              *ComboChart
-	Animations         []Animation
+	Title                string
+	Layout               string
+	Transition           SlideTransition
+	DefaultBulletStyle   TextParagraphStyle
+	Bullets              []string
+	BulletRuns           [][]TextRun
+	BulletStyles         []TextParagraphStyle
+	Notes                string
+	Images               []Image
+	Shapes               []Shape
+	Connectors           []Connector
+	Table                *Table
+	Chart                *BarChart
+	BarHorizontal        *BarHorizontalChart
+	BarStacked           *BarStackedChart
+	BarStacked100        *BarStacked100Chart
+	Line                 *LineChart
+	LineMarkers          *LineMarkersChart
+	LineStacked          *LineStackedChart
+	Scatter              *ScatterChart
+	Area                 *AreaChart
+	AreaStacked          *AreaStackedChart
+	AreaStacked100       *AreaStacked100Chart
+	Pie                  *PieChart
+	Dough                *DoughnutChart
+	Bubble               *BubbleChart
+	Radar                *RadarChart
+	RadarFilled          *RadarFilledChart
+	StockHLC             *StockHLCChart
+	StockOHLC            *StockOHLCChart
+	Combo                *ComboChart
+	Animations           []Animation
+	PlaceholderOverrides []PlaceholderContent
+}
+
+// PlaceholderContent overrides content for a layout placeholder.
+type PlaceholderContent struct {
+	Index int
+	Type  string
+	Text  string
+	Image *Image
+	Table *Table
+	// TODO: Charts
+}
+
+// WithPlaceholderImage adds an image to a specific placeholder index.
+func (s SlideContent) WithPlaceholderImage(idx int, image Image) SlideContent {
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+		Index: idx,
+		Image: &image,
+	})
+	return s
+}
+
+// WithPlaceholderText adds text to a specific placeholder index.
+func (s SlideContent) WithPlaceholderText(idx int, text string) SlideContent {
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+		Index: idx,
+		Text:  text,
+	})
+	return s
+}
+
+// WithPlaceholderTable adds a table to a specific placeholder index.
+func (s SlideContent) WithPlaceholderTable(idx int, table Table) SlideContent {
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+		Index: idx,
+		Table: &table,
+	})
+	return s
 }
 
 // AddAnimation appends one animation effect and returns the updated slide.
-func (s SlideContent) AddAnimation(animation Animation) SlideContent {
-	s.Animations = append(s.Animations, animation)
+func (s SlideContent) AddAnimation(def AnimationDefinition) SlideContent {
+	s.Animations = append(s.Animations, def.ToAnimation())
 	return s
 }
 

@@ -179,6 +179,7 @@ func scanSupportedSlideRels(rels []editorRelationship) (notesTarget string, err 
 		case relTypeSlideLayout:
 		case relTypeNotesSlide:
 			notesTarget = rel.Target
+		case relTypeHyperlink:
 		default:
 			return "", fmt.Errorf("unsupported relationship type %q", rel.Type)
 		}

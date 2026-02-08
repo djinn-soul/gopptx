@@ -44,6 +44,7 @@ type ShapeSpec struct {
 	Line         *ShapeLineSpec
 	Text         string
 	RotationDeg  *int
+	Hyperlink    *HyperlinkSpec
 }
 
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.
@@ -70,11 +71,22 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 		rotationAttr = fmt.Sprintf(` rot="%d"`, *shape.RotationDeg*60000)
 	}
 
+	hyperlinkXML := ""
+	if shape.Hyperlink != nil {
+		hyperlinkXML = HyperlinkXML(*shape.Hyperlink)
+	}
+
+	// If hyperlink is present, p:cNvPr must have a child element, so we use a different format
+	cNvPrContent := "/>"
+	if hyperlinkXML != "" {
+		cNvPrContent = ">" + hyperlinkXML + "</p:cNvPr>"
+	}
+
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(`
 <p:sp>
 <p:nvSpPr>
-<p:cNvPr id="%d" name="Shape %d"/>
+<p:cNvPr id="%d" name="Shape %d"%s
 <p:cNvSpPr/>
 <p:nvPr/>
 </p:nvSpPr>
@@ -86,6 +98,7 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <a:prstGeom prst="%s"><a:avLst/></a:prstGeom>`,
 		shapeID,
 		shapeID,
+		cNvPrContent,
 		rotationAttr,
 		shape.X,
 		shape.Y,
@@ -123,7 +136,7 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <a:p>
 <a:pPr algn="ctr"/>
 <a:r>
-<a:rPr lang="en-US" sz="` + shapeTextSizeXML(shape) + `" b="0" i="0" u="none" dirty="0">` + shapeTextRunPropertiesXML(shape) + `</a:rPr>
+<a:rPr lang="en-US" sz="` + shapeTextSizeXML(shape) + `" b="0" i="0" u="none" dirty="0">` + shapeTextRunPropertiesXML(shape) + hyperlinkXML + `</a:rPr>
 <a:t>` + Escape(shape.Text) + `</a:t>
 </a:r>
 </a:p>

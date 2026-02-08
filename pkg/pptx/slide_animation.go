@@ -3,6 +3,7 @@ package pptx
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 // AnimationEffect defines the type of animation effect.
@@ -77,6 +78,7 @@ const (
 )
 
 // Animation represents a single animation effect on a slide object.
+// It defines the effect type, trigger condition, direction, duration, and other timing properties.
 type Animation struct {
 	ShapeIndex  int // 1-indexed, matches Shape/Connector index
 	Effect      AnimationEffect
@@ -125,6 +127,11 @@ func (a Animation) WithRepeat(count uint32) Animation {
 // WithAutoReverse enables or disables auto-reverse for the animation.
 func (a Animation) WithAutoReverse(autoReverse bool) Animation {
 	a.AutoReverse = autoReverse
+	return a
+}
+
+// ToAnimation implements the AnimationDefinition interface.
+func (a Animation) ToAnimation() Animation {
 	return a
 }
 
@@ -251,6 +258,12 @@ func (a Animation) xml(seqID int, actualShapeID int) string {
 	)
 }
 
+// AnimationDefinition is the interface for types that can be converted to an Animation.
+// This allows for extensible animation builders and custom implementations.
+type AnimationDefinition interface {
+	ToAnimation() Animation
+}
+
 func (a Animation) nodeType() string {
 	switch a.Trigger {
 	case AnimationOnClick:
@@ -269,18 +282,62 @@ func slideAnimationsXML(s SlideContent, shapeIDs []int) string {
 		return ""
 	}
 
-	var animationsXML []string
-	for i, anim := range s.Animations {
-		actualID := 0
-		if anim.ShapeIndex > 0 && anim.ShapeIndex <= len(shapeIDs) {
-			actualID = shapeIDs[anim.ShapeIndex-1]
+	// Calculate concurrently if we have enough animations
+	const parallelThreshold = 50
+	numAnims := len(s.Animations)
+	animationsXML := make([]string, numAnims)
+
+	if numAnims < parallelThreshold {
+		for i, anim := range s.Animations {
+			actualID := 0
+			if anim.ShapeIndex > 0 && anim.ShapeIndex <= len(shapeIDs) {
+				actualID = shapeIDs[anim.ShapeIndex-1]
+			}
+			if actualID == 0 {
+				continue
+			}
+			animationsXML[i] = anim.xml(i*2+3, actualID)
 		}
-		if actualID == 0 {
-			continue
+	} else {
+		var wg sync.WaitGroup
+		numWorkers := 4
+		chunkSize := (numAnims + numWorkers - 1) / numWorkers
+
+		for w := 0; w < numWorkers; w++ {
+			wg.Add(1)
+			go func(workerID int) {
+				defer wg.Done()
+				start := workerID * chunkSize
+				end := start + chunkSize
+				if end > numAnims {
+					end = numAnims
+				}
+
+				for i := start; i < end; i++ {
+					anim := s.Animations[i]
+					actualID := 0
+					if anim.ShapeIndex > 0 && anim.ShapeIndex <= len(shapeIDs) {
+						actualID = shapeIDs[anim.ShapeIndex-1]
+					}
+					if actualID == 0 {
+						continue
+					}
+					animationsXML[i] = anim.xml(i*2+3, actualID)
+				}
+			}(w)
 		}
-		animationsXML = append(animationsXML, anim.xml(i*2+3, actualID))
+		wg.Wait()
 	}
-	if len(animationsXML) == 0 {
+
+	// Filter out empty strings (from invalid shape IDs)
+	var finalXML []string
+	for _, xml := range animationsXML {
+		if xml != "" {
+			finalXML = append(finalXML, xml)
+		}
+	}
+
+	if len(finalXML) == 0 {
 		return ""
 	}
 
@@ -302,7 +359,7 @@ func slideAnimationsXML(s SlideContent, shapeIDs []int) string {
     </p:par>
   </p:tnLst>
 </p:timing>`,
-		strings.Join(animationsXML, "\n"),
+		strings.Join(finalXML, "\n"),
 	)
 }
 

@@ -67,6 +67,11 @@ func validateShape(shape Shape, slideIndex int, shapeIndex int) error {
 			return fmt.Errorf("slide %d shape %d rotation must be in [-360,360]", slideIndex, shapeIndex)
 		}
 	}
+	if shape.Hyperlink != nil {
+		if err := validateHyperlink(shape.Hyperlink, fmt.Sprintf("slide %d shape %d", slideIndex, shapeIndex)); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

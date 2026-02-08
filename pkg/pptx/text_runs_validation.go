@@ -33,6 +33,9 @@ func validateSlideTextRuns(s SlideContent, slideIndex int) error {
 			if run.Subscript && run.Superscript {
 				return fmt.Errorf("slide %d bullet %d run %d cannot be both subscript and superscript", slideIndex, bulletIndex+1, runIndex+1)
 			}
+			if err := validateHyperlink(run.Hyperlink, fmt.Sprintf("slide %d bullet %d run %d", slideIndex, bulletIndex+1, runIndex+1)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

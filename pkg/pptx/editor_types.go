@@ -15,6 +15,7 @@ const (
 	relTypeSlide       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
 	relTypeSlideLayout = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
 	relTypeNotesSlide  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
+	relTypeHyperlink   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 )
 
 // PresentationMetadata describes summary information parsed from an existing PPTX package.

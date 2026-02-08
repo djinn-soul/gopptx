@@ -91,6 +91,7 @@ type Shape struct {
 	Line         *ShapeLine
 	Text         string
 	RotationDeg  *int
+	Hyperlink    *Hyperlink
 }
 
 // NewShape creates one shape with explicit preset type, position, and size.
@@ -129,6 +130,12 @@ func (s Shape) WithText(text string) Shape {
 func (s Shape) WithRotation(degrees int) Shape {
 	value := degrees
 	s.RotationDeg = &value
+	return s
+}
+
+// WithHyperlink attaches a clickable hyperlink to the shape.
+func (s Shape) WithHyperlink(hyperlink Hyperlink) Shape {
+	s.Hyperlink = &hyperlink
 	return s
 }
 

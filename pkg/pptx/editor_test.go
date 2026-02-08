@@ -121,6 +121,47 @@ func TestPresentationEditorRejectsUpdateForSlideWithExternalRelationships(t *tes
 	}
 }
 
+func TestPresentationEditorPersistsHyperlinks(t *testing.T) {
+	path := writeDeckFixture(t, "base.pptx", []SlideContent{NewSlide("Base")})
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+
+	slide := NewSlide("Linked").
+		AddShape(NewShape(ShapeTypeRectangle, 0, 0, 500000, 500000).
+			WithText("shape link").
+			WithHyperlink(NewHyperlink(HyperlinkURL("https://example.com")))).
+		AddBulletRuns([]TextRun{
+			NewTextRun("text link").WithHyperlink(NewHyperlink(HyperlinkURL("https://example.org"))),
+		})
+	if _, err := editor.AddSlide(slide); err != nil {
+		t.Fatalf("add linked slide: %v", err)
+	}
+
+	outPath := filepath.Join(t.TempDir(), "linked.pptx")
+	if err := editor.Save(outPath); err != nil {
+		t.Fatalf("save linked deck: %v", err)
+	}
+
+	slideXML := string(readZipFileBytes(t, outPath, "ppt/slides/slide2.xml"))
+	if strings.Count(slideXML, "hlinkClick") < 2 {
+		t.Fatalf("expected shape and text hyperlinks in slide XML")
+	}
+	relsXML := string(readZipFileBytes(t, outPath, "ppt/slides/_rels/slide2.xml.rels"))
+	if strings.Count(relsXML, "/relationships/hyperlink") < 2 {
+		t.Fatalf("expected hyperlink relationships for linked slide")
+	}
+
+	reopened, err := OpenPresentationEditor(outPath)
+	if err != nil {
+		t.Fatalf("reopen linked deck: %v", err)
+	}
+	if err := reopened.UpdateSlide(1, NewSlide("Linked Updated").AddBullet("ok")); err != nil {
+		t.Fatalf("update linked slide: %v", err)
+	}
+}
+
 func TestPresentationEditorMergeFromFile(t *testing.T) {
 	destPath := writeDeckFixture(t, "dest.pptx", []SlideContent{
 		NewSlide("Dest 1").AddBullet("a"),

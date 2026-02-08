@@ -114,14 +114,24 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool) string {
 }
 
 // Presentation renders ppt/presentation.xml.
-func Presentation(title string, slideCount int) string {
+func Presentation(title string, slideCount int, includeNotesMaster bool) string {
 	_ = title
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">
 <p:sldMasterIdLst>
 <p:sldMasterId id="2147483648" r:id="rId1"/>
-</p:sldMasterIdLst>
+</p:sldMasterIdLst>`)
+
+	if includeNotesMaster {
+		rid := slideCount + 3
+		b.WriteString(fmt.Sprintf(`
+<p:notesMasterIdLst>
+<p:notesMasterId id="2147483664" r:id="rId%d"/>
+</p:notesMasterIdLst>`, rid))
+	}
+
+	b.WriteString(`
 <p:sldIdLst>`)
 
 	for i := 1; i <= slideCount; i++ {

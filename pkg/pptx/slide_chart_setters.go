@@ -141,4 +141,3 @@ func (s *SlideContent) clearCharts() {
 	s.StockOHLC = nil
 	s.Combo = nil
 }
-

@@ -21,6 +21,25 @@ func validateSlideAnimations(s SlideContent, slideIndex int) error {
 			return fmt.Errorf("slide %d animation %d: %w", slideIndex, i+1, err)
 		}
 	}
+	if err := validateAnimationConflicts(s.Animations, slideIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateAnimationConflicts(anims []Animation, slideIndex int) error {
+	if len(anims) == 0 {
+		return nil
+	}
+
+	// First animation cannot be WithPrevious or AfterPrevious
+	if anims[0].Trigger != AnimationOnClick {
+		return fmt.Errorf("slide %d animation 1 trigger cannot be %q (must be %q)",
+			slideIndex, string(anims[0].Trigger), string(AnimationOnClick))
+	}
+
+	// TODO: Add more conflict checks if needed (e.g. exit before entrance on same shape?)
+	// For now, ppt-rs and PowerPoint are permissive about sequence, but the first trigger rule is standard.
 	return nil
 }
 
