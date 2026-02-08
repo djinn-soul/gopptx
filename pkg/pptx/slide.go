@@ -113,45 +113,46 @@ func (s SlideContent) WithTable(table Table) SlideContent {
 	return s
 }
 
-func validateSlide(s SlideContent, index int) error {
-	if err := validateSlideLayout(s, index); err != nil {
+// Validate checks the slide content for OOXML compliance and common constraints.
+func (s SlideContent) Validate(slideIndex int) error {
+	if err := validateSlideLayout(s, slideIndex); err != nil {
 		return err
 	}
-	if err := validateSlideTransition(s, index); err != nil {
+	if err := validateSlideTransition(s, slideIndex); err != nil {
 		return err
 	}
 	for bulletIndex, bullet := range s.Bullets {
 		if bullet == "" {
-			return fmt.Errorf("slide %d bullet %d cannot be empty", index, bulletIndex+1)
+			return fmt.Errorf("slide %d bullet %d cannot be empty", slideIndex, bulletIndex+1)
 		}
 	}
-	if err := validateSlideTextRuns(s, index); err != nil {
+	if err := validateSlideTextRuns(s, slideIndex); err != nil {
 		return err
 	}
-	if err := validateSlideTextParagraphStyles(s, index); err != nil {
+	if err := validateSlideTextParagraphStyles(s, slideIndex); err != nil {
 		return err
 	}
 	for imageIndex, image := range s.Images {
-		if err := validateImage(image, index, imageIndex+1); err != nil {
+		if err := image.Validate(slideIndex, imageIndex+1); err != nil {
 			return err
 		}
 	}
-	if err := validateSlideDrawings(s, index); err != nil {
+	if err := validateSlideDrawings(s, slideIndex); err != nil {
 		return err
 	}
-	if err := validateSlideAnimations(s, index); err != nil {
+	if err := validateSlideAnimations(s, slideIndex); err != nil {
 		return err
 	}
 	if s.Table != nil {
-		if err := validateTable(*s.Table, index); err != nil {
+		if err := s.Table.Validate(slideIndex); err != nil {
 			return err
 		}
 	}
-	if err := validateSlideCharts(s, index); err != nil {
+	if err := validateSlideCharts(s, slideIndex); err != nil {
 		return err
 	}
 	if chartKindCount(s) > 1 {
-		return fmt.Errorf("slide %d cannot have more than one chart kind", index)
+		return fmt.Errorf("slide %d cannot have more than one chart kind", slideIndex)
 	}
 	return nil
 }

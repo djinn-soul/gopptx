@@ -197,7 +197,7 @@ func validateEditorSlideContent(slide SlideContent) error {
 	if chartKindCount(slide) > 0 {
 		return fmt.Errorf("editor add/update does not support chart authoring yet")
 	}
-	if err := validateSlide(slide, 1); err != nil {
+	if err := slide.Validate(1); err != nil {
 		return err
 	}
 	return nil

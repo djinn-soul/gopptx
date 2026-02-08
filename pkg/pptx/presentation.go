@@ -39,7 +39,7 @@ func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
 		return nil, fmt.Errorf("at least one slide is required")
 	}
 	for i, slide := range slides {
-		if err := validateSlide(slide, i+1); err != nil {
+		if err := slide.Validate(i + 1); err != nil {
 			return nil, err
 		}
 	}
@@ -321,6 +321,3 @@ func writeMediaFiles(zw *zip.Writer, catalog *mediaCatalog) error {
 	}
 	return nil
 }
-
-
-

@@ -3,7 +3,9 @@ package pptx
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -49,6 +51,36 @@ func (e *PresentationEditor) Bytes() ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// Validate checks all slide parts in the presentation for basic XML well-formedness.
+func (e *PresentationEditor) Validate() error {
+	if e == nil {
+		return fmt.Errorf("editor cannot be nil")
+	}
+	for _, slide := range e.slides {
+		data, ok := e.parts[slide.Part]
+		if !ok {
+			return fmt.Errorf("slide part %q missing", slide.Part)
+		}
+		if err := validateXMLData(data); err != nil {
+			return fmt.Errorf("slide %s: %w", slide.Part, err)
+		}
+	}
+	return nil
+}
+
+func validateXMLData(data []byte) error {
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	for {
+		if _, err := decoder.Token(); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return fmt.Errorf("invalid XML: %w", err)
+		}
+	}
+	return nil
 }
 
 func (e *PresentationEditor) rebuildControlParts() error {

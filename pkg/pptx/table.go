@@ -116,3 +116,8 @@ func (t Table) WithRowHeights(heights []int64) Table {
 	t.RowHeights = out
 	return t
 }
+
+// Validate checks the table content for common constraints.
+func (t Table) Validate(slideIndex int) error {
+	return validateTable(t, slideIndex)
+}

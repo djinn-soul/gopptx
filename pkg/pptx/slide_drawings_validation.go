@@ -7,19 +7,20 @@ import (
 
 func validateSlideDrawings(s SlideContent, slideIndex int) error {
 	for shapeIndex, shape := range s.Shapes {
-		if err := validateShape(shape, slideIndex, shapeIndex+1); err != nil {
+		if err := shape.Validate(slideIndex, shapeIndex+1); err != nil {
 			return err
 		}
 	}
 	for connectorIndex, connector := range s.Connectors {
-		if err := validateConnector(connector, len(s.Shapes), slideIndex, connectorIndex+1); err != nil {
+		if err := connector.Validate(len(s.Shapes), slideIndex, connectorIndex+1); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateShape(shape Shape, slideIndex int, shapeIndex int) error {
+// Validate checks shape properties for OOXML compliance and library constraints.
+func (shape Shape) Validate(slideIndex int, shapeIndex int) error {
 	if !isShapeType(shape.Type) {
 		return fmt.Errorf("slide %d shape %d type %q is not supported", slideIndex, shapeIndex, shape.Type)
 	}
@@ -139,7 +140,8 @@ func validateShapeGradientFill(fill ShapeGradientFill, slideIndex int, shapeInde
 	return nil
 }
 
-func validateConnector(connector Connector, shapeCount int, slideIndex int, connectorIndex int) error {
+// Validate checks connector properties and anchor references.
+func (connector Connector) Validate(shapeCount int, slideIndex int, connectorIndex int) error {
 	if !isConnectorType(connector.Type) {
 		return fmt.Errorf("slide %d connector %d type %q is not supported", slideIndex, connectorIndex, connector.Type)
 	}

@@ -99,17 +99,18 @@ func (img Image) WithFlip(horizontal, vertical bool) Image {
 	return img
 }
 
-func validateImage(image Image, slideIndex int, imageIndex int) error {
-	if image.Path == "" && len(image.Data) == 0 && image.SourceURL == "" {
+// Validate checks the image for common constraints and required fields.
+func (img Image) Validate(slideIndex int, imageIndex int) error {
+	if img.Path == "" && len(img.Data) == 0 && img.SourceURL == "" {
 		return fmt.Errorf("slide %d image %d has no source (Path, Data, or SourceURL)", slideIndex, imageIndex)
 	}
-	if len(image.Data) > 0 && image.Format == "" {
+	if len(img.Data) > 0 && img.Format == "" {
 		return fmt.Errorf("slide %d image %d has Data but no Format", slideIndex, imageIndex)
 	}
-	if image.X < 0 || image.Y < 0 {
+	if img.X < 0 || img.Y < 0 {
 		return fmt.Errorf("slide %d image %d position cannot be negative", slideIndex, imageIndex)
 	}
-	if image.CX <= 0 || image.CY <= 0 {
+	if img.CX <= 0 || img.CY <= 0 {
 		return fmt.Errorf("slide %d image %d size must be > 0", slideIndex, imageIndex)
 	}
 	return nil
