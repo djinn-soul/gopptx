@@ -6,7 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
-func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget string) (string, string, error) {
+func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget string, width, height int64) (string, string, error) {
 	tableSpec, err := renderEditorTableSpec(slide, slideNumber)
 	if err != nil {
 		return "", "", err
@@ -47,6 +47,8 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 		nil,
 		slideTransitionXML(slide),
 		animationsXML,
+		width,
+		height,
 	)
 	relsXML := pptxxml.SlideRelationshipsWithHyperlinks(
 		slideLayoutTarget(slide.Layout),

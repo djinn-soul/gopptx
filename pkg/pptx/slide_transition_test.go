@@ -161,8 +161,50 @@ func TestTransitionOptions(t *testing.T) {
 				Direction:             TransitionDirRight,
 				DisableAdvanceOnClick: true,
 				AdvanceAfterMS:        2000,
+				DurationMS:            1500,
 			},
-			expectXML: `<p:transition advClick="0" advTm="2000"><p:push dir="r"/></p:transition>`,
+			expectXML: `<p:transition advClick="0" advTm="2000" dur="1500"><p:push dir="r"/></p:transition>`,
+		},
+		{
+			name: "fade through black",
+			options: TransitionOptions{
+				Type:    TransitionFade,
+				ThruBlk: true,
+			},
+			expectXML: `<p:transition><p:fade thruBlk="1"/></p:transition>`,
+		},
+		{
+			name: "split vertical in",
+			options: TransitionOptions{
+				Type:        TransitionSplit,
+				Orientation: TransitionOrientVertical,
+				Direction:   TransitionDirIn,
+			},
+			expectXML: `<p:transition><p:split dir="in" orient="vert"/></p:transition>`,
+		},
+		{
+			name: "wheel spokes",
+			options: TransitionOptions{
+				Type:       TransitionClock,
+				SpokeCount: 8,
+			},
+			expectXML: `<p:transition><p:wheel spokes="8"/></p:transition>`,
+		},
+		{
+			name: "blinds vertical",
+			options: TransitionOptions{
+				Type:        TransitionBlinds,
+				Orientation: TransitionOrientVertical,
+			},
+			expectXML: `<p:transition><p:blinds orient="vert"/></p:transition>`,
+		},
+		{
+			name: "randomBar vertical",
+			options: TransitionOptions{
+				Type:        TransitionRandomBars,
+				Orientation: TransitionOrientVertical,
+			},
+			expectXML: `<p:transition><p:randomBar orient="vert"/></p:transition>`,
 		},
 		{
 			name: "fade advance on click",

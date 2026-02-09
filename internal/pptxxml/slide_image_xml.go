@@ -26,6 +26,17 @@ type ImageCropRef struct {
 	Bottom int64
 }
 
+const (
+	defaultShadowBlurRad    = 40000
+	defaultShadowDist       = 20000
+	defaultShadowDir        = 5400000
+	defaultShadowAlpha      = 40000
+	defaultReflectionBlur   = 6350
+	defaultReflectionStA    = 50000
+	defaultReflectionEndA   = 300
+	defaultReflectionEndPos = 35000
+)
+
 func imageShape(image ImageRef, shapeID int) string {
 	name := image.Name
 	if name == "" {
@@ -68,10 +79,12 @@ func imageShape(image ImageRef, shapeID int) string {
 	if image.Shadow || image.Reflection {
 		effectsXML = "<a:effectLst>"
 		if image.Shadow {
-			effectsXML += `<a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr></a:outerShdw>`
+			effectsXML += fmt.Sprintf(`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
+				defaultShadowBlurRad, defaultShadowDist, defaultShadowDir, defaultShadowAlpha)
 		}
 		if image.Reflection {
-			effectsXML += `<a:ref blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`
+			effectsXML += fmt.Sprintf(`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" sy="-100000" algn="bl" rotWithShape="0"/>`,
+				defaultReflectionBlur, defaultReflectionStA, defaultReflectionEndA, defaultReflectionEndPos, defaultShadowDir)
 		}
 		effectsXML += "</a:effectLst>"
 	}

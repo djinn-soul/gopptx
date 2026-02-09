@@ -256,10 +256,18 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 			}
 
 			// Placeholder charts
+
 			for _, override := range slide.PlaceholderOverrides {
 				if override.Chart != nil {
+
+					if partIdx >= len(parts) {
+						return fmt.Errorf("slide %d: missing chart part for placeholder index %d", slideNumber, override.Index)
+					}
+
 					part := parts[partIdx]
+
 					partIdx++
+
 					rid := fmt.Sprintf("rId%d", nextRID)
 					nextRID++
 					frame := &pptxxml.ChartFrame{
@@ -345,6 +353,8 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 			placeholderSpecs,
 			slideTransitionXML(slide),
 			animationsXML,
+			meta.SlideSize.Width,
+			meta.SlideSize.Height,
 		)
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		if err := writeFile(zw, slidePath, slideXML); err != nil {

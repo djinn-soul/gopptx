@@ -92,11 +92,22 @@ const (
 	TransitionDirDownRight TransitionDirection = "dr"
 )
 
+// TransitionOrientation defines the orientation of a transition (e.g. for Split, Blinds).
+type TransitionOrientation string
+
+const (
+	TransitionOrientHorizontal TransitionOrientation = "horz"
+	TransitionOrientVertical   TransitionOrientation = "vert"
+)
+
 // TransitionOptions provides advanced configuration for a slide transition.
 type TransitionOptions struct {
 	Type                  TransitionType
 	DurationMS            uint32
 	Direction             TransitionDirection
+	Orientation           TransitionOrientation
+	SpokeCount            uint32 // for wheel/clock
+	ThruBlk               bool   // for fade (thruBlk="1")
 	DisableAdvanceOnClick bool
 	AdvanceAfterMS        uint32 // 0 means no auto-advance
 }
@@ -105,6 +116,16 @@ type TransitionOptions struct {
 func (o TransitionOptions) Validate() error {
 	if err := o.Type.Validate(); err != nil {
 		return err
+	}
+	if o.Orientation != "" {
+		switch o.Type {
+		case TransitionSplit, TransitionBlinds, TransitionRandomBars:
+			if o.Orientation != TransitionOrientHorizontal && o.Orientation != TransitionOrientVertical {
+				return fmt.Errorf("invalid orientation %q for transition %q", o.Orientation, o.Type)
+			}
+		default:
+			return fmt.Errorf("transition %q does not support orientation", o.Type)
+		}
 	}
 	return nil
 }
@@ -115,32 +136,79 @@ func (o TransitionOptions) XML() string {
 		return ""
 	}
 
-	advClick := ""
+	var attrs []string
 	if o.DisableAdvanceOnClick {
-		advClick = ` advClick="0"`
+		attrs = append(attrs, `advClick="0"`)
 	}
-	advTm := ""
 	if o.AdvanceAfterMS > 0 {
-		advTm = fmt.Sprintf(` advTm="%d"`, o.AdvanceAfterMS)
+		attrs = append(attrs, fmt.Sprintf(`advTm="%d"`, o.AdvanceAfterMS))
+	}
+	if o.DurationMS > 0 {
+		attrs = append(attrs, fmt.Sprintf(`dur="%d"`, o.DurationMS))
 	}
 
-	dir := string(o.Direction)
-	if dir == "" {
-		// Defaults aligned with ppt-rs
-		switch o.Type {
-		case TransitionPush, TransitionWipe, TransitionReveal, TransitionCover:
-			dir = "r"
-		case TransitionZoom:
-			dir = "in"
-		case TransitionSplit:
-			// Split in ppt-rs uses orient and dir
-			return fmt.Sprintf(`<p:transition%s%s><p:split dir="out" orient="horz"/></p:transition>`, advClick, advTm)
-		default:
-			return fmt.Sprintf(`<p:transition%s%s><p:%s/></p:transition>`, advClick, advTm, string(o.Type))
+	attrStr := ""
+	if len(attrs) > 0 {
+		attrStr = " " + strings.Join(attrs, " ")
+	}
+
+	switch o.Type {
+	case TransitionFade:
+		thruBlk := ""
+		if o.ThruBlk {
+			thruBlk = ` thruBlk="1"`
 		}
-	}
+		return fmt.Sprintf(`<p:transition%s><p:fade%s/></p:transition>`, attrStr, thruBlk)
 
-	return fmt.Sprintf(`<p:transition%s%s><p:%s dir="%s"/></p:transition>`, advClick, advTm, string(o.Type), dir)
+	case TransitionSplit:
+		dir := o.Direction
+		if dir == "" {
+			dir = TransitionDirOut
+		}
+		orient := o.Orientation
+		if orient == "" {
+			orient = TransitionOrientHorizontal
+		}
+		return fmt.Sprintf(`<p:transition%s><p:split dir="%s" orient="%s"/></p:transition>`, attrStr, dir, orient)
+
+	case TransitionBlinds, TransitionRandomBars:
+		orient := o.Orientation
+		if orient == "" {
+			orient = TransitionOrientHorizontal
+		}
+		return fmt.Sprintf(`<p:transition%s><p:%s orient="%s"/></p:transition>`, attrStr, string(o.Type), orient)
+
+	case TransitionClock:
+		spokes := ""
+		if o.SpokeCount > 0 {
+			spokes = fmt.Sprintf(` spokes="%d"`, o.SpokeCount)
+		}
+		return fmt.Sprintf(`<p:transition%s><p:wheel%s/></p:transition>`, attrStr, spokes)
+
+	case TransitionPush, TransitionWipe, TransitionReveal, TransitionCover:
+		dir := o.Direction
+		if dir == "" {
+			dir = "r"
+		}
+		return fmt.Sprintf(`<p:transition%s><p:%s dir="%s"/></p:transition>`, attrStr, string(o.Type), dir)
+
+	case TransitionZoom:
+		dir := o.Direction
+		if dir == "" {
+			dir = "in"
+		}
+		return fmt.Sprintf(`<p:transition%s><p:zoom dir="%s"/></p:transition>`, attrStr, dir)
+
+	case TransitionUncover:
+		dir := o.Direction
+		if dir == "" {
+			dir = "l"
+		}
+		return fmt.Sprintf(`<p:transition%s><p:pull dir="%s"/></p:transition>`, attrStr, dir)
+
+	default:
+		return fmt.Sprintf(`<p:transition%s><p:%s/></p:transition>`, attrStr, string(o.Type))
+	}
 }
 
 // WithTransition sets the transition behavior for a slide.

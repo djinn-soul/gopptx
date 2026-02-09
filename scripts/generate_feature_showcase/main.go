@@ -80,6 +80,20 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 				}),
 		),
 
+		func() pptx.SlideContent {
+			slide := pptx.NewSlide("Layout Helpers (2x3 Grid)")
+			boxes, _ := pptx.Grid(2, 3, pptx.Inches(0.5))
+			for i, box := range boxes {
+				slide.AddShape(
+					pptx.NewShape(pptx.ShapeTypeRoundedRectangle, box.X, box.Y, box.CX, box.CY).
+						WithText(fmt.Sprintf("Item %d", i+1)).
+						WithFill(pptx.NewShapeFill("ED7D31")).
+						WithLine(pptx.NewShapeLine("C65911", pptx.Points(1))),
+				)
+			}
+			return slide
+		}(),
+
 		pptx.NewSlide("").WithBlankLayout().
 			AddShape(
 				pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(0.9), pptx.Inches(1.8), pptx.Inches(2.6), pptx.Inches(1.1)).

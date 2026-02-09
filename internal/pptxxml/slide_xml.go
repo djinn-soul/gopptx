@@ -91,6 +91,7 @@ func SlideWithContent(
 	images []ImageRef,
 	transitionXML string,
 	animationsXML string,
+	width, height int64,
 ) string {
 	return SlideWithLayout(
 		slideLayoutTitleAndContent,
@@ -107,6 +108,8 @@ func SlideWithContent(
 		nil,
 		transitionXML,
 		animationsXML,
+		width,
+		height,
 	)
 }
 
@@ -126,6 +129,7 @@ func SlideWithLayout(
 	placeholders []PlaceholderOverrideSpec,
 	transitionXML string,
 	animationsXML string,
+	width, height int64,
 ) string {
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
@@ -134,9 +138,9 @@ func SlideWithLayout(
 	nextID := 2
 	if layoutMode != slideLayoutBlank {
 		if layoutMode == slideLayoutCenteredTitle {
-			b.WriteString(centeredTitleShape(title))
+			b.WriteString(centeredTitleShape(title, width, height))
 		} else {
-			b.WriteString(titleShape(title))
+			b.WriteString(titleShape(title, width, height))
 		}
 		nextID = 3
 	}
@@ -147,19 +151,19 @@ func SlideWithLayout(
 	} else if len(bullets) > 0 {
 		switch layoutMode {
 		case slideLayoutTitleAndContent:
-			b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID))
+			b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
 			nextID++
 		case slideLayoutTitleBigContent:
-			b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID))
+			b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
 			nextID++
 		case slideLayoutTwoColumn:
 			leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)
 			leftStyles, rightStyles := splitBulletStylesForTwoColumns(bulletStyles, len(leftBullets))
 			leftRuns, rightRuns := splitBulletRunsForTwoColumns(bulletRuns, len(leftBullets))
-			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID))
+			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID, width, height))
 			nextID++
 			if len(rightBullets) > 0 {
-				b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID))
+				b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height))
 				nextID++
 			}
 		}

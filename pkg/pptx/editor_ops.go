@@ -19,7 +19,7 @@ func (e *PresentationEditor) AddSlide(slide SlideContent) (int, error) {
 	part := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 	relsPart := slideRelsPartName(part)
 
-	slideXML, slideRelsXML, err := renderEditorSlideParts(slide, slideNumber, "")
+	slideXML, slideRelsXML, err := renderEditorSlideParts(slide, slideNumber, "", e.metadata.SlideSize.Width, e.metadata.SlideSize.Height)
 	if err != nil {
 		return 0, err
 	}
@@ -67,7 +67,7 @@ func (e *PresentationEditor) UpdateSlide(index int, slide SlideContent) error {
 	if !ok {
 		return fmt.Errorf("unsupported slide part path %q", ref.Part)
 	}
-	slideXML, relsXML, err := renderEditorSlideParts(slide, number, notesTarget)
+	slideXML, relsXML, err := renderEditorSlideParts(slide, number, notesTarget, e.metadata.SlideSize.Width, e.metadata.SlideSize.Height)
 	if err != nil {
 		return err
 	}

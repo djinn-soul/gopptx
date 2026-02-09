@@ -5,12 +5,24 @@ import (
 	"strings"
 )
 
-func titleShape(title TitleSpec) string {
-	return titleShapeAt(title, 457200, 274638, 8230200, 1143000, "l")
+func titleShape(title TitleSpec, width, height int64) string {
+	// Standard margin is 0.5 inches (457200 EMU)
+	margin := int64(457200)
+	x := margin
+	y := int64(274638) // Fixed top offset
+	cx := width - 2*margin
+	cy := int64(1143000) // Fixed height (1.25 inches)
+	return titleShapeAt(title, x, y, cx, cy, "l")
 }
 
-func centeredTitleShape(title TitleSpec) string {
-	return titleShapeAt(title, 457200, 2743200, 8230200, 1371600, "ctr")
+func centeredTitleShape(title TitleSpec, width, height int64) string {
+	// Standard margin is 0.5 inches (457200 EMU)
+	margin := int64(457200)
+	cx := width - 2*margin
+	cy := int64(1371600) // 1.5 inches
+	x := margin
+	y := (height - cy) / 2 // Vertically centered
+	return titleShapeAt(title, x, y, cx, cy, "ctr")
 }
 
 func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align string) string {
@@ -54,14 +66,16 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 </p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue(title.Underline), colorXML)
 }
 
-func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
+func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+	margin := int64(457200)
+	x := margin
+	y := int64(1600200) // Fixed top offset
+	cx := width - 2*margin
+	cy := int64(4572000) // Fixed height
 	return contentShapeAt(
 		shapeID,
 		"Content",
-		457200,
-		1600200,
-		8230200,
-		4572000,
+		x, y, cx, cy,
 		bullets,
 		bulletStyles,
 		bulletRuns,
@@ -69,14 +83,16 @@ func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRu
 	)
 }
 
-func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
+func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+	margin := int64(457200)
+	x := margin
+	y := int64(1189200) // Lower top offset for big content
+	cx := width - 2*margin
+	cy := int64(5668800) // Taller content area
 	return contentShapeAt(
 		shapeID,
 		"Content",
-		457200,
-		1189200,
-		8230200,
-		5668800,
+		x, y, cx, cy,
 		bullets,
 		bulletStyles,
 		bulletRuns,
@@ -84,14 +100,17 @@ func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulle
 	)
 }
 
-func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
+func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+	margin := int64(457200)
+	columnGap := int64(457200) // 0.5 inch gap
+	x := margin
+	y := int64(1189200)
+	cx := (width - 2*margin - columnGap) / 2
+	cy := int64(5668800)
 	return contentShapeAt(
 		shapeID,
 		"Left Content",
-		457200,
-		1189200,
-		4115100,
-		5668800,
+		x, y, cx, cy,
 		bullets,
 		bulletStyles,
 		bulletRuns,
@@ -99,14 +118,17 @@ func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bu
 	)
 }
 
-func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
+func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+	margin := int64(457200)
+	columnGap := int64(457200)
+	cx := (width - 2*margin - columnGap) / 2
+	x := margin + cx + columnGap
+	y := int64(1189200)
+	cy := int64(5668800)
 	return contentShapeAt(
 		shapeID,
 		"Right Content",
-		4572300,
-		1189200,
-		4115100,
-		5668800,
+		x, y, cx, cy,
 		bullets,
 		bulletStyles,
 		bulletRuns,
