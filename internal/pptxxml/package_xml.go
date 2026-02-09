@@ -116,7 +116,7 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool) string {
 }
 
 // Presentation renders ppt/presentation.xml.
-func Presentation(title string, slideCount int, includeNotesMaster bool) string {
+func Presentation(title string, slideCount int, includeNotesMaster bool, width, height int64) string {
 	_ = title
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -143,10 +143,17 @@ func Presentation(title string, slideCount int, includeNotesMaster bool) string 
 <p:sldId id="%d" r:id="rId%d"/>`, slideID, rid))
 	}
 
-	b.WriteString(`
+	typeAttr := "custom"
+	if width == 9144000 && height == 6858000 {
+		typeAttr = "screen4x3"
+	} else if width == 12192000 && height == 6858000 {
+		typeAttr = "screen16x9"
+	}
+
+	b.WriteString(fmt.Sprintf(`
 </p:sldIdLst>
-<p:sldSz cx="9144000" cy="6858000" type="screen4x3"/>
+<p:sldSz cx="%d" cy="%d" type="%s"/>
 <p:notesSz cx="6858000" cy="9144000"/>
-</p:presentation>`)
+</p:presentation>`, width, height, typeAttr))
 	return b.String()
 }

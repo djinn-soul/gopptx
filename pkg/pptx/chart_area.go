@@ -3,6 +3,8 @@ package pptx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 // AreaChart is a simple categorical area chart.
@@ -78,36 +80,70 @@ func (c AreaChart) WithAreaColor(color string) AreaChart {
 	return c
 }
 
-func validateAreaChart(chart AreaChart, slideIndex int) error {
+// ToChartSpec converts AreaChart to internal XML spec.
+func (c AreaChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:                  pptxxml.ChartKindArea,
+		Title:                 c.Title,
+		TitleOverlay:          c.TitleOverlay,
+		Categories:            copyStringSlice(c.Categories),
+		Values:                copyFloat64Slice(c.Values),
+		X:                     c.X,
+		Y:                     c.Y,
+		CX:                    c.CX,
+		CY:                    c.CY,
+		Color:                 normalizeHexColor(c.AreaColor),
+		SeriesName:            c.SeriesName,
+		ShowLegend:            c.ShowLegend,
+		LegendPosition:        c.LegendPosition,
+		LegendOverlay:         c.LegendOverlay,
+		ShowDataLabels:        c.ShowDataLabels,
+		ShowMajorGridlines:    c.ShowMajorGridlines,
+		CategoryAxisTitle:     c.CategoryAxisTitle,
+		ValueAxisTitle:        c.ValueAxisTitle,
+		ValueFormat:           c.ValueFormat,
+		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
+		MinValue:              copyFloat64Pointer(c.MinValue),
+		MaxValue:              copyFloat64Pointer(c.MaxValue),
+		Grouping:              "standard",
+	}
+}
+
+// Validate checks the area chart for consistency.
+func (c AreaChart) Validate(slideIndex int) error {
 	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.Values,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
+		c.Title,
+		c.Categories,
+		c.Values,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if !isHexColor(chart.AreaColor) {
+	if !isHexColor(c.AreaColor) {
 		return fmt.Errorf("slide %d area chart color must be 6-digit RGB hex", slideIndex)
 	}
-	if strings.TrimSpace(chart.SeriesName) == "" {
+	if strings.TrimSpace(c.SeriesName) == "" {
 		return fmt.Errorf("slide %d area chart series name cannot be empty", slideIndex)
 	}
-	if !isLegendPosition(chart.LegendPosition) {
+	if !isLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d area chart legend position must be one of r,l,t,b", slideIndex)
 	}
-	if strings.TrimSpace(chart.ValueFormat) == "" {
+	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d area chart value format cannot be empty", slideIndex)
 	}
-	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+	if !isValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d area chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
-	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
+	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
 		return err
 	}
 	return nil
+}
+
+func validateAreaChart(chart AreaChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
 }

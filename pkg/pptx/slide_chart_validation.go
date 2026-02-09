@@ -1,101 +1,112 @@
 package pptx
 
 func validateSlideCharts(s SlideContent, index int) error {
+	// Primary charts (legacy fields)
 	if s.Chart != nil {
-		if err := validateBarChart(*s.Chart, index); err != nil {
+		if err := s.Chart.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.BarHorizontal != nil {
-		if err := validateBarHorizontalChart(*s.BarHorizontal, index); err != nil {
+		if err := s.BarHorizontal.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.BarStacked != nil {
-		if err := validateBarStackedChart(*s.BarStacked, index); err != nil {
+		if err := s.BarStacked.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.BarStacked100 != nil {
-		if err := validateBarStacked100Chart(*s.BarStacked100, index); err != nil {
+		if err := s.BarStacked100.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Line != nil {
-		if err := validateLineChart(*s.Line, index); err != nil {
+		if err := s.Line.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.LineMarkers != nil {
-		if err := validateLineMarkersChart(*s.LineMarkers, index); err != nil {
+		if err := s.LineMarkers.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.LineStacked != nil {
-		if err := validateLineStackedChart(*s.LineStacked, index); err != nil {
+		if err := s.LineStacked.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Scatter != nil {
-		if err := validateScatterChart(*s.Scatter, index); err != nil {
+		if err := s.Scatter.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Area != nil {
-		if err := validateAreaChart(*s.Area, index); err != nil {
+		if err := s.Area.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.AreaStacked != nil {
-		if err := validateAreaStackedChart(*s.AreaStacked, index); err != nil {
+		if err := s.AreaStacked.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.AreaStacked100 != nil {
-		if err := validateAreaStacked100Chart(*s.AreaStacked100, index); err != nil {
+		if err := s.AreaStacked100.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Pie != nil {
-		if err := validatePieChart(*s.Pie, index); err != nil {
+		if err := s.Pie.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Dough != nil {
-		if err := validateDoughnutChart(*s.Dough, index); err != nil {
+		if err := s.Dough.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Bubble != nil {
-		if err := validateBubbleChart(*s.Bubble, index); err != nil {
+		if err := s.Bubble.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Radar != nil {
-		if err := validateRadarChart(*s.Radar, index); err != nil {
+		if err := s.Radar.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.RadarFilled != nil {
-		if err := validateRadarFilledChart(*s.RadarFilled, index); err != nil {
+		if err := s.RadarFilled.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.StockHLC != nil {
-		if err := validateStockHLCChart(*s.StockHLC, index); err != nil {
+		if err := s.StockHLC.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.StockOHLC != nil {
-		if err := validateStockOHLCChart(*s.StockOHLC, index); err != nil {
+		if err := s.StockOHLC.Validate(index); err != nil {
 			return err
 		}
 	}
 	if s.Combo != nil {
-		if err := validateComboChart(*s.Combo, index); err != nil {
+		if err := s.Combo.Validate(index); err != nil {
 			return err
 		}
 	}
+
+	// Placeholder charts
+	for _, override := range s.PlaceholderOverrides {
+		if override.Chart != nil {
+			if err := override.Chart.Validate(index); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -157,6 +168,12 @@ func chartKindCount(s SlideContent) int {
 	}
 	if s.Combo != nil {
 		count++
+	}
+
+	for _, override := range s.PlaceholderOverrides {
+		if override.Chart != nil {
+			count++
+		}
 	}
 	return count
 }

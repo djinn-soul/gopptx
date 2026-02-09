@@ -3,6 +3,8 @@ package pptx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 // PieChart is a simple categorical pie chart.
@@ -60,24 +62,49 @@ func (c PieChart) WithTitle(title string) PieChart {
 	return c
 }
 
-func validatePieChart(chart PieChart, slideIndex int) error {
+// ToChartSpec converts PieChart to internal XML spec.
+func (c PieChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:           pptxxml.ChartKindPie,
+		Title:          c.Title,
+		TitleOverlay:   c.TitleOverlay,
+		Categories:     copyStringSlice(c.Categories),
+		Values:         copyFloat64Slice(c.Values),
+		X:              c.X,
+		Y:              c.Y,
+		CX:             c.CX,
+		CY:             c.CY,
+		SeriesName:     c.SeriesName,
+		ShowLegend:     c.ShowLegend,
+		LegendPosition: c.LegendPosition,
+		LegendOverlay:  c.LegendOverlay,
+		ShowDataLabels: c.ShowDataLabels,
+	}
+}
+
+// Validate checks the pie chart for consistency.
+func (c PieChart) Validate(slideIndex int) error {
 	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.Values,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
+		c.Title,
+		c.Categories,
+		c.Values,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if strings.TrimSpace(chart.SeriesName) == "" {
+	if strings.TrimSpace(c.SeriesName) == "" {
 		return fmt.Errorf("slide %d pie chart series name cannot be empty", slideIndex)
 	}
-	if !isLegendPosition(chart.LegendPosition) {
+	if !isLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d pie chart legend position must be one of r,l,t,b", slideIndex)
 	}
 	return nil
+}
+
+func validatePieChart(chart PieChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
 }

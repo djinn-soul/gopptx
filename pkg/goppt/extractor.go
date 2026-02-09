@@ -13,7 +13,7 @@ import (
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 
-	"github.com/djinn09/gopptx/internal/ioadapters"
+	"github.com/djinn-soul/gopptx/internal/ioadapters"
 )
 
 // skipped metadata or non-readable records in slide container

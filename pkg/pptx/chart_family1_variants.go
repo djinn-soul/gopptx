@@ -1,5 +1,7 @@
 package pptx
 
+import "github.com/djinn-soul/gopptx/internal/pptxxml"
+
 // BarHorizontalChart is a horizontal clustered bar chart variant.
 type BarHorizontalChart struct {
 	BarChart
@@ -9,8 +11,17 @@ func NewBarHorizontalChart(categories []string, values []float64) BarHorizontalC
 	return BarHorizontalChart{BarChart: NewBarChart(categories, values)}
 }
 
-func validateBarHorizontalChart(chart BarHorizontalChart, slideIndex int) error {
-	return validateBarChart(chart.BarChart, slideIndex)
+// ToChartSpec converts BarHorizontalChart to internal XML spec.
+func (c BarHorizontalChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.BarChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindBarHorizontal
+	spec.BarDir = "bar"
+	return spec
+}
+
+// Validate checks the bar chart for consistency.
+func (c BarHorizontalChart) Validate(slideIndex int) error {
+	return c.BarChart.Validate(slideIndex)
 }
 
 // BarStackedChart is a stacked bar chart variant.
@@ -22,8 +33,17 @@ func NewBarStackedChart(categories []string, values []float64) BarStackedChart {
 	return BarStackedChart{BarChart: NewBarChart(categories, values)}
 }
 
-func validateBarStackedChart(chart BarStackedChart, slideIndex int) error {
-	return validateBarChart(chart.BarChart, slideIndex)
+// ToChartSpec converts BarStackedChart to internal XML spec.
+func (c BarStackedChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.BarChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindBarStacked
+	spec.Grouping = "stacked"
+	return spec
+}
+
+// Validate checks the bar chart for consistency.
+func (c BarStackedChart) Validate(slideIndex int) error {
+	return c.BarChart.Validate(slideIndex)
 }
 
 // BarStacked100Chart is a 100%% stacked bar chart variant.
@@ -35,8 +55,17 @@ func NewBarStacked100Chart(categories []string, values []float64) BarStacked100C
 	return BarStacked100Chart{BarChart: NewBarChart(categories, values)}
 }
 
-func validateBarStacked100Chart(chart BarStacked100Chart, slideIndex int) error {
-	return validateBarChart(chart.BarChart, slideIndex)
+// ToChartSpec converts BarStacked100Chart to internal XML spec.
+func (c BarStacked100Chart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.BarChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindBarStacked100
+	spec.Grouping = "percentStacked"
+	return spec
+}
+
+// Validate checks the bar chart for consistency.
+func (c BarStacked100Chart) Validate(slideIndex int) error {
+	return c.BarChart.Validate(slideIndex)
 }
 
 // LineMarkersChart is a line-with-markers chart variant.
@@ -48,8 +77,17 @@ func NewLineMarkersChart(categories []string, values []float64) LineMarkersChart
 	return LineMarkersChart{LineChart: NewLineChart(categories, values)}
 }
 
-func validateLineMarkersChart(chart LineMarkersChart, slideIndex int) error {
-	return validateLineChart(chart.LineChart, slideIndex)
+// ToChartSpec converts LineMarkersChart to internal XML spec.
+func (c LineMarkersChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.LineChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindLineMarkers
+	spec.ShowMarkers = true
+	return spec
+}
+
+// Validate checks the line chart for consistency.
+func (c LineMarkersChart) Validate(slideIndex int) error {
+	return c.LineChart.Validate(slideIndex)
 }
 
 // LineStackedChart is a stacked line chart variant.
@@ -61,8 +99,17 @@ func NewLineStackedChart(categories []string, values []float64) LineStackedChart
 	return LineStackedChart{LineChart: NewLineChart(categories, values)}
 }
 
-func validateLineStackedChart(chart LineStackedChart, slideIndex int) error {
-	return validateLineChart(chart.LineChart, slideIndex)
+// ToChartSpec converts LineStackedChart to internal XML spec.
+func (c LineStackedChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.LineChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindLineStacked
+	spec.Grouping = "stacked"
+	return spec
+}
+
+// Validate checks the line chart for consistency.
+func (c LineStackedChart) Validate(slideIndex int) error {
+	return c.LineChart.Validate(slideIndex)
 }
 
 // AreaStackedChart is a stacked area chart variant.
@@ -74,8 +121,17 @@ func NewAreaStackedChart(categories []string, values []float64) AreaStackedChart
 	return AreaStackedChart{AreaChart: NewAreaChart(categories, values)}
 }
 
-func validateAreaStackedChart(chart AreaStackedChart, slideIndex int) error {
-	return validateAreaChart(chart.AreaChart, slideIndex)
+// ToChartSpec converts AreaStackedChart to internal XML spec.
+func (c AreaStackedChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.AreaChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindAreaStacked
+	spec.Grouping = "stacked"
+	return spec
+}
+
+// Validate checks the area chart for consistency.
+func (c AreaStackedChart) Validate(slideIndex int) error {
+	return c.AreaChart.Validate(slideIndex)
 }
 
 // AreaStacked100Chart is a 100%% stacked area chart variant.
@@ -87,6 +143,15 @@ func NewAreaStacked100Chart(categories []string, values []float64) AreaStacked10
 	return AreaStacked100Chart{AreaChart: NewAreaChart(categories, values)}
 }
 
-func validateAreaStacked100Chart(chart AreaStacked100Chart, slideIndex int) error {
-	return validateAreaChart(chart.AreaChart, slideIndex)
+// ToChartSpec converts AreaStacked100Chart to internal XML spec.
+func (c AreaStacked100Chart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.AreaChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindAreaStacked100
+	spec.Grouping = "percentStacked"
+	return spec
+}
+
+// Validate checks the area chart for consistency.
+func (c AreaStacked100Chart) Validate(slideIndex int) error {
+	return c.AreaChart.Validate(slideIndex)
 }

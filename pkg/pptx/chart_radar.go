@@ -3,6 +3,8 @@ package pptx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 const (
@@ -80,38 +82,68 @@ func (c RadarChart) WithLineColor(color string) RadarChart {
 	return c
 }
 
-func validateRadarChart(chart RadarChart, slideIndex int) error {
+// ToChartSpec converts RadarChart to internal XML spec.
+func (c RadarChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:                  pptxxml.ChartKindRadar,
+		Title:                 c.Title,
+		TitleOverlay:          c.TitleOverlay,
+		Categories:            copyStringSlice(c.Categories),
+		Values:                copyFloat64Slice(c.Values),
+		X:                     c.X,
+		Y:                     c.Y,
+		CX:                    c.CX,
+		CY:                    c.CY,
+		Color:                 normalizeHexColor(c.LineColor),
+		SeriesName:            c.SeriesName,
+		ShowLegend:            c.ShowLegend,
+		LegendPosition:        c.LegendPosition,
+		LegendOverlay:         c.LegendOverlay,
+		ShowDataLabels:        c.ShowDataLabels,
+		ShowMajorGridlines:    c.ShowMajorGridlines,
+		CategoryAxisTitle:     c.CategoryAxisTitle,
+		ValueAxisTitle:        c.ValueAxisTitle,
+		ValueFormat:           c.ValueFormat,
+		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
+		MinValue:              copyFloat64Pointer(c.MinValue),
+		MaxValue:              copyFloat64Pointer(c.MaxValue),
+		RadarStyle:            c.RadarStyle,
+	}
+}
+
+// Validate checks the radar chart for consistency.
+func (c RadarChart) Validate(slideIndex int) error {
 	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.Values,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
+		c.Title,
+		c.Categories,
+		c.Values,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if !isHexColor(chart.LineColor) {
+	if !isHexColor(c.LineColor) {
 		return fmt.Errorf("slide %d radar chart color must be 6-digit RGB hex", slideIndex)
 	}
-	if strings.TrimSpace(chart.SeriesName) == "" {
+	if strings.TrimSpace(c.SeriesName) == "" {
 		return fmt.Errorf("slide %d radar chart series name cannot be empty", slideIndex)
 	}
-	if !isLegendPosition(chart.LegendPosition) {
+	if !isLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d radar chart legend position must be one of r,l,t,b", slideIndex)
 	}
-	if strings.TrimSpace(chart.ValueFormat) == "" {
+	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d radar chart value format cannot be empty", slideIndex)
 	}
-	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+	if !isValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d radar chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
-	if chart.RadarStyle != RadarStyleMarker && chart.RadarStyle != RadarStyleFilled {
+	if c.RadarStyle != RadarStyleMarker && c.RadarStyle != RadarStyleFilled {
 		return fmt.Errorf("slide %d radar chart style must be marker or filled", slideIndex)
 	}
-	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
+	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
 		return err
 	}
 	return nil
@@ -128,7 +160,19 @@ func NewRadarFilledChart(categories []string, values []float64) RadarFilledChart
 	return RadarFilledChart{RadarChart: base}
 }
 
-func validateRadarFilledChart(chart RadarFilledChart, slideIndex int) error {
-	chart.RadarStyle = RadarStyleFilled
-	return validateRadarChart(chart.RadarChart, slideIndex)
+// ToChartSpec converts RadarFilledChart to internal XML spec.
+func (c RadarFilledChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.RadarChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindRadarFilled
+	spec.RadarStyle = RadarStyleFilled
+	return spec
+}
+
+// Validate checks the radar chart for consistency.
+func (c RadarFilledChart) Validate(slideIndex int) error {
+	return c.RadarChart.Validate(slideIndex)
+}
+
+func validateRadarChart(chart RadarChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
 }

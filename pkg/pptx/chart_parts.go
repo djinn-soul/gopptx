@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 
-	"github.com/djinn09/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 type chartPart struct {
@@ -16,23 +16,34 @@ type chartPart struct {
 func buildChartParts(slides []SlideContent) []chartPart {
 	out := make([]chartPart, 0)
 	for i, slide := range slides {
+		// Existing single chart
 		spec, ok := slideChartSpec(slide)
-		if !ok {
-			continue
+		if ok {
+			out = append(out, chartPart{
+				slideIndex: i,
+				partNumber: len(out) + 1,
+				spec:       *spec,
+			})
 		}
-		out = append(out, chartPart{
-			slideIndex: i,
-			partNumber: len(out) + 1,
-			spec:       *spec,
-		})
+
+		// Charts in placeholders
+		for _, override := range slide.PlaceholderOverrides {
+			if override.Chart != nil {
+				out = append(out, chartPart{
+					slideIndex: i,
+					partNumber: len(out) + 1,
+					spec:       *override.Chart.ToChartSpec(),
+				})
+			}
+		}
 	}
 	return out
 }
 
-func chartPartBySlide(parts []chartPart) map[int]chartPart {
-	bySlide := make(map[int]chartPart, len(parts))
+func chartPartBySlide(parts []chartPart) map[int][]chartPart {
+	bySlide := make(map[int][]chartPart, len(parts))
 	for _, part := range parts {
-		bySlide[part.slideIndex] = part
+		bySlide[part.slideIndex] = append(bySlide[part.slideIndex], part)
 	}
 	return bySlide
 }
@@ -80,6 +91,11 @@ func slideChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 		}
 	}
 	return nil, false
+}
+
+func slideChartKindDefined(slide SlideContent) bool {
+	_, ok := slideChartSpec(slide)
+	return ok
 }
 
 func copyFloat64Pointer(value *float64) *float64 {

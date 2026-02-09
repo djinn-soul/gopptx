@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/djinn09/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 // runLegacyFlags preserves the historical flag-only mode:

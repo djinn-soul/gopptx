@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/djinn09/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func runCreateCommand(args []string, stdout io.Writer, stderr io.Writer) int {

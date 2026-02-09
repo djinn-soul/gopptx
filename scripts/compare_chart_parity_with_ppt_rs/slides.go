@@ -1,6 +1,6 @@
 package main
 
-import "github.com/djinn09/gopptx/pkg/pptx"
+import "github.com/djinn-soul/gopptx/pkg/pptx"
 
 func barSlide() pptx.SlideContent {
 	chart := pptx.NewBarChart(

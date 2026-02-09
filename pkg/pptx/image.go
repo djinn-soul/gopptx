@@ -29,7 +29,21 @@ type Image struct {
 	Crop        ImageCrop
 	FlipH       bool
 	FlipV       bool
+	Shadow      bool
+	Reflection  bool
 	Placeholder *Placeholder
+}
+
+// WithShadow adds an outer shadow effect to the image.
+func (img Image) WithShadow(enabled bool) Image {
+	img.Shadow = enabled
+	return img
+}
+
+// WithReflection adds a reflection effect to the image.
+func (img Image) WithReflection(enabled bool) Image {
+	img.Reflection = enabled
+	return img
 }
 
 // NewImage creates an image placement from a file path.

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/djinn09/gopptx/internal/ioadapters"
+	"github.com/djinn-soul/gopptx/internal/ioadapters"
 )
 
 const headerSize = 8

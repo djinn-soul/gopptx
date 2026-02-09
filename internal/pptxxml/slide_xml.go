@@ -22,6 +22,7 @@ type PlaceholderOverrideSpec struct {
 	Text  string
 	Image *ImageRef
 	Table *TableSpec
+	Chart *ChartFrame
 }
 
 const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -59,12 +60,32 @@ const slideFooterClrMap = `
 const slideFooterEnd = `
 </p:sld>`
 
+// TitleSpec describes title formatting.
+type TitleSpec struct {
+	Text      string
+	SizePt    int
+	Color     string
+	Bold      bool
+	Italic    bool
+	Underline bool
+}
+
+// ContentStyleSpec describes default content formatting.
+type ContentStyleSpec struct {
+	SizePt    int
+	Color     string
+	Bold      bool
+	Italic    bool
+	Underline bool
+}
+
 // SlideWithContent renders a title+bullets slide with optional table, chart, and images.
 func SlideWithContent(
-	title string,
+	title TitleSpec,
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
+	contentStyle ContentStyleSpec,
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
@@ -77,6 +98,7 @@ func SlideWithContent(
 		bullets,
 		bulletStyles,
 		bulletRuns,
+		contentStyle,
 		table,
 		chart,
 		images,
@@ -91,10 +113,11 @@ func SlideWithContent(
 // SlideWithLayout renders a slide using an explicit layout mode.
 func SlideWithLayout(
 	layout string,
-	title string,
+	title TitleSpec,
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
+	contentStyle ContentStyleSpec,
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
@@ -124,19 +147,19 @@ func SlideWithLayout(
 	} else if len(bullets) > 0 {
 		switch layoutMode {
 		case slideLayoutTitleAndContent:
-			b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, nextID))
+			b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID))
 			nextID++
 		case slideLayoutTitleBigContent:
-			b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, nextID))
+			b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID))
 			nextID++
 		case slideLayoutTwoColumn:
 			leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)
 			leftStyles, rightStyles := splitBulletStylesForTwoColumns(bulletStyles, len(leftBullets))
 			leftRuns, rightRuns := splitBulletRunsForTwoColumns(bulletRuns, len(leftBullets))
-			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, nextID))
+			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID))
 			nextID++
 			if len(rightBullets) > 0 {
-				b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, nextID))
+				b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID))
 				nextID++
 			}
 		}
@@ -163,6 +186,8 @@ func SlideWithLayout(
 		endShapeID := shapeAnchorID(shapeIDs, connector.EndShapeIndex)
 		b.WriteString(connectorXML(connector, nextID+i, startShapeID, endShapeID))
 	}
+	nextID += len(connectors)
+
 	b.WriteString(slideContentFooter)
 	b.WriteString(slideFooterClrMap)
 
@@ -210,6 +235,18 @@ func SlideRelationshipsWithLayoutAndNotes(layoutTarget string, imageTargets []st
 
 // SlideRelationshipsWithHyperlinks extends slide relationships to include hyperlinks.
 func SlideRelationshipsWithHyperlinks(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string, hyperlinks []HyperlinkRel) string {
+	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, notesTarget, hyperlinks)
+}
+
+// SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts.
+func SlideRelationshipsWithMultiCharts(
+	layoutTarget string,
+	imageTargets []string,
+	chartRel *ChartRel,
+	placeholderCharts []ChartRel,
+	notesTarget string,
+	hyperlinks []HyperlinkRel,
+) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -230,6 +267,16 @@ func SlideRelationshipsWithHyperlinks(layoutTarget string, imageTargets []string
 			Escape(chartRel.Target),
 		))
 		if rid := ridNumber(chartRel.RID); rid > maxRID {
+			maxRID = rid
+		}
+	}
+	for _, phChart := range placeholderCharts {
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="%s"/>`,
+			Escape(phChart.RID),
+			Escape(phChart.Target),
+		))
+		if rid := ridNumber(phChart.RID); rid > maxRID {
 			maxRID = rid
 		}
 	}

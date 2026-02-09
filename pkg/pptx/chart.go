@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 var hexColorPattern = regexp.MustCompile(`^[0-9A-F]{6}$`)
@@ -166,72 +168,142 @@ func (c LineChart) WithLineColor(color string) LineChart {
 	return c
 }
 
-func validateBarChart(chart BarChart, slideIndex int) error {
+// ToChartSpec converts BarChart to internal XML spec.
+func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:                  pptxxml.ChartKindBar,
+		Title:                 c.Title,
+		TitleOverlay:          c.TitleOverlay,
+		Categories:            copyStringSlice(c.Categories),
+		Values:                copyFloat64Slice(c.Values),
+		X:                     c.X,
+		Y:                     c.Y,
+		CX:                    c.CX,
+		CY:                    c.CY,
+		Color:                 normalizeHexColor(c.BarColor),
+		SeriesName:            c.SeriesName,
+		ShowLegend:            c.ShowLegend,
+		LegendPosition:        c.LegendPosition,
+		LegendOverlay:         c.LegendOverlay,
+		ShowDataLabels:        c.ShowDataLabels,
+		ShowMajorGridlines:    c.ShowMajorGridlines,
+		CategoryAxisTitle:     c.CategoryAxisTitle,
+		ValueAxisTitle:        c.ValueAxisTitle,
+		ValueFormat:           c.ValueFormat,
+		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
+		MinValue:              copyFloat64Pointer(c.MinValue),
+		MaxValue:              copyFloat64Pointer(c.MaxValue),
+		BarDir:                "col",
+		Grouping:              "clustered",
+	}
+}
+
+// Validate checks the bar chart for consistency.
+func (c BarChart) Validate(slideIndex int) error {
 	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.Values,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
+		c.Title,
+		c.Categories,
+		c.Values,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if !isHexColor(chart.BarColor) {
+	if !isHexColor(c.BarColor) {
 		return fmt.Errorf("slide %d bar chart color must be 6-digit RGB hex", slideIndex)
 	}
-	if strings.TrimSpace(chart.SeriesName) == "" {
+	if strings.TrimSpace(c.SeriesName) == "" {
 		return fmt.Errorf("slide %d bar chart series name cannot be empty", slideIndex)
 	}
-	if !isLegendPosition(chart.LegendPosition) {
+	if !isLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d bar chart legend position must be one of r,l,t,b", slideIndex)
 	}
-	if strings.TrimSpace(chart.ValueFormat) == "" {
+	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d bar chart value format cannot be empty", slideIndex)
 	}
-	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+	if !isValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d bar chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
-	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
+	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateLineChart(chart LineChart, slideIndex int) error {
+// ToChartSpec converts LineChart to internal XML spec.
+func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:                  pptxxml.ChartKindLine,
+		Title:                 c.Title,
+		TitleOverlay:          c.TitleOverlay,
+		Categories:            copyStringSlice(c.Categories),
+		Values:                copyFloat64Slice(c.Values),
+		X:                     c.X,
+		Y:                     c.Y,
+		CX:                    c.CX,
+		CY:                    c.CY,
+		Color:                 normalizeHexColor(c.LineColor),
+		SeriesName:            c.SeriesName,
+		ShowLegend:            c.ShowLegend,
+		LegendPosition:        c.LegendPosition,
+		LegendOverlay:         c.LegendOverlay,
+		ShowDataLabels:        c.ShowDataLabels,
+		ShowMajorGridlines:    c.ShowMajorGridlines,
+		CategoryAxisTitle:     c.CategoryAxisTitle,
+		ValueAxisTitle:        c.ValueAxisTitle,
+		ValueFormat:           c.ValueFormat,
+		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
+		MinValue:              copyFloat64Pointer(c.MinValue),
+		MaxValue:              copyFloat64Pointer(c.MaxValue),
+		Grouping:              "standard",
+		Smooth:                c.Smooth,
+	}
+}
+
+// Validate checks the line chart for consistency.
+func (c LineChart) Validate(slideIndex int) error {
 	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.Values,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
+		c.Title,
+		c.Categories,
+		c.Values,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if !isHexColor(chart.LineColor) {
+	if !isHexColor(c.LineColor) {
 		return fmt.Errorf("slide %d line chart color must be 6-digit RGB hex", slideIndex)
 	}
-	if strings.TrimSpace(chart.SeriesName) == "" {
+	if strings.TrimSpace(c.SeriesName) == "" {
 		return fmt.Errorf("slide %d line chart series name cannot be empty", slideIndex)
 	}
-	if !isLegendPosition(chart.LegendPosition) {
+	if !isLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d line chart legend position must be one of r,l,t,b", slideIndex)
 	}
-	if strings.TrimSpace(chart.ValueFormat) == "" {
+	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d line chart value format cannot be empty", slideIndex)
 	}
-	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
+	if !isValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d line chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
-	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
+	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
 		return err
 	}
 	return nil
+}
+
+func validateBarChart(chart BarChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
+}
+
+func validateLineChart(chart LineChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
 }
 
 func validateChartCore(

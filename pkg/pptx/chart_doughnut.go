@@ -3,6 +3,8 @@ package pptx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 // DoughnutChart is a simple categorical doughnut chart.
@@ -62,27 +64,53 @@ func (c DoughnutChart) WithTitle(title string) DoughnutChart {
 	return c
 }
 
-func validateDoughnutChart(chart DoughnutChart, slideIndex int) error {
+// ToChartSpec converts DoughnutChart to internal XML spec.
+func (c DoughnutChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:           pptxxml.ChartKindDoughnut,
+		Title:          c.Title,
+		TitleOverlay:   c.TitleOverlay,
+		Categories:     copyStringSlice(c.Categories),
+		Values:         copyFloat64Slice(c.Values),
+		X:              c.X,
+		Y:              c.Y,
+		CX:             c.CX,
+		CY:             c.CY,
+		SeriesName:     c.SeriesName,
+		ShowLegend:     c.ShowLegend,
+		LegendPosition: c.LegendPosition,
+		LegendOverlay:  c.LegendOverlay,
+		ShowDataLabels: c.ShowDataLabels,
+		HoleSize:       c.HoleSize,
+	}
+}
+
+// Validate checks the doughnut chart for consistency.
+func (c DoughnutChart) Validate(slideIndex int) error {
 	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.Values,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
+		c.Title,
+		c.Categories,
+		c.Values,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if strings.TrimSpace(chart.SeriesName) == "" {
+	if strings.TrimSpace(c.SeriesName) == "" {
 		return fmt.Errorf("slide %d doughnut chart series name cannot be empty", slideIndex)
 	}
-	if !isLegendPosition(chart.LegendPosition) {
+	if !isLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d doughnut chart legend position must be one of r,l,t,b", slideIndex)
 	}
-	if chart.HoleSize < 10 || chart.HoleSize > 90 {
+	if c.HoleSize < 10 || c.HoleSize > 90 {
 		return fmt.Errorf("slide %d doughnut chart hole size must be between 10 and 90", slideIndex)
 	}
 	return nil
+}
+
+func validateDoughnutChart(chart DoughnutChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
 }

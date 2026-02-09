@@ -1,7 +1,7 @@
 package pptx
 
 import (
-	"github.com/djinn09/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {

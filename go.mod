@@ -1,4 +1,4 @@
-module github.com/djinn09/gopptx
+module github.com/djinn-soul/gopptx
 
 go 1.25
 

@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/djinn09/gopptx/internal/pptxxml"
+import "github.com/djinn-soul/gopptx/internal/pptxxml"
 
 func slideScatterChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 	if slide.Scatter == nil {

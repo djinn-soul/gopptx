@@ -5,16 +5,26 @@ import (
 	"strings"
 )
 
-func titleShape(title string) string {
+func titleShape(title TitleSpec) string {
 	return titleShapeAt(title, 457200, 274638, 8230200, 1143000, "l")
 }
 
-func centeredTitleShape(title string) string {
+func centeredTitleShape(title TitleSpec) string {
 	return titleShapeAt(title, 457200, 2743200, 8230200, 1371600, "ctr")
 }
 
-func titleShapeAt(title string, x int64, y int64, cx int64, cy int64, align string) string {
-	escaped := Escape(title)
+func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align string) string {
+	escaped := Escape(title.Text)
+	sz := 4400
+	if title.SizePt > 0 {
+		sz = title.SizePt * 100
+	}
+
+	colorXML := ""
+	if title.Color != "" {
+		colorXML = fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, Escape(title.Color))
+	}
+
 	return fmt.Sprintf(`
 <p:sp>
 <p:nvSpPr>
@@ -36,15 +46,15 @@ func titleShapeAt(title string, x int64, y int64, cx int64, cy int64, align stri
 <a:p>
 <a:pPr algn="%s"/>
 <a:r>
-<a:rPr lang="en-US" sz="4400" b="1" i="0" dirty="0"/>
+<a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s</a:rPr>
 <a:t>`+escaped+`</a:t>
 </a:r>
 </a:p>
 </p:txBody>
-</p:sp>`, x, y, cx, cy, Escape(align))
+</p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue(title.Underline), colorXML)
 }
 
-func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, shapeID int) string {
+func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
 	return contentShapeAt(
 		shapeID,
 		"Content",
@@ -55,10 +65,11 @@ func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRu
 		bullets,
 		bulletStyles,
 		bulletRuns,
+		style,
 	)
 }
 
-func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, shapeID int) string {
+func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
 	return contentShapeAt(
 		shapeID,
 		"Content",
@@ -69,10 +80,11 @@ func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulle
 		bullets,
 		bulletStyles,
 		bulletRuns,
+		style,
 	)
 }
 
-func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, shapeID int) string {
+func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
 	return contentShapeAt(
 		shapeID,
 		"Left Content",
@@ -83,10 +95,11 @@ func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bu
 		bullets,
 		bulletStyles,
 		bulletRuns,
+		style,
 	)
 }
 
-func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, shapeID int) string {
+func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int) string {
 	return contentShapeAt(
 		shapeID,
 		"Right Content",
@@ -97,6 +110,7 @@ func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, b
 		bullets,
 		bulletStyles,
 		bulletRuns,
+		style,
 	)
 }
 
@@ -110,6 +124,7 @@ func contentShapeAt(
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
+	style ContentStyleSpec,
 ) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(`
@@ -132,13 +147,13 @@ func contentShapeAt(
 <a:lstStyle/>`, shapeID, Escape(shapeName), x, y, cx, cy))
 
 	for i, bullet := range bullets {
-		style := bulletStyleAt(bulletStyles, i)
+		pStyle := bulletStyleAt(bulletStyles, i)
 		runs := bulletRunsAt(bulletRuns, i)
 		if len(runs) > 0 {
-			b.WriteString(bulletParagraphRuns(runs, style))
+			b.WriteString(bulletParagraphRuns(runs, pStyle, style))
 			continue
 		}
-		b.WriteString(bulletParagraph(bullet, style))
+		b.WriteString(bulletParagraph(bullet, pStyle, style))
 	}
 
 	b.WriteString(`
@@ -179,14 +194,24 @@ func splitBulletRunsForTwoColumns(runs [][]TextRunSpec, leftCount int) ([][]Text
 	return left, right
 }
 
-func bulletParagraph(text string, style BulletParagraphSpec) string {
+func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyleSpec) string {
 	escaped := Escape(text)
-	return `
+	sz := 2800
+	if style.SizePt > 0 {
+		sz = style.SizePt * 100
+	}
+
+	colorXML := ""
+	if style.Color != "" {
+		colorXML = fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, Escape(style.Color))
+	}
+
+	return fmt.Sprintf(`
 <a:p>
-` + bulletParagraphPropsXML(style) + `
+%s
 <a:r>
-<a:rPr lang="en-US" sz="2800" b="0" i="0" dirty="0"/>
-<a:t>` + escaped + `</a:t>
+<a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s</a:rPr>
+<a:t>%s</a:t>
 </a:r>
-</a:p>`
+</a:p>`, bulletParagraphPropsXML(pStyle), sz, boolToFlag(style.Bold), boolToFlag(style.Italic), runUnderlineValue(style.Underline), colorXML, escaped)
 }

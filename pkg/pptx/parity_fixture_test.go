@@ -40,6 +40,75 @@ func TestBasicParityFixtureAgainstPptRsSimpleDeck(t *testing.T) {
 	assertContainsTokens(t, "gopptx basic parity deck", ours, tokens)
 }
 
+func TestLayoutParityFixtureAgainstPptRsDeck(t *testing.T) {
+	reference := fixtureAllSlidesXML(t, "layout_demo.pptx")
+	ours := generatedAllSlidesXML(t, []SlideContent{
+		// Slide 1: Title Only
+		NewSlide("Welcome to Layout Demo").WithTitleOnlyLayout(),
+
+		// Slide 2: Centered Title
+		NewSlide("Centered Title Slide").
+			WithCenteredTitleLayout().
+			WithTitleSize(60).
+			WithTitleColor("4F81BD"),
+
+		// Slide 3: Standard Layout
+		NewSlide("Standard Layout").
+			AddBullet("Point 1: Title at top").
+			AddBullet("Point 2: Content below").
+			AddBullet("Point 3: Most common layout"),
+
+		// Slide 4: Title and Big Content
+		NewSlide("Big Content Area").
+			WithTitleAndBigContentLayout().
+			AddBullet("More space for content").
+			AddBullet("Smaller title area").
+			AddBullet("Good for detailed slides").
+			AddBullet("Maximizes content space"),
+
+		// Slide 5: Two Column Layout
+		NewSlide("Two Column Layout").
+			WithTwoColumnLayout().
+			AddBullet("Left column content").
+			AddBullet("Organized side by side").
+			AddBullet("Great for comparisons"),
+
+		// Slide 6: Blank Slide
+		NewSlide("").WithBlankLayout(),
+
+		// Slide 7: Summary
+		NewSlide("Summary").
+			WithTitleSize(48).
+			WithTitleBold(true).
+			WithTitleColor("C0504D").
+			AddBullet("Layout types implemented:").
+			AddBullet("• TitleOnly - Just title").
+			AddBullet("• CenteredTitle - Title centered").
+			AddBullet("• TitleAndContent - Standard").
+			AddBullet("• TitleAndBigContent - Large content").
+			AddBullet("• TwoColumn - Side by side").
+			AddBullet("• Blank - Empty slide").
+			WithContentSize(20),
+	})
+
+	tokens := []string{
+		`<a:t>Welcome to Layout Demo</a:t>`,
+		`<a:t>Centered Title Slide</a:t>`,
+		`sz="6000"`,
+		`<a:srgbClr val="4F81BD"/>`,
+		`<a:t>Standard Layout</a:t>`,
+		`<a:t>Big Content Area</a:t>`,
+		`<a:t>Two Column Layout</a:t>`,
+		`<a:t>Summary</a:t>`,
+		`sz="4800"`,
+		`b="1"`,
+		`<a:srgbClr val="C0504D"/>`,
+		`sz="2000"`,
+	}
+	assertContainsTokens(t, "ppt-rs layout fixture", reference, tokens)
+	assertContainsTokens(t, "gopptx layout parity deck", ours, tokens)
+}
+
 func TestTextFormattingParityFixtureAgainstPptRsProfessionalDeck(t *testing.T) {
 	reference := fixtureAllSlidesXML(t, "professional.pptx")
 	ours := generatedAllSlidesXML(t, []SlideContent{

@@ -119,7 +119,7 @@ func TestCreateWithSlidesRejectsInvalidLineChart(t *testing.T) {
 	}
 }
 
-func TestCreateWithSlidesRejectsMultipleChartKindsOnOneSlide(t *testing.T) {
+func TestCreateWithSlidesSupportsMultipleChartKindsOnOneSlide(t *testing.T) {
 	bar := NewBarChart([]string{"A"}, []float64{1})
 	line := NewLineChart([]string{"A"}, []float64{1})
 	slides := []SlideContent{
@@ -131,8 +131,8 @@ func TestCreateWithSlidesRejectsMultipleChartKindsOnOneSlide(t *testing.T) {
 	}
 
 	_, err := CreateWithSlides("Demo", slides)
-	if err == nil {
-		t.Fatalf("expected validation error for multiple chart kinds on one slide")
+	if err != nil {
+		t.Fatalf("unexpected validation error for multiple chart kinds on one slide: %v", err)
 	}
 }
 

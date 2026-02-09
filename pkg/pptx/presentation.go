@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/djinn09/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 // Create builds a valid PPTX with generated slide titles.
@@ -27,12 +27,17 @@ func Create(title string, slideCount int) ([]byte, error) {
 		slides = append(slides, NewSlide(slideTitle))
 	}
 
-	return CreateWithSlides(title, slides)
+	return CreateWithMetadata(PresentationMetadata{Title: title}, slides)
 }
 
 // CreateWithSlides builds a PPTX from caller-provided slide content.
 func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
-	if title == "" {
+	return CreateWithMetadata(PresentationMetadata{Title: title}, slides)
+}
+
+// CreateWithMetadata builds a PPTX from metadata and caller-provided slide content.
+func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byte, error) {
+	if meta.Title == "" {
 		return nil, fmt.Errorf("presentation title cannot be empty")
 	}
 	if len(slides) == 0 {
@@ -44,11 +49,15 @@ func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
 		}
 	}
 
+	if meta.SlideSize.Width == 0 || meta.SlideSize.Height == 0 {
+		meta.SlideSize = SlideSize4x3
+	}
+
 	buf := bytes.NewBuffer(nil)
 	zw := zip.NewWriter(buf)
 	count := len(slides)
 
-	if err := writePackageFiles(zw, title, slides, count); err != nil {
+	if err := writePackageFiles(zw, meta, slides, count); err != nil {
 		_ = zw.Close()
 		return nil, err
 	}
@@ -60,14 +69,14 @@ func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
 
 // WriteFile is a convenience helper that writes the generated PPTX to disk.
 func WriteFile(path string, title string, slides []SlideContent) error {
-	data, err := CreateWithSlides(title, slides)
+	data, err := CreateWithMetadata(PresentationMetadata{Title: title, SlideSize: SlideSize4x3}, slides)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(path, data, 0o600)
 }
 
-func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slideCount int) error {
+func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []SlideContent, slideCount int) error {
 	mediaCatalog, err := buildMediaCatalog(slides)
 	if err != nil {
 		return err
@@ -85,7 +94,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.imageExtensions(), len(chartParts), notesSlideNumbers(notesParts), hasNotes)},
 		{"_rels/.rels", pptxxml.RootRelationships()},
 		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes)},
-		{"ppt/presentation.xml", pptxxml.Presentation(title, slideCount, hasNotes)},
+		{"ppt/presentation.xml", pptxxml.Presentation(meta.Title, slideCount, hasNotes, meta.SlideSize.Width, meta.SlideSize.Height)},
 		{"ppt/slideLayouts/slideLayout1.xml", pptxxml.SlideLayoutTitleAndContent()},
 		{"ppt/slideLayouts/_rels/slideLayout1.xml.rels", pptxxml.SlideLayoutRelationships()},
 		{"ppt/slideLayouts/slideLayout2.xml", pptxxml.SlideLayoutTitleOnly()},
@@ -101,8 +110,13 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		{"ppt/slideMasters/slideMaster1.xml", pptxxml.SlideMaster()},
 		{"ppt/slideMasters/_rels/slideMaster1.xml.rels", pptxxml.SlideMasterRelationships()},
 		{"ppt/theme/theme1.xml", pptxxml.Theme()},
-		{"docProps/core.xml", pptxxml.CoreProperties(title)},
-		{"docProps/app.xml", pptxxml.AppProperties(slideCount, len(notesParts))},
+		{"docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
+			Title:       meta.Title,
+			Subject:     meta.Subject,
+			Creator:     meta.Creator,
+			Description: meta.Description,
+		})},
+		{"docProps/app.xml", pptxxml.AppProperties(slideCount, len(notesParts), meta.SlideSize.Width, meta.SlideSize.Height)},
 	}
 	if hasNotes {
 		files = append(files,
@@ -165,16 +179,18 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			}
 
 			imageRefs = append(imageRefs, pptxxml.ImageRef{
-				RelID:    relID,
-				Name:     fmt.Sprintf("Picture %d", imageIndex+1),
-				X:        image.X,
-				Y:        image.Y,
-				CX:       image.CX,
-				CY:       image.CY,
-				Rotation: int64(image.Rotation * 60000),
-				FlipH:    image.FlipH,
-				FlipV:    image.FlipV,
-				Crop:     crop,
+				RelID:      relID,
+				Name:       fmt.Sprintf("Picture %d", imageIndex+1),
+				X:          image.X,
+				Y:          image.Y,
+				CX:         image.CX,
+				CY:         image.CY,
+				Rotation:   int64(image.Rotation * 60000),
+				FlipH:      image.FlipH,
+				FlipV:      image.FlipV,
+				Crop:       crop,
+				Shadow:     image.Shadow,
+				Reflection: image.Reflection,
 			})
 			imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
 		}
@@ -195,10 +211,12 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 				imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
 
 				ref := &pptxxml.ImageRef{
-					RelID: rid,
-					Name:  "Placeholder Picture",
-					FlipH: override.Image.FlipH,
-					FlipV: override.Image.FlipV,
+					RelID:      rid,
+					Name:       "Placeholder Picture",
+					FlipH:      override.Image.FlipH,
+					FlipV:      override.Image.FlipV,
+					Shadow:     override.Image.Shadow,
+					Reflection: override.Image.Reflection,
 				}
 				placeholderImageRefs[override.Index] = ref
 			}
@@ -213,19 +231,50 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 
 		var chartFrame *pptxxml.ChartFrame
 		var chartRel *pptxxml.ChartRel
-		if part, ok := chartBySlide[i]; ok {
-			rid := fmt.Sprintf("rId%d", nextRID)
-			nextRID++
-			chartFrame = &pptxxml.ChartFrame{
-				RelID: rid,
-				X:     part.spec.X,
-				Y:     part.spec.Y,
-				CX:    part.spec.CX,
-				CY:    part.spec.CY,
+		placeholderChartFrames := make(map[int]*pptxxml.ChartFrame)
+		placeholderChartRels := make([]pptxxml.ChartRel, 0)
+
+		if parts, ok := chartBySlide[i]; ok {
+			partIdx := 0
+			// Primary chart (if slide.Chart etc is set)
+			if slideChartKindDefined(slide) {
+				part := parts[partIdx]
+				partIdx++
+				rid := fmt.Sprintf("rId%d", nextRID)
+				nextRID++
+				chartFrame = &pptxxml.ChartFrame{
+					RelID: rid,
+					X:     part.spec.X,
+					Y:     part.spec.Y,
+					CX:    part.spec.CX,
+					CY:    part.spec.CY,
+				}
+				chartRel = &pptxxml.ChartRel{
+					RID:    rid,
+					Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
+				}
 			}
-			chartRel = &pptxxml.ChartRel{
-				RID:    rid,
-				Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
+
+			// Placeholder charts
+			for _, override := range slide.PlaceholderOverrides {
+				if override.Chart != nil {
+					part := parts[partIdx]
+					partIdx++
+					rid := fmt.Sprintf("rId%d", nextRID)
+					nextRID++
+					frame := &pptxxml.ChartFrame{
+						RelID: rid,
+						X:     part.spec.X,
+						Y:     part.spec.Y,
+						CX:    part.spec.CX,
+						CY:    part.spec.CY,
+					}
+					placeholderChartFrames[override.Index] = frame
+					placeholderChartRels = append(placeholderChartRels, pptxxml.ChartRel{
+						RID:    rid,
+						Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
+					})
+				}
 			}
 		}
 
@@ -246,6 +295,10 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 			if spec, ok := placeholderTableSpecs[override.Index]; ok {
 				tableRef = spec
 			}
+			var chartRef *pptxxml.ChartFrame
+			if frame, ok := placeholderChartFrames[override.Index]; ok {
+				chartRef = frame
+			}
 
 			placeholderSpecs = append(placeholderSpecs, pptxxml.PlaceholderOverrideSpec{
 				Index: override.Index,
@@ -253,6 +306,7 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 				Text:  override.Text,
 				Image: imageRef,
 				Table: tableRef,
+				Chart: chartRef,
 			})
 		}
 
@@ -260,12 +314,29 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		shapeIDs := calculateShapeIDs(slide)
 		animationsXML := slideAnimationsXML(slide, shapeIDs)
 
+		titleSpec := pptxxml.TitleSpec{
+			Text:      slide.Title,
+			SizePt:    slide.TitleSize,
+			Color:     slide.TitleColor,
+			Bold:      slide.TitleBold,
+			Italic:    slide.TitleItalic,
+			Underline: slide.TitleUnderline,
+		}
+		contentStyle := pptxxml.ContentStyleSpec{
+			SizePt:    slide.ContentSize,
+			Color:     slide.ContentColor,
+			Bold:      slide.ContentBold,
+			Italic:    slide.ContentItalic,
+			Underline: slide.ContentUnderline,
+		}
+
 		slideXML := pptxxml.SlideWithLayout(
 			layoutMode,
-			slide.Title,
+			titleSpec,
 			slide.Bullets,
 			bulletStyles,
 			bulletRuns,
+			contentStyle,
 			tableSpec,
 			chartFrame,
 			imageRefs,
@@ -284,10 +355,11 @@ func writePackageFiles(zw *zip.Writer, title string, slides []SlideContent, slid
 		if err := writeFile(
 			zw,
 			relsPath,
-			pptxxml.SlideRelationshipsWithHyperlinks(
+			pptxxml.SlideRelationshipsWithMultiCharts(
 				slideLayoutTarget(slide.Layout),
 				imageTargets,
 				chartRel,
+				placeholderChartRels,
 				notesTargets[slideNumber],
 				hyperlinks,
 			),

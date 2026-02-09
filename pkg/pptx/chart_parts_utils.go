@@ -1,6 +1,6 @@
 package pptx
 
-import "github.com/djinn09/gopptx/internal/pptxxml"
+import "github.com/djinn-soul/gopptx/internal/pptxxml"
 
 func copyStringSlice(values []string) []string {
 	out := make([]string, len(values))

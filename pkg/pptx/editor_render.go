@@ -3,7 +3,7 @@ package pptx
 import (
 	"fmt"
 
-	"github.com/djinn09/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget string) (string, string, error) {
@@ -16,12 +16,29 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 	shapeIDs := calculateShapeIDs(slide)
 	animationsXML := slideAnimationsXML(slide, shapeIDs)
 
+	titleSpec := pptxxml.TitleSpec{
+		Text:      slide.Title,
+		SizePt:    slide.TitleSize,
+		Color:     slide.TitleColor,
+		Bold:      slide.TitleBold,
+		Italic:    slide.TitleItalic,
+		Underline: slide.TitleUnderline,
+	}
+	contentStyle := pptxxml.ContentStyleSpec{
+		SizePt:    slide.ContentSize,
+		Color:     slide.ContentColor,
+		Bold:      slide.ContentBold,
+		Italic:    slide.ContentItalic,
+		Underline: slide.ContentUnderline,
+	}
+
 	slideXML := pptxxml.SlideWithLayout(
 		layoutMode,
-		slide.Title,
+		titleSpec,
 		slide.Bullets,
 		toXMLBulletParagraphStyles(slide.BulletStyles),
 		toXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
+		contentStyle,
 		tableSpec,
 		nil,
 		nil,

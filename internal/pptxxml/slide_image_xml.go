@@ -4,16 +4,18 @@ import "fmt"
 
 // ImageRef describes one image reference in a slide.
 type ImageRef struct {
-	RelID    string
-	Name     string
-	X        int64
-	Y        int64
-	CX       int64
-	CY       int64
-	Rotation int64 // 60000ths of a degree
-	FlipH    bool
-	FlipV    bool
-	Crop     *ImageCropRef
+	RelID      string
+	Name       string
+	X          int64
+	Y          int64
+	CX         int64
+	CY         int64
+	Rotation   int64 // 60000ths of a degree
+	FlipH      bool
+	FlipV      bool
+	Crop       *ImageCropRef
+	Shadow     bool
+	Reflection bool
 }
 
 // ImageCropRef defines cropping percentages (0-100000 range for OOXML).
@@ -62,12 +64,24 @@ func imageShape(image ImageRef, shapeID int) string {
 		}
 	}
 
+	effectsXML := ""
+	if image.Shadow || image.Reflection {
+		effectsXML = "<a:effectLst>"
+		if image.Shadow {
+			effectsXML += `<a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr></a:outerShdw>`
+		}
+		if image.Reflection {
+			effectsXML += `<a:ref blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0" dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`
+		}
+		effectsXML += "</a:effectLst>"
+	}
+
 	return fmt.Sprintf(`
 <p:pic>
 <p:nvPicPr>
 <p:cNvPr id="%d" name="%s"/>
 <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
-<p:nvPr/>
+</p:nvPr>
 </p:nvPicPr>
 <p:blipFill>
 <a:blip r:embed="%s"/>
@@ -80,6 +94,7 @@ func imageShape(image ImageRef, shapeID int) string {
 <a:ext cx="%d" cy="%d"/>
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+%s
 </p:spPr>
 </p:pic>`,
 		shapeID,
@@ -91,5 +106,6 @@ func imageShape(image ImageRef, shapeID int) string {
 		image.Y,
 		image.CX,
 		image.CY,
+		effectsXML,
 	)
 }

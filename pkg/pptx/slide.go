@@ -7,6 +7,16 @@ import (
 // SlideContent describes the user-visible content of a slide.
 type SlideContent struct {
 	Title                string
+	TitleSize            int
+	TitleColor           string
+	TitleBold            bool
+	TitleItalic          bool
+	TitleUnderline       bool
+	ContentSize          int
+	ContentColor         string
+	ContentBold          bool
+	ContentItalic        bool
+	ContentUnderline     bool
 	Layout               string
 	Transition           SlideTransition
 	DefaultBulletStyle   TextParagraphStyle
@@ -41,6 +51,66 @@ type SlideContent struct {
 	PlaceholderOverrides []PlaceholderContent
 }
 
+// WithTitleSize sets the font size for the slide title.
+func (s SlideContent) WithTitleSize(size int) SlideContent {
+	s.TitleSize = size
+	return s
+}
+
+// WithTitleColor sets the RGB hex color for the slide title.
+func (s SlideContent) WithTitleColor(color string) SlideContent {
+	s.TitleColor = normalizeHexColor(color)
+	return s
+}
+
+// WithTitleBold sets whether the slide title is bold.
+func (s SlideContent) WithTitleBold(bold bool) SlideContent {
+	s.TitleBold = bold
+	return s
+}
+
+// WithTitleItalic sets whether the slide title is italic.
+func (s SlideContent) WithTitleItalic(italic bool) SlideContent {
+	s.TitleItalic = italic
+	return s
+}
+
+// WithTitleUnderline sets whether the slide title is underlined.
+func (s SlideContent) WithTitleUnderline(underline bool) SlideContent {
+	s.TitleUnderline = underline
+	return s
+}
+
+// WithContentSize sets the default font size for bullet content.
+func (s SlideContent) WithContentSize(size int) SlideContent {
+	s.ContentSize = size
+	return s
+}
+
+// WithContentColor sets the default RGB hex color for bullet content.
+func (s SlideContent) WithContentColor(color string) SlideContent {
+	s.ContentColor = normalizeHexColor(color)
+	return s
+}
+
+// WithContentBold sets whether the bullet content is bold by default.
+func (s SlideContent) WithContentBold(bold bool) SlideContent {
+	s.ContentBold = bold
+	return s
+}
+
+// WithContentItalic sets whether the bullet content is italic by default.
+func (s SlideContent) WithContentItalic(italic bool) SlideContent {
+	s.ContentItalic = italic
+	return s
+}
+
+// WithContentUnderline sets whether the bullet content is underlined by default.
+func (s SlideContent) WithContentUnderline(underline bool) SlideContent {
+	s.ContentUnderline = underline
+	return s
+}
+
 // PlaceholderContent overrides content for a layout placeholder.
 type PlaceholderContent struct {
 	Index int
@@ -48,7 +118,16 @@ type PlaceholderContent struct {
 	Text  string
 	Image *Image
 	Table *Table
-	// TODO: Charts
+	Chart ChartDefinition
+}
+
+// WithPlaceholderChart adds a chart to a specific placeholder index.
+func (s SlideContent) WithPlaceholderChart(idx int, chart ChartDefinition) SlideContent {
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+		Index: idx,
+		Chart: chart,
+	})
+	return s
 }
 
 // WithPlaceholderImage adds an image to a specific placeholder index.
@@ -121,6 +200,9 @@ func (s SlideContent) Validate(slideIndex int) error {
 	if err := validateSlideTransition(s, slideIndex); err != nil {
 		return err
 	}
+	if err := validateSlideStyle(s, slideIndex); err != nil {
+		return err
+	}
 	for bulletIndex, bullet := range s.Bullets {
 		if bullet == "" {
 			return fmt.Errorf("slide %d bullet %d cannot be empty", slideIndex, bulletIndex+1)
@@ -150,9 +232,6 @@ func (s SlideContent) Validate(slideIndex int) error {
 	}
 	if err := validateSlideCharts(s, slideIndex); err != nil {
 		return err
-	}
-	if chartKindCount(s) > 1 {
-		return fmt.Errorf("slide %d cannot have more than one chart kind", slideIndex)
 	}
 	return nil
 }

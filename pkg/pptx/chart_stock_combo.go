@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 // StockHLCChart is a stock chart with High/Low/Close series.
@@ -55,6 +57,64 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, close 
 	}
 }
 
+// ToChartSpec converts StockHLCChart to internal XML spec.
+func (c StockHLCChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:                  pptxxml.ChartKindStockHLC,
+		Title:                 c.Title,
+		TitleOverlay:          c.TitleOverlay,
+		Categories:            copyStringSlice(c.Categories),
+		HighValues:            copyFloat64Slice(c.HighValues),
+		LowValues:             copyFloat64Slice(c.LowValues),
+		CloseValues:           copyFloat64Slice(c.CloseValues),
+		X:                     c.X,
+		Y:                     c.Y,
+		CX:                    c.CX,
+		CY:                    c.CY,
+		ShowLegend:            c.ShowLegend,
+		LegendPosition:        c.LegendPosition,
+		LegendOverlay:         c.LegendOverlay,
+		ShowDataLabels:        c.ShowDataLabels,
+		ShowMajorGridlines:    c.ShowMajorGridlines,
+		CategoryAxisTitle:     c.CategoryAxisTitle,
+		ValueAxisTitle:        c.ValueAxisTitle,
+		ValueFormat:           c.ValueFormat,
+		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
+		MinValue:              copyFloat64Pointer(c.MinValue),
+		MaxValue:              copyFloat64Pointer(c.MaxValue),
+	}
+}
+
+// Validate checks the stock chart for consistency.
+func (c StockHLCChart) Validate(slideIndex int) error {
+	if err := validateStockCore(
+		slideIndex,
+		c.Title,
+		c.Categories,
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
+		c.ValueFormat,
+		c.LegendPosition,
+		c.ValueAxisCrossBetween,
+		c.MinValue,
+		c.MaxValue,
+	); err != nil {
+		return err
+	}
+	if err := validateStockSeries(c.HighValues, c.Categories, slideIndex, "high"); err != nil {
+		return err
+	}
+	if err := validateStockSeries(c.LowValues, c.Categories, slideIndex, "low"); err != nil {
+		return err
+	}
+	if err := validateStockSeries(c.CloseValues, c.Categories, slideIndex, "close"); err != nil {
+		return err
+	}
+	return nil
+}
+
 // StockOHLCChart is a stock chart with Open/High/Low/Close series.
 type StockOHLCChart struct {
 	StockHLCChart
@@ -74,6 +134,22 @@ func NewStockOHLCChart(
 		StockHLCChart: base,
 		OpenValues:    openVals,
 	}
+}
+
+// ToChartSpec converts StockOHLCChart to internal XML spec.
+func (c StockOHLCChart) ToChartSpec() *pptxxml.ChartSpec {
+	spec := c.StockHLCChart.ToChartSpec()
+	spec.Kind = pptxxml.ChartKindStockOHLC
+	spec.OpenValues = copyFloat64Slice(c.OpenValues)
+	return spec
+}
+
+// Validate checks the stock chart for consistency.
+func (c StockOHLCChart) Validate(slideIndex int) error {
+	if err := c.StockHLCChart.Validate(slideIndex); err != nil {
+		return err
+	}
+	return validateStockSeries(c.OpenValues, c.Categories, slideIndex, "open")
 }
 
 // ComboChart mixes bar and line series on one category axis.
@@ -119,74 +195,78 @@ func NewComboChart(categories []string, barSeries []Series, lineSeries []Series)
 	}
 }
 
-func validateStockHLCChart(chart StockHLCChart, slideIndex int) error {
-	if err := validateStockCore(
+// ToChartSpec converts ComboChart to internal XML spec.
+func (c ComboChart) ToChartSpec() *pptxxml.ChartSpec {
+	return &pptxxml.ChartSpec{
+		Kind:                  pptxxml.ChartKindCombo,
+		Title:                 c.Title,
+		TitleOverlay:          c.TitleOverlay,
+		Categories:            copyStringSlice(c.Categories),
+		BarSeries:             toXMLSeries(c.BarSeries),
+		LineSeries:            toXMLSeries(c.LineSeries),
+		X:                     c.X,
+		Y:                     c.Y,
+		CX:                    c.CX,
+		CY:                    c.CY,
+		ShowLegend:            c.ShowLegend,
+		LegendPosition:        c.LegendPosition,
+		LegendOverlay:         c.LegendOverlay,
+		ShowDataLabels:        c.ShowDataLabels,
+		ShowMajorGridlines:    c.ShowMajorGridlines,
+		CategoryAxisTitle:     c.CategoryAxisTitle,
+		ValueAxisTitle:        c.ValueAxisTitle,
+		ValueFormat:           c.ValueFormat,
+		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
+		MinValue:              copyFloat64Pointer(c.MinValue),
+		MaxValue:              copyFloat64Pointer(c.MaxValue),
+	}
+}
+
+// Validate checks the combo chart for consistency.
+func (c ComboChart) Validate(slideIndex int) error {
+	if err := validateChartCore(
 		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
-		chart.ValueFormat,
-		chart.LegendPosition,
-		chart.ValueAxisCrossBetween,
-		chart.MinValue,
-		chart.MaxValue,
+		c.Title,
+		c.Categories,
+		c.CategoriesToValues(),
+		c.X,
+		c.Y,
+		c.CX,
+		c.CY,
 	); err != nil {
 		return err
 	}
-	if err := validateStockSeries(chart.HighValues, chart.Categories, slideIndex, "high"); err != nil {
+	if !isLegendPosition(c.LegendPosition) {
+		return fmt.Errorf("slide %d combo chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if strings.TrimSpace(c.ValueFormat) == "" {
+		return fmt.Errorf("slide %d combo chart value format cannot be empty", slideIndex)
+	}
+	if !isValueAxisCrossBetween(c.ValueAxisCrossBetween) {
+		return fmt.Errorf("slide %d combo chart value-axis crossBetween must be between or midCat", slideIndex)
+	}
+	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
 		return err
 	}
-	if err := validateStockSeries(chart.LowValues, chart.Categories, slideIndex, "low"); err != nil {
+	if err := validateSeriesList(c.BarSeries, len(c.Categories), slideIndex, "combo bar"); err != nil {
 		return err
 	}
-	if err := validateStockSeries(chart.CloseValues, chart.Categories, slideIndex, "close"); err != nil {
+	if err := validateSeriesList(c.LineSeries, len(c.Categories), slideIndex, "combo line"); err != nil {
 		return err
 	}
 	return nil
+}
+
+func validateStockHLCChart(chart StockHLCChart, slideIndex int) error {
+	return chart.Validate(slideIndex)
 }
 
 func validateStockOHLCChart(chart StockOHLCChart, slideIndex int) error {
-	if err := validateStockHLCChart(chart.StockHLCChart, slideIndex); err != nil {
-		return err
-	}
-	return validateStockSeries(chart.OpenValues, chart.Categories, slideIndex, "open")
+	return chart.Validate(slideIndex)
 }
 
 func validateComboChart(chart ComboChart, slideIndex int) error {
-	if err := validateChartCore(
-		slideIndex,
-		chart.Title,
-		chart.Categories,
-		chart.CategoriesToValues(),
-		chart.X,
-		chart.Y,
-		chart.CX,
-		chart.CY,
-	); err != nil {
-		return err
-	}
-	if !isLegendPosition(chart.LegendPosition) {
-		return fmt.Errorf("slide %d combo chart legend position must be one of r,l,t,b", slideIndex)
-	}
-	if strings.TrimSpace(chart.ValueFormat) == "" {
-		return fmt.Errorf("slide %d combo chart value format cannot be empty", slideIndex)
-	}
-	if !isValueAxisCrossBetween(chart.ValueAxisCrossBetween) {
-		return fmt.Errorf("slide %d combo chart value-axis crossBetween must be between or midCat", slideIndex)
-	}
-	if err := validateValueRange(chart.MinValue, chart.MaxValue, slideIndex); err != nil {
-		return err
-	}
-	if err := validateSeriesList(chart.BarSeries, len(chart.Categories), slideIndex, "combo bar"); err != nil {
-		return err
-	}
-	if err := validateSeriesList(chart.LineSeries, len(chart.Categories), slideIndex, "combo line"); err != nil {
-		return err
-	}
-	return nil
+	return chart.Validate(slideIndex)
 }
 
 func (c ComboChart) CategoriesToValues() []float64 {

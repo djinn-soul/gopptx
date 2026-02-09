@@ -76,6 +76,35 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
 </p:graphicFrame>`, id, ph.Index, phAttr, xfrm, tableGraphicXML(ph.Table))
 	}
 
+	if ph.Chart != nil {
+		// Render as chart graphicFrame
+		xfrm := ""
+		if ph.Chart.X != 0 || ph.Chart.Y != 0 || ph.Chart.CX != 0 || ph.Chart.CY != 0 {
+			xfrm = fmt.Sprintf(`
+  <p:xfrm>
+    <a:off x="%d" y="%d"/>
+    <a:ext cx="%d" cy="%d"/>
+  </p:xfrm>`, ph.Chart.X, ph.Chart.Y, ph.Chart.CX, ph.Chart.CY)
+		}
+
+		return fmt.Sprintf(`
+<p:graphicFrame>
+  <p:nvGraphicFramePr>
+    <p:cNvPr id="%d" name="Placeholder Chart %d"/>
+    <p:cNvGraphicFramePr/>
+    <p:nvPr>
+      <p:ph%s/>
+    </p:nvPr>
+  </p:nvGraphicFramePr>
+  %s
+  <a:graphic>
+    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+      <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="%s"/>
+    </a:graphicData>
+  </a:graphic>
+</p:graphicFrame>`, id, ph.Index, phAttr, xfrm, Escape(ph.Chart.RelID))
+	}
+
 	// Default to Text/Shape
 
 	// Text body

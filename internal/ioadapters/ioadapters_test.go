@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/djinn09/gopptx/internal/ioadapters"
+	"github.com/djinn-soul/gopptx/internal/ioadapters"
 )
 
 func TestAdaptedReaderAt(t *testing.T) {

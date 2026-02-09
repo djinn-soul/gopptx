@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/djinn09/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func TestImageAdvancedSources(t *testing.T) {

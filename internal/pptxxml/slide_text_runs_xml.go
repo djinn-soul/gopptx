@@ -31,7 +31,7 @@ func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
 	return allRuns[index]
 }
 
-func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec) string {
+func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec, contentStyle ContentStyleSpec) string {
 	var b strings.Builder
 	b.WriteString(`
 <a:p>
@@ -40,25 +40,25 @@ func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec) string {
 		if strings.TrimSpace(run.Text) == "" {
 			continue
 		}
-		b.WriteString(richTextRun(run))
+		b.WriteString(richTextRun(run, contentStyle))
 	}
 	b.WriteString(`
 </a:p>`)
 	return b.String()
 }
 
-func richTextRun(run TextRunSpec) string {
+func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	var b strings.Builder
 	b.WriteString(`
 <a:r>
 <a:rPr lang="en-US" sz="`)
-	b.WriteString(runSizeValue(run.SizePt))
+	b.WriteString(runSizeValueWithDefault(run.SizePt, contentStyle.SizePt))
 	b.WriteString(`" b="`)
-	b.WriteString(boolToFlag(run.Bold))
+	b.WriteString(boolToFlag(run.Bold || contentStyle.Bold))
 	b.WriteString(`" i="`)
-	b.WriteString(boolToFlag(run.Italic))
+	b.WriteString(boolToFlag(run.Italic || contentStyle.Italic))
 	b.WriteString(`" u="`)
-	b.WriteString(runUnderlineValue(run.Underline))
+	b.WriteString(runUnderlineValue(run.Underline || contentStyle.Underline))
 	b.WriteString(`"`)
 	if run.Strikethrough {
 		b.WriteString(` strike="sngStrike"`)
@@ -80,7 +80,12 @@ func richTextRun(run TextRunSpec) string {
 		b.WriteString(`"/></a:highlight>`)
 	}
 
-	if color := strings.TrimSpace(run.Color); color != "" {
+	color := strings.TrimSpace(run.Color)
+	if color == "" {
+		color = strings.TrimSpace(contentStyle.Color)
+	}
+
+	if color != "" {
 		b.WriteString(`<a:solidFill><a:srgbClr val="`)
 		b.WriteString(Escape(color))
 		b.WriteString(`"/></a:solidFill>`)
@@ -99,11 +104,14 @@ func richTextRun(run TextRunSpec) string {
 	return b.String()
 }
 
-func runSizeValue(sizePt int) string {
-	if sizePt <= 0 {
-		return strconv.Itoa(defaultBulletRunSize)
+func runSizeValueWithDefault(sizePt int, defaultSizePt int) string {
+	if sizePt > 0 {
+		return strconv.Itoa(sizePt * 100)
 	}
-	return strconv.Itoa(sizePt * 100)
+	if defaultSizePt > 0 {
+		return strconv.Itoa(defaultSizePt * 100)
+	}
+	return strconv.Itoa(defaultBulletRunSize)
 }
 
 func runFont(run TextRunSpec) string {
