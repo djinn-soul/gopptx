@@ -36,9 +36,17 @@ func TestPlaceholderMultiChart(t *testing.T) {
 	for _, f := range zr.File {
 		if f.Name == "ppt/slides/slide1.xml" {
 			foundSlide = true
-			rc, _ := f.Open()
-			content, _ := io.ReadAll(rc)
-			rc.Close()
+			rc, err := f.Open()
+			if err != nil {
+				t.Fatalf("failed to open slide1.xml: %v", err)
+			}
+			content, err := io.ReadAll(rc)
+			if err != nil {
+				t.Fatalf("failed to read slide1.xml: %v", err)
+			}
+			if err := rc.Close(); err != nil {
+				t.Errorf("failed to close rc: %v", err)
+			}
 			xml := string(content)
 
 			if !strings.Contains(xml, `r:id="rId2"`) {
@@ -64,9 +72,17 @@ func TestPlaceholderMultiChart(t *testing.T) {
 	for _, f := range zr.File {
 		if f.Name == "ppt/slides/_rels/slide1.xml.rels" {
 			foundRels = true
-			rc, _ := f.Open()
-			content, _ := io.ReadAll(rc)
-			rc.Close()
+			rc, err := f.Open()
+			if err != nil {
+				t.Fatalf("failed to open slide1.xml.rels: %v", err)
+			}
+			content, err := io.ReadAll(rc)
+			if err != nil {
+				t.Fatalf("failed to read slide1.xml.rels: %v", err)
+			}
+			if err := rc.Close(); err != nil {
+				t.Errorf("failed to close rc: %v", err)
+			}
 			xml := string(content)
 
 			if !strings.Contains(xml, `Id="rId2"`) || !strings.Contains(xml, `Target="../charts/chart1.xml"`) {

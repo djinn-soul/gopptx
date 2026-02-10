@@ -36,9 +36,11 @@ func TestCreateWithMetadata(t *testing.T) {
 				t.Fatalf("failed to open core.xml: %v", err)
 			}
 			content, err := io.ReadAll(rc)
-			rc.Close()
 			if err != nil {
 				t.Fatalf("failed to read core.xml: %v", err)
+			}
+			if err := rc.Close(); err != nil {
+				t.Fatalf("failed to close core.xml: %v", err)
 			}
 
 			xml := string(content)
@@ -86,7 +88,9 @@ func TestSlideSize(t *testing.T) {
 		if f.Name == "ppt/presentation.xml" {
 			rc, _ := f.Open()
 			content, _ := io.ReadAll(rc)
-			rc.Close()
+			if err := rc.Close(); err != nil {
+				t.Errorf("failed to close presentation.xml: %v", err)
+			}
 			xml := string(content)
 			if !strings.Contains(xml, `cx="12192000" cy="6858000" type="screen16x9"`) {
 				t.Errorf("incorrect slide size in presentation.xml: %s", xml)
@@ -95,7 +99,9 @@ func TestSlideSize(t *testing.T) {
 		if f.Name == "docProps/app.xml" {
 			rc, _ := f.Open()
 			content, _ := io.ReadAll(rc)
-			rc.Close()
+			if err := rc.Close(); err != nil {
+				t.Errorf("failed to close app.xml: %v", err)
+			}
 			xml := string(content)
 			if !strings.Contains(xml, "<PresentationFormat>Widescreen</PresentationFormat>") {
 				t.Errorf("incorrect presentation format in app.xml: %s", xml)

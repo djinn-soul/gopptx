@@ -73,14 +73,6 @@ const (
 
 // Helper aliases
 var (
-	copyStringSlice         = charts.CopyStringSlice
-	copyFloat64Slice        = charts.CopyFloat64Slice
-	copyFloat64Pointer      = charts.CopyFloat64Pointer
-	normalizeHexColor       = charts.NormalizeHexColor
-	toXMLSeries             = charts.ToXMLSeries
-	isHexColor              = charts.IsHexColor
-	isLegendPosition        = charts.IsLegendPosition
-	isValueAxisCrossBetween = charts.IsValueAxisCrossBetween
-	validateSeriesList      = charts.ValidateSeriesList
-	copySeriesList          = charts.CopySeriesList
+	normalizeHexColor = charts.NormalizeHexColor
+	isHexColor        = charts.IsHexColor
 )

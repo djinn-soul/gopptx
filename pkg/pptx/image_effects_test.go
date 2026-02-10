@@ -40,7 +40,9 @@ func TestImageEffects(t *testing.T) {
 			found = true
 			rc, _ := f.Open()
 			content, _ := io.ReadAll(rc)
-			rc.Close()
+			if err := rc.Close(); err != nil {
+				t.Errorf("failed to close rc: %v", err)
+			}
 			xml := string(content)
 
 			if !strings.Contains(xml, "<a:effectLst>") {
