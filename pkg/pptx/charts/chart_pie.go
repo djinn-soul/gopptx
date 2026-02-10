@@ -93,6 +93,7 @@ func (c PieChart) Validate(slideIndex int) error {
 		c.Y,
 		c.CX,
 		c.CY,
+		false,
 	); err != nil {
 		return err
 	}

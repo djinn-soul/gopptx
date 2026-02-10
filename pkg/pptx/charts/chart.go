@@ -209,6 +209,7 @@ func (c BarChart) Validate(slideIndex int) error {
 		c.Y,
 		c.CX,
 		c.CY,
+		false,
 	); err != nil {
 		return err
 	}
@@ -274,6 +275,7 @@ func (c LineChart) Validate(slideIndex int) error {
 		c.Y,
 		c.CX,
 		c.CY,
+		true,
 	); err != nil {
 		return err
 	}
@@ -307,6 +309,7 @@ func validateChartCore(
 	y int64,
 	cx int64,
 	cy int64,
+	allowNegative bool,
 ) error {
 	if x < 0 || y < 0 {
 		return fmt.Errorf("slide %d chart position cannot be negative", slideIndex)
@@ -329,30 +332,26 @@ func validateChartCore(
 		)
 	}
 
-	hasPositive := false
+	hasNonZero := false
 	for i := range categories {
 		if strings.TrimSpace(categories[i]) == "" {
 			return fmt.Errorf("slide %d chart category %d cannot be empty", slideIndex, i+1)
 		}
-		if values[i] < 0 {
+		if !allowNegative && values[i] < 0 {
 			return fmt.Errorf("slide %d chart value %d cannot be negative", slideIndex, i+1)
 		}
-		if values[i] > 0 {
-			hasPositive = true
+		if values[i] != 0 {
+			hasNonZero = true
 		}
 	}
-	if !hasPositive {
-		return fmt.Errorf("slide %d chart requires at least one positive value", slideIndex)
+	if !hasNonZero {
+		return fmt.Errorf("slide %d chart requires at least one non-zero value", slideIndex)
 	}
 	return nil
 }
 
 func copyChartData(categories []string, values []float64) ([]string, []float64) {
-	cats := make([]string, len(categories))
-	copy(cats, categories)
-	vals := make([]float64, len(values))
-	copy(vals, values)
-	return cats, vals
+	return CopyStringSlice(categories), CopyFloat64Slice(values)
 }
 
 func validateValueRange(minValue *float64, maxValue *float64, slideIndex int) error {

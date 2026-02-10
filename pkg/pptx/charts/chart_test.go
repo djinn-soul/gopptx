@@ -258,3 +258,25 @@ func TestCreateWithSlidesRejectsEmptySeriesName(t *testing.T) {
 		t.Fatalf("expected validation error for empty series name")
 	}
 }
+
+func TestLineChartSupportsNegativeValues(t *testing.T) {
+	chart := charts.NewLineChart(
+		[]string{"Jan", "Feb", "Mar"},
+		[]float64{10, -5, 15},
+	)
+	err := chart.Validate(1)
+	if err != nil {
+		t.Fatalf("expected LineChart to support negative values: %v", err)
+	}
+}
+
+func TestBarChartRejectsNegativeValues(t *testing.T) {
+	chart := charts.NewBarChart(
+		[]string{"Q1", "Q2"},
+		[]float64{10, -5},
+	)
+	err := chart.Validate(1)
+	if err == nil {
+		t.Fatalf("expected BarChart to reject negative values")
+	}
+}
