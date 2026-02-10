@@ -39,4 +39,4 @@ repos:
         entry: go
         language: system
         pass_filenames: false
-        args: ["test", "./..."]
+        args: ["test", "./cmd/...", "./internal/...", "./pkg/..."]

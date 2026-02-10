@@ -1,4 +1,4 @@
-package pptx
+package tables
 
 // WithMarginsPt sets all cell text margins in points.
 func (c TableCell) WithMarginsPt(points float64) TableCell {
@@ -51,7 +51,8 @@ func (c TableCell) withMargin(side string, points float64) TableCell {
 	return c
 }
 
-func cloneFloat64Pointer(value *float64) *float64 {
+// CloneFloat64Pointer clones a float64 pointer.
+func CloneFloat64Pointer(value *float64) *float64 {
 	if value == nil {
 		return nil
 	}
@@ -59,7 +60,8 @@ func cloneFloat64Pointer(value *float64) *float64 {
 	return &v
 }
 
-func cloneBoolPointer(value *bool) *bool {
+// CloneBoolPointer clones a bool pointer.
+func CloneBoolPointer(value *bool) *bool {
 	if value == nil {
 		return nil
 	}

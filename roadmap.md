@@ -1,6 +1,7 @@
 # gopptx Roadmap
 
 ## Current parity status
+
 - Chart variant parity with `ppt-rs` is implemented for:
 - `BarHorizontal`, `BarStacked`, `BarStacked100`
 - `LineMarkers`, `LineStacked`
@@ -20,10 +21,12 @@
 - Per-side border dash styles (`solid|dash|dot|dashDot|lgDash`)
 
 ## Active parity backlog
+
 1. Add fixture parity checks for styled bullet and enhanced-text decks from `ppt-rs` examples.
 2. Expand slide surface parity beyond layout selection (placeholder-level controls).
 
 ## Completed recently
+
 - Expanded chart parity report coverage beyond the prior 6-signature slice:
 - Added full variant catalog comparisons for `bar`, `line`, `area`, `pie`, `doughnut`, `scatter` (3 styles), `bubble`, `radar`, `stock`, and `combo`.
 - Updated `tools/ppt-rs-chart-signatures` and `scripts/compare_chart_parity_with_ppt_rs` to emit/compare 21 deterministic chart signatures.
@@ -34,26 +37,31 @@
 - Added integration coverage for overlay output and `crossBetween` behavior in `pkg/pptx/chart_style_test.go` and `pkg/pptx/chart_axis_test.go`.
 
 1. `StockHLC` / `StockOHLC` visual parity enhancement:
+
 - Added `<c:hiLowLines>` for stock charts.
 - Added `<c:upDownBars>` for OHLC charts.
 - Manual PowerPoint screenshots confirm improved financial-style rendering.
 
 2. Deterministic appearance regression coverage:
+
 - Added Bubble/Radar/Stock/Combo XML signature tests in `pkg/pptx/chart_parity_signature_test.go`.
 
 3. Table styled cell parity slice:
+
 - Added `TableCell` style model in `pkg/pptx/table.go`.
 - Added styled row API `AddStyledRow([]TableCell)`.
 - Added table XML rendering for bold text and background fill in `internal/pptxxml/slide_table_xml.go`.
 - Added validation and integration tests in `pkg/pptx/presentation_test.go`.
 
 4. Table alignment/border parity slice:
+
 - Added cell alignment APIs (`WithAlign*`, `WithVAlign*`) and validation in `pkg/pptx/table.go`.
 - Added border API (`WithBorder(widthPt, color)`) with strict validation in `pkg/pptx/table.go`.
 - Added OOXML rendering for `<a:pPr algn="...">`, `<a:tcPr anchor="...">`, and deterministic `lnL/lnR/lnT/lnB` borders in `internal/pptxxml/slide_table_xml.go`.
 - Added integration coverage in `pkg/pptx/table_alignment_border_test.go`.
 
 5. Slide layout parity slice:
+
 - Added caller-selectable slide layouts in `pkg/pptx`:
 - `SlideLayoutTitleAndContent` (default)
 - `SlideLayoutTitleOnly`
@@ -69,6 +77,7 @@
 - Added integration coverage in `pkg/pptx/slide_layout_test.go`.
 
 6. Deep table border semantics parity slice:
+
 - Added per-side border APIs in `pkg/pptx/table.go`:
 - `WithLeftBorder*`, `WithRightBorder*`, `WithTopBorder*`, `WithBottomBorder*`
 - Added dashed border style APIs (`With*BorderStyle`) with allowed dash values:
@@ -79,6 +88,7 @@
 - Added integration coverage for side overrides and dash rendering in `pkg/pptx/table_alignment_border_test.go`.
 
 7. Markdown inline rich-text parity slice:
+
 - Added markdown inline parsing for `**bold**`, `*italic*`, and `` `code` `` in `pkg/pptx/markdown.go`.
 - Added additive rich text model/API for bullets in `pkg/pptx/text_runs.go` and `pkg/pptx/slide.go` (`TextRun`, `AddBulletRuns`).
 - Added run-aware slide XML rendering in `internal/pptxxml/slide_xml.go` with code font mapping (`Consolas`).
@@ -86,12 +96,14 @@
 - Added parser + XML integration tests in `pkg/pptx/markdown_test.go`.
 
 8. Text formatting parity slice (run-level):
+
 - Extended `TextRun` API in `pkg/pptx/text_runs.go` with `underline`, `color`, `font`, and `size` controls.
 - Added run validation in `pkg/pptx/text_runs_validation.go` (RGB color + size bounds).
 - Refined OOXML run rendering in `internal/pptxxml/slide_text_runs_xml.go` with deterministic run-property ordering and style emission.
 - Added integration tests in `pkg/pptx/text_runs_test.go` and updated markdown OOXML assertions in `pkg/pptx/markdown_test.go`.
 
 9. Text formatting parity slice (paragraph-level):
+
 - Added paragraph style API in `pkg/pptx/text_paragraph.go`:
 - Alignment (`l|ctr|r|just`)
 - Spacing controls (`space-before`, `space-after`, `line-spacing`)
@@ -101,6 +113,7 @@
 - Added integration coverage in `pkg/pptx/text_paragraph_test.go`.
 
 10. Bullet styles parity slice:
+
 - Added bullet style model in `pkg/pptx/text_bullet_style.go`:
 - `bullet`, `number`, `letter_lower`, `letter_upper`, `roman_lower`, `roman_upper`, `custom`, `none`
 - Added helper bullet APIs in `pkg/pptx`:
@@ -111,6 +124,7 @@
 - Updated markdown ordered-list parsing in `pkg/pptx/markdown.go` to emit numbered bullet style.
 
 11. Text enhancements parity slice:
+
 - Extended `TextRun` API in `pkg/pptx/text_runs.go`:
 - `WithStrikethrough`, `WithHighlight`, `WithSubscript`, `WithSuperscript`
 - Added ppt-rs-comparable run-size presets in `pkg/pptx/text_size_presets.go`.
@@ -124,6 +138,7 @@
 - Added integration coverage in `pkg/pptx/text_runs_test.go`.
 
 12. Foundational drawings slice (shapes + connectors):
+
 - Added public shape model/API in `pkg/pptx/shape.go`:
 - baseline shape preset enum/constants
 - fill, line, transparency, rotation, and text setters
@@ -138,6 +153,7 @@
 - Added integration tests in `pkg/pptx/shape_connector_test.go`.
 
 13. Markdown parity expansion slice:
+
 - Refactored markdown parsing into modular components:
 - parser state machine in `pkg/pptx/markdown_parser.go`
 - block parsers in `pkg/pptx/markdown_blocks.go`
@@ -149,6 +165,7 @@
 - Added end-to-end fixture coverage using upstream `md2ppt_demo.md` in `pkg/pptx/testdata/ppt_rs/md2ppt_demo.md` and `pkg/pptx/markdown_blocks_test.go`.
 
 14. Speaker-notes persistence slice:
+
 - Added notes-slide XML generation in `internal/pptxxml/notes_xml.go`.
 - Added notes package wiring in `pkg/pptx/presentation.go`:
 - notes-slide content type overrides
@@ -159,6 +176,7 @@
 - Added integration tests in `pkg/pptx/presentation_notes_test.go` for both direct notes API and markdown blockquote persistence.
 
 15. CLI command parity slice:
+
 - Refactored `cmd/pptcli` into modular command handlers with explicit exit codes.
 - Added subcommands: `create`, `md2ppt`, `info`, `validate`.
 - Preserved legacy flag mode (`-out`, `-md`, `-title`) for backward compatibility.
@@ -166,6 +184,7 @@
 - Added command documentation and usage examples in `cmd/pptcli/README.md`.
 
 16. Read/modify existing PPTX API slice:
+
 - Added `PresentationEditor` API in `pkg/pptx` for opening existing PPTX packages with `archive/zip`.
 - Added parsed metadata surfaces (`PresentationMetadata`, `SlideMetadata`) with concurrent slide-title extraction.
 - Added editing operations:
@@ -177,6 +196,7 @@
 - Added fixture-backed regression tests in `pkg/pptx/editor_test.go` for open/edit/save, merge, preservation, and corruption handling.
 
 17. Advanced table controls + parity reporting slice:
+
 - Added explicit row-height controls via `Table.WithRowHeights([]int64)` with strict validation.
 - Added per-cell text layout controls in `TableCell`:
 - `WithMarginsPt`
@@ -190,6 +210,7 @@
 - Added deterministic table parity report pipeline in `scripts/compare_table_parity_with_ppt_rs/main.go` with generated output at `reports/table_parity_report.md`.
 
 18. Shape gradient fill parity slice:
+
 - Added gradient fill model/API in `pkg/pptx`:
 - `ShapeGradientFill` and `ShapeGradientStop`
 - gradient types: `linear`, `radial`, `rectangular`, `path`
@@ -204,6 +225,7 @@
 - Added integration coverage in `pkg/pptx/shape_gradient_test.go`.
 
 19. Connector auto-site parity slice:
+
 - Added connector auto-anchor APIs in `pkg/pptx`:
 - `ConnectStartAuto(shapeIndex)` and `ConnectEndAuto(shapeIndex)`
 - Added relative-position site inference for anchored connectors:
@@ -214,33 +236,42 @@
 - Added flow-layout integration tests in `pkg/pptx/connector_auto_sites_test.go` for horizontal and vertical anchor inference.
 
 20. Shape text-contrast parity slice:
+
 - Added automatic text-color contrast selection for shape text based on fill luminance and WCAG-style contrast ratio.
 - Supports both solid fills (including transparency blending) and gradient fills (average stop color with per-stop transparency).
 - Wired contrast-aware text run rendering into shape XML output (`a:rPr` + `a:solidFill`).
 - Added integration tests in `pkg/pptx/shape_text_contrast_test.go` for dark/light solid fills and dark-gradient fills.
 
 21. Shape text auto-fit parity slice:
+
 - Added automatic shape text sizing based on shape bounds and text length heuristics.
 - Wired shape text bodies to emit `<a:spAutoFit/>` and dynamic run-size values in OOXML.
 - Added integration coverage in `pkg/pptx/shape_text_autofit_test.go` to assert long text renders with smaller font size than short text.
 
 22. Shape XML parallel rendering slice:
+
 - Added deterministic concurrent shape rendering helper in `internal/pptxxml` for large slides.
 - Preserved stable shape ID ordering while computing each `p:sp` block in parallel goroutines.
 - Wired `SlideWithLayout` to use the parallel helper before connector emission.
 - Added focused deterministic-order coverage in `internal/pptxxml/slide_drawings_parallel_xml_test.go`.
 
 23. Extensible shape interface parity slice:
+
 - Added `ShapeDefinition` interface in `pkg/pptx` to support pluggable shape builders.
 - Implemented `Shape.ToShape()` for backward compatibility with existing fluent usage.
 - Updated `SlideContent.AddShape(...)` to accept interface-backed shape definitions.
 - Added integration coverage in `pkg/pptx/shape_definition_test.go` using a custom external shape type.
 
 24. Connector site-selection optimization slice:
+
 - Replaced dominant-axis heuristic with geometry-aware nearest-anchor selection across edge/corner/center sites.
 - Optimized anchor resolution to use shape-local candidate points and squared-distance comparisons (no floating-point cost).
 - Preserved deterministic behavior and backward compatibility with explicit site overrides.
 - Added diagonal-flow parity coverage in `pkg/pptx/connector_auto_sites_test.go` to validate corner-site inference.
 
+25. Slide transition direction and CLI merge slice:
 
-
+- Added strict direction validation for slide transitions in `pkg/pptx` (Push, Wipe, Zoom, Uncover, Strips, Split).
+- Added `Strips` transition support with `ul|ur|dl|dr` direction mapping.
+- Added `pptcli merge` command to combine multiple PPTX files into one.
+- Added CLI integration tests for `merge` command and validation coverage in `pkg/pptx/slide_transition_test.go`.

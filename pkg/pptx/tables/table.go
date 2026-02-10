@@ -1,4 +1,8 @@
-package pptx
+package tables
+
+import (
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
+)
 
 const (
 	// TableAlignLeft sets horizontal text alignment to left.
@@ -120,4 +124,72 @@ func (t Table) WithRowHeights(heights []int64) Table {
 // Validate checks the table content for common constraints.
 func (t Table) Validate(slideIndex int) error {
 	return validateTable(t, slideIndex)
+}
+
+// ToTableSpec converts Table to internal XML spec.
+func (t Table) ToTableSpec(slideNumber int) (*pptxxml.TableSpec, error) {
+	styledRows, err := TableRowsWithMerges(t, slideNumber)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([][]string, 0, len(styledRows))
+	styledSpecRows := make([][]pptxxml.TableCellSpec, 0, len(styledRows))
+	for _, srcRow := range styledRows {
+		row := make([]string, len(srcRow))
+		specRow := make([]pptxxml.TableCellSpec, len(srcRow))
+		for i, cell := range srcRow {
+			borders := cell.bordersForRender()
+			row[i] = cell.Text
+			specRow[i] = pptxxml.TableCellSpec{
+				Text:            cell.Text,
+				Bold:            cell.Bold,
+				BackgroundColor: cell.BackgroundColor,
+				Align:           cell.Align,
+				VAlign:          cell.VAlign,
+				MarginLeft:      TableMarginEMU(cell.MarginLeftPt),
+				MarginRight:     TableMarginEMU(cell.MarginRightPt),
+				MarginTop:       TableMarginEMU(cell.MarginTopPt),
+				MarginBottom:    TableMarginEMU(cell.MarginBottomPt),
+				WrapText:        CloneBoolPointer(cell.WrapText),
+				RowSpan:         cell.RowSpan,
+				ColSpan:         cell.ColSpan,
+				VMerge:          cell.VMerge,
+				HMerge:          cell.HMerge,
+				BorderColor:     cell.BorderColor,
+				BorderWidth:     TableBorderWidthEMU(cell.BorderWidthPt),
+				BorderLeft:      toXMLTableBorderSpec(borders.Left),
+				BorderRight:     toXMLTableBorderSpec(borders.Right),
+				BorderTop:       toXMLTableBorderSpec(borders.Top),
+				BorderBottom:    toXMLTableBorderSpec(borders.Bottom),
+			}
+		}
+		rows = append(rows, row)
+		styledSpecRows = append(styledSpecRows, specRow)
+	}
+	columnWidths := make([]int64, len(t.ColumnWidths))
+	copy(columnWidths, t.ColumnWidths)
+	rowHeights := make([]int64, len(t.RowHeights))
+	copy(rowHeights, t.RowHeights)
+
+	return &pptxxml.TableSpec{
+		X:            t.X,
+		Y:            t.Y,
+		CX:           t.CX,
+		CY:           t.CY,
+		ColumnWidths: columnWidths,
+		RowHeights:   rowHeights,
+		Rows:         rows,
+		StyledRows:   styledSpecRows,
+	}, nil
+}
+
+func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {
+	if border == nil || border.WidthPt <= 0 {
+		return nil
+	}
+	return &pptxxml.TableCellBorderSpec{
+		Width: TableBorderWidthEMU(border.WidthPt),
+		Color: border.Color,
+		Dash:  border.Dash,
+	}
 }

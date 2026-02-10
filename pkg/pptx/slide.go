@@ -2,6 +2,8 @@ package pptx
 
 import (
 	"fmt"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 // SlideContent describes the user-visible content of a slide.
@@ -27,7 +29,7 @@ type SlideContent struct {
 	Images               []Image
 	Shapes               []Shape
 	Connectors           []Connector
-	Table                *Table
+	Table                *tables.Table
 	Chart                *BarChart
 	BarHorizontal        *BarHorizontalChart
 	BarStacked           *BarStackedChart
@@ -117,7 +119,7 @@ type PlaceholderContent struct {
 	Type  string
 	Text  string
 	Image *Image
-	Table *Table
+	Table *tables.Table
 	Chart ChartDefinition
 }
 
@@ -149,7 +151,7 @@ func (s SlideContent) WithPlaceholderText(idx int, text string) SlideContent {
 }
 
 // WithPlaceholderTable adds a table to a specific placeholder index.
-func (s SlideContent) WithPlaceholderTable(idx int, table Table) SlideContent {
+func (s SlideContent) WithPlaceholderTable(idx int, table tables.Table) SlideContent {
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
 		Index: idx,
 		Table: &table,
@@ -187,7 +189,7 @@ func (s SlideContent) AddImage(image Image) SlideContent {
 }
 
 // WithTable sets one table for the slide.
-func (s SlideContent) WithTable(table Table) SlideContent {
+func (s SlideContent) WithTable(table tables.Table) SlideContent {
 	s.Table = &table
 	return s
 }

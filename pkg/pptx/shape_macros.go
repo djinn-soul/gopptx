@@ -12,10 +12,7 @@ func NewEllipse(x, y, w, h float64) Shape {
 
 // NewTextBox creates a text box shape with given text and inch dimensions.
 func NewTextBox(text string, x, y, w, h float64) Shape {
-	// A text box is essentially a rectangle with text and often no fill/line,
-	// but here we just return a ShapeTypeRectangle with text for simplicity
-	// unless there's a specific requirement to hide borders (which we can do via WithLine(ShapeLine{Width:0}) later).
-	return NewShape(ShapeTypeRectangle, Inches(x), Inches(y), Inches(w), Inches(h)).
+	return NewRectangle(x, y, w, h).
 		WithText(text)
 }
 

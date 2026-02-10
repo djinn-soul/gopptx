@@ -1,4 +1,4 @@
-package pptx
+package tables
 
 import (
 	"fmt"
@@ -13,7 +13,8 @@ type tableMergeCoverage struct {
 	VMerge    bool
 }
 
-func tableRowsWithMerges(table Table, slideIndex int) ([][]TableCell, error) {
+// TableRowsWithMerges handles merged cell calculation for table rendering.
+func TableRowsWithMerges(table Table, slideIndex int) ([][]TableCell, error) {
 	rows := tableRowsForRender(table)
 	return applyTableCellMerges(rows, len(table.ColumnWidths), slideIndex)
 }

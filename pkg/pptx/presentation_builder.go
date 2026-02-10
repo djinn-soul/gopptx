@@ -56,15 +56,10 @@ func (b *PresentationBuilder) AddShapesSlide(title string, shapes ...Shape) *Pre
 
 // Build compiles the presentation into a PPTX byte slice.
 func (b *PresentationBuilder) Build() ([]byte, error) {
-	// Ensure title is set in metadata if not provided explicitly, or override if needed.
-	// The CreateWithMetadata function uses meta.Title.
+	// Metadata title overrides builder title if both are present.
 	if b.metadata.Title == "" {
 		b.metadata.Title = b.title
 	}
-	// If the user provided a title in NewPresentationBuilder, we should probably prefer that
-	// or ensure it syncs with metadata.
-	// But let's stick to the simplest implementation: allow metadata to override if set,
-	// otherwise use builder title.
 
 	return CreateWithMetadata(b.metadata, b.slides)
 }

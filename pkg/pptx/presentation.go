@@ -152,7 +152,7 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 
 		var tableSpec *pptxxml.TableSpec
 		if slide.Table != nil {
-			spec, err := buildTableSpec(*slide.Table, slideNumber)
+			spec, err := slide.Table.ToTableSpec(slideNumber)
 			if err != nil {
 				return err
 			}
@@ -223,7 +223,7 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 				placeholderImageRefs[override.Index] = ref
 			}
 			if override.Table != nil {
-				spec, err := buildTableSpec(*override.Table, slideNumber)
+				spec, err := override.Table.ToTableSpec(slideNumber)
 				if err != nil {
 					return err
 				}

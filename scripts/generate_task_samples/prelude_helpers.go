@@ -17,7 +17,7 @@ func generatePreludeHelpers() ([]byte, error) {
 		"Fluent PresentationBuilder API",
 		"One-line Title/Bullet/Shapes slides",
 		"Overflow-protected unit converters",
-		"Hundredthsndths of a point font size helper",
+		"Hundredths of a point font size helper",
 	})
 
 	builder.AddShapesSlide("Expanded Shape Macros",

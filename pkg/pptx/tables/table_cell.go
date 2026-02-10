@@ -1,17 +1,10 @@
-package pptx
+package tables
 
 // TableCellBorder describes one side border for a table cell.
 type TableCellBorder struct {
 	WidthPt float64
 	Color   string
 	Dash    string
-}
-
-func (b *TableCellBorder) widthEMU() int64 {
-	if b == nil {
-		return 0
-	}
-	return tableBorderWidthEMU(b.WidthPt)
 }
 
 // TableCell stores text and optional style for one table cell.
@@ -63,7 +56,7 @@ func (c TableCell) WithBold(enabled bool) TableCell {
 
 // WithBackgroundColor sets cell background fill using RGB hex.
 func (c TableCell) WithBackgroundColor(color string) TableCell {
-	c.BackgroundColor = normalizeHexColor(color)
+	c.BackgroundColor = NormalizeHexColor(color)
 	return c
 }
 
@@ -131,10 +124,9 @@ func (c TableCell) WithBorder(widthPt float64, color string) TableCell {
 	return c.WithBorderStyle(widthPt, color, TableBorderDashSolid)
 }
 
-// WithBorderStyle sets uniform border on all sides.
 func (c TableCell) WithBorderStyle(widthPt float64, color string, dash string) TableCell {
-	normalizedColor := normalizeHexColor(color)
-	normalizedDash := normalizeTableBorderDash(dash)
+	normalizedColor := NormalizeHexColor(color)
+	normalizedDash := NormalizeTableBorderDash(dash)
 	c.BorderWidthPt = widthPt
 	c.BorderColor = normalizedColor
 	c.BorderLeft = &TableCellBorder{WidthPt: widthPt, Color: normalizedColor, Dash: normalizedDash}
@@ -187,8 +179,8 @@ func (c TableCell) WithBottomBorderStyle(widthPt float64, color string, dash str
 func (c TableCell) withSideBorder(side string, widthPt float64, color string, dash string) TableCell {
 	border := &TableCellBorder{
 		WidthPt: widthPt,
-		Color:   normalizeHexColor(color),
-		Dash:    normalizeTableBorderDash(dash),
+		Color:   NormalizeHexColor(color),
+		Dash:    NormalizeTableBorderDash(dash),
 	}
 	switch side {
 	case borderSideLeft:
@@ -226,12 +218,12 @@ func (c TableCell) hasExplicitBorderSides() bool {
 }
 
 func (c TableCell) uniformLegacyBorder() *TableCellBorder {
-	if c.BorderWidthPt <= 0 && normalizeHexColor(c.BorderColor) == "" {
+	if c.BorderWidthPt <= 0 && NormalizeHexColor(c.BorderColor) == "" {
 		return nil
 	}
 	return &TableCellBorder{
 		WidthPt: c.BorderWidthPt,
-		Color:   normalizeHexColor(c.BorderColor),
+		Color:   NormalizeHexColor(c.BorderColor),
 		Dash:    TableBorderDashSolid,
 	}
 }

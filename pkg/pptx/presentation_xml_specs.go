@@ -4,17 +4,6 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
-func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec {
-	if border == nil {
-		return nil
-	}
-	return &pptxxml.TableCellBorderSpec{
-		Width: border.widthEMU(),
-		Color: normalizeHexColor(border.Color),
-		Dash:  normalizeTableBorderDash(border.Dash),
-	}
-}
-
 func toXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*Hyperlink]string) [][]pptxxml.TextRunSpec {
 	if len(rows) == 0 {
 		return nil
