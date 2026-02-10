@@ -17,21 +17,23 @@ type ImageCrop struct {
 
 // Image describes one image placement on a slide.
 type Image struct {
-	Path        string
-	SourceURL   string
-	Data        []byte
-	Format      string // e.g. "png", "jpg" - required if Data is used
-	X           int64
-	Y           int64
-	CX          int64
-	CY          int64
-	Rotation    float64
-	Crop        ImageCrop
-	FlipH       bool
-	FlipV       bool
-	Shadow      bool
-	Reflection  bool
-	Placeholder *Placeholder
+	Path         string
+	SourceURL    string
+	Data         []byte
+	Format       string // e.g. "png", "jpg" - required if Data is used
+	X            int64
+	Y            int64
+	CX           int64
+	CY           int64
+	Rotation     float64
+	Crop         ImageCrop
+	FlipH        bool
+	FlipV        bool
+	Shadow       bool
+	Reflection   bool
+	Placeholder  *Placeholder
+	AltText      string
+	IsDecorative bool
 }
 
 // WithShadow adds an outer shadow effect to the image.
@@ -110,6 +112,18 @@ func (img Image) WithCrop(left, right, top, bottom float64) Image {
 func (img Image) WithFlip(horizontal, vertical bool) Image {
 	img.FlipH = horizontal
 	img.FlipV = vertical
+	return img
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (img Image) WithAltText(text string) Image {
+	img.AltText = text
+	return img
+}
+
+// WithDecorative marks the image as decorative (ignored by screen readers).
+func (img Image) WithDecorative(enabled bool) Image {
+	img.IsDecorative = enabled
 	return img
 }
 

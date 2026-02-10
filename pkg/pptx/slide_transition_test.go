@@ -207,6 +207,30 @@ func TestTransitionOptions(t *testing.T) {
 			expectXML: `<p:transition><p:randomBar orient="vert"/></p:transition>`,
 		},
 		{
+			name: "wipe up",
+			options: TransitionOptions{
+				Type:      TransitionWipe,
+				Direction: TransitionDirUp,
+			},
+			expectXML: `<p:transition><p:wipe dir="u"/></p:transition>`,
+		},
+		{
+			name: "uncover up-left",
+			options: TransitionOptions{
+				Type:      TransitionUncover,
+				Direction: TransitionDirUpLeft,
+			},
+			expectXML: `<p:transition><p:pull dir="lu"/></p:transition>`,
+		},
+		{
+			name: "strips up-right",
+			options: TransitionOptions{
+				Type:      TransitionStrips,
+				Direction: TransitionDirUpRight,
+			},
+			expectXML: `<p:transition><p:strips dir="ru"/></p:transition>`,
+		},
+		{
 			name: "fade advance on click",
 			options: TransitionOptions{
 				Type: TransitionFade,
@@ -221,6 +245,80 @@ func TestTransitionOptions(t *testing.T) {
 			slideXML := transitionSlideXML(t, NewSlide("Options").WithTransitionOptions(tc.options))
 			if !strings.Contains(slideXML, tc.expectXML) {
 				t.Errorf("expected transition XML %s not found in: %s", tc.expectXML, slideXML)
+			}
+		})
+	}
+}
+
+func TestTransitionValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		options TransitionOptions
+		wantErr string
+	}{
+		{
+			name: "invalid push direction",
+			options: TransitionOptions{
+				Type:      TransitionPush,
+				Direction: "invalid",
+			},
+			wantErr: "invalid direction \"invalid\" for transition \"push\" (expected u|d|l|r)",
+		},
+		{
+			name: "invalid zoom direction",
+			options: TransitionOptions{
+				Type:      TransitionZoom,
+				Direction: TransitionDirUp,
+			},
+			wantErr: "invalid direction \"u\" for transition \"zoom\" (expected in|out)",
+		},
+		{
+			name: "strips valid direction",
+			options: TransitionOptions{
+				Type:      TransitionStrips,
+				Direction: TransitionDirUpLeft,
+			},
+			wantErr: "",
+		},
+		{
+			name: "strips invalid direction",
+			options: TransitionOptions{
+				Type:      TransitionStrips,
+				Direction: TransitionDirUp,
+			},
+			wantErr: "invalid direction \"u\" for transition \"strips\" (expected ul|ur|dl|dr)",
+		},
+		{
+			name: "fade no support for direction",
+			options: TransitionOptions{
+				Type:      TransitionFade,
+				Direction: TransitionDirUp,
+			},
+			wantErr: "transition \"fade\" does not support direction",
+		},
+		{
+			name: "invalid wheel spoke count for non-wheel",
+			options: TransitionOptions{
+				Type:       TransitionFade,
+				SpokeCount: 4,
+			},
+			wantErr: "transition \"fade\" does not support spoke count",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.options.Validate()
+			if tc.wantErr == "" {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("expected error %q, got nil", tc.wantErr)
+				} else if !strings.Contains(err.Error(), tc.wantErr) {
+					t.Errorf("expected error %q, got %q", tc.wantErr, err.Error())
+				}
 			}
 		})
 	}

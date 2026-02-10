@@ -23,8 +23,10 @@ func autoFitShapeTextSizePt(shape ShapeSpec) int {
 	}
 
 	dimensionPts := float64(minInt64(shape.CX, shape.CY)) / 12700
-	sizeByBounds := int(math.Round(dimensionPts * 0.32))
-	sizeByChars := int(math.Round(46 - 0.55*float64(chars)))
+	// More conservative sizing for shapes (Star, Heart, etc.)
+	// Most shapes have internal margins or narrow areas.
+	sizeByBounds := int(math.Round(dimensionPts * 0.28))
+	sizeByChars := int(math.Round(42 - 0.50*float64(chars)))
 
 	sizePt := sizeByChars
 	if sizeByBounds < sizePt {

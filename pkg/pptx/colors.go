@@ -16,15 +16,18 @@ const (
 	ColorCyan      = "00FFFF"
 	ColorMagenta   = "FF00FF"
 	ColorNavy      = "000080"
-	ColorTeal      = "008080"
-	ColorOlive     = "808000"
+	// ColorTeal represents the teal color (008080).
+	ColorTeal = "008080"
+	// ColorOlive represents the olive color (808000).
+	ColorOlive = "808000"
 )
 
 // Corporate colors
 const (
-	ColorCorporateBlue   = "1565C0"
-	ColorCorporateGreen  = "2E7D32"
-	ColorCorporateRed    = "C62828"
+	ColorCorporateBlue  = "1565C0"
+	ColorCorporateGreen = "2E7D32"
+	ColorCorporateRed   = "C62828"
+	// ColorCorporateOrange is the standard corporate orange (EF6C00).
 	ColorCorporateOrange = "EF6C00"
 )
 
@@ -42,17 +45,19 @@ const (
 	ColorMaterialAmber  = "FFC107"
 	ColorMaterialOrange = "FF9800"
 	ColorMaterialBrown  = "795548"
-	ColorMaterialGray   = "9E9E9E"
+	// ColorMaterialGray is the material design gray (9E9E9E).
+	ColorMaterialGray = "9E9E9E"
 )
 
 // IBM Carbon Design colors
 const (
-	ColorCarbonBlue60   = "0043CE"
-	ColorCarbonBlue40   = "4589FF"
-	ColorCarbonGray100  = "161616"
-	ColorCarbonGray80   = "393939"
-	ColorCarbonGray20   = "E0E0E0"
-	ColorCarbonGreen50  = "24A148"
-	ColorCarbonRed60    = "DA1E28"
+	ColorCarbonBlue60  = "0043CE"
+	ColorCarbonBlue40  = "4589FF"
+	ColorCarbonGray100 = "161616"
+	ColorCarbonGray80  = "393939"
+	ColorCarbonGray20  = "E0E0E0"
+	ColorCarbonGreen50 = "24A148"
+	ColorCarbonRed60   = "DA1E28"
+	// ColorCarbonPurple60 is the IBM Carbon purple 60 (8A3FFC).
 	ColorCarbonPurple60 = "8A3FFC"
 )

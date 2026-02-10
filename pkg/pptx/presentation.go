@@ -179,18 +179,20 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 			}
 
 			imageRefs = append(imageRefs, pptxxml.ImageRef{
-				RelID:      relID,
-				Name:       fmt.Sprintf("Picture %d", imageIndex+1),
-				X:          image.X,
-				Y:          image.Y,
-				CX:         image.CX,
-				CY:         image.CY,
-				Rotation:   int64(image.Rotation * 60000),
-				FlipH:      image.FlipH,
-				FlipV:      image.FlipV,
-				Crop:       crop,
-				Shadow:     image.Shadow,
-				Reflection: image.Reflection,
+				RelID:        relID,
+				Name:         fmt.Sprintf("Picture %d", imageIndex+1),
+				X:            image.X,
+				Y:            image.Y,
+				CX:           image.CX,
+				CY:           image.CY,
+				Rotation:     int64(image.Rotation * 60000),
+				FlipH:        image.FlipH,
+				FlipV:        image.FlipV,
+				Crop:         crop,
+				Shadow:       image.Shadow,
+				Reflection:   image.Reflection,
+				AltText:      image.AltText,
+				IsDecorative: image.IsDecorative,
 			})
 			imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
 		}

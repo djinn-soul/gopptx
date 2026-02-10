@@ -45,6 +45,8 @@ type ShapeSpec struct {
 	Text         string
 	RotationDeg  *int
 	Hyperlink    *HyperlinkSpec
+	AltText      string
+	IsDecorative bool
 }
 
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.
@@ -63,6 +65,8 @@ type ConnectorSpec struct {
 	EndShapeIndex   int
 	EndSiteIndex    *int
 	Label           string
+	AltText         string
+	IsDecorative    bool
 }
 
 func customShapeXML(shape ShapeSpec, shapeID int) string {
@@ -82,11 +86,18 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 		cNvPrContent = ">" + hyperlinkXML + "</p:cNvPr>"
 	}
 
+	descrAttr := ""
+	if shape.IsDecorative {
+		descrAttr = ` descr=""`
+	} else if shape.AltText != "" {
+		descrAttr = fmt.Sprintf(` descr="%s"`, Escape(shape.AltText))
+	}
+
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(`
 <p:sp>
 <p:nvSpPr>
-<p:cNvPr id="%d" name="Shape %d"%s
+<p:cNvPr id="%d" name="Shape %d"%s%s
 <p:cNvSpPr/>
 <p:nvPr/>
 </p:nvSpPr>
@@ -98,6 +109,7 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <a:prstGeom prst="%s"><a:avLst/></a:prstGeom>`,
 		shapeID,
 		shapeID,
+		descrAttr, // We append descr to name/id attrs
 		cNvPrContent,
 		rotationAttr,
 		shape.X,
@@ -131,7 +143,9 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	} else {
 		b.WriteString(`
 <p:txBody>
-<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"><a:spAutoFit/></a:bodyPr>
+<a:bodyPr wrap="square" rtlCol="0" anchor="ctr" marL="45720" marT="45720" marR="45720" marB="45720">
+<a:spAutoFit/>
+</a:bodyPr>
 <a:lstStyle/>
 <a:p>
 <a:pPr algn="ctr"/>
@@ -181,12 +195,19 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 		flipV = ` flipV="1"`
 	}
 
+	descrAttr := ""
+	if connector.IsDecorative {
+		descrAttr = ` descr=""`
+	} else if connector.AltText != "" {
+		descrAttr = fmt.Sprintf(` descr="%s"`, Escape(connector.AltText))
+	}
+
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf(`
 <p:cxnSp>
 <p:nvCxnSpPr>
-<p:cNvPr id="%d" name="Connector %d"/>
-<p:cNvCxnSpPr>`, shapeID, shapeID))
+<p:cNvPr id="%d" name="Connector %d"%s/>
+<p:cNvCxnSpPr>`, shapeID, shapeID, descrAttr))
 	if startShapeID > 0 && connector.StartSiteIndex != nil {
 		b.WriteString(fmt.Sprintf(`
 <a:stCxn id="%d" idx="%d"/>`, startShapeID, *connector.StartSiteIndex))

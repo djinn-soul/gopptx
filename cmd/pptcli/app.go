@@ -23,6 +23,10 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runInfoCommand(args[1:], stdout, stderr)
 	case "validate":
 		return runValidateCommand(args[1:], stdout, stderr)
+	case "merge":
+		return runMergeCommand(args[1:], stdout, stderr)
+	case "version", "-version", "--version":
+		return runVersionCommand(args[1:], stdout, stderr)
 	default:
 		if strings.HasPrefix(args[0], "-") {
 			return runLegacyFlags(args, stdout, stderr)
@@ -41,6 +45,8 @@ func printRootUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  pptcli md2ppt   -in deck.md [-out file.pptx] [-title TITLE]")
 	_, _ = fmt.Fprintln(w, "  pptcli info     -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
+	_, _ = fmt.Fprintln(w, "  pptcli merge    -out merged.pptx file1.pptx file2.pptx ...")
+	_, _ = fmt.Fprintln(w, "  pptcli version")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Legacy mode:")
 	_, _ = fmt.Fprintln(w, "  pptcli [-out output.pptx] [-md input.md] [-title TITLE]")

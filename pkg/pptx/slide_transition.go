@@ -127,6 +127,42 @@ func (o TransitionOptions) Validate() error {
 			return fmt.Errorf("transition %q does not support orientation", o.Type)
 		}
 	}
+	if o.Direction != "" {
+		switch o.Type {
+		case TransitionPush, TransitionWipe, TransitionReveal, TransitionCover:
+			switch o.Direction {
+			case TransitionDirUp, TransitionDirDown, TransitionDirLeft, TransitionDirRight:
+			default:
+				return fmt.Errorf("invalid direction %q for transition %q (expected u|d|l|r)", o.Direction, o.Type)
+			}
+		case TransitionZoom:
+			if o.Direction != TransitionDirIn && o.Direction != TransitionDirOut {
+				return fmt.Errorf("invalid direction %q for transition %q (expected in|out)", o.Direction, o.Type)
+			}
+		case TransitionUncover:
+			switch o.Direction {
+			case TransitionDirUp, TransitionDirDown, TransitionDirLeft, TransitionDirRight,
+				TransitionDirUpLeft, TransitionDirUpRight, TransitionDirDownLeft, TransitionDirDownRight:
+			default:
+				return fmt.Errorf("invalid direction %q for transition %q (expected u|d|l|r|ul|ur|dl|dr)", o.Direction, o.Type)
+			}
+		case TransitionStrips:
+			switch o.Direction {
+			case TransitionDirUpLeft, TransitionDirUpRight, TransitionDirDownLeft, TransitionDirDownRight:
+			default:
+				return fmt.Errorf("invalid direction %q for transition %q (expected ul|ur|dl|dr)", o.Direction, o.Type)
+			}
+		case TransitionSplit:
+			if o.Direction != TransitionDirIn && o.Direction != TransitionDirOut {
+				return fmt.Errorf("invalid direction %q for transition %q (expected in|out)", o.Direction, o.Type)
+			}
+		default:
+			return fmt.Errorf("transition %q does not support direction", o.Type)
+		}
+	}
+	if o.SpokeCount > 0 && o.Type != TransitionClock {
+		return fmt.Errorf("transition %q does not support spoke count", o.Type)
+	}
 	return nil
 }
 
@@ -185,30 +221,55 @@ func (o TransitionOptions) XML() string {
 		}
 		return fmt.Sprintf(`<p:transition%s><p:wheel%s/></p:transition>`, attrStr, spokes)
 
-	case TransitionPush, TransitionWipe, TransitionReveal, TransitionCover:
-		dir := o.Direction
-		if dir == "" {
-			dir = "r"
-		}
-		return fmt.Sprintf(`<p:transition%s><p:%s dir="%s"/></p:transition>`, attrStr, string(o.Type), dir)
-
 	case TransitionZoom:
 		dir := o.Direction
 		if dir == "" {
-			dir = "in"
+			dir = TransitionDirIn
 		}
 		return fmt.Sprintf(`<p:transition%s><p:zoom dir="%s"/></p:transition>`, attrStr, dir)
 
-	case TransitionUncover:
+	case TransitionUncover, TransitionCover, TransitionPush, TransitionWipe, TransitionReveal:
+		tag := string(o.Type)
+		if o.Type == TransitionUncover {
+			tag = "pull"
+		}
 		dir := o.Direction
 		if dir == "" {
-			dir = "l"
+			dir = TransitionDirRight
 		}
-		return fmt.Sprintf(`<p:transition%s><p:pull dir="%s"/></p:transition>`, attrStr, dir)
+		xmlDir := mapDirectionXML(dir, o.Type)
+		return fmt.Sprintf(`<p:transition%s><p:%s dir="%s"/></p:transition>`, attrStr, tag, xmlDir)
+
+	case TransitionStrips:
+		dir := o.Direction
+		if dir == "" {
+			dir = TransitionDirDownRight
+		}
+		xmlDir := mapDirectionXML(dir, TransitionStrips)
+		return fmt.Sprintf(`<p:transition%s><p:strips dir="%s"/></p:transition>`, attrStr, xmlDir)
 
 	default:
 		return fmt.Sprintf(`<p:transition%s><p:%s/></p:transition>`, attrStr, string(o.Type))
 	}
+}
+
+func mapDirectionXML(dir TransitionDirection, t TransitionType) string {
+	switch t {
+	case TransitionStrips, TransitionUncover, TransitionCover, TransitionReveal, TransitionPush, TransitionWipe:
+		switch dir {
+		case TransitionDirUpLeft:
+			return "lu"
+		case TransitionDirUpRight:
+			return "ru"
+		case TransitionDirDownLeft:
+			return "ld"
+		case TransitionDirDownRight:
+			return "rd"
+		default:
+			return string(dir)
+		}
+	}
+	return string(dir)
 }
 
 // WithTransition sets the transition behavior for a slide.
@@ -283,7 +344,7 @@ func (t TransitionType) XML() string {
 	case TransitionBlinds:
 		return `<p:transition><p:blinds/></p:transition>`
 	case TransitionStrips:
-		return `<p:transition><p:strips/></p:transition>`
+		return `<p:transition><p:strips dir="rd"/></p:transition>`
 	default:
 		return ""
 	}

@@ -37,6 +37,7 @@ func main() {
 		{"22_speaker_notes", generateSpeakerNotes},
 		{"28_animations", generateAnimations},
 		{"31_hyperlinks", generateHyperlinks},
+		{"15_merge", generateMerge},
 	}
 
 	for _, g := range generators {
@@ -393,14 +394,83 @@ func generateTransitions() ([]byte, error) {
 		pptx.NewSlide("Fade Transition").
 			WithTransition(pptx.TransitionFade).
 			AddBullet("This slide fades in"),
-		pptx.NewSlide("Push Transition").
-			WithTransition(pptx.TransitionPush).
-			AddBullet("This slide pushes in"),
-		pptx.NewSlide("Wipe Transition").
-			WithTransition(pptx.TransitionWipe).
-			AddBullet("This slide wipes in"),
+		pptx.NewSlide("Push Transition (Left)").
+			WithTransitionOptions(pptx.TransitionOptions{
+				Type:      pptx.TransitionPush,
+				Direction: "l",
+			}).
+			AddBullet("This slide pushes from the left"),
+		pptx.NewSlide("Wipe Transition (Up)").
+			WithTransitionOptions(pptx.TransitionOptions{
+				Type:      pptx.TransitionWipe,
+				Direction: "u",
+			}).
+			AddBullet("This slide wipes from the bottom up"),
+		pptx.NewSlide("Strips Transition (Right-Down)").
+			WithTransitionOptions(pptx.TransitionOptions{
+				Type:      pptx.TransitionStrips,
+				Direction: "dr",
+			}).
+			AddBullet("This slide uses strips from top-left to bottom-right"),
+		pptx.NewSlide("Clock Transition (3 spokes)").
+			WithTransitionOptions(pptx.TransitionOptions{
+				Type:       pptx.TransitionClock,
+				SpokeCount: 3,
+			}).
+			AddBullet("This slide uses a wheel/clock transition with 3 spokes"),
 	}
 	return pptx.CreateWithSlides("Task 14: Transitions", slides)
+}
+
+func generateMerge() ([]byte, error) {
+	// Create first presentation
+	s1 := pptx.NewSlide("Presentation One").
+		AddBullet("Slide from the first presentation")
+	data1, err := pptx.CreateWithSlides("Merge Target", []pptx.SlideContent{s1})
+	if err != nil {
+		return nil, err
+	}
+
+	// Create second presentation
+	s2 := pptx.NewSlide("Presentation Two").
+		AddBullet("Slide from the second presentation")
+	data2, err := pptx.CreateWithSlides("Merge Source", []pptx.SlideContent{s2})
+	if err != nil {
+		return nil, err
+	}
+
+	// Save data2 to a temp file because MergeFromFile needs a path
+	tmpFile := filepath.Join(os.TempDir(), "gopptx_merge_source.pptx")
+	if err := os.WriteFile(tmpFile, data2, 0o644); err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmpFile)
+
+	// Save data1 to a temp file because OpenPresentationEditor needs a path
+	targetFile := filepath.Join(os.TempDir(), "gopptx_merge_target.pptx")
+	if err := os.WriteFile(targetFile, data1, 0o644); err != nil {
+		return nil, err
+	}
+	defer os.Remove(targetFile)
+
+	// Open first and merge second
+	editor, err := pptx.OpenPresentationEditor(targetFile)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := editor.MergeFromFile(tmpFile); err != nil {
+		return nil, err
+	}
+
+	// Save back to a new temp file to read bytes
+	mergedFile := filepath.Join(os.TempDir(), "gopptx_merged.pptx")
+	if err := editor.Save(mergedFile); err != nil {
+		return nil, err
+	}
+	defer os.Remove(mergedFile)
+
+	return os.ReadFile(mergedFile)
 }
 
 func generateReadModify() ([]byte, error) {

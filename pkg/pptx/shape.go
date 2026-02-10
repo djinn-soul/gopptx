@@ -37,6 +37,14 @@ const (
 	ShapeTypeDownArrow = "downArrow"
 	// ShapeTypeCloud renders a cloud shape.
 	ShapeTypeCloud = "cloud"
+	// ShapeTypeStar5 renders a 5-pointed star.
+	ShapeTypeStar5 = "star5"
+	// ShapeTypeHeart renders a heart shape.
+	ShapeTypeHeart = "heart"
+	// ShapeTypeFlowChartDocument renders a flowchart document shape.
+	ShapeTypeFlowChartDocument = "flowChartDocument"
+	// ShapeTypeFlowChartData renders a flowchart data shape (parallelogram).
+	ShapeTypeFlowChartData = "flowChartInputOutput"
 )
 
 // ShapeFill configures solid fill properties for one shape.
@@ -92,6 +100,8 @@ type Shape struct {
 	Text         string
 	RotationDeg  *int
 	Hyperlink    *Hyperlink
+	AltText      string
+	IsDecorative bool
 }
 
 // NewShape creates one shape with explicit preset type, position, and size.
@@ -139,42 +149,63 @@ func (s Shape) WithHyperlink(hyperlink Hyperlink) Shape {
 	return s
 }
 
+// WithAltText sets the alternative text for accessibility.
+func (s Shape) WithAltText(text string) Shape {
+	s.AltText = text
+	return s
+}
+
+// WithDecorative marks the shape as decorative (ignored by screen readers).
+func (s Shape) WithDecorative(enabled bool) Shape {
+	s.IsDecorative = enabled
+	return s
+}
+
 func normalizeShapeType(shapeType string) string {
-	switch strings.ToLower(strings.TrimSpace(shapeType)) {
-	case ShapeTypeRectangle, "rectangle":
+	t := strings.ToLower(strings.TrimSpace(shapeType))
+	switch t {
+	case strings.ToLower(ShapeTypeRectangle), "rectangle":
 		return ShapeTypeRectangle
-	case ShapeTypeRoundedRectangle, "roundedrectangle", "rounded-rectangle", "rounded_rectangle":
+	case strings.ToLower(ShapeTypeRoundedRectangle), "roundedrectangle", "rounded-rectangle", "rounded_rectangle":
 		return ShapeTypeRoundedRectangle
-	case ShapeTypeEllipse, "circle":
+	case strings.ToLower(ShapeTypeEllipse), "circle":
 		return ShapeTypeEllipse
-	case ShapeTypeTriangle:
+	case strings.ToLower(ShapeTypeTriangle):
 		return ShapeTypeTriangle
-	case ShapeTypeRightTriangle, "righttriangle", "right-triangle", "right_triangle":
+	case strings.ToLower(ShapeTypeRightTriangle), "righttriangle", "right-triangle", "right_triangle":
 		return ShapeTypeRightTriangle
-	case ShapeTypeDiamond:
+	case strings.ToLower(ShapeTypeDiamond):
 		return ShapeTypeDiamond
-	case ShapeTypePentagon:
+	case strings.ToLower(ShapeTypePentagon):
 		return ShapeTypePentagon
-	case ShapeTypeHexagon:
+	case strings.ToLower(ShapeTypeHexagon):
 		return ShapeTypeHexagon
-	case ShapeTypeParallelogram:
+	case strings.ToLower(ShapeTypeParallelogram):
 		return ShapeTypeParallelogram
-	case ShapeTypeFlowChartProcess, "flowchartprocess", "flowchart-process", "flowchart_process":
+	case strings.ToLower(ShapeTypeFlowChartProcess), "flowchartprocess", "flowchart-process", "flowchart_process":
 		return ShapeTypeFlowChartProcess
-	case ShapeTypeFlowChartDecision, "flowchartdecision", "flowchart-decision", "flowchart_decision":
+	case strings.ToLower(ShapeTypeFlowChartDecision), "flowchartdecision", "flowchart-decision", "flowchart_decision":
 		return ShapeTypeFlowChartDecision
-	case ShapeTypeFlowChartTerminator, "flowchartterminator", "flowchart-terminator", "flowchart_terminator":
+	case strings.ToLower(ShapeTypeFlowChartTerminator), "flowchartterminator", "flowchart-terminator", "flowchart_terminator":
 		return ShapeTypeFlowChartTerminator
-	case ShapeTypeRightArrow, "rightarrow", "right-arrow", "right_arrow":
+	case strings.ToLower(ShapeTypeRightArrow), "rightarrow", "right-arrow", "right_arrow":
 		return ShapeTypeRightArrow
-	case ShapeTypeLeftArrow, "leftarrow", "left-arrow", "left_arrow":
+	case strings.ToLower(ShapeTypeLeftArrow), "leftarrow", "left-arrow", "left_arrow":
 		return ShapeTypeLeftArrow
-	case ShapeTypeUpArrow, "uparrow", "up-arrow", "up_arrow":
+	case strings.ToLower(ShapeTypeUpArrow), "uparrow", "up-arrow", "up_arrow":
 		return ShapeTypeUpArrow
-	case ShapeTypeDownArrow, "downarrow", "down-arrow", "down_arrow":
+	case strings.ToLower(ShapeTypeDownArrow), "downarrow", "down-arrow", "down_arrow":
 		return ShapeTypeDownArrow
-	case ShapeTypeCloud:
+	case strings.ToLower(ShapeTypeCloud):
 		return ShapeTypeCloud
+	case "star", strings.ToLower(ShapeTypeStar5):
+		return ShapeTypeStar5
+	case "heart", strings.ToLower(ShapeTypeHeart):
+		return ShapeTypeHeart
+	case "document", "flowchartdocument", strings.ToLower(ShapeTypeFlowChartDocument):
+		return ShapeTypeFlowChartDocument
+	case "data", "flowchartdata", "flowchartinputoutput", strings.ToLower(ShapeTypeFlowChartData):
+		return ShapeTypeFlowChartData
 	default:
 		return strings.TrimSpace(shapeType)
 	}
@@ -198,7 +229,11 @@ func isShapeType(shapeType string) bool {
 		ShapeTypeLeftArrow,
 		ShapeTypeUpArrow,
 		ShapeTypeDownArrow,
-		ShapeTypeCloud:
+		ShapeTypeCloud,
+		ShapeTypeStar5,
+		ShapeTypeHeart,
+		ShapeTypeFlowChartDocument,
+		ShapeTypeFlowChartData:
 		return true
 	default:
 		return false

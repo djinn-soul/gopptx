@@ -72,6 +72,8 @@ type Connector struct {
 	EndShapeIndex   int
 	EndSite         string
 	Label           string
+	AltText         string
+	IsDecorative    bool
 }
 
 // NewConnector creates a connector with explicit geometry and type.
@@ -149,13 +151,26 @@ func (c Connector) WithLabel(label string) Connector {
 	return c
 }
 
+// WithAltText sets the alternative text for accessibility.
+func (c Connector) WithAltText(text string) Connector {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the connector as decorative (ignored by screen readers).
+func (c Connector) WithDecorative(enabled bool) Connector {
+	c.IsDecorative = enabled
+	return c
+}
+
 func normalizeConnectorType(connectorType string) string {
-	switch strings.ToLower(strings.TrimSpace(connectorType)) {
-	case ConnectorTypeStraight, "straight":
+	t := strings.ToLower(strings.TrimSpace(connectorType))
+	switch t {
+	case strings.ToLower(ConnectorTypeStraight), "straight", "s":
 		return ConnectorTypeStraight
-	case ConnectorTypeElbow, "elbow", "bent":
+	case strings.ToLower(ConnectorTypeElbow), "elbow", "bent", "e":
 		return ConnectorTypeElbow
-	case ConnectorTypeCurved, "curved", "curve":
+	case strings.ToLower(ConnectorTypeCurved), "curved", "curve", "c":
 		return ConnectorTypeCurved
 	default:
 		return strings.TrimSpace(connectorType)
@@ -172,18 +187,19 @@ func isConnectorType(connectorType string) bool {
 }
 
 func normalizeArrowType(arrowType string) string {
-	switch strings.ToLower(strings.TrimSpace(arrowType)) {
-	case "", ArrowTypeNone:
+	t := strings.ToLower(strings.TrimSpace(arrowType))
+	switch t {
+	case strings.ToLower(ArrowTypeNone), "", "n":
 		return ArrowTypeNone
-	case ArrowTypeTriangle:
+	case strings.ToLower(ArrowTypeTriangle), "t":
 		return ArrowTypeTriangle
-	case ArrowTypeStealth:
+	case strings.ToLower(ArrowTypeStealth), "s":
 		return ArrowTypeStealth
-	case ArrowTypeDiamond:
+	case strings.ToLower(ArrowTypeDiamond), "d":
 		return ArrowTypeDiamond
-	case ArrowTypeOval:
+	case strings.ToLower(ArrowTypeOval), "o":
 		return ArrowTypeOval
-	case ArrowTypeOpen, "open":
+	case strings.ToLower(ArrowTypeOpen), "open", "a":
 		return ArrowTypeOpen
 	default:
 		return strings.TrimSpace(arrowType)
@@ -200,12 +216,13 @@ func isArrowType(arrowType string) bool {
 }
 
 func normalizeArrowSize(size string) string {
-	switch strings.ToLower(strings.TrimSpace(size)) {
-	case "", ArrowSizeMedium, "medium":
+	t := strings.ToLower(strings.TrimSpace(size))
+	switch t {
+	case strings.ToLower(ArrowSizeMedium), "", "medium", "m":
 		return ArrowSizeMedium
-	case ArrowSizeSmall, "small":
+	case strings.ToLower(ArrowSizeSmall), "small", "s":
 		return ArrowSizeSmall
-	case ArrowSizeLarge, "large":
+	case strings.ToLower(ArrowSizeLarge), "large", "l":
 		return ArrowSizeLarge
 	default:
 		return strings.TrimSpace(size)
@@ -222,24 +239,25 @@ func isArrowSize(size string) bool {
 }
 
 func normalizeConnectionSite(site string) string {
-	switch strings.ToLower(strings.TrimSpace(site)) {
-	case ConnectionSiteTop:
+	t := strings.ToLower(strings.TrimSpace(site))
+	switch t {
+	case strings.ToLower(ConnectionSiteTop), "t":
 		return ConnectionSiteTop
-	case ConnectionSiteRight:
+	case strings.ToLower(ConnectionSiteRight), "r":
 		return ConnectionSiteRight
-	case ConnectionSiteBottom:
+	case strings.ToLower(ConnectionSiteBottom), "b":
 		return ConnectionSiteBottom
-	case ConnectionSiteLeft:
+	case strings.ToLower(ConnectionSiteLeft), "l":
 		return ConnectionSiteLeft
-	case "topleft", "top-left", "top_left":
+	case "topleft", "top-left", "top_left", "tl":
 		return ConnectionSiteTopLeft
-	case "topright", "top-right", "top_right":
+	case "topright", "top-right", "top_right", "tr":
 		return ConnectionSiteTopRight
-	case "bottomright", "bottom-right", "bottom_right":
+	case "bottomright", "bottom-right", "bottom_right", "br":
 		return ConnectionSiteBottomRight
-	case "bottomleft", "bottom-left", "bottom_left":
+	case "bottomleft", "bottom-left", "bottom_left", "bl":
 		return ConnectionSiteBottomLeft
-	case ConnectionSiteCenter:
+	case strings.ToLower(ConnectionSiteCenter), "ctr", "c":
 		return ConnectionSiteCenter
 	default:
 		return strings.TrimSpace(site)

@@ -4,18 +4,20 @@ import "fmt"
 
 // ImageRef describes one image reference in a slide.
 type ImageRef struct {
-	RelID      string
-	Name       string
-	X          int64
-	Y          int64
-	CX         int64
-	CY         int64
-	Rotation   int64 // 60000ths of a degree
-	FlipH      bool
-	FlipV      bool
-	Crop       *ImageCropRef
-	Shadow     bool
-	Reflection bool
+	RelID        string
+	Name         string
+	X            int64
+	Y            int64
+	CX           int64
+	CY           int64
+	Rotation     int64 // 60000ths of a degree
+	FlipH        bool
+	FlipV        bool
+	Crop         *ImageCropRef
+	Shadow       bool
+	Reflection   bool
+	AltText      string
+	IsDecorative bool
 }
 
 // ImageCropRef defines cropping percentages (0-100000 range for OOXML).
@@ -89,12 +91,19 @@ func imageShape(image ImageRef, shapeID int) string {
 		effectsXML += "</a:effectLst>"
 	}
 
+	descrAttr := ""
+	if image.IsDecorative {
+		descrAttr = ` descr=""`
+	} else if image.AltText != "" {
+		descrAttr = fmt.Sprintf(` descr="%s"`, Escape(image.AltText))
+	}
+
 	return fmt.Sprintf(`
 <p:pic>
 <p:nvPicPr>
-<p:cNvPr id="%d" name="%s"/>
+<p:cNvPr id="%d" name="%s"%s/>
 <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
-</p:nvPr>
+<p:nvPr/>
 </p:nvPicPr>
 <p:blipFill>
 <a:blip r:embed="%s"/>
@@ -112,6 +121,7 @@ func imageShape(image ImageRef, shapeID int) string {
 </p:pic>`,
 		shapeID,
 		Escape(name),
+		descrAttr,
 		Escape(image.RelID),
 		srcRect,
 		xfrmAttrs,

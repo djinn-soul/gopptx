@@ -13,6 +13,19 @@ import (
 	"testing"
 )
 
+func TestCLI_VersionSubcommand(t *testing.T) {
+	stdout, stderr, code := runCLI(t, "version")
+	if code != exitOK {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, "gopptx version") {
+		t.Fatalf("expected version output, got %q", stdout)
+	}
+}
+
 func TestCLI_CreateSubcommand(t *testing.T) {
 	outPath := filepath.Join(t.TempDir(), "create.pptx")
 	stdout, stderr, code := runCLI(t, "create", "-out", outPath, "-title", "CLI Deck", "-slides", "2")
@@ -133,6 +146,31 @@ var (
 	cliBuildErr  error
 	cliBinPath   string
 )
+
+func TestMergeCommand(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	a := filepath.Join(tmpDir, "a.pptx")
+	runCLI(t, "create", "-out", a, "-title", "Presentation A")
+
+	b := filepath.Join(tmpDir, "b.pptx")
+	runCLI(t, "create", "-out", b, "-title", "Presentation B")
+
+	merged := filepath.Join(tmpDir, "merged.pptx")
+	out, stderr, code := runCLI(t, "merge", "-out", merged, a, b)
+	if code != exitOK {
+		t.Fatalf("merge failed (%d): %s\n%s", code, out, stderr)
+	}
+
+	if !strings.Contains(out, "Successfully merged 2 files") {
+		t.Fatalf("unexpected success output: %s", out)
+	}
+
+	infoOut, _, _ := runCLI(t, "info", "-file", merged)
+	if !strings.Contains(infoOut, "Slide count: 2") {
+		t.Fatalf("expected 2 slides in merged file, got output: %s", infoOut)
+	}
+}
 
 func cliBinary(t *testing.T) string {
 	t.Helper()

@@ -83,12 +83,14 @@ func toXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*Hyperlink]string) []pptx
 	specs := make([]pptxxml.ShapeSpec, 0, len(shapes))
 	for _, shape := range shapes {
 		spec := pptxxml.ShapeSpec{
-			Type: normalizeShapeType(shape.Type),
-			X:    shape.X,
-			Y:    shape.Y,
-			CX:   shape.CX,
-			CY:   shape.CY,
-			Text: shape.Text,
+			Type:         normalizeShapeType(shape.Type),
+			X:            shape.X,
+			Y:            shape.Y,
+			CX:           shape.CX,
+			CY:           shape.CY,
+			Text:         shape.Text,
+			AltText:      shape.AltText,
+			IsDecorative: shape.IsDecorative,
 		}
 		if shape.Fill != nil {
 			spec.Fill = &pptxxml.ShapeFillSpec{
@@ -157,6 +159,8 @@ func toXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.Conne
 			StartShapeIndex: connector.StartShapeIndex,
 			EndShapeIndex:   connector.EndShapeIndex,
 			Label:           connector.Label,
+			AltText:         connector.AltText,
+			IsDecorative:    connector.IsDecorative,
 		}
 		spec.StartSiteIndex, spec.EndSiteIndex = resolveConnectorSiteIndices(connector, shapes)
 		specs = append(specs, spec)
