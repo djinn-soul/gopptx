@@ -38,6 +38,7 @@ func main() {
 		{"28_animations", generateAnimations},
 		{"31_hyperlinks", generateHyperlinks},
 		{"15_merge", generateMerge},
+		{"16_prelude_helpers", generatePreludeHelpers},
 	}
 
 	for _, g := range generators {
@@ -444,14 +445,14 @@ func generateMerge() ([]byte, error) {
 	if err := os.WriteFile(tmpFile, data2, 0o644); err != nil {
 		return nil, err
 	}
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	// Save data1 to a temp file because OpenPresentationEditor needs a path
 	targetFile := filepath.Join(os.TempDir(), "gopptx_merge_target.pptx")
 	if err := os.WriteFile(targetFile, data1, 0o644); err != nil {
 		return nil, err
 	}
-	defer os.Remove(targetFile)
+	defer func() { _ = os.Remove(targetFile) }()
 
 	// Open first and merge second
 	editor, err := pptx.OpenPresentationEditor(targetFile)
@@ -468,7 +469,7 @@ func generateMerge() ([]byte, error) {
 	if err := editor.Save(mergedFile); err != nil {
 		return nil, err
 	}
-	defer os.Remove(mergedFile)
+	defer func() { _ = os.Remove(mergedFile) }()
 
 	return os.ReadFile(mergedFile)
 }
