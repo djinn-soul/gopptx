@@ -87,7 +87,7 @@ func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulle
 	margin := int64(457200)
 	x := margin
 	y := int64(1189200) // Lower top offset for big content
-	cx := width - 2*margin
+	cx := int64(8230200)
 	cy := int64(5668800) // Taller content area
 	return contentShapeAt(
 		shapeID,
@@ -122,7 +122,7 @@ func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, b
 	margin := int64(457200)
 	columnGap := int64(457200)
 	cx := (width - 2*margin - columnGap) / 2
-	x := margin + cx + columnGap
+	x := int64(4572300)
 	y := int64(1189200)
 	cy := int64(5668800)
 	return contentShapeAt(
