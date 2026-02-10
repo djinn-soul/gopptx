@@ -59,36 +59,63 @@ func writeChartFiles(zw *zip.Writer, parts []chartPart) error {
 	return nil
 }
 
-type slideChartSpecResolver func(slide SlideContent) (*pptxxml.ChartSpec, bool)
-
-var slideChartSpecResolvers = []slideChartSpecResolver{
-	slideBarChartSpec,
-	slideBarHorizontalChartSpec,
-	slideBarStackedChartSpec,
-	slideBarStacked100ChartSpec,
-	slideLineChartSpec,
-	slideLineMarkersChartSpec,
-	slideLineStackedChartSpec,
-	slideScatterChartSpec,
-	slideAreaChartSpec,
-	slideAreaStackedChartSpec,
-	slideAreaStacked100ChartSpec,
-	slidePieChartSpec,
-	slideDoughnutChartSpec,
-	slideBubbleChartSpec,
-	slideRadarChartSpec,
-	slideRadarFilledChartSpec,
-	slideStockHLCChartSpec,
-	slideStockOHLCChartSpec,
-	slideComboChartSpec,
-}
-
 func slideChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
-	for _, resolver := range slideChartSpecResolvers {
-		spec, ok := resolver(slide)
-		if ok {
-			return spec, true
-		}
+	if slide.Chart != nil {
+		return slide.Chart.ToChartSpec(), true
+	}
+	if slide.BarHorizontal != nil {
+		return slide.BarHorizontal.ToChartSpec(), true
+	}
+	if slide.BarStacked != nil {
+		return slide.BarStacked.ToChartSpec(), true
+	}
+	if slide.BarStacked100 != nil {
+		return slide.BarStacked100.ToChartSpec(), true
+	}
+	if slide.Line != nil {
+		return slide.Line.ToChartSpec(), true
+	}
+	if slide.LineMarkers != nil {
+		return slide.LineMarkers.ToChartSpec(), true
+	}
+	if slide.LineStacked != nil {
+		return slide.LineStacked.ToChartSpec(), true
+	}
+	if slide.Scatter != nil {
+		return slide.Scatter.ToChartSpec(), true
+	}
+	if slide.Area != nil {
+		return slide.Area.ToChartSpec(), true
+	}
+	if slide.AreaStacked != nil {
+		return slide.AreaStacked.ToChartSpec(), true
+	}
+	if slide.AreaStacked100 != nil {
+		return slide.AreaStacked100.ToChartSpec(), true
+	}
+	if slide.Pie != nil {
+		return slide.Pie.ToChartSpec(), true
+	}
+	if slide.Doughnut != nil {
+		return slide.Doughnut.ToChartSpec(), true
+	}
+	if slide.Bubble != nil {
+		return slide.Bubble.ToChartSpec(), true
+	}
+	if slide.Radar != nil {
+		return slide.Radar.ToChartSpec(), true
+	}
+	if slide.RadarFilled != nil {
+		return slide.RadarFilled.ToChartSpec(), true
+	}
+	if slide.StockHLC != nil {
+		return slide.StockHLC.ToChartSpec(), true
+	}
+	if slide.StockOHLC != nil {
+		return slide.StockOHLC.ToChartSpec(), true
+	}
+	if slide.Combo != nil {
+		return slide.Combo.ToChartSpec(), true
 	}
 	return nil, false
 }
@@ -96,12 +123,4 @@ func slideChartSpec(slide SlideContent) (*pptxxml.ChartSpec, bool) {
 func slideChartKindDefined(slide SlideContent) bool {
 	_, ok := slideChartSpec(slide)
 	return ok
-}
-
-func copyFloat64Pointer(value *float64) *float64 {
-	if value == nil {
-		return nil
-	}
-	v := *value
-	return &v
 }

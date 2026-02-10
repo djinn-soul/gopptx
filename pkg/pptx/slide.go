@@ -40,7 +40,7 @@ type SlideContent struct {
 	AreaStacked          *AreaStackedChart
 	AreaStacked100       *AreaStacked100Chart
 	Pie                  *PieChart
-	Dough                *DoughnutChart
+	Doughnut             *DoughnutChart
 	Bubble               *BubbleChart
 	Radar                *RadarChart
 	RadarFilled          *RadarFilledChart

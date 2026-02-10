@@ -194,7 +194,7 @@ func generateCharts() ([]byte, error) {
 		[]float64{50, 30, 20},
 	).WithTitle("Product Mix")
 	slide4 := pptx.NewSlide("Doughnut Chart")
-	slide4.Dough = &doughnutChart
+	slide4.Doughnut = &doughnutChart
 	slides = append(slides, slide4)
 
 	// Scatter Chart

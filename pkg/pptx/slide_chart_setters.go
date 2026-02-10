@@ -80,7 +80,7 @@ func (s SlideContent) WithPieChart(chart PieChart) SlideContent {
 // WithDoughnutChart sets one doughnut chart for the slide.
 func (s SlideContent) WithDoughnutChart(chart DoughnutChart) SlideContent {
 	s.clearCharts()
-	s.Dough = &chart
+	s.Doughnut = &chart
 	return s
 }
 
@@ -133,7 +133,7 @@ func (s *SlideContent) clearCharts() {
 	s.AreaStacked = nil
 	s.AreaStacked100 = nil
 	s.Pie = nil
-	s.Dough = nil
+	s.Doughnut = nil
 	s.Bubble = nil
 	s.Radar = nil
 	s.RadarFilled = nil

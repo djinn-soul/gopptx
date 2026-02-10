@@ -62,8 +62,8 @@ func validateSlideCharts(s SlideContent, index int) error {
 			return err
 		}
 	}
-	if s.Dough != nil {
-		if err := s.Dough.Validate(index); err != nil {
+	if s.Doughnut != nil {
+		if err := s.Doughnut.Validate(index); err != nil {
 			return err
 		}
 	}
@@ -148,7 +148,7 @@ func chartKindCount(s SlideContent) int {
 	if s.Pie != nil {
 		count++
 	}
-	if s.Dough != nil {
+	if s.Doughnut != nil {
 		count++
 	}
 	if s.Bubble != nil {
