@@ -228,3 +228,71 @@ func TestCreateWithSlidesRejectsStyledTableInvalidColor(t *testing.T) {
 		t.Fatalf("expected styled table color validation error")
 	}
 }
+
+func TestCreateWithSlidesEmbedsBackgroundColor(t *testing.T) {
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Red Background").WithBackgroundColor("#FF0000"),
+	}
+
+	data, err := pptx.CreateWithSlides("Background Test", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	needle := `<a:srgbClr val="FF0000"/>`
+	if !strings.Contains(slideXML, needle) {
+		t.Fatalf("expected background color %q in slide XML", needle)
+	}
+}
+
+func TestCreateWithSlidesTitleAlignment(t *testing.T) {
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Right Title").WithTitleAlign("r"),
+	}
+
+	data, err := pptx.CreateWithSlides("Title Alignment Test", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	needle := `<a:pPr algn="r"/>`
+	if !strings.Contains(slideXML, needle) {
+		t.Fatalf("expected title alignment %q in slide XML", needle)
+	}
+}
+
+func TestCreateWithSlidesContentVerticalAlignment(t *testing.T) {
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Centered Content").
+			AddBullet("Bullet 1").
+			WithContentVAlign("ctr"),
+	}
+
+	data, err := pptx.CreateWithSlides("Vertical Alignment Test", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	needle := `anchor="ctr"`
+	if !strings.Contains(slideXML, needle) {
+		t.Fatalf("expected content vertical alignment %q in slide XML", needle)
+	}
+}

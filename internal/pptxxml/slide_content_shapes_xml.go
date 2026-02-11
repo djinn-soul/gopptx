@@ -12,7 +12,11 @@ func titleShape(title TitleSpec, width, height int64) string {
 	y := int64(274638) // Fixed top offset
 	cx := width - 2*margin
 	cy := int64(1143000) // Fixed height (1.25 inches)
-	return titleShapeAt(title, x, y, cx, cy, "l")
+	align := title.Align
+	if align == "" {
+		align = "l"
+	}
+	return titleShapeAt(title, x, y, cx, cy, align)
 }
 
 func centeredTitleShape(title TitleSpec, width, height int64) string {
@@ -22,7 +26,11 @@ func centeredTitleShape(title TitleSpec, width, height int64) string {
 	cy := int64(1371600) // 1.5 inches
 	x := margin
 	y := (height - cy) / 2 // Vertically centered
-	return titleShapeAt(title, x, y, cx, cy, "ctr")
+	align := title.Align
+	if align == "" {
+		align = "ctr"
+	}
+	return titleShapeAt(title, x, y, cx, cy, align)
 }
 
 func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align string) string {
@@ -149,6 +157,11 @@ func contentShapeAt(
 	style ContentStyleSpec,
 ) string {
 	var b strings.Builder
+	vAlign := style.VAlign
+	if vAlign == "" {
+		vAlign = "t"
+	}
+
 	b.WriteString(fmt.Sprintf(`
 <p:sp>
 <p:nvSpPr>
@@ -165,8 +178,8 @@ func contentShapeAt(
 <a:noFill/>
 </p:spPr>
 <p:txBody>
-<a:bodyPr wrap="square" rtlCol="0"/>
-<a:lstStyle/>`, shapeID, Escape(shapeName), x, y, cx, cy))
+<a:bodyPr wrap="square" rtlCol="0" anchor="%s"/>
+<a:lstStyle/>`, shapeID, Escape(shapeName), x, y, cx, cy, Escape(vAlign)))
 
 	for i, bullet := range bullets {
 		pStyle := bulletStyleAt(bulletStyles, i)

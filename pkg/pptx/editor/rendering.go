@@ -26,6 +26,7 @@ func renderEditorSlideParts(slide elements.SlideContent, slideNumber int, notesT
 		Bold:      slide.TitleBold,
 		Italic:    slide.TitleItalic,
 		Underline: slide.TitleUnderline,
+		Align:     slide.TitleAlign,
 	}
 	contentStyle := pptxxml.ContentStyleSpec{
 		SizePt:    slide.ContentSize,
@@ -33,6 +34,7 @@ func renderEditorSlideParts(slide elements.SlideContent, slideNumber int, notesT
 		Bold:      slide.ContentBold,
 		Italic:    slide.ContentItalic,
 		Underline: slide.ContentUnderline,
+		VAlign:    slide.ContentVAlign,
 	}
 
 	slideXML := pptxxml.SlideWithLayout(
@@ -48,6 +50,7 @@ func renderEditorSlideParts(slide elements.SlideContent, slideNumber int, notesT
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 		nil,
+		slide.BackgroundColor,
 		elements.SlideTransitionXML(slide),
 		elements.SlideAnimationsXML(slide, shapeIDs),
 		width,

@@ -125,6 +125,9 @@ func (s SlideContent) Validate(index int) error {
 	if s.ContentColor != "" && !common.IsHexColor(s.ContentColor) {
 		return fmt.Errorf("content color must be 6-digit RGB hex")
 	}
+	if s.BackgroundColor != "" && (!common.IsHexColor(s.BackgroundColor) || strings.HasPrefix(s.BackgroundColor, "#")) {
+		return fmt.Errorf("background color must be 6-digit RGB hex (without #)")
+	}
 
 	// Validate transition
 	if err := ValidateSlideTransition(s, index); err != nil {
@@ -142,6 +145,22 @@ func (s SlideContent) Validate(index int) error {
 	for _, b := range s.Bullets {
 		if b == "" {
 			return fmt.Errorf("bullet cannot be empty")
+		}
+	}
+
+	if s.TitleAlign != "" {
+		switch s.TitleAlign {
+		case "l", "ctr", "r", "just":
+		default:
+			return fmt.Errorf("invalid title alignment: %q (expected l|ctr|r|just)", s.TitleAlign)
+		}
+	}
+
+	if s.ContentVAlign != "" {
+		switch s.ContentVAlign {
+		case "t", "ctr", "b":
+		default:
+			return fmt.Errorf("invalid content vertical alignment: %q (expected t|ctr|b)", s.ContentVAlign)
 		}
 	}
 
@@ -190,12 +209,15 @@ type SlideContent struct {
 	TitleBold            bool
 	TitleItalic          bool
 	TitleUnderline       bool
+	TitleAlign           string
 	ContentSize          int
 	ContentColor         string
 	ContentBold          bool
 	ContentItalic        bool
 	ContentUnderline     bool
+	ContentVAlign        string
 	Layout               string
+	BackgroundColor      string
 	Transition           transitions.SlideTransition
 	DefaultBulletStyle   TextParagraphStyle
 	Bullets              []string
@@ -349,6 +371,12 @@ func (s SlideContent) WithLayout(layout string) SlideContent {
 	return s
 }
 
+// WithBackgroundColor sets the slide background as RGB hex.
+func (s SlideContent) WithBackgroundColor(color string) SlideContent {
+	s.BackgroundColor = common.NormalizeHexColor(color)
+	return s
+}
+
 // WithTitleSize sets the title font size in points.
 func (s SlideContent) WithTitleSize(size int) SlideContent {
 	s.TitleSize = size
@@ -379,6 +407,12 @@ func (s SlideContent) WithTitleUnderline(underline bool) SlideContent {
 	return s
 }
 
+// WithTitleAlign sets the horizontal alignment of the title (l|ctr|r|just).
+func (s SlideContent) WithTitleAlign(align string) SlideContent {
+	s.TitleAlign = strings.ToLower(strings.TrimSpace(align))
+	return s
+}
+
 // WithContentSize sets the content font size in points.
 func (s SlideContent) WithContentSize(size int) SlideContent {
 	s.ContentSize = size
@@ -406,6 +440,12 @@ func (s SlideContent) WithContentItalic(italic bool) SlideContent {
 // WithContentUnderline sets whether the content is underlined.
 func (s SlideContent) WithContentUnderline(underline bool) SlideContent {
 	s.ContentUnderline = underline
+	return s
+}
+
+// WithContentVAlign sets the vertical alignment of the main content (t|ctr|b).
+func (s SlideContent) WithContentVAlign(align string) SlideContent {
+	s.ContentVAlign = strings.ToLower(strings.TrimSpace(align))
 	return s
 }
 

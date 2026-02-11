@@ -25,14 +25,35 @@ type PlaceholderOverrideSpec struct {
 	Chart *ChartFrame
 }
 
-const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const slideHeaderStart = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-<p:cSld>
+<p:cSld>`
+
+const slideDefaultBackground = `
 <p:bg>
 <p:bgRef idx="1001">
 <a:schemeClr val="bg1"/>
 </p:bgRef>
-</p:bg>
+</p:bg>`
+
+func backgroundXML(color string) string {
+	if color == "" {
+		return slideDefaultBackground
+	}
+	color = strings.TrimPrefix(color, "#")
+	return fmt.Sprintf(`
+<p:bg>
+<p:bgPr>
+<a:solidFill>
+<a:srgbClr val="%s"/>
+</a:solidFill>
+<a:effectLst/>
+</p:bgPr>
+</p:bg>`, color)
+}
+
+func slideHeaderEndBodyXML(width, height int64) string {
+	return fmt.Sprintf(`
 <p:spTree>
 <p:nvGrpSpPr>
 <p:cNvPr id="1" name=""/>
@@ -42,11 +63,12 @@ const slideHeader = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:grpSpPr>
 <a:xfrm>
 <a:off x="0" y="0"/>
-<a:ext cx="9144000" cy="6858000"/>
+<a:ext cx="%d" cy="%d"/>
 <a:chOff x="0" y="0"/>
-<a:chExt cx="9144000" cy="6858000"/>
+<a:chExt cx="%d" cy="%d"/>
 </a:xfrm>
-</p:grpSpPr>`
+</p:grpSpPr>`, width, height, width, height)
+}
 
 const slideContentFooter = `
 </p:spTree>
@@ -68,6 +90,7 @@ type TitleSpec struct {
 	Bold      bool
 	Italic    bool
 	Underline bool
+	Align     string
 }
 
 // ContentStyleSpec describes default content formatting.
@@ -77,6 +100,7 @@ type ContentStyleSpec struct {
 	Bold      bool
 	Italic    bool
 	Underline bool
+	VAlign    string
 }
 
 // SlideWithContent renders a title+bullets slide with optional table, chart, and images.
@@ -89,6 +113,7 @@ func SlideWithContent(
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
+	backgroundColor string,
 	transitionXML string,
 	animationsXML string,
 	width, height int64,
@@ -106,6 +131,7 @@ func SlideWithContent(
 		nil,
 		nil,
 		nil,
+		backgroundColor,
 		transitionXML,
 		animationsXML,
 		width,
@@ -127,13 +153,16 @@ func SlideWithLayout(
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
 	placeholders []PlaceholderOverrideSpec,
+	backgroundColor string,
 	transitionXML string,
 	animationsXML string,
 	width, height int64,
 ) string {
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
-	b.WriteString(slideHeader)
+	b.WriteString(slideHeaderStart)
+	b.WriteString(backgroundXML(backgroundColor))
+	b.WriteString(slideHeaderEndBodyXML(width, height))
 
 	nextID := 2
 	if layoutMode != slideLayoutBlank {
