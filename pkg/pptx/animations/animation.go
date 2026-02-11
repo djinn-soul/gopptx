@@ -84,12 +84,12 @@ type Animation struct {
 	// 2. Connectors (s.Connectors)
 	// 3. Images (s.Images)
 	// 4. Placeholder Overrides (s.PlaceholderOverrides)
-	ShapeIndex int
-	Effect     AnimationEffect
-	Trigger    AnimationTrigger
-	Direction  AnimationDirection
-	DurationMS uint32
-	DelayMS    uint32
+	ShapeIndex  int
+	Effect      AnimationEffect
+	Trigger     AnimationTrigger
+	Direction   AnimationDirection
+	DurationMS  uint32
+	DelayMS     uint32
 	RepeatCount uint32
 	AutoReverse bool
 }
