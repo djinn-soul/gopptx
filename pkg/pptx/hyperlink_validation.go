@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-func validateHyperlink(h *Hyperlink, context string) error {
-	if h == nil {
-		return nil
-	}
-	return validateHyperlinkAction(h.Action, context)
-}
-
 func validateHyperlinkAction(a HyperlinkAction, context string) error {
 	switch a.Type {
 	case HyperlinkActionURL:

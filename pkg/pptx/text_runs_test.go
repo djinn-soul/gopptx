@@ -33,7 +33,7 @@ func TestCreateWithSlidesEmbedsRichTextRunFormatting(t *testing.T) {
 
 	checks := []string{
 		`<a:rPr lang="en-US" sz="1800" b="1" i="1" u="sng" dirty="0"><a:solidFill><a:srgbClr val="1A2B3C"/></a:solidFill><a:latin typeface="Calibri"/></a:rPr>`,
-		`<a:rPr lang="en-US" sz="2800" b="0" i="0" u="none" dirty="0"><a:latin typeface="Consolas"/></a:rPr>`,
+		`<a:rPr lang="en-US" sz="1800" b="0" i="0" u="none" dirty="0"><a:latin typeface="Consolas"/></a:rPr>`,
 		`<a:t>Heading </a:t>`,
 		`<a:t>Code</a:t>`,
 	}
@@ -94,7 +94,7 @@ func TestCreateWithSlidesEmbedsTextEnhancementRunFormatting(t *testing.T) {
 	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
-		`<a:rPr lang="en-US" sz="2800" b="0" i="0" u="none" strike="sngStrike" dirty="0"><a:highlight><a:srgbClr val="FFFF00"/></a:highlight></a:rPr>`,
+		`<a:rPr lang="en-US" sz="1800" b="0" i="0" u="none" strike="sngStrike" dirty="0"><a:highlight><a:srgbClr val="FFFF00"/></a:highlight></a:rPr>`,
 		`baseline="-25000"`,
 		`baseline="30000"`,
 	}

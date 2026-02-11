@@ -1,15 +1,17 @@
-package pptx
+package markdown
 
 import (
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type markdownParser struct {
 	lines             []string
 	index             int
-	slides            []SlideContent
-	current           *SlideContent
+	slides            []elements.SlideContent
+	current           *elements.SlideContent
 	lastTitle         string
 	continuationTitle string
 }
@@ -17,11 +19,11 @@ type markdownParser struct {
 func newMarkdownParser(markdown string) *markdownParser {
 	return &markdownParser{
 		lines:  strings.Split(markdown, "\n"),
-		slides: make([]SlideContent, 0, 8),
+		slides: make([]elements.SlideContent, 0, 8),
 	}
 }
 
-func (p *markdownParser) parse() ([]SlideContent, error) {
+func (p *markdownParser) parse() ([]elements.SlideContent, error) {
 	for p.index < len(p.lines) {
 		lineNumber := p.index + 1
 		trimmed := strings.TrimSpace(p.lines[p.index])
@@ -63,7 +65,7 @@ func (p *markdownParser) parse() ([]SlideContent, error) {
 				return nil, fmt.Errorf("line %d: slide title cannot be empty", lineNumber)
 			}
 			p.flushCurrent()
-			slide := NewSlide(title)
+			slide := elements.NewSlide(title)
 			p.current = &slide
 			p.lastTitle = title
 			p.continuationTitle = ""
@@ -76,8 +78,8 @@ func (p *markdownParser) parse() ([]SlideContent, error) {
 			}
 			subheading := strings.TrimSpace(trimMarkdownHeadingPrefix(trimmed))
 			if subheading != "" {
-				runs := []TextRun{NewTextRun(subheading).WithBold(true)}
-				*p.current = p.current.AddBulletRunsWithStyle(runs, defaultTextParagraphStyle())
+				runs := []elements.TextRun{elements.NewTextRun(subheading).WithBold(true)}
+				*p.current = p.current.AddBulletRunsWithStyle(runs, elements.DefaultTextParagraphStyle())
 			}
 			p.index++
 			continue
@@ -90,7 +92,7 @@ func (p *markdownParser) parse() ([]SlideContent, error) {
 		if !ok {
 			bullet = parsedMarkdownBullet{
 				text:  trimmed,
-				style: defaultTextParagraphStyle(),
+				style: elements.DefaultTextParagraphStyle(),
 			}
 		}
 		appendMarkdownBullet(p.current, bullet.text, bullet.style)
@@ -118,7 +120,7 @@ func (p *markdownParser) ensureCurrent(lineNumber int) error {
 	}
 	if strings.TrimSpace(p.continuationTitle) != "" {
 		title := p.continuationTitle + " (continued)"
-		slide := NewSlide(title)
+		slide := elements.NewSlide(title)
 		p.current = &slide
 		p.lastTitle = title
 		p.continuationTitle = ""

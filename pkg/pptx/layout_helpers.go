@@ -127,6 +127,9 @@ func Distribute(orientation string, bounds Box, count int, elementSize int64) ([
 	if count <= 0 {
 		return nil, fmt.Errorf("count must be greater than zero")
 	}
+	if orientation != OrientationHorizontal && orientation != OrientationVertical {
+		return nil, fmt.Errorf("invalid orientation: %s", orientation)
+	}
 	if count == 1 {
 		switch orientation {
 		case OrientationHorizontal:
@@ -135,8 +138,6 @@ func Distribute(orientation string, bounds Box, count int, elementSize int64) ([
 		case OrientationVertical:
 			_, y := CenterInBox(0, elementSize, bounds)
 			return []int64{y}, nil
-		default:
-			// Fallthrough for error handling later if needed, but for now we follow original logic
 		}
 	}
 
@@ -149,8 +150,6 @@ func Distribute(orientation string, bounds Box, count int, elementSize int64) ([
 	case OrientationVertical:
 		totalAvailable = bounds.CY
 		startCoord = bounds.Y
-	default:
-		return nil, fmt.Errorf("invalid orientation: %s", orientation)
 	}
 
 	totalElementSize := elementSize * int64(count)

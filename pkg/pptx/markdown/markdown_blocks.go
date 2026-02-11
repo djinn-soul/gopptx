@@ -1,9 +1,11 @@
-package pptx
+package markdown
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 var markdownTableSeparatorPattern = regexp.MustCompile(`^:?-{3,}:?$`)
@@ -138,11 +140,11 @@ func (p *markdownParser) consumeTable(startLine int) error {
 	for i := range columnWidths {
 		columnWidths[i] = columnWidth
 	}
-	table := NewTable(columnWidths)
+	table := tables.NewTable(columnWidths)
 
-	headerRow := make([]TableCell, 0, columnCount)
+	headerRow := make([]tables.TableCell, 0, columnCount)
 	for _, text := range rows[0] {
-		headerRow = append(headerRow, NewTableCell(text).WithBold(true).WithBackgroundColor("4472C4"))
+		headerRow = append(headerRow, tables.NewTableCell(text).WithBold(true).WithBackgroundColor("4472C4"))
 	}
 	table = table.AddStyledRow(headerRow)
 	for _, row := range rows[1:] {

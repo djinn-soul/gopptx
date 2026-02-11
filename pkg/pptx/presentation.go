@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 // Create builds a valid PPTX with generated slide titles.
@@ -320,8 +321,8 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 			})
 		}
 
-		layoutMode := slideLayoutXMLMode(slide.Layout)
-		shapeIDs := calculateShapeIDs(slide)
+		layoutMode := elements.SlideLayoutXMLMode(slide.Layout)
+		shapeIDs := elements.CalculateShapeIDs(slide)
 		animationsXML := slideAnimationsXML(slide, shapeIDs)
 
 		titleSpec := pptxxml.TitleSpec{
@@ -368,7 +369,7 @@ func writePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []Slide
 			zw,
 			relsPath,
 			pptxxml.SlideRelationshipsWithMultiCharts(
-				slideLayoutTarget(slide.Layout),
+				elements.SlideLayoutTarget(slide.Layout),
 				imageTargets,
 				chartRel,
 				placeholderChartRels,

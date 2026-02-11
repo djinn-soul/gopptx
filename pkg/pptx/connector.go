@@ -1,290 +1,75 @@
 package pptx
 
-import "strings"
+import (
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+)
 
-const (
-	// ConnectorTypeStraight renders a straight connector.
-	ConnectorTypeStraight = "straightConnector1"
-	// ConnectorTypeElbow renders an elbow connector.
-	ConnectorTypeElbow = "bentConnector3"
-	// ConnectorTypeCurved renders a curved connector.
-	ConnectorTypeCurved = "curvedConnector3"
+type (
+	// Connector is one connector.
+	Connector = elements.Connector
 )
 
 const (
-	// ArrowTypeNone renders no arrowhead.
-	ArrowTypeNone = "none"
-	// ArrowTypeTriangle renders a triangle arrowhead.
-	ArrowTypeTriangle = "triangle"
-	// ArrowTypeStealth renders a stealth arrowhead.
-	ArrowTypeStealth = "stealth"
-	// ArrowTypeDiamond renders a diamond arrowhead.
-	ArrowTypeDiamond = "diamond"
-	// ArrowTypeOval renders an oval arrowhead.
-	ArrowTypeOval = "oval"
-	// ArrowTypeOpen renders an open arrowhead.
-	ArrowTypeOpen = "arrow"
+	ConnectorTypeStraight = elements.ConnectorTypeStraight
+	ConnectorTypeElbow    = elements.ConnectorTypeElbow
+	ConnectorTypeCurved   = elements.ConnectorTypeCurved
 )
 
 const (
-	// ArrowSizeSmall renders small arrowheads.
-	ArrowSizeSmall = "sm"
-	// ArrowSizeMedium renders medium arrowheads.
-	ArrowSizeMedium = "med"
-	// ArrowSizeLarge renders large arrowheads.
-	ArrowSizeLarge = "lg"
+	ArrowTypeNone     = elements.ArrowTypeNone
+	ArrowTypeTriangle = elements.ArrowTypeTriangle
+	ArrowTypeStealth  = elements.ArrowTypeStealth
+	ArrowTypeDiamond  = elements.ArrowTypeDiamond
+	ArrowTypeOval     = elements.ArrowTypeOval
+	ArrowTypeOpen     = elements.ArrowTypeOpen
 )
 
 const (
-	// ConnectionSiteTop anchors on top-center.
-	ConnectionSiteTop = "top"
-	// ConnectionSiteRight anchors on right-center.
-	ConnectionSiteRight = "right"
-	// ConnectionSiteBottom anchors on bottom-center.
-	ConnectionSiteBottom = "bottom"
-	// ConnectionSiteLeft anchors on left-center.
-	ConnectionSiteLeft = "left"
-	// ConnectionSiteTopLeft anchors on top-left.
-	ConnectionSiteTopLeft = "topLeft"
-	// ConnectionSiteTopRight anchors on top-right.
-	ConnectionSiteTopRight = "topRight"
-	// ConnectionSiteBottomRight anchors on bottom-right.
-	ConnectionSiteBottomRight = "bottomRight"
-	// ConnectionSiteBottomLeft anchors on bottom-left.
-	ConnectionSiteBottomLeft = "bottomLeft"
-	// ConnectionSiteCenter anchors on center.
-	ConnectionSiteCenter = "center"
+	ArrowSizeSmall  = elements.ArrowSizeSmall
+	ArrowSizeMedium = elements.ArrowSizeMedium
+	ArrowSizeLarge  = elements.ArrowSizeLarge
 )
 
-// Connector is one connector rendered as p:cxnSp in slide XML.
-type Connector struct {
-	Type            string
-	StartX          int64
-	StartY          int64
-	EndX            int64
-	EndY            int64
-	Line            ShapeLine
-	StartArrow      string
-	EndArrow        string
-	ArrowSize       string
-	StartShapeIndex int
-	StartSite       string
-	EndShapeIndex   int
-	EndSite         string
-	Label           string
-	AltText         string
-	IsDecorative    bool
+const (
+	ConnectionSiteTop         = elements.ConnectionSiteTop
+	ConnectionSiteRight       = elements.ConnectionSiteRight
+	ConnectionSiteBottom      = elements.ConnectionSiteBottom
+	ConnectionSiteLeft        = elements.ConnectionSiteLeft
+	ConnectionSiteTopLeft     = elements.ConnectionSiteTopLeft
+	ConnectionSiteTopRight    = elements.ConnectionSiteTopRight
+	ConnectionSiteBottomRight = elements.ConnectionSiteBottomRight
+	ConnectionSiteBottomLeft  = elements.ConnectionSiteBottomLeft
+	ConnectionSiteCenter      = elements.ConnectionSiteCenter
+)
+
+func NewConnector(connectorType string, startX, startY, endX, endY int64) Connector {
+	return elements.NewConnector(connectorType, startX, startY, endX, endY)
 }
 
-// NewConnector creates a connector with explicit geometry and type.
-func NewConnector(connectorType string, startX int64, startY int64, endX int64, endY int64) Connector {
-	return Connector{
-		Type:       normalizeConnectorType(connectorType),
-		StartX:     startX,
-		StartY:     startY,
-		EndX:       endX,
-		EndY:       endY,
-		Line:       NewShapeLine("000000", 12700),
-		StartArrow: ArrowTypeNone,
-		EndArrow:   ArrowTypeNone,
-		ArrowSize:  ArrowSizeMedium,
-	}
+func NewStraightConnector(startX, startY, endX, endY int64) Connector {
+	return elements.NewStraightConnector(startX, startY, endX, endY)
 }
 
-// NewStraightConnector creates a straight connector.
-func NewStraightConnector(startX int64, startY int64, endX int64, endY int64) Connector {
-	return NewConnector(ConnectorTypeStraight, startX, startY, endX, endY)
+func NewElbowConnector(startX, startY, endX, endY int64) Connector {
+	return elements.NewElbowConnector(startX, startY, endX, endY)
 }
 
-// NewElbowConnector creates an elbow connector.
-func NewElbowConnector(startX int64, startY int64, endX int64, endY int64) Connector {
-	return NewConnector(ConnectorTypeElbow, startX, startY, endX, endY)
-}
-
-// NewCurvedConnector creates a curved connector.
-func NewCurvedConnector(startX int64, startY int64, endX int64, endY int64) Connector {
-	return NewConnector(ConnectorTypeCurved, startX, startY, endX, endY)
-}
-
-// WithLine sets connector line color and width.
-func (c Connector) WithLine(line ShapeLine) Connector {
-	c.Line = line
-	return c
-}
-
-// WithDash sets connector dash style.
-func (c Connector) WithDash(dash string) Connector {
-	c.Line = c.Line.WithDash(dash)
-	return c
-}
-
-// WithArrows sets start and end arrowhead types.
-func (c Connector) WithArrows(startArrow string, endArrow string) Connector {
-	c.StartArrow = normalizeArrowType(startArrow)
-	c.EndArrow = normalizeArrowType(endArrow)
-	return c
-}
-
-// WithArrowSize sets arrowhead size for both ends.
-func (c Connector) WithArrowSize(size string) Connector {
-	c.ArrowSize = normalizeArrowSize(size)
-	return c
-}
-
-// ConnectStart anchors the connector start to the indexed custom shape (1-based).
-func (c Connector) ConnectStart(shapeIndex int, site string) Connector {
-	c.StartShapeIndex = shapeIndex
-	c.StartSite = normalizeConnectionSite(site)
-	return c
-}
-
-// ConnectEnd anchors the connector end to the indexed custom shape (1-based).
-func (c Connector) ConnectEnd(shapeIndex int, site string) Connector {
-	c.EndShapeIndex = shapeIndex
-	c.EndSite = normalizeConnectionSite(site)
-	return c
-}
-
-// WithLabel sets connector label text.
-func (c Connector) WithLabel(label string) Connector {
-	c.Label = label
-	return c
-}
-
-// WithAltText sets the alternative text for accessibility.
-func (c Connector) WithAltText(text string) Connector {
-	c.AltText = text
-	return c
-}
-
-// WithDecorative marks the connector as decorative (ignored by screen readers).
-func (c Connector) WithDecorative(enabled bool) Connector {
-	c.IsDecorative = enabled
-	return c
+func NewCurvedConnector(startX, startY, endX, endY int64) Connector {
+	return elements.NewCurvedConnector(startX, startY, endX, endY)
 }
 
 func normalizeConnectorType(connectorType string) string {
-	t := strings.ToLower(strings.TrimSpace(connectorType))
-	switch t {
-	case strings.ToLower(ConnectorTypeStraight), "straight", "s":
-		return ConnectorTypeStraight
-	case strings.ToLower(ConnectorTypeElbow), "elbow", "bent", "e":
-		return ConnectorTypeElbow
-	case strings.ToLower(ConnectorTypeCurved), "curved", "curve", "c":
-		return ConnectorTypeCurved
-	default:
-		return strings.TrimSpace(connectorType)
-	}
-}
-
-func isConnectorType(connectorType string) bool {
-	switch normalizeConnectorType(connectorType) {
-	case ConnectorTypeStraight, ConnectorTypeElbow, ConnectorTypeCurved:
-		return true
-	default:
-		return false
-	}
+	return elements.NormalizeConnectorType(connectorType)
 }
 
 func normalizeArrowType(arrowType string) string {
-	t := strings.ToLower(strings.TrimSpace(arrowType))
-	switch t {
-	case strings.ToLower(ArrowTypeNone), "", "n":
-		return ArrowTypeNone
-	case strings.ToLower(ArrowTypeTriangle), "t":
-		return ArrowTypeTriangle
-	case strings.ToLower(ArrowTypeStealth), "s":
-		return ArrowTypeStealth
-	case strings.ToLower(ArrowTypeDiamond), "d":
-		return ArrowTypeDiamond
-	case strings.ToLower(ArrowTypeOval), "o":
-		return ArrowTypeOval
-	case strings.ToLower(ArrowTypeOpen), "open", "a":
-		return ArrowTypeOpen
-	default:
-		return strings.TrimSpace(arrowType)
-	}
-}
-
-func isArrowType(arrowType string) bool {
-	switch normalizeArrowType(arrowType) {
-	case ArrowTypeNone, ArrowTypeTriangle, ArrowTypeStealth, ArrowTypeDiamond, ArrowTypeOval, ArrowTypeOpen:
-		return true
-	default:
-		return false
-	}
+	return elements.NormalizeArrowType(arrowType)
 }
 
 func normalizeArrowSize(size string) string {
-	t := strings.ToLower(strings.TrimSpace(size))
-	switch t {
-	case strings.ToLower(ArrowSizeMedium), "", "medium", "m":
-		return ArrowSizeMedium
-	case strings.ToLower(ArrowSizeSmall), "small", "s":
-		return ArrowSizeSmall
-	case strings.ToLower(ArrowSizeLarge), "large", "l":
-		return ArrowSizeLarge
-	default:
-		return strings.TrimSpace(size)
-	}
-}
-
-func isArrowSize(size string) bool {
-	switch normalizeArrowSize(size) {
-	case ArrowSizeSmall, ArrowSizeMedium, ArrowSizeLarge:
-		return true
-	default:
-		return false
-	}
+	return elements.NormalizeArrowSize(size)
 }
 
 func normalizeConnectionSite(site string) string {
-	t := strings.ToLower(strings.TrimSpace(site))
-	switch t {
-	case strings.ToLower(ConnectionSiteTop), "t":
-		return ConnectionSiteTop
-	case strings.ToLower(ConnectionSiteRight), "r":
-		return ConnectionSiteRight
-	case strings.ToLower(ConnectionSiteBottom), "b":
-		return ConnectionSiteBottom
-	case strings.ToLower(ConnectionSiteLeft), "l":
-		return ConnectionSiteLeft
-	case "topleft", "top-left", "top_left", "tl":
-		return ConnectionSiteTopLeft
-	case "topright", "top-right", "top_right", "tr":
-		return ConnectionSiteTopRight
-	case "bottomright", "bottom-right", "bottom_right", "br":
-		return ConnectionSiteBottomRight
-	case "bottomleft", "bottom-left", "bottom_left", "bl":
-		return ConnectionSiteBottomLeft
-	case strings.ToLower(ConnectionSiteCenter), "ctr", "c":
-		return ConnectionSiteCenter
-	default:
-		return strings.TrimSpace(site)
-	}
-}
-
-func connectionSiteIndex(site string) (int, bool) {
-	switch normalizeConnectionSite(site) {
-	case ConnectionSiteTop:
-		return 0, true
-	case ConnectionSiteRight:
-		return 1, true
-	case ConnectionSiteBottom:
-		return 2, true
-	case ConnectionSiteLeft:
-		return 3, true
-	case ConnectionSiteTopLeft:
-		return 4, true
-	case ConnectionSiteTopRight:
-		return 5, true
-	case ConnectionSiteBottomRight:
-		return 6, true
-	case ConnectionSiteBottomLeft:
-		return 7, true
-	case ConnectionSiteCenter:
-		return 8, true
-	default:
-		return 0, false
-	}
+	return elements.NormalizeConnectionSite(site)
 }

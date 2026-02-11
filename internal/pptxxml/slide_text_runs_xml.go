@@ -33,25 +33,20 @@ func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
 
 func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec, contentStyle ContentStyleSpec) string {
 	var b strings.Builder
-	b.WriteString(`
-<a:p>
-` + bulletParagraphPropsXML(style))
+	b.WriteString(`<a:p>` + bulletParagraphPropsXML(style))
 	for _, run := range runs {
 		if strings.TrimSpace(run.Text) == "" {
 			continue
 		}
 		b.WriteString(richTextRun(run, contentStyle))
 	}
-	b.WriteString(`
-</a:p>`)
+	b.WriteString(`</a:p>`)
 	return b.String()
 }
 
 func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	var b strings.Builder
-	b.WriteString(`
-<a:r>
-<a:rPr lang="en-US" sz="`)
+	b.WriteString(`<a:r><a:rPr lang="en-US" sz="`)
 	b.WriteString(runSizeValueWithDefault(run.SizePt, contentStyle.SizePt))
 	b.WriteString(`" b="`)
 	b.WriteString(boolToFlag(run.Bold || contentStyle.Bold))
@@ -96,11 +91,9 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 		b.WriteString(`"/>`)
 	}
 
-	b.WriteString(`</a:rPr>
-<a:t>`)
+	b.WriteString(`</a:rPr><a:t>`)
 	b.WriteString(Escape(run.Text))
-	b.WriteString(`</a:t>
-</a:r>`)
+	b.WriteString(`</a:t></a:r>`)
 	return b.String()
 }
 

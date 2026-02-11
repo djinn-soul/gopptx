@@ -1,16 +1,18 @@
-package pptx
+package markdown
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 var numberedListPattern = regexp.MustCompile(`^\d+\.\s+(.+)$`)
 
 type parsedMarkdownBullet struct {
 	text  string
-	style TextParagraphStyle
+	style elements.TextParagraphStyle
 }
 
 // SlidesFromMarkdown converts a markdown document into slide content.
@@ -24,7 +26,7 @@ type parsedMarkdownBullet struct {
 // - fenced code blocks are rendered as no-bullet code paragraphs
 // - fenced mermaid blocks are converted to placeholder shapes
 // - blockquotes are parsed into slide speaker notes
-func SlidesFromMarkdown(markdown string) ([]SlideContent, error) {
+func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
 		return nil, fmt.Errorf("markdown content cannot be empty")
 	}
@@ -37,7 +39,7 @@ func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
 		if strings.HasPrefix(line, marker) {
 			return parsedMarkdownBullet{
 				text:  strings.TrimSpace(strings.TrimPrefix(line, marker)),
-				style: defaultTextParagraphStyle(),
+				style: elements.DefaultTextParagraphStyle(),
 			}, true
 		}
 	}
@@ -46,13 +48,13 @@ func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
 	if len(matches) == 2 {
 		return parsedMarkdownBullet{
 			text:  strings.TrimSpace(matches[1]),
-			style: defaultTextParagraphStyle().WithNumbered(),
+			style: elements.DefaultTextParagraphStyle().WithNumbered(),
 		}, true
 	}
 	return parsedMarkdownBullet{}, false
 }
 
-func appendMarkdownBullet(slide *SlideContent, text string, style TextParagraphStyle) {
+func appendMarkdownBullet(slide *elements.SlideContent, text string, style elements.TextParagraphStyle) {
 	runs, rich := parseInlineTextRuns(text)
 	if rich {
 		*slide = slide.AddBulletRunsWithStyle(runs, style)
@@ -61,13 +63,13 @@ func appendMarkdownBullet(slide *SlideContent, text string, style TextParagraphS
 	*slide = slide.AddBulletWithStyle(text, style)
 }
 
-func parseInlineTextRuns(text string) ([]TextRun, bool) {
+func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 	input := strings.TrimSpace(text)
 	if input == "" {
 		return nil, false
 	}
 
-	runs := make([]TextRun, 0, 4)
+	runs := make([]elements.TextRun, 0, 4)
 	hasStyled := false
 	for i := 0; i < len(input); {
 		if input[i] == '`' {
@@ -75,13 +77,13 @@ func parseInlineTextRuns(text string) ([]TextRun, bool) {
 			if close >= 0 {
 				end := i + 1 + close
 				if end > i+1 {
-					runs = append(runs, TextRun{Text: input[i+1 : end], Code: true})
+					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Code: true})
 					hasStyled = true
 				}
 				i = end + 1
 				continue
 			}
-			runs = append(runs, TextRun{Text: input[i : i+1]})
+			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
 			i++
 			continue
 		}
@@ -91,13 +93,13 @@ func parseInlineTextRuns(text string) ([]TextRun, bool) {
 			if close >= 0 {
 				end := i + 2 + close
 				if end > i+2 {
-					runs = append(runs, TextRun{Text: input[i+2 : end], Bold: true})
+					runs = append(runs, elements.TextRun{Text: input[i+2 : end], Bold: true})
 					hasStyled = true
 				}
 				i = end + 2
 				continue
 			}
-			runs = append(runs, TextRun{Text: input[i : i+1]})
+			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
 			i++
 			continue
 		}
@@ -107,32 +109,32 @@ func parseInlineTextRuns(text string) ([]TextRun, bool) {
 			if close >= 0 {
 				end := i + 1 + close
 				if end > i+1 {
-					runs = append(runs, TextRun{Text: input[i+1 : end], Italic: true})
+					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Italic: true})
 					hasStyled = true
 				}
 				i = end + 1
 				continue
 			}
-			runs = append(runs, TextRun{Text: input[i : i+1]})
+			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
 			i++
 			continue
 		}
 
 		next := nextInlineMarkerOffset(input[i:])
 		if next < 0 {
-			runs = append(runs, TextRun{Text: input[i:]})
+			runs = append(runs, elements.TextRun{Text: input[i:]})
 			break
 		}
 		if next == 0 {
-			runs = append(runs, TextRun{Text: input[i : i+1]})
+			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
 			i++
 			continue
 		}
-		runs = append(runs, TextRun{Text: input[i : i+next]})
+		runs = append(runs, elements.TextRun{Text: input[i : i+next]})
 		i += next
 	}
 
-	return normalizeTextRuns(runs), hasStyled
+	return elements.NormalizeTextRuns(runs), hasStyled
 }
 
 func nextInlineMarkerOffset(input string) int {

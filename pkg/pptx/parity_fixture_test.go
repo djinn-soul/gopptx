@@ -229,6 +229,17 @@ func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
 	}
 }
 
+func rootTestdataPath(parts ...string) string {
+	base := "../../testdata"
+	for i := 0; i < 5; i++ {
+		if _, err := os.Stat(base); err == nil {
+			break
+		}
+		base = "../" + base
+	}
+	return filepath.Join(append([]string{base}, parts...)...)
+}
+
 func fixtureAllSlidesXML(t *testing.T, fixtureName string) string {
 	t.Helper()
 	zr := fixtureZipReader(t, fixtureName)

@@ -73,6 +73,10 @@ const (
 
 // Helper aliases
 var (
-	normalizeHexColor = charts.NormalizeHexColor
-	isHexColor        = charts.IsHexColor
+	NormalizeHexColor = charts.NormalizeHexColor
+	IsHexColor        = charts.IsHexColor
+)
+
+var (
+	normalizeHexColor = NormalizeHexColor
 )

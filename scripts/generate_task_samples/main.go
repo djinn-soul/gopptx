@@ -347,12 +347,12 @@ func generatePlaceholders() ([]byte, error) {
 
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Placeholder Overrides").
-			WithPlaceholderText(0, "Title Override").
-			WithPlaceholderText(1, "Body content override from code"),
+			WithPlaceholderText(0, "title", "Title Override").
+			WithPlaceholderText(1, "body", "Body content override from code"),
 		pptx.NewSlide("Placeholder Image").
-			WithPlaceholderImage(1, img),
+			WithPlaceholderImage(1, "picture", img),
 		pptx.NewSlide("Placeholder Table").
-			WithPlaceholderTable(1, pptx.Table{
+			WithPlaceholderTable(1, "body", pptx.Table{
 				Rows: [][]string{
 					{"PH Col 1", "PH Col 2"},
 					{"PH Data 1", "PH Data 2"},

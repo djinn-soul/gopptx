@@ -11,6 +11,7 @@ const (
 	ColorLightGray = "D3D3D3"
 	ColorDarkGray  = "404040"
 	ColorYellow    = "FFFF00"
+	ColorLightBlue = "ADD8E6"
 	ColorOrange    = "FFA500"
 	ColorPurple    = "800080"
 	ColorCyan      = "00FFFF"

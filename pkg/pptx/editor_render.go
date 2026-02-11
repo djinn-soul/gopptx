@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget string, width, height int64) (string, string, error) {
@@ -11,9 +12,9 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 	if err != nil {
 		return "", "", err
 	}
-	layoutMode := slideLayoutXMLMode(slide.Layout)
+	layoutMode := elements.SlideLayoutXMLMode(slide.Layout)
 	hyperlinkRIDs, hyperlinks, _ := buildSlideHyperlinkRels(slide, 2)
-	shapeIDs := calculateShapeIDs(slide)
+	shapeIDs := elements.CalculateShapeIDs(slide)
 	animationsXML := slideAnimationsXML(slide, shapeIDs)
 
 	titleSpec := pptxxml.TitleSpec{
@@ -51,7 +52,7 @@ func renderEditorSlideParts(slide SlideContent, slideNumber int, notesTarget str
 		height,
 	)
 	relsXML := pptxxml.SlideRelationshipsWithHyperlinks(
-		slideLayoutTarget(slide.Layout),
+		elements.SlideLayoutTarget(slide.Layout),
 		nil,
 		nil,
 		notesTarget,

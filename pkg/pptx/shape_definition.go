@@ -1,11 +1,8 @@
 package pptx
 
-// ShapeDefinition allows external shape builders to plug into slide composition.
-type ShapeDefinition interface {
-	ToShape() Shape
-}
+import (
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+)
 
-// ToShape returns the shape itself and satisfies ShapeDefinition.
-func (s Shape) ToShape() Shape {
-	return s
-}
+// ShapeDefinition allows external shape builders to plug into slide composition.
+type ShapeDefinition = elements.ShapeDefinition
