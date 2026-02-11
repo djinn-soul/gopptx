@@ -1,4 +1,4 @@
-package pptx_test
+package animations_test
 
 import (
 	"archive/zip"

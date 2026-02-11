@@ -1,4 +1,4 @@
-package pptx_test
+package elements_test
 
 import (
 	"archive/zip"

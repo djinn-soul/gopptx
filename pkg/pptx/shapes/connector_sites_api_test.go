@@ -1,4 +1,4 @@
-package pptx_test
+package shapes_test
 
 import (
 	"archive/zip"

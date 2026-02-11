@@ -1,4 +1,4 @@
-package pptx_test
+package markdown_test
 
 import (
 	"archive/zip"

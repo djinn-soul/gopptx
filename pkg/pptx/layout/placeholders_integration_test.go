@@ -1,4 +1,4 @@
-package pptx_test
+package layout_test
 
 import (
 	"testing"

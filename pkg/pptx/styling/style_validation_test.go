@@ -1,4 +1,4 @@
-package pptx_test
+package styling_test
 
 import (
 	"strings"

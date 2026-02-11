@@ -1,4 +1,4 @@
-package pptx_test
+package notes_test
 
 import (
 	"archive/zip"
