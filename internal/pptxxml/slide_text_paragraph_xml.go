@@ -14,6 +14,8 @@ type BulletParagraphSpec struct {
 	LineSpacingPct int
 	BulletStyle    string
 	BulletChar     string
+	BulletColor    string
+	BulletSize     int
 	Level          int
 }
 
@@ -30,7 +32,7 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 	if style.Align != "" {
 		base += ` algn="` + Escape(style.Align) + `"`
 	}
-	base += `>` + bulletNodeXML(style)
+	base += ">"
 
 	if style.LineSpacingPct > 0 {
 		base += `<a:lnSpc><a:spcPct val="` + strconv.Itoa(style.LineSpacingPct*1000) + `"/></a:lnSpc>`
@@ -42,6 +44,8 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 		base += `<a:spcAft><a:spcPts val="` + strconv.Itoa(style.SpaceAfterPt*100) + `"/></a:spcAft>`
 	}
 
+	base += bulletNodeXML(style)
+
 	return base + `</a:pPr>`
 }
 
@@ -52,26 +56,42 @@ func bulletIndent(level int) (int, int) {
 }
 
 func bulletNodeXML(style BulletParagraphSpec) string {
+	var b strings.Builder
+
+	if style.BulletColor != "" {
+		b.WriteString(`<a:buClr><a:srgbClr val="`)
+		b.WriteString(Escape(style.BulletColor))
+		b.WriteString(`"/></a:buClr>`)
+	}
+	if style.BulletSize > 0 {
+		b.WriteString(`<a:buSzPct val="`)
+		b.WriteString(strconv.Itoa(style.BulletSize * 1000))
+		b.WriteString(`"/>`)
+	}
+
 	switch normalizeBulletStyle(style.BulletStyle) {
 	case "", "bullet":
-		return `<a:buChar char="•"/>`
+		b.WriteString(`<a:buChar char="•"/>`)
 	case "number":
-		return `<a:buAutoNum type="arabicPeriod"/>`
+		b.WriteString(`<a:buAutoNum type="arabicPeriod"/>`)
 	case "letter_lower":
-		return `<a:buAutoNum type="alphaLcPeriod"/>`
+		b.WriteString(`<a:buAutoNum type="alphaLcPeriod"/>`)
 	case "letter_upper":
-		return `<a:buAutoNum type="alphaUcPeriod"/>`
+		b.WriteString(`<a:buAutoNum type="alphaUcPeriod"/>`)
 	case "roman_lower":
-		return `<a:buAutoNum type="romanLcPeriod"/>`
+		b.WriteString(`<a:buAutoNum type="romanLcPeriod"/>`)
 	case "roman_upper":
-		return `<a:buAutoNum type="romanUcPeriod"/>`
+		b.WriteString(`<a:buAutoNum type="romanUcPeriod"/>`)
 	case "custom":
-		return `<a:buChar char="` + Escape(strings.TrimSpace(style.BulletChar)) + `"/>`
+		b.WriteString(`<a:buChar char="`)
+		b.WriteString(Escape(strings.TrimSpace(style.BulletChar)))
+		b.WriteString(`"/>`)
 	case "none":
-		return `<a:buNone/>`
+		b.WriteString(`<a:buNone/>`)
 	default:
 		panic(fmt.Sprintf("unsupported bullet style: %q", style.BulletStyle))
 	}
+	return b.String()
 }
 
 func normalizeBulletStyle(style string) string {

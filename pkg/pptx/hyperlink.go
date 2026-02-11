@@ -1,70 +1,74 @@
 package pptx
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 )
 
 type (
 	// Hyperlink describes a clickable link.
-	Hyperlink = elements.Hyperlink
+	Hyperlink = action.Hyperlink
 	// HyperlinkAction defines the target of a hyperlink.
-	HyperlinkAction = elements.HyperlinkAction
+	HyperlinkAction = action.HyperlinkAction
 	// HyperlinkActionType defines the type of hyperlink action.
-	HyperlinkActionType = elements.HyperlinkActionType
+	HyperlinkActionType = action.HyperlinkActionType
 )
 
 const (
-	HyperlinkActionURL           = elements.HyperlinkActionURL
-	HyperlinkActionSlide         = elements.HyperlinkActionSlide
-	HyperlinkActionFirstSlide    = elements.HyperlinkActionFirstSlide
-	HyperlinkActionLastSlide     = elements.HyperlinkActionLastSlide
-	HyperlinkActionNextSlide     = elements.HyperlinkActionNextSlide
-	HyperlinkActionPreviousSlide = elements.HyperlinkActionPreviousSlide
-	HyperlinkActionEndShow       = elements.HyperlinkActionEndShow
-	HyperlinkActionEmail         = elements.HyperlinkActionEmail
-	HyperlinkActionFile          = elements.HyperlinkActionFile
+	HyperlinkActionURL           = action.HyperlinkActionURL
+	HyperlinkActionSlide         = action.HyperlinkActionSlide
+	HyperlinkActionFirstSlide    = action.HyperlinkActionFirstSlide
+	HyperlinkActionLastSlide     = action.HyperlinkActionLastSlide
+	HyperlinkActionNextSlide     = action.HyperlinkActionNextSlide
+	HyperlinkActionPreviousSlide = action.HyperlinkActionPreviousSlide
+	HyperlinkActionEndShow       = action.HyperlinkActionEndShow
+	HyperlinkActionEmail         = action.HyperlinkActionEmail
+	HyperlinkActionFile          = action.HyperlinkActionFile
 )
 
-func NewHyperlink(action HyperlinkAction) Hyperlink {
-	return elements.NewHyperlink(action)
+func NewHyperlink(act action.HyperlinkAction) Hyperlink {
+	return action.NewHyperlink(act)
 }
 
 func HyperlinkURL(urlStr string) HyperlinkAction {
-	return elements.HyperlinkURL(urlStr)
+	return action.HyperlinkURL(urlStr)
 }
 
 func HyperlinkSlide(slideNum uint32) HyperlinkAction {
-	return elements.HyperlinkSlide(slideNum)
+	return action.HyperlinkSlide(slideNum)
 }
 
 func HyperlinkFirstSlide() HyperlinkAction {
-	return elements.HyperlinkFirstSlide()
+	return action.HyperlinkFirstSlide()
 }
 
 func HyperlinkLastSlide() HyperlinkAction {
-	return elements.HyperlinkLastSlide()
+	return action.HyperlinkLastSlide()
 }
 
 func HyperlinkNextSlide() HyperlinkAction {
-	return elements.HyperlinkNextSlide()
+	return action.HyperlinkNextSlide()
 }
 
 func HyperlinkPreviousSlide() HyperlinkAction {
-	return elements.HyperlinkPreviousSlide()
+	return action.HyperlinkPreviousSlide()
 }
 
 func HyperlinkEndShow() HyperlinkAction {
-	return elements.HyperlinkEndShow()
+	return action.HyperlinkEndShow()
 }
 
 func HyperlinkEmail(address string) HyperlinkAction {
-	return elements.HyperlinkEmail(address)
+	return action.HyperlinkEmail(address)
 }
 
 func HyperlinkEmailWithSubject(address, subject string) HyperlinkAction {
-	return elements.HyperlinkEmailWithSubject(address, subject)
+	return action.HyperlinkEmailWithSubject(address, subject)
 }
 
 func HyperlinkFile(path string) HyperlinkAction {
-	return elements.HyperlinkFile(path)
+	return action.HyperlinkFile(path)
+}
+
+func validateHyperlinkAction(a HyperlinkAction, context string) error {
+	return action.ValidateHyperlinkAction(a, context)
 }

@@ -2,13 +2,14 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 type (
 	// SlideContent describes the user-visible content of a slide.
 	SlideContent = elements.SlideContent
 	// PlaceholderContent describes overridden content for a slide layout placeholder.
-	PlaceholderContent = elements.PlaceholderContent
+	PlaceholderContent = shapes.PlaceholderContent
 )
 
 func NewSlide(title string) SlideContent {

@@ -4,17 +4,18 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
-// Table aliases for backward compatibility
 type (
 	Table     = tables.Table
 	TableCell = tables.TableCell
 )
 
-// Function aliases
-var (
-	NewTable     = tables.NewTable
-	NewTableCell = tables.NewTableCell
-)
+func NewTable(columnWidths []int64) Table {
+	return tables.NewTable(columnWidths)
+}
+
+func NewTableCell(text string) TableCell {
+	return tables.NewTableCell(text)
+}
 
 // Table Constants
 const (

@@ -6,6 +6,8 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
@@ -114,13 +116,13 @@ func (s SlideContent) Validate(index int) error {
 	if (s.TitleSize != 0 && s.TitleSize < 1) || s.TitleSize > 400 {
 		return fmt.Errorf("title size must be between 1 and 400 pt (or 0 for default)")
 	}
-	if s.TitleColor != "" && !IsHexColor(s.TitleColor) {
+	if s.TitleColor != "" && !common.IsHexColor(s.TitleColor) {
 		return fmt.Errorf("title color must be 6-digit RGB hex")
 	}
 	if (s.ContentSize != 0 && s.ContentSize < 1) || s.ContentSize > 400 {
 		return fmt.Errorf("content size must be between 1 and 400 pt (or 0 for default)")
 	}
-	if s.ContentColor != "" && !IsHexColor(s.ContentColor) {
+	if s.ContentColor != "" && !common.IsHexColor(s.ContentColor) {
 		return fmt.Errorf("content color must be 6-digit RGB hex")
 	}
 
@@ -200,9 +202,9 @@ type SlideContent struct {
 	BulletRuns           [][]TextRun
 	BulletStyles         []TextParagraphStyle
 	Notes                string
-	Images               []Image
-	Shapes               []Shape
-	Connectors           []Connector
+	Images               []shapes.Image
+	Shapes               []shapes.Shape
+	Connectors           []shapes.Connector
 	Table                *tables.Table
 	Chart                *charts.BarChart
 	BarHorizontal        *charts.BarHorizontalChart
@@ -224,17 +226,7 @@ type SlideContent struct {
 	StockOHLC            *charts.StockOHLCChart
 	Combo                *charts.ComboChart
 	Animations           []animations.Animation
-	PlaceholderOverrides []PlaceholderContent
-}
-
-// PlaceholderContent describes overridden content for a slide layout placeholder.
-type PlaceholderContent struct {
-	Index int
-	Type  string
-	Text  string
-	Image *Image
-	Table *tables.Table
-	Chart charts.ChartDefinition
+	PlaceholderOverrides []shapes.PlaceholderContent
 }
 
 // AddBullet appends one bullet item and returns the updated slide.
@@ -270,7 +262,7 @@ func (s SlideContent) AddBulletRunsWithStyle(runs []TextRun, style TextParagraph
 }
 
 // AddShape appends one shape and returns the updated slide content.
-func (s SlideContent) AddShape(sd ShapeDefinition) SlideContent {
+func (s SlideContent) AddShape(sd shapes.ShapeDefinition) SlideContent {
 	s.Shapes = append(s.Shapes, sd.ToShape())
 	return s
 }
@@ -365,7 +357,7 @@ func (s SlideContent) WithTitleSize(size int) SlideContent {
 
 // WithTitleColor sets the title color as RGB hex.
 func (s SlideContent) WithTitleColor(color string) SlideContent {
-	s.TitleColor = NormalizeHexColor(color)
+	s.TitleColor = common.NormalizeHexColor(color)
 	return s
 }
 
@@ -395,7 +387,7 @@ func (s SlideContent) WithContentSize(size int) SlideContent {
 
 // WithContentColor sets the content color as RGB hex.
 func (s SlideContent) WithContentColor(color string) SlideContent {
-	s.ContentColor = NormalizeHexColor(color)
+	s.ContentColor = common.NormalizeHexColor(color)
 	return s
 }
 
@@ -418,7 +410,7 @@ func (s SlideContent) WithContentUnderline(underline bool) SlideContent {
 }
 
 // AddImage adds an image to the slide.
-func (s SlideContent) AddImage(img Image) SlideContent {
+func (s SlideContent) AddImage(img shapes.Image) SlideContent {
 	s.Images = append(s.Images, img)
 	return s
 }
@@ -533,7 +525,7 @@ func SlideLayoutTarget(layout string) string {
 //   - WithPlaceholderText(index, placeholderType, text)
 func (s SlideContent) WithPlaceholderText(index int, args ...any) SlideContent {
 	phType, text := parsePlaceholderTextArgs(index, args...)
-	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
 		Type:  phType,
 		Text:  text,
@@ -547,7 +539,7 @@ func (s SlideContent) WithPlaceholderText(index int, args ...any) SlideContent {
 //   - WithPlaceholderImage(index, placeholderType, image)
 func (s SlideContent) WithPlaceholderImage(index int, args ...any) SlideContent {
 	phType, img := parsePlaceholderImageArgs(index, args...)
-	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
 		Type:  phType,
 		Image: &img,
@@ -561,7 +553,7 @@ func (s SlideContent) WithPlaceholderImage(index int, args ...any) SlideContent 
 //   - WithPlaceholderTable(index, placeholderType, table)
 func (s SlideContent) WithPlaceholderTable(index int, args ...any) SlideContent {
 	phType, table := parsePlaceholderTableArgs(index, args...)
-	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
 		Type:  phType,
 		Table: &table,
@@ -575,7 +567,7 @@ func (s SlideContent) WithPlaceholderTable(index int, args ...any) SlideContent 
 //   - WithPlaceholderChart(index, placeholderType, chart)
 func (s SlideContent) WithPlaceholderChart(index int, args ...any) SlideContent {
 	phType, chart := parsePlaceholderChartArgs(index, args...)
-	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
 		Type:  phType,
 		Chart: chart,
@@ -610,12 +602,12 @@ func parsePlaceholderTextArgs(index int, args ...any) (string, string) {
 	}
 }
 
-func parsePlaceholderImageArgs(index int, args ...any) (string, Image) {
+func parsePlaceholderImageArgs(index int, args ...any) (string, shapes.Image) {
 	switch len(args) {
 	case 1:
-		img, ok := args[0].(Image)
+		img, ok := args[0].(shapes.Image)
 		if !ok {
-			panic("WithPlaceholderImage(index, image): image must be Image")
+			panic("WithPlaceholderImage(index, image): image must be shapes.Image")
 		}
 		phType := "pic"
 		if index == 0 {
@@ -627,9 +619,9 @@ func parsePlaceholderImageArgs(index int, args ...any) (string, Image) {
 		if !ok {
 			panic("WithPlaceholderImage(index, type, image): type must be string")
 		}
-		img, ok := args[1].(Image)
+		img, ok := args[1].(shapes.Image)
 		if !ok {
-			panic("WithPlaceholderImage(index, type, image): image must be Image")
+			panic("WithPlaceholderImage(index, type, image): image must be shapes.Image")
 		}
 		return phType, img
 	default:
@@ -692,7 +684,7 @@ func parsePlaceholderChartArgs(index int, args ...any) (string, ChartDefinition)
 }
 
 // AddConnector adds a connector to the slide.
-func (s SlideContent) AddConnector(c Connector) SlideContent {
+func (s SlideContent) AddConnector(c shapes.Connector) SlideContent {
 	s.Connectors = append(s.Connectors, c)
 	return s
 }

@@ -2,7 +2,6 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type (
@@ -78,8 +77,4 @@ const (
 
 func NewAnimation(shapeIndex int, effect AnimationEffect) Animation {
 	return animations.NewAnimation(shapeIndex, effect)
-}
-
-func slideAnimationsXML(s elements.SlideContent, shapeIDs []int) string {
-	return elements.SlideAnimationsXML(s, shapeIDs)
 }

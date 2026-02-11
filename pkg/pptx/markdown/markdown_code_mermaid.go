@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 const (
@@ -122,9 +123,9 @@ func addMermaidDiagram(slide *elements.SlideContent, code string, lineNumber int
 		text += "\n" + summary
 	}
 
-	shape := elements.NewShape(style.shapeType, 762000, 1524000, 8001000, 1714500).
-		WithFill(elements.NewShapeFill(style.fillColor).WithTransparency(8)).
-		WithLine(elements.NewShapeLine(style.lineColor, 15875)).
+	shape := shapes.NewShape(style.shapeType, 762000, 1524000, 8001000, 1714500).
+		WithFill(shapes.NewShapeFill(style.fillColor).WithTransparency(8)).
+		WithLine(shapes.NewShapeLine(style.lineColor, 15875)).
 		WithText(text)
 	*slide = slide.AddShape(shape)
 	return nil
@@ -151,84 +152,84 @@ func detectMermaidDiagram(code string, lineNumber int) (mermaidDiagramStyle, err
 		return mermaidDiagramStyle{
 			kind:      "Flowchart",
 			subtitle:  subtitle,
-			shapeType: elements.ShapeTypeFlowChartProcess,
+			shapeType: shapes.ShapeTypeFlowChartProcess,
 			fillColor: "DCE6F2",
 			lineColor: "2F5597",
 		}, nil
 	case "sequencediagram":
 		return mermaidDiagramStyle{
 			kind:      "Sequence Diagram",
-			shapeType: elements.ShapeTypeRectangle,
+			shapeType: shapes.ShapeTypeRectangle,
 			fillColor: "E2F0D9",
 			lineColor: "2E7D32",
 		}, nil
 	case "classdiagram":
 		return mermaidDiagramStyle{
 			kind:      "Class Diagram",
-			shapeType: elements.ShapeTypeRectangle,
+			shapeType: shapes.ShapeTypeRectangle,
 			fillColor: "FCE4D6",
 			lineColor: "A64D00",
 		}, nil
 	case "statediagram", "statediagram-v2":
 		return mermaidDiagramStyle{
 			kind:      "State Diagram",
-			shapeType: elements.ShapeTypeRoundedRectangle,
+			shapeType: shapes.ShapeTypeRoundedRectangle,
 			fillColor: "EDE2F7",
 			lineColor: "6A1B9A",
 		}, nil
 	case "erdiagram":
 		return mermaidDiagramStyle{
 			kind:      "Entity-Relationship Diagram",
-			shapeType: elements.ShapeTypeRectangle,
+			shapeType: shapes.ShapeTypeRectangle,
 			fillColor: "E8F5E9",
 			lineColor: "1B5E20",
 		}, nil
 	case "journey":
 		return mermaidDiagramStyle{
 			kind:      "User Journey",
-			shapeType: elements.ShapeTypeRoundedRectangle,
+			shapeType: shapes.ShapeTypeRoundedRectangle,
 			fillColor: "FFF2CC",
 			lineColor: "8A6D1A",
 		}, nil
 	case "gantt":
 		return mermaidDiagramStyle{
 			kind:      "Gantt Chart",
-			shapeType: elements.ShapeTypeRectangle,
+			shapeType: shapes.ShapeTypeRectangle,
 			fillColor: "E2EFDA",
 			lineColor: "2F6B2F",
 		}, nil
 	case "pie":
 		return mermaidDiagramStyle{
 			kind:      "Pie Chart",
-			shapeType: elements.ShapeTypeEllipse,
+			shapeType: shapes.ShapeTypeEllipse,
 			fillColor: "FBE5D6",
 			lineColor: "C65911",
 		}, nil
 	case "mindmap":
 		return mermaidDiagramStyle{
 			kind:      "Mindmap",
-			shapeType: elements.ShapeTypeEllipse,
+			shapeType: shapes.ShapeTypeEllipse,
 			fillColor: "E4DFEC",
 			lineColor: "5B4B8A",
 		}, nil
 	case "quadrantchart":
 		return mermaidDiagramStyle{
 			kind:      "Quadrant Chart",
-			shapeType: elements.ShapeTypeRectangle,
+			shapeType: shapes.ShapeTypeRectangle,
 			fillColor: "D9E1F2",
 			lineColor: "203864",
 		}, nil
 	case "timeline":
 		return mermaidDiagramStyle{
 			kind:      "Timeline",
-			shapeType: elements.ShapeTypeRightArrow,
+			shapeType: shapes.ShapeTypeRightArrow,
 			fillColor: "DEEAF6",
 			lineColor: "2F75B5",
 		}, nil
 	case "gitgraph":
 		return mermaidDiagramStyle{
 			kind:      "Git Graph",
-			shapeType: elements.ShapeTypeParallelogram,
+			shapeType: shapes.ShapeTypeParallelogram,
 			fillColor: "EDEDED",
 			lineColor: "595959",
 		}, nil

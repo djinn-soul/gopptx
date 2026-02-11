@@ -1,28 +1,25 @@
 package pptx
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/media"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 type (
 	// Image describes one image placement.
-	Image = elements.Image
+	Image = shapes.Image
 	// ImageCrop defines cropping details for an image.
-	ImageCrop = elements.ImageCrop
+	ImageCrop = shapes.ImageCrop
 )
 
-func NewImage(path string, x, y, cx, cy int64) Image {
-	return elements.NewImage(path, x, y, cx, cy)
-}
+// NewImage creates a new image descriptor with a local file path.
+var NewImage = media.NewImage
 
-func NewImageFromBytes(data []byte, format string, x, y, cx, cy int64) Image {
-	return elements.NewImageFromBytes(data, format, x, y, cx, cy)
-}
+// NewImageFromBytes creates a new image descriptor with raw data.
+var NewImageFromBytes = media.NewImageFromBytes
 
-func NewImageFromBase64(b64 string, format string, x, y, cx, cy int64) (Image, error) {
-	return elements.NewImageFromBase64(b64, format, x, y, cx, cy)
-}
+// NewImageFromBase64 creates a new image descriptor with base64 encoded data.
+var NewImageFromBase64 = media.NewImageFromBase64
 
-func NewImageFromURL(url string, x, y, cx, cy int64) Image {
-	return elements.NewImageFromURL(url, x, y, cx, cy)
-}
+// NewImageFromURL creates a new image descriptor with a remote URL.
+var NewImageFromURL = media.NewImageFromURL

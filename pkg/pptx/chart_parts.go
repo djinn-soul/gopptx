@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
 type chartPart struct {
@@ -52,7 +53,7 @@ func writeChartFiles(zw *zip.Writer, parts []chartPart) error {
 	for _, part := range parts {
 		path := fmt.Sprintf("ppt/charts/chart%d.xml", part.partNumber)
 		content := pptxxml.ChartPartXML(&part.spec)
-		if err := writeFile(zw, path, content); err != nil {
+		if err := common.WriteFile(zw, path, content); err != nil {
 			return err
 		}
 	}

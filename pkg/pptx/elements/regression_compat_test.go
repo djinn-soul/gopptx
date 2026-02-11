@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
@@ -11,10 +12,10 @@ import (
 func TestCalculateShapeIDs_IncludesChartSlot(t *testing.T) {
 	withChart := NewSlide("Chart+Shape")
 	withChart.Chart = &charts.BarChart{}
-	withChart = withChart.AddShape(NewShape(ShapeTypeRectangle, 0, 0, 100, 100))
+	withChart = withChart.AddShape(shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100))
 
 	withoutChart := NewSlide("ShapeOnly")
-	withoutChart = withoutChart.AddShape(NewShape(ShapeTypeRectangle, 0, 0, 100, 100))
+	withoutChart = withoutChart.AddShape(shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100))
 
 	idsWithChart := CalculateShapeIDs(withChart)
 	idsWithoutChart := CalculateShapeIDs(withoutChart)
@@ -29,7 +30,7 @@ func TestCalculateShapeIDs_IncludesChartSlot(t *testing.T) {
 
 func TestPlaceholderMethods_AcceptLegacyAndTypedSignatures(t *testing.T) {
 	slide := NewSlide("Placeholder API")
-	img := NewImage("test.png", 1, 2, 3, 4)
+	img := shapes.NewImage("test.png", 1, 2, 3, 4)
 	table := tables.NewTable([]int64{1000})
 	chart := charts.NewBarChart([]string{"A"}, []float64{1})
 

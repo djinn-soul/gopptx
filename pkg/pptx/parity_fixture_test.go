@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 func TestBasicParityFixtureAgainstPptRsSimpleDeck(t *testing.T) {
@@ -180,7 +182,7 @@ func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
 		mime string
 		data []byte
 	}{
-		{name: "png", ext: "png", mime: "image/png", data: tinyPNG},
+		{name: "png", ext: "png", mime: "image/png", data: testutil.TinyPNG},
 		{name: "jpg", ext: "jpg", mime: "image/jpeg", data: []byte{0xFF, 0xD8, 0xFF, 0xD9}},
 		{name: "jpeg", ext: "jpeg", mime: "image/jpeg", data: []byte{0xFF, 0xD8, 0xFF, 0xD9}},
 		{name: "gif", ext: "gif", mime: "image/gif", data: []byte("GIF89a")},
