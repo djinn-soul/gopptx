@@ -77,7 +77,7 @@ func TestDistribute(t *testing.T) {
 	elSize := int64(200)
 
 	// Distribute horizontally
-	coords, err := Distribute(OrientationHorizontal, bounds, count, elSize)
+	coords, err := DistributeUniform(OrientationHorizontal, bounds, count, elSize)
 	if err != nil {
 		t.Fatalf("Distribute failed: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestDistributeVertical(t *testing.T) {
 	elSize := int64(200)
 
 	// Distribute vertically
-	coords, err := Distribute(OrientationVertical, bounds, count, elSize)
+	coords, err := DistributeUniform(OrientationVertical, bounds, count, elSize)
 	if err != nil {
 		t.Fatalf("Vertical Distribute failed: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestDistributeSingleElement(t *testing.T) {
 	elSize := int64(200)
 
 	// Horizontal
-	coords, err := Distribute(OrientationHorizontal, bounds, 1, elSize)
+	coords, err := DistributeUniform(OrientationHorizontal, bounds, 1, elSize)
 	if err != nil {
 		t.Fatalf("Horizontal Single Distribute failed: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestDistributeSingleElement(t *testing.T) {
 	}
 
 	// Vertical
-	coords, err = Distribute(OrientationVertical, bounds, 1, elSize)
+	coords, err = DistributeUniform(OrientationVertical, bounds, 1, elSize)
 	if err != nil {
 		t.Fatalf("Vertical Single Distribute failed: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestLayoutHelpersErrors(t *testing.T) {
 		t.Error("expected error for invalid orientation in Stack")
 	}
 
-	_, err = Distribute(OrientationHorizontal, common.Box{X: 0, Y: 0, CX: 100, CY: 100}, 2, 60)
+	_, err = DistributeUniform(OrientationHorizontal, common.Box{X: 0, Y: 0, CX: 100, CY: 100}, 2, 60)
 	if err == nil {
 		t.Error("expected error when elements exceed space in Distribute")
 	}

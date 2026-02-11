@@ -2,6 +2,7 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type (
@@ -70,5 +71,5 @@ func HyperlinkFile(path string) HyperlinkAction {
 }
 
 func validateHyperlinkAction(a HyperlinkAction, context string) error {
-	return action.ValidateHyperlinkAction(a, context)
+	return elements.ValidateHyperlinkAction(a, context)
 }

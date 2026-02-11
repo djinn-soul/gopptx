@@ -21,11 +21,15 @@ const (
 )
 
 // Center calculates the (X, Y) coordinates to center an element of size (cx, cy)
-// within the standard slide bounds.
+// within the standard 4:3 slide bounds.
 func Center(cx, cy int64) (x, y int64) {
-	x = (SlideWidth - cx) / 2
-	y = (SlideHeight - cy) / 2
-	return x, y
+	return CenterInSize(cx, cy, SlideWidth, SlideHeight)
+}
+
+// CenterInSize calculates the (X, Y) coordinates to center an element of size (cx, cy)
+// within total dimensions (totalW, totalH).
+func CenterInSize(cx, cy, totalW, totalH int64) (x, y int64) {
+	return (totalW - cx) / 2, (totalH - cy) / 2
 }
 
 // CenterInBox calculates the (X, Y) coordinates to center an element of size (cx, cy)
@@ -98,10 +102,10 @@ func Stack(orientation string, start common.Point, gap int64, elements ...common
 	return points, nil
 }
 
-// Distribute calculates the top or left coordinates to evenly space elements within a bound.
+// DistributeUniform calculates the top or left coordinates to evenly space elements of identical size within a bound.
 // orientation can be "horizontal" or "vertical".
 // count is the number of elements to distribute.
-func Distribute(orientation string, bounds common.Box, count int, elementSize int64) ([]int64, error) {
+func DistributeUniform(orientation string, bounds common.Box, count int, elementSize int64) ([]int64, error) {
 	if count <= 0 {
 		return nil, fmt.Errorf("count must be greater than zero")
 	}

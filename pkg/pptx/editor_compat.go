@@ -7,16 +7,8 @@ import (
 
 // Re-export types for backward compatibility.
 type (
-	PresentationEditor   = editor.PresentationEditor
-	PresentationMetadata = common.PresentationMetadata
-	SlideMetadata        = common.SlideMetadata
-	SlideSize            = common.SlideSize
-)
-
-// Re-export constants.
-var (
-	SlideSize4x3  = common.SlideSize4x3
-	SlideSize16x9 = common.SlideSize16x9
+	PresentationEditor = editor.PresentationEditor
+	SlideMetadata      = common.SlideMetadata
 )
 
 // OpenPresentationEditor re-exports the function from the editor package.

@@ -30,6 +30,9 @@ var (
 	// Center calculates the (X, Y) coordinates to center an element of size (cx, cy)
 	// within the standard slide bounds.
 	Center = layout.Center
+	// CenterInSize calculates the (X, Y) coordinates to center an element of size (cx, cy)
+	// within arbitrary dimensions.
+	CenterInSize = layout.CenterInSize
 	// CenterInBox calculates the (X, Y) coordinates to center an element of size (cx, cy)
 	// within a specific bounding box.
 	CenterInBox = layout.CenterInBox
@@ -39,6 +42,6 @@ var (
 	GridInBox = layout.GridInBox
 	// Stack calculates the starting points for elements placed sequentially with a fixed gap.
 	Stack = layout.Stack
-	// Distribute calculates the top or left coordinates to evenly space elements within a bound.
-	Distribute = layout.Distribute
+	// DistributeUniform calculates the top or left coordinates to evenly space elements of identical size within a bound.
+	DistributeUniform = layout.DistributeUniform
 )
