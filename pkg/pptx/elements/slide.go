@@ -210,6 +210,7 @@ type SlideContent struct {
 	TitleItalic          bool
 	TitleUnderline       bool
 	TitleAlign           string
+	TitleFont            string
 	ContentSize          int
 	ContentColor         string
 	ContentBold          bool
@@ -223,6 +224,7 @@ type SlideContent struct {
 	Bullets              []string
 	BulletRuns           [][]TextRun
 	BulletStyles         []TextParagraphStyle
+	ShowSlideNumber      bool
 	Notes                string
 	Images               []shapes.Image
 	Shapes               []shapes.Shape
@@ -413,6 +415,12 @@ func (s SlideContent) WithTitleAlign(align string) SlideContent {
 	return s
 }
 
+// WithTitleFont sets the typeface for the slide title (e.g., "Consolas").
+func (s SlideContent) WithTitleFont(font string) SlideContent {
+	s.TitleFont = strings.TrimSpace(font)
+	return s
+}
+
 // WithContentSize sets the content font size in points.
 func (s SlideContent) WithContentSize(size int) SlideContent {
 	s.ContentSize = size
@@ -452,6 +460,12 @@ func (s SlideContent) WithContentVAlign(align string) SlideContent {
 // AddImage adds an image to the slide.
 func (s SlideContent) AddImage(img shapes.Image) SlideContent {
 	s.Images = append(s.Images, img)
+	return s
+}
+
+// WithSlideNumber enables or disables slide number display.
+func (s SlideContent) WithSlideNumber(show bool) SlideContent {
+	s.ShowSlideNumber = show
 	return s
 }
 

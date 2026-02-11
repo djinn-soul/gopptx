@@ -91,6 +91,7 @@ type TitleSpec struct {
 	Italic    bool
 	Underline bool
 	Align     string
+	Font      string
 }
 
 // ContentStyleSpec describes default content formatting.
@@ -116,6 +117,7 @@ func SlideWithContent(
 	backgroundColor string,
 	transitionXML string,
 	animationsXML string,
+	showSlideNumber bool,
 	width, height int64,
 ) string {
 	return SlideWithLayout(
@@ -134,6 +136,7 @@ func SlideWithContent(
 		backgroundColor,
 		transitionXML,
 		animationsXML,
+		showSlideNumber,
 		width,
 		height,
 	)
@@ -156,6 +159,7 @@ func SlideWithLayout(
 	backgroundColor string,
 	transitionXML string,
 	animationsXML string,
+	showSlideNumber bool,
 	width, height int64,
 ) string {
 	var b strings.Builder
@@ -237,6 +241,11 @@ func SlideWithLayout(
 		b.WriteString("\n")
 		b.WriteString(ax)
 	}
+
+	if showSlideNumber {
+		b.WriteString(slideNumberShape(width, height, nextID))
+	}
+
 	b.WriteString(slideFooterEnd)
 	return b.String()
 }

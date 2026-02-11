@@ -388,6 +388,7 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			Italic:    slide.TitleItalic,
 			Underline: slide.TitleUnderline,
 			Align:     slide.TitleAlign,
+			Font:      slide.TitleFont,
 		}
 		contentStyle := pptxxml.ContentStyleSpec{
 			SizePt:    slide.ContentSize,
@@ -414,6 +415,7 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			slide.BackgroundColor,
 			elements.SlideTransitionXML(slide),
 			animationsXML,
+			slide.ShowSlideNumber,
 			meta.SlideSize.Width,
 			meta.SlideSize.Height,
 		)

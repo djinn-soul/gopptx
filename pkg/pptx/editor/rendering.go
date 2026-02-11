@@ -53,6 +53,7 @@ func renderEditorSlideParts(slide elements.SlideContent, slideNumber int, notesT
 		slide.BackgroundColor,
 		elements.SlideTransitionXML(slide),
 		elements.SlideAnimationsXML(slide, shapeIDs),
+		slide.ShowSlideNumber,
 		width,
 		height,
 	)

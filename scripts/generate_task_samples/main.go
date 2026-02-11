@@ -39,6 +39,10 @@ func main() {
 		{"31_hyperlinks", generateHyperlinks},
 		{"15_merge", generateMerge},
 		{"16_prelude_helpers", generatePreludeHelpers},
+		{"03_markdown", generateMarkdown},
+		{"18_layout_helpers", generateLayoutHelpers},
+		{"48_accessibility", generateAccessibility},
+		{"53_slide_properties", generateSlideProperties},
 	}
 
 	for _, g := range generators {
@@ -410,7 +414,7 @@ func generateTransitions() ([]byte, error) {
 		pptx.NewSlide("Strips Transition (Right-Down)").
 			WithTransitionOptions(pptx.TransitionOptions{
 				Type:      pptx.TransitionStrips,
-				Direction: "dr",
+				Direction: pptx.TransitionDirDownRight,
 			}).
 			AddBullet("This slide uses strips from top-left to bottom-right"),
 		pptx.NewSlide("Clock Transition (3 spokes)").
@@ -520,4 +524,65 @@ func generateHyperlinks() ([]byte, error) {
 		})
 
 	return pptx.CreateWithSlides("Task 31: Hyperlinks", []pptx.SlideContent{slide})
+}
+
+func generateMarkdown() ([]byte, error) {
+	md := `# Markdown Slide
+- Bullet point
+- **Bold** and *italic*
+---
+# Another Slide
+1. Ordered list
+2. item 2`
+	slides, err := pptx.SlidesFromMarkdown(md)
+	if err != nil {
+		return nil, err
+	}
+	return pptx.CreateWithSlides("Task 03: Markdown", slides)
+}
+
+func generateLayoutHelpers() ([]byte, error) {
+	slide := pptx.NewSlide("Layout Helpers")
+	boxes, _ := pptx.Grid(2, 2, pptx.Inches(0.5))
+	for i, b := range boxes {
+		slide.AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
+			WithText(fmt.Sprintf("Grid %d", i+1)).
+			WithFill(pptx.NewShapeFill("4472C4")))
+	}
+	return pptx.CreateWithSlides("Task 18: Layout Helpers", []pptx.SlideContent{slide})
+}
+
+func generateAccessibility() ([]byte, error) {
+	img := pptx.NewImageFromBytes([]byte("fake"), "png", 1000000, 1000000, 2000000, 2000000).
+		WithAltText("A descriptive text for the image").
+		WithDecorative(false)
+
+	shape := pptx.NewShape(pptx.ShapeTypeRectangle, 4000000, 1000000, 2000000, 2000000).
+		WithFill(pptx.NewShapeFill("70AD47")).
+		WithAltText("Decorative shape").
+		WithDecorative(true)
+
+	slide := pptx.NewSlide("Accessibility").
+		AddImage(img).
+		AddShape(shape).
+		AddBullet("Image has AltText").
+		AddBullet("Shape is marked as decorative")
+
+	return pptx.CreateWithSlides("Task 48: Accessibility", []pptx.SlideContent{slide})
+}
+
+func generateSlideProperties() ([]byte, error) {
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Styled Slide").
+			WithBackgroundColor("D9E1F2").
+			WithTitleAlign("r").
+			WithTitleFont("Consolas").
+			WithContentVAlign("ctr").
+			WithSlideNumber(true).
+			AddBullet("Background: D9E1F2").
+			AddBullet("Title: Right-aligned, Consolas").
+			AddBullet("Content: Middle-aligned").
+			AddBullet("Slide numbers: Enabled"),
+	}
+	return pptx.CreateWithSlides("Task 53: Slide Properties", slides)
 }

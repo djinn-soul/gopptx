@@ -296,3 +296,39 @@ func TestCreateWithSlidesContentVerticalAlignment(t *testing.T) {
 		t.Fatalf("expected content vertical alignment %q in slide XML", needle)
 	}
 }
+
+func TestCreateWithSlidesTitleFontAndNumber(t *testing.T) {
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Styled Slide").
+			WithTitleFont("Consolas").
+			WithSlideNumber(true),
+	}
+
+	data, err := pptx.CreateWithSlides("Font and Number Test", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+
+	// Check Title Font
+	fontNeedle := `typeface="Consolas"`
+	if !strings.Contains(slideXML, fontNeedle) {
+		t.Fatalf("expected title font %q in slide XML", fontNeedle)
+	}
+
+	// Check Slide Number
+	sldNumNeedle := `type="sldNum"`
+	if !strings.Contains(slideXML, sldNumNeedle) {
+		t.Fatalf("expected slide number placeholder %q in slide XML", sldNumNeedle)
+	}
+	fldNeedle := `type="slnum"`
+	if !strings.Contains(slideXML, fldNeedle) {
+		t.Fatalf("expected slide number field %q in slide XML", fldNeedle)
+	}
+}

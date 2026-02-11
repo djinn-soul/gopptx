@@ -45,6 +45,11 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 		colorXML = fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, Escape(title.Color))
 	}
 
+	fontXML := ""
+	if title.Font != "" {
+		fontXML = fmt.Sprintf(`<a:latin typeface="%s"/><a:ea typeface="%s"/><a:cs typeface="%s"/>`, Escape(title.Font), Escape(title.Font), Escape(title.Font))
+	}
+
 	return fmt.Sprintf(`
 <p:sp>
 <p:nvSpPr>
@@ -66,12 +71,12 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 <a:p>
 <a:pPr algn="%s"/>
 <a:r>
-<a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s</a:rPr>
+<a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s%s</a:rPr>
 <a:t>`+escaped+`</a:t>
 </a:r>
 </a:p>
 </p:txBody>
-</p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue(title.Underline), colorXML)
+</p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue(title.Underline), colorXML, fontXML)
 }
 
 func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
@@ -249,4 +254,46 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 <a:t>%s</a:t>
 </a:r>
 </a:p>`, bulletParagraphPropsXML(pStyle), sz, boolToFlag(style.Bold), boolToFlag(style.Italic), runUnderlineValue(style.Underline), colorXML, escaped)
+}
+
+func slideNumberShape(width, height int64, shapeID int) string {
+	// Standard bottom right position for slide numbers
+	cx := int64(548640)
+	cy := int64(396240)
+	x := width - cx - int64(457200)  // margin
+	y := height - cy - int64(274320) // lower margin
+
+	return fmt.Sprintf(`
+<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="%d" name="Slide Number Placeholder"/>
+    <p:cNvSpPr>
+      <a:spLocks noGrp="1"/>
+    </p:cNvSpPr>
+    <p:nvPr>
+      <p:ph type="sldNum" sz="quarter" idx="12"/>
+    </p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="%d" y="%d"/>
+      <a:ext cx="%d" cy="%d"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    <a:noFill/>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr algn="r"/>
+      <a:fld type="slnum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
+        <a:pPr algn="r"/>
+        <a:rPr lang="en-US" smtClean="0"/>
+        <a:t>‹#›</a:t>
+      </a:fld>
+      <a:endParaRPr lang="en-US" smtClean="0"/>
+    </a:p>
+  </p:txBody>
+</p:sp>`, shapeID, x, y, cx, cy)
 }
