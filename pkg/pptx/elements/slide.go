@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
+	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
 // Validate checks the slide for consistency.
@@ -26,7 +28,6 @@ func (s SlideContent) Validate(index int) error {
 		}
 	}
 
-	// Validate charts
 	// Validate charts
 	var slideCharts []ChartDefinition
 	if s.Chart != nil {
@@ -151,7 +152,7 @@ func (s SlideContent) Validate(index int) error {
 			return err
 		}
 		// First animation in a sequence (on a slide) cannot be WithPrevious/AfterPrevious
-		if i == 0 && (anim.Trigger == AnimationWithPrevious || anim.Trigger == AnimationAfterPrevious) {
+		if i == 0 && (anim.Trigger == animations.AnimationWithPrevious || anim.Trigger == animations.AnimationAfterPrevious) {
 			return fmt.Errorf("first animation trigger cannot be with/after previous")
 		}
 	}
@@ -193,7 +194,7 @@ type SlideContent struct {
 	ContentItalic        bool
 	ContentUnderline     bool
 	Layout               string
-	Transition           SlideTransition
+	Transition           transitions.SlideTransition
 	DefaultBulletStyle   TextParagraphStyle
 	Bullets              []string
 	BulletRuns           [][]TextRun
@@ -222,7 +223,7 @@ type SlideContent struct {
 	StockHLC             *charts.StockHLCChart
 	StockOHLC            *charts.StockOHLCChart
 	Combo                *charts.ComboChart
-	Animations           []Animation
+	Animations           []animations.Animation
 	PlaceholderOverrides []PlaceholderContent
 }
 
@@ -332,13 +333,13 @@ func (s SlideContent) AddSubBullet(level int, text string) SlideContent {
 }
 
 // WithTransition sets the transition for the slide.
-func (s SlideContent) WithTransition(t SlideTransition) SlideContent {
+func (s SlideContent) WithTransition(t transitions.SlideTransition) SlideContent {
 	s.Transition = t
 	return s
 }
 
 // WithTransitionOptions sets built-in transition options.
-func (s SlideContent) WithTransitionOptions(opt TransitionOptions) SlideContent {
+func (s SlideContent) WithTransitionOptions(opt transitions.TransitionOptions) SlideContent {
 	s.Transition = opt
 	return s
 }
@@ -423,7 +424,7 @@ func (s SlideContent) AddImage(img Image) SlideContent {
 }
 
 // AddAnimation adds an animation to the slide.
-func (s SlideContent) AddAnimation(anim AnimationDefinition) SlideContent {
+func (s SlideContent) AddAnimation(anim animations.AnimationDefinition) SlideContent {
 	s.Animations = append(s.Animations, anim.ToAnimation())
 	return s
 }
@@ -531,7 +532,7 @@ func SlideLayoutTarget(layout string) string {
 //   - WithPlaceholderText(index, text)
 //   - WithPlaceholderText(index, placeholderType, text)
 func (s SlideContent) WithPlaceholderText(index int, args ...any) SlideContent {
-	phType, text := parsePlaceholderTextArgs(args...)
+	phType, text := parsePlaceholderTextArgs(index, args...)
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
 		Index: index,
 		Type:  phType,
@@ -545,7 +546,7 @@ func (s SlideContent) WithPlaceholderText(index int, args ...any) SlideContent {
 //   - WithPlaceholderImage(index, image)
 //   - WithPlaceholderImage(index, placeholderType, image)
 func (s SlideContent) WithPlaceholderImage(index int, args ...any) SlideContent {
-	phType, img := parsePlaceholderImageArgs(args...)
+	phType, img := parsePlaceholderImageArgs(index, args...)
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
 		Index: index,
 		Type:  phType,
@@ -559,7 +560,7 @@ func (s SlideContent) WithPlaceholderImage(index int, args ...any) SlideContent 
 //   - WithPlaceholderTable(index, table)
 //   - WithPlaceholderTable(index, placeholderType, table)
 func (s SlideContent) WithPlaceholderTable(index int, args ...any) SlideContent {
-	phType, table := parsePlaceholderTableArgs(args...)
+	phType, table := parsePlaceholderTableArgs(index, args...)
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
 		Index: index,
 		Type:  phType,
@@ -573,7 +574,7 @@ func (s SlideContent) WithPlaceholderTable(index int, args ...any) SlideContent 
 //   - WithPlaceholderChart(index, chart)
 //   - WithPlaceholderChart(index, placeholderType, chart)
 func (s SlideContent) WithPlaceholderChart(index int, args ...any) SlideContent {
-	phType, chart := parsePlaceholderChartArgs(args...)
+	phType, chart := parsePlaceholderChartArgs(index, args...)
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, PlaceholderContent{
 		Index: index,
 		Type:  phType,
@@ -582,14 +583,18 @@ func (s SlideContent) WithPlaceholderChart(index int, args ...any) SlideContent 
 	return s
 }
 
-func parsePlaceholderTextArgs(args ...any) (string, string) {
+func parsePlaceholderTextArgs(index int, args ...any) (string, string) {
 	switch len(args) {
 	case 1:
 		text, ok := args[0].(string)
 		if !ok {
 			panic("WithPlaceholderText(index, text): text must be string")
 		}
-		return "", text
+		phType := "body"
+		if index == 0 {
+			phType = "title"
+		}
+		return phType, text
 	case 2:
 		phType, ok := args[0].(string)
 		if !ok {
@@ -605,14 +610,18 @@ func parsePlaceholderTextArgs(args ...any) (string, string) {
 	}
 }
 
-func parsePlaceholderImageArgs(args ...any) (string, Image) {
+func parsePlaceholderImageArgs(index int, args ...any) (string, Image) {
 	switch len(args) {
 	case 1:
 		img, ok := args[0].(Image)
 		if !ok {
 			panic("WithPlaceholderImage(index, image): image must be Image")
 		}
-		return "", img
+		phType := "pic"
+		if index == 0 {
+			phType = "title"
+		}
+		return phType, img
 	case 2:
 		phType, ok := args[0].(string)
 		if !ok {
@@ -628,14 +637,18 @@ func parsePlaceholderImageArgs(args ...any) (string, Image) {
 	}
 }
 
-func parsePlaceholderTableArgs(args ...any) (string, tables.Table) {
+func parsePlaceholderTableArgs(index int, args ...any) (string, tables.Table) {
 	switch len(args) {
 	case 1:
 		table, ok := args[0].(tables.Table)
 		if !ok {
 			panic("WithPlaceholderTable(index, table): table must be tables.Table")
 		}
-		return "", table
+		phType := "body"
+		if index == 0 {
+			phType = "title"
+		}
+		return phType, table
 	case 2:
 		phType, ok := args[0].(string)
 		if !ok {
@@ -651,14 +664,18 @@ func parsePlaceholderTableArgs(args ...any) (string, tables.Table) {
 	}
 }
 
-func parsePlaceholderChartArgs(args ...any) (string, ChartDefinition) {
+func parsePlaceholderChartArgs(index int, args ...any) (string, ChartDefinition) {
 	switch len(args) {
 	case 1:
 		chart, ok := args[0].(ChartDefinition)
 		if !ok {
 			panic("WithPlaceholderChart(index, chart): chart must implement ChartDefinition")
 		}
-		return "", chart
+		phType := "body"
+		if index == 0 {
+			phType = "title"
+		}
+		return phType, chart
 	case 2:
 		phType, ok := args[0].(string)
 		if !ok {

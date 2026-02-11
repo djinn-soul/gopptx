@@ -2,66 +2,71 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
 type (
 	// SlideTransition is the extensibility contract for slide transitions.
-	SlideTransition = elements.SlideTransition
+	SlideTransition = transitions.SlideTransition
 	// TransitionType is the built-in transition enum.
-	TransitionType = elements.TransitionType
+	TransitionType = transitions.TransitionType
 	// TransitionDirection defines the direction of a transition.
-	TransitionDirection = elements.TransitionDirection
+	TransitionDirection = transitions.TransitionDirection
 	// TransitionOrientation defines the orientation of a transition.
-	TransitionOrientation = elements.TransitionOrientation
+	TransitionOrientation = transitions.TransitionOrientation
 	// TransitionOptions provides advanced configuration for a slide transition.
-	TransitionOptions = elements.TransitionOptions
+	TransitionOptions = transitions.TransitionOptions
 )
 
 const (
-	TransitionNone       = elements.TransitionNone
-	TransitionCut        = elements.TransitionCut
-	TransitionFade       = elements.TransitionFade
-	TransitionPush       = elements.TransitionPush
-	TransitionWipe       = elements.TransitionWipe
-	TransitionSplit      = elements.TransitionSplit
-	TransitionReveal     = elements.TransitionReveal
-	TransitionCover      = elements.TransitionCover
-	TransitionZoom       = elements.TransitionZoom
-	TransitionRandomBars = elements.TransitionRandomBars
-	TransitionShape      = elements.TransitionShape
-	TransitionUncover    = elements.TransitionUncover
-	TransitionFlash      = elements.TransitionFlash
-	TransitionStrips     = elements.TransitionStrips
-	TransitionBlinds     = elements.TransitionBlinds
-	TransitionClock      = elements.TransitionClock
-	TransitionRipple     = elements.TransitionRipple
-	TransitionHoneycomb  = elements.TransitionHoneycomb
-	TransitionGlitter    = elements.TransitionGlitter
-	TransitionVortex     = elements.TransitionVortex
-	TransitionShred      = elements.TransitionShred
-	TransitionSwitch     = elements.TransitionSwitch
-	TransitionFlip       = elements.TransitionFlip
-	TransitionGallery    = elements.TransitionGallery
-	TransitionCube       = elements.TransitionCube
-	TransitionDoors      = elements.TransitionDoors
-	TransitionBox        = elements.TransitionBox
-	TransitionRandom     = elements.TransitionRandom
+	TransitionNone       = transitions.TransitionNone
+	TransitionCut        = transitions.TransitionCut
+	TransitionFade       = transitions.TransitionFade
+	TransitionPush       = transitions.TransitionPush
+	TransitionWipe       = transitions.TransitionWipe
+	TransitionSplit      = transitions.TransitionSplit
+	TransitionReveal     = transitions.TransitionReveal
+	TransitionCover      = transitions.TransitionCover
+	TransitionZoom       = transitions.TransitionZoom
+	TransitionRandomBars = transitions.TransitionRandomBars
+	TransitionShape      = transitions.TransitionShape
+	TransitionUncover    = transitions.TransitionUncover
+	TransitionFlash      = transitions.TransitionFlash
+	TransitionStrips     = transitions.TransitionStrips
+	TransitionBlinds     = transitions.TransitionBlinds
+	TransitionClock      = transitions.TransitionClock
+	TransitionRipple     = transitions.TransitionRipple
+	TransitionHoneycomb  = transitions.TransitionHoneycomb
+	TransitionGlitter    = transitions.TransitionGlitter
+	TransitionVortex     = transitions.TransitionVortex
+	TransitionShred      = transitions.TransitionShred
+	TransitionSwitch     = transitions.TransitionSwitch
+	TransitionFlip       = transitions.TransitionFlip
+	TransitionGallery    = transitions.TransitionGallery
+	TransitionCube       = transitions.TransitionCube
+	TransitionDoors      = transitions.TransitionDoors
+	TransitionBox        = transitions.TransitionBox
+	TransitionRandom     = transitions.TransitionRandom
 )
 
 const (
-	TransitionDirIn        = elements.TransitionDirIn
-	TransitionDirOut       = elements.TransitionDirOut
-	TransitionDirUp        = elements.TransitionDirUp
-	TransitionDirDown      = elements.TransitionDirDown
-	TransitionDirLeft      = elements.TransitionDirLeft
-	TransitionDirRight     = elements.TransitionDirRight
-	TransitionDirUpLeft    = elements.TransitionDirUpLeft
-	TransitionDirUpRight   = elements.TransitionDirUpRight
-	TransitionDirDownLeft  = elements.TransitionDirDownLeft
-	TransitionDirDownRight = elements.TransitionDirDownRight
+	TransitionDirIn        = transitions.TransitionDirIn
+	TransitionDirOut       = transitions.TransitionDirOut
+	TransitionDirUp        = transitions.TransitionDirUp
+	TransitionDirDown      = transitions.TransitionDirDown
+	TransitionDirLeft      = transitions.TransitionDirLeft
+	TransitionDirRight     = transitions.TransitionDirRight
+	TransitionDirUpLeft    = transitions.TransitionDirUpLeft
+	TransitionDirUpRight   = transitions.TransitionDirUpRight
+	TransitionDirDownLeft  = transitions.TransitionDirDownLeft
+	TransitionDirDownRight = transitions.TransitionDirDownRight
 )
 
 const (
-	TransitionOrientHorizontal = elements.TransitionOrientHorizontal
-	TransitionOrientVertical   = elements.TransitionOrientVertical
+	TransitionOrientHorizontal = transitions.TransitionOrientHorizontal
+	TransitionOrientVertical   = transitions.TransitionOrientVertical
 )
+
+func ValidateSlideTransition(s elements.SlideContent, index int) error {
+	return elements.ValidateSlideTransition(s, index)
+}

@@ -1,84 +1,85 @@
 package pptx
 
 import (
+	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type (
 	// AnimationEffect defines the type of animation effect.
-	AnimationEffect = elements.AnimationEffect
+	AnimationEffect = animations.AnimationEffect
 	// AnimationTrigger defines when the animation starts.
-	AnimationTrigger = elements.AnimationTrigger
+	AnimationTrigger = animations.AnimationTrigger
 	// AnimationDirection defines the direction or subtype of the animation.
-	AnimationDirection = elements.AnimationDirection
+	AnimationDirection = animations.AnimationDirection
 	// Animation represents a single animation effect on a slide object.
-	Animation = elements.Animation
+	Animation = animations.Animation
 	// AnimationDefinition is the interface for types that can be converted to an Animation.
-	AnimationDefinition = elements.AnimationDefinition
+	AnimationDefinition = animations.AnimationDefinition
 )
 
 const (
-	AnimationEntranceAppear      = elements.AnimationEntranceAppear
-	AnimationEntranceFade        = elements.AnimationEntranceFade
-	AnimationEntranceFlyIn       = elements.AnimationEntranceFlyIn
-	AnimationEntranceFloat       = elements.AnimationEntranceFloat
-	AnimationEntranceSplit       = elements.AnimationEntranceSplit
-	AnimationEntranceWipe        = elements.AnimationEntranceWipe
-	AnimationEntranceShape       = elements.AnimationEntranceShape
-	AnimationEntranceWheel       = elements.AnimationEntranceWheel
-	AnimationEntranceRandomBars  = elements.AnimationEntranceRandomBars
-	AnimationEntranceGrowAndTurn = elements.AnimationEntranceGrowAndTurn
-	AnimationEntranceZoom        = elements.AnimationEntranceZoom
-	AnimationEntranceSwivel      = elements.AnimationEntranceSwivel
-	AnimationEntranceBounce      = elements.AnimationEntranceBounce
+	AnimationEntranceAppear      = animations.AnimationEntranceAppear
+	AnimationEntranceFade        = animations.AnimationEntranceFade
+	AnimationEntranceFlyIn       = animations.AnimationEntranceFlyIn
+	AnimationEntranceFloat       = animations.AnimationEntranceFloat
+	AnimationEntranceSplit       = animations.AnimationEntranceSplit
+	AnimationEntranceWipe        = animations.AnimationEntranceWipe
+	AnimationEntranceShape       = animations.AnimationEntranceShape
+	AnimationEntranceWheel       = animations.AnimationEntranceWheel
+	AnimationEntranceRandomBars  = animations.AnimationEntranceRandomBars
+	AnimationEntranceGrowAndTurn = animations.AnimationEntranceGrowAndTurn
+	AnimationEntranceZoom        = animations.AnimationEntranceZoom
+	AnimationEntranceSwivel      = animations.AnimationEntranceSwivel
+	AnimationEntranceBounce      = animations.AnimationEntranceBounce
 
-	AnimationExitDisappear = elements.AnimationExitDisappear
-	AnimationExitFadeOut   = elements.AnimationExitFadeOut
-	AnimationExitFlyOut    = elements.AnimationExitFlyOut
-	AnimationExitFloatOut  = elements.AnimationExitFloatOut
+	AnimationExitDisappear = animations.AnimationExitDisappear
+	AnimationExitFadeOut   = animations.AnimationExitFadeOut
+	AnimationExitFlyOut    = animations.AnimationExitFlyOut
+	AnimationExitFloatOut  = animations.AnimationExitFloatOut
 
-	AnimationEmphasisPulse                        = elements.AnimationEmphasisPulse
-	AnimationEmphasisColorPulse                   = elements.AnimationEmphasisColorPulse
-	AnimationEmphasisTeeter                       = elements.AnimationEmphasisTeeter
-	AnimationEmphasisSpin                         = elements.AnimationEmphasisSpin
-	AnimationEmphasisGrowShrink                   = elements.AnimationEmphasisGrowShrink
-	AnimationEmphasisDesaturate   AnimationEffect = elements.AnimationEmphasisDesaturate
-	AnimationEmphasisDarken       AnimationEffect = elements.AnimationEmphasisDarken
-	AnimationEmphasisLighten      AnimationEffect = elements.AnimationEmphasisLighten
-	AnimationEmphasisTransparency AnimationEffect = elements.AnimationEmphasisTransparency
-	AnimationEmphasisObjectColor  AnimationEffect = elements.AnimationEmphasisObjectColor
+	AnimationEmphasisPulse                        = animations.AnimationEmphasisPulse
+	AnimationEmphasisColorPulse                   = animations.AnimationEmphasisColorPulse
+	AnimationEmphasisTeeter                       = animations.AnimationEmphasisTeeter
+	AnimationEmphasisSpin                         = animations.AnimationEmphasisSpin
+	AnimationEmphasisGrowShrink                   = animations.AnimationEmphasisGrowShrink
+	AnimationEmphasisDesaturate   AnimationEffect = animations.AnimationEmphasisDesaturate
+	AnimationEmphasisDarken       AnimationEffect = animations.AnimationEmphasisDarken
+	AnimationEmphasisLighten      AnimationEffect = animations.AnimationEmphasisLighten
+	AnimationEmphasisTransparency AnimationEffect = animations.AnimationEmphasisTransparency
+	AnimationEmphasisObjectColor  AnimationEffect = animations.AnimationEmphasisObjectColor
 
-	AnimationPathLines  = elements.AnimationPathLines
-	AnimationPathArcs   = elements.AnimationPathArcs
-	AnimationPathTurns  = elements.AnimationPathTurns
-	AnimationPathShapes = elements.AnimationPathShapes
-	AnimationPathLoops  = elements.AnimationPathLoops
-	AnimationPathCustom = elements.AnimationPathCustom
+	AnimationPathLines  = animations.AnimationPathLines
+	AnimationPathArcs   = animations.AnimationPathArcs
+	AnimationPathTurns  = animations.AnimationPathTurns
+	AnimationPathShapes = animations.AnimationPathShapes
+	AnimationPathLoops  = animations.AnimationPathLoops
+	AnimationPathCustom = animations.AnimationPathCustom
 )
 
 const (
-	AnimationOnClick       = elements.AnimationOnClick
-	AnimationWithPrevious  = elements.AnimationWithPrevious
-	AnimationAfterPrevious = elements.AnimationAfterPrevious
+	AnimationOnClick       = animations.AnimationOnClick
+	AnimationWithPrevious  = animations.AnimationWithPrevious
+	AnimationAfterPrevious = animations.AnimationAfterPrevious
 )
 
 const (
-	AnimationDirIn        = elements.AnimationDirIn
-	AnimationDirOut       = elements.AnimationDirOut
-	AnimationDirUp        = elements.AnimationDirUp
-	AnimationDirDown      = elements.AnimationDirDown
-	AnimationDirLeft      = elements.AnimationDirLeft
-	AnimationDirRight     = elements.AnimationDirRight
-	AnimationDirUpLeft    = elements.AnimationDirUpLeft
-	AnimationDirUpRight   = elements.AnimationDirUpRight
-	AnimationDirDownLeft  = elements.AnimationDirDownLeft
-	AnimationDirDownRight = elements.AnimationDirDownRight
+	AnimationDirIn        = animations.AnimationDirIn
+	AnimationDirOut       = animations.AnimationDirOut
+	AnimationDirUp        = animations.AnimationDirUp
+	AnimationDirDown      = animations.AnimationDirDown
+	AnimationDirLeft      = animations.AnimationDirLeft
+	AnimationDirRight     = animations.AnimationDirRight
+	AnimationDirUpLeft    = animations.AnimationDirUpLeft
+	AnimationDirUpRight   = animations.AnimationDirUpRight
+	AnimationDirDownLeft  = animations.AnimationDirDownLeft
+	AnimationDirDownRight = animations.AnimationDirDownRight
 )
 
 func NewAnimation(shapeIndex int, effect AnimationEffect) Animation {
-	return elements.NewAnimation(shapeIndex, effect)
+	return animations.NewAnimation(shapeIndex, effect)
 }
 
-func slideAnimationsXML(s SlideContent, shapeIDs []int) string {
+func slideAnimationsXML(s elements.SlideContent, shapeIDs []int) string {
 	return elements.SlideAnimationsXML(s, shapeIDs)
 }
