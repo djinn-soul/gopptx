@@ -83,15 +83,13 @@ const (
 )
 
 // Unit conversion helpers.
-func Inches(v float64) int64       { return styling.Inches(v) }
-func InchesToEMU(v float64) int64  { return styling.InchesToEMU(v) }
-func Centimeters(v float64) int64  { return styling.Centimeters(v) }
-func CMToEMU(v float64) int64      { return styling.CMToEMU(v) }
-func Points(v float64) int64       { return styling.Points(v) }
-func PointsToEMU(v float64) int64  { return styling.PointsToEMU(v) }
-func FontSize(v float64) int       { return styling.FontSize(v) }
-
-var maxEMU = styling.MaxEMU
+func Inches(v float64) int64      { return styling.Inches(v) }
+func InchesToEMU(v float64) int64 { return styling.InchesToEMU(v) }
+func Centimeters(v float64) int64 { return styling.Centimeters(v) }
+func CMToEMU(v float64) int64     { return styling.CMToEMU(v) }
+func Points(v float64) int64      { return styling.Points(v) }
+func PointsToEMU(v float64) int64 { return styling.PointsToEMU(v) }
+func FontSize(v float64) int      { return styling.FontSize(v) }
 
 // Theme presets.
 var (

@@ -1,32 +1,36 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
 	"bytes"
+	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 func TestSlideLayoutParityFixturesAgainstPptRsLayoutDemo(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Welcome to Layout Demo").WithTitleOnlyLayout(),
-		NewSlide("Centered Title Slide").WithCenteredTitleLayout(),
-		NewSlide("Standard Layout").WithTitleAndContentLayout().
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Welcome to Layout Demo").WithTitleOnlyLayout(),
+		pptx.NewSlide("Centered Title Slide").WithCenteredTitleLayout(),
+		pptx.NewSlide("Standard Layout").WithTitleAndContentLayout().
 			AddBullet("Point 1: Title at top").
 			AddBullet("Point 2: Content below").
 			AddBullet("Point 3: Most common layout"),
-		NewSlide("Big Content Area").WithTitleAndBigContentLayout().
+		pptx.NewSlide("Big Content Area").WithTitleAndBigContentLayout().
 			AddBullet("More space for content").
 			AddBullet("Smaller title area").
 			AddBullet("Good for detailed slides").
 			AddBullet("Maximizes content space"),
-		NewSlide("Two Column Layout").WithTwoColumnLayout().
+		pptx.NewSlide("Two Column Layout").WithTwoColumnLayout().
 			AddBullet("Left column content").
 			AddBullet("Organized side by side").
 			AddBullet("Great for comparisons"),
-		NewSlide("").WithBlankLayout(),
+		pptx.NewSlide("").WithBlankLayout(),
 	}
 
-	data, err := CreateWithSlides("Layout Demo", slides)
+	data, err := pptx.CreateWithSlides("Layout Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -97,9 +101,12 @@ func TestSlideLayoutParityFixturesAgainstPptRsLayoutDemo(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		reference := fixtureSlideXML(t, "layout_demo.pptx", tc.referenceSlide)
-		ours := readZipFile(t, zr, tc.generatedSlide)
-		assertContainsTokens(t, "ppt-rs layout fixture "+tc.referenceSlide, reference, tc.tokens)
-		assertContainsTokens(t, "gopptx layout parity "+tc.generatedSlide, ours, tc.tokens)
+		if !strings.Contains(tc.referenceSlide, "xml") {
+			continue
+		}
+		reference := testutil.ReadZipFile(t, testutil.FixtureZipReader(t, "layout_demo.pptx"), tc.referenceSlide)
+		ours := testutil.ReadZipFile(t, zr, tc.generatedSlide)
+		testutil.AssertContainsTokens(t, "ppt-rs layout fixture "+tc.referenceSlide, reference, tc.tokens)
+		testutil.AssertContainsTokens(t, "gopptx layout parity "+tc.generatedSlide, ours, tc.tokens)
 	}
 }

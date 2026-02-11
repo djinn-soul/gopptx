@@ -1,4 +1,4 @@
-package pptx
+package shapes_test
 
 import (
 	"archive/zip"
@@ -7,20 +7,23 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 var shapeRunSizePattern = regexp.MustCompile(`<a:rPr[^>]*sz="([0-9]+)"`)
 
 func TestCreateWithSlidesAutoFitsShapeTextSize(t *testing.T) {
-	short := NewShape(ShapeTypeRectangle, Inches(1), Inches(1), Inches(3), Inches(1.1)).
-		WithFill(NewShapeFill("4472C4")).
+	short := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(3), pptx.Inches(1.1)).
+		WithFill(pptx.NewShapeFill("4472C4")).
 		WithText("Short title")
-	long := NewShape(ShapeTypeRectangle, Inches(1), Inches(3), Inches(3), Inches(1.1)).
-		WithFill(NewShapeFill("4472C4")).
+	long := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(3), pptx.Inches(3), pptx.Inches(1.1)).
+		WithFill(pptx.NewShapeFill("4472C4")).
 		WithText("This is a much longer sentence that should trigger smaller auto-fit text sizing")
 
-	data, err := CreateWithSlides("Deck", []SlideContent{
-		NewSlide("").WithBlankLayout().AddShape(short).AddShape(long),
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{
+		pptx.NewSlide("").WithBlankLayout().AddShape(short).AddShape(long),
 	})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
@@ -30,7 +33,7 @@ func TestCreateWithSlidesAutoFitsShapeTextSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	if !strings.Contains(slideXML, `<a:spAutoFit/>`) {
 		t.Fatalf("expected shape text body to include auto-fit tag")

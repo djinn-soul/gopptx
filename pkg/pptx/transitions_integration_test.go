@@ -1,4 +1,4 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 type transitionParityFixtureEntry struct {
@@ -22,26 +25,25 @@ type customTransition struct {
 }
 
 func (c customTransition) Validate() error { return c.validateErr }
-
-func (c customTransition) XML() string { return c.xml }
+func (c customTransition) XML() string     { return c.xml }
 
 func TestCreateWithSlidesRendersRepresentativeTransitions(t *testing.T) {
 	cases := []struct {
 		name       string
-		transition SlideTransition
+		transition pptx.SlideTransition
 		expectXML  string
 	}{
-		{name: "fade", transition: TransitionFade, expectXML: `<p:transition><p:fade/></p:transition>`},
-		{name: "push", transition: TransitionPush, expectXML: `<p:transition><p:push dir="r"/></p:transition>`},
-		{name: "split", transition: TransitionSplit, expectXML: `<p:transition><p:split dir="out" orient="horz"/></p:transition>`},
-		{name: "zoom", transition: TransitionZoom, expectXML: `<p:transition><p:zoom dir="in"/></p:transition>`},
-		{name: "none", transition: TransitionNone, expectXML: ``},
-		{name: "cut", transition: TransitionCut, expectXML: ``},
+		{name: "fade", transition: pptx.TransitionFade, expectXML: `<p:transition><p:fade/></p:transition>`},
+		{name: "push", transition: pptx.TransitionPush, expectXML: `<p:transition><p:push dir="r"/></p:transition>`},
+		{name: "split", transition: pptx.TransitionSplit, expectXML: `<p:transition><p:split dir="out" orient="horz"/></p:transition>`},
+		{name: "zoom", transition: pptx.TransitionZoom, expectXML: `<p:transition><p:zoom dir="in"/></p:transition>`},
+		{name: "none", transition: pptx.TransitionNone, expectXML: ``},
+		{name: "cut", transition: pptx.TransitionCut, expectXML: ``},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			slideXML := transitionSlideXML(t, NewSlide("Transition").WithTransition(tc.transition))
+			slideXML := transitionSlideXML(t, pptx.NewSlide("Transition").WithTransition(tc.transition))
 			if tc.expectXML == "" {
 				if strings.Contains(slideXML, "<p:transition>") {
 					t.Fatalf("did not expect transition XML for %s", tc.name)
@@ -56,8 +58,8 @@ func TestCreateWithSlidesRendersRepresentativeTransitions(t *testing.T) {
 }
 
 func TestCreateWithSlidesRejectsUnknownTransition(t *testing.T) {
-	_, err := CreateWithSlides("Demo", []SlideContent{
-		NewSlide("Bad").WithTransition(TransitionType("spin")),
+	_, err := pptx.CreateWithSlides("Demo", []pptx.SlideContent{
+		pptx.NewSlide("Bad").WithTransition(pptx.TransitionType("spin")),
 	})
 	if err == nil {
 		t.Fatalf("expected unknown transition validation error")
@@ -68,7 +70,7 @@ func TestCreateWithSlidesRejectsUnknownTransition(t *testing.T) {
 }
 
 func TestSlideTransitionSupportsCustomImplementation(t *testing.T) {
-	xml := transitionSlideXML(t, NewSlide("Custom").WithTransition(customTransition{
+	xml := transitionSlideXML(t, pptx.NewSlide("Custom").WithTransition(customTransition{
 		xml: `<p:transition><p:wheel spokes="1"/></p:transition>`,
 	}))
 	if !strings.Contains(xml, `<p:transition><p:wheel spokes="1"/></p:transition>`) {
@@ -77,8 +79,8 @@ func TestSlideTransitionSupportsCustomImplementation(t *testing.T) {
 }
 
 func TestSlideTransitionRejectsCustomValidationError(t *testing.T) {
-	_, err := CreateWithSlides("Demo", []SlideContent{
-		NewSlide("Bad").WithTransition(customTransition{validateErr: errors.New("bad transition")}),
+	_, err := pptx.CreateWithSlides("Demo", []pptx.SlideContent{
+		pptx.NewSlide("Bad").WithTransition(customTransition{validateErr: errors.New("bad transition")}),
 	})
 	if err == nil {
 		t.Fatalf("expected custom transition validation error")
@@ -89,8 +91,8 @@ func TestSlideTransitionRejectsCustomValidationError(t *testing.T) {
 }
 
 func TestSlideTransitionRejectsMalformedCustomXML(t *testing.T) {
-	_, err := CreateWithSlides("Demo", []SlideContent{
-		NewSlide("Bad").WithTransition(customTransition{xml: `<p:fade/>`}),
+	_, err := pptx.CreateWithSlides("Demo", []pptx.SlideContent{
+		pptx.NewSlide("Bad").WithTransition(customTransition{xml: `<p:fade/>`}),
 	})
 	if err == nil {
 		t.Fatalf("expected malformed transition XML error")
@@ -106,8 +108,8 @@ func TestTransitionParityFixturesAgainstPptRsFragments(t *testing.T) {
 		t.Fatalf("transition parity fixture is empty")
 	}
 	for _, entry := range entries {
-		transition := TransitionType(entry.Transition)
-		slideXML := transitionSlideXML(t, NewSlide("Parity").WithTransition(transition))
+		transition := pptx.TransitionType(entry.Transition)
+		slideXML := transitionSlideXML(t, pptx.NewSlide("Parity").WithTransition(transition))
 
 		if entry.XML == "" {
 			if strings.Contains(slideXML, "<p:transition>") {
@@ -121,9 +123,9 @@ func TestTransitionParityFixturesAgainstPptRsFragments(t *testing.T) {
 	}
 }
 
-func transitionSlideXML(t *testing.T, slide SlideContent) string {
+func transitionSlideXML(t *testing.T, slide pptx.SlideContent) string {
 	t.Helper()
-	data, err := CreateWithSlides("Transition Demo", []SlideContent{slide})
+	data, err := pptx.CreateWithSlides("Transition Demo", []pptx.SlideContent{slide})
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -131,7 +133,7 @@ func transitionSlideXML(t *testing.T, slide SlideContent) string {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	return readZipFile(t, zr, "ppt/slides/slide1.xml")
+	return testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 }
 
 func loadTransitionParityFixture(t *testing.T) []transitionParityFixtureEntry {
@@ -151,14 +153,14 @@ func loadTransitionParityFixture(t *testing.T) []transitionParityFixtureEntry {
 func TestTransitionOptions(t *testing.T) {
 	cases := []struct {
 		name      string
-		options   TransitionOptions
+		options   pptx.TransitionOptions
 		expectXML string
 	}{
 		{
 			name: "push right auto advance",
-			options: TransitionOptions{
-				Type:                  TransitionPush,
-				Direction:             TransitionDirRight,
+			options: pptx.TransitionOptions{
+				Type:                  pptx.TransitionPush,
+				Direction:             pptx.TransitionDirRight,
 				DisableAdvanceOnClick: true,
 				AdvanceAfterMS:        2000,
 				DurationMS:            1500,
@@ -167,74 +169,73 @@ func TestTransitionOptions(t *testing.T) {
 		},
 		{
 			name: "fade through black",
-			options: TransitionOptions{
-				Type:    TransitionFade,
+			options: pptx.TransitionOptions{
+				Type:    pptx.TransitionFade,
 				ThruBlk: true,
 			},
 			expectXML: `<p:transition><p:fade thruBlk="1"/></p:transition>`,
 		},
 		{
 			name: "split vertical in",
-			options: TransitionOptions{
-				Type:        TransitionSplit,
-				Orientation: TransitionOrientVertical,
-				Direction:   TransitionDirIn,
+			options: pptx.TransitionOptions{
+				Type:        pptx.TransitionSplit,
+				Orientation: pptx.TransitionOrientVertical,
+				Direction:   pptx.TransitionDirIn,
 			},
 			expectXML: `<p:transition><p:split dir="in" orient="vert"/></p:transition>`,
 		},
 		{
 			name: "wheel spokes",
-			options: TransitionOptions{
-				Type:       TransitionClock,
+			options: pptx.TransitionOptions{
+				Type:       pptx.TransitionClock,
 				SpokeCount: 8,
 			},
 			expectXML: `<p:transition><p:wheel spokes="8"/></p:transition>`,
 		},
 		{
 			name: "blinds vertical",
-			options: TransitionOptions{
-				Type:        TransitionBlinds,
-				Orientation: TransitionOrientVertical,
+			options: pptx.TransitionOptions{
+				Type:        pptx.TransitionBlinds,
+				Orientation: pptx.TransitionOrientVertical,
 			},
 			expectXML: `<p:transition><p:blinds orient="vert"/></p:transition>`,
 		},
 		{
 			name: "randomBar vertical",
-			options: TransitionOptions{
-				Type:        TransitionRandomBars,
-				Orientation: TransitionOrientVertical,
+			options: pptx.TransitionOptions{
+				Type:        pptx.TransitionRandomBars,
+				Orientation: pptx.TransitionOrientVertical,
 			},
 			expectXML: `<p:transition><p:randomBar orient="vert"/></p:transition>`,
 		},
 		{
 			name: "wipe up",
-			options: TransitionOptions{
-				Type:      TransitionWipe,
-				Direction: TransitionDirUp,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionWipe,
+				Direction: pptx.TransitionDirUp,
 			},
 			expectXML: `<p:transition><p:wipe dir="u"/></p:transition>`,
 		},
 		{
 			name: "uncover up-left",
-			options: TransitionOptions{
-				Type:      TransitionUncover,
-				Direction: TransitionDirUpLeft,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionUncover,
+				Direction: pptx.TransitionDirUpLeft,
 			},
 			expectXML: `<p:transition><p:pull dir="lu"/></p:transition>`,
 		},
 		{
 			name: "strips up-right",
-			options: TransitionOptions{
-				Type:      TransitionStrips,
-				Direction: TransitionDirUpRight,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionStrips,
+				Direction: pptx.TransitionDirUpRight,
 			},
 			expectXML: `<p:transition><p:strips dir="ru"/></p:transition>`,
 		},
 		{
 			name: "fade advance on click",
-			options: TransitionOptions{
-				Type: TransitionFade,
-				// DisableAdvanceOnClick default is false (enabled)
+			options: pptx.TransitionOptions{
+				Type: pptx.TransitionFade,
 			},
 			expectXML: `<p:transition><p:fade/></p:transition>`,
 		},
@@ -242,7 +243,7 @@ func TestTransitionOptions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			slideXML := transitionSlideXML(t, NewSlide("Options").WithTransitionOptions(tc.options))
+			slideXML := transitionSlideXML(t, pptx.NewSlide("Options").WithTransitionOptions(tc.options))
 			if !strings.Contains(slideXML, tc.expectXML) {
 				t.Errorf("expected transition XML %s not found in: %s", tc.expectXML, slideXML)
 			}
@@ -253,56 +254,56 @@ func TestTransitionOptions(t *testing.T) {
 func TestTransitionValidation(t *testing.T) {
 	cases := []struct {
 		name    string
-		options TransitionOptions
+		options pptx.TransitionOptions
 		wantErr string
 	}{
 		{
 			name: "invalid push direction",
-			options: TransitionOptions{
-				Type:      TransitionPush,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionPush,
 				Direction: "invalid",
 			},
-			wantErr: "invalid direction \"invalid\" for transition \"push\" (expected u|d|l|r)",
+			wantErr: `invalid direction "invalid" for transition "push" (expected u|d|l|r)`,
 		},
 		{
 			name: "invalid zoom direction",
-			options: TransitionOptions{
-				Type:      TransitionZoom,
-				Direction: TransitionDirUp,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionZoom,
+				Direction: pptx.TransitionDirUp,
 			},
-			wantErr: "invalid direction \"u\" for transition \"zoom\" (expected in|out)",
+			wantErr: `invalid direction "u" for transition "zoom" (expected in|out)`,
 		},
 		{
 			name: "strips valid direction",
-			options: TransitionOptions{
-				Type:      TransitionStrips,
-				Direction: TransitionDirUpLeft,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionStrips,
+				Direction: pptx.TransitionDirUpLeft,
 			},
 			wantErr: "",
 		},
 		{
 			name: "strips invalid direction",
-			options: TransitionOptions{
-				Type:      TransitionStrips,
-				Direction: TransitionDirUp,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionStrips,
+				Direction: pptx.TransitionDirUp,
 			},
-			wantErr: "invalid direction \"u\" for transition \"strips\" (expected ul|ur|dl|dr)",
+			wantErr: `invalid direction "u" for transition "strips" (expected ul|ur|dl|dr)`,
 		},
 		{
 			name: "fade no support for direction",
-			options: TransitionOptions{
-				Type:      TransitionFade,
-				Direction: TransitionDirUp,
+			options: pptx.TransitionOptions{
+				Type:      pptx.TransitionFade,
+				Direction: pptx.TransitionDirUp,
 			},
-			wantErr: "transition \"fade\" does not support direction",
+			wantErr: `transition "fade" does not support direction`,
 		},
 		{
 			name: "invalid wheel spoke count for non-wheel",
-			options: TransitionOptions{
-				Type:       TransitionFade,
+			options: pptx.TransitionOptions{
+				Type:       pptx.TransitionFade,
 				SpokeCount: 4,
 			},
-			wantErr: "transition \"fade\" does not support spoke count",
+			wantErr: `transition "fade" does not support spoke count`,
 		},
 	}
 

@@ -1,4 +1,4 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
@@ -8,16 +8,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 func TestCreateWithSlidesProducesPackage(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Intro").AddBullet("First").AddBullet("Second"),
-		NewSlide("Details"),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Intro").AddBullet("First").AddBullet("Second"),
+		pptx.NewSlide("Details"),
 	}
 
-	data, err := CreateWithSlides("Demo", slides)
+	data, err := pptx.CreateWithSlides("Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -55,11 +56,11 @@ func TestCreateWithSlidesProducesPackage(t *testing.T) {
 }
 
 func TestCreateWithSlidesEscapesText(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Title & More").AddBullet("Use <tag>").AddBullet("5 > 3"),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Title & More").AddBullet("Use <tag>").AddBullet("5 > 3"),
 	}
 
-	data, err := CreateWithSlides("Demo", slides)
+	data, err := pptx.CreateWithSlides("Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -69,27 +70,7 @@ func TestCreateWithSlidesEscapesText(t *testing.T) {
 		t.Fatalf("zip read error: %v", err)
 	}
 
-	var slideXML string
-	for _, f := range zr.File {
-		if f.Name == "ppt/slides/slide1.xml" {
-			r, err := f.Open()
-			if err != nil {
-				t.Fatalf("open slide: %v", err)
-			}
-			buf := new(bytes.Buffer)
-			if _, err := buf.ReadFrom(r); err != nil {
-				_ = r.Close()
-				t.Fatalf("read slide: %v", err)
-			}
-			_ = r.Close()
-			slideXML = buf.String()
-			break
-		}
-	}
-
-	if slideXML == "" {
-		t.Fatalf("slide XML not found")
-	}
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		"Title &amp; More",
@@ -105,7 +86,7 @@ func TestCreateWithSlidesEscapesText(t *testing.T) {
 }
 
 func TestCreateWithSlidesValidation(t *testing.T) {
-	_, err := CreateWithSlides("Demo", []SlideContent{{}})
+	_, err := pptx.CreateWithSlides("Demo", []pptx.SlideContent{{}})
 	if err == nil {
 		t.Fatalf("expected error for empty title")
 	}
@@ -118,11 +99,11 @@ func TestCreateWithSlidesEmbedsImage(t *testing.T) {
 		t.Fatalf("write image: %v", err)
 	}
 
-	slides := []SlideContent{
-		NewSlide("Image Slide").AddImage(NewImage(imgPath, 1200000, 1700000, 2400000, 1800000)),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Image Slide").AddImage(pptx.NewImage(imgPath, 1200000, 1700000, 2400000, 1800000)),
 	}
 
-	data, err := CreateWithSlides("Demo", slides)
+	data, err := pptx.CreateWithSlides("Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -132,11 +113,11 @@ func TestCreateWithSlidesEmbedsImage(t *testing.T) {
 		t.Fatalf("zip read error: %v", err)
 	}
 
-	if !zipHasFile(zr, "ppt/media/image1.png") {
+	if !testutil.ZipHasFile(zr, "ppt/media/image1.png") {
 		t.Fatalf("missing embedded media file")
 	}
 
-	relsXML := readZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
+	relsXML := testutil.ReadZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
 	if !strings.Contains(relsXML, `relationships/image"`) {
 		t.Fatalf("expected image relationship in slide rels")
 	}
@@ -144,32 +125,32 @@ func TestCreateWithSlidesEmbedsImage(t *testing.T) {
 		t.Fatalf("expected image media target in slide rels")
 	}
 
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 	if !strings.Contains(slideXML, `a:blip r:embed="rId2"`) {
 		t.Fatalf("expected image embed reference in slide xml")
 	}
 }
 
 func TestCreateWithSlidesFailsForMissingImage(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Image Slide").AddImage(NewImage("does-not-exist.png", 1, 1, 1, 1)),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Image Slide").AddImage(pptx.NewImage("does-not-exist.png", 1, 1, 1, 1)),
 	}
-	_, err := CreateWithSlides("Demo", slides)
+	_, err := pptx.CreateWithSlides("Demo", slides)
 	if err == nil {
 		t.Fatalf("expected error for missing image file")
 	}
 }
 
 func TestCreateWithSlidesEmbedsTable(t *testing.T) {
-	table := NewTable([]int64{2743400, 2743400, 2743400}).
+	table := pptx.NewTable([]int64{2743400, 2743400, 2743400}).
 		AddRow([]string{"Name", "Status", "Owner"}).
 		AddRow([]string{"Parser", "Done", "Core Team"})
 
-	slides := []SlideContent{
-		NewSlide("Table Slide").WithTable(table),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Table Slide").WithTable(table),
 	}
 
-	data, err := CreateWithSlides("Demo", slides)
+	data, err := pptx.CreateWithSlides("Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -179,7 +160,7 @@ func TestCreateWithSlidesEmbedsTable(t *testing.T) {
 		t.Fatalf("zip read error: %v", err)
 	}
 
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 	if !strings.Contains(slideXML, "<a:tbl>") {
 		t.Fatalf("expected table XML in slide")
 	}
@@ -192,28 +173,28 @@ func TestCreateWithSlidesEmbedsTable(t *testing.T) {
 }
 
 func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
-	table := NewTable([]int64{2000000, 2000000}).
+	table := pptx.NewTable([]int64{2000000, 2000000}).
 		AddRow([]string{"A"})
 
-	slides := []SlideContent{
-		NewSlide("Broken Table").WithTable(table),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Broken Table").WithTable(table),
 	}
 
-	_, err := CreateWithSlides("Demo", slides)
+	_, err := pptx.CreateWithSlides("Demo", slides)
 	if err == nil {
 		t.Fatalf("expected table validation error")
 	}
 }
 
 func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
-	table := NewTable([]int64{2743400, 2743400}).
-		AddStyledRow([]TableCell{
-			NewTableCell("Header").WithBold(true).WithBackgroundColor("1F497D"),
-			NewTableCell("Value"),
+	table := pptx.NewTable([]int64{2743400, 2743400}).
+		AddStyledRow([]pptx.TableCell{
+			pptx.NewTableCell("Header").WithBold(true).WithBackgroundColor("1F497D"),
+			pptx.NewTableCell("Value"),
 		}).
 		AddRow([]string{"Row 1", "Plain"})
 
-	data, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Styled Table").WithTable(table)})
+	data, err := pptx.CreateWithSlides("Demo", []pptx.SlideContent{pptx.NewSlide("Styled Table").WithTable(table)})
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -223,7 +204,7 @@ func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
 		t.Fatalf("zip read error: %v", err)
 	}
 
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 	checks := []string{
 		`<a:rPr lang="en-US" dirty="0" b="1"/>`,
 		`<a:tcPr><a:solidFill><a:srgbClr val="1F497D"/></a:solidFill></a:tcPr>`,
@@ -237,43 +218,13 @@ func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
 }
 
 func TestCreateWithSlidesRejectsStyledTableInvalidColor(t *testing.T) {
-	table := NewTable([]int64{2743400}).
-		AddStyledRow([]TableCell{
-			NewTableCell("Header").WithBackgroundColor("NOTHEX"),
+	table := pptx.NewTable([]int64{2743400}).
+		AddStyledRow([]pptx.TableCell{
+			pptx.NewTableCell("Header").WithBackgroundColor("NOTHEX"),
 		})
 
-	_, err := CreateWithSlides("Demo", []SlideContent{NewSlide("Broken Styled Table").WithTable(table)})
+	_, err := pptx.CreateWithSlides("Demo", []pptx.SlideContent{pptx.NewSlide("Broken Styled Table").WithTable(table)})
 	if err == nil {
 		t.Fatalf("expected styled table color validation error")
 	}
-}
-
-func zipHasFile(zr *zip.Reader, name string) bool {
-	for _, f := range zr.File {
-		if f.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-func readZipFile(t *testing.T, zr *zip.Reader, name string) string {
-	t.Helper()
-	for _, f := range zr.File {
-		if f.Name != name {
-			continue
-		}
-		r, err := f.Open()
-		if err != nil {
-			t.Fatalf("open %s: %v", name, err)
-		}
-		defer func() { _ = r.Close() }()
-		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(r); err != nil {
-			t.Fatalf("read %s: %v", name, err)
-		}
-		return buf.String()
-	}
-	t.Fatalf("file %s not found in zip", name)
-	return ""
 }

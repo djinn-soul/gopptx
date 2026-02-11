@@ -1,4 +1,4 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
@@ -6,18 +6,20 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func TestCreateWithMetadata(t *testing.T) {
-	meta := PresentationMetadata{
+	meta := pptx.PresentationMetadata{
 		Title:       "Test Title",
 		Subject:     "Test Subject",
 		Creator:     "Test Creator",
 		Description: "Test Description",
 	}
-	slides := []SlideContent{NewSlide("Slide 1")}
+	slides := []pptx.SlideContent{pptx.NewSlide("Slide 1")}
 
-	data, err := CreateWithMetadata(meta, slides)
+	data, err := pptx.CreateWithMetadata(meta, slides)
 	if err != nil {
 		t.Fatalf("CreateWithMetadata failed: %v", err)
 	}
@@ -68,13 +70,13 @@ func TestCreateWithMetadata(t *testing.T) {
 }
 
 func TestSlideSize(t *testing.T) {
-	meta := PresentationMetadata{
+	meta := pptx.PresentationMetadata{
 		Title:     "16:9 Test",
-		SlideSize: SlideSize16x9,
+		SlideSize: pptx.SlideSize16x9,
 	}
-	slides := []SlideContent{NewSlide("Slide 1")}
+	slides := []pptx.SlideContent{pptx.NewSlide("Slide 1")}
 
-	data, err := CreateWithMetadata(meta, slides)
+	data, err := pptx.CreateWithMetadata(meta, slides)
 	if err != nil {
 		t.Fatalf("CreateWithMetadata failed: %v", err)
 	}

@@ -1,19 +1,22 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Intro").AddBullet("Content").WithNotes("First line\nSecond line"),
-		NewSlide("Plain").AddBullet("No notes"),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Intro").AddBullet("Content").WithNotes("First line\nSecond line"),
+		pptx.NewSlide("Plain").AddBullet("No notes"),
 	}
 
-	data, err := CreateWithSlides("Demo", slides)
+	data, err := pptx.CreateWithSlides("Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -31,15 +34,15 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		"ppt/theme/theme2.xml",
 	}
 	for _, name := range required {
-		if !zipHasFile(zr, name) {
+		if !testutil.ZipHasFile(zr, name) {
 			t.Fatalf("missing expected notes part: %s", name)
 		}
 	}
-	if zipHasFile(zr, "ppt/notesSlides/notesSlide2.xml") {
+	if testutil.ZipHasFile(zr, "ppt/notesSlides/notesSlide2.xml") {
 		t.Fatalf("did not expect notes slide for slide without notes")
 	}
 
-	contentTypes := readZipFile(t, zr, "[Content_Types].xml")
+	contentTypes := testutil.ReadZipFile(t, zr, "[Content_Types].xml")
 	for _, needle := range []string{
 		`/ppt/notesSlides/notesSlide1.xml`,
 		`presentationml.notesSlide+xml`,
@@ -52,12 +55,12 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		}
 	}
 
-	presRels := readZipFile(t, zr, "ppt/_rels/presentation.xml.rels")
+	presRels := testutil.ReadZipFile(t, zr, "ppt/_rels/presentation.xml.rels")
 	if !strings.Contains(presRels, `relationships/notesMaster`) {
 		t.Fatalf("expected notes master relationship in presentation rels")
 	}
 
-	slide1Rels := readZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
+	slide1Rels := testutil.ReadZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
 	if !strings.Contains(slide1Rels, `relationships/notesSlide`) {
 		t.Fatalf("expected notes slide relationship on slide1")
 	}
@@ -65,12 +68,12 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		t.Fatalf("expected notes slide target for slide1")
 	}
 
-	slide2Rels := readZipFile(t, zr, "ppt/slides/_rels/slide2.xml.rels")
+	slide2Rels := testutil.ReadZipFile(t, zr, "ppt/slides/_rels/slide2.xml.rels")
 	if strings.Contains(slide2Rels, `relationships/notesSlide`) {
 		t.Fatalf("did not expect notes slide relationship on slide2")
 	}
 
-	notesXML := readZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
+	notesXML := testutil.ReadZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
 	for _, needle := range []string{
 		`<p:notes`,
 		`<a:t>First line</a:t>`,
@@ -81,7 +84,7 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		}
 	}
 
-	notesRels := readZipFile(t, zr, "ppt/notesSlides/_rels/notesSlide1.xml.rels")
+	notesRels := testutil.ReadZipFile(t, zr, "ppt/notesSlides/_rels/notesSlide1.xml.rels")
 	for _, needle := range []string{
 		`Target="../slides/slide1.xml"`,
 		`relationships/notesMaster`,
@@ -91,12 +94,12 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		}
 	}
 
-	notesMasterRels := readZipFile(t, zr, "ppt/notesMasters/_rels/notesMaster1.xml.rels")
+	notesMasterRels := testutil.ReadZipFile(t, zr, "ppt/notesMasters/_rels/notesMaster1.xml.rels")
 	if !strings.Contains(notesMasterRels, `Target="../theme/theme2.xml"`) {
 		t.Fatalf("expected notes master to reference dedicated notes theme")
 	}
 
-	appXML := readZipFile(t, zr, "docProps/app.xml")
+	appXML := testutil.ReadZipFile(t, zr, "docProps/app.xml")
 	if !strings.Contains(appXML, `<Notes>1</Notes>`) {
 		t.Fatalf("expected notes count in app props")
 	}
@@ -106,7 +109,7 @@ func TestCreateWithSlidesMarkdownNotesPersistence(t *testing.T) {
 	input := `# Topic
 - Bullet
 > Speaker note text`
-	slides, err := SlidesFromMarkdown(input)
+	slides, err := pptx.SlidesFromMarkdown(input)
 	if err != nil {
 		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
 	}
@@ -114,7 +117,7 @@ func TestCreateWithSlidesMarkdownNotesPersistence(t *testing.T) {
 		t.Fatalf("expected parsed notes from markdown blockquote")
 	}
 
-	data, err := CreateWithSlides("Demo", slides)
+	data, err := pptx.CreateWithSlides("Demo", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
 	}
@@ -122,7 +125,7 @@ func TestCreateWithSlidesMarkdownNotesPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	notesXML := readZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
+	notesXML := testutil.ReadZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
 	if !strings.Contains(notesXML, `<a:t>Speaker note text</a:t>`) {
 		t.Fatalf("expected markdown note text persisted into notes slide xml")
 	}

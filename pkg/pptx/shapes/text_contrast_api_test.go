@@ -1,19 +1,22 @@
-package pptx
+package shapes_test
 
 import (
 	"archive/zip"
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 func TestCreateWithSlidesUsesLightTextOnDarkShapeFill(t *testing.T) {
-	shape := NewShape(ShapeTypeRectangle, Inches(1), Inches(1), Inches(2.5), Inches(1.2)).
-		WithFill(NewShapeFill("1F4E78")).
+	shape := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(2.5), pptx.Inches(1.2)).
+		WithFill(pptx.NewShapeFill("1F4E78")).
 		WithText("Dark")
 
-	data, err := CreateWithSlides("Deck", []SlideContent{
-		NewSlide("").WithBlankLayout().AddShape(shape),
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{
+		pptx.NewSlide("").WithBlankLayout().AddShape(shape),
 	})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
@@ -23,7 +26,7 @@ func TestCreateWithSlidesUsesLightTextOnDarkShapeFill(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		`<a:t>Dark</a:t>`,
@@ -37,12 +40,12 @@ func TestCreateWithSlidesUsesLightTextOnDarkShapeFill(t *testing.T) {
 }
 
 func TestCreateWithSlidesUsesDarkTextOnLightShapeFill(t *testing.T) {
-	shape := NewShape(ShapeTypeRectangle, Inches(1), Inches(1), Inches(2.5), Inches(1.2)).
-		WithFill(NewShapeFill("EAF2FB")).
+	shape := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(2.5), pptx.Inches(1.2)).
+		WithFill(pptx.NewShapeFill("EAF2FB")).
 		WithText("Light")
 
-	data, err := CreateWithSlides("Deck", []SlideContent{
-		NewSlide("").WithBlankLayout().AddShape(shape),
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{
+		pptx.NewSlide("").WithBlankLayout().AddShape(shape),
 	})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
@@ -52,7 +55,7 @@ func TestCreateWithSlidesUsesDarkTextOnLightShapeFill(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		`<a:t>Light</a:t>`,
@@ -66,19 +69,19 @@ func TestCreateWithSlidesUsesDarkTextOnLightShapeFill(t *testing.T) {
 }
 
 func TestCreateWithSlidesUsesLightTextOnDarkGradientShapeFill(t *testing.T) {
-	gradient := NewShapeGradientFill(
-		ShapeGradientTypeLinear,
-		[]ShapeGradientStop{
-			NewShapeGradientStop(0, "173A5E"),
-			NewShapeGradientStop(100, "2A5D8F"),
+	gradient := pptx.NewShapeGradientFill(
+		pptx.ShapeGradientTypeLinear,
+		[]pptx.ShapeGradientStop{
+			pptx.NewShapeGradientStop(0, "173A5E"),
+			pptx.NewShapeGradientStop(100, "2A5D8F"),
 		},
 	)
-	shape := NewShape(ShapeTypeRectangle, Inches(1), Inches(1), Inches(2.5), Inches(1.2)).
+	shape := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(2.5), pptx.Inches(1.2)).
 		WithGradientFill(gradient).
 		WithText("Gradient")
 
-	data, err := CreateWithSlides("Deck", []SlideContent{
-		NewSlide("").WithBlankLayout().AddShape(shape),
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{
+		pptx.NewSlide("").WithBlankLayout().AddShape(shape),
 	})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
@@ -88,7 +91,7 @@ func TestCreateWithSlidesUsesLightTextOnDarkGradientShapeFill(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		`<a:t>Gradient</a:t>`,

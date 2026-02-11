@@ -61,19 +61,3 @@ func ConnectStartAuto(c Connector, shapeIndex int) Connector {
 func ConnectEndAuto(c Connector, shapeIndex int) Connector {
 	return c.ConnectEndAuto(shapeIndex)
 }
-
-func normalizeConnectorType(connectorType string) string {
-	return shapes.NormalizeConnectorType(connectorType)
-}
-
-func normalizeArrowType(arrowType string) string {
-	return shapes.NormalizeArrowType(arrowType)
-}
-
-func normalizeArrowSize(size string) string {
-	return shapes.NormalizeArrowSize(size)
-}
-
-func normalizeConnectionSite(site string) string {
-	return shapes.NormalizeConnectionSite(site)
-}

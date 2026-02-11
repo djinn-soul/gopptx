@@ -1,39 +1,41 @@
-package pptx
+package pptx_test
 
 import (
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func TestSlideStyleValidation(t *testing.T) {
 	tests := []struct {
 		name    string
-		slide   SlideContent
+		slide   pptx.SlideContent
 		wantErr string
 	}{
 		{
 			name:    "Invalid Title Size",
-			slide:   NewSlide("Test").WithTitleSize(500),
+			slide:   pptx.NewSlide("Test").WithTitleSize(500),
 			wantErr: "title size must be between 1 and 400 pt",
 		},
 		{
 			name:    "Invalid Title Color",
-			slide:   NewSlide("Test").WithTitleColor("invalid"),
+			slide:   pptx.NewSlide("Test").WithTitleColor("invalid"),
 			wantErr: "title color must be 6-digit RGB hex",
 		},
 		{
 			name:    "Invalid Content Size",
-			slide:   NewSlide("Test").WithContentSize(-1),
+			slide:   pptx.NewSlide("Test").WithContentSize(-1),
 			wantErr: "content size must be between 1 and 400 pt",
 		},
 		{
 			name:    "Invalid Content Color",
-			slide:   NewSlide("Test").WithContentColor("GG0000"),
+			slide:   pptx.NewSlide("Test").WithContentColor("GG0000"),
 			wantErr: "content color must be 6-digit RGB hex",
 		},
 		{
 			name:  "Valid Styles",
-			slide: NewSlide("Test").WithTitleSize(24).WithTitleColor("FF0000").WithContentSize(18).WithContentColor("00FF00"),
+			slide: pptx.NewSlide("Test").WithTitleSize(24).WithTitleColor("FF0000").WithContentSize(18).WithContentColor("00FF00"),
 		},
 	}
 

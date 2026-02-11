@@ -1,25 +1,28 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
 func TestCreateWithSlidesRendersConnectorAutoSitesHorizontal(t *testing.T) {
-	left := NewShape(ShapeTypeRectangle, Inches(1), Inches(2), Inches(2), Inches(1)).WithText("Left")
-	right := NewShape(ShapeTypeRectangle, Inches(5), Inches(2), Inches(2), Inches(1)).WithText("Right")
-	connector := NewStraightConnector(Inches(3), Inches(2.5), Inches(5), Inches(2.5)).
+	left := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Left")
+	right := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Right")
+	connector := pptx.NewStraightConnector(pptx.Inches(3), pptx.Inches(2.5), pptx.Inches(5), pptx.Inches(2.5)).
 		ConnectStartAuto(1).
 		ConnectEndAuto(2)
 
-	slide := NewSlide("").WithBlankLayout().
+	slide := pptx.NewSlide("").WithBlankLayout().
 		AddShape(left).
 		AddShape(right).
 		AddConnector(connector)
 
-	data, err := CreateWithSlides("Deck", []SlideContent{slide})
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{slide})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
 	}
@@ -28,7 +31,7 @@ func TestCreateWithSlidesRendersConnectorAutoSitesHorizontal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		`<a:stCxn id="2" idx="1"/>`,
@@ -42,18 +45,18 @@ func TestCreateWithSlidesRendersConnectorAutoSitesHorizontal(t *testing.T) {
 }
 
 func TestCreateWithSlidesRendersConnectorAutoSitesVertical(t *testing.T) {
-	top := NewShape(ShapeTypeRectangle, Inches(3), Inches(1), Inches(2), Inches(1)).WithText("Top")
-	bottom := NewShape(ShapeTypeRectangle, Inches(3), Inches(4), Inches(2), Inches(1)).WithText("Bottom")
-	connector := NewStraightConnector(Inches(4), Inches(2), Inches(4), Inches(4)).
+	top := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(1), pptx.Inches(2), pptx.Inches(1)).WithText("Top")
+	bottom := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).WithText("Bottom")
+	connector := pptx.NewStraightConnector(pptx.Inches(4), pptx.Inches(2), pptx.Inches(4), pptx.Inches(4)).
 		ConnectStartAuto(1).
 		ConnectEndAuto(2)
 
-	slide := NewSlide("").WithBlankLayout().
+	slide := pptx.NewSlide("").WithBlankLayout().
 		AddShape(top).
 		AddShape(bottom).
 		AddConnector(connector)
 
-	data, err := CreateWithSlides("Deck", []SlideContent{slide})
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{slide})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
 	}
@@ -62,7 +65,7 @@ func TestCreateWithSlidesRendersConnectorAutoSitesVertical(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		`<a:stCxn id="2" idx="2"/>`,
@@ -76,18 +79,18 @@ func TestCreateWithSlidesRendersConnectorAutoSitesVertical(t *testing.T) {
 }
 
 func TestCreateWithSlidesRendersConnectorAutoSitesDiagonal(t *testing.T) {
-	start := NewShape(ShapeTypeRectangle, Inches(1), Inches(1), Inches(2), Inches(1)).WithText("Start")
-	end := NewShape(ShapeTypeRectangle, Inches(5), Inches(4), Inches(2), Inches(1)).WithText("End")
-	connector := NewStraightConnector(Inches(3), Inches(2), Inches(5), Inches(4)).
+	start := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(2), pptx.Inches(1)).WithText("Start")
+	end := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).WithText("End")
+	connector := pptx.NewStraightConnector(pptx.Inches(3), pptx.Inches(2), pptx.Inches(5), pptx.Inches(4)).
 		ConnectStartAuto(1).
 		ConnectEndAuto(2)
 
-	slide := NewSlide("").WithBlankLayout().
+	slide := pptx.NewSlide("").WithBlankLayout().
 		AddShape(start).
 		AddShape(end).
 		AddConnector(connector)
 
-	data, err := CreateWithSlides("Deck", []SlideContent{slide})
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{slide})
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
 	}
@@ -96,7 +99,7 @@ func TestCreateWithSlidesRendersConnectorAutoSitesDiagonal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := readZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 
 	checks := []string{
 		`<a:stCxn id="2" idx="6"/>`,

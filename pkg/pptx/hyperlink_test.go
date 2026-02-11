@@ -1,15 +1,17 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func TestHyperlinkURL(t *testing.T) {
-	link := NewHyperlink(HyperlinkURL("https://example.com"))
-	if link.Action.Type != HyperlinkActionURL {
+	link := pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com"))
+	if link.Action.Type != pptx.HyperlinkActionURL {
 		t.Errorf("Expected URL action type, got %s", link.Action.Type)
 	}
 	if link.Action.URL != "https://example.com" {
@@ -21,8 +23,8 @@ func TestHyperlinkURL(t *testing.T) {
 }
 
 func TestHyperlinkSlide(t *testing.T) {
-	link := NewHyperlink(HyperlinkSlide(3))
-	if link.Action.Type != HyperlinkActionSlide {
+	link := pptx.NewHyperlink(pptx.HyperlinkSlide(3))
+	if link.Action.Type != pptx.HyperlinkActionSlide {
 		t.Errorf("Expected Slide action type, got %s", link.Action.Type)
 	}
 	if link.Action.SlideNumber != 3 {
@@ -38,8 +40,8 @@ func TestHyperlinkSlide(t *testing.T) {
 }
 
 func TestHyperlinkEmail(t *testing.T) {
-	link := NewHyperlink(HyperlinkEmailWithSubject("test@example.com", "Hello World"))
-	if link.Action.Type != HyperlinkActionEmail {
+	link := pptx.NewHyperlink(pptx.HyperlinkEmailWithSubject("test@example.com", "Hello World"))
+	if link.Action.Type != pptx.HyperlinkActionEmail {
 		t.Errorf("Expected Email action type, got %s", link.Action.Type)
 	}
 	target := link.Action.RelationshipTarget()
@@ -53,15 +55,15 @@ func TestHyperlinkEmail(t *testing.T) {
 
 func TestHyperlinkNavigation(t *testing.T) {
 	tests := []struct {
-		action       HyperlinkAction
+		action       pptx.HyperlinkAction
 		wantAction   string
 		wantExternal bool
 	}{
-		{HyperlinkFirstSlide(), "ppaction://hlinkshowjump?jump=firstslide", true},
-		{HyperlinkLastSlide(), "ppaction://hlinkshowjump?jump=lastslide", true},
-		{HyperlinkNextSlide(), "ppaction://hlinkshowjump?jump=nextslide", true},
-		{HyperlinkPreviousSlide(), "ppaction://hlinkshowjump?jump=previousslide", true},
-		{HyperlinkEndShow(), "ppaction://hlinkshowjump?jump=endshow", true},
+		{pptx.HyperlinkFirstSlide(), "ppaction://hlinkshowjump?jump=firstslide", true},
+		{pptx.HyperlinkLastSlide(), "ppaction://hlinkshowjump?jump=lastslide", true},
+		{pptx.HyperlinkNextSlide(), "ppaction://hlinkshowjump?jump=nextslide", true},
+		{pptx.HyperlinkPreviousSlide(), "ppaction://hlinkshowjump?jump=previousslide", true},
+		{pptx.HyperlinkEndShow(), "ppaction://hlinkshowjump?jump=endshow", true},
 	}
 	for _, tt := range tests {
 		if tt.action.ActionType() != tt.wantAction {
@@ -74,7 +76,7 @@ func TestHyperlinkNavigation(t *testing.T) {
 }
 
 func TestHyperlinkWithTooltip(t *testing.T) {
-	link := NewHyperlink(HyperlinkURL("https://example.com")).
+	link := pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com")).
 		WithTooltip("Click me").
 		WithHighlightClick(false)
 
@@ -86,37 +88,10 @@ func TestHyperlinkWithTooltip(t *testing.T) {
 	}
 }
 
-func TestHyperlinkValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		action  HyperlinkAction
-		wantErr bool
-	}{
-		{"valid URL", HyperlinkURL("https://example.com"), false},
-		{"empty URL", HyperlinkURL(""), true},
-		{"URL without scheme", HyperlinkURL("example.com"), true},
-		{"valid slide", HyperlinkSlide(1), false},
-		{"invalid slide 0", HyperlinkSlide(0), true},
-		{"valid email", HyperlinkEmail("test@example.com"), false},
-		{"invalid email", HyperlinkEmail("invalid"), true},
-		{"valid file", HyperlinkFile("C:\\docs\\file.pdf"), false},
-		{"empty file", HyperlinkFile(""), true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateHyperlinkAction(tt.action, "test")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("validateHyperlinkAction() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestShapeWithHyperlink(t *testing.T) {
-	slide := NewSlide("Hyperlink Test").
-		AddShape(NewShape("rect", 0, 0, 100, 100).
-			WithHyperlink(NewHyperlink(HyperlinkURL("https://example.com")).WithTooltip("Go to Example")))
+	slide := pptx.NewSlide("Hyperlink Test").
+		AddShape(pptx.NewShape("rect", 0, 0, 100, 100).
+			WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com")).WithTooltip("Go to Example")))
 
 	if len(slide.Shapes) != 1 {
 		t.Fatalf("Expected 1 shape, got %d", len(slide.Shapes))
@@ -130,25 +105,25 @@ func TestShapeWithHyperlink(t *testing.T) {
 }
 
 func TestTextRunWithHyperlink(t *testing.T) {
-	run := NewTextRun("Click here").
-		WithHyperlink(NewHyperlink(HyperlinkSlide(2)))
+	run := pptx.NewTextRun("Click here").
+		WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkSlide(2)))
 
 	if run.Hyperlink == nil {
 		t.Fatal("Expected text run to have hyperlink")
 	}
-	if run.Hyperlink.Action.Type != HyperlinkActionSlide {
+	if run.Hyperlink.Action.Type != pptx.HyperlinkActionSlide {
 		t.Errorf("Expected slide action, got %s", run.Hyperlink.Action.Type)
 	}
 }
 
 func TestHyperlinkInPPTX(t *testing.T) {
-	slide := NewSlide("Hyperlink PPTX Test").
-		AddShape(NewShape("rect", 100000, 100000, 2000000, 500000).
-			WithFill(NewShapeFill("FF6600")).
+	slide := pptx.NewSlide("Hyperlink PPTX Test").
+		AddShape(pptx.NewShape("rect", 100000, 100000, 2000000, 500000).
+			WithFill(pptx.NewShapeFill("FF6600")).
 			WithText("Click me").
-			WithHyperlink(NewHyperlink(HyperlinkURL("https://example.com"))))
+			WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com"))))
 
-	data, err := CreateWithSlides("Hyperlink Test", []SlideContent{slide})
+	data, err := pptx.CreateWithSlides("Hyperlink Test", []pptx.SlideContent{slide})
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}
@@ -158,7 +133,6 @@ func TestHyperlinkInPPTX(t *testing.T) {
 		t.Fatalf("zip reader error: %v", err)
 	}
 
-	// Check slide1.xml for hyperlink element
 	for _, f := range zr.File {
 		if f.Name == "ppt/slides/slide1.xml" {
 			rc, err := f.Open()
@@ -169,7 +143,6 @@ func TestHyperlinkInPPTX(t *testing.T) {
 			_, _ = buf.ReadFrom(rc)
 			_ = rc.Close()
 			content := buf.String()
-			// The hyperlink should be rendered in XML (relationship ID will be present)
 			if !strings.Contains(content, "hlinkClick") {
 				t.Log("Note: hlinkClick not found in slide XML; relationship wiring may need additional implementation")
 			}
@@ -180,12 +153,12 @@ func TestHyperlinkInPPTX(t *testing.T) {
 }
 
 func TestCreateWithSlidesRejectsInvalidTextRunHyperlink(t *testing.T) {
-	slide := NewSlide("Invalid Hyperlink").
-		AddBulletRuns([]TextRun{
-			NewTextRun("Bad URL").WithHyperlink(NewHyperlink(HyperlinkURL(""))),
+	slide := pptx.NewSlide("Invalid Hyperlink").
+		AddBulletRuns([]pptx.TextRun{
+			pptx.NewTextRun("Bad URL").WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL(""))),
 		})
 
-	_, err := CreateWithSlides("Invalid Hyperlink Deck", []SlideContent{slide})
+	_, err := pptx.CreateWithSlides("Invalid Hyperlink Deck", []pptx.SlideContent{slide})
 	if err == nil {
 		t.Fatal("expected invalid text-run hyperlink to fail validation")
 	}
@@ -195,13 +168,13 @@ func TestCreateWithSlidesRejectsInvalidTextRunHyperlink(t *testing.T) {
 }
 
 func TestNavigationHyperlinkUsesExternalRelationshipMode(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Nav").AddBulletRuns([]TextRun{
-			NewTextRun("First Slide").WithHyperlink(NewHyperlink(HyperlinkFirstSlide())),
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Nav").AddBulletRuns([]pptx.TextRun{
+			pptx.NewTextRun("First Slide").WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkFirstSlide())),
 		}),
-		NewSlide("Second"),
+		pptx.NewSlide("Second"),
 	}
-	data, err := CreateWithSlides("Nav", slides)
+	data, err := pptx.CreateWithSlides("Nav", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides error: %v", err)
 	}

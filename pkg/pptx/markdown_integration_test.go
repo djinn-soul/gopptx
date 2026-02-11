@@ -1,4 +1,4 @@
-package pptx
+package pptx_test
 
 import (
 	"archive/zip"
@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 	"github.com/djinn-soul/gopptx/pkg/pptx/markdown"
 )
 
@@ -23,7 +25,7 @@ func TestSlidesFromMarkdown_Integration_GFMTable(t *testing.T) {
 		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
 	}
 
-	data, err := CreateWithSlides("Deck", slides)
+	data, err := pptx.CreateWithSlides("Deck", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
 	}
@@ -31,14 +33,14 @@ func TestSlidesFromMarkdown_Integration_GFMTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("zip read error: %v", err)
 	}
-	slideXML := ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 	if !strings.Contains(slideXML, "<a:tbl>") {
 		t.Fatalf("expected table XML in slide output")
 	}
 }
 
 func TestSlidesFromMarkdown_Integration_Md2PptDemoFixture(t *testing.T) {
-	content, err := os.ReadFile(RootTestdataPath("ppt_rs", "md2ppt_demo.md"))
+	content, err := os.ReadFile(testutil.RootTestdataPath("ppt_rs", "md2ppt_demo.md"))
 	if err != nil {
 		t.Fatalf("read fixture error: %v", err)
 	}
@@ -48,7 +50,7 @@ func TestSlidesFromMarkdown_Integration_Md2PptDemoFixture(t *testing.T) {
 		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
 	}
 
-	data, err := CreateWithSlides("Fixture Deck", slides)
+	data, err := pptx.CreateWithSlides("Fixture Deck", slides)
 	if err != nil {
 		t.Fatalf("CreateWithSlides returned error: %v", err)
 	}
@@ -61,7 +63,7 @@ func TestSlidesFromMarkdown_Integration_Md2PptDemoFixture(t *testing.T) {
 	foundMermaid := false
 	for i := 1; i <= len(slides); i++ {
 		name := "ppt/slides/slide" + strconv.Itoa(i) + ".xml"
-		slideXML := ReadZipFile(t, zr, name)
+		slideXML := testutil.ReadZipFile(t, zr, name)
 		if strings.Contains(slideXML, "<a:tbl>") {
 			foundTable = true
 		}

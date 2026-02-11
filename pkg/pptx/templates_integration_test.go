@@ -1,16 +1,18 @@
-package pptx
+package pptx_test
 
 import (
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func TestTemplateIntegration(t *testing.T) {
-	templatesList := []Template{
-		SimpleTemplate{Title: "Integration Simple", Content: "Content"},
-		ProposalTemplate{Title: "Integration Proposal", Context: "Context", Solution: "Solution", Pricing: []string{"Item 1"}, Timeline: "Soon"},
-		TrainingTemplate{Title: "Integration Training", Agenda: []string{"Step 1"}, Concepts: []string{"Concept A"}, Summary: "End"},
-		StatusTemplate{Project: "Integration Status", OKRs: []string{"OKR 1"}, Risks: []string{"Risk 1"}, NextSteps: []string{"Next"}},
-		TechnicalTemplate{Title: "Integration Tech", Architecture: "Arch", DeepDive: "Deep", Benchmarks: "Fast"},
+	templatesList := []pptx.Template{
+		pptx.SimpleTemplate{Title: "Integration Simple", Content: "Content"},
+		pptx.ProposalTemplate{Title: "Integration Proposal", Context: "Context", Solution: "Solution", Pricing: []string{"Item 1"}, Timeline: "Soon"},
+		pptx.TrainingTemplate{Title: "Integration Training", Agenda: []string{"Step 1"}, Concepts: []string{"Concept A"}, Summary: "End"},
+		pptx.StatusTemplate{Project: "Integration Status", OKRs: []string{"OKR 1"}, Risks: []string{"Risk 1"}, NextSteps: []string{"Next"}},
+		pptx.TechnicalTemplate{Title: "Integration Tech", Architecture: "Arch", DeepDive: "Deep", Benchmarks: "Fast"},
 	}
 
 	for _, tmpl := range templatesList {
@@ -20,7 +22,7 @@ func TestTemplateIntegration(t *testing.T) {
 			continue
 		}
 
-		data, err := CreateWithSlides("Integration Test", slides)
+		data, err := pptx.CreateWithSlides("Integration Test", slides)
 		if err != nil {
 			t.Errorf("CreateWithSlides error for template %T: %v", tmpl, err)
 			continue

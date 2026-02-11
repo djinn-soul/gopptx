@@ -1,18 +1,20 @@
-package pptx
+package pptx_test
 
 import (
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func TestPlaceholderOverrides(t *testing.T) {
-	slides := []SlideContent{
-		NewSlide("Slide 1").
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Slide 1").
 			WithPlaceholderText(0, "title", "Title Override").
 			WithPlaceholderText(1, "body", "Body Override"),
-		NewSlide("Slide 2").
-			WithPlaceholderImage(1, "picture", NewImageFromBytes([]byte("fake png"), "png", 0, 0, 0, 0)),
-		NewSlide("Slide 3").
-			WithPlaceholderTable(1, "body", Table{
+		pptx.NewSlide("Slide 2").
+			WithPlaceholderImage(1, "picture", pptx.NewImageFromBytes([]byte("fake png"), "png", 0, 0, 0, 0)),
+		pptx.NewSlide("Slide 3").
+			WithPlaceholderTable(1, "body", pptx.Table{
 				Rows: [][]string{
 					{"A", "B"},
 					{"1", "2"},
@@ -20,7 +22,7 @@ func TestPlaceholderOverrides(t *testing.T) {
 			}),
 	}
 
-	_, err := CreateWithSlides("Test Pres", slides)
+	_, err := pptx.CreateWithSlides("Test Pres", slides)
 	if err != nil {
 		t.Fatalf("failed to create presentation: %v", err)
 	}
