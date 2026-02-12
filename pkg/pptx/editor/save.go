@@ -70,6 +70,26 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	hasNotesMaster := false
+	if _, ok := e.parts["ppt/notesMasters/notesMaster1.xml"]; ok {
+		hasNotesMaster = true
+	}
+	notesMasterRelID := ""
+	if hasNotesMaster {
+		for _, rel := range e.nonSlideRels {
+			if rel.Type == common.RelTypeNotesMaster {
+				notesMasterRelID = rel.ID
+				break
+			}
+		}
+		if strings.TrimSpace(notesMasterRelID) == "" {
+			return nil, fmt.Errorf("notes master part exists but presentation relationship is missing")
+		}
+	}
+	presentationXML, err = rewritePresentationNotesMasterList([]byte(presentationXML), notesMasterRelID, hasNotesMaster)
+	if err != nil {
+		return nil, err
+	}
 	out[common.PresentationXMLPath] = []byte(presentationXML)
 
 	hasSections := len(e.sections) > 0
@@ -101,11 +121,6 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		if strings.HasPrefix(p, "ppt/theme/theme") {
 			themePaths = append(themePaths, p)
 		}
-	}
-
-	hasNotesMaster := false
-	if _, ok := e.parts["ppt/notesMasters/notesMaster1.xml"]; ok {
-		hasNotesMaster = true
 	}
 
 	contentTypesXML, err := rewriteContentTypes(e.parts[common.ContentTypesPath], e.slides, mediaPaths, hasSections, chartPaths, notesPaths, themePaths, hasNotesMaster)

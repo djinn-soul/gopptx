@@ -13,6 +13,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
 type mediaAsset struct {
@@ -27,7 +28,7 @@ type MediaCatalog struct {
 	ordered []mediaAsset
 }
 
-var supportedImageExtensions = map[string]struct{}{
+var supportedMediaExtensions = map[string]struct{}{
 	"png":  {},
 	"jpg":  {},
 	"jpeg": {},
@@ -35,6 +36,9 @@ var supportedImageExtensions = map[string]struct{}{
 	"bmp":  {},
 	"tif":  {},
 	"tiff": {},
+	"mp3":  {},
+	"wav":  {},
+	"m4a":  {},
 }
 
 // BuildMediaCatalog constructs a catalog from multiple slides.
@@ -133,7 +137,7 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 			return fmt.Errorf("yielded empty data")
 		}
 
-		if _, ok := supportedImageExtensions[ext]; !ok {
+		if _, ok := supportedMediaExtensions[ext]; !ok {
 			if ext == "" {
 				return fmt.Errorf("has unknown extension (cannot infer)")
 			}
@@ -167,6 +171,39 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 		if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
 			if err := addImage(*slide.Background.PictureFill); err != nil {
 				return nil, fmt.Errorf("slide %d background image: %w", slideIndex+1, err)
+			}
+		}
+
+		// Handle transition sounds
+		if slide.Transition != nil {
+			if opt, ok := slide.Transition.(transitions.TransitionOptions); ok && opt.Sound != nil && strings.HasPrefix(opt.Sound.RelID, "file:") {
+				path := strings.TrimPrefix(opt.Sound.RelID, "file:")
+				soundMedia := shapes.Image{Path: path}
+				if err := addImage(soundMedia); err != nil {
+					return nil, fmt.Errorf("slide %d transition sound: %w", slideIndex+1, err)
+				}
+
+				// Find the registered media name to determine RID later?
+				// Actually, BuildMediaCatalog builds the catalog but doesn't assign RIDs here usually?
+				// Wait, presentation.go assigns RIDs based on order in catalog or just sequence?
+				// presentation.go assigns RIDs sequence: rId2, rId3...
+				// And it appends to imageTargets based on mediaName.
+				// Here we just ensure it's in catalog.
+				// BUT we need to update the RelID in the slide to be something we can use in presentation.go?
+				// presentation.go Logic:
+				//   mediaName, ok := mediaCatalog.MediaNameForImage(image)
+				//   relID := ...
+				//   imageTargets = append(...)
+
+				// So here in BuildMediaCatalog, we just add it.
+				// But we also need to allow presentation.go to find it.
+				// The slide.Transition logic in presentation.go needs to change to LOOK UP the sound.
+
+				// Keep the "file:" prefix or change it?
+				// If we leave "file:", presentation.go can parse it and look up in catalog.
+				// If we change it here, presentation.go needs to know what we changed it to.
+
+				// Better: leave "file:" prefix, so presentation.go knows it needs resolving.
 			}
 		}
 	}
@@ -274,7 +311,7 @@ func (c *MediaCatalog) RegisterImage(image shapes.Image) (string, error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("yielded empty data")
 	}
-	if _, ok := supportedImageExtensions[ext]; !ok {
+	if _, ok := supportedMediaExtensions[ext]; !ok {
 		return "", fmt.Errorf("unsupported extension %q", ext)
 	}
 

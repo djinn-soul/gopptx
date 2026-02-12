@@ -25,6 +25,9 @@ var imageContentTypes = map[string]string{
 	"bmp":  "image/bmp",
 	"tif":  "image/tiff",
 	"tiff": "image/tiff",
+	"wav":  "audio/wav",
+	"mp3":  "audio/mpeg",
+	"m4a":  "audio/mp4",
 }
 
 // ContentTypes renders [Content_Types].xml.
@@ -61,6 +64,8 @@ func ContentTypes(slideCount int, imageExtensions []string, chartCount int, note
 	if includeNotesMaster {
 		b.WriteString(`
 <Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>`)
+		b.WriteString(`
+<Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`)
 	}
 
 	for i := 1; i <= customXMLCount; i++ {

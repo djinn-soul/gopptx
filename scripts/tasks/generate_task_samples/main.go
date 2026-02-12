@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 
@@ -429,7 +430,77 @@ func generateTransitions() ([]byte, error) {
 			}).
 			AddBullet("This slide uses a wheel/clock transition with 3 spokes"),
 	}
+	// Transition Sounds
+	transitionsWithSound := pptx.NewSlide("Transition with Sound").
+		WithTransitionOptions(pptx.TransitionOptions{
+			Type: pptx.TransitionShape,
+		}).
+		WithTransitionSound(filepath.Join("smoke_samples", "transition_sound.wav")).
+		AddBullet("This slide has a circle transition with sound")
+
+	slides = append(slides, transitionsWithSound)
+
+	// Create a dummy WAV file for the test
+	wavData := generateSineWaveWAV()
+	if err := os.WriteFile(filepath.Join("smoke_samples", "transition_sound.wav"), wavData, 0o644); err != nil {
+		return nil, fmt.Errorf("failed to write wav file: %w", err)
+	}
+
 	return pptx.CreateWithSlides("Task 14: Transitions", slides)
+}
+
+func generateSineWaveWAV() []byte {
+	// Simple WAV header and 1 second of sine wave
+	const (
+		sampleRate = 44100
+		duration   = 1 // seconds
+		frequency  = 440.0
+	)
+
+	numSamples := sampleRate * duration
+	dataSize := numSamples * 2 // 16-bit mono
+	fileSize := 36 + dataSize
+
+	buf := make([]byte, 44+dataSize)
+
+	// RIFF header
+	copy(buf[0:], []byte("RIFF"))
+	putUint32(buf[4:], uint32(fileSize))
+	copy(buf[8:], []byte("WAVE"))
+
+	// fmt chunk
+	copy(buf[12:], []byte("fmt "))
+	putUint32(buf[16:], 16) // Subchunk1Size
+	putUint16(buf[20:], 1)  // AudioFormat (PCM)
+	putUint16(buf[22:], 1)  // NumChannels (Mono)
+	putUint32(buf[24:], uint32(sampleRate))
+	putUint32(buf[28:], uint32(sampleRate*2)) // ByteRate
+	putUint16(buf[32:], 2)                    // BlockAlign
+	putUint16(buf[34:], 16)                   // BitsPerSample
+
+	// data chunk
+	copy(buf[36:], []byte("data"))
+	putUint32(buf[40:], uint32(dataSize))
+
+	// Sound data
+	for i := 0; i < numSamples; i++ {
+		sample := int16(32767.0 * 0.5 * math.Sin(2.0*math.Pi*frequency*float64(i)/float64(sampleRate)))
+		putUint16(buf[44+i*2:], uint16(sample))
+	}
+
+	return buf
+}
+
+func putUint32(b []byte, v uint32) {
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
+	b[2] = byte(v >> 16)
+	b[3] = byte(v >> 24)
+}
+
+func putUint16(b []byte, v uint16) {
+	b[0] = byte(v)
+	b[1] = byte(v >> 8)
 }
 
 func generateMerge() ([]byte, error) {

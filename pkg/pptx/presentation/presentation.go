@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/xml"
 	"fmt"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
@@ -12,6 +13,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/notes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
 // PresentationMetadata defines non-content properties of a PPTX.
@@ -203,6 +205,10 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 				name    string
 				content string
 			}{"ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships()},
+			struct {
+				name    string
+				content string
+			}{"ppt/theme/theme2.xml", pptxxml.Theme(mapThemeToSpec(meta.Theme))},
 		)
 	}
 
@@ -279,6 +285,25 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			if ok {
 				backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
 				imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
+			}
+		}
+
+		// Handle transition sound
+		if slide.Transition != nil {
+			if opt, ok := slide.Transition.(transitions.TransitionOptions); ok && opt.Sound != nil && strings.HasPrefix(opt.Sound.RelID, "file:") {
+				path := strings.TrimPrefix(opt.Sound.RelID, "file:")
+				// Create a dummy image struct to reuse the register logic (hacky but effective given current catalog API)
+				// TODO: refactor catalog to accept generic media
+				soundMedia := shapes.Image{Path: path}
+				mediaName, ok := mediaCatalog.MediaNameForImage(soundMedia)
+				if !ok {
+					// This should have been registered by BuildMediaCatalog
+					return fmt.Errorf("transition sound %q was not registered", path)
+				}
+				rid := fmt.Sprintf("rId%d", len(imageTargets)+2)
+				imageTargets = append(imageTargets, fmt.Sprintf("../media/%s", mediaName))
+				opt.Sound.RelID = rid
+				slide.Transition = opt
 			}
 		}
 

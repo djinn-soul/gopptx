@@ -98,6 +98,11 @@ func (e *PresentationEditor) RemoveSlide(index int) error {
 	}
 
 	ref := e.slides[index]
+	if notesPart, ok := e.notesInventory[ref.Part]; ok {
+		delete(e.parts, notesPart)
+		delete(e.parts, common.SlideRelsPartName(notesPart))
+		delete(e.notesInventory, ref.Part)
+	}
 	delete(e.parts, ref.Part)
 	delete(e.parts, common.SlideRelsPartName(ref.Part))
 
@@ -631,8 +636,20 @@ func (e *PresentationEditor) ensureNotesInfrastructure() {
 	}
 	e.parts["ppt/notesMasters/notesMaster1.xml"] = []byte(pptxxml.NotesMaster())
 	e.parts["ppt/notesMasters/_rels/notesMaster1.xml.rels"] = []byte(pptxxml.NotesMasterRelationships())
-	// Use default theme for notes master if missing
 	if _, ok := e.parts["ppt/theme/theme2.xml"]; !ok {
 		e.parts["ppt/theme/theme2.xml"] = []byte(pptxxml.Theme(nil))
 	}
+
+	for _, rel := range e.nonSlideRels {
+		if rel.Type == common.RelTypeNotesMaster {
+			return
+		}
+	}
+	e.recalculateNextRelIDNum()
+	e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
+		ID:     fmt.Sprintf("rId%d", e.nextRelIDNum),
+		Type:   common.RelTypeNotesMaster,
+		Target: "notesMasters/notesMaster1.xml",
+	})
+	e.nextRelIDNum++
 }

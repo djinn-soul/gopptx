@@ -12,6 +12,7 @@ import (
 )
 
 var sldIdLstPattern = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
+var notesMasterIDListPattern = regexp.MustCompile(`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`)
 
 func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
 	if len(current) == 0 {
@@ -50,6 +51,37 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	}
 	b.WriteString("</p:sldIdLst>")
 	return b.String()
+}
+
+func rewritePresentationNotesMasterList(current []byte, relID string, enable bool) (string, error) {
+	if len(current) == 0 {
+		return "", fmt.Errorf("missing presentation XML content")
+	}
+	source := string(current)
+
+	if !enable {
+		if notesMasterIDListPattern.MatchString(source) {
+			return notesMasterIDListPattern.ReplaceAllString(source, ""), nil
+		}
+		return source, nil
+	}
+	if strings.TrimSpace(relID) == "" {
+		return "", fmt.Errorf("notes master relationship id is required")
+	}
+
+	replacement := "<p:notesMasterIdLst>\n<p:notesMasterId r:id=\"" + common.XMLEscape(relID) + "\"/>\n</p:notesMasterIdLst>"
+	if notesMasterIDListPattern.MatchString(source) {
+		return notesMasterIDListPattern.ReplaceAllString(source, replacement), nil
+	}
+
+	if idx := strings.Index(source, "</p:sldMasterIdLst>"); idx >= 0 {
+		insertPos := idx + len("</p:sldMasterIdLst>")
+		return source[:insertPos] + "\n" + replacement + source[insertPos:], nil
+	}
+	if idx := strings.Index(source, "<p:sldIdLst"); idx >= 0 {
+		return source[:idx] + replacement + "\n" + source[idx:], nil
+	}
+	return "", fmt.Errorf("presentation XML does not contain insertion point for notesMasterIdLst")
 }
 
 func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []common.EditorSlideRef, hasSections bool) (string, error) {

@@ -2,6 +2,7 @@ package elements
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
@@ -393,6 +394,24 @@ func (s SlideContent) WithTransition(t transitions.SlideTransition) SlideContent
 
 // WithTransitionOptions sets built-in transition options.
 func (s SlideContent) WithTransitionOptions(opt transitions.TransitionOptions) SlideContent {
+	s.Transition = opt
+	return s
+}
+
+// WithTransitionSound sets a sound file for the slide transition.
+func (s SlideContent) WithTransitionSound(path string) SlideContent {
+	// If transition is nil or not options, default to cut.
+	opt, ok := s.Transition.(transitions.TransitionOptions)
+	if !ok {
+		opt = transitions.TransitionOptions{Type: transitions.TransitionCut}
+	}
+	if opt.Sound == nil {
+		opt.Sound = &transitions.TransitionSound{}
+	}
+	// Store the path in RelID temporarily; it will be resolved to a relation ID
+	// during package writing.
+	opt.Sound.RelID = "file:" + path
+	opt.Sound.Name = filepath.Base(path)
 	s.Transition = opt
 	return s
 }
