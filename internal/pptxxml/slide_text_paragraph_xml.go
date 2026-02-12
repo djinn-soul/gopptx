@@ -17,6 +17,9 @@ type BulletParagraphSpec struct {
 	BulletColor    string
 	BulletSize     int
 	Level          int
+	LeftIndent     int64
+	RightIndent    int64
+	HangingIndent  int64
 }
 
 func bulletStyleAt(all []BulletParagraphSpec, index int) BulletParagraphSpec {
@@ -28,7 +31,19 @@ func bulletStyleAt(all []BulletParagraphSpec, index int) BulletParagraphSpec {
 
 func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 	marL, indent := bulletIndent(style.Level)
-	base := `<a:pPr lvl="` + strconv.Itoa(style.Level) + `" marL="` + strconv.Itoa(marL) + `" indent="` + strconv.Itoa(indent) + `"`
+	if style.LeftIndent != 0 {
+		marL = int(style.LeftIndent)
+	}
+	if style.HangingIndent != 0 {
+		indent = int(style.HangingIndent)
+	}
+	// Note: Right indent (marR) is also supported in a:pPr
+	marRXML := ""
+	if style.RightIndent != 0 {
+		marRXML = fmt.Sprintf(` marR="%d"`, style.RightIndent)
+	}
+
+	base := `<a:pPr lvl="` + strconv.Itoa(style.Level) + `" marL="` + strconv.Itoa(marL) + `" indent="` + strconv.Itoa(indent) + `"` + marRXML
 	if style.Align != "" {
 		base += ` algn="` + Escape(style.Align) + `"`
 	}

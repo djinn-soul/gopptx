@@ -1,14 +1,14 @@
 package main
 
-import "github.com/djinn-soul/gopptx/pkg/pptx"
+import (
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+)
 
 func generatePreludeHelpers() ([]byte, error) {
 	builder := pptx.NewPresentationBuilder("GoPPTX Prelude Helpers Showcase").
 		WithMetadata(pptx.PresentationMetadata{
-			Title:       "Prelude Showcase",
-			Subject:     "Testing new ergonomic features",
-			Creator:     "GoPPTX Agent",
-			Description: "Showcase for expanded prelude helpers, unit converters, and shape macros.",
+			PresentationMetadata: common.PresentationMetadata{Creator: "GoPPTX Agent"},
 		})
 
 	builder.AddTitleSlide("Ergonomic Prelude Helpers")

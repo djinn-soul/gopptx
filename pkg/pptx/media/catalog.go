@@ -164,6 +164,11 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 				}
 			}
 		}
+		if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
+			if err := addImage(*slide.Background.PictureFill); err != nil {
+				return nil, fmt.Errorf("slide %d background image: %w", slideIndex+1, err)
+			}
+		}
 	}
 
 	return catalog, nil
@@ -234,3 +239,48 @@ func (a mediaAsset) Extension() string { return a.extension }
 
 // Data returns the raw content of a media asset.
 func (a mediaAsset) Data() []byte { return a.data }
+
+// RegisterImage registers an image in the catalog and returns its media name.
+// This is useful for registering master slide images outside of BuildMediaCatalog.
+func (c *MediaCatalog) RegisterImage(image shapes.Image) (string, error) {
+	var data []byte
+	var ext string
+	var key string
+
+	if image.Path != "" {
+		cleanPath := filepath.Clean(image.Path)
+		key = "path:" + cleanPath
+		if asset, exists := c.byKey[key]; exists {
+			return asset.mediaName, nil
+		}
+		ext = NormalizeImageExtension(cleanPath)
+		fileData, err := os.ReadFile(cleanPath)
+		if err != nil {
+			return "", fmt.Errorf("read error: %w", err)
+		}
+		data = fileData
+	} else if len(image.Data) > 0 {
+		ext = NormalizeExtension(image.Format)
+		hash := sha256.Sum256(image.Data)
+		key = "data:" + hex.EncodeToString(hash[:])
+		if asset, exists := c.byKey[key]; exists {
+			return asset.mediaName, nil
+		}
+		data = image.Data
+	} else {
+		return "", fmt.Errorf("image has no path or data")
+	}
+
+	if len(data) == 0 {
+		return "", fmt.Errorf("yielded empty data")
+	}
+	if _, ok := supportedImageExtensions[ext]; !ok {
+		return "", fmt.Errorf("unsupported extension %q", ext)
+	}
+
+	mediaName := fmt.Sprintf("image%d.%s", len(c.ordered)+1, ext)
+	asset := mediaAsset{mediaName: mediaName, extension: ext, data: data}
+	c.byKey[key] = asset
+	c.ordered = append(c.ordered, asset)
+	return mediaName, nil
+}

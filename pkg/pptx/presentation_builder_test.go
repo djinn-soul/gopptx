@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
 func TestPresentationBuilder(t *testing.T) {
@@ -13,7 +14,7 @@ func TestPresentationBuilder(t *testing.T) {
 	outPath := filepath.Join(tmpDir, "builder_test.pptx")
 
 	builder := pptx.NewPresentationBuilder("Fluent Presentation").
-		WithMetadata(pptx.PresentationMetadata{Creator: "Test Builder"}).
+		WithMetadata(pptx.PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Creator: "Test Builder"}}).
 		AddSlide(pptx.NewSlide("Slide 1").AddShape(pptx.NewRectangle(1, 1, 2, 2))).
 		AddSlide(pptx.NewSlide("Slide 2").AddShape(pptx.NewEllipse(3, 1, 2, 2)))
 

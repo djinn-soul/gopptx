@@ -19,6 +19,15 @@ type (
 	ShapeGradientStop = shapes.ShapeGradientStop
 	// ShapeGradientFill configures gradient fill properties for one shape.
 	ShapeGradientFill = shapes.ShapeGradientFill
+
+	// TextFrame configures the text layout within a shape.
+	TextFrame = shapes.TextFrame
+	// TextFrameAnchor specifies the vertical alignment of text within its shape.
+	TextFrameAnchor = shapes.TextFrameAnchor
+	// TextFrameWrap specifies how text wraps within the shape's text frame.
+	TextFrameWrap = shapes.TextFrameWrap
+	// TextFrameAutoFit specifies how text is automatically resized or how the shape is resized.
+	TextFrameAutoFit = shapes.TextFrameAutoFit
 )
 
 const (
@@ -48,6 +57,17 @@ const (
 	ShapeGradientTypeRadial      = shapes.ShapeGradientTypeRadial
 	ShapeGradientTypeRectangular = shapes.ShapeGradientTypeRectangular
 	ShapeGradientTypePath        = shapes.ShapeGradientTypePath
+
+	TextAnchorTop    = shapes.TextAnchorTop
+	TextAnchorMiddle = shapes.TextAnchorMiddle
+	TextAnchorBottom = shapes.TextAnchorBottom
+
+	TextWrapNone   = shapes.TextWrapNone
+	TextWrapSquare = shapes.TextWrapSquare
+
+	TextAutoFitNone   = shapes.TextAutoFitNone
+	TextAutoFitShape  = shapes.TextAutoFitShape
+	TextAutoFitNormal = shapes.TextAutoFitNormal
 )
 
 func NewShape(shapeType string, x, y, cx, cy int64) Shape {
@@ -68,6 +88,10 @@ func NewShapeGradientStop(positionPct int, color string) ShapeGradientStop {
 
 func NewShapeGradientFill(gradientType string, stops []ShapeGradientStop) ShapeGradientFill {
 	return shapes.NewShapeGradientFill(gradientType, stops)
+}
+
+func NewTextFrame() TextFrame {
+	return shapes.NewTextFrame()
 }
 
 // Fluent API Macros (Inches based)

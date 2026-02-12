@@ -3,6 +3,9 @@ package pptx
 import (
 	"fmt"
 	"os"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // PresentationBuilder provides a fluent API for creating presentations.
@@ -22,6 +25,24 @@ func NewPresentationBuilder(title string) *PresentationBuilder {
 // WithMetadata sets the presentation metadata.
 func (b *PresentationBuilder) WithMetadata(meta PresentationMetadata) *PresentationBuilder {
 	b.metadata = meta
+	return b
+}
+
+// WithSlideSize sets the slide dimensions for the presentation.
+func (b *PresentationBuilder) WithSlideSize(size SlideSize) *PresentationBuilder {
+	b.metadata.SlideSize = size
+	return b
+}
+
+// WithTheme sets the theme (colors and fonts) for the presentation.
+func (b *PresentationBuilder) WithTheme(theme styling.Theme) *PresentationBuilder {
+	b.metadata.Theme = &theme
+	return b
+}
+
+// WithMaster sets the slide master (background, footer, shapes) for the presentation.
+func (b *PresentationBuilder) WithMaster(master *elements.SlideMaster) *PresentationBuilder {
+	b.metadata.Master = master
 	return b
 }
 

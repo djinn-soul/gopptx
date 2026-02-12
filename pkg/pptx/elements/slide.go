@@ -125,8 +125,10 @@ func (s SlideContent) Validate(index int) error {
 	if s.ContentColor != "" && !common.IsHexColor(s.ContentColor) {
 		return fmt.Errorf("content color must be 6-digit RGB hex")
 	}
-	if s.BackgroundColor != "" && (!common.IsHexColor(s.BackgroundColor) || strings.HasPrefix(s.BackgroundColor, "#")) {
-		return fmt.Errorf("background color must be 6-digit RGB hex (without #)")
+	if s.Background != nil {
+		if err := s.Background.Validate(); err != nil {
+			return fmt.Errorf("invalid background: %w", err)
+		}
 	}
 
 	// Validate transition
@@ -218,7 +220,7 @@ type SlideContent struct {
 	ContentUnderline     bool
 	ContentVAlign        string
 	Layout               string
-	BackgroundColor      string
+	Background           *SlideBackground
 	Transition           transitions.SlideTransition
 	DefaultBulletStyle   TextParagraphStyle
 	Bullets              []string
@@ -375,8 +377,28 @@ func (s SlideContent) WithLayout(layout string) SlideContent {
 
 // WithBackgroundColor sets the slide background as RGB hex.
 func (s SlideContent) WithBackgroundColor(color string) SlideContent {
-	s.BackgroundColor = common.NormalizeHexColor(color)
+	normalized := common.NormalizeHexColor(color)
+	bg := NewSolidBackground(normalized)
+	s.Background = &bg
 	return s
+}
+
+// WithBackground sets a complex background for the slide.
+func (s SlideContent) WithBackground(bg SlideBackground) SlideContent {
+	s.Background = &bg
+	return s
+}
+
+// WithGradientBackground sets a gradient background for the slide.
+func (s SlideContent) WithGradientBackground(gradient shapes.ShapeGradientFill) SlideContent {
+	bg := NewGradientBackground(gradient)
+	return s.WithBackground(bg)
+}
+
+// WithPictureBackground sets a picture background for the slide using image data.
+func (s SlideContent) WithPictureBackground(img shapes.Image) SlideContent {
+	bg := NewPictureBackground(img)
+	return s.WithBackground(bg)
 }
 
 // WithTitleSize sets the title font size in points.

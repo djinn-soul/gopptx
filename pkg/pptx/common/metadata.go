@@ -1,5 +1,10 @@
 package common
 
+// Forward declarations or interface if needed?
+// Actually, SlideMaster is in elements. elements imports common.
+// styling doesn't import common.
+// common should probably not import styling or elements if they import common.
+
 // SlideSize describes the dimensions of slides in a presentation in EMUs.
 type SlideSize struct {
 	Width  int64

@@ -80,7 +80,7 @@ func NotesTargetBySlide(parts []RenderedNotesPart) map[int]string {
 // WriteNotesFiles writes all notes-related XML files to the presentation package.
 func WriteNotesFiles(zw *zip.Writer, parts []RenderedNotesPart) error {
 	if len(parts) > 0 {
-		if err := common.WriteFile(zw, "ppt/theme/theme2.xml", pptxxml.Theme()); err != nil {
+		if err := common.WriteFile(zw, "ppt/theme/theme2.xml", pptxxml.Theme(nil)); err != nil {
 			return err
 		}
 	}

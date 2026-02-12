@@ -22,7 +22,10 @@ type TextRun struct {
 	Font          string
 	SizePt        int
 	Code          bool
-	Hyperlink     *action.Hyperlink
+	AllCaps       bool
+	SmallCaps     bool
+	Hyperlink     *action.Hyperlink // Click behavior
+	HoverAction   *action.Hyperlink // Hover behavior
 }
 
 // NewTextRun creates a simple text run.
@@ -102,9 +105,33 @@ func (r TextRun) WithCode(code bool) TextRun {
 	return r
 }
 
-// WithHyperlink sets a hyperlink for the run.
+// WithAllCaps sets the text to be all uppercase.
+func (r TextRun) WithAllCaps(allCaps bool) TextRun {
+	r.AllCaps = allCaps
+	if allCaps {
+		r.SmallCaps = false
+	}
+	return r
+}
+
+// WithSmallCaps sets the text to be small caps.
+func (r TextRun) WithSmallCaps(smallCaps bool) TextRun {
+	r.SmallCaps = smallCaps
+	if smallCaps {
+		r.AllCaps = false
+	}
+	return r
+}
+
+// WithHyperlink sets a click action for the run.
 func (r TextRun) WithHyperlink(link action.Hyperlink) TextRun {
 	r.Hyperlink = &link
+	return r
+}
+
+// WithHoverAction sets a hover action for the run.
+func (r TextRun) WithHoverAction(link action.Hyperlink) TextRun {
+	r.HoverAction = &link
 	return r
 }
 

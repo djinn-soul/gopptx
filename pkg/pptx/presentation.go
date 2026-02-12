@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/presentation"
 )
 
@@ -40,12 +41,12 @@ func Create(title string, slideCount int) ([]byte, error) {
 		slides = append(slides, NewSlide(slideTitle))
 	}
 
-	return CreateWithMetadata(PresentationMetadata{Title: title}, slides)
+	return CreateWithMetadata(PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}}, slides)
 }
 
 // CreateWithSlides builds a PPTX from caller-provided slide content.
 func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
-	return CreateWithMetadata(PresentationMetadata{Title: title}, slides)
+	return CreateWithMetadata(PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}}, slides)
 }
 
 // CreateWithMetadata builds a PPTX from metadata and caller-provided slide content.
@@ -82,7 +83,7 @@ func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byt
 
 // WriteFile is a convenience helper that writes the generated PPTX to disk.
 func WriteFile(path string, title string, slides []SlideContent) error {
-	data, err := CreateWithMetadata(PresentationMetadata{Title: title, SlideSize: SlideSize4x3}, slides)
+	data, err := CreateWithMetadata(PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title, SlideSize: SlideSize4x3}}, slides)
 	if err != nil {
 		return err
 	}

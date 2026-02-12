@@ -21,7 +21,10 @@ type TextRunSpec struct {
 	Font          string
 	SizePt        int
 	Code          bool
-	Hyperlink     *HyperlinkSpec
+	AllCaps       bool
+	SmallCaps     bool
+	Hyperlink     *HyperlinkSpec // Click action
+	HoverAction   *HyperlinkSpec // Hover action
 }
 
 func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
@@ -63,10 +66,18 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	} else if run.Superscript {
 		b.WriteString(` baseline="30000"`)
 	}
+	if run.AllCaps {
+		b.WriteString(` cap="allCaps"`)
+	} else if run.SmallCaps {
+		b.WriteString(` cap="smallCaps"`)
+	}
 	b.WriteString(` dirty="0">`)
 
 	if run.Hyperlink != nil {
-		b.WriteString(HyperlinkXML(*run.Hyperlink))
+		b.WriteString(HyperlinkXML(*run.Hyperlink, "a:hlinkClick"))
+	}
+	if run.HoverAction != nil {
+		b.WriteString(HyperlinkXML(*run.HoverAction, "a:hlinkHover"))
 	}
 
 	if highlight := strings.TrimSpace(run.Highlight); highlight != "" {

@@ -51,6 +51,22 @@ err := editor.UpdateSlide(0, updatedSlide) // Replaces the first slide
 err := editor.RemoveSlide(1) // Removes the second slide
 ```
 
+## Updating Theme and Slide Size
+
+You can now apply a new theme and change presentation dimensions on an existing file:
+
+```go
+err := editor.ApplyTheme(styling.ThemeTech)
+if err != nil {
+    log.Fatal(err)
+}
+
+err = editor.SetSlideSize(pptx.SlideSize16x9)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
 ## Merging Presentations
 
 You can merge slides from another PPTX file into the current one:
@@ -77,4 +93,4 @@ The `PresentationEditor` is under active development. The following constraints 
 
 1.  **Unsupported Content:** Adding or updating slides with images, charts, or speaker notes is not yet supported.
 2.  **Complex Merges:** Merging slides that contain external assets (images/charts) will currently fail to protect the integrity of the package relationships.
-3.  **Theme Preservation:** The editor preserves the existing theme of the base presentation; it does not currently support merging themes from multiple sources.
+3.  **Theme/Master Merge:** The editor can replace `ppt/theme/theme1.xml` in the active file, but does not yet merge multiple source themes or replace the global slide master.

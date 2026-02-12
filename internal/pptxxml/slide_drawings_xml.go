@@ -44,9 +44,23 @@ type ShapeSpec struct {
 	Line         *ShapeLineSpec
 	Text         string
 	RotationDeg  *int
-	Hyperlink    *HyperlinkSpec
+	Hyperlink    *HyperlinkSpec // Legacy: mapped to ClickAction
+	ClickAction  *HyperlinkSpec
+	HoverAction  *HyperlinkSpec
 	AltText      string
 	IsDecorative bool
+	TextFrame    *TextFrameSpec
+}
+
+// TextFrameSpec describes the text layout within a shape.
+type TextFrameSpec struct {
+	MarginLeft   int64
+	MarginRight  int64
+	MarginTop    int64
+	MarginBottom int64
+	Anchor       string
+	Wrap         string
+	AutoFit      string
 }
 
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.
@@ -76,8 +90,14 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	}
 
 	hyperlinkXML := ""
-	if shape.Hyperlink != nil {
-		hyperlinkXML = HyperlinkXML(*shape.Hyperlink)
+	if shape.ClickAction != nil {
+		hyperlinkXML = HyperlinkXML(*shape.ClickAction, "a:hlinkClick")
+	} else if shape.Hyperlink != nil {
+		hyperlinkXML = HyperlinkXML(*shape.Hyperlink, "a:hlinkClick")
+	}
+
+	if shape.HoverAction != nil {
+		hyperlinkXML += HyperlinkXML(*shape.HoverAction, "a:hlinkHover")
 	}
 
 	// If hyperlink is present, p:cNvPr must have a child element, so we use a different format
@@ -141,20 +161,44 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <a:p/>
 </p:txBody>`)
 	} else {
-		b.WriteString(`
+		bodyPrAttr := ""
+		autoFitXML := `<a:spAutoFit/>`
+
+		if shape.TextFrame != nil {
+			bodyPrAttr = fmt.Sprintf(` wrap="%s" rtlCol="0" anchor="%s" marL="%d" marT="%d" marR="%d" marB="%d"`,
+				Escape(shape.TextFrame.Wrap),
+				Escape(shape.TextFrame.Anchor),
+				shape.TextFrame.MarginLeft,
+				shape.TextFrame.MarginTop,
+				shape.TextFrame.MarginRight,
+				shape.TextFrame.MarginBottom,
+			)
+			switch shape.TextFrame.AutoFit {
+			case "spAutoFit":
+				autoFitXML = `<a:spAutoFit/>`
+			case "normAutoFit":
+				autoFitXML = `<a:normAutoFit/>`
+			default:
+				autoFitXML = ""
+			}
+		} else {
+			bodyPrAttr = ` wrap="square" rtlCol="0" anchor="ctr" marL="45720" marT="45720" marR="45720" marB="45720"`
+		}
+
+		b.WriteString(fmt.Sprintf(`
 <p:txBody>
-<a:bodyPr wrap="square" rtlCol="0" anchor="ctr" marL="45720" marT="45720" marR="45720" marB="45720">
-<a:spAutoFit/>
+<a:bodyPr%s>
+%s
 </a:bodyPr>
 <a:lstStyle/>
 <a:p>
-<a:pPr algn="ctr"/>
+<a:pPr algn="l"/>
 <a:r>
-<a:rPr lang="en-US" sz="` + shapeTextSizeXML(shape) + `" b="0" i="0" u="none" dirty="0">` + shapeTextRunPropertiesXML(shape) + hyperlinkXML + `</a:rPr>
-<a:t>` + Escape(shape.Text) + `</a:t>
+<a:rPr lang="en-US" sz="%s" b="0" i="0" u="none" dirty="0">%s%s</a:rPr>
+<a:t>%s</a:t>
 </a:r>
 </a:p>
-</p:txBody>`)
+</p:txBody>`, bodyPrAttr, autoFitXML, shapeTextSizeXML(shape), shapeTextRunPropertiesXML(shape), hyperlinkXML, Escape(shape.Text)))
 	}
 	b.WriteString(`
 </p:sp>`)

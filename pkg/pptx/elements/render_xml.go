@@ -47,11 +47,17 @@ func BuildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*action.Hype
 	}
 
 	for _, shape := range slide.Shapes {
-		addHyperlink(shape.Hyperlink)
+		if shape.ClickAction != nil {
+			addHyperlink(shape.ClickAction)
+		} else if shape.Hyperlink != nil {
+			addHyperlink(shape.Hyperlink)
+		}
+		addHyperlink(shape.HoverAction)
 	}
 	for _, runRow := range slide.BulletRuns {
 		for _, run := range runRow {
 			addHyperlink(run.Hyperlink)
+			addHyperlink(run.HoverAction)
 		}
 	}
 
@@ -82,6 +88,8 @@ func ToXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*action.Hyperlink]stri
 				Font:          run.Font,
 				SizePt:        run.SizePt,
 				Code:          run.Code,
+				AllCaps:       run.AllCaps,
+				SmallCaps:     run.SmallCaps,
 			}
 			if run.Hyperlink != nil {
 				if rid, ok := hyperlinkRIDs[run.Hyperlink]; ok {
@@ -90,6 +98,16 @@ func ToXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*action.Hyperlink]stri
 						Tooltip:        run.Hyperlink.Tooltip,
 						HighlightClick: run.Hyperlink.HighlightClick,
 						Action:         run.Hyperlink.Action.ActionType(),
+					}
+				}
+			}
+			if run.HoverAction != nil {
+				if rid, ok := hyperlinkRIDs[run.HoverAction]; ok {
+					spec.HoverAction = &pptxxml.HyperlinkSpec{
+						RelID:          rid,
+						Tooltip:        run.HoverAction.Tooltip,
+						HighlightClick: run.HoverAction.HighlightClick,
+						Action:         run.HoverAction.Action.ActionType(),
 					}
 				}
 			}
@@ -116,7 +134,51 @@ func ToXMLBulletParagraphStyles(styles []TextParagraphStyle) []pptxxml.BulletPar
 			BulletColor:    common.NormalizeHexColor(style.BulletColor),
 			BulletSize:     style.BulletSize,
 			Level:          style.Level,
+			LeftIndent:     style.LeftIndent,
+			RightIndent:    style.RightIndent,
+			HangingIndent:  style.HangingIndent,
 		}
 	}
 	return out
+}
+
+func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideBackgroundSpec {
+	if bg == nil || bg.Type == "" {
+		return nil
+	}
+	spec := &pptxxml.SlideBackgroundSpec{
+		Type: string(bg.Type),
+	}
+	switch bg.Type {
+	case SlideBackgroundSolid:
+		if bg.SolidFill != nil {
+			spec.SolidFill = &pptxxml.ShapeFillSpec{
+				Color:           common.NormalizeHexColor(bg.SolidFill.Color),
+				TransparencyPct: bg.SolidFill.TransparencyPct,
+			}
+		}
+	case SlideBackgroundGradient:
+		if bg.GradientFill != nil {
+			stops := make([]pptxxml.ShapeGradientStopSpec, 0, len(bg.GradientFill.Stops))
+			for _, stop := range bg.GradientFill.Stops {
+				stops = append(stops, pptxxml.ShapeGradientStopSpec{
+					PositionPct:     stop.PositionPct,
+					Color:           common.NormalizeHexColor(stop.Color),
+					TransparencyPct: stop.TransparencyPct,
+				})
+			}
+			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{
+				Type:     string(bg.GradientFill.Type),
+				Stops:    stops,
+				AngleDeg: bg.GradientFill.AngleDeg,
+			}
+		}
+	case SlideBackgroundPicture:
+		if bg.PictureFill != nil {
+			spec.PictureFill = &pptxxml.ImageRef{
+				RelID: imageRelID,
+			}
+		}
+	}
+	return spec
 }

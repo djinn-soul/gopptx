@@ -50,7 +50,7 @@ func renderEditorSlideParts(slide elements.SlideContent, slideNumber int, notesT
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 		nil,
-		slide.BackgroundColor,
+		elements.ToXMLBackgroundSpec(slide.Background, ""),
 		elements.SlideTransitionXML(slide),
 		elements.SlideAnimationsXML(slide, shapeIDs),
 		slide.ShowSlideNumber,

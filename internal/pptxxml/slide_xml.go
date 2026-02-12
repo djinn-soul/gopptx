@@ -36,20 +36,44 @@ const slideDefaultBackground = `
 </p:bgRef>
 </p:bg>`
 
-func backgroundXML(color string) string {
-	if color == "" {
-		return slideDefaultBackground
+func backgroundXML(bg *SlideBackgroundSpec) string {
+	if bg == nil || bg.Type == "" {
+		return ""
 	}
-	color = strings.TrimPrefix(color, "#")
-	return fmt.Sprintf(`
+
+	xml := `
 <p:bg>
-<p:bgPr>
+<p:bgPr>`
+
+	switch bg.Type {
+	case "solid":
+		if bg.SolidFill != nil {
+			xml += fmt.Sprintf(`
 <a:solidFill>
 <a:srgbClr val="%s"/>
-</a:solidFill>
+</a:solidFill>`, strings.TrimPrefix(bg.SolidFill.Color, "#"))
+		}
+	case "gradient":
+		if bg.GradientFill != nil {
+			xml += shapeGradientFillXML(*bg.GradientFill)
+		}
+	case "picture":
+		if bg.PictureFill != nil {
+			xml += fmt.Sprintf(`
+<a:blipFill>
+<a:blip r:embed="%s"/>
+<a:stretch>
+<a:fillRect/>
+</a:stretch>
+</a:blipFill>`, Escape(bg.PictureFill.RelID))
+		}
+	}
+
+	xml += `
 <a:effectLst/>
 </p:bgPr>
-</p:bg>`, color)
+</p:bg>`
+	return xml
 }
 
 func slideHeaderEndBodyXML(width, height int64) string {
@@ -104,6 +128,14 @@ type ContentStyleSpec struct {
 	VAlign    string
 }
 
+// SlideBackgroundSpec describes how the slide background should be filled.
+type SlideBackgroundSpec struct {
+	Type         string // "solid", "gradient", "picture"
+	SolidFill    *ShapeFillSpec
+	GradientFill *ShapeGradientFillSpec
+	PictureFill  *ImageRef
+}
+
 // SlideWithContent renders a title+bullets slide with optional table, chart, and images.
 func SlideWithContent(
 	title TitleSpec,
@@ -114,7 +146,7 @@ func SlideWithContent(
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
-	backgroundColor string,
+	background *SlideBackgroundSpec,
 	transitionXML string,
 	animationsXML string,
 	showSlideNumber bool,
@@ -133,7 +165,7 @@ func SlideWithContent(
 		nil,
 		nil,
 		nil,
-		backgroundColor,
+		background,
 		transitionXML,
 		animationsXML,
 		showSlideNumber,
@@ -156,7 +188,7 @@ func SlideWithLayout(
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
 	placeholders []PlaceholderOverrideSpec,
-	backgroundColor string,
+	background *SlideBackgroundSpec,
 	transitionXML string,
 	animationsXML string,
 	showSlideNumber bool,
@@ -165,7 +197,7 @@ func SlideWithLayout(
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
 	b.WriteString(slideHeaderStart)
-	b.WriteString(backgroundXML(backgroundColor))
+	b.WriteString(backgroundXML(background))
 	b.WriteString(slideHeaderEndBodyXML(width, height))
 
 	nextID := 2

@@ -10,9 +10,9 @@ type HyperlinkSpec struct {
 	Action         string // ppaction:// for internal navigation
 }
 
-// HyperlinkXML generates the <a:hlinkClick> element for shapes or text runs.
-func HyperlinkXML(spec HyperlinkSpec) string {
-	xml := fmt.Sprintf(`<a:hlinkClick r:id="%s"`, Escape(spec.RelID))
+// HyperlinkXML generates the <a:hlinkClick> or <a:hlinkHover> element.
+func HyperlinkXML(spec HyperlinkSpec, tagName string) string {
+	xml := fmt.Sprintf(`<%s r:id="%s"`, Escape(tagName), Escape(spec.RelID))
 
 	if spec.Tooltip != "" {
 		xml += fmt.Sprintf(` tooltip="%s"`, Escape(spec.Tooltip))

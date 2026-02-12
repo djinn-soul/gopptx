@@ -7,6 +7,56 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
+// TextFrameAnchor specifies the vertical alignment of text within its shape.
+type TextFrameAnchor string
+
+const (
+	TextAnchorTop    TextFrameAnchor = "t"
+	TextAnchorMiddle TextFrameAnchor = "ctr"
+	TextAnchorBottom TextFrameAnchor = "b"
+)
+
+// TextFrameWrap specifies how text wraps within the shape's text frame.
+type TextFrameWrap string
+
+const (
+	TextWrapNone   TextFrameWrap = "none"
+	TextWrapSquare TextFrameWrap = "square"
+)
+
+// TextFrameAutoFit specifies how text is automatically resized or how the shape is resized.
+type TextFrameAutoFit string
+
+const (
+	TextAutoFitNone   TextFrameAutoFit = "none"
+	TextAutoFitShape  TextFrameAutoFit = "spAutoFit"
+	TextAutoFitNormal TextFrameAutoFit = "normAutoFit"
+)
+
+// TextFrame configures the text layout within a shape.
+type TextFrame struct {
+	MarginLeft   int64 // EMU
+	MarginRight  int64
+	MarginTop    int64
+	MarginBottom int64
+	Anchor       TextFrameAnchor
+	Wrap         TextFrameWrap
+	AutoFit      TextFrameAutoFit
+}
+
+// NewTextFrame creates a text frame with default margins (0.05 inches).
+func NewTextFrame() TextFrame {
+	return TextFrame{
+		MarginLeft:   45720,
+		MarginRight:  45720,
+		MarginTop:    45720,
+		MarginBottom: 45720,
+		Anchor:       TextAnchorMiddle,
+		Wrap:         TextWrapSquare,
+		AutoFit:      TextAutoFitShape,
+	}
+}
+
 // ShapeFill configures solid fill properties for one shape.
 type ShapeFill struct {
 	Color           string
@@ -170,9 +220,12 @@ type Shape struct {
 	GradientFill *ShapeGradientFill
 	Text         string
 	RotationDeg  *int
-	Hyperlink    *action.Hyperlink
+	Hyperlink    *action.Hyperlink // Legacy: mapped to ClickAction
+	ClickAction  *action.Hyperlink
+	HoverAction  *action.Hyperlink
 	AltText      string
 	IsDecorative bool
+	TextFrame    *TextFrame
 }
 
 // NewShape creates one shape.
@@ -196,6 +249,19 @@ func (s Shape) WithFill(fill ShapeFill) Shape {
 // WithLine applies a line style to a shape.
 func (s Shape) WithLine(line ShapeLine) Shape {
 	s.Line = &line
+	return s
+}
+
+// WithClickAction adds a click behavior to the shape.
+func (s Shape) WithClickAction(link action.Hyperlink) Shape {
+	s.ClickAction = &link
+	s.Hyperlink = &link // Keep legacy field in sync
+	return s
+}
+
+// WithHoverAction adds a hover behavior to the shape.
+func (s Shape) WithHoverAction(link action.Hyperlink) Shape {
+	s.HoverAction = &link
 	return s
 }
 
@@ -224,8 +290,7 @@ func (s Shape) ToShape() Shape {
 
 // WithHyperlink attaches a clickable hyperlink to the shape.
 func (s Shape) WithHyperlink(hyperlink action.Hyperlink) Shape {
-	s.Hyperlink = &hyperlink
-	return s
+	return s.WithClickAction(hyperlink)
 }
 
 // WithAltText sets the alternative text for accessibility.
@@ -244,6 +309,55 @@ func (s Shape) WithDecorative(enabled bool) Shape {
 func (s Shape) WithGradientFill(fill ShapeGradientFill) Shape {
 	s.GradientFill = &fill
 	s.Fill = nil
+	return s
+}
+
+// WithTextFrame applies custom text frame properties to a shape.
+func (s Shape) WithTextFrame(frame TextFrame) Shape {
+	s.TextFrame = &frame
+	return s
+}
+
+// WithTextMargins sets EMU margins for the shape text frame.
+func (s Shape) WithTextMargins(left, top, right, bottom int64) Shape {
+	if s.TextFrame == nil {
+		tf := NewTextFrame()
+		s.TextFrame = &tf
+	}
+	s.TextFrame.MarginLeft = left
+	s.TextFrame.MarginTop = top
+	s.TextFrame.MarginRight = right
+	s.TextFrame.MarginBottom = bottom
+	return s
+}
+
+// WithVerticalAnchor sets the vertical alignment of text in the shape.
+func (s Shape) WithVerticalAnchor(anchor TextFrameAnchor) Shape {
+	if s.TextFrame == nil {
+		tf := NewTextFrame()
+		s.TextFrame = &tf
+	}
+	s.TextFrame.Anchor = anchor
+	return s
+}
+
+// WithTextWrap sets the text wrapping mode.
+func (s Shape) WithTextWrap(wrap TextFrameWrap) Shape {
+	if s.TextFrame == nil {
+		tf := NewTextFrame()
+		s.TextFrame = &tf
+	}
+	s.TextFrame.Wrap = wrap
+	return s
+}
+
+// WithAutoFit sets the auto-fit behavior for text within the shape.
+func (s Shape) WithAutoFit(autoFit TextFrameAutoFit) Shape {
+	if s.TextFrame == nil {
+		tf := NewTextFrame()
+		s.TextFrame = &tf
+	}
+	s.TextFrame.AutoFit = autoFit
 	return s
 }
 

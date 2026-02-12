@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func main() {
@@ -43,6 +45,9 @@ func main() {
 		{"18_layout_helpers", generateLayoutHelpers},
 		{"48_accessibility", generateAccessibility},
 		{"53_slide_properties", generateSlideProperties},
+		{"54_theme_master", generateThemeMaster},
+		{"55_background_fills", generateSlideBackgrounds},
+		{"56_action_api", generateActionAPI},
 	}
 
 	for _, g := range generators {
@@ -585,4 +590,74 @@ func generateSlideProperties() ([]byte, error) {
 			AddBullet("Slide numbers: Enabled"),
 	}
 	return pptx.CreateWithSlides("Task 53: Slide Properties", slides)
+}
+
+func generateThemeMaster() ([]byte, error) {
+	neonTheme := styling.Theme{
+		Name: "NeonStream",
+		Colors: styling.ColorScheme{
+			Name:    "NeonStream Colors",
+			Dk1:     "000000",
+			Lt1:     "FFFFFF",
+			Accent1: "00FFFF",
+			Accent2: "FF00FF",
+		},
+		Fonts: styling.FontScheme{
+			Name:      "Modern Tech",
+			MajorFont: "Inter",
+			MinorFont: "Roboto",
+		},
+	}
+
+	neonGradient := pptx.NewShapeGradientFill(pptx.ShapeGradientTypeLinear, []pptx.ShapeGradientStop{
+		pptx.NewShapeGradientStop(0, "000000"),
+		pptx.NewShapeGradientStop(100, "1A1A1A"),
+	})
+
+	master := elements.NewMaster().
+		WithBackground(elements.NewGradientBackground(neonGradient)).
+		WithFooter("© 2026 NeonStream Technology - Confidential").
+		WithColorMapping("dk1", "lt1")
+
+	master.AddShape(pptx.NewRectangle(0, 0, 13.33, 0.05).WithFill(pptx.NewShapeFill("00FFFF")))
+	master.AddShape(pptx.NewRectangle(0, 7.45, 13.33, 0.05).WithFill(pptx.NewShapeFill("FF00FF")))
+
+	builder := pptx.NewPresentationBuilder("Task 54: Theme & Master").
+		WithTheme(neonTheme).
+		WithMaster(master).
+		WithSlideSize(pptx.SlideSize16x9)
+
+	builder.AddTitleSlide("Neon Theme Showcase")
+	builder.AddBulletSlide("Features", []string{"Custom Colors", "Global Footer", "Master Shapes"})
+
+	return builder.Build()
+}
+
+func generateSlideBackgrounds() ([]byte, error) {
+	builder := pptx.NewPresentationBuilder("Task 55: Slide Backgrounds")
+
+	// Solid
+	builder.AddSlide(pptx.NewSlide("Solid Background").WithBackgroundColor("FF9900"))
+
+	// Gradient
+	grad := pptx.NewShapeGradientFill(pptx.ShapeGradientTypeLinear, []pptx.ShapeGradientStop{
+		pptx.NewShapeGradientStop(0, "FFEE00"),
+		pptx.NewShapeGradientStop(100, "FF0000"),
+	})
+	builder.AddSlide(pptx.NewSlide("Gradient Background").WithGradientBackground(grad))
+
+	return builder.Build()
+}
+
+func generateActionAPI() ([]byte, error) {
+	builder := pptx.NewPresentationBuilder("Task 56: Action API")
+
+	slide := pptx.NewSlide("Interactive Shapes").
+		AddShape(pptx.NewRectangle(1, 1, 3, 2).
+			WithText("Click Me (GitHub)").
+			WithFill(pptx.NewShapeFill("00FF00")).
+			WithClickAction(pptx.NewHyperlink(pptx.HyperlinkURL("https://github.com/djinn-soul/gopptx"))))
+
+	builder.AddSlide(slide)
+	return builder.Build()
 }

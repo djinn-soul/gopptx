@@ -51,13 +51,44 @@ func ToXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*action.Hyperlink]string)
 			}
 		}
 		spec.RotationDeg = shape.RotationDeg
-		if shape.Hyperlink != nil {
+		if shape.TextFrame != nil {
+			spec.TextFrame = &pptxxml.TextFrameSpec{
+				MarginLeft:   shape.TextFrame.MarginLeft,
+				MarginRight:  shape.TextFrame.MarginRight,
+				MarginTop:    shape.TextFrame.MarginTop,
+				MarginBottom: shape.TextFrame.MarginBottom,
+				Anchor:       string(shape.TextFrame.Anchor),
+				Wrap:         string(shape.TextFrame.Wrap),
+				AutoFit:      string(shape.TextFrame.AutoFit),
+			}
+		}
+		if shape.ClickAction != nil {
+			if rid, ok := hyperlinkRIDs[shape.ClickAction]; ok {
+				spec.ClickAction = &pptxxml.HyperlinkSpec{
+					RelID:          rid,
+					Tooltip:        shape.ClickAction.Tooltip,
+					HighlightClick: shape.ClickAction.HighlightClick,
+					Action:         shape.ClickAction.Action.ActionType(),
+				}
+			}
+		} else if shape.Hyperlink != nil {
 			if rid, ok := hyperlinkRIDs[shape.Hyperlink]; ok {
-				spec.Hyperlink = &pptxxml.HyperlinkSpec{
+				spec.ClickAction = &pptxxml.HyperlinkSpec{
 					RelID:          rid,
 					Tooltip:        shape.Hyperlink.Tooltip,
 					HighlightClick: shape.Hyperlink.HighlightClick,
 					Action:         shape.Hyperlink.Action.ActionType(),
+				}
+			}
+		}
+
+		if shape.HoverAction != nil {
+			if rid, ok := hyperlinkRIDs[shape.HoverAction]; ok {
+				spec.HoverAction = &pptxxml.HyperlinkSpec{
+					RelID:          rid,
+					Tooltip:        shape.HoverAction.Tooltip,
+					HighlightClick: shape.HoverAction.HighlightClick,
+					Action:         shape.HoverAction.Action.ActionType(),
 				}
 			}
 		}

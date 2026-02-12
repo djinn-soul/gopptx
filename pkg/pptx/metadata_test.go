@@ -8,14 +8,17 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
 func TestCreateWithMetadata(t *testing.T) {
 	meta := pptx.PresentationMetadata{
-		Title:       "Test Title",
-		Subject:     "Test Subject",
-		Creator:     "Test Creator",
-		Description: "Test Description",
+		PresentationMetadata: common.PresentationMetadata{
+			Title:       "Test Title",
+			Subject:     "Test Subject",
+			Creator:     "Test Creator",
+			Description: "Test Description",
+		},
 	}
 	slides := []pptx.SlideContent{pptx.NewSlide("Slide 1")}
 
@@ -71,8 +74,10 @@ func TestCreateWithMetadata(t *testing.T) {
 
 func TestSlideSize(t *testing.T) {
 	meta := pptx.PresentationMetadata{
-		Title:     "16:9 Test",
-		SlideSize: pptx.SlideSize16x9,
+		PresentationMetadata: common.PresentationMetadata{
+			Title:     "16:9 Test",
+			SlideSize: pptx.SlideSize16x9,
+		},
 	}
 	slides := []pptx.SlideContent{pptx.NewSlide("Slide 1")}
 

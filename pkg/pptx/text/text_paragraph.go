@@ -18,6 +18,9 @@ type TextParagraphStyle struct {
 	BulletColor    string
 	BulletSize     int
 	Level          int
+	LeftIndent     int64 // EMU
+	RightIndent    int64 // EMU
+	HangingIndent  int64 // EMU
 }
 
 // DefaultTextParagraphStyle returns the standard paragraph styling.
@@ -138,6 +141,25 @@ func (p TextParagraphStyle) WithSpaceAfterPt(pt int) TextParagraphStyle {
 // WithLineSpacingPct sets line spacing as percentage (e.g. 100).
 func (p TextParagraphStyle) WithLineSpacingPct(pct int) TextParagraphStyle {
 	p.LineSpacingPct = pct
+	return p
+}
+
+// WithLeftIndent sets the left margin for the paragraph in EMUs.
+func (p TextParagraphStyle) WithLeftIndent(emu int64) TextParagraphStyle {
+	p.LeftIndent = emu
+	return p
+}
+
+// WithRightIndent sets the right margin for the paragraph in EMUs.
+func (p TextParagraphStyle) WithRightIndent(emu int64) TextParagraphStyle {
+	p.RightIndent = emu
+	return p
+}
+
+// WithHangingIndent sets the hanging indent (indent of the first line) in EMUs.
+// Note: Usually negative to shift the first line to the left of the rest.
+func (p TextParagraphStyle) WithHangingIndent(emu int64) TextParagraphStyle {
+	p.HangingIndent = emu
 	return p
 }
 

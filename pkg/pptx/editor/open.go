@@ -60,9 +60,14 @@ func newPresentationEditorFromParts(parts map[string][]byte) (*PresentationEdito
 		nonSlideRels:    nonSlideRels,
 		presentationXML: string(presentationXMLBytes),
 	}
+	slideSize, err := parsePresentationSlideSize(presentationXMLBytes)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s slide size: %w", common.PresentationXMLPath, err)
+	}
 	editor.metadata = common.PresentationMetadata{
 		Title:      extractCoreTitle(parts[common.CorePropsPath]),
 		SlideCount: len(slideRefs),
+		SlideSize:  slideSize,
 	}
 	editor.nextSlideID = nextSlideID(slideRefs)
 	editor.nextRelIDNum = nextRelationshipNumber(rels)
