@@ -19,6 +19,7 @@ const (
 	RelTypeNotesSlide  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
 	RelTypeHyperlink   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	RelTypeImage       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+	RelTypeChart       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 	RelTypeSectionList = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
 
 	RelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"

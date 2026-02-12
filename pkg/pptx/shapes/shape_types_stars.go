@@ -45,6 +45,17 @@ const (
 	ShapeTypeVerticalScroll = "verticalScroll"
 	// ShapeTypeHorizontalScroll renders a horizontal scroll.
 	ShapeTypeHorizontalScroll = "horizontalScroll"
+
+	// ShapeTypeSeal renders a seal shape.
+	ShapeTypeSeal = "seal"
+	// ShapeTypeSeal4 renders a 4-pointed seal.
+	ShapeTypeSeal4 = "seal4"
+	// ShapeTypeSeal8 renders an 8-pointed seal.
+	ShapeTypeSeal8 = "seal8"
+	// ShapeTypeSeal16 renders a 16-pointed seal.
+	ShapeTypeSeal16 = "seal16"
+	// ShapeTypeSeal32 renders a 32-pointed seal.
+	ShapeTypeSeal32 = "seal32"
 )
 
 func init() {
@@ -57,6 +68,8 @@ func init() {
 		ShapeTypeEllipseRibbon, ShapeTypeEllipseRibbon2,
 		ShapeTypeWave, ShapeTypeDoubleWave,
 		ShapeTypeVerticalScroll, ShapeTypeHorizontalScroll,
+		ShapeTypeSeal, ShapeTypeSeal4, ShapeTypeSeal8,
+		ShapeTypeSeal16, ShapeTypeSeal32,
 	} {
 		registerShapeType(t)
 	}

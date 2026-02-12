@@ -61,8 +61,8 @@ func NewTextFrame() TextFrame {
 
 // ShapeFill configures solid fill properties for one shape.
 type ShapeFill struct {
-	Color           string
-	Transparency    *float64 // 0.0=opaque, 1.0=transparent
+	Color        string
+	Transparency *float64 // 0.0=opaque, 1.0=transparent
 }
 
 // NewShapeFill creates a solid fill using a 6-digit RGB color.
@@ -126,9 +126,9 @@ func (l ShapeLine) Validate() error {
 
 // ShapeGradientStop configures one gradient stop for a shape fill.
 type ShapeGradientStop struct {
-	PositionPct     int
-	Color           string
-	Transparency    *float64 // 0.0=opaque, 1.0=transparent
+	PositionPct  int
+	Color        string
+	Transparency *float64 // 0.0=opaque, 1.0=transparent
 }
 
 // NewShapeGradientStop creates a gradient stop at one position in [0,100].
@@ -403,9 +403,18 @@ func (s Shape) Validate(slideIndex, shapeIndex int) error {
 		}
 	}
 
-	if s.Hyperlink != nil {
+	if s.ClickAction != nil {
+		if err := s.ClickAction.Validate(); err != nil {
+			return fmt.Errorf("shape %d on slide %d has invalid click action: %w", shapeIndex, slideIndex, err)
+		}
+	} else if s.Hyperlink != nil {
 		if err := s.Hyperlink.Validate(); err != nil {
-			return err
+			return fmt.Errorf("shape %d on slide %d has invalid hyperlink: %w", shapeIndex, slideIndex, err)
+		}
+	}
+	if s.HoverAction != nil {
+		if err := s.HoverAction.Validate(); err != nil {
+			return fmt.Errorf("shape %d on slide %d has invalid hover action: %w", shapeIndex, slideIndex, err)
 		}
 	}
 	return nil

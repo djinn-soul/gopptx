@@ -81,6 +81,9 @@ func newPresentationEditorFromParts(parts map[string][]byte) (*PresentationEdito
 		editor.sections = sections
 	}
 
+	editor.chartEmbeddings, editor.nextChartNum, editor.nextExcelNum = parseChartInventory(parts)
+	editor.notesInventory, editor.nextNotesNum = parseNotesInventory(parts)
+
 	editor.populateSlideTitlesConcurrently()
 	return editor, nil
 }
@@ -318,4 +321,67 @@ func parseSectionListXML(data []byte) ([]EditorSection, error) {
 		})
 	}
 	return out, nil
+}
+
+func parseChartInventory(parts map[string][]byte) (map[string]string, int, int) {
+	inventory := make(map[string]string)
+	maxChart := 0
+	maxExcel := 0
+
+	for p := range parts {
+		if !strings.HasPrefix(p, "ppt/charts/chart") || !strings.HasSuffix(p, ".xml") {
+			continue
+		}
+		num, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(p, "ppt/charts/chart"), ".xml"))
+		if num > maxChart {
+			maxChart = num
+		}
+
+		// Find its rels
+		relsPath := "ppt/charts/_rels/" + path.Base(p) + ".rels"
+		if relsData, ok := parts[relsPath]; ok {
+			rels, _ := parseRelationshipsXML(relsData)
+			for _, r := range rels {
+				if r.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
+					excelPath := common.CanonicalPartPath(path.Join("ppt/charts", r.Target))
+					inventory[p] = excelPath
+
+					// Tracking excel number (Microsoft_Excel_WorksheetN.xlsx)
+					base := path.Base(excelPath)
+					if strings.HasPrefix(base, "Microsoft_Excel_Worksheet") {
+						enum, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(base, "Microsoft_Excel_Worksheet"), ".xlsx"))
+						if enum > maxExcel {
+							maxExcel = enum
+						}
+					}
+				}
+			}
+		}
+	}
+	return inventory, maxChart + 1, maxExcel + 1
+}
+
+func parseNotesInventory(parts map[string][]byte) (map[string]string, int) {
+	inventory := make(map[string]string)
+	maxNotes := 0
+
+	for p := range parts {
+		if !strings.HasPrefix(p, "ppt/slides/_rels/slide") || !strings.HasSuffix(p, ".xml.rels") {
+			continue
+		}
+		slidePart := "ppt/slides/" + strings.TrimSuffix(path.Base(p), ".rels")
+		rels, _ := parseRelationshipsXML(parts[p])
+		for _, r := range rels {
+			if r.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" {
+				notesPath := common.CanonicalPartPath(path.Join("ppt/slides", r.Target))
+				inventory[slidePart] = notesPath
+
+				num, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(path.Base(notesPath), "notesSlide"), ".xml"))
+				if num > maxNotes {
+					maxNotes = num
+				}
+			}
+		}
+	}
+	return inventory, maxNotes + 1
 }

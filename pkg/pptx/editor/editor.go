@@ -41,6 +41,15 @@ type PresentationEditor struct {
 
 	// Section management
 	sections []EditorSection
+
+	// Chart inventory (ChartPath -> EmbeddingPath)
+	chartEmbeddings map[string]string
+	nextChartNum    int
+	nextExcelNum    int
+
+	// Notes inventory (SlidePath -> NotesSlidePath)
+	notesInventory map[string]string
+	nextNotesNum   int
 }
 
 // Metadata returns presentation-level metadata parsed from the package.

@@ -1,8 +1,12 @@
 package pptx_test
 
 import (
+	"archive/zip"
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
@@ -52,6 +56,46 @@ func TestCustomXML(t *testing.T) {
 	}
 	if len(data) == 0 {
 		t.Errorf("Build returned empty data")
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip.NewReader failed: %v", err)
+	}
+
+	itemIDPattern := regexp.MustCompile(`ds:itemID="\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}"`)
+	itemPropsPathPattern := regexp.MustCompile(`^customXml/itemProps\d+\.xml$`)
+	foundIDs := make(map[string]struct{})
+	propsCount := 0
+
+	for _, f := range zr.File {
+		if !itemPropsPathPattern.MatchString(f.Name) {
+			continue
+		}
+		propsCount++
+
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatalf("open %s: %v", f.Name, err)
+		}
+		content, err := io.ReadAll(rc)
+		_ = rc.Close()
+		if err != nil {
+			t.Fatalf("read %s: %v", f.Name, err)
+		}
+
+		matches := itemIDPattern.FindAllString(string(content), -1)
+		if len(matches) != 1 {
+			t.Fatalf("expected exactly one GUID itemID in %s, got %d", f.Name, len(matches))
+		}
+		foundIDs[matches[0]] = struct{}{}
+	}
+
+	if propsCount != 2 {
+		t.Fatalf("expected 2 customXml itemProps files, got %d", propsCount)
+	}
+	if len(foundIDs) != 2 {
+		t.Fatalf("expected unique GUID itemIDs for customXml itemProps")
 	}
 }
 

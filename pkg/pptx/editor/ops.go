@@ -1,12 +1,15 @@
 package editor
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"path"
 	"regexp"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
@@ -150,7 +153,12 @@ func (e *PresentationEditor) DuplicateSlide(srcIndex, destIndex int) (int, error
 	// Try to visually indicate copy in the XML
 	newSlideBytes = appendCopySuffixToXML(newSlideBytes)
 	e.parts[newPart] = newSlideBytes
-	e.parts[newRelsPart] = newRelsBytes
+
+	updatedRelsBytes, err := e.deepCloneSlideParts(srcRef.Part, relsBytes, newPart)
+	if err != nil {
+		return 0, fmt.Errorf("clone slide parts: %w", err)
+	}
+	e.parts[newRelsPart] = updatedRelsBytes
 
 	newRef := common.EditorSlideRef{
 		SlideID: e.nextSlideID,
@@ -294,13 +302,7 @@ func scanSupportedSlideRels(rels []common.EditorRelationship) (notesTarget strin
 }
 
 func validateEditorSlideContent(slide elements.SlideContent) error {
-	if slide.Notes != "" {
-		return fmt.Errorf("editor add/update does not support notes authoring yet")
-	}
-	// Images are now supported!
-	if slide.ChartKindCount() > 0 {
-		return fmt.Errorf("editor add/update does not support chart authoring yet")
-	}
+	// Notes and Images/Charts are now supported!
 	if err := slide.Validate(1); err != nil {
 		return err
 	}
@@ -310,17 +312,95 @@ func validateEditorSlideContent(slide elements.SlideContent) error {
 var aTTitlePattern = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
 
 func appendCopySuffixToXML(content []byte) []byte {
+	res, _ := replaceTitleLikeText(content, replaceLastTextRun, func(match []byte) []byte {
+		// Insert " (Copy)" before the closing tag.
+		return []byte(strings.Replace(string(match), "</a:t>", " (Copy)</a:t>", 1))
+	})
+	return res
+}
+
+func replaceTitleLikeText(content []byte, runSelector func([]byte, func([]byte) []byte) ([]byte, bool), replaceFn func(match []byte) []byte) ([]byte, bool) {
+	// Prefer replacing text inside the title placeholder shape when present.
+	updated, ok := replaceTitlePlaceholderText(content, runSelector, replaceFn)
+	if ok {
+		return updated, true
+	}
+	// Fallback to first <a:t> to preserve behavior on unusual slide XML.
+	return runSelector(content, replaceFn)
+}
+
+func replaceTitlePlaceholderText(content []byte, runSelector func([]byte, func([]byte) []byte) ([]byte, bool), replaceFn func(match []byte) []byte) ([]byte, bool) {
+	const (
+		shapeStart = "<p:sp"
+		shapeEnd   = "</p:sp>"
+	)
+
+	searchFrom := 0
+	for {
+		startIdx := bytes.Index(content[searchFrom:], []byte(shapeStart))
+		if startIdx < 0 {
+			return content, false
+		}
+		start := searchFrom + startIdx
+
+		endIdx := bytes.Index(content[start:], []byte(shapeEnd))
+		if endIdx < 0 {
+			return content, false
+		}
+		end := start + endIdx + len(shapeEnd)
+
+		shape := content[start:end]
+		if isTitlePlaceholderShape(shape) {
+			replacedShape, replaced := runSelector(shape, replaceFn)
+			if !replaced {
+				return content, false
+			}
+
+			out := make([]byte, 0, len(content)-len(shape)+len(replacedShape))
+			out = append(out, content[:start]...)
+			out = append(out, replacedShape...)
+			out = append(out, content[end:]...)
+			return out, true
+		}
+
+		searchFrom = end
+	}
+}
+
+func isTitlePlaceholderShape(shape []byte) bool {
+	if !bytes.Contains(shape, []byte("<p:ph")) {
+		return false
+	}
+	return bytes.Contains(shape, []byte(`type="title"`)) || bytes.Contains(shape, []byte(`type="ctrTitle"`))
+}
+
+func replaceFirstTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
 	modified := false
 	res := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
 		if modified {
 			return match
 		}
 		modified = true
-		s := string(match)
-		// Insert " (Copy)" before the closing tag
-		return []byte(strings.Replace(s, "</a:t>", " (Copy)</a:t>", 1))
+		return replaceFn(match)
 	})
-	return res
+	return res, modified
+}
+
+func replaceLastTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
+	indexes := aTTitlePattern.FindAllIndex(content, -1)
+	if len(indexes) == 0 {
+		return content, false
+	}
+	last := indexes[len(indexes)-1]
+	start, end := last[0], last[1]
+	match := content[start:end]
+	replacement := replaceFn(match)
+
+	out := make([]byte, 0, len(content)-len(match)+len(replacement))
+	out = append(out, content[:start]...)
+	out = append(out, replacement...)
+	out = append(out, content[end:]...)
+	return out, true
 }
 
 func (e *PresentationEditor) recalculateNextRelIDNum() {
@@ -355,14 +435,12 @@ func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 		return fmt.Errorf("slide part %q missing", ref.Part)
 	}
 
-	modified := false
-	newContent := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
-		if modified {
-			return match
-		}
-		modified = true
+	newContent, modified := replaceTitleLikeText(content, replaceFirstTextRun, func(_ []byte) []byte {
 		return []byte("<a:t>" + common.XMLEscape(title) + "</a:t>")
 	})
+	if !modified {
+		return fmt.Errorf("slide %d has no title text run to update", index)
+	}
 
 	e.parts[ref.Part] = newContent
 	e.slides[index].Title = title
@@ -452,4 +530,109 @@ func (e *PresentationEditor) Sections() []EditorSection {
 		return nil
 	}
 	return e.sections
+}
+
+func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRelsBytes []byte, newSlidePart string) ([]byte, error) {
+	rels, err := parseRelationshipsXML(srcSlideRelsBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	changed := false
+	for i, rel := range rels {
+		switch rel.Type {
+		case common.RelTypeChart:
+			srcChartPart := common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
+			newChartPart := fmt.Sprintf("ppt/charts/chart%d.xml", e.nextChartNum)
+			e.nextChartNum++
+
+			if data, ok := e.parts[srcChartPart]; ok {
+				newChartData := cloneBytes(data)
+
+				// Clone chart rels
+				srcChartRelsPath := common.SlideRelsPartName(srcChartPart)
+				if relsData, ok := e.parts[srcChartRelsPath]; ok {
+					newChartRelsPath := common.SlideRelsPartName(newChartPart)
+					chartRels, _ := parseRelationshipsXML(relsData)
+
+					for j, cr := range chartRels {
+						if cr.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
+							srcExcel := common.CanonicalPartPath(path.Join("ppt/charts", cr.Target))
+							newExcel := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", e.nextExcelNum)
+							e.nextExcelNum++
+
+							if xdata, ok := e.parts[srcExcel]; ok {
+								e.parts[newExcel] = cloneBytes(xdata)
+								chartRels[j].Target = "../embeddings/" + path.Base(newExcel)
+								// Update chart XML externalData rid
+								newChartData = rewriteChartExternalData(newChartData, chartRels[j].ID)
+								e.chartEmbeddings[newChartPart] = newExcel
+							}
+						}
+					}
+					rendered, _ := renderRelationshipsXML(chartRels)
+					e.parts[newChartRelsPath] = []byte(rendered)
+				}
+				e.parts[newChartPart] = newChartData
+			}
+			rels[i].Target = "../charts/" + path.Base(newChartPart)
+			changed = true
+
+		case common.RelTypeNotesSlide:
+			srcNotesPart := common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
+			newNotesPart := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
+			e.nextNotesNum++
+
+			if data, ok := e.parts[srcNotesPart]; ok {
+				e.parts[newNotesPart] = cloneBytes(data)
+
+				srcNotesRelsPath := common.SlideRelsPartName(srcNotesPart)
+				if relsData, ok := e.parts[srcNotesRelsPath]; ok {
+					newNotesRelsPath := common.SlideRelsPartName(newNotesPart)
+					notesRels, _ := parseRelationshipsXML(relsData)
+
+					for j, nr := range notesRels {
+						if nr.Type == common.RelTypeSlide {
+							notesRels[j].Target = "../slides/" + path.Base(newSlidePart)
+						}
+					}
+					rendered, _ := renderRelationshipsXML(notesRels)
+					e.parts[newNotesRelsPath] = []byte(rendered)
+				}
+				e.notesInventory[newSlidePart] = newNotesPart
+			}
+			rels[i].Target = "../notesSlides/" + path.Base(newNotesPart)
+			changed = true
+		}
+	}
+
+	if changed {
+		rendered, err := renderRelationshipsXML(rels)
+		if err != nil {
+			return nil, err
+		}
+		return []byte(rendered), nil
+	}
+	return srcSlideRelsBytes, nil
+}
+
+func cloneBytes(b []byte) []byte {
+	if b == nil {
+		return nil
+	}
+	c := make([]byte, len(b))
+	copy(c, b)
+	return c
+}
+
+func (e *PresentationEditor) ensureNotesInfrastructure() {
+	if _, ok := e.parts["ppt/notesMasters/notesMaster1.xml"]; ok {
+		return
+	}
+	e.parts["ppt/notesMasters/notesMaster1.xml"] = []byte(pptxxml.NotesMaster())
+	e.parts["ppt/notesMasters/_rels/notesMaster1.xml.rels"] = []byte(pptxxml.NotesMasterRelationships())
+	// Use default theme for notes master if missing
+	if _, ok := e.parts["ppt/theme/theme2.xml"]; !ok {
+		e.parts["ppt/theme/theme2.xml"] = []byte(pptxxml.Theme(nil))
+	}
 }

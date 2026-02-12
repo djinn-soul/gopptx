@@ -7,15 +7,15 @@ import (
 
 // ShapeFillSpec describes solid fill properties for a custom shape.
 type ShapeFillSpec struct {
-	Color           string
-	Transparency    *float64
+	Color        string
+	Transparency *float64
 }
 
 // ShapeGradientStopSpec describes one gradient stop for a custom shape.
 type ShapeGradientStopSpec struct {
-	PositionPct     int
-	Color           string
-	Transparency    *float64
+	PositionPct  int
+	Color        string
+	Transparency *float64
 }
 
 // ShapeGradientFillSpec describes gradient fill properties for a custom shape.

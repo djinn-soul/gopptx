@@ -12,7 +12,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, slideNumber int, notesTarget string, width, height int64) (string, string, error) {
+func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, slideNumber int, existingNotesTarget string, width, height int64) (string, string, error) {
 	tableSpec, err := renderEditorTableSpec(slide, slideNumber)
 	if err != nil {
 		return "", "", err
@@ -92,8 +92,14 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 	}
 
 	layoutMode := elements.SlideLayoutXMLMode(slide.Layout)
-	hyperlinkRIDs, hyperlinks, _ := elements.BuildSlideHyperlinkRels(slide, len(imageTargets)+2)
-	shapeIDs := elements.CalculateShapeIDs(slide)
+	hyperlinkRIDs, hyperlinks, nextRID := elements.BuildSlideHyperlinkRels(slide, len(imageTargets)+2)
+
+	// Process placeholder overrides
+	placeholderSpecs, phImageTargets, phChartRels, err := renderEditorPlaceholderSpecs(e, slide, slideNumber, nextRID)
+	if err != nil {
+		return "", "", err
+	}
+	imageTargets = append(imageTargets, phImageTargets...)
 
 	titleSpec := pptxxml.TitleSpec{
 		Text:      slide.Title,
@@ -126,20 +132,43 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 		imageRefs,
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
-		nil,
+		placeholderSpecs,
 		elements.ToXMLBackgroundSpec(slide.Background, backgroundRID),
 		elements.SlideTransitionXML(slide),
-		elements.SlideAnimationsXML(slide, shapeIDs),
+		elements.SlideAnimationsXML(slide, elements.CalculateShapeIDs(slide)),
 		slide.ShowSlideNumber,
-		"",
-		false,
+		"",    // footerText
+		false, // showDateTime
 		width,
 		height,
 	)
-	relsXML := pptxxml.SlideRelationshipsWithHyperlinks(
+
+	// Speaker Notes
+	notesTarget := strings.TrimSpace(existingNotesTarget)
+	if strings.TrimSpace(slide.Notes) != "" {
+		e.ensureNotesInfrastructure()
+
+		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
+		notesPath, ok := e.notesInventory[slidePath]
+		if !ok {
+			notesPath = fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
+			e.nextNotesNum++
+			e.notesInventory[slidePath] = notesPath
+		}
+
+		e.parts[notesPath] = []byte(pptxxml.NotesSlide(slide.Notes))
+
+		notesRelsPath := common.SlideRelsPartName(notesPath)
+		e.parts[notesRelsPath] = []byte(pptxxml.NotesSlideRelationships(slideNumber))
+
+		notesTarget = "../notesSlides/" + path.Base(notesPath)
+	}
+
+	relsXML := pptxxml.SlideRelationshipsWithMultiCharts(
 		elements.SlideLayoutTarget(slide.Layout),
 		imageTargets,
 		nil,
+		phChartRels,
 		notesTarget,
 		hyperlinks,
 	)
@@ -151,6 +180,97 @@ func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxx
 		return nil, nil
 	}
 	return slide.Table.ToTableSpec(slideNumber)
+}
+
+// renderEditorPlaceholderSpecs converts SlideContent.PlaceholderOverrides into
+// XML specs for the editor rendering path. It returns the specs, any additional
+// image relationship targets, chart rels, and an error.
+func renderEditorPlaceholderSpecs(e *PresentationEditor, slide elements.SlideContent, slideNumber int, startRID int) ([]pptxxml.PlaceholderOverrideSpec, []string, []pptxxml.ChartRel, error) {
+	if len(slide.PlaceholderOverrides) == 0 {
+		return nil, nil, nil, nil
+	}
+
+	specs := make([]pptxxml.PlaceholderOverrideSpec, 0, len(slide.PlaceholderOverrides))
+	var imageTargets []string
+	var chartRels []pptxxml.ChartRel
+	currentRID := startRID
+
+	for _, override := range slide.PlaceholderOverrides {
+		spec := pptxxml.PlaceholderOverrideSpec{
+			Index: override.Index,
+			Type:  override.Type,
+			Text:  override.Text,
+		}
+
+		// Handle image placeholder
+		if override.Image != nil {
+			data := override.Image.Data
+			format := override.Image.Format
+			if len(data) == 0 && override.Image.Path != "" {
+				d, err := os.ReadFile(override.Image.Path)
+				if err != nil {
+					return nil, nil, nil, fmt.Errorf("placeholder image %d: %w", override.Index, err)
+				}
+				data = d
+				if format == "" {
+					if idx := strings.LastIndex(override.Image.Path, "."); idx >= 0 {
+						format = override.Image.Path[idx+1:]
+					}
+				}
+			}
+			if len(data) > 0 {
+				partPath, err := e.RegisterImage(data, format)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				rid := fmt.Sprintf("rId%d", currentRID)
+				currentRID++
+				imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
+				spec.Image = &pptxxml.ImageRef{
+					RelID: rid,
+					Name:  "Placeholder Picture",
+					X:     override.Image.X.Emu(),
+					Y:     override.Image.Y.Emu(),
+					CX:    override.Image.CX.Emu(),
+					CY:    override.Image.CY.Emu(),
+				}
+			}
+		}
+
+		// Handle table placeholder
+		if override.Table != nil {
+			tableSpec, err := override.Table.ToTableSpec(slideNumber)
+			if err != nil {
+				return nil, nil, nil, fmt.Errorf("placeholder table %d: %w", override.Index, err)
+			}
+			spec.Table = tableSpec
+		}
+
+		// Handle chart placeholder
+		if override.Chart != nil {
+			chartSpec := override.Chart.ToChartSpec()
+			chartPath := fmt.Sprintf("ppt/charts/chart_ph_%d_%d.xml", slideNumber, override.Index)
+			e.parts[chartPath] = []byte(pptxxml.ChartPartXML(chartSpec))
+
+			rid := fmt.Sprintf("rId%d", currentRID)
+			currentRID++
+			spec.Chart = &pptxxml.ChartFrame{
+				RelID: rid,
+				X:     chartSpec.X,
+				Y:     chartSpec.Y,
+				CX:    chartSpec.CX,
+				CY:    chartSpec.CY,
+			}
+			chartRels = append(chartRels, pptxxml.ChartRel{
+				RID:    rid,
+				Target: "../charts/" + path.Base(chartPath),
+			})
+		}
+
+		specs = append(specs, spec)
+	}
+
+	return specs, imageTargets, chartRels, nil
 }
 
 func editorEnsureSlideRelsExist(parts map[string][]byte, slidePart string) error {

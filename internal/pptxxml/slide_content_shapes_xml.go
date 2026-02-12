@@ -370,7 +370,7 @@ func dateTimeShape(width, height int64, shapeID int) string {
       <a:pPr algn="l"/>
       <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
         <a:rPr lang="en-US" sz="1200" dirty="0"/>
-        <a:t>` + time.Now().Format("2006-01-02") + `</a:t>
+        <a:t>`+time.Now().Format("2006-01-02")+`</a:t>
       </a:fld>
       <a:endParaRPr lang="en-US" sz="1200" dirty="0"/>
     </a:p>

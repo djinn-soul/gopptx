@@ -477,8 +477,11 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			return err
 		}
 
-		// Generate itemProps
-		itemID := fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", i, i, i, i, i) // Placeholder GUID
+		// Generate itemProps.
+		itemID, err := common.NewGUID()
+		if err != nil {
+			return fmt.Errorf("generate custom XML itemID for part %d: %w", i+1, err)
+		}
 		propsContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
 <ds:schemaRefs/>

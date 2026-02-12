@@ -203,3 +203,77 @@ func TestNavigationHyperlinkUsesExternalRelationshipMode(t *testing.T) {
 	}
 	t.Fatal("slide1 relationships not found")
 }
+
+func TestShapeHoverAction_EmitsHlinkHoverInSlideXML(t *testing.T) {
+	slide := pptx.NewSlide("Hover Test").
+		AddShape(pptx.NewShape("rect", 100000, 100000, 2000000, 500000).
+			WithFill(pptx.NewShapeFill("0288D1")).
+			WithText("Hover me").
+			WithHoverAction(pptx.NewHyperlink(pptx.HyperlinkURL("https://hover.example.com")).
+				WithTooltip("Hover tooltip")))
+
+	data, err := pptx.CreateWithSlides("Hover Test", []pptx.SlideContent{slide})
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip reader error: %v", err)
+	}
+
+	for _, f := range zr.File {
+		if f.Name == "ppt/slides/slide1.xml" {
+			rc, _ := f.Open()
+			buf := new(bytes.Buffer)
+			_, _ = buf.ReadFrom(rc)
+			_ = rc.Close()
+			content := buf.String()
+			if !strings.Contains(content, "hlinkHover") {
+				t.Error("expected hlinkHover in slide XML for shape hover action")
+			}
+			if !strings.Contains(content, "Hover tooltip") {
+				t.Error("expected tooltip text in slide XML")
+			}
+			return
+		}
+	}
+	t.Error("slide1.xml not found")
+}
+
+func TestTextRunHoverAction_EmitsHlinkHoverInSlideXML(t *testing.T) {
+	slide := pptx.NewSlide("Text Hover").
+		AddBulletRuns([]pptx.TextRun{
+			pptx.NewTextRun("Hover text").
+				WithHoverAction(pptx.NewHyperlink(pptx.HyperlinkNextSlide()).
+					WithTooltip("Text hover tip")),
+		})
+
+	data, err := pptx.CreateWithSlides("Text Hover", []pptx.SlideContent{slide})
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip reader error: %v", err)
+	}
+
+	for _, f := range zr.File {
+		if f.Name == "ppt/slides/slide1.xml" {
+			rc, _ := f.Open()
+			buf := new(bytes.Buffer)
+			_, _ = buf.ReadFrom(rc)
+			_ = rc.Close()
+			content := buf.String()
+			if !strings.Contains(content, "hlinkHover") {
+				t.Error("expected hlinkHover in slide XML for text run hover action")
+			}
+			if !strings.Contains(content, "Text hover tip") {
+				t.Error("expected tooltip text in slide XML")
+			}
+			return
+		}
+	}
+	t.Error("slide1.xml not found")
+}

@@ -35,6 +35,22 @@ const (
 	ShapeTypeSwooshArrow = "swooshArrow"
 	// ShapeTypeLeftRightUpArrow renders a left-right-up arrow.
 	ShapeTypeLeftRightUpArrow = "leftRightUpArrow"
+	// ShapeTypeCurvedRightArrow renders a curved right arrow.
+	ShapeTypeCurvedRightArrow = "curvedRightArrow"
+	// ShapeTypeCurvedLeftArrow renders a curved left arrow.
+	ShapeTypeCurvedLeftArrow = "curvedLeftArrow"
+	// ShapeTypeCurvedUpArrow renders a curved up arrow.
+	ShapeTypeCurvedUpArrow = "curvedUpArrow"
+	// ShapeTypeCurvedDownArrow renders a curved down arrow.
+	ShapeTypeCurvedDownArrow = "curvedDownArrow"
+	// ShapeTypeCurvedLeftRightArrow renders a curved left-right arrow.
+	ShapeTypeCurvedLeftRightArrow = "curvedLeftRightArrow"
+	// ShapeTypeCurvedUpDownArrow renders a curved up-down arrow.
+	ShapeTypeCurvedUpDownArrow = "curvedUpDownArrow"
+	// ShapeTypePentagonArrow renders a pentagon arrow.
+	ShapeTypePentagonArrow = "pentArrow"
+	// ShapeTypeChevronArrow renders a chevron arrow.
+	ShapeTypeChevronArrow = "chevron"
 
 	// ShapeTypeRightArrowCallout renders a right arrow callout.
 	ShapeTypeRightArrowCallout = "rightArrowCallout"
@@ -62,6 +78,10 @@ func init() {
 		ShapeTypeUturnArrow, ShapeTypeCircularArrow,
 		ShapeTypeNotchedRightArrow, ShapeTypeStripedRightArrow,
 		ShapeTypeSwooshArrow, ShapeTypeLeftRightUpArrow,
+		ShapeTypeCurvedRightArrow, ShapeTypeCurvedLeftArrow,
+		ShapeTypeCurvedUpArrow, ShapeTypeCurvedDownArrow,
+		ShapeTypeCurvedLeftRightArrow, ShapeTypeCurvedUpDownArrow,
+		ShapeTypePentagonArrow, ShapeTypeChevronArrow,
 		ShapeTypeRightArrowCallout, ShapeTypeLeftArrowCallout,
 		ShapeTypeUpArrowCallout, ShapeTypeDownArrowCallout,
 		ShapeTypeLeftRightArrowCallout, ShapeTypeQuadArrowCallout,

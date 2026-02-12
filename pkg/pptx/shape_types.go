@@ -13,8 +13,11 @@ const (
 	ShapeTypeHeptagon              = shapes.ShapeTypeHeptagon
 	ShapeTypeTrapezoid             = shapes.ShapeTypeTrapezoid
 	ShapeTypeNonIsoscelesTrapezoid = shapes.ShapeTypeNonIsoscelesTrapezoid
+	ShapeTypeIsoscelesTrapezoid    = shapes.ShapeTypeIsoscelesTrapezoid
 	ShapeTypeCube                  = shapes.ShapeTypeCube
 	ShapeTypeCan                   = shapes.ShapeTypeCan
+	ShapeTypeCone                  = shapes.ShapeTypeCone
+	ShapeTypeCylinder              = shapes.ShapeTypeCylinder
 	ShapeTypeFoldedCorner          = shapes.ShapeTypeFoldedCorner
 	ShapeTypeFrame                 = shapes.ShapeTypeFrame
 	ShapeTypeHalfFrame             = shapes.ShapeTypeHalfFrame
@@ -37,6 +40,8 @@ const (
 	ShapeTypeMoon                  = shapes.ShapeTypeMoon
 	ShapeTypeLightningBolt         = shapes.ShapeTypeLightningBolt
 	ShapeTypePlaque                = shapes.ShapeTypePlaque
+	ShapeTypeMusicNote             = shapes.ShapeTypeMusicNote
+	ShapeTypePictureFrame          = shapes.ShapeTypePictureFrame
 	ShapeTypeHomePlate             = shapes.ShapeTypeHomePlate
 	ShapeTypeChevron               = shapes.ShapeTypeChevron
 )
@@ -55,6 +60,14 @@ const (
 	ShapeTypeStripedRightArrow     = shapes.ShapeTypeStripedRightArrow
 	ShapeTypeSwooshArrow           = shapes.ShapeTypeSwooshArrow
 	ShapeTypeLeftRightUpArrow      = shapes.ShapeTypeLeftRightUpArrow
+	ShapeTypeCurvedRightArrow      = shapes.ShapeTypeCurvedRightArrow
+	ShapeTypeCurvedLeftArrow       = shapes.ShapeTypeCurvedLeftArrow
+	ShapeTypeCurvedUpArrow         = shapes.ShapeTypeCurvedUpArrow
+	ShapeTypeCurvedDownArrow       = shapes.ShapeTypeCurvedDownArrow
+	ShapeTypeCurvedLeftRightArrow  = shapes.ShapeTypeCurvedLeftRightArrow
+	ShapeTypeCurvedUpDownArrow     = shapes.ShapeTypeCurvedUpDownArrow
+	ShapeTypePentagonArrow         = shapes.ShapeTypePentagonArrow
+	ShapeTypeChevronArrow          = shapes.ShapeTypeChevronArrow
 	ShapeTypeRightArrowCallout     = shapes.ShapeTypeRightArrowCallout
 	ShapeTypeLeftArrowCallout      = shapes.ShapeTypeLeftArrowCallout
 	ShapeTypeUpArrowCallout        = shapes.ShapeTypeUpArrowCallout
@@ -85,6 +98,11 @@ const (
 	ShapeTypeDoubleWave       = shapes.ShapeTypeDoubleWave
 	ShapeTypeVerticalScroll   = shapes.ShapeTypeVerticalScroll
 	ShapeTypeHorizontalScroll = shapes.ShapeTypeHorizontalScroll
+	ShapeTypeSeal             = shapes.ShapeTypeSeal
+	ShapeTypeSeal4            = shapes.ShapeTypeSeal4
+	ShapeTypeSeal8            = shapes.ShapeTypeSeal8
+	ShapeTypeSeal16           = shapes.ShapeTypeSeal16
+	ShapeTypeSeal32           = shapes.ShapeTypeSeal32
 )
 
 // Callouts.
@@ -133,6 +151,10 @@ const (
 	ShapeTypeFlowChartSort                    = shapes.ShapeTypeFlowChartSort
 	ShapeTypeFlowChartStoredData              = shapes.ShapeTypeFlowChartStoredData
 	ShapeTypeFlowChartSummingJunction         = shapes.ShapeTypeFlowChartSummingJunction
+	ShapeTypeFlowChartPunchedCard             = shapes.ShapeTypeFlowChartPunchedCard
+	ShapeTypeFlowChartOnlineStorage           = shapes.ShapeTypeFlowChartOnlineStorage
+	ShapeTypeFlowChartMagneticTape            = shapes.ShapeTypeFlowChartMagneticTape
+	ShapeTypeFlowChartMagneticDrum            = shapes.ShapeTypeFlowChartMagneticDrum
 )
 
 // Action buttons.

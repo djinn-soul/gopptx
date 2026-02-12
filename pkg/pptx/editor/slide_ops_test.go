@@ -159,3 +159,113 @@ func TestPresentationEditorMoveSlide(t *testing.T) {
 		t.Fatalf("reopened order: %s, %s, %s", slides[0].Title, slides[1].Title, slides[2].Title)
 	}
 }
+
+func TestDuplicateSlide_AppendsCopySuffixToTitlePlaceholder(t *testing.T) {
+	path := writeDeckFixture(t, "duplicate_title_placeholder.pptx", []elements.SlideContent{
+		elements.NewSlide("Main Title"),
+	})
+
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+
+	srcPart := editor.Slides()[0].PartName
+	editor.parts[srcPart] = []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title"))
+
+	if _, err := editor.DuplicateSlide(0, 1); err != nil {
+		t.Fatalf("duplicate slide: %v", err)
+	}
+
+	copyPart := editor.Slides()[1].PartName
+	copyXML := string(editor.parts[copyPart])
+	if !strings.Contains(copyXML, "Main Title (Copy)") {
+		t.Fatalf("expected title placeholder to include copy suffix")
+	}
+	if strings.Contains(copyXML, "Body Text (Copy)") {
+		t.Fatalf("did not expect non-title text to be modified")
+	}
+}
+
+func TestDuplicateSlide_AppendsCopySuffixToLastTitleRun(t *testing.T) {
+	path := writeDeckFixture(t, "duplicate_title_multirun.pptx", []elements.SlideContent{
+		elements.NewSlide("Main Title"),
+	})
+
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+
+	srcPart := editor.Slides()[0].PartName
+	editor.parts[srcPart] = []byte(slideWithBodyAndMultiRunTitlePlaceholderXML("Body Text", "Main ", "Title"))
+
+	if _, err := editor.DuplicateSlide(0, 1); err != nil {
+		t.Fatalf("duplicate slide: %v", err)
+	}
+
+	copyPart := editor.Slides()[1].PartName
+	copyXML := string(editor.parts[copyPart])
+	if !strings.Contains(copyXML, "<a:t>Main </a:t></a:r><a:r><a:t>Title (Copy)</a:t>") {
+		t.Fatalf("expected suffix on last title run, got XML: %s", copyXML)
+	}
+	if strings.Contains(copyXML, "<a:t>Main  (Copy)</a:t></a:r><a:r><a:t>Title</a:t>") {
+		t.Fatalf("unexpected suffix on first title run")
+	}
+	if strings.Contains(copyXML, "Body Text (Copy)") {
+		t.Fatalf("did not expect non-title text to be modified")
+	}
+}
+
+func TestSetSlideTitle_TargetsTitlePlaceholder(t *testing.T) {
+	path := writeDeckFixture(t, "set_title_placeholder.pptx", []elements.SlideContent{
+		elements.NewSlide("Main Title"),
+	})
+
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+
+	part := editor.Slides()[0].PartName
+	editor.parts[part] = []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title"))
+
+	if err := editor.SetSlideTitle(0, "Renamed Title"); err != nil {
+		t.Fatalf("set slide title: %v", err)
+	}
+
+	xml := string(editor.parts[part])
+	if !strings.Contains(xml, "Renamed Title") {
+		t.Fatalf("expected updated title text in slide XML")
+	}
+	if strings.Contains(xml, "Body Text (Copy)") {
+		t.Fatalf("unexpected body text mutation")
+	}
+	if !strings.Contains(xml, "Body Text") {
+		t.Fatalf("expected non-title text to remain unchanged")
+	}
+}
+
+func slideWithBodyAndTitlePlaceholderXML(bodyText, titleText string) string {
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + bodyText + `</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="3" name="Title 1"/><p:cNvSpPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + titleText + `</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`</p:spTree></p:cSld></p:sld>`
+}
+
+func slideWithBodyAndMultiRunTitlePlaceholderXML(bodyText, titlePrefix, titleSuffix string) string {
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + bodyText + `</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="3" name="Title 1"/><p:cNvSpPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + titlePrefix + `</a:t></a:r><a:r><a:t>` + titleSuffix + `</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`</p:spTree></p:cSld></p:sld>`
+}

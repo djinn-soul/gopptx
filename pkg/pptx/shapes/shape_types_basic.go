@@ -36,10 +36,16 @@ const (
 	ShapeTypeTrapezoid = "trapezoid"
 	// ShapeTypeNonIsoscelesTrapezoid renders a non-isosceles trapezoid.
 	ShapeTypeNonIsoscelesTrapezoid = "nonIsoscelesTrapezoid"
+	// ShapeTypeIsoscelesTrapezoid renders an isosceles trapezoid.
+	ShapeTypeIsoscelesTrapezoid = "isoTrapezoid"
 	// ShapeTypeCube renders a cube.
 	ShapeTypeCube = "cube"
 	// ShapeTypeCan renders a cylinder/can.
 	ShapeTypeCan = "can"
+	// ShapeTypeCone renders a cone.
+	ShapeTypeCone = "cone"
+	// ShapeTypeCylinder renders a cylinder.
+	ShapeTypeCylinder = "cylinder"
 	// ShapeTypeFoldedCorner renders a folded corner shape.
 	ShapeTypeFoldedCorner = "foldedCorner"
 	// ShapeTypeFrame renders a frame shape.
@@ -82,6 +88,10 @@ const (
 	ShapeTypeMoon = "moon"
 	// ShapeTypeLightningBolt renders a lightning bolt.
 	ShapeTypeLightningBolt = "lightningBolt"
+	// ShapeTypeMusicNote renders a music note.
+	ShapeTypeMusicNote = "musicNote"
+	// ShapeTypePictureFrame renders a picture frame.
+	ShapeTypePictureFrame = "frame"
 	// ShapeTypePlaque renders a plaque shape.
 	ShapeTypePlaque = "plaque"
 	// ShapeTypeHomePlate renders a home plate shape.
@@ -97,15 +107,15 @@ func init() {
 		ShapeTypePentagon, ShapeTypeHexagon, ShapeTypeParallelogram,
 		ShapeTypeCloud, ShapeTypeHeart,
 		ShapeTypeOctagon, ShapeTypeDecagon, ShapeTypeDodecagon,
-		ShapeTypeHeptagon, ShapeTypeTrapezoid, ShapeTypeNonIsoscelesTrapezoid,
-		ShapeTypeCube, ShapeTypeCan, ShapeTypeFoldedCorner,
+		ShapeTypeHeptagon, ShapeTypeTrapezoid, ShapeTypeNonIsoscelesTrapezoid, ShapeTypeIsoscelesTrapezoid,
+		ShapeTypeCube, ShapeTypeCan, ShapeTypeCone, ShapeTypeCylinder, ShapeTypeFoldedCorner,
 		ShapeTypeFrame, ShapeTypeHalfFrame, ShapeTypeCorner,
 		ShapeTypeLShape, ShapeTypeDiagStripe, ShapeTypePlus,
 		ShapeTypeDonut, ShapeTypeNoSmoking, ShapeTypeBevel,
 		ShapeTypeFunnel, ShapeTypeTeardrop, ShapeTypePie,
 		ShapeTypePieWedge, ShapeTypeChord, ShapeTypeArc,
 		ShapeTypeBlockArc, ShapeTypeSmileyFace, ShapeTypeSun,
-		ShapeTypeMoon, ShapeTypeLightningBolt, ShapeTypePlaque,
+		ShapeTypeMoon, ShapeTypeLightningBolt, ShapeTypeMusicNote, ShapeTypePictureFrame, ShapeTypePlaque,
 		ShapeTypeHomePlate, ShapeTypeChevron,
 	} {
 		registerShapeType(t)

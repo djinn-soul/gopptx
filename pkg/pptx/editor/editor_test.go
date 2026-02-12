@@ -117,6 +117,44 @@ func TestPresentationEditorRejectsUpdateForSlideWithExternalRelationships(t *tes
 	}
 }
 
+func TestPresentationEditorUpdateSlidePreservesExistingNotesRelationship(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "existing-notes.pptx")
+	existingNotes := "Keep these notes"
+	_ = writeZipFixture(path, map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/><Override PartName="/ppt/notesSlides/notesSlide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/></Types>`,
+		"_rels/.rels":         `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>`,
+		"ppt/presentation.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`,
+		"ppt/slides/slide1.xml":           `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`,
+		"ppt/slides/_rels/slide1.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide1.xml"/></Relationships>`,
+		"ppt/notesSlides/notesSlide1.xml": fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>%s</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>`, existingNotes),
+		"ppt/notesSlides/_rels/notesSlide1.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide1.xml"/></Relationships>`,
+	})
+
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	if err := editor.UpdateSlide(0, elements.NewSlide("Updated Title").AddBullet("updated body")); err != nil {
+		t.Fatalf("update slide: %v", err)
+	}
+
+	outPath := filepath.Join(t.TempDir(), "updated-existing-notes.pptx")
+	if err := editor.Save(outPath); err != nil {
+		t.Fatalf("save edited deck: %v", err)
+	}
+
+	relsXML := string(readZipFileBytes(t, outPath, "ppt/slides/_rels/slide1.xml.rels"))
+	if !strings.Contains(relsXML, "/relationships/notesSlide") || !strings.Contains(relsXML, "../notesSlides/notesSlide1.xml") {
+		t.Fatalf("expected notes relationship to be preserved, got: %s", relsXML)
+	}
+
+	notesXML := string(readZipFileBytes(t, outPath, "ppt/notesSlides/notesSlide1.xml"))
+	if !strings.Contains(notesXML, existingNotes) {
+		t.Fatalf("expected original notes content to be preserved")
+	}
+}
+
 func TestPresentationEditorPersistsHyperlinks(t *testing.T) {
 	path := writeDeckFixture(t, "base.pptx", []elements.SlideContent{elements.NewSlide("Base")})
 	h1 := action.NewHyperlink(action.HyperlinkURL("https://example.com"))

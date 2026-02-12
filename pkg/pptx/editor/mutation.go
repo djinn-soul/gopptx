@@ -3,6 +3,7 @@ package editor
 import (
 	"encoding/xml"
 	"fmt"
+	"path"
 	"regexp"
 	"sort"
 	"strings"
@@ -133,7 +134,38 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 	return b.String(), nil
 }
 
-func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool) (string, error) {
+func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
+	sort.Slice(rels, func(i, j int) bool {
+		a, aok := common.ParseRelationshipNumber(rels[i].ID)
+		b, bok := common.ParseRelationshipNumber(rels[j].ID)
+		if aok && bok && a != b {
+			return a < b
+		}
+		return rels[i].ID < rels[j].ID
+	})
+
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
+	b.WriteString("\n")
+	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)
+	for _, rel := range rels {
+		b.WriteString("\n  <Relationship Id=\"")
+		b.WriteString(common.XMLEscape(rel.ID))
+		b.WriteString("\" Type=\"")
+		b.WriteString(common.XMLEscape(rel.Type))
+		b.WriteString("\" Target=\"")
+		b.WriteString(common.XMLEscape(rel.Target))
+		b.WriteString("\"")
+		if strings.TrimSpace(rel.TargetMode) != "" {
+			b.WriteString(` TargetMode="` + common.XMLEscape(rel.TargetMode) + `"`)
+		}
+		b.WriteString("/>")
+	}
+	b.WriteString("\n</Relationships>")
+	return b.String(), nil
+}
+
+func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, hasNotesMaster bool) (string, error) {
 	if len(current) == 0 {
 		return "", fmt.Errorf("missing content types content")
 	}
@@ -152,10 +184,7 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		exts[strings.ToLower(d.Extension)] = struct{}{}
 	}
 	for _, m := range mediaPaths {
-		ext := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(strings.ToLower(strings.TrimPrefix(m, "."))), "."))
-		if idx := strings.LastIndex(m, "."); idx >= 0 {
-			ext = strings.ToLower(m[idx+1:])
-		}
+		ext := strings.TrimPrefix(strings.ToLower(path.Ext(strings.TrimSpace(m))), ".")
 		if _, ok := exts[ext]; !ok {
 			contentType := ""
 			switch ext {
@@ -165,6 +194,8 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 				contentType = "image/jpeg"
 			case "gif":
 				contentType = "image/gif"
+			case "xlsx":
+				contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 			}
 			if contentType != "" {
 				doc.Defaults = append(doc.Defaults, contentTypeDefault{
@@ -183,7 +214,7 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		if isSlidePartOverride(part) {
 			continue
 		}
-		if part == "ppt/sectionList.xml" {
+		if part == "ppt/sectionList.xml" || strings.HasPrefix(part, "ppt/charts/chart") || strings.HasPrefix(part, "ppt/notesSlides/notesSlide") || strings.HasPrefix(part, "ppt/notesMasters/notesMaster") || strings.HasPrefix(part, "ppt/theme/theme") {
 			continue
 		}
 		filtered = append(filtered, override)
@@ -199,6 +230,30 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		filtered = append(filtered, contentTypeOverride{
 			PartName:    "/ppt/sectionList.xml",
 			ContentType: "application/vnd.microsoft.powerpoint.sectionList+xml",
+		})
+	}
+	for _, p := range chartPaths {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
+		})
+	}
+	for _, p := range notesPaths {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml",
+		})
+	}
+	for _, p := range themePaths {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: "application/vnd.openxmlformats-officedocument.theme+xml",
+		})
+	}
+	if hasNotesMaster {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/ppt/notesMasters/notesMaster1.xml",
+			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml",
 		})
 	}
 
@@ -256,4 +311,20 @@ func buildSectionListXML(sections []EditorSection) string {
 	}
 	b.WriteString("\n</s:sectionLst>")
 	return b.String()
+}
+
+var chartExternalDataPattern = regexp.MustCompile(`<c:externalData[^>]*r:id="([^"]*)"[^>]*/>`)
+
+func rewriteChartExternalData(current []byte, newRelID string) []byte {
+	source := string(current)
+	if !chartExternalDataPattern.MatchString(source) {
+		return current
+	}
+	// Simplified replace that preserves other attributes if any (though usually it's just r:id)
+	res := chartExternalDataPattern.ReplaceAllStringFunc(source, func(match string) string {
+		// Just replace the r:id attribute value
+		re := regexp.MustCompile(`r:id="[^"]*"`)
+		return re.ReplaceAllString(match, fmt.Sprintf(`r:id="%s"`, newRelID))
+	})
+	return []byte(res)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
@@ -83,7 +84,31 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		mediaPaths = append(mediaPaths, p)
 	}
 
-	contentTypesXML, err := rewriteContentTypes(e.parts[common.ContentTypesPath], e.slides, mediaPaths, hasSections)
+	chartPaths := make([]string, 0)
+	for p := range e.parts {
+		if strings.HasPrefix(p, "ppt/charts/chart") && strings.HasSuffix(p, ".xml") {
+			chartPaths = append(chartPaths, p)
+		}
+	}
+
+	notesPaths := make([]string, 0)
+	for _, p := range e.notesInventory {
+		notesPaths = append(notesPaths, p)
+	}
+
+	themePaths := make([]string, 0)
+	for p := range e.parts {
+		if strings.HasPrefix(p, "ppt/theme/theme") {
+			themePaths = append(themePaths, p)
+		}
+	}
+
+	hasNotesMaster := false
+	if _, ok := e.parts["ppt/notesMasters/notesMaster1.xml"]; ok {
+		hasNotesMaster = true
+	}
+
+	contentTypesXML, err := rewriteContentTypes(e.parts[common.ContentTypesPath], e.slides, mediaPaths, hasSections, chartPaths, notesPaths, themePaths, hasNotesMaster)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +116,13 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 
 	if hasSections {
 		out["ppt/sectionList.xml"] = []byte(buildSectionListXML(e.sections))
+	}
+
+	if hasNotesMaster {
+		// Ensure notes master rels are also persisted if they were injected
+		if masterRels, ok := e.parts["ppt/notesMasters/_rels/notesMaster1.xml.rels"]; ok {
+			out["ppt/notesMasters/_rels/notesMaster1.xml.rels"] = masterRels
+		}
 	}
 
 	return out, nil

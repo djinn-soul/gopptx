@@ -61,6 +61,14 @@ const (
 	ShapeTypeFlowChartStoredData = "flowChartStoredData"
 	// ShapeTypeFlowChartSummingJunction renders a flowchart summing junction.
 	ShapeTypeFlowChartSummingJunction = "flowChartSummingJunction"
+	// ShapeTypeFlowChartPunchedCard renders a flowchart punched card.
+	ShapeTypeFlowChartPunchedCard = "flowChartPunchedCard"
+	// ShapeTypeFlowChartOnlineStorage renders a flowchart online storage.
+	ShapeTypeFlowChartOnlineStorage = "flowChartOnlineStorage"
+	// ShapeTypeFlowChartMagneticTape renders a flowchart magnetic tape.
+	ShapeTypeFlowChartMagneticTape = "flowChartMagneticTape"
+	// ShapeTypeFlowChartMagneticDrum renders a flowchart magnetic drum.
+	ShapeTypeFlowChartMagneticDrum = "flowChartMagneticDrum"
 )
 
 func init() {
@@ -80,6 +88,8 @@ func init() {
 		ShapeTypeFlowChartPreparation, ShapeTypeFlowChartPunchedTape,
 		ShapeTypeFlowChartSequentialAccessStorage, ShapeTypeFlowChartSort,
 		ShapeTypeFlowChartStoredData, ShapeTypeFlowChartSummingJunction,
+		ShapeTypeFlowChartPunchedCard, ShapeTypeFlowChartOnlineStorage,
+		ShapeTypeFlowChartMagneticTape, ShapeTypeFlowChartMagneticDrum,
 	} {
 		registerShapeType(t)
 	}
