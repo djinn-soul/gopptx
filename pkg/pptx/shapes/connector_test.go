@@ -1,6 +1,7 @@
 package shapes
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -95,5 +96,50 @@ func TestConnectorValidation(t *testing.T) {
 				t.Errorf("Connector.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestConnectorValidateWithShapesRejectsUnsupportedSiteForEllipse(t *testing.T) {
+	ellipse := NewShape(ShapeTypeEllipse, 0, 0, 1000, 1000)
+	connector := NewStraightConnector(0, 0, 2000, 0).ConnectStart(1, ConnectionSiteTopLeft)
+	err := connector.ValidateWithShapes([]Shape{ellipse}, 1, 1)
+	if err == nil {
+		t.Fatalf("expected shape-type site validation error")
+	}
+	if got := err.Error(); !strings.Contains(got, `start site "topLeft" is not supported`) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestConnectorAutoRerouteUpdatesSitesAndEndpoints(t *testing.T) {
+	start := NewShape(ShapeTypeRectangle, 0, 0, 1000, 1000)
+	end := NewShape(ShapeTypeRectangle, 3000, 0, 1000, 1000)
+	connector := NewStraightConnector(500, 500, 3500, 500).
+		ConnectStartAuto(1).
+		ConnectEndAuto(2)
+
+	rerouted := connector.AutoReroute([]Shape{start, end})
+	if rerouted.StartSite != ConnectionSiteRight {
+		t.Fatalf("expected start site %q, got %q", ConnectionSiteRight, rerouted.StartSite)
+	}
+	if rerouted.EndSite != ConnectionSiteLeft {
+		t.Fatalf("expected end site %q, got %q", ConnectionSiteLeft, rerouted.EndSite)
+	}
+	if rerouted.StartX != 1000 || rerouted.StartY != 500 {
+		t.Fatalf("unexpected rerouted start endpoint (%d,%d)", rerouted.StartX, rerouted.StartY)
+	}
+	if rerouted.EndX != 3000 || rerouted.EndY != 500 {
+		t.Fatalf("unexpected rerouted end endpoint (%d,%d)", rerouted.EndX, rerouted.EndY)
+	}
+}
+
+func TestConnectorValidationRejectsAdjustmentsOnStraightConnector(t *testing.T) {
+	connector := NewStraightConnector(0, 0, 100, 100).WithAdjustmentValue("adj1", 20000)
+	err := connector.Validate(0, 1, 1)
+	if err == nil {
+		t.Fatalf("expected adjustment validation error for straight connector")
+	}
+	if got := err.Error(); !strings.Contains(got, "adjustments are only supported for elbow/curved connectors") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

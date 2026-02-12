@@ -29,6 +29,13 @@ type Connector struct {
 	AltText         string
 	IsDecorative    bool
 	Placeholder     *Placeholder
+	Adjustments     []ConnectorAdjustment
+}
+
+// ConnectorAdjustment represents one connector geometry adjustment point (<a:gd>) entry.
+type ConnectorAdjustment struct {
+	Name    string
+	Formula string
 }
 
 // NewConnector creates a connector.
@@ -139,6 +146,20 @@ func (c Connector) WithLabel(label string) Connector {
 	return c
 }
 
+// WithAdjustment appends one geometry adjustment point for elbow/curved connectors.
+func (c Connector) WithAdjustment(name, formula string) Connector {
+	c.Adjustments = append(c.Adjustments, ConnectorAdjustment{
+		Name:    strings.TrimSpace(name),
+		Formula: strings.TrimSpace(formula),
+	})
+	return c
+}
+
+// WithAdjustmentValue appends one "val" adjustment helper entry for elbow/curved connectors.
+func (c Connector) WithAdjustmentValue(name string, value int) Connector {
+	return c.WithAdjustment(name, fmt.Sprintf("val %d", value))
+}
+
 // WithAltText sets the alternative text for accessibility.
 func (c Connector) WithAltText(text string) Connector {
 	c.AltText = text
@@ -162,6 +183,36 @@ func (c Connector) ConnectStartAuto(shapeIndex int) Connector {
 func (c Connector) ConnectEndAuto(shapeIndex int) Connector {
 	c.EndShapeIndex = shapeIndex
 	c.EndSite = ""
+	return c
+}
+
+// AutoReroute recalculates start/end connector sites from current shape positions.
+// Endpoints anchored to shapes are rewritten to the nearest valid site.
+func (c Connector) AutoReroute(shapes []Shape) Connector {
+	if c.StartShapeIndex > 0 {
+		tmp := c
+		tmp.StartSite = ""
+		startIdx, _ := ResolveConnectorSiteIndices(tmp, shapes)
+		if startIdx != nil {
+			c.StartSite = siteFromIndex(*startIdx)
+			if anchorX, anchorY, ok := shapeAnchorPointForIndex(shapes, c.StartShapeIndex, c.StartSite); ok {
+				c.StartX = anchorX
+				c.StartY = anchorY
+			}
+		}
+	}
+	if c.EndShapeIndex > 0 {
+		tmp := c
+		tmp.EndSite = ""
+		_, endIdx := ResolveConnectorSiteIndices(tmp, shapes)
+		if endIdx != nil {
+			c.EndSite = siteFromIndex(*endIdx)
+			if anchorX, anchorY, ok := shapeAnchorPointForIndex(shapes, c.EndShapeIndex, c.EndSite); ok {
+				c.EndX = anchorX
+				c.EndY = anchorY
+			}
+		}
+	}
 	return c
 }
 
@@ -207,7 +258,7 @@ func shapeCenterForIndex(shapes []Shape, shapeIndex int) (styling.Length, stylin
 }
 
 func autoConnectionSite(shape Shape, targetX styling.Length, targetY styling.Length) string {
-	candidates := shapeConnectionSiteCandidates(shape)
+	candidates := shapeConnectionSiteCandidatesForType(shape)
 	bestSite := ConnectionSiteCenter
 	var bestDistance styling.Length
 	first := true
@@ -247,6 +298,87 @@ func shapeConnectionSiteCandidates(shape Shape) [9]connectionSiteCandidate {
 		{site: ConnectionSiteBottomLeft, x: shape.X, y: bottom},
 		{site: ConnectionSiteCenter, x: cx, y: cy},
 	}
+}
+
+func shapeConnectionSiteCandidatesForType(shape Shape) []connectionSiteCandidate {
+	all := shapeConnectionSiteCandidates(shape)
+	allowed := allowedConnectionSitesForShape(shape.Type)
+	out := make([]connectionSiteCandidate, 0, len(allowed))
+	for _, site := range allowed {
+		for _, candidate := range all {
+			if candidate.site == site {
+				out = append(out, candidate)
+				break
+			}
+		}
+	}
+	if len(out) == 0 {
+		return all[:]
+	}
+	return out
+}
+
+func allowedConnectionSitesForShape(shapeType string) []string {
+	switch NormalizeShapeType(shapeType) {
+	case ShapeTypeEllipse, ShapeTypeCloud, ShapeTypeHeart:
+		return []string{
+			ConnectionSiteTop,
+			ConnectionSiteRight,
+			ConnectionSiteBottom,
+			ConnectionSiteLeft,
+			ConnectionSiteCenter,
+		}
+	default:
+		return []string{
+			ConnectionSiteTop,
+			ConnectionSiteRight,
+			ConnectionSiteBottom,
+			ConnectionSiteLeft,
+			ConnectionSiteTopLeft,
+			ConnectionSiteTopRight,
+			ConnectionSiteBottomRight,
+			ConnectionSiteBottomLeft,
+			ConnectionSiteCenter,
+		}
+	}
+}
+
+func siteFromIndex(idx int) string {
+	switch idx {
+	case 0:
+		return ConnectionSiteTop
+	case 1:
+		return ConnectionSiteRight
+	case 2:
+		return ConnectionSiteBottom
+	case 3:
+		return ConnectionSiteLeft
+	case 4:
+		return ConnectionSiteTopLeft
+	case 5:
+		return ConnectionSiteTopRight
+	case 6:
+		return ConnectionSiteBottomRight
+	case 7:
+		return ConnectionSiteBottomLeft
+	case 8:
+		return ConnectionSiteCenter
+	default:
+		return ""
+	}
+}
+
+func shapeAnchorPointForIndex(shapes []Shape, shapeIndex int, site string) (styling.Length, styling.Length, bool) {
+	shape, ok := shapeForIndex(shapes, shapeIndex)
+	if !ok {
+		return 0, 0, false
+	}
+	for _, candidate := range shapeConnectionSiteCandidatesForType(shape) {
+		if candidate.site == site {
+			return candidate.x, candidate.y, true
+		}
+	}
+	return 0, 0, false
 }
 
 func SiteIndexPointer(site string) *int {
@@ -295,6 +427,38 @@ func (connector Connector) Validate(shapeCount int, slideIndex int, connectorInd
 	if err := validateConnectorAnchor("end", connector.EndShapeIndex, connector.EndSite, shapeCount, slideIndex, connectorIndex); err != nil {
 		return err
 	}
+	for i, adj := range connector.Adjustments {
+		if strings.TrimSpace(adj.Name) == "" {
+			return fmt.Errorf("slide %d connector %d adjustment %d name cannot be empty", slideIndex, connectorIndex, i+1)
+		}
+		if strings.TrimSpace(adj.Formula) == "" {
+			return fmt.Errorf("slide %d connector %d adjustment %d formula cannot be empty", slideIndex, connectorIndex, i+1)
+		}
+	}
+	if len(connector.Adjustments) > 0 {
+		connectorType := NormalizeConnectorType(connector.Type)
+		if connectorType != ConnectorTypeElbow && connectorType != ConnectorTypeCurved {
+			return fmt.Errorf(
+				"slide %d connector %d adjustments are only supported for elbow/curved connectors",
+				slideIndex,
+				connectorIndex,
+			)
+		}
+	}
+	return nil
+}
+
+// ValidateWithShapes checks connector fields and validates site compatibility with connected shape types.
+func (connector Connector) ValidateWithShapes(shapes []Shape, slideIndex, connectorIndex int) error {
+	if err := connector.Validate(len(shapes), slideIndex, connectorIndex); err != nil {
+		return err
+	}
+	if err := validateConnectorSiteForShape("start", connector.StartShapeIndex, connector.StartSite, shapes, slideIndex, connectorIndex); err != nil {
+		return err
+	}
+	if err := validateConnectorSiteForShape("end", connector.EndShapeIndex, connector.EndSite, shapes, slideIndex, connectorIndex); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -341,4 +505,35 @@ func validateConnectorAnchor(
 		)
 	}
 	return nil
+}
+
+func validateConnectorSiteForShape(
+	side string,
+	shapeIndex int,
+	site string,
+	shapes []Shape,
+	slideIndex int,
+	connectorIndex int,
+) error {
+	if shapeIndex <= 0 || strings.TrimSpace(site) == "" {
+		return nil
+	}
+	shape, ok := shapeForIndex(shapes, shapeIndex)
+	if !ok {
+		return nil
+	}
+	normalized := NormalizeConnectionSite(site)
+	for _, allowed := range allowedConnectionSitesForShape(shape.Type) {
+		if normalized == allowed {
+			return nil
+		}
+	}
+	return fmt.Errorf(
+		"slide %d connector %d %s site %q is not supported for shape type %q",
+		slideIndex,
+		connectorIndex,
+		side,
+		normalized,
+		shape.Type,
+	)
 }

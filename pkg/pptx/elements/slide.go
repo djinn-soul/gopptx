@@ -20,7 +20,7 @@ func (s SlideContent) Validate(index int) error {
 		}
 	}
 	for connectorIndex, connector := range s.Connectors {
-		if err := connector.Validate(len(s.Shapes), index, connectorIndex+1); err != nil {
+		if err := connector.ValidateWithShapes(s.Shapes, index, connectorIndex+1); err != nil {
 			return err
 		}
 	}
@@ -228,6 +228,7 @@ type SlideContent struct {
 	BulletStyles         []TextParagraphStyle
 	ShowSlideNumber      bool
 	Notes                string
+	NotesBody            []TextParagraph
 	Images               []shapes.Image
 	Shapes               []shapes.Shape
 	Connectors           []shapes.Connector
@@ -312,6 +313,40 @@ func NewSlide(title string) SlideContent {
 // WithNotes sets the speaker notes for the slide.
 func (s SlideContent) WithNotes(notes string) SlideContent {
 	s.Notes = notes
+	// Also populate NotesBody for internal consistency
+	p := NewTextParagraph()
+	p.Runs = append(p.Runs, NewTextRun(notes))
+	s.NotesBody = []TextParagraph{p}
+	return s
+}
+
+// WithRichNotes sets the speaker notes using rich text paragraphs.
+func (s SlideContent) WithRichNotes(body []TextParagraph) SlideContent {
+	s.NotesBody = body
+	// Sync to plain text Notes
+	var sb strings.Builder
+	for i, p := range body {
+		for _, r := range p.Runs {
+			sb.WriteString(r.Text)
+		}
+		if i < len(body)-1 {
+			sb.WriteString("\n")
+		}
+	}
+	s.Notes = sb.String()
+	return s
+}
+
+// AddNoteParagraph appends a rich text paragraph to the speaker notes.
+func (s SlideContent) AddNoteParagraph(p TextParagraph) SlideContent {
+	s.NotesBody = append(s.NotesBody, p)
+	// Sync to plain text Notes
+	if s.Notes != "" {
+		s.Notes += "\n"
+	}
+	for _, r := range p.Runs {
+		s.Notes += r.Text
+	}
 	return s
 }
 
@@ -672,6 +707,16 @@ func defaultPlaceholderImageType(index int) string {
 // AddConnector adds a connector to the slide.
 func (s SlideContent) AddConnector(c shapes.Connector) SlideContent {
 	s.Connectors = append(s.Connectors, c)
+	return s
+}
+
+// AutoRerouteConnectors recalculates connector sites from current shape positions.
+func (s SlideContent) AutoRerouteConnectors() SlideContent {
+	rerouted := make([]shapes.Connector, 0, len(s.Connectors))
+	for _, connector := range s.Connectors {
+		rerouted = append(rerouted, connector.AutoReroute(s.Shapes))
+	}
+	s.Connectors = rerouted
 	return s
 }
 

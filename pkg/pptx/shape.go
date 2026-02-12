@@ -35,15 +35,15 @@ type (
 )
 
 const (
-	ShapeTypeRectangle        = shapes.ShapeTypeRectangle
-	ShapeTypeRoundedRectangle = shapes.ShapeTypeRoundedRectangle
-	ShapeTypeEllipse          = shapes.ShapeTypeEllipse
-	ShapeTypeTriangle         = shapes.ShapeTypeTriangle
-	ShapeTypeRightTriangle    = shapes.ShapeTypeRightTriangle
-	ShapeTypeDiamond          = shapes.ShapeTypeDiamond
-	ShapeTypePentagon         = shapes.ShapeTypePentagon
-	ShapeTypeHexagon          = shapes.ShapeTypeHexagon
-	ShapeTypeParallelogram    = shapes.ShapeTypeParallelogram
+	ShapeTypeRectangle           = shapes.ShapeTypeRectangle
+	ShapeTypeRoundedRectangle    = shapes.ShapeTypeRoundedRectangle
+	ShapeTypeEllipse             = shapes.ShapeTypeEllipse
+	ShapeTypeTriangle            = shapes.ShapeTypeTriangle
+	ShapeTypeRightTriangle       = shapes.ShapeTypeRightTriangle
+	ShapeTypeDiamond             = shapes.ShapeTypeDiamond
+	ShapeTypePentagon            = shapes.ShapeTypePentagon
+	ShapeTypeHexagon             = shapes.ShapeTypeHexagon
+	ShapeTypeParallelogram       = shapes.ShapeTypeParallelogram
 	ShapeTypeFlowChartProcess    = shapes.ShapeTypeFlowChartProcess
 	ShapeTypeFlowChartDecision   = shapes.ShapeTypeFlowChartDecision
 	ShapeTypeFlowChartTerminator = shapes.ShapeTypeFlowChartTerminator
@@ -62,6 +62,14 @@ const (
 	ShapeGradientTypeRectangular = shapes.ShapeGradientTypeRectangular
 	ShapeGradientTypePath        = shapes.ShapeGradientTypePath
 
+	LineCapFlat   = shapes.LineCapFlat
+	LineCapRound  = shapes.LineCapRound
+	LineCapSquare = shapes.LineCapSquare
+
+	LineJoinRound = shapes.LineJoinRound
+	LineJoinBevel = shapes.LineJoinBevel
+	LineJoinMiter = shapes.LineJoinMiter
+
 	TextAnchorTop    = shapes.TextAnchorTop
 	TextAnchorMiddle = shapes.TextAnchorMiddle
 	TextAnchorBottom = shapes.TextAnchorBottom
@@ -73,7 +81,6 @@ const (
 	TextAutoFitShape  = shapes.TextAutoFitShape
 	TextAutoFitNormal = shapes.TextAutoFitNormal
 )
-
 
 func NewShape(shapeType string, x, y, cx, cy Length) Shape {
 	return shapes.NewShape(shapeType, x, y, cx, cy)
@@ -201,6 +208,10 @@ func NewWedgeRectCallout(x, y, w, h float64) Shape {
 	return shapes.NewWedgeRectCallout(x, y, w, h)
 }
 
+func NewWedgeRRectCallout(x, y, w, h float64) Shape {
+	return shapes.NewWedgeRRectCallout(x, y, w, h)
+}
+
 func NewWedgeEllipseCallout(x, y, w, h float64) Shape {
 	return shapes.NewWedgeEllipseCallout(x, y, w, h)
 }
@@ -208,7 +219,6 @@ func NewWedgeEllipseCallout(x, y, w, h float64) Shape {
 func NewCloudCallout(x, y, w, h float64) Shape {
 	return shapes.NewCloudCallout(x, y, w, h)
 }
-
 
 func NewCloud(x, y, w, h float64) Shape {
 	return shapes.NewCloud(x, y, w, h)
@@ -234,8 +244,16 @@ func NewStar6(x, y, size float64) Shape {
 	return shapes.NewStar6(x, y, size)
 }
 
+func NewStar7(x, y, size float64) Shape {
+	return shapes.NewStar7(x, y, size)
+}
+
 func NewStar8(x, y, size float64) Shape {
 	return shapes.NewStar8(x, y, size)
+}
+
+func NewStar10(x, y, size float64) Shape {
+	return shapes.NewStar10(x, y, size)
 }
 
 func NewStar12(x, y, size float64) Shape {
@@ -285,7 +303,6 @@ func NewActionButtonBack(x, y, size float64) Shape {
 func NewActionButtonForward(x, y, size float64) Shape {
 	return shapes.NewActionButtonForward(x, y, size)
 }
-
 
 func NewFlowChartDocument(x, y, w, h float64) Shape {
 	return shapes.NewFlowChartDocument(x, y, w, h)
@@ -390,7 +407,6 @@ func NewFlowChartDisplay(x, y, w, h float64) Shape {
 func NewFlowChartPreparation(x, y, w, h float64) Shape {
 	return shapes.NewFlowChartPreparation(x, y, w, h)
 }
-
 
 func NewBadge(text string, x, y float64, color string) Shape {
 	return shapes.NewBadge(text, x, y, color)

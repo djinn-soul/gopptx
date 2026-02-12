@@ -8,6 +8,32 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+// TextParagraph represents a single paragraph of text with runs and styling.
+type TextParagraph struct {
+	Runs  []TextRun
+	Style TextParagraphStyle
+}
+
+// NewTextParagraph creates a new paragraph with default style.
+func NewTextParagraph() TextParagraph {
+	return TextParagraph{
+		Runs:  make([]TextRun, 0),
+		Style: DefaultTextParagraphStyle(),
+	}
+}
+
+// AddRun appends a text run to the paragraph.
+func (p TextParagraph) AddRun(run TextRun) TextParagraph {
+	p.Runs = append(p.Runs, run)
+	return p
+}
+
+// WithStyle sets the paragraph style.
+func (p TextParagraph) WithStyle(style TextParagraphStyle) TextParagraph {
+	p.Style = style
+	return p
+}
+
 // TextParagraphStyle describes paragraph-level formatting for one bullet line.
 type TextParagraphStyle struct {
 	Align          string

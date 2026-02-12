@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
@@ -36,12 +37,12 @@ func (p *markdownParser) consumeBlockquote(startLine int) error {
 		return nil
 	}
 
-	notes := strings.Join(parts, "\n")
-	if strings.TrimSpace(p.current.Notes) == "" {
-		p.current.Notes = notes
-		return nil
+	for _, part := range parts {
+		runs, _ := parseInlineTextRuns(part)
+		para := elements.NewTextParagraph()
+		para.Runs = runs
+		*p.current = p.current.AddNoteParagraph(para)
 	}
-	p.current.Notes += "\n" + notes
 	return nil
 }
 

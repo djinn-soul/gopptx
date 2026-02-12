@@ -30,6 +30,8 @@ type ShapeLineSpec struct {
 	Color string
 	Width int64
 	Dash  string
+	Cap   string
+	Join  string
 }
 
 // ShapeSpec describes one custom shape rendered as p:sp.
@@ -82,6 +84,13 @@ type ConnectorSpec struct {
 	Label           string
 	AltText         string
 	IsDecorative    bool
+	Adjustments     []ConnectorAdjustmentSpec
+}
+
+// ConnectorAdjustmentSpec describes one connector adjustment entry (a:gd).
+type ConnectorAdjustmentSpec struct {
+	Name    string
+	Formula string
 }
 
 func customShapeXML(shape ShapeSpec, shapeID int) string {
@@ -222,10 +231,24 @@ func shapeLineXML(line ShapeLineSpec) string {
 	if strings.TrimSpace(line.Dash) != "" && line.Dash != "solid" {
 		dash = `<a:prstDash val="` + Escape(line.Dash) + `"/>`
 	}
+	cap := ""
+	if strings.TrimSpace(line.Cap) != "" {
+		cap = ` cap="` + Escape(line.Cap) + `"`
+	}
+	join := ""
+	switch strings.TrimSpace(line.Join) {
+	case "bevel":
+		join = `<a:bevel/>`
+	case "miter":
+		join = `<a:miter/>`
+	case "round":
+		join = `<a:round/>`
+	}
 	return `
-<a:ln w="` + fmt.Sprintf("%d", line.Width) + `">
+<a:ln w="` + fmt.Sprintf("%d", line.Width) + `"` + cap + `>
 <a:solidFill><a:srgbClr val="` + Escape(line.Color) + `"/></a:solidFill>
 ` + dash + `
+` + join + `
 </a:ln>`
 }
 
@@ -261,6 +284,22 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 		b.WriteString(fmt.Sprintf(`
 <a:endCxn id="%d" idx="%d"/>`, endShapeID, *connector.EndSiteIndex))
 	}
+	avLst := "<a:avLst/>"
+	if len(connector.Adjustments) > 0 {
+		var av strings.Builder
+		av.WriteString("<a:avLst>")
+		for _, adj := range connector.Adjustments {
+			av.WriteString(`<a:gd name="` + Escape(adj.Name) + `" fmla="` + Escape(adj.Formula) + `"/>`)
+		}
+		av.WriteString("</a:avLst>")
+		avLst = av.String()
+	}
+
+	capAttr := ""
+	if strings.TrimSpace(connector.Line.Cap) != "" {
+		capAttr = ` cap="` + Escape(connector.Line.Cap) + `"`
+	}
+
 	b.WriteString(fmt.Sprintf(`
 </p:cNvCxnSpPr>
 <p:nvPr/>
@@ -270,8 +309,8 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 <a:off x="%d" y="%d"/>
 <a:ext cx="%d" cy="%d"/>
 </a:xfrm>
-<a:prstGeom prst="%s"><a:avLst/></a:prstGeom>
-<a:ln w="%d">
+<a:prstGeom prst="%s">%s</a:prstGeom>
+<a:ln w="%d"%s>
 <a:solidFill><a:srgbClr val="%s"/></a:solidFill>`,
 		flipH,
 		flipV,
@@ -280,7 +319,9 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 		cx,
 		cy,
 		Escape(connector.Type),
+		avLst,
 		connector.Line.Width,
+		capAttr,
 		Escape(connector.Line.Color),
 	))
 	if strings.TrimSpace(connector.Line.Dash) != "" && connector.Line.Dash != "solid" {
@@ -294,6 +335,17 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 	if connector.EndArrow != "none" {
 		b.WriteString(`
 <a:tailEnd type="` + Escape(connector.EndArrow) + `" w="` + Escape(connector.EndArrowWidth) + `" len="` + Escape(connector.EndArrowLen) + `"/>`)
+	}
+	switch strings.TrimSpace(connector.Line.Join) {
+	case "bevel":
+		b.WriteString(`
+<a:bevel/>`)
+	case "miter":
+		b.WriteString(`
+<a:miter/>`)
+	case "round":
+		b.WriteString(`
+<a:round/>`)
 	}
 	b.WriteString(`
 </a:ln>

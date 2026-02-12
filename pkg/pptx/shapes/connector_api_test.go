@@ -46,7 +46,12 @@ func TestCreateWithSlidesRendersConnectorWithShapeAnchors(t *testing.T) {
 	left := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Start")
 	right := pptx.NewShape(pptx.ShapeTypeDiamond, pptx.Inches(5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Decision")
 	connector := pptx.NewStraightConnector(pptx.Inches(3), pptx.Inches(2.5), pptx.Inches(5), pptx.Inches(2.5)).
-		WithLine(pptx.NewShapeLine("5B9BD5", pptx.Points(1.25)).WithDash(pptx.LineDashDash)).
+		WithLine(
+			pptx.NewShapeLine("5B9BD5", pptx.Points(1.25)).
+				WithDash(pptx.LineDashDash).
+				WithCap(pptx.LineCapSquare).
+				WithJoin(pptx.LineJoinBevel),
+		).
 		WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle).
 		WithArrowSize(pptx.ArrowSizeLarge).
 		ConnectStart(1, pptx.ConnectionSiteRight).
@@ -73,9 +78,36 @@ func TestCreateWithSlidesRendersConnectorWithShapeAnchors(t *testing.T) {
 		`<a:stCxn id="2" idx="1"/>`,
 		`<a:endCxn id="3" idx="3"/>`,
 		`<a:prstGeom prst="straightConnector1"><a:avLst/></a:prstGeom>`,
+		`<a:ln w="15875" cap="sq">`,
 		`<a:prstDash val="dash"/>`,
+		`<a:bevel/>`,
 		`<a:tailEnd type="triangle" w="lg" len="lg"/>`,
 		`<a:t>next</a:t>`,
+	}
+	for _, needle := range checks {
+		if !strings.Contains(slideXML, needle) {
+			t.Fatalf("expected %q in slide XML", needle)
+		}
+	}
+}
+
+func TestCreateWithSlidesRendersConnectorAdjustmentPoints(t *testing.T) {
+	connector := pptx.NewElbowConnector(pptx.Inches(1), pptx.Inches(1), pptx.Inches(4), pptx.Inches(3)).
+		WithAdjustmentValue("adj1", 25000).
+		WithAdjustment("adj2", "val 50000")
+
+	slide := pptx.NewSlide("").WithBlankLayout().AddConnector(connector)
+	data, err := pptx.CreateWithSlides("Deck", []pptx.SlideContent{slide})
+	if err != nil {
+		t.Fatalf("CreateWithSlides returned error: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	checks := []string{
+		`<a:prstGeom prst="bentConnector3"><a:avLst><a:gd name="adj1" fmla="val 25000"/><a:gd name="adj2" fmla="val 50000"/></a:avLst></a:prstGeom>`,
 	}
 	for _, needle := range checks {
 		if !strings.Contains(slideXML, needle) {

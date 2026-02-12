@@ -93,6 +93,8 @@ type ShapeLine struct {
 	Color string
 	Width styling.Length
 	Dash  string
+	Cap   string
+	Join  string
 }
 
 // NewShapeLine creates a line style with RGB color and EMU width.
@@ -110,6 +112,18 @@ func (l ShapeLine) WithDash(dash string) ShapeLine {
 	return l
 }
 
+// WithCap sets line cap style.
+func (l ShapeLine) WithCap(cap string) ShapeLine {
+	l.Cap = NormalizeLineCap(cap)
+	return l
+}
+
+// WithJoin sets line join style.
+func (l ShapeLine) WithJoin(join string) ShapeLine {
+	l.Join = NormalizeLineJoin(join)
+	return l
+}
+
 // Validate checks for validity of line parameters.
 func (l ShapeLine) Validate() error {
 	if !common.IsHexColor(l.Color) {
@@ -120,6 +134,12 @@ func (l ShapeLine) Validate() error {
 	}
 	if !IsDrawingLineDash(l.Dash) {
 		return fmt.Errorf("invalid line dash %q", l.Dash)
+	}
+	if !IsLineCap(l.Cap) {
+		return fmt.Errorf("invalid line cap %q", l.Cap)
+	}
+	if !IsLineJoin(l.Join) {
+		return fmt.Errorf("invalid line join %q", l.Join)
 	}
 	return nil
 }

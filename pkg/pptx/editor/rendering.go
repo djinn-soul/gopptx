@@ -156,7 +156,15 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 			e.notesInventory[slidePath] = notesPath
 		}
 
-		e.parts[notesPath] = []byte(pptxxml.NotesSlide(slide.Notes))
+		var body []elements.TextParagraph
+		if len(slide.NotesBody) > 0 {
+			body = slide.NotesBody
+		} else {
+			p := elements.NewTextParagraph()
+			p.Runs = append(p.Runs, elements.NewTextRun(slide.Notes))
+			body = []elements.TextParagraph{p}
+		}
+		e.parts[notesPath] = []byte(pptxxml.NotesSlide(body))
 
 		notesRelsPath := common.SlideRelsPartName(notesPath)
 		e.parts[notesRelsPath] = []byte(pptxxml.NotesSlideRelationships(slideNumber))

@@ -25,20 +25,31 @@ func BuildRenderedNotesParts(slides []elements.SlideContent) []RenderedNotesPart
 
 	for i := range slides {
 		slide := slides[i]
-		if strings.TrimSpace(slide.Notes) == "" {
+		hasNotes := strings.TrimSpace(slide.Notes) != "" || len(slide.NotesBody) > 0
+		if !hasNotes {
 			continue
 		}
 
 		wg.Add(1)
-		go func(index int, notes string) {
+		go func(index int, s elements.SlideContent) {
 			defer wg.Done()
 			slideNumber := index + 1
+
+			var body []elements.TextParagraph
+			if len(s.NotesBody) > 0 {
+				body = s.NotesBody
+			} else {
+				p := elements.NewTextParagraph()
+				p.Runs = append(p.Runs, elements.NewTextRun(s.Notes))
+				body = []elements.TextParagraph{p}
+			}
+
 			parts[index] = RenderedNotesPart{
 				SlideNumber: slideNumber,
-				SlideXML:    pptxxml.NotesSlide(notes),
+				SlideXML:    pptxxml.NotesSlide(body),
 				RelsXML:     pptxxml.NotesSlideRelationships(slideNumber),
 			}
-		}(i, slide.Notes)
+		}(i, slide)
 	}
 
 	wg.Wait()
@@ -79,11 +90,7 @@ func NotesTargetBySlide(parts []RenderedNotesPart) map[int]string {
 
 // WriteNotesFiles writes all notes-related XML files to the presentation package.
 func WriteNotesFiles(zw *zip.Writer, parts []RenderedNotesPart) error {
-	if len(parts) > 0 {
-		if err := common.WriteFile(zw, "ppt/theme/theme2.xml", pptxxml.Theme(nil)); err != nil {
-			return err
-		}
-	}
+	// Note: We use theme1.xml from the main presentation, so we don't need to write theme2.xml anymore.
 
 	for _, part := range parts {
 		path := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", part.SlideNumber)

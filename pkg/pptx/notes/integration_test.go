@@ -31,7 +31,6 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		"ppt/notesSlides/_rels/notesSlide1.xml.rels",
 		"ppt/notesMasters/notesMaster1.xml",
 		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
-		"ppt/theme/theme2.xml",
 	}
 	for _, name := range required {
 		if !testutil.ZipHasFile(zr, name) {
@@ -48,11 +47,13 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		`presentationml.notesSlide+xml`,
 		`/ppt/notesMasters/notesMaster1.xml`,
 		`presentationml.notesMaster+xml`,
-		`/ppt/theme/theme2.xml`,
 	} {
 		if !strings.Contains(contentTypes, needle) {
 			t.Fatalf("expected %q in [Content_Types].xml", needle)
 		}
+	}
+	if strings.Contains(contentTypes, `/ppt/theme/theme2.xml`) {
+		t.Fatalf("did not expect dedicated notes theme override in [Content_Types].xml")
 	}
 
 	presRels := testutil.ReadZipFile(t, zr, "ppt/_rels/presentation.xml.rels")
@@ -76,8 +77,8 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 	notesXML := testutil.ReadZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
 	for _, needle := range []string{
 		`<p:notes`,
-		`<a:t>First line</a:t>`,
-		`<a:t>Second line</a:t>`,
+		`<a:t>First line`,
+		`Second line</a:t>`,
 	} {
 		if !strings.Contains(notesXML, needle) {
 			t.Fatalf("expected %q in notes slide XML", needle)
@@ -95,8 +96,8 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 	}
 
 	notesMasterRels := testutil.ReadZipFile(t, zr, "ppt/notesMasters/_rels/notesMaster1.xml.rels")
-	if !strings.Contains(notesMasterRels, `Target="../theme/theme2.xml"`) {
-		t.Fatalf("expected notes master to reference dedicated notes theme")
+	if !strings.Contains(notesMasterRels, `Target="../theme/theme1.xml"`) {
+		t.Fatalf("expected notes master to reference presentation theme")
 	}
 
 	appXML := testutil.ReadZipFile(t, zr, "docProps/app.xml")

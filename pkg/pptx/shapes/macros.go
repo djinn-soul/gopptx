@@ -122,6 +122,10 @@ func NewWedgeRectCallout(x, y, w, h float64) Shape {
 	return NewShape(ShapeTypeWedgeRectCallout, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
 }
 
+func NewWedgeRRectCallout(x, y, w, h float64) Shape {
+	return NewShape(ShapeTypeWedgeRRectCallout, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+}
+
 func NewWedgeEllipseCallout(x, y, w, h float64) Shape {
 	return NewShape(ShapeTypeWedgeEllipseCallout, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
 }
@@ -246,8 +250,16 @@ func NewStar6(x, y, size float64) Shape {
 	return NewShape(ShapeTypeStar6, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
 }
 
+func NewStar7(x, y, size float64) Shape {
+	return NewShape(ShapeTypeStar7, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+}
+
 func NewStar8(x, y, size float64) Shape {
 	return NewShape(ShapeTypeStar8, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+}
+
+func NewStar10(x, y, size float64) Shape {
+	return NewShape(ShapeTypeStar10, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
 }
 
 func NewStar12(x, y, size float64) Shape {

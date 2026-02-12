@@ -8,6 +8,8 @@ import (
 type (
 	// Connector is one connector.
 	Connector = shapes.Connector
+	// ConnectorAdjustment is one connector geometry adjustment point.
+	ConnectorAdjustment = shapes.ConnectorAdjustment
 )
 
 const (
@@ -61,4 +63,9 @@ func ConnectStartAuto(c Connector, shapeIndex int) Connector {
 // ConnectEndAuto anchors the connector end to a shape and auto-selects the site.
 func ConnectEndAuto(c Connector, shapeIndex int) Connector {
 	return c.ConnectEndAuto(shapeIndex)
+}
+
+// AutoReroute recalculates connector sites from current shape positions.
+func AutoReroute(c Connector, shapes []Shape) Connector {
+	return c.AutoReroute(shapes)
 }

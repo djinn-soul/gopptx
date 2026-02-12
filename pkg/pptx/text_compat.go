@@ -7,6 +7,7 @@ import (
 type (
 	TextRun            = text.TextRun
 	TextParagraphStyle = text.TextParagraphStyle
+	TextParagraph      = text.TextParagraph
 )
 
 const (
@@ -37,6 +38,10 @@ const (
 
 func NewTextRun(txt string) TextRun {
 	return text.NewTextRun(txt)
+}
+
+func NewTextParagraph() TextParagraph {
+	return text.NewTextParagraph()
 }
 
 func NewTextParagraphStyle() TextParagraphStyle {

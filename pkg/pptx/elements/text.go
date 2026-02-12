@@ -10,6 +10,9 @@ type (
 
 	// TextParagraphStyle describes paragraph-level formatting for one bullet line.
 	TextParagraphStyle = text.TextParagraphStyle
+
+	// TextParagraph represents a single paragraph of text with runs and styling.
+	TextParagraph = text.TextParagraph
 )
 
 const (
@@ -32,6 +35,10 @@ const (
 
 func NewTextRun(txt string) TextRun {
 	return text.NewTextRun(txt)
+}
+
+func NewTextParagraph() TextParagraph {
+	return text.NewTextParagraph()
 }
 
 func DefaultTextParagraphStyle() TextParagraphStyle {

@@ -1,6 +1,8 @@
 package shapes
 
 import (
+	"strings"
+
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
@@ -134,13 +136,38 @@ func ToXMLConnectorSpec(connector Connector, startSiteIndex *int, endSiteIndex *
 		Label:           connector.Label,
 		AltText:         connector.AltText,
 		IsDecorative:    connector.IsDecorative,
+		Adjustments:     toXMLConnectorAdjustments(connector.Adjustments),
 	}
 }
 
 func ToXMLShapeLineSpec(line ShapeLine) pptxxml.ShapeLineSpec {
+	cap := strings.TrimSpace(line.Cap)
+	if cap != "" {
+		cap = NormalizeLineCap(cap)
+	}
+	join := strings.TrimSpace(line.Join)
+	if join != "" {
+		join = NormalizeLineJoin(join)
+	}
 	return pptxxml.ShapeLineSpec{
 		Color: common.NormalizeHexColor(line.Color),
 		Width: line.Width.Emu(),
 		Dash:  NormalizeDrawingLineDash(line.Dash),
+		Cap:   cap,
+		Join:  join,
 	}
+}
+
+func toXMLConnectorAdjustments(adjustments []ConnectorAdjustment) []pptxxml.ConnectorAdjustmentSpec {
+	if len(adjustments) == 0 {
+		return nil
+	}
+	specs := make([]pptxxml.ConnectorAdjustmentSpec, 0, len(adjustments))
+	for _, adj := range adjustments {
+		specs = append(specs, pptxxml.ConnectorAdjustmentSpec{
+			Name:    adj.Name,
+			Formula: adj.Formula,
+		})
+	}
+	return specs
 }

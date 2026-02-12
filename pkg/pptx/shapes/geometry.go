@@ -18,6 +18,20 @@ const (
 	// LineDashLongDashDot emits a long-dash-dot line.
 	LineDashLongDashDot = "lgDashDot"
 
+	// LineCapFlat renders flat line caps.
+	LineCapFlat = "flat"
+	// LineCapRound renders rounded line caps.
+	LineCapRound = "rnd"
+	// LineCapSquare renders square line caps.
+	LineCapSquare = "sq"
+
+	// LineJoinRound renders round line joins.
+	LineJoinRound = "round"
+	// LineJoinBevel renders bevel line joins.
+	LineJoinBevel = "bevel"
+	// LineJoinMiter renders miter line joins.
+	LineJoinMiter = "miter"
+
 	// ShapeGradientTypeLinear renders a linear gradient.
 	ShapeGradientTypeLinear = "linear"
 	// ShapeGradientTypeRadial renders a radial gradient.
@@ -122,6 +136,50 @@ func NormalizeDrawingLineDash(dash string) string {
 func IsDrawingLineDash(dash string) bool {
 	switch NormalizeDrawingLineDash(dash) {
 	case LineDashSolid, LineDashDash, LineDashDot, LineDashDashDot, LineDashDashDotDot, LineDashLongDash, LineDashLongDashDot:
+		return true
+	default:
+		return false
+	}
+}
+
+func NormalizeLineCap(cap string) string {
+	switch strings.ToLower(strings.TrimSpace(cap)) {
+	case "", LineCapFlat:
+		return LineCapFlat
+	case "round", "rnd":
+		return LineCapRound
+	case "square", "sq":
+		return LineCapSquare
+	default:
+		return strings.TrimSpace(cap)
+	}
+}
+
+func IsLineCap(cap string) bool {
+	switch NormalizeLineCap(cap) {
+	case LineCapFlat, LineCapRound, LineCapSquare:
+		return true
+	default:
+		return false
+	}
+}
+
+func NormalizeLineJoin(join string) string {
+	switch strings.ToLower(strings.TrimSpace(join)) {
+	case "", LineJoinRound:
+		return LineJoinRound
+	case LineJoinBevel:
+		return LineJoinBevel
+	case LineJoinMiter:
+		return LineJoinMiter
+	default:
+		return strings.TrimSpace(join)
+	}
+}
+
+func IsLineJoin(join string) bool {
+	switch NormalizeLineJoin(join) {
+	case LineJoinRound, LineJoinBevel, LineJoinMiter:
 		return true
 	default:
 		return false

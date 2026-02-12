@@ -39,6 +39,11 @@ This repository groups scripts by intent:
 - `go run ./scripts/smoke/editor/generate_multi_template_smoke`
 - `go run ./scripts/smoke/editor/generate_slide_duplication_smoke`
 
+### Validation
+
+- `go run ./scripts/smoke/validate_smoke_outputs` (scan `smoke_samples/` for `.pptx` and validate package structure)
+- `go run ./scripts/smoke/validate_smoke_outputs -file smoke_samples/01_basic_pptx.pptx`
+
 ## Parity Scripts
 
 - `go run ./scripts/parity/compare_chart_parity_with_ppt_rs`
