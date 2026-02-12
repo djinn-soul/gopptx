@@ -69,6 +69,13 @@ const (
 	TransitionOrientVertical   TransitionOrientation = "vert"
 )
 
+// TransitionSound defines the audio configuration for a transition.
+type TransitionSound struct {
+	RelID string // Relationship ID for the audio file (required)
+	Name  string // Display name (e.g., "Applause")
+	Loop  bool   // Whether to loop the sound
+}
+
 // TransitionOptions provides advanced configuration for a slide transition.
 type TransitionOptions struct {
 	Type                  TransitionType
@@ -77,6 +84,7 @@ type TransitionOptions struct {
 	Orientation           TransitionOrientation
 	SpokeCount            uint32
 	ThruBlk               bool
+	Sound                 *TransitionSound
 	DisableAdvanceOnClick bool
 	AdvanceAfterMS        uint32
 }
@@ -84,6 +92,12 @@ type TransitionOptions struct {
 func (o TransitionOptions) Validate() error {
 	if err := o.Type.Validate(); err != nil {
 		return err
+	}
+
+	if o.Sound != nil {
+		if strings.TrimSpace(o.Sound.RelID) == "" {
+			return fmt.Errorf("transition sound requires a valid relationship ID")
+		}
 	}
 
 	if o.Orientation != "" {
@@ -136,7 +150,7 @@ func (o TransitionOptions) Validate() error {
 }
 
 func (o TransitionOptions) XML() string {
-	if o.Type == TransitionNone || o.Type == TransitionCut {
+	if o.Type == TransitionNone || (o.Type == TransitionCut && o.Sound == nil) {
 		return ""
 	}
 	var b strings.Builder
@@ -150,7 +164,22 @@ func (o TransitionOptions) XML() string {
 	if o.DurationMS > 0 {
 		fmt.Fprintf(&b, ` dur="%d"`, o.DurationMS)
 	}
-	b.WriteString(`><p:`)
+	b.WriteString(`>`)
+
+	if o.Sound != nil {
+		b.WriteString(`<p:sndAc><p:stSnd`)
+		if o.Sound.Loop {
+			b.WriteString(` loop="1"`)
+		}
+		b.WriteString(`><p:snd r:embed="` + escape(o.Sound.RelID) + `"`)
+		if o.Sound.Name != "" {
+			b.WriteString(` name="` + escape(o.Sound.Name) + `"`)
+		}
+		b.WriteString(`/>`)
+		b.WriteString(`</p:stSnd></p:sndAc>`)
+	}
+
+	b.WriteString(`<p:`)
 	b.WriteString(string(o.Type))
 
 	if o.Direction != "" {
@@ -167,6 +196,17 @@ func (o TransitionOptions) XML() string {
 	}
 	b.WriteString(`/></p:transition>`)
 	return b.String()
+}
+
+func escape(value string) string {
+	replacer := strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		">", "&gt;",
+		"\"", "&quot;",
+		"'", "&apos;",
+	)
+	return replacer.Replace(value)
 }
 
 func (t TransitionType) Validate() error {
@@ -187,9 +227,7 @@ func (t TransitionType) Validate() error {
 func (t TransitionType) XML() string {
 	switch t {
 	case TransitionNone, TransitionCut:
-		// Cut is usually default logic, but tests expect empty string for 'cut' case in one test,
-		// but 'TestCreateWithSlidesRendersRepresentativeTransitions' is what we likely need to match.
-		// Wait, TestCreateWithSlidesRendersRepresentativeTransitions says: {name: "cut", transition: TransitionCut, expectXML: ``}
+		// TransitionCut is the default and requires no XML unless options (like sound) are set.
 		return ""
 	case TransitionPush:
 		return `<p:transition><p:push dir="r"/></p:transition>`
@@ -206,8 +244,6 @@ func (t TransitionType) XML() string {
 	case TransitionCover:
 		return `<p:transition><p:cover dir="r"/></p:transition>`
 	default:
-		// For others, we might need a generic fallback or specific implementation.
-		// Assuming simple tag for now if no attributes.
 		return fmt.Sprintf(`<p:transition><p:%s/></p:transition>`, t)
 	}
 }

@@ -40,6 +40,16 @@ func TestTransitionOptionsValidation(t *testing.T) {
 			opts:    TransitionOptions{Type: TransitionPush, Direction: TransitionDirUp},
 			wantErr: false,
 		},
+		{
+			name:    "valid sound",
+			opts:    TransitionOptions{Type: TransitionFade, Sound: &TransitionSound{RelID: "rId2"}},
+			wantErr: false,
+		},
+		{
+			name:    "invalid sound missing relID",
+			opts:    TransitionOptions{Type: TransitionFade, Sound: &TransitionSound{RelID: ""}},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -71,6 +81,38 @@ func TestTransitionXML(t *testing.T) {
 			name: "split horizontal out",
 			opts: TransitionOptions{Type: TransitionSplit, Direction: TransitionDirOut, Orientation: TransitionOrientHorizontal},
 			want: `<p:transition><p:split dir="out" orient="horz"/></p:transition>`,
+		},
+		{
+			name: "fade with sound",
+			opts: TransitionOptions{
+				Type:  TransitionFade,
+				Sound: &TransitionSound{RelID: "rId2", Name: "Applause.wav"},
+			},
+			want: `<p:transition><p:sndAc><p:stSnd><p:snd r:embed="rId2" name="Applause.wav"/></p:stSnd></p:sndAc><p:fade/></p:transition>`,
+		},
+		{
+			name: "fade with looping sound",
+			opts: TransitionOptions{
+				Type:  TransitionFade,
+				Sound: &TransitionSound{RelID: "rId3", Loop: true},
+			},
+			want: `<p:transition><p:sndAc><p:stSnd loop="1"><p:snd r:embed="rId3"/></p:stSnd></p:sndAc><p:fade/></p:transition>`,
+		},
+		{
+			name: "cut with sound",
+			opts: TransitionOptions{
+				Type:  TransitionCut,
+				Sound: &TransitionSound{RelID: "rId4"},
+			},
+			want: `<p:transition><p:sndAc><p:stSnd><p:snd r:embed="rId4"/></p:stSnd></p:sndAc><p:cut/></p:transition>`,
+		},
+		{
+			name: "sound with special characters",
+			opts: TransitionOptions{
+				Type:  TransitionFade,
+				Sound: &TransitionSound{RelID: "rId5", Name: `Applause "Special".wav`},
+			},
+			want: `<p:transition><p:sndAc><p:stSnd><p:snd r:embed="rId5" name="Applause &quot;Special&quot;.wav"/></p:stSnd></p:sndAc><p:fade/></p:transition>`,
 		},
 	}
 

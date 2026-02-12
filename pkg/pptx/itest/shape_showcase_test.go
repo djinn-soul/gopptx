@@ -5,16 +5,16 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	pptxshapes "github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-func TestShapeShowcase(t *testing.T) {
-	builder := pptx.NewPresentationBuilder("Shape Showcase")
+type shapeShowcaseCategory struct {
+	Category string
+	Types    []string
+}
 
-	// List of all shapes we want to showcase
-	shapes := []struct {
-		Category string
-		Types    []string
-	}{
+func shapeShowcaseCategories() []shapeShowcaseCategory {
+	return []shapeShowcaseCategory{
 		{
 			Category: "Basic Shapes",
 			Types: []string{
@@ -84,9 +84,63 @@ func TestShapeShowcase(t *testing.T) {
 				pptx.ShapeTypeActionButtonDocument, pptx.ShapeTypeActionButtonSound, pptx.ShapeTypeActionButtonMovie,
 			},
 		},
+		{
+			Category: "Rectangle Variants",
+			Types: []string{
+				pptx.ShapeTypeSnip1Rect, pptx.ShapeTypeSnip2SameRect, pptx.ShapeTypeSnip2DiagRect,
+				pptx.ShapeTypeRound1Rect, pptx.ShapeTypeRound2SameRect, pptx.ShapeTypeRound2DiagRect,
+				pptx.ShapeTypeSnipRoundRect, pptx.ShapeTypePlaqueTabs, pptx.ShapeTypeSquareTabs,
+				pptx.ShapeTypeCornerTabs,
+			},
+		},
+		{
+			Category: "Math & Special",
+			Types: []string{
+				pptx.ShapeTypeMathMultiply, pptx.ShapeTypeMathDivide, pptx.ShapeTypeMathEqual, pptx.ShapeTypeMathNotEqual,
+				pptx.ShapeTypeGear6, pptx.ShapeTypeGear9, pptx.ShapeTypeChartPlus, pptx.ShapeTypeChartStar,
+				pptx.ShapeTypeChartX, pptx.ShapeTypeBracePair, pptx.ShapeTypeBracketPair, pptx.ShapeTypeLeftBrace,
+				pptx.ShapeTypeRightBrace, pptx.ShapeTypeLeftBracket, pptx.ShapeTypeRightBracket, pptx.ShapeTypeDoubleBrace,
+				pptx.ShapeTypeDoubleBracket, pptx.ShapeTypeLine, pptx.ShapeTypeLineInv,
+			},
+		},
+	}
+}
+
+func flattenShapeShowcaseTypes(categories []shapeShowcaseCategory) []string {
+	total := 0
+	for _, category := range categories {
+		total += len(category.Types)
+	}
+	out := make([]string, 0, total)
+	for _, category := range categories {
+		out = append(out, category.Types...)
+	}
+	return out
+}
+
+func TestShapeShowcaseCatalogCompleteness(t *testing.T) {
+	categories := shapeShowcaseCategories()
+	types := flattenShapeShowcaseTypes(categories)
+	seenCanonical := make(map[string]struct{}, len(types))
+	for _, shapeType := range types {
+		if !pptxshapes.IsShapeType(shapeType) {
+			t.Fatalf("shape type %q is not registered in shape catalog", shapeType)
+		}
+		normalized := pptxshapes.NormalizeShapeType(shapeType)
+		seenCanonical[normalized] = struct{}{}
 	}
 
-	for _, cat := range shapes {
+	// Task 12 target requires at least the 133-shape preset parity set.
+	if len(seenCanonical) < 133 {
+		t.Fatalf("showcase catalog has %d unique canonical shapes; expected at least 133", len(seenCanonical))
+	}
+}
+
+func TestShapeShowcase(t *testing.T) {
+	builder := pptx.NewPresentationBuilder("Shape Showcase")
+	categories := shapeShowcaseCategories()
+
+	for _, cat := range categories {
 		slide := pptx.NewSlide(cat.Category)
 		tbox := pptx.NewTextBox(cat.Category, 0.5, 0.2, 9.0, 0.5)
 		tbox = tbox.WithAutoFit(pptx.TextAutoFitNone)

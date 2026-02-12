@@ -130,7 +130,6 @@ func init() {
 	registerShapeAlias("righttriangle", ShapeTypeRightTriangle)
 	registerShapeAlias("right-triangle", ShapeTypeRightTriangle)
 	registerShapeAlias("right_triangle", ShapeTypeRightTriangle)
-	registerShapeAlias("cylinder", ShapeTypeCan)
 	registerShapeAlias("cross", ShapeTypePlus)
 	registerShapeAlias("smiley", ShapeTypeSmileyFace)
 	registerShapeAlias("lightning", ShapeTypeLightningBolt)
