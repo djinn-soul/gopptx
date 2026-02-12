@@ -3,49 +3,6 @@ package shapes
 import "strings"
 
 const (
-	// ShapeTypeRectangle renders a rectangle shape.
-	ShapeTypeRectangle = "rect"
-	// ShapeTypeRoundedRectangle renders a rounded rectangle.
-	ShapeTypeRoundedRectangle = "roundRect"
-	// ShapeTypeEllipse renders an ellipse shape.
-	ShapeTypeEllipse = "ellipse"
-	// ShapeTypeTriangle renders a triangle shape.
-	ShapeTypeTriangle = "triangle"
-	// ShapeTypeRightTriangle renders a right triangle shape.
-	ShapeTypeRightTriangle = "rtTriangle"
-	// ShapeTypeDiamond renders a diamond shape.
-	ShapeTypeDiamond = "diamond"
-	// ShapeTypePentagon renders a pentagon shape.
-	ShapeTypePentagon = "pentagon"
-	// ShapeTypeHexagon renders a hexagon shape.
-	ShapeTypeHexagon = "hexagon"
-	// ShapeTypeParallelogram renders a parallelogram shape.
-	ShapeTypeParallelogram = "parallelogram"
-	// ShapeTypeFlowChartProcess renders a flowchart process shape.
-	ShapeTypeFlowChartProcess = "flowChartProcess"
-	// ShapeTypeFlowChartDecision renders a flowchart decision shape.
-	ShapeTypeFlowChartDecision = "flowChartDecision"
-	// ShapeTypeFlowChartTerminator renders a flowchart terminator shape.
-	ShapeTypeFlowChartTerminator = "flowChartTerminator"
-	// ShapeTypeRightArrow renders a right arrow shape.
-	ShapeTypeRightArrow = "rightArrow"
-	// ShapeTypeLeftArrow renders a left arrow shape.
-	ShapeTypeLeftArrow = "leftArrow"
-	// ShapeTypeUpArrow renders an up arrow shape.
-	ShapeTypeUpArrow = "upArrow"
-	// ShapeTypeDownArrow renders a down arrow shape.
-	ShapeTypeDownArrow = "downArrow"
-	// ShapeTypeCloud renders a cloud shape.
-	ShapeTypeCloud = "cloud"
-	// ShapeTypeStar5 renders a 5-pointed star.
-	ShapeTypeStar5 = "star5"
-	// ShapeTypeHeart renders a heart shape.
-	ShapeTypeHeart = "heart"
-	// ShapeTypeFlowChartDocument renders a flowchart document shape.
-	ShapeTypeFlowChartDocument = "flowChartDocument"
-	// ShapeTypeFlowChartData renders a flowchart data shape (parallelogram).
-	ShapeTypeFlowChartData = "flowChartInputOutput"
-
 	// LineDashSolid emits a solid line.
 	LineDashSolid = "solid"
 	// LineDashDash emits a dashed line.
@@ -117,83 +74,28 @@ const (
 	ConnectionSiteCenter = "center"
 )
 
+// NormalizeShapeType resolves aliases and normalizes casing for shape types.
 func NormalizeShapeType(shapeType string) string {
-	t := strings.ToLower(strings.TrimSpace(shapeType))
-	switch t {
-	case strings.ToLower(ShapeTypeRectangle), "rectangle":
-		return ShapeTypeRectangle
-	case strings.ToLower(ShapeTypeRoundedRectangle), "roundedrectangle", "rounded-rectangle", "rounded_rectangle":
-		return ShapeTypeRoundedRectangle
-	case strings.ToLower(ShapeTypeEllipse), "circle":
-		return ShapeTypeEllipse
-	case strings.ToLower(ShapeTypeTriangle):
-		return ShapeTypeTriangle
-	case strings.ToLower(ShapeTypeRightTriangle), "righttriangle", "right-triangle", "right_triangle":
-		return ShapeTypeRightTriangle
-	case strings.ToLower(ShapeTypeDiamond):
-		return ShapeTypeDiamond
-	case strings.ToLower(ShapeTypePentagon):
-		return ShapeTypePentagon
-	case strings.ToLower(ShapeTypeHexagon):
-		return ShapeTypeHexagon
-	case strings.ToLower(ShapeTypeParallelogram):
-		return ShapeTypeParallelogram
-	case strings.ToLower(ShapeTypeFlowChartProcess), "flowchartprocess", "flowchart-process", "flowchart_process":
-		return ShapeTypeFlowChartProcess
-	case strings.ToLower(ShapeTypeFlowChartDecision), "flowchartdecision", "flowchart-decision", "flowchart_decision":
-		return ShapeTypeFlowChartDecision
-	case strings.ToLower(ShapeTypeFlowChartTerminator), "flowchartterminator", "flowchart-terminator", "flowchart_terminator":
-		return ShapeTypeFlowChartTerminator
-	case strings.ToLower(ShapeTypeRightArrow), "rightarrow", "right-arrow", "right_arrow":
-		return ShapeTypeRightArrow
-	case strings.ToLower(ShapeTypeLeftArrow), "leftarrow", "left-arrow", "left_arrow":
-		return ShapeTypeLeftArrow
-	case strings.ToLower(ShapeTypeUpArrow), "uparrow", "up-arrow", "up_arrow":
-		return ShapeTypeUpArrow
-	case strings.ToLower(ShapeTypeDownArrow), "downarrow", "down-arrow", "down_arrow":
-		return ShapeTypeDownArrow
-	case strings.ToLower(ShapeTypeCloud):
-		return ShapeTypeCloud
-	case "star", strings.ToLower(ShapeTypeStar5):
-		return ShapeTypeStar5
-	case "heart", strings.ToLower(ShapeTypeHeart):
-		return ShapeTypeHeart
-	case "document", "flowchartdocument", strings.ToLower(ShapeTypeFlowChartDocument):
-		return ShapeTypeFlowChartDocument
-	case "data", "flowchartdata", "flowchartinputoutput", strings.ToLower(ShapeTypeFlowChartData):
-		return ShapeTypeFlowChartData
-	default:
-		return strings.TrimSpace(shapeType)
+	trimmed := strings.TrimSpace(shapeType)
+	t := strings.ToLower(trimmed)
+
+	// Check alias registry first.
+	if canonical, ok := shapeAliasRegistry[t]; ok {
+		return canonical
 	}
+
+	// Check if the lowercased value matches a known type.
+	if shapeTypeRegistry[t] {
+		return t
+	}
+
+	// Pass through unknown types for extensibility.
+	return trimmed
 }
 
+// IsShapeType reports whether shapeType is a recognized OOXML preset.
 func IsShapeType(shapeType string) bool {
-	switch NormalizeShapeType(shapeType) {
-	case ShapeTypeRectangle,
-		ShapeTypeRoundedRectangle,
-		ShapeTypeEllipse,
-		ShapeTypeTriangle,
-		ShapeTypeRightTriangle,
-		ShapeTypeDiamond,
-		ShapeTypePentagon,
-		ShapeTypeHexagon,
-		ShapeTypeParallelogram,
-		ShapeTypeFlowChartProcess,
-		ShapeTypeFlowChartDecision,
-		ShapeTypeFlowChartTerminator,
-		ShapeTypeRightArrow,
-		ShapeTypeLeftArrow,
-		ShapeTypeUpArrow,
-		ShapeTypeDownArrow,
-		ShapeTypeCloud,
-		ShapeTypeStar5,
-		ShapeTypeHeart,
-		ShapeTypeFlowChartDocument,
-		ShapeTypeFlowChartData:
-		return true
-	default:
-		return false
-	}
+	return shapeTypeRegistry[NormalizeShapeType(shapeType)]
 }
 
 func NormalizeDrawingLineDash(dash string) string {

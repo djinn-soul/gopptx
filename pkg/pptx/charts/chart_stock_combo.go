@@ -6,20 +6,22 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // StockHLCChart is a stock chart with High/Low/Close series.
 type StockHLCChart struct {
-	Title                 string
-	TitleOverlay          bool
-	Categories            []string
-	HighValues            []float64
-	LowValues             []float64
-	CloseValues           []float64
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
+	Title        string
+	TitleOverlay bool
+	Categories   []string
+	HighValues   []float64
+	LowValues    []float64
+	CloseValues  []float64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	ShowLegend            bool
 	LegendPosition        string
 	LegendOverlay         bool
@@ -39,15 +41,16 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, close 
 	lowVals := append([]float64(nil), low...)
 	closeVals := append([]float64(nil), close...)
 	return StockHLCChart{
-		Title:                 "Chart",
-		Categories:            cats,
-		HighValues:            highVals,
-		LowValues:             lowVals,
-		CloseValues:           closeVals,
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		Title:       "Chart",
+		Categories:  cats,
+		HighValues:  highVals,
+		LowValues:   lowVals,
+		CloseValues: closeVals,
+		X:           styling.Emu(685800),
+		Y:           styling.Emu(1800000),
+		CX:          styling.Emu(7772400),
+		CY:          styling.Emu(4114800),
+
 		ShowLegend:            true,
 		LegendPosition:        LegendPositionRight,
 		ShowDataLabels:        false,
@@ -60,17 +63,18 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, close 
 // ToChartSpec converts StockHLCChart to internal XML spec.
 func (c StockHLCChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindStockHLC,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		Categories:            CopyStringSlice(c.Categories),
-		HighValues:            CopyFloat64Slice(c.HighValues),
-		LowValues:             CopyFloat64Slice(c.LowValues),
-		CloseValues:           CopyFloat64Slice(c.CloseValues),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
+		Kind:         pptxxml.ChartKindStockHLC,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		Categories:   CopyStringSlice(c.Categories),
+		HighValues:   CopyFloat64Slice(c.HighValues),
+		LowValues:    CopyFloat64Slice(c.LowValues),
+		CloseValues:  CopyFloat64Slice(c.CloseValues),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		ShowLegend:            c.ShowLegend,
 		LegendPosition:        c.LegendPosition,
 		LegendOverlay:         c.LegendOverlay,
@@ -95,6 +99,7 @@ func (c StockHLCChart) Validate(slideIndex int) error {
 		c.Y,
 		c.CX,
 		c.CY,
+
 		c.ValueFormat,
 		c.LegendPosition,
 		c.ValueAxisCrossBetween,
@@ -154,15 +159,16 @@ func (c StockOHLCChart) Validate(slideIndex int) error {
 
 // ComboChart mixes bar and line series on one category axis.
 type ComboChart struct {
-	Title                 string
-	TitleOverlay          bool
-	Categories            []string
-	BarSeries             []Series
-	LineSeries            []Series
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
+	Title        string
+	TitleOverlay bool
+	Categories   []string
+	BarSeries    []Series
+	LineSeries   []Series
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	ShowLegend            bool
 	LegendPosition        string
 	LegendOverlay         bool
@@ -178,14 +184,15 @@ type ComboChart struct {
 
 func NewComboChart(categories []string, barSeries []Series, lineSeries []Series) ComboChart {
 	return ComboChart{
-		Title:                 "Chart",
-		Categories:            append([]string(nil), categories...),
-		BarSeries:             CopySeriesList(barSeries),
-		LineSeries:            CopySeriesList(lineSeries),
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		Title:      "Chart",
+		Categories: append([]string(nil), categories...),
+		BarSeries:  CopySeriesList(barSeries),
+		LineSeries: CopySeriesList(lineSeries),
+		X:          styling.Emu(685800),
+		Y:          styling.Emu(1800000),
+		CX:         styling.Emu(7772400),
+		CY:         styling.Emu(4114800),
+
 		ShowLegend:            true,
 		LegendPosition:        LegendPositionRight,
 		ShowDataLabels:        false,
@@ -198,16 +205,17 @@ func NewComboChart(categories []string, barSeries []Series, lineSeries []Series)
 // ToChartSpec converts ComboChart to internal XML spec.
 func (c ComboChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindCombo,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		Categories:            CopyStringSlice(c.Categories),
-		BarSeries:             ToXMLSeries(c.BarSeries),
-		LineSeries:            ToXMLSeries(c.LineSeries),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
+		Kind:         pptxxml.ChartKindCombo,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		Categories:   CopyStringSlice(c.Categories),
+		BarSeries:    ToXMLSeries(c.BarSeries),
+		LineSeries:   ToXMLSeries(c.LineSeries),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		ShowLegend:            c.ShowLegend,
 		LegendPosition:        c.LegendPosition,
 		LegendOverlay:         c.LegendOverlay,
@@ -233,6 +241,7 @@ func (c ComboChart) Validate(slideIndex int) error {
 		c.Y,
 		c.CX,
 		c.CY,
+
 		false,
 	); err != nil {
 		return err
@@ -282,10 +291,11 @@ func validateStockCore(
 	slideIndex int,
 	title string,
 	categories []string,
-	x int64,
-	y int64,
-	cx int64,
-	cy int64,
+	x styling.Length,
+	y styling.Length,
+	cx styling.Length,
+	cy styling.Length,
+
 	valueFormat string,
 	legendPosition string,
 	valueAxisCrossBetween string,

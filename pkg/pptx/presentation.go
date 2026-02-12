@@ -15,6 +15,8 @@ type (
 	PresentationMetadata = presentation.PresentationMetadata
 	// SlideSize defines presentation dimensions in EMUs.
 	SlideSize = presentation.SlideSize
+	// CustomXMLPart represents an embedded custom XML document.
+	CustomXMLPart = common.CustomXMLPart
 )
 
 // Default slide sizes.

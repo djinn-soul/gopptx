@@ -2,6 +2,7 @@ package shapes
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
@@ -34,7 +35,7 @@ type Placeholder struct {
 	Name  string
 
 	// underlying shape reference or geometry for layout inheritance
-	X, Y, CX, CY int64
+	X, Y, CX, CY styling.Length
 }
 
 // InsertPicture inserts an image into the placeholder.

@@ -7,9 +7,9 @@ import (
 
 const (
 	// SlideWidth is the standard width of a 4:3 slide in EMU.
-	SlideWidth = layout.SlideWidth
+	SlideWidth Length = layout.SlideWidth
 	// SlideHeight is the standard height of a 4:3 slide in EMU.
-	SlideHeight = layout.SlideHeight
+	SlideHeight Length = layout.SlideHeight
 
 	// OrientationHorizontal represents left-to-right or horizontal distribution.
 	OrientationHorizontal = layout.OrientationHorizontal

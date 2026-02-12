@@ -1,6 +1,7 @@
 package pptxxml
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -12,8 +13,8 @@ type TextRunSpec struct {
 	Text          string
 	Bold          bool
 	Italic        bool
-	Underline     bool
-	Strikethrough bool
+	Underline     string
+	Strikethrough string
 	Subscript     bool
 	Superscript   bool
 	Color         string
@@ -56,10 +57,10 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	b.WriteString(`" i="`)
 	b.WriteString(boolToFlag(run.Italic || contentStyle.Italic))
 	b.WriteString(`" u="`)
-	b.WriteString(runUnderlineValue(run.Underline || contentStyle.Underline))
+	b.WriteString(runUnderlineValue(run.Underline, contentStyle.Underline))
 	b.WriteString(`"`)
-	if run.Strikethrough {
-		b.WriteString(` strike="sngStrike"`)
+	if run.Strikethrough != "" && run.Strikethrough != "none" {
+		b.WriteString(fmt.Sprintf(` strike="%s"`, Escape(run.Strikethrough)))
 	}
 	if run.Subscript {
 		b.WriteString(` baseline="-25000"`)
@@ -128,8 +129,11 @@ func runFont(run TextRunSpec) string {
 	return ""
 }
 
-func runUnderlineValue(underline bool) string {
-	if underline {
+func runUnderlineValue(underline string, defaultUnderline bool) string {
+	if underline != "" && underline != "none" {
+		return underline
+	}
+	if defaultUnderline {
 		return "sng"
 	}
 	return "none"

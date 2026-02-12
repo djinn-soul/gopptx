@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
@@ -135,8 +136,8 @@ func (p *markdownParser) consumeTable(startLine int) error {
 		}
 	}
 
-	columnWidth := int64(8230200 / columnCount)
-	columnWidths := make([]int64, columnCount)
+	columnWidth := styling.Emu(int64(8230200 / columnCount))
+	columnWidths := make([]styling.Length, columnCount)
 	for i := range columnWidths {
 		columnWidths[i] = columnWidth
 	}

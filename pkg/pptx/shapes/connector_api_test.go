@@ -12,7 +12,7 @@ import (
 
 func TestCreateWithSlidesRendersCustomShape(t *testing.T) {
 	shape := pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(1.2), pptx.Inches(1.4), pptx.Inches(2.8), pptx.Inches(1.3)).
-		WithFill(pptx.NewShapeFill("4472C4").WithTransparency(25)).
+		WithFill(pptx.NewShapeFill("4472C4").WithTransparency(0.25)).
 		WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.5)).WithDash(pptx.LineDashDash)).
 		WithText("Service")
 

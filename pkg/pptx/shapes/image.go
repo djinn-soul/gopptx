@@ -3,6 +3,8 @@ package shapes
 import (
 	"encoding/base64"
 	"fmt"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // ImageCrop defines cropping details for an image.
@@ -15,14 +17,15 @@ type ImageCrop struct {
 
 // Image describes one image placement.
 type Image struct {
-	Path         string
-	SourceURL    string
-	Data         []byte
-	Format       string
-	X            int64
-	Y            int64
-	CX           int64
-	CY           int64
+	Path      string
+	SourceURL string
+	Data      []byte
+	Format    string
+	X         styling.Length
+	Y         styling.Length
+	CX        styling.Length
+	CY        styling.Length
+
 	Rotation     float64
 	Crop         ImageCrop
 	FlipH        bool
@@ -35,17 +38,17 @@ type Image struct {
 }
 
 // NewImage creates an image placement.
-func NewImage(path string, x, y, cx, cy int64) Image {
+func NewImage(path string, x, y, cx, cy styling.Length) Image {
 	return Image{Path: path, X: x, Y: y, CX: cx, CY: cy}
 }
 
 // NewImageFromBytes creates an image placement from raw bytes.
-func NewImageFromBytes(data []byte, format string, x, y, cx, cy int64) Image {
+func NewImageFromBytes(data []byte, format string, x, y, cx, cy styling.Length) Image {
 	return Image{Data: data, Format: format, X: x, Y: y, CX: cx, CY: cy}
 }
 
 // NewImageFromBase64 creates an image placement from a base64 string.
-func NewImageFromBase64(b64 string, format string, x, y, cx, cy int64) (Image, error) {
+func NewImageFromBase64(b64 string, format string, x, y, cx, cy styling.Length) (Image, error) {
 	data, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
 		return Image{}, fmt.Errorf("invalid base64 image data: %w", err)
@@ -54,7 +57,7 @@ func NewImageFromBase64(b64 string, format string, x, y, cx, cy int64) (Image, e
 }
 
 // NewImageFromURL creates an image placement from a URL.
-func NewImageFromURL(url string, x, y, cx, cy int64) Image {
+func NewImageFromURL(url string, x, y, cx, cy styling.Length) Image {
 	return Image{SourceURL: url, X: x, Y: y, CX: cx, CY: cy}
 }
 

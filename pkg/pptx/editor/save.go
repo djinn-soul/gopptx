@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
@@ -28,7 +29,21 @@ func (e *PresentationEditor) Save(filePath string) error {
 	zw := zip.NewWriter(file)
 	defer func() { _ = zw.Close() }()
 
-	allNames := partNamesSorted(e.parts)
+	// Iterate over ALL unique part names from both existing state and updates
+	allNamesSet := make(map[string]struct{})
+	for k := range e.parts {
+		allNamesSet[k] = struct{}{}
+	}
+	for k := range updatedParts {
+		allNamesSet[k] = struct{}{}
+	}
+
+	allNames := make([]string, 0, len(allNamesSet))
+	for k := range allNamesSet {
+		allNames = append(allNames, k)
+	}
+	sort.Strings(allNames)
+
 	for _, name := range allNames {
 		content := e.parts[name]
 		if updated, ok := updatedParts[name]; ok {
@@ -56,17 +71,27 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	}
 	out[common.PresentationXMLPath] = []byte(presentationXML)
 
-	presentationRelsXML, err := renderPresentationRelsXML(e.nonSlideRels, e.slides)
+	hasSections := len(e.sections) > 0
+	presentationRelsXML, err := renderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections)
 	if err != nil {
 		return nil, err
 	}
 	out[common.PresentationRelPath] = []byte(presentationRelsXML)
 
-	contentTypesXML, err := rewriteContentTypesSlideOverrides(e.parts[common.ContentTypesPath], e.slides)
+	mediaPaths := make([]string, 0, len(e.mediaInventory))
+	for _, p := range e.mediaInventory {
+		mediaPaths = append(mediaPaths, p)
+	}
+
+	contentTypesXML, err := rewriteContentTypes(e.parts[common.ContentTypesPath], e.slides, mediaPaths, hasSections)
 	if err != nil {
 		return nil, err
 	}
 	out[common.ContentTypesPath] = []byte(contentTypesXML)
+
+	if hasSections {
+		out["ppt/sectionList.xml"] = []byte(buildSectionListXML(e.sections))
+	}
 
 	return out, nil
 }

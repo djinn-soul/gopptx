@@ -2,6 +2,7 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 type (
@@ -28,6 +29,9 @@ type (
 	TextFrameWrap = shapes.TextFrameWrap
 	// TextFrameAutoFit specifies how text is automatically resized or how the shape is resized.
 	TextFrameAutoFit = shapes.TextFrameAutoFit
+
+	// Length represents a distance in English Metric Units (EMU).
+	Length = styling.Length
 )
 
 const (
@@ -70,7 +74,7 @@ const (
 	TextAutoFitNormal = shapes.TextAutoFitNormal
 )
 
-func NewShape(shapeType string, x, y, cx, cy int64) Shape {
+func NewShape(shapeType string, x, y, cx, cy Length) Shape {
 	return shapes.NewShape(shapeType, x, y, cx, cy)
 }
 
@@ -78,7 +82,7 @@ func NewShapeFill(color string) ShapeFill {
 	return shapes.NewShapeFill(color)
 }
 
-func NewShapeLine(color string, width int64) ShapeLine {
+func NewShapeLine(color string, width Length) ShapeLine {
 	return shapes.NewShapeLine(color, width)
 }
 

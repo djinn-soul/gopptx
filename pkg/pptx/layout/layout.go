@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
 	// SlideWidth is the standard width of a 4:3 slide in EMU.
-	SlideWidth int64 = 9144000
+	SlideWidth styling.Length = 9144000
 	// SlideHeight is the standard height of a 4:3 slide in EMU.
-	SlideHeight int64 = 6858000
+	SlideHeight styling.Length = 6858000
 )
 
 const (
@@ -22,19 +23,19 @@ const (
 
 // Center calculates the (X, Y) coordinates to center an element of size (cx, cy)
 // within the standard 4:3 slide bounds.
-func Center(cx, cy int64) (x, y int64) {
+func Center(cx, cy styling.Length) (x, y styling.Length) {
 	return CenterInSize(cx, cy, SlideWidth, SlideHeight)
 }
 
 // CenterInSize calculates the (X, Y) coordinates to center an element of size (cx, cy)
 // within total dimensions (totalW, totalH).
-func CenterInSize(cx, cy, totalW, totalH int64) (x, y int64) {
+func CenterInSize(cx, cy, totalW, totalH styling.Length) (x, y styling.Length) {
 	return (totalW - cx) / 2, (totalH - cy) / 2
 }
 
 // CenterInBox calculates the (X, Y) coordinates to center an element of size (cx, cy)
 // within a specific bounding box.
-func CenterInBox(cx, cy int64, bounds common.Box) (x, y int64) {
+func CenterInBox(cx, cy styling.Length, bounds common.Box) (x, y styling.Length) {
 	x = bounds.X + (bounds.CX-cx)/2
 	y = bounds.Y + (bounds.CY-cy)/2
 	return x, y
@@ -43,31 +44,32 @@ func CenterInBox(cx, cy int64, bounds common.Box) (x, y int64) {
 // Grid calculates a sequence of bounding boxes for a grid layout.
 // rows and cols must be greater than zero. margin is the spacing between elements.
 // The grid fills the standard slide area.
-func Grid(rows, cols int, margin int64) ([]common.Box, error) {
+func Grid(rows, cols int, margin styling.Length) ([]common.Box, error) {
 	return GridInBox(rows, cols, margin, common.Box{X: 0, Y: 0, CX: SlideWidth, CY: SlideHeight})
 }
 
 // GridInBox calculates a sequence of bounding boxes for a grid layout within specific bounds.
-func GridInBox(rows, cols int, margin int64, bounds common.Box) ([]common.Box, error) {
+func GridInBox(rows, cols int, margin styling.Length, bounds common.Box) ([]common.Box, error) {
 	if rows <= 0 || cols <= 0 {
 		return nil, fmt.Errorf("rows and cols must be greater than zero")
 	}
 
-	totalMarginX := margin * int64(cols-1)
-	totalMarginY := margin * int64(rows-1)
+	totalMarginX := margin * styling.Length(cols-1)
+	totalMarginY := margin * styling.Length(rows-1)
 
 	if totalMarginX >= bounds.CX || totalMarginY >= bounds.CY {
 		return nil, fmt.Errorf("margins exceed bounding box dimensions")
 	}
 
-	elementCX := (bounds.CX - totalMarginX) / int64(cols)
-	elementCY := (bounds.CY - totalMarginY) / int64(rows)
+	elementCX := (bounds.CX - totalMarginX) / styling.Length(cols)
+	elementCY := (bounds.CY - totalMarginY) / styling.Length(rows)
 
 	boxes := make([]common.Box, 0, rows*cols)
 	for r := 0; r < rows; r++ {
 		for c := 0; c < cols; c++ {
-			x := bounds.X + int64(c)*(elementCX+margin)
-			y := bounds.Y + int64(r)*(elementCY+margin)
+			x := bounds.X + styling.Length(c)*(elementCX+margin)
+			y := bounds.Y + styling.Length(r)*(elementCY+margin)
+
 			boxes = append(boxes, common.Box{
 				X:  x,
 				Y:  y,
@@ -82,7 +84,7 @@ func GridInBox(rows, cols int, margin int64, bounds common.Box) ([]common.Box, e
 
 // Stack calculates the starting points for elements placed sequentially with a fixed gap.
 // orientation can be "horizontal" or "vertical".
-func Stack(orientation string, start common.Point, gap int64, elements ...common.Size) ([]common.Point, error) {
+func Stack(orientation string, start common.Point, gap styling.Length, elements ...common.Size) ([]common.Point, error) {
 	points := make([]common.Point, 0, len(elements))
 	currentX := start.X
 	currentY := start.Y
@@ -105,7 +107,7 @@ func Stack(orientation string, start common.Point, gap int64, elements ...common
 // DistributeUniform calculates the top or left coordinates to evenly space elements of identical size within a bound.
 // orientation can be "horizontal" or "vertical".
 // count is the number of elements to distribute.
-func DistributeUniform(orientation string, bounds common.Box, count int, elementSize int64) ([]int64, error) {
+func DistributeUniform(orientation string, bounds common.Box, count int, elementSize styling.Length) ([]styling.Length, error) {
 	if count <= 0 {
 		return nil, fmt.Errorf("count must be greater than zero")
 	}
@@ -116,15 +118,16 @@ func DistributeUniform(orientation string, bounds common.Box, count int, element
 		switch orientation {
 		case OrientationHorizontal:
 			x, _ := CenterInBox(elementSize, 0, bounds)
-			return []int64{x}, nil
+			return []styling.Length{x}, nil
 		case OrientationVertical:
 			_, y := CenterInBox(0, elementSize, bounds)
-			return []int64{y}, nil
+			return []styling.Length{y}, nil
+
 		}
 	}
 
-	var totalAvailable int64
-	var startCoord int64
+	var totalAvailable styling.Length
+	var startCoord styling.Length
 	switch orientation {
 	case OrientationHorizontal:
 		totalAvailable = bounds.CX
@@ -134,15 +137,15 @@ func DistributeUniform(orientation string, bounds common.Box, count int, element
 		startCoord = bounds.Y
 	}
 
-	totalElementSize := elementSize * int64(count)
+	totalElementSize := elementSize * styling.Length(count)
 	if totalElementSize > totalAvailable {
 		return nil, fmt.Errorf("elements exceed available space")
 	}
 
-	gap := (totalAvailable - totalElementSize) / int64(count-1)
-	coords := make([]int64, count)
+	gap := (totalAvailable - totalElementSize) / styling.Length(count-1)
+	coords := make([]styling.Length, count)
 	for i := 0; i < count; i++ {
-		coords[i] = startCoord + int64(i)*(elementSize+gap)
+		coords[i] = startCoord + styling.Length(i)*(elementSize+gap)
 	}
 
 	return coords, nil

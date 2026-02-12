@@ -124,7 +124,7 @@ func addMermaidDiagram(slide *elements.SlideContent, code string, lineNumber int
 	}
 
 	shape := shapes.NewShape(style.shapeType, 762000, 1524000, 8001000, 1714500).
-		WithFill(shapes.NewShapeFill(style.fillColor).WithTransparency(8)).
+		WithFill(shapes.NewShapeFill(style.fillColor).WithTransparency(0.08)).
 		WithLine(shapes.NewShapeLine(style.lineColor, 15875)).
 		WithText(text)
 	*slide = slide.AddShape(shape)

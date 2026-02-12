@@ -2,6 +2,7 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 type (
@@ -36,19 +37,19 @@ const (
 	ConnectionSiteCenter      = shapes.ConnectionSiteCenter
 )
 
-func NewConnector(connectorType string, startX, startY, endX, endY int64) Connector {
+func NewConnector(connectorType string, startX, startY, endX, endY styling.Length) Connector {
 	return shapes.NewConnector(connectorType, startX, startY, endX, endY)
 }
 
-func NewStraightConnector(startX, startY, endX, endY int64) Connector {
+func NewStraightConnector(startX, startY, endX, endY styling.Length) Connector {
 	return shapes.NewStraightConnector(startX, startY, endX, endY)
 }
 
-func NewElbowConnector(startX, startY, endX, endY int64) Connector {
+func NewElbowConnector(startX, startY, endX, endY styling.Length) Connector {
 	return shapes.NewElbowConnector(startX, startY, endX, endY)
 }
 
-func NewCurvedConnector(startX, startY, endX, endY int64) Connector {
+func NewCurvedConnector(startX, startY, endX, endY styling.Length) Connector {
 	return shapes.NewCurvedConnector(startX, startY, endX, endY)
 }
 

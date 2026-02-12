@@ -146,7 +146,7 @@ func generateTextEnhancements() ([]byte, error) {
 }
 
 func generateTables() ([]byte, error) {
-	table := pptx.NewTable([]int64{2000000, 2000000, 2000000}).
+	table := pptx.NewTable([]pptx.Length{pptx.Inches(2), pptx.Inches(2), pptx.Inches(2)}).
 		AddRow([]string{"Header 1", "Header 2", "Header 3"}).
 		AddRow([]string{"Row 1, Col 1", "Row 1, Col 2", "Row 1, Col 3"}).
 		AddRow([]string{"Row 2, Col 1", "Row 2, Col 2", "Row 2, Col 3"})
@@ -156,7 +156,7 @@ func generateTables() ([]byte, error) {
 }
 
 func generateTableMerge() ([]byte, error) {
-	table := pptx.NewTable([]int64{2000000, 2000000, 2000000}).
+	table := pptx.NewTable([]pptx.Length{pptx.Inches(2), pptx.Inches(2), pptx.Inches(2)}).
 		AddStyledRow([]pptx.TableCell{
 			pptx.NewTableCell("Merged Header").WithColSpan(3),
 			pptx.NewTableCell(""),
@@ -303,9 +303,9 @@ func generateImages() ([]byte, error) {
 	_, err := os.Stat(imagePath)
 	var img pptx.Image
 	if err == nil {
-		img = pptx.NewImage(imagePath, 4*914400, 1*914400, 4*914400, 2*914400)
+		img = pptx.NewImage(imagePath, pptx.Inches(4), pptx.Inches(1), pptx.Inches(4), pptx.Inches(2))
 	} else {
-		img = pptx.NewImageFromBytes([]byte("fake png"), "png", 4*914400, 1*914400, 4*914400, 2*914400)
+		img = pptx.NewImageFromBytes([]byte("fake png"), "png", pptx.Inches(4), pptx.Inches(1), pptx.Inches(4), pptx.Inches(2))
 	}
 
 	slide := pptx.NewSlide("Images").
@@ -322,16 +322,16 @@ func generateImagesAdvanced() ([]byte, error) {
 	_, err := os.Stat(imagePath)
 	var img1, img2 pptx.Image
 	if err == nil {
-		img1 = pptx.NewImage(imagePath, 500000, 2000000, 2000000, 2000000).
+		img1 = pptx.NewImage(imagePath, pptx.Emu(500000), pptx.Inches(2), pptx.Inches(2), pptx.Inches(2)).
 			WithRotation(15).
 			WithFlip(true, false)
-		img2 = pptx.NewImage(imagePath, 3000000, 2000000, 2000000, 2000000).
+		img2 = pptx.NewImage(imagePath, pptx.Inches(3), pptx.Inches(2), pptx.Inches(2), pptx.Inches(2)).
 			WithCrop(0.1, 0.1, 0.1, 0.1)
 	} else {
-		img1 = pptx.NewImageFromBytes([]byte("fake png"), "png", 500000, 2000000, 2000000, 2000000).
+		img1 = pptx.NewImageFromBytes([]byte("fake png"), "png", pptx.Emu(500000), pptx.Inches(2), pptx.Inches(2), pptx.Inches(2)).
 			WithRotation(15).
 			WithFlip(true, false)
-		img2 = pptx.NewImageFromBytes([]byte("fake png"), "png", 3000000, 2000000, 2000000, 2000000).
+		img2 = pptx.NewImageFromBytes([]byte("fake png"), "png", pptx.Inches(3), pptx.Inches(2), pptx.Inches(2), pptx.Inches(2)).
 			WithCrop(0.1, 0.1, 0.1, 0.1)
 	}
 
@@ -356,12 +356,12 @@ func generatePlaceholders() ([]byte, error) {
 
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Placeholder Overrides").
-			WithPlaceholderText(0, "title", "Title Override").
-			WithPlaceholderText(1, "body", "Body content override from code"),
+			WithPlaceholderTextAs(0, "title", "Title Override").
+			WithPlaceholderTextAs(1, "body", "Body content override from code"),
 		pptx.NewSlide("Placeholder Image").
-			WithPlaceholderImage(1, "picture", img),
+			WithPlaceholderImageAs(1, "picture", img),
 		pptx.NewSlide("Placeholder Table").
-			WithPlaceholderTable(1, "body", pptx.Table{
+			WithPlaceholderTableAs(1, "body", pptx.Table{
 				Rows: [][]string{
 					{"PH Col 1", "PH Col 2"},
 					{"PH Data 1", "PH Data 2"},
@@ -373,13 +373,13 @@ func generatePlaceholders() ([]byte, error) {
 
 func generateShapes() ([]byte, error) {
 	slide := pptx.NewSlide("Shapes").
-		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, 500000, 1500000, 2000000, 1000000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Emu(500000), pptx.Inches(1.5), pptx.Inches(2), pptx.Inches(1)).
 			WithFill(pptx.NewShapeFill("FF6600")).
 			WithText("Rectangle")).
-		AddShape(pptx.NewShape(pptx.ShapeTypeEllipse, 3000000, 1500000, 1500000, 1000000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeEllipse, pptx.Emu(3000000), pptx.Inches(1.5), pptx.Inches(1.5), pptx.Inches(1)).
 			WithFill(pptx.NewShapeFill("0066FF")).
 			WithText("Ellipse")).
-		AddShape(pptx.NewShape(pptx.ShapeTypeTriangle, 5000000, 1500000, 1500000, 1000000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeTriangle, pptx.Emu(5000000), pptx.Inches(1.5), pptx.Inches(1.5), pptx.Inches(1)).
 			WithFill(pptx.NewShapeFill("00CC00")).
 			WithText("Triangle"))
 
@@ -388,12 +388,12 @@ func generateShapes() ([]byte, error) {
 
 func generateConnectors() ([]byte, error) {
 	slide := pptx.NewSlide("Connectors").
-		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, 500000, 2000000, 1500000, 800000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Emu(500000), pptx.Inches(2), pptx.Inches(1.5), pptx.Emu(800000)).
 			WithFill(pptx.NewShapeFill("3366CC")).WithText("Start")).
-		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, 4000000, 2000000, 1500000, 800000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(4), pptx.Inches(2), pptx.Inches(1.5), pptx.Emu(800000)).
 			WithFill(pptx.NewShapeFill("CC6633")).WithText("End")).
-		AddConnector(pptx.NewConnector(pptx.ConnectorTypeStraight, 2000000, 2400000, 4000000, 2400000).
-			WithLine(pptx.NewShapeLine("333333", 12700)).
+		AddConnector(pptx.NewConnector(pptx.ConnectorTypeStraight, pptx.Inches(2), pptx.Emu(2400000), pptx.Inches(4), pptx.Emu(2400000)).
+			WithLine(pptx.NewShapeLine("333333", pptx.Emu(12700))).
 			WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle))
 
 	return pptx.CreateWithSlides("Task 13: Connectors", []pptx.SlideContent{slide})
@@ -502,9 +502,9 @@ func generateSpeakerNotes() ([]byte, error) {
 
 func generateAnimations() ([]byte, error) {
 	slide := pptx.NewSlide("Animations").
-		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, 1000000, 2000000, 2000000, 1000000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).
 			WithFill(pptx.NewShapeFill("FF6600")).WithText("Fade In")).
-		AddShape(pptx.NewShape(pptx.ShapeTypeEllipse, 4000000, 2000000, 2000000, 1000000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeEllipse, pptx.Inches(4), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).
 			WithFill(pptx.NewShapeFill("0066FF")).WithText("Fly In")).
 		AddAnimation(pptx.NewAnimation(1, pptx.AnimationEntranceFade)).
 		AddAnimation(pptx.NewAnimation(2, pptx.AnimationEntranceFlyIn).WithTrigger(pptx.AnimationAfterPrevious))
@@ -514,7 +514,7 @@ func generateAnimations() ([]byte, error) {
 
 func generateHyperlinks() ([]byte, error) {
 	slide := pptx.NewSlide("Hyperlinks").
-		AddShape(pptx.NewShape(pptx.ShapeTypeRoundedRectangle, 1000000, 2000000, 3000000, 800000).
+		AddShape(pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(3), pptx.Emu(800000)).
 			WithFill(pptx.NewShapeFill("0066CC")).
 			WithText("Click to visit example.com").
 			WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com")).WithTooltip("Open website"))).
@@ -558,11 +558,11 @@ func generateLayoutHelpers() ([]byte, error) {
 }
 
 func generateAccessibility() ([]byte, error) {
-	img := pptx.NewImageFromBytes([]byte("fake"), "png", 1000000, 1000000, 2000000, 2000000).
+	img := pptx.NewImageFromBytes([]byte("fake"), "png", pptx.Inches(1), pptx.Inches(1), pptx.Inches(2), pptx.Inches(2)).
 		WithAltText("A descriptive text for the image").
 		WithDecorative(false)
 
-	shape := pptx.NewShape(pptx.ShapeTypeRectangle, 4000000, 1000000, 2000000, 2000000).
+	shape := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(4), pptx.Inches(1), pptx.Inches(2), pptx.Inches(2)).
 		WithFill(pptx.NewShapeFill("70AD47")).
 		WithAltText("Decorative shape").
 		WithDecorative(true)

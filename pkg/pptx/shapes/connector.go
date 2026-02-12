@@ -3,19 +3,24 @@ package shapes
 import (
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // Connector is one connector.
 type Connector struct {
 	Type            string
-	StartX          int64
-	StartY          int64
-	EndX            int64
-	EndY            int64
+	StartX          styling.Length
+	StartY          styling.Length
+	EndX            styling.Length
+	EndY            styling.Length
 	Line            ShapeLine
 	StartArrow      string
+	StartArrowWidth string
+	StartArrowLen   string
 	EndArrow        string
-	ArrowSize       string
+	EndArrowWidth   string
+	EndArrowLen     string
 	StartShapeIndex int
 	StartSite       string
 	EndShapeIndex   int
@@ -27,29 +32,32 @@ type Connector struct {
 }
 
 // NewConnector creates a connector.
-func NewConnector(connectorType string, startX, startY, endX, endY int64) Connector {
+func NewConnector(connectorType string, startX, startY, endX, endY styling.Length) Connector {
 	return Connector{
-		Type:       NormalizeConnectorType(connectorType),
-		StartX:     startX,
-		StartY:     startY,
-		EndX:       endX,
-		EndY:       endY,
-		Line:       NewShapeLine("000000", 12700),
-		StartArrow: ArrowTypeNone,
-		EndArrow:   ArrowTypeNone,
-		ArrowSize:  ArrowSizeMedium,
+		Type:            NormalizeConnectorType(connectorType),
+		StartX:          startX,
+		StartY:          startY,
+		EndX:            endX,
+		EndY:            endY,
+		Line:            NewShapeLine("000000", styling.Emu(12700)),
+		StartArrow:      ArrowTypeNone,
+		StartArrowWidth: ArrowSizeMedium,
+		StartArrowLen:   ArrowSizeMedium,
+		EndArrow:        ArrowTypeNone,
+		EndArrowWidth:   ArrowSizeMedium,
+		EndArrowLen:     ArrowSizeMedium,
 	}
 }
 
-func NewStraightConnector(startX, startY, endX, endY int64) Connector {
+func NewStraightConnector(startX, startY, endX, endY styling.Length) Connector {
 	return NewConnector(ConnectorTypeStraight, startX, startY, endX, endY)
 }
 
-func NewElbowConnector(startX, startY, endX, endY int64) Connector {
+func NewElbowConnector(startX, startY, endX, endY styling.Length) Connector {
 	return NewConnector(ConnectorTypeElbow, startX, startY, endX, endY)
 }
 
-func NewCurvedConnector(startX, startY, endX, endY int64) Connector {
+func NewCurvedConnector(startX, startY, endX, endY styling.Length) Connector {
 	return NewConnector(ConnectorTypeCurved, startX, startY, endX, endY)
 }
 
@@ -72,9 +80,42 @@ func (c Connector) WithArrows(startArrow string, endArrow string) Connector {
 	return c
 }
 
-// WithArrowSize sets arrowhead size for both ends.
+// WithArrowSize sets arrowhead size (both width and length) for both ends.
 func (c Connector) WithArrowSize(size string) Connector {
-	c.ArrowSize = NormalizeArrowSize(size)
+	return c.WithStartArrowSize(size, size).WithEndArrowSize(size, size)
+}
+
+// WithStartArrowSize sets start arrowhead width and length.
+func (c Connector) WithStartArrowSize(width, length string) Connector {
+	return c.WithStartArrowWidth(width).WithStartArrowLen(length)
+}
+
+// WithEndArrowSize sets end arrowhead width and length.
+func (c Connector) WithEndArrowSize(width, length string) Connector {
+	return c.WithEndArrowWidth(width).WithEndArrowLen(length)
+}
+
+// WithStartArrowWidth sets start arrowhead width.
+func (c Connector) WithStartArrowWidth(width string) Connector {
+	c.StartArrowWidth = NormalizeArrowSize(width)
+	return c
+}
+
+// WithStartArrowLen sets start arrowhead length.
+func (c Connector) WithStartArrowLen(length string) Connector {
+	c.StartArrowLen = NormalizeArrowSize(length)
+	return c
+}
+
+// WithEndArrowWidth sets end arrowhead width.
+func (c Connector) WithEndArrowWidth(width string) Connector {
+	c.EndArrowWidth = NormalizeArrowSize(width)
+	return c
+}
+
+// WithEndArrowLen sets end arrowhead length.
+func (c Connector) WithEndArrowLen(length string) Connector {
+	c.EndArrowLen = NormalizeArrowSize(length)
 	return c
 }
 
@@ -157,7 +198,7 @@ func shapeForIndex(shapes []Shape, shapeIndex int) (Shape, bool) {
 	return shapes[shapeIndex-1], true
 }
 
-func shapeCenterForIndex(shapes []Shape, shapeIndex int) (int64, int64, bool) {
+func shapeCenterForIndex(shapes []Shape, shapeIndex int) (styling.Length, styling.Length, bool) {
 	shape, ok := shapeForIndex(shapes, shapeIndex)
 	if !ok {
 		return 0, 0, false
@@ -165,10 +206,10 @@ func shapeCenterForIndex(shapes []Shape, shapeIndex int) (int64, int64, bool) {
 	return shape.X + shape.CX/2, shape.Y + shape.CY/2, true
 }
 
-func autoConnectionSite(shape Shape, targetX int64, targetY int64) string {
+func autoConnectionSite(shape Shape, targetX styling.Length, targetY styling.Length) string {
 	candidates := shapeConnectionSiteCandidates(shape)
 	bestSite := ConnectionSiteCenter
-	var bestDistance int64
+	var bestDistance styling.Length
 	first := true
 	for _, candidate := range candidates {
 		dx := candidate.x - targetX
@@ -185,8 +226,8 @@ func autoConnectionSite(shape Shape, targetX int64, targetY int64) string {
 
 type connectionSiteCandidate struct {
 	site string
-	x    int64
-	y    int64
+	x    styling.Length
+	y    styling.Length
 }
 
 func shapeConnectionSiteCandidates(shape Shape) [9]connectionSiteCandidate {
@@ -236,8 +277,17 @@ func (connector Connector) Validate(shapeCount int, slideIndex int, connectorInd
 	if !IsArrowType(connector.EndArrow) {
 		return fmt.Errorf("slide %d connector %d end arrow %q is invalid", slideIndex, connectorIndex, connector.EndArrow)
 	}
-	if !IsArrowSize(connector.ArrowSize) {
-		return fmt.Errorf("slide %d connector %d arrow size %q is invalid", slideIndex, connectorIndex, connector.ArrowSize)
+	if !IsArrowSize(connector.StartArrowWidth) {
+		return fmt.Errorf("slide %d connector %d start arrow width %q is invalid", slideIndex, connectorIndex, connector.StartArrowWidth)
+	}
+	if !IsArrowSize(connector.StartArrowLen) {
+		return fmt.Errorf("slide %d connector %d start arrow length %q is invalid", slideIndex, connectorIndex, connector.StartArrowLen)
+	}
+	if !IsArrowSize(connector.EndArrowWidth) {
+		return fmt.Errorf("slide %d connector %d end arrow width %q is invalid", slideIndex, connectorIndex, connector.EndArrowWidth)
+	}
+	if !IsArrowSize(connector.EndArrowLen) {
+		return fmt.Errorf("slide %d connector %d end arrow length %q is invalid", slideIndex, connectorIndex, connector.EndArrowLen)
 	}
 	if err := validateConnectorAnchor("start", connector.StartShapeIndex, connector.StartSite, shapeCount, slideIndex, connectorIndex); err != nil {
 		return err

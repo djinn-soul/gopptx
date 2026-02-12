@@ -35,7 +35,7 @@ func main() {
 		AddBulletWithStyle("Hanging Indent (0.5 inch offset)",
 			pptx.DefaultTextParagraphStyle().
 				WithLeftIndent(pptx.Inches(1)).
-				WithHangingIndent(-pptx.Inches(0.5)))
+				WithHangingIndent(pptx.Inches(-0.5)))
 
 	builder.AddSlide(slide2)
 

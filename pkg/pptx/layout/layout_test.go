@@ -4,25 +4,25 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func TestCenter(t *testing.T) {
 	// Slide is 9144000 x 6858000
-	cx, cy := int64(3657600), int64(1828800)
-	x, y := Center(cx, cy)
+	x, y := Center(3657600, 1828800)
 
-	expectedX := (SlideWidth - cx) / 2
-	expectedY := (SlideHeight - cy) / 2
+	expectedX := (SlideWidth - 3657600) / 2
+	expectedY := (SlideHeight - 1828800) / 2
 
 	if x != expectedX || y != expectedY {
-		t.Errorf("Center(%d, %d) = (%d, %d); expected (%d, %d)", cx, cy, x, y, expectedX, expectedY)
+		t.Errorf("Center(%d, %d) = (%d, %d); expected (%d, %d)", 3657600, 1828800, x, y, expectedX, expectedY)
 	}
 }
 
 func TestGridInBox(t *testing.T) {
 	bounds := common.Box{X: 0, Y: 0, CX: 1000, CY: 1000}
 	rows, cols := 2, 2
-	margin := int64(100)
+	margin := styling.Emu(100)
 
 	boxes, err := GridInBox(rows, cols, margin, bounds)
 	if err != nil {
@@ -34,7 +34,7 @@ func TestGridInBox(t *testing.T) {
 	}
 
 	// Element size should be (1000 - 100) / 2 = 450
-	expectedCX := int64(450)
+	expectedCX := styling.Emu(450)
 	if boxes[0].CX != expectedCX {
 		t.Errorf("expected CX %d, got %d", expectedCX, boxes[0].CX)
 	}
@@ -48,7 +48,7 @@ func TestGridInBox(t *testing.T) {
 func TestStack(t *testing.T) {
 	elements := []common.Size{{CX: 100, CY: 100}, {CX: 200, CY: 200}}
 	start := common.Point{X: 0, Y: 0}
-	gap := int64(50)
+	gap := styling.Emu(50)
 
 	// Horizontal stack
 	points, err := Stack(OrientationHorizontal, start, gap, elements...)
@@ -74,7 +74,7 @@ func TestStack(t *testing.T) {
 func TestDistribute(t *testing.T) {
 	bounds := common.Box{X: 0, Y: 0, CX: 1000, CY: 1000}
 	count := 3
-	elSize := int64(200)
+	elSize := styling.Emu(200)
 
 	// Distribute horizontally
 	coords, err := DistributeUniform(OrientationHorizontal, bounds, count, elSize)
@@ -94,21 +94,20 @@ func TestDistribute(t *testing.T) {
 
 func TestCenterInBox(t *testing.T) {
 	bounds := common.Box{X: 100, Y: 100, CX: 1000, CY: 1000}
-	cx, cy := int64(400), int64(200)
-	x, y := CenterInBox(cx, cy, bounds)
+	x, y := CenterInBox(400, 200, bounds)
 
-	expectedX := int64(100 + (1000-400)/2) // 100 + 300 = 400
-	expectedY := int64(100 + (1000-200)/2) // 100 + 400 = 500
+	expectedX := styling.Emu(100 + (1000-400)/2) // 100 + 300 = 400
+	expectedY := styling.Emu(100 + (1000-200)/2) // 100 + 400 = 500
 
 	if x != expectedX || y != expectedY {
-		t.Errorf("CenterInBox(%d, %d, bounds) = (%d, %d); expected (%d, %d)", cx, cy, x, y, expectedX, expectedY)
+		t.Errorf("CenterInBox(%d, %d, bounds) = (%d, %d); expected (%d, %d)", 400, 200, x, y, expectedX, expectedY)
 	}
 }
 
 func TestDistributeVertical(t *testing.T) {
 	bounds := common.Box{X: 0, Y: 0, CX: 1000, CY: 1000}
 	count := 3
-	elSize := int64(200)
+	elSize := styling.Emu(200)
 
 	// Distribute vertically
 	coords, err := DistributeUniform(OrientationVertical, bounds, count, elSize)
@@ -123,7 +122,7 @@ func TestDistributeVertical(t *testing.T) {
 
 func TestDistributeSingleElement(t *testing.T) {
 	bounds := common.Box{X: 0, Y: 0, CX: 1000, CY: 1000}
-	elSize := int64(200)
+	elSize := styling.Emu(200)
 
 	// Horizontal
 	coords, err := DistributeUniform(OrientationHorizontal, bounds, 1, elSize)

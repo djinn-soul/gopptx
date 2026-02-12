@@ -9,12 +9,12 @@ import (
 func TestPlaceholderOverrides(t *testing.T) {
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Slide 1").
-			WithPlaceholderText(0, "title", "Title Override").
-			WithPlaceholderText(1, "body", "Body Override"),
+			WithPlaceholderTextAs(0, "title", "Title Override").
+			WithPlaceholderTextAs(1, "body", "Body Override"),
 		pptx.NewSlide("Slide 2").
-			WithPlaceholderImage(1, "picture", pptx.NewImageFromBytes([]byte("fake png"), "png", 0, 0, 0, 0)),
+			WithPlaceholderImageAs(1, "picture", pptx.NewImageFromBytes([]byte("fake png"), "png", 0, 0, 0, 0)),
 		pptx.NewSlide("Slide 3").
-			WithPlaceholderTable(1, "body", pptx.Table{
+			WithPlaceholderTableAs(1, "body", pptx.Table{
 				Rows: [][]string{
 					{"A", "B"},
 					{"1", "2"},

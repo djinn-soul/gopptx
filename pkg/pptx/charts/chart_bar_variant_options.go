@@ -1,11 +1,15 @@
 package charts
 
-func (c BarHorizontalChart) Position(x int64, y int64) BarHorizontalChart {
+import (
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+)
+
+func (c BarHorizontalChart) Position(x styling.Length, y styling.Length) BarHorizontalChart {
 	c.BarChart = c.BarChart.Position(x, y)
 	return c
 }
 
-func (c BarHorizontalChart) Size(cx int64, cy int64) BarHorizontalChart {
+func (c BarHorizontalChart) Size(cx styling.Length, cy styling.Length) BarHorizontalChart {
 	c.BarChart = c.BarChart.Size(cx, cy)
 	return c
 }
@@ -75,12 +79,12 @@ func (c BarHorizontalChart) WithValueRange(min float64, max float64) BarHorizont
 	return c
 }
 
-func (c BarStackedChart) Position(x int64, y int64) BarStackedChart {
+func (c BarStackedChart) Position(x styling.Length, y styling.Length) BarStackedChart {
 	c.BarChart = c.BarChart.Position(x, y)
 	return c
 }
 
-func (c BarStackedChart) Size(cx int64, cy int64) BarStackedChart {
+func (c BarStackedChart) Size(cx styling.Length, cy styling.Length) BarStackedChart {
 	c.BarChart = c.BarChart.Size(cx, cy)
 	return c
 }
@@ -150,12 +154,12 @@ func (c BarStackedChart) WithValueRange(min float64, max float64) BarStackedChar
 	return c
 }
 
-func (c BarStacked100Chart) Position(x int64, y int64) BarStacked100Chart {
+func (c BarStacked100Chart) Position(x styling.Length, y styling.Length) BarStacked100Chart {
 	c.BarChart = c.BarChart.Position(x, y)
 	return c
 }
 
-func (c BarStacked100Chart) Size(cx int64, cy int64) BarStacked100Chart {
+func (c BarStacked100Chart) Size(cx styling.Length, cy styling.Length) BarStacked100Chart {
 	c.BarChart = c.BarChart.Size(cx, cy)
 	return c
 }

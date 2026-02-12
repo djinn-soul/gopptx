@@ -18,12 +18,21 @@ var (
 	SlideSize16x9 = SlideSize{Width: 12192000, Height: 6858000}
 )
 
+// CustomXMLPart represents an embedded custom XML document in the PPTX package.
+// The Content field must be a valid XML string.
+type CustomXMLPart struct {
+	Content string `json:"content" xml:",innerxml"`
+}
+
 // PresentationMetadata describes summary information for a PPTX package.
 type PresentationMetadata struct {
-	Title       string
-	Subject     string
-	Creator     string
-	Description string
-	SlideSize   SlideSize
-	SlideCount  int
+	Title        string
+	Subject      string
+	Creator      string
+	Description  string
+	FooterText   string
+	ShowDateTime bool
+	SlideSize    SlideSize
+	SlideCount   int
+	CustomXML    []CustomXMLPart
 }

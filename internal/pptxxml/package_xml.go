@@ -28,7 +28,7 @@ var imageContentTypes = map[string]string{
 }
 
 // ContentTypes renders [Content_Types].xml.
-func ContentTypes(slideCount int, imageExtensions []string, chartCount int, notesSlides []int, includeNotesMaster bool) string {
+func ContentTypes(slideCount int, imageExtensions []string, chartCount int, notesSlides []int, includeNotesMaster bool, customXMLCount int) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -65,6 +65,13 @@ func ContentTypes(slideCount int, imageExtensions []string, chartCount int, note
 <Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`)
 	}
 
+	for i := 1; i <= customXMLCount; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Override PartName="/customXml/item%d.xml" ContentType="application/xml"/>`, i))
+		b.WriteString(fmt.Sprintf(`
+<Override PartName="/customXml/itemProps%d.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/>`, i))
+	}
+
 	b.WriteString(`
 <Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
 <Override PartName="/ppt/slideLayouts/slideLayout2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
@@ -92,7 +99,7 @@ func RootRelationships() string {
 }
 
 // PresentationRelationships renders ppt/_rels/presentation.xml.rels.
-func PresentationRelationships(slideCount int, includeNotesMaster bool) string {
+func PresentationRelationships(slideCount int, includeNotesMaster bool, customXMLCount int) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -108,6 +115,18 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool) string {
 		rid := slideCount + 3
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`, rid))
+	}
+
+	baseRid := slideCount + 3
+	if includeNotesMaster {
+		baseRid++
+	}
+	for i := 1; i <= customXMLCount; i++ {
+		rid := baseRid + (i-1)*2
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" Target="../customXml/item%d.xml"/>`, rid, i))
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="../customXml/itemProps%d.xml"/>`, rid+1, i))
 	}
 
 	b.WriteString(`

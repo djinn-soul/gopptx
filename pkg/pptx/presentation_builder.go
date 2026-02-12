@@ -10,9 +10,12 @@ import (
 
 // PresentationBuilder provides a fluent API for creating presentations.
 type PresentationBuilder struct {
-	title    string
-	metadata PresentationMetadata
-	slides   []SlideContent
+	title           string
+	metadata        PresentationMetadata
+	slides          []SlideContent
+	showSlideNumber bool
+	footerText      string
+	showDateTime    bool
 }
 
 // NewPresentationBuilder creates a new presentation builder with a title.
@@ -48,6 +51,9 @@ func (b *PresentationBuilder) WithMaster(master *elements.SlideMaster) *Presenta
 
 // AddSlide adds a slide to the presentation.
 func (b *PresentationBuilder) AddSlide(slide SlideContent) *PresentationBuilder {
+	if b.showSlideNumber {
+		slide = slide.WithSlideNumber(true)
+	}
 	b.slides = append(b.slides, slide)
 	return b
 }
@@ -75,12 +81,42 @@ func (b *PresentationBuilder) AddShapesSlide(title string, shapes ...Shape) *Pre
 	return b.AddSlide(slide)
 }
 
+// AddCustomXML adds a custom XML part to the presentation.
+func (b *PresentationBuilder) AddCustomXML(content string) *PresentationBuilder {
+	b.metadata.CustomXML = append(b.metadata.CustomXML, CustomXMLPart{Content: content})
+	return b
+}
+
+// WithSlideNumbers enables or disables slide number display for all slides in the presentation.
+func (b *PresentationBuilder) WithSlideNumbers(show bool) *PresentationBuilder {
+	b.showSlideNumber = show
+	for i := range b.slides {
+		b.slides[i] = b.slides[i].WithSlideNumber(show)
+	}
+	return b
+}
+
+// WithFooter sets the footer text for all slides in the presentation.
+func (b *PresentationBuilder) WithFooter(text string) *PresentationBuilder {
+	b.footerText = text
+	return b
+}
+
+// WithDateTime enables or disables date/time display for all slides in the presentation.
+func (b *PresentationBuilder) WithDateTime(show bool) *PresentationBuilder {
+	b.showDateTime = show
+	return b
+}
+
 // Build compiles the presentation into a PPTX byte slice.
 func (b *PresentationBuilder) Build() ([]byte, error) {
 	// Metadata title overrides builder title if both are present.
 	if b.metadata.Title == "" {
 		b.metadata.Title = b.title
 	}
+
+	b.metadata.FooterText = b.footerText
+	b.metadata.ShowDateTime = b.showDateTime
 
 	return CreateWithMetadata(b.metadata, b.slides)
 }

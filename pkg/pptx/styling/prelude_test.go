@@ -68,15 +68,15 @@ func TestUnitConvertersOverflow(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    float64
-		fn       func(float64) int64
-		expected int64
+		fn       func(float64) pptx.Length
+		expected pptx.Length
 	}{
-		{"Inches Overflow", 2e15, pptx.Inches, int64(styling.MaxEMU)},
-		{"Inches Underflow", -2e15, pptx.Inches, int64(-styling.MaxEMU)},
-		{"CM Overflow", 5e15, pptx.Centimeters, int64(styling.MaxEMU)},
-		{"CM Underflow", -5e15, pptx.Centimeters, int64(-styling.MaxEMU)},
-		{"Points Overflow", 1e16, pptx.Points, int64(styling.MaxEMU)},
-		{"Points Underflow", -1e16, pptx.Points, int64(-styling.MaxEMU)},
+		{"Inches Overflow", 2e15, pptx.Inches, styling.MaxEMU},
+		{"Inches Underflow", -2e15, pptx.Inches, -styling.MaxEMU},
+		{"CM Overflow", 5e15, pptx.Centimeters, styling.MaxEMU},
+		{"CM Underflow", -5e15, pptx.Centimeters, -styling.MaxEMU},
+		{"Points Overflow", 1e16, pptx.Points, styling.MaxEMU},
+		{"Points Underflow", -1e16, pptx.Points, -styling.MaxEMU},
 	}
 
 	for _, tt := range tests {

@@ -18,7 +18,7 @@ func TestSampleImageIntegration(t *testing.T) {
 
 	// Use it as a placeholder override
 	slide2 := pptx.NewSlide("Sample Image Placeholder").
-		WithPlaceholderImage(1, "picture", pptx.NewImage(imagePath, 0, 0, 0, 0))
+		WithPlaceholderImageAs(1, "picture", pptx.NewImage(imagePath, 0, 0, 0, 0))
 
 	slides := []pptx.SlideContent{slide1, slide2}
 	_, err := pptx.CreateWithSlides("Sample Integration", slides)

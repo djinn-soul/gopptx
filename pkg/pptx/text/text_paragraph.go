@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // TextParagraphStyle describes paragraph-level formatting for one bullet line.
@@ -18,9 +19,9 @@ type TextParagraphStyle struct {
 	BulletColor    string
 	BulletSize     int
 	Level          int
-	LeftIndent     int64 // EMU
-	RightIndent    int64 // EMU
-	HangingIndent  int64 // EMU
+	LeftIndent     styling.Length // EMU
+	RightIndent    styling.Length // EMU
+	HangingIndent  styling.Length // EMU
 }
 
 // DefaultTextParagraphStyle returns the standard paragraph styling.
@@ -145,20 +146,20 @@ func (p TextParagraphStyle) WithLineSpacingPct(pct int) TextParagraphStyle {
 }
 
 // WithLeftIndent sets the left margin for the paragraph in EMUs.
-func (p TextParagraphStyle) WithLeftIndent(emu int64) TextParagraphStyle {
+func (p TextParagraphStyle) WithLeftIndent(emu styling.Length) TextParagraphStyle {
 	p.LeftIndent = emu
 	return p
 }
 
 // WithRightIndent sets the right margin for the paragraph in EMUs.
-func (p TextParagraphStyle) WithRightIndent(emu int64) TextParagraphStyle {
+func (p TextParagraphStyle) WithRightIndent(emu styling.Length) TextParagraphStyle {
 	p.RightIndent = emu
 	return p
 }
 
 // WithHangingIndent sets the hanging indent (indent of the first line) in EMUs.
 // Note: Usually negative to shift the first line to the left of the rest.
-func (p TextParagraphStyle) WithHangingIndent(emu int64) TextParagraphStyle {
+func (p TextParagraphStyle) WithHangingIndent(emu styling.Length) TextParagraphStyle {
 	p.HangingIndent = emu
 	return p
 }

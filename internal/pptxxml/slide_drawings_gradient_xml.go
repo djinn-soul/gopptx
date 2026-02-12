@@ -23,8 +23,8 @@ func shapeGradientFillXML(fill ShapeGradientFillSpec) string {
 
 func shapeGradientStopXML(stop ShapeGradientStopSpec) string {
 	alpha := ""
-	if stop.TransparencyPct != nil {
-		alpha = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaFromTransparencyPct(*stop.TransparencyPct))
+	if stop.Transparency != nil {
+		alpha = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaFromNormalizedTransparency(*stop.Transparency))
 	}
 	return fmt.Sprintf(`
 <a:gs pos="%d">

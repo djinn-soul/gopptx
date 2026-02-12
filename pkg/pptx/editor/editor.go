@@ -15,6 +15,13 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+// EditorSection describes a PowerPoint section entry.
+type EditorSection struct {
+	Name     string
+	GUID     string
+	SlideIDs []int64
+}
+
 // PresentationEditor provides read/modify/save operations for existing PPTX files.
 type PresentationEditor struct {
 	parts map[string][]byte
@@ -27,6 +34,13 @@ type PresentationEditor struct {
 	metadata        common.PresentationMetadata
 	nonSlideRels    []common.EditorRelationship
 	presentationXML string
+
+	// Media inventory for deduplication (SHA1 -> PartPath)
+	mediaInventory map[string]string
+	nextMediaNum   int
+
+	// Section management
+	sections []EditorSection
 }
 
 // Metadata returns presentation-level metadata parsed from the package.
@@ -76,15 +90,6 @@ func requirePart(parts map[string][]byte, path string) ([]byte, error) {
 		return nil, fmt.Errorf("missing required package part %q", path)
 	}
 	return content, nil
-}
-
-func partNamesSorted(parts map[string][]byte) []string {
-	names := make([]string, 0, len(parts))
-	for path := range parts {
-		names = append(names, path)
-	}
-	sort.Strings(names)
-	return names
 }
 
 var coreTitlePattern = regexp.MustCompile(`(?s)<dc:title[^>]*>(.*?)</dc:title>`)

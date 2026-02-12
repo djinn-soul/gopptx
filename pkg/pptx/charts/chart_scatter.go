@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
@@ -16,14 +17,15 @@ const (
 
 // ScatterChart is a simple XY scatter chart.
 type ScatterChart struct {
-	Title                 string
-	TitleOverlay          bool
-	XValues               []float64
-	YValues               []float64
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
+	Title        string
+	TitleOverlay bool
+	XValues      []float64
+	YValues      []float64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	LineColor             string
 	SeriesName            string
 	ScatterStyle          string
@@ -47,13 +49,14 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 	ys := make([]float64, len(yValues))
 	copy(ys, yValues)
 	return ScatterChart{
-		Title:                 "Chart",
-		XValues:               xs,
-		YValues:               ys,
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		Title:   "Chart",
+		XValues: xs,
+		YValues: ys,
+		X:       styling.Emu(685800),
+		Y:       styling.Emu(1800000),
+		CX:      styling.Emu(7772400),
+		CY:      styling.Emu(4114800),
+
 		LineColor:             "4F81BD",
 		SeriesName:            "Series 1",
 		ScatterStyle:          ScatterStyleMarker,
@@ -67,14 +70,14 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 }
 
 // Position sets chart position in EMU.
-func (c ScatterChart) Position(x int64, y int64) ScatterChart {
+func (c ScatterChart) Position(x styling.Length, y styling.Length) ScatterChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
 // Size sets chart size in EMU.
-func (c ScatterChart) Size(cx int64, cy int64) ScatterChart {
+func (c ScatterChart) Size(cx styling.Length, cy styling.Length) ScatterChart {
 	c.CX = cx
 	c.CY = cy
 	return c
@@ -95,15 +98,16 @@ func (c ScatterChart) WithLineColor(color string) ScatterChart {
 // ToChartSpec converts ScatterChart to internal XML spec.
 func (c ScatterChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindScatter,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		XValues:               CopyFloat64Slice(c.XValues),
-		Values:                CopyFloat64Slice(c.YValues),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
+		Kind:         pptxxml.ChartKindScatter,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		XValues:      CopyFloat64Slice(c.XValues),
+		Values:       CopyFloat64Slice(c.YValues),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		Color:                 NormalizeHexColor(c.LineColor),
 		SeriesName:            c.SeriesName,
 		ScatterStyle:          c.ScatterStyle,
@@ -129,6 +133,7 @@ func (c ScatterChart) Validate(slideIndex int) error {
 	if c.CX <= 0 || c.CY <= 0 {
 		return fmt.Errorf("slide %d scatter chart size must be > 0", slideIndex)
 	}
+
 	if strings.TrimSpace(c.Title) == "" {
 		return fmt.Errorf("slide %d scatter chart title cannot be empty", slideIndex)
 	}

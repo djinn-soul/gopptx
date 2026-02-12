@@ -8,14 +8,14 @@ import (
 // ShapeFillSpec describes solid fill properties for a custom shape.
 type ShapeFillSpec struct {
 	Color           string
-	TransparencyPct *int
+	Transparency    *float64
 }
 
 // ShapeGradientStopSpec describes one gradient stop for a custom shape.
 type ShapeGradientStopSpec struct {
 	PositionPct     int
 	Color           string
-	TransparencyPct *int
+	Transparency    *float64
 }
 
 // ShapeGradientFillSpec describes gradient fill properties for a custom shape.
@@ -66,14 +66,15 @@ type TextFrameSpec struct {
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.
 type ConnectorSpec struct {
 	Type            string
-	StartX          int64
-	StartY          int64
-	EndX            int64
-	EndY            int64
+	StartX, StartY  int64
+	EndX, EndY      int64
 	Line            ShapeLineSpec
 	StartArrow      string
+	StartArrowWidth string
+	StartArrowLen   string
 	EndArrow        string
-	ArrowSize       string
+	EndArrowWidth   string
+	EndArrowLen     string
 	StartShapeIndex int
 	StartSiteIndex  *int
 	EndShapeIndex   int
@@ -207,8 +208,8 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 
 func shapeSolidFillXML(fill ShapeFillSpec) string {
 	alpha := ""
-	if fill.TransparencyPct != nil {
-		alpha = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaFromTransparencyPct(*fill.TransparencyPct))
+	if fill.Transparency != nil {
+		alpha = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaFromNormalizedTransparency(*fill.Transparency))
 	}
 	return `
 <a:solidFill>
@@ -288,11 +289,11 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 	}
 	if connector.StartArrow != "none" {
 		b.WriteString(`
-<a:headEnd type="` + Escape(connector.StartArrow) + `" w="` + Escape(connector.ArrowSize) + `" len="` + Escape(connector.ArrowSize) + `"/>`)
+<a:headEnd type="` + Escape(connector.StartArrow) + `" w="` + Escape(connector.StartArrowWidth) + `" len="` + Escape(connector.StartArrowLen) + `"/>`)
 	}
 	if connector.EndArrow != "none" {
 		b.WriteString(`
-<a:tailEnd type="` + Escape(connector.EndArrow) + `" w="` + Escape(connector.ArrowSize) + `" len="` + Escape(connector.ArrowSize) + `"/>`)
+<a:tailEnd type="` + Escape(connector.EndArrow) + `" w="` + Escape(connector.EndArrowWidth) + `" len="` + Escape(connector.EndArrowLen) + `"/>`)
 	}
 	b.WriteString(`
 </a:ln>
@@ -315,8 +316,8 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 	return b.String()
 }
 
-func alphaFromTransparencyPct(transparencyPct int) int {
-	return (100 - transparencyPct) * 1000
+func alphaFromNormalizedTransparency(transparency float64) int {
+	return int((1.0 - transparency) * 100000)
 }
 
 func connectorBounds(connector ConnectorSpec) (x int64, y int64, cx int64, cy int64) {

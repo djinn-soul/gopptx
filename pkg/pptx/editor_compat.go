@@ -15,3 +15,8 @@ type (
 func OpenPresentationEditor(path string) (*PresentationEditor, error) {
 	return editor.OpenPresentationEditor(path)
 }
+
+// Save re-exports the Save method.
+func Save(e *PresentationEditor, filePath string) error {
+	return e.Save(filePath)
+}

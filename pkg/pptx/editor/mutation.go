@@ -51,10 +51,11 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	return b.String()
 }
 
-func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []common.EditorSlideRef) (string, error) {
-	rels := make([]common.EditorRelationship, 0, len(nonSlide)+len(slides))
+func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []common.EditorSlideRef, hasSections bool) (string, error) {
+	rels := make([]common.EditorRelationship, 0, len(nonSlide)+len(slides)+1)
 	used := map[string]struct{}{}
 
+	hasSectionRel := false
 	for _, rel := range nonSlide {
 		id := strings.TrimSpace(rel.ID)
 		if id == "" {
@@ -65,18 +66,43 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 		}
 		used[id] = struct{}{}
 		rels = append(rels, rel)
+		if rel.Type == common.RelTypeSectionList {
+			hasSectionRel = true
+		}
 	}
+
+	if hasSections && !hasSectionRel {
+		// Allocate next rId for sectionList
+		maxNum := 0
+		for _, r := range rels {
+			if n, ok := parseRelationshipNumber(r.ID); ok && n > maxNum {
+				maxNum = n
+			}
+		}
+		for _, s := range slides {
+			if n, ok := parseRelationshipNumber(s.RelID); ok && n > maxNum {
+				maxNum = n
+			}
+		}
+		sectionRelID := fmt.Sprintf("rId%d", maxNum+1)
+		rels = append(rels, common.EditorRelationship{
+			ID:     sectionRelID,
+			Type:   common.RelTypeSectionList,
+			Target: "sectionList.xml",
+		})
+	}
+
 	for _, slide := range slides {
 		if _, exists := used[slide.RelID]; exists {
-			return "", fmt.Errorf("duplicate relationship Id %q", slide.RelID)
+			continue // Already in rels? (Shouldn't happen with slides usually)
 		}
-		used[slide.RelID] = struct{}{}
 		rels = append(rels, common.EditorRelationship{
 			ID:     slide.RelID,
 			Type:   common.RelTypeSlide,
 			Target: slide.Target,
 		})
 	}
+
 	sort.Slice(rels, func(i, j int) bool {
 		a, aok := parseRelationshipNumber(rels[i].ID)
 		b, bok := parseRelationshipNumber(rels[j].ID)
@@ -107,7 +133,7 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 	return b.String(), nil
 }
 
-func rewriteContentTypesSlideOverrides(current []byte, slides []common.EditorSlideRef) (string, error) {
+func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool) (string, error) {
 	if len(current) == 0 {
 		return "", fmt.Errorf("missing content types content")
 	}
@@ -120,19 +146,62 @@ func rewriteContentTypesSlideOverrides(current []byte, slides []common.EditorSli
 		doc.XMLNS = common.ContentTypesXMLNS
 	}
 
-	filtered := make([]contentTypeOverride, 0, len(doc.Overrides)+len(slides))
+	// 1. Manage Defaults (Media Extensions)
+	exts := make(map[string]struct{})
+	for _, d := range doc.Defaults {
+		exts[strings.ToLower(d.Extension)] = struct{}{}
+	}
+	for _, m := range mediaPaths {
+		ext := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(strings.ToLower(strings.TrimPrefix(m, "."))), "."))
+		if idx := strings.LastIndex(m, "."); idx >= 0 {
+			ext = strings.ToLower(m[idx+1:])
+		}
+		if _, ok := exts[ext]; !ok {
+			contentType := ""
+			switch ext {
+			case "png":
+				contentType = "image/png"
+			case "jpg", "jpeg":
+				contentType = "image/jpeg"
+			case "gif":
+				contentType = "image/gif"
+			}
+			if contentType != "" {
+				doc.Defaults = append(doc.Defaults, contentTypeDefault{
+					Extension:   ext,
+					ContentType: contentType,
+				})
+				exts[ext] = struct{}{}
+			}
+		}
+	}
+
+	// 2. Manage Overrides (Slides and SectionList)
+	filtered := make([]contentTypeOverride, 0, len(doc.Overrides)+len(slides)+1)
 	for _, override := range doc.Overrides {
-		if isSlidePartOverride(override.PartName) {
+		part := common.CanonicalPartPath(override.PartName)
+		if isSlidePartOverride(part) {
+			continue
+		}
+		if part == "ppt/sectionList.xml" {
 			continue
 		}
 		filtered = append(filtered, override)
 	}
+
 	for _, slide := range slides {
 		filtered = append(filtered, contentTypeOverride{
 			PartName:    "/" + common.CanonicalPartPath(slide.Part),
 			ContentType: common.SlideContentType,
 		})
 	}
+	if hasSections {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/ppt/sectionList.xml",
+			ContentType: "application/vnd.microsoft.powerpoint.sectionList+xml",
+		})
+	}
+
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].PartName < filtered[j].PartName
 	})
@@ -165,4 +234,26 @@ type contentTypeOverride struct {
 func isSlidePartOverride(partName string) bool {
 	clean := common.CanonicalPartPath(strings.TrimPrefix(strings.TrimSpace(partName), "/"))
 	return strings.HasPrefix(clean, "ppt/slides/slide") && strings.HasSuffix(clean, ".xml")
+}
+
+func buildSectionListXML(sections []EditorSection) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
+	b.WriteString("\n")
+	b.WriteString(`<s:sectionLst xmlns:s="http://schemas.microsoft.com/office/powerpoint/2010/main">`)
+	for _, s := range sections {
+		b.WriteString("\n  <s:section name=\"")
+		b.WriteString(common.XMLEscape(s.Name))
+		b.WriteString("\" id=\"")
+		b.WriteString(s.GUID)
+		b.WriteString("\">")
+		b.WriteString("\n    <s:sldIdLst>")
+		for _, slideID := range s.SlideIDs {
+			b.WriteString(fmt.Sprintf("\n      <s:sldId id=\"%d\"/>", slideID))
+		}
+		b.WriteString("\n    </s:sldIdLst>")
+		b.WriteString("\n  </s:section>")
+	}
+	b.WriteString("\n</s:sectionLst>")
+	return b.String()
 }

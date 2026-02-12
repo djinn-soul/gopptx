@@ -150,6 +150,8 @@ func SlideWithContent(
 	transitionXML string,
 	animationsXML string,
 	showSlideNumber bool,
+	footerText string,
+	showDateTime bool,
 	width, height int64,
 ) string {
 	return SlideWithLayout(
@@ -169,6 +171,8 @@ func SlideWithContent(
 		transitionXML,
 		animationsXML,
 		showSlideNumber,
+		footerText,
+		showDateTime,
 		width,
 		height,
 	)
@@ -192,6 +196,8 @@ func SlideWithLayout(
 	transitionXML string,
 	animationsXML string,
 	showSlideNumber bool,
+	footerText string,
+	showDateTime bool,
 	width, height int64,
 ) string {
 	var b strings.Builder
@@ -276,6 +282,16 @@ func SlideWithLayout(
 
 	if showSlideNumber {
 		b.WriteString(slideNumberShape(width, height, nextID))
+		nextID++
+	}
+
+	if footerText != "" {
+		b.WriteString(footerShape(footerText, width, height, nextID))
+		nextID++
+	}
+
+	if showDateTime {
+		b.WriteString(dateTimeShape(width, height, nextID))
 	}
 
 	b.WriteString(slideFooterEnd)

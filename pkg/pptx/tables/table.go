@@ -2,6 +2,7 @@ package tables
 
 import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
@@ -44,26 +45,26 @@ const (
 
 // Table is a simple slide table with fixed columns and text cells.
 type Table struct {
-	X            int64
-	Y            int64
-	CX           int64
-	CY           int64
-	ColumnWidths []int64
-	RowHeights   []int64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+	ColumnWidths []styling.Length
+	RowHeights   []styling.Length
 	Rows         [][]string
 	StyledRows   [][]TableCell
 	renderRows   [][]TableCell
 }
 
 // NewTable creates a table with default placement and size.
-func NewTable(columnWidths []int64) Table {
-	widths := make([]int64, len(columnWidths))
+func NewTable(columnWidths []styling.Length) Table {
+	widths := make([]styling.Length, len(columnWidths))
 	copy(widths, columnWidths)
 	return Table{
-		X:            457200,
-		Y:            1600200,
-		CX:           8230200,
-		CY:           3200400,
+		X:            styling.Emu(457200),
+		Y:            styling.Emu(1600200),
+		CX:           styling.Emu(8230200),
+		CY:           styling.Emu(3200400),
 		ColumnWidths: widths,
 		RowHeights:   nil,
 		Rows:         make([][]string, 0),
@@ -96,26 +97,26 @@ func (t Table) AddStyledRow(cells []TableCell) Table {
 }
 
 // Position sets table position in EMU.
-func (t Table) Position(x int64, y int64) Table {
+func (t Table) Position(x styling.Length, y styling.Length) Table {
 	t.X = x
 	t.Y = y
 	return t
 }
 
 // Size sets table size in EMU.
-func (t Table) Size(cx int64, cy int64) Table {
+func (t Table) Size(cx styling.Length, cy styling.Length) Table {
 	t.CX = cx
 	t.CY = cy
 	return t
 }
 
 // WithRowHeights sets explicit row heights in EMU. Length must match row count.
-func (t Table) WithRowHeights(heights []int64) Table {
+func (t Table) WithRowHeights(heights []styling.Length) Table {
 	if len(heights) == 0 {
 		t.RowHeights = nil
 		return t
 	}
-	out := make([]int64, len(heights))
+	out := make([]styling.Length, len(heights))
 	copy(out, heights)
 	t.RowHeights = out
 	return t
@@ -167,15 +168,19 @@ func (t Table) ToTableSpec(slideNumber int) (*pptxxml.TableSpec, error) {
 		styledSpecRows = append(styledSpecRows, specRow)
 	}
 	columnWidths := make([]int64, len(t.ColumnWidths))
-	copy(columnWidths, t.ColumnWidths)
+	for i, w := range t.ColumnWidths {
+		columnWidths[i] = w.Emu()
+	}
 	rowHeights := make([]int64, len(t.RowHeights))
-	copy(rowHeights, t.RowHeights)
+	for i, h := range t.RowHeights {
+		rowHeights[i] = h.Emu()
+	}
 
 	return &pptxxml.TableSpec{
-		X:            t.X,
-		Y:            t.Y,
-		CX:           t.CX,
-		CY:           t.CY,
+		X:            t.X.Emu(),
+		Y:            t.Y.Emu(),
+		CX:           t.CX.Emu(),
+		CY:           t.CY.Emu(),
 		ColumnWidths: columnWidths,
 		RowHeights:   rowHeights,
 		Rows:         rows,

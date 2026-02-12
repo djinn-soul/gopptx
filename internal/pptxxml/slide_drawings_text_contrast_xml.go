@@ -28,7 +28,7 @@ func shapeTextColorForShape(shape ShapeSpec) string {
 
 func shapeBackgroundColor(shape ShapeSpec) (int, int, int, bool) {
 	if shape.Fill != nil {
-		return colorWithTransparency(shape.Fill.Color, shape.Fill.TransparencyPct)
+		return colorWithTransparency(shape.Fill.Color, shape.Fill.Transparency)
 	}
 	if shape.GradientFill != nil {
 		return gradientAverageColor(*shape.GradientFill)
@@ -46,7 +46,7 @@ func gradientAverageColor(fill ShapeGradientFillSpec) (int, int, int, bool) {
 	var sumB float64
 	var count float64
 	for _, stop := range fill.Stops {
-		r, g, b, ok := colorWithTransparency(stop.Color, stop.TransparencyPct)
+		r, g, b, ok := colorWithTransparency(stop.Color, stop.Transparency)
 		if !ok {
 			continue
 		}
@@ -61,21 +61,21 @@ func gradientAverageColor(fill ShapeGradientFillSpec) (int, int, int, bool) {
 	return int(math.Round(sumR / count)), int(math.Round(sumG / count)), int(math.Round(sumB / count)), true
 }
 
-func colorWithTransparency(color string, transparencyPct *int) (int, int, int, bool) {
+func colorWithTransparency(color string, transparency *float64) (int, int, int, bool) {
 	r, g, b, ok := parseHexColor(color)
 	if !ok {
 		return 0, 0, 0, false
 	}
 	alpha := 1.0
-	if transparencyPct != nil {
-		percent := *transparencyPct
+	if transparency != nil {
+		percent := *transparency
 		if percent < 0 {
 			percent = 0
 		}
-		if percent > 100 {
-			percent = 100
+		if percent > 1 {
+			percent = 1
 		}
-		alpha = float64(100-percent) / 100
+		alpha = 1.0 - percent
 	}
 	return blendWithWhite(r, alpha), blendWithWhite(g, alpha), blendWithWhite(b, alpha), true
 }

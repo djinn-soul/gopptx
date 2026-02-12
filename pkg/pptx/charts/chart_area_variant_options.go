@@ -1,11 +1,15 @@
 package charts
 
-func (c AreaStackedChart) Position(x int64, y int64) AreaStackedChart {
+import (
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+)
+
+func (c AreaStackedChart) Position(x styling.Length, y styling.Length) AreaStackedChart {
 	c.AreaChart = c.AreaChart.Position(x, y)
 	return c
 }
 
-func (c AreaStackedChart) Size(cx int64, cy int64) AreaStackedChart {
+func (c AreaStackedChart) Size(cx styling.Length, cy styling.Length) AreaStackedChart {
 	c.AreaChart = c.AreaChart.Size(cx, cy)
 	return c
 }
@@ -75,12 +79,12 @@ func (c AreaStackedChart) WithValueRange(min float64, max float64) AreaStackedCh
 	return c
 }
 
-func (c AreaStacked100Chart) Position(x int64, y int64) AreaStacked100Chart {
+func (c AreaStacked100Chart) Position(x styling.Length, y styling.Length) AreaStacked100Chart {
 	c.AreaChart = c.AreaChart.Position(x, y)
 	return c
 }
 
-func (c AreaStacked100Chart) Size(cx int64, cy int64) AreaStacked100Chart {
+func (c AreaStacked100Chart) Size(cx styling.Length, cy styling.Length) AreaStacked100Chart {
 	c.AreaChart = c.AreaChart.Size(cx, cy)
 	return c
 }

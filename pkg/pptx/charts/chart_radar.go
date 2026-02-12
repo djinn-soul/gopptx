@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
@@ -14,14 +15,15 @@ const (
 
 // RadarChart is a radar chart using marker style.
 type RadarChart struct {
-	Title                 string
-	TitleOverlay          bool
-	Categories            []string
-	Values                []float64
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
+	Title        string
+	TitleOverlay bool
+	Categories   []string
+	Values       []float64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	LineColor             string
 	SeriesName            string
 	ShowLegend            bool
@@ -41,13 +43,14 @@ type RadarChart struct {
 func NewRadarChart(categories []string, values []float64) RadarChart {
 	cats, vals := copyChartData(categories, values)
 	return RadarChart{
-		Title:                 "Chart",
-		Categories:            cats,
-		Values:                vals,
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		Title:      "Chart",
+		Categories: cats,
+		Values:     vals,
+		X:          styling.Emu(685800),
+		Y:          styling.Emu(1800000),
+		CX:         styling.Emu(7772400),
+		CY:         styling.Emu(4114800),
+
 		LineColor:             "4F81BD",
 		SeriesName:            "Series 1",
 		ShowLegend:            false,
@@ -60,13 +63,13 @@ func NewRadarChart(categories []string, values []float64) RadarChart {
 	}
 }
 
-func (c RadarChart) Position(x int64, y int64) RadarChart {
+func (c RadarChart) Position(x styling.Length, y styling.Length) RadarChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
-func (c RadarChart) Size(cx int64, cy int64) RadarChart {
+func (c RadarChart) Size(cx styling.Length, cy styling.Length) RadarChart {
 	c.CX = cx
 	c.CY = cy
 	return c
@@ -85,15 +88,16 @@ func (c RadarChart) WithLineColor(color string) RadarChart {
 // ToChartSpec converts RadarChart to internal XML spec.
 func (c RadarChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindRadar,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		Categories:            CopyStringSlice(c.Categories),
-		Values:                CopyFloat64Slice(c.Values),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
+		Kind:         pptxxml.ChartKindRadar,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		Categories:   CopyStringSlice(c.Categories),
+		Values:       CopyFloat64Slice(c.Values),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		Color:                 NormalizeHexColor(c.LineColor),
 		SeriesName:            c.SeriesName,
 		ShowLegend:            c.ShowLegend,

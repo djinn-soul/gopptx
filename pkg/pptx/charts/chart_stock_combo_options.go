@@ -1,14 +1,18 @@
 package charts
 
-import "strings"
+import (
+	"strings"
 
-func (c StockHLCChart) Position(x int64, y int64) StockHLCChart {
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+)
+
+func (c StockHLCChart) Position(x styling.Length, y styling.Length) StockHLCChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
-func (c StockHLCChart) Size(cx int64, cy int64) StockHLCChart {
+func (c StockHLCChart) Size(cx styling.Length, cy styling.Length) StockHLCChart {
 	c.CX = cx
 	c.CY = cy
 	return c
@@ -71,12 +75,12 @@ func (c StockHLCChart) WithValueRange(min float64, max float64) StockHLCChart {
 	return c
 }
 
-func (c StockOHLCChart) Position(x int64, y int64) StockOHLCChart {
+func (c StockOHLCChart) Position(x styling.Length, y styling.Length) StockOHLCChart {
 	c.StockHLCChart = c.StockHLCChart.Position(x, y)
 	return c
 }
 
-func (c StockOHLCChart) Size(cx int64, cy int64) StockOHLCChart {
+func (c StockOHLCChart) Size(cx styling.Length, cy styling.Length) StockOHLCChart {
 	c.StockHLCChart = c.StockHLCChart.Size(cx, cy)
 	return c
 }
@@ -136,13 +140,13 @@ func (c StockOHLCChart) WithValueRange(min float64, max float64) StockOHLCChart 
 	return c
 }
 
-func (c ComboChart) Position(x int64, y int64) ComboChart {
+func (c ComboChart) Position(x styling.Length, y styling.Length) ComboChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
-func (c ComboChart) Size(cx int64, cy int64) ComboChart {
+func (c ComboChart) Size(cx styling.Length, cy styling.Length) ComboChart {
 	c.CX = cx
 	c.CY = cy
 	return c

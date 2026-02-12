@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 var hexColorPattern = regexp.MustCompile(`^[0-9A-F]{6}$`)
@@ -22,14 +23,15 @@ const (
 
 // BarChart is a simple categorical bar chart.
 type BarChart struct {
-	Title                 string
-	TitleOverlay          bool
-	Categories            []string
-	Values                []float64
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
+	Title        string
+	TitleOverlay bool
+	Categories   []string
+	Values       []float64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	BarColor              string
 	SeriesName            string
 	ShowLegend            bool
@@ -49,13 +51,14 @@ type BarChart struct {
 func NewBarChart(categories []string, values []float64) BarChart {
 	cats, vals := copyChartData(categories, values)
 	return BarChart{
-		Title:                 "Chart",
-		Categories:            cats,
-		Values:                vals,
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		Title:      "Chart",
+		Categories: cats,
+		Values:     vals,
+		X:          styling.Emu(685800),
+		Y:          styling.Emu(1800000),
+		CX:         styling.Emu(7772400),
+		CY:         styling.Emu(4114800),
+
 		BarColor:              "4F81BD",
 		SeriesName:            "Series 1",
 		ShowLegend:            false,
@@ -68,14 +71,14 @@ func NewBarChart(categories []string, values []float64) BarChart {
 }
 
 // Position sets chart position in EMU.
-func (c BarChart) Position(x int64, y int64) BarChart {
+func (c BarChart) Position(x styling.Length, y styling.Length) BarChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
 // Size sets chart size in EMU.
-func (c BarChart) Size(cx int64, cy int64) BarChart {
+func (c BarChart) Size(cx styling.Length, cy styling.Length) BarChart {
 	c.CX = cx
 	c.CY = cy
 	return c
@@ -95,14 +98,15 @@ func (c BarChart) WithBarColor(color string) BarChart {
 
 // LineChart is a simple categorical line chart.
 type LineChart struct {
-	Title                 string
-	TitleOverlay          bool
-	Categories            []string
-	Values                []float64
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
+	Title        string
+	TitleOverlay bool
+	Categories   []string
+	Values       []float64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	LineColor             string
 	SeriesName            string
 	ShowLegend            bool
@@ -123,13 +127,14 @@ type LineChart struct {
 func NewLineChart(categories []string, values []float64) LineChart {
 	cats, vals := copyChartData(categories, values)
 	return LineChart{
-		Title:                 "Chart",
-		Categories:            cats,
-		Values:                vals,
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		Title:      "Chart",
+		Categories: cats,
+		Values:     vals,
+		X:          styling.Emu(685800),
+		Y:          styling.Emu(1800000),
+		CX:         styling.Emu(7772400),
+		CY:         styling.Emu(4114800),
+
 		LineColor:             "C0504D",
 		SeriesName:            "Series 1",
 		ShowLegend:            false,
@@ -143,14 +148,14 @@ func NewLineChart(categories []string, values []float64) LineChart {
 }
 
 // Position sets chart position in EMU.
-func (c LineChart) Position(x int64, y int64) LineChart {
+func (c LineChart) Position(x styling.Length, y styling.Length) LineChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
 // Size sets chart size in EMU.
-func (c LineChart) Size(cx int64, cy int64) LineChart {
+func (c LineChart) Size(cx styling.Length, cy styling.Length) LineChart {
 	c.CX = cx
 	c.CY = cy
 	return c
@@ -171,15 +176,16 @@ func (c LineChart) WithLineColor(color string) LineChart {
 // ToChartSpec converts BarChart to internal XML spec.
 func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindBar,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		Categories:            CopyStringSlice(c.Categories),
-		Values:                CopyFloat64Slice(c.Values),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
+		Kind:         pptxxml.ChartKindBar,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		Categories:   CopyStringSlice(c.Categories),
+		Values:       CopyFloat64Slice(c.Values),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		Color:                 NormalizeHexColor(c.BarColor),
 		SeriesName:            c.SeriesName,
 		ShowLegend:            c.ShowLegend,
@@ -237,15 +243,16 @@ func (c BarChart) Validate(slideIndex int) error {
 // ToChartSpec converts LineChart to internal XML spec.
 func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindLine,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		Categories:            CopyStringSlice(c.Categories),
-		Values:                CopyFloat64Slice(c.Values),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
+		Kind:         pptxxml.ChartKindLine,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		Categories:   CopyStringSlice(c.Categories),
+		Values:       CopyFloat64Slice(c.Values),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		Color:                 NormalizeHexColor(c.LineColor),
 		SeriesName:            c.SeriesName,
 		ShowLegend:            c.ShowLegend,
@@ -305,10 +312,10 @@ func validateChartCore(
 	title string,
 	categories []string,
 	values []float64,
-	x int64,
-	y int64,
-	cx int64,
-	cy int64,
+	x styling.Length,
+	y styling.Length,
+	cx styling.Length,
+	cy styling.Length,
 	allowNegative bool,
 ) error {
 	if x < 0 || y < 0 {
@@ -317,6 +324,7 @@ func validateChartCore(
 	if cx <= 0 || cy <= 0 {
 		return fmt.Errorf("slide %d chart size must be > 0", slideIndex)
 	}
+
 	if strings.TrimSpace(title) == "" {
 		return fmt.Errorf("slide %d chart title cannot be empty", slideIndex)
 	}

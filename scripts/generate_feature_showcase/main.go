@@ -62,7 +62,7 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 			}),
 
 		pptx.NewSlide("Table Styling + Borders").WithTable(
-			pptx.NewTable([]int64{2400000, 2400000, 2400000}).
+			pptx.NewTable([]pptx.Length{pptx.Inches(2.62), pptx.Inches(2.62), pptx.Inches(2.62)}).
 				AddStyledRow([]pptx.TableCell{
 					pptx.NewTableCell("Feature").WithBold(true).WithBackgroundColor("D9E1F2"),
 					pptx.NewTableCell("State").WithBold(true).WithBackgroundColor("D9E1F2"),

@@ -17,8 +17,8 @@ func TestPlaceholderMultiChart(t *testing.T) {
 
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Multi Chart").
-			WithPlaceholderChart(1, "body", chart1).
-			WithPlaceholderChart(2, "body", chart2),
+			WithPlaceholderChartAs(1, "body", chart1).
+			WithPlaceholderChartAs(2, "body", chart2),
 	}
 
 	data, err := pptx.CreateWithSlides("Multi Chart Demo", slides)

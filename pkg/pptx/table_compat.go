@@ -9,7 +9,7 @@ type (
 	TableCell = tables.TableCell
 )
 
-func NewTable(columnWidths []int64) Table {
+func NewTable(columnWidths []Length) Table {
 	return tables.NewTable(columnWidths)
 }
 

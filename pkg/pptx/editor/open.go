@@ -3,6 +3,8 @@ package editor
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -72,6 +74,13 @@ func newPresentationEditorFromParts(parts map[string][]byte) (*PresentationEdito
 	editor.nextSlideID = nextSlideID(slideRefs)
 	editor.nextRelIDNum = nextRelationshipNumber(rels)
 	editor.nextSlideNum = nextSlidePartNumber(slideRefs)
+
+	editor.mediaInventory, editor.nextMediaNum = parseMediaInventory(parts)
+	if sectionData, ok := parts["ppt/sectionList.xml"]; ok {
+		sections, _ := parseSectionListXML(sectionData)
+		editor.sections = sections
+	}
+
 	editor.populateSlideTitlesConcurrently()
 	return editor, nil
 }
@@ -241,6 +250,72 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 			return nil, fmt.Errorf("slide id entry missing id or r:id")
 		}
 		out = append(out, ref)
+	}
+	return out, nil
+}
+
+func parseMediaInventory(parts map[string][]byte) (map[string]string, int) {
+	inventory := make(map[string]string)
+	maxNum := 0
+	for partPath, data := range parts {
+		if strings.HasPrefix(partPath, "ppt/media/image") {
+			hash := sha1.Sum(data)
+			inventory[hex.EncodeToString(hash[:])] = partPath
+
+			num, ok := parseImagePartNumber(partPath)
+			if ok && num > maxNum {
+				maxNum = num
+			}
+		}
+	}
+	return inventory, maxNum + 1
+}
+
+func parseImagePartNumber(partPath string) (int, bool) {
+	base := path.Base(partPath)
+	if !strings.HasPrefix(base, "image") {
+		return 0, false
+	}
+	ext := path.Ext(base)
+	name := strings.TrimSuffix(base, ext)
+	numStr := strings.TrimPrefix(name, "image")
+	num, err := strconv.Atoi(numStr)
+	if err != nil {
+		return 0, false
+	}
+	return num, true
+}
+
+type xmlSectionList struct {
+	Sections []xmlSection `xml:"section"`
+}
+
+type xmlSection struct {
+	Name     string             `xml:"name,attr"`
+	GUID     string             `xml:"id,attr"`
+	SlideIDs []xmlSectionSLDRef `xml:"sldIdLst>sldId"`
+}
+
+type xmlSectionSLDRef struct {
+	ID int64 `xml:"id,attr"`
+}
+
+func parseSectionListXML(data []byte) ([]EditorSection, error) {
+	var list xmlSectionList
+	if err := xml.Unmarshal(data, &list); err != nil {
+		return nil, err
+	}
+	out := make([]EditorSection, 0, len(list.Sections))
+	for _, s := range list.Sections {
+		ids := make([]int64, 0, len(s.SlideIDs))
+		for _, item := range s.SlideIDs {
+			ids = append(ids, item.ID)
+		}
+		out = append(out, EditorSection{
+			Name:     s.Name,
+			GUID:     s.GUID,
+			SlideIDs: ids,
+		})
 	}
 	return out, nil
 }

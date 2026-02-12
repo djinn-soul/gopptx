@@ -8,13 +8,24 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
+const (
+	UnderlineStyleNone   = "none"
+	UnderlineStyleSingle = "sng"
+	UnderlineStyleDouble = "dbl"
+	UnderlineStyleDotted = "dotted"
+
+	StrikethroughStyleNone   = "none"
+	StrikethroughStyleSingle = "sngStrike"
+	StrikethroughStyleDouble = "dblStrike"
+)
+
 // TextRun describes a single piece of text with uniform styling.
 type TextRun struct {
 	Text          string
 	Bold          bool
 	Italic        bool
-	Underline     bool
-	Strikethrough bool
+	Underline     string // "none", "sng", "dbl", "dotted", etc.
+	Strikethrough string // "none", "sng", "dbl"
 	Subscript     bool
 	Superscript   bool
 	Color         string
@@ -45,15 +56,35 @@ func (r TextRun) WithItalic(italic bool) TextRun {
 	return r
 }
 
-// WithUnderline sets underline property.
+// WithUnderline sets underline property (boolean compatibility).
 func (r TextRun) WithUnderline(underline bool) TextRun {
-	r.Underline = underline
+	if underline {
+		r.Underline = UnderlineStyleSingle
+	} else {
+		r.Underline = UnderlineStyleNone
+	}
 	return r
 }
 
-// WithStrikethrough sets strikethrough property.
+// WithUnderlineStyle sets a specific underline style.
+func (r TextRun) WithUnderlineStyle(style string) TextRun {
+	r.Underline = style
+	return r
+}
+
+// WithStrikethrough sets strikethrough property (boolean compatibility).
 func (r TextRun) WithStrikethrough(strikethrough bool) TextRun {
-	r.Strikethrough = strikethrough
+	if strikethrough {
+		r.Strikethrough = StrikethroughStyleSingle
+	} else {
+		r.Strikethrough = StrikethroughStyleNone
+	}
+	return r
+}
+
+// WithStrikethroughStyle sets a specific strikethrough style.
+func (r TextRun) WithStrikethroughStyle(style string) TextRun {
+	r.Strikethrough = style
 	return r
 }
 

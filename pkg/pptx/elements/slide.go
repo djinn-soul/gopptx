@@ -595,168 +595,78 @@ func SlideLayoutTarget(layout string) string {
 	}
 }
 
-// WithPlaceholderText overrides a placeholder with text.
-// Supported call forms:
-//   - WithPlaceholderText(index, text)
-//   - WithPlaceholderText(index, placeholderType, text)
-func (s SlideContent) WithPlaceholderText(index int, args ...any) SlideContent {
-	phType, text := parsePlaceholderTextArgs(index, args...)
+// WithPlaceholderText overrides a placeholder with text using the default placeholder type.
+func (s SlideContent) WithPlaceholderText(index int, text string) SlideContent {
+	return s.WithPlaceholderTextAs(index, defaultPlaceholderTextType(index), text)
+}
+
+// WithPlaceholderTextAs overrides a placeholder with text and explicit placeholder type.
+func (s SlideContent) WithPlaceholderTextAs(index int, placeholderType, text string) SlideContent {
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
-		Type:  phType,
+		Type:  placeholderType,
 		Text:  text,
 	})
 	return s
 }
 
-// WithPlaceholderImage overrides a placeholder with an image.
-// Supported call forms:
-//   - WithPlaceholderImage(index, image)
-//   - WithPlaceholderImage(index, placeholderType, image)
-func (s SlideContent) WithPlaceholderImage(index int, args ...any) SlideContent {
-	phType, img := parsePlaceholderImageArgs(index, args...)
+// WithPlaceholderImage overrides a placeholder with an image using the default placeholder type.
+func (s SlideContent) WithPlaceholderImage(index int, img shapes.Image) SlideContent {
+	return s.WithPlaceholderImageAs(index, defaultPlaceholderImageType(index), img)
+}
+
+// WithPlaceholderImageAs overrides a placeholder with an image and explicit placeholder type.
+func (s SlideContent) WithPlaceholderImageAs(index int, placeholderType string, img shapes.Image) SlideContent {
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
-		Type:  phType,
+		Type:  placeholderType,
 		Image: &img,
 	})
 	return s
 }
 
-// WithPlaceholderTable overrides a placeholder with a table.
-// Supported call forms:
-//   - WithPlaceholderTable(index, table)
-//   - WithPlaceholderTable(index, placeholderType, table)
-func (s SlideContent) WithPlaceholderTable(index int, args ...any) SlideContent {
-	phType, table := parsePlaceholderTableArgs(index, args...)
+// WithPlaceholderTable overrides a placeholder with a table using the default placeholder type.
+func (s SlideContent) WithPlaceholderTable(index int, table tables.Table) SlideContent {
+	return s.WithPlaceholderTableAs(index, defaultPlaceholderTextType(index), table)
+}
+
+// WithPlaceholderTableAs overrides a placeholder with a table and explicit placeholder type.
+func (s SlideContent) WithPlaceholderTableAs(index int, placeholderType string, table tables.Table) SlideContent {
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
-		Type:  phType,
+		Type:  placeholderType,
 		Table: &table,
 	})
 	return s
 }
 
-// WithPlaceholderChart overrides a placeholder with a chart.
-// Supported call forms:
-//   - WithPlaceholderChart(index, chart)
-//   - WithPlaceholderChart(index, placeholderType, chart)
-func (s SlideContent) WithPlaceholderChart(index int, args ...any) SlideContent {
-	phType, chart := parsePlaceholderChartArgs(index, args...)
+// WithPlaceholderChart overrides a placeholder with a chart using the default placeholder type.
+func (s SlideContent) WithPlaceholderChart(index int, chart ChartDefinition) SlideContent {
+	return s.WithPlaceholderChartAs(index, defaultPlaceholderTextType(index), chart)
+}
+
+// WithPlaceholderChartAs overrides a placeholder with a chart and explicit placeholder type.
+func (s SlideContent) WithPlaceholderChartAs(index int, placeholderType string, chart ChartDefinition) SlideContent {
 	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: index,
-		Type:  phType,
+		Type:  placeholderType,
 		Chart: chart,
 	})
 	return s
 }
 
-func parsePlaceholderTextArgs(index int, args ...any) (string, string) {
-	switch len(args) {
-	case 1:
-		text, ok := args[0].(string)
-		if !ok {
-			panic("WithPlaceholderText(index, text): text must be string")
-		}
-		phType := "body"
-		if index == 0 {
-			phType = "title"
-		}
-		return phType, text
-	case 2:
-		phType, ok := args[0].(string)
-		if !ok {
-			panic("WithPlaceholderText(index, type, text): type must be string")
-		}
-		text, ok := args[1].(string)
-		if !ok {
-			panic("WithPlaceholderText(index, type, text): text must be string")
-		}
-		return phType, text
-	default:
-		panic("WithPlaceholderText requires (index, text) or (index, type, text)")
+func defaultPlaceholderTextType(index int) string {
+	if index == 0 {
+		return "title"
 	}
+	return "body"
 }
 
-func parsePlaceholderImageArgs(index int, args ...any) (string, shapes.Image) {
-	switch len(args) {
-	case 1:
-		img, ok := args[0].(shapes.Image)
-		if !ok {
-			panic("WithPlaceholderImage(index, image): image must be shapes.Image")
-		}
-		phType := "pic"
-		if index == 0 {
-			phType = "title"
-		}
-		return phType, img
-	case 2:
-		phType, ok := args[0].(string)
-		if !ok {
-			panic("WithPlaceholderImage(index, type, image): type must be string")
-		}
-		img, ok := args[1].(shapes.Image)
-		if !ok {
-			panic("WithPlaceholderImage(index, type, image): image must be shapes.Image")
-		}
-		return phType, img
-	default:
-		panic("WithPlaceholderImage requires (index, image) or (index, type, image)")
+func defaultPlaceholderImageType(index int) string {
+	if index == 0 {
+		return "title"
 	}
-}
-
-func parsePlaceholderTableArgs(index int, args ...any) (string, tables.Table) {
-	switch len(args) {
-	case 1:
-		table, ok := args[0].(tables.Table)
-		if !ok {
-			panic("WithPlaceholderTable(index, table): table must be tables.Table")
-		}
-		phType := "body"
-		if index == 0 {
-			phType = "title"
-		}
-		return phType, table
-	case 2:
-		phType, ok := args[0].(string)
-		if !ok {
-			panic("WithPlaceholderTable(index, type, table): type must be string")
-		}
-		table, ok := args[1].(tables.Table)
-		if !ok {
-			panic("WithPlaceholderTable(index, type, table): table must be tables.Table")
-		}
-		return phType, table
-	default:
-		panic("WithPlaceholderTable requires (index, table) or (index, type, table)")
-	}
-}
-
-func parsePlaceholderChartArgs(index int, args ...any) (string, ChartDefinition) {
-	switch len(args) {
-	case 1:
-		chart, ok := args[0].(ChartDefinition)
-		if !ok {
-			panic("WithPlaceholderChart(index, chart): chart must implement ChartDefinition")
-		}
-		phType := "body"
-		if index == 0 {
-			phType = "title"
-		}
-		return phType, chart
-	case 2:
-		phType, ok := args[0].(string)
-		if !ok {
-			panic("WithPlaceholderChart(index, type, chart): type must be string")
-		}
-		chart, ok := args[1].(ChartDefinition)
-		if !ok {
-			panic("WithPlaceholderChart(index, type, chart): chart must implement ChartDefinition")
-		}
-		return phType, chart
-	default:
-		panic("WithPlaceholderChart requires (index, chart) or (index, type, chart)")
-	}
+	return "pic"
 }
 
 // AddConnector adds a connector to the slide.

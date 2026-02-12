@@ -38,7 +38,7 @@ var tableCases = []tableCase{
 		FixtureXML: "ppt/slides/slide7.xml",
 		Generated: pptx.NewSlide("Table Demo").
 			WithTable(
-				pptx.NewTable([]int64{2200000, 2200000, 2200000}).
+				pptx.NewTable([]pptx.Length{pptx.Emu(2200000), pptx.Emu(2200000), pptx.Emu(2200000)}).
 					AddStyledRow([]pptx.TableCell{
 						pptx.NewTableCell("Region").WithBold(true).WithBackgroundColor("2F5597").WithAlignCenter(),
 						pptx.NewTableCell("Quarter").WithBold(true).WithBackgroundColor("2F5597").WithAlignCenter(),
@@ -66,7 +66,7 @@ var tableCases = []tableCase{
 		FixturePPT: "merged_cells.pptx",
 		FixtureXML: "ppt/slides/slide1.xml",
 		Generated: pptx.NewSlide("Merged Cells").WithTable(
-			pptx.NewTable([]int64{2000000, 2000000, 2000000}).
+			pptx.NewTable([]pptx.Length{pptx.Emu(2000000), pptx.Emu(2000000), pptx.Emu(2000000)}).
 				AddStyledRow([]pptx.TableCell{
 					pptx.NewTableCell("Merged Header").WithRowSpan(2).WithColSpan(2),
 					pptx.NewTableCell(""),

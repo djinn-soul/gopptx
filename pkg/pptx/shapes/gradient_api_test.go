@@ -15,7 +15,7 @@ func TestCreateWithSlidesRendersLinearShapeGradientFill(t *testing.T) {
 		pptx.ShapeGradientTypeLinear,
 		[]pptx.ShapeGradientStop{
 			pptx.NewShapeGradientStop(0, "1F4E78"),
-			pptx.NewShapeGradientStop(100, "8FB9E0").WithTransparency(30),
+			pptx.NewShapeGradientStop(100, "8FB9E0").WithTransparency(0.3),
 		},
 	).WithLinearAngle(45)
 

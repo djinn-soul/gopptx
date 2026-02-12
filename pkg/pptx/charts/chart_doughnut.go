@@ -5,18 +5,20 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // DoughnutChart is a simple categorical doughnut chart.
 type DoughnutChart struct {
-	Title          string
-	TitleOverlay   bool
-	Categories     []string
-	Values         []float64
-	X              int64
-	Y              int64
-	CX             int64
-	CY             int64
+	Title        string
+	TitleOverlay bool
+	Categories   []string
+	Values       []float64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+
 	SeriesName     string
 	ShowLegend     bool
 	LegendPosition string
@@ -29,13 +31,14 @@ type DoughnutChart struct {
 func NewDoughnutChart(categories []string, values []float64) DoughnutChart {
 	cats, vals := copyChartData(categories, values)
 	return DoughnutChart{
-		Title:          "Chart",
-		Categories:     cats,
-		Values:         vals,
-		X:              685800,
-		Y:              1800000,
-		CX:             7772400,
-		CY:             4114800,
+		Title:      "Chart",
+		Categories: cats,
+		Values:     vals,
+		X:          styling.Emu(685800),
+		Y:          styling.Emu(1800000),
+		CX:         styling.Emu(7772400),
+		CY:         styling.Emu(4114800),
+
 		SeriesName:     "Series 1",
 		ShowLegend:     false,
 		LegendPosition: LegendPositionRight,
@@ -45,14 +48,14 @@ func NewDoughnutChart(categories []string, values []float64) DoughnutChart {
 }
 
 // Position sets chart position in EMU.
-func (c DoughnutChart) Position(x int64, y int64) DoughnutChart {
+func (c DoughnutChart) Position(x styling.Length, y styling.Length) DoughnutChart {
 	c.X = x
 	c.Y = y
 	return c
 }
 
 // Size sets chart size in EMU.
-func (c DoughnutChart) Size(cx int64, cy int64) DoughnutChart {
+func (c DoughnutChart) Size(cx styling.Length, cy styling.Length) DoughnutChart {
 	c.CX = cx
 	c.CY = cy
 	return c
@@ -67,15 +70,16 @@ func (c DoughnutChart) WithTitle(title string) DoughnutChart {
 // ToChartSpec converts DoughnutChart to internal XML spec.
 func (c DoughnutChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
-		Kind:           pptxxml.ChartKindDoughnut,
-		Title:          c.Title,
-		TitleOverlay:   c.TitleOverlay,
-		Categories:     CopyStringSlice(c.Categories),
-		Values:         CopyFloat64Slice(c.Values),
-		X:              c.X,
-		Y:              c.Y,
-		CX:             c.CX,
-		CY:             c.CY,
+		Kind:         pptxxml.ChartKindDoughnut,
+		Title:        c.Title,
+		TitleOverlay: c.TitleOverlay,
+		Categories:   CopyStringSlice(c.Categories),
+		Values:       CopyFloat64Slice(c.Values),
+		X:            c.X.Emu(),
+		Y:            c.Y.Emu(),
+		CX:           c.CX.Emu(),
+		CY:           c.CY.Emu(),
+
 		SeriesName:     c.SeriesName,
 		ShowLegend:     c.ShowLegend,
 		LegendPosition: c.LegendPosition,

@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"archive/zip"
+	"encoding/xml"
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -165,9 +166,9 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 		name    string
 		content string
 	}{
-		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.ImageExtensions(), len(chartParts), notes.NotesSlideNumbers(notesParts), hasNotes)},
+		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.ImageExtensions(), len(chartParts), notes.NotesSlideNumbers(notesParts), hasNotes, len(meta.CustomXML))},
 		{"_rels/.rels", pptxxml.RootRelationships()},
-		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes)},
+		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML))},
 		{"ppt/presentation.xml", pptxxml.Presentation(meta.Title, slideCount, hasNotes, meta.SlideSize.Width, meta.SlideSize.Height)},
 		{"ppt/slideLayouts/slideLayout1.xml", pptxxml.SlideLayoutTitleAndContent()},
 		{"ppt/slideLayouts/_rels/slideLayout1.xml.rels", pptxxml.SlideLayoutRelationships()},
@@ -253,12 +254,13 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			}
 
 			imageRefs = append(imageRefs, pptxxml.ImageRef{
-				RelID:        relID,
-				Name:         fmt.Sprintf("Picture %d", imageIndex+1),
-				X:            image.X,
-				Y:            image.Y,
-				CX:           image.CX,
-				CY:           image.CY,
+				RelID: relID,
+				Name:  fmt.Sprintf("Picture %d", imageIndex+1),
+				X:     image.X.Emu(),
+				Y:     image.Y.Emu(),
+				CX:    image.CX.Emu(),
+				CY:    image.CY.Emu(),
+
 				Rotation:     int64(image.Rotation * 60000),
 				FlipH:        image.FlipH,
 				FlipV:        image.FlipV,
@@ -437,6 +439,8 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			elements.SlideTransitionXML(slide),
 			animationsXML,
 			slide.ShowSlideNumber,
+			meta.FooterText,
+			meta.ShowDateTime,
 			meta.SlideSize.Width,
 			meta.SlideSize.Height,
 		)
@@ -458,6 +462,29 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 				hyperlinks,
 			),
 		); err != nil {
+			return err
+		}
+	}
+
+	// Write custom XML parts.
+	for i, part := range meta.CustomXML {
+		// Ensure part content is well-formed XML.
+		if err := xml.Unmarshal([]byte(part.Content), new(interface{})); err != nil {
+			return fmt.Errorf("custom XML part %d contains invalid XML: %w", i+1, err)
+		}
+		path := fmt.Sprintf("customXml/item%d.xml", i+1)
+		if err := common.WriteFile(zw, path, part.Content); err != nil {
+			return err
+		}
+
+		// Generate itemProps
+		itemID := fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", i, i, i, i, i) // Placeholder GUID
+		propsContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
+<ds:schemaRefs/>
+</ds:datastoreItem>`, itemID)
+		propsPath := fmt.Sprintf("customXml/itemProps%d.xml", i+1)
+		if err := common.WriteFile(zw, propsPath, propsContent); err != nil {
 			return err
 		}
 	}
@@ -537,12 +564,13 @@ func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.MediaCata
 		relID := fmt.Sprintf("rId%d", 8+i)
 		targets = append(targets, fmt.Sprintf("../media/%s", mediaName))
 		refs = append(refs, pptxxml.ImageRef{
-			RelID:        relID,
-			Name:         fmt.Sprintf("Master Picture %d", i+1),
-			X:            img.X,
-			Y:            img.Y,
-			CX:           img.CX,
-			CY:           img.CY,
+			RelID: relID,
+			Name:  fmt.Sprintf("Master Picture %d", i+1),
+			X:     img.X.Emu(),
+			Y:     img.Y.Emu(),
+			CX:    img.CX.Emu(),
+			CY:    img.CY.Emu(),
+
 			AltText:      img.AltText,
 			IsDecorative: img.IsDecorative,
 		})

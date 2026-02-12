@@ -19,12 +19,12 @@ func TestSlideContentValidate(t *testing.T) {
 }
 
 func TestTableValidate(t *testing.T) {
-	tbl := pptx.NewTable([]int64{100, 100}).AddRow([]string{"A", "B"})
+	tbl := pptx.NewTable([]pptx.Length{pptx.Emu(100), pptx.Emu(100)}).AddRow([]string{"A", "B"})
 	if err := tbl.Validate(1); err != nil {
 		t.Errorf("expected no error for valid table, got %v", err)
 	}
 
-	tbl2 := pptx.NewTable([]int64{100}).AddRow([]string{"A", "B"})
+	tbl2 := pptx.NewTable([]pptx.Length{pptx.Emu(100)}).AddRow([]string{"A", "B"})
 	if err := tbl2.Validate(1); err == nil {
 		t.Error("expected error for mismatched columns, got nil")
 	}

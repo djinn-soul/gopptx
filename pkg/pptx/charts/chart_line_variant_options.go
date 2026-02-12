@@ -1,11 +1,15 @@
 package charts
 
-func (c LineMarkersChart) Position(x int64, y int64) LineMarkersChart {
+import (
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+)
+
+func (c LineMarkersChart) Position(x styling.Length, y styling.Length) LineMarkersChart {
 	c.LineChart = c.LineChart.Position(x, y)
 	return c
 }
 
-func (c LineMarkersChart) Size(cx int64, cy int64) LineMarkersChart {
+func (c LineMarkersChart) Size(cx styling.Length, cy styling.Length) LineMarkersChart {
 	c.LineChart = c.LineChart.Size(cx, cy)
 	return c
 }
@@ -75,12 +79,12 @@ func (c LineMarkersChart) WithValueRange(min float64, max float64) LineMarkersCh
 	return c
 }
 
-func (c LineStackedChart) Position(x int64, y int64) LineStackedChart {
+func (c LineStackedChart) Position(x styling.Length, y styling.Length) LineStackedChart {
 	c.LineChart = c.LineChart.Position(x, y)
 	return c
 }
 
-func (c LineStackedChart) Size(cx int64, cy int64) LineStackedChart {
+func (c LineStackedChart) Size(cx styling.Length, cy styling.Length) LineStackedChart {
 	c.LineChart = c.LineChart.Size(cx, cy)
 	return c
 }

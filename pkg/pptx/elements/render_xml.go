@@ -134,9 +134,9 @@ func ToXMLBulletParagraphStyles(styles []TextParagraphStyle) []pptxxml.BulletPar
 			BulletColor:    common.NormalizeHexColor(style.BulletColor),
 			BulletSize:     style.BulletSize,
 			Level:          style.Level,
-			LeftIndent:     style.LeftIndent,
-			RightIndent:    style.RightIndent,
-			HangingIndent:  style.HangingIndent,
+			LeftIndent:     style.LeftIndent.Emu(),
+			RightIndent:    style.RightIndent.Emu(),
+			HangingIndent:  style.HangingIndent.Emu(),
 		}
 	}
 	return out
@@ -153,8 +153,8 @@ func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideB
 	case SlideBackgroundSolid:
 		if bg.SolidFill != nil {
 			spec.SolidFill = &pptxxml.ShapeFillSpec{
-				Color:           common.NormalizeHexColor(bg.SolidFill.Color),
-				TransparencyPct: bg.SolidFill.TransparencyPct,
+				Color:        common.NormalizeHexColor(bg.SolidFill.Color),
+				Transparency: bg.SolidFill.Transparency,
 			}
 		}
 	case SlideBackgroundGradient:
@@ -162,9 +162,9 @@ func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideB
 			stops := make([]pptxxml.ShapeGradientStopSpec, 0, len(bg.GradientFill.Stops))
 			for _, stop := range bg.GradientFill.Stops {
 				stops = append(stops, pptxxml.ShapeGradientStopSpec{
-					PositionPct:     stop.PositionPct,
-					Color:           common.NormalizeHexColor(stop.Color),
-					TransparencyPct: stop.TransparencyPct,
+					PositionPct:  stop.PositionPct,
+					Color:        common.NormalizeHexColor(stop.Color),
+					Transparency: stop.Transparency,
 				})
 			}
 			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{

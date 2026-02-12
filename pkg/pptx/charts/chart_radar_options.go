@@ -1,6 +1,10 @@
 package charts
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+)
 
 func (c RadarChart) WithSeriesName(name string) RadarChart {
 	c.SeriesName = strings.TrimSpace(name)
@@ -59,12 +63,12 @@ func (c RadarChart) WithValueRange(min float64, max float64) RadarChart {
 	return c
 }
 
-func (c RadarFilledChart) Position(x int64, y int64) RadarFilledChart {
+func (c RadarFilledChart) Position(x styling.Length, y styling.Length) RadarFilledChart {
 	c.RadarChart = c.RadarChart.Position(x, y)
 	return c
 }
 
-func (c RadarFilledChart) Size(cx int64, cy int64) RadarFilledChart {
+func (c RadarFilledChart) Size(cx styling.Length, cy styling.Length) RadarFilledChart {
 	c.RadarChart = c.RadarChart.Size(cx, cy)
 	return c
 }

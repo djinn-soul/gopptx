@@ -142,7 +142,7 @@ func TestCreateWithSlidesFailsForMissingImage(t *testing.T) {
 }
 
 func TestCreateWithSlidesEmbedsTable(t *testing.T) {
-	table := pptx.NewTable([]int64{2743400, 2743400, 2743400}).
+	table := pptx.NewTable([]pptx.Length{pptx.Emu(2743400), pptx.Emu(2743400), pptx.Emu(2743400)}).
 		AddRow([]string{"Name", "Status", "Owner"}).
 		AddRow([]string{"Parser", "Done", "Core Team"})
 
@@ -173,7 +173,7 @@ func TestCreateWithSlidesEmbedsTable(t *testing.T) {
 }
 
 func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
-	table := pptx.NewTable([]int64{2000000, 2000000}).
+	table := pptx.NewTable([]pptx.Length{pptx.Emu(2000000), pptx.Emu(2000000)}).
 		AddRow([]string{"A"})
 
 	slides := []pptx.SlideContent{
@@ -187,7 +187,7 @@ func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
 }
 
 func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
-	table := pptx.NewTable([]int64{2743400, 2743400}).
+	table := pptx.NewTable([]pptx.Length{pptx.Emu(2743400), pptx.Emu(2743400)}).
 		AddStyledRow([]pptx.TableCell{
 			pptx.NewTableCell("Header").WithBold(true).WithBackgroundColor("1F497D"),
 			pptx.NewTableCell("Value"),
@@ -218,7 +218,7 @@ func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
 }
 
 func TestCreateWithSlidesRejectsStyledTableInvalidColor(t *testing.T) {
-	table := pptx.NewTable([]int64{2743400}).
+	table := pptx.NewTable([]pptx.Length{pptx.Emu(2743400)}).
 		AddStyledRow([]pptx.TableCell{
 			pptx.NewTableCell("Header").WithBackgroundColor("NOTHEX"),
 		})

@@ -5,6 +5,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // TextFrameAnchor specifies the vertical alignment of text within its shape.
@@ -35,10 +36,10 @@ const (
 
 // TextFrame configures the text layout within a shape.
 type TextFrame struct {
-	MarginLeft   int64 // EMU
-	MarginRight  int64
-	MarginTop    int64
-	MarginBottom int64
+	MarginLeft   styling.Length // EMU
+	MarginRight  styling.Length
+	MarginTop    styling.Length
+	MarginBottom styling.Length
 	Anchor       TextFrameAnchor
 	Wrap         TextFrameWrap
 	AutoFit      TextFrameAutoFit
@@ -47,20 +48,21 @@ type TextFrame struct {
 // NewTextFrame creates a text frame with default margins (0.05 inches).
 func NewTextFrame() TextFrame {
 	return TextFrame{
-		MarginLeft:   45720,
-		MarginRight:  45720,
-		MarginTop:    45720,
-		MarginBottom: 45720,
-		Anchor:       TextAnchorMiddle,
-		Wrap:         TextWrapSquare,
-		AutoFit:      TextAutoFitShape,
+		MarginLeft:   styling.Inches(0.05),
+		MarginRight:  styling.Inches(0.05),
+		MarginTop:    styling.Inches(0.05),
+		MarginBottom: styling.Inches(0.05),
+
+		Anchor:  TextAnchorMiddle,
+		Wrap:    TextWrapSquare,
+		AutoFit: TextAutoFitShape,
 	}
 }
 
 // ShapeFill configures solid fill properties for one shape.
 type ShapeFill struct {
 	Color           string
-	TransparencyPct *int
+	Transparency    *float64 // 0.0=opaque, 1.0=transparent
 }
 
 // NewShapeFill creates a solid fill using a 6-digit RGB color.
@@ -68,10 +70,10 @@ func NewShapeFill(color string) ShapeFill {
 	return ShapeFill{Color: common.NormalizeHexColor(color)}
 }
 
-// WithTransparency sets fill transparency percentage in the range [0,100].
-func (f ShapeFill) WithTransparency(percent int) ShapeFill {
+// WithTransparency sets fill transparency in the range [0.0, 1.0] (0.0=opaque, 1.0=transparent).
+func (f ShapeFill) WithTransparency(percent float64) ShapeFill {
 	value := percent
-	f.TransparencyPct = &value
+	f.Transparency = &value
 	return f
 }
 
@@ -80,8 +82,8 @@ func (f ShapeFill) Validate() error {
 	if !common.IsHexColor(f.Color) {
 		return fmt.Errorf("invalid color %q", f.Color)
 	}
-	if f.TransparencyPct != nil && (*f.TransparencyPct < 0 || *f.TransparencyPct > 100) {
-		return fmt.Errorf("transparency must be between 0 and 100")
+	if f.Transparency != nil && (*f.Transparency < 0 || *f.Transparency > 1) {
+		return fmt.Errorf("transparency must be between 0.0 and 1.0")
 	}
 	return nil
 }
@@ -89,12 +91,12 @@ func (f ShapeFill) Validate() error {
 // ShapeLine configures line style for one shape or connector.
 type ShapeLine struct {
 	Color string
-	Width int64
+	Width styling.Length
 	Dash  string
 }
 
 // NewShapeLine creates a line style with RGB color and EMU width.
-func NewShapeLine(color string, width int64) ShapeLine {
+func NewShapeLine(color string, width styling.Length) ShapeLine {
 	return ShapeLine{
 		Color: common.NormalizeHexColor(color),
 		Width: width,
@@ -126,7 +128,7 @@ func (l ShapeLine) Validate() error {
 type ShapeGradientStop struct {
 	PositionPct     int
 	Color           string
-	TransparencyPct *int
+	Transparency    *float64 // 0.0=opaque, 1.0=transparent
 }
 
 // NewShapeGradientStop creates a gradient stop at one position in [0,100].
@@ -137,10 +139,10 @@ func NewShapeGradientStop(positionPct int, color string) ShapeGradientStop {
 	}
 }
 
-// WithTransparency sets stop transparency percentage in the range [0,100].
-func (s ShapeGradientStop) WithTransparency(percent int) ShapeGradientStop {
+// WithTransparency sets stop transparency in the range [0.0, 1.0] (0.0=opaque, 1.0=transparent).
+func (s ShapeGradientStop) WithTransparency(percent float64) ShapeGradientStop {
 	value := percent
-	s.TransparencyPct = &value
+	s.Transparency = &value
 	return s
 }
 
@@ -152,8 +154,8 @@ func (s ShapeGradientStop) Validate() error {
 	if !common.IsHexColor(s.Color) {
 		return fmt.Errorf("invalid color %q", s.Color)
 	}
-	if s.TransparencyPct != nil && (*s.TransparencyPct < 0 || *s.TransparencyPct > 100) {
-		return fmt.Errorf("transparency must be between 0 and 100")
+	if s.Transparency != nil && (*s.Transparency < 0 || *s.Transparency > 1) {
+		return fmt.Errorf("transparency must be between 0.0 and 1.0")
 	}
 	return nil
 }
@@ -211,10 +213,10 @@ func (f ShapeGradientFill) Validate() error {
 // Shape is one auto shape.
 type Shape struct {
 	Type         string
-	X            int64
-	Y            int64
-	CX           int64
-	CY           int64
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
 	Fill         *ShapeFill
 	Line         *ShapeLine
 	GradientFill *ShapeGradientFill
@@ -229,7 +231,7 @@ type Shape struct {
 }
 
 // NewShape creates one shape.
-func NewShape(shapeType string, x, y, cx, cy int64) Shape {
+func NewShape(shapeType string, x, y, cx, cy styling.Length) Shape {
 	return Shape{
 		Type: NormalizeShapeType(shapeType),
 		X:    x,
@@ -319,7 +321,7 @@ func (s Shape) WithTextFrame(frame TextFrame) Shape {
 }
 
 // WithTextMargins sets EMU margins for the shape text frame.
-func (s Shape) WithTextMargins(left, top, right, bottom int64) Shape {
+func (s Shape) WithTextMargins(left, top, right, bottom styling.Length) Shape {
 	if s.TextFrame == nil {
 		tf := NewTextFrame()
 		s.TextFrame = &tf

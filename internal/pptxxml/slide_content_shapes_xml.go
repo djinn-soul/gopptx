@@ -3,6 +3,7 @@ package pptxxml
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 func titleShape(title TitleSpec, width, height int64) string {
@@ -69,14 +70,14 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
 <a:lstStyle/>
 <a:p>
-<a:pPr algn="%s"/>
-<a:r>
-<a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s%s</a:rPr>
-<a:t>`+escaped+`</a:t>
-</a:r>
-</a:p>
-</p:txBody>
-</p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue(title.Underline), colorXML, fontXML)
+      <a:pPr algn="%s"/>
+      <a:r>
+        <a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s%s</a:rPr>
+        <a:t>%s</a:t>
+      </a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue("", title.Underline), colorXML, fontXML, escaped)
 }
 
 func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
@@ -253,7 +254,7 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 <a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s</a:rPr>
 <a:t>%s</a:t>
 </a:r>
-</a:p>`, bulletParagraphPropsXML(pStyle), sz, boolToFlag(style.Bold), boolToFlag(style.Italic), runUnderlineValue(style.Underline), colorXML, escaped)
+</a:p>`, bulletParagraphPropsXML(pStyle), sz, boolToFlag(style.Bold), boolToFlag(style.Italic), runUnderlineValue("", style.Underline), colorXML, escaped)
 }
 
 func slideNumberShape(width, height int64, shapeID int) string {
@@ -293,6 +294,85 @@ func slideNumberShape(width, height int64, shapeID int) string {
         <a:t>‹#›</a:t>
       </a:fld>
       <a:endParaRPr lang="en-US" smtClean="0"/>
+    </a:p>
+  </p:txBody>
+</p:sp>`, shapeID, x, y, cx, cy)
+}
+
+func footerShape(text string, width, height int64, shapeID int) string {
+	cx := int64(2133600)
+	cy := int64(396240)
+	x := (width - cx) / 2
+	y := height - cy - int64(274320)
+
+	return fmt.Sprintf(`
+<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="%d" name="Footer Placeholder"/>
+    <p:cNvSpPr>
+      <a:spLocks noGrp="1"/>
+    </p:cNvSpPr>
+    <p:nvPr>
+      <p:ph type="ftr" sz="quarter" idx="11"/>
+    </p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="%d" y="%d"/>
+      <a:ext cx="%d" cy="%d"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    <a:noFill/>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr algn="ctr"/>
+      <a:r>
+        <a:rPr lang="en-US" sz="1200" dirty="0"/>
+        <a:t>%s</a:t>
+      </a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`, shapeID, x, y, cx, cy, Escape(text))
+}
+
+func dateTimeShape(width, height int64, shapeID int) string {
+	cx := int64(2133600)
+	cy := int64(396240)
+	x := int64(457200)
+	y := height - cy - int64(274320)
+
+	return fmt.Sprintf(`
+<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="%d" name="Date Placeholder"/>
+    <p:cNvSpPr>
+      <a:spLocks noGrp="1"/>
+    </p:cNvSpPr>
+    <p:nvPr>
+      <p:ph type="dt" sz="quarter" idx="10"/>
+    </p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="%d" y="%d"/>
+      <a:ext cx="%d" cy="%d"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    <a:noFill/>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr algn="l"/>
+      <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
+        <a:rPr lang="en-US" sz="1200" dirty="0"/>
+        <a:t>` + time.Now().Format("2006-01-02") + `</a:t>
+      </a:fld>
+      <a:endParaRPr lang="en-US" sz="1200" dirty="0"/>
     </a:p>
   </p:txBody>
 </p:sp>`, shapeID, x, y, cx, cy)

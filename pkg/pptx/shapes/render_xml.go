@@ -14,27 +14,28 @@ func ToXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*action.Hyperlink]string)
 	for _, shape := range shapes {
 		spec := pptxxml.ShapeSpec{
 			Type:         NormalizeShapeType(shape.Type),
-			X:            shape.X,
-			Y:            shape.Y,
-			CX:           shape.CX,
-			CY:           shape.CY,
+			X:            shape.X.Emu(),
+			Y:            shape.Y.Emu(),
+			CX:           shape.CX.Emu(),
+			CY:           shape.CY.Emu(),
 			Text:         shape.Text,
 			AltText:      shape.AltText,
 			IsDecorative: shape.IsDecorative,
 		}
+
 		if shape.Fill != nil {
 			spec.Fill = &pptxxml.ShapeFillSpec{
-				Color:           common.NormalizeHexColor(shape.Fill.Color),
-				TransparencyPct: shape.Fill.TransparencyPct,
+				Color:        common.NormalizeHexColor(shape.Fill.Color),
+				Transparency: shape.Fill.Transparency,
 			}
 		}
 		if shape.GradientFill != nil {
 			stops := make([]pptxxml.ShapeGradientStopSpec, 0, len(shape.GradientFill.Stops))
 			for _, stop := range shape.GradientFill.Stops {
 				stops = append(stops, pptxxml.ShapeGradientStopSpec{
-					PositionPct:     stop.PositionPct,
-					Color:           common.NormalizeHexColor(stop.Color),
-					TransparencyPct: stop.TransparencyPct,
+					PositionPct:  stop.PositionPct,
+					Color:        common.NormalizeHexColor(stop.Color),
+					Transparency: stop.Transparency,
 				})
 			}
 			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{
@@ -46,20 +47,22 @@ func ToXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*action.Hyperlink]string)
 		if shape.Line != nil {
 			spec.Line = &pptxxml.ShapeLineSpec{
 				Color: common.NormalizeHexColor(shape.Line.Color),
-				Width: shape.Line.Width,
+				Width: shape.Line.Width.Emu(),
 				Dash:  NormalizeDrawingLineDash(shape.Line.Dash),
 			}
 		}
+
 		spec.RotationDeg = shape.RotationDeg
 		if shape.TextFrame != nil {
 			spec.TextFrame = &pptxxml.TextFrameSpec{
-				MarginLeft:   shape.TextFrame.MarginLeft,
-				MarginRight:  shape.TextFrame.MarginRight,
-				MarginTop:    shape.TextFrame.MarginTop,
-				MarginBottom: shape.TextFrame.MarginBottom,
+				MarginLeft:   shape.TextFrame.MarginLeft.Emu(),
+				MarginRight:  shape.TextFrame.MarginRight.Emu(),
+				MarginTop:    shape.TextFrame.MarginTop.Emu(),
+				MarginBottom: shape.TextFrame.MarginBottom.Emu(),
 				Anchor:       string(shape.TextFrame.Anchor),
-				Wrap:         string(shape.TextFrame.Wrap),
-				AutoFit:      string(shape.TextFrame.AutoFit),
+
+				Wrap:    string(shape.TextFrame.Wrap),
+				AutoFit: string(shape.TextFrame.AutoFit),
 			}
 		}
 		if shape.ClickAction != nil {
@@ -103,28 +106,41 @@ func ToXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.Conne
 	}
 	specs := make([]pptxxml.ConnectorSpec, 0, len(connectors))
 	for _, connector := range connectors {
-		spec := pptxxml.ConnectorSpec{
-			Type:   NormalizeConnectorType(connector.Type),
-			StartX: connector.StartX,
-			StartY: connector.StartY,
-			EndX:   connector.EndX,
-			EndY:   connector.EndY,
-			Line: pptxxml.ShapeLineSpec{
-				Color: common.NormalizeHexColor(connector.Line.Color),
-				Width: connector.Line.Width,
-				Dash:  NormalizeDrawingLineDash(connector.Line.Dash),
-			},
-			StartArrow:      NormalizeArrowType(connector.StartArrow),
-			EndArrow:        NormalizeArrowType(connector.EndArrow),
-			ArrowSize:       NormalizeArrowSize(connector.ArrowSize),
-			StartShapeIndex: connector.StartShapeIndex,
-			EndShapeIndex:   connector.EndShapeIndex,
-			Label:           connector.Label,
-			AltText:         connector.AltText,
-			IsDecorative:    connector.IsDecorative,
-		}
-		spec.StartSiteIndex, spec.EndSiteIndex = ResolveConnectorSiteIndices(connector, shapes)
+		startSiteIndex, endSiteIndex := ResolveConnectorSiteIndices(connector, shapes)
+		spec := ToXMLConnectorSpec(connector, startSiteIndex, endSiteIndex)
 		specs = append(specs, spec)
 	}
 	return specs
+}
+
+func ToXMLConnectorSpec(connector Connector, startSiteIndex *int, endSiteIndex *int) pptxxml.ConnectorSpec {
+	return pptxxml.ConnectorSpec{
+		Type:            NormalizeConnectorType(connector.Type),
+		StartX:          connector.StartX.Emu(),
+		StartY:          connector.StartY.Emu(),
+		EndX:            connector.EndX.Emu(),
+		EndY:            connector.EndY.Emu(),
+		Line:            ToXMLShapeLineSpec(connector.Line),
+		StartArrow:      NormalizeArrowType(connector.StartArrow),
+		StartArrowWidth: NormalizeArrowSize(connector.StartArrowWidth),
+		StartArrowLen:   NormalizeArrowSize(connector.StartArrowLen),
+		EndArrow:        NormalizeArrowType(connector.EndArrow),
+		EndArrowWidth:   NormalizeArrowSize(connector.EndArrowWidth),
+		EndArrowLen:     NormalizeArrowSize(connector.EndArrowLen),
+		StartShapeIndex: connector.StartShapeIndex,
+		StartSiteIndex:  startSiteIndex,
+		EndShapeIndex:   connector.EndShapeIndex,
+		EndSiteIndex:    endSiteIndex,
+		Label:           connector.Label,
+		AltText:         connector.AltText,
+		IsDecorative:    connector.IsDecorative,
+	}
+}
+
+func ToXMLShapeLineSpec(line ShapeLine) pptxxml.ShapeLineSpec {
+	return pptxxml.ShapeLineSpec{
+		Color: common.NormalizeHexColor(line.Color),
+		Width: line.Width.Emu(),
+		Dash:  NormalizeDrawingLineDash(line.Dash),
+	}
 }
