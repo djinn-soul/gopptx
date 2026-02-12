@@ -1,7 +1,7 @@
 package itest
 
 import (
-	"log"
+	"path/filepath"
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
@@ -121,7 +121,8 @@ func TestShapeShowcase(t *testing.T) {
 		builder.AddSlide(slide)
 	}
 
-	if err := builder.WriteToFile("shape_showcase.pptx"); err != nil {
-		log.Fatalf("failed to save presentation: %s", err)
+	outPath := filepath.Join(t.TempDir(), "shape_showcase.pptx")
+	if err := builder.WriteToFile(outPath); err != nil {
+		t.Fatalf("failed to save presentation: %s", err)
 	}
 }

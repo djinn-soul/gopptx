@@ -29,7 +29,7 @@
 
 - Expanded chart parity report coverage beyond the prior 6-signature slice:
 - Added full variant catalog comparisons for `bar`, `line`, `area`, `pie`, `doughnut`, `scatter` (3 styles), `bubble`, `radar`, `stock`, and `combo`.
-- Updated `tools/ppt-rs-chart-signatures` and `scripts/compare_chart_parity_with_ppt_rs` to emit/compare 21 deterministic chart signatures.
+- Updated `tools/ppt-rs-chart-signatures` and `scripts/parity/compare_chart_parity_with_ppt_rs` to emit/compare 21 deterministic chart signatures.
 - Added explicit normalization for known `ppt-rs` bar token quirks so semantic checks remain strict and stable.
 - Completed chart style-controls parity slice:
 - Added title/legend overlay controls across chart families (`WithTitleOverlay`, `WithLegendOverlay`).
@@ -207,7 +207,7 @@
 - per-cell `marL/marR/marT/marB` on `<a:tcPr>`
 - per-cell wrap mode on `<a:bodyPr wrap="...">`
 - Added integration validation coverage in `pkg/pptx/table_alignment_border_test.go` for row heights, margins, wrap output, and invalid margin/row-height cases.
-- Added deterministic table parity report pipeline in `scripts/compare_table_parity_with_ppt_rs/main.go` with generated output at `reports/table_parity_report.md`.
+- Added deterministic table parity report pipeline in `scripts/parity/compare_table_parity_with_ppt_rs/main.go` with generated output at `reports/table_parity_report.md`.
 
 18. Shape gradient fill parity slice:
 
