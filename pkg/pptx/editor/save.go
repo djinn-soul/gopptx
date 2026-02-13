@@ -7,8 +7,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
+
+const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
 
 // Save writes the edited presentation back to a PPTX file.
 func (e *PresentationEditor) Save(filePath string) error {
@@ -17,8 +20,6 @@ func (e *PresentationEditor) Save(filePath string) error {
 	}
 
 	// Materialize all lazy parts into memory and release the source file handle.
-	// This is necessary because we need the file handle released before writing,
-	// especially on Windows where file locks are mandatory.
 	if err := e.parts.Materialize(); err != nil {
 		return fmt.Errorf("failed to materialize lazy PPTX parts from source archive: %w", err)
 	}
@@ -78,6 +79,45 @@ func (e *PresentationEditor) Save(filePath string) error {
 
 func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	out := make(map[string][]byte)
+
+	// Serialize authors if cache is populated
+	e.authorCacheMu.RLock()
+	cachePopulated := e.authorCache != nil
+	e.authorCacheMu.RUnlock()
+
+	if cachePopulated {
+		// Convert map to slice
+		authors, _ := e.GetAuthors() // Acquires lock internally
+		// Sort by ID
+		sort.Slice(authors, func(i, j int) bool {
+			return authors[i].ID < authors[j].ID
+		})
+
+		xmlContent := pptxxml.CommentAuthorsXML(authors)
+		e.parts.Set("ppt/commentAuthors.xml", []byte(xmlContent))
+	}
+
+	// Check for commentAuthors existence and relationship injection
+	hasCommentAuthors := e.parts.Has("ppt/commentAuthors.xml")
+	if hasCommentAuthors {
+		found := false
+		for _, rel := range e.nonSlideRels {
+			if rel.Type == commentAuthorsRelType {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Add rel
+			relID := fmt.Sprintf("rId%d", e.nextRelIDNum)
+			e.nextRelIDNum++
+			e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
+				ID:     relID,
+				Type:   commentAuthorsRelType,
+				Target: "commentAuthors.xml",
+			})
+		}
+	}
 
 	presentationXML, err := rewritePresentationSlideList([]byte(e.presentationXML), e.slides)
 	if err != nil {
@@ -147,8 +187,17 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	layoutPaths := e.parts.KeysWithPrefix("ppt/slideLayouts/slideLayout")
 	masterPaths := e.parts.KeysWithPrefix("ppt/slideMasters/slideMaster")
 
+	commentPaths := e.parts.KeysWithPrefix("ppt/comments/comment")
+	// Filter just in case
+	filteredCommentPaths := make([]string, 0, len(commentPaths))
+	for _, p := range commentPaths {
+		if strings.HasSuffix(p, ".xml") {
+			filteredCommentPaths = append(filteredCommentPaths, p)
+		}
+	}
+
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
-	contentTypesXML, err := rewriteContentTypes(contentTypesData, e.slides, mediaPaths, hasSections, filteredChartPaths, notesPaths, themePaths, layoutPaths, masterPaths, hasNotesMaster)
+	contentTypesXML, err := rewriteContentTypes(contentTypesData, e.slides, mediaPaths, hasSections, filteredChartPaths, notesPaths, themePaths, layoutPaths, masterPaths, hasNotesMaster, hasCommentAuthors, filteredCommentPaths)
 	if err != nil {
 		return nil, err
 	}

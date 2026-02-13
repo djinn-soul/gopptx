@@ -183,3 +183,19 @@ type SlideMasterCloneResult struct {
 	ThemePart  string
 	LayoutMap  map[string]string
 }
+
+// ShapeProps defines optional properties when creating a shape.
+type ShapeProps struct {
+	Name string
+	// Add other properties as needed for Phase 1
+}
+
+// ShapeUpdate defines fields that can be updated on a shape.
+// Pointers are used to indicate which fields are being updated (non-nil).
+type ShapeUpdate struct {
+	Text *string
+	X    *int
+	Y    *int
+	W    *int
+	H    *int
+}

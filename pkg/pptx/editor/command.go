@@ -6,6 +6,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // RequestEnvelope is the standard wrapper for all incoming commands.
@@ -44,6 +45,19 @@ var commandHandlers = map[string]commandHandler{
 	OpListSlideLayouts:        handleListSlideLayouts,
 	OpRebindSlideLayout:       handleRebindSlideLayout,
 	OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
+	OpAddSection:              handleAddSection,
+	OpRemoveSection:           handleRemoveSection,
+	OpRenameSection:           handleRenameSection,
+	OpGetCoreProperties:       handleGetCoreProperties,
+	OpSetCoreProperties:       handleSetCoreProperties,
+	OpApplyTheme:              handleApplyTheme,
+	OpSetSlideSize:            handleSetSlideSize,
+	OpListShapes:              handleListShapes,
+	OpAddShape:                handleAddShape,
+	OpRemoveShape:             handleRemoveShape,
+	OpUpdateShape:             handleUpdateShape,
+	OpGetNotes:                handleGetNotes,
+	OpSetNotes:                handleSetNotes,
 }
 
 // ExecuteCommand dispatches a JSON command to the appropriate editor method.
@@ -214,6 +228,105 @@ func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessag
 	}, nil
 }
 
+func handleAddSection(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		Name         string `json:"name"`
+		SlideIndices []int  `json:"slide_indices"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.AddSection(p.Name, p.SlideIndices); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"added": true}, nil
+}
+
+func handleRemoveSection(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.RemoveSection(p.Name); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"removed": true}, nil
+}
+
+func handleRenameSection(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		OldName string `json:"old_name"`
+		NewName string `json:"new_name"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.RenameSection(p.OldName, p.NewName); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"renamed": true}, nil
+}
+
+func handleGetCoreProperties(e *PresentationEditor, _ json.RawMessage) (interface{}, error) {
+	return e.GetCoreProperties(), nil
+}
+
+func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p common.CoreProperties
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	e.SetCoreProperties(p)
+	return map[string]bool{"updated": true}, nil
+}
+
+func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		ThemeName string `json:"theme_name"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+
+	var theme styling.Theme
+	switch p.ThemeName {
+	case "Corporate":
+		theme = styling.ThemeCorporate
+	case "Modern":
+		theme = styling.ThemeModern
+	case "Vibrant":
+		theme = styling.ThemeVibrant
+	case "Dark":
+		theme = styling.ThemeDark
+	case "Nature":
+		theme = styling.ThemeNature
+	case "Tech":
+		theme = styling.ThemeTech
+	case "Carbon":
+		theme = styling.ThemeCarbon
+	default:
+		return nil, fmt.Errorf("unknown theme name %q", p.ThemeName)
+	}
+
+	if err := e.ApplyTheme(theme); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"applied": true}, nil
+}
+
+func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p common.SlideSize
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.SetSlideSize(p); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"updated": true}, nil
+}
+
 func errorResponse(code, message, reqID string) string {
 	resp := ResponseEnvelope{
 		OK:        false,
@@ -229,4 +342,110 @@ func errorResponse(code, message, reqID string) string {
 		return `{"ok": false, "error": {"code": "INTERNAL_ERROR", "message": "Failed to marshal error response"}}`
 	}
 	return string(out)
+}
+
+func handleListShapes(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		SlideIndex int `json:"slide_index"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	shapes, err := e.GetShapes(p.SlideIndex)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{"shapes": shapes}, nil
+}
+
+func handleAddShape(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		SlideIndex int                `json:"slide_index"`
+		Type       string             `json:"type"`
+		X          float64            `json:"x"`
+		Y          float64            `json:"y"`
+		W          float64            `json:"w"`
+		H          float64            `json:"h"`
+		Text       string             `json:"text"`       // Optional
+		Properties *common.ShapeProps `json:"properties"` // Optional
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+
+	// Assuming PresentationEditor has AddShape(slideIndex, type, x, y, w, h)
+	id, err := e.AddShape(p.SlideIndex, p.Type, p.X, p.Y, p.W, p.H)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply optional updates
+	if p.Text != "" {
+		updates := common.ShapeUpdate{
+			Text: &p.Text,
+		}
+		if err := e.UpdateShape(p.SlideIndex, id, updates); err != nil {
+			return nil, err
+		}
+	}
+
+	return map[string]int{"shape_id": id}, nil
+}
+
+func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		SlideIndex int `json:"slide_index"`
+		ShapeID    int `json:"shape_id"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.RemoveShape(p.SlideIndex, p.ShapeID); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"removed": true}, nil
+}
+
+func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		SlideIndex int                `json:"slide_index"`
+		ShapeID    int                `json:"shape_id"`
+		Updates    common.ShapeUpdate `json:"updates"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.UpdateShape(p.SlideIndex, p.ShapeID, p.Updates); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"updated": true}, nil
+}
+
+func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		SlideIndex int `json:"slide_index"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	// Assuming GetNotes returns just the text string for Phase 1
+	notes, err := e.GetNotes(p.SlideIndex)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{"text": notes}, nil
+}
+
+func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+	var p struct {
+		SlideIndex int    `json:"slide_index"`
+		Text       string `json:"text"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.SetNotes(p.SlideIndex, p.Text); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"updated": true}, nil
 }

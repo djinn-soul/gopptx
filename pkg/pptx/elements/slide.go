@@ -351,6 +351,31 @@ func (s SlideContent) AddNoteParagraph(p TextParagraph) SlideContent {
 	return s
 }
 
+// AddNoteBullet appends a bulleted paragraph to the speaker notes.
+func (s SlideContent) AddNoteBullet(text string) SlideContent {
+	p := NewTextParagraph()
+	p.Runs = append(p.Runs, NewTextRun(text))
+	p.Style.BulletStyle = BulletStyleBullet
+	return s.AddNoteParagraph(p)
+}
+
+// AddNoteNumbered appends a numbered paragraph to the speaker notes.
+func (s SlideContent) AddNoteNumbered(text string) SlideContent {
+	p := NewTextParagraph()
+	p.Runs = append(p.Runs, NewTextRun(text))
+	p.Style.BulletStyle = BulletStyleNumber
+	return s.AddNoteParagraph(p)
+}
+
+// AddNoteSubBullet appends an indented bullet paragraph to the speaker notes.
+func (s SlideContent) AddNoteSubBullet(level int, text string) SlideContent {
+	p := NewTextParagraph()
+	p.Runs = append(p.Runs, NewTextRun(text))
+	p.Style.BulletStyle = BulletStyleBullet
+	p.Style.Level = level
+	return s.AddNoteParagraph(p)
+}
+
 // WithTable sets the table for the slide.
 func (s SlideContent) WithTable(t tables.Table) SlideContent {
 	s.Table = &t

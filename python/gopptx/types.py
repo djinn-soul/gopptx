@@ -16,3 +16,17 @@ class PresentationMetadata(TypedDict):
     slide_count: int
     size: SlideSize
 
+
+class CoreProperties(TypedDict, total=False):
+    title: str
+    subject: str
+    creator: str
+    keywords: str
+    description: str
+    lastModifiedBy: str
+    revision: str
+    created: str
+    modified: str
+    category: str
+    contentStatus: str
+

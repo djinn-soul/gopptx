@@ -8,7 +8,8 @@ import uuid
 from typing import Any, Dict, Optional, cast
 
 from . import ops
-from .types import PresentationMetadata
+from .types import CoreProperties, PresentationMetadata
+
 
 class GopptxError(Exception):
     """Base exception for gopptx library errors."""
@@ -147,6 +148,37 @@ class Presentation:
             insert_at = index + 1
         result = self.execute(ops.OP_DUPLICATE_SLIDE, {"index": index, "insert_at": insert_at})
         return int(result.get("new_index", -1))
+
+    def add_section(self, name: str, slide_indices: list[int]) -> None:
+        """Adds a new grouped section for slides."""
+        self.execute(ops.OP_ADD_SECTION, {"name": name, "slide_indices": slide_indices})
+
+    def remove_section(self, name: str) -> None:
+        """Removes a section by name."""
+        self.execute(ops.OP_REMOVE_SECTION, {"name": name})
+
+    def rename_section(self, old_name: str, new_name: str) -> None:
+        """Renames a section."""
+        self.execute(ops.OP_RENAME_SECTION, {"old_name": old_name, "new_name": new_name})
+
+    @property
+    def core_properties(self) -> CoreProperties:
+        """Returns the presentation's core properties (Dublin Core metadata)."""
+        result = self.execute(ops.OP_GET_CORE_PROPERTIES, {})
+        return cast(CoreProperties, result)
+
+    @core_properties.setter
+    def core_properties(self, props: CoreProperties) -> None:
+        """Updates the presentation's core properties."""
+        self.execute(ops.OP_SET_CORE_PROPERTIES, props)
+
+    def apply_theme(self, theme_name: str) -> None:
+        """Applies a theme preset to the presentation."""
+        self.execute(ops.OP_APPLY_THEME, {"theme_name": theme_name})
+
+    def set_slide_size(self, width: int, height: int) -> None:
+        """Sets the slide size in EMUs."""
+        self.execute(ops.OP_SET_SLIDE_SIZE, {"width": width, "height": height})
 
 
     def _get_last_error(self) -> str:

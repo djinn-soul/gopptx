@@ -252,7 +252,7 @@ func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
 	return b.String(), nil
 }
 
-func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, layoutPaths []string, masterPaths []string, hasNotesMaster bool) (string, error) {
+func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, layoutPaths []string, masterPaths []string, hasNotesMaster bool, hasCommentAuthors bool, commentPaths []string) (string, error) {
 	if len(current) == 0 {
 		return "", fmt.Errorf("missing content types content")
 	}
@@ -294,7 +294,7 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		}
 	}
 
-	// 2. Manage Overrides (Slides and SectionList)
+	// 2. Manage Overrides (Slides, SectionList, and Comments)
 	filtered := make([]contentTypeOverride, 0, len(doc.Overrides)+len(slides)+1)
 	for _, override := range doc.Overrides {
 		part := common.CanonicalPartPath(override.PartName)
@@ -302,12 +302,14 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 			continue
 		}
 		if part == "ppt/sectionList.xml" ||
+			part == "ppt/commentAuthors.xml" ||
 			strings.HasPrefix(part, "ppt/charts/chart") ||
 			strings.HasPrefix(part, "ppt/notesSlides/notesSlide") ||
 			strings.HasPrefix(part, "ppt/notesMasters/notesMaster") ||
 			strings.HasPrefix(part, "ppt/theme/theme") ||
 			strings.HasPrefix(part, "ppt/slideLayouts/slideLayout") ||
-			strings.HasPrefix(part, "ppt/slideMasters/slideMaster") {
+			strings.HasPrefix(part, "ppt/slideMasters/slideMaster") ||
+			strings.HasPrefix(part, "ppt/comments/comment") {
 			continue
 		}
 		filtered = append(filtered, override)
@@ -359,6 +361,18 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		filtered = append(filtered, contentTypeOverride{
 			PartName:    "/ppt/notesMasters/notesMaster1.xml",
 			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml",
+		})
+	}
+	if hasCommentAuthors {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/ppt/commentAuthors.xml",
+			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml",
+		})
+	}
+	for _, p := range commentPaths {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.comments+xml",
 		})
 	}
 

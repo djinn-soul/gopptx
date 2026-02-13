@@ -90,7 +90,11 @@ func TestPresentationEditor_SectionsPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	defer reopened.Close()
+	defer func() {
+		if closeErr := reopened.Close(); closeErr != nil {
+			t.Errorf("close reopened editor: %v", closeErr)
+		}
+	}()
 
 	sections := reopened.Sections()
 	if len(sections) != 1 {
@@ -136,7 +140,11 @@ func TestPresentationEditor_SectionsPreservedOnMove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
-	defer editor.Close()
+	defer func() {
+		if closeErr := editor.Close(); closeErr != nil {
+			t.Errorf("close editor: %v", closeErr)
+		}
+	}()
 
 	// Capture slide IDs
 	slides := editor.Slides()

@@ -114,3 +114,21 @@ func TestReplaceShapeNodes(t *testing.T) {
 		t.Errorf("replace mismatch.\nExpected: %s\nGot:      %s", expected, string(modified))
 	}
 }
+
+func TestMaxObjectIDIncludesGraphicFrame(t *testing.T) {
+	xmlContent := []byte(`
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+      <p:sp><p:nvSpPr><p:cNvPr id="3" name="Title"/></p:nvSpPr></p:sp>
+      <p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="9" name="Chart 1"/></p:nvGraphicFramePr></p:graphicFrame>
+    </p:spTree>
+  </p:cSld>
+</p:sld>`)
+
+	got := maxObjectID(xmlContent)
+	if got != 9 {
+		t.Fatalf("maxObjectID() = %d, want 9", got)
+	}
+}

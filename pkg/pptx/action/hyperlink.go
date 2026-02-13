@@ -28,6 +28,8 @@ const (
 	HyperlinkActionEmail HyperlinkActionType = "email"
 	// HyperlinkActionFile links to a file.
 	HyperlinkActionFile HyperlinkActionType = "file"
+	// HyperlinkActionProgram links to an external program.
+	HyperlinkActionProgram HyperlinkActionType = "program"
 )
 
 // HyperlinkAction defines the target of a hyperlink.
@@ -38,6 +40,7 @@ type HyperlinkAction struct {
 	EmailAddress string // For Email type
 	EmailSubject string // For Email type (optional)
 	FilePath     string // For File type
+	ProgramPath  string // For Program type
 }
 
 // Hyperlink represents a clickable hyperlink on a shape or text run.
@@ -105,6 +108,11 @@ func HyperlinkFile(path string) HyperlinkAction {
 	return HyperlinkAction{Type: HyperlinkActionFile, FilePath: path}
 }
 
+// HyperlinkProgram creates a program hyperlink action.
+func HyperlinkProgram(path string) HyperlinkAction {
+	return HyperlinkAction{Type: HyperlinkActionProgram, ProgramPath: path}
+}
+
 // RelationshipTarget returns the target URL for the relationship.
 func (a HyperlinkAction) RelationshipTarget() string {
 	switch a.Type {
@@ -130,6 +138,8 @@ func (a HyperlinkAction) RelationshipTarget() string {
 		return mailto
 	case HyperlinkActionFile:
 		return "file:///" + strings.ReplaceAll(a.FilePath, "\\", "/")
+	case HyperlinkActionProgram:
+		return "file:///" + strings.ReplaceAll(a.ProgramPath, "\\", "/")
 	default:
 		return ""
 	}
@@ -145,7 +155,8 @@ func (a HyperlinkAction) IsExternal() bool {
 		HyperlinkActionPreviousSlide,
 		HyperlinkActionEndShow,
 		HyperlinkActionEmail,
-		HyperlinkActionFile:
+		HyperlinkActionFile,
+		HyperlinkActionProgram:
 		return true
 	default:
 		return false
@@ -155,6 +166,8 @@ func (a HyperlinkAction) IsExternal() bool {
 // ActionType returns the ppaction string for internal navigation links.
 func (a HyperlinkAction) ActionType() string {
 	switch a.Type {
+	case HyperlinkActionProgram:
+		return "ppaction://program"
 	case HyperlinkActionFirstSlide:
 		return "ppaction://hlinkshowjump?jump=firstslide"
 	case HyperlinkActionLastSlide:

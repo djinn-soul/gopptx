@@ -43,6 +43,27 @@ type SlideMasterSpec struct {
 	Shapes       []ShapeSpec
 	Images       []ImageRef
 	ColorMapping *ColorMappingSpec
+	TxStyles     *TxStylesSpec
+}
+
+// TxStylesSpec defines the default text styles for a slide master.
+// Each field holds up to 9 levels of text styling (Lvl1–Lvl9).
+type TxStylesSpec struct {
+	TitleStyle []TextLevelStyle
+	BodyStyle  []TextLevelStyle
+	OtherStyle []TextLevelStyle
+}
+
+// TextLevelStyle defines default text properties for one indent level.
+type TextLevelStyle struct {
+	Level      int    // 0-based (0=Lvl1, 8=Lvl9)
+	Font       string // Typeface override
+	SizePt     int    // Size in points
+	Bold       bool
+	Italic     bool
+	Color      string // 6-digit hex RGB
+	BulletChar string // Bullet character override
+	IndentEMU  int64  // Left indent in EMU
 }
 
 // ColorMappingSpec describes how theme colors map to functional roles on slides.
@@ -200,7 +221,7 @@ func SlideMaster(spec *SlideMasterSpec) string {
 <p:sldLayoutId id="2147483652" r:id="rId4"/>
 <p:sldLayoutId id="2147483653" r:id="rId5"/>
 <p:sldLayoutId id="2147483654" r:id="rId6"/>
-</p:sldLayoutIdLst>
+</p:sldLayoutIdLst>` + txStylesXML(spec) + `
 </p:sldMaster>`
 }
 
@@ -219,6 +240,92 @@ func masterShapesAndImagesXML(spec *SlideMasterSpec) string {
 	for _, img := range spec.Images {
 		b.WriteString(imageShape(img, nextID))
 		nextID++
+	}
+	return b.String()
+}
+
+// txStylesXML renders the <p:txStyles> block for a slide master.
+func txStylesXML(spec *SlideMasterSpec) string {
+	if spec == nil || spec.TxStyles == nil {
+		return ""
+	}
+	tx := spec.TxStyles
+	var b strings.Builder
+	b.WriteString(`
+<p:txStyles>`)
+	if len(tx.TitleStyle) > 0 {
+		b.WriteString(`
+<p:titleStyle>`)
+		b.WriteString(textLevelStylesXML(tx.TitleStyle))
+		b.WriteString(`
+</p:titleStyle>`)
+	}
+	if len(tx.BodyStyle) > 0 {
+		b.WriteString(`
+<p:bodyStyle>`)
+		b.WriteString(textLevelStylesXML(tx.BodyStyle))
+		b.WriteString(`
+</p:bodyStyle>`)
+	}
+	if len(tx.OtherStyle) > 0 {
+		b.WriteString(`
+<p:otherStyle>`)
+		b.WriteString(textLevelStylesXML(tx.OtherStyle))
+		b.WriteString(`
+</p:otherStyle>`)
+	}
+	b.WriteString(`
+</p:txStyles>`)
+	return b.String()
+}
+
+// textLevelStylesXML renders <a:lvlNpPr> elements for each text level.
+func textLevelStylesXML(levels []TextLevelStyle) string {
+	var b strings.Builder
+	for _, lvl := range levels {
+		lvlNum := lvl.Level + 1 // 0-based → 1-based
+		if lvlNum < 1 {
+			lvlNum = 1
+		}
+		if lvlNum > 9 {
+			lvlNum = 9
+		}
+
+		attrs := ""
+		if lvl.IndentEMU > 0 {
+			attrs += fmt.Sprintf(` indent="%d"`, lvl.IndentEMU)
+		}
+
+		b.WriteString(fmt.Sprintf(`
+<a:lvl%dpPr%s>`, lvlNum, attrs))
+
+		if lvl.BulletChar != "" {
+			b.WriteString(fmt.Sprintf(`<a:buChar char="%s"/>`, Escape(lvl.BulletChar)))
+		}
+
+		// Default text run properties
+		rprAttrs := ""
+		if lvl.SizePt > 0 {
+			rprAttrs += fmt.Sprintf(` sz="%d"`, lvl.SizePt*100)
+		}
+		if lvl.Bold {
+			rprAttrs += ` b="1"`
+		}
+		if lvl.Italic {
+			rprAttrs += ` i="1"`
+		}
+		b.WriteString(fmt.Sprintf(`<a:defRPr%s>`, rprAttrs))
+
+		if lvl.Color != "" {
+			color := strings.TrimPrefix(lvl.Color, "#")
+			b.WriteString(fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, color))
+		}
+		if lvl.Font != "" {
+			b.WriteString(fmt.Sprintf(`<a:latin typeface="%s"/>`, Escape(lvl.Font)))
+		}
+		b.WriteString(`</a:defRPr>`)
+		b.WriteString(fmt.Sprintf(`
+</a:lvl%dpPr>`, lvlNum))
 	}
 	return b.String()
 }

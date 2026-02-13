@@ -103,25 +103,37 @@ func RootRelationships() string {
 }
 
 // PresentationRelationships renders ppt/_rels/presentation.xml.rels.
-func PresentationRelationships(slideCount int, includeNotesMaster bool, customXMLCount int) string {
+func PresentationRelationships(slideCount int, includeNotesMaster bool, customXMLCount int, masterCount int) string {
+	if masterCount < 1 {
+		masterCount = 1
+	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`)
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
 
+	// Master relationships: rId1..rIdN for N masters
+	for i := 0; i < masterCount; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster%d.xml"/>`, i+1, i+1))
+	}
+
+	// Theme relationship: rId(masterCount+1)
+	b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`, masterCount+1))
+
+	// Slide relationships: rId(masterCount+2)..rId(masterCount+slideCount+1)
 	for i := 1; i <= slideCount; i++ {
-		rid := i + 2
+		rid := masterCount + 1 + i
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide%d.xml"/>`, rid, i))
 	}
 	if includeNotesMaster {
-		rid := slideCount + 3
+		rid := masterCount + slideCount + 2
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`, rid))
 	}
 
-	baseRid := slideCount + 3
+	baseRid := masterCount + slideCount + 2
 	if includeNotesMaster {
 		baseRid++
 	}
@@ -139,17 +151,26 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 }
 
 // Presentation renders ppt/presentation.xml.
-func Presentation(title string, slideCount int, includeNotesMaster bool, width, height int64) string {
+func Presentation(title string, slideCount int, includeNotesMaster bool, width, height int64, masterCount int) string {
 	_ = title
+	if masterCount < 1 {
+		masterCount = 1
+	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">
-<p:sldMasterIdLst>
-<p:sldMasterId id="2147483648" r:id="rId1"/>
+<p:sldMasterIdLst>`)
+	for i := 0; i < masterCount; i++ {
+		masterID := int64(2147483648) + int64(i)
+		rid := i + 1
+		b.WriteString(fmt.Sprintf(`
+<p:sldMasterId id="%d" r:id="rId%d"/>`, masterID, rid))
+	}
+	b.WriteString(`
 </p:sldMasterIdLst>`)
 
 	if includeNotesMaster {
-		rid := slideCount + 3
+		rid := masterCount + slideCount + 2
 		b.WriteString(fmt.Sprintf(`
 <p:notesMasterIdLst>
 <p:notesMasterId r:id="rId%d"/>
@@ -161,7 +182,7 @@ func Presentation(title string, slideCount int, includeNotesMaster bool, width, 
 
 	for i := 1; i <= slideCount; i++ {
 		slideID := 256 + i
-		rid := i + 2
+		rid := masterCount + 1 + i
 		b.WriteString(fmt.Sprintf(`
 <p:sldId id="%d" r:id="rId%d"/>`, slideID, rid))
 	}

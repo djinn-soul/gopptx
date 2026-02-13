@@ -5,6 +5,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 // parsedShape represents a shape found in the slide XML.
@@ -250,13 +253,23 @@ func renderShapeXML(s *parsedShape) []byte {
 		return nil
 	}
 
+	// Basic preset geometry mapping (Phase 1 supports common types)
+	prst := "rect"
+	switch strings.ToLower(s.Type) {
+	case "ellipse", "oval":
+		prst = "ellipse"
+	case "triangle":
+		prst = "triangle"
+	}
+
 	// Reconstruct a basic Text Shape / Rectangle
+	// REDUCED: Removed redundant xmlns:a and xmlns:p as they should be at slide root.
 	return []byte(fmt.Sprintf(
-		`<p:sp xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`+
+		`<p:sp>`+
 			`<p:nvSpPr><p:cNvPr id="%d" name="%s"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`+
 			`<p:spPr>`+
 			`<a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm>`+
-			`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`+
+			`<a:prstGeom prst="%s"><a:avLst/></a:prstGeom>`+
 			`</p:spPr>`+
 			`<p:txBody>`+
 			`<a:bodyPr/><a:lstStyle/>`+
@@ -265,6 +278,89 @@ func renderShapeXML(s *parsedShape) []byte {
 			`</p:sp>`,
 		s.ID, escape(s.Name),
 		s.X, s.Y, s.W, s.H,
+		prst,
 		escape(s.Text),
 	))
 }
+
+// AddShape adds a new shape to the slide.
+func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w, h float64) (int, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return 0, fmt.Errorf("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return 0, fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	// Parse existing shapes to find max ID and last shape position
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return 0, fmt.Errorf("parse shapes: %w", err)
+	}
+
+	maxID := maxObjectID(content)
+	lastShapeEnd := int64(-1)
+	for _, s := range shapes {
+		if s.End > lastShapeEnd {
+			lastShapeEnd = s.End
+		}
+	}
+	newID := maxID + 1
+
+	newShape := parsedShape{
+		ID:   newID,
+		Name: fmt.Sprintf("%s %d", shapeType, newID),
+		Type: shapeType,
+		Text: "",
+		X:    int(x),
+		Y:    int(y),
+		W:    int(w),
+		H:    int(h),
+	}
+
+	shapeXML := renderShapeXML(&newShape)
+
+	// Insertion point: After last shape if exists, else before </p:spTree>
+	var buf bytes.Buffer
+	if lastShapeEnd != -1 {
+		buf.Write(content[:lastShapeEnd])
+		buf.Write(shapeXML)
+		buf.Write(content[lastShapeEnd:])
+	} else {
+		endTree := []byte("</p:spTree>")
+		idx := bytes.LastIndex(content, endTree)
+		if idx == -1 {
+			return 0, fmt.Errorf("invalid slide xml: missing spTree end")
+		}
+		buf.Write(content[:idx])
+		buf.Write(shapeXML)
+		buf.Write(content[idx:])
+	}
+
+	e.parts.Set(partPath, buf.Bytes())
+	return newID, nil
+}
+
+var cNvPrIDPattern = regexp.MustCompile(`\bcNvPr\b[^>]*\bid="(\d+)"`)
+
+func maxObjectID(content []byte) int {
+	matches := cNvPrIDPattern.FindAllSubmatch(content, -1)
+	maxID := 0
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		id, err := strconv.Atoi(string(match[1]))
+		if err != nil {
+			continue
+		}
+		if id > maxID {
+			maxID = id
+		}
+	}
+	return maxID
+}
+

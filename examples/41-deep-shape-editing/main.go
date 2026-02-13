@@ -49,8 +49,6 @@ func run() error {
 			log.Printf("warning: failed to close editor: %v", closeErr)
 		}
 	}()
-
-	// 3. Find the shape
 	shapes, err := edit.GetShapes(0)
 	if err != nil {
 		return fmt.Errorf("GetShapes failed: %w", err)
@@ -76,10 +74,15 @@ func run() error {
 	updatedX := 500000
 	updatedY := 500000
 
-	err = edit.UpdateShape(0, targetIndex, common.Shape{
-		Text: "Edited Text",
-		X:    updatedX,
-		Y:    updatedY,
+	newText := "Edited Text"
+	// Create vars for pointers
+	newXVal := updatedX
+	newYVal := updatedY
+
+	err = edit.UpdateShape(0, shapes[targetIndex].ID, common.ShapeUpdate{
+		Text: &newText,
+		X:    &newXVal,
+		Y:    &newYVal,
 	})
 	if err != nil {
 		return fmt.Errorf("UpdateShape failed: %w", err)
