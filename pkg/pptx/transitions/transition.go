@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+var transitionEscapeReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
 // SlideTransition is the extensibility contract for slide transitions.
 type SlideTransition interface {
 	Validate() error
@@ -199,14 +207,7 @@ func (o TransitionOptions) XML() string {
 }
 
 func escape(value string) string {
-	replacer := strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		"\"", "&quot;",
-		"'", "&apos;",
-	)
-	return replacer.Replace(value)
+	return transitionEscapeReplacer.Replace(value)
 }
 
 func (t TransitionType) Validate() error {

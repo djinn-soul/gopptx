@@ -1,0 +1,133 @@
+package main
+
+/*
+#include <stdlib.h>
+
+typedef uintptr_t DeckHandle;
+*/
+import "C"
+
+import (
+	"fmt"
+	"runtime/debug"
+	"sync"
+	"unsafe"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
+)
+
+var (
+	globalErrorMu sync.RWMutex
+	globalError   string
+)
+
+// setGlobalError safely sets the global error message.
+func setGlobalError(err error) {
+	globalErrorMu.Lock()
+	defer globalErrorMu.Unlock()
+	if err != nil {
+		globalError = err.Error()
+	} else {
+		globalError = ""
+	}
+}
+
+//export deck_global_error
+func deck_global_error() *C.char {
+	globalErrorMu.RLock()
+	defer globalErrorMu.RUnlock()
+	if globalError == "" {
+		return nil
+	}
+	return C.CString(globalError)
+}
+
+// main is required for cgo build but not used for library
+func main() {}
+
+// recoverPanic prevents Go panics from crashing the C host.
+func recoverPanic(h editor.Handle) {
+	if r := recover(); r != nil {
+		err := fmt.Errorf("go panic: %v\n%s", r, debug.Stack())
+		if h != 0 {
+			editor.SetHandleError(h, err)
+		} else {
+			setGlobalError(err)
+		}
+	}
+}
+
+//export deck_open
+func deck_open(path *C.char) C.DeckHandle {
+	defer recoverPanic(0)
+	setGlobalError(nil) // clear previous error
+
+	goPath := C.GoString(path)
+	e, err := editor.OpenPresentationEditor(goPath)
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	h := editor.RegisterEditor(e)
+	return C.DeckHandle(h)
+}
+
+//export deck_execute_json
+func deck_execute_json(h C.DeckHandle, json_input *C.char) *C.char {
+	handle := editor.Handle(h)
+	defer recoverPanic(handle)
+
+	e, ok := editor.GetEditor(handle)
+	if !ok {
+		// Return a JSON error even if handle is invalid
+		return C.CString(`{"ok": false, "error": {"code": "INVALID_HANDLE", "message": "Handle not found"}}`)
+	}
+
+	goInput := C.GoString(json_input)
+	response := editor.ExecuteCommand(e, goInput)
+	return C.CString(response)
+}
+
+//export deck_save
+func deck_save(h C.DeckHandle, path *C.char) C.int {
+	handle := editor.Handle(h)
+	defer recoverPanic(handle)
+
+	e, ok := editor.GetEditor(handle)
+	if !ok {
+		return -1
+	}
+
+	goPath := C.GoString(path)
+	if err := e.Save(goPath); err != nil {
+		editor.SetHandleError(handle, err)
+		return 1
+	}
+
+	return 0
+}
+
+//export deck_last_error
+func deck_last_error(h C.DeckHandle) *C.char {
+	handle := editor.Handle(h)
+	defer recoverPanic(handle)
+
+	errMsg := editor.GetHandleError(handle)
+	return C.CString(errMsg)
+}
+
+//export deck_free_string
+func deck_free_string(s *C.char) {
+	if s != nil {
+		C.free(unsafe.Pointer(s))
+	}
+}
+
+//export deck_close
+func deck_close(h C.DeckHandle) {
+	handle := editor.Handle(h)
+	defer recoverPanic(handle)
+
+	editor.UnregisterEditor(handle)
+}

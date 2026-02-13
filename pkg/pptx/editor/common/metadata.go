@@ -23,3 +23,6 @@ type SlideMetadata struct {
 	PartName       string
 	Title          string
 }
+
+// CoreProperties describes the docProps/core.xml metadata.
+type CoreProperties = common.CoreProperties

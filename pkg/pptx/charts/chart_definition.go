@@ -6,4 +6,6 @@ import "github.com/djinn-soul/gopptx/internal/pptxxml"
 type ChartDefinition interface {
 	ToChartSpec() *pptxxml.ChartSpec
 	Validate(slideIndex int) error
+	GetCategories() []string
+	GetValues() []float64
 }

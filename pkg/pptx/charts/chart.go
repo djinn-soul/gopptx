@@ -240,6 +240,14 @@ func (c BarChart) Validate(slideIndex int) error {
 	return nil
 }
 
+func (c BarChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c BarChart) GetValues() []float64 {
+	return c.Values
+}
+
 // ToChartSpec converts LineChart to internal XML spec.
 func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 	return &pptxxml.ChartSpec{
@@ -305,6 +313,14 @@ func (c LineChart) Validate(slideIndex int) error {
 		return err
 	}
 	return nil
+}
+
+func (c LineChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c LineChart) GetValues() []float64 {
+	return c.Values
 }
 
 func validateChartCore(

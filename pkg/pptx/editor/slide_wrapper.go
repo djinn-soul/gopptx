@@ -40,7 +40,7 @@ var (
 
 // Placeholders parses the slide XML and returns all placeholder elements found.
 func (s *Slide) Placeholders() ([]Placeholder, error) {
-	content, ok := s.editor.parts[s.PartName]
+	content, ok := s.editor.parts.Get(s.PartName)
 	if !ok {
 		return nil, fmt.Errorf("slide part %q not found", s.PartName)
 	}

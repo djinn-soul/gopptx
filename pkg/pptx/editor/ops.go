@@ -33,8 +33,8 @@ func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) 
 		return 0, err
 	}
 
-	e.parts[part] = []byte(slideXML)
-	e.parts[relsPart] = []byte(slideRelsXML)
+	e.parts.Set(part, []byte(slideXML))
+	e.parts.Set(relsPart, []byte(slideRelsXML))
 
 	e.slides = append(e.slides, common.EditorSlideRef{
 		SlideID: e.nextSlideID,
@@ -82,8 +82,8 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 		return err
 	}
 
-	e.parts[ref.Part] = []byte(slideXML)
-	e.parts[common.SlideRelsPartName(ref.Part)] = []byte(relsXML)
+	e.parts.Set(ref.Part, []byte(slideXML))
+	e.parts.Set(common.SlideRelsPartName(ref.Part), []byte(relsXML))
 	e.slides[index].Title = slide.Title
 	return nil
 }
@@ -99,12 +99,12 @@ func (e *PresentationEditor) RemoveSlide(index int) error {
 
 	ref := e.slides[index]
 	if notesPart, ok := e.notesInventory[ref.Part]; ok {
-		delete(e.parts, notesPart)
-		delete(e.parts, common.SlideRelsPartName(notesPart))
+		e.parts.Delete(notesPart)
+		e.parts.Delete(common.SlideRelsPartName(notesPart))
 		delete(e.notesInventory, ref.Part)
 	}
-	delete(e.parts, ref.Part)
-	delete(e.parts, common.SlideRelsPartName(ref.Part))
+	e.parts.Delete(ref.Part)
+	e.parts.Delete(common.SlideRelsPartName(ref.Part))
 
 	next := make([]common.EditorSlideRef, 0, len(e.slides)-1)
 	next = append(next, e.slides[:index]...)
@@ -131,11 +131,11 @@ func (e *PresentationEditor) DuplicateSlide(srcIndex, destIndex int) (int, error
 	srcPart := srcRef.Part
 	srcRelsPart := common.SlideRelsPartName(srcPart)
 
-	slideBytes, ok := e.parts[srcPart]
+	slideBytes, ok := e.parts.Get(srcPart)
 	if !ok {
 		return 0, fmt.Errorf("source slide part %q missing", srcPart)
 	}
-	relsBytes, ok := e.parts[srcRelsPart]
+	relsBytes, ok := e.parts.Get(srcRelsPart)
 	if !ok {
 		return 0, fmt.Errorf("source slide rels part %q missing", srcRelsPart)
 	}
@@ -157,13 +157,13 @@ func (e *PresentationEditor) DuplicateSlide(srcIndex, destIndex int) (int, error
 
 	// Try to visually indicate copy in the XML
 	newSlideBytes = appendCopySuffixToXML(newSlideBytes)
-	e.parts[newPart] = newSlideBytes
+	e.parts.Set(newPart, newSlideBytes)
 
 	updatedRelsBytes, err := e.deepCloneSlideParts(srcRef.Part, relsBytes, newPart)
 	if err != nil {
 		return 0, fmt.Errorf("clone slide parts: %w", err)
 	}
-	e.parts[newRelsPart] = updatedRelsBytes
+	e.parts.Set(newRelsPart, updatedRelsBytes)
 
 	newRef := common.EditorSlideRef{
 		SlideID: e.nextSlideID,
@@ -226,6 +226,7 @@ func (e *PresentationEditor) MergeFromFile(filePath string) error {
 	if err != nil {
 		return err
 	}
+	defer func() { _ = other.Close() }()
 	return e.MergeFromEditor(other)
 }
 
@@ -236,33 +237,33 @@ func (e *PresentationEditor) MergeFromEditor(other *PresentationEditor) error {
 	}
 
 	for idx, slide := range other.slides {
-		rels, err := other.slideRelationships(slide.Part)
-		if err != nil {
-			return err
-		}
-		if _, err := scanSupportedSlideRels(rels); err != nil {
-			return fmt.Errorf("source slide %d is not merge-supported: %w", idx, err)
-		}
+		// Check removed to allow deep copier to handle supported types
+		// if _, err := scanSupportedSlideRels(rels); err != nil {
+		// 	return fmt.Errorf("source slide %d is not merge-supported: %w", idx, err)
+		// }
 
 		slideNumber := e.nextSlideNum
 		relID := fmt.Sprintf("rId%d", e.nextRelIDNum)
 		part := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 		relsPart := common.SlideRelsPartName(part)
 
-		sourceSlideBytes := other.parts[slide.Part]
-		sourceRelsBytes := other.parts[common.SlideRelsPartName(slide.Part)]
+		sourceSlideBytes, _ := other.parts.Get(slide.Part)
+		sourceRelsBytes, _ := other.parts.Get(common.SlideRelsPartName(slide.Part))
 		if len(sourceSlideBytes) == 0 || len(sourceRelsBytes) == 0 {
 			return fmt.Errorf("source slide %d parts are missing", idx)
 		}
 
 		copiedSlide := make([]byte, len(sourceSlideBytes))
 		copy(copiedSlide, sourceSlideBytes)
-		// TODO: Implement deep-copy for slide relationships to remap rIds and media targets.
-		// For now, only simple slides without complex internal rels are safely supported.
-		copiedRels := make([]byte, len(sourceRelsBytes))
-		copy(copiedRels, sourceRelsBytes)
-		e.parts[part] = copiedSlide
-		e.parts[relsPart] = copiedRels
+
+		// Use deep clone helper to handle assets (images, charts) and remapping
+		copiedRels, err := e.deepCloneSlideAssets(other, slide.Part, sourceRelsBytes, part)
+		if err != nil {
+			return fmt.Errorf("failed to clone slide assets: %w", err)
+		}
+
+		e.parts.Set(part, copiedSlide)
+		e.parts.Set(relsPart, copiedRels)
 		e.slides = append(e.slides, common.EditorSlideRef{
 			SlideID: e.nextSlideID,
 			RelID:   relID,
@@ -281,7 +282,7 @@ func (e *PresentationEditor) MergeFromEditor(other *PresentationEditor) error {
 
 func (e *PresentationEditor) slideRelationships(slidePart string) ([]common.EditorRelationship, error) {
 	relsPart := common.SlideRelsPartName(slidePart)
-	data, ok := e.parts[relsPart]
+	data, ok := e.parts.Get(relsPart)
 	if !ok {
 		return nil, fmt.Errorf("missing slide relationships part %q", relsPart)
 	}
@@ -435,7 +436,7 @@ func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 	}
 
 	ref := e.slides[index]
-	content, ok := e.parts[ref.Part]
+	content, ok := e.parts.Get(ref.Part)
 	if !ok {
 		return fmt.Errorf("slide part %q missing", ref.Part)
 	}
@@ -447,7 +448,7 @@ func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 		return fmt.Errorf("slide %d has no title text run to update", index)
 	}
 
-	e.parts[ref.Part] = newContent
+	e.parts.Set(ref.Part, newContent)
 	e.slides[index].Title = title
 	return nil
 }
@@ -461,6 +462,9 @@ func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, 
 		return "", fmt.Errorf("image data cannot be empty")
 	}
 
+	e.mediaMu.Lock()
+	defer e.mediaMu.Unlock()
+
 	hash := sha1.Sum(data)
 	hexHash := hex.EncodeToString(hash[:])
 
@@ -472,7 +476,7 @@ func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, 
 	partPath := fmt.Sprintf("ppt/media/image%d.%s", e.nextMediaNum, format)
 	e.nextMediaNum++
 
-	e.parts[partPath] = data
+	e.parts.Set(partPath, data)
 	e.mediaInventory[hexHash] = partPath
 
 	return partPath, nil
@@ -529,6 +533,28 @@ func (e *PresentationEditor) RemoveSection(name string) error {
 	return nil
 }
 
+// RenameSection renames a section.
+func (e *PresentationEditor) RenameSection(oldName, newName string) error {
+	if e == nil {
+		return fmt.Errorf("editor cannot be nil")
+	}
+	if newName == "" {
+		return fmt.Errorf("new section name cannot be empty")
+	}
+	found := false
+	for i := range e.sections {
+		if e.sections[i].Name == oldName {
+			e.sections[i].Name = newName
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("section %q not found", oldName)
+	}
+	return nil
+}
+
 // Sections returns the current section list.
 func (e *PresentationEditor) Sections() []EditorSection {
 	if e == nil {
@@ -551,12 +577,12 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 			newChartPart := fmt.Sprintf("ppt/charts/chart%d.xml", e.nextChartNum)
 			e.nextChartNum++
 
-			if data, ok := e.parts[srcChartPart]; ok {
+			if data, ok := e.parts.Get(srcChartPart); ok {
 				newChartData := cloneBytes(data)
 
 				// Clone chart rels
 				srcChartRelsPath := common.SlideRelsPartName(srcChartPart)
-				if relsData, ok := e.parts[srcChartRelsPath]; ok {
+				if relsData, ok := e.parts.Get(srcChartRelsPath); ok {
 					newChartRelsPath := common.SlideRelsPartName(newChartPart)
 					chartRels, _ := parseRelationshipsXML(relsData)
 
@@ -566,8 +592,8 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 							newExcel := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", e.nextExcelNum)
 							e.nextExcelNum++
 
-							if xdata, ok := e.parts[srcExcel]; ok {
-								e.parts[newExcel] = cloneBytes(xdata)
+							if xdata, ok := e.parts.Get(srcExcel); ok {
+								e.parts.Set(newExcel, cloneBytes(xdata))
 								chartRels[j].Target = "../embeddings/" + path.Base(newExcel)
 								// Update chart XML externalData rid
 								newChartData = rewriteChartExternalData(newChartData, chartRels[j].ID)
@@ -576,9 +602,9 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 						}
 					}
 					rendered, _ := renderRelationshipsXML(chartRels)
-					e.parts[newChartRelsPath] = []byte(rendered)
+					e.parts.Set(newChartRelsPath, []byte(rendered))
 				}
-				e.parts[newChartPart] = newChartData
+				e.parts.Set(newChartPart, newChartData)
 			}
 			rels[i].Target = "../charts/" + path.Base(newChartPart)
 			changed = true
@@ -588,11 +614,11 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 			newNotesPart := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
 			e.nextNotesNum++
 
-			if data, ok := e.parts[srcNotesPart]; ok {
-				e.parts[newNotesPart] = cloneBytes(data)
+			if data, ok := e.parts.Get(srcNotesPart); ok {
+				e.parts.Set(newNotesPart, cloneBytes(data))
 
 				srcNotesRelsPath := common.SlideRelsPartName(srcNotesPart)
-				if relsData, ok := e.parts[srcNotesRelsPath]; ok {
+				if relsData, ok := e.parts.Get(srcNotesRelsPath); ok {
 					newNotesRelsPath := common.SlideRelsPartName(newNotesPart)
 					notesRels, _ := parseRelationshipsXML(relsData)
 
@@ -602,7 +628,7 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 						}
 					}
 					rendered, _ := renderRelationshipsXML(notesRels)
-					e.parts[newNotesRelsPath] = []byte(rendered)
+					e.parts.Set(newNotesRelsPath, []byte(rendered))
 				}
 				e.notesInventory[newSlidePart] = newNotesPart
 			}
@@ -631,13 +657,13 @@ func cloneBytes(b []byte) []byte {
 }
 
 func (e *PresentationEditor) ensureNotesInfrastructure() {
-	if _, ok := e.parts["ppt/notesMasters/notesMaster1.xml"]; ok {
+	if e.parts.Has("ppt/notesMasters/notesMaster1.xml") {
 		return
 	}
-	e.parts["ppt/notesMasters/notesMaster1.xml"] = []byte(pptxxml.NotesMaster())
-	e.parts["ppt/notesMasters/_rels/notesMaster1.xml.rels"] = []byte(pptxxml.NotesMasterRelationships())
-	if _, ok := e.parts["ppt/theme/theme2.xml"]; !ok {
-		e.parts["ppt/theme/theme2.xml"] = []byte(pptxxml.Theme(nil))
+	e.parts.Set("ppt/notesMasters/notesMaster1.xml", []byte(pptxxml.NotesMaster()))
+	e.parts.Set("ppt/notesMasters/_rels/notesMaster1.xml.rels", []byte(pptxxml.NotesMasterRelationships()))
+	if !e.parts.Has("ppt/theme/theme2.xml") {
+		e.parts.Set("ppt/theme/theme2.xml", []byte(pptxxml.Theme(nil)))
 	}
 
 	for _, rel := range e.nonSlideRels {

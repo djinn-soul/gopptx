@@ -154,6 +154,14 @@ func (c RadarChart) Validate(slideIndex int) error {
 	return nil
 }
 
+func (c RadarChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c RadarChart) GetValues() []float64 {
+	return c.Values
+}
+
 // RadarFilledChart is a radar chart using filled style.
 type RadarFilledChart struct {
 	RadarChart

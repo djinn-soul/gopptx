@@ -18,6 +18,7 @@ func TestPresentationEditorAddNotesInjectsMasterAndWiring(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 	if err := editor.UpdateSlide(0, elements.NewSlide("Slide 1").AddBullet("Body").WithNotes("Speaker script")); err != nil {
 		t.Fatalf("update slide with notes: %v", err)
 	}
@@ -68,6 +69,7 @@ func TestPresentationEditorMoveSlidePreservesNotesAttachment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 	if err := editor.MoveSlide(0, 1); err != nil {
 		t.Fatalf("move slide: %v", err)
 	}
@@ -94,6 +96,7 @@ func TestPresentationEditorRemoveSlideRemovesAssociatedNotes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 	if err := editor.RemoveSlide(0); err != nil {
 		t.Fatalf("remove slide: %v", err)
 	}

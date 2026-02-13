@@ -148,3 +148,11 @@ func (c AreaChart) Validate(slideIndex int) error {
 	}
 	return nil
 }
+
+func (c AreaChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c AreaChart) GetValues() []float64 {
+	return c.Values
+}

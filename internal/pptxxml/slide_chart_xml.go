@@ -7,36 +7,41 @@ import (
 
 // ChartPartXML renders a chart part (`ppt/charts/chartN.xml`).
 func ChartPartXML(chart *ChartSpec) string {
+	return string(RenderChart(chart))
+}
+
+// RenderChart renders a chart part to bytes.
+func RenderChart(chart *ChartSpec) []byte {
 	if chart.Kind == ChartKindBar || chart.Kind == ChartKindBarHorizontal ||
 		chart.Kind == ChartKindBarStacked || chart.Kind == ChartKindBarStacked100 {
-		return barChartPartXML(chart)
+		return []byte(barChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindLine || chart.Kind == ChartKindLineMarkers || chart.Kind == ChartKindLineStacked {
-		return lineChartPartXML(chart)
+		return []byte(lineChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindBubble {
-		return bubbleChartPartXML(chart)
+		return []byte(bubbleChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindScatter {
-		return scatterChartPartXML(chart)
+		return []byte(scatterChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindArea || chart.Kind == ChartKindAreaStacked || chart.Kind == ChartKindAreaStacked100 {
-		return areaChartPartXML(chart)
+		return []byte(areaChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindPie {
-		return pieChartPartXML(chart)
+		return []byte(pieChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindDoughnut {
-		return doughnutChartPartXML(chart)
+		return []byte(doughnutChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindRadar || chart.Kind == ChartKindRadarFilled {
-		return radarChartPartXML(chart)
+		return []byte(radarChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindStockHLC || chart.Kind == ChartKindStockOHLC {
-		return stockChartPartXML(chart)
+		return []byte(stockChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindCombo {
-		return comboChartPartXML(chart)
+		return []byte(comboChartPartXML(chart))
 	}
 	panic(fmt.Sprintf("unsupported chart kind: %s", chart.Kind))
 }

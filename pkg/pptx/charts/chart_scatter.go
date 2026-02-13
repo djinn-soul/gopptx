@@ -184,6 +184,18 @@ func (c ScatterChart) Validate(slideIndex int) error {
 	return nil
 }
 
+func (c ScatterChart) GetCategories() []string {
+	cats := make([]string, len(c.XValues))
+	for i, v := range c.XValues {
+		cats[i] = fmt.Sprintf("%g", v)
+	}
+	return cats
+}
+
+func (c ScatterChart) GetValues() []float64 {
+	return c.YValues
+}
+
 func isScatterStyle(style string) bool {
 	switch strings.TrimSpace(style) {
 	case ScatterStyleMarker, ScatterStyleLineMarker, ScatterStyleSmoothMarker:

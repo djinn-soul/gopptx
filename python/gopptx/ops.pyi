@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from typing import Tuple
+
+OP_SLIDE_COUNT: str
+OP_ADD_SLIDE: str
+OP_REMOVE_SLIDE: str
+OP_MOVE_SLIDE: str
+OP_DUPLICATE_SLIDE: str
+OP_GET_METADATA: str
+OP_UPDATE_CHART_DATA: str
+OP_LIST_SLIDE_CHARTS: str
+OP_LIST_SLIDE_LAYOUTS: str
+OP_REBIND_SLIDE_LAYOUT: str
+OP_CLONE_LAYOUT_MASTER_FAMILY: str
+SUPPORTED_OPS: Tuple[str, ...]

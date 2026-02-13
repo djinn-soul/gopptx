@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -23,10 +24,10 @@ func (e *PresentationEditor) ApplyTheme(theme styling.Theme) error {
 	if e == nil {
 		return fmt.Errorf("editor cannot be nil")
 	}
-	if _, err := requirePart(e.parts, themePartPath); err != nil {
-		return err
+	if !e.parts.Has(themePartPath) {
+		return fmt.Errorf("missing required package part %q", themePartPath)
 	}
-	e.parts[themePartPath] = []byte(pptxxml.Theme(mapEditorThemeToSpec(&theme)))
+	e.parts.Set(themePartPath, []byte(pptxxml.Theme(mapEditorThemeToSpec(&theme))))
 	return nil
 }
 
@@ -47,6 +48,25 @@ func (e *PresentationEditor) SetSlideSize(size common.SlideSize) error {
 	e.presentationXML = rewritten
 	e.metadata.SlideSize = size
 	return nil
+}
+
+// GetCoreProperties returns the presentation's core properties (Dublin Core metadata).
+func (e *PresentationEditor) GetCoreProperties() common.CoreProperties {
+	if e == nil {
+		return common.CoreProperties{}
+	}
+	return e.metadata.CoreProperties
+}
+
+// SetCoreProperties updates the presentation's core properties.
+// These changes are applied to the in-memory metadata and will be written to docProps/core.xml on Save.
+func (e *PresentationEditor) SetCoreProperties(p common.CoreProperties) {
+	if e == nil {
+		return
+	}
+	e.metadata.CoreProperties = p
+	// Sync legacy title field for backward compatibility if needed, though we should likely deprecate it.
+	e.metadata.Title = p.Title
 }
 
 func parsePresentationSlideSize(content []byte) (common.SlideSize, error) {
@@ -154,4 +174,90 @@ func mapEditorThemeToSpec(theme *styling.Theme) *pptxxml.ThemeSpec {
 			MinorFont: theme.Fonts.MinorFont,
 		},
 	}
+}
+
+// parseCoreProperties parses docProps/core.xml into CoreProperties.
+func parseCoreProperties(content []byte) (common.CoreProperties, error) {
+	if len(content) == 0 {
+		return common.CoreProperties{}, nil
+	}
+	var props common.CoreProperties
+	if err := xml.Unmarshal(content, &props); err != nil {
+		return common.CoreProperties{}, err
+	}
+	return props, nil
+}
+
+func renderCoreProperties(props common.CoreProperties) ([]byte, error) {
+	created := strings.TrimSpace(props.Created)
+	if created == "" {
+		created = time.Now().UTC().Format("2006-01-02T15:04:05Z")
+	}
+	modified := strings.TrimSpace(props.Modified)
+	if modified == "" {
+		modified = created
+	}
+
+	lastModifiedBy := strings.TrimSpace(props.LastModifiedBy)
+	if lastModifiedBy == "" {
+		lastModifiedBy = strings.TrimSpace(props.Creator)
+	}
+
+	type dctermsDate struct {
+		XSIType string `xml:"xsi:type,attr"`
+		Value   string `xml:",chardata"`
+	}
+	type corePropertiesXML struct {
+		XMLName xml.Name `xml:"cp:coreProperties"`
+
+		XMLNSCP       string `xml:"xmlns:cp,attr"`
+		XMLNSDC       string `xml:"xmlns:dc,attr"`
+		XMLNSDCTerms  string `xml:"xmlns:dcterms,attr"`
+		XMLNSDCMITYpe string `xml:"xmlns:dcmitype,attr"`
+		XMLNSXSI      string `xml:"xmlns:xsi,attr"`
+
+		Title          string      `xml:"dc:title,omitempty"`
+		Subject        string      `xml:"dc:subject,omitempty"`
+		Creator        string      `xml:"dc:creator,omitempty"`
+		Keywords       string      `xml:"cp:keywords,omitempty"`
+		Description    string      `xml:"dc:description,omitempty"`
+		LastModifiedBy string      `xml:"cp:lastModifiedBy,omitempty"`
+		Revision       string      `xml:"cp:revision,omitempty"`
+		Created        dctermsDate `xml:"dcterms:created"`
+		Modified       dctermsDate `xml:"dcterms:modified"`
+		Category       string      `xml:"cp:category,omitempty"`
+		ContentStatus  string      `xml:"cp:contentStatus,omitempty"`
+	}
+
+	doc := corePropertiesXML{
+		XMLNSCP:       common.CPNamespace,
+		XMLNSDC:       common.DCNamespace,
+		XMLNSDCTerms:  common.DCTermsNamespace,
+		XMLNSDCMITYpe: common.DCMITypeNamespace,
+		XMLNSXSI:      common.XSINamespace,
+
+		Title:          strings.TrimSpace(props.Title),
+		Subject:        strings.TrimSpace(props.Subject),
+		Creator:        strings.TrimSpace(props.Creator),
+		Keywords:       strings.TrimSpace(props.Keywords),
+		Description:    strings.TrimSpace(props.Description),
+		LastModifiedBy: lastModifiedBy,
+		Revision:       strings.TrimSpace(props.Revision),
+		Created: dctermsDate{
+			XSIType: "dcterms:W3CDTF",
+			Value:   created,
+		},
+		Modified: dctermsDate{
+			XSIType: "dcterms:W3CDTF",
+			Value:   modified,
+		},
+		Category:      strings.TrimSpace(props.Category),
+		ContentStatus: strings.TrimSpace(props.ContentStatus),
+	}
+
+	data, err := xml.Marshal(doc)
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte(xml.Header), data...), nil
 }

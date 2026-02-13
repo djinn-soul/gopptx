@@ -169,3 +169,16 @@ func (c BubbleChart) Validate(slideIndex int) error {
 	}
 	return nil
 }
+
+func (c BubbleChart) GetCategories() []string {
+	// Browse compliance: Convert XValues to string for categories
+	cats := make([]string, len(c.XValues))
+	for i, v := range c.XValues {
+		cats[i] = fmt.Sprintf("%g", v)
+	}
+	return cats
+}
+
+func (c BubbleChart) GetValues() []float64 {
+	return c.YValues
+}

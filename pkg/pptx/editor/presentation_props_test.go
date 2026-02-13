@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -28,6 +29,7 @@ func TestPresentationEditorApplyThemeAndSlideSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 	if err := editor.ApplyTheme(styling.ThemeTech); err != nil {
 		t.Fatalf("apply theme: %v", err)
 	}
@@ -59,6 +61,7 @@ func TestPresentationEditorSetSlideSizeInsertsWhenMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 	if err := editor.SetSlideSize(SlideSize4x3); err != nil {
 		t.Fatalf("set slide size: %v", err)
 	}
@@ -82,7 +85,75 @@ func TestPresentationEditorApplyThemeRequiresThemePart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 	if err := editor.ApplyTheme(styling.ThemeCorporate); err == nil {
 		t.Fatalf("expected missing theme part error")
+	}
+}
+
+func TestPresentationEditorCoreProperties(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "props.pptx")
+	coreXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<dc:title>Original Title</dc:title>
+<dc:subject>Original Subject</dc:subject>
+<dc:creator>Original Creator</dc:creator>
+</cp:coreProperties>`
+
+	if err := writeZipFixture(path, map[string]string{
+		"[Content_Types].xml":             `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`,
+		"_rels/.rels":                     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`,
+		"ppt/presentation.xml":            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst/></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`,
+		"docProps/core.xml":               coreXML,
+	}); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	// 1. Open and verify read
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	props := editor.GetCoreProperties()
+	if props.Title != "Original Title" {
+		t.Errorf("expected Title 'Original Title', got %q", props.Title)
+	}
+	if props.Creator != "Original Creator" {
+		t.Errorf("expected Creator 'Original Creator', got %q", props.Creator)
+	}
+
+	// 2. Update properties
+	newProps := common.CoreProperties{
+		Title:       "Updated Title",
+		Subject:     "Updated Subject",
+		Creator:     "Updated Creator",
+		Description: "New Description",
+	}
+	editor.SetCoreProperties(newProps)
+
+	// 3. Save
+	outPath := filepath.Join(t.TempDir(), "edited-props.pptx")
+	if err := editor.Save(outPath); err != nil {
+		t.Fatalf("save edited deck: %v", err)
+	}
+
+	// 4. Verify output XML
+	savedCoreXML := readZipFileBytes(t, outPath, "docProps/core.xml")
+	savedProps, err := parseCoreProperties(savedCoreXML)
+	if err != nil {
+		t.Fatalf("parse saved core properties: %v", err)
+	}
+
+	if savedProps.Title != "Updated Title" {
+		t.Errorf("expected Title 'Updated Title', got %q", savedProps.Title)
+	}
+	if savedProps.Description != "New Description" {
+		t.Errorf("expected Description 'New Description', got %q", savedProps.Description)
+	}
+	if savedProps.Creator != "Updated Creator" {
+		t.Errorf("expected Creator 'Updated Creator', got %q", savedProps.Creator)
 	}
 }

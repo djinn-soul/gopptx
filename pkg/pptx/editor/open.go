@@ -22,25 +22,30 @@ type parsedSlideIDRef struct {
 }
 
 // OpenPresentationEditor opens a PPTX package for in-place slide editing.
-func OpenPresentationEditor(path string) (*PresentationEditor, error) {
-	parts, err := loadPackageParts(path)
+func OpenPresentationEditor(filePath string) (*PresentationEditor, error) {
+	ps, err := openPartStore(filePath)
 	if err != nil {
 		return nil, err
 	}
-	return newPresentationEditorFromParts(parts)
+	editor, err := newPresentationEditorFromParts(ps)
+	if err != nil {
+		_ = ps.Close()
+		return nil, err
+	}
+	return editor, nil
 }
 
-func newPresentationEditorFromParts(parts map[string][]byte) (*PresentationEditor, error) {
-	if _, err := requirePart(parts, common.ContentTypesPath); err != nil {
-		return nil, err
+func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) {
+	if !ps.Has(common.ContentTypesPath) {
+		return nil, fmt.Errorf("missing required package part %q", common.ContentTypesPath)
 	}
-	presentationXMLBytes, err := requirePart(parts, common.PresentationXMLPath)
-	if err != nil {
-		return nil, err
+	presentationXMLBytes, ok := ps.Get(common.PresentationXMLPath)
+	if !ok {
+		return nil, fmt.Errorf("missing required package part %q", common.PresentationXMLPath)
 	}
-	presentationRelsBytes, err := requirePart(parts, common.PresentationRelPath)
-	if err != nil {
-		return nil, err
+	presentationRelsBytes, ok := ps.Get(common.PresentationRelPath)
+	if !ok {
+		return nil, fmt.Errorf("missing required package part %q", common.PresentationRelPath)
 	}
 
 	rels, err := parseRelationshipsXML(presentationRelsBytes)
@@ -51,44 +56,49 @@ func newPresentationEditorFromParts(parts map[string][]byte) (*PresentationEdito
 	if err != nil {
 		return nil, fmt.Errorf("parse %s: %w", common.PresentationXMLPath, err)
 	}
-	slideRefs, nonSlideRels, err := resolveSlideReferences(slideIDRefs, rels, parts)
+	slideRefs, nonSlideRels, err := resolveSlideReferences(slideIDRefs, rels, ps)
 	if err != nil {
 		return nil, err
 	}
 
 	editor := &PresentationEditor{
-		parts:           cloneParts(parts),
+		parts:           ps,
 		slides:          slideRefs,
 		nonSlideRels:    nonSlideRels,
 		presentationXML: string(presentationXMLBytes),
+		imagePathCache:  make(map[string]imagePathCacheEntry),
 	}
 	slideSize, err := parsePresentationSlideSize(presentationXMLBytes)
 	if err != nil {
 		return nil, fmt.Errorf("parse %s slide size: %w", common.PresentationXMLPath, err)
 	}
+	coreData, _ := ps.Get(common.CorePropsPath)
+	coreProps, _ := parseCoreProperties(coreData)
 	editor.metadata = common.PresentationMetadata{
-		Title:      extractCoreTitle(parts[common.CorePropsPath]),
-		SlideCount: len(slideRefs),
-		SlideSize:  slideSize,
+		Title:          coreProps.Title,
+		SlideCount:     len(slideRefs),
+		SlideSize:      slideSize,
+		CoreProperties: coreProps,
 	}
 	editor.nextSlideID = nextSlideID(slideRefs)
 	editor.nextRelIDNum = nextRelationshipNumber(rels)
 	editor.nextSlideNum = nextSlidePartNumber(slideRefs)
 
-	editor.mediaInventory, editor.nextMediaNum = parseMediaInventory(parts)
-	if sectionData, ok := parts["ppt/sectionList.xml"]; ok {
+	partKeys := ps.Keys()
+	editor.mediaInventory, editor.nextMediaNum = parseMediaInventory(ps, partKeys)
+	if sectionData, ok := ps.Get("ppt/sectionList.xml"); ok {
 		sections, _ := parseSectionListXML(sectionData)
 		editor.sections = sections
 	}
 
-	editor.chartEmbeddings, editor.nextChartNum, editor.nextExcelNum = parseChartInventory(parts)
-	editor.notesInventory, editor.nextNotesNum = parseNotesInventory(parts)
+	editor.chartEmbeddings, editor.nextChartNum, editor.nextExcelNum = parseChartInventory(ps, partKeys)
+	editor.notesInventory, editor.nextNotesNum = parseNotesInventory(ps, partKeys)
 
 	editor.populateSlideTitlesConcurrently()
 	return editor, nil
 }
 
-func loadPackageParts(filePath string) (map[string][]byte, error) {
+func openPartStore(filePath string) (*PartStore, error) {
 	meta, err := os.Stat(filePath)
 	if err != nil {
 		return nil, err
@@ -101,36 +111,20 @@ func loadPackageParts(filePath string) (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = file.Close() }()
 
 	zr, err := zip.NewReader(file, meta.Size())
 	if err != nil {
+		_ = file.Close()
 		return nil, fmt.Errorf("invalid PPTX zip archive: %w", err)
 	}
 
-	parts := make(map[string][]byte, len(zr.File))
-	for _, entry := range zr.File {
-		if entry.FileInfo().IsDir() {
-			continue
-		}
-		reader, err := entry.Open()
-		if err != nil {
-			return nil, fmt.Errorf("open zip entry %q: %w", entry.Name, err)
-		}
-		data, err := io.ReadAll(reader)
-		_ = reader.Close()
-		if err != nil {
-			return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)
-		}
-		parts[common.CanonicalPartPath(entry.Name)] = data
-	}
-	return parts, nil
+	return newPartStoreFromZip(file, zr), nil
 }
 
 func resolveSlideReferences(
 	slideIDs []parsedSlideIDRef,
 	rels []common.EditorRelationship,
-	parts map[string][]byte,
+	ps *PartStore,
 ) ([]common.EditorSlideRef, []common.EditorRelationship, error) {
 	relByID := make(map[string]common.EditorRelationship, len(rels))
 	nonSlide := make([]common.EditorRelationship, 0, len(rels))
@@ -156,10 +150,10 @@ func resolveSlideReferences(
 		}
 		target := normalizePresentationTarget(rel.Target)
 		partName := common.CanonicalPartPath(path.Join("ppt", target))
-		if _, ok := parts[partName]; !ok {
+		if !ps.Has(partName) {
 			return nil, nil, fmt.Errorf("slide part %q not found", partName)
 		}
-		if err := editorEnsureSlideRelsExist(parts, partName); err != nil {
+		if err := editorEnsureSlideRelsExistPS(ps, partName); err != nil {
 			return nil, nil, err
 		}
 		out = append(out, common.EditorSlideRef{
@@ -233,6 +227,11 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 		if !ok || start.Name.Local != "sldId" {
 			continue
 		}
+		// Ignore sldId elements from legacy/extension namespaces (like p14:sldId in sections)
+		// The main slide list uses the default presentationml namespace.
+		if start.Name.Space != "" && start.Name.Space != "http://schemas.openxmlformats.org/presentationml/2006/main" {
+			continue
+		}
 
 		ref := parsedSlideIDRef{}
 		for _, attr := range start.Attr {
@@ -257,18 +256,23 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 	return out, nil
 }
 
-func parseMediaInventory(parts map[string][]byte) (map[string]string, int) {
+func parseMediaInventory(ps *PartStore, partKeys []string) (map[string]string, int) {
 	inventory := make(map[string]string)
 	maxNum := 0
-	for partPath, data := range parts {
-		if strings.HasPrefix(partPath, "ppt/media/image") {
-			hash := sha1.Sum(data)
-			inventory[hex.EncodeToString(hash[:])] = partPath
+	for _, partPath := range partKeys {
+		if !strings.HasPrefix(partPath, "ppt/media/image") {
+			continue
+		}
+		data, ok := ps.Get(partPath)
+		if !ok {
+			continue
+		}
+		hash := sha1.Sum(data)
+		inventory[hex.EncodeToString(hash[:])] = partPath
 
-			num, ok := parseImagePartNumber(partPath)
-			if ok && num > maxNum {
-				maxNum = num
-			}
+		num, ok := parseImagePartNumber(partPath)
+		if ok && num > maxNum {
+			maxNum = num
 		}
 	}
 	return inventory, maxNum + 1
@@ -323,13 +327,16 @@ func parseSectionListXML(data []byte) ([]EditorSection, error) {
 	return out, nil
 }
 
-func parseChartInventory(parts map[string][]byte) (map[string]string, int, int) {
+func parseChartInventory(ps *PartStore, partKeys []string) (map[string]string, int, int) {
 	inventory := make(map[string]string)
 	maxChart := 0
 	maxExcel := 0
 
-	for p := range parts {
-		if !strings.HasPrefix(p, "ppt/charts/chart") || !strings.HasSuffix(p, ".xml") {
+	for _, p := range partKeys {
+		if !strings.HasPrefix(p, "ppt/charts/chart") {
+			continue
+		}
+		if !strings.HasSuffix(p, ".xml") {
 			continue
 		}
 		num, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(p, "ppt/charts/chart"), ".xml"))
@@ -339,7 +346,7 @@ func parseChartInventory(parts map[string][]byte) (map[string]string, int, int) 
 
 		// Find its rels
 		relsPath := "ppt/charts/_rels/" + path.Base(p) + ".rels"
-		if relsData, ok := parts[relsPath]; ok {
+		if relsData, ok := ps.Get(relsPath); ok {
 			rels, _ := parseRelationshipsXML(relsData)
 			for _, r := range rels {
 				if r.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
@@ -361,16 +368,23 @@ func parseChartInventory(parts map[string][]byte) (map[string]string, int, int) 
 	return inventory, maxChart + 1, maxExcel + 1
 }
 
-func parseNotesInventory(parts map[string][]byte) (map[string]string, int) {
+func parseNotesInventory(ps *PartStore, partKeys []string) (map[string]string, int) {
 	inventory := make(map[string]string)
 	maxNotes := 0
 
-	for p := range parts {
-		if !strings.HasPrefix(p, "ppt/slides/_rels/slide") || !strings.HasSuffix(p, ".xml.rels") {
+	for _, p := range partKeys {
+		if !strings.HasPrefix(p, "ppt/slides/_rels/slide") {
+			continue
+		}
+		if !strings.HasSuffix(p, ".xml.rels") {
 			continue
 		}
 		slidePart := "ppt/slides/" + strings.TrimSuffix(path.Base(p), ".rels")
-		rels, _ := parseRelationshipsXML(parts[p])
+		relsData, ok := ps.Get(p)
+		if !ok {
+			continue
+		}
+		rels, _ := parseRelationshipsXML(relsData)
 		for _, r := range rels {
 			if r.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" {
 				notesPath := common.CanonicalPartPath(path.Join("ppt/slides", r.Target))

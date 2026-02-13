@@ -2,6 +2,7 @@ package common
 
 import (
 	"archive/zip"
+	"io"
 )
 
 // WriteFile is a helper to write a string content to a zip file.
@@ -10,7 +11,7 @@ func WriteFile(zw *zip.Writer, path string, content string) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(content))
+	_, err = io.WriteString(w, content)
 	return err
 }
 

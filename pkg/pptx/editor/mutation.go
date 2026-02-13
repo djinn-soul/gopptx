@@ -6,13 +6,18 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-var sldIdLstPattern = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
-var notesMasterIDListPattern = regexp.MustCompile(`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`)
+var (
+	sldIdLstPattern          = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
+	notesMasterIDListPattern = regexp.MustCompile(`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`)
+	slideMasterIDListPattern = regexp.MustCompile(`(?s)<p:sldMasterIdLst>.*?</p:sldMasterIdLst>|<p:sldMasterIdLst\s*/>`)
+	slideMasterIDPattern     = regexp.MustCompile(`id="(\d+)"`)
+)
 
 func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
 	if len(current) == 0 {
@@ -84,6 +89,56 @@ func rewritePresentationNotesMasterList(current []byte, relID string, enable boo
 	return "", fmt.Errorf("presentation XML does not contain insertion point for notesMasterIdLst")
 }
 
+func rewritePresentationSlideMasterList(current []byte, relID string) (string, error) {
+	if len(current) == 0 {
+		return "", fmt.Errorf("missing presentation XML content")
+	}
+	if strings.TrimSpace(relID) == "" {
+		return "", fmt.Errorf("slide master relationship id is required")
+	}
+	source := string(current)
+
+	matches := slideMasterIDPattern.FindAllStringSubmatch(source, -1)
+	nextMasterID := int64(2147483648)
+	for _, m := range matches {
+		if len(m) != 2 {
+			continue
+		}
+		val, err := strconv.ParseInt(m[1], 10, 64)
+		if err != nil {
+			continue
+		}
+		if val >= nextMasterID {
+			nextMasterID = val + 1
+		}
+	}
+
+	newEntry := fmt.Sprintf(`<p:sldMasterId id="%d" r:id="%s"/>`, nextMasterID, common.XMLEscape(relID))
+	if slideMasterIDListPattern.MatchString(source) {
+		return slideMasterIDListPattern.ReplaceAllStringFunc(source, func(match string) string {
+			if strings.Contains(match, "</p:sldMasterIdLst>") {
+				if strings.Contains(match, "<p:sldMasterId") {
+					return strings.Replace(match, "</p:sldMasterIdLst>", "\n"+newEntry+"\n</p:sldMasterIdLst>", 1)
+				}
+				return "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>"
+			}
+			return "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>"
+		}), nil
+	}
+
+	insertAfter := "</p:notesMasterIdLst>"
+	if idx := strings.Index(source, insertAfter); idx >= 0 {
+		pos := idx + len(insertAfter)
+		replacement := "\n<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>"
+		return source[:pos] + replacement + source[pos:], nil
+	}
+	if idx := strings.Index(source, "<p:sldIdLst"); idx >= 0 {
+		replacement := "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>\n"
+		return source[:idx] + replacement + source[idx:], nil
+	}
+	return "", fmt.Errorf("presentation XML does not contain insertion point for sldMasterIdLst")
+}
+
 func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []common.EditorSlideRef, hasSections bool) (string, error) {
 	rels := make([]common.EditorRelationship, 0, len(nonSlide)+len(slides)+1)
 	used := map[string]struct{}{}
@@ -150,7 +205,7 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 	b.WriteString("\n")
 	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)
 	for _, rel := range rels {
-		b.WriteString("\n  <Relationship Id=\"")
+		b.WriteString("\n<Relationship Id=\"")
 		b.WriteString(common.XMLEscape(rel.ID))
 		b.WriteString("\" Type=\"")
 		b.WriteString(common.XMLEscape(rel.Type))
@@ -181,7 +236,7 @@ func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
 	b.WriteString("\n")
 	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)
 	for _, rel := range rels {
-		b.WriteString("\n  <Relationship Id=\"")
+		b.WriteString("\n<Relationship Id=\"")
 		b.WriteString(common.XMLEscape(rel.ID))
 		b.WriteString("\" Type=\"")
 		b.WriteString(common.XMLEscape(rel.Type))
@@ -197,7 +252,7 @@ func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
 	return b.String(), nil
 }
 
-func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, hasNotesMaster bool) (string, error) {
+func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, layoutPaths []string, masterPaths []string, hasNotesMaster bool) (string, error) {
 	if len(current) == 0 {
 		return "", fmt.Errorf("missing content types content")
 	}
@@ -246,7 +301,13 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		if isSlidePartOverride(part) {
 			continue
 		}
-		if part == "ppt/sectionList.xml" || strings.HasPrefix(part, "ppt/charts/chart") || strings.HasPrefix(part, "ppt/notesSlides/notesSlide") || strings.HasPrefix(part, "ppt/notesMasters/notesMaster") || strings.HasPrefix(part, "ppt/theme/theme") {
+		if part == "ppt/sectionList.xml" ||
+			strings.HasPrefix(part, "ppt/charts/chart") ||
+			strings.HasPrefix(part, "ppt/notesSlides/notesSlide") ||
+			strings.HasPrefix(part, "ppt/notesMasters/notesMaster") ||
+			strings.HasPrefix(part, "ppt/theme/theme") ||
+			strings.HasPrefix(part, "ppt/slideLayouts/slideLayout") ||
+			strings.HasPrefix(part, "ppt/slideMasters/slideMaster") {
 			continue
 		}
 		filtered = append(filtered, override)
@@ -280,6 +341,18 @@ func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPa
 		filtered = append(filtered, contentTypeOverride{
 			PartName:    "/" + common.CanonicalPartPath(p),
 			ContentType: "application/vnd.openxmlformats-officedocument.theme+xml",
+		})
+	}
+	for _, p := range layoutPaths {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml",
+		})
+	}
+	for _, p := range masterPaths {
+		filtered = append(filtered, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml",
 		})
 	}
 	if hasNotesMaster {
@@ -345,7 +418,10 @@ func buildSectionListXML(sections []EditorSection) string {
 	return b.String()
 }
 
-var chartExternalDataPattern = regexp.MustCompile(`<c:externalData[^>]*r:id="([^"]*)"[^>]*/>`)
+var (
+	chartExternalDataPattern = regexp.MustCompile(`<c:externalData[^>]*r:id="([^"]*)"[^>]*/>`)
+	chartRelIDAttrPattern    = regexp.MustCompile(`r:id="[^"]*"`)
+)
 
 func rewriteChartExternalData(current []byte, newRelID string) []byte {
 	source := string(current)
@@ -355,8 +431,91 @@ func rewriteChartExternalData(current []byte, newRelID string) []byte {
 	// Simplified replace that preserves other attributes if any (though usually it's just r:id)
 	res := chartExternalDataPattern.ReplaceAllStringFunc(source, func(match string) string {
 		// Just replace the r:id attribute value
-		re := regexp.MustCompile(`r:id="[^"]*"`)
-		return re.ReplaceAllString(match, fmt.Sprintf(`r:id="%s"`, newRelID))
+		return chartRelIDAttrPattern.ReplaceAllString(match, fmt.Sprintf(`r:id="%s"`, newRelID))
 	})
 	return []byte(res)
+}
+
+var extLstPattern = regexp.MustCompile(`(?s)<p:extLst>.*?</p:extLst>|<p:extLst\s*/>`)
+
+func rewritePresentationSections(current []byte, sections []EditorSection) (string, error) {
+	if len(current) == 0 {
+		return "", fmt.Errorf("missing presentation XML content")
+	}
+	source := string(current)
+
+	// Build the p14:sectionLst XML
+	sectionXML := buildPresentationSectionExtensionXML(sections)
+
+	// Extension URI for Section List
+	extURI := "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
+
+	// Helper to build the full <p:ext> block
+	fullExtBlock := fmt.Sprintf(`<p:ext uri="%s">%s</p:ext>`, extURI, sectionXML)
+
+	// Strategy:
+	// 1. If <p:extLst> exists:
+	//    a. If matches our URI, replace the content.
+	//    b. Else, append our <p:ext> to the list.
+	// 2. If <p:extLst> missing:
+	//    a. Insert new <p:extLst> at end of presentation (before closing tag).
+
+	if extLstPattern.MatchString(source) {
+		return extLstPattern.ReplaceAllStringFunc(source, func(match string) string {
+			// Check if our extension exists
+			if strings.Contains(match, extURI) {
+				// Regex to replace specific extension?
+				// For simplicity/robustness, let's parse or strict regex.
+				// Since we control usage, let's try a regex for the specific p:ext
+				pExtPattern := regexp.MustCompile(fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)))
+				if pExtPattern.MatchString(match) {
+					return pExtPattern.ReplaceAllString(match, fullExtBlock)
+				}
+				// URI not found, but list exists. Append.
+				// Insert before closing </p:extLst>
+				if strings.Contains(match, "</p:extLst>") {
+					return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
+				}
+				// Self closing <p:extLst/>?
+				return strings.Replace(match, "/>", ">"+fullExtBlock+"</p:extLst>", 1)
+			}
+			// Extension not present, append it.
+			if strings.Contains(match, "</p:extLst>") {
+				return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
+			}
+			return strings.Replace(match, "/>", ">\n"+fullExtBlock+"\n</p:extLst>", 1)
+		}), nil
+	}
+
+	// No extLst, insert it.
+	// Valid insertion point is after <p:defaultTextStyle> or just before </p:presentation>
+	newExtLst := fmt.Sprintf("<p:extLst>\n%s\n</p:extLst>", fullExtBlock)
+	if idx := strings.LastIndex(source, "</p:presentation>"); idx >= 0 {
+		return source[:idx] + newExtLst + source[idx:], nil
+	}
+
+	return "", fmt.Errorf("presentation XML malformed (missing </p:presentation>)")
+}
+
+func buildPresentationSectionExtensionXML(sections []EditorSection) string {
+	if len(sections) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	// Note: using p14 prefix requires definition, but p:ext usually allows it if defined in parent or self.
+	// Usually presentation.xml has xmlns:p14. If not we might need to add it or use local xmlns.
+	// Safest is local xmlns.
+	b.WriteString(`<p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">`)
+	for _, s := range sections {
+		// Section entries
+		b.WriteString(fmt.Sprintf("\n<p14:section name=\"%s\" id=\"%s\">", common.XMLEscape(s.Name), s.GUID))
+		b.WriteString("\n<p14:sldIdLst>")
+		for _, sid := range s.SlideIDs {
+			b.WriteString(fmt.Sprintf("\n<p14:sldId id=\"%d\"/>", sid))
+		}
+		b.WriteString("\n</p14:sldIdLst>")
+		b.WriteString("\n</p14:section>")
+	}
+	b.WriteString("\n</p14:sectionLst>")
+	return b.String()
 }

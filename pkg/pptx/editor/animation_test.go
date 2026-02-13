@@ -19,6 +19,7 @@ func TestPresentationEditorUpdateSlideRendersAnimations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	updated := elements.NewSlide("Animated").
 		AddShape(shapes.NewShape("rect", 0, 0, 100, 100)).

@@ -40,6 +40,7 @@ type ChartSpec struct {
 	MinValue              *float64
 	MaxValue              *float64
 	Smooth                bool
+	ExternalDataID        string
 }
 
 type ChartSeries struct {

@@ -115,3 +115,11 @@ func (c DoughnutChart) Validate(slideIndex int) error {
 	}
 	return nil
 }
+
+func (c DoughnutChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c DoughnutChart) GetValues() []float64 {
+	return c.Values
+}

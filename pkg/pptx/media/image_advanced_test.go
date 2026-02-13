@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -44,13 +43,8 @@ func TestImageAdvancedSources(t *testing.T) {
 	slide.AddImage(imgURL)
 	slide.AddImage(imgEffect)
 
-	pptxFile := filepath.Join(os.TempDir(), "image_advanced_test.pptx")
+	pptxFile := filepath.Join(t.TempDir(), "image_advanced_test.pptx")
 	if err := pptx.WriteFile(pptxFile, "Image Test", []pptx.SlideContent{slide}); err != nil {
 		t.Fatalf("failed to write pptx: %v", err)
 	}
-	defer func() {
-		if err := os.Remove(pptxFile); err != nil && !os.IsNotExist(err) {
-			t.Fatalf("failed to cleanup test pptx: %v", err)
-		}
-	}()
 }

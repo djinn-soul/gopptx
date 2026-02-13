@@ -14,14 +14,24 @@ const (
 	ContentTypesPath    = "[Content_Types].xml"
 	CorePropsPath       = "docProps/core.xml"
 
+	// Metadata Namespaces
+	DCNamespace       = "http://purl.org/dc/elements/1.1/"
+	DCTermsNamespace  = "http://purl.org/dc/terms/"
+	DCMITypeNamespace = "http://purl.org/dc/dcmitype/"
+	CPNamespace       = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+	XSINamespace      = "http://www.w3.org/2001/XMLSchema-instance"
+
 	RelTypeSlide       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
+	RelTypeSlideMaster = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster"
 	RelTypeSlideLayout = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
 	RelTypeNotesSlide  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
 	RelTypeNotesMaster = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"
 	RelTypeHyperlink   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	RelTypeImage       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 	RelTypeChart       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
+	RelTypeTheme       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
 	RelTypeSectionList = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
+	RelTypePackage     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
 
 	RelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 	ContentTypesXMLNS  = "http://schemas.openxmlformats.org/package/2006/content-types"
@@ -76,6 +86,21 @@ func SlideRelsPartName(slidePart string) string {
 	return dir + "/_rels/" + file + ".rels"
 }
 
+// RelsPathFor returns the relationships part path for any given part path.
+func RelsPathFor(partPath string) string {
+	clean := strings.TrimSpace(strings.ReplaceAll(partPath, "\\", "/"))
+	if clean == "" {
+		return ""
+	}
+	lastSlash := strings.LastIndex(clean, "/")
+	if lastSlash < 0 {
+		return "_rels/" + clean + ".rels"
+	}
+	dir := clean[:lastSlash]
+	file := clean[lastSlash+1:]
+	return dir + "/_rels/" + file + ".rels"
+}
+
 // ParseRelationshipNumber extracts the numeric part of an rId string.
 func ParseRelationshipNumber(id string) (int, bool) {
 	if !strings.HasPrefix(id, "rId") {
@@ -105,4 +130,56 @@ func ParseSlidePartNumber(partPath string) (int, bool) {
 		return 0, false
 	}
 	return num, true
+}
+
+// Shape represents a simplified view of a slide shape for editing.
+type Shape struct {
+	ID   int
+	Name string
+	Text string
+	X, Y int
+	W, H int
+}
+
+// ChartSelector identifies a slide chart by index and/or relationship ID.
+type ChartSelector struct {
+	Index *int
+	RelID string
+}
+
+// ChartSeriesData carries one chart series worth of input data.
+type ChartSeriesData struct {
+	Name       *string
+	Categories []string
+	Values     []float64
+	XValues    []float64
+	YValues    []float64
+	Sizes      []float64
+}
+
+// ChartDataUpdate is the complete chart update payload.
+type ChartDataUpdate struct {
+	Categories []string
+	Series     []ChartSeriesData
+}
+
+// SlideChartRef describes a chart relationship discovered on a slide.
+type SlideChartRef struct {
+	Index     int
+	RelID     string
+	ChartPart string
+}
+
+// SlideLayoutInfo describes one available slide layout part.
+type SlideLayoutInfo struct {
+	Part       string
+	Name       string
+	MasterPart string
+}
+
+// SlideMasterCloneResult summarizes an in-package layout/master clone operation.
+type SlideMasterCloneResult struct {
+	MasterPart string
+	ThemePart  string
+	LayoutMap  map[string]string
 }

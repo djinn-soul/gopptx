@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ type EditorSection struct {
 
 // PresentationEditor provides read/modify/save operations for existing PPTX files.
 type PresentationEditor struct {
-	parts map[string][]byte
+	parts *PartStore
 
 	slides       []common.EditorSlideRef
 	nextSlideID  int64
@@ -38,6 +37,9 @@ type PresentationEditor struct {
 	// Media inventory for deduplication (SHA1 -> PartPath)
 	mediaInventory map[string]string
 	nextMediaNum   int
+	mediaMu        sync.Mutex
+	imagePathCache map[string]imagePathCacheEntry
+	imagePathMu    sync.RWMutex
 
 	// Section management
 	sections []EditorSection
@@ -55,6 +57,14 @@ type PresentationEditor struct {
 // Metadata returns presentation-level metadata parsed from the package.
 func (e *PresentationEditor) Metadata() common.PresentationMetadata {
 	return e.metadata
+}
+
+// Close releases any resources held by the editor (e.g. the underlying file handle).
+func (e *PresentationEditor) Close() error {
+	if e == nil || e.parts == nil {
+		return nil
+	}
+	return e.parts.Close()
 }
 
 // SlideCount returns the number of slides currently tracked by the editor.
@@ -81,48 +91,6 @@ func (e *PresentationEditor) Slides() []common.SlideMetadata {
 		})
 	}
 	return out
-}
-
-func cloneParts(parts map[string][]byte) map[string][]byte {
-	out := make(map[string][]byte, len(parts))
-	for path, content := range parts {
-		clone := make([]byte, len(content))
-		copy(clone, content)
-		out[path] = clone
-	}
-	return out
-}
-
-func requirePart(parts map[string][]byte, path string) ([]byte, error) {
-	content, ok := parts[path]
-	if !ok {
-		return nil, fmt.Errorf("missing required package part %q", path)
-	}
-	return content, nil
-}
-
-var coreTitlePattern = regexp.MustCompile(`(?s)<dc:title[^>]*>(.*?)</dc:title>`)
-
-func extractCoreTitle(content []byte) string {
-	if len(content) == 0 {
-		return ""
-	}
-	matches := coreTitlePattern.FindSubmatch(content)
-	if len(matches) != 2 {
-		return ""
-	}
-	return strings.TrimSpace(htmlUnescapeXML(string(matches[1])))
-}
-
-func htmlUnescapeXML(value string) string {
-	replacer := strings.NewReplacer(
-		"&lt;", "<",
-		"&gt;", ">",
-		"&amp;", "&",
-		"&quot;", `"`,
-		"&apos;", "'",
-	)
-	return replacer.Replace(value)
 }
 
 func nextSlideID(slides []common.EditorSlideRef) int64 {
@@ -198,7 +166,8 @@ func (e *PresentationEditor) populateSlideTitlesConcurrently() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			title := extractFirstAText(e.parts[e.slides[idx].Part])
+			data, _ := e.parts.Get(e.slides[idx].Part)
+			title := extractFirstAText(data)
 			ch <- result{index: idx, title: title}
 		}()
 	}
@@ -238,4 +207,133 @@ func extractFirstAText(content []byte) string {
 			return trimmed
 		}
 	}
+}
+
+// GetShapes returns a list of shapes found on the specified slide (0-based index).
+func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return nil, fmt.Errorf("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return nil, fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	parsed, err := parseSlideShapes(content)
+	if err != nil {
+		return nil, fmt.Errorf("parse shapes: %w", err)
+	}
+
+	shapes := make([]common.Shape, len(parsed))
+	for i, p := range parsed {
+		shapes[i] = common.Shape{
+			ID:   p.ID,
+			Name: p.Name,
+			Text: p.Text,
+			X:    p.X,
+			Y:    p.Y,
+			W:    p.W,
+			H:    p.H,
+		}
+	}
+	return shapes, nil
+}
+
+// UpdateShape modifies the properties of a specific shape on a slide.
+// Only fields that are non-zero in the 'updates' struct will be applied (if feasible),
+// but for simple replacement logic we might replace the whole shape XML.
+// Current implementation replaces the XML structure with a re-rendered version
+// based on the parsed state + updates.
+func (e *PresentationEditor) UpdateShape(slideIndex, shapeIndex int, updates common.Shape) error {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return fmt.Errorf("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return fmt.Errorf("parse shapes: %w", err)
+	}
+
+	if shapeIndex < 0 || shapeIndex >= len(shapes) {
+		return fmt.Errorf("shape index out of range")
+	}
+
+	// Apply updates to the target shape
+	target := &shapes[shapeIndex]
+	if updates.Text != "" {
+		target.Text = updates.Text
+	}
+	if updates.X != 0 {
+		target.X = updates.X
+	}
+	if updates.Y != 0 {
+		target.Y = updates.Y
+	}
+	if updates.W != 0 {
+		target.W = updates.W
+	}
+	if updates.H != 0 {
+		target.H = updates.H
+	}
+
+	// Re-render only the modified shape
+	newContent := replaceShapeNodes(content, shapes, func(i int, p *parsedShape) ([]byte, bool) {
+		if i != shapeIndex {
+			return nil, false
+		}
+		// Render the updated shape to XML
+		// We need a helper to render a 'parsedShape' back to XML
+		// NOT reusing elements.Shape logic because we might be dealing with p:pic or existing styles.
+		// Limitation: This implementation recreates the shape structure, potentially losing
+		// extra attributes (rotations, effects, custom geometry) if not captured in parsedShape.
+		// For the smoke test "Find & Replace" text/pos, this might be acceptable for now,
+		// but ideally we should update IN PLACE.
+		//
+		// Let's implement a 'renderParsedShape' in shape_editor.go
+		return renderShapeXML(p), true
+	})
+
+	e.parts.Set(partPath, newContent)
+	return nil
+}
+
+// RemoveShape removes a shape from the slide.
+func (e *PresentationEditor) RemoveShape(slideIndex, shapeIndex int) error {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return fmt.Errorf("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return fmt.Errorf("parse shapes: %w", err)
+	}
+
+	if shapeIndex < 0 || shapeIndex >= len(shapes) {
+		return fmt.Errorf("shape index out of range")
+	}
+
+	// Replace with empty byte slice
+	newContent := replaceShapeNodes(content, shapes, func(i int, p *parsedShape) ([]byte, bool) {
+		if i == shapeIndex {
+			return []byte{}, true
+		}
+		return nil, false
+	})
+
+	e.parts.Set(partPath, newContent)
+	return nil
 }

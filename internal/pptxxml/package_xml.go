@@ -5,16 +5,17 @@ import (
 	"strings"
 )
 
+var xmlEscapeReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
 // Escape replaces XML-sensitive characters with entity references.
 func Escape(value string) string {
-	replacer := strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		"\"", "&quot;",
-		"'", "&apos;",
-	)
-	return replacer.Replace(value)
+	return xmlEscapeReplacer.Replace(value)
 }
 
 var imageContentTypes = map[string]string{

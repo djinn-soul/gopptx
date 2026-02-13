@@ -8,7 +8,7 @@ import (
 )
 
 func TestSampleImageIntegration(t *testing.T) {
-	imagePath := filepath.Join("..", "..", "..", "smoke_samples", "sampleimage", "repository-open-graph-template.png")
+	imagePath := filepath.Join("..", "..", "..", "examples", "assets", "55", "repository-open-graph-template.png")
 
 	// Use the image in a normal way
 	slide1 := pptx.NewSlide("Sample Image Showcase").

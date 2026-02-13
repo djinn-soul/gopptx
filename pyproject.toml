@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gopptx"
+version = "0.1.0"
+authors = [
+  { name="djinn-soul" },
+]
+description = "High-performance PPTX engine powered by Go"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typing-extensions>=4.0; python_version<'3.8'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "basedpyright>=1.23.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["python"]
+include = ["gopptx*"]
+
+[tool.setuptools.package-data]
+gopptx = ["*.dll", "*.so", "*.dylib", "*.pyi", "py.typed"]
+
+[tool.basedpyright]
+include = ["python/gopptx"]
+exclude = ["**/__pycache__"]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"

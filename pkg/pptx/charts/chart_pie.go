@@ -109,3 +109,11 @@ func (c PieChart) Validate(slideIndex int) error {
 	}
 	return nil
 }
+
+func (c PieChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c PieChart) GetValues() []float64 {
+	return c.Values
+}

@@ -26,13 +26,29 @@ type CustomXMLPart struct {
 
 // PresentationMetadata describes summary information for a PPTX package.
 type PresentationMetadata struct {
-	Title        string
-	Subject      string
-	Creator      string
-	Description  string
-	FooterText   string
-	ShowDateTime bool
-	SlideSize    SlideSize
-	SlideCount   int
-	CustomXML    []CustomXMLPart
+	Title          string
+	Subject        string
+	Creator        string
+	Description    string
+	FooterText     string
+	ShowDateTime   bool
+	SlideSize      SlideSize
+	SlideCount     int
+	CustomXML      []CustomXMLPart
+	CoreProperties CoreProperties
+}
+
+// CoreProperties represents the docProps/core.xml metadata.
+type CoreProperties struct {
+	Title          string `xml:"http://purl.org/dc/elements/1.1/ title,omitempty"`
+	Subject        string `xml:"http://purl.org/dc/elements/1.1/ subject,omitempty"`
+	Creator        string `xml:"http://purl.org/dc/elements/1.1/ creator,omitempty"`
+	Keywords       string `xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties keywords,omitempty"`
+	Description    string `xml:"http://purl.org/dc/elements/1.1/ description,omitempty"`
+	LastModifiedBy string `xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties lastModifiedBy,omitempty"`
+	Revision       string `xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties revision,omitempty"`
+	Created        string `xml:"http://purl.org/dc/terms/ created,omitempty"`
+	Modified       string `xml:"http://purl.org/dc/terms/ modified,omitempty"`
+	Category       string `xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties category,omitempty"`
+	ContentStatus  string `xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"`
 }

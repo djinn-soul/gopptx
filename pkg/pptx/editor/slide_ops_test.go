@@ -22,6 +22,7 @@ func TestPresentationEditorDuplicateSlide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	// Duplicate Slide 1 to the end
 	if _, err := editor.DuplicateSlide(0, 2); err != nil {
@@ -62,6 +63,7 @@ func TestPresentationEditorDuplicateSlide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen deck: %v", err)
 	}
+	defer func() { _ = reopened.Close() }()
 	if reopened.SlideCount() != 4 {
 		t.Fatalf("reopened: expected 4 slides, got %d", reopened.SlideCount())
 	}
@@ -93,6 +95,7 @@ func TestDuplicateSlideWithImage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	// Duplicate Image Slide
 	if _, err := editor.DuplicateSlide(0, 2); err != nil {
@@ -124,6 +127,7 @@ func TestPresentationEditorMoveSlide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	// Move B to start: [B, A, C]
 	if err := editor.MoveSlide(1, 0); err != nil {
@@ -154,6 +158,7 @@ func TestPresentationEditorMoveSlide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
+	defer func() { _ = reopened.Close() }()
 	slides = reopened.Slides()
 	if slides[0].Title != "B" || slides[1].Title != "C" || slides[2].Title != "A" {
 		t.Fatalf("reopened order: %s, %s, %s", slides[0].Title, slides[1].Title, slides[2].Title)
@@ -169,16 +174,18 @@ func TestDuplicateSlide_AppendsCopySuffixToTitlePlaceholder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	srcPart := editor.Slides()[0].PartName
-	editor.parts[srcPart] = []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title"))
+	editor.parts.Set(srcPart, []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title")))
 
 	if _, err := editor.DuplicateSlide(0, 1); err != nil {
 		t.Fatalf("duplicate slide: %v", err)
 	}
 
 	copyPart := editor.Slides()[1].PartName
-	copyXML := string(editor.parts[copyPart])
+	copyData, _ := editor.parts.Get(copyPart)
+	copyXML := string(copyData)
 	if !strings.Contains(copyXML, "Main Title (Copy)") {
 		t.Fatalf("expected title placeholder to include copy suffix")
 	}
@@ -196,16 +203,18 @@ func TestDuplicateSlide_AppendsCopySuffixToLastTitleRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	srcPart := editor.Slides()[0].PartName
-	editor.parts[srcPart] = []byte(slideWithBodyAndMultiRunTitlePlaceholderXML("Body Text", "Main ", "Title"))
+	editor.parts.Set(srcPart, []byte(slideWithBodyAndMultiRunTitlePlaceholderXML("Body Text", "Main ", "Title")))
 
 	if _, err := editor.DuplicateSlide(0, 1); err != nil {
 		t.Fatalf("duplicate slide: %v", err)
 	}
 
 	copyPart := editor.Slides()[1].PartName
-	copyXML := string(editor.parts[copyPart])
+	copyData, _ := editor.parts.Get(copyPart)
+	copyXML := string(copyData)
 	if !strings.Contains(copyXML, "<a:t>Main </a:t></a:r><a:r><a:t>Title (Copy)</a:t>") {
 		t.Fatalf("expected suffix on last title run, got XML: %s", copyXML)
 	}
@@ -226,22 +235,24 @@ func TestSetSlideTitle_TargetsTitlePlaceholder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
+	defer func() { _ = editor.Close() }()
 
 	part := editor.Slides()[0].PartName
-	editor.parts[part] = []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title"))
+	editor.parts.Set(part, []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title")))
 
 	if err := editor.SetSlideTitle(0, "Renamed Title"); err != nil {
 		t.Fatalf("set slide title: %v", err)
 	}
 
-	xml := string(editor.parts[part])
-	if !strings.Contains(xml, "Renamed Title") {
+	xmlData, _ := editor.parts.Get(part)
+	xmlStr := string(xmlData)
+	if !strings.Contains(xmlStr, "Renamed Title") {
 		t.Fatalf("expected updated title text in slide XML")
 	}
-	if strings.Contains(xml, "Body Text (Copy)") {
+	if strings.Contains(xmlStr, "Body Text (Copy)") {
 		t.Fatalf("unexpected body text mutation")
 	}
-	if !strings.Contains(xml, "Body Text") {
+	if !strings.Contains(xmlStr, "Body Text") {
 		t.Fatalf("expected non-title text to remain unchanged")
 	}
 }

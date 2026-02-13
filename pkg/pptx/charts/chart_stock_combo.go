@@ -120,6 +120,14 @@ func (c StockHLCChart) Validate(slideIndex int) error {
 	return nil
 }
 
+func (c StockHLCChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c StockHLCChart) GetValues() []float64 {
+	return c.HighValues
+}
+
 // StockOHLCChart is a stock chart with Open/High/Low/Close series.
 type StockOHLCChart struct {
 	StockHLCChart
@@ -155,6 +163,14 @@ func (c StockOHLCChart) Validate(slideIndex int) error {
 		return err
 	}
 	return validateStockSeries(c.OpenValues, c.Categories, slideIndex, "open")
+}
+
+func (c StockOHLCChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c StockOHLCChart) GetValues() []float64 {
+	return c.HighValues
 }
 
 // ComboChart mixes bar and line series on one category axis.
@@ -273,6 +289,15 @@ func (c ComboChart) CategoriesToValues() []float64 {
 		values[i] = 1
 	}
 	return values
+}
+
+func (c ComboChart) GetCategories() []string {
+	return c.Categories
+}
+
+func (c ComboChart) GetValues() []float64 {
+	// Return zero-value slice of correct length since combo has mixed series
+	return make([]float64, len(c.Categories))
 }
 
 func validateStockSeries(values []float64, categories []string, slideIndex int, label string) error {
