@@ -38,6 +38,15 @@ Validate that a file is a readable PPTX package with required parts and well-for
 go run ./cmd/pptcli validate -file deck.pptx
 ```
 
+### `completion`
+
+Generate shell completion scripts for bash or zsh.
+
+```bash
+go run ./cmd/pptcli completion -shell bash
+go run ./cmd/pptcli completion -shell zsh
+```
+
 ## Legacy flags mode
 
 The historical flag-only entrypoint is still supported:

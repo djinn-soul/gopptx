@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // Template defines the interface for high-level presentation builders.
@@ -39,14 +40,30 @@ func (t SimpleTemplate) Build() ([]elements.SlideContent, error) {
 	), nil
 }
 
+// BrandingSpec defines visual branding for a template.
+type BrandingSpec struct {
+	Theme  *styling.Theme
+	Header string
+	Footer string
+}
+
 // ProposalTemplate creates a standard 5-slide proposal deck.
 type ProposalTemplate struct {
-	Title    string   // Main proposal title
-	Subtitle string   // Optional subtitle
-	Context  string   // Problem or background context
-	Solution string   // Proposed solution details
-	Pricing  []string // List of pricing items or tiers
-	Timeline string   // Project timeline or milestones
+	Title    string       // Main proposal title
+	Subtitle string       // Optional subtitle
+	Context  string       // Problem or background context
+	Solution string       // Proposed solution details
+	Pricing  []string     // List of pricing items or tiers
+	Timeline string       // Project timeline or milestones
+	Branding BrandingSpec // Optional branding/theme
+}
+
+// ApplyBranding applies branding settings to a slide.
+func (b BrandingSpec) Apply(s elements.SlideContent) elements.SlideContent {
+	if b.Footer != "" {
+		s.FooterText = b.Footer
+	}
+	return s
 }
 
 // Build generates slides for ProposalTemplate.
@@ -55,7 +72,7 @@ func (t ProposalTemplate) Build() ([]elements.SlideContent, error) {
 		return nil, fmt.Errorf("proposal template title cannot be empty")
 	}
 
-	return buildParallel(
+	slides := buildParallel(
 		func() elements.SlideContent {
 			s := elements.NewSlide(t.Title).WithCenteredTitleLayout()
 			if t.Subtitle != "" {
@@ -91,15 +108,21 @@ func (t ProposalTemplate) Build() ([]elements.SlideContent, error) {
 			}
 			return s
 		},
-	), nil
+	)
+
+	for i := range slides {
+		slides[i] = t.Branding.Apply(slides[i])
+	}
+	return slides, nil
 }
 
 // TrainingTemplate creates an educational deck.
 type TrainingTemplate struct {
-	Title    string   // Title of the training session
-	Agenda   []string // List of topics to be covered
-	Concepts []string // Each concept will get its own slide
-	Summary  string   // Closing summary or key takeaways
+	Title    string       // Title of the training session
+	Agenda   []string     // List of topics to be covered
+	Concepts []string     // Each concept will get its own slide
+	Summary  string       // Closing summary or key takeaways
+	Branding BrandingSpec // Optional branding/theme
 }
 
 // Build generates slides for TrainingTemplate.
@@ -135,7 +158,11 @@ func (t TrainingTemplate) Build() ([]elements.SlideContent, error) {
 		return s
 	})
 
-	return buildParallel(funcs...), nil
+	slides := buildParallel(funcs...)
+	for i := range slides {
+		slides[i] = t.Branding.Apply(slides[i])
+	}
+	return slides, nil
 }
 
 // StatusTemplate creates a 4-slide project status report.
@@ -152,7 +179,7 @@ func (t StatusTemplate) Build() ([]elements.SlideContent, error) {
 		return nil, fmt.Errorf("status template project name cannot be empty")
 	}
 
-	return buildParallel(
+	slides := buildParallel(
 		func() elements.SlideContent {
 			return elements.NewSlide(t.Project + " - Status Update").WithCenteredTitleLayout()
 		},
@@ -177,15 +204,17 @@ func (t StatusTemplate) Build() ([]elements.SlideContent, error) {
 			}
 			return s
 		},
-	), nil
+	)
+	return slides, nil
 }
 
 // TechnicalTemplate creates a 4-slide technical deep-dive.
 type TechnicalTemplate struct {
-	Title        string // Subject of the technical presentation
-	Architecture string // High-level architecture description
-	DeepDive     string // Specific technical details
-	Benchmarks   string // Performance or comparison data
+	Title        string       // Subject of the technical presentation
+	Architecture string       // High-level architecture description
+	DeepDive     string       // Specific technical details
+	Benchmarks   string       // Performance or comparison data
+	Branding     BrandingSpec // Optional branding/theme
 }
 
 // Build generates slides for TechnicalTemplate.
@@ -194,7 +223,7 @@ func (t TechnicalTemplate) Build() ([]elements.SlideContent, error) {
 		return nil, fmt.Errorf("technical template title cannot be empty")
 	}
 
-	return buildParallel(
+	slides := buildParallel(
 		func() elements.SlideContent {
 			return elements.NewSlide(t.Title).WithCenteredTitleLayout()
 		},
@@ -219,7 +248,12 @@ func (t TechnicalTemplate) Build() ([]elements.SlideContent, error) {
 			}
 			return s
 		},
-	), nil
+	)
+
+	for i := range slides {
+		slides[i] = t.Branding.Apply(slides[i])
+	}
+	return slides, nil
 }
 
 // buildParallel executes slide generation functions in parallel.

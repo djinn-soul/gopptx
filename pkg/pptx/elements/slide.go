@@ -228,6 +228,7 @@ type SlideContent struct {
 	BulletRuns           [][]TextRun
 	BulletStyles         []TextParagraphStyle
 	ShowSlideNumber      bool
+	FooterText           string
 	Notes                string
 	NotesBody            []TextParagraph
 	Images               []shapes.Image

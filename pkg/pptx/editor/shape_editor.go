@@ -363,4 +363,3 @@ func maxObjectID(content []byte) int {
 	}
 	return maxID
 }
-

@@ -37,6 +37,9 @@ func TestHyperlinkSlide(t *testing.T) {
 	if target != "slide3.xml" {
 		t.Errorf("Expected 'slide3.xml', got %s", target)
 	}
+	if action := link.Action.ActionType(); action != "ppaction://hlinksldjump" {
+		t.Errorf("Expected slide action type 'ppaction://hlinksldjump', got %s", action)
+	}
 }
 
 func TestHyperlinkEmail(t *testing.T) {

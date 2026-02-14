@@ -15,10 +15,27 @@ type (
 	SlideBackground = elements.SlideBackground
 	// SlideBackgroundType defines the filling method for a slide background.
 	SlideBackgroundType = elements.SlideBackgroundType
+
+	// SlideMaster defines content that appears on all slides.
+	SlideMaster = elements.SlideMaster
+	// TxStyles defines the default text styles for a slide master.
+	TxStyles = elements.TxStyles
+	// TextLevelStyle defines default text properties for one indent level.
+	TextLevelStyle = elements.TextLevelStyle
+	// NotesMaster defines the configuration for the notes master part.
+	NotesMaster = elements.NotesMaster
 )
 
 func NewSlide(title string) SlideContent {
 	return elements.NewSlide(title)
+}
+
+func NewNotesMaster() *NotesMaster {
+	return elements.NewNotesMaster()
+}
+
+func NewMaster() *SlideMaster {
+	return elements.NewMaster()
 }
 
 const (

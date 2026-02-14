@@ -13,6 +13,8 @@ import (
 type (
 	// PresentationMetadata defines non-content properties of a PPTX.
 	PresentationMetadata = presentation.PresentationMetadata
+	// PresentationMetadataFields defines the basic descriptive fields for a PPTX.
+	PresentationMetadataFields = common.PresentationMetadata
 	// SlideSize defines presentation dimensions in EMUs.
 	SlideSize = presentation.SlideSize
 	// CustomXMLPart represents an embedded custom XML document.

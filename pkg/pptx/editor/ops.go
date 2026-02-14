@@ -72,6 +72,9 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 	if err != nil {
 		return fmt.Errorf("slide %d cannot be updated safely: %w", index, err)
 	}
+	if slideHasImageContent(slide) && !hasSlideLayoutRelationship(existingRels) {
+		return fmt.Errorf("slide %d cannot add images without a slideLayout relationship", index)
+	}
 
 	number, ok := parseSlidePartNumber(ref.Part)
 	if !ok {
@@ -305,6 +308,30 @@ func scanSupportedSlideRels(rels []common.EditorRelationship) (notesTarget strin
 		}
 	}
 	return notesTarget, nil
+}
+
+func hasSlideLayoutRelationship(rels []common.EditorRelationship) bool {
+	for _, rel := range rels {
+		if rel.Type == common.RelTypeSlideLayout {
+			return true
+		}
+	}
+	return false
+}
+
+func slideHasImageContent(slide elements.SlideContent) bool {
+	if len(slide.Images) > 0 {
+		return true
+	}
+	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
+		return true
+	}
+	for _, override := range slide.PlaceholderOverrides {
+		if override.Image != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func validateEditorSlideContent(slide elements.SlideContent) error {
@@ -660,7 +687,7 @@ func (e *PresentationEditor) ensureNotesInfrastructure() {
 	if e.parts.Has("ppt/notesMasters/notesMaster1.xml") {
 		return
 	}
-	e.parts.Set("ppt/notesMasters/notesMaster1.xml", []byte(pptxxml.NotesMaster()))
+	e.parts.Set("ppt/notesMasters/notesMaster1.xml", []byte(pptxxml.NotesMaster(nil)))
 	e.parts.Set("ppt/notesMasters/_rels/notesMaster1.xml.rels", []byte(pptxxml.NotesMasterRelationships()))
 	if !e.parts.Has("ppt/theme/theme2.xml") {
 		e.parts.Set("ppt/theme/theme2.xml", []byte(pptxxml.Theme(nil)))

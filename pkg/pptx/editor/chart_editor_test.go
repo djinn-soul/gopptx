@@ -3,11 +3,13 @@ package editor
 import (
 	"archive/zip"
 	"bytes"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 func TestAddChart(t *testing.T) {
@@ -66,6 +68,96 @@ func TestAddChart(t *testing.T) {
 	// d. Check Inventory
 	if editor.chartEmbeddings["ppt/charts/chart1.xml"] != "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx" {
 		t.Error("inventory not updated correctly")
+	}
+}
+
+func TestAddChartDeduplicatesIdenticalExcelEmbeddings(t *testing.T) {
+	editor := &PresentationEditor{
+		parts: NewPartStore(),
+		slides: []common.EditorSlideRef{
+			{Part: "ppt/slides/slide1.xml"},
+			{Part: "ppt/slides/slide2.xml"},
+		},
+		chartEmbeddings: make(map[string]string),
+		nextChartNum:    1,
+		nextExcelNum:    1,
+		nextRelIDNum:    1,
+	}
+	editor.parts.Set("ppt/slides/slide1.xml", []byte(`<p:sld><p:spTree></p:spTree></p:sld>`))
+	editor.parts.Set("ppt/slides/slide2.xml", []byte(`<p:sld><p:spTree></p:spTree></p:sld>`))
+	editor.parts.Set("[Content_Types].xml", []byte(`<Types></Types>`))
+
+	chartDef := charts.NewBarChart(
+		[]string{"A", "B"},
+		[]float64{10, 20},
+	).WithTitle("Same Data")
+
+	if err := editor.AddChart(0, chartDef); err != nil {
+		t.Fatalf("add chart 1 failed: %v", err)
+	}
+	if err := editor.AddChart(1, chartDef); err != nil {
+		t.Fatalf("add chart 2 failed: %v", err)
+	}
+
+	embeddingParts := editor.parts.KeysWithPrefix("ppt/embeddings/")
+	if len(embeddingParts) != 1 {
+		t.Fatalf("expected exactly one deduplicated embedding part, got %d: %v", len(embeddingParts), embeddingParts)
+	}
+}
+
+func TestMergeFromFilePreservesChartEmbeddingChain(t *testing.T) {
+	sourcePath := writeDeckFixture(t, "source-chart-base.pptx", []elements.SlideContent{
+		elements.NewSlide("Source Chart"),
+	})
+	sourceEditor, err := OpenPresentationEditor(sourcePath)
+	if err != nil {
+		t.Fatalf("open source editor: %v", err)
+	}
+	chartDef := charts.NewBarChart(
+		[]string{"Q1", "Q2"},
+		[]float64{100, 120},
+	).WithTitle("Revenue")
+	if err := sourceEditor.AddChart(0, chartDef); err != nil {
+		t.Fatalf("add source chart: %v", err)
+	}
+	sourceWithChart := filepath.Join(t.TempDir(), "source-with-chart.pptx")
+	if err := sourceEditor.Save(sourceWithChart); err != nil {
+		t.Fatalf("save source with chart: %v", err)
+	}
+	_ = sourceEditor.Close()
+
+	destPath := writeDeckFixture(t, "dest-base.pptx", []elements.SlideContent{
+		elements.NewSlide("Dest Slide"),
+	})
+	destEditor, err := OpenPresentationEditor(destPath)
+	if err != nil {
+		t.Fatalf("open dest editor: %v", err)
+	}
+	defer func() { _ = destEditor.Close() }()
+	if err := destEditor.MergeFromFile(sourceWithChart); err != nil {
+		t.Fatalf("merge from file failed: %v", err)
+	}
+	outPath := filepath.Join(t.TempDir(), "merged-chart.pptx")
+	if err := destEditor.Save(outPath); err != nil {
+		t.Fatalf("save merged deck: %v", err)
+	}
+
+	merged, err := OpenPresentationEditor(outPath)
+	if err != nil {
+		t.Fatalf("reopen merged deck: %v", err)
+	}
+	defer func() { _ = merged.Close() }()
+	if merged.SlideCount() != 2 {
+		t.Fatalf("expected 2 slides after merge, got %d", merged.SlideCount())
+	}
+
+	chartParts := merged.parts.KeysWithPrefix("ppt/charts/chart")
+	if len(chartParts) == 0 {
+		t.Fatalf("expected merged chart parts")
+	}
+	embeddingParts := merged.parts.KeysWithPrefix("ppt/embeddings/")
+	if len(embeddingParts) == 0 {
+		t.Fatalf("expected merged embedding parts")
 	}
 }
 

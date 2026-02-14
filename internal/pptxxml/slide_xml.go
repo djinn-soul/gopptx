@@ -317,6 +317,7 @@ type HyperlinkRel struct {
 	RID      string
 	Target   string
 	External bool
+	Type     string
 }
 
 func SlideRelationshipsWithLayoutAndNotes(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string) string {
@@ -371,7 +372,7 @@ func SlideRelationshipsWithMultiCharts(
 		}
 	}
 	for _, hl := range hyperlinks {
-		b.WriteString(HyperlinkRelationshipXML(hl.RID, hl.Target, hl.External))
+		b.WriteString(HyperlinkRelationshipXML(hl.RID, hl.Target, hl.External, hl.Type))
 		if rid := ridNumber(hl.RID); rid > maxRID {
 			maxRID = rid
 		}

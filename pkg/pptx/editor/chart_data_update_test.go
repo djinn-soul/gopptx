@@ -110,6 +110,28 @@ func TestListSlideCharts(t *testing.T) {
 	}
 }
 
+func TestUpdateChartDataFailsWhenEmbeddingMissing(t *testing.T) {
+	e := newChartUpdateEditorFixture()
+	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXML()))
+	e.parts.Delete("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx")
+	delete(e.chartEmbeddings, "ppt/charts/chart1.xml")
+	e.parts.Set("ppt/charts/_rels/chart1.xml.rels", []byte(
+		`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" Target="../embeddings/Microsoft_Excel_Worksheet1.xlsx"/></Relationships>`,
+	))
+
+	idx := 0
+	err := e.UpdateChartData(0, common.ChartSelector{Index: &idx}, common.ChartDataUpdate{
+		Categories: []string{"Q1"},
+		Series:     []common.ChartSeriesData{{Values: []float64{10}}},
+	})
+	if err == nil {
+		t.Fatalf("expected missing embedding error")
+	}
+	if !strings.Contains(err.Error(), "embedding part missing") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func newChartUpdateEditorFixture() *PresentationEditor {
 	e := &PresentationEditor{
 		parts: NewPartStore(),

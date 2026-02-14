@@ -51,4 +51,3 @@ func TestSpeakerNotesShowcase(t *testing.T) {
 		t.Fatalf("failed to write presentation: %s", err)
 	}
 }
-

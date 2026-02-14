@@ -136,9 +136,24 @@ func ParseSlidePartNumber(partPath string) (int, bool) {
 type Shape struct {
 	ID   int
 	Name string
+	Type string
 	Text string
 	X, Y int
 	W, H int
+}
+
+// ShapeSearchQuery filters shapes for editor-wide search.
+type ShapeSearchQuery struct {
+	NameContains  string
+	TypeEquals    string
+	TextContains  string
+	CaseSensitive bool
+}
+
+// ShapeSearchResult identifies one matched shape and its slide index.
+type ShapeSearchResult struct {
+	SlideIndex int
+	Shape      Shape
 }
 
 // ChartSelector identifies a slide chart by index and/or relationship ID.
@@ -198,4 +213,11 @@ type ShapeUpdate struct {
 	Y    *int
 	W    *int
 	H    *int
+}
+
+// SlideImageRef describes one image relationship on a slide.
+type SlideImageRef struct {
+	Index  int
+	RelID  string
+	Target string
 }

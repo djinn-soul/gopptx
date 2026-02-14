@@ -2,6 +2,8 @@ package editor
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"path"
 	"regexp"
@@ -31,10 +33,11 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	e.nextChartNum++
 	chartPartPath := fmt.Sprintf("ppt/charts/chart%d.xml", chartNum)
 
-	// Excel part
-	excelNum := e.nextExcelNum
-	e.nextExcelNum++
-	excelPartPath := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", excelNum)
+	// Excel part (deduplicated by SHA-1 for identical workbooks).
+	excelPartPath, err := e.registerExcelEmbedding(excelData)
+	if err != nil {
+		return fmt.Errorf("register excel embedding: %w", err)
+	}
 
 	// 3. Register parts
 	e.parts.Set(chartPartPath, nil) // Will populate content later
@@ -53,7 +56,10 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	}
 
 	// Chart -> Excel
-	chartRelID := "rId1"
+	chartRelID, err := e.allocChartRelID(chartPartPath)
+	if err != nil {
+		return fmt.Errorf("allocate chart rel id: %w", err)
+	}
 	if err := e.addRelationship(chartPartPath, chartRelID, common.RelTypePackage, "../embeddings/"+path.Base(excelPartPath)); err != nil {
 		return fmt.Errorf("add chart rel: %w", err)
 	}
@@ -81,6 +87,47 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	e.chartEmbeddings[chartPartPath] = excelPartPath
 
 	return nil
+}
+
+func (e *PresentationEditor) allocChartRelID(chartPart string) (string, error) {
+	relsPath := common.RelsPathFor(chartPart)
+	data, ok := e.parts.Get(relsPath)
+	if !ok {
+		return "rId1", nil
+	}
+	rels, err := parseRelationshipsXML(data)
+	if err != nil {
+		return "", fmt.Errorf("parse chart rels: %w", err)
+	}
+	maxID := 0
+	for _, rel := range rels {
+		if num, ok := common.ParseRelationshipNumber(rel.ID); ok && num > maxID {
+			maxID = num
+		}
+	}
+	return fmt.Sprintf("rId%d", maxID+1), nil
+}
+
+func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error) {
+	sum := sha1.Sum(data)
+	hash := hex.EncodeToString(sum[:])
+
+	for _, part := range e.parts.KeysWithPrefix("ppt/embeddings/") {
+		existing, ok := e.parts.Get(part)
+		if !ok {
+			continue
+		}
+		existingSum := sha1.Sum(existing)
+		if hash == hex.EncodeToString(existingSum[:]) {
+			return part, nil
+		}
+	}
+
+	excelNum := e.nextExcelNum
+	e.nextExcelNum++
+	partPath := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", excelNum)
+	e.parts.Set(partPath, data)
+	return partPath, nil
 }
 
 // ReplaceChartData updates the data source and cached values of an existing chart.
@@ -198,10 +245,10 @@ func (e *PresentationEditor) createChartGraphicFrameXML(id int, name, rId string
 			<p:cNvGraphicFramePr/>
 			<p:nvPr/>
 		</p:nvGraphicFramePr>
-		<p:xf>
+		<p:xfrm>
 			<a:off x="%d" y="%d"/>
 			<a:ext cx="%d" cy="%d"/>
-		</p:xf>
+		</p:xfrm>
 		<a:graphic>
 			<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
 				<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="%s"/>

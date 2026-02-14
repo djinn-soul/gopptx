@@ -51,9 +51,10 @@ func TestTransitionSound(t *testing.T) {
 	}
 
 	// 2. Check slide rels for the audio relationship
-	// foundRel := false
-	// We need to parse slide rels... simplified check for raw string
-	// In a real test we'd parse XML
+	slideRels := readFile(t, r, "ppt/slides/_rels/slide1.xml.rels")
+	if !strings.Contains(slideRels, ".wav") {
+		t.Error("Expected wav relationship target in slide rels")
+	}
 
 	// 3. Check slide XML for p:sndAc
 	slideXML := readFile(t, r, "ppt/slides/slide1.xml")
@@ -62,6 +63,9 @@ func TestTransitionSound(t *testing.T) {
 	}
 	if !strings.Contains(slideXML, "r:embed=") {
 		t.Error("Expected r:embed in slide XML sound action")
+	}
+	if strings.Contains(slideXML, "file:") {
+		t.Error("Expected transition sound to reference relationship id, not file path")
 	}
 }
 

@@ -32,7 +32,10 @@ var imageContentTypes = map[string]string{
 }
 
 // ContentTypes renders [Content_Types].xml.
-func ContentTypes(slideCount int, imageExtensions []string, chartCount int, notesSlides []int, includeNotesMaster bool, customXMLCount int) string {
+func ContentTypes(slideCount int, imageExtensions []string, chartCount int, notesSlides []int, includeNotesMaster bool, customXMLCount int, masterCount int) string {
+	if masterCount < 1 {
+		masterCount = 1
+	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -76,14 +79,21 @@ func ContentTypes(slideCount int, imageExtensions []string, chartCount int, note
 <Override PartName="/customXml/itemProps%d.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/>`, i))
 	}
 
+	for i := 1; i <= 6; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Override PartName="/ppt/slideLayouts/slideLayout%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`, i))
+	}
+	for masterIdx := 2; masterIdx <= masterCount; masterIdx++ {
+		for layoutIdx := 1; layoutIdx <= 6; layoutIdx++ {
+			b.WriteString(fmt.Sprintf(`
+<Override PartName="/ppt/slideLayouts/slideLayout%d_m%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`, layoutIdx, masterIdx))
+		}
+	}
+	for i := 1; i <= masterCount; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Override PartName="/ppt/slideMasters/slideMaster%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`, i))
+	}
 	b.WriteString(`
-<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-<Override PartName="/ppt/slideLayouts/slideLayout2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-<Override PartName="/ppt/slideLayouts/slideLayout3.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-<Override PartName="/ppt/slideLayouts/slideLayout4.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-<Override PartName="/ppt/slideLayouts/slideLayout5.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-<Override PartName="/ppt/slideLayouts/slideLayout6.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
-<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
 <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
 <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
 <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
@@ -161,7 +171,8 @@ func Presentation(title string, slideCount int, includeNotesMaster bool, width, 
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">
 <p:sldMasterIdLst>`)
 	for i := 0; i < masterCount; i++ {
-		masterID := int64(2147483648) + int64(i)
+		// Keep master IDs globally distinct from generated slide layout IDs.
+		masterID := int64(2147483648) + int64(i*1000)
 		rid := i + 1
 		b.WriteString(fmt.Sprintf(`
 <p:sldMasterId id="%d" r:id="rId%d"/>`, masterID, rid))

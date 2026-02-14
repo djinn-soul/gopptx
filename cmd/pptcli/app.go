@@ -25,6 +25,8 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runValidateCommand(args[1:], stdout, stderr)
 	case "merge":
 		return runMergeCommand(args[1:], stdout, stderr)
+	case "completion":
+		return runCompletionCommand(args[1:], stdout, stderr)
 	case "version", "-version", "--version":
 		return runVersionCommand(args[1:], stdout, stderr)
 	default:
@@ -46,6 +48,7 @@ func printRootUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  pptcli info     -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli merge    -out merged.pptx file1.pptx file2.pptx ...")
+	_, _ = fmt.Fprintln(w, "  pptcli completion -shell bash|zsh")
 	_, _ = fmt.Fprintln(w, "  pptcli version")
 	_, _ = fmt.Fprintln(w, "")
 	_, _ = fmt.Fprintln(w, "Legacy mode:")

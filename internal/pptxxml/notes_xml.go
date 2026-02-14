@@ -62,8 +62,29 @@ func NotesSlideRelationships(slideNumber int) string {
 </Relationships>`, slideNumber)
 }
 
-// NotesMaster renders a minimal notes master part.
-func NotesMaster() string {
+// NotesMasterSpec defines the content for notesMaster1.xml.
+type NotesMasterSpec struct {
+	HeaderText     string
+	FooterText     string
+	ShowDateTime   bool
+	ShowSlideNum   bool
+	BackgroundSpec string
+	NotesStyle     []TextLevelStyle
+}
+
+// NotesMaster renders a notes master part.
+func NotesMaster(spec *NotesMasterSpec) string {
+	if spec == nil {
+		spec = &NotesMasterSpec{}
+	}
+
+	notesStyleXML := ""
+	if len(spec.NotesStyle) > 0 {
+		notesStyleXML = `
+<p:notesStyle>` + textLevelStylesXML(spec.NotesStyle) + `
+</p:notesStyle>`
+	}
+
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:notesMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>
@@ -83,20 +104,101 @@ func NotesMaster() string {
 </p:grpSpPr>
 <p:sp>
 <p:nvSpPr>
-<p:cNvPr id="2" name="Notes Placeholder 1"/>
+<p:cNvPr id="2" name="Header Placeholder 1"/>
+<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>
+<p:nvPr><p:ph type="hdr"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr/>
+<p:txBody>
+<a:bodyPr/>
+<a:lstStyle/>
+<a:p>
+<a:r>
+<a:rPr lang="en-US" sm="1"/>
+<a:t>` + Escape(spec.HeaderText) + `</a:t>
+</a:r>
+</a:p>
+</p:txBody>
+</p:sp>
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="3" name="Date Placeholder 2"/>
+<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>
+<p:nvPr><p:ph type="dt"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr/>
+<p:txBody>
+<a:bodyPr/>
+<a:lstStyle/>
+<a:p><a:fld id="{8583B92D-B326-4076-96F9-126CB471A9B6}" type="datetime1"><a:rPr lang="en-US" sm="1"/><a:pPr/><a:t></a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
+</p:txBody>
+</p:sp>
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="4" name="Slide Image Placeholder 3"/>
+<p:cNvSpPr><a:spLocks noGrp="1" noRot="1" noChangeAspect="1"/></p:cNvSpPr>
+<p:nvPr><p:ph type="sldImg"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr>
+<a:xfrm>
+<a:off x="1143000" y="685800"/>
+<a:ext cx="4572000" cy="3429000"/>
+</a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+</p:spPr>
+</p:sp>
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="5" name="Notes Placeholder 4"/>
 <p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>
 <p:nvPr><p:ph type="body" idx="1"/></p:nvPr>
 </p:nvSpPr>
-<p:spPr/>
+<p:spPr>
+<a:xfrm>
+<a:off x="1143000" y="4572000"/>
+<a:ext cx="4572000" cy="3886200"/>
+</a:xfrm>
+</p:spPr>
 <p:txBody>
 <a:bodyPr/>
 <a:lstStyle/>
 <a:p><a:endParaRPr lang="en-US"/></a:p>
 </p:txBody>
 </p:sp>
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="6" name="Footer Placeholder 5"/>
+<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>
+<p:nvPr><p:ph type="ftr" idx="3"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr/>
+<p:txBody>
+<a:bodyPr/>
+<a:lstStyle/>
+<a:p>
+<a:r>
+<a:rPr lang="en-US" sm="1"/>
+<a:t>` + Escape(spec.FooterText) + `</a:t>
+</a:r>
+</a:p>
+</p:txBody>
+</p:sp>
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="7" name="Slide Number Placeholder 6"/>
+<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>
+<p:nvPr><p:ph type="sldNum" idx="4"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr/>
+<p:txBody>
+<a:bodyPr/>
+<a:lstStyle/>
+<a:p><a:fld id="{1E4E639B-83C3-4404-B32B-98A843E836FB}" type="slidenum"><a:rPr lang="en-US" sm="1"/><a:t>‹#›</a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
+</p:txBody>
+</p:sp>
 </p:spTree>
 </p:cSld>
-<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>` + notesStyleXML + `
 </p:notesMaster>`
 }
 

@@ -168,6 +168,8 @@ func (a HyperlinkAction) ActionType() string {
 	switch a.Type {
 	case HyperlinkActionProgram:
 		return "ppaction://program"
+	case HyperlinkActionSlide:
+		return "ppaction://hlinksldjump"
 	case HyperlinkActionFirstSlide:
 		return "ppaction://hlinkshowjump?jump=firstslide"
 	case HyperlinkActionLastSlide:
@@ -195,9 +197,29 @@ func (h Hyperlink) WithHighlightClick(highlight bool) Hyperlink {
 
 // Validate checks for invalid hyperlink properties.
 func (h Hyperlink) Validate() error {
-	if h.Action.Type == HyperlinkActionURL && h.Action.URL == "" {
-		return fmt.Errorf("hyperlink URL cannot be empty")
+	switch h.Action.Type {
+	case HyperlinkActionURL:
+		if h.Action.URL == "" {
+			return fmt.Errorf("hyperlink URL cannot be empty")
+		}
+	case HyperlinkActionFile:
+		if h.Action.FilePath == "" {
+			return fmt.Errorf("hyperlink file path cannot be empty")
+		}
+		if strings.Contains(h.Action.FilePath, "..") {
+			return fmt.Errorf("hyperlink file path cannot contain directory traversal (..)")
+		}
+	case HyperlinkActionProgram:
+		if h.Action.ProgramPath == "" {
+			return fmt.Errorf("hyperlink program path cannot be empty")
+		}
+		if strings.Contains(h.Action.ProgramPath, "..") {
+			return fmt.Errorf("hyperlink program path cannot contain directory traversal (..)")
+		}
+	case HyperlinkActionEmail:
+		if h.Action.EmailAddress == "" {
+			return fmt.Errorf("hyperlink email address cannot be empty")
+		}
 	}
-	// Add other validation logic if needed
 	return nil
 }

@@ -1,6 +1,9 @@
 package pptxxml
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // HyperlinkSpec contains data needed for hyperlink XML generation.
 type HyperlinkSpec struct {
@@ -30,15 +33,20 @@ func HyperlinkXML(spec HyperlinkSpec, tagName string) string {
 	return xml
 }
 
-// HyperlinkRelationshipXML generates a relationship element for hyperlinks.
-func HyperlinkRelationshipXML(relID, target string, external bool) string {
+// HyperlinkRelationshipXML generates a relationship element for hyperlink-like targets.
+func HyperlinkRelationshipXML(relID, target string, external bool, relType string) string {
+	typeValue := strings.TrimSpace(relType)
+	if typeValue == "" {
+		typeValue = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+	}
 	targetMode := ""
 	if external {
 		targetMode = ` TargetMode="External"`
 	}
 	return fmt.Sprintf(
-		`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="%s"%s/>`,
+		`<Relationship Id="%s" Type="%s" Target="%s"%s/>`,
 		Escape(relID),
+		Escape(typeValue),
 		Escape(target),
 		targetMode,
 	)

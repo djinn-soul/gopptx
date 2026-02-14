@@ -1,13 +1,11 @@
 package notes
 
 import (
-	"archive/zip"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
-	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -89,19 +87,15 @@ func NotesTargetBySlide(parts []RenderedNotesPart) map[int]string {
 }
 
 // WriteNotesFiles writes all notes-related XML files to the presentation package.
-func WriteNotesFiles(zw *zip.Writer, parts []RenderedNotesPart) error {
+func WriteNotesFiles(pw *pptxxml.PackageWriter, parts []RenderedNotesPart) error {
 	// Note: We use theme1.xml from the main presentation, so we don't need to write theme2.xml anymore.
 
 	for _, part := range parts {
 		path := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", part.SlideNumber)
-		if err := common.WriteFile(zw, path, part.SlideXML); err != nil {
-			return err
-		}
+		pw.AddPart(path, part.SlideXML)
 
 		relsPath := fmt.Sprintf("ppt/notesSlides/_rels/notesSlide%d.xml.rels", part.SlideNumber)
-		if err := common.WriteFile(zw, relsPath, part.RelsXML); err != nil {
-			return err
-		}
+		pw.AddPart(relsPath, part.RelsXML)
 	}
 	return nil
 }

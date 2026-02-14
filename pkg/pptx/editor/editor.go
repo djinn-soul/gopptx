@@ -237,6 +237,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 		shapes[i] = common.Shape{
 			ID:   p.ID,
 			Name: p.Name,
+			Type: p.Type,
 			Text: p.Text,
 			X:    p.X,
 			Y:    p.Y,

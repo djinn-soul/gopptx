@@ -26,6 +26,32 @@ func TestCLI_VersionSubcommand(t *testing.T) {
 	}
 }
 
+func TestCLI_CompletionSubcommand(t *testing.T) {
+	stdout, stderr, code := runCLI(t, "completion", "-shell", "bash")
+	if code != exitOK {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, "complete -F _pptcli_complete pptcli") {
+		t.Fatalf("expected bash completion script output, got %q", stdout)
+	}
+}
+
+func TestCLI_CompletionSubcommand_UnsupportedShell(t *testing.T) {
+	stdout, stderr, code := runCLI(t, "completion", "-shell", "fish")
+	if code != exitUsage {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitUsage, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout on unsupported shell, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "unsupported shell") {
+		t.Fatalf("expected unsupported shell error, got %q", stderr)
+	}
+}
+
 func TestCLI_CreateSubcommand(t *testing.T) {
 	outPath := filepath.Join(t.TempDir(), "create.pptx")
 	stdout, stderr, code := runCLI(t, "create", "-out", outPath, "-title", "CLI Deck", "-slides", "2")

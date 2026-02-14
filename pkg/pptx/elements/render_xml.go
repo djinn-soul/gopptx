@@ -43,6 +43,7 @@ func BuildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*action.Hype
 			RID:      rid,
 			Target:   h.Action.RelationshipTarget(),
 			External: h.Action.IsExternal(),
+			Type:     hyperlinkRelationshipType(h.Action.Type),
 		})
 	}
 
@@ -62,6 +63,13 @@ func BuildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*action.Hype
 	}
 
 	return hyperlinkRIDs, hyperlinks, nextRID
+}
+
+func hyperlinkRelationshipType(actionType action.HyperlinkActionType) string {
+	if actionType == action.HyperlinkActionSlide {
+		return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
+	}
+	return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 }
 
 func ToXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*action.Hyperlink]string) [][]pptxxml.TextRunSpec {
@@ -181,4 +189,48 @@ func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideB
 		}
 	}
 	return spec
+}
+
+func MapTxStyles(styles *TxStyles) *pptxxml.TxStylesSpec {
+	if styles == nil {
+		return nil
+	}
+	return &pptxxml.TxStylesSpec{
+		TitleStyle: MapTextLevelStyles(styles.TitleStyle),
+		BodyStyle:  MapTextLevelStyles(styles.BodyStyle),
+		OtherStyle: MapTextLevelStyles(styles.OtherStyle),
+	}
+}
+
+func MapTextLevelStyles(levels []TextLevelStyle) []pptxxml.TextLevelStyle {
+	if len(levels) == 0 {
+		return nil
+	}
+	out := make([]pptxxml.TextLevelStyle, len(levels))
+	for i, lvl := range levels {
+		out[i] = pptxxml.TextLevelStyle{
+			Level:      lvl.Level,
+			Font:       lvl.Font,
+			SizePt:     lvl.SizePt,
+			Bold:       lvl.Bold,
+			Italic:     lvl.Italic,
+			Color:      common.NormalizeHexColor(lvl.Color),
+			BulletChar: lvl.BulletChar,
+			IndentEMU:  lvl.IndentEMU,
+		}
+	}
+	return out
+}
+
+func MapNotesMasterToSpec(master *NotesMaster) *pptxxml.NotesMasterSpec {
+	if master == nil {
+		return nil
+	}
+	return &pptxxml.NotesMasterSpec{
+		HeaderText:   master.HeaderText,
+		FooterText:   master.FooterText,
+		ShowDateTime: master.ShowDateTime,
+		ShowSlideNum: master.ShowSlideNum,
+		NotesStyle:   MapTextLevelStyles(master.BodyStyle),
+	}
 }

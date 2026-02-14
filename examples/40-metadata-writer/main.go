@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 )
@@ -121,70 +122,17 @@ func contains(s, substr string) bool {
 }
 
 func createMinimalPPTX(filename string) error {
-	f, err := os.Create(filename)
+	meta := pptx.PresentationMetadata{
+		PresentationMetadata: pptx.PresentationMetadataFields{
+			Title:   "Initial Title",
+			Creator: "Initial Creator",
+		},
+	}
+	data, err := pptx.CreateWithMetadata(meta, []pptx.SlideContent{
+		pptx.NewSlide("Metadata Base"),
+	})
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f.Close() }()
-
-	z := zip.NewWriter(f)
-	defer func() { _ = z.Close() }()
-
-	// [Content_Types].xml
-	ct := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
-  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
-</Types>`
-	if err := writeZipFile(z, "[Content_Types].xml", ct); err != nil {
-		return err
-	}
-
-	// _rels/.rels
-	pkgRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
-</Relationships>`
-	if err := writeZipFile(z, "_rels/.rels", pkgRels); err != nil {
-		return err
-	}
-
-	// ppt/presentation.xml
-	pres := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst/></p:presentation>`
-	if err := writeZipFile(z, "ppt/presentation.xml", pres); err != nil {
-		return err
-	}
-
-	// ppt/_rels/presentation.xml.rels (required)
-	presRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-	<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`
-	if err := writeZipFile(z, "ppt/_rels/presentation.xml.rels", presRels); err != nil {
-		return err
-	}
-
-	// docProps/core.xml
-	core := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-<dc:title>Initial Title</dc:title>
-<dc:creator>Initial Creator</dc:creator>
-<cp:keywords>initial</cp:keywords>
-</cp:coreProperties>`
-	if err := writeZipFile(z, "docProps/core.xml", core); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func writeZipFile(z *zip.Writer, name, content string) error {
-	w, err := z.Create(name)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write([]byte(content))
-	return err
+	return os.WriteFile(filename, data, 0o644)
 }

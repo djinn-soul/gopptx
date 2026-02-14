@@ -68,9 +68,9 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 		b.WriteString(` baseline="30000"`)
 	}
 	if run.AllCaps {
-		b.WriteString(` cap="allCaps"`)
+		b.WriteString(` cap="all"`)
 	} else if run.SmallCaps {
-		b.WriteString(` cap="smallCaps"`)
+		b.WriteString(` cap="small"`)
 	}
 	b.WriteString(` dirty="0">`)
 

@@ -38,6 +38,7 @@ type ThemeSpec struct {
 
 // SlideMasterSpec defines the appearance of the slide master.
 type SlideMasterSpec struct {
+	MasterIndex  int
 	Background   *SlideBackgroundSpec
 	FooterText   string
 	Shapes       []ShapeSpec
@@ -133,11 +134,21 @@ func slideLayout(name string) string {
 </p:sldLayout>`
 }
 
-// SlideLayoutRelationships renders ppt/slideLayouts/_rels/slideLayout1.xml.rels.
-func SlideLayoutRelationships() string {
+func slideLayoutPartName(layoutIndex, masterIndex int) string {
+	if masterIndex <= 1 {
+		return fmt.Sprintf("slideLayout%d.xml", layoutIndex)
+	}
+	return fmt.Sprintf("slideLayout%d_m%d.xml", layoutIndex, masterIndex)
+}
+
+// SlideLayoutRelationships renders ppt/slideLayouts/_rels/slideLayoutN.xml.rels.
+func SlideLayoutRelationships(masterIndex int) string {
+	if masterIndex < 1 {
+		masterIndex = 1
+	}
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster` + fmt.Sprintf("%d", masterIndex) + `.xml"/>
 </Relationships>`
 }
 
@@ -147,6 +158,11 @@ func SlideMaster(spec *SlideMasterSpec) string {
 	if spec != nil && spec.Background != nil {
 		bgXML = backgroundXML(spec.Background)
 	}
+	masterIndex := 1
+	if spec != nil && spec.MasterIndex > 0 {
+		masterIndex = spec.MasterIndex
+	}
+	layoutIDBase := int64(2147483649 + (masterIndex-1)*6)
 
 	footerXML := ""
 	if spec != nil && spec.FooterText != "" {
@@ -215,12 +231,12 @@ func SlideMaster(spec *SlideMasterSpec) string {
 </p:cSld>
 <p:clrMap bg1="` + bg1 + `" tx1="` + tx1 + `" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
 <p:sldLayoutIdLst>
-<p:sldLayoutId id="2147483649" r:id="rId1"/>
-<p:sldLayoutId id="2147483650" r:id="rId2"/>
-<p:sldLayoutId id="2147483651" r:id="rId3"/>
-<p:sldLayoutId id="2147483652" r:id="rId4"/>
-<p:sldLayoutId id="2147483653" r:id="rId5"/>
-<p:sldLayoutId id="2147483654" r:id="rId6"/>
+<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase) + `" r:id="rId1"/>
+<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+1) + `" r:id="rId2"/>
+<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+2) + `" r:id="rId3"/>
+<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+3) + `" r:id="rId4"/>
+<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+4) + `" r:id="rId5"/>
+<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+5) + `" r:id="rId6"/>
 </p:sldLayoutIdLst>` + txStylesXML(spec) + `
 </p:sldMaster>`
 }
@@ -330,18 +346,21 @@ func textLevelStylesXML(levels []TextLevelStyle) string {
 	return b.String()
 }
 
-// SlideMasterRelationships renders ppt/slideMasters/_rels/slideMaster1.xml.rels.
+// SlideMasterRelationships renders ppt/slideMasters/_rels/slideMasterN.xml.rels.
 // imageTargets are optional media paths for master images (e.g. "../media/image1.png").
-func SlideMasterRelationships(imageTargets []string) string {
+func SlideMasterRelationships(imageTargets []string, masterIndex int) string {
+	if masterIndex < 1 {
+		masterIndex = 1
+	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout2.xml"/>
-<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout3.xml"/>
-<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout4.xml"/>
-<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout5.xml"/>
-<Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout6.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(1, masterIndex) + `"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(2, masterIndex) + `"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(3, masterIndex) + `"/>
+<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(4, masterIndex) + `"/>
+<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(5, masterIndex) + `"/>
+<Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(6, masterIndex) + `"/>
 <Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>`)
 	for i, target := range imageTargets {
 		b.WriteString(fmt.Sprintf(`

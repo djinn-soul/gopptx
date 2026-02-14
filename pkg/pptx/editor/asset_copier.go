@@ -34,12 +34,8 @@ func (e *PresentationEditor) deepCloneSlideAssets(srcEditor *PresentationEditor,
 			newTarget, err = e.copyChartAsset(srcEditor, srcTargetAbs)
 			handled = true
 		case common.RelTypeNotesSlide:
-			// Notes slides are handled by specific logic in ops.go usually, or we can generalize here.
-			// The original implementation in ops.go handled this.
-			// For now, let's leave it as "pass through" if we don't move that logic here yet,
-			// OR we can implement `copyNotesSlideAsset` if we want to be fully generic.
-			// The task focuses on Media and Charts.
-			// Let's implement basics first.
+			newTarget, err = e.copyNotesSlideAsset(srcEditor, srcTargetAbs, dstSlidePart)
+			handled = true
 		}
 
 		if err != nil {
@@ -157,16 +153,45 @@ func (e *PresentationEditor) copyExcelAsset(srcEditor *PresentationEditor, srcPa
 	if !ok {
 		return "", fmt.Errorf("source excel part not found: %s", srcPath)
 	}
+	return e.registerExcelEmbedding(data)
+}
 
-	newExcelNum := e.nextExcelNum
-	e.nextExcelNum++
-	// Keep extension
-	ext := path.Ext(srcPath)
-	if ext == "" {
-		ext = ".xlsx"
+func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, srcPath, dstSlidePart string) (string, error) {
+	data, ok := srcEditor.parts.Get(srcPath)
+	if !ok {
+		return "", fmt.Errorf("source notes part not found: %s", srcPath)
 	}
-	newPath := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d%s", newExcelNum, ext)
 
-	e.parts.Set(newPath, data)
-	return newPath, nil
+	e.ensureNotesInfrastructure()
+	if e.nextNotesNum < 1 {
+		e.nextNotesNum = 1
+	}
+
+	newNotesPath := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
+	e.nextNotesNum++
+	e.parts.Set(newNotesPath, cloneBytes(data))
+
+	srcNotesRelsPath := common.SlideRelsPartName(srcPath)
+	if relsData, ok := srcEditor.parts.Get(srcNotesRelsPath); ok {
+		rels, err := parseRelationshipsXML(relsData)
+		if err != nil {
+			return "", fmt.Errorf("parse source notes rels: %w", err)
+		}
+		for i, rel := range rels {
+			switch rel.Type {
+			case common.RelTypeSlide:
+				rels[i].Target = common.MakeRelativePath(newNotesPath, dstSlidePart)
+			case common.RelTypeNotesMaster:
+				rels[i].Target = "../notesMasters/notesMaster1.xml"
+			}
+		}
+		rendered, err := renderRelationshipsXML(rels)
+		if err != nil {
+			return "", fmt.Errorf("render notes rels: %w", err)
+		}
+		e.parts.Set(common.SlideRelsPartName(newNotesPath), []byte(rendered))
+	}
+
+	e.notesInventory[dstSlidePart] = newNotesPath
+	return newNotesPath, nil
 }
