@@ -46,6 +46,7 @@ Under `scripts/smoke/`, only the validator remains.
 
 - `go run ./scripts/smoke/validate_smoke_outputs` (scan `smoke_samples/` for `.pptx` and validate package structure)
 - `go run ./scripts/smoke/validate_smoke_outputs -file examples/assets/01/01_basic_pptx.pptx`
+- `go run ./scripts/smoke/validate_multi_master_against_powerpoint -baseline examples/output/pp_multi_master_reference.pptx -candidate examples/output/36_multi_master_smoke.pptx`
 
 ## Parity Scripts
 

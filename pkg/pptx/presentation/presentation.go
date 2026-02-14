@@ -45,12 +45,6 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 	if len(effectiveMasters) == 0 {
 		effectiveMasters = []*elements.SlideMaster{elements.NewMaster()}
 	}
-	// Current slide layout selection API binds slides to the canonical layout set only.
-	// Until per-slide master/layout binding is implemented, emitting additional masters
-	// creates unreferenced master/layout families that PowerPoint can reject.
-	if len(effectiveMasters) > 1 {
-		effectiveMasters = effectiveMasters[:1]
-	}
 	masterCount := len(effectiveMasters)
 
 	chartParts := BuildChartParts(slides)
@@ -58,16 +52,22 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 	notesParts := notes.BuildRenderedNotesParts(slides)
 	notesTargets := notes.NotesTargetBySlide(notesParts)
 	hasNotes := len(notesParts) > 0
+	notesThemeIndex := 0
+	if hasNotes {
+		notesThemeIndex = 2
+		if masterCount >= 2 {
+			notesThemeIndex = masterCount + 1
+		}
+	}
 
 	files := []struct {
 		name    string
 		content string
 	}{
-		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.ImageExtensions(), len(chartParts), notes.NotesSlideNumbers(notesParts), hasNotes, len(meta.CustomXML), masterCount)},
+		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.ImageExtensions(), len(chartParts), notes.NotesSlideNumbers(notesParts), hasNotes, len(meta.CustomXML), masterCount, notesThemeIndex)},
 		{"_rels/.rels", pptxxml.RootRelationships()},
 		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount)},
 		{"ppt/presentation.xml", pptxxml.Presentation(meta.Title, slideCount, hasNotes, meta.SlideSize.Width, meta.SlideSize.Height, masterCount)},
-		{"ppt/theme/theme1.xml", pptxxml.Theme(mapThemeToSpec(meta.Theme))},
 		{"docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
 			Title:       meta.Title,
 			Subject:     meta.Subject,
@@ -87,10 +87,8 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 	}
 	for masterNum := 1; masterNum <= masterCount; masterNum++ {
 		for layoutIdx := 1; layoutIdx <= len(layoutXML); layoutIdx++ {
-			layoutName := fmt.Sprintf("slideLayout%d.xml", layoutIdx)
-			if masterNum > 1 {
-				layoutName = fmt.Sprintf("slideLayout%d_m%d.xml", layoutIdx, masterNum)
-			}
+			globalLayoutIdx := (masterNum-1)*len(layoutXML) + layoutIdx
+			layoutName := fmt.Sprintf("slideLayout%d.xml", globalLayoutIdx)
 			files = append(files, struct {
 				name    string
 				content string
@@ -116,7 +114,14 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 		files = append(files, struct {
 			name    string
 			content string
-		}{fmt.Sprintf("ppt/slideMasters/_rels/slideMaster%d.xml.rels", masterNum), pptxxml.SlideMasterRelationships(targets, masterNum)})
+		}{fmt.Sprintf("ppt/slideMasters/_rels/slideMaster%d.xml.rels", masterNum), pptxxml.SlideMasterRelationships(targets, masterNum, masterNum)})
+	}
+
+	for i := 1; i <= masterCount; i++ {
+		files = append(files, struct {
+			name    string
+			content string
+		}{fmt.Sprintf("ppt/theme/theme%d.xml", i), pptxxml.Theme(mapThemeToSpec(meta.Theme))})
 	}
 
 	if hasNotes {
@@ -129,12 +134,14 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 			struct {
 				name    string
 				content string
-			}{"ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships()},
-			struct {
+			}{"ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships(notesThemeIndex)},
+		)
+		if notesThemeIndex > masterCount {
+			files = append(files, struct {
 				name    string
 				content string
-			}{"ppt/theme/theme2.xml", pptxxml.Theme(mapThemeToSpec(meta.Theme))},
-		)
+			}{fmt.Sprintf("ppt/theme/theme%d.xml", notesThemeIndex), pptxxml.Theme(mapThemeToSpec(meta.Theme))})
+		}
 	}
 
 	for _, item := range files {
@@ -151,7 +158,7 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 		return err
 	}
 
-	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, notesTargets); err != nil {
+	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, notesTargets, masterCount); err != nil {
 		return err
 	}
 

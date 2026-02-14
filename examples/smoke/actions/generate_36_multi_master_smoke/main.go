@@ -21,16 +21,31 @@ func main() {
 			{Level: 1, SizePt: 24, Color: "3949AB", BulletChar: "•"},
 		})
 
+	// Master 2: Warm theme with Calibri
+	master2 := pptx.NewMaster().
+		WithBackground(pptx.SlideBackground{Type: pptx.SlideBackgroundSolid, SolidFill: &pptx.ShapeFill{Color: "FFF3E0"}}).
+		WithFooter("Master 2: Warm Orange").
+		WithTitleStyle([]pptx.TextLevelStyle{
+			{Level: 0, Font: "Calibri", SizePt: 44, Bold: true, Color: "BF360C"},
+		}).
+		WithBodyStyle([]pptx.TextLevelStyle{
+			{Level: 0, SizePt: 28, Color: "E65100"},
+			{Level: 1, SizePt: 24, Color: "EF6C00", BulletChar: "•"},
+		})
+
 	meta := pptx.PresentationMetadata{
-		Masters: []*pptx.SlideMaster{master1},
+		Masters: []*pptx.SlideMaster{master1, master2},
 	}
 	meta.Title = "Master Styling Smoke Test"
 
 	slides := []pptx.SlideContent{
-		pptx.NewSlide("Master 1 applied").
+		pptx.NewSlide("Slide 1 (Master 1)").
 			AddBullet("Bullet Level 1").
 			AddSubBullet(1, "Bullet Level 2"),
-		pptx.NewSlide("Second slide"),
+		pptx.NewSlide("Slide 2 (Master 2)").
+			AddBullet("Second master visual family"),
+		pptx.NewSlide("Slide 3 (Master 1)"),
+		pptx.NewSlide("Slide 4 (Master 2)"),
 	}
 
 	data, err := pptx.CreateWithMetadata(meta, slides)

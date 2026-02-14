@@ -229,6 +229,55 @@ func TestCreateWithSlidesRejectsStyledTableInvalidColor(t *testing.T) {
 	}
 }
 
+func TestCreateWithMetadataEmitsMultipleMasters(t *testing.T) {
+	meta := pptx.PresentationMetadata{
+		PresentationMetadata: pptx.PresentationMetadataFields{Title: "Multi Master"},
+		Masters: []*pptx.SlideMaster{
+			pptx.NewMaster().WithFooter("Master One"),
+			pptx.NewMaster().WithFooter("Master Two"),
+		},
+	}
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Slide 1"),
+		pptx.NewSlide("Slide 2"),
+	}
+
+	data, err := pptx.CreateWithMetadata(meta, slides)
+	if err != nil {
+		t.Fatalf("CreateWithMetadata error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	if !testutil.ZipHasFile(zr, "ppt/slideMasters/slideMaster2.xml") {
+		t.Fatalf("missing second slide master part")
+	}
+	if !testutil.ZipHasFile(zr, "ppt/slideLayouts/slideLayout7.xml") {
+		t.Fatalf("missing second master layout family")
+	}
+
+	contentTypes := testutil.ReadZipFile(t, zr, "[Content_Types].xml")
+	if !strings.Contains(contentTypes, `/ppt/slideMasters/slideMaster2.xml`) {
+		t.Fatalf("missing content-types override for slideMaster2")
+	}
+	if !strings.Contains(contentTypes, `/ppt/slideLayouts/slideLayout7.xml`) {
+		t.Fatalf("missing content-types override for slideLayout7")
+	}
+
+	presentationRels := testutil.ReadZipFile(t, zr, "ppt/_rels/presentation.xml.rels")
+	if !strings.Contains(presentationRels, `Target="slideMasters/slideMaster2.xml"`) {
+		t.Fatalf("missing presentation relationship for slideMaster2")
+	}
+
+	slide2Rels := testutil.ReadZipFile(t, zr, "ppt/slides/_rels/slide2.xml.rels")
+	if !strings.Contains(slide2Rels, `Target="../slideLayouts/slideLayout7.xml"`) {
+		t.Fatalf("slide2 should bind to second master layout family")
+	}
+}
+
 func TestCreateWithSlidesEmbedsBackgroundColor(t *testing.T) {
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Red Background").WithBackgroundColor("#FF0000"),

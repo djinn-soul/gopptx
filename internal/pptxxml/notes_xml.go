@@ -203,10 +203,14 @@ func NotesMaster(spec *NotesMasterSpec) string {
 }
 
 // NotesMasterRelationships renders notesMaster1.xml.rels.
-func NotesMasterRelationships() string {
+func NotesMasterRelationships(themeIndex ...int) string {
+	idx := 2
+	if len(themeIndex) > 0 && themeIndex[0] > 0 {
+		idx = themeIndex[0]
+	}
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme2.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + fmt.Sprintf("%d", idx) + `.xml"/>
 </Relationships>`
 }
 

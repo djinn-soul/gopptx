@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -11,7 +12,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
-func renderSlides(pw *pptxxml.PackageWriter, meta PresentationMetadata, slides []elements.SlideContent, mediaCatalog *media.MediaCatalog, chartBySlide map[int][]chartPart, notesTargets map[int]string) error {
+func renderSlides(pw *pptxxml.PackageWriter, meta PresentationMetadata, slides []elements.SlideContent, mediaCatalog *media.MediaCatalog, chartBySlide map[int][]chartPart, notesTargets map[int]string, masterCount int) error {
 	for i, slide := range slides {
 		num := i + 1
 		builder := &slidePartBuilder{
@@ -56,9 +57,15 @@ func renderSlides(pw *pptxxml.PackageWriter, meta PresentationMetadata, slides [
 			meta.SlideSize.Height,
 		)
 
+		layoutTarget := elements.SlideLayoutTarget(slide.Layout)
+		if masterCount > 1 {
+			masterNum := (i % masterCount) + 1
+			layoutTarget = layoutTargetForMaster(layoutTarget, masterNum)
+		}
+
 		pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), slideXML)
 		pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), pptxxml.SlideRelationshipsWithMultiCharts(
-			elements.SlideLayoutTarget(slide.Layout),
+			layoutTarget,
 			builder.targets,
 			parts.chartRel,
 			parts.placeholderChartRels,
@@ -67,6 +74,23 @@ func renderSlides(pw *pptxxml.PackageWriter, meta PresentationMetadata, slides [
 		))
 	}
 	return nil
+}
+
+func layoutTargetForMaster(baseTarget string, masterNum int) string {
+	if masterNum <= 1 {
+		return baseTarget
+	}
+	const prefix = "../slideLayouts/slideLayout"
+	const suffix = ".xml"
+	if !strings.HasPrefix(baseTarget, prefix) || !strings.HasSuffix(baseTarget, suffix) {
+		return baseTarget
+	}
+	n, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(baseTarget, prefix), suffix))
+	if err != nil || n < 1 {
+		return baseTarget
+	}
+	globalLayout := (masterNum-1)*6 + n
+	return fmt.Sprintf("%s%d%s", prefix, globalLayout, suffix)
 }
 
 type slidePartBuilder struct {

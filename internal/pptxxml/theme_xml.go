@@ -135,10 +135,11 @@ func slideLayout(name string) string {
 }
 
 func slideLayoutPartName(layoutIndex, masterIndex int) string {
-	if masterIndex <= 1 {
-		return fmt.Sprintf("slideLayout%d.xml", layoutIndex)
+	if masterIndex < 1 {
+		masterIndex = 1
 	}
-	return fmt.Sprintf("slideLayout%d_m%d.xml", layoutIndex, masterIndex)
+	globalLayoutIndex := (masterIndex-1)*6 + layoutIndex
+	return fmt.Sprintf("slideLayout%d.xml", globalLayoutIndex)
 }
 
 // SlideLayoutRelationships renders ppt/slideLayouts/_rels/slideLayoutN.xml.rels.
@@ -162,7 +163,13 @@ func SlideMaster(spec *SlideMasterSpec) string {
 	if spec != nil && spec.MasterIndex > 0 {
 		masterIndex = spec.MasterIndex
 	}
-	layoutIDBase := int64(2147483649 + (masterIndex-1)*6)
+	masterAttrs := ``
+	if masterIndex > 1 {
+		// PowerPoint-authored packages mark additional master families as preserved.
+		masterAttrs = ` preserve="1"`
+	}
+	// Allocate in blocks to avoid overlap with master IDs across multiple masters.
+	layoutIDBase := int64(2147483649 + (masterIndex-1)*7)
 
 	footerXML := ""
 	if spec != nil && spec.FooterText != "" {
@@ -209,7 +216,7 @@ func SlideMaster(spec *SlideMasterSpec) string {
 	}
 
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"` + masterAttrs + `>
 <p:cSld>
 ` + bgXML + `
 <p:spTree>
@@ -348,9 +355,12 @@ func textLevelStylesXML(levels []TextLevelStyle) string {
 
 // SlideMasterRelationships renders ppt/slideMasters/_rels/slideMasterN.xml.rels.
 // imageTargets are optional media paths for master images (e.g. "../media/image1.png").
-func SlideMasterRelationships(imageTargets []string, masterIndex int) string {
+func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex int) string {
 	if masterIndex < 1 {
 		masterIndex = 1
+	}
+	if themeIndex < 1 {
+		themeIndex = 1
 	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -361,7 +371,7 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int) string {
 <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(4, masterIndex) + `"/>
 <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(5, masterIndex) + `"/>
 <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(6, masterIndex) + `"/>
-<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>`)
+<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + fmt.Sprintf("%d", themeIndex) + `.xml"/>`)
 	for i, target := range imageTargets {
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, 8+i, Escape(target)))

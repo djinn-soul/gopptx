@@ -99,10 +99,10 @@ func TestPresentationMultiMaster(t *testing.T) {
 	if !strings.Contains(xml, `id="2147483648"`) {
 		t.Error("missing first master ID")
 	}
-	if !strings.Contains(xml, `id="2147484648"`) {
+	if !strings.Contains(xml, `id="2147483655"`) {
 		t.Error("missing second master ID")
 	}
-	if !strings.Contains(xml, `id="2147485648"`) {
+	if !strings.Contains(xml, `id="2147483662"`) {
 		t.Error("missing third master ID")
 	}
 
@@ -136,7 +136,7 @@ func TestPresentationRelationshipsMultiMaster(t *testing.T) {
 }
 
 func TestContentTypesMultiMaster(t *testing.T) {
-	xml := pptxxml.ContentTypes(1, nil, 0, nil, false, 0, 2)
+	xml := pptxxml.ContentTypes(1, nil, 0, nil, false, 0, 2, 0)
 	if !strings.Contains(xml, `/ppt/slideMasters/slideMaster1.xml`) {
 		t.Error("missing slideMaster1 content-type override")
 	}
