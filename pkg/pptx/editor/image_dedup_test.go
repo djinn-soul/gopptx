@@ -1,7 +1,6 @@
 package editor
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,13 +9,8 @@ import (
 )
 
 func TestImageDeduplication(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "gopptx-image-dedup-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
-	basePath := filepath.Join(tmpDir, "base.pptx")
 	modifiedPath := filepath.Join(tmpDir, "modified.pptx")
 
 	// 1. Create a base presentation
@@ -24,14 +18,18 @@ func TestImageDeduplication(t *testing.T) {
 		elements.NewSlide("Slide 1"),
 	}
 	// Use writeDeckFixture from editor_test.go which is in the same package 'editor'
-	basePath = writeDeckFixture(t, "base.pptx", slides)
+	basePath := writeDeckFixture(t, "base.pptx", slides)
 
 	// 2. Open with Editor
 	editor, err := OpenPresentationEditor(basePath)
 	if err != nil {
 		t.Fatalf("failed to open editor: %v", err)
 	}
-	defer editor.Close()
+	defer func() {
+		if closeErr := editor.Close(); closeErr != nil {
+			t.Errorf("failed to close editor: %v", closeErr)
+		}
+	}()
 
 	// 3. Register the same image twice
 	imgData := []byte("fake-image-data-123")
@@ -58,7 +56,11 @@ func TestImageDeduplication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to reopen: %v", err)
 	}
-	defer reopened.Close()
+	defer func() {
+		if closeErr := reopened.Close(); closeErr != nil {
+			t.Errorf("failed to close reopened editor: %v", closeErr)
+		}
+	}()
 
 	// Direct part store access or inventory check
 	// Every RegisterImage should have populated the internal mediaInventory tracking
