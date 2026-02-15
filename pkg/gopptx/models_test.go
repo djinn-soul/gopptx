@@ -12,7 +12,7 @@ func TestPresentationXML(t *testing.T) {
 		t.Fatalf("Failed to marshal Presentation: %v", err)
 	}
 
-	expected := `<presentation xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"></presentation>`
+	expected := `<presentation xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"><sldIdLst></sldIdLst></presentation>`
 	if string(output) != expected {
 		t.Errorf("Expected %s, got %s", expected, string(output))
 	}
@@ -31,7 +31,14 @@ func TestSlideXML(t *testing.T) {
 	}
 }
 
-func TestMarshaling(t *testing.T) {
-	// Placeholder for more complex marshaling tests if needed in the future
+func TestAddSlide(t *testing.T) {
+	pres := &Presentation{}
+	slide := pres.AddSlide()
+	if slide == nil {
+		t.Fatal("Expected new slide, got nil")
+	}
+	if len(pres.Slides) != 1 {
+		t.Errorf("Expected 1 slide, got %d", len(pres.Slides))
+	}
 }
 
