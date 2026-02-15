@@ -10,9 +10,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Foundational Structure' (Protocol in workflow.md) [f09ddff]
 
 ## Phase 2: XML Serialization & Slide Generation
-- [ ] Task: Implement XML marshaling for Presentation and Slide
-    - [ ] Write Tests: Verify generated XML against PPTX schema
-    - [ ] Implement Feature: Add `MarshalXML` methods to models
+- [x] Task: Implement XML marshaling for Presentation and Slide [49c910f]
+    - [x] Write Tests: Verify generated XML against PPTX schema
+    - [x] Implement Feature: Add `MarshalXML` methods to models
 - [ ] Task: Implement basic Slide Addition logic
     - [ ] Write Tests: Test `presentation.AddSlide()` functionality
     - [ ] Implement Feature: Logic to create new slide files and update relationships
