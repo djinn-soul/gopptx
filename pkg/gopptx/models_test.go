@@ -30,3 +30,8 @@ func TestSlideXML(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, string(output))
 	}
 }
+
+func TestMarshaling(t *testing.T) {
+	// Placeholder for more complex marshaling tests if needed in the future
+}
+
