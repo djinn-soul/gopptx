@@ -13,9 +13,9 @@
 - [x] Task: Implement XML marshaling for Presentation and Slide [49c910f]
     - [x] Write Tests: Verify generated XML against PPTX schema
     - [x] Implement Feature: Add `MarshalXML` methods to models
-- [ ] Task: Implement basic Slide Addition logic
-    - [ ] Write Tests: Test `presentation.AddSlide()` functionality
-    - [ ] Implement Feature: Logic to create new slide files and update relationships
+- [x] Task: Implement basic Slide Addition logic [2ac7e22]
+    - [x] Write Tests: Test `presentation.AddSlide()` functionality
+    - [x] Implement Feature: Logic to create new slide files and update relationships
 - [ ] Task: Create a smoke test to generate a valid .pptx file
     - [ ] Write Tests: Generate file and verify it can be opened (basic check)
     - [ ] Implement Feature: `examples/basic_gen/main.go`
