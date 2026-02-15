@@ -1,6 +1,12 @@
 package gopptx
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"fmt"
+	"os"
+
+	"github.com/djinn-soul/gopptx/internal/opc"
+)
 
 const (
 	NS_P = "http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -17,6 +23,41 @@ func (p *Presentation) AddSlide() *Slide {
 	slide := &Slide{}
 	p.Slides = append(p.Slides, slide)
 	return slide
+}
+
+// Save writes the presentation to a .pptx file.
+func (p *Presentation) Save(path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := opc.NewWriter(f)
+	defer w.Close()
+
+	// 1. Marshal Presentation
+	presXML, err := xml.Marshal(p)
+	if err != nil {
+		return err
+	}
+	if err := w.AddFile("ppt/presentation.xml", presXML); err != nil {
+		return err
+	}
+
+	// 2. Marshal Slides
+	for i, slide := range p.Slides {
+		slideXML, err := xml.Marshal(slide)
+		if err != nil {
+			return err
+		}
+		filename := fmt.Sprintf("ppt/slides/slide%d.xml", i+1)
+		if err := w.AddFile(filename, slideXML); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Slide represents a single slide XML component.

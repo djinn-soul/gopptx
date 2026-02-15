@@ -41,4 +41,3 @@ func TestAddSlide(t *testing.T) {
 		t.Errorf("Expected 1 slide, got %d", len(pres.Slides))
 	}
 }
-
