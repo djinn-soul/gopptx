@@ -4,9 +4,9 @@
 - [x] Task: Define core PPTX data models (Presentation, Slide) in Go [370c97c]
     - [x] Write Tests: Define expected struct behavior and XML tags
     - [x] Implement Feature: Create structs in `pkg/gopptx/models.go`
-- [ ] Task: Implement OPC (Open Packaging Conventions) ZIP wrapper
-    - [ ] Write Tests: Verify ZIP creation and directory structure
-    - [ ] Implement Feature: Create package manager in `internal/opc/`
+- [x] Task: Implement OPC (Open Packaging Conventions) ZIP wrapper [8d47656]
+    - [x] Write Tests: Verify ZIP creation and directory structure
+    - [x] Implement Feature: Create package manager in `internal/opc/`
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Foundational Structure' (Protocol in workflow.md)
 
 ## Phase 2: XML Serialization & Slide Generation
