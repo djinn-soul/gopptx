@@ -1,9 +1,9 @@
 # Implementation Plan - Initialize core PPTX structure
 
 ## Phase 1: Foundational Structure
-- [ ] Task: Define core PPTX data models (Presentation, Slide) in Go
-    - [ ] Write Tests: Define expected struct behavior and XML tags
-    - [ ] Implement Feature: Create structs in `pkg/gopptx/models.go`
+- [x] Task: Define core PPTX data models (Presentation, Slide) in Go [370c97c]
+    - [x] Write Tests: Define expected struct behavior and XML tags
+    - [x] Implement Feature: Create structs in `pkg/gopptx/models.go`
 - [ ] Task: Implement OPC (Open Packaging Conventions) ZIP wrapper
     - [ ] Write Tests: Verify ZIP creation and directory structure
     - [ ] Implement Feature: Create package manager in `internal/opc/`
