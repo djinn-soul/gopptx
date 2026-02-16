@@ -35,48 +35,9 @@ func renderEditorSlideParts(
 		tableSpec = nil
 	}
 
-	imageRefs := make([]pptxxml.ImageRef, 0, len(slide.Images))
-	imageTargets := make([]string, 0, len(slide.Images))
-
-	for i, img := range slide.Images {
-		partPath, imgErr := e.registerEditorImage(img.Path, img.Data, img.Format)
-		if imgErr != nil {
-			if errors.Is(imgErr, errImagePayloadEmpty) {
-				return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
-			}
-			return "", "", fmt.Errorf("read image %d: %w", i+1, imgErr)
-		}
-		if partPath == "" {
-			return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
-		}
-
-		relID := fmt.Sprintf("rId%d", i+firstImageRelationshipID)
-		imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-
-		ref := pptxxml.ImageRef{
-			RelID:        relID,
-			Name:         fmt.Sprintf("Picture %d", i+1),
-			X:            img.X.Emu(),
-			Y:            img.Y.Emu(),
-			CX:           img.CX.Emu(),
-			CY:           img.CY.Emu(),
-			Rotation:     int64(img.Rotation * rotationDegreeToOOXML),
-			FlipH:        img.FlipH,
-			FlipV:        img.FlipV,
-			Shadow:       img.Shadow,
-			Reflection:   img.Reflection,
-			AltText:      img.AltText,
-			IsDecorative: img.IsDecorative,
-		}
-		if img.Crop != (shapes.ImageCrop{}) {
-			ref.Crop = &pptxxml.ImageCropRef{
-				Left:   int64(img.Crop.Left * cropFractionToOOXML),
-				Right:  int64(img.Crop.Right * cropFractionToOOXML),
-				Top:    int64(img.Crop.Top * cropFractionToOOXML),
-				Bottom: int64(img.Crop.Bottom * cropFractionToOOXML),
-			}
-		}
-		imageRefs = append(imageRefs, ref)
+	imageRefs, imageTargets, err := e.renderSlideImages(slide.Images, slideNumber)
+	if err != nil {
+		return "", "", err
 	}
 
 	backgroundRID, backgroundTarget, err := e.renderBackgroundImageTarget(slide.Background, len(imageTargets))
@@ -142,34 +103,7 @@ func renderEditorSlideParts(
 		height,
 	)
 
-	// Speaker Notes
-	notesTarget := strings.TrimSpace(existingNotesTarget)
-	if strings.TrimSpace(slide.Notes) != "" {
-		e.ensureNotesInfrastructure()
-
-		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
-		notesPath, ok := e.notesInventory[slidePath]
-		if !ok {
-			notesPath = fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
-			e.nextNotesNum++
-			e.notesInventory[slidePath] = notesPath
-		}
-
-		var body []elements.TextParagraph
-		if len(slide.NotesBody) > 0 {
-			body = slide.NotesBody
-		} else {
-			p := elements.NewTextParagraph()
-			p.Runs = append(p.Runs, elements.NewTextRun(slide.Notes))
-			body = []elements.TextParagraph{p}
-		}
-		e.parts.Set(notesPath, []byte(pptxxml.NotesSlide(body)))
-
-		notesRelsPath := common.SlideRelsPartName(notesPath)
-		e.parts.Set(notesRelsPath, []byte(pptxxml.NotesSlideRelationships(slideNumber)))
-
-		notesTarget = "../notesSlides/" + path.Base(notesPath)
-	}
+	notesTarget := e.renderSlideNotesTarget(slide, slideNumber, existingNotesTarget)
 
 	relsXML := pptxxml.SlideRelationshipsWithMultiCharts(
 		elements.SlideLayoutTarget(slide.Layout),
@@ -180,6 +114,104 @@ func renderEditorSlideParts(
 		hyperlinks,
 	)
 	return slideXML, relsXML, nil
+}
+
+func (e *PresentationEditor) renderSlideImages(
+	images []shapes.Image,
+	slideNumber int,
+) ([]pptxxml.ImageRef, []string, error) {
+	imageRefs := make([]pptxxml.ImageRef, 0, len(images))
+	imageTargets := make([]string, 0, len(images))
+	for i, img := range images {
+		ref, target, err := e.renderSlideImageRef(img, i, slideNumber)
+		if err != nil {
+			return nil, nil, err
+		}
+		imageRefs = append(imageRefs, ref)
+		imageTargets = append(imageTargets, target)
+	}
+	return imageRefs, imageTargets, nil
+}
+
+func (e *PresentationEditor) renderSlideImageRef(
+	img shapes.Image,
+	index int,
+	slideNumber int,
+) (pptxxml.ImageRef, string, error) {
+	partPath, imgErr := e.registerEditorImage(img.Path, img.Data, img.Format)
+	if imgErr != nil {
+		if errors.Is(imgErr, errImagePayloadEmpty) {
+			return pptxxml.ImageRef{}, "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, index+1)
+		}
+		return pptxxml.ImageRef{}, "", fmt.Errorf("read image %d: %w", index+1, imgErr)
+	}
+
+	relID := fmt.Sprintf("rId%d", index+firstImageRelationshipID)
+	ref := pptxxml.ImageRef{
+		RelID:        relID,
+		Name:         fmt.Sprintf("Picture %d", index+1),
+		X:            img.X.Emu(),
+		Y:            img.Y.Emu(),
+		CX:           img.CX.Emu(),
+		CY:           img.CY.Emu(),
+		Rotation:     int64(img.Rotation * rotationDegreeToOOXML),
+		FlipH:        img.FlipH,
+		FlipV:        img.FlipV,
+		Shadow:       img.Shadow,
+		Reflection:   img.Reflection,
+		AltText:      img.AltText,
+		IsDecorative: img.IsDecorative,
+	}
+	if img.Crop != (shapes.ImageCrop{}) {
+		ref.Crop = &pptxxml.ImageCropRef{
+			Left:   int64(img.Crop.Left * cropFractionToOOXML),
+			Right:  int64(img.Crop.Right * cropFractionToOOXML),
+			Top:    int64(img.Crop.Top * cropFractionToOOXML),
+			Bottom: int64(img.Crop.Bottom * cropFractionToOOXML),
+		}
+	}
+	return ref, "../media/" + path.Base(partPath), nil
+}
+
+func (e *PresentationEditor) renderSlideNotesTarget(
+	slide elements.SlideContent,
+	slideNumber int,
+	existingNotesTarget string,
+) string {
+	notesTarget := strings.TrimSpace(existingNotesTarget)
+	if strings.TrimSpace(slide.Notes) == "" {
+		return notesTarget
+	}
+
+	e.ensureNotesInfrastructure()
+	slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
+	notesPath := e.ensureSlideNotesPart(slidePath)
+	e.parts.Set(notesPath, []byte(pptxxml.NotesSlide(editorNotesBody(slide))))
+
+	notesRelsPath := common.SlideRelsPartName(notesPath)
+	e.parts.Set(notesRelsPath, []byte(pptxxml.NotesSlideRelationships(slideNumber)))
+	return "../notesSlides/" + path.Base(notesPath)
+}
+
+func (e *PresentationEditor) ensureSlideNotesPart(slidePath string) string {
+	notesPath, ok := e.notesInventory[slidePath]
+	if ok {
+		return notesPath
+	}
+	notesPath = fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
+	e.nextNotesNum++
+	e.notesInventory[slidePath] = notesPath
+	return notesPath
+}
+
+func editorNotesBody(slide elements.SlideContent) []elements.TextParagraph {
+	if len(slide.NotesBody) > 0 {
+		return slide.NotesBody
+	}
+
+	p := elements.NewTextParagraph()
+	p.Runs = append(p.Runs, elements.NewTextRun(slide.Notes))
+	return []elements.TextParagraph{p}
 }
 
 func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxxml.TableSpec, error) {

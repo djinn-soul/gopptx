@@ -222,37 +222,20 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 	out := make([]parsedSlideIDRef, 0, defaultSlideIDsCapacity)
 
 	for {
-		token, err := decoder.Token()
+		start, ok, err := nextSlideIDStartElement(decoder)
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
 			return nil, err
 		}
-		start, ok := token.(xml.StartElement)
-		if !ok || start.Name.Local != "sldId" {
-			continue
+		if !ok {
+			break
 		}
-		// Ignore sldId elements from legacy/extension namespaces (like p14:sldId in sections)
-		// The main slide list uses the default presentationml namespace.
-		if start.Name.Space != "" && start.Name.Space != "http://schemas.openxmlformats.org/presentationml/2006/main" {
+		if !isPresentationSlideIDElement(start) {
 			continue
 		}
 
-		ref := parsedSlideIDRef{}
-		for _, attr := range start.Attr {
-			if attr.Name.Local != "id" {
-				continue
-			}
-			if attr.Name.Space == "" {
-				slideID, parseErr := strconv.ParseInt(strings.TrimSpace(attr.Value), 10, 64)
-				if parseErr != nil {
-					return nil, fmt.Errorf("invalid slide id %q", attr.Value)
-				}
-				ref.SlideID = slideID
-				continue
-			}
-			ref.RelID = strings.TrimSpace(attr.Value)
+		ref, err := parseSlideIDRef(start)
+		if err != nil {
+			return nil, err
 		}
 		if ref.SlideID == 0 || ref.RelID == "" {
 			return nil, errors.New("slide id entry missing id or r:id")
@@ -260,6 +243,52 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 		out = append(out, ref)
 	}
 	return out, nil
+}
+
+func nextSlideIDStartElement(decoder *xml.Decoder) (xml.StartElement, bool, error) {
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return xml.StartElement{}, false, nil
+			}
+			return xml.StartElement{}, false, err
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		return start, true, nil
+	}
+}
+
+func isPresentationSlideIDElement(start xml.StartElement) bool {
+	if start.Name.Local != "sldId" {
+		return false
+	}
+	if start.Name.Space == "" {
+		return true
+	}
+	return start.Name.Space == "http://schemas.openxmlformats.org/presentationml/2006/main"
+}
+
+func parseSlideIDRef(start xml.StartElement) (parsedSlideIDRef, error) {
+	ref := parsedSlideIDRef{}
+	for _, attr := range start.Attr {
+		if attr.Name.Local != "id" {
+			continue
+		}
+		if attr.Name.Space == "" {
+			slideID, parseErr := strconv.ParseInt(strings.TrimSpace(attr.Value), 10, 64)
+			if parseErr != nil {
+				return parsedSlideIDRef{}, fmt.Errorf("invalid slide id %q", attr.Value)
+			}
+			ref.SlideID = slideID
+			continue
+		}
+		ref.RelID = strings.TrimSpace(attr.Value)
+	}
+	return ref, nil
 }
 
 func parseMediaInventory(ps *PartStore, partKeys []string) (map[string]string, int) {

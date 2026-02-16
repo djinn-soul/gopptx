@@ -193,6 +193,15 @@ func buildCategoryRows(categories []string, series []common.ChartSeriesData) [][
 }
 
 func buildScatterSheet(series []common.ChartSeriesData, withSizes bool) ([]string, [][]string) {
+	headers, maxRows := scatterHeadersAndMaxRows(series, withSizes)
+	rows := make([][]string, maxRows)
+	for rowIdx := range maxRows {
+		rows[rowIdx] = scatterRowValues(series, rowIdx, withSizes, len(headers))
+	}
+	return headers, rows
+}
+
+func scatterHeadersAndMaxRows(series []common.ChartSeriesData, withSizes bool) ([]string, int) {
 	headers := make([]string, 0, len(series)*scatterHeaderColFactor)
 	maxRows := 0
 	for i, s := range series {
@@ -204,31 +213,26 @@ func buildScatterSheet(series []common.ChartSeriesData, withSizes bool) ([]strin
 			maxRows = len(s.XValues)
 		}
 	}
-	rows := make([][]string, maxRows)
-	for r := range maxRows {
-		row := make([]string, 0, len(headers))
-		for _, s := range series {
-			if len(s.XValues) > r {
-				row = append(row, strconv.FormatFloat(s.XValues[r], 'f', -1, 64))
-			} else {
-				row = append(row, "")
-			}
-			if len(s.YValues) > r {
-				row = append(row, strconv.FormatFloat(s.YValues[r], 'f', -1, 64))
-			} else {
-				row = append(row, "")
-			}
-			if withSizes {
-				if len(s.Sizes) > r {
-					row = append(row, strconv.FormatFloat(s.Sizes[r], 'f', -1, 64))
-				} else {
-					row = append(row, "")
-				}
-			}
+	return headers, maxRows
+}
+
+func scatterRowValues(series []common.ChartSeriesData, rowIdx int, withSizes bool, capacity int) []string {
+	row := make([]string, 0, capacity)
+	for _, s := range series {
+		row = append(row, scatterValueAt(s.XValues, rowIdx))
+		row = append(row, scatterValueAt(s.YValues, rowIdx))
+		if withSizes {
+			row = append(row, scatterValueAt(s.Sizes, rowIdx))
 		}
-		rows[r] = row
 	}
-	return headers, rows
+	return row
+}
+
+func scatterValueAt(values []float64, idx int) string {
+	if len(values) <= idx {
+		return ""
+	}
+	return strconv.FormatFloat(values[idx], 'f', -1, 64)
 }
 
 func columnName(n int) string {
