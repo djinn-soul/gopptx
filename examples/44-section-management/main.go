@@ -14,8 +14,10 @@ func main() {
 	if err := run(); err != nil {
 		log.Fatalf("Smoke test failed: %v", err)
 	}
-	fmt.Println("Section Management Smoke Test: SUCCESS")
-	fmt.Println("To verify visually: Open examples/output/44_section_management.pptx in PowerPoint and switch to 'Slide Sorter' view.")
+	log.Println("Section Management Smoke Test: SUCCESS")
+	log.Println(
+		"To verify visually: Open examples/output/44_section_management.pptx in PowerPoint and switch to 'Slide Sorter' view.",
+	)
 }
 
 func run() error {
@@ -66,21 +68,21 @@ func run() error {
 		}
 	}()
 
-	fmt.Println("Adding 'Introduction' section...")
+	log.Println("Adding 'Introduction' section...")
 	if err := edit.AddSection("Introduction", []int{0}); err != nil {
 		return fmt.Errorf("failed to add intro section: %w", err)
 	}
 
-	fmt.Println("Adding 'Core Content' section...")
+	log.Println("Adding 'Core Content' section...")
 	if err := edit.AddSection("Core Content", []int{1, 2}); err != nil {
 		return fmt.Errorf("failed to add core section: %w", err)
 	}
 
-	fmt.Println("Adding 'Appendix' section...")
+	log.Println("Adding 'Appendix' section...")
 	if err := edit.AddSection("Appendix", []int{3}); err != nil {
 		return fmt.Errorf("failed to add appendix section: %w", err)
 	}
-	fmt.Println("Renaming 'Appendix' to 'Back Matter'...")
+	log.Println("Renaming 'Appendix' to 'Back Matter'...")
 	if err := edit.RenameSection("Appendix", "Back Matter"); err != nil {
 		return fmt.Errorf("failed to rename section: %w", err)
 	}
@@ -103,9 +105,9 @@ func run() error {
 	}()
 
 	sections := checkEdit.Sections()
-	fmt.Printf("Found %d sections:\n", len(sections))
+	log.Printf("Found %d sections:\n", len(sections))
 	for _, s := range sections {
-		fmt.Printf("- %s (ID: %s, Slides: %d)\n", s.Name, s.GUID, len(s.SlideIDs))
+		log.Printf("- %s (ID: %s, Slides: %d)\n", s.Name, s.GUID, len(s.SlideIDs))
 	}
 
 	if len(sections) != 3 {

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -52,7 +52,12 @@ func TestFindAndReplaceInShapesHandlesTextRunsWithAttributes(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected slide part")
 	}
-	updatedSlide := strings.Replace(string(slide1), "<a:t>Hello World</a:t>", `<a:t xml:space="preserve">Hello World</a:t>`, 1)
+	updatedSlide := strings.Replace(
+		string(slide1),
+		"<a:t>Hello World</a:t>",
+		`<a:t xml:space="preserve">Hello World</a:t>`,
+		1,
+	)
 	editor.parts.Set("ppt/slides/slide1.xml", []byte(updatedSlide))
 
 	count, err := editor.FindAndReplaceInShapes("Hello", "Hi")
@@ -93,8 +98,8 @@ func TestSwapImageByIndex(t *testing.T) {
 	}
 	oldTarget := before[0].Target
 
-	if err := editor.SwapImageByIndex(0, 0, []byte("replacement-image-bytes"), "png"); err != nil {
-		t.Fatalf("swap image failed: %v", err)
+	if swapErr := editor.SwapImageByIndex(0, 0, []byte("replacement-image-bytes"), "png"); swapErr != nil {
+		t.Fatalf("swap image failed: %v", swapErr)
 	}
 	after, err := editor.ListSlideImages(0)
 	if err != nil {
@@ -147,8 +152,8 @@ func TestSearchShapes(t *testing.T) {
 		t.Fatalf("add shape: %v", err)
 	}
 	text := "Needle Text"
-	if err := editor.UpdateShape(0, shapeID, common.ShapeUpdate{Text: &text}); err != nil {
-		t.Fatalf("update shape: %v", err)
+	if updateErr := editor.UpdateShape(0, shapeID, common.ShapeUpdate{Text: &text}); updateErr != nil {
+		t.Fatalf("update shape: %v", updateErr)
 	}
 
 	results, err := editor.SearchShapes(common.ShapeSearchQuery{TextContains: "needle", CaseSensitive: false})
@@ -175,12 +180,12 @@ func TestMergeFromFileWithImageAndChart(t *testing.T) {
 		t.Fatalf("open source editor: %v", err)
 	}
 	chartDef := charts.NewBarChart([]string{"A", "B"}, []float64{1, 2}).WithTitle("C")
-	if err := sourceEditor.AddChart(0, chartDef); err != nil {
-		t.Fatalf("add chart to source: %v", err)
+	if addChartErr := sourceEditor.AddChart(0, chartDef); addChartErr != nil {
+		t.Fatalf("add chart to source: %v", addChartErr)
 	}
 	sourceOut := filepath.Join(tmpDir, "source-mixed-chart.pptx")
-	if err := sourceEditor.Save(sourceOut); err != nil {
-		t.Fatalf("save source with chart: %v", err)
+	if saveSourceErr := sourceEditor.Save(sourceOut); saveSourceErr != nil {
+		t.Fatalf("save source with chart: %v", saveSourceErr)
 	}
 	_ = sourceEditor.Close()
 
@@ -193,13 +198,13 @@ func TestMergeFromFileWithImageAndChart(t *testing.T) {
 	}
 	defer func() { _ = destEditor.Close() }()
 
-	if err := destEditor.MergeFromFile(sourceOut); err != nil {
-		t.Fatalf("merge from mixed source failed: %v", err)
+	if mergeErr := destEditor.MergeFromFile(sourceOut); mergeErr != nil {
+		t.Fatalf("merge from mixed source failed: %v", mergeErr)
 	}
 
 	outPath := filepath.Join(tmpDir, "merged-mixed.pptx")
-	if err := destEditor.Save(outPath); err != nil {
-		t.Fatalf("save merged mixed deck: %v", err)
+	if saveDestErr := destEditor.Save(outPath); saveDestErr != nil {
+		t.Fatalf("save merged mixed deck: %v", saveDestErr)
 	}
 
 	reopened, err := OpenPresentationEditor(outPath)

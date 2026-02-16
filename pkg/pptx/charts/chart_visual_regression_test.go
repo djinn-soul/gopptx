@@ -48,7 +48,9 @@ func TestChartVisualRegressionFixtures(t *testing.T) {
 		if got[chart] != want {
 			t.Fatalf(
 				"visual regression for %q: expected %s, got %s (run UPDATE_CHART_VISUAL_FIXTURES=1 go test ./pkg/pptx -run TestChartVisualRegressionFixtures -count=1 to refresh fixtures)",
-				chart, want, got[chart],
+				chart,
+				want,
+				got[chart],
 			)
 		}
 	}
@@ -69,7 +71,8 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 			charts.NewAreaStackedChart([]string{"Q1", "Q2", "Q3"}, []float64{14, 17, 23}).WithTitle("Area Stacked"),
 		),
 		"areaStacked100": pptx.NewSlide("Area Stacked 100").WithAreaStacked100Chart(
-			charts.NewAreaStacked100Chart([]string{"Q1", "Q2", "Q3"}, []float64{14, 17, 23}).WithTitle("Area Stacked 100"),
+			charts.NewAreaStacked100Chart([]string{"Q1", "Q2", "Q3"}, []float64{14, 17, 23}).
+				WithTitle("Area Stacked 100"),
 		),
 		"bar": pptx.NewSlide("Bar").WithBarChart(
 			charts.NewBarChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar"),
@@ -81,7 +84,8 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 			charts.NewBarStackedChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar Stacked"),
 		),
 		"barStacked100": pptx.NewSlide("Bar Stacked 100").WithBarStacked100Chart(
-			charts.NewBarStacked100Chart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar Stacked 100"),
+			charts.NewBarStacked100Chart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).
+				WithTitle("Bar Stacked 100"),
 		),
 		"bubble": pptx.NewSlide("Bubble").WithBubbleChart(
 			charts.NewBubbleChart([]float64{1, 2, 3}, []float64{10, 20, 30}, []float64{10, 20, 30}).

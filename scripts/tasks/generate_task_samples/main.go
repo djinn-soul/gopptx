@@ -62,7 +62,7 @@ func main() {
 			log.Printf("Error writing %s: %v", path, err)
 			continue
 		}
-		fmt.Printf("Generated %s\n", path)
+		log.Printf("Generated %s\n", path)
 	}
 }
 
@@ -306,7 +306,14 @@ func generateImages() ([]byte, error) {
 	if err == nil {
 		img = pptx.NewImage(imagePath, pptx.Inches(4), pptx.Inches(1), pptx.Inches(4), pptx.Inches(2))
 	} else {
-		img = pptx.NewImageFromBytes([]byte("fake png"), "png", pptx.Inches(4), pptx.Inches(1), pptx.Inches(4), pptx.Inches(2))
+		img = pptx.NewImageFromBytes(
+			[]byte("fake png"),
+			"png",
+			pptx.Inches(4),
+			pptx.Inches(1),
+			pptx.Inches(4),
+			pptx.Inches(2),
+		)
 	}
 
 	slide := pptx.NewSlide("Images").
@@ -483,7 +490,7 @@ func generateSineWaveWAV() []byte {
 	putUint32(buf[40:], uint32(dataSize))
 
 	// Sound data
-	for i := 0; i < numSamples; i++ {
+	for i := range numSamples {
 		sample := int16(32767.0 * 0.5 * math.Sin(2.0*math.Pi*frequency*float64(i)/float64(sampleRate)))
 		putUint16(buf[44+i*2:], uint16(sample))
 	}

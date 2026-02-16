@@ -1,7 +1,7 @@
 package text
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
@@ -193,22 +193,22 @@ func (p TextParagraphStyle) WithHangingIndent(emu styling.Length) TextParagraphS
 // Validate checks for invalid text paragraph style properties.
 func (p TextParagraphStyle) Validate() error {
 	if p.BulletColor != "" && !common.IsHexColor(p.BulletColor) {
-		return fmt.Errorf("bullet color must be hex")
+		return errors.New("bullet color must be hex")
 	}
 	if p.SpaceBeforePt < 0 {
-		return fmt.Errorf("space-before must be >= 0")
+		return errors.New("space-before must be >= 0")
 	}
 	if p.SpaceAfterPt < 0 {
-		return fmt.Errorf("space-after must be >= 0")
+		return errors.New("space-after must be >= 0")
 	}
 	if p.LineSpacingPct < 0 {
-		return fmt.Errorf("line-spacing must be >= 0")
+		return errors.New("line-spacing must be >= 0")
 	}
 	switch p.Align {
 	case "", TextAlignLeft, TextAlignCenter, TextAlignRight, TextAlignJustify:
 		// Valid
 	default:
-		return fmt.Errorf("align must be one of l|ctr|r|just")
+		return errors.New("align must be one of l|ctr|r|just")
 	}
 	return nil
 }

@@ -17,8 +17,8 @@ func main() {
 	if err := run(); err != nil {
 		log.Fatalf("Smoke test failed: %v", err)
 	}
-	fmt.Println("Advanced Hyperlinks Smoke Test: SUCCESS")
-	fmt.Println("To verify visually: Open examples/output/49_advanced_hyperlinks.pptx and try clicking the shapes.")
+	log.Println("Advanced Hyperlinks Smoke Test: SUCCESS")
+	log.Println("To verify visually: Open examples/output/49_advanced_hyperlinks.pptx and try clicking the shapes.")
 }
 
 func run() error {

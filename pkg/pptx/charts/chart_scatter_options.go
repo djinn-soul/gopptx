@@ -70,8 +70,8 @@ func (c ScatterChart) WithValueAxisCrossBetween(mode string) ScatterChart {
 }
 
 // WithValueRange sets optional y-axis min/max.
-func (c ScatterChart) WithValueRange(min float64, max float64) ScatterChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c ScatterChart) WithValueRange(minValue float64, maxValue float64) ScatterChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }

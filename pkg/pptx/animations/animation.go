@@ -1,6 +1,7 @@
 package animations
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -9,7 +10,7 @@ import (
 type AnimationEffect string
 
 const (
-	// Entrance effects
+	// Entrance effects.
 	AnimationEntranceAppear      AnimationEffect = "entr_appear"
 	AnimationEntranceFade        AnimationEffect = "entr_fade"
 	AnimationEntranceFlyIn       AnimationEffect = "entr_flyIn"
@@ -24,13 +25,13 @@ const (
 	AnimationEntranceSwivel      AnimationEffect = "entr_swivel"
 	AnimationEntranceBounce      AnimationEffect = "entr_bounce"
 
-	// Exit effects
+	// Exit effects.
 	AnimationExitDisappear AnimationEffect = "exit_disappear"
 	AnimationExitFadeOut   AnimationEffect = "exit_fade"
 	AnimationExitFlyOut    AnimationEffect = "exit_flyOut"
 	AnimationExitFloatOut  AnimationEffect = "exit_float"
 
-	// Emphasis effects
+	// Emphasis effects.
 	AnimationEmphasisPulse        AnimationEffect = "emph_pulse"
 	AnimationEmphasisColorPulse   AnimationEffect = "emph_colorPulse"
 	AnimationEmphasisTeeter       AnimationEffect = "emph_teeter"
@@ -42,7 +43,7 @@ const (
 	AnimationEmphasisTransparency AnimationEffect = "emph_transparency"
 	AnimationEmphasisObjectColor  AnimationEffect = "emph_objectColor"
 
-	// Motion paths
+	// Motion paths.
 	AnimationPathLines  AnimationEffect = "path_lines"
 	AnimationPathArcs   AnimationEffect = "path_arcs"
 	AnimationPathTurns  AnimationEffect = "path_turns"
@@ -136,7 +137,7 @@ func (a Animation) WithAutoReverse(autoReverse bool) Animation {
 
 func (a Animation) Validate() error {
 	if a.ShapeIndex <= 0 {
-		return fmt.Errorf("animation shape index must be greater than zero")
+		return errors.New("animation shape index must be greater than zero")
 	}
 	if err := a.Effect.Validate(); err != nil {
 		return err

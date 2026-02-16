@@ -35,7 +35,11 @@ func TestCreateWithSlidesRendersRepresentativeTransitions(t *testing.T) {
 	}{
 		{name: "fade", transition: pptx.TransitionFade, expectXML: `<p:transition><p:fade/></p:transition>`},
 		{name: "push", transition: pptx.TransitionPush, expectXML: `<p:transition><p:push dir="r"/></p:transition>`},
-		{name: "split", transition: pptx.TransitionSplit, expectXML: `<p:transition><p:split dir="out" orient="horz"/></p:transition>`},
+		{
+			name:       "split",
+			transition: pptx.TransitionSplit,
+			expectXML:  `<p:transition><p:split dir="out" orient="horz"/></p:transition>`,
+		},
 		{name: "zoom", transition: pptx.TransitionZoom, expectXML: `<p:transition><p:zoom dir="in"/></p:transition>`},
 		{name: "none", transition: pptx.TransitionNone, expectXML: ``},
 		{name: "cut", transition: pptx.TransitionCut, expectXML: ``},
@@ -138,7 +142,14 @@ func transitionSlideXML(t *testing.T, slide pptx.SlideContent) string {
 
 func loadTransitionParityFixture(t *testing.T) []transitionParityFixtureEntry {
 	t.Helper()
-	path := filepath.Join(testutil.RootTestdataDir(), "..", "pkg", "pptx", "fixtures", "ppt_rs_transition_fragments.json")
+	path := filepath.Join(
+		testutil.RootTestdataDir(),
+		"..",
+		"pkg",
+		"pptx",
+		"fixtures",
+		"ppt_rs_transition_fragments.json",
+	)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read transition fixture %s: %v", path, err)

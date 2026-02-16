@@ -11,7 +11,7 @@ import (
 func writeCustomXMLParts(pw *pptxxml.PackageWriter, customXML []common.CustomXMLPart) error {
 	for i, part := range customXML {
 		// Ensure part content is well-formed XML.
-		if err := xml.Unmarshal([]byte(part.Content), new(interface{})); err != nil {
+		if err := xml.Unmarshal([]byte(part.Content), new(any)); err != nil {
 			return fmt.Errorf("custom XML part %d contains invalid XML: %w", i+1, err)
 		}
 		path := fmt.Sprintf("customXml/item%d.xml", i+1)

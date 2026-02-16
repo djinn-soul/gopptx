@@ -3,8 +3,11 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,7 +39,7 @@ func main() {
 		fail("write parity report", err)
 	}
 
-	fmt.Printf("Wrote %s\n", reportPath)
+	log.Printf("Wrote %s\n", reportPath)
 	printSummary(results)
 
 	for _, result := range results {
@@ -47,7 +50,8 @@ func main() {
 }
 
 func loadReferenceXML() (map[string]string, error) {
-	cmd := exec.Command(
+	cmd := exec.CommandContext(
+		context.Background(),
 		"cargo",
 		"run",
 		"--quiet",
@@ -57,7 +61,8 @@ func loadReferenceXML() (map[string]string, error) {
 	cmd.Env = append(os.Environ(), "CARGO_TARGET_DIR=.tmp/cargo-target/ppt-rs-chart-signatures")
 	output, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		exitErr := &exec.ExitError{}
+		if errors.As(err, &exitErr) {
 			return nil, fmt.Errorf("cargo run failed: %s", strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return nil, err
@@ -244,12 +249,12 @@ func printSummary(results []compareResult) {
 			passed++
 		}
 	}
-	fmt.Printf("Parity result: %d/%d chart signatures matched ppt-rs reference requirements.\n", passed, len(results))
+	log.Printf("Parity result: %d/%d chart signatures matched ppt-rs reference requirements.\n", passed, len(results))
 	for _, r := range results {
 		if r.Pass {
 			continue
 		}
-		fmt.Printf("  - %s failed\n", r.Chart)
+		log.Printf("  - %s failed\n", r.Chart)
 	}
 }
 

@@ -9,7 +9,10 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
-func BuildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*action.Hyperlink]string, []pptxxml.HyperlinkRel, int) {
+func BuildSlideHyperlinkRels(
+	slide SlideContent,
+	firstRID int,
+) (map[*action.Hyperlink]string, []pptxxml.HyperlinkRel, int) {
 	hyperlinkRIDs := make(map[*action.Hyperlink]string)
 	hyperlinks := make([]pptxxml.HyperlinkRel, 0)
 	nextRID := firstRID
@@ -176,7 +179,7 @@ func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideB
 				})
 			}
 			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{
-				Type:     string(bg.GradientFill.Type),
+				Type:     bg.GradientFill.Type,
 				Stops:    stops,
 				AngleDeg: bg.GradientFill.AngleDeg,
 			}

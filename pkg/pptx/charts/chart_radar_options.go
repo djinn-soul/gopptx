@@ -57,9 +57,9 @@ func (c RadarChart) WithValueAxisCrossBetween(mode string) RadarChart {
 	return c
 }
 
-func (c RadarChart) WithValueRange(min float64, max float64) RadarChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c RadarChart) WithValueRange(minValue float64, maxValue float64) RadarChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }
 
@@ -133,7 +133,7 @@ func (c RadarFilledChart) WithValueAxisCrossBetween(mode string) RadarFilledChar
 	return c
 }
 
-func (c RadarFilledChart) WithValueRange(min float64, max float64) RadarFilledChart {
-	c.RadarChart = c.RadarChart.WithValueRange(min, max)
+func (c RadarFilledChart) WithValueRange(minValue float64, maxValue float64) RadarFilledChart {
+	c.RadarChart = c.RadarChart.WithValueRange(minValue, maxValue)
 	return c
 }

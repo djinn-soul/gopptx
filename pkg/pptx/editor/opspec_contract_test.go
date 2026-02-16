@@ -8,7 +8,9 @@ import (
 	"testing"
 )
 
-var pyOpLine = regexp.MustCompile(`(?m)^OP_[A-Z_]+\s*=\s*"([^"]+)"\s*$`)
+func pyOpLineRegex() *regexp.Regexp {
+	return regexp.MustCompile(`(?m)^OP_[A-Z_]+\s*=\s*"([^"]+)"\s*$`)
+}
 
 func TestSupportedOpsMatchPythonConstants(t *testing.T) {
 	// Robustly find the project root by walking up looking for go.mod
@@ -31,14 +33,14 @@ func TestSupportedOpsMatchPythonConstants(t *testing.T) {
 	}
 
 	var pyOps []string
-	for _, match := range pyOpLine.FindAllStringSubmatch(string(content), -1) {
+	for _, match := range pyOpLineRegex().FindAllStringSubmatch(string(content), -1) {
 		pyOps = append(pyOps, match[1])
 	}
 	if len(pyOps) == 0 {
 		t.Fatal("no OP_* constants found in python/gopptx/ops.py")
 	}
 
-	goOps := append([]string(nil), SupportedOps...)
+	goOps := SupportedOps()
 	slices.Sort(goOps)
 	slices.Sort(pyOps)
 
@@ -48,16 +50,22 @@ func TestSupportedOpsMatchPythonConstants(t *testing.T) {
 }
 
 func TestSupportedOpsMatchCommandHandlers(t *testing.T) {
-	handlerOps := make([]string, 0, len(commandHandlers))
-	for op := range commandHandlers {
+	goOps := SupportedOps()
+	handlerOps := make([]string, 0, len(goOps))
+	for _, op := range goOps {
+		_, ok := commandHandlerFor(op)
+		if !ok {
+			t.Fatalf("missing command handler for op %q", op)
+		}
 		handlerOps = append(handlerOps, op)
 	}
-	if len(handlerOps) == 0 {
+	if len(goOps) == 0 {
 		t.Fatal("no command handlers registered")
 	}
+	if _, ok := commandHandlerFor("___unknown___"); ok {
+		t.Fatal("unexpected command handler for unknown op")
+	}
 	slices.Sort(handlerOps)
-
-	goOps := append([]string(nil), SupportedOps...)
 	slices.Sort(goOps)
 
 	if !slices.Equal(goOps, handlerOps) {

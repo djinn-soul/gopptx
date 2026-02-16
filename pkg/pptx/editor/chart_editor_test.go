@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -55,13 +55,19 @@ func TestAddChart(t *testing.T) {
 	// c. Check Relationships
 	// Slide -> Chart
 	slideRelsData, _ := editor.parts.Get("ppt/slides/_rels/slide1.xml.rels")
-	if !strings.Contains(string(slideRelsData), "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart") {
+	if !strings.Contains(
+		string(slideRelsData),
+		"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart",
+	) {
 		t.Error("missing slide->chart relationship")
 	}
 
 	// Chart -> Excel
 	chartRelsData, _ := editor.parts.Get("ppt/charts/_rels/chart1.xml.rels")
-	if !strings.Contains(string(chartRelsData), "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package") {
+	if !strings.Contains(
+		string(chartRelsData),
+		"http://schemas.openxmlformats.org/officeDocument/2006/relationships/package",
+	) {
 		t.Error("missing chart->excel relationship")
 	}
 
@@ -117,12 +123,12 @@ func TestMergeFromFilePreservesChartEmbeddingChain(t *testing.T) {
 		[]string{"Q1", "Q2"},
 		[]float64{100, 120},
 	).WithTitle("Revenue")
-	if err := sourceEditor.AddChart(0, chartDef); err != nil {
-		t.Fatalf("add source chart: %v", err)
+	if addErr := sourceEditor.AddChart(0, chartDef); addErr != nil {
+		t.Fatalf("add source chart: %v", addErr)
 	}
 	sourceWithChart := filepath.Join(t.TempDir(), "source-with-chart.pptx")
-	if err := sourceEditor.Save(sourceWithChart); err != nil {
-		t.Fatalf("save source with chart: %v", err)
+	if saveSourceErr := sourceEditor.Save(sourceWithChart); saveSourceErr != nil {
+		t.Fatalf("save source with chart: %v", saveSourceErr)
 	}
 	_ = sourceEditor.Close()
 
@@ -134,12 +140,12 @@ func TestMergeFromFilePreservesChartEmbeddingChain(t *testing.T) {
 		t.Fatalf("open dest editor: %v", err)
 	}
 	defer func() { _ = destEditor.Close() }()
-	if err := destEditor.MergeFromFile(sourceWithChart); err != nil {
-		t.Fatalf("merge from file failed: %v", err)
+	if mergeErr := destEditor.MergeFromFile(sourceWithChart); mergeErr != nil {
+		t.Fatalf("merge from file failed: %v", mergeErr)
 	}
 	outPath := filepath.Join(t.TempDir(), "merged-chart.pptx")
-	if err := destEditor.Save(outPath); err != nil {
-		t.Fatalf("save merged deck: %v", err)
+	if saveDestErr := destEditor.Save(outPath); saveDestErr != nil {
+		t.Fatalf("save merged deck: %v", saveDestErr)
 	}
 
 	merged, err := OpenPresentationEditor(outPath)
@@ -194,7 +200,12 @@ func TestReplaceChartData(t *testing.T) {
 			<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>
 		</Relationships>
 	`))
-	editor.parts.Set("ppt/charts/chart1.xml", []byte(`<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:plotArea><c:barChart><c:ser><c:cat><c:strRef><c:f>Sheet1!$A$2:$A$2</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>A</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser></c:barChart></c:plotArea></c:chartSpace>`))
+	editor.parts.Set(
+		"ppt/charts/chart1.xml",
+		[]byte(
+			`<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:plotArea><c:barChart><c:ser><c:cat><c:strRef><c:f>Sheet1!$A$2:$A$2</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>A</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser></c:barChart></c:plotArea></c:chartSpace>`,
+		),
+	)
 
 	// Mock Excel Part
 	editor.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx", []byte("old data"))

@@ -90,7 +90,9 @@ func TestRenderShapeXML(t *testing.T) {
 
 func TestReplaceShapeNodes(t *testing.T) {
 	// Use valid XML that matches what our parser expects (namespaces) to ensure correct parsing
-	original := []byte(`<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:sp>Shape1</p:sp> MIDDLE <p:sp>Shape2</p:sp></p:sld>`)
+	original := []byte(
+		`<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:sp>Shape1</p:sp> MIDDLE <p:sp>Shape2</p:sp></p:sld>`,
+	)
 
 	// Parse to get real offsets
 	shapes, err := parseSlideShapes(original)
@@ -102,7 +104,7 @@ func TestReplaceShapeNodes(t *testing.T) {
 	}
 
 	// Modify second shape only
-	modified := replaceShapeNodes(original, shapes, func(i int, p *parsedShape) ([]byte, bool) {
+	modified := replaceShapeNodes(original, shapes, func(i int, _ *parsedShape) ([]byte, bool) {
 		if i == 1 {
 			return []byte(`<p:sp>REPLACED</p:sp>`), true
 		}

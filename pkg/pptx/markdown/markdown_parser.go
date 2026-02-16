@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -59,8 +60,8 @@ func (p *markdownParser) parse() ([]elements.SlideContent, error) {
 			p.index++
 			continue
 		}
-		if strings.HasPrefix(trimmed, "# ") {
-			title := strings.TrimSpace(strings.TrimPrefix(trimmed, "# "))
+		if after, ok := strings.CutPrefix(trimmed, "# "); ok {
+			title := strings.TrimSpace(after)
 			if title == "" {
 				return nil, fmt.Errorf("line %d: slide title cannot be empty", lineNumber)
 			}
@@ -101,7 +102,7 @@ func (p *markdownParser) parse() ([]elements.SlideContent, error) {
 
 	p.flushCurrent()
 	if len(p.slides) == 0 {
-		return nil, fmt.Errorf("markdown did not produce any slides")
+		return nil, errors.New("markdown did not produce any slides")
 	}
 	return p.slides, nil
 }

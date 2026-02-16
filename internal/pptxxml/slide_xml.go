@@ -234,7 +234,9 @@ func SlideWithLayout(
 			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID, width, height))
 			nextID++
 			if len(rightBullets) > 0 {
-				b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height))
+				b.WriteString(
+					rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height),
+				)
 				nextID++
 			}
 		}
@@ -320,12 +322,23 @@ type HyperlinkRel struct {
 	Type     string
 }
 
-func SlideRelationshipsWithLayoutAndNotes(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string) string {
+func SlideRelationshipsWithLayoutAndNotes(
+	layoutTarget string,
+	imageTargets []string,
+	chartRel *ChartRel,
+	notesTarget string,
+) string {
 	return SlideRelationshipsWithHyperlinks(layoutTarget, imageTargets, chartRel, notesTarget, nil)
 }
 
 // SlideRelationshipsWithHyperlinks extends slide relationships to include hyperlinks.
-func SlideRelationshipsWithHyperlinks(layoutTarget string, imageTargets []string, chartRel *ChartRel, notesTarget string, hyperlinks []HyperlinkRel) string {
+func SlideRelationshipsWithHyperlinks(
+	layoutTarget string,
+	imageTargets []string,
+	chartRel *ChartRel,
+	notesTarget string,
+	hyperlinks []HyperlinkRel,
+) string {
 	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, notesTarget, hyperlinks)
 }
 

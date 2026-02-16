@@ -141,9 +141,9 @@ func ToXMLConnectorSpec(connector Connector, startSiteIndex *int, endSiteIndex *
 }
 
 func ToXMLShapeLineSpec(line ShapeLine) pptxxml.ShapeLineSpec {
-	cap := strings.TrimSpace(line.Cap)
-	if cap != "" {
-		cap = NormalizeLineCap(cap)
+	lineCap := strings.TrimSpace(line.Cap)
+	if lineCap != "" {
+		lineCap = NormalizeLineCap(lineCap)
 	}
 	join := strings.TrimSpace(line.Join)
 	if join != "" {
@@ -153,7 +153,7 @@ func ToXMLShapeLineSpec(line ShapeLine) pptxxml.ShapeLineSpec {
 		Color: common.NormalizeHexColor(line.Color),
 		Width: line.Width.Emu(),
 		Dash:  NormalizeDrawingLineDash(line.Dash),
-		Cap:   cap,
+		Cap:   lineCap,
 		Join:  join,
 	}
 }

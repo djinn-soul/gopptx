@@ -12,7 +12,9 @@ func TestTask10Showcase(t *testing.T) {
 		AddBullet("PNG, JPEG, GIF formats").
 		AddBullet("Position and size control")
 
-	slide = slide.AddImage(pptx.NewImageFromBytes([]byte("fake png content"), "png", 4*914400, 1*914400, 2*914400, 2*914400))
+	slide = slide.AddImage(
+		pptx.NewImageFromBytes([]byte("fake png content"), "png", 4*914400, 1*914400, 2*914400, 2*914400),
+	)
 
 	slides := []pptx.SlideContent{slide}
 	_, err := pptx.CreateWithSlides("Task 10 Showcase", slides)

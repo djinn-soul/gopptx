@@ -14,32 +14,46 @@ type registeredEditor struct {
 	lastError string
 }
 
-var (
-	registryMu sync.RWMutex
-	registry   = make(map[Handle]*registeredEditor)
-	// Start at 1000 to avoid common low integer values
-	nextHandle uintptr = 1000
-)
+const initialEditorHandle = 1000
 
-// RegisterEditor adds an editor to the global registry and returns a handle.
-func RegisterEditor(e *PresentationEditor) Handle {
-	if e == nil {
+// Registry stores active editor handles.
+type Registry struct {
+	mu sync.RWMutex
+
+	editors    map[Handle]*registeredEditor
+	nextHandle uintptr
+}
+
+// NewEditorRegistry creates an empty registry.
+func NewEditorRegistry() *Registry {
+	return &Registry{
+		editors:    make(map[Handle]*registeredEditor),
+		nextHandle: initialEditorHandle, // Start above common low integer values.
+	}
+}
+
+// RegisterEditor adds an editor to the registry and returns a handle.
+func (r *Registry) RegisterEditor(e *PresentationEditor) Handle {
+	if r == nil || e == nil {
 		return 0
 	}
-	registryMu.Lock()
-	defer registryMu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	h := Handle(atomic.AddUintptr(&nextHandle, 1))
-	registry[h] = &registeredEditor{editor: e}
+	h := Handle(atomic.AddUintptr(&r.nextHandle, 1))
+	r.editors[h] = &registeredEditor{editor: e}
 	return h
 }
 
 // GetEditor retrieves an editor from the registry by its handle.
-func GetEditor(h Handle) (*PresentationEditor, bool) {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
+func (r *Registry) GetEditor(h Handle) (*PresentationEditor, bool) {
+	if r == nil {
+		return nil, false
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	reg, ok := registry[h]
+	reg, ok := r.editors[h]
 	if !ok {
 		return nil, false
 	}
@@ -47,13 +61,16 @@ func GetEditor(h Handle) (*PresentationEditor, bool) {
 }
 
 // UnregisterEditor removes an editor from the registry and closes it.
-func UnregisterEditor(h Handle) {
-	registryMu.Lock()
-	reg, ok := registry[h]
-	if ok {
-		delete(registry, h)
+func (r *Registry) UnregisterEditor(h Handle) {
+	if r == nil {
+		return
 	}
-	registryMu.Unlock()
+	r.mu.Lock()
+	reg, ok := r.editors[h]
+	if ok {
+		delete(r.editors, h)
+	}
+	r.mu.Unlock()
 
 	if ok && reg.editor != nil {
 		_ = reg.editor.Close()
@@ -61,25 +78,68 @@ func UnregisterEditor(h Handle) {
 }
 
 // SetHandleError records the last error encountered for a specific handle.
-func SetHandleError(h Handle, err error) {
-	if err == nil {
+func (r *Registry) SetHandleError(h Handle, err error) {
+	if r == nil || err == nil {
 		return
 	}
-	registryMu.Lock()
-	defer registryMu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-	if reg, ok := registry[h]; ok {
+	if reg, ok := r.editors[h]; ok {
 		reg.lastError = err.Error()
 	}
 }
 
 // GetHandleError returns the last error string for a specific handle.
-func GetHandleError(h Handle) string {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
+func (r *Registry) GetHandleError(h Handle) string {
+	if r == nil {
+		return fmt.Sprintf("invalid handle: %d", h)
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
-	if reg, ok := registry[h]; ok {
+	if reg, ok := r.editors[h]; ok {
 		return reg.lastError
 	}
 	return fmt.Sprintf("invalid handle: %d", h)
+}
+
+// RegisterEditor adds an editor to a registry and returns its handle.
+func RegisterEditor(registry *Registry, e *PresentationEditor) Handle {
+	if registry == nil {
+		return 0
+	}
+	return registry.RegisterEditor(e)
+}
+
+// GetEditor retrieves an editor from a registry by handle.
+func GetEditor(registry *Registry, h Handle) (*PresentationEditor, bool) {
+	if registry == nil {
+		return nil, false
+	}
+	return registry.GetEditor(h)
+}
+
+// UnregisterEditor removes an editor from a registry and closes it.
+func UnregisterEditor(registry *Registry, h Handle) {
+	if registry == nil {
+		return
+	}
+	registry.UnregisterEditor(h)
+}
+
+// SetHandleError records the last error for a handle in a registry.
+func SetHandleError(registry *Registry, h Handle, err error) {
+	if registry == nil {
+		return
+	}
+	registry.SetHandleError(h, err)
+}
+
+// GetHandleError returns the last error for a handle in a registry.
+func GetHandleError(registry *Registry, h Handle) string {
+	if registry == nil {
+		return fmt.Sprintf("invalid handle: %d", h)
+	}
+	return registry.GetHandleError(h)
 }

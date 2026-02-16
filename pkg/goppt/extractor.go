@@ -16,7 +16,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/ioadapters"
 )
 
-// skipped metadata or non-readable records in slide container
+// skipped metadata or non-readable records in slide container.
 var slideSkippedRecordsTypes = []recordType{
 	recordTypeExternalObjectList,
 	recordTypeEnvironment,
@@ -27,7 +27,7 @@ var slideSkippedRecordsTypes = []recordType{
 	recordTypeHeadersFooters,
 }
 
-// skipped metadata or non-readable records in drawing container
+// skipped metadata or non-readable records in drawing container.
 var drawingSkippedRecordsTypes = []recordType{
 	recordTypeSlideShowSlideInfoAtom,
 	recordTypeHeadersFooters,
@@ -69,8 +69,11 @@ func ExtractText(r io.Reader) (string, error) {
 	return readSlides(documentContainer, pptDocument, persistDirEntries)
 }
 
-// getCurrentUserAndPPTDoc extracts necessary mscfb files from PPT file
-func getCurrentUserAndPPTDoc(r *mscfb.Reader) (currentUser *mscfb.File, pptDocument *mscfb.File) {
+// getCurrentUserAndPPTDoc extracts necessary mscfb files from PPT file.
+func getCurrentUserAndPPTDoc(r *mscfb.Reader) (*mscfb.File, *mscfb.File) {
+	var currentUser *mscfb.File
+	var pptDocument *mscfb.File
+
 	for _, f := range r.File {
 		switch f.Name {
 		case "Current User":
@@ -84,7 +87,7 @@ func getCurrentUserAndPPTDoc(r *mscfb.Reader) (currentUser *mscfb.File, pptDocum
 
 // isValidPPT checks if provided file is valid, meaning
 // it has both "Current User" and "PowerPoint Document" files
-// and "Current User"'s CurrentUserAtom record has valid header token
+// and "Current User"'s CurrentUserAtom record has valid header token.
 func isValidPPT(currentUser, pptDocument *mscfb.File) error {
 	const (
 		headerTokenOffset      = 12
@@ -93,7 +96,7 @@ func isValidPPT(currentUser, pptDocument *mscfb.File) error {
 	)
 
 	if currentUser == nil || pptDocument == nil {
-		return fmt.Errorf(".ppt file must contain \"Current User\" and \"PowerPoint Document\" streams")
+		return errors.New(".ppt file must contain \"Current User\" and \"PowerPoint Document\" streams")
 	}
 	var b [4]byte
 	_, err := currentUser.ReadAt(b[:], headerTokenOffset)
@@ -108,19 +111,18 @@ func isValidPPT(currentUser, pptDocument *mscfb.File) error {
 }
 
 // getUserEditAtomsData extracts "live record" and persist directory offsets
-// according to section 2.1.2 of specification
-func getUserEditAtomsData(currentUser, pptDocument *mscfb.File) (
-	persistDirectoryOffsets []int64,
-	liveRecord record,
-	err error,
-) {
+// according to section 2.1.2 of specification.
+func getUserEditAtomsData(currentUser, pptDocument *mscfb.File) ([]int64, record, error) {
 	const (
 		offsetLastEditInitialPosition  = 16
 		offsetLastEditPosition         = 8
 		persistDirectoryOffsetPosition = 12
 	)
+	var persistDirectoryOffsets []int64
+	var liveRecord record
+
 	var b [4]byte
-	_, err = currentUser.ReadAt(b[:], offsetLastEditInitialPosition)
+	_, err := currentUser.ReadAt(b[:], offsetLastEditInitialPosition)
 	if err != nil {
 		return nil, record{}, err
 	}
@@ -147,7 +149,7 @@ func getUserEditAtomsData(currentUser, pptDocument *mscfb.File) (
 	return persistDirectoryOffsets, liveRecord, nil
 }
 
-// getPersistDirectoryEntries transforms offsets into persists directory identifiers and persist offsets
+// getPersistDirectoryEntries transforms offsets into persists directory identifiers and persist offsets.
 func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[uint32]int64, error) {
 	const persistOffsetEntrySize = 4
 
@@ -166,7 +168,7 @@ func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[u
 			cPersist := ((persist & 0xFFF00000) >> 20) & 0x00000FFF
 			j += 4
 
-			for k := uint32(0); k < cPersist; k++ {
+			for k := range cPersist {
 				persistDirEntries[persistID+k] = int64(rgPersistDirEntryData.LongAt(j + int(k)*persistOffsetEntrySize))
 			}
 			j += int(cPersist * persistOffsetEntrySize)
@@ -175,7 +177,7 @@ func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[u
 	return persistDirEntries, nil
 }
 
-// readSlides reads text from slides of given DocumentContainer
+// readSlides reads text from slides of given DocumentContainer.
 func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries map[uint32]int64) (string, error) {
 	const slideSkipInitialOffset = 48
 	offset, err := skipRecords(documentContainer, slideSkipInitialOffset, slideSkippedRecordsTypes)
@@ -280,7 +282,7 @@ func readTextFromSlidePersistAtom(
 func matchPocket(data []byte, from int) int {
 	data = data[from:]
 	n := len(data)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		switch data[i] {
 		case recordTypeTextCharsAtom.LowerPart(), recordTypeTextBytesAtom.LowerPart():
 			if i < n-1 && data[i+1] == 0x0F {
@@ -291,7 +293,7 @@ func matchPocket(data []byte, from int) int {
 	return -1
 }
 
-// readTextFromTextCharsAtom simply transforms UTF-16LE data into UTF-8 data
+// readTextFromTextCharsAtom simply transforms UTF-16LE data into UTF-8 data.
 func readTextFromTextCharsAtom(atom record, out *strings.Builder, dec *encoding.Decoder) error {
 	dec.Reset()
 	transformed, err := dec.Bytes(atom.Data())
@@ -315,7 +317,7 @@ func readTextFromTextBytesAtom(atom record, out *strings.Builder, dec *encoding.
 }
 
 // decodeTextBytesAtom transforms text from TextBytesAtom, which is an array of bytes representing lower parts of UTF-16
-// characters into UTF-8 data
+// characters into UTF-8 data.
 func decodeTextBytesAtom(data []byte, dec *encoding.Decoder) ([]byte, error) {
 	var (
 		// buffer for UTF-16 char
@@ -337,7 +339,7 @@ func decodeTextBytesAtom(data []byte, dec *encoding.Decoder) ([]byte, error) {
 	return result, nil
 }
 
-// skipRecords reads headers and skips data of records of provided types
+// skipRecords reads headers and skips data of records of provided types.
 func skipRecords(r io.ReaderAt, initialOffset int64, skippedRecordsTypes []recordType) (int64, error) {
 	offset := initialOffset
 

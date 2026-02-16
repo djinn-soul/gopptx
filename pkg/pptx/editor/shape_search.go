@@ -1,16 +1,16 @@
 package editor
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // SearchShapes scans all slides and returns shapes matching the query.
 func (e *PresentationEditor) SearchShapes(query common.ShapeSearchQuery) ([]common.ShapeSearchResult, error) {
 	if e == nil {
-		return nil, fmt.Errorf("editor cannot be nil")
+		return nil, errors.New("editor cannot be nil")
 	}
 
 	results := make([]common.ShapeSearchResult, 0)

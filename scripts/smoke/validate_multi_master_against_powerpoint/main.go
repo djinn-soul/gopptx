@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,8 +19,10 @@ var (
 	reSlideLayoutPath = regexp.MustCompile(`^ppt/slideLayouts/slideLayout(\d+)\.xml$`)
 	reCTMaster        = regexp.MustCompile(`/ppt/slideMasters/slideMaster(\d+)\.xml`)
 	reCTLayout        = regexp.MustCompile(`/ppt/slideLayouts/slideLayout(\d+)\.xml`)
-	reRel             = regexp.MustCompile(`<Relationship[^>]*Id="([^"]+)"[^>]*Type="([^"]+)"[^>]*Target="([^"]+)"[^>]*/?>`)
-	reMasterRID       = regexp.MustCompile(`<p:sldMasterId[^>]*r:id="([^"]+)"`)
+	reRel             = regexp.MustCompile(
+		`<Relationship[^>]*Id="([^"]+)"[^>]*Type="([^"]+)"[^>]*Target="([^"]+)"[^>]*/?>`,
+	)
+	reMasterRID = regexp.MustCompile(`<p:sldMasterId[^>]*r:id="([^"]+)"`)
 )
 
 const (
@@ -51,7 +54,11 @@ type relationship struct {
 }
 
 func main() {
-	baseline := flag.String("baseline", "examples/output/pp_multi_master_reference.pptx", "PowerPoint-authored baseline .pptx")
+	baseline := flag.String(
+		"baseline",
+		"examples/output/pp_multi_master_reference.pptx",
+		"PowerPoint-authored baseline .pptx",
+	)
 	candidate := flag.String("candidate", "examples/output/36_multi_master_smoke.pptx", "candidate .pptx to validate")
 	flag.Parse()
 
@@ -70,13 +77,13 @@ func main() {
 	printSummary(baseInfo, candInfo)
 
 	if len(errs) > 0 {
-		fmt.Println("RESULT=FAIL")
+		log.Println("RESULT=FAIL")
 		for _, e := range errs {
-			fmt.Printf("- %s\n", e)
+			log.Printf("- %s\n", e)
 		}
 		os.Exit(1)
 	}
-	fmt.Println("RESULT=PASS")
+	log.Println("RESULT=PASS")
 }
 
 func inspectPackage(path string) (*pkgInfo, error) {
@@ -185,17 +192,26 @@ func validateAgainstBaseline(base, cand *pkgInfo) []string {
 		errs = append(errs, "baseline does not look multi-master (expected >=2 masters)")
 	}
 	if len(cand.masters) < 2 {
-		errs = append(errs, fmt.Sprintf("candidate has only %d master(s); expected multi-master (>=2)", len(cand.masters)))
+		errs = append(
+			errs,
+			fmt.Sprintf("candidate has only %d master(s); expected multi-master (>=2)", len(cand.masters)),
+		)
 	}
 
 	for _, idx := range cand.masters {
 		if _, ok := cand.ctMasterOverrides[idx]; !ok {
-			errs = append(errs, fmt.Sprintf("missing [Content_Types] override for /ppt/slideMasters/slideMaster%d.xml", idx))
+			errs = append(
+				errs,
+				fmt.Sprintf("missing [Content_Types] override for /ppt/slideMasters/slideMaster%d.xml", idx),
+			)
 		}
 	}
 	for _, idx := range cand.layouts {
 		if _, ok := cand.ctLayoutOverrides[idx]; !ok {
-			errs = append(errs, fmt.Sprintf("missing [Content_Types] override for /ppt/slideLayouts/slideLayout%d.xml", idx))
+			errs = append(
+				errs,
+				fmt.Sprintf("missing [Content_Types] override for /ppt/slideLayouts/slideLayout%d.xml", idx),
+			)
 		}
 	}
 
@@ -206,7 +222,10 @@ func validateAgainstBaseline(base, cand *pkgInfo) []string {
 			continue
 		}
 		if rel.typeURI != relTypeSlideMaster {
-			errs = append(errs, fmt.Sprintf("presentation.xml master r:id=%s points to non-slideMaster rel type %s", rid, rel.typeURI))
+			errs = append(
+				errs,
+				fmt.Sprintf("presentation.xml master r:id=%s points to non-slideMaster rel type %s", rid, rel.typeURI),
+			)
 		}
 		part := "ppt/" + strings.TrimPrefix(rel.target, "../")
 		if _, exists := cand.entrySet[part]; !exists {
@@ -269,8 +288,8 @@ func readZipEntry(files []*zip.File, name string) (string, error) {
 }
 
 func printSummary(base, cand *pkgInfo) {
-	fmt.Printf("BASELINE=%s masters=%d layouts=%d\n", base.path, len(base.masters), len(base.layouts))
-	fmt.Printf("CANDIDATE=%s masters=%d layouts=%d\n", cand.path, len(cand.masters), len(cand.layouts))
+	log.Printf("BASELINE=%s masters=%d layouts=%d\n", base.path, len(base.masters), len(base.layouts))
+	log.Printf("CANDIDATE=%s masters=%d layouts=%d\n", cand.path, len(cand.masters), len(cand.layouts))
 }
 
 func dedupe(in []string) []string {

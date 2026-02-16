@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/zip"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,7 +32,7 @@ func main() {
 	outputFile := filepath.Join(outputDir, "40_metadata_output.pptx")
 
 	// 1. Create a minimal valid PPTX file
-	fmt.Printf("Generating minimal PPTX: %s...\n", inputFile)
+	log.Printf("Generating minimal PPTX: %s...\n", inputFile)
 	if err := createMinimalPPTX(inputFile); err != nil {
 		log.Fatalf("Failed to create minimal PPTX: %v", err)
 	}
@@ -45,7 +44,7 @@ func main() {
 	}()
 
 	// 2. Open it
-	fmt.Printf("Opening %s...\n", inputFile)
+	log.Printf("Opening %s...\n", inputFile)
 	ppt, err := editor.OpenPresentationEditor(inputFile)
 	if err != nil {
 		log.Fatalf("Failed to open presentation: %v", err)
@@ -54,13 +53,13 @@ func main() {
 
 	// 3. Check initial metadata
 	props := ppt.GetCoreProperties()
-	fmt.Printf("Initial Title: %s\n", props.Title)
+	log.Printf("Initial Title: %s\n", props.Title)
 	if props.Title != "Initial Title" {
 		log.Fatalf("Expected 'Initial Title', got '%s'", props.Title)
 	}
 
 	// 4. Update metadata
-	fmt.Println("Updating metadata...")
+	log.Println("Updating metadata...")
 	newProps := common.CoreProperties{
 		Title:       "Updated Title",
 		Subject:     "Updated Subject",
@@ -71,7 +70,7 @@ func main() {
 	ppt.SetCoreProperties(newProps)
 
 	// 5. Save
-	fmt.Printf("Saving to %s...\n", outputFile)
+	log.Printf("Saving to %s...\n", outputFile)
 	if err := ppt.Save(outputFile); err != nil {
 		log.Fatalf("Failed to save: %v", err)
 	}
@@ -79,7 +78,7 @@ func main() {
 	// 6. Verify output
 	verifyOutput(outputFile)
 
-	fmt.Println("Done! Smoke test passed.")
+	log.Println("Done! Smoke test passed.")
 }
 
 func verifyOutput(filename string) {

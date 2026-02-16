@@ -44,7 +44,7 @@ func ZipHasFile(zr *zip.Reader, name string) bool {
 // searching upward from the current working directory.
 func RootTestdataPath(parts ...string) string {
 	base := "testdata"
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		if _, err := os.Stat(base); err == nil {
 			return filepath.Join(append([]string{base}, parts...)...)
 		}

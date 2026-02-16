@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -20,44 +20,86 @@ type RequestEnvelope struct {
 // ResponseEnvelope is the standard wrapper for all outgoing responses.
 type ResponseEnvelope struct {
 	OK        bool         `json:"ok"`
-	Result    interface{}  `json:"result,omitempty"`
+	Result    any          `json:"result,omitempty"`
 	Error     *ErrorDetail `json:"error,omitempty"`
 	RequestID string       `json:"request_id,omitempty"`
 }
 
 type ErrorDetail struct {
-	Code    string      `json:"code"`
-	Message string      `json:"message"`
-	Details interface{} `json:"details,omitempty"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
 }
 
-type commandHandler func(*PresentationEditor, json.RawMessage) (interface{}, error)
+type commandHandler func(*PresentationEditor, json.RawMessage) (any, error)
 
-var commandHandlers = map[string]commandHandler{
-	OpSlideCount:              handleSlideCount,
-	OpAddSlide:                handleAddSlide,
-	OpRemoveSlide:             handleRemoveSlide,
-	OpMoveSlide:               handleMoveSlide,
-	OpDuplicateSlide:          handleDuplicateSlide,
-	OpGetMetadata:             handleGetMetadata,
-	OpUpdateChartData:         handleUpdateChartData,
-	OpListSlideCharts:         handleListSlideCharts,
-	OpListSlideLayouts:        handleListSlideLayouts,
-	OpRebindSlideLayout:       handleRebindSlideLayout,
-	OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
-	OpAddSection:              handleAddSection,
-	OpRemoveSection:           handleRemoveSection,
-	OpRenameSection:           handleRenameSection,
-	OpGetCoreProperties:       handleGetCoreProperties,
-	OpSetCoreProperties:       handleSetCoreProperties,
-	OpApplyTheme:              handleApplyTheme,
-	OpSetSlideSize:            handleSetSlideSize,
-	OpListShapes:              handleListShapes,
-	OpAddShape:                handleAddShape,
-	OpRemoveShape:             handleRemoveShape,
-	OpUpdateShape:             handleUpdateShape,
-	OpGetNotes:                handleGetNotes,
-	OpSetNotes:                handleSetNotes,
+func commandHandlerFor(op string) (commandHandler, bool) {
+	if handler, ok := commandHandlerForSlidesAndMeta(op); ok {
+		return handler, true
+	}
+	return commandHandlerForShapesAndNotes(op)
+}
+
+func commandHandlerForSlidesAndMeta(op string) (commandHandler, bool) {
+	switch op {
+	case OpSlideCount:
+		return handleSlideCount, true
+	case OpAddSlide:
+		return handleAddSlide, true
+	case OpRemoveSlide:
+		return handleRemoveSlide, true
+	case OpMoveSlide:
+		return handleMoveSlide, true
+	case OpDuplicateSlide:
+		return handleDuplicateSlide, true
+	case OpGetMetadata:
+		return handleGetMetadata, true
+	case OpUpdateChartData:
+		return handleUpdateChartData, true
+	case OpListSlideCharts:
+		return handleListSlideCharts, true
+	case OpListSlideLayouts:
+		return handleListSlideLayouts, true
+	case OpRebindSlideLayout:
+		return handleRebindSlideLayout, true
+	case OpCloneLayoutMasterFamily:
+		return handleCloneLayoutMasterFamily, true
+	case OpAddSection:
+		return handleAddSection, true
+	case OpRemoveSection:
+		return handleRemoveSection, true
+	case OpRenameSection:
+		return handleRenameSection, true
+	case OpGetCoreProperties:
+		return handleGetCoreProperties, true
+	case OpSetCoreProperties:
+		return handleSetCoreProperties, true
+	case OpApplyTheme:
+		return handleApplyTheme, true
+	case OpSetSlideSize:
+		return handleSetSlideSize, true
+	default:
+		return nil, false
+	}
+}
+
+func commandHandlerForShapesAndNotes(op string) (commandHandler, bool) {
+	switch op {
+	case OpListShapes:
+		return handleListShapes, true
+	case OpAddShape:
+		return handleAddShape, true
+	case OpRemoveShape:
+		return handleRemoveShape, true
+	case OpUpdateShape:
+		return handleUpdateShape, true
+	case OpGetNotes:
+		return handleGetNotes, true
+	case OpSetNotes:
+		return handleSetNotes, true
+	default:
+		return nil, false
+	}
 }
 
 // ExecuteCommand dispatches a JSON command to the appropriate editor method.
@@ -68,10 +110,14 @@ func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
 	}
 
 	if req.APIVersion != 1 {
-		return errorResponse("UNSUPPORTED_VERSION", fmt.Sprintf("API version %d not supported", req.APIVersion), req.RequestID)
+		return errorResponse(
+			"UNSUPPORTED_VERSION",
+			fmt.Sprintf("API version %d not supported", req.APIVersion),
+			req.RequestID,
+		)
 	}
 
-	handler, ok := commandHandlers[req.Op]
+	handler, ok := commandHandlerFor(req.Op)
 	if !ok {
 		return errorResponse("UNKNOWN_OP", fmt.Sprintf("Operation %q not recognized", req.Op), req.RequestID)
 	}
@@ -93,11 +139,11 @@ func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
 	return string(out)
 }
 
-func handleSlideCount(e *PresentationEditor, _ json.RawMessage) (interface{}, error) {
+func handleSlideCount(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	return map[string]int{"count": e.SlideCount()}, nil
 }
 
-func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		Title string `json:"title"`
 	}
@@ -111,7 +157,7 @@ func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (interface{}
 	return map[string]int{"index": index}, nil
 }
 
-func handleRemoveSlide(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleRemoveSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		Index int `json:"index"`
 	}
@@ -121,7 +167,7 @@ func handleRemoveSlide(e *PresentationEditor, payload json.RawMessage) (interfac
 	return nil, e.RemoveSlide(p.Index)
 }
 
-func handleMoveSlide(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleMoveSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		From int `json:"from"`
 		To   int `json:"to"`
@@ -132,7 +178,7 @@ func handleMoveSlide(e *PresentationEditor, payload json.RawMessage) (interface{
 	return nil, e.MoveSlide(p.From, p.To)
 }
 
-func handleDuplicateSlide(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleDuplicateSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		Index    int `json:"index"`
 		InsertAt int `json:"insert_at"`
@@ -147,9 +193,9 @@ func handleDuplicateSlide(e *PresentationEditor, payload json.RawMessage) (inter
 	return map[string]int{"new_index": newIdx}, nil
 }
 
-func handleGetMetadata(e *PresentationEditor, _ json.RawMessage) (interface{}, error) {
+func handleGetMetadata(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	m := e.Metadata()
-	return map[string]interface{}{
+	return map[string]any{
 		"title":       m.Title,
 		"slide_count": m.SlideCount,
 		"size": map[string]int64{
@@ -159,7 +205,7 @@ func handleGetMetadata(e *PresentationEditor, _ json.RawMessage) (interface{}, e
 	}, nil
 }
 
-func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex    int                    `json:"slide_index"`
 		ChartSelector common.ChartSelector   `json:"chart_selector"`
@@ -174,7 +220,7 @@ func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (inte
 	return map[string]bool{"updated": true}, nil
 }
 
-func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int `json:"slide_index"`
 	}
@@ -185,18 +231,18 @@ func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (inte
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{"charts": refs}, nil
+	return map[string]any{"charts": refs}, nil
 }
 
-func handleListSlideLayouts(e *PresentationEditor, _ json.RawMessage) (interface{}, error) {
+func handleListSlideLayouts(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	layouts, err := e.ListSlideLayouts()
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{"layouts": layouts}, nil
+	return map[string]any{"layouts": layouts}, nil
 }
 
-func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int    `json:"slide_index"`
 		LayoutPart string `json:"layout_part"`
@@ -210,7 +256,7 @@ func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (in
 	return map[string]bool{"rebound": true}, nil
 }
 
-func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		LayoutPart string `json:"layout_part"`
 	}
@@ -221,14 +267,14 @@ func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessag
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"master_part": result.MasterPart,
 		"theme_part":  result.ThemePart,
 		"layout_map":  result.LayoutMap,
 	}, nil
 }
 
-func handleAddSection(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleAddSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		Name         string `json:"name"`
 		SlideIndices []int  `json:"slide_indices"`
@@ -242,7 +288,7 @@ func handleAddSection(e *PresentationEditor, payload json.RawMessage) (interface
 	return map[string]bool{"added": true}, nil
 }
 
-func handleRemoveSection(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleRemoveSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		Name string `json:"name"`
 	}
@@ -255,7 +301,7 @@ func handleRemoveSection(e *PresentationEditor, payload json.RawMessage) (interf
 	return map[string]bool{"removed": true}, nil
 }
 
-func handleRenameSection(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleRenameSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		OldName string `json:"old_name"`
 		NewName string `json:"new_name"`
@@ -269,11 +315,11 @@ func handleRenameSection(e *PresentationEditor, payload json.RawMessage) (interf
 	return map[string]bool{"renamed": true}, nil
 }
 
-func handleGetCoreProperties(e *PresentationEditor, _ json.RawMessage) (interface{}, error) {
+func handleGetCoreProperties(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	return e.GetCoreProperties(), nil
 }
 
-func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p common.CoreProperties
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return nil, err
@@ -282,7 +328,7 @@ func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (in
 	return map[string]bool{"updated": true}, nil
 }
 
-func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		ThemeName string `json:"theme_name"`
 	}
@@ -316,7 +362,7 @@ func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (interface
 	return map[string]bool{"applied": true}, nil
 }
 
-func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p common.SlideSize
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return nil, err
@@ -344,7 +390,7 @@ func errorResponse(code, message, reqID string) string {
 	return string(out)
 }
 
-func handleListShapes(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleListShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int `json:"slide_index"`
 	}
@@ -355,10 +401,10 @@ func handleListShapes(e *PresentationEditor, payload json.RawMessage) (interface
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{"shapes": shapes}, nil
+	return map[string]any{"shapes": shapes}, nil
 }
 
-func handleAddShape(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleAddShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int                `json:"slide_index"`
 		Type       string             `json:"type"`
@@ -384,15 +430,15 @@ func handleAddShape(e *PresentationEditor, payload json.RawMessage) (interface{}
 		updates := common.ShapeUpdate{
 			Text: &p.Text,
 		}
-		if err := e.UpdateShape(p.SlideIndex, id, updates); err != nil {
-			return nil, err
+		if updateErr := e.UpdateShape(p.SlideIndex, id, updates); updateErr != nil {
+			return nil, updateErr
 		}
 	}
 
 	return map[string]int{"shape_id": id}, nil
 }
 
-func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int `json:"slide_index"`
 		ShapeID    int `json:"shape_id"`
@@ -406,7 +452,7 @@ func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (interfac
 	return map[string]bool{"removed": true}, nil
 }
 
-func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int                `json:"slide_index"`
 		ShapeID    int                `json:"shape_id"`
@@ -421,7 +467,7 @@ func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (interfac
 	return map[string]bool{"updated": true}, nil
 }
 
-func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int `json:"slide_index"`
 	}
@@ -436,7 +482,7 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (interface{}
 	return map[string]string{"text": notes}, nil
 }
 
-func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (interface{}, error) {
+func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int    `json:"slide_index"`
 		Text       string `json:"text"`

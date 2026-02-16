@@ -11,7 +11,7 @@ import (
 const headerSize = 8
 
 // recordType is an enumeration that specifies the record type of an atom record or a container record
-// ([MS-PPT] 2.13.24 RecordType)
+// ([MS-PPT] 2.13.24 RecordType).
 type recordType uint16
 
 const (
@@ -35,7 +35,7 @@ const (
 	recordTypeRoundTripSlideSyncInfo12 recordType = 0x3714
 )
 
-// LowerPart returns lower byte of record type
+// LowerPart returns lower byte of record type.
 func (r recordType) LowerPart() byte {
 	const fullByte = 0xFF
 	return byte(r & fullByte)
@@ -48,29 +48,29 @@ type record struct {
 	recordData
 }
 
-// Type returns recordType of record contained in it's header
+// Type returns recordType of record contained in it's header.
 func (r record) Type() recordType {
 	return recordType(binary.LittleEndian.Uint16(r.header[2:4]))
 }
 
-// Length returns data length contained in record header
+// Length returns data length contained in record header.
 func (r record) Length() uint32 {
 	return binary.LittleEndian.Uint32(r.header[4:8])
 }
 
-// Data returns all data from record except header
+// Data returns all data from record except header.
 func (r record) Data() []byte {
 	return r.recordData
 }
 
 type recordData []byte
 
-// ReadAt copies bytes from record data at given offset into buffer p
-func (rd recordData) ReadAt(p []byte, off int64) (n int, err error) {
+// ReadAt copies bytes from record data at given offset into buffer p.
+func (rd recordData) ReadAt(p []byte, off int64) (int, error) {
 	return ioadapters.BytesReadAt(rd, p, off)
 }
 
-// LongAt interprets 4 bytes of record data at given offset as uint32 value and returns it
+// LongAt interprets 4 bytes of record data at given offset as uint32 value and returns it.
 func (rd recordData) LongAt(offset int) uint32 {
 	if offset+4 > len(rd) {
 		return 0
@@ -79,7 +79,7 @@ func (rd recordData) LongAt(offset int) uint32 {
 }
 
 // readRecord reads header and data of record. If wantedType is specified (not equals recordTypeUnspecified),
-// also compares read type with the wanted one and returns an error is they are not equal
+// also compares read type with the wanted one and returns an error is they are not equal.
 func readRecord(f io.ReaderAt, offset int64, wantedType recordType) (record, error) {
 	r, err := readRecordHeaderOnly(f, offset, wantedType)
 	if err != nil {
@@ -96,7 +96,7 @@ func readRecord(f io.ReaderAt, offset int64, wantedType recordType) (record, err
 }
 
 // readRecordHeaderOnly reads header of record. If wantedType is specified (not equals recordTypeUnspecified),
-// also compares read type with the wanted one and returns an error is they are not equal
+// also compares read type with the wanted one and returns an error is they are not equal.
 func readRecordHeaderOnly(f io.ReaderAt, offset int64, wantedType recordType) (record, error) {
 	r := record{}
 	_, err := f.ReadAt(r.header[:], offset)

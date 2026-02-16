@@ -2,7 +2,7 @@ package pptx
 
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // Re-export types for backward compatibility.

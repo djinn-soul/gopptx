@@ -19,6 +19,7 @@ import (
 var (
 	globalErrorMu sync.RWMutex
 	globalError   string
+	deckRegistry  = editor.NewEditorRegistry()
 )
 
 // setGlobalError safely sets the global error message.
@@ -50,7 +51,7 @@ func recoverPanic(h editor.Handle) {
 	if r := recover(); r != nil {
 		err := fmt.Errorf("go panic: %v\n%s", r, debug.Stack())
 		if h != 0 {
-			editor.SetHandleError(h, err)
+			editor.SetHandleError(deckRegistry, h, err)
 		} else {
 			setGlobalError(err)
 		}
@@ -69,7 +70,7 @@ func deck_open(path *C.char) C.DeckHandle {
 		return 0
 	}
 
-	h := editor.RegisterEditor(e)
+	h := editor.RegisterEditor(deckRegistry, e)
 	return C.DeckHandle(h)
 }
 
@@ -78,7 +79,7 @@ func deck_execute_json(h C.DeckHandle, json_input *C.char) *C.char {
 	handle := editor.Handle(h)
 	defer recoverPanic(handle)
 
-	e, ok := editor.GetEditor(handle)
+	e, ok := editor.GetEditor(deckRegistry, handle)
 	if !ok {
 		// Return a JSON error even if handle is invalid
 		return C.CString(`{"ok": false, "error": {"code": "INVALID_HANDLE", "message": "Handle not found"}}`)
@@ -94,14 +95,14 @@ func deck_save(h C.DeckHandle, path *C.char) C.int {
 	handle := editor.Handle(h)
 	defer recoverPanic(handle)
 
-	e, ok := editor.GetEditor(handle)
+	e, ok := editor.GetEditor(deckRegistry, handle)
 	if !ok {
 		return -1
 	}
 
 	goPath := C.GoString(path)
 	if err := e.Save(goPath); err != nil {
-		editor.SetHandleError(handle, err)
+		editor.SetHandleError(deckRegistry, handle, err)
 		return 1
 	}
 
@@ -113,7 +114,7 @@ func deck_last_error(h C.DeckHandle) *C.char {
 	handle := editor.Handle(h)
 	defer recoverPanic(handle)
 
-	errMsg := editor.GetHandleError(handle)
+	errMsg := editor.GetHandleError(deckRegistry, handle)
 	return C.CString(errMsg)
 }
 
@@ -129,5 +130,5 @@ func deck_close(h C.DeckHandle) {
 	handle := editor.Handle(h)
 	defer recoverPanic(handle)
 
-	editor.UnregisterEditor(handle)
+	editor.UnregisterEditor(deckRegistry, handle)
 }

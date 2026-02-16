@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -22,7 +23,7 @@ func main() {
 		"09_charts_family4_stock_combo.pptx":            createFamily4Sample,
 	}
 
-	fmt.Println("Generating chart smoke samples...")
+	log.Println("Generating chart smoke samples...")
 	for name, build := range samples {
 		data, err := build()
 		if err != nil {
@@ -33,11 +34,11 @@ func main() {
 		if err := os.WriteFile(path, data, 0o644); err != nil {
 			fail("write "+path, err)
 		}
-		fmt.Printf("  wrote %s\n", path)
+		log.Printf("  wrote %s\n", path)
 	}
 
-	fmt.Println("Done.")
-	fmt.Println("Manual checklist: scripts/chart_smoke_checklist.md")
+	log.Println("Done.")
+	log.Println("Manual checklist: scripts/chart_smoke_checklist.md")
 }
 
 func createFamily1Sample() ([]byte, error) {

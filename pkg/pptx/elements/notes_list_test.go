@@ -23,10 +23,18 @@ func TestNotesListParagraphs(t *testing.T) {
 
 	// Verify bullet styles carried through
 	if slide.NotesBody[0].Style.BulletStyle != text.BulletStyleBullet {
-		t.Errorf("para 0: expected bullet style %q, got %q", text.BulletStyleBullet, slide.NotesBody[0].Style.BulletStyle)
+		t.Errorf(
+			"para 0: expected bullet style %q, got %q",
+			text.BulletStyleBullet,
+			slide.NotesBody[0].Style.BulletStyle,
+		)
 	}
 	if slide.NotesBody[2].Style.BulletStyle != text.BulletStyleNumber {
-		t.Errorf("para 2: expected number style %q, got %q", text.BulletStyleNumber, slide.NotesBody[2].Style.BulletStyle)
+		t.Errorf(
+			"para 2: expected number style %q, got %q",
+			text.BulletStyleNumber,
+			slide.NotesBody[2].Style.BulletStyle,
+		)
 	}
 	if slide.NotesBody[4].Style.Level != 1 {
 		t.Errorf("para 4: expected level 1, got %d", slide.NotesBody[4].Style.Level)

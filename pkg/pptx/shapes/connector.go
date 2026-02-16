@@ -2,6 +2,7 @@ package shapes
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -404,35 +405,89 @@ func (connector Connector) Validate(shapeCount int, slideIndex int, connectorInd
 		return fmt.Errorf("slide %d connector %d invalid line: %w", slideIndex, connectorIndex, err)
 	}
 	if !IsArrowType(connector.StartArrow) {
-		return fmt.Errorf("slide %d connector %d start arrow %q is invalid", slideIndex, connectorIndex, connector.StartArrow)
+		return fmt.Errorf(
+			"slide %d connector %d start arrow %q is invalid",
+			slideIndex,
+			connectorIndex,
+			connector.StartArrow,
+		)
 	}
 	if !IsArrowType(connector.EndArrow) {
-		return fmt.Errorf("slide %d connector %d end arrow %q is invalid", slideIndex, connectorIndex, connector.EndArrow)
+		return fmt.Errorf(
+			"slide %d connector %d end arrow %q is invalid",
+			slideIndex,
+			connectorIndex,
+			connector.EndArrow,
+		)
 	}
 	if !IsArrowSize(connector.StartArrowWidth) {
-		return fmt.Errorf("slide %d connector %d start arrow width %q is invalid", slideIndex, connectorIndex, connector.StartArrowWidth)
+		return fmt.Errorf(
+			"slide %d connector %d start arrow width %q is invalid",
+			slideIndex,
+			connectorIndex,
+			connector.StartArrowWidth,
+		)
 	}
 	if !IsArrowSize(connector.StartArrowLen) {
-		return fmt.Errorf("slide %d connector %d start arrow length %q is invalid", slideIndex, connectorIndex, connector.StartArrowLen)
+		return fmt.Errorf(
+			"slide %d connector %d start arrow length %q is invalid",
+			slideIndex,
+			connectorIndex,
+			connector.StartArrowLen,
+		)
 	}
 	if !IsArrowSize(connector.EndArrowWidth) {
-		return fmt.Errorf("slide %d connector %d end arrow width %q is invalid", slideIndex, connectorIndex, connector.EndArrowWidth)
+		return fmt.Errorf(
+			"slide %d connector %d end arrow width %q is invalid",
+			slideIndex,
+			connectorIndex,
+			connector.EndArrowWidth,
+		)
 	}
 	if !IsArrowSize(connector.EndArrowLen) {
-		return fmt.Errorf("slide %d connector %d end arrow length %q is invalid", slideIndex, connectorIndex, connector.EndArrowLen)
+		return fmt.Errorf(
+			"slide %d connector %d end arrow length %q is invalid",
+			slideIndex,
+			connectorIndex,
+			connector.EndArrowLen,
+		)
 	}
-	if err := validateConnectorAnchor("start", connector.StartShapeIndex, connector.StartSite, shapeCount, slideIndex, connectorIndex); err != nil {
+	if err := validateConnectorAnchor(
+		"start",
+		connector.StartShapeIndex,
+		connector.StartSite,
+		shapeCount,
+		slideIndex,
+		connectorIndex,
+	); err != nil {
 		return err
 	}
-	if err := validateConnectorAnchor("end", connector.EndShapeIndex, connector.EndSite, shapeCount, slideIndex, connectorIndex); err != nil {
+	if err := validateConnectorAnchor(
+		"end",
+		connector.EndShapeIndex,
+		connector.EndSite,
+		shapeCount,
+		slideIndex,
+		connectorIndex,
+	); err != nil {
 		return err
 	}
 	for i, adj := range connector.Adjustments {
 		if strings.TrimSpace(adj.Name) == "" {
-			return fmt.Errorf("slide %d connector %d adjustment %d name cannot be empty", slideIndex, connectorIndex, i+1)
+			return fmt.Errorf(
+				"slide %d connector %d adjustment %d name cannot be empty",
+				slideIndex,
+				connectorIndex,
+				i+1,
+			)
 		}
 		if strings.TrimSpace(adj.Formula) == "" {
-			return fmt.Errorf("slide %d connector %d adjustment %d formula cannot be empty", slideIndex, connectorIndex, i+1)
+			return fmt.Errorf(
+				"slide %d connector %d adjustment %d formula cannot be empty",
+				slideIndex,
+				connectorIndex,
+				i+1,
+			)
 		}
 	}
 	if len(connector.Adjustments) > 0 {
@@ -453,10 +508,24 @@ func (connector Connector) ValidateWithShapes(shapes []Shape, slideIndex, connec
 	if err := connector.Validate(len(shapes), slideIndex, connectorIndex); err != nil {
 		return err
 	}
-	if err := validateConnectorSiteForShape("start", connector.StartShapeIndex, connector.StartSite, shapes, slideIndex, connectorIndex); err != nil {
+	if err := validateConnectorSiteForShape(
+		"start",
+		connector.StartShapeIndex,
+		connector.StartSite,
+		shapes,
+		slideIndex,
+		connectorIndex,
+	); err != nil {
 		return err
 	}
-	if err := validateConnectorSiteForShape("end", connector.EndShapeIndex, connector.EndSite, shapes, slideIndex, connectorIndex); err != nil {
+	if err := validateConnectorSiteForShape(
+		"end",
+		connector.EndShapeIndex,
+		connector.EndSite,
+		shapes,
+		slideIndex,
+		connectorIndex,
+	); err != nil {
 		return err
 	}
 	return nil
@@ -523,10 +592,8 @@ func validateConnectorSiteForShape(
 		return nil
 	}
 	normalized := NormalizeConnectionSite(site)
-	for _, allowed := range allowedConnectionSitesForShape(shape.Type) {
-		if normalized == allowed {
-			return nil
-		}
+	if slices.Contains(allowedConnectionSitesForShape(shape.Type), normalized) {
+		return nil
 	}
 	return fmt.Errorf(
 		"slide %d connector %d %s site %q is not supported for shape type %q",

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -115,7 +116,7 @@ func main() {
 	if err := os.WriteFile(reportPath, []byte(report), 0o644); err != nil {
 		fail("write parity report", err)
 	}
-	_, _ = fmt.Printf("Wrote %s\n", reportPath)
+	log.Printf("Wrote %s\n", reportPath)
 
 	passed := 0
 	for _, result := range results {
@@ -123,12 +124,12 @@ func main() {
 			passed++
 		}
 	}
-	_, _ = fmt.Printf("Parity result: %d/%d table signatures matched ppt-rs fixture requirements.\n", passed, len(results))
+	log.Printf("Parity result: %d/%d table signatures matched ppt-rs fixture requirements.\n", passed, len(results))
 	for _, result := range results {
 		if result.Pass {
 			continue
 		}
-		_, _ = fmt.Printf("  - %s failed\n", result.Name)
+		log.Printf("  - %s failed\n", result.Name)
 	}
 	if passed != len(results) {
 		os.Exit(1)

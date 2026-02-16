@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -73,7 +74,7 @@ func main() {
 		fail("write output", err)
 	}
 
-	fmt.Printf("Successfully generated smoke sample: %s\n", path)
+	log.Printf("Successfully generated smoke sample: %s\n", path)
 }
 
 func fail(step string, err error) {

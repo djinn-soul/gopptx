@@ -12,8 +12,11 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
 
 	if ph.Image != nil {
 		// Render as Picture
-		xfrm := ""
 		// If we have custom placement, use it, otherwise omit to inherit
+		xfrm := `
+  <p:spPr>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>`
 		if ph.Image.X != 0 || ph.Image.Y != 0 || ph.Image.CX != 0 || ph.Image.CY != 0 {
 			xfrm = fmt.Sprintf(`
   <p:spPr>
@@ -23,11 +26,6 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
   </p:spPr>`, ph.Image.X, ph.Image.Y, ph.Image.CX, ph.Image.CY)
-		} else {
-			xfrm = `
-  <p:spPr>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-  </p:spPr>`
 		}
 
 		return fmt.Sprintf(`
@@ -108,7 +106,12 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
 	// Default to Text/Shape
 
 	// Text body
-	txBody := ""
+	txBody := `
+<p:txBody>
+  <a:bodyPr/>
+  <a:lstStyle/>
+  <a:p/>
+</p:txBody>`
 	if ph.Text != "" {
 		escaped := Escape(ph.Text)
 		txBody = fmt.Sprintf(`
@@ -122,14 +125,6 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
     </a:r>
   </a:p>
 </p:txBody>`, escaped)
-	} else {
-		// Empty body but allowing text entry
-		txBody = `
-<p:txBody>
-  <a:bodyPr/>
-  <a:lstStyle/>
-  <a:p/>
-</p:txBody>`
 	}
 
 	return fmt.Sprintf(`

@@ -24,7 +24,7 @@ func ToReaderAt(r io.Reader) io.ReaderAt {
 	}
 }
 
-func (r *readerAtAdapter) ReadAt(p []byte, off int64) (n int, err error) {
+func (r *readerAtAdapter) ReadAt(p []byte, off int64) (int, error) {
 	if int(off)+len(p) > len(r.readBytes) {
 		err := r.expandBuffer(int(off) + len(p))
 		if err != nil {
@@ -53,20 +53,20 @@ func (r *readerAtAdapter) expandBuffer(newSize int) error {
 }
 
 // BytesReadAt returns an io.ReaderAt from a byte slice.
-func BytesReadAt(src []byte, dst []byte, off int64) (n int, err error) {
+func BytesReadAt(src []byte, dst []byte, off int64) (int, error) {
 	return bytesReaderAt(src).ReadAt(dst, off)
 }
 
 type bytesReaderAt []byte
 
-func (bra bytesReaderAt) ReadAt(p []byte, off int64) (n int, err error) {
+func (bra bytesReaderAt) ReadAt(p []byte, off int64) (int, error) {
 	if off < 0 {
 		return 0, errors.New("ioadapters: negative offset")
 	}
 	if off >= int64(len(bra)) {
 		return 0, io.EOF
 	}
-	n = copy(p, bra[off:])
+	n := copy(p, bra[off:])
 	if n < len(p) {
 		return n, io.EOF
 	}

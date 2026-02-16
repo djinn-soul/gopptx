@@ -28,30 +28,32 @@ const (
 	OpSetNotes                = "set_notes"
 )
 
-// SupportedOps is the canonical list of operations accepted by ExecuteCommand.
-var SupportedOps = []string{
-	OpSlideCount,
-	OpAddSlide,
-	OpRemoveSlide,
-	OpMoveSlide,
-	OpDuplicateSlide,
-	OpGetMetadata,
-	OpUpdateChartData,
-	OpListSlideCharts,
-	OpListSlideLayouts,
-	OpRebindSlideLayout,
-	OpCloneLayoutMasterFamily,
-	OpAddSection,
-	OpRemoveSection,
-	OpRenameSection,
-	OpGetCoreProperties,
-	OpSetCoreProperties,
-	OpApplyTheme,
-	OpSetSlideSize,
-	OpListShapes,
-	OpAddShape,
-	OpRemoveShape,
-	OpUpdateShape,
-	OpGetNotes,
-	OpSetNotes,
+// SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
+func SupportedOps() []string {
+	return []string{
+		OpSlideCount,
+		OpAddSlide,
+		OpRemoveSlide,
+		OpMoveSlide,
+		OpDuplicateSlide,
+		OpGetMetadata,
+		OpUpdateChartData,
+		OpListSlideCharts,
+		OpListSlideLayouts,
+		OpRebindSlideLayout,
+		OpCloneLayoutMasterFamily,
+		OpAddSection,
+		OpRemoveSection,
+		OpRenameSection,
+		OpGetCoreProperties,
+		OpSetCoreProperties,
+		OpApplyTheme,
+		OpSetSlideSize,
+		OpListShapes,
+		OpAddShape,
+		OpRemoveShape,
+		OpUpdateShape,
+		OpGetNotes,
+		OpSetNotes,
+	}
 }

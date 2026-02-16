@@ -6,33 +6,35 @@ import (
 )
 
 func TestRegistry(t *testing.T) {
+	registry := NewEditorRegistry()
 	e := &PresentationEditor{} // Dummy editor
-	h := RegisterEditor(e)
+	h := RegisterEditor(registry, e)
 	if h == 0 {
 		t.Fatal("expected non-zero handle")
 	}
 
-	retrieved, ok := GetEditor(h)
+	retrieved, ok := GetEditor(registry, h)
 	if !ok || retrieved != e {
 		t.Fatal("failed to retrieve editor")
 	}
 
-	UnregisterEditor(h)
-	_, ok = GetEditor(h)
+	UnregisterEditor(registry, h)
+	_, ok = GetEditor(registry, h)
 	if ok {
 		t.Fatal("handle should be unregistered")
 	}
 }
 
 func TestRegistryErrorTracking(t *testing.T) {
+	registry := NewEditorRegistry()
 	e := &PresentationEditor{}
-	h := RegisterEditor(e)
-	defer UnregisterEditor(h)
+	h := RegisterEditor(registry, e)
+	defer UnregisterEditor(registry, h)
 
 	const errMsg = "test error"
-	SetHandleError(h, errors.New(errMsg))
+	SetHandleError(registry, h, errors.New(errMsg))
 
-	if GetHandleError(h) != errMsg {
-		t.Fatalf("expected %q, got %q", errMsg, GetHandleError(h))
+	if GetHandleError(registry, h) != errMsg {
+		t.Fatalf("expected %q, got %q", errMsg, GetHandleError(registry, h))
 	}
 }

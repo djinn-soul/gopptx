@@ -40,15 +40,15 @@ type PresentationMetadata struct {
 
 // CoreProperties represents the docProps/core.xml metadata.
 type CoreProperties struct {
-	Title          string `json:"title" xml:"http://purl.org/dc/elements/1.1/ title,omitempty"`
-	Subject        string `json:"subject" xml:"http://purl.org/dc/elements/1.1/ subject,omitempty"`
-	Creator        string `json:"creator" xml:"http://purl.org/dc/elements/1.1/ creator,omitempty"`
-	Keywords       string `json:"keywords" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties keywords,omitempty"`
-	Description    string `json:"description" xml:"http://purl.org/dc/elements/1.1/ description,omitempty"`
+	Title          string `json:"title"          xml:"http://purl.org/dc/elements/1.1/ title,omitempty"`
+	Subject        string `json:"subject"        xml:"http://purl.org/dc/elements/1.1/ subject,omitempty"`
+	Creator        string `json:"creator"        xml:"http://purl.org/dc/elements/1.1/ creator,omitempty"`
+	Keywords       string `json:"keywords"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties keywords,omitempty"`
+	Description    string `json:"description"    xml:"http://purl.org/dc/elements/1.1/ description,omitempty"`
 	LastModifiedBy string `json:"lastModifiedBy" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties lastModifiedBy,omitempty"`
-	Revision       string `json:"revision" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties revision,omitempty"`
-	Created        string `json:"created" xml:"http://purl.org/dc/terms/ created,omitempty"`
-	Modified       string `json:"modified" xml:"http://purl.org/dc/terms/ modified,omitempty"`
-	Category       string `json:"category" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties category,omitempty"`
-	ContentStatus  string `json:"contentStatus" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"`
+	Revision       string `json:"revision"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties revision,omitempty"`
+	Created        string `json:"created"        xml:"http://purl.org/dc/terms/ created,omitempty"`
+	Modified       string `json:"modified"       xml:"http://purl.org/dc/terms/ modified,omitempty"`
+	Category       string `json:"category"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties category,omitempty"`
+	ContentStatus  string `json:"contentStatus"  xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"`
 }

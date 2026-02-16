@@ -79,7 +79,11 @@ func TestTransitionXML(t *testing.T) {
 		},
 		{
 			name: "split horizontal out",
-			opts: TransitionOptions{Type: TransitionSplit, Direction: TransitionDirOut, Orientation: TransitionOrientHorizontal},
+			opts: TransitionOptions{
+				Type:        TransitionSplit,
+				Direction:   TransitionDirOut,
+				Orientation: TransitionOrientHorizontal,
+			},
 			want: `<p:transition><p:split dir="out" orient="horz"/></p:transition>`,
 		},
 		{

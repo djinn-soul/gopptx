@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html"
 	"regexp"
@@ -11,14 +12,16 @@ import (
 
 var textRunPattern = regexp.MustCompile(`(?s)(<a:t(?:\s+[^>]*)?>)(.*?)(</a:t>)`)
 
+const textRunPatternSubmatchSize = 4
+
 // FindAndReplaceInShapes performs a global text replacement across slide text runs.
 // It returns the number of replacements made.
 func (e *PresentationEditor) FindAndReplaceInShapes(findText, replaceText string) (int, error) {
 	if e == nil {
-		return 0, fmt.Errorf("editor cannot be nil")
+		return 0, errors.New("editor cannot be nil")
 	}
 	if strings.TrimSpace(findText) == "" {
-		return 0, fmt.Errorf("find text cannot be empty")
+		return 0, errors.New("find text cannot be empty")
 	}
 
 	total := 0
@@ -41,7 +44,7 @@ func replaceTextRuns(content []byte, findText, replaceText string) ([]byte, int)
 	total := 0
 	replaced := textRunPattern.ReplaceAllFunc(content, func(match []byte) []byte {
 		sub := textRunPattern.FindSubmatch(match)
-		if len(sub) < 4 {
+		if len(sub) < textRunPatternSubmatchSize {
 			return match
 		}
 		openTag := string(sub[1])

@@ -3,6 +3,7 @@ package pptx
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 
@@ -30,10 +31,10 @@ var (
 // Create builds a valid PPTX with generated slide titles.
 func Create(title string, slideCount int) ([]byte, error) {
 	if title == "" {
-		return nil, fmt.Errorf("presentation title cannot be empty")
+		return nil, errors.New("presentation title cannot be empty")
 	}
 	if slideCount < 1 {
-		return nil, fmt.Errorf("slide count must be at least 1")
+		return nil, errors.New("slide count must be at least 1")
 	}
 
 	slides := make([]SlideContent, 0, slideCount)
@@ -45,21 +46,27 @@ func Create(title string, slideCount int) ([]byte, error) {
 		slides = append(slides, NewSlide(slideTitle))
 	}
 
-	return CreateWithMetadata(PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}}, slides)
+	return CreateWithMetadata(
+		PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}},
+		slides,
+	)
 }
 
 // CreateWithSlides builds a PPTX from caller-provided slide content.
 func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
-	return CreateWithMetadata(PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}}, slides)
+	return CreateWithMetadata(
+		PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}},
+		slides,
+	)
 }
 
 // CreateWithMetadata builds a PPTX from metadata and caller-provided slide content.
 func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byte, error) {
 	if meta.Title == "" {
-		return nil, fmt.Errorf("presentation title cannot be empty")
+		return nil, errors.New("presentation title cannot be empty")
 	}
 	if len(slides) == 0 {
-		return nil, fmt.Errorf("at least one slide is required")
+		return nil, errors.New("at least one slide is required")
 	}
 	for i, slide := range slides {
 		if err := slide.Validate(i + 1); err != nil {
@@ -87,7 +94,10 @@ func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byt
 
 // WriteFile is a convenience helper that writes the generated PPTX to disk.
 func WriteFile(path string, title string, slides []SlideContent) error {
-	data, err := CreateWithMetadata(PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title, SlideSize: SlideSize4x3}}, slides)
+	data, err := CreateWithMetadata(
+		PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title, SlideSize: SlideSize4x3}},
+		slides,
+	)
 	if err != nil {
 		return err
 	}
