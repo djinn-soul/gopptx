@@ -114,8 +114,8 @@ func (l ShapeLine) WithDash(dash string) ShapeLine {
 }
 
 // WithCap sets line cap style.
-func (l ShapeLine) WithCap(cap string) ShapeLine {
-	l.Cap = NormalizeLineCap(cap)
+func (l ShapeLine) WithCap(lineCap string) ShapeLine {
+	l.Cap = NormalizeLineCap(lineCap)
 	return l
 }
 

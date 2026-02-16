@@ -1,6 +1,7 @@
 package media
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -93,7 +94,12 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 				ext = "png"
 			}
 
-			resp, err := client.Get(image.SourceURL)
+			req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, image.SourceURL, http.NoBody)
+			if reqErr != nil {
+				return fmt.Errorf("build request error: %w", reqErr)
+			}
+
+			resp, err := client.Do(req)
 			if err != nil {
 				return fmt.Errorf("fetch error: %w", err)
 			}

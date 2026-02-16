@@ -70,7 +70,10 @@ func ExtractText(r io.Reader) (string, error) {
 }
 
 // getCurrentUserAndPPTDoc extracts necessary mscfb files from PPT file.
-func getCurrentUserAndPPTDoc(r *mscfb.Reader) (currentUser *mscfb.File, pptDocument *mscfb.File) {
+func getCurrentUserAndPPTDoc(r *mscfb.Reader) (*mscfb.File, *mscfb.File) {
+	var currentUser *mscfb.File
+	var pptDocument *mscfb.File
+
 	for _, f := range r.File {
 		switch f.Name {
 		case "Current User":
@@ -109,18 +112,17 @@ func isValidPPT(currentUser, pptDocument *mscfb.File) error {
 
 // getUserEditAtomsData extracts "live record" and persist directory offsets
 // according to section 2.1.2 of specification.
-func getUserEditAtomsData(currentUser, pptDocument *mscfb.File) (
-	persistDirectoryOffsets []int64,
-	liveRecord record,
-	err error,
-) {
+func getUserEditAtomsData(currentUser, pptDocument *mscfb.File) ([]int64, record, error) {
 	const (
 		offsetLastEditInitialPosition  = 16
 		offsetLastEditPosition         = 8
 		persistDirectoryOffsetPosition = 12
 	)
+	var persistDirectoryOffsets []int64
+	var liveRecord record
+
 	var b [4]byte
-	_, err = currentUser.ReadAt(b[:], offsetLastEditInitialPosition)
+	_, err := currentUser.ReadAt(b[:], offsetLastEditInitialPosition)
 	if err != nil {
 		return nil, record{}, err
 	}

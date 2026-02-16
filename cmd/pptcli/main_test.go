@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
 )
 
@@ -141,7 +140,7 @@ func TestCLI_ValidateSubcommand_InvalidZip(t *testing.T) {
 	}
 }
 
-func runCLI(t *testing.T, args ...string) (stdout string, stderr string, exitCode int) {
+func runCLI(t *testing.T, args ...string) (string, string, int) {
 	t.Helper()
 
 	cmd := exec.Command(cliBinary(t), args...)
@@ -166,12 +165,6 @@ func runCLI(t *testing.T, args ...string) (stdout string, stderr string, exitCod
 	t.Fatalf("unexpected run error: %v", err)
 	return "", "", exitInternal
 }
-
-var (
-	cliBuildOnce sync.Once
-	cliBuildErr  error
-	cliBinPath   string
-)
 
 func TestMergeCommand(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -201,31 +194,21 @@ func TestMergeCommand(t *testing.T) {
 func cliBinary(t *testing.T) string {
 	t.Helper()
 
-	cliBuildOnce.Do(func() {
-		tmpDir, err := os.MkdirTemp("", "gopptx-pptcli-*")
-		if err != nil {
-			cliBuildErr = err
-			return
-		}
-
-		name := "pptcli-test-bin"
-		if runtime.GOOS == "windows" {
-			name += ".exe"
-		}
-		cliBinPath = filepath.Join(tmpDir, name)
-
-		build := exec.Command("go", "build", "-o", cliBinPath, ".")
-		build.Dir = "."
-		var buildOut bytes.Buffer
-		build.Stdout = &buildOut
-		build.Stderr = &buildOut
-		if err := build.Run(); err != nil {
-			cliBuildErr = fmt.Errorf("build failed: %w: %s", err, buildOut.String())
-		}
-	})
-
-	if cliBuildErr != nil {
-		t.Fatalf("failed to build CLI binary: %v", cliBuildErr)
+	tmpDir := t.TempDir()
+	name := "pptcli-test-bin"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
 	}
+	cliBinPath := filepath.Join(tmpDir, name)
+
+	build := exec.Command("go", "build", "-o", cliBinPath, ".")
+	build.Dir = "."
+	var buildOut bytes.Buffer
+	build.Stdout = &buildOut
+	build.Stderr = &buildOut
+	if err := build.Run(); err != nil {
+		t.Fatalf("failed to build CLI binary: %v", fmt.Errorf("build failed: %w: %s", err, buildOut.String()))
+	}
+
 	return cliBinPath
 }

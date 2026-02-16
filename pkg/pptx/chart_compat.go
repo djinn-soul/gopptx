@@ -96,12 +96,12 @@ func NewRadarFilledChart(categories []string, values []float64) RadarFilledChart
 	return charts.NewRadarFilledChart(categories, values)
 }
 
-func NewStockHLCChart(categories []string, high, low, close []float64) StockHLCChart {
-	return charts.NewStockHLCChart(categories, high, low, close)
+func NewStockHLCChart(categories []string, high, low, closeValues []float64) StockHLCChart {
+	return charts.NewStockHLCChart(categories, high, low, closeValues)
 }
 
-func NewStockOHLCChart(categories []string, open, high, low, close []float64) StockOHLCChart {
-	return charts.NewStockOHLCChart(categories, open, high, low, close)
+func NewStockOHLCChart(categories []string, open, high, low, closeValues []float64) StockOHLCChart {
+	return charts.NewStockOHLCChart(categories, open, high, low, closeValues)
 }
 
 func NewComboChart(categories []string, barSeries []Series, lineSeries []Series) ComboChart {

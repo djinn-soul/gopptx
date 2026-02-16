@@ -179,7 +179,7 @@ func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideB
 				})
 			}
 			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{
-				Type:     string(bg.GradientFill.Type),
+				Type:     bg.GradientFill.Type,
 				Stops:    stops,
 				AngleDeg: bg.GradientFill.AngleDeg,
 			}

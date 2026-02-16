@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func titleShape(title TitleSpec, width, height int64) string {
+func titleShape(title TitleSpec, width, _ int64) string {
 	// Standard margin is 0.5 inches (457200 EMU)
 	margin := int64(457200)
 	x := margin
@@ -91,7 +91,7 @@ func contentShape(
 	bulletRuns [][]TextRunSpec,
 	style ContentStyleSpec,
 	shapeID int,
-	width, height int64,
+	width, _ int64,
 ) string {
 	margin := int64(457200)
 	x := margin
@@ -115,7 +115,7 @@ func bigContentShape(
 	bulletRuns [][]TextRunSpec,
 	style ContentStyleSpec,
 	shapeID int,
-	width, height int64,
+	_, _ int64,
 ) string {
 	margin := int64(457200)
 	x := margin
@@ -139,7 +139,7 @@ func leftTwoColumnShape(
 	bulletRuns [][]TextRunSpec,
 	style ContentStyleSpec,
 	shapeID int,
-	width, height int64,
+	width, _ int64,
 ) string {
 	margin := int64(457200)
 	columnGap := int64(457200) // 0.5 inch gap
@@ -164,7 +164,7 @@ func rightTwoColumnShape(
 	bulletRuns [][]TextRunSpec,
 	style ContentStyleSpec,
 	shapeID int,
-	width, height int64,
+	width, _ int64,
 ) string {
 	margin := int64(457200)
 	columnGap := int64(457200)
@@ -374,7 +374,7 @@ func footerShape(text string, width, height int64, shapeID int) string {
 </p:sp>`, shapeID, x, y, cx, cy, Escape(text))
 }
 
-func dateTimeShape(width, height int64, shapeID int) string {
+func dateTimeShape(_ int64, height int64, shapeID int) string {
 	cx := int64(2133600)
 	cy := int64(396240)
 	x := int64(457200)

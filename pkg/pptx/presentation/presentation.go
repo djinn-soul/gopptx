@@ -39,9 +39,9 @@ func WritePackageFiles(
 ) error {
 	pw := pptxxml.NewPackageWriter()
 
-	mediaCatalog, err := media.BuildMediaCatalog(slides)
-	if err != nil {
-		return err
+	mediaCatalog, mediaErr := media.BuildMediaCatalog(slides)
+	if mediaErr != nil {
+		return mediaErr
 	}
 
 	effectiveMasters := meta.Masters

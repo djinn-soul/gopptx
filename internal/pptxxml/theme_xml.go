@@ -310,9 +310,7 @@ func textLevelStylesXML(levels []TextLevelStyle) string {
 		lvlNum := max(
 			// 0-based → 1-based
 			lvl.Level+1, 1)
-		if lvlNum > 9 {
-			lvlNum = 9
-		}
+		lvlNum = min(lvlNum, 9)
 
 		attrs := ""
 		if lvl.IndentEMU > 0 {

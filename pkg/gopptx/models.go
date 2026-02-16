@@ -4,13 +4,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/djinn-soul/gopptx/internal/opc"
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 const (
-	NS_P = "http://schemas.openxmlformats.org/presentationml/2006/main"
+	NSP = "http://schemas.openxmlformats.org/presentationml/2006/main"
 )
 
 // Presentation represents the main presentation XML component.
@@ -65,7 +66,7 @@ func (p *Presentation) Save(path string) error {
 		// Using a minimal valid slide XML for now to ensure it's openable
 		slideXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Slide ` + fmt.Sprintf("%d", i+1) + `</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
+<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Slide ` + strconv.Itoa(i+1) + `</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
 		filename := fmt.Sprintf("ppt/slides/slide%d.xml", i+1)
 		if err := w.AddFile(filename, []byte(slideXML)); err != nil {
 			return err

@@ -73,9 +73,9 @@ func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 	hasStyled := false
 	for i := 0; i < len(input); {
 		if input[i] == '`' {
-			close := strings.Index(input[i+1:], "`")
-			if close >= 0 {
-				end := i + 1 + close
+			closeIdx := strings.Index(input[i+1:], "`")
+			if closeIdx >= 0 {
+				end := i + 1 + closeIdx
 				if end > i+1 {
 					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Code: true})
 					hasStyled = true
@@ -89,9 +89,9 @@ func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 		}
 
 		if strings.HasPrefix(input[i:], "**") {
-			close := strings.Index(input[i+2:], "**")
-			if close >= 0 {
-				end := i + 2 + close
+			closeIdx := strings.Index(input[i+2:], "**")
+			if closeIdx >= 0 {
+				end := i + 2 + closeIdx
 				if end > i+2 {
 					runs = append(runs, elements.TextRun{Text: input[i+2 : end], Bold: true})
 					hasStyled = true
@@ -105,9 +105,9 @@ func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 		}
 
 		if input[i] == '*' {
-			close := strings.Index(input[i+1:], "*")
-			if close >= 0 {
-				end := i + 1 + close
+			closeIdx := strings.Index(input[i+1:], "*")
+			if closeIdx >= 0 {
+				end := i + 1 + closeIdx
 				if end > i+1 {
 					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Italic: true})
 					hasStyled = true

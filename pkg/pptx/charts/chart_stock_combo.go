@@ -35,11 +35,11 @@ type StockHLCChart struct {
 	MaxValue              *float64
 }
 
-func NewStockHLCChart(categories []string, high []float64, low []float64, close []float64) StockHLCChart {
+func NewStockHLCChart(categories []string, high []float64, low []float64, closeValues []float64) StockHLCChart {
 	cats := append([]string(nil), categories...)
 	highVals := append([]float64(nil), high...)
 	lowVals := append([]float64(nil), low...)
-	closeVals := append([]float64(nil), close...)
+	closeVals := append([]float64(nil), closeValues...)
 	return StockHLCChart{
 		Title:       "Chart",
 		Categories:  cats,
@@ -140,9 +140,9 @@ func NewStockOHLCChart(
 	open []float64,
 	high []float64,
 	low []float64,
-	close []float64,
+	closeValues []float64,
 ) StockOHLCChart {
-	base := NewStockHLCChart(categories, high, low, close)
+	base := NewStockHLCChart(categories, high, low, closeValues)
 	openVals := append([]float64(nil), open...)
 	return StockOHLCChart{
 		StockHLCChart: base,

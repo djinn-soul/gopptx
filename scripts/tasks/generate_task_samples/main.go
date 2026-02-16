@@ -62,7 +62,7 @@ func main() {
 			log.Printf("Error writing %s: %v", path, err)
 			continue
 		}
-		fmt.Printf("Generated %s\n", path)
+		log.Printf("Generated %s\n", path)
 	}
 }
 

@@ -139,9 +139,9 @@ func (b *slidePartBuilder) build(
 		p.table = spec
 	}
 
-	imageRefs, err := b.mapImages(slide.Images)
-	if err != nil {
-		return nil, err
+	imageRefs, mapErr := b.mapImages(slide.Images)
+	if mapErr != nil {
+		return nil, mapErr
 	}
 	p.imageRefs = imageRefs
 
@@ -215,7 +215,7 @@ func (b *slidePartBuilder) handleTransitionSound(slide *elements.SlideContent) {
 			strings.HasPrefix(opt.Sound.RelID, "file:") {
 			path := strings.TrimPrefix(opt.Sound.RelID, "file:")
 			soundMedia := shapes.Image{Path: path}
-			if mediaName, ok := b.catalog.MediaNameForImage(soundMedia); ok {
+			if mediaName, found := b.catalog.MediaNameForImage(soundMedia); found {
 				rid := b.nextRID()
 				b.targets = append(b.targets, fmt.Sprintf("../media/%s", mediaName))
 				opt.Sound.RelID = rid

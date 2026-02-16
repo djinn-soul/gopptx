@@ -66,7 +66,7 @@ func (r record) Data() []byte {
 type recordData []byte
 
 // ReadAt copies bytes from record data at given offset into buffer p.
-func (rd recordData) ReadAt(p []byte, off int64) (n int, err error) {
+func (rd recordData) ReadAt(p []byte, off int64) (int, error) {
 	return ioadapters.BytesReadAt(rd, p, off)
 }
 
