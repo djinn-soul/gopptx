@@ -12,8 +12,9 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const outDir = "examples/output"
+
 func main() {
-	outDir := "smoke_samples"
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
@@ -299,7 +300,7 @@ func generateCharts() ([]byte, error) {
 }
 
 func generateImages() ([]byte, error) {
-	imagePath := filepath.Join("smoke_samples", "sampleimage", "repository-open-graph-template.png")
+	imagePath := filepath.Join("examples", "assets", "55", "repository-open-graph-template.png")
 	// If path doesn't exist relative to where script is run, fall back to dummy
 	_, err := os.Stat(imagePath)
 	var img pptx.Image
@@ -326,7 +327,7 @@ func generateImages() ([]byte, error) {
 }
 
 func generateImagesAdvanced() ([]byte, error) {
-	imagePath := filepath.Join("smoke_samples", "sampleimage", "repository-open-graph-template.png")
+	imagePath := filepath.Join("examples", "assets", "55", "repository-open-graph-template.png")
 	_, err := os.Stat(imagePath)
 	var img1, img2 pptx.Image
 	if err == nil {
@@ -442,14 +443,14 @@ func generateTransitions() ([]byte, error) {
 		WithTransitionOptions(pptx.TransitionOptions{
 			Type: pptx.TransitionShape,
 		}).
-		WithTransitionSound(filepath.Join("smoke_samples", "transition_sound.wav")).
+		WithTransitionSound(filepath.Join(outDir, "transition_sound.wav")).
 		AddBullet("This slide has a circle transition with sound")
 
 	slides = append(slides, transitionsWithSound)
 
 	// Create a dummy WAV file for the test
 	wavData := generateSineWaveWAV()
-	if err := os.WriteFile(filepath.Join("smoke_samples", "transition_sound.wav"), wavData, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "transition_sound.wav"), wavData, 0o644); err != nil {
 		return nil, fmt.Errorf("failed to write wav file: %w", err)
 	}
 

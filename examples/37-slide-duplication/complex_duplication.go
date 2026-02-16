@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -16,7 +18,7 @@ const (
 	outFile   = "37_complex_duplication.pptx"
 )
 
-func complexDuplicationExample() {
+func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

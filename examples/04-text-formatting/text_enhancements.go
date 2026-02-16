@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func mainTextEnhancements() {
+func main() {
 	builder := pptx.NewPresentationBuilder("Text Enhancements Showcase")
 
 	// Slide 1: Case Controls

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func mainTextFrame() { //nolint:unused
+func main() { //nolint:unused
 	//nolint:unused
 	outDir := "examples/output"
 	if err := os.MkdirAll(outDir, 0o755); err != nil {

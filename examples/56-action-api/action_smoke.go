@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -13,7 +15,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
-func smokeActionAPI() {
+func main() {
 	slides := []pptx.SlideContent{
 		buildClickActionSlide(),
 		buildHoverActionSlide(),
