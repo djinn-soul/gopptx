@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -35,7 +36,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Write error: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Created %s\n", outPath)
+	log.Printf("Created %s\n", outPath)
 }
 
 func buildClickActionSlide() pptx.SlideContent {

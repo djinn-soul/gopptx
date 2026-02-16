@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -81,6 +82,6 @@ func run() error {
 		return fmt.Errorf("failed to save presentation: %w", err)
 	}
 
-	fmt.Printf("Generated %s\n", path)
+	log.Printf("Generated %s\n", path)
 	return nil
 }

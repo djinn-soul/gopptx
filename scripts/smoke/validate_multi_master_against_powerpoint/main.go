@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -76,13 +77,13 @@ func main() {
 	printSummary(baseInfo, candInfo)
 
 	if len(errs) > 0 {
-		fmt.Println("RESULT=FAIL")
+		log.Println("RESULT=FAIL")
 		for _, e := range errs {
-			fmt.Printf("- %s\n", e)
+			log.Printf("- %s\n", e)
 		}
 		os.Exit(1)
 	}
-	fmt.Println("RESULT=PASS")
+	log.Println("RESULT=PASS")
 }
 
 func inspectPackage(path string) (*pkgInfo, error) {
@@ -287,8 +288,8 @@ func readZipEntry(files []*zip.File, name string) (string, error) {
 }
 
 func printSummary(base, cand *pkgInfo) {
-	fmt.Printf("BASELINE=%s masters=%d layouts=%d\n", base.path, len(base.masters), len(base.layouts))
-	fmt.Printf("CANDIDATE=%s masters=%d layouts=%d\n", cand.path, len(cand.masters), len(cand.layouts))
+	log.Printf("BASELINE=%s masters=%d layouts=%d\n", base.path, len(base.masters), len(base.layouts))
+	log.Printf("CANDIDATE=%s masters=%d layouts=%d\n", cand.path, len(cand.masters), len(cand.layouts))
 }
 
 func dedupe(in []string) []string {

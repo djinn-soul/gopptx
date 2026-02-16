@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // SearchShapes scans all slides and returns shapes matching the query.

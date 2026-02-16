@@ -16,8 +16,8 @@ type registeredEditor struct {
 
 const initialEditorHandle = 1000
 
-// EditorRegistry stores active editor handles.
-type EditorRegistry struct {
+// Registry stores active editor handles.
+type Registry struct {
 	mu sync.RWMutex
 
 	editors    map[Handle]*registeredEditor
@@ -25,15 +25,15 @@ type EditorRegistry struct {
 }
 
 // NewEditorRegistry creates an empty registry.
-func NewEditorRegistry() *EditorRegistry {
-	return &EditorRegistry{
+func NewEditorRegistry() *Registry {
+	return &Registry{
 		editors:    make(map[Handle]*registeredEditor),
 		nextHandle: initialEditorHandle, // Start above common low integer values.
 	}
 }
 
 // RegisterEditor adds an editor to the registry and returns a handle.
-func (r *EditorRegistry) RegisterEditor(e *PresentationEditor) Handle {
+func (r *Registry) RegisterEditor(e *PresentationEditor) Handle {
 	if r == nil || e == nil {
 		return 0
 	}
@@ -46,7 +46,7 @@ func (r *EditorRegistry) RegisterEditor(e *PresentationEditor) Handle {
 }
 
 // GetEditor retrieves an editor from the registry by its handle.
-func (r *EditorRegistry) GetEditor(h Handle) (*PresentationEditor, bool) {
+func (r *Registry) GetEditor(h Handle) (*PresentationEditor, bool) {
 	if r == nil {
 		return nil, false
 	}
@@ -61,7 +61,7 @@ func (r *EditorRegistry) GetEditor(h Handle) (*PresentationEditor, bool) {
 }
 
 // UnregisterEditor removes an editor from the registry and closes it.
-func (r *EditorRegistry) UnregisterEditor(h Handle) {
+func (r *Registry) UnregisterEditor(h Handle) {
 	if r == nil {
 		return
 	}
@@ -78,7 +78,7 @@ func (r *EditorRegistry) UnregisterEditor(h Handle) {
 }
 
 // SetHandleError records the last error encountered for a specific handle.
-func (r *EditorRegistry) SetHandleError(h Handle, err error) {
+func (r *Registry) SetHandleError(h Handle, err error) {
 	if r == nil || err == nil {
 		return
 	}
@@ -91,7 +91,7 @@ func (r *EditorRegistry) SetHandleError(h Handle, err error) {
 }
 
 // GetHandleError returns the last error string for a specific handle.
-func (r *EditorRegistry) GetHandleError(h Handle) string {
+func (r *Registry) GetHandleError(h Handle) string {
 	if r == nil {
 		return fmt.Sprintf("invalid handle: %d", h)
 	}
@@ -105,7 +105,7 @@ func (r *EditorRegistry) GetHandleError(h Handle) string {
 }
 
 // RegisterEditor adds an editor to a registry and returns its handle.
-func RegisterEditor(registry *EditorRegistry, e *PresentationEditor) Handle {
+func RegisterEditor(registry *Registry, e *PresentationEditor) Handle {
 	if registry == nil {
 		return 0
 	}
@@ -113,7 +113,7 @@ func RegisterEditor(registry *EditorRegistry, e *PresentationEditor) Handle {
 }
 
 // GetEditor retrieves an editor from a registry by handle.
-func GetEditor(registry *EditorRegistry, h Handle) (*PresentationEditor, bool) {
+func GetEditor(registry *Registry, h Handle) (*PresentationEditor, bool) {
 	if registry == nil {
 		return nil, false
 	}
@@ -121,7 +121,7 @@ func GetEditor(registry *EditorRegistry, h Handle) (*PresentationEditor, bool) {
 }
 
 // UnregisterEditor removes an editor from a registry and closes it.
-func UnregisterEditor(registry *EditorRegistry, h Handle) {
+func UnregisterEditor(registry *Registry, h Handle) {
 	if registry == nil {
 		return
 	}
@@ -129,7 +129,7 @@ func UnregisterEditor(registry *EditorRegistry, h Handle) {
 }
 
 // SetHandleError records the last error for a handle in a registry.
-func SetHandleError(registry *EditorRegistry, h Handle, err error) {
+func SetHandleError(registry *Registry, h Handle, err error) {
 	if registry == nil {
 		return
 	}
@@ -137,7 +137,7 @@ func SetHandleError(registry *EditorRegistry, h Handle, err error) {
 }
 
 // GetHandleError returns the last error for a handle in a registry.
-func GetHandleError(registry *EditorRegistry, h Handle) string {
+func GetHandleError(registry *Registry, h Handle) string {
 	if registry == nil {
 		return fmt.Sprintf("invalid handle: %d", h)
 	}

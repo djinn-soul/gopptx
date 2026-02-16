@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // deepCloneSlideAssets walks through the relationships of a source slide and copies

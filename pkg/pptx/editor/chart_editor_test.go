@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 

@@ -14,7 +14,7 @@ func main() {
 	templatePath := "examples/assets/37/160070-labyrinth-template-16x9.pptx"
 	outputPath := "examples/output/38_editor_image_stamping.pptx"
 
-	fmt.Printf("Opening %s...\n", templatePath)
+	log.Printf("Opening %s...\n", templatePath)
 	e, err := pptx.OpenPresentationEditor(templatePath)
 	if err != nil {
 		log.Fatalf("Failed to open template: %v", err)
@@ -42,7 +42,7 @@ func main() {
 		styling.Inches(1),
 	)
 
-	fmt.Println("Stamping images on multiple slides...")
+	log.Println("Stamping images on multiple slides...")
 	for i := range 3 {
 		slide := elements.NewSlide(fmt.Sprintf("Image Stamp Test %d", i+1)).
 			AddBullet("This slide has a stamped logo.").
@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// 2. Picture Background
-	fmt.Println("Adding slide with picture background...")
+	log.Println("Adding slide with picture background...")
 	bgSlide := elements.NewSlide("Picture Background Test").
 		WithPictureBackground(logo).
 		AddBullet("This slide uses the same logo as a background.").
@@ -67,10 +67,10 @@ func main() {
 		log.Fatalf("Failed to add background slide: %v", err)
 	}
 
-	fmt.Printf("Saving to %s...\n", outputPath)
+	log.Printf("Saving to %s...\n", outputPath)
 	if err := pptx.Save(e, outputPath); err != nil {
 		log.Fatalf("Failed to save: %v", err)
 	}
 
-	fmt.Println("Done!")
+	log.Println("Done!")
 }

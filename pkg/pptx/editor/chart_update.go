@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 type chartKind int
@@ -146,7 +146,7 @@ func (e *PresentationEditor) resolveChartSelector(
 			return common.SlideChartRef{}, fmt.Errorf(
 				"chart selector mismatch: index=%d rel_id=%q",
 				*selector.Index,
-				relID,
+				selector.RelID,
 			)
 		}
 		return *idxMatch, nil

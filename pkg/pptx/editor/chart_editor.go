@@ -9,11 +9,10 @@ import (
 	"path"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // AddChart adds a new chart to a specific slide.
@@ -218,18 +217,7 @@ func (e *PresentationEditor) addRelationship(partPath, id, relType, target strin
 }
 
 func (e *PresentationEditor) writeRelationships(path string, rels []common.EditorRelationship) error {
-	output := `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
-	var outputSb197 strings.Builder
-	for _, r := range rels {
-		outputSb197.WriteString(fmt.Sprintf(`<Relationship Id="%s" Type="%s" Target="%s"`, r.ID, r.Type, r.Target))
-		if r.TargetMode != "" {
-			outputSb197.WriteString(fmt.Sprintf(` TargetMode="%s"`, r.TargetMode))
-		}
-		outputSb197.WriteString(`/>`)
-	}
-	output += outputSb197.String()
-	output += `</Relationships>`
-	e.parts.Set(path, []byte(output))
+	e.parts.Set(path, []byte(renderRelationshipsXML(rels)))
 	return nil
 }
 

@@ -9,14 +9,14 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("Smoke test failed: %v", err)
 	}
-	fmt.Println("Smoke test completed successfully!")
+	log.Println("Smoke test completed successfully!")
 }
 
 func run() error {
@@ -38,7 +38,7 @@ func run() error {
 	if err := deck.WriteToFile(inputFile); err != nil {
 		return fmt.Errorf("failed to save input file: %w", err)
 	}
-	fmt.Printf("Created base file: %s\n", inputFile)
+	log.Printf("Created base file: %s\n", inputFile)
 
 	// 2. Open with Editor
 	edit, err := editor.OpenPresentationEditor(inputFile)
@@ -57,7 +57,7 @@ func run() error {
 
 	targetIndex := -1
 	for i, s := range shapes {
-		fmt.Printf("Shape %d: ID=%d Name=%q Text=%q\n", i, s.ID, s.Name, s.Text)
+		log.Printf("Shape %d: ID=%d Name=%q Text=%q\n", i, s.ID, s.Name, s.Text)
 		if s.Text == "Original Text" {
 			targetIndex = i
 		}
@@ -71,7 +71,7 @@ func run() error {
 	// Note: editor works with raw EMUs.
 	// We want to verify update persistence.
 	// Let's set it to exactly 500,000 EMUs (approx 0.5 inches) just to have a clean integer number to verify.
-	fmt.Println("Updating shape...")
+	log.Println("Updating shape...")
 	updatedX := 500000
 	updatedY := 500000
 
@@ -94,7 +94,7 @@ func run() error {
 	if err := edit.Save(outputFile); err != nil {
 		return fmt.Errorf("failed to save output file: %w", err)
 	}
-	fmt.Printf("Saved edited file: %s\n", outputFile)
+	log.Printf("Saved edited file: %s\n", outputFile)
 
 	// 6. Verify by re-opening
 	verifyEdit, err := editor.OpenPresentationEditor(outputFile)
@@ -114,7 +114,7 @@ func run() error {
 
 	foundEdited := false
 	for _, s := range vShapes {
-		fmt.Printf("Verification Shape: ID=%d Text=%q X=%d Y=%d\n", s.ID, s.Text, s.X, s.Y)
+		log.Printf("Verification Shape: ID=%d Text=%q X=%d Y=%d\n", s.ID, s.Text, s.X, s.Y)
 		if s.Text == "Edited Text" && s.X == updatedX && s.Y == updatedY {
 			foundEdited = true
 			break

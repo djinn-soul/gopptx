@@ -8,7 +8,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // PartStore provides lazy-loading access to PPTX package parts.

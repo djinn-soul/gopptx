@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -60,5 +59,5 @@ func main() {
 		log.Fatalf("failed to save edited pptx: %v", err)
 	}
 
-	fmt.Printf("Successfully generated %s\n", outPath)
+	log.Printf("Successfully generated %s\n", outPath)
 }

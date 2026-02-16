@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -37,7 +38,7 @@ func run() error {
 	}
 
 	count := editor.SlideCount()
-	fmt.Printf("Original slide count: %d\n", count)
+	log.Printf("Original slide count: %d\n", count)
 
 	// 2. Complex Manipulation
 	// Duplicate the first slide (usually a title) to the end
@@ -61,7 +62,7 @@ func run() error {
 	if err := editor.Save(destPath); err != nil {
 		return fmt.Errorf("save: %w", err)
 	}
-	fmt.Printf("Generated complex duplication smoke sample: %s\n", destPath)
+	log.Printf("Generated complex duplication smoke sample: %s\n", destPath)
 
 	return nil
 }

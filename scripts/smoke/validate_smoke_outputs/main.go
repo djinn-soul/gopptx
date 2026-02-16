@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -37,17 +38,17 @@ func main() {
 	for _, path := range files {
 		result := validatePPTXPath(path)
 		if len(result.Errors) == 0 {
-			fmt.Printf("PASS %s\n", path)
+			log.Printf("PASS %s\n", path)
 			continue
 		}
 		failed++
-		fmt.Printf("FAIL %s\n", path)
+		log.Printf("FAIL %s\n", path)
 		for _, msg := range result.Errors {
-			fmt.Printf("  - %s\n", msg)
+			log.Printf("  - %s\n", msg)
 		}
 	}
 
-	fmt.Printf("Validated %d file(s); failures=%d\n", len(files), failed)
+	log.Printf("Validated %d file(s); failures=%d\n", len(files), failed)
 	if failed > 0 {
 		os.Exit(1)
 	}

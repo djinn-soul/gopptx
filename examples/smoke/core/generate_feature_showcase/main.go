@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -33,7 +34,7 @@ func main() {
 		fail("write output", err)
 	}
 
-	fmt.Printf("Wrote %s\n", path)
+	log.Printf("Wrote %s\n", path)
 }
 
 func buildShowcaseSlides() ([]pptx.SlideContent, error) {

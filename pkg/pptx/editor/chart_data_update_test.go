@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 func TestUpdateChartDataCategoryByIndexPreservesStyle(t *testing.T) {

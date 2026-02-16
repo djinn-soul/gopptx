@@ -303,6 +303,8 @@ func renderShapeXML(s *parsedShape) []byte {
 			`</p:spPr>`+
 			`<p:txBody>`+
 			`<a:bodyPr/><a:lstStyle/>`+
+			// TODO: Implementation should perform a surgical update of text runs within the existing TxBody
+			// instead of full re-rendering to preserve styles.
 			`<a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`+
 			`</p:txBody>`+
 			`</p:sp>`,

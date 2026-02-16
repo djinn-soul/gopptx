@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -27,13 +26,13 @@ func main() {
 	outputFile := filepath.Join(outputDir, "39_editor_chart_support_output.pptx")
 
 	// 1. Create a minimal valid PPTX file
-	fmt.Printf("Generating minimal PPTX: %s...\n", inputFile)
+	log.Printf("Generating minimal PPTX: %s...\n", inputFile)
 	if err := createMinimalPPTX(inputFile); err != nil {
 		log.Fatalf("Failed to create minimal PPTX: %v", err)
 	}
 
 	// 2. Open it
-	fmt.Printf("Opening %s...\n", inputFile)
+	log.Printf("Opening %s...\n", inputFile)
 	ppt, err := editor.OpenPresentationEditor(inputFile)
 	if err != nil {
 		log.Fatalf("Failed to open presentation: %v", err)
@@ -45,7 +44,7 @@ func main() {
 	}
 
 	// 3. Add a Bar Chart to Slide 1
-	fmt.Println("Adding Bar Chart to Slide 1...")
+	log.Println("Adding Bar Chart to Slide 1...")
 	barChart := charts.NewBarChart(
 		[]string{"Q1", "Q2", "Q3", "Q4"},
 		[]float64{100, 200, 150, 300},
@@ -56,7 +55,7 @@ func main() {
 	}
 
 	// 4. Add a Line Chart to Slide 1
-	fmt.Println("Adding Line Chart to Slide 1...")
+	log.Println("Adding Line Chart to Slide 1...")
 	lineChart := charts.NewLineChart(
 		[]string{"Jan", "Feb", "Mar"},
 		[]float64{5, 10, 8},
@@ -70,12 +69,12 @@ func main() {
 	}
 
 	// 5. Save
-	fmt.Printf("Saving to %s...\n", outputFile)
+	log.Printf("Saving to %s...\n", outputFile)
 	if err := ppt.Save(outputFile); err != nil {
 		log.Fatalf("Failed to save: %v", err)
 	}
 
-	fmt.Println("Done! Smoke test passed.")
+	log.Println("Done! Smoke test passed.")
 }
 
 func createMinimalPPTX(filename string) error {

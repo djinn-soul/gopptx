@@ -13,13 +13,13 @@ import (
 	"sync"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 const shapeTypePicture = "pic"
 
-// EditorSection describes a PowerPoint section entry.
-type EditorSection struct {
+// Section describes a PowerPoint section entry.
+type Section struct {
 	Name     string
 	GUID     string
 	SlideIDs []int64
@@ -46,7 +46,7 @@ type PresentationEditor struct {
 	imagePathMu    sync.RWMutex
 
 	// Section management
-	sections []EditorSection
+	sections []Section
 
 	// Chart inventory (ChartPath -> EmbeddingPath)
 	chartEmbeddings map[string]string

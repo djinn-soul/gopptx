@@ -1,7 +1,7 @@
 package editor
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // PresentationMetadata re-exports common.PresentationMetadata.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // ListSlideImages returns image relationships for a slide in relationship order.

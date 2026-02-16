@@ -11,7 +11,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // Internal XML structures for relationships (for read/modify).
@@ -196,9 +196,17 @@ func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text str
 			Target: "../comments/" + newPartName,
 		})
 
-		// Save rels
-		out, _ := xml.Marshal(rels)
-		e.parts.Set(relsPath, out)
+		// Save rels using standardized internal renderer
+		editorRels := make([]common.EditorRelationship, len(rels.Rels))
+		for i, r := range rels.Rels {
+			editorRels[i] = common.EditorRelationship{
+				ID:         r.ID,
+				Type:       r.Type,
+				Target:     r.Target,
+				TargetMode: r.TargetMode,
+			}
+		}
+		e.parts.Set(relsPath, []byte(renderRelationshipsXML(editorRels)))
 	}
 
 	// 2. Read existing comments

@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 type parsedSlideIDRef struct {
@@ -342,18 +342,18 @@ type xmlSectionSLDRef struct {
 	ID int64 `xml:"id,attr"`
 }
 
-func parseSectionListXML(data []byte) ([]EditorSection, error) {
+func parseSectionListXML(data []byte) ([]Section, error) {
 	var list xmlSectionList
 	if err := xml.Unmarshal(data, &list); err != nil {
 		return nil, err
 	}
-	out := make([]EditorSection, 0, len(list.Sections))
+	out := make([]Section, 0, len(list.Sections))
 	for _, s := range list.Sections {
 		ids := make([]int64, 0, len(s.SlideIDs))
 		for _, item := range s.SlideIDs {
 			ids = append(ids, item.ID)
 		}
-		out = append(out, EditorSection{
+		out = append(out, Section{
 			Name:     s.Name,
 			GUID:     s.GUID,
 			SlideIDs: ids,

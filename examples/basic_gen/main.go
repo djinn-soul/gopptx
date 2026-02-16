@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/djinn-soul/gopptx/pkg/gopptx"
@@ -17,5 +16,5 @@ func main() {
 		log.Fatalf("Failed to save presentation: %v", err)
 	}
 
-	fmt.Printf("Successfully generated %s\n", filename)
+	log.Printf("Successfully generated %s\n", filename)
 }

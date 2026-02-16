@@ -9,79 +9,100 @@ import (
 )
 
 func TestCommentsIntegration(t *testing.T) {
-	// 1. Create a basic presentation
-	p := pptx.NewPresentationBuilder("Test Title")
-	p.AddTitleSlide("Slide 1") // Slide 0
-	tempDir := t.TempDir()
-	srcPath := filepath.Join(tempDir, "base.pptx")
-	if err := p.WriteToFile(srcPath); err != nil {
-		t.Fatalf("save base: %v", err)
+	srcPath := buildBaseCommentsPresentation(t)
+	ed := mustOpenEditor(t, srcPath)
+
+	a1 := mustAddAuthor(t, ed, "Alice", "AL")
+	a2 := mustAddAuthor(t, ed, "Bob", "BB")
+	mustAddComment(t, ed, 0, a1, "Alice's comment", 100, 100)
+	mustAddComment(t, ed, 0, a1, "Alice's second comment", 200, 200)
+	mustAddComment(t, ed, 0, a2, "Bob's comment", 300, 300)
+
+	outPath := filepath.Join(t.TempDir(), "comments.pptx")
+	if err := ed.Save(outPath); err != nil {
+		t.Fatalf("save edited: %v", err)
+	}
+	if err := ed.Close(); err != nil {
+		t.Errorf("close editor: %v", err)
 	}
 
-	// 2. Open with Editor
-	ed, err := editor.OpenPresentationEditor(srcPath)
-	if err != nil {
-		t.Fatalf("open editor: %v", err)
-	}
-	// Do not defer close immediately because we close explicitly before save check? No, defer is fine if we close explicitly later.
-	// But double close is safe? editor.Close is safe.
-
-	// 3. Add Author
-	a1, err := ed.AddAuthor("Alice", "AL")
-	if err != nil {
-		t.Fatalf("add author 1: %v", err)
-	}
-	a2, err := ed.AddAuthor("Bob", "BB")
-	if err != nil {
-		t.Fatalf("add author 2: %v", err)
-	}
-
-	// 4. Add Comments
-	// Slide 0
-	err = ed.AddComment(0, a1.ID, "Alice's comment", 100, 100)
-	if err != nil {
-		t.Fatalf("add comment 1: %v", err)
-	}
-	// Alice adds another
-	err = ed.AddComment(0, a1.ID, "Alice's second comment", 200, 200)
-	if err != nil {
-		t.Fatalf("add comment 2: %v", err)
-	}
-	// Bob adds one
-	err = ed.AddComment(0, a2.ID, "Bob's comment", 300, 300)
-	if err != nil {
-		t.Fatalf("add comment 3: %v", err)
-	}
-
-	// 5. Save
-	outPath := filepath.Join(tempDir, "comments.pptx")
-	if saveErr := ed.Save(outPath); saveErr != nil {
-		t.Fatalf("save edited: %v", saveErr)
-	}
-	if closeErr := ed.Close(); closeErr != nil {
-		t.Errorf("close editor: %v", closeErr)
-	}
-
-	// 6. Verify persistence
-	ed2, err := editor.OpenPresentationEditor(outPath)
-	if err != nil {
-		t.Fatalf("reopen: %v", err)
-	}
+	ed2 := mustOpenEditor(t, outPath)
 	defer func() {
-		if closeErr := ed2.Close(); closeErr != nil {
-			t.Errorf("close reopened editor: %v", closeErr)
+		if err := ed2.Close(); err != nil {
+			t.Errorf("close reopened editor: %v", err)
 		}
 	}()
 
-	authors, err := ed2.GetAuthors()
+	assertAuthorsCount(t, ed2, 2)
+	assertInitialComments(t, ed2, a1, a2)
+
+	if err := ed2.RemoveComment(0, a1, 1); err != nil {
+		t.Fatalf("remove comment: %v", err)
+	}
+	assertCommentsAfterRemoval(t, ed2)
+}
+
+func buildBaseCommentsPresentation(t *testing.T) string {
+	t.Helper()
+	p := pptx.NewPresentationBuilder("Test Title")
+	p.AddTitleSlide("Slide 1")
+	srcPath := filepath.Join(t.TempDir(), "base.pptx")
+	if err := p.WriteToFile(srcPath); err != nil {
+		t.Fatalf("save base: %v", err)
+	}
+	return srcPath
+}
+
+func mustOpenEditor(t *testing.T, filePath string) *editor.PresentationEditor {
+	t.Helper()
+	ed, err := editor.OpenPresentationEditor(filePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	return ed
+}
+
+func mustAddAuthor(
+	t *testing.T,
+	ed *editor.PresentationEditor,
+	name, initials string,
+) int64 {
+	t.Helper()
+	author, err := ed.AddAuthor(name, initials)
+	if err != nil {
+		t.Fatalf("add author %s: %v", name, err)
+	}
+	return author.ID
+}
+
+func mustAddComment(
+	t *testing.T,
+	ed *editor.PresentationEditor,
+	slideIndex int,
+	authorID int64,
+	text string,
+	x, y int64,
+) {
+	t.Helper()
+	if err := ed.AddComment(slideIndex, authorID, text, x, y); err != nil {
+		t.Fatalf("add comment %q: %v", text, err)
+	}
+}
+
+func assertAuthorsCount(t *testing.T, ed *editor.PresentationEditor, want int) {
+	t.Helper()
+	authors, err := ed.GetAuthors()
 	if err != nil {
 		t.Fatalf("get authors: %v", err)
 	}
-	if len(authors) != 2 {
-		t.Errorf("expected 2 authors, got %d", len(authors))
+	if len(authors) != want {
+		t.Errorf("expected %d authors, got %d", want, len(authors))
 	}
+}
 
-	comments, err := ed2.GetComments(0)
+func assertInitialComments(t *testing.T, ed *editor.PresentationEditor, aliceID, bobID int64) {
+	t.Helper()
+	comments, err := ed.GetComments(0)
 	if err != nil {
 		t.Fatalf("get comments: %v", err)
 	}
@@ -89,43 +110,34 @@ func TestCommentsIntegration(t *testing.T) {
 		t.Fatalf("expected 3 comments, got %d", len(comments))
 	}
 
-	// Verify order / content
-	if comments[0].Text != "Alice's comment" {
-		t.Errorf("expected 'Alice's comment', got '%s'", comments[0].Text)
-	}
-	if comments[0].AuthorID != a1.ID {
-		t.Errorf("expected author ID %d, got %d", a1.ID, comments[0].AuthorID)
-	}
-	if comments[0].Index != 1 {
-		t.Errorf("expected index 1, got %d", comments[0].Index)
-	}
+	assertCommentField(t, comments[0].Text, "Alice's comment", "first comment text")
+	assertCommentField(t, comments[0].AuthorID, aliceID, "first comment author")
+	assertCommentField(t, comments[0].Index, 1, "first comment index")
+	assertCommentField(t, comments[1].Text, "Alice's second comment", "second comment text")
+	assertCommentField(t, comments[1].Index, 2, "second comment index")
+	assertCommentField(t, comments[2].AuthorID, bobID, "third comment author")
+}
 
-	if comments[1].Text != "Alice's second comment" {
-		t.Errorf("expected 'Alice's second comment', got '%s'", comments[1].Text)
-	}
-	if comments[1].Index != 2 {
-		t.Errorf("expected index 2, got %d", comments[1].Index)
-	}
-
-	if comments[2].AuthorID != a2.ID {
-		t.Errorf("expected author ID %d, got %d", a2.ID, comments[2].AuthorID)
-	}
-
-	// 7. Remove Comment (Alice's first)
-	// Assuming RemoveComment takes (slideIndex, authorID, authorIndex)
-	err = ed2.RemoveComment(0, a1.ID, 1)
-	if err != nil {
-		t.Fatalf("remove comment: %v", err)
-	}
-
-	commentsAfter, err := ed2.GetComments(0)
+func assertCommentsAfterRemoval(t *testing.T, ed *editor.PresentationEditor) {
+	t.Helper()
+	commentsAfter, err := ed.GetComments(0)
 	if err != nil {
 		t.Fatalf("get comments after remove: %v", err)
 	}
 	if len(commentsAfter) != 2 {
 		t.Errorf("expected 2 comments after removal, got %d", len(commentsAfter))
 	}
-	if commentsAfter[0].Text != "Alice's second comment" {
-		t.Errorf("expected remaining comment to be 'Alice's second comment', got '%s'", commentsAfter[0].Text)
+	assertCommentField(
+		t,
+		commentsAfter[0].Text,
+		"Alice's second comment",
+		"remaining first comment text",
+	)
+}
+
+func assertCommentField[T comparable](t *testing.T, got, want T, field string) {
+	t.Helper()
+	if got != want {
+		t.Errorf("%s: expected %v, got %v", field, want, got)
 	}
 }

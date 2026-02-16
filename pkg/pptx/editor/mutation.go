@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 var (
@@ -208,8 +208,7 @@ func rewriteContentTypes(
 		"application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml")
 	overrides = appendOptionalContentTypeOverride(overrides, hasCommentAuthors, "/ppt/commentAuthors.xml",
 		"application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml")
-	overrides = appendPathOverrides(overrides, commentPaths,
-		"application/vnd.openxmlformats-officedocument.presentationml.comments+xml")
+	overrides = appendPathOverrides(overrides, commentPaths, commentsPartType)
 
 	sort.Slice(overrides, func(i, j int) bool { return overrides[i].PartName < overrides[j].PartName })
 	doc.Overrides = overrides
@@ -473,7 +472,7 @@ func isSlidePartOverride(partName string) bool {
 	return strings.HasPrefix(clean, "ppt/slides/slide") && strings.HasSuffix(clean, ".xml")
 }
 
-func buildSectionListXML(sections []EditorSection) string {
+func buildSectionListXML(sections []Section) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
 	b.WriteString("\n")
@@ -515,7 +514,7 @@ func rewriteChartExternalData(current []byte, newRelID string) []byte {
 
 var extLstPattern = regexp.MustCompile(`(?s)<p:extLst>.*?</p:extLst>|<p:extLst\s*/>`)
 
-func rewritePresentationSections(current []byte, sections []EditorSection) (string, error) {
+func rewritePresentationSections(current []byte, sections []Section) (string, error) {
 	if len(current) == 0 {
 		return "", errors.New("missing presentation XML content")
 	}
@@ -576,7 +575,7 @@ func appendSectionExtension(match, fullExtBlock string) string {
 	return strings.Replace(match, "/>", ">\n"+fullExtBlock+"\n</p:extLst>", 1)
 }
 
-func buildPresentationSectionExtensionXML(sections []EditorSection) string {
+func buildPresentationSectionExtensionXML(sections []Section) string {
 	if len(sections) == 0 {
 		return ""
 	}

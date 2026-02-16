@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -53,7 +54,7 @@ func run() error {
 	// 2. Merge slides from second template
 	mergeStartIdx := editor.SlideCount()
 	if err := editor.MergeFromFile(path2); err != nil {
-		fmt.Printf("Warning during merge: %v\n", err)
+		log.Printf("Warning during merge: %v\n", err)
 	}
 
 	// Mark original slides from Template 2
@@ -66,7 +67,7 @@ func run() error {
 	}
 
 	// 3. Perform 6 Duplications
-	fmt.Println("Performing 6 duplication operations...")
+	log.Println("Performing 6 duplication operations...")
 
 	// Copy 1: T1 Title to end
 	_, _ = editor.DuplicateSlide(0, editor.SlideCount())
@@ -93,8 +94,8 @@ func run() error {
 	if err := editor.Save(destPath); err != nil {
 		return fmt.Errorf("save: %w", err)
 	}
-	fmt.Printf("Generated multi-template duplication smoke sample with 6 copies: %s\n", destPath)
-	fmt.Printf("Final slide count: %d\n", editor.SlideCount())
+	log.Printf("Generated multi-template duplication smoke sample with 6 copies: %s\n", destPath)
+	log.Printf("Final slide count: %d\n", editor.SlideCount())
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package common
+package editorcommon
 
 import "github.com/djinn-soul/gopptx/pkg/pptx/common"
 

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -556,7 +556,7 @@ func (e *PresentationEditor) AddSection(name string, slideIndices []int) error {
 		return fmt.Errorf("generate section GUID: %w", err)
 	}
 
-	e.sections = append(e.sections, EditorSection{
+	e.sections = append(e.sections, Section{
 		Name:     name,
 		GUID:     guid,
 		SlideIDs: ids,
@@ -569,7 +569,7 @@ func (e *PresentationEditor) RemoveSection(name string) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
 	}
-	next := make([]EditorSection, 0, len(e.sections))
+	next := make([]Section, 0, len(e.sections))
 	found := false
 	for _, s := range e.sections {
 		if s.Name == name {
@@ -608,7 +608,7 @@ func (e *PresentationEditor) RenameSection(oldName, newName string) error {
 }
 
 // Sections returns the current section list.
-func (e *PresentationEditor) Sections() []EditorSection {
+func (e *PresentationEditor) Sections() []Section {
 	if e == nil {
 		return nil
 	}
