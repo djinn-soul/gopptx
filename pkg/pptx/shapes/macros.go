@@ -22,7 +22,13 @@ func NewTextBox(text string, x, y, w, h float64) Shape {
 
 // NewRoundedRectangle creates a rounded rectangle shape with given inch dimensions.
 func NewRoundedRectangle(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeRoundedRectangle, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeRoundedRectangle,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 // NewTriangle creates a triangle shape with given inch dimensions.
@@ -57,17 +63,35 @@ func NewParallelogram(x, y, w, h float64) Shape {
 
 // NewFlowChartProcess creates a flowchart process shape with given inch dimensions.
 func NewFlowChartProcess(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartProcess, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartProcess,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 // NewFlowChartDecision creates a flowchart decision shape with given inch dimensions.
 func NewFlowChartDecision(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartDecision, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartDecision,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 // NewFlowChartTerminator creates a flowchart terminator shape with given inch dimensions.
 func NewFlowChartTerminator(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartTerminator, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartTerminator,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 // NewRightArrow creates a right arrow shape with given inch dimensions.
@@ -119,15 +143,33 @@ func NewChevron(x, y, w, h float64) Shape {
 }
 
 func NewWedgeRectCallout(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeWedgeRectCallout, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeWedgeRectCallout,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewWedgeRRectCallout(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeWedgeRRectCallout, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeWedgeRRectCallout,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewWedgeEllipseCallout(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeWedgeEllipseCallout, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeWedgeEllipseCallout,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewCloudCallout(x, y, w, h float64) Shape {
@@ -153,39 +195,93 @@ func NewCube(x, y, w, h float64) Shape {
 }
 
 func NewFlowChartPredefinedProcess(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartPredefinedProcess, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartPredefinedProcess,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartInternalStorage(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartInternalStorage, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartInternalStorage,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartManualInput(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartManualInput, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartManualInput,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartManualOperation(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartManualOperation, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartManualOperation,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartConnector(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartConnector, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartConnector,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartOffpageConnector(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartOffpageConnector, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartOffpageConnector,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartPunchedCard(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartPunchedCard, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartPunchedCard,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartPunchedTape(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartPunchedTape, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartPunchedTape,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartSummingJunction(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartSummingJunction, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartSummingJunction,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartOr(x, y, w, h float64) Shape {
@@ -193,7 +289,13 @@ func NewFlowChartOr(x, y, w, h float64) Shape {
 }
 
 func NewFlowChartCollate(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartCollate, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartCollate,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartSort(x, y, w, h float64) Shape {
@@ -201,7 +303,13 @@ func NewFlowChartSort(x, y, w, h float64) Shape {
 }
 
 func NewFlowChartExtract(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartExtract, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartExtract,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartMerge(x, y, w, h float64) Shape {
@@ -209,7 +317,13 @@ func NewFlowChartMerge(x, y, w, h float64) Shape {
 }
 
 func NewFlowChartOnlineStorage(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartOnlineStorage, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartOnlineStorage,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartDelay(x, y, w, h float64) Shape {
@@ -217,29 +331,65 @@ func NewFlowChartDelay(x, y, w, h float64) Shape {
 }
 
 func NewFlowChartMagneticTape(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartMagneticTape, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartMagneticTape,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartMagneticDisk(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartMagneticDisk, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartMagneticDisk,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartMagneticDrum(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartMagneticDrum, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartMagneticDrum,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartDisplay(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartDisplay, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartDisplay,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 func NewFlowChartPreparation(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartPreparation, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartPreparation,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 // NewCircle creates a circle (ellipse with equal width and height) with given diameter in inches.
 
 func NewCircle(x, y, diameter float64) Shape {
-	return NewShape(ShapeTypeEllipse, styling.Inches(x), styling.Inches(y), styling.Inches(diameter), styling.Inches(diameter))
+	return NewShape(
+		ShapeTypeEllipse,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(diameter),
+		styling.Inches(diameter),
+	)
 }
 
 func NewStar4(x, y, size float64) Shape {
@@ -291,23 +441,53 @@ func NewSeal(x, y, size float64) Shape {
 }
 
 func NewActionButtonHome(x, y, size float64) Shape {
-	return NewShape(ShapeTypeActionButtonHome, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+	return NewShape(
+		ShapeTypeActionButtonHome,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(size),
+		styling.Inches(size),
+	)
 }
 
 func NewActionButtonHelp(x, y, size float64) Shape {
-	return NewShape(ShapeTypeActionButtonHelp, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+	return NewShape(
+		ShapeTypeActionButtonHelp,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(size),
+		styling.Inches(size),
+	)
 }
 
 func NewActionButtonInformation(x, y, size float64) Shape {
-	return NewShape(ShapeTypeActionButtonInformation, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+	return NewShape(
+		ShapeTypeActionButtonInformation,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(size),
+		styling.Inches(size),
+	)
 }
 
 func NewActionButtonBack(x, y, size float64) Shape {
-	return NewShape(ShapeTypeActionButtonBackPrevious, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+	return NewShape(
+		ShapeTypeActionButtonBackPrevious,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(size),
+		styling.Inches(size),
+	)
 }
 
 func NewActionButtonForward(x, y, size float64) Shape {
-	return NewShape(ShapeTypeActionButtonForwardNext, styling.Inches(x), styling.Inches(y), styling.Inches(size), styling.Inches(size))
+	return NewShape(
+		ShapeTypeActionButtonForwardNext,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(size),
+		styling.Inches(size),
+	)
 }
 
 // NewStar creates a 5-pointed star shape with given size in inches.
@@ -323,7 +503,13 @@ func NewHeart(x, y, size float64) Shape {
 
 // NewFlowChartDocument creates a flowchart document shape with given inch dimensions.
 func NewFlowChartDocument(x, y, w, h float64) Shape {
-	return NewShape(ShapeTypeFlowChartDocument, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
+	return NewShape(
+		ShapeTypeFlowChartDocument,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(w),
+		styling.Inches(h),
+	)
 }
 
 // NewFlowChartData creates a flowchart data shape (parallelogram) with given inch dimensions.
@@ -336,7 +522,13 @@ func NewBadge(text string, x, y float64, color string) Shape {
 	if color == "" {
 		color = styling.ColorMaterialGreen
 	}
-	return NewShape(ShapeTypeRoundedRectangle, styling.Inches(x), styling.Inches(y), styling.Inches(1.5), styling.Inches(0.4)).
+	return NewShape(
+		ShapeTypeRoundedRectangle,
+		styling.Inches(x),
+		styling.Inches(y),
+		styling.Inches(1.5),
+		styling.Inches(0.4),
+	).
 		WithFill(NewShapeFill(color)).
 		WithText(text)
 }

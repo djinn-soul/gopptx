@@ -1,7 +1,7 @@
 package text
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
@@ -169,16 +169,16 @@ func (r TextRun) WithHoverAction(link action.Hyperlink) TextRun {
 // Validate checks for invalid text run properties.
 func (r TextRun) Validate() error {
 	if r.SizePt < 0 {
-		return fmt.Errorf("size must be >= 0")
+		return errors.New("size must be >= 0")
 	}
 	if r.Color != "" && !common.IsHexColor(r.Color) {
-		return fmt.Errorf("color must be 6-digit RGB hex")
+		return errors.New("color must be 6-digit RGB hex")
 	}
 	if r.Highlight != "" && !common.IsHexColor(r.Highlight) {
-		return fmt.Errorf("highlight must be 6-digit RGB hex")
+		return errors.New("highlight must be 6-digit RGB hex")
 	}
 	if r.Subscript && r.Superscript {
-		return fmt.Errorf("cannot be both subscript and superscript")
+		return errors.New("cannot be both subscript and superscript")
 	}
 	if r.Hyperlink != nil {
 		if err := r.Hyperlink.Validate(); err != nil {

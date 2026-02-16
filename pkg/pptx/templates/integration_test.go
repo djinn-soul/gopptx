@@ -9,9 +9,25 @@ import (
 func TestTemplateIntegration(t *testing.T) {
 	templatesList := []pptx.Template{
 		pptx.SimpleTemplate{Title: "Integration Simple", Content: "Content"},
-		pptx.ProposalTemplate{Title: "Integration Proposal", Context: "Context", Solution: "Solution", Pricing: []string{"Item 1"}, Timeline: "Soon"},
-		pptx.TrainingTemplate{Title: "Integration Training", Agenda: []string{"Step 1"}, Concepts: []string{"Concept A"}, Summary: "End"},
-		pptx.StatusTemplate{Project: "Integration Status", OKRs: []string{"OKR 1"}, Risks: []string{"Risk 1"}, NextSteps: []string{"Next"}},
+		pptx.ProposalTemplate{
+			Title:    "Integration Proposal",
+			Context:  "Context",
+			Solution: "Solution",
+			Pricing:  []string{"Item 1"},
+			Timeline: "Soon",
+		},
+		pptx.TrainingTemplate{
+			Title:    "Integration Training",
+			Agenda:   []string{"Step 1"},
+			Concepts: []string{"Concept A"},
+			Summary:  "End",
+		},
+		pptx.StatusTemplate{
+			Project:   "Integration Status",
+			OKRs:      []string{"OKR 1"},
+			Risks:     []string{"Risk 1"},
+			NextSteps: []string{"Next"},
+		},
 		pptx.TechnicalTemplate{Title: "Integration Tech", Architecture: "Arch", DeepDive: "Deep", Benchmarks: "Fast"},
 	}
 

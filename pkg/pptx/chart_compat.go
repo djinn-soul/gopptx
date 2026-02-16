@@ -4,7 +4,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
-// Chart aliases for backward compatibility
+// Chart aliases for backward compatibility.
 type (
 	BarChart            = charts.BarChart
 	BarHorizontalChart  = charts.BarHorizontalChart
@@ -108,7 +108,7 @@ func NewComboChart(categories []string, barSeries []Series, lineSeries []Series)
 	return charts.NewComboChart(categories, barSeries, lineSeries)
 }
 
-// Constants
+// Constants.
 const (
 	LegendPositionRight  = charts.LegendPositionRight
 	LegendPositionLeft   = charts.LegendPositionLeft

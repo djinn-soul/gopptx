@@ -11,7 +11,13 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, slideNumber int, existingNotesTarget string, width, height int64) (string, string, error) {
+func renderEditorSlideParts(
+	e *PresentationEditor,
+	slide elements.SlideContent,
+	slideNumber int,
+	existingNotesTarget string,
+	width, height int64,
+) (string, string, error) {
 	tableSpec, err := renderEditorTableSpec(slide, slideNumber)
 	if err != nil {
 		return "", "", err
@@ -21,20 +27,19 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 	imageTargets := make([]string, 0, len(slide.Images))
 
 	for i, img := range slide.Images {
-		var (
-			partPath string
-			err      error
-		)
+		var partPath string
 		if img.Path != "" && len(img.Data) == 0 {
-			partPath, _, err = e.registerImageFromPath(img.Path, img.Format)
-			if err != nil {
-				return "", "", fmt.Errorf("read image %d: %w", i+1, err)
+			registeredPath, registerErr := e.registerImageFromPath(img.Path, img.Format)
+			if registerErr != nil {
+				return "", "", fmt.Errorf("read image %d: %w", i+1, registerErr)
 			}
+			partPath = registeredPath
 		} else if len(img.Data) > 0 {
-			partPath, err = e.RegisterImage(img.Data, img.Format)
-			if err != nil {
-				return "", "", err
+			registeredPath, registerErr := e.RegisterImage(img.Data, img.Format)
+			if registerErr != nil {
+				return "", "", registerErr
 			}
+			partPath = registeredPath
 		} else {
 			return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
 		}
@@ -69,19 +74,20 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 	}
 
 	backgroundRID := ""
-	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
+	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture &&
+		slide.Background.PictureFill != nil {
 		img := *slide.Background.PictureFill
 		if img.Path != "" && len(img.Data) == 0 {
-			partPath, _, err := e.registerImageFromPath(img.Path, img.Format)
-			if err != nil {
-				return "", "", fmt.Errorf("read background image: %w", err)
+			partPath, bgErr := e.registerImageFromPath(img.Path, img.Format)
+			if bgErr != nil {
+				return "", "", fmt.Errorf("read background image: %w", bgErr)
 			}
 			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
 			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
 		} else if len(img.Data) > 0 {
-			partPath, err := e.RegisterImage(img.Data, img.Format)
-			if err != nil {
-				return "", "", err
+			partPath, bgErr := e.RegisterImage(img.Data, img.Format)
+			if bgErr != nil {
+				return "", "", bgErr
 			}
 			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
 			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
@@ -190,7 +196,12 @@ func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxx
 // renderEditorPlaceholderSpecs converts SlideContent.PlaceholderOverrides into
 // XML specs for the editor rendering path. It returns the specs, any additional
 // image relationship targets, chart rels, and an error.
-func renderEditorPlaceholderSpecs(e *PresentationEditor, slide elements.SlideContent, slideNumber int, startRID int) ([]pptxxml.PlaceholderOverrideSpec, []string, []pptxxml.ChartRel, error) {
+func renderEditorPlaceholderSpecs(
+	e *PresentationEditor,
+	slide elements.SlideContent,
+	slideNumber int,
+	startRID int,
+) ([]pptxxml.PlaceholderOverrideSpec, []string, []pptxxml.ChartRel, error) {
 	if len(slide.PlaceholderOverrides) == 0 {
 		return nil, nil, nil, nil
 	}
@@ -210,7 +221,7 @@ func renderEditorPlaceholderSpecs(e *PresentationEditor, slide elements.SlideCon
 		// Handle image placeholder
 		if override.Image != nil {
 			if override.Image.Path != "" && len(override.Image.Data) == 0 {
-				partPath, _, err := e.registerImageFromPath(override.Image.Path, override.Image.Format)
+				partPath, err := e.registerImageFromPath(override.Image.Path, override.Image.Format)
 				if err != nil {
 					return nil, nil, nil, fmt.Errorf("placeholder image %d: %w", override.Index, err)
 				}

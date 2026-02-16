@@ -3,6 +3,7 @@ package editor
 import (
 	"archive/zip"
 	"fmt"
+	"maps"
 	"os"
 	"sort"
 	"sync"
@@ -69,9 +70,7 @@ func NewPartStore() *PartStore {
 // already loaded (e.g. from MergeFromEditor).
 func newPartStoreFromMap(parts map[string][]byte) *PartStore {
 	cached := make(map[string][]byte, len(parts))
-	for k, v := range parts {
-		cached[k] = v
-	}
+	maps.Copy(cached, parts)
 	return &PartStore{
 		index:     make(map[string]*zip.File),
 		cache:     cached,
@@ -150,10 +149,10 @@ func (ps *PartStore) Get(name string) ([]byte, bool) {
 	if err == nil {
 		if ps.deleted[name] {
 			err = fmt.Errorf("part %q was deleted during read", name)
-		} else if current, ok := ps.modified[name]; ok {
-			data = current
-		} else if current, ok := ps.cache[name]; ok {
-			data = current
+		} else if modifiedData, modifiedOK := ps.modified[name]; modifiedOK {
+			data = modifiedData
+		} else if cachedData, cachedOK := ps.cache[name]; cachedOK {
+			data = cachedData
 		} else {
 			ps.cache[name] = data
 		}

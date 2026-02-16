@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html"
 	"regexp"
@@ -15,10 +16,10 @@ var textRunPattern = regexp.MustCompile(`(?s)(<a:t(?:\s+[^>]*)?>)(.*?)(</a:t>)`)
 // It returns the number of replacements made.
 func (e *PresentationEditor) FindAndReplaceInShapes(findText, replaceText string) (int, error) {
 	if e == nil {
-		return 0, fmt.Errorf("editor cannot be nil")
+		return 0, errors.New("editor cannot be nil")
 	}
 	if strings.TrimSpace(findText) == "" {
-		return 0, fmt.Errorf("find text cannot be empty")
+		return 0, errors.New("find text cannot be empty")
 	}
 
 	total := 0

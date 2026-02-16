@@ -60,7 +60,8 @@ func TestCreateWithSlidesEmbedsStockOHLCChart(t *testing.T) {
 		`<c:upBars/>`,
 		`<c:downBars/>`,
 	})
-	if strings.Contains(xml, `<c:upBars><c:spPr/></c:upBars>`) || strings.Contains(xml, `<c:downBars><c:spPr/></c:downBars>`) {
+	if strings.Contains(xml, `<c:upBars><c:spPr/></c:upBars>`) ||
+		strings.Contains(xml, `<c:downBars><c:spPr/></c:downBars>`) {
 		t.Fatalf("expected stock OHLC bars without inline spPr")
 	}
 }

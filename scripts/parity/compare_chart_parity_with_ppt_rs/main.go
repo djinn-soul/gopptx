@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -57,7 +58,8 @@ func loadReferenceXML() (map[string]string, error) {
 	cmd.Env = append(os.Environ(), "CARGO_TARGET_DIR=.tmp/cargo-target/ppt-rs-chart-signatures")
 	output, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		exitErr := &exec.ExitError{}
+		if errors.As(err, &exitErr) {
 			return nil, fmt.Errorf("cargo run failed: %s", strings.TrimSpace(string(exitErr.Stderr)))
 		}
 		return nil, err

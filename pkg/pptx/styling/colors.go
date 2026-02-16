@@ -23,7 +23,7 @@ const (
 	ColorOlive = "808000"
 )
 
-// Corporate colors
+// Corporate colors.
 const (
 	ColorCorporateBlue  = "1565C0"
 	ColorCorporateGreen = "2E7D32"
@@ -32,7 +32,7 @@ const (
 	ColorCorporateOrange = "EF6C00"
 )
 
-// Material Design colors
+// Material Design colors.
 const (
 	ColorMaterialRed    = "F44336"
 	ColorMaterialPink   = "E91E63"
@@ -50,7 +50,7 @@ const (
 	ColorMaterialGray = "9E9E9E"
 )
 
-// IBM Carbon Design colors
+// IBM Carbon Design colors.
 const (
 	ColorCarbonBlue60  = "0043CE"
 	ColorCarbonBlue40  = "4589FF"

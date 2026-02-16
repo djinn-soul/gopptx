@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -40,7 +41,7 @@ func scanShapesWithOffsets(content []byte) ([]parsedShape, error) {
 		// handle offset before reading token
 		startOffset := decoder.InputOffset()
 		token, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -61,9 +62,9 @@ func scanShapesWithOffsets(content []byte) ([]parsedShape, error) {
 			// So `startOffset` is the end of the *previous* token.
 
 			// Let's extract this node.
-			shape, endOffset, err := extractShapeNode(content, startOffset, decoder, se.Name.Local)
-			if err != nil {
-				return nil, err
+			shape, endOffset, extractErr := extractShapeNode(content, startOffset, decoder, se.Name.Local)
+			if extractErr != nil {
+				return nil, extractErr
 			}
 			shapes = append(shapes, shape)
 
@@ -78,7 +79,12 @@ func scanShapesWithOffsets(content []byte) ([]parsedShape, error) {
 
 // extractShapeNode consumes tokens until the matching end element is found.
 // It also parses the content within that range to populate parsedShape.
-func extractShapeNode(fullContent []byte, startOffset int64, decoder *xml.Decoder, stopTag string) (parsedShape, int64, error) {
+func extractShapeNode(
+	fullContent []byte,
+	startOffset int64,
+	decoder *xml.Decoder,
+	stopTag string,
+) (parsedShape, int64, error) {
 	depth := 1
 	var endOffset int64
 
@@ -105,16 +111,21 @@ func extractShapeNode(fullContent []byte, startOffset int64, decoder *xml.Decode
 					// NOTE: InputOffset points to *after* the current token.
 					// Verify range bounds
 					if startOffset < 0 || startOffset >= endOffset || endOffset > int64(len(fullContent)) {
-						return parsedShape{}, 0, fmt.Errorf("invalid shape offsets: start=%d end=%d size=%d", startOffset, endOffset, len(fullContent))
+						return parsedShape{}, 0, fmt.Errorf(
+							"invalid shape offsets: start=%d end=%d size=%d",
+							startOffset,
+							endOffset,
+							len(fullContent),
+						)
 					}
 
 					// Extract bytes
 					shapeXML := fullContent[startOffset:endOffset]
 
 					// Parse properties from this specific XML fragment
-					pShape, err := parseShapeProperties(shapeXML)
-					if err != nil {
-						return parsedShape{}, 0, err
+					pShape, parseErr := parseShapeProperties(shapeXML)
+					if parseErr != nil {
+						return parsedShape{}, 0, parseErr
 					}
 					pShape.Start = startOffset
 					pShape.End = endOffset
@@ -126,7 +137,7 @@ func extractShapeNode(fullContent []byte, startOffset int64, decoder *xml.Decode
 	}
 }
 
-// Minimal structs for parsing shape properties
+// Minimal structs for parsing shape properties.
 type shapeXML struct {
 	NvSpPr struct {
 		CNvPr struct {
@@ -185,12 +196,16 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 
 	// Text (simple accumulation)
 	var txt string
+	var txtSb188 strings.Builder
 	for _, p := range s.TxBody.P {
+		var txtSb189 strings.Builder
 		for _, r := range p.R {
-			txt += r.T
+			txtSb189.WriteString(r.T)
 		}
-		txt += "\n" // naive paragraph join
+		txt += txtSb189.String()
+		txtSb188.WriteString("\n") // naive paragraph join
 	}
+	txt += txtSb188.String()
 	// Trim last newline if exists
 	if len(txt) > 0 && txt[len(txt)-1] == '\n' {
 		txt = txt[:len(txt)-1]
@@ -201,7 +216,11 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 }
 
 // replaceShapeNodes replaces the XML at the given indices.
-func replaceShapeNodes(content []byte, shapes []parsedShape, modFunc func(i int, p *parsedShape) ([]byte, bool)) []byte {
+func replaceShapeNodes(
+	content []byte,
+	shapes []parsedShape,
+	modFunc func(i int, p *parsedShape) ([]byte, bool),
+) []byte {
 	// Reconstruct the file by appending chunks.
 	// Must process shapes in order of offset to keep clean.
 	// Optimization: Assumed shapes are sorted by offset (scanned sequentially).
@@ -264,7 +283,7 @@ func renderShapeXML(s *parsedShape) []byte {
 
 	// Reconstruct a basic Text Shape / Rectangle
 	// REDUCED: Removed redundant xmlns:a and xmlns:p as they should be at slide root.
-	return []byte(fmt.Sprintf(
+	return fmt.Appendf(nil,
 		`<p:sp>`+
 			`<p:nvSpPr><p:cNvPr id="%d" name="%s"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`+
 			`<p:spPr>`+
@@ -280,13 +299,13 @@ func renderShapeXML(s *parsedShape) []byte {
 		s.X, s.Y, s.W, s.H,
 		prst,
 		escape(s.Text),
-	))
+	)
 }
 
 // AddShape adds a new shape to the slide.
 func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w, h float64) (int, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return 0, fmt.Errorf("slide index out of range")
+		return 0, errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -333,7 +352,7 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 		endTree := []byte("</p:spTree>")
 		idx := bytes.LastIndex(content, endTree)
 		if idx == -1 {
-			return 0, fmt.Errorf("invalid slide xml: missing spTree end")
+			return 0, errors.New("invalid slide xml: missing spTree end")
 		}
 		buf.Write(content[:idx])
 		buf.Write(shapeXML)

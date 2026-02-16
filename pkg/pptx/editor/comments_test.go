@@ -55,11 +55,11 @@ func TestCommentsIntegration(t *testing.T) {
 
 	// 5. Save
 	outPath := filepath.Join(tempDir, "comments.pptx")
-	if err := ed.Save(outPath); err != nil {
-		t.Fatalf("save edited: %v", err)
+	if saveErr := ed.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited: %v", saveErr)
 	}
-	if err := ed.Close(); err != nil {
-		t.Errorf("close editor: %v", err)
+	if closeErr := ed.Close(); closeErr != nil {
+		t.Errorf("close editor: %v", closeErr)
 	}
 
 	// 6. Verify persistence

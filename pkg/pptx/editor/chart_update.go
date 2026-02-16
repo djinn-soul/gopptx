@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -47,8 +48,8 @@ func (e *PresentationEditor) ListSlideCharts(slideIndex int) ([]common.SlideChar
 	rIDs := extractChartRelIDs(slideXML)
 	out := make([]common.SlideChartRef, 0, len(rIDs))
 	for i, relID := range rIDs {
-		chartPart, ok := relToChart[relID]
-		if !ok {
+		chartPart, found := relToChart[relID]
+		if !found {
 			continue
 		}
 		out = append(out, common.SlideChartRef{
@@ -60,7 +61,11 @@ func (e *PresentationEditor) ListSlideCharts(slideIndex int) ([]common.SlideChar
 	return out, nil
 }
 
-func (e *PresentationEditor) UpdateChartData(slideIndex int, selector common.ChartSelector, req common.ChartDataUpdate) error {
+func (e *PresentationEditor) UpdateChartData(
+	slideIndex int,
+	selector common.ChartSelector,
+	req common.ChartDataUpdate,
+) error {
 	chartRef, err := e.resolveChartSelector(slideIndex, selector)
 	if err != nil {
 		return err
@@ -72,8 +77,8 @@ func (e *PresentationEditor) UpdateChartData(slideIndex int, selector common.Cha
 	}
 
 	kind := detectChartKind(chartXML)
-	if err := validateChartUpdatePayload(kind, req); err != nil {
-		return err
+	if validateErr := validateChartUpdatePayload(kind, req); validateErr != nil {
+		return validateErr
 	}
 
 	workbook, err := generateExcelForChartUpdate(kind, req)
@@ -96,7 +101,10 @@ func (e *PresentationEditor) UpdateChartData(slideIndex int, selector common.Cha
 	return nil
 }
 
-func (e *PresentationEditor) resolveChartSelector(slideIndex int, selector common.ChartSelector) (common.SlideChartRef, error) {
+func (e *PresentationEditor) resolveChartSelector(
+	slideIndex int,
+	selector common.ChartSelector,
+) (common.SlideChartRef, error) {
 	refs, err := e.ListSlideCharts(slideIndex)
 	if err != nil {
 		return common.SlideChartRef{}, err
@@ -108,7 +116,11 @@ func (e *PresentationEditor) resolveChartSelector(slideIndex int, selector commo
 	var idxMatch *common.SlideChartRef
 	if selector.Index != nil {
 		if *selector.Index < 0 || *selector.Index >= len(refs) {
-			return common.SlideChartRef{}, fmt.Errorf("chart index %d out of range (found %d charts)", *selector.Index, len(refs))
+			return common.SlideChartRef{}, fmt.Errorf(
+				"chart index %d out of range (found %d charts)",
+				*selector.Index,
+				len(refs),
+			)
 		}
 		ref := refs[*selector.Index]
 		idxMatch = &ref
@@ -131,7 +143,11 @@ func (e *PresentationEditor) resolveChartSelector(slideIndex int, selector commo
 
 	if idxMatch != nil && relMatch != nil {
 		if idxMatch.RelID != relMatch.RelID {
-			return common.SlideChartRef{}, fmt.Errorf("chart selector mismatch: index=%d rel_id=%q", *selector.Index, relID)
+			return common.SlideChartRef{}, fmt.Errorf(
+				"chart selector mismatch: index=%d rel_id=%q",
+				*selector.Index,
+				relID,
+			)
 		}
 		return *idxMatch, nil
 	}
@@ -141,7 +157,7 @@ func (e *PresentationEditor) resolveChartSelector(slideIndex int, selector commo
 	if relMatch != nil {
 		return *relMatch, nil
 	}
-	return common.SlideChartRef{}, fmt.Errorf("chart_selector must include index and/or rel_id")
+	return common.SlideChartRef{}, errors.New("chart_selector must include index and/or rel_id")
 }
 
 func detectChartKind(chartXML []byte) chartKind {
@@ -158,7 +174,7 @@ func detectChartKind(chartXML []byte) chartKind {
 
 func validateChartUpdatePayload(kind chartKind, req common.ChartDataUpdate) error {
 	if len(req.Series) == 0 {
-		return fmt.Errorf("chart update requires at least one series")
+		return errors.New("chart update requires at least one series")
 	}
 	switch kind {
 	case chartKindCategory:
@@ -175,10 +191,15 @@ func validateChartUpdatePayload(kind chartKind, req common.ChartDataUpdate) erro
 				catLen = len(s.Categories)
 			}
 			if catLen == 0 {
-				return fmt.Errorf("category chart requires categories")
+				return errors.New("category chart requires categories")
 			}
 			if len(s.Values) != catLen {
-				return fmt.Errorf("series %d values length (%d) must equal category length (%d)", i, len(s.Values), catLen)
+				return fmt.Errorf(
+					"series %d values length (%d) must equal category length (%d)",
+					i,
+					len(s.Values),
+					catLen,
+				)
 			}
 		}
 	case chartKindScatter:
@@ -200,7 +221,7 @@ func validateChartUpdatePayload(kind chartKind, req common.ChartDataUpdate) erro
 			}
 		}
 	default:
-		return fmt.Errorf("unsupported chart type")
+		return errors.New("unsupported chart type")
 	}
 	return nil
 }

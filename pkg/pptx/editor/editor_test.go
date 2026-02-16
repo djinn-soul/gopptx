@@ -32,19 +32,19 @@ func TestPresentationEditorAddUpdateRemoveSave(t *testing.T) {
 		t.Fatalf("expected 2 slides, got %d", editor.SlideCount())
 	}
 
-	if _, err := editor.AddSlide(elements.NewSlide("Added").AddBullet("new bullet")); err != nil {
-		t.Fatalf("add slide: %v", err)
+	if _, addErr := editor.AddSlide(elements.NewSlide("Added").AddBullet("new bullet")); addErr != nil {
+		t.Fatalf("add slide: %v", addErr)
 	}
-	if err := editor.UpdateSlide(0, elements.NewSlide("Updated Intro").AddBullet("Updated")); err != nil {
-		t.Fatalf("update slide: %v", err)
+	if updateErr := editor.UpdateSlide(0, elements.NewSlide("Updated Intro").AddBullet("Updated")); updateErr != nil {
+		t.Fatalf("update slide: %v", updateErr)
 	}
-	if err := editor.RemoveSlide(1); err != nil {
-		t.Fatalf("remove slide: %v", err)
+	if removeErr := editor.RemoveSlide(1); removeErr != nil {
+		t.Fatalf("remove slide: %v", removeErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "edited.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	edited, err := OpenPresentationEditor(outPath)
@@ -83,13 +83,13 @@ func TestPresentationEditorPreservesNonEditedParts(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.UpdateSlide(1, elements.NewSlide("Editable").AddBullet("updated text")); err != nil {
-		t.Fatalf("update text-only slide: %v", err)
+	if updateErr := editor.UpdateSlide(1, elements.NewSlide("Editable").AddBullet("updated text")); updateErr != nil {
+		t.Fatalf("update text-only slide: %v", updateErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "edited-with-image.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	_ = readZipFileBytes(t, originalPath, "ppt/media/image1.png")
@@ -154,13 +154,16 @@ func TestPresentationEditorUpdateSlidePreservesExistingNotesRelationship(t *test
 	path := filepath.Join(t.TempDir(), "existing-notes.pptx")
 	existingNotes := "Keep these notes"
 	_ = writeZipFixture(path, map[string]string{
-		"[Content_Types].xml":                        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/><Override PartName="/ppt/notesSlides/notesSlide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/></Types>`,
-		"_rels/.rels":                                `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>`,
-		"ppt/presentation.xml":                       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst></p:presentation>`,
-		"ppt/_rels/presentation.xml.rels":            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`,
-		"ppt/slides/slide1.xml":                      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`,
-		"ppt/slides/_rels/slide1.xml.rels":           `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide1.xml"/></Relationships>`,
-		"ppt/notesSlides/notesSlide1.xml":            fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>%s</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>`, existingNotes),
+		"[Content_Types].xml":              `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/><Override PartName="/ppt/notesSlides/notesSlide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/></Types>`,
+		"_rels/.rels":                      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>`,
+		"ppt/presentation.xml":             `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels":  `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`,
+		"ppt/slides/slide1.xml":            `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`,
+		"ppt/slides/_rels/slide1.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide1.xml"/></Relationships>`,
+		"ppt/notesSlides/notesSlide1.xml": fmt.Sprintf(
+			`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>%s</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>`,
+			existingNotes,
+		),
 		"ppt/notesSlides/_rels/notesSlide1.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide1.xml"/></Relationships>`,
 	})
 
@@ -169,17 +172,18 @@ func TestPresentationEditorUpdateSlidePreservesExistingNotesRelationship(t *test
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.UpdateSlide(0, elements.NewSlide("Updated Title").AddBullet("updated body")); err != nil {
-		t.Fatalf("update slide: %v", err)
+	if updateErr := editor.UpdateSlide(0, elements.NewSlide("Updated Title").AddBullet("updated body")); updateErr != nil {
+		t.Fatalf("update slide: %v", updateErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "updated-existing-notes.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	relsXML := string(readZipFileBytes(t, outPath, "ppt/slides/_rels/slide1.xml.rels"))
-	if !strings.Contains(relsXML, "/relationships/notesSlide") || !strings.Contains(relsXML, "../notesSlides/notesSlide1.xml") {
+	if !strings.Contains(relsXML, "/relationships/notesSlide") ||
+		!strings.Contains(relsXML, "../notesSlides/notesSlide1.xml") {
 		t.Fatalf("expected notes relationship to be preserved, got: %s", relsXML)
 	}
 
@@ -206,13 +210,13 @@ func TestPresentationEditorPersistsHyperlinks(t *testing.T) {
 		AddBulletRuns([]elements.TextRun{
 			{Text: "text link", Hyperlink: &h2},
 		})
-	if _, err := editor.AddSlide(slide); err != nil {
-		t.Fatalf("add linked slide: %v", err)
+	if _, addErr := editor.AddSlide(slide); addErr != nil {
+		t.Fatalf("add linked slide: %v", addErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "linked.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save linked deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save linked deck: %v", saveErr)
 	}
 
 	slideXML := string(readZipFileBytes(t, outPath, "ppt/slides/slide2.xml"))
@@ -239,8 +243,8 @@ func TestPresentationEditorMergeFromFile(t *testing.T) {
 		t.Fatalf("open dest editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.MergeFromFile(sourcePath); err != nil {
-		t.Fatalf("merge from file: %v", err)
+	if mergeErr := editor.MergeFromFile(sourcePath); mergeErr != nil {
+		t.Fatalf("merge from file: %v", mergeErr)
 	}
 	if editor.SlideCount() != 3 {
 		t.Fatalf("expected 3 slides after merge, got %d", editor.SlideCount())
@@ -270,9 +274,13 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 	var presRels strings.Builder
 	var contentTypes strings.Builder
 
-	contentTypes.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
+	contentTypes.WriteString(
+		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`,
+	)
 
-	presRels.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
+	presRels.WriteString(
+		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`,
+	)
 
 	sldIds.WriteString(`<p:sldIdLst>`)
 	for i, slide := range slides {
@@ -283,11 +291,25 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 		fullPart := fmt.Sprintf("ppt/slides/slide%d.xml", num)
 
 		sldIds.WriteString(fmt.Sprintf(`<p:sldId id="%d" r:id="%s"/>`, id, rid))
-		presRels.WriteString(fmt.Sprintf(`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="%s"/>`, rid, part))
-		contentTypes.WriteString(fmt.Sprintf(`<Override PartName="/%s" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`, fullPart))
+		presRels.WriteString(
+			fmt.Sprintf(
+				`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="%s"/>`,
+				rid,
+				part,
+			),
+		)
+		contentTypes.WriteString(
+			fmt.Sprintf(
+				`<Override PartName="/%s" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`,
+				fullPart,
+			),
+		)
 
 		// Minimal slide XML
-		files[fullPart] = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree><p:title><p:txBody><a:p><a:r><a:t>%s</a:t></a:r></a:p></p:txBody></p:title></p:cSld></p:sld>`, slide.Title)
+		files[fullPart] = fmt.Sprintf(
+			`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/></p:spTree><p:title><p:txBody><a:p><a:r><a:t>%s</a:t></a:r></a:p></p:txBody></p:title></p:cSld></p:sld>`,
+			slide.Title,
+		)
 		files[fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num)] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`
 
 		// Add image if present
@@ -297,7 +319,10 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 			for imageIdx := range slide.Images {
 				mediaPart := fmt.Sprintf("ppt/media/image%d.png", imageIdx+1) // Simplified
 				files[mediaPart] = "fake png data"
-				files[fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num)] = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image%d.png"/></Relationships>`, imageIdx+1)
+				files[fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num)] = fmt.Sprintf(
+					`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image%d.png"/></Relationships>`,
+					imageIdx+1,
+				)
 			}
 		}
 	}
@@ -307,7 +332,10 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 
 	files["[Content_Types].xml"] = contentTypes.String()
 	files["ppt/_rels/presentation.xml.rels"] = presRels.String()
-	files["ppt/presentation.xml"] = fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">%s</p:presentation>`, sldIds.String())
+	files["ppt/presentation.xml"] = fmt.Sprintf(
+		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">%s</p:presentation>`,
+		sldIds.String(),
+	)
 
 	err := writeZipFixture(path, files)
 	if err != nil {

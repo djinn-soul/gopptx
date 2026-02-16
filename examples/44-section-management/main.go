@@ -15,7 +15,9 @@ func main() {
 		log.Fatalf("Smoke test failed: %v", err)
 	}
 	fmt.Println("Section Management Smoke Test: SUCCESS")
-	fmt.Println("To verify visually: Open examples/output/44_section_management.pptx in PowerPoint and switch to 'Slide Sorter' view.")
+	fmt.Println(
+		"To verify visually: Open examples/output/44_section_management.pptx in PowerPoint and switch to 'Slide Sorter' view.",
+	)
 }
 
 func run() error {

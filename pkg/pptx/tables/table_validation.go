@@ -85,13 +85,28 @@ func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex i
 		return fmt.Errorf("slide %d table row %d cell %d col span must be >= 1", slideIndex, rowIndex, cellIndex)
 	}
 	if color := strings.TrimSpace(cell.BackgroundColor); color != "" && !IsHexColor(color) {
-		return fmt.Errorf("slide %d table row %d cell %d background color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d background color must be 6-digit RGB hex",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+		)
 	}
 	if align := strings.TrimSpace(cell.Align); align != "" && !isTableAlign(align) {
-		return fmt.Errorf("slide %d table row %d cell %d align must be one of l|ctr|r|just", slideIndex, rowIndex, cellIndex)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d align must be one of l|ctr|r|just",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+		)
 	}
 	if vAlign := strings.TrimSpace(cell.VAlign); vAlign != "" && !isTableVAlign(vAlign) {
-		return fmt.Errorf("slide %d table row %d cell %d valign must be one of t|ctr|b", slideIndex, rowIndex, cellIndex)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d valign must be one of t|ctr|b",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+		)
 	}
 	if err := validateTableCellMargin(cell.MarginLeftPt, slideIndex, rowIndex, cellIndex, "left"); err != nil {
 		return err
@@ -107,16 +122,34 @@ func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex i
 	}
 
 	if cell.hasExplicitBorderSides() {
-		if err := validateTableCellBorder(cell.BorderLeft, slideIndex, rowIndex, cellIndex, borderSideLeft); err != nil {
+		if err := validateTableCellBorder(
+			cell.BorderLeft,
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			borderSideLeft,
+		); err != nil {
 			return err
 		}
-		if err := validateTableCellBorder(cell.BorderRight, slideIndex, rowIndex, cellIndex, borderSideRight); err != nil {
+		if err := validateTableCellBorder(
+			cell.BorderRight,
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			borderSideRight,
+		); err != nil {
 			return err
 		}
 		if err := validateTableCellBorder(cell.BorderTop, slideIndex, rowIndex, cellIndex, borderSideTop); err != nil {
 			return err
 		}
-		if err := validateTableCellBorder(cell.BorderBottom, slideIndex, rowIndex, cellIndex, borderSideBottom); err != nil {
+		if err := validateTableCellBorder(
+			cell.BorderBottom,
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			borderSideBottom,
+		); err != nil {
 			return err
 		}
 		return nil
@@ -136,16 +169,41 @@ func validateTableCellBorder(border *TableCellBorder, slideIndex int, rowIndex i
 	}
 
 	if math.IsNaN(border.WidthPt) || math.IsInf(border.WidthPt, 0) {
-		return fmt.Errorf("slide %d table row %d cell %d %s width must be finite", slideIndex, rowIndex, cellIndex, fieldPrefix)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d %s width must be finite",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			fieldPrefix,
+		)
 	}
 	if border.WidthPt < 0 {
-		return fmt.Errorf("slide %d table row %d cell %d %s width must be >= 0", slideIndex, rowIndex, cellIndex, fieldPrefix)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d %s width must be >= 0",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			fieldPrefix,
+		)
 	}
 	if border.WidthPt > 0 && !IsHexColor(border.Color) {
-		return fmt.Errorf("slide %d table row %d cell %d %s color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex, fieldPrefix)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d %s color must be 6-digit RGB hex",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			fieldPrefix,
+		)
 	}
 	if NormalizeHexColor(border.Color) != "" && border.WidthPt <= 0 {
-		return fmt.Errorf("slide %d table row %d cell %d %s width must be > 0 when %s color is set", slideIndex, rowIndex, cellIndex, fieldPrefix, fieldPrefix)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d %s width must be > 0 when %s color is set",
+			slideIndex,
+			rowIndex,
+			cellIndex,
+			fieldPrefix,
+			fieldPrefix,
+		)
 	}
 	if dash := strings.TrimSpace(border.Dash); dash != "" && !isTableBorderDash(dash) {
 		return fmt.Errorf(

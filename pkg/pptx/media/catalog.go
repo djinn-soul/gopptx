@@ -3,6 +3,7 @@ package media
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -71,7 +72,6 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 				return fmt.Errorf("read error: %w", err)
 			}
 			data = fileData
-
 		} else if len(image.Data) > 0 {
 			ext = NormalizeExtension(image.Format)
 			// key by hash of data
@@ -81,7 +81,6 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 				return nil
 			}
 			data = image.Data
-
 		} else if image.SourceURL != "" {
 			key = "url:" + image.SourceURL
 			if _, exists := catalog.byKey[key]; exists {
@@ -134,12 +133,12 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 		}
 
 		if len(data) == 0 {
-			return fmt.Errorf("yielded empty data")
+			return errors.New("yielded empty data")
 		}
 
 		if _, ok := supportedMediaExtensions[ext]; !ok {
 			if ext == "" {
-				return fmt.Errorf("has unknown extension (cannot infer)")
+				return errors.New("has unknown extension (cannot infer)")
 			}
 			return fmt.Errorf("has unsupported extension %q", ext)
 		}
@@ -168,7 +167,8 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 				}
 			}
 		}
-		if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
+		if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture &&
+			slide.Background.PictureFill != nil {
 			if err := addImage(*slide.Background.PictureFill); err != nil {
 				return nil, fmt.Errorf("slide %d background image: %w", slideIndex+1, err)
 			}
@@ -176,7 +176,8 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*MediaCatalog, error) {
 
 		// Handle transition sounds
 		if slide.Transition != nil {
-			if opt, ok := slide.Transition.(transitions.TransitionOptions); ok && opt.Sound != nil && strings.HasPrefix(opt.Sound.RelID, "file:") {
+			if opt, ok := slide.Transition.(transitions.TransitionOptions); ok && opt.Sound != nil &&
+				strings.HasPrefix(opt.Sound.RelID, "file:") {
 				path := strings.TrimPrefix(opt.Sound.RelID, "file:")
 				soundMedia := shapes.Image{Path: path}
 				if err := addImage(soundMedia); err != nil {
@@ -305,11 +306,11 @@ func (c *MediaCatalog) RegisterImage(image shapes.Image) (string, error) {
 		}
 		data = image.Data
 	} else {
-		return "", fmt.Errorf("image has no path or data")
+		return "", errors.New("image has no path or data")
 	}
 
 	if len(data) == 0 {
-		return "", fmt.Errorf("yielded empty data")
+		return "", errors.New("yielded empty data")
 	}
 	if _, ok := supportedMediaExtensions[ext]; !ok {
 		return "", fmt.Errorf("unsupported extension %q", ext)

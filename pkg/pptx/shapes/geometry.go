@@ -135,7 +135,13 @@ func NormalizeDrawingLineDash(dash string) string {
 
 func IsDrawingLineDash(dash string) bool {
 	switch NormalizeDrawingLineDash(dash) {
-	case LineDashSolid, LineDashDash, LineDashDot, LineDashDashDot, LineDashDashDotDot, LineDashLongDash, LineDashLongDashDot:
+	case LineDashSolid,
+		LineDashDash,
+		LineDashDot,
+		LineDashDashDot,
+		LineDashDashDotDot,
+		LineDashLongDash,
+		LineDashLongDashDot:
 		return true
 	default:
 		return false

@@ -8,7 +8,7 @@ import (
 // ResolveRelationshipTarget calculates the absolute path of a target based on the source part.
 // sourcePart: "ppt/slides/slide1.xml"
 // targetRel: "../media/image1.png"
-// Result: "ppt/media/image1.png"
+// Result: "ppt/media/image1.png".
 func ResolveRelationshipTarget(sourcePart, targetRel string) string {
 	// If target is already absolute (no starting dot, no slash), treat as relative to root?
 	// OOXML Spec: Targets can be relative to the source part's directory.
@@ -24,7 +24,7 @@ func ResolveRelationshipTarget(sourcePart, targetRel string) string {
 // MakeRelativePath calculates the relative path from source to target.
 // sourcePart: "ppt/slides/slide1.xml"
 // targetPart: "ppt/media/image1.png"
-// Result: "../media/image1.png"
+// Result: "../media/image1.png".
 func MakeRelativePath(sourcePart, targetPart string) string {
 	sourceDir := path.Dir(sourcePart)
 

@@ -34,8 +34,8 @@ func TestUpdateChartDataCategoryByIndexPreservesStyle(t *testing.T) {
 	}
 
 	excelData, _ := e.parts.Get("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx")
-	if _, err := zip.NewReader(bytes.NewReader(excelData), int64(len(excelData))); err != nil {
-		t.Fatalf("updated excel payload is invalid zip: %v", err)
+	if _, zipErr := zip.NewReader(bytes.NewReader(excelData), int64(len(excelData))); zipErr != nil {
+		t.Fatalf("updated excel payload is invalid zip: %v", zipErr)
 	}
 }
 
@@ -142,8 +142,18 @@ func newChartUpdateEditorFixture() *PresentationEditor {
 			"ppt/charts/chart1.xml": "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx",
 		},
 	}
-	e.parts.Set("ppt/slides/slide1.xml", []byte(`<p:sld><p:spTree><p:graphicFrame><a:graphic><a:graphicData><c:chart r:id="rIdChart"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:sld>`))
-	e.parts.Set("ppt/slides/_rels/slide1.xml.rels", []byte(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdChart" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/></Relationships>`))
+	e.parts.Set(
+		"ppt/slides/slide1.xml",
+		[]byte(
+			`<p:sld><p:spTree><p:graphicFrame><a:graphic><a:graphicData><c:chart r:id="rIdChart"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:sld>`,
+		),
+	)
+	e.parts.Set(
+		"ppt/slides/_rels/slide1.xml.rels",
+		[]byte(
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdChart" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/></Relationships>`,
+		),
+	)
 	e.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx", []byte("old"))
 	return e
 }

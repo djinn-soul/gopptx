@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -149,7 +150,7 @@ func SlideLayoutRelationships(masterIndex int) string {
 	}
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster` + fmt.Sprintf("%d", masterIndex) + `.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster` + strconv.Itoa(masterIndex) + `.xml"/>
 </Relationships>`
 }
 
@@ -238,12 +239,12 @@ func SlideMaster(spec *SlideMasterSpec) string {
 </p:cSld>
 <p:clrMap bg1="` + bg1 + `" tx1="` + tx1 + `" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
 <p:sldLayoutIdLst>
-<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase) + `" r:id="rId1"/>
-<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+1) + `" r:id="rId2"/>
-<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+2) + `" r:id="rId3"/>
-<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+3) + `" r:id="rId4"/>
-<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+4) + `" r:id="rId5"/>
-<p:sldLayoutId id="` + fmt.Sprintf("%d", layoutIDBase+5) + `" r:id="rId6"/>
+<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase, 10) + `" r:id="rId1"/>
+<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+1, 10) + `" r:id="rId2"/>
+<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+2, 10) + `" r:id="rId3"/>
+<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+3, 10) + `" r:id="rId4"/>
+<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+4, 10) + `" r:id="rId5"/>
+<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+5, 10) + `" r:id="rId6"/>
 </p:sldLayoutIdLst>` + txStylesXML(spec) + `
 </p:sldMaster>`
 }
@@ -306,10 +307,9 @@ func txStylesXML(spec *SlideMasterSpec) string {
 func textLevelStylesXML(levels []TextLevelStyle) string {
 	var b strings.Builder
 	for _, lvl := range levels {
-		lvlNum := lvl.Level + 1 // 0-based → 1-based
-		if lvlNum < 1 {
-			lvlNum = 1
-		}
+		lvlNum := max(
+			// 0-based → 1-based
+			lvl.Level+1, 1)
 		if lvlNum > 9 {
 			lvlNum = 9
 		}
@@ -371,7 +371,7 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(4, masterIndex) + `"/>
 <Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(5, masterIndex) + `"/>
 <Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(6, masterIndex) + `"/>
-<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + fmt.Sprintf("%d", themeIndex) + `.xml"/>`)
+<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(themeIndex) + `.xml"/>`)
 	for i, target := range imageTargets {
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, 8+i, Escape(target)))

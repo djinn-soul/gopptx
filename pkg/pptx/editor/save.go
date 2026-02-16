@@ -2,6 +2,7 @@ package editor
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -16,7 +17,7 @@ const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/
 // Save writes the edited presentation back to a PPTX file.
 func (e *PresentationEditor) Save(filePath string) error {
 	if e == nil {
-		return fmt.Errorf("nil editor")
+		return errors.New("nil editor")
 	}
 
 	// Materialize all lazy parts into memory and release the source file handle.
@@ -55,22 +56,22 @@ func (e *PresentationEditor) Save(filePath string) error {
 
 	for _, name := range allNames {
 		var content []byte
-		if updated, ok := updatedParts[name]; ok {
+		if updated, updatedOK := updatedParts[name]; updatedOK {
 			content = updated
 		} else {
-			data, ok := e.parts.Get(name)
-			if !ok {
+			data, partOK := e.parts.Get(name)
+			if !partOK {
 				return fmt.Errorf("failed to retrieve part %q during save", name)
 			}
 			content = data
 		}
 
-		w, err := zw.Create(name)
-		if err != nil {
-			return fmt.Errorf("create zip entry %q: %w", name, err)
+		w, createErr := zw.Create(name)
+		if createErr != nil {
+			return fmt.Errorf("create zip entry %q: %w", name, createErr)
 		}
-		if _, err := w.Write(content); err != nil {
-			return fmt.Errorf("write zip entry %q: %w", name, err)
+		if _, writeErr := w.Write(content); writeErr != nil {
+			return fmt.Errorf("write zip entry %q: %w", name, writeErr)
 		}
 	}
 
@@ -133,7 +134,7 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 			}
 		}
 		if strings.TrimSpace(notesMasterRelID) == "" {
-			return nil, fmt.Errorf("notes master part exists but presentation relationship is missing")
+			return nil, errors.New("notes master part exists but presentation relationship is missing")
 		}
 	}
 	presentationXML, err = rewritePresentationNotesMasterList([]byte(presentationXML), notesMasterRelID, hasNotesMaster)
@@ -144,9 +145,9 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 
 	// Inject Sections into presentation.xml extension list (Required for PPT 2010+)
 	if len(e.sections) > 0 {
-		pXML, err := rewritePresentationSections([]byte(presentationXML), e.sections)
-		if err != nil {
-			return nil, fmt.Errorf("rewrite sections: %w", err)
+		pXML, rewriteErr := rewritePresentationSections([]byte(presentationXML), e.sections)
+		if rewriteErr != nil {
+			return nil, fmt.Errorf("rewrite sections: %w", rewriteErr)
 		}
 		out[common.PresentationXMLPath] = []byte(pXML)
 	}
@@ -197,7 +198,20 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	}
 
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
-	contentTypesXML, err := rewriteContentTypes(contentTypesData, e.slides, mediaPaths, hasSections, filteredChartPaths, notesPaths, themePaths, layoutPaths, masterPaths, hasNotesMaster, hasCommentAuthors, filteredCommentPaths)
+	contentTypesXML, err := rewriteContentTypes(
+		contentTypesData,
+		e.slides,
+		mediaPaths,
+		hasSections,
+		filteredChartPaths,
+		notesPaths,
+		themePaths,
+		layoutPaths,
+		masterPaths,
+		hasNotesMaster,
+		hasCommentAuthors,
+		filteredCommentPaths,
+	)
 	if err != nil {
 		return nil, err
 	}

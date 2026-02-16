@@ -1,6 +1,7 @@
 package layout
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
@@ -51,22 +52,22 @@ func Grid(rows, cols int, margin styling.Length) ([]common.Box, error) {
 // GridInBox calculates a sequence of bounding boxes for a grid layout within specific bounds.
 func GridInBox(rows, cols int, margin styling.Length, bounds common.Box) ([]common.Box, error) {
 	if rows <= 0 || cols <= 0 {
-		return nil, fmt.Errorf("rows and cols must be greater than zero")
+		return nil, errors.New("rows and cols must be greater than zero")
 	}
 
 	totalMarginX := margin * styling.Length(cols-1)
 	totalMarginY := margin * styling.Length(rows-1)
 
 	if totalMarginX >= bounds.CX || totalMarginY >= bounds.CY {
-		return nil, fmt.Errorf("margins exceed bounding box dimensions")
+		return nil, errors.New("margins exceed bounding box dimensions")
 	}
 
 	elementCX := (bounds.CX - totalMarginX) / styling.Length(cols)
 	elementCY := (bounds.CY - totalMarginY) / styling.Length(rows)
 
 	boxes := make([]common.Box, 0, rows*cols)
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
+	for r := range rows {
+		for c := range cols {
 			x := bounds.X + styling.Length(c)*(elementCX+margin)
 			y := bounds.Y + styling.Length(r)*(elementCY+margin)
 
@@ -84,7 +85,12 @@ func GridInBox(rows, cols int, margin styling.Length, bounds common.Box) ([]comm
 
 // Stack calculates the starting points for elements placed sequentially with a fixed gap.
 // orientation can be "horizontal" or "vertical".
-func Stack(orientation string, start common.Point, gap styling.Length, elements ...common.Size) ([]common.Point, error) {
+func Stack(
+	orientation string,
+	start common.Point,
+	gap styling.Length,
+	elements ...common.Size,
+) ([]common.Point, error) {
 	points := make([]common.Point, 0, len(elements))
 	currentX := start.X
 	currentY := start.Y
@@ -107,9 +113,14 @@ func Stack(orientation string, start common.Point, gap styling.Length, elements 
 // DistributeUniform calculates the top or left coordinates to evenly space elements of identical size within a bound.
 // orientation can be "horizontal" or "vertical".
 // count is the number of elements to distribute.
-func DistributeUniform(orientation string, bounds common.Box, count int, elementSize styling.Length) ([]styling.Length, error) {
+func DistributeUniform(
+	orientation string,
+	bounds common.Box,
+	count int,
+	elementSize styling.Length,
+) ([]styling.Length, error) {
 	if count <= 0 {
-		return nil, fmt.Errorf("count must be greater than zero")
+		return nil, errors.New("count must be greater than zero")
 	}
 	if orientation != OrientationHorizontal && orientation != OrientationVertical {
 		return nil, fmt.Errorf("invalid orientation: %s", orientation)
@@ -122,7 +133,6 @@ func DistributeUniform(orientation string, bounds common.Box, count int, element
 		case OrientationVertical:
 			_, y := CenterInBox(0, elementSize, bounds)
 			return []styling.Length{y}, nil
-
 		}
 	}
 
@@ -139,12 +149,12 @@ func DistributeUniform(orientation string, bounds common.Box, count int, element
 
 	totalElementSize := elementSize * styling.Length(count)
 	if totalElementSize > totalAvailable {
-		return nil, fmt.Errorf("elements exceed available space")
+		return nil, errors.New("elements exceed available space")
 	}
 
 	gap := (totalAvailable - totalElementSize) / styling.Length(count-1)
 	coords := make([]styling.Length, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		coords[i] = startCoord + styling.Length(i)*(elementSize+gap)
 	}
 

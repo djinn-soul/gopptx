@@ -147,7 +147,7 @@ func TestPartStoreLazyLoadFromZip(t *testing.T) {
 	}
 
 	// part2 should still not be cached
-	if _, ok := ps.cache["part2.xml"]; ok {
+	if _, cached := ps.cache["part2.xml"]; cached {
 		t.Fatalf("part2.xml should not be cached yet")
 	}
 }
@@ -214,20 +214,20 @@ func TestPartStoreConcurrentGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	zw := zip.NewWriter(f)
-	for i := 0; i < 10; i++ {
-		w, err := zw.Create(filepath.ToSlash(filepath.Join("ppt", "slides", "slide"+string(rune('0'+i))+".xml")))
-		if err != nil {
-			t.Fatal(err)
+	for i := range 10 {
+		w, createErr := zw.Create(filepath.ToSlash(filepath.Join("ppt", "slides", "slide"+string(rune('0'+i))+".xml")))
+		if createErr != nil {
+			t.Fatal(createErr)
 		}
-		if _, err := w.Write([]byte("data")); err != nil {
-			t.Fatal(err)
+		if _, writeErr := w.Write([]byte("data")); writeErr != nil {
+			t.Fatal(writeErr)
 		}
 	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
+	if closeZipErr := zw.Close(); closeZipErr != nil {
+		t.Fatal(closeZipErr)
 	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
+	if closeFileErr := f.Close(); closeFileErr != nil {
+		t.Fatal(closeFileErr)
 	}
 
 	file, err := os.Open(zipPath)
@@ -248,11 +248,9 @@ func TestPartStoreConcurrentGet(t *testing.T) {
 
 	names := ps.KeysWithPrefix("ppt/slides/")
 	var wg sync.WaitGroup
-	for g := 0; g < 20; g++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for i := 0; i < 200; i++ {
+	for range 20 {
+		wg.Go(func() {
+			for range 200 {
 				for _, name := range names {
 					if _, ok := ps.Get(name); !ok {
 						t.Errorf("missing part %q during concurrent Get", name)
@@ -260,7 +258,7 @@ func TestPartStoreConcurrentGet(t *testing.T) {
 					}
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

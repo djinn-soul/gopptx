@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -20,7 +21,7 @@ func patchChartDataCache(chartXML []byte, kind chartKind, req common.ChartDataUp
 	src := string(chartXML)
 	series := chartSeriesPattern.FindAllString(src, -1)
 	if len(series) == 0 {
-		return nil, fmt.Errorf("chart has no series nodes")
+		return nil, errors.New("chart has no series nodes")
 	}
 	if len(series) != len(req.Series) {
 		return nil, fmt.Errorf("series count mismatch: chart has %d, payload has %d", len(series), len(req.Series))
@@ -56,7 +57,12 @@ func patchChartDataCache(chartXML []byte, kind chartKind, req common.ChartDataUp
 	return []byte(result), nil
 }
 
-func patchCategorySeries(seriesIdx int, seriesXML string, categories []string, data common.ChartSeriesData) (string, error) {
+func patchCategorySeries(
+	seriesIdx int,
+	seriesXML string,
+	categories []string,
+	data common.ChartSeriesData,
+) (string, error) {
 	cats := categories
 	if len(data.Categories) > 0 {
 		cats = data.Categories

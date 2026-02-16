@@ -1,6 +1,7 @@
 package action
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -200,25 +201,25 @@ func (h Hyperlink) Validate() error {
 	switch h.Action.Type {
 	case HyperlinkActionURL:
 		if h.Action.URL == "" {
-			return fmt.Errorf("hyperlink URL cannot be empty")
+			return errors.New("hyperlink URL cannot be empty")
 		}
 	case HyperlinkActionFile:
 		if h.Action.FilePath == "" {
-			return fmt.Errorf("hyperlink file path cannot be empty")
+			return errors.New("hyperlink file path cannot be empty")
 		}
 		if strings.Contains(h.Action.FilePath, "..") {
-			return fmt.Errorf("hyperlink file path cannot contain directory traversal (..)")
+			return errors.New("hyperlink file path cannot contain directory traversal (..)")
 		}
 	case HyperlinkActionProgram:
 		if h.Action.ProgramPath == "" {
-			return fmt.Errorf("hyperlink program path cannot be empty")
+			return errors.New("hyperlink program path cannot be empty")
 		}
 		if strings.Contains(h.Action.ProgramPath, "..") {
-			return fmt.Errorf("hyperlink program path cannot contain directory traversal (..)")
+			return errors.New("hyperlink program path cannot contain directory traversal (..)")
 		}
 	case HyperlinkActionEmail:
 		if h.Action.EmailAddress == "" {
-			return fmt.Errorf("hyperlink email address cannot be empty")
+			return errors.New("hyperlink email address cannot be empty")
 		}
 	}
 	return nil

@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
@@ -51,8 +53,13 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	// Slide -> Chart
 	slideRelID := fmt.Sprintf("rId%d", e.nextRelIDNum)
 	e.nextRelIDNum++
-	if err := e.addSlideRelationship(slideRef.Part, slideRelID, common.RelTypeChart, "../charts/"+path.Base(chartPartPath)); err != nil {
-		return fmt.Errorf("add slide rel: %w", err)
+	if addSlideRelErr := e.addSlideRelationship(
+		slideRef.Part,
+		slideRelID,
+		common.RelTypeChart,
+		"../charts/"+path.Base(chartPartPath),
+	); addSlideRelErr != nil {
+		return fmt.Errorf("add slide rel: %w", addSlideRelErr)
 	}
 
 	// Chart -> Excel
@@ -60,8 +67,13 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	if err != nil {
 		return fmt.Errorf("allocate chart rel id: %w", err)
 	}
-	if err := e.addRelationship(chartPartPath, chartRelID, common.RelTypePackage, "../embeddings/"+path.Base(excelPartPath)); err != nil {
-		return fmt.Errorf("add chart rel: %w", err)
+	if addChartRelErr := e.addRelationship(
+		chartPartPath,
+		chartRelID,
+		common.RelTypePackage,
+		"../embeddings/"+path.Base(excelPartPath),
+	); addChartRelErr != nil {
+		return fmt.Errorf("add chart rel: %w", addChartRelErr)
 	}
 
 	// 5. Generate Chart XML
@@ -77,10 +89,18 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	shapeID := e.nextShapeID(slideRef.Part)
 
 	// Create GraphicFrame XML
-	gfxFrame := e.createChartGraphicFrameXML(shapeID, chartSpec.Title, slideRelID, chartSpec.X, chartSpec.Y, chartSpec.CX, chartSpec.CY)
+	gfxFrame := e.createChartGraphicFrameXML(
+		shapeID,
+		chartSpec.Title,
+		slideRelID,
+		chartSpec.X,
+		chartSpec.Y,
+		chartSpec.CX,
+		chartSpec.CY,
+	)
 
-	if err := e.appendShapeToSlide(slideRef.Part, gfxFrame); err != nil {
-		return fmt.Errorf("append chart shape: %w", err)
+	if appendErr := e.appendShapeToSlide(slideRef.Part, gfxFrame); appendErr != nil {
+		return fmt.Errorf("append chart shape: %w", appendErr)
 	}
 
 	// Update inventory
@@ -101,7 +121,7 @@ func (e *PresentationEditor) allocChartRelID(chartPart string) (string, error) {
 	}
 	maxID := 0
 	for _, rel := range rels {
-		if num, ok := common.ParseRelationshipNumber(rel.ID); ok && num > maxID {
+		if num, parsed := common.ParseRelationshipNumber(rel.ID); parsed && num > maxID {
 			maxID = num
 		}
 	}
@@ -132,7 +152,12 @@ func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error)
 
 // ReplaceChartData updates the data source and cached values of an existing chart.
 // chartIndex is the 0-based index of the chart on the slide (order of appearance).
-func (e *PresentationEditor) ReplaceChartData(slideIndex int, chartIndex int, categories []string, values []float64) error {
+func (e *PresentationEditor) ReplaceChartData(
+	slideIndex int,
+	chartIndex int,
+	categories []string,
+	values []float64,
+) error {
 	idx := chartIndex
 	return e.UpdateChartData(slideIndex, common.ChartSelector{Index: &idx}, common.ChartDataUpdate{
 		Categories: categories,
@@ -194,13 +219,15 @@ func (e *PresentationEditor) addRelationship(partPath, id, relType, target strin
 
 func (e *PresentationEditor) writeRelationships(path string, rels []common.EditorRelationship) error {
 	output := `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+	var outputSb197 strings.Builder
 	for _, r := range rels {
-		output += fmt.Sprintf(`<Relationship Id="%s" Type="%s" Target="%s"`, r.ID, r.Type, r.Target)
+		outputSb197.WriteString(fmt.Sprintf(`<Relationship Id="%s" Type="%s" Target="%s"`, r.ID, r.Type, r.Target))
 		if r.TargetMode != "" {
-			output += fmt.Sprintf(` TargetMode="%s"`, r.TargetMode)
+			outputSb197.WriteString(fmt.Sprintf(` TargetMode="%s"`, r.TargetMode))
 		}
-		output += `/>`
+		outputSb197.WriteString(`/>`)
 	}
+	output += outputSb197.String()
 	output += `</Relationships>`
 	e.parts.Set(path, []byte(output))
 	return nil
@@ -214,7 +241,7 @@ func (e *PresentationEditor) addContentTypeOverride(partName, contentType string
 	}
 
 	partNameRooted := "/" + partName
-	if bytes.Contains(data, []byte(fmt.Sprintf(`PartName="%s"`, partNameRooted))) {
+	if bytes.Contains(data, []byte(`PartName="`+partNameRooted+`"`)) {
 		return
 	}
 
@@ -237,7 +264,7 @@ func (e *PresentationEditor) nextShapeID(slidePart string) int {
 	return maxID + 1
 }
 
-func (e *PresentationEditor) createChartGraphicFrameXML(id int, name, rId string, x, y, cx, cy int64) string {
+func (e *PresentationEditor) createChartGraphicFrameXML(id int, name, rID string, x, y, cx, cy int64) string {
 	return fmt.Sprintf(`
 	<p:graphicFrame>
 		<p:nvGraphicFramePr>
@@ -254,17 +281,17 @@ func (e *PresentationEditor) createChartGraphicFrameXML(id int, name, rId string
 				<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="%s"/>
 			</a:graphicData>
 		</a:graphic>
-	</p:graphicFrame>`, id, name, x, y, cx, cy, rId)
+	</p:graphicFrame>`, id, name, x, y, cx, cy, rID)
 }
 
 func (e *PresentationEditor) appendShapeToSlide(slidePart, shapeXML string) error {
 	data, ok := e.parts.Get(slidePart)
 	if !ok {
-		return fmt.Errorf("part not found")
+		return errors.New("part not found")
 	}
 
 	if !bytes.Contains(data, []byte("</p:spTree>")) {
-		return fmt.Errorf("invalid slide xml: missing spTree end")
+		return errors.New("invalid slide xml: missing spTree end")
 	}
 
 	replaced := bytes.Replace(data, []byte("</p:spTree>"), []byte(shapeXML+"</p:spTree>"), 1)

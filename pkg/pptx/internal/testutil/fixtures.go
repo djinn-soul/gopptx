@@ -13,7 +13,7 @@ import (
 // RootTestdataDir searches upward for the testdata directory.
 func RootTestdataDir() string {
 	base := "../../testdata"
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		if _, err := os.Stat(base); err == nil {
 			return base
 		}

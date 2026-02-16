@@ -25,8 +25,8 @@ func TestAddCommentPreservesExistingRelationshipTargetMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("add author: %v", err)
 	}
-	if err := e.AddComment(0, author.ID, "hello", 100, 100); err != nil {
-		t.Fatalf("add comment: %v", err)
+	if addErr := e.AddComment(0, author.ID, "hello", 100, 100); addErr != nil {
+		t.Fatalf("add comment: %v", addErr)
 	}
 
 	rels, ok := e.parts.Get("ppt/slides/_rels/slide1.xml.rels")

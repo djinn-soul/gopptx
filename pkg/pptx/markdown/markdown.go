@@ -1,7 +1,7 @@
 package markdown
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"strings"
 
@@ -25,10 +25,10 @@ type parsedMarkdownBullet struct {
 // - GFM tables are mapped to native table elements
 // - fenced code blocks are rendered as no-bullet code paragraphs
 // - fenced mermaid blocks are converted to placeholder shapes
-// - blockquotes are parsed into slide speaker notes
+// - blockquotes are parsed into slide speaker notes.
 func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
-		return nil, fmt.Errorf("markdown content cannot be empty")
+		return nil, errors.New("markdown content cannot be empty")
 	}
 	parser := newMarkdownParser(markdown)
 	return parser.parse()
@@ -36,9 +36,9 @@ func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
 
 func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
 	for _, marker := range []string{"- ", "* ", "+ "} {
-		if strings.HasPrefix(line, marker) {
+		if after, ok := strings.CutPrefix(line, marker); ok {
 			return parsedMarkdownBullet{
-				text:  strings.TrimSpace(strings.TrimPrefix(line, marker)),
+				text:  strings.TrimSpace(after),
 				style: elements.DefaultTextParagraphStyle(),
 			}, true
 		}

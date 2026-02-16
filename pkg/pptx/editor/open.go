@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -86,7 +87,7 @@ func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 
 	partKeys := ps.Keys()
 	editor.mediaInventory, editor.nextMediaNum = parseMediaInventory(ps, partKeys)
-	if sectionData, ok := ps.Get("ppt/sectionList.xml"); ok {
+	if sectionData, sectionOK := ps.Get("ppt/sectionList.xml"); sectionOK {
 		sections, _ := parseSectionListXML(sectionData)
 		editor.sections = sections
 	}
@@ -180,7 +181,7 @@ func parseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) 
 	for {
 		token, err := decoder.Token()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, err
@@ -204,7 +205,7 @@ func parseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) 
 			}
 		}
 		if rel.ID == "" || rel.Type == "" || rel.Target == "" {
-			return nil, fmt.Errorf("relationship with missing Id/Type/Target")
+			return nil, errors.New("relationship with missing Id/Type/Target")
 		}
 		out = append(out, rel)
 	}
@@ -218,7 +219,7 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 	for {
 		token, err := decoder.Token()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, err
@@ -239,8 +240,8 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 				continue
 			}
 			if attr.Name.Space == "" {
-				slideID, err := strconv.ParseInt(strings.TrimSpace(attr.Value), 10, 64)
-				if err != nil {
+				slideID, parseErr := strconv.ParseInt(strings.TrimSpace(attr.Value), 10, 64)
+				if parseErr != nil {
 					return nil, fmt.Errorf("invalid slide id %q", attr.Value)
 				}
 				ref.SlideID = slideID
@@ -249,7 +250,7 @@ func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 			ref.RelID = strings.TrimSpace(attr.Value)
 		}
 		if ref.SlideID == 0 || ref.RelID == "" {
-			return nil, fmt.Errorf("slide id entry missing id or r:id")
+			return nil, errors.New("slide id entry missing id or r:id")
 		}
 		out = append(out, ref)
 	}
@@ -355,8 +356,8 @@ func parseChartInventory(ps *PartStore, partKeys []string) (map[string]string, i
 
 					// Tracking excel number (Microsoft_Excel_WorksheetN.xlsx)
 					base := path.Base(excelPath)
-					if strings.HasPrefix(base, "Microsoft_Excel_Worksheet") {
-						enum, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(base, "Microsoft_Excel_Worksheet"), ".xlsx"))
+					if after, ok0 := strings.CutPrefix(base, "Microsoft_Excel_Worksheet"); ok0 {
+						enum, _ := strconv.Atoi(strings.TrimSuffix(after, ".xlsx"))
 						if enum > maxExcel {
 							maxExcel = enum
 						}
@@ -390,7 +391,9 @@ func parseNotesInventory(ps *PartStore, partKeys []string) (map[string]string, i
 				notesPath := common.CanonicalPartPath(path.Join("ppt/slides", r.Target))
 				inventory[slidePart] = notesPath
 
-				num, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(path.Base(notesPath), "notesSlide"), ".xml"))
+				num, _ := strconv.Atoi(
+					strings.TrimSuffix(strings.TrimPrefix(path.Base(notesPath), "notesSlide"), ".xml"),
+				)
 				if num > maxNotes {
 					maxNotes = num
 				}

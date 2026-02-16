@@ -33,10 +33,17 @@ func main() {
 	}
 
 	// 1. Stamping the same image on multiple slides to test deduplication
-	logo := shapes.NewImageFromBytes(redSquare, "png", styling.Inches(0.5), styling.Inches(0.5), styling.Inches(1), styling.Inches(1))
+	logo := shapes.NewImageFromBytes(
+		redSquare,
+		"png",
+		styling.Inches(0.5),
+		styling.Inches(0.5),
+		styling.Inches(1),
+		styling.Inches(1),
+	)
 
 	fmt.Println("Stamping images on multiple slides...")
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		slide := elements.NewSlide(fmt.Sprintf("Image Stamp Test %d", i+1)).
 			AddBullet("This slide has a stamped logo.").
 			AddBullet("Deduplication should ensure only one image file is added to the package.").

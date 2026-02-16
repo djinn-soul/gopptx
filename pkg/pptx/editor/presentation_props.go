@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -22,7 +23,7 @@ var sldSzPattern = regexp.MustCompile(`(?s)<p:sldSz\b[^>]*/>`)
 // ApplyTheme replaces the package theme with the provided palette and fonts.
 func (e *PresentationEditor) ApplyTheme(theme styling.Theme) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if !e.parts.Has(themePartPath) {
 		return fmt.Errorf("missing required package part %q", themePartPath)
@@ -34,10 +35,10 @@ func (e *PresentationEditor) ApplyTheme(theme styling.Theme) error {
 // SetSlideSize updates presentation dimensions used for existing and future slides.
 func (e *PresentationEditor) SetSlideSize(size common.SlideSize) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if size.Width <= 0 || size.Height <= 0 {
-		return fmt.Errorf("slide size must have positive dimensions")
+		return errors.New("slide size must have positive dimensions")
 	}
 
 	rewritten, err := rewritePresentationSlideSize(e.presentationXML, size)
@@ -74,7 +75,7 @@ func parsePresentationSlideSize(content []byte) (common.SlideSize, error) {
 	for {
 		token, err := decoder.Token()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return common.SlideSize{}, nil
 			}
 			return common.SlideSize{}, err
@@ -106,14 +107,14 @@ func parseSlideSizeAttrs(attrs []xml.Attr) (common.SlideSize, error) {
 		}
 	}
 	if size.Width == 0 || size.Height == 0 {
-		return common.SlideSize{}, fmt.Errorf("slide size entry missing cx/cy")
+		return common.SlideSize{}, errors.New("slide size entry missing cx/cy")
 	}
 	return size, nil
 }
 
 func rewritePresentationSlideSize(current string, size common.SlideSize) (string, error) {
 	if strings.TrimSpace(current) == "" {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	entry := fmt.Sprintf(`<p:sldSz cx="%d" cy="%d" type="%s"/>`, size.Width, size.Height, slideSizeType(size))
 
@@ -134,14 +135,16 @@ func rewritePresentationSlideSize(current string, size common.SlideSize) (string
 	if idx := strings.Index(current, "</p:presentation>"); idx >= 0 {
 		return current[:idx] + entry + "\n" + current[idx:], nil
 	}
-	return "", fmt.Errorf("presentation XML does not contain <p:notesSz> or </p:presentation>")
+	return "", errors.New("presentation XML does not contain <p:notesSz> or </p:presentation>")
 }
 
 func slideSizeType(size common.SlideSize) string {
-	if size.Width == common.SlideSize4x3.Width && size.Height == common.SlideSize4x3.Height {
+	slideSize4x3 := common.SlideSize4x3()
+	if size.Width == slideSize4x3.Width && size.Height == slideSize4x3.Height {
 		return "screen4x3"
 	}
-	if size.Width == common.SlideSize16x9.Width && size.Height == common.SlideSize16x9.Height {
+	slideSize16x9 := common.SlideSize16x9()
+	if size.Width == slideSize16x9.Width && size.Height == slideSize16x9.Height {
 		return "screen16x9"
 	}
 	return "custom"

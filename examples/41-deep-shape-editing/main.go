@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -63,7 +64,7 @@ func run() error {
 	}
 
 	if targetIndex == -1 {
-		return fmt.Errorf("could not find shape with text 'Original Text'")
+		return errors.New("could not find shape with text 'Original Text'")
 	}
 
 	// 4. Update the shape

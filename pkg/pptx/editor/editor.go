@@ -3,6 +3,7 @@ package editor
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -168,14 +169,11 @@ func (e *PresentationEditor) populateSlideTitlesConcurrently() {
 	var wg sync.WaitGroup
 
 	for idx := range e.slides {
-		idx := idx
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			data, _ := e.parts.Get(e.slides[idx].Part)
 			title := extractFirstAText(data)
 			ch <- result{index: idx, title: title}
-		}()
+		})
 	}
 	wg.Wait()
 	close(ch)
@@ -195,7 +193,7 @@ func extractFirstAText(content []byte) string {
 	for {
 		token, err := decoder.Token()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return ""
 			}
 			return ""
@@ -205,7 +203,7 @@ func extractFirstAText(content []byte) string {
 			continue
 		}
 		var value string
-		if err := decoder.DecodeElement(&value, &start); err != nil {
+		if decodeErr := decoder.DecodeElement(&value, &start); decodeErr != nil {
 			return ""
 		}
 		trimmed := strings.TrimSpace(value)
@@ -218,7 +216,7 @@ func extractFirstAText(content []byte) string {
 // GetShapes returns a list of shapes found on the specified slide (0-based index).
 func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return nil, fmt.Errorf("slide index out of range")
+		return nil, errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -251,7 +249,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 // UpdateShapeByIndex modifies the properties of a specific shape on a slide by its index in the parsed shape list.
 func (e *PresentationEditor) UpdateShapeByIndex(slideIndex, shapeIndex int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return fmt.Errorf("slide index out of range")
+		return errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -266,7 +264,7 @@ func (e *PresentationEditor) UpdateShapeByIndex(slideIndex, shapeIndex int, upda
 	}
 
 	if shapeIndex < 0 || shapeIndex >= len(shapes) {
-		return fmt.Errorf("shape index out of range")
+		return errors.New("shape index out of range")
 	}
 
 	return e.applyShapeUpdate(partPath, content, shapes, shapeIndex, updates)
@@ -275,7 +273,7 @@ func (e *PresentationEditor) UpdateShapeByIndex(slideIndex, shapeIndex int, upda
 // UpdateShape modifies the properties of a specific shape on a slide by its ID.
 func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return fmt.Errorf("slide index out of range")
+		return errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -304,7 +302,13 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 	return e.applyShapeUpdate(partPath, content, shapes, shapeIndex, updates)
 }
 
-func (e *PresentationEditor) applyShapeUpdate(partPath string, content []byte, shapes []parsedShape, shapeIndex int, updates common.ShapeUpdate) error {
+func (e *PresentationEditor) applyShapeUpdate(
+	partPath string,
+	content []byte,
+	shapes []parsedShape,
+	shapeIndex int,
+	updates common.ShapeUpdate,
+) error {
 	target := &shapes[shapeIndex]
 	if updates.Text != nil {
 		target.Text = *updates.Text
@@ -340,9 +344,9 @@ func (e *PresentationEditor) applyShapeUpdate(partPath string, content []byte, s
 	if bytes.Equal(content, newContent) && updates != (common.ShapeUpdate{}) {
 		// This is a bit of a heuristic, but if renderShapeXML returns nil for the target,
 		// newContent will equal content (replace=false).
-		target := &shapes[shapeIndex]
-		if target.Type == "pic" {
-			return fmt.Errorf("updating shape of type 'pic' is not supported")
+		updatedShape := &shapes[shapeIndex]
+		if updatedShape.Type == "pic" {
+			return errors.New("updating shape of type 'pic' is not supported")
 		}
 	}
 
@@ -353,7 +357,7 @@ func (e *PresentationEditor) applyShapeUpdate(partPath string, content []byte, s
 // RemoveShapeByIndex removes a shape from the slide by its index.
 func (e *PresentationEditor) RemoveShapeByIndex(slideIndex, shapeIndex int) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return fmt.Errorf("slide index out of range")
+		return errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -368,7 +372,7 @@ func (e *PresentationEditor) RemoveShapeByIndex(slideIndex, shapeIndex int) erro
 	}
 
 	if shapeIndex < 0 || shapeIndex >= len(shapes) {
-		return fmt.Errorf("shape index out of range")
+		return errors.New("shape index out of range")
 	}
 
 	return e.applyShapeRemoval(partPath, content, shapes, shapeIndex)
@@ -377,7 +381,7 @@ func (e *PresentationEditor) RemoveShapeByIndex(slideIndex, shapeIndex int) erro
 // RemoveShape removes a shape from the slide by its ID.
 func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return fmt.Errorf("slide index out of range")
+		return errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -406,7 +410,12 @@ func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 	return e.applyShapeRemoval(partPath, content, shapes, shapeIndex)
 }
 
-func (e *PresentationEditor) applyShapeRemoval(partPath string, content []byte, shapes []parsedShape, shapeIndex int) error {
+func (e *PresentationEditor) applyShapeRemoval(
+	partPath string,
+	content []byte,
+	shapes []parsedShape,
+	shapeIndex int,
+) error {
 	// Replace with empty byte slice
 	newContent := replaceShapeNodes(content, shapes, func(i int, p *parsedShape) ([]byte, bool) {
 		if i == shapeIndex {

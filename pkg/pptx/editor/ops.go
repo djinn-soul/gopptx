@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -17,7 +18,7 @@ import (
 // AddSlide appends a new slide and returns its 0-based index.
 func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) {
 	if e == nil {
-		return 0, fmt.Errorf("editor cannot be nil")
+		return 0, errors.New("editor cannot be nil")
 	}
 	if err := validateEditorSlideContent(slide); err != nil {
 		return 0, err
@@ -28,7 +29,14 @@ func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) 
 	part := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 	relsPart := common.SlideRelsPartName(part)
 
-	slideXML, slideRelsXML, err := renderEditorSlideParts(e, slide, slideNumber, "", e.metadata.SlideSize.Width, e.metadata.SlideSize.Height)
+	slideXML, slideRelsXML, err := renderEditorSlideParts(
+		e,
+		slide,
+		slideNumber,
+		"",
+		e.metadata.SlideSize.Width,
+		e.metadata.SlideSize.Height,
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +62,7 @@ func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) 
 // UpdateSlide replaces one slide content at index.
 func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if index < 0 || index >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range [0,%d)", index, len(e.slides))
@@ -80,7 +88,14 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 	if !ok {
 		return fmt.Errorf("unsupported slide part path %q", ref.Part)
 	}
-	slideXML, relsXML, err := renderEditorSlideParts(e, slide, number, notesTarget, e.metadata.SlideSize.Width, e.metadata.SlideSize.Height)
+	slideXML, relsXML, err := renderEditorSlideParts(
+		e,
+		slide,
+		number,
+		notesTarget,
+		e.metadata.SlideSize.Width,
+		e.metadata.SlideSize.Height,
+	)
 	if err != nil {
 		return err
 	}
@@ -94,7 +109,7 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 // RemoveSlide removes one slide by index.
 func (e *PresentationEditor) RemoveSlide(index int) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if index < 0 || index >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range [0,%d)", index, len(e.slides))
@@ -121,7 +136,7 @@ func (e *PresentationEditor) RemoveSlide(index int) error {
 // All shared assets (layouts, images) are reused in the clone.
 func (e *PresentationEditor) DuplicateSlide(srcIndex, destIndex int) (int, error) {
 	if e == nil {
-		return 0, fmt.Errorf("editor cannot be nil")
+		return 0, errors.New("editor cannot be nil")
 	}
 	if srcIndex < 0 || srcIndex >= len(e.slides) {
 		return 0, fmt.Errorf("source slide index %d out of range [0,%d)", srcIndex, len(e.slides))
@@ -197,7 +212,7 @@ func (e *PresentationEditor) DuplicateSlideAfter(index int) (int, error) {
 // MoveSlide reorders a slide from one index to another.
 func (e *PresentationEditor) MoveSlide(from, to int) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if from < 0 || from >= len(e.slides) {
 		return fmt.Errorf("from index %d out of range [0,%d)", from, len(e.slides))
@@ -236,7 +251,7 @@ func (e *PresentationEditor) MergeFromFile(filePath string) error {
 // MergeFromEditor appends slides from another editor instance.
 func (e *PresentationEditor) MergeFromEditor(other *PresentationEditor) error {
 	if e == nil || other == nil {
-		return fmt.Errorf("editors cannot be nil")
+		return errors.New("editors cannot be nil")
 	}
 
 	for idx, slide := range other.slides {
@@ -323,7 +338,8 @@ func slideHasImageContent(slide elements.SlideContent) bool {
 	if len(slide.Images) > 0 {
 		return true
 	}
-	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
+	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture &&
+		slide.Background.PictureFill != nil {
 		return true
 	}
 	for _, override := range slide.PlaceholderOverrides {
@@ -352,7 +368,11 @@ func appendCopySuffixToXML(content []byte) []byte {
 	return res
 }
 
-func replaceTitleLikeText(content []byte, runSelector func([]byte, func([]byte) []byte) ([]byte, bool), replaceFn func(match []byte) []byte) ([]byte, bool) {
+func replaceTitleLikeText(
+	content []byte,
+	runSelector func([]byte, func([]byte) []byte) ([]byte, bool),
+	replaceFn func(match []byte) []byte,
+) ([]byte, bool) {
 	// Prefer replacing text inside the title placeholder shape when present.
 	updated, ok := replaceTitlePlaceholderText(content, runSelector, replaceFn)
 	if ok {
@@ -362,7 +382,11 @@ func replaceTitleLikeText(content []byte, runSelector func([]byte, func([]byte) 
 	return runSelector(content, replaceFn)
 }
 
-func replaceTitlePlaceholderText(content []byte, runSelector func([]byte, func([]byte) []byte) ([]byte, bool), replaceFn func(match []byte) []byte) ([]byte, bool) {
+func replaceTitlePlaceholderText(
+	content []byte,
+	runSelector func([]byte, func([]byte) []byte) ([]byte, bool),
+	replaceFn func(match []byte) []byte,
+) ([]byte, bool) {
 	const (
 		shapeStart = "<p:sp"
 		shapeEnd   = "</p:sp>"
@@ -456,7 +480,7 @@ func (e *PresentationEditor) recalculateNextRelIDNum() {
 // SetSlideTitle updates the text of the first title-like element in the slide XML.
 func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if index < 0 || index >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range", index)
@@ -483,10 +507,10 @@ func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 // RegisterImage adds an image to the presentation or reuses an existing one based on SHA-1 hash.
 func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, error) {
 	if e == nil {
-		return "", fmt.Errorf("editor cannot be nil")
+		return "", errors.New("editor cannot be nil")
 	}
 	if len(data) == 0 {
-		return "", fmt.Errorf("image data cannot be empty")
+		return "", errors.New("image data cannot be empty")
 	}
 
 	e.mediaMu.Lock()
@@ -512,10 +536,10 @@ func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, 
 // AddSection creates a new grouped section for slides.
 func (e *PresentationEditor) AddSection(name string, slideIndices []int) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if name == "" {
-		return fmt.Errorf("section name cannot be empty")
+		return errors.New("section name cannot be empty")
 	}
 
 	ids := make([]int64, 0, len(slideIndices))
@@ -542,7 +566,7 @@ func (e *PresentationEditor) AddSection(name string, slideIndices []int) error {
 // RemoveSection removes a section by name.
 func (e *PresentationEditor) RemoveSection(name string) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	next := make([]EditorSection, 0, len(e.sections))
 	found := false
@@ -563,10 +587,10 @@ func (e *PresentationEditor) RemoveSection(name string) error {
 // RenameSection renames a section.
 func (e *PresentationEditor) RenameSection(oldName, newName string) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if newName == "" {
-		return fmt.Errorf("new section name cannot be empty")
+		return errors.New("new section name cannot be empty")
 	}
 	found := false
 	for i := range e.sections {
@@ -590,7 +614,11 @@ func (e *PresentationEditor) Sections() []EditorSection {
 	return e.sections
 }
 
-func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRelsBytes []byte, newSlidePart string) ([]byte, error) {
+func (e *PresentationEditor) deepCloneSlideParts(
+	srcSlidePart string,
+	srcSlideRelsBytes []byte,
+	newSlidePart string,
+) ([]byte, error) {
 	rels, err := parseRelationshipsXML(srcSlideRelsBytes)
 	if err != nil {
 		return nil, err
@@ -604,12 +632,12 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 			newChartPart := fmt.Sprintf("ppt/charts/chart%d.xml", e.nextChartNum)
 			e.nextChartNum++
 
-			if data, ok := e.parts.Get(srcChartPart); ok {
+			if data, chartOK := e.parts.Get(srcChartPart); chartOK {
 				newChartData := cloneBytes(data)
 
 				// Clone chart rels
 				srcChartRelsPath := common.SlideRelsPartName(srcChartPart)
-				if relsData, ok := e.parts.Get(srcChartRelsPath); ok {
+				if relsData, relsOK := e.parts.Get(srcChartRelsPath); relsOK {
 					newChartRelsPath := common.SlideRelsPartName(newChartPart)
 					chartRels, _ := parseRelationshipsXML(relsData)
 
@@ -619,7 +647,7 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 							newExcel := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", e.nextExcelNum)
 							e.nextExcelNum++
 
-							if xdata, ok := e.parts.Get(srcExcel); ok {
+							if xdata, excelOK := e.parts.Get(srcExcel); excelOK {
 								e.parts.Set(newExcel, cloneBytes(xdata))
 								chartRels[j].Target = "../embeddings/" + path.Base(newExcel)
 								// Update chart XML externalData rid
@@ -628,7 +656,7 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 							}
 						}
 					}
-					rendered, _ := renderRelationshipsXML(chartRels)
+					rendered := renderRelationshipsXML(chartRels)
 					e.parts.Set(newChartRelsPath, []byte(rendered))
 				}
 				e.parts.Set(newChartPart, newChartData)
@@ -641,11 +669,11 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 			newNotesPart := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
 			e.nextNotesNum++
 
-			if data, ok := e.parts.Get(srcNotesPart); ok {
+			if data, notesOK := e.parts.Get(srcNotesPart); notesOK {
 				e.parts.Set(newNotesPart, cloneBytes(data))
 
 				srcNotesRelsPath := common.SlideRelsPartName(srcNotesPart)
-				if relsData, ok := e.parts.Get(srcNotesRelsPath); ok {
+				if relsData, relsOK := e.parts.Get(srcNotesRelsPath); relsOK {
 					newNotesRelsPath := common.SlideRelsPartName(newNotesPart)
 					notesRels, _ := parseRelationshipsXML(relsData)
 
@@ -654,7 +682,7 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 							notesRels[j].Target = "../slides/" + path.Base(newSlidePart)
 						}
 					}
-					rendered, _ := renderRelationshipsXML(notesRels)
+					rendered := renderRelationshipsXML(notesRels)
 					e.parts.Set(newNotesRelsPath, []byte(rendered))
 				}
 				e.notesInventory[newSlidePart] = newNotesPart
@@ -665,10 +693,7 @@ func (e *PresentationEditor) deepCloneSlideParts(srcSlidePart string, srcSlideRe
 	}
 
 	if changed {
-		rendered, err := renderRelationshipsXML(rels)
-		if err != nil {
-			return nil, err
-		}
+		rendered := renderRelationshipsXML(rels)
 		return []byte(rendered), nil
 	}
 	return srcSlideRelsBytes, nil

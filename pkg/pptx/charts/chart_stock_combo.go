@@ -131,6 +131,7 @@ func (c StockHLCChart) GetValues() []float64 {
 // StockOHLCChart is a stock chart with Open/High/Low/Close series.
 type StockOHLCChart struct {
 	StockHLCChart
+
 	OpenValues []float64
 }
 

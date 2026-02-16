@@ -2,6 +2,7 @@ package editor
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -13,25 +14,27 @@ import (
 )
 
 var (
-	sldIdLstPattern          = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
-	notesMasterIDListPattern = regexp.MustCompile(`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`)
+	sldIDLstPattern          = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
+	notesMasterIDListPattern = regexp.MustCompile(
+		`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`,
+	)
 	slideMasterIDListPattern = regexp.MustCompile(`(?s)<p:sldMasterIdLst>.*?</p:sldMasterIdLst>|<p:sldMasterIdLst\s*/>`)
 	slideMasterIDPattern     = regexp.MustCompile(`id="(\d+)"`)
 )
 
 func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
 	replacement := buildPresentationSlideListXML(slides)
-	if !sldIdLstPattern.MatchString(source) {
-		return "", fmt.Errorf("presentation XML does not contain <p:sldIdLst>")
+	if !sldIDLstPattern.MatchString(source) {
+		return "", errors.New("presentation XML does not contain <p:sldIdLst>")
 	}
 
 	found := false
-	result := sldIdLstPattern.ReplaceAllStringFunc(source, func(match string) string {
+	result := sldIDLstPattern.ReplaceAllStringFunc(source, func(match string) string {
 		if found {
 			return match
 		}
@@ -46,7 +49,7 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	b.WriteString("<p:sldIdLst>")
 	for _, slide := range slides {
 		b.WriteString("\n<p:sldId id=\"")
-		b.WriteString(fmt.Sprintf("%d", slide.SlideID))
+		b.WriteString(strconv.FormatInt(slide.SlideID, 10))
 		b.WriteString("\" r:id=\"")
 		b.WriteString(slide.RelID)
 		b.WriteString("\"/>")
@@ -60,7 +63,7 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 
 func rewritePresentationNotesMasterList(current []byte, relID string, enable bool) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
@@ -71,10 +74,12 @@ func rewritePresentationNotesMasterList(current []byte, relID string, enable boo
 		return source, nil
 	}
 	if strings.TrimSpace(relID) == "" {
-		return "", fmt.Errorf("notes master relationship id is required")
+		return "", errors.New("notes master relationship id is required")
 	}
 
-	replacement := "<p:notesMasterIdLst>\n<p:notesMasterId r:id=\"" + common.XMLEscape(relID) + "\"/>\n</p:notesMasterIdLst>"
+	replacement := "<p:notesMasterIdLst>\n<p:notesMasterId r:id=\"" + common.XMLEscape(
+		relID,
+	) + "\"/>\n</p:notesMasterIdLst>"
 	if notesMasterIDListPattern.MatchString(source) {
 		return notesMasterIDListPattern.ReplaceAllString(source, replacement), nil
 	}
@@ -86,15 +91,15 @@ func rewritePresentationNotesMasterList(current []byte, relID string, enable boo
 	if idx := strings.Index(source, "<p:sldIdLst"); idx >= 0 {
 		return source[:idx] + replacement + "\n" + source[idx:], nil
 	}
-	return "", fmt.Errorf("presentation XML does not contain insertion point for notesMasterIdLst")
+	return "", errors.New("presentation XML does not contain insertion point for notesMasterIdLst")
 }
 
 func rewritePresentationSlideMasterList(current []byte, relID string) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	if strings.TrimSpace(relID) == "" {
-		return "", fmt.Errorf("slide master relationship id is required")
+		return "", errors.New("slide master relationship id is required")
 	}
 	source := string(current)
 
@@ -136,10 +141,14 @@ func rewritePresentationSlideMasterList(current []byte, relID string) (string, e
 		replacement := "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>\n"
 		return source[:idx] + replacement + source[idx:], nil
 	}
-	return "", fmt.Errorf("presentation XML does not contain insertion point for sldMasterIdLst")
+	return "", errors.New("presentation XML does not contain insertion point for sldMasterIdLst")
 }
 
-func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []common.EditorSlideRef, hasSections bool) (string, error) {
+func renderPresentationRelsXML(
+	nonSlide []common.EditorRelationship,
+	slides []common.EditorSlideRef,
+	hasSections bool,
+) (string, error) {
 	rels := make([]common.EditorRelationship, 0, len(nonSlide)+len(slides)+1)
 	used := map[string]struct{}{}
 
@@ -147,7 +156,7 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 	for _, rel := range nonSlide {
 		id := strings.TrimSpace(rel.ID)
 		if id == "" {
-			return "", fmt.Errorf("non-slide relationship has empty Id")
+			return "", errors.New("non-slide relationship has empty Id")
 		}
 		if _, exists := used[id]; exists {
 			return "", fmt.Errorf("duplicate relationship Id %q", id)
@@ -221,7 +230,7 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 	return b.String(), nil
 }
 
-func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
+func renderRelationshipsXML(rels []common.EditorRelationship) string {
 	sort.Slice(rels, func(i, j int) bool {
 		a, aok := common.ParseRelationshipNumber(rels[i].ID)
 		b, bok := common.ParseRelationshipNumber(rels[j].ID)
@@ -249,12 +258,25 @@ func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
 		b.WriteString("/>")
 	}
 	b.WriteString("\n</Relationships>")
-	return b.String(), nil
+	return b.String()
 }
 
-func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, layoutPaths []string, masterPaths []string, hasNotesMaster bool, hasCommentAuthors bool, commentPaths []string) (string, error) {
+func rewriteContentTypes(
+	current []byte,
+	slides []common.EditorSlideRef,
+	mediaPaths []string,
+	hasSections bool,
+	chartPaths []string,
+	notesPaths []string,
+	themePaths []string,
+	layoutPaths []string,
+	masterPaths []string,
+	hasNotesMaster bool,
+	hasCommentAuthors bool,
+	commentPaths []string,
+) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing content types content")
+		return "", errors.New("missing content types content")
 	}
 
 	var doc contentTypesDocument
@@ -454,7 +476,7 @@ var extLstPattern = regexp.MustCompile(`(?s)<p:extLst>.*?</p:extLst>|<p:extLst\s
 
 func rewritePresentationSections(current []byte, sections []EditorSection) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
@@ -481,7 +503,9 @@ func rewritePresentationSections(current []byte, sections []EditorSection) (stri
 				// Regex to replace specific extension?
 				// For simplicity/robustness, let's parse or strict regex.
 				// Since we control usage, let's try a regex for the specific p:ext
-				pExtPattern := regexp.MustCompile(fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)))
+				pExtPattern := regexp.MustCompile(
+					fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)),
+				)
 				if pExtPattern.MatchString(match) {
 					return pExtPattern.ReplaceAllString(match, fullExtBlock)
 				}
@@ -508,7 +532,7 @@ func rewritePresentationSections(current []byte, sections []EditorSection) (stri
 		return source[:idx] + newExtLst + source[idx:], nil
 	}
 
-	return "", fmt.Errorf("presentation XML malformed (missing </p:presentation>)")
+	return "", errors.New("presentation XML malformed (missing </p:presentation>)")
 }
 
 func buildPresentationSectionExtensionXML(sections []EditorSection) string {

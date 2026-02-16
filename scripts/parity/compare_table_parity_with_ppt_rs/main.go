@@ -123,7 +123,11 @@ func main() {
 			passed++
 		}
 	}
-	_, _ = fmt.Printf("Parity result: %d/%d table signatures matched ppt-rs fixture requirements.\n", passed, len(results))
+	_, _ = fmt.Printf(
+		"Parity result: %d/%d table signatures matched ppt-rs fixture requirements.\n",
+		passed,
+		len(results),
+	)
 	for _, result := range results {
 		if result.Pass {
 			continue

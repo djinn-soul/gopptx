@@ -1,6 +1,7 @@
 package elements
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -54,21 +55,21 @@ func (b SlideBackground) Validate() error {
 	switch b.Type {
 	case SlideBackgroundSolid:
 		if b.SolidFill == nil {
-			return fmt.Errorf("solid background must have fill properties")
+			return errors.New("solid background must have fill properties")
 		}
 		return b.SolidFill.Validate()
 	case SlideBackgroundGradient:
 		if b.GradientFill == nil {
-			return fmt.Errorf("gradient background must have fill properties")
+			return errors.New("gradient background must have fill properties")
 		}
 		return b.GradientFill.Validate()
 	case SlideBackgroundPicture:
 		if b.PictureFill == nil {
-			return fmt.Errorf("picture background must have an image")
+			return errors.New("picture background must have an image")
 		}
 		// Minimal validation for path/data
 		if b.PictureFill.Path == "" && len(b.PictureFill.Data) == 0 {
-			return fmt.Errorf("picture background image must have a path or data")
+			return errors.New("picture background image must have a path or data")
 		}
 	case "":
 		return nil

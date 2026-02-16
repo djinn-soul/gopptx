@@ -52,7 +52,8 @@ func buildClickActionSlide() pptx.SlideContent {
 		AddShape(shapes.NewShape("rect", styling.Inches(0.5), styling.Inches(3), styling.Inches(3), styling.Inches(0.8)).
 			WithFill(shapes.NewShapeFill("E65100")).
 			WithText("Send Email").
-			WithClickAction(action.NewHyperlink(action.HyperlinkEmailWithSubject("test@example.com", "Hello from gopptx")))).
+			WithClickAction(action.NewHyperlink(action.HyperlinkEmailWithSubject("test@example.com", "Hello from gopptx"))),
+		).
 		AddShape(shapes.NewShape("rect", styling.Inches(4), styling.Inches(3), styling.Inches(3), styling.Inches(0.8)).
 			WithFill(shapes.NewShapeFill("6A1B9A")).
 			WithText("Next Slide →").

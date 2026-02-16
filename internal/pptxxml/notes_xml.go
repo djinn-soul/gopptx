@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
@@ -210,7 +211,7 @@ func NotesMasterRelationships(themeIndex ...int) string {
 	}
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + fmt.Sprintf("%d", idx) + `.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(idx) + `.xml"/>
 </Relationships>`
 }
 

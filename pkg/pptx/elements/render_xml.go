@@ -9,7 +9,10 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
-func BuildSlideHyperlinkRels(slide SlideContent, firstRID int) (map[*action.Hyperlink]string, []pptxxml.HyperlinkRel, int) {
+func BuildSlideHyperlinkRels(
+	slide SlideContent,
+	firstRID int,
+) (map[*action.Hyperlink]string, []pptxxml.HyperlinkRel, int) {
 	hyperlinkRIDs := make(map[*action.Hyperlink]string)
 	hyperlinks := make([]pptxxml.HyperlinkRel, 0)
 	nextRID := firstRID

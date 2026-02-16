@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -245,7 +246,7 @@ func shapeLineXML(line ShapeLineSpec) string {
 		join = `<a:round/>`
 	}
 	return `
-<a:ln w="` + fmt.Sprintf("%d", line.Width) + `"` + cap + `>
+<a:ln w="` + strconv.FormatInt(line.Width, 10) + `"` + cap + `>
 <a:solidFill><a:srgbClr val="` + Escape(line.Color) + `"/></a:solidFill>
 ` + dash + `
 ` + join + `
@@ -373,14 +374,8 @@ func alphaFromNormalizedTransparency(transparency float64) int {
 }
 
 func connectorBounds(connector ConnectorSpec) (x int64, y int64, cx int64, cy int64) {
-	x = connector.StartX
-	if connector.EndX < x {
-		x = connector.EndX
-	}
-	y = connector.StartY
-	if connector.EndY < y {
-		y = connector.EndY
-	}
+	x = min(connector.EndX, connector.StartX)
+	y = min(connector.EndY, connector.StartY)
 	cx = connector.EndX - connector.StartX
 	if cx < 0 {
 		cx = -cx

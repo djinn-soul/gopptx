@@ -90,7 +90,9 @@ func TestRenderShapeXML(t *testing.T) {
 
 func TestReplaceShapeNodes(t *testing.T) {
 	// Use valid XML that matches what our parser expects (namespaces) to ensure correct parsing
-	original := []byte(`<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:sp>Shape1</p:sp> MIDDLE <p:sp>Shape2</p:sp></p:sld>`)
+	original := []byte(
+		`<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:sp>Shape1</p:sp> MIDDLE <p:sp>Shape2</p:sp></p:sld>`,
+	)
 
 	// Parse to get real offsets
 	shapes, err := parseSlideShapes(original)

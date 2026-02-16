@@ -43,8 +43,10 @@ func TestCreateWithSlidesRendersCustomShape(t *testing.T) {
 }
 
 func TestCreateWithSlidesRendersConnectorWithShapeAnchors(t *testing.T) {
-	left := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Start")
-	right := pptx.NewShape(pptx.ShapeTypeDiamond, pptx.Inches(5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Decision")
+	left := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Start")
+	right := pptx.NewShape(pptx.ShapeTypeDiamond, pptx.Inches(5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Decision")
 	connector := pptx.NewStraightConnector(pptx.Inches(3), pptx.Inches(2.5), pptx.Inches(5), pptx.Inches(2.5)).
 		WithLine(
 			pptx.NewShapeLine("5B9BD5", pptx.Points(1.25)).

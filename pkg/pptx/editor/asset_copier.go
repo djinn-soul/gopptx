@@ -10,7 +10,12 @@ import (
 // deepCloneSlideAssets walks through the relationships of a source slide and copies
 // all referenced assets (images, charts, etc.) to the target editor.
 // It returns a modified relationships XML byte slice where targets are remapped to the new locations.
-func (e *PresentationEditor) deepCloneSlideAssets(srcEditor *PresentationEditor, srcSlidePart string, srcSlideRelsBytes []byte, dstSlidePart string) ([]byte, error) {
+func (e *PresentationEditor) deepCloneSlideAssets(
+	srcEditor *PresentationEditor,
+	srcSlidePart string,
+	srcSlideRelsBytes []byte,
+	dstSlidePart string,
+) ([]byte, error) {
 	rels, err := parseRelationshipsXML(srcSlideRelsBytes)
 	if err != nil {
 		return nil, err
@@ -55,10 +60,7 @@ func (e *PresentationEditor) deepCloneSlideAssets(srcEditor *PresentationEditor,
 	}
 
 	if changed {
-		rendered, err := renderRelationshipsXML(rels)
-		if err != nil {
-			return nil, err
-		}
+		rendered := renderRelationshipsXML(rels)
 		return []byte(rendered), nil
 	}
 
@@ -111,9 +113,9 @@ func (e *PresentationEditor) copyChartAsset(srcEditor *PresentationEditor, srcPa
 
 			// Check for Excel embedding
 			if rel.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
-				newExcelPath, err := e.copyExcelAsset(srcEditor, srcTargetAbs)
-				if err != nil {
-					return "", err
+				newExcelPath, copyErr := e.copyExcelAsset(srcEditor, srcTargetAbs)
+				if copyErr != nil {
+					return "", copyErr
 				}
 
 				// Relink
@@ -130,10 +132,7 @@ func (e *PresentationEditor) copyChartAsset(srcEditor *PresentationEditor, srcPa
 		}
 
 		if changed {
-			newRelsData, err := renderRelationshipsXML(rels)
-			if err != nil {
-				return "", err
-			}
+			newRelsData := renderRelationshipsXML(rels)
 			e.parts.Set(common.SlideRelsPartName(newChartPath), []byte(newRelsData))
 		} else {
 			e.parts.Set(common.SlideRelsPartName(newChartPath), srcRelsData)
@@ -156,7 +155,10 @@ func (e *PresentationEditor) copyExcelAsset(srcEditor *PresentationEditor, srcPa
 	return e.registerExcelEmbedding(data)
 }
 
-func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, srcPath, dstSlidePart string) (string, error) {
+func (e *PresentationEditor) copyNotesSlideAsset(
+	srcEditor *PresentationEditor,
+	srcPath, dstSlidePart string,
+) (string, error) {
 	data, ok := srcEditor.parts.Get(srcPath)
 	if !ok {
 		return "", fmt.Errorf("source notes part not found: %s", srcPath)
@@ -172,7 +174,7 @@ func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, 
 	e.parts.Set(newNotesPath, cloneBytes(data))
 
 	srcNotesRelsPath := common.SlideRelsPartName(srcPath)
-	if relsData, ok := srcEditor.parts.Get(srcNotesRelsPath); ok {
+	if relsData, relsOK := srcEditor.parts.Get(srcNotesRelsPath); relsOK {
 		rels, err := parseRelationshipsXML(relsData)
 		if err != nil {
 			return "", fmt.Errorf("parse source notes rels: %w", err)
@@ -185,10 +187,7 @@ func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, 
 				rels[i].Target = "../notesMasters/notesMaster1.xml"
 			}
 		}
-		rendered, err := renderRelationshipsXML(rels)
-		if err != nil {
-			return "", fmt.Errorf("render notes rels: %w", err)
-		}
+		rendered := renderRelationshipsXML(rels)
 		e.parts.Set(common.SlideRelsPartName(newNotesPath), []byte(rendered))
 	}
 

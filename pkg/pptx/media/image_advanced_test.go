@@ -12,7 +12,9 @@ import (
 
 func TestImageAdvancedSources(t *testing.T) {
 	// 1. Setup a simple red pixel PNG
-	redPixelPNG, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwITAAAAABJRU5ErkJggg==")
+	redPixelPNG, _ := base64.StdEncoding.DecodeString(
+		"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwITAAAAABJRU5ErkJggg==",
+	)
 
 	// 2. Setup a mock HTTP server for URL testing
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +27,14 @@ func TestImageAdvancedSources(t *testing.T) {
 
 	// 3. Create images using different sources
 	imgBytes := pptx.NewImageFromBytes(redPixelPNG, "png", 1000000, 1000000, 1000000, 1000000)
-	imgBase64, err := pptx.NewImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwITAAAAABJRU5ErkJggg==", "png", 3000000, 1000000, 1000000, 1000000)
+	imgBase64, err := pptx.NewImageFromBase64(
+		"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwITAAAAABJRU5ErkJggg==",
+		"png",
+		3000000,
+		1000000,
+		1000000,
+		1000000,
+	)
 	if err != nil {
 		t.Fatalf("failed to create image from base64: %v", err)
 	}

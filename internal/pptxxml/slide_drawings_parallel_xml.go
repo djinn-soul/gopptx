@@ -23,10 +23,7 @@ func renderCustomShapeXMLConcurrently(shapes []ShapeSpec, firstShapeID int) ([]i
 		return shapeIDs, xmlByIndex
 	}
 
-	workerCount := runtime.GOMAXPROCS(0)
-	if workerCount < 1 {
-		workerCount = 1
-	}
+	workerCount := max(runtime.GOMAXPROCS(0), 1)
 	if workerCount > len(shapes) {
 		workerCount = len(shapes)
 	}
@@ -34,7 +31,7 @@ func renderCustomShapeXMLConcurrently(shapes []ShapeSpec, firstShapeID int) ([]i
 	jobs := make(chan int, workerCount*2)
 	var wg sync.WaitGroup
 	wg.Add(workerCount)
-	for w := 0; w < workerCount; w++ {
+	for range workerCount {
 		go func() {
 			defer wg.Done()
 			for index := range jobs {

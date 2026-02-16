@@ -15,6 +15,7 @@ import (
 // PresentationMetadata defines non-content properties of a PPTX.
 type PresentationMetadata struct {
 	common.PresentationMetadata
+
 	Theme       *styling.Theme
 	Master      *elements.SlideMaster
 	Masters     []*elements.SlideMaster
@@ -30,7 +31,12 @@ var (
 	SlideSize16x9 = common.SlideSize16x9
 )
 
-func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []elements.SlideContent, slideCount int) error {
+func WritePackageFiles(
+	zw *zip.Writer,
+	meta PresentationMetadata,
+	slides []elements.SlideContent,
+	slideCount int,
+) error {
 	pw := pptxxml.NewPackageWriter()
 
 	mediaCatalog, err := media.BuildMediaCatalog(slides)
@@ -64,17 +70,45 @@ func WritePackageFiles(zw *zip.Writer, meta PresentationMetadata, slides []eleme
 		name    string
 		content string
 	}{
-		{"[Content_Types].xml", pptxxml.ContentTypes(slideCount, mediaCatalog.ImageExtensions(), len(chartParts), notes.NotesSlideNumbers(notesParts), hasNotes, len(meta.CustomXML), masterCount, notesThemeIndex)},
+		{
+			"[Content_Types].xml",
+			pptxxml.ContentTypes(
+				slideCount,
+				mediaCatalog.ImageExtensions(),
+				len(chartParts),
+				notes.NotesSlideNumbers(notesParts),
+				hasNotes,
+				len(meta.CustomXML),
+				masterCount,
+				notesThemeIndex,
+			),
+		},
 		{"_rels/.rels", pptxxml.RootRelationships()},
-		{"ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount)},
-		{"ppt/presentation.xml", pptxxml.Presentation(meta.Title, slideCount, hasNotes, meta.SlideSize.Width, meta.SlideSize.Height, masterCount)},
+		{
+			"ppt/_rels/presentation.xml.rels",
+			pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount),
+		},
+		{
+			"ppt/presentation.xml",
+			pptxxml.Presentation(
+				meta.Title,
+				slideCount,
+				hasNotes,
+				meta.SlideSize.Width,
+				meta.SlideSize.Height,
+				masterCount,
+			),
+		},
 		{"docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
 			Title:       meta.Title,
 			Subject:     meta.Subject,
 			Creator:     meta.Creator,
 			Description: meta.Description,
 		})},
-		{"docProps/app.xml", pptxxml.AppProperties(slideCount, len(notesParts), meta.SlideSize.Width, meta.SlideSize.Height)},
+		{
+			"docProps/app.xml",
+			pptxxml.AppProperties(slideCount, len(notesParts), meta.SlideSize.Width, meta.SlideSize.Height),
+		},
 	}
 
 	layoutXML := []string{

@@ -11,7 +11,7 @@ type (
 	SlideSize            = common.SlideSize
 )
 
-var (
-	SlideSize4x3  = common.SlideSize4x3
-	SlideSize16x9 = common.SlideSize16x9
-)
+func SlideSize4x3() SlideSize { return common.SlideSize4x3() }
+func SlideSize16x9() SlideSize {
+	return common.SlideSize16x9()
+}

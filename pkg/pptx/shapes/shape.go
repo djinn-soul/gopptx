@@ -1,6 +1,7 @@
 package shapes
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
@@ -83,7 +84,7 @@ func (f ShapeFill) Validate() error {
 		return fmt.Errorf("invalid color %q", f.Color)
 	}
 	if f.Transparency != nil && (*f.Transparency < 0 || *f.Transparency > 1) {
-		return fmt.Errorf("transparency must be between 0.0 and 1.0")
+		return errors.New("transparency must be between 0.0 and 1.0")
 	}
 	return nil
 }
@@ -127,10 +128,10 @@ func (l ShapeLine) WithJoin(join string) ShapeLine {
 // Validate checks for validity of line parameters.
 func (l ShapeLine) Validate() error {
 	if !common.IsHexColor(l.Color) {
-		return fmt.Errorf("line color must be 6-digit RGB hex")
+		return errors.New("line color must be 6-digit RGB hex")
 	}
 	if l.Width <= 0 {
-		return fmt.Errorf("line width must be > 0")
+		return errors.New("line width must be > 0")
 	}
 	if !IsDrawingLineDash(l.Dash) {
 		return fmt.Errorf("invalid line dash %q", l.Dash)
@@ -169,13 +170,13 @@ func (s ShapeGradientStop) WithTransparency(percent float64) ShapeGradientStop {
 // Validate checks for validity of gradient stop parameters.
 func (s ShapeGradientStop) Validate() error {
 	if s.PositionPct < 0 || s.PositionPct > 100 {
-		return fmt.Errorf("position must be between 0 and 100")
+		return errors.New("position must be between 0 and 100")
 	}
 	if !common.IsHexColor(s.Color) {
 		return fmt.Errorf("invalid color %q", s.Color)
 	}
 	if s.Transparency != nil && (*s.Transparency < 0 || *s.Transparency > 1) {
-		return fmt.Errorf("transparency must be between 0.0 and 1.0")
+		return errors.New("transparency must be between 0.0 and 1.0")
 	}
 	return nil
 }
@@ -210,7 +211,7 @@ func (f ShapeGradientFill) Validate() error {
 		return fmt.Errorf("invalid gradient type %q", f.Type)
 	}
 	if len(f.Stops) < 2 {
-		return fmt.Errorf("gradient must have at least 2 stops")
+		return errors.New("gradient must have at least 2 stops")
 	}
 	for i, stop := range f.Stops {
 		if err := stop.Validate(); err != nil {
@@ -220,12 +221,12 @@ func (f ShapeGradientFill) Validate() error {
 	// Validate stop constraints
 	for i := 1; i < len(f.Stops); i++ {
 		if f.Stops[i].PositionPct <= f.Stops[i-1].PositionPct {
-			return fmt.Errorf("gradient stop positions must be strictly increasing")
+			return errors.New("gradient stop positions must be strictly increasing")
 		}
 	}
 
 	if f.AngleDeg != nil && f.Type != ShapeGradientTypeLinear {
-		return fmt.Errorf("gradient angle is only supported for linear gradients")
+		return errors.New("gradient angle is only supported for linear gradients")
 	}
 	return nil
 }
@@ -398,7 +399,12 @@ func (s Shape) Validate(slideIndex, shapeIndex int) error {
 
 	if s.Fill != nil {
 		if s.GradientFill != nil {
-			return fmt.Errorf("shape %d (type %q) on slide %d cannot set both solid and gradient fill", shapeIndex, s.Type, slideIndex)
+			return fmt.Errorf(
+				"shape %d (type %q) on slide %d cannot set both solid and gradient fill",
+				shapeIndex,
+				s.Type,
+				slideIndex,
+			)
 		}
 		if err := s.Fill.Validate(); err != nil {
 			return fmt.Errorf("shape %d on slide %d has invalid fill: %w", shapeIndex, slideIndex, err)

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -21,13 +22,16 @@ import (
 // Limitations:
 // - Single series only (for now)
 // - No styling beyond basics
-// - No shared strings optimization (inline strings for simplicity)
+// - No shared strings optimization (inline strings for simplicity).
 func generateExcelForChart(categories []string, values []float64) ([]byte, error) {
 	if len(categories) != len(values) {
 		return nil, fmt.Errorf("categories and values length mismatch: %d vs %d", len(categories), len(values))
 	}
 	seriesName := "Series 1"
-	return generateExcelSheetBinary([]string{"Category", seriesName}, buildCategoryRows(categories, []common.ChartSeriesData{{Values: values}}))
+	return generateExcelSheetBinary(
+		[]string{"Category", seriesName},
+		buildCategoryRows(categories, []common.ChartSeriesData{{Values: values}}),
+	)
 }
 
 func generateExcelForChartUpdate(kind chartKind, req common.ChartDataUpdate) ([]byte, error) {
@@ -86,12 +90,12 @@ func generateExcelSheetBinary(headers []string, rows [][]string) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	if err := writeZipFile(zw, "xl/worksheets/sheet1.xml", sheetXML); err != nil {
-		return nil, err
+	if writeErr := writeZipFile(zw, "xl/worksheets/sheet1.xml", sheetXML); writeErr != nil {
+		return nil, writeErr
 	}
 
-	if err := zw.Close(); err != nil {
-		return nil, err
+	if closeErr := zw.Close(); closeErr != nil {
+		return nil, closeErr
 	}
 
 	return buf.Bytes(), nil
@@ -108,33 +112,43 @@ func writeZipFile(zw *zip.Writer, name, content string) error {
 
 func generateSheetXML(headers []string, rows [][]string) (string, error) {
 	if len(headers) == 0 {
-		return "", fmt.Errorf("headers cannot be empty")
+		return "", errors.New("headers cannot be empty")
 	}
 
 	xmlRows := fmt.Sprintf(`<row r="1" spans="1:%d">`, len(headers))
+	var xmlRowsSb115 strings.Builder
 	for i, h := range headers {
 		cell := columnName(i + 1)
-		xmlRows += fmt.Sprintf(`<c r="%s1" t="inlineStr"><is><t>%s</t></is></c>`, cell, simpleXMLEscape(h))
+		xmlRowsSb115.WriteString(
+			fmt.Sprintf(`<c r="%s1" t="inlineStr"><is><t>%s</t></is></c>`, cell, simpleXMLEscape(h)),
+		)
 	}
+	xmlRows += xmlRowsSb115.String()
 	xmlRows += `</row>`
 
+	var xmlRowsSb121 strings.Builder
 	for i, row := range rows {
 		rowNum := i + 2
-		xmlRows += fmt.Sprintf(`<row r="%d" spans="1:%d">`, rowNum, len(headers))
-		for col := 0; col < len(headers); col++ {
+		xmlRowsSb121.WriteString(fmt.Sprintf(`<row r="%d" spans="1:%d">`, rowNum, len(headers)))
+		var xmlRowsSb124 strings.Builder
+		for col := range headers {
 			val := ""
 			if col < len(row) {
 				val = row[col]
 			}
 			cell := columnName(col + 1)
 			if isNumberLiteral(val) {
-				xmlRows += fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, cell, rowNum, val)
+				xmlRowsSb124.WriteString(fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, cell, rowNum, val))
 			} else {
-				xmlRows += fmt.Sprintf(`<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>`, cell, rowNum, simpleXMLEscape(val))
+				xmlRowsSb124.WriteString(
+					fmt.Sprintf(`<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>`, cell, rowNum, simpleXMLEscape(val)),
+				)
 			}
 		}
-		xmlRows += `</row>`
+		xmlRowsSb121.WriteString(xmlRowsSb124.String())
+		xmlRowsSb121.WriteString(`</row>`)
 	}
+	xmlRows += xmlRowsSb121.String()
 
 	return fmt.Sprintf(ExcelSheetTemplate, xmlRows), nil
 }
@@ -151,7 +165,7 @@ func buildCategoryRows(categories []string, series []common.ChartSeriesData) [][
 		rowCount = len(series[0].Categories)
 	}
 	rows := make([][]string, rowCount)
-	for i := 0; i < rowCount; i++ {
+	for i := range rowCount {
 		row := make([]string, 0, 1+len(series))
 		cat := ""
 		if len(categories) > i {
@@ -185,7 +199,7 @@ func buildScatterSheet(series []common.ChartSeriesData, withSizes bool) ([]strin
 		}
 	}
 	rows := make([][]string, maxRows)
-	for r := 0; r < maxRows; r++ {
+	for r := range maxRows {
 		row := make([]string, 0, len(headers))
 		for _, s := range series {
 			if len(s.XValues) > r {
@@ -231,7 +245,7 @@ func isNumberLiteral(s string) bool {
 	return true
 }
 
-// Fixed XML constants for a minimal valid Excel file
+// Fixed XML constants for a minimal valid Excel file.
 const ExcelContentTypesXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`
 
