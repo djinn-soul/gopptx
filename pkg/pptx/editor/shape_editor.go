@@ -53,7 +53,7 @@ func scanShapesWithOffsets(content []byte) ([]parsedShape, error) {
 			continue
 		}
 
-		if se.Name.Local == "sp" || se.Name.Local == "pic" {
+		if se.Name.Local == "sp" || se.Name.Local == shapeTypePicture {
 			// Found a shape start.
 			// We need to capture the exact bytes from `startOffset` until the end element.
 			// The `decoder.InputOffset()` gives the start of the token *buffer* usually, but for Bytes.Reader it's precise enough usually
@@ -195,22 +195,16 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 	ps.H = s.SpPr.Xfrm.Ext.Cy
 
 	// Text (simple accumulation)
-	var txt string
-	var txtSb188 strings.Builder
-	for _, p := range s.TxBody.P {
-		var txtSb189 strings.Builder
+	var txt strings.Builder
+	for pIdx, p := range s.TxBody.P {
 		for _, r := range p.R {
-			txtSb189.WriteString(r.T)
+			txt.WriteString(r.T)
 		}
-		txt += txtSb189.String()
-		txtSb188.WriteString("\n") // naive paragraph join
+		if pIdx < len(s.TxBody.P)-1 {
+			txt.WriteString("\n") // naive paragraph join
+		}
 	}
-	txt += txtSb188.String()
-	// Trim last newline if exists
-	if len(txt) > 0 && txt[len(txt)-1] == '\n' {
-		txt = txt[:len(txt)-1]
-	}
-	ps.Text = txt
+	ps.Text = txt.String()
 
 	return ps, nil
 }
@@ -268,7 +262,7 @@ func renderShapeXML(s *parsedShape) []byte {
 		return buf.String()
 	}
 
-	if s.Type == "pic" {
+	if s.Type == shapeTypePicture {
 		return nil
 	}
 
@@ -365,11 +359,13 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 
 var cNvPrIDPattern = regexp.MustCompile(`\bcNvPr\b[^>]*\bid="(\d+)"`)
 
+const cNvPrSubmatchSize = 2
+
 func maxObjectID(content []byte) int {
 	matches := cNvPrIDPattern.FindAllSubmatch(content, -1)
 	maxID := 0
 	for _, match := range matches {
-		if len(match) < 2 {
+		if len(match) < cNvPrSubmatchSize {
 			continue
 		}
 		id, err := strconv.Atoi(string(match[1]))

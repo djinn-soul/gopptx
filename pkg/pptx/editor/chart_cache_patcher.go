@@ -17,6 +17,13 @@ var (
 	numCachePattern    = regexp.MustCompile(`(?s)<c:numCache>.*?</c:numCache>`)
 )
 
+const (
+	firstSeriesValueColumnOffset = 2
+	scatterColumnsPerSeries      = 2
+	bubbleColumnsPerSeries       = 3
+	bubbleSizeColumnOffset       = 2
+)
+
 func patchChartDataCache(chartXML []byte, kind chartKind, req common.ChartDataUpdate) ([]byte, error) {
 	src := string(chartXML)
 	series := chartSeriesPattern.FindAllString(src, -1)
@@ -76,7 +83,7 @@ func patchCategorySeries(
 		return "", fmt.Errorf("series %d categories: %w", seriesIdx, err)
 	}
 
-	valueCol := columnName(seriesIdx + 2)
+	valueCol := columnName(seriesIdx + firstSeriesValueColumnOffset)
 	out, err = replaceFieldContent(out, "val", sheetRange(valueCol, len(data.Values)), nil, data.Values)
 	if err != nil {
 		return "", fmt.Errorf("series %d values: %w", seriesIdx, err)
@@ -85,9 +92,9 @@ func patchCategorySeries(
 }
 
 func patchScatterSeries(seriesIdx int, seriesXML string, data common.ChartSeriesData, bubble bool) (string, error) {
-	baseCol := seriesIdx*2 + 1
+	baseCol := seriesIdx*scatterColumnsPerSeries + 1
 	if bubble {
-		baseCol = seriesIdx*3 + 1
+		baseCol = seriesIdx*bubbleColumnsPerSeries + 1
 	}
 	xCol := columnName(baseCol)
 	yCol := columnName(baseCol + 1)
@@ -104,7 +111,7 @@ func patchScatterSeries(seriesIdx int, seriesXML string, data common.ChartSeries
 		return out, nil
 	}
 
-	sizeCol := columnName(baseCol + 2)
+	sizeCol := columnName(baseCol + bubbleSizeColumnOffset)
 	out, err = replaceFieldContent(out, "bubbleSize", sheetRange(sizeCol, len(data.Sizes)), nil, data.Sizes)
 	if err != nil {
 		return "", fmt.Errorf("series %d bubble sizes: %w", seriesIdx, err)
@@ -127,9 +134,10 @@ func replaceFieldContent(seriesXML, fieldTag, formula string, strVals []string, 
 
 	switch {
 	case len(strVals) > 0:
-		if strCachePattern.MatchString(updatedField) {
+		switch {
+		case strCachePattern.MatchString(updatedField):
 			updatedField = strCachePattern.ReplaceAllString(updatedField, buildStringCache(strVals))
-		} else if numCachePattern.MatchString(updatedField) {
+		case numCachePattern.MatchString(updatedField):
 			numValsFromCats := make([]float64, 0, len(strVals))
 			for _, s := range strVals {
 				f, err := strconv.ParseFloat(s, 64)
@@ -139,7 +147,7 @@ func replaceFieldContent(seriesXML, fieldTag, formula string, strVals []string, 
 				numValsFromCats = append(numValsFromCats, f)
 			}
 			updatedField = numCachePattern.ReplaceAllString(updatedField, buildNumberCache(numValsFromCats))
-		} else {
+		default:
 			return "", fmt.Errorf("missing cache node for %s", fieldTag)
 		}
 	case len(numVals) > 0:

@@ -12,6 +12,8 @@ import (
 
 var textRunPattern = regexp.MustCompile(`(?s)(<a:t(?:\s+[^>]*)?>)(.*?)(</a:t>)`)
 
+const textRunPatternSubmatchSize = 4
+
 // FindAndReplaceInShapes performs a global text replacement across slide text runs.
 // It returns the number of replacements made.
 func (e *PresentationEditor) FindAndReplaceInShapes(findText, replaceText string) (int, error) {
@@ -42,7 +44,7 @@ func replaceTextRuns(content []byte, findText, replaceText string) ([]byte, int)
 	total := 0
 	replaced := textRunPattern.ReplaceAllFunc(content, func(match []byte) []byte {
 		sub := textRunPattern.FindSubmatch(match)
-		if len(sub) < 4 {
+		if len(sub) < textRunPatternSubmatchSize {
 			return match
 		}
 		openTag := string(sub[1])

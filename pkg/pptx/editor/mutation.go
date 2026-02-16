@@ -22,6 +22,11 @@ var (
 	slideMasterIDPattern     = regexp.MustCompile(`id="(\d+)"`)
 )
 
+const (
+	initialSlideMasterID   int64 = 2147483648
+	patternSubmatchPairLen int   = 2
+)
+
 func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
 	if len(current) == 0 {
 		return "", errors.New("missing presentation XML content")
@@ -104,9 +109,9 @@ func rewritePresentationSlideMasterList(current []byte, relID string) (string, e
 	source := string(current)
 
 	matches := slideMasterIDPattern.FindAllStringSubmatch(source, -1)
-	nextMasterID := int64(2147483648)
+	nextMasterID := initialSlideMasterID
 	for _, m := range matches {
-		if len(m) != 2 {
+		if len(m) != patternSubmatchPairLen {
 			continue
 		}
 		val, err := strconv.ParseInt(m[1], 10, 64)

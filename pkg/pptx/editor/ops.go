@@ -2,7 +2,7 @@ package editor
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -311,7 +311,8 @@ func (e *PresentationEditor) slideRelationships(slidePart string) ([]common.Edit
 	return rels, nil
 }
 
-func scanSupportedSlideRels(rels []common.EditorRelationship) (notesTarget string, err error) {
+func scanSupportedSlideRels(rels []common.EditorRelationship) (string, error) {
+	notesTarget := ""
 	for _, rel := range rels {
 		switch rel.Type {
 		case common.RelTypeSlideLayout:
@@ -516,7 +517,7 @@ func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, 
 	e.mediaMu.Lock()
 	defer e.mediaMu.Unlock()
 
-	hash := sha1.Sum(data)
+	hash := sha256.Sum256(data)
 	hexHash := hex.EncodeToString(hash[:])
 
 	if path, ok := e.mediaInventory[hexHash]; ok {
@@ -615,7 +616,7 @@ func (e *PresentationEditor) Sections() []EditorSection {
 }
 
 func (e *PresentationEditor) deepCloneSlideParts(
-	srcSlidePart string,
+	_ string,
 	srcSlideRelsBytes []byte,
 	newSlidePart string,
 ) ([]byte, error) {

@@ -104,7 +104,7 @@ func TestReplaceShapeNodes(t *testing.T) {
 	}
 
 	// Modify second shape only
-	modified := replaceShapeNodes(original, shapes, func(i int, p *parsedShape) ([]byte, bool) {
+	modified := replaceShapeNodes(original, shapes, func(i int, _ *parsedShape) ([]byte, bool) {
 		if i == 1 {
 			return []byte(`<p:sp>REPLACED</p:sp>`), true
 		}

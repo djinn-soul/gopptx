@@ -3,7 +3,7 @@ package editor
 import (
 	"archive/zip"
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
 	"errors"
@@ -21,6 +21,11 @@ type parsedSlideIDRef struct {
 	SlideID int64
 	RelID   string
 }
+
+const (
+	defaultRelsCapacity     = 8
+	defaultSlideIDsCapacity = 8
+)
 
 // OpenPresentationEditor opens a PPTX package for in-place slide editing.
 func OpenPresentationEditor(filePath string) (*PresentationEditor, error) {
@@ -176,7 +181,7 @@ func normalizePresentationTarget(target string) string {
 
 func parseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) {
 	decoder := xml.NewDecoder(bytes.NewReader(content))
-	out := make([]common.EditorRelationship, 0, 8)
+	out := make([]common.EditorRelationship, 0, defaultRelsCapacity)
 
 	for {
 		token, err := decoder.Token()
@@ -214,7 +219,7 @@ func parseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) 
 
 func parsePresentationSlideIDs(content []byte) ([]parsedSlideIDRef, error) {
 	decoder := xml.NewDecoder(bytes.NewReader(content))
-	out := make([]parsedSlideIDRef, 0, 8)
+	out := make([]parsedSlideIDRef, 0, defaultSlideIDsCapacity)
 
 	for {
 		token, err := decoder.Token()
@@ -268,7 +273,7 @@ func parseMediaInventory(ps *PartStore, partKeys []string) (map[string]string, i
 		if !ok {
 			continue
 		}
-		hash := sha1.Sum(data)
+		hash := sha256.Sum256(data)
 		inventory[hex.EncodeToString(hash[:])] = partPath
 
 		num, ok := parseImagePartNumber(partPath)
@@ -350,7 +355,7 @@ func parseChartInventory(ps *PartStore, partKeys []string) (map[string]string, i
 		if relsData, ok := ps.Get(relsPath); ok {
 			rels, _ := parseRelationshipsXML(relsData)
 			for _, r := range rels {
-				if r.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
+				if r.Type == common.RelTypePackage {
 					excelPath := common.CanonicalPartPath(path.Join("ppt/charts", r.Target))
 					inventory[p] = excelPath
 

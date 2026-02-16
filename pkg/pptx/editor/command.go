@@ -34,6 +34,13 @@ type ErrorDetail struct {
 type commandHandler func(*PresentationEditor, json.RawMessage) (any, error)
 
 func commandHandlerFor(op string) (commandHandler, bool) {
+	if handler, ok := commandHandlerForSlidesAndMeta(op); ok {
+		return handler, true
+	}
+	return commandHandlerForShapesAndNotes(op)
+}
+
+func commandHandlerForSlidesAndMeta(op string) (commandHandler, bool) {
 	switch op {
 	case OpSlideCount:
 		return handleSlideCount, true
@@ -71,6 +78,13 @@ func commandHandlerFor(op string) (commandHandler, bool) {
 		return handleApplyTheme, true
 	case OpSetSlideSize:
 		return handleSetSlideSize, true
+	default:
+		return nil, false
+	}
+}
+
+func commandHandlerForShapesAndNotes(op string) (commandHandler, bool) {
+	switch op {
 	case OpListShapes:
 		return handleListShapes, true
 	case OpAddShape:

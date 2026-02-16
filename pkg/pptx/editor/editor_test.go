@@ -172,7 +172,8 @@ func TestPresentationEditorUpdateSlidePreservesExistingNotesRelationship(t *test
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if updateErr := editor.UpdateSlide(0, elements.NewSlide("Updated Title").AddBullet("updated body")); updateErr != nil {
+	updatedSlide := elements.NewSlide("Updated Title").AddBullet("updated body")
+	if updateErr := editor.UpdateSlide(0, updatedSlide); updateErr != nil {
 		t.Fatalf("update slide: %v", updateErr)
 	}
 
@@ -270,7 +271,7 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 	files := make(map[string]string)
 	files["_rels/.rels"] = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/></Relationships>`
 
-	var sldIds strings.Builder
+	var sldIDs strings.Builder
 	var presRels strings.Builder
 	var contentTypes strings.Builder
 
@@ -282,7 +283,7 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`,
 	)
 
-	sldIds.WriteString(`<p:sldIdLst>`)
+	sldIDs.WriteString(`<p:sldIdLst>`)
 	for i, slide := range slides {
 		num := i + 1
 		id := 256 + i
@@ -290,7 +291,7 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 		part := fmt.Sprintf("slides/slide%d.xml", num)
 		fullPart := fmt.Sprintf("ppt/slides/slide%d.xml", num)
 
-		sldIds.WriteString(fmt.Sprintf(`<p:sldId id="%d" r:id="%s"/>`, id, rid))
+		sldIDs.WriteString(fmt.Sprintf(`<p:sldId id="%d" r:id="%s"/>`, id, rid))
 		presRels.WriteString(
 			fmt.Sprintf(
 				`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="%s"/>`,
@@ -326,7 +327,7 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 			}
 		}
 	}
-	sldIds.WriteString(`</p:sldIdLst>`)
+	sldIDs.WriteString(`</p:sldIdLst>`)
 	presRels.WriteString(`</Relationships>`)
 	contentTypes.WriteString(`</Types>`)
 
@@ -334,7 +335,7 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 	files["ppt/_rels/presentation.xml.rels"] = presRels.String()
 	files["ppt/presentation.xml"] = fmt.Sprintf(
 		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">%s</p:presentation>`,
-		sldIds.String(),
+		sldIDs.String(),
 	)
 
 	err := writeZipFixture(path, files)

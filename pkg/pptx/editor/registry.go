@@ -14,6 +14,8 @@ type registeredEditor struct {
 	lastError string
 }
 
+const initialEditorHandle = 1000
+
 // EditorRegistry stores active editor handles.
 type EditorRegistry struct {
 	mu sync.RWMutex
@@ -26,7 +28,7 @@ type EditorRegistry struct {
 func NewEditorRegistry() *EditorRegistry {
 	return &EditorRegistry{
 		editors:    make(map[Handle]*registeredEditor),
-		nextHandle: 1000, // Start above common low integer values.
+		nextHandle: initialEditorHandle, // Start above common low integer values.
 	}
 }
 

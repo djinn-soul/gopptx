@@ -39,7 +39,7 @@ type PartStore struct {
 }
 
 // newPartStoreFromZip creates a lazy store backed by the given zip reader.
-// The os.File must remain open for the lifetime of the store.
+// The [os.File] must remain open for the lifetime of the store.
 func newPartStoreFromZip(file *os.File, zr *zip.Reader) *PartStore {
 	index := make(map[string]*zip.File, len(zr.File))
 	for _, entry := range zr.File {
@@ -85,52 +85,22 @@ func newPartStoreFromMap(parts map[string][]byte) *PartStore {
 // then cached data, then lazy-reads from the zip archive.
 func (ps *PartStore) Get(name string) ([]byte, bool) {
 	ps.mu.RLock()
-	if ps.deleted[name] {
-		ps.mu.RUnlock()
-		return nil, false
-	}
-	if data, ok := ps.modified[name]; ok {
+	if data, ok, pending := ps.getPriorityDataLocked(name); ok {
 		ps.mu.RUnlock()
 		return data, true
-	}
-	if data, ok := ps.cache[name]; ok {
+	} else if pending != nil {
 		ps.mu.RUnlock()
-		return data, true
-	}
-	if pending, ok := ps.inflight[name]; ok {
-		p := pending
-		ch := p.ch
-		ps.mu.RUnlock()
-		<-ch
-		if p.err != nil {
-			return nil, false
-		}
-		return p.data, true
+		return waitInflightRead(pending)
 	}
 	ps.mu.RUnlock()
 
 	ps.mu.Lock()
-	if ps.deleted[name] {
-		ps.mu.Unlock()
-		return nil, false
-	}
-	if data, ok := ps.modified[name]; ok {
+	if data, ok, pending := ps.getPriorityDataLocked(name); ok {
 		ps.mu.Unlock()
 		return data, true
-	}
-	if data, ok := ps.cache[name]; ok {
+	} else if pending != nil {
 		ps.mu.Unlock()
-		return data, true
-	}
-	if pending, ok := ps.inflight[name]; ok {
-		p := pending
-		ch := p.ch
-		ps.mu.Unlock()
-		<-ch
-		if p.err != nil {
-			return nil, false
-		}
-		return p.data, true
+		return waitInflightRead(pending)
 	}
 	entry, ok := ps.index[name]
 	if !ok {

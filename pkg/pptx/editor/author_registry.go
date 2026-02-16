@@ -8,6 +8,7 @@ import (
 )
 
 const commentAuthorsPartName = "ppt/commentAuthors.xml"
+const authorColorCycle = 7
 
 // cmAuthorLst is the root element container for authors.
 type cmAuthorLst struct {
@@ -101,7 +102,7 @@ func (e *PresentationEditor) AddAuthor(name, initials string) (comments.Author, 
 
 	// Simplistic color cycle: 0-based index.
 	// PowerPoint usually cycles through colors.
-	colorIdx := int(id) % 7 // Arbitrary cycle
+	colorIdx := int(id) % authorColorCycle // Arbitrary cycle
 
 	newAuthor := comments.Author{
 		ID:         id,

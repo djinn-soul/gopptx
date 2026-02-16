@@ -1,6 +1,10 @@
-package common
+package common_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+)
 
 func TestResolveRelationshipTarget(t *testing.T) {
 	tests := []struct {
@@ -15,7 +19,7 @@ func TestResolveRelationshipTarget(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := ResolveRelationshipTarget(tt.source, tt.target)
+		got := common.ResolveRelationshipTarget(tt.source, tt.target)
 		if got != tt.want {
 			t.Errorf("ResolveRelationshipTarget(%q, %q) = %q; want %q", tt.source, tt.target, got, tt.want)
 		}
@@ -35,7 +39,7 @@ func TestMakeRelativePath(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := MakeRelativePath(tt.source, tt.target)
+		got := common.MakeRelativePath(tt.source, tt.target)
 		if got != tt.want {
 			t.Errorf("MakeRelativePath(%q, %q) = %q; want %q", tt.source, tt.target, got, tt.want)
 		}

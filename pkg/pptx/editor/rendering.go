@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -11,6 +12,14 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
+const (
+	firstImageRelationshipID = 2
+	rotationDegreeToOOXML    = 60000
+	cropFractionToOOXML      = 100000
+)
+
+var errNoSlideTable = errors.New("slide has no table")
+
 func renderEditorSlideParts(
 	e *PresentationEditor,
 	slide elements.SlideContent,
@@ -19,8 +28,11 @@ func renderEditorSlideParts(
 	width, height int64,
 ) (string, string, error) {
 	tableSpec, err := renderEditorTableSpec(slide, slideNumber)
-	if err != nil {
+	if err != nil && !errors.Is(err, errNoSlideTable) {
 		return "", "", err
+	}
+	if errors.Is(err, errNoSlideTable) {
+		tableSpec = nil
 	}
 
 	imageRefs := make([]pptxxml.ImageRef, 0, len(slide.Images))
@@ -28,23 +40,24 @@ func renderEditorSlideParts(
 
 	for i, img := range slide.Images {
 		var partPath string
-		if img.Path != "" && len(img.Data) == 0 {
+		switch {
+		case img.Path != "" && len(img.Data) == 0:
 			registeredPath, registerErr := e.registerImageFromPath(img.Path, img.Format)
 			if registerErr != nil {
 				return "", "", fmt.Errorf("read image %d: %w", i+1, registerErr)
 			}
 			partPath = registeredPath
-		} else if len(img.Data) > 0 {
+		case len(img.Data) > 0:
 			registeredPath, registerErr := e.RegisterImage(img.Data, img.Format)
 			if registerErr != nil {
 				return "", "", registerErr
 			}
 			partPath = registeredPath
-		} else {
+		default:
 			return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
 		}
 
-		relID := fmt.Sprintf("rId%d", i+2)
+		relID := fmt.Sprintf("rId%d", i+firstImageRelationshipID)
 		imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
 
 		ref := pptxxml.ImageRef{
@@ -54,7 +67,7 @@ func renderEditorSlideParts(
 			Y:            img.Y.Emu(),
 			CX:           img.CX.Emu(),
 			CY:           img.CY.Emu(),
-			Rotation:     int64(img.Rotation * 60000),
+			Rotation:     int64(img.Rotation * rotationDegreeToOOXML),
 			FlipH:        img.FlipH,
 			FlipV:        img.FlipV,
 			Shadow:       img.Shadow,
@@ -64,10 +77,10 @@ func renderEditorSlideParts(
 		}
 		if img.Crop != (shapes.ImageCrop{}) {
 			ref.Crop = &pptxxml.ImageCropRef{
-				Left:   int64(img.Crop.Left * 100000),
-				Right:  int64(img.Crop.Right * 100000),
-				Top:    int64(img.Crop.Top * 100000),
-				Bottom: int64(img.Crop.Bottom * 100000),
+				Left:   int64(img.Crop.Left * cropFractionToOOXML),
+				Right:  int64(img.Crop.Right * cropFractionToOOXML),
+				Top:    int64(img.Crop.Top * cropFractionToOOXML),
+				Bottom: int64(img.Crop.Bottom * cropFractionToOOXML),
 			}
 		}
 		imageRefs = append(imageRefs, ref)
@@ -82,20 +95,23 @@ func renderEditorSlideParts(
 			if bgErr != nil {
 				return "", "", fmt.Errorf("read background image: %w", bgErr)
 			}
-			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
+			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+firstImageRelationshipID)
 			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
 		} else if len(img.Data) > 0 {
 			partPath, bgErr := e.RegisterImage(img.Data, img.Format)
 			if bgErr != nil {
 				return "", "", bgErr
 			}
-			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
+			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+firstImageRelationshipID)
 			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
 		}
 	}
 
 	layoutMode := elements.SlideLayoutXMLMode(slide.Layout)
-	hyperlinkRIDs, hyperlinks, nextRID := elements.BuildSlideHyperlinkRels(slide, len(imageTargets)+2)
+	hyperlinkRIDs, hyperlinks, nextRID := elements.BuildSlideHyperlinkRels(
+		slide,
+		len(imageTargets)+firstImageRelationshipID,
+	)
 
 	// Process placeholder overrides
 	placeholderSpecs, phImageTargets, phChartRels, err := renderEditorPlaceholderSpecs(e, slide, slideNumber, nextRID)
@@ -188,7 +204,7 @@ func renderEditorSlideParts(
 
 func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxxml.TableSpec, error) {
 	if slide.Table == nil {
-		return nil, nil
+		return nil, errNoSlideTable
 	}
 	return slide.Table.ToTableSpec(slideNumber)
 }

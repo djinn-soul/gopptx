@@ -16,6 +16,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+const shapeTypePicture = "pic"
+
 // EditorSection describes a PowerPoint section entry.
 type EditorSection struct {
 	Name     string
@@ -345,7 +347,7 @@ func (e *PresentationEditor) applyShapeUpdate(
 		// This is a bit of a heuristic, but if renderShapeXML returns nil for the target,
 		// newContent will equal content (replace=false).
 		updatedShape := &shapes[shapeIndex]
-		if updatedShape.Type == "pic" {
+		if updatedShape.Type == shapeTypePicture {
 			return errors.New("updating shape of type 'pic' is not supported")
 		}
 	}
@@ -417,7 +419,7 @@ func (e *PresentationEditor) applyShapeRemoval(
 	shapeIndex int,
 ) error {
 	// Replace with empty byte slice
-	newContent := replaceShapeNodes(content, shapes, func(i int, p *parsedShape) ([]byte, bool) {
+	newContent := replaceShapeNodes(content, shapes, func(i int, _ *parsedShape) ([]byte, bool) {
 		if i == shapeIndex {
 			return []byte{}, true
 		}

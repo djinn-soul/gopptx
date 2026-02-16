@@ -2,7 +2,7 @@ package editor
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -129,7 +129,7 @@ func (e *PresentationEditor) allocChartRelID(chartPart string) (string, error) {
 }
 
 func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error) {
-	sum := sha1.Sum(data)
+	sum := sha256.Sum256(data)
 	hash := hex.EncodeToString(sum[:])
 
 	for _, part := range e.parts.KeysWithPrefix("ppt/embeddings/") {
@@ -137,7 +137,7 @@ func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error)
 		if !ok {
 			continue
 		}
-		existingSum := sha1.Sum(existing)
+		existingSum := sha256.Sum256(existing)
 		if hash == hex.EncodeToString(existingSum[:]) {
 			return part, nil
 		}

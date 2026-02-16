@@ -12,6 +12,12 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+const (
+	excelDataStartRow      = 2
+	scatterHeaderColFactor = 3
+	excelColumnBase        = 26
+)
+
 // generateExcelForChart creates a minimal .xlsx file content (as []byte)
 // suitable for a PowerPoint chart data source.
 //
@@ -128,7 +134,7 @@ func generateSheetXML(headers []string, rows [][]string) (string, error) {
 
 	var xmlRowsSb121 strings.Builder
 	for i, row := range rows {
-		rowNum := i + 2
+		rowNum := i + excelDataStartRow
 		xmlRowsSb121.WriteString(fmt.Sprintf(`<row r="%d" spans="1:%d">`, rowNum, len(headers)))
 		var xmlRowsSb124 strings.Builder
 		for col := range headers {
@@ -187,7 +193,7 @@ func buildCategoryRows(categories []string, series []common.ChartSeriesData) [][
 }
 
 func buildScatterSheet(series []common.ChartSeriesData, withSizes bool) ([]string, [][]string) {
-	headers := make([]string, 0, len(series)*3)
+	headers := make([]string, 0, len(series)*scatterHeaderColFactor)
 	maxRows := 0
 	for i, s := range series {
 		headers = append(headers, fmt.Sprintf("X%d", i+1), fmt.Sprintf("Y%d", i+1))
@@ -229,8 +235,8 @@ func columnName(n int) string {
 	name := ""
 	for n > 0 {
 		n--
-		name = string(rune('A'+(n%26))) + name
-		n /= 26
+		name = string(rune('A'+(n%excelColumnBase))) + name
+		n /= excelColumnBase
 	}
 	return name
 }
@@ -245,7 +251,7 @@ func isNumberLiteral(s string) bool {
 	return true
 }
 
-// Fixed XML constants for a minimal valid Excel file.
+// ExcelContentTypesXML and related constants form a minimal valid Excel package.
 const ExcelContentTypesXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`
 

@@ -17,6 +17,8 @@ var (
 	themeNumPattern  = regexp.MustCompile(`^theme(\d+)\.xml$`)
 )
 
+const partPatternSubmatchSize = 2
+
 func (e *PresentationEditor) ListSlideLayouts() ([]common.SlideLayoutInfo, error) {
 	layoutParts := e.parts.KeysWithPrefix("ppt/slideLayouts/slideLayout")
 	infos := make([]common.SlideLayoutInfo, 0, len(layoutParts))
@@ -248,17 +250,17 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 func (e *PresentationEditor) cloneMasterTheme(
 	masterRels []common.EditorRelationship,
 	sourceMaster string,
-) (oldTheme string, newTheme string, err error) {
+) (string, string, error) {
 	for _, rel := range masterRels {
 		if rel.Type != common.RelTypeTheme {
 			continue
 		}
-		oldTheme = common.CanonicalPartPath(path.Join(path.Dir(sourceMaster), rel.Target))
+		oldTheme := common.CanonicalPartPath(path.Join(path.Dir(sourceMaster), rel.Target))
 		themeXML, ok := e.parts.Get(oldTheme)
 		if !ok {
 			return "", "", fmt.Errorf("theme part not found: %s", oldTheme)
 		}
-		newTheme = fmt.Sprintf("ppt/theme/theme%d.xml", e.nextPartNumber(themeNumPattern, "ppt/theme"))
+		newTheme := fmt.Sprintf("ppt/theme/theme%d.xml", e.nextPartNumber(themeNumPattern, "ppt/theme"))
 		e.parts.Set(newTheme, append([]byte(nil), themeXML...))
 		return oldTheme, newTheme, nil
 	}
@@ -270,7 +272,7 @@ func (e *PresentationEditor) nextPartNumber(pattern *regexp.Regexp, dir string) 
 	for _, part := range e.parts.KeysWithPrefix(dir + "/") {
 		base := path.Base(part)
 		m := pattern.FindStringSubmatch(base)
-		if len(m) != 2 {
+		if len(m) != partPatternSubmatchSize {
 			continue
 		}
 		n, err := strconv.Atoi(m[1])

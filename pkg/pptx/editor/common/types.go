@@ -14,7 +14,7 @@ const (
 	ContentTypesPath    = "[Content_Types].xml"
 	CorePropsPath       = "docProps/core.xml"
 
-	// Metadata Namespaces.
+	// DCNamespace and related metadata XML namespaces.
 	DCNamespace       = "http://purl.org/dc/elements/1.1/"
 	DCTermsNamespace  = "http://purl.org/dc/terms/"
 	DCMITypeNamespace = "http://purl.org/dc/dcmitype/"
