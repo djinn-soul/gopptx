@@ -81,78 +81,24 @@ func (e *PresentationEditor) Save(filePath string) error {
 func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	out := make(map[string][]byte)
 
-	// Serialize authors if cache is populated
-	e.authorCacheMu.RLock()
-	cachePopulated := e.authorCache != nil
-	e.authorCacheMu.RUnlock()
-
-	if cachePopulated {
-		// Convert map to slice
-		authors, _ := e.GetAuthors() // Acquires lock internally
-		// Sort by ID
-		sort.Slice(authors, func(i, j int) bool {
-			return authors[i].ID < authors[j].ID
-		})
-
-		xmlContent := pptxxml.CommentAuthorsXML(authors)
-		e.parts.Set("ppt/commentAuthors.xml", []byte(xmlContent))
+	if err := e.serializeAuthorCacheIfPopulated(); err != nil {
+		return nil, err
 	}
 
 	// Check for commentAuthors existence and relationship injection
 	hasCommentAuthors := e.parts.Has("ppt/commentAuthors.xml")
 	if hasCommentAuthors {
-		found := false
-		for _, rel := range e.nonSlideRels {
-			if rel.Type == commentAuthorsRelType {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// Add rel
-			relID := fmt.Sprintf("rId%d", e.nextRelIDNum)
-			e.nextRelIDNum++
-			e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
-				ID:     relID,
-				Type:   commentAuthorsRelType,
-				Target: "commentAuthors.xml",
-			})
-		}
+		e.ensureCommentAuthorsRelationship()
 	}
 
-	presentationXML, err := rewritePresentationSlideList([]byte(e.presentationXML), e.slides)
-	if err != nil {
-		return nil, err
-	}
-	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
-	notesMasterRelID := ""
-	if hasNotesMaster {
-		for _, rel := range e.nonSlideRels {
-			if rel.Type == common.RelTypeNotesMaster {
-				notesMasterRelID = rel.ID
-				break
-			}
-		}
-		if strings.TrimSpace(notesMasterRelID) == "" {
-			return nil, errors.New("notes master part exists but presentation relationship is missing")
-		}
-	}
-	presentationXML, err = rewritePresentationNotesMasterList([]byte(presentationXML), notesMasterRelID, hasNotesMaster)
+	presentationXML, err := e.renderPresentationXMLWithSections()
 	if err != nil {
 		return nil, err
 	}
 	out[common.PresentationXMLPath] = []byte(presentationXML)
 
-	// Inject Sections into presentation.xml extension list (Required for PPT 2010+)
-	if len(e.sections) > 0 {
-		pXML, rewriteErr := rewritePresentationSections([]byte(presentationXML), e.sections)
-		if rewriteErr != nil {
-			return nil, fmt.Errorf("rewrite sections: %w", rewriteErr)
-		}
-		out[common.PresentationXMLPath] = []byte(pXML)
-	}
-
 	hasSections := len(e.sections) > 0
+	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
 	presentationRelsXML, err := renderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections)
 	if err != nil {
 		return nil, err
@@ -166,36 +112,15 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	}
 	out[common.CorePropsPath] = corePropsXML
 
-	mediaPaths := make([]string, 0, len(e.mediaInventory))
-	for _, p := range e.mediaInventory {
-		mediaPaths = append(mediaPaths, p)
-	}
-
-	chartPaths := e.parts.KeysWithPrefix("ppt/charts/chart")
-	filteredChartPaths := make([]string, 0, len(chartPaths))
-	for _, p := range chartPaths {
-		if strings.HasSuffix(p, ".xml") {
-			filteredChartPaths = append(filteredChartPaths, p)
-		}
-	}
-
-	notesPaths := make([]string, 0)
-	for _, p := range e.notesInventory {
-		notesPaths = append(notesPaths, p)
-	}
+	mediaPaths := mapValues(e.mediaInventory)
+	filteredChartPaths := filterXMLPartPaths(e.parts.KeysWithPrefix("ppt/charts/chart"))
+	notesPaths := mapValues(e.notesInventory)
 
 	themePaths := e.parts.KeysWithPrefix("ppt/theme/theme")
 	layoutPaths := e.parts.KeysWithPrefix("ppt/slideLayouts/slideLayout")
 	masterPaths := e.parts.KeysWithPrefix("ppt/slideMasters/slideMaster")
 
-	commentPaths := e.parts.KeysWithPrefix("ppt/comments/comment")
-	// Filter just in case
-	filteredCommentPaths := make([]string, 0, len(commentPaths))
-	for _, p := range commentPaths {
-		if strings.HasSuffix(p, ".xml") {
-			filteredCommentPaths = append(filteredCommentPaths, p)
-		}
-	}
+	filteredCommentPaths := filterXMLPartPaths(e.parts.KeysWithPrefix("ppt/comments/comment"))
 
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
 	contentTypesXML, err := rewriteContentTypes(
@@ -229,4 +154,104 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	}
 
 	return out, nil
+}
+
+func (e *PresentationEditor) serializeAuthorCacheIfPopulated() error {
+	e.authorCacheMu.RLock()
+	cachePopulated := e.authorCache != nil
+	e.authorCacheMu.RUnlock()
+	if !cachePopulated {
+		return nil
+	}
+
+	authors, err := e.GetAuthors()
+	if err != nil {
+		return fmt.Errorf("get authors: %w", err)
+	}
+	sort.Slice(authors, func(i, j int) bool {
+		return authors[i].ID < authors[j].ID
+	})
+
+	xmlContent := pptxxml.CommentAuthorsXML(authors)
+	e.parts.Set("ppt/commentAuthors.xml", []byte(xmlContent))
+	return nil
+}
+
+func (e *PresentationEditor) ensureCommentAuthorsRelationship() {
+	for _, rel := range e.nonSlideRels {
+		if rel.Type == commentAuthorsRelType {
+			return
+		}
+	}
+
+	relID := fmt.Sprintf("rId%d", e.nextRelIDNum)
+	e.nextRelIDNum++
+	e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
+		ID:     relID,
+		Type:   commentAuthorsRelType,
+		Target: "commentAuthors.xml",
+	})
+}
+
+func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error) {
+	presentationXML, err := rewritePresentationSlideList([]byte(e.presentationXML), e.slides)
+	if err != nil {
+		return "", err
+	}
+
+	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
+	notesMasterRelID, err := e.resolveNotesMasterRelID(hasNotesMaster)
+	if err != nil {
+		return "", err
+	}
+
+	presentationXML, err = rewritePresentationNotesMasterList(
+		[]byte(presentationXML),
+		notesMasterRelID,
+		hasNotesMaster,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	if len(e.sections) == 0 {
+		return presentationXML, nil
+	}
+
+	presentationXML, err = rewritePresentationSections([]byte(presentationXML), e.sections)
+	if err != nil {
+		return "", fmt.Errorf("rewrite sections: %w", err)
+	}
+	return presentationXML, nil
+}
+
+func (e *PresentationEditor) resolveNotesMasterRelID(hasNotesMaster bool) (string, error) {
+	if !hasNotesMaster {
+		return "", nil
+	}
+
+	for _, rel := range e.nonSlideRels {
+		if rel.Type == common.RelTypeNotesMaster {
+			return rel.ID, nil
+		}
+	}
+	return "", errors.New("notes master part exists but presentation relationship is missing")
+}
+
+func mapValues(m map[string]string) []string {
+	values := make([]string, 0, len(m))
+	for _, value := range m {
+		values = append(values, value)
+	}
+	return values
+}
+
+func filterXMLPartPaths(paths []string) []string {
+	filtered := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if strings.HasSuffix(p, ".xml") {
+			filtered = append(filtered, p)
+		}
+	}
+	return filtered
 }

@@ -86,7 +86,6 @@ func extractShapeNode(
 	stopTag string,
 ) (parsedShape, int64, error) {
 	depth := 1
-	var endOffset int64
 
 	// To parse attributes, we can try to unmarshal the captured byte range later.
 	// For now, let's just find the end offset.
@@ -99,42 +98,60 @@ func extractShapeNode(
 
 		switch t := token.(type) {
 		case xml.StartElement:
-			if t.Name.Local == stopTag { // nested same tag? unlikely for sp/pic but good for correctness
-				depth++
-			}
+			depth = adjustShapeDepthForStart(depth, t.Name.Local, stopTag)
 		case xml.EndElement:
-			if t.Name.Local == stopTag {
-				depth--
-				if depth == 0 {
-					endOffset = decoder.InputOffset()
-					// Now we have the range [startOffset, endOffset).
-					// NOTE: InputOffset points to *after* the current token.
-					// Verify range bounds
-					if startOffset < 0 || startOffset >= endOffset || endOffset > int64(len(fullContent)) {
-						return parsedShape{}, 0, fmt.Errorf(
-							"invalid shape offsets: start=%d end=%d size=%d",
-							startOffset,
-							endOffset,
-							len(fullContent),
-						)
-					}
-
-					// Extract bytes
-					shapeXML := fullContent[startOffset:endOffset]
-
-					// Parse properties from this specific XML fragment
-					pShape, parseErr := parseShapeProperties(shapeXML)
-					if parseErr != nil {
-						return parsedShape{}, 0, parseErr
-					}
-					pShape.Start = startOffset
-					pShape.End = endOffset
-					pShape.Type = stopTag
-					return pShape, endOffset, nil
+			nextDepth, done := adjustShapeDepthForEnd(depth, t.Name.Local, stopTag)
+			depth = nextDepth
+			if done {
+				endOffset := decoder.InputOffset()
+				pShape, parseErr := buildParsedShapeFromRange(fullContent, startOffset, endOffset, stopTag)
+				if parseErr != nil {
+					return parsedShape{}, 0, parseErr
 				}
+				return pShape, endOffset, nil
 			}
 		}
 	}
+}
+
+func adjustShapeDepthForStart(currentDepth int, tokenName, stopTag string) int {
+	if tokenName == stopTag {
+		return currentDepth + 1
+	}
+	return currentDepth
+}
+
+func adjustShapeDepthForEnd(currentDepth int, tokenName, stopTag string) (int, bool) {
+	if tokenName != stopTag {
+		return currentDepth, false
+	}
+	nextDepth := currentDepth - 1
+	return nextDepth, nextDepth == 0
+}
+
+func buildParsedShapeFromRange(
+	fullContent []byte,
+	startOffset, endOffset int64,
+	stopTag string,
+) (parsedShape, error) {
+	if startOffset < 0 || startOffset >= endOffset || endOffset > int64(len(fullContent)) {
+		return parsedShape{}, fmt.Errorf(
+			"invalid shape offsets: start=%d end=%d size=%d",
+			startOffset,
+			endOffset,
+			len(fullContent),
+		)
+	}
+
+	shapeXML := fullContent[startOffset:endOffset]
+	pShape, parseErr := parseShapeProperties(shapeXML)
+	if parseErr != nil {
+		return parsedShape{}, parseErr
+	}
+	pShape.Start = startOffset
+	pShape.End = endOffset
+	pShape.Type = stopTag
+	return pShape, nil
 }
 
 // Minimal structs for parsing shape properties.

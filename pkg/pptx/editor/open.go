@@ -339,10 +339,7 @@ func parseChartInventory(ps *PartStore, partKeys []string) (map[string]string, i
 	maxExcel := 0
 
 	for _, p := range partKeys {
-		if !strings.HasPrefix(p, "ppt/charts/chart") {
-			continue
-		}
-		if !strings.HasSuffix(p, ".xml") {
+		if !isChartPartPath(p) {
 			continue
 		}
 		num, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(p, "ppt/charts/chart"), ".xml"))
@@ -350,28 +347,52 @@ func parseChartInventory(ps *PartStore, partKeys []string) (map[string]string, i
 			maxChart = num
 		}
 
-		// Find its rels
-		relsPath := "ppt/charts/_rels/" + path.Base(p) + ".rels"
-		if relsData, ok := ps.Get(relsPath); ok {
-			rels, _ := parseRelationshipsXML(relsData)
-			for _, r := range rels {
-				if r.Type == common.RelTypePackage {
-					excelPath := common.CanonicalPartPath(path.Join("ppt/charts", r.Target))
-					inventory[p] = excelPath
-
-					// Tracking excel number (Microsoft_Excel_WorksheetN.xlsx)
-					base := path.Base(excelPath)
-					if after, ok0 := strings.CutPrefix(base, "Microsoft_Excel_Worksheet"); ok0 {
-						enum, _ := strconv.Atoi(strings.TrimSuffix(after, ".xlsx"))
-						if enum > maxExcel {
-							maxExcel = enum
-						}
-					}
-				}
-			}
+		excelPath, nextExcel := findChartEmbedding(ps, p, maxExcel)
+		if excelPath == "" {
+			continue
 		}
+		inventory[p] = excelPath
+		maxExcel = nextExcel
 	}
 	return inventory, maxChart + 1, maxExcel + 1
+}
+
+func isChartPartPath(partPath string) bool {
+	return strings.HasPrefix(partPath, "ppt/charts/chart") && strings.HasSuffix(partPath, ".xml")
+}
+
+func findChartEmbedding(ps *PartStore, chartPart string, currentMaxExcel int) (string, int) {
+	relsPath := "ppt/charts/_rels/" + path.Base(chartPart) + ".rels"
+	relsData, ok := ps.Get(relsPath)
+	if !ok {
+		return "", currentMaxExcel
+	}
+
+	rels, _ := parseRelationshipsXML(relsData)
+	maxExcel := currentMaxExcel
+	for _, rel := range rels {
+		if rel.Type != common.RelTypePackage {
+			continue
+		}
+		excelPath := common.CanonicalPartPath(path.Join("ppt/charts", rel.Target))
+		maxExcel = maxExcelNumber(maxExcel, excelPath)
+		return excelPath, maxExcel
+	}
+	return "", maxExcel
+}
+
+func maxExcelNumber(current int, excelPath string) int {
+	base := path.Base(excelPath)
+	after, ok := strings.CutPrefix(base, "Microsoft_Excel_Worksheet")
+	if !ok {
+		return current
+	}
+
+	enum, _ := strconv.Atoi(strings.TrimSuffix(after, ".xlsx"))
+	if enum > current {
+		return enum
+	}
+	return current
 }
 
 func parseNotesInventory(ps *PartStore, partKeys []string) (map[string]string, int) {

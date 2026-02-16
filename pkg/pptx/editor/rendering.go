@@ -39,21 +39,14 @@ func renderEditorSlideParts(
 	imageTargets := make([]string, 0, len(slide.Images))
 
 	for i, img := range slide.Images {
-		var partPath string
-		switch {
-		case img.Path != "" && len(img.Data) == 0:
-			registeredPath, registerErr := e.registerImageFromPath(img.Path, img.Format)
-			if registerErr != nil {
-				return "", "", fmt.Errorf("read image %d: %w", i+1, registerErr)
+		partPath, imgErr := e.registerEditorImage(img.Path, img.Data, img.Format)
+		if imgErr != nil {
+			if errors.Is(imgErr, errImagePayloadEmpty) {
+				return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
 			}
-			partPath = registeredPath
-		case len(img.Data) > 0:
-			registeredPath, registerErr := e.RegisterImage(img.Data, img.Format)
-			if registerErr != nil {
-				return "", "", registerErr
-			}
-			partPath = registeredPath
-		default:
+			return "", "", fmt.Errorf("read image %d: %w", i+1, imgErr)
+		}
+		if partPath == "" {
 			return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
 		}
 
@@ -86,25 +79,12 @@ func renderEditorSlideParts(
 		imageRefs = append(imageRefs, ref)
 	}
 
-	backgroundRID := ""
-	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture &&
-		slide.Background.PictureFill != nil {
-		img := *slide.Background.PictureFill
-		if img.Path != "" && len(img.Data) == 0 {
-			partPath, bgErr := e.registerImageFromPath(img.Path, img.Format)
-			if bgErr != nil {
-				return "", "", fmt.Errorf("read background image: %w", bgErr)
-			}
-			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+firstImageRelationshipID)
-			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-		} else if len(img.Data) > 0 {
-			partPath, bgErr := e.RegisterImage(img.Data, img.Format)
-			if bgErr != nil {
-				return "", "", bgErr
-			}
-			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+firstImageRelationshipID)
-			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-		}
+	backgroundRID, backgroundTarget, err := e.renderBackgroundImageTarget(slide.Background, len(imageTargets))
+	if err != nil {
+		return "", "", err
+	}
+	if backgroundTarget != "" {
+		imageTargets = append(imageTargets, backgroundTarget)
 	}
 
 	layoutMode := elements.SlideLayoutXMLMode(slide.Layout)
@@ -236,38 +216,14 @@ func renderEditorPlaceholderSpecs(
 
 		// Handle image placeholder
 		if override.Image != nil {
-			if override.Image.Path != "" && len(override.Image.Data) == 0 {
-				partPath, err := e.registerImageFromPath(override.Image.Path, override.Image.Format)
-				if err != nil {
-					return nil, nil, nil, fmt.Errorf("placeholder image %d: %w", override.Index, err)
-				}
-				rid := fmt.Sprintf("rId%d", currentRID)
+			imageRef, imageTarget, imageErr := e.renderPlaceholderImageRef(override, currentRID)
+			if imageErr != nil {
+				return nil, nil, nil, imageErr
+			}
+			if imageRef != nil {
+				spec.Image = imageRef
+				imageTargets = append(imageTargets, imageTarget)
 				currentRID++
-				imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-				spec.Image = &pptxxml.ImageRef{
-					RelID: rid,
-					Name:  "Placeholder Picture",
-					X:     override.Image.X.Emu(),
-					Y:     override.Image.Y.Emu(),
-					CX:    override.Image.CX.Emu(),
-					CY:    override.Image.CY.Emu(),
-				}
-			} else if len(override.Image.Data) > 0 {
-				partPath, err := e.RegisterImage(override.Image.Data, override.Image.Format)
-				if err != nil {
-					return nil, nil, nil, err
-				}
-				rid := fmt.Sprintf("rId%d", currentRID)
-				currentRID++
-				imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-				spec.Image = &pptxxml.ImageRef{
-					RelID: rid,
-					Name:  "Placeholder Picture",
-					X:     override.Image.X.Emu(),
-					Y:     override.Image.Y.Emu(),
-					CX:    override.Image.CX.Emu(),
-					CY:    override.Image.CY.Emu(),
-				}
 			}
 		}
 
@@ -305,6 +261,70 @@ func renderEditorPlaceholderSpecs(
 	}
 
 	return specs, imageTargets, chartRels, nil
+}
+
+var errImagePayloadEmpty = errors.New("image has no data or path")
+
+func (e *PresentationEditor) registerEditorImage(pathValue string, data []byte, format string) (string, error) {
+	switch {
+	case pathValue != "" && len(data) == 0:
+		return e.registerImageFromPath(pathValue, format)
+	case len(data) > 0:
+		return e.RegisterImage(data, format)
+	default:
+		return "", errImagePayloadEmpty
+	}
+}
+
+func (e *PresentationEditor) renderBackgroundImageTarget(
+	background *elements.SlideBackground,
+	currentImageCount int,
+) (string, string, error) {
+	if background == nil || background.Type != elements.SlideBackgroundPicture || background.PictureFill == nil {
+		return "", "", nil
+	}
+
+	partPath, err := e.registerEditorImage(
+		background.PictureFill.Path,
+		background.PictureFill.Data,
+		background.PictureFill.Format,
+	)
+	if err != nil {
+		if errors.Is(err, errImagePayloadEmpty) {
+			return "", "", nil
+		}
+		return "", "", fmt.Errorf("read background image: %w", err)
+	}
+
+	backgroundRID := fmt.Sprintf("rId%d", currentImageCount+firstImageRelationshipID)
+	return backgroundRID, "../media/" + path.Base(partPath), nil
+}
+
+func (e *PresentationEditor) renderPlaceholderImageRef(
+	override shapes.PlaceholderContent,
+	ridIndex int,
+) (*pptxxml.ImageRef, string, error) {
+	if override.Image == nil {
+		return nil, "", nil
+	}
+
+	partPath, err := e.registerEditorImage(override.Image.Path, override.Image.Data, override.Image.Format)
+	if err != nil {
+		if errors.Is(err, errImagePayloadEmpty) {
+			return nil, "", nil
+		}
+		return nil, "", fmt.Errorf("placeholder image %d: %w", override.Index, err)
+	}
+
+	imageRef := &pptxxml.ImageRef{
+		RelID: fmt.Sprintf("rId%d", ridIndex),
+		Name:  "Placeholder Picture",
+		X:     override.Image.X.Emu(),
+		Y:     override.Image.Y.Emu(),
+		CX:    override.Image.CX.Emu(),
+		CY:    override.Image.CY.Emu(),
+	}
+	return imageRef, "../media/" + path.Base(partPath), nil
 }
 
 func editorEnsureSlideRelsExistPS(ps *PartStore, slidePart string) error {

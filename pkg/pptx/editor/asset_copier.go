@@ -101,44 +101,37 @@ func (e *PresentationEditor) copyChartAsset(srcEditor *PresentationEditor, srcPa
 	srcRelsPath := common.SlideRelsPartName(srcPath)
 	srcRelsData, hasRels := srcEditor.parts.Get(srcRelsPath)
 
-	if hasRels {
-		rels, err := parseRelationshipsXML(srcRelsData)
-		if err != nil {
-			return "", fmt.Errorf("parse source chart rels: %w", err)
-		}
-
-		changed := false
-		for i, rel := range rels {
-			srcTargetAbs := common.ResolveRelationshipTarget(srcPath, rel.Target)
-
-			// Check for Excel embedding
-			if rel.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
-				newExcelPath, copyErr := e.copyExcelAsset(srcEditor, srcTargetAbs)
-				if copyErr != nil {
-					return "", copyErr
-				}
-
-				// Relink
-				relPath := common.MakeRelativePath(newChartPath, newExcelPath)
-				rels[i].Target = relPath
-
-				// Also need to update the rId validation in the chart XML if strictly required,
-				// but usually rId stays same if we preserve order.
-				// However, if we filter rels, rIDs might change?
-				// Actually, we are copying the rels file, so we keep IDs stable.
-				changed = true
-			}
-			// TODO: Handle chart colors/styles if external?
-		}
-
-		if changed {
-			newRelsData := renderRelationshipsXML(rels)
-			e.parts.Set(common.SlideRelsPartName(newChartPath), []byte(newRelsData))
-		} else {
-			e.parts.Set(common.SlideRelsPartName(newChartPath), srcRelsData)
-		}
+	if !hasRels {
+		e.parts.Set(newChartPath, data)
+		return newChartPath, nil
 	}
 
+	rels, err := parseRelationshipsXML(srcRelsData)
+	if err != nil {
+		return "", fmt.Errorf("parse source chart rels: %w", err)
+	}
+
+	changed := false
+	for i, rel := range rels {
+		if rel.Type != common.RelTypePackage {
+			continue
+		}
+
+		srcTargetAbs := common.ResolveRelationshipTarget(srcPath, rel.Target)
+		newExcelPath, copyErr := e.copyExcelAsset(srcEditor, srcTargetAbs)
+		if copyErr != nil {
+			return "", copyErr
+		}
+		rels[i].Target = common.MakeRelativePath(newChartPath, newExcelPath)
+		changed = true
+	}
+
+	if changed {
+		newRelsData := renderRelationshipsXML(rels)
+		e.parts.Set(common.SlideRelsPartName(newChartPath), []byte(newRelsData))
+	} else {
+		e.parts.Set(common.SlideRelsPartName(newChartPath), srcRelsData)
+	}
 	e.parts.Set(newChartPath, data)
 
 	// Track embeddings if needed? e.chartEmbeddings

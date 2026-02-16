@@ -176,52 +176,86 @@ func validateChartUpdatePayload(kind chartKind, req common.ChartDataUpdate) erro
 	if len(req.Series) == 0 {
 		return errors.New("chart update requires at least one series")
 	}
+
+	var err error
 	switch kind {
 	case chartKindCategory:
-		baseCats := len(req.Categories)
-		if baseCats == 0 && len(req.Series[0].Categories) > 0 {
-			baseCats = len(req.Series[0].Categories)
-		}
-		for i, s := range req.Series {
-			if len(s.Values) == 0 {
-				return fmt.Errorf("series %d requires values", i)
-			}
-			catLen := baseCats
-			if len(s.Categories) > 0 {
-				catLen = len(s.Categories)
-			}
-			if catLen == 0 {
-				return errors.New("category chart requires categories")
-			}
-			if len(s.Values) != catLen {
-				return fmt.Errorf(
-					"series %d values length (%d) must equal category length (%d)",
-					i,
-					len(s.Values),
-					catLen,
-				)
-			}
-		}
+		err = validateCategoryChartUpdatePayload(req)
 	case chartKindScatter:
-		for i, s := range req.Series {
-			if len(s.XValues) == 0 || len(s.YValues) == 0 {
-				return fmt.Errorf("scatter series %d requires x_values and y_values", i)
-			}
-			if len(s.XValues) != len(s.YValues) {
-				return fmt.Errorf("scatter series %d x/y length mismatch", i)
-			}
-		}
+		err = validateScatterChartUpdatePayload(req.Series)
 	case chartKindBubble:
-		for i, s := range req.Series {
-			if len(s.XValues) == 0 || len(s.YValues) == 0 || len(s.Sizes) == 0 {
-				return fmt.Errorf("bubble series %d requires x_values, y_values, and sizes", i)
-			}
-			if len(s.XValues) != len(s.YValues) || len(s.XValues) != len(s.Sizes) {
-				return fmt.Errorf("bubble series %d x/y/size length mismatch", i)
-			}
-		}
+		err = validateBubbleChartUpdatePayload(req.Series)
 	default:
-		return errors.New("unsupported chart type")
+		err = errors.New("unsupported chart type")
+	}
+	return err
+}
+
+func validateCategoryChartUpdatePayload(req common.ChartDataUpdate) error {
+	baseCats := len(req.Categories)
+	if baseCats == 0 {
+		baseCats = firstSeriesCategoryCount(req.Series)
+	}
+
+	for i, s := range req.Series {
+		if err := validateCategorySeries(i, s, baseCats); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func firstSeriesCategoryCount(series []common.ChartSeriesData) int {
+	if len(series) == 0 {
+		return 0
+	}
+	return len(series[0].Categories)
+}
+
+func validateCategorySeries(index int, series common.ChartSeriesData, baseCats int) error {
+	if len(series.Values) == 0 {
+		return fmt.Errorf("series %d requires values", index)
+	}
+
+	catLen := baseCats
+	if len(series.Categories) > 0 {
+		catLen = len(series.Categories)
+	}
+	if catLen == 0 {
+		return errors.New("category chart requires categories")
+	}
+	if len(series.Values) == catLen {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"series %d values length (%d) must equal category length (%d)",
+		index,
+		len(series.Values),
+		catLen,
+	)
+}
+
+func validateScatterChartUpdatePayload(series []common.ChartSeriesData) error {
+	for i, s := range series {
+		if len(s.XValues) == 0 || len(s.YValues) == 0 {
+			return fmt.Errorf("scatter series %d requires x_values and y_values", i)
+		}
+		if len(s.XValues) != len(s.YValues) {
+			return fmt.Errorf("scatter series %d x/y length mismatch", i)
+		}
+	}
+	return nil
+}
+
+func validateBubbleChartUpdatePayload(series []common.ChartSeriesData) error {
+	for i, s := range series {
+		if len(s.XValues) == 0 || len(s.YValues) == 0 || len(s.Sizes) == 0 {
+			return fmt.Errorf("bubble series %d requires x_values, y_values, and sizes", i)
+		}
+		if len(s.XValues) != len(s.YValues) || len(s.XValues) != len(s.Sizes) {
+			return fmt.Errorf("bubble series %d x/y/size length mismatch", i)
+		}
 	}
 	return nil
 }

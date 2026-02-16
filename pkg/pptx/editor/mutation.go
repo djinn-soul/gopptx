@@ -502,32 +502,10 @@ func rewritePresentationSections(current []byte, sections []EditorSection) (stri
 	//    a. Insert new <p:extLst> at end of presentation (before closing tag).
 
 	if extLstPattern.MatchString(source) {
-		return extLstPattern.ReplaceAllStringFunc(source, func(match string) string {
-			// Check if our extension exists
-			if strings.Contains(match, extURI) {
-				// Regex to replace specific extension?
-				// For simplicity/robustness, let's parse or strict regex.
-				// Since we control usage, let's try a regex for the specific p:ext
-				pExtPattern := regexp.MustCompile(
-					fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)),
-				)
-				if pExtPattern.MatchString(match) {
-					return pExtPattern.ReplaceAllString(match, fullExtBlock)
-				}
-				// URI not found, but list exists. Append.
-				// Insert before closing </p:extLst>
-				if strings.Contains(match, "</p:extLst>") {
-					return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
-				}
-				// Self closing <p:extLst/>?
-				return strings.Replace(match, "/>", ">"+fullExtBlock+"</p:extLst>", 1)
-			}
-			// Extension not present, append it.
-			if strings.Contains(match, "</p:extLst>") {
-				return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
-			}
-			return strings.Replace(match, "/>", ">\n"+fullExtBlock+"\n</p:extLst>", 1)
-		}), nil
+		rewritten := extLstPattern.ReplaceAllStringFunc(source, func(match string) string {
+			return rewriteExtListMatch(match, extURI, fullExtBlock)
+		})
+		return rewritten, nil
 	}
 
 	// No extLst, insert it.
@@ -538,6 +516,28 @@ func rewritePresentationSections(current []byte, sections []EditorSection) (stri
 	}
 
 	return "", errors.New("presentation XML malformed (missing </p:presentation>)")
+}
+
+func rewriteExtListMatch(match, extURI, fullExtBlock string) string {
+	if strings.Contains(match, extURI) {
+		return replaceSectionExtension(match, extURI, fullExtBlock)
+	}
+	return appendSectionExtension(match, fullExtBlock)
+}
+
+func replaceSectionExtension(match, extURI, fullExtBlock string) string {
+	pExtPattern := regexp.MustCompile(fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)))
+	if pExtPattern.MatchString(match) {
+		return pExtPattern.ReplaceAllString(match, fullExtBlock)
+	}
+	return appendSectionExtension(match, fullExtBlock)
+}
+
+func appendSectionExtension(match, fullExtBlock string) string {
+	if strings.Contains(match, "</p:extLst>") {
+		return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
+	}
+	return strings.Replace(match, "/>", ">\n"+fullExtBlock+"\n</p:extLst>", 1)
 }
 
 func buildPresentationSectionExtensionXML(sections []EditorSection) string {

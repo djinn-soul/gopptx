@@ -627,70 +627,12 @@ func (e *PresentationEditor) deepCloneSlideParts(
 
 	changed := false
 	for i, rel := range rels {
-		switch rel.Type {
-		case common.RelTypeChart:
-			srcChartPart := common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
-			newChartPart := fmt.Sprintf("ppt/charts/chart%d.xml", e.nextChartNum)
-			e.nextChartNum++
-
-			if data, chartOK := e.parts.Get(srcChartPart); chartOK {
-				newChartData := cloneBytes(data)
-
-				// Clone chart rels
-				srcChartRelsPath := common.SlideRelsPartName(srcChartPart)
-				if relsData, relsOK := e.parts.Get(srcChartRelsPath); relsOK {
-					newChartRelsPath := common.SlideRelsPartName(newChartPart)
-					chartRels, _ := parseRelationshipsXML(relsData)
-
-					for j, cr := range chartRels {
-						if cr.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
-							srcExcel := common.CanonicalPartPath(path.Join("ppt/charts", cr.Target))
-							newExcel := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", e.nextExcelNum)
-							e.nextExcelNum++
-
-							if xdata, excelOK := e.parts.Get(srcExcel); excelOK {
-								e.parts.Set(newExcel, cloneBytes(xdata))
-								chartRels[j].Target = "../embeddings/" + path.Base(newExcel)
-								// Update chart XML externalData rid
-								newChartData = rewriteChartExternalData(newChartData, chartRels[j].ID)
-								e.chartEmbeddings[newChartPart] = newExcel
-							}
-						}
-					}
-					rendered := renderRelationshipsXML(chartRels)
-					e.parts.Set(newChartRelsPath, []byte(rendered))
-				}
-				e.parts.Set(newChartPart, newChartData)
-			}
-			rels[i].Target = "../charts/" + path.Base(newChartPart)
-			changed = true
-
-		case common.RelTypeNotesSlide:
-			srcNotesPart := common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
-			newNotesPart := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
-			e.nextNotesNum++
-
-			if data, notesOK := e.parts.Get(srcNotesPart); notesOK {
-				e.parts.Set(newNotesPart, cloneBytes(data))
-
-				srcNotesRelsPath := common.SlideRelsPartName(srcNotesPart)
-				if relsData, relsOK := e.parts.Get(srcNotesRelsPath); relsOK {
-					newNotesRelsPath := common.SlideRelsPartName(newNotesPart)
-					notesRels, _ := parseRelationshipsXML(relsData)
-
-					for j, nr := range notesRels {
-						if nr.Type == common.RelTypeSlide {
-							notesRels[j].Target = "../slides/" + path.Base(newSlidePart)
-						}
-					}
-					rendered := renderRelationshipsXML(notesRels)
-					e.parts.Set(newNotesRelsPath, []byte(rendered))
-				}
-				e.notesInventory[newSlidePart] = newNotesPart
-			}
-			rels[i].Target = "../notesSlides/" + path.Base(newNotesPart)
-			changed = true
+		newTarget, handled := e.cloneSlideRelationshipPart(rel, newSlidePart)
+		if !handled {
+			continue
 		}
+		rels[i].Target = newTarget
+		changed = true
 	}
 
 	if changed {
@@ -698,6 +640,121 @@ func (e *PresentationEditor) deepCloneSlideParts(
 		return []byte(rendered), nil
 	}
 	return srcSlideRelsBytes, nil
+}
+
+func (e *PresentationEditor) cloneSlideRelationshipPart(
+	rel common.EditorRelationship,
+	newSlidePart string,
+) (string, bool) {
+	switch rel.Type {
+	case common.RelTypeChart:
+		return e.cloneChartPart(rel)
+	case common.RelTypeNotesSlide:
+		return e.cloneNotesSlidePart(rel, newSlidePart)
+	default:
+		return "", false
+	}
+}
+
+func (e *PresentationEditor) cloneChartPart(rel common.EditorRelationship) (string, bool) {
+	srcChartPart := common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
+	newChartPart := fmt.Sprintf("ppt/charts/chart%d.xml", e.nextChartNum)
+	e.nextChartNum++
+
+	data, chartOK := e.parts.Get(srcChartPart)
+	if !chartOK {
+		return "../charts/" + path.Base(newChartPart), true
+	}
+
+	newChartData := cloneBytes(data)
+	newChartData = e.cloneChartDependencies(srcChartPart, newChartPart, newChartData)
+	e.parts.Set(newChartPart, newChartData)
+	return "../charts/" + path.Base(newChartPart), true
+}
+
+func (e *PresentationEditor) cloneChartDependencies(srcChartPart, newChartPart string, newChartData []byte) []byte {
+	srcChartRelsPath := common.SlideRelsPartName(srcChartPart)
+	relsData, relsOK := e.parts.Get(srcChartRelsPath)
+	if !relsOK {
+		return newChartData
+	}
+
+	chartRels, _ := parseRelationshipsXML(relsData)
+	for i, cr := range chartRels {
+		if cr.Type != common.RelTypePackage {
+			continue
+		}
+
+		updatedChartData, newExcel, copied := e.cloneChartEmbedding(srcChartPart, newChartData, cr)
+		if !copied {
+			continue
+		}
+		newChartData = updatedChartData
+		chartRels[i].Target = "../embeddings/" + path.Base(newExcel)
+		e.chartEmbeddings[newChartPart] = newExcel
+	}
+
+	newChartRelsPath := common.SlideRelsPartName(newChartPart)
+	rendered := renderRelationshipsXML(chartRels)
+	e.parts.Set(newChartRelsPath, []byte(rendered))
+	return newChartData
+}
+
+func (e *PresentationEditor) cloneChartEmbedding(
+	srcChartPart string,
+	newChartData []byte,
+	chartRel common.EditorRelationship,
+) ([]byte, string, bool) {
+	srcExcel := common.CanonicalPartPath(path.Join(path.Dir(srcChartPart), chartRel.Target))
+	newExcel := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", e.nextExcelNum)
+	e.nextExcelNum++
+
+	xdata, excelOK := e.parts.Get(srcExcel)
+	if !excelOK {
+		return newChartData, "", false
+	}
+
+	e.parts.Set(newExcel, cloneBytes(xdata))
+	newChartData = rewriteChartExternalData(newChartData, chartRel.ID)
+	return newChartData, newExcel, true
+}
+
+func (e *PresentationEditor) cloneNotesSlidePart(
+	rel common.EditorRelationship,
+	newSlidePart string,
+) (string, bool) {
+	srcNotesPart := common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
+	newNotesPart := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
+	e.nextNotesNum++
+
+	data, notesOK := e.parts.Get(srcNotesPart)
+	if !notesOK {
+		return "../notesSlides/" + path.Base(newNotesPart), true
+	}
+
+	e.parts.Set(newNotesPart, cloneBytes(data))
+	e.cloneNotesRelationships(srcNotesPart, newNotesPart, newSlidePart)
+	e.notesInventory[newSlidePart] = newNotesPart
+	return "../notesSlides/" + path.Base(newNotesPart), true
+}
+
+func (e *PresentationEditor) cloneNotesRelationships(srcNotesPart, newNotesPart, newSlidePart string) {
+	srcNotesRelsPath := common.SlideRelsPartName(srcNotesPart)
+	relsData, relsOK := e.parts.Get(srcNotesRelsPath)
+	if !relsOK {
+		return
+	}
+
+	notesRels, _ := parseRelationshipsXML(relsData)
+	for i, nr := range notesRels {
+		if nr.Type == common.RelTypeSlide {
+			notesRels[i].Target = "../slides/" + path.Base(newSlidePart)
+		}
+	}
+
+	newNotesRelsPath := common.SlideRelsPartName(newNotesPart)
+	rendered := renderRelationshipsXML(notesRels)
+	e.parts.Set(newNotesRelsPath, []byte(rendered))
 }
 
 func cloneBytes(b []byte) []byte {
