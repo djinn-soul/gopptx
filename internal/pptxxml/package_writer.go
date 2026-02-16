@@ -28,24 +28,26 @@ func (pw *PackageWriter) AddBinaryPart(path string, content []byte) {
 	pw.parts[path] = content
 }
 
-// WriteTo writes all collected parts to the provided zip.Writer.
+// WriteTo writes all collected parts to the provided [zip.Writer].
 func (pw *PackageWriter) WriteTo(zw *zip.Writer) error {
 	// Note: In an OPC package, order doesn't strictly matter for most tools,
 	// but [Content_Types].xml and _rels/.rels are usually first.
 	// For now, we just iterate the map.
 	for path, content := range pw.parts {
-		w, err := zw.Create(path)
-		if err != nil {
-			return err
+		w, createErr := zw.Create(path)
+		if createErr != nil {
+			return createErr
 		}
 		if _, err := w.Write(content); err != nil {
+			// TODO: Verify resource cleanup procedures on write failure.
 			return err
 		}
 	}
 	return nil
 }
 
-// WriteFile is a convenience helper to write a string content to a writer (non-buffered).
+// WriteFile is a convenience helper to write string content to a writer (non-buffered).
+//
 // Deprecated: used for incremental migration.
 func WriteFile(w io.Writer, content string) error {
 	_, err := io.WriteString(w, content)

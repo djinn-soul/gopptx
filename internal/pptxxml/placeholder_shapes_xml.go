@@ -11,24 +11,37 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
 	}
 
 	if ph.Image != nil {
-		// Render as Picture
-		// If we have custom placement, use it, otherwise omit to inherit
-		xfrm := `
+		return renderPlaceholderImage(ph.Image, id, phAttr)
+	}
+
+	if ph.Table != nil {
+		return renderPlaceholderTable(ph.Table, id, ph.Index, phAttr)
+	}
+
+	if ph.Chart != nil {
+		return renderPlaceholderChart(ph.Chart, id, ph.Index, phAttr)
+	}
+
+	return renderPlaceholderDefault(ph, id, phAttr)
+}
+
+func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
+	xfrm := `
   <p:spPr>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
   </p:spPr>`
-		if ph.Image.X != 0 || ph.Image.Y != 0 || ph.Image.CX != 0 || ph.Image.CY != 0 {
-			xfrm = fmt.Sprintf(`
+	if img.X != 0 || img.Y != 0 || img.CX != 0 || img.CY != 0 {
+		xfrm = fmt.Sprintf(`
   <p:spPr>
     <a:xfrm>
       <a:off x="%d" y="%d"/>
       <a:ext cx="%d" cy="%d"/>
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-  </p:spPr>`, ph.Image.X, ph.Image.Y, ph.Image.CX, ph.Image.CY)
-		}
+  </p:spPr>`, img.X, img.Y, img.CX, img.CY)
+	}
 
-		return fmt.Sprintf(`
+	return fmt.Sprintf(`
 <p:pic>
   <p:nvPicPr>
     <p:cNvPr id="%d" name="%s"/>
@@ -46,21 +59,20 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
     </a:stretch>
   </p:blipFill>
   %s
-</p:pic>`, id, Escape(ph.Image.Name), phAttr, ph.Image.RelID, xfrm)
-	}
+</p:pic>`, id, Escape(img.Name), phAttr, img.RelID, xfrm)
+}
 
-	if ph.Table != nil {
-		// Render as graphicFrame
-		xfrm := ""
-		if ph.Table.X != 0 || ph.Table.Y != 0 || ph.Table.CX != 0 || ph.Table.CY != 0 {
-			xfrm = fmt.Sprintf(`
+func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) string {
+	xfrm := ""
+	if tbl.X != 0 || tbl.Y != 0 || tbl.CX != 0 || tbl.CY != 0 {
+		xfrm = fmt.Sprintf(`
   <p:xfrm>
     <a:off x="%d" y="%d"/>
     <a:ext cx="%d" cy="%d"/>
-  </p:xfrm>`, ph.Table.X, ph.Table.Y, ph.Table.CX, ph.Table.CY)
-		}
+  </p:xfrm>`, tbl.X, tbl.Y, tbl.CX, tbl.CY)
+	}
 
-		return fmt.Sprintf(`
+	return fmt.Sprintf(`
 <p:graphicFrame>
   <p:nvGraphicFramePr>
     <p:cNvPr id="%d" name="Placeholder Table %d"/>
@@ -71,21 +83,20 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
   </p:nvGraphicFramePr>
   %s
   %s
-</p:graphicFrame>`, id, ph.Index, phAttr, xfrm, tableGraphicXML(ph.Table))
-	}
+</p:graphicFrame>`, id, index, phAttr, xfrm, tableGraphicXML(tbl))
+}
 
-	if ph.Chart != nil {
-		// Render as chart graphicFrame
-		xfrm := ""
-		if ph.Chart.X != 0 || ph.Chart.Y != 0 || ph.Chart.CX != 0 || ph.Chart.CY != 0 {
-			xfrm = fmt.Sprintf(`
+func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) string {
+	xfrm := ""
+	if ch.X != 0 || ch.Y != 0 || ch.CX != 0 || ch.CY != 0 {
+		xfrm = fmt.Sprintf(`
   <p:xfrm>
     <a:off x="%d" y="%d"/>
     <a:ext cx="%d" cy="%d"/>
-  </p:xfrm>`, ph.Chart.X, ph.Chart.Y, ph.Chart.CX, ph.Chart.CY)
-		}
+  </p:xfrm>`, ch.X, ch.Y, ch.CX, ch.CY)
+	}
 
-		return fmt.Sprintf(`
+	return fmt.Sprintf(`
 <p:graphicFrame>
   <p:nvGraphicFramePr>
     <p:cNvPr id="%d" name="Placeholder Chart %d"/>
@@ -100,12 +111,10 @@ func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
       <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="%s"/>
     </a:graphicData>
   </a:graphic>
-</p:graphicFrame>`, id, ph.Index, phAttr, xfrm, Escape(ph.Chart.RelID))
-	}
+</p:graphicFrame>`, id, index, phAttr, xfrm, Escape(ch.RelID))
+}
 
-	// Default to Text/Shape
-
-	// Text body
+func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string) string {
 	txBody := `
 <p:txBody>
   <a:bodyPr/>

@@ -33,13 +33,13 @@ func BuildRenderedNotesParts(slides []elements.SlideContent) []RenderedNotesPart
 			defer wg.Done()
 			slideNumber := index + 1
 
-			var body []elements.TextParagraph
+			var body []elements.Paragraph
 			if len(s.NotesBody) > 0 {
 				body = s.NotesBody
 			} else {
-				p := elements.NewTextParagraph()
-				p.Runs = append(p.Runs, elements.NewTextRun(s.Notes))
-				body = []elements.TextParagraph{p}
+				p := elements.NewParagraph()
+				p.Runs = append(p.Runs, elements.NewRun(s.Notes))
+				body = []elements.Paragraph{p}
 			}
 
 			parts[index] = RenderedNotesPart{
@@ -62,8 +62,8 @@ func BuildRenderedNotesParts(slides []elements.SlideContent) []RenderedNotesPart
 	return filtered
 }
 
-// NotesSlideNumbers extracts the slide numbers that have associated notes.
-func NotesSlideNumbers(parts []RenderedNotesPart) []int {
+// SlideNumbers extracts the slide numbers that have associated notes.
+func SlideNumbers(parts []RenderedNotesPart) []int {
 	if len(parts) == 0 {
 		return nil
 	}
@@ -74,8 +74,8 @@ func NotesSlideNumbers(parts []RenderedNotesPart) []int {
 	return out
 }
 
-// NotesTargetBySlide returns a map of slide number to its notes slide XML path.
-func NotesTargetBySlide(parts []RenderedNotesPart) map[int]string {
+// TargetBySlide returns a map of slide number to its notes slide XML path.
+func TargetBySlide(parts []RenderedNotesPart) map[int]string {
 	if len(parts) == 0 {
 		return nil
 	}

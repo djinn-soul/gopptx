@@ -11,12 +11,21 @@ type SlideSize struct {
 	Height int64
 }
 
-var (
-	// SlideSize4x3 is the standard 4:3 slide size (10x7.5 inches).
-	SlideSize4x3 = SlideSize{Width: 9144000, Height: 6858000}
-	// SlideSize16x9 is the standard 16:9 widescreen slide size (13.33x7.5 inches).
-	SlideSize16x9 = SlideSize{Width: 12192000, Height: 6858000}
+const (
+	width4x3  = 9144000
+	height4x3 = 6858000
+	width16x9 = 12192000
 )
+
+// GetSlideSize4x3 returns the standard 4:3 slide size (10x7.5 inches).
+func GetSlideSize4x3() SlideSize {
+	return SlideSize{Width: width4x3, Height: height4x3}
+}
+
+// GetSlideSize16x9 returns the standard 16:9 widescreen slide size (13.33x7.5 inches).
+func GetSlideSize16x9() SlideSize {
+	return SlideSize{Width: width16x9, Height: height4x3}
+}
 
 // CustomXMLPart represents an embedded custom XML document in the PPTX package.
 // The Content field must be a valid XML string.
@@ -24,8 +33,8 @@ type CustomXMLPart struct {
 	Content string `json:"content" xml:",innerxml"`
 }
 
-// PresentationMetadata describes summary information for a PPTX package.
-type PresentationMetadata struct {
+// Metadata describes summary information for a PPTX package.
+type Metadata struct {
 	Title          string
 	Subject        string
 	Creator        string
@@ -46,9 +55,9 @@ type CoreProperties struct {
 	Keywords       string `json:"keywords"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties keywords,omitempty"`
 	Description    string `json:"description"    xml:"http://purl.org/dc/elements/1.1/ description,omitempty"`
 	LastModifiedBy string `json:"lastModifiedBy" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties lastModifiedBy,omitempty"`
-	Revision       string `json:"revision"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties revision,omitempty"`
+	Revision       string `json:"revision"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties revision,omitempty"` //nolint:lll // struct tags cannot be split
 	Created        string `json:"created"        xml:"http://purl.org/dc/terms/ created,omitempty"`
 	Modified       string `json:"modified"       xml:"http://purl.org/dc/terms/ modified,omitempty"`
-	Category       string `json:"category"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties category,omitempty"`
-	ContentStatus  string `json:"contentStatus"  xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"`
+	Category       string `json:"category"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties category,omitempty"`      //nolint:lll // struct tags cannot be split
+	ContentStatus  string `json:"contentStatus"  xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"` //nolint:lll // struct tags cannot be split
 }

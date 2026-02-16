@@ -112,7 +112,9 @@ func chartPartEnvelope(
 </c:legend>`
 	}
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" `+
+		`xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" `+
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <c:lang val="en-US"/>
 <c:chart>
 <c:title>

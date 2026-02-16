@@ -143,7 +143,7 @@ func TestCreateWithSlidesSupportsMultipleChartKindsOnOneSlide(t *testing.T) {
 func TestCreateWithSlidesImageAndChartRelationshipOrder(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := tmpDir + string(filepath.Separator) + "sample.png"
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("write image: %v", err)
 	}
 

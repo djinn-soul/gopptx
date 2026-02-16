@@ -7,18 +7,18 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
-type chartPart struct {
+type ChartPart struct {
 	slideIndex int
 	partNumber int
 	spec       pptxxml.ChartSpec
 }
 
-func BuildChartParts(slides []elements.SlideContent) []chartPart {
-	out := make([]chartPart, 0)
+func BuildChartParts(slides []elements.SlideContent) []ChartPart {
+	out := make([]ChartPart, 0)
 	for i, slide := range slides {
 		spec, ok := slideChartSpec(slide)
 		if ok {
-			out = append(out, chartPart{
+			out = append(out, ChartPart{
 				slideIndex: i,
 				partNumber: len(out) + 1,
 				spec:       *spec,
@@ -27,7 +27,7 @@ func BuildChartParts(slides []elements.SlideContent) []chartPart {
 
 		for _, override := range slide.PlaceholderOverrides {
 			if override.Chart != nil {
-				out = append(out, chartPart{
+				out = append(out, ChartPart{
 					slideIndex: i,
 					partNumber: len(out) + 1,
 					spec:       *override.Chart.ToChartSpec(),
@@ -38,15 +38,15 @@ func BuildChartParts(slides []elements.SlideContent) []chartPart {
 	return out
 }
 
-func chartPartBySlide(parts []chartPart) map[int][]chartPart {
-	bySlide := make(map[int][]chartPart, len(parts))
+func chartPartBySlide(parts []ChartPart) map[int][]ChartPart {
+	bySlide := make(map[int][]ChartPart, len(parts))
 	for _, part := range parts {
 		bySlide[part.slideIndex] = append(bySlide[part.slideIndex], part)
 	}
 	return bySlide
 }
 
-func writeChartFiles(pw *pptxxml.PackageWriter, parts []chartPart) error {
+func writeChartFiles(pw *pptxxml.PackageWriter, parts []ChartPart) error {
 	for _, part := range parts {
 		path := fmt.Sprintf("ppt/charts/chart%d.xml", part.partNumber)
 		content := pptxxml.ChartPartXML(&part.spec)

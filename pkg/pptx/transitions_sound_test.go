@@ -78,13 +78,13 @@ func readFile(t *testing.T, r *zip.Reader, name string) string {
 				t.Fatalf("Open %s failed: %v", name, err)
 			}
 			defer func() {
-				if err := rc.Close(); err != nil {
-					t.Errorf("Close %s failed: %v", name, err)
+				if closeErr := rc.Close(); closeErr != nil {
+					t.Errorf("Close %s failed: %v", name, closeErr)
 				}
 			}()
 			buf := new(bytes.Buffer)
-			if _, err := buf.ReadFrom(rc); err != nil {
-				t.Fatalf("ReadFrom %s failed: %v", name, err)
+			if _, readErr := buf.ReadFrom(rc); readErr != nil {
+				t.Fatalf("ReadFrom %s failed: %v", name, readErr)
 			}
 			return buf.String()
 		}

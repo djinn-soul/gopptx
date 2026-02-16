@@ -1,14 +1,26 @@
 package pptxxml
 
 import (
+	"encoding/hex"
 	"math"
-	"strconv"
 	"strings"
 )
 
 const (
 	shapeTextColorLight = "FFFFFF"
 	shapeTextColorDark  = "000000"
+	// Color algorithms use standard coefficients.
+	sRGBGamma      = 2.4
+	sRGBOffset     = 0.055
+	sRGBDivisor    = 1.055
+	sRGBThreshold  = 0.04045
+	sRFBSlope      = 12.92
+	lumaR          = 0.2126
+	lumaG          = 0.7152
+	lumaB          = 0.0722
+	contrastOffset = 0.05
+	maxByteValue   = 255
+	hexColorLen    = 6
 )
 
 func shapeTextRunPropertiesXML(shape ShapeSpec) string {
@@ -20,7 +32,7 @@ func shapeTextColorForShape(shape ShapeSpec) string {
 	if !ok {
 		return shapeTextColorDark
 	}
-	if contrastRatio(r, g, b, 255, 255, 255) >= contrastRatio(r, g, b, 0, 0, 0) {
+	if contrastRatio(r, g, b, maxByteValue, maxByteValue, maxByteValue) >= contrastRatio(r, g, b, 0, 0, 0) {
 		return shapeTextColorLight
 	}
 	return shapeTextColorDark
@@ -81,20 +93,20 @@ func colorWithTransparency(color string, transparency *float64) (int, int, int, 
 }
 
 func blendWithWhite(channel int, alpha float64) int {
-	value := alpha*float64(channel) + (1-alpha)*255
+	value := alpha*float64(channel) + (1-alpha)*maxByteValue
 	return int(math.Round(value))
 }
 
 func parseHexColor(color string) (int, int, int, bool) {
 	clean := strings.TrimPrefix(strings.TrimSpace(color), "#")
-	if len(clean) != 6 {
+	if len(clean) != hexColorLen {
 		return 0, 0, 0, false
 	}
-	value, err := strconv.ParseUint(clean, 16, 32)
+	rgb, err := hex.DecodeString(clean)
 	if err != nil {
 		return 0, 0, 0, false
 	}
-	return int((value >> 16) & 0xFF), int((value >> 8) & 0xFF), int(value & 0xFF), true
+	return int(rgb[0]), int(rgb[1]), int(rgb[2]), true
 }
 
 func contrastRatio(r1 int, g1 int, b1 int, r2 int, g2 int, b2 int) float64 {
@@ -103,19 +115,19 @@ func contrastRatio(r1 int, g1 int, b1 int, r2 int, g2 int, b2 int) float64 {
 	if l1 < l2 {
 		l1, l2 = l2, l1
 	}
-	return (l1 + 0.05) / (l2 + 0.05)
+	return (l1 + contrastOffset) / (l2 + contrastOffset)
 }
 
 func relativeLuminance(r int, g int, b int) float64 {
-	rLinear := srgbToLinear(float64(r) / 255)
-	gLinear := srgbToLinear(float64(g) / 255)
-	bLinear := srgbToLinear(float64(b) / 255)
-	return 0.2126*rLinear + 0.7152*gLinear + 0.0722*bLinear
+	rLinear := srgbToLinear(float64(r) / maxByteValue)
+	gLinear := srgbToLinear(float64(g) / maxByteValue)
+	bLinear := srgbToLinear(float64(b) / maxByteValue)
+	return lumaR*rLinear + lumaG*gLinear + lumaB*bLinear
 }
 
 func srgbToLinear(value float64) float64 {
-	if value <= 0.04045 {
-		return value / 12.92
+	if value <= sRGBThreshold {
+		return value / sRFBSlope
 	}
-	return math.Pow((value+0.055)/1.055, 2.4)
+	return math.Pow((value+sRGBOffset)/sRGBDivisor, sRGBGamma)
 }

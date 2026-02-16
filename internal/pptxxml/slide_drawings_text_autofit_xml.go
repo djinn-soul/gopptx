@@ -8,25 +8,30 @@ import (
 )
 
 const (
-	shapeTextMinPt = 10
-	shapeTextMaxPt = 36
+	shapeTextMinPt      = 10
+	shapeTextMaxPt      = 36
+	shapeTextDefaultPt  = 18
+	shapeSizingBase     = 42
+	shapeSizingSlope    = 0.50
+	shapeSizingBoundMod = 0.28
+	emuPerPoint         = 12700
 )
 
 func shapeTextSizeXML(shape ShapeSpec) string {
-	return strconv.Itoa(autoFitShapeTextSizePt(shape) * 100)
+	return strconv.Itoa(autoFitShapeTextSizePt(shape) * ptFactor)
 }
 
 func autoFitShapeTextSizePt(shape ShapeSpec) int {
 	chars := utf8.RuneCountInString(strings.TrimSpace(shape.Text))
 	if chars <= 0 {
-		return 18
+		return shapeTextDefaultPt
 	}
 
-	dimensionPts := float64(minInt64(shape.CX, shape.CY)) / 12700
+	dimensionPts := float64(minInt64(shape.CX, shape.CY)) / float64(emuPerPoint)
 	// More conservative sizing for shapes (Star, Heart, etc.)
 	// Most shapes have internal margins or narrow areas.
-	sizeByBounds := int(math.Round(dimensionPts * 0.28))
-	sizeByChars := int(math.Round(42 - 0.50*float64(chars)))
+	sizeByBounds := int(math.Round(dimensionPts * shapeSizingBoundMod))
+	sizeByChars := int(math.Round(shapeSizingBase - shapeSizingSlope*float64(chars)))
 
 	sizePt := min(sizeByBounds, sizeByChars)
 	return clampInt(sizePt, shapeTextMinPt, shapeTextMaxPt)

@@ -1,4 +1,4 @@
-package common
+package common //nolint:revive // avoid meaningless package names
 
 import (
 	"archive/zip"

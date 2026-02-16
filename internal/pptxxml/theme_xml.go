@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+const (
+	layoutsPerMaster = 6
+)
+
 // ColorSchemeSpec defines the 12 colors in a theme.
 type ColorSchemeSpec struct {
 	Name     string
@@ -111,7 +115,9 @@ func SlideLayoutTwoColumn() string {
 
 func slideLayout(name string) string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" preserve="1">
+<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" preserve="1">
 <p:cSld name="` + Escape(name) + `">
 <p:spTree>
 <p:nvGrpSpPr>
@@ -139,7 +145,7 @@ func slideLayoutPartName(layoutIndex, masterIndex int) string {
 	if masterIndex < 1 {
 		masterIndex = 1
 	}
-	globalLayoutIndex := (masterIndex-1)*6 + layoutIndex
+	globalLayoutIndex := (masterIndex-1)*layoutsPerMaster + layoutIndex
 	return fmt.Sprintf("slideLayout%d.xml", globalLayoutIndex)
 }
 
@@ -150,11 +156,14 @@ func SlideLayoutRelationships(masterIndex int) string {
 	}
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster` + strconv.Itoa(masterIndex) + `.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" ` +
+		`Target="../slideMasters/slideMaster` + strconv.Itoa(masterIndex) + `.xml"/>
 </Relationships>`
 }
 
 // SlideMaster renders ppt/slideMasters/slideMaster1.xml.
+//
+//nolint:mnd // Contains specific ID base calculations required by the spec.
 func SlideMaster(spec *SlideMasterSpec) string {
 	bgXML := slideDefaultBackground
 	if spec != nil && spec.Background != nil {
@@ -237,7 +246,8 @@ func SlideMaster(spec *SlideMasterSpec) string {
 ` + footerXML + masterElementsXML + `
 </p:spTree>
 </p:cSld>
-<p:clrMap bg1="` + bg1 + `" tx1="` + tx1 + `" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+<p:clrMap bg1="` + bg1 + `" tx1="` + tx1 + `" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" ` +
+		`accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
 <p:sldLayoutIdLst>
 <p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase, 10) + `" r:id="rId1"/>
 <p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+1, 10) + `" r:id="rId2"/>
@@ -304,6 +314,8 @@ func txStylesXML(spec *SlideMasterSpec) string {
 }
 
 // textLevelStylesXML renders <a:lvlNpPr> elements for each text level.
+//
+//nolint:mnd // Contains specific level limits and point conversion factors.
 func textLevelStylesXML(levels []TextLevelStyle) string {
 	var b strings.Builder
 	for _, lvl := range levels {
@@ -351,6 +363,8 @@ func textLevelStylesXML(levels []TextLevelStyle) string {
 	return b.String()
 }
 
+const imageRidStart = 8
+
 // SlideMasterRelationships renders ppt/slideMasters/_rels/slideMasterN.xml.rels.
 // imageTargets are optional media paths for master images (e.g. "../media/image1.png").
 func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex int) string {
@@ -362,17 +376,22 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(1, masterIndex) + `"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(2, masterIndex) + `"/>
-<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(3, masterIndex) + `"/>
-<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(4, masterIndex) + `"/>
-<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(5, masterIndex) + `"/>
-<Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/` + slideLayoutPartName(6, masterIndex) + `"/>
-<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(themeIndex) + `.xml"/>`)
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
+	// Layouts 1-6
+	for i := 1; i <= 6; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/%s"/>`,
+			i, slideLayoutPartName(i, masterIndex)))
+	}
+	// Theme is rId7
+	b.WriteString(fmt.Sprintf(`
+<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme%d.xml"/>`,
+		themeIndex))
+	// Images start at rId8
 	for i, target := range imageTargets {
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, 8+i, Escape(target)))
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`,
+			imageRidStart+i, Escape(target)))
 	}
 	b.WriteString(`
 </Relationships>`)
@@ -381,76 +400,32 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 
 // Theme renders ppt/theme/theme1.xml.
 func Theme(spec *ThemeSpec) string {
+	// TODO: [MEDIUM] Duplicated documentation comment. Remove one instance.
 	name := "Office Theme"
-	clrName := "Office"
-	fontName := "Office"
-
-	dk1, lt1, dk2, lt2 := "windowText", "window", "1F497D", "EEECE1"
-	dk1Last, lt1Last := "000000", "FFFFFF"
-	accent1, accent2, accent3 := "4F81BD", "C0504D", "9BBB59"
-	accent4, accent5, accent6 := "8064A2", "4BACC6", "F79646"
-	hlink, folHlink := "0000FF", "800080"
-
-	majorFont, minorFont := "Calibri", "Calibri"
-
-	if spec != nil {
-		if spec.Name != "" {
-			name = spec.Name
-			clrName = spec.Name
-			fontName = spec.Name
-		}
-		c := spec.Colors
-		if c.Dk1 != "" {
-			dk1 = "windowText"
-			dk1Last = strings.TrimPrefix(c.Dk1, "#")
-		}
-		if c.Lt1 != "" {
-			lt1 = "window"
-			lt1Last = strings.TrimPrefix(c.Lt1, "#")
-		}
-		if c.Dk2 != "" {
-			dk2 = strings.TrimPrefix(c.Dk2, "#")
-		}
-		if c.Lt2 != "" {
-			lt2 = strings.TrimPrefix(c.Lt2, "#")
-		}
-		if c.Accent1 != "" {
-			accent1 = strings.TrimPrefix(c.Accent1, "#")
-		}
-		if c.Accent2 != "" {
-			accent2 = strings.TrimPrefix(c.Accent2, "#")
-		}
-		if c.Accent3 != "" {
-			accent3 = strings.TrimPrefix(c.Accent3, "#")
-		}
-		if c.Accent4 != "" {
-			accent4 = strings.TrimPrefix(c.Accent4, "#")
-		}
-		if c.Accent5 != "" {
-			accent5 = strings.TrimPrefix(c.Accent5, "#")
-		}
-		if c.Accent6 != "" {
-			accent6 = strings.TrimPrefix(c.Accent6, "#")
-		}
-		if c.Hlink != "" {
-			hlink = strings.TrimPrefix(c.Hlink, "#")
-		}
-		if c.FolHlink != "" {
-			folHlink = strings.TrimPrefix(c.FolHlink, "#")
-		}
-
-		if spec.Fonts.MajorFont != "" {
-			majorFont = spec.Fonts.MajorFont
-		}
-		if spec.Fonts.MinorFont != "" {
-			minorFont = spec.Fonts.MinorFont
-		}
+	if spec != nil && spec.Name != "" {
+		name = spec.Name
 	}
 
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="`+Escape(name)+` marketing">
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="`+
+		Escape(name)+` marketing">
 <a:themeElements>
-<a:clrScheme name="`+Escape(clrName)+` colors">
+%s
+%s
+%s
+</a:themeElements>
+<a:objectDefaults/>
+<a:extraClrSchemeLst/>
+</a:theme>`,
+		themeColorsXML(spec),
+		themeFontsXML(spec),
+		themeFmtSchemeXML())
+}
+
+func themeColorsXML(spec *ThemeSpec) string {
+	c := resolveThemeColors(spec)
+
+	return fmt.Sprintf(`<a:clrScheme name="`+Escape(c.clrName)+` colors">
 <a:dk1><a:sysClr val="%s" lastClr="%s"/></a:dk1>
 <a:lt1><a:sysClr val="%s" lastClr="%s"/></a:lt1>
 <a:dk2><a:srgbClr val="%s"/></a:dk2>
@@ -463,8 +438,87 @@ func Theme(spec *ThemeSpec) string {
 <a:accent6><a:srgbClr val="%s"/></a:accent6>
 <a:hlink><a:srgbClr val="%s"/></a:hlink>
 <a:folHlink><a:srgbClr val="%s"/></a:folHlink>
-</a:clrScheme>
-<a:fontScheme name="`+Escape(fontName)+` fonts">
+</a:clrScheme>`,
+		c.dk1, c.dk1Last, c.lt1, c.lt1Last, c.dk2, c.lt2,
+		c.accent1, c.accent2, c.accent3, c.accent4, c.accent5, c.accent6,
+		c.hlink, c.folHlink)
+}
+
+type resolvedThemeColors struct {
+	clrName                                              string
+	dk1, dk1Last, lt1, lt1Last                           string
+	dk2, lt2                                             string
+	accent1, accent2, accent3, accent4, accent5, accent6 string
+	hlink, folHlink                                      string
+}
+
+func resolveThemeColors(spec *ThemeSpec) resolvedThemeColors {
+	res := resolvedThemeColors{
+		clrName: "Office",
+		dk1:     "windowText", lt1: "window", dk2: "1F497D", lt2: "EEECE1",
+		dk1Last: "000000", lt1Last: "FFFFFF",
+		accent1: "4F81BD", accent2: "C0504D", accent3: "9BBB59",
+		accent4: "8064A2", accent5: "4BACC6", accent6: "F79646",
+		hlink: "0000FF", folHlink: "800080",
+	}
+
+	if spec == nil {
+		return res
+	}
+
+	if spec.Name != "" {
+		res.clrName = spec.Name
+	}
+
+	c := spec.Colors
+	if c.Dk1 != "" {
+		res.dk1Last = strings.TrimPrefix(c.Dk1, "#")
+	}
+	if c.Lt1 != "" {
+		res.lt1Last = strings.TrimPrefix(c.Lt1, "#")
+	}
+	if c.Dk2 != "" {
+		res.dk2 = strings.TrimPrefix(c.Dk2, "#")
+	}
+	if c.Lt2 != "" {
+		res.lt2 = strings.TrimPrefix(c.Lt2, "#")
+	}
+	res.accent1 = fallbackColor(c.Accent1, res.accent1)
+	res.accent2 = fallbackColor(c.Accent2, res.accent2)
+	res.accent3 = fallbackColor(c.Accent3, res.accent3)
+	res.accent4 = fallbackColor(c.Accent4, res.accent4)
+	res.accent5 = fallbackColor(c.Accent5, res.accent5)
+	res.accent6 = fallbackColor(c.Accent6, res.accent6)
+	res.hlink = fallbackColor(c.Hlink, res.hlink)
+	res.folHlink = fallbackColor(c.FolHlink, res.folHlink)
+
+	return res
+}
+
+func fallbackColor(val, def string) string {
+	if val == "" {
+		return def
+	}
+	return strings.TrimPrefix(val, "#")
+}
+
+func themeFontsXML(spec *ThemeSpec) string {
+	fontName := "Office"
+	majorFont, minorFont := "Calibri", "Calibri"
+
+	if spec != nil {
+		if spec.Name != "" {
+			fontName = spec.Name
+		}
+		if spec.Fonts.MajorFont != "" {
+			majorFont = spec.Fonts.MajorFont
+		}
+		if spec.Fonts.MinorFont != "" {
+			minorFont = spec.Fonts.MinorFont
+		}
+	}
+
+	return fmt.Sprintf(`<a:fontScheme name="`+Escape(fontName)+` fonts">
 <a:majorFont>
 <a:latin typeface="%s"/>
 <a:ea typeface=""/>
@@ -475,17 +529,30 @@ func Theme(spec *ThemeSpec) string {
 <a:ea typeface=""/>
 <a:cs typeface=""/>
 </a:minorFont>
-</a:fontScheme>
-<a:fmtScheme name="Office">
+</a:fontScheme>`, majorFont, minorFont)
+}
+
+func themeFmtSchemeXML() string {
+	return `<a:fmtScheme name="Office">
 <a:fillStyleLst>
 <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
-<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="50000"/><a:satMod val="300000"/></a:schemeClr></a:gs><a:gs pos="35000"><a:schemeClr val="phClr"><a:tint val="37000"/><a:satMod val="300000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:tint val="15000"/><a:satMod val="350000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="1"/></a:gradFill>
-<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:shade val="51000"/><a:satMod val="130000"/></a:schemeClr></a:gs><a:gs pos="80000"><a:schemeClr val="phClr"><a:shade val="93000"/><a:satMod val="130000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="94000"/><a:satMod val="135000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="16200000" scaled="0"/></a:gradFill>
+<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="50000"/><a:satMod val="300000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="35000"><a:schemeClr val="phClr"><a:tint val="37000"/><a:satMod val="300000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="100000"><a:schemeClr val="phClr"><a:tint val="15000"/><a:satMod val="350000"/></a:schemeClr></a:gs></a:gsLst>` +
+		`<a:lin ang="16200000" scaled="1"/></a:gradFill>
+<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:shade val="51000"/><a:satMod val="130000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="80000"><a:schemeClr val="phClr"><a:shade val="93000"/><a:satMod val="130000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="94000"/><a:satMod val="135000"/></a:schemeClr></a:gs></a:gsLst>` +
+		`<a:lin ang="16200000" scaled="0"/></a:gradFill>
 </a:fillStyleLst>
 <a:lnStyleLst>
-<a:ln w="9525" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"><a:shade val="95000"/><a:satMod val="105000"/></a:schemeClr></a:solidFill><a:prstDash val="solid"/></a:ln>
-<a:ln w="25400" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
-<a:ln w="38100" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+<a:ln w="9525" cap="flat" cmpd="sng" algn="ctr">` +
+		`<a:solidFill><a:schemeClr val="phClr"><a:shade val="95000"/><a:satMod val="105000"/></a:schemeClr></a:solidFill>` +
+		`<a:prstDash val="solid"/></a:ln>
+<a:ln w="25400" cap="flat" cmpd="sng" algn="ctr">` +
+		`<a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+<a:ln w="38100" cap="flat" cmpd="sng" algn="ctr">` +
+		`<a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
 </a:lnStyleLst>
 <a:effectStyleLst>
 <a:effectStyle><a:effectLst/></a:effectStyle>
@@ -494,16 +561,13 @@ func Theme(spec *ThemeSpec) string {
 </a:effectStyleLst>
 <a:bgFillStyleLst>
 <a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
-<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/><a:satMod val="350000"/></a:schemeClr></a:gs><a:gs pos="40000"><a:schemeClr val="phClr"><a:tint val="45000"/><a:shade val="99000"/><a:satMod val="350000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="20000"/><a:satMod val="255000"/></a:schemeClr></a:gs></a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="-80000" r="50000" b="180000"/></a:path></a:gradFill>
-<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="80000"/><a:satMod val="300000"/></a:schemeClr></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="30000"/><a:satMod val="200000"/></a:schemeClr></a:gs></a:gsLst><a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>
+<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="40000"/><a:satMod val="350000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="40000"><a:schemeClr val="phClr"><a:tint val="45000"/><a:shade val="99000"/><a:satMod val="350000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="20000"/><a:satMod val="255000"/></a:schemeClr></a:gs></a:gsLst>` +
+		`<a:path path="circle"><a:fillToRect l="50000" t="-80000" r="50000" b="180000"/></a:path></a:gradFill>
+<a:gradFill rotWithShape="1"><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"><a:tint val="80000"/><a:satMod val="300000"/></a:schemeClr></a:gs>` +
+		`<a:gs pos="100000"><a:schemeClr val="phClr"><a:shade val="30000"/><a:satMod val="200000"/></a:schemeClr></a:gs></a:gsLst>` +
+		`<a:path path="circle"><a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path></a:gradFill>
 </a:bgFillStyleLst>
-</a:fmtScheme>
-</a:themeElements>
-<a:objectDefaults/>
-<a:extraClrSchemeLst/>
-</a:theme>`,
-		dk1, dk1Last, lt1, lt1Last, dk2, lt2,
-		accent1, accent2, accent3, accent4, accent5, accent6,
-		hlink, folHlink,
-		majorFont, minorFont)
+</a:fmtScheme>`
 }

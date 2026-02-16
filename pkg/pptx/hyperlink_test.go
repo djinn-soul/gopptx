@@ -138,9 +138,9 @@ func TestHyperlinkInPPTX(t *testing.T) {
 
 	for _, f := range zr.File {
 		if f.Name == "ppt/slides/slide1.xml" {
-			rc, err := f.Open()
-			if err != nil {
-				t.Fatalf("failed to open slide1.xml: %v", err)
+			rc, openErr := f.Open()
+			if openErr != nil {
+				t.Fatalf("failed to open slide1.xml: %v", openErr)
 			}
 			buf := new(bytes.Buffer)
 			_, _ = buf.ReadFrom(rc)
@@ -191,9 +191,9 @@ func TestNavigationHyperlinkUsesExternalRelationshipMode(t *testing.T) {
 		if f.Name != "ppt/slides/_rels/slide1.xml.rels" {
 			continue
 		}
-		rc, err := f.Open()
-		if err != nil {
-			t.Fatalf("failed to open slide1 rels: %v", err)
+		rc, openErr := f.Open()
+		if openErr != nil {
+			t.Fatalf("failed to open slide1 rels: %v", openErr)
 		}
 		buf := new(bytes.Buffer)
 		_, _ = buf.ReadFrom(rc)

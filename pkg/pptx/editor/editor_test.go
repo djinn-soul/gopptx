@@ -68,7 +68,7 @@ func TestPresentationEditorAddUpdateRemoveSave(t *testing.T) {
 func TestPresentationEditorPreservesNonEditedParts(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := filepath.Join(tmpDir, "sample.png")
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("write image fixture: %v", err)
 	}
 
@@ -139,7 +139,7 @@ func TestPresentationEditorRejectsImageUpdateWithoutSlideLayoutRelationship(t *t
 	defer func() { _ = editor.Close() }()
 
 	imageSlide := elements.NewSlide("Replacement with image").AddImage(
-		shapes.NewImageFromBytes(testutil.TinyPNG, "png", 0, 0, 914400, 914400),
+		shapes.NewImageFromBytes(testutil.TinyPNG(), "png", 0, 0, 914400, 914400),
 	)
 	err = editor.UpdateSlide(0, imageSlide)
 	if err == nil {
@@ -208,7 +208,7 @@ func TestPresentationEditorPersistsHyperlinks(t *testing.T) {
 		AddShape(shapes.NewShape("rect", 0, 0, 457200, 457200).
 			WithText("shape link").
 			WithHyperlink(h1)).
-		AddBulletRuns([]elements.TextRun{
+		AddBulletRuns([]elements.Run{
 			{Text: "text link", Hyperlink: &h2},
 		})
 	if _, addErr := editor.AddSlide(slide); addErr != nil {

@@ -2,8 +2,16 @@ package pptxxml
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
+)
+
+const (
+	shapeDescrAttrEmpty = ` descr=""`
+	strokeDashSolid     = "solid"
+	arrowTypeNone       = "none"
+	emusPerDegree       = 60000
+	transparencyBase    = 100000
+	defaultMargin       = 457200
 )
 
 // ShapeFillSpec describes solid fill properties for a custom shape.
@@ -95,11 +103,37 @@ type ConnectorAdjustmentSpec struct {
 }
 
 func customShapeXML(shape ShapeSpec, shapeID int) string {
-	rotationAttr := ""
-	if shape.RotationDeg != nil {
-		rotationAttr = fmt.Sprintf(` rot="%d"`, *shape.RotationDeg*60000)
+	cNvPrContent := customShapeNonVisualProperties(shape)
+	xfrmXML := customShapeTransform(shape)
+	fillXML := customShapeFill(shape)
+
+	lineXML := ""
+	if shape.Line != nil {
+		lineXML = shapeLineXML(*shape.Line)
 	}
 
+	descrAttr := customShapeAltText(shape)
+
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf(`
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="%d" name="Shape %d"%s%s
+<p:cNvSpPr/>
+<p:nvPr/>
+</p:nvSpPr>
+<p:spPr>
+%s
+<a:prstGeom prst="%s"><a:avLst/></a:prstGeom>%s%s
+</p:spPr>`, shapeID, shapeID, descrAttr, cNvPrContent, xfrmXML, Escape(shape.Type), fillXML, lineXML))
+
+	b.WriteString(customShapeTextBody(shape))
+	b.WriteString(`
+</p:sp>`)
+	return b.String()
+}
+
+func customShapeNonVisualProperties(shape ShapeSpec) string {
 	hyperlinkXML := ""
 	if shape.ClickAction != nil {
 		hyperlinkXML = HyperlinkXML(*shape.ClickAction, "a:hlinkClick")
@@ -111,90 +145,86 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 		hyperlinkXML += HyperlinkXML(*shape.HoverAction, "a:hlinkHover")
 	}
 
-	// If hyperlink is present, p:cNvPr must have a child element, so we use a different format
-	cNvPrContent := "/>"
 	if hyperlinkXML != "" {
-		cNvPrContent = ">" + hyperlinkXML + "</p:cNvPr>"
+		return ">" + hyperlinkXML + "</p:cNvPr>"
 	}
+	return "/>"
+}
 
-	descrAttr := ""
-	if shape.IsDecorative {
-		descrAttr = ` descr=""`
-	} else if shape.AltText != "" {
-		descrAttr = fmt.Sprintf(` descr="%s"`, Escape(shape.AltText))
+func customShapeTransform(shape ShapeSpec) string {
+	rotationAttr := ""
+	if shape.RotationDeg != nil {
+		rotationAttr = fmt.Sprintf(` rot="%d"`, *shape.RotationDeg*emusPerDegree)
 	}
-
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`
-<p:sp>
-<p:nvSpPr>
-<p:cNvPr id="%d" name="Shape %d"%s%s
-<p:cNvSpPr/>
-<p:nvPr/>
-</p:nvSpPr>
-<p:spPr>
+	return fmt.Sprintf(`
 <a:xfrm%s>
 <a:off x="%d" y="%d"/>
 <a:ext cx="%d" cy="%d"/>
-</a:xfrm>
-<a:prstGeom prst="%s"><a:avLst/></a:prstGeom>`,
-		shapeID,
-		shapeID,
-		descrAttr, // We append descr to name/id attrs
-		cNvPrContent,
-		rotationAttr,
-		shape.X,
-		shape.Y,
-		shape.CX,
-		shape.CY,
-		Escape(shape.Type),
-	))
+</a:xfrm>`, rotationAttr, shape.X, shape.Y, shape.CX, shape.CY)
+}
 
-	if shape.GradientFill != nil {
-		b.WriteString(shapeGradientFillXML(*shape.GradientFill))
-	} else if shape.Fill != nil {
-		b.WriteString(shapeSolidFillXML(*shape.Fill))
-	} else {
-		b.WriteString(`
-<a:noFill/>`)
+func customShapeFill(shape ShapeSpec) string {
+	switch {
+	case shape.GradientFill != nil:
+		return shapeGradientFillXML(*shape.GradientFill)
+	case shape.Fill != nil:
+		return shapeSolidFillXML(*shape.Fill)
+	default:
+		return `
+<a:noFill/>`
 	}
-	if shape.Line != nil {
-		b.WriteString(shapeLineXML(*shape.Line))
-	}
-	b.WriteString(`
-</p:spPr>`)
+}
 
+func customShapeAltText(shape ShapeSpec) string {
+	if shape.IsDecorative {
+		return shapeDescrAttrEmpty
+	}
+	if shape.AltText != "" {
+		return fmt.Sprintf(` descr="%s"`, Escape(shape.AltText))
+	}
+	return ""
+}
+
+func customShapeTextBody(shape ShapeSpec) string {
 	if strings.TrimSpace(shape.Text) == "" {
-		b.WriteString(`
+		return `
 <p:txBody>
 <a:bodyPr/>
 <a:lstStyle/>
 <a:p/>
-</p:txBody>`)
-	} else {
-		autoFitXML := `<a:spAutoFit/>`
-		bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" marL="45720" marT="45720" marR="45720" marB="45720"`
+</p:txBody>`
+	}
 
-		if shape.TextFrame != nil {
-			bodyPrAttr = fmt.Sprintf(` wrap="%s" rtlCol="0" anchor="%s" marL="%d" marT="%d" marR="%d" marB="%d"`,
-				Escape(shape.TextFrame.Wrap),
-				Escape(shape.TextFrame.Anchor),
-				shape.TextFrame.MarginLeft,
-				shape.TextFrame.MarginTop,
-				shape.TextFrame.MarginRight,
-				shape.TextFrame.MarginBottom,
-			)
-			switch shape.TextFrame.AutoFit {
-			case "spAutoFit":
-				autoFitXML = `<a:spAutoFit/>`
-			case "normAutoFit":
-				autoFitXML = `<a:normAutoFit/>`
-			default:
-				autoFitXML = ""
-			}
+	autoFitXML := `<a:spAutoFit/>`
+	bodyPrAttr := fmt.Sprintf(` wrap="square" rtlCol="0" anchor="ctr" marL="%d" marT="%d" marR="%d" marB="%d"`, defaultMargin, defaultMargin, defaultMargin, defaultMargin)
+
+	if shape.TextFrame != nil {
+		bodyPrAttr = fmt.Sprintf(` wrap="%s" rtlCol="0" anchor="%s" marL="%d" marT="%d" marR="%d" marB="%d"`,
+			Escape(shape.TextFrame.Wrap),
+			Escape(shape.TextFrame.Anchor),
+			shape.TextFrame.MarginLeft,
+			shape.TextFrame.MarginTop,
+			shape.TextFrame.MarginRight,
+			shape.TextFrame.MarginBottom,
+		)
+		switch shape.TextFrame.AutoFit {
+		case "spAutoFit":
+			autoFitXML = `<a:spAutoFit/>`
+		case "normAutoFit":
+			autoFitXML = `<a:normAutoFit/>`
+		default:
+			autoFitXML = ""
 		}
+	}
 
-		b.WriteString(fmt.Sprintf(`
+	hyperlinkXML := ""
+	if shape.ClickAction != nil {
+		hyperlinkXML = HyperlinkXML(*shape.ClickAction, "a:hlinkClick")
+	} else if shape.Hyperlink != nil {
+		hyperlinkXML = HyperlinkXML(*shape.Hyperlink, "a:hlinkClick")
+	}
+
+	return fmt.Sprintf(`
 <p:txBody>
 <a:bodyPr%s>
 %s
@@ -207,11 +237,117 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <a:t>%s</a:t>
 </a:r>
 </a:p>
-</p:txBody>`, bodyPrAttr, autoFitXML, shapeTextSizeXML(shape), shapeTextRunPropertiesXML(shape), hyperlinkXML, Escape(shape.Text)))
+</p:txBody>`, bodyPrAttr, autoFitXML, shapeTextSizeXML(shape), shapeTextRunPropertiesXML(shape), hyperlinkXML, Escape(shape.Text))
+}
+
+func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endShapeID int) string {
+	xfrm := connectorTransform(connector)
+	avLst := connectorAdjustments(connector)
+	descrAttr := connectorAltText(connector)
+	connections := connectorCxn(startShapeID, endShapeID, connector.StartSiteIndex, connector.EndSiteIndex)
+
+	capAttr := ""
+	if strings.TrimSpace(connector.Line.Cap) != "" {
+		capAttr = ` cap="` + Escape(connector.Line.Cap) + `"`
 	}
+
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf(`
+<p:cxnSp>
+<p:nvCxnSpPr>
+<p:cNvPr id="%d" name="Connector %d"%s/>
+<p:cNvCxnSpPr>%s</p:cNvCxnSpPr>
+<p:nvPr/>
+</p:nvCxnSpPr>
+<p:spPr>
+%s
+<a:prstGeom prst="%s">%s</a:prstGeom>
+<a:ln w="%d"%s>
+<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`,
+		shapeID, shapeID, descrAttr, connections, xfrm, Escape(connector.Type), avLst,
+		connector.Line.Width, capAttr, Escape(connector.Line.Color),
+	))
+
+	if strings.TrimSpace(connector.Line.Dash) != "" && connector.Line.Dash != strokeDashSolid {
+		b.WriteString(`
+<a:prstDash val="` + Escape(connector.Line.Dash) + `"/>`)
+	}
+	b.WriteString(connectorArrows(connector))
+	b.WriteString(connectorLineJoin(connector.Line.Join))
+
 	b.WriteString(`
-</p:sp>`)
+</a:ln>
+</p:spPr>`)
+	b.WriteString(connectorLabel(connector))
+	b.WriteString(`
+</p:cxnSp>`)
 	return b.String()
+}
+
+func connectorTransform(connector ConnectorSpec) string {
+	x, y, cx, cy := connectorBounds(connector)
+	flipH := ""
+	if connector.EndX < connector.StartX {
+		flipH = ` flipH="1"`
+	}
+	flipV := ""
+	if connector.EndY < connector.StartY {
+		flipV = ` flipV="1"`
+	}
+	return fmt.Sprintf(`
+<a:xfrm%s%s>
+<a:off x="%d" y="%d"/>
+<a:ext cx="%d" cy="%d"/>
+</a:xfrm>`, flipH, flipV, x, y, cx, cy)
+}
+
+func connectorCxn(startID, endID int, startIdx, endIdx *int) string {
+	res := ""
+	if startID > 0 && startIdx != nil {
+		res += fmt.Sprintf(`
+<a:stCxn id="%d" idx="%d"/>`, startID, *startIdx)
+	}
+	if endID > 0 && endIdx != nil {
+		res += fmt.Sprintf(`
+<a:endCxn id="%d" idx="%d"/>`, endID, *endIdx)
+	}
+	return res
+}
+
+func connectorAdjustments(connector ConnectorSpec) string {
+	if len(connector.Adjustments) == 0 {
+		return "<a:avLst/>"
+	}
+	var av strings.Builder
+	av.WriteString("<a:avLst>")
+	for _, adj := range connector.Adjustments {
+		av.WriteString(`<a:gd name="` + Escape(adj.Name) + `" fmla="` + Escape(adj.Formula) + `"/>`)
+	}
+	av.WriteString("</a:avLst>")
+	return av.String()
+}
+
+func connectorAltText(connector ConnectorSpec) string {
+	if connector.IsDecorative {
+		return shapeDescrAttrEmpty
+	}
+	if connector.AltText != "" {
+		return fmt.Sprintf(` descr="%s"`, Escape(connector.AltText))
+	}
+	return ""
+}
+
+func connectorArrows(connector ConnectorSpec) string {
+	res := ""
+	if connector.StartArrow != arrowTypeNone {
+		res += `
+<a:headEnd type="` + Escape(connector.StartArrow) + `" w="` + Escape(connector.StartArrowWidth) + `" len="` + Escape(connector.StartArrowLen) + `"/>`
+	}
+	if connector.EndArrow != arrowTypeNone {
+		res += `
+<a:tailEnd type="` + Escape(connector.EndArrow) + `" w="` + Escape(connector.EndArrowWidth) + `" len="` + Escape(connector.EndArrowLen) + `"/>`
+	}
+	return res
 }
 
 func shapeSolidFillXML(fill ShapeFillSpec) string {
@@ -227,7 +363,7 @@ func shapeSolidFillXML(fill ShapeFillSpec) string {
 
 func shapeLineXML(line ShapeLineSpec) string {
 	dash := ""
-	if strings.TrimSpace(line.Dash) != "" && line.Dash != "solid" {
+	if strings.TrimSpace(line.Dash) != "" && line.Dash != strokeDashSolid {
 		dash = `<a:prstDash val="` + Escape(line.Dash) + `"/>`
 	}
 	lineCapAttr := ""
@@ -243,114 +379,35 @@ func shapeLineXML(line ShapeLineSpec) string {
 	case "round":
 		join = `<a:round/>`
 	}
-	return `
-<a:ln w="` + strconv.FormatInt(line.Width, 10) + `"` + lineCapAttr + `>
-<a:solidFill><a:srgbClr val="` + Escape(line.Color) + `"/></a:solidFill>
-` + dash + `
-` + join + `
-</a:ln>`
+	return fmt.Sprintf(`
+<a:ln w="%d"%s>
+<a:solidFill><a:srgbClr val="%s"/></a:solidFill>
+%s
+%s
+</a:ln>`, line.Width, lineCapAttr, Escape(line.Color), dash, join)
 }
 
-func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endShapeID int) string {
-	x, y, cx, cy := connectorBounds(connector)
-	flipH := ""
-	if connector.EndX < connector.StartX {
-		flipH = ` flipH="1"`
-	}
-	flipV := ""
-	if connector.EndY < connector.StartY {
-		flipV = ` flipV="1"`
-	}
-
-	descrAttr := ""
-	if connector.IsDecorative {
-		descrAttr = ` descr=""`
-	} else if connector.AltText != "" {
-		descrAttr = fmt.Sprintf(` descr="%s"`, Escape(connector.AltText))
-	}
-
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`
-<p:cxnSp>
-<p:nvCxnSpPr>
-<p:cNvPr id="%d" name="Connector %d"%s/>
-<p:cNvCxnSpPr>`, shapeID, shapeID, descrAttr))
-	if startShapeID > 0 && connector.StartSiteIndex != nil {
-		b.WriteString(fmt.Sprintf(`
-<a:stCxn id="%d" idx="%d"/>`, startShapeID, *connector.StartSiteIndex))
-	}
-	if endShapeID > 0 && connector.EndSiteIndex != nil {
-		b.WriteString(fmt.Sprintf(`
-<a:endCxn id="%d" idx="%d"/>`, endShapeID, *connector.EndSiteIndex))
-	}
-	avLst := "<a:avLst/>"
-	if len(connector.Adjustments) > 0 {
-		var av strings.Builder
-		av.WriteString("<a:avLst>")
-		for _, adj := range connector.Adjustments {
-			av.WriteString(`<a:gd name="` + Escape(adj.Name) + `" fmla="` + Escape(adj.Formula) + `"/>`)
-		}
-		av.WriteString("</a:avLst>")
-		avLst = av.String()
-	}
-
-	capAttr := ""
-	if strings.TrimSpace(connector.Line.Cap) != "" {
-		capAttr = ` cap="` + Escape(connector.Line.Cap) + `"`
-	}
-
-	b.WriteString(fmt.Sprintf(`
-</p:cNvCxnSpPr>
-<p:nvPr/>
-</p:nvCxnSpPr>
-<p:spPr>
-<a:xfrm%s%s>
-<a:off x="%d" y="%d"/>
-<a:ext cx="%d" cy="%d"/>
-</a:xfrm>
-<a:prstGeom prst="%s">%s</a:prstGeom>
-<a:ln w="%d"%s>
-<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`,
-		flipH,
-		flipV,
-		x,
-		y,
-		cx,
-		cy,
-		Escape(connector.Type),
-		avLst,
-		connector.Line.Width,
-		capAttr,
-		Escape(connector.Line.Color),
-	))
-	if strings.TrimSpace(connector.Line.Dash) != "" && connector.Line.Dash != "solid" {
-		b.WriteString(`
-<a:prstDash val="` + Escape(connector.Line.Dash) + `"/>`)
-	}
-	if connector.StartArrow != "none" {
-		b.WriteString(`
-<a:headEnd type="` + Escape(connector.StartArrow) + `" w="` + Escape(connector.StartArrowWidth) + `" len="` + Escape(connector.StartArrowLen) + `"/>`)
-	}
-	if connector.EndArrow != "none" {
-		b.WriteString(`
-<a:tailEnd type="` + Escape(connector.EndArrow) + `" w="` + Escape(connector.EndArrowWidth) + `" len="` + Escape(connector.EndArrowLen) + `"/>`)
-	}
-	switch strings.TrimSpace(connector.Line.Join) {
+func connectorLineJoin(join string) string {
+	switch strings.TrimSpace(join) {
 	case "bevel":
-		b.WriteString(`
-<a:bevel/>`)
+		return `
+<a:bevel/>`
 	case "miter":
-		b.WriteString(`
-<a:miter/>`)
+		return `
+<a:miter/>`
 	case "round":
-		b.WriteString(`
-<a:round/>`)
+		return `
+<a:round/>`
+	default:
+		return ""
 	}
-	b.WriteString(`
-</a:ln>
-</p:spPr>`)
-	if strings.TrimSpace(connector.Label) != "" {
-		b.WriteString(`
+}
+
+func connectorLabel(connector ConnectorSpec) string {
+	if strings.TrimSpace(connector.Label) == "" {
+		return ""
+	}
+	return `
 <p:txBody>
 <a:bodyPr/>
 <a:lstStyle/>
@@ -360,15 +417,11 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 <a:t>` + Escape(connector.Label) + `</a:t>
 </a:r>
 </a:p>
-</p:txBody>`)
-	}
-	b.WriteString(`
-</p:cxnSp>`)
-	return b.String()
+</p:txBody>`
 }
 
 func alphaFromNormalizedTransparency(transparency float64) int {
-	return int((1.0 - transparency) * 100000)
+	return int((1.0 - transparency) * transparencyBase)
 }
 
 func connectorBounds(connector ConnectorSpec) (int64, int64, int64, int64) {

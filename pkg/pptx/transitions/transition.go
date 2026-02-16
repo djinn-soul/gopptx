@@ -6,14 +6,6 @@ import (
 	"strings"
 )
 
-var transitionEscapeReplacer = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	"\"", "&quot;",
-	"'", "&apos;",
-)
-
 // SlideTransition is the extensibility contract for slide transitions.
 type SlideTransition interface {
 	Validate() error
@@ -103,63 +95,84 @@ func (o TransitionOptions) Validate() error {
 		return err
 	}
 
-	if o.Sound != nil {
-		if strings.TrimSpace(o.Sound.RelID) == "" {
-			return errors.New("transition sound requires a valid relationship ID")
-		}
+	if o.Sound != nil && strings.TrimSpace(o.Sound.RelID) == "" {
+		return errors.New("transition sound requires a valid relationship ID")
 	}
 
-	if o.Orientation != "" {
-		switch o.Type {
-		case TransitionSplit, TransitionBlinds, TransitionRandomBars:
-			if o.Orientation != TransitionOrientHorizontal && o.Orientation != TransitionOrientVertical {
-				return fmt.Errorf("invalid orientation %q for transition %q", o.Orientation, o.Type)
-			}
-		default:
-			return fmt.Errorf("transition %q does not support orientation", o.Type)
-		}
+	if err := o.validateOrientation(); err != nil {
+		return err
 	}
 
 	if o.SpokeCount > 0 && o.Type != TransitionClock {
 		return fmt.Errorf("transition %q does not support spoke count", o.Type)
 	}
 
-	if o.Direction != "" {
-		switch o.Type {
-		case TransitionPush, TransitionWipe, TransitionReveal, TransitionCover:
-			switch o.Direction {
-			case TransitionDirUp, TransitionDirDown, TransitionDirLeft, TransitionDirRight:
-			default:
-				return fmt.Errorf("invalid direction %q for transition %q (expected u|d|l|r)", o.Direction, o.Type)
-			}
-		case TransitionZoom, TransitionSplit:
-			switch o.Direction {
-			case TransitionDirIn, TransitionDirOut:
-			default:
-				return fmt.Errorf("invalid direction %q for transition %q (expected in|out)", o.Direction, o.Type)
-			}
-		case TransitionUncover:
-			switch o.Direction {
-			case TransitionDirUp, TransitionDirDown, TransitionDirLeft, TransitionDirRight,
-				TransitionDirUpLeft, TransitionDirUpRight, TransitionDirDownLeft, TransitionDirDownRight:
-			default:
-				return fmt.Errorf(
-					"invalid direction %q for transition %q (expected u|d|l|r|lu|ru|ld|rd)",
-					o.Direction,
-					o.Type,
-				)
-			}
-		case TransitionStrips:
-			switch o.Direction {
-			case TransitionDirUpLeft, TransitionDirUpRight, TransitionDirDownLeft, TransitionDirDownRight:
-			default:
-				return fmt.Errorf("invalid direction %q for transition %q (expected ul|ur|dl|dr)", o.Direction, o.Type)
-			}
-		default:
-			return fmt.Errorf("transition %q does not support direction", o.Type)
-		}
+	return o.validateDirection()
+}
+
+func (o TransitionOptions) validateOrientation() error {
+	if o.Orientation == "" {
+		return nil
 	}
-	return nil
+	switch o.Type {
+	case TransitionSplit, TransitionBlinds, TransitionRandomBars:
+		if o.Orientation != TransitionOrientHorizontal && o.Orientation != TransitionOrientVertical {
+			return fmt.Errorf("invalid orientation %q for transition %q", o.Orientation, o.Type)
+		}
+		return nil
+	default:
+		return fmt.Errorf("transition %q does not support orientation", o.Type)
+	}
+}
+
+func (o TransitionOptions) validateDirection() error {
+	if o.Direction == "" {
+		return nil
+	}
+	switch o.Type {
+	case TransitionPush, TransitionWipe, TransitionReveal, TransitionCover:
+		return validateSimpleDirection(o.Type, o.Direction)
+	case TransitionZoom, TransitionSplit:
+		return validateInOutDirection(o.Type, o.Direction)
+	case TransitionUncover:
+		return validateUncoverDirection(o.Direction)
+	case TransitionStrips:
+		return validateStripsDirection(o.Direction)
+	default:
+		return fmt.Errorf("transition %q does not support direction", o.Type)
+	}
+}
+
+func validateSimpleDirection(t TransitionType, d TransitionDirection) error {
+	if d == TransitionDirUp || d == TransitionDirDown || d == TransitionDirLeft || d == TransitionDirRight {
+		return nil
+	}
+	return fmt.Errorf("invalid direction %q for transition %q (expected u|d|l|r)", d, t)
+}
+
+func validateInOutDirection(t TransitionType, d TransitionDirection) error {
+	if d == TransitionDirIn || d == TransitionDirOut {
+		return nil
+	}
+	return fmt.Errorf("invalid direction %q for transition %q (expected in|out)", d, t)
+}
+
+func validateUncoverDirection(d TransitionDirection) error {
+	switch d {
+	case TransitionDirUp, TransitionDirDown, TransitionDirLeft, TransitionDirRight,
+		TransitionDirUpLeft, TransitionDirUpRight, TransitionDirDownLeft, TransitionDirDownRight:
+		return nil
+	default:
+		return fmt.Errorf("invalid direction %q for transition %q (expected u|d|l|r|lu|ru|ld|rd)", d, TransitionUncover)
+	}
+}
+
+func validateStripsDirection(d TransitionDirection) error {
+	if d == TransitionDirUpLeft || d == TransitionDirUpRight ||
+		d == TransitionDirDownLeft || d == TransitionDirDownRight {
+		return nil
+	}
+	return fmt.Errorf("invalid direction %q for transition %q (expected ul|ur|dl|dr)", d, TransitionStrips)
 }
 
 func (o TransitionOptions) XML() string {
@@ -212,8 +225,19 @@ func (o TransitionOptions) XML() string {
 }
 
 func escape(value string) string {
-	return transitionEscapeReplacer.Replace(value)
+	return transitionEscapeReplacerVar.Replace(value)
 }
+
+// TODO: [HIGH] Performance regression in transitionEscapeReplacer. Ensure this remains a package-level variable.
+var transitionEscapeReplacerVar = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
+// TODO: Verify replacer reuse.
 
 func (t TransitionType) Validate() error {
 	switch t {

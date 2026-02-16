@@ -11,7 +11,7 @@ import (
 // PresentationBuilder provides a fluent API for creating presentations.
 type PresentationBuilder struct {
 	title           string
-	metadata        PresentationMetadata
+	metadata        Metadata
 	slides          []SlideContent
 	showSlideNumber bool
 	footerText      string
@@ -26,7 +26,7 @@ func NewPresentationBuilder(title string) *PresentationBuilder {
 }
 
 // WithMetadata sets the presentation metadata.
-func (b *PresentationBuilder) WithMetadata(meta PresentationMetadata) *PresentationBuilder {
+func (b *PresentationBuilder) WithMetadata(meta Metadata) *PresentationBuilder {
 	b.metadata = meta
 	return b
 }
@@ -127,5 +127,5 @@ func (b *PresentationBuilder) WriteToFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to build presentation: %w", err)
 	}
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o600)
 }

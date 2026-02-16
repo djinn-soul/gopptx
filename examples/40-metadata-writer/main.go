@@ -18,9 +18,9 @@ func main() {
 		log.Fatalf("Failed to create output dir: %v", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "gopptx-metadata-writer-*")
-	if err != nil {
-		log.Fatalf("Failed to create temp dir: %v", err)
+	tmpDir, tempErr := os.MkdirTemp("", "gopptx-metadata-writer-*")
+	if tempErr != nil {
+		log.Fatalf("Failed to create temp dir: %v", tempErr)
 	}
 	defer func() {
 		if err := os.RemoveAll(tmpDir); err != nil {

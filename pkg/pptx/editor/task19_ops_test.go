@@ -76,7 +76,7 @@ func TestFindAndReplaceInShapesHandlesTextRunsWithAttributes(t *testing.T) {
 func TestSwapImageByIndex(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := filepath.Join(tmpDir, "sample.png")
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("write image fixture: %v", err)
 	}
 
@@ -113,7 +113,7 @@ func TestSwapImageByIndex(t *testing.T) {
 func TestSwapImageByRelIDDoesNotRegisterImageOnMissingRelationship(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := filepath.Join(tmpDir, "sample.png")
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("write image fixture: %v", err)
 	}
 
@@ -168,7 +168,7 @@ func TestSearchShapes(t *testing.T) {
 func TestMergeFromFileWithImageAndChart(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := filepath.Join(tmpDir, "src.png")
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("write source image fixture: %v", err)
 	}
 

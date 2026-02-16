@@ -10,7 +10,8 @@ import (
 type AnimationEffect string
 
 const (
-	// Entrance effects.
+	// AnimationEntranceAppear starts the entrance-effects group.
+	classEntr                                    = "entr"
 	AnimationEntranceAppear      AnimationEffect = "entr_appear"
 	AnimationEntranceFade        AnimationEffect = "entr_fade"
 	AnimationEntranceFlyIn       AnimationEffect = "entr_flyIn"
@@ -25,13 +26,13 @@ const (
 	AnimationEntranceSwivel      AnimationEffect = "entr_swivel"
 	AnimationEntranceBounce      AnimationEffect = "entr_bounce"
 
-	// Exit effects.
+	// AnimationExitDisappear starts the exit-effects group.
 	AnimationExitDisappear AnimationEffect = "exit_disappear"
 	AnimationExitFadeOut   AnimationEffect = "exit_fade"
 	AnimationExitFlyOut    AnimationEffect = "exit_flyOut"
 	AnimationExitFloatOut  AnimationEffect = "exit_float"
 
-	// Emphasis effects.
+	// AnimationEmphasisPulse starts the emphasis-effects group.
 	AnimationEmphasisPulse        AnimationEffect = "emph_pulse"
 	AnimationEmphasisColorPulse   AnimationEffect = "emph_colorPulse"
 	AnimationEmphasisTeeter       AnimationEffect = "emph_teeter"
@@ -43,7 +44,7 @@ const (
 	AnimationEmphasisTransparency AnimationEffect = "emph_transparency"
 	AnimationEmphasisObjectColor  AnimationEffect = "emph_objectColor"
 
-	// Motion paths.
+	// AnimationPathLines starts the motion-path effects group.
 	AnimationPathLines  AnimationEffect = "path_lines"
 	AnimationPathArcs   AnimationEffect = "path_arcs"
 	AnimationPathTurns  AnimationEffect = "path_turns"
@@ -95,13 +96,15 @@ type Animation struct {
 	AutoReverse bool
 }
 
+const defaultAnimationDurationMS = 500
+
 // NewAnimation creates a new animation with default settings (500ms duration, OnClick).
 func NewAnimation(shapeIndex int, effect AnimationEffect) Animation {
 	return Animation{
 		ShapeIndex: shapeIndex,
 		Effect:     effect,
 		Trigger:    AnimationOnClick,
-		DurationMS: 500,
+		DurationMS: defaultAnimationDurationMS,
 	}
 }
 
@@ -174,6 +177,20 @@ func (t AnimationTrigger) Validate() error {
 }
 
 func (a Animation) PresetID() uint32 {
+	// TODO: [HIGH] High-frequency map allocation in PresetID. Ensure this remains a switch statement.
+	switch a.PresetClass() {
+	case "entr", "exit":
+		return a.presetIDEntranceExit()
+	case "emph":
+		return a.presetIDEmphasis()
+	case "path":
+		return a.presetIDPath()
+	}
+	return 0
+}
+
+//nolint:mnd // Preset IDs are from OOXML spec
+func (a Animation) presetIDEntranceExit() uint32 {
 	switch a.Effect {
 	case AnimationEntranceAppear, AnimationExitDisappear:
 		return 1
@@ -201,6 +218,14 @@ func (a Animation) PresetID() uint32 {
 		return 19
 	case AnimationEntranceBounce:
 		return 25
+	default:
+		return 0
+	}
+}
+
+//nolint:mnd // Preset IDs are from OOXML spec
+func (a Animation) presetIDEmphasis() uint32 {
+	switch a.Effect {
 	case AnimationEmphasisPulse:
 		return 31
 	case AnimationEmphasisColorPulse:
@@ -221,6 +246,14 @@ func (a Animation) PresetID() uint32 {
 		return 39
 	case AnimationEmphasisObjectColor:
 		return 40
+	default:
+		return 0
+	}
+}
+
+//nolint:mnd // Preset IDs are from OOXML spec
+func (a Animation) presetIDPath() uint32 {
+	switch a.Effect {
 	case AnimationPathLines:
 		return 42
 	case AnimationPathArcs:
@@ -241,7 +274,7 @@ func (a Animation) PresetID() uint32 {
 func (a Animation) PresetClass() string {
 	switch {
 	case strings.HasPrefix(string(a.Effect), "entr_"):
-		return "entr"
+		return classEntr
 	case strings.HasPrefix(string(a.Effect), "exit_"):
 		return "exit"
 	case strings.HasPrefix(string(a.Effect), "emph_"):
@@ -249,14 +282,15 @@ func (a Animation) PresetClass() string {
 	case strings.HasPrefix(string(a.Effect), "path_"):
 		return "path"
 	default:
-		return "entr"
+		return classEntr
 	}
 }
 
 func (a Animation) XML(seqID int, actualShapeID int) string {
 	repeatAttr := ""
 	if a.RepeatCount > 0 {
-		repeatAttr = fmt.Sprintf(` repeatCount="%d"`, a.RepeatCount*1000)
+		const repeatMultiplier = 1000
+		repeatAttr = fmt.Sprintf(` repeatCount="%d"`, a.RepeatCount*repeatMultiplier)
 	}
 	reverseAttr := ""
 	if a.AutoReverse {
@@ -297,6 +331,7 @@ func (a Animation) XML(seqID int, actualShapeID int) string {
 	)
 }
 
+//nolint:mnd // Preset subtypes are from OOXML spec
 func (a Animation) PresetSubtype() int {
 	// Mapping based on MS-PPTX / OOXML standards for common effects.
 	switch a.Effect {
@@ -343,8 +378,9 @@ func (a Animation) PresetSubtype() int {
 		default:
 			return 2
 		}
+	default:
+		return 0
 	}
-	return 0
 }
 
 func (a Animation) NodeType() string {

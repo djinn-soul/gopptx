@@ -34,7 +34,7 @@ type PresentationEditor struct {
 	nextRelIDNum int
 	nextSlideNum int
 
-	metadata        common.PresentationMetadata
+	metadata        common.Metadata
 	nonSlideRels    []common.EditorRelationship
 	presentationXML string
 
@@ -64,7 +64,7 @@ type PresentationEditor struct {
 }
 
 // Metadata returns presentation-level metadata parsed from the package.
-func (e *PresentationEditor) Metadata() common.PresentationMetadata {
+func (e *PresentationEditor) Metadata() common.Metadata {
 	return e.metadata
 }
 

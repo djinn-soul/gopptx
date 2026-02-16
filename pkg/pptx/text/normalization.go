@@ -19,12 +19,12 @@ func hyperlinksEqual(a, b *action.Hyperlink) bool {
 		a.HighlightClick == b.HighlightClick
 }
 
-// NormalizeTextRuns removes empty runs and merges adjacent runs with identical styling.
-func NormalizeTextRuns(runs []TextRun) []TextRun {
+// NormalizeRuns removes empty runs and merges adjacent runs with identical styling.
+func NormalizeRuns(runs []Run) []Run {
 	if len(runs) == 0 {
 		return nil
 	}
-	result := make([]TextRun, 0, len(runs))
+	result := make([]Run, 0, len(runs))
 	for _, run := range runs {
 		if run.Text == "" {
 			continue
@@ -45,13 +45,13 @@ func NormalizeTextRuns(runs []TextRun) []TextRun {
 	return result
 }
 
-// NormalizeTextParagraphStyle ensures all fields are within expected bounds.
-func NormalizeTextParagraphStyle(style TextParagraphStyle) TextParagraphStyle {
+// NormalizeParagraphStyle ensures all fields are within expected bounds.
+func NormalizeParagraphStyle(style ParagraphStyle) ParagraphStyle {
 	normalizedBulletStyle := NormalizeBulletStyle(style.BulletStyle)
 	if normalizedBulletStyle == "" {
 		normalizedBulletStyle = BulletStyleBullet
 	}
-	return TextParagraphStyle{
+	return ParagraphStyle{
 		Align:          NormalizeTextAlign(style.Align),
 		SpaceBeforePt:  style.SpaceBeforePt,
 		SpaceAfterPt:   style.SpaceAfterPt,
@@ -64,8 +64,8 @@ func NormalizeTextParagraphStyle(style TextParagraphStyle) TextParagraphStyle {
 	}
 }
 
-// RunsToPlainText converts a slice of TextRuns to a single string.
-func RunsToPlainText(runs []TextRun) string {
+// RunsToPlainText converts a slice of Runs to a single string.
+func RunsToPlainText(runs []Run) string {
 	var sb strings.Builder
 	for _, run := range runs {
 		sb.WriteString(run.Text)

@@ -1,6 +1,10 @@
 package elements
 
 func (s SlideContent) ChartKindCount() int {
+	return s.directChartCount() + s.placeholderChartCount()
+}
+
+func (s SlideContent) directChartCount() int {
 	count := 0
 	if s.Chart != nil {
 		count++
@@ -59,7 +63,11 @@ func (s SlideContent) ChartKindCount() int {
 	if s.Combo != nil {
 		count++
 	}
+	return count
+}
 
+func (s SlideContent) placeholderChartCount() int {
+	count := 0
 	for _, override := range s.PlaceholderOverrides {
 		if override.Chart != nil {
 			count++

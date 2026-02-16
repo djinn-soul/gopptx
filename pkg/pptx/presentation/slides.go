@@ -12,12 +12,19 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
+const (
+	firstSlideRelID    = 2
+	layoutsPerMaster   = 6
+	rotationUnitDegree = 60000
+	cropScaleFactor    = 100000
+)
+
 func renderSlides(
 	pw *pptxxml.PackageWriter,
-	meta PresentationMetadata,
+	meta Metadata,
 	slides []elements.SlideContent,
-	mediaCatalog *media.MediaCatalog,
-	chartBySlide map[int][]chartPart,
+	mediaCatalog *media.Catalog,
+	chartBySlide map[int][]ChartPart,
 	notesTargets map[int]string,
 	masterCount int,
 ) error {
@@ -27,7 +34,7 @@ func renderSlides(
 			num:     num,
 			catalog: mediaCatalog,
 			targets: make([]string, 0),
-			ridNext: 2,
+			ridNext: firstSlideRelID,
 		}
 
 		parts, err := builder.build(i, slide, chartBySlide)
@@ -97,13 +104,13 @@ func layoutTargetForMaster(baseTarget string, masterNum int) string {
 	if err != nil || n < 1 {
 		return baseTarget
 	}
-	globalLayout := (masterNum-1)*6 + n
+	globalLayout := (masterNum-1)*layoutsPerMaster + n
 	return fmt.Sprintf("%s%d%s", prefix, globalLayout, suffix)
 }
 
 type slidePartBuilder struct {
 	num     int
-	catalog *media.MediaCatalog
+	catalog *media.Catalog
 	targets []string
 	ridNext int
 }
@@ -124,7 +131,7 @@ type slideParts struct {
 func (b *slidePartBuilder) build(
 	idx int,
 	slide elements.SlideContent,
-	chartBySlide map[int][]chartPart,
+	chartBySlide map[int][]ChartPart,
 ) (*slideParts, error) {
 	p := &slideParts{
 		title:        b.buildTitleSpec(slide),
@@ -184,7 +191,7 @@ func (b *slidePartBuilder) mapImages(images []shapes.Image) ([]pptxxml.ImageRef,
 			Y:            img.Y.Emu(),
 			CX:           img.CX.Emu(),
 			CY:           img.CY.Emu(),
-			Rotation:     int64(img.Rotation * 60000),
+			Rotation:     int64(img.Rotation * rotationUnitDegree),
 			FlipH:        img.FlipH,
 			FlipV:        img.FlipV,
 			Crop:         mapCrop(img.Crop),
@@ -227,7 +234,7 @@ func (b *slidePartBuilder) handleTransitionSound(slide *elements.SlideContent) {
 
 func (b *slidePartBuilder) mapPlaceholders(
 	specs *[]pptxxml.PlaceholderOverrideSpec,
-	chartRels *[]pptxxml.ChartRel,
+	_ *[]pptxxml.ChartRel,
 	overrides []shapes.PlaceholderContent,
 ) error {
 	imageRefs := make(map[int]*pptxxml.ImageRef)
@@ -269,7 +276,7 @@ func (b *slidePartBuilder) mapPlaceholders(
 	return nil
 }
 
-func (b *slidePartBuilder) mapCharts(p *slideParts, parts []chartPart, slide elements.SlideContent) error {
+func (b *slidePartBuilder) mapCharts(p *slideParts, parts []ChartPart, slide elements.SlideContent) error {
 	partIdx := 0
 	if slideChartKindDefined(slide) {
 		part := parts[partIdx]
@@ -342,9 +349,9 @@ func mapCrop(crop shapes.ImageCrop) *pptxxml.ImageCropRef {
 		return nil
 	}
 	return &pptxxml.ImageCropRef{
-		Left:   int64(crop.Left * 100000),
-		Right:  int64(crop.Right * 100000),
-		Top:    int64(crop.Top * 100000),
-		Bottom: int64(crop.Bottom * 100000),
+		Left:   int64(crop.Left * cropScaleFactor),
+		Right:  int64(crop.Right * cropScaleFactor),
+		Top:    int64(crop.Top * cropScaleFactor),
+		Bottom: int64(crop.Bottom * cropScaleFactor),
 	}
 }

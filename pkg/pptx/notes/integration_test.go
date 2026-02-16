@@ -26,6 +26,13 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		t.Fatalf("zip read error: %v", err)
 	}
 
+	checkRequiredParts(t, zr)
+	checkContentTypes(t, zr)
+	checkRelationships(t, zr)
+	checkXMLContent(t, zr)
+}
+
+func checkRequiredParts(t *testing.T, zr *zip.Reader) {
 	required := []string{
 		"ppt/notesSlides/notesSlide1.xml",
 		"ppt/notesSlides/_rels/notesSlide1.xml.rels",
@@ -41,7 +48,9 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 	if testutil.ZipHasFile(zr, "ppt/notesSlides/notesSlide2.xml") {
 		t.Fatalf("did not expect notes slide for slide without notes")
 	}
+}
 
+func checkContentTypes(t *testing.T, zr *zip.Reader) {
 	contentTypes := testutil.ReadZipFile(t, zr, "[Content_Types].xml")
 	for _, needle := range []string{
 		`/ppt/notesSlides/notesSlide1.xml`,
@@ -54,7 +63,9 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 			t.Fatalf("expected %q in [Content_Types].xml", needle)
 		}
 	}
+}
 
+func checkRelationships(t *testing.T, zr *zip.Reader) {
 	presRels := testutil.ReadZipFile(t, zr, "ppt/_rels/presentation.xml.rels")
 	if !strings.Contains(presRels, `relationships/notesMaster`) {
 		t.Fatalf("expected notes master relationship in presentation rels")
@@ -73,17 +84,6 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 		t.Fatalf("did not expect notes slide relationship on slide2")
 	}
 
-	notesXML := testutil.ReadZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
-	for _, needle := range []string{
-		`<p:notes`,
-		`<a:t>First line`,
-		`Second line</a:t>`,
-	} {
-		if !strings.Contains(notesXML, needle) {
-			t.Fatalf("expected %q in notes slide XML", needle)
-		}
-	}
-
 	notesRels := testutil.ReadZipFile(t, zr, "ppt/notesSlides/_rels/notesSlide1.xml.rels")
 	for _, needle := range []string{
 		`Target="../slides/slide1.xml"`,
@@ -97,6 +97,19 @@ func TestCreateWithSlidesEmbedsSpeakerNotesParts(t *testing.T) {
 	notesMasterRels := testutil.ReadZipFile(t, zr, "ppt/notesMasters/_rels/notesMaster1.xml.rels")
 	if !strings.Contains(notesMasterRels, `Target="../theme/theme2.xml"`) {
 		t.Fatalf("expected notes master to reference dedicated notes theme")
+	}
+}
+
+func checkXMLContent(t *testing.T, zr *zip.Reader) {
+	notesXML := testutil.ReadZipFile(t, zr, "ppt/notesSlides/notesSlide1.xml")
+	for _, needle := range []string{
+		`<p:notes`,
+		`<a:t>First line`,
+		`Second line</a:t>`,
+	} {
+		if !strings.Contains(notesXML, needle) {
+			t.Fatalf("expected %q in notes slide XML", needle)
+		}
 	}
 
 	appXML := testutil.ReadZipFile(t, zr, "docProps/app.xml")

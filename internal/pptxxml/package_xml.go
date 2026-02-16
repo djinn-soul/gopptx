@@ -5,30 +5,9 @@ import (
 	"strings"
 )
 
-var xmlEscapeReplacer = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	"\"", "&quot;",
-	"'", "&apos;",
-)
-
 // Escape replaces XML-sensitive characters with entity references.
 func Escape(value string) string {
 	return xmlEscapeReplacer.Replace(value)
-}
-
-var imageContentTypes = map[string]string{
-	"png":  "image/png",
-	"jpg":  "image/jpeg",
-	"jpeg": "image/jpeg",
-	"gif":  "image/gif",
-	"bmp":  "image/bmp",
-	"tif":  "image/tiff",
-	"tiff": "image/tiff",
-	"wav":  "audio/wav",
-	"mp3":  "audio/mpeg",
-	"m4a":  "audio/mp4",
 }
 
 // ContentTypes renders [Content_Types].xml.
@@ -50,10 +29,11 @@ func ContentTypes(
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
 <Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
+<Override PartName="/ppt/presentation.xml" ` +
+		`ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
 
 	for _, ext := range imageExtensions {
-		contentType, ok := imageContentTypes[ext]
+		contentType, ok := imageContentType(ext)
 		if !ok {
 			panic(fmt.Sprintf("unsupported image extension in content types: %s", ext))
 		}
@@ -92,11 +72,13 @@ func ContentTypes(
 	}
 	for i := 1; i <= masterCount; i++ {
 		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/slideMasters/slideMaster%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`, i))
+<Override PartName="/ppt/slideMasters/slideMaster%d.xml" `+
+			`ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`, i))
 	}
 	for i := 1; i <= masterCount; i++ {
 		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/theme/theme%d.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, i))
+<Override PartName="/ppt/theme/theme%d.xml" `+
+			`ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, i))
 	}
 	if includeNotesMaster {
 		if notesThemeIndex < 1 {
@@ -104,24 +86,71 @@ func ContentTypes(
 		}
 		if notesThemeIndex > masterCount {
 			b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/theme/theme%d.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, notesThemeIndex))
+<Override PartName="/ppt/theme/theme%d.xml" `+
+				`ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, notesThemeIndex))
 		}
 	}
 	b.WriteString(`
-<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
-<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+<Override PartName="/ppt/notesSlides/notesSlide1.xml" ` +
+		`ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>
+<Override PartName="/ppt/theme/theme1.xml" ` +
+		`ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
+<Override PartName="/docProps/core.xml" ` +
+		`ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+<Override PartName="/docProps/app.xml" ` +
+		`ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
 </Types>`)
 
 	return b.String()
+}
+
+// TODO: [HIGH] Performance regression due to repeated [strings.Replacer] allocation.
+// Ensure this remains a package-level variable.
+//
+//nolint:gochecknoglobals // Reused for performance
+var xmlEscapeReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
+// TODO: Verify performance improvement of replacer reuse.
+
+func imageContentType(ext string) (string, bool) {
+	switch ext {
+	case "png":
+		return "image/png", true
+	case "jpg", "jpeg":
+		return "image/jpeg", true
+	case "gif":
+		return "image/gif", true
+	case "bmp":
+		return "image/bmp", true
+	case "tif", "tiff":
+		return "image/tiff", true
+	case "wav":
+		return "audio/wav", true
+	case "mp3":
+		return "audio/mpeg", true
+	case "m4a":
+		return "audio/mp4", true
+	default:
+		return "", false
+	}
 }
 
 // RootRelationships renders _rels/.rels.
 func RootRelationships() string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
-<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" ` +
+		`Target="ppt/presentation.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" ` +
+		`Target="docProps/core.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" ` +
+		`Target="docProps/app.xml"/>
 </Relationships>`
 }
 
@@ -144,28 +173,33 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`, masterCount+1))
 
-	// Slide relationships: rId(masterCount+2)..rId(masterCount+slideCount+1)
+	// Slide relationships: rId(masterCount+1)..rId(masterCount+slideCount+1)
 	for i := 1; i <= slideCount; i++ {
 		rid := masterCount + 1 + i
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide%d.xml"/>`, rid, i))
 	}
 	if includeNotesMaster {
+		//nolint:mnd // OOXML relationship ID offset
 		rid := masterCount + slideCount + 2
 		b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`, rid))
 	}
 
+	//nolint:mnd // OOXML relationship ID offset
 	baseRid := masterCount + slideCount + 2
 	if includeNotesMaster {
 		baseRid++
 	}
 	for i := 1; i <= customXMLCount; i++ {
+		//nolint:mnd // Custom XML ID pair spacing
 		rid := baseRid + (i-1)*2
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" Target="../customXml/item%d.xml"/>`, rid, i))
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" `+
+			`Target="../customXml/item%d.xml"/>`, rid, i))
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="../customXml/itemProps%d.xml"/>`, rid+1, i))
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" `+
+			`Target="../customXml/itemProps%d.xml"/>`, rid+1, i))
 	}
 
 	b.WriteString(`
@@ -181,10 +215,13 @@ func Presentation(title string, slideCount int, includeNotesMaster bool, width, 
 	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">
+<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1">
 <p:sldMasterIdLst>`)
 	for i := range masterCount {
 		// Keep IDs globally unique across masters + layout IDs (block size: 1 master + 6 layouts).
+		//nolint:mnd // OOXML master ID base
 		masterID := int64(2147483648) + int64(i*7)
 		rid := i + 1
 		b.WriteString(fmt.Sprintf(`
@@ -194,6 +231,7 @@ func Presentation(title string, slideCount int, includeNotesMaster bool, width, 
 </p:sldMasterIdLst>`)
 
 	if includeNotesMaster {
+		//nolint:mnd // OOXML notes master relationship ID offset
 		rid := masterCount + slideCount + 2
 		b.WriteString(fmt.Sprintf(`
 <p:notesMasterIdLst>
@@ -205,6 +243,7 @@ func Presentation(title string, slideCount int, includeNotesMaster bool, width, 
 <p:sldIdLst>`)
 
 	for i := 1; i <= slideCount; i++ {
+		//nolint:mnd // OOXML slide ID base and rId offset
 		slideID := 256 + i
 		rid := masterCount + 1 + i
 		b.WriteString(fmt.Sprintf(`

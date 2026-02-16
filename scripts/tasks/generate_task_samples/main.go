@@ -52,9 +52,9 @@ func main() {
 	}
 
 	for _, g := range generators {
-		data, err := g.fn()
-		if err != nil {
-			log.Printf("Error generating %s: %v", g.name, err)
+		data, genErr := g.fn()
+		if genErr != nil {
+			log.Printf("Error generating %s: %v", g.name, genErr)
 			continue
 		}
 		path := filepath.Join(outDir, g.name+".pptx")
@@ -93,20 +93,20 @@ func generateSlideLayouts() ([]byte, error) {
 
 func generateTextFormatting() ([]byte, error) {
 	slide := pptx.NewSlide("Text Formatting").
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Bold ").WithBold(true),
-			pptx.NewTextRun("Italic ").WithItalic(true),
-			pptx.NewTextRun("Underline ").WithUnderline(true),
-			pptx.NewTextRun("Strikethrough").WithStrikethrough(true),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Bold ").WithBold(true),
+			pptx.NewRun("Italic ").WithItalic(true),
+			pptx.NewRun("Underline ").WithUnderline(true),
+			pptx.NewRun("Strikethrough").WithStrikethrough(true),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Red ").WithColor("FF0000"),
-			pptx.NewTextRun("Green ").WithColor("00FF00"),
-			pptx.NewTextRun("Blue").WithColor("0000FF"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Red ").WithColor("FF0000"),
+			pptx.NewRun("Green ").WithColor("00FF00"),
+			pptx.NewRun("Blue").WithColor("0000FF"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Large ").WithSizePt(24),
-			pptx.NewTextRun("Small").WithSizePt(10),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Large ").WithSizePt(24),
+			pptx.NewRun("Small").WithSizePt(10),
 		})
 	return pptx.CreateWithSlides("Task 04: Text Formatting", []pptx.SlideContent{slide})
 }
@@ -118,30 +118,30 @@ func generateBulletStyles() ([]byte, error) {
 		AddBullet("Third bullet point")
 
 	slide2 := pptx.NewSlide("Numbered Bullets").
-		AddBulletWithStyle("First item", pptx.NewTextParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
-		AddBulletWithStyle("Second item", pptx.NewTextParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
-		AddBulletWithStyle("Third item", pptx.NewTextParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber))
+		AddBulletWithStyle("First item", pptx.NewParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
+		AddBulletWithStyle("Second item", pptx.NewParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
+		AddBulletWithStyle("Third item", pptx.NewParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber))
 
 	return pptx.CreateWithSlides("Task 05: Bullet Styles", []pptx.SlideContent{slide, slide2})
 }
 
 func generateTextEnhancements() ([]byte, error) {
 	slide := pptx.NewSlide("Text Enhancements").
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("H"),
-			pptx.NewTextRun("2").WithSubscript(true),
-			pptx.NewTextRun("O - Subscript"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("H"),
+			pptx.NewRun("2").WithSubscript(true),
+			pptx.NewRun("O - Subscript"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("E=mc"),
-			pptx.NewTextRun("2").WithSuperscript(true),
-			pptx.NewTextRun(" - Superscript"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("E=mc"),
+			pptx.NewRun("2").WithSuperscript(true),
+			pptx.NewRun(" - Superscript"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Highlighted text").WithHighlight("FFFF00"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Highlighted text").WithHighlight("FFFF00"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Code style").WithCode(true),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Code style").WithCode(true),
 		})
 	return pptx.CreateWithSlides("Task 06: Text Enhancements", []pptx.SlideContent{slide})
 }
@@ -514,9 +514,9 @@ func generateMerge() ([]byte, error) {
 	// Create first presentation
 	s1 := pptx.NewSlide("Presentation One").
 		AddBullet("Slide from the first presentation")
-	data1, err := pptx.CreateWithSlides("Merge Target", []pptx.SlideContent{s1})
-	if err != nil {
-		return nil, err
+	data1, buildErr := pptx.CreateWithSlides("Merge Target", []pptx.SlideContent{s1})
+	if buildErr != nil {
+		return nil, buildErr
 	}
 
 	// Create second presentation
@@ -598,9 +598,9 @@ func generateHyperlinks() ([]byte, error) {
 			WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com")).WithTooltip("Open website"))).
 		AddBullet("Shape with URL hyperlink").
 		AddBullet("Tooltip on hover").
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Text hyperlink: "),
-			pptx.NewTextRun("Click here to visit example.com").
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Text hyperlink: "),
+			pptx.NewRun("Click here to visit example.com").
 				WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com"))).
 				WithColor("0000FF").
 				WithUnderline(true),

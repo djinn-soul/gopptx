@@ -221,6 +221,12 @@ func (h Hyperlink) Validate() error {
 		if h.Action.EmailAddress == "" {
 			return errors.New("hyperlink email address cannot be empty")
 		}
+	case HyperlinkActionSlide, HyperlinkActionFirstSlide, HyperlinkActionLastSlide:
+		// Internal slide-jump actions require no additional payload validation.
+	case HyperlinkActionNextSlide, HyperlinkActionPreviousSlide, HyperlinkActionEndShow:
+		// Navigation actions are fully described by the action type itself.
+	default:
+		// Unknown action type is handled by render-time fallback behavior.
 	}
 	return nil
 }

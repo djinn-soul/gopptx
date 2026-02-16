@@ -78,7 +78,8 @@ func TestCommandNotesOps(t *testing.T) {
 	defer func() { _ = e.Close() }()
 
 	// 1. Set Notes
-	setReq := `{"api_version":1,"request_id":"n1","op":"set_notes","payload":{"slide_index":0,"text":"Speaker notes here"}}`
+	setReq := `{"api_version":1,"request_id":"n1","op":"set_notes",` +
+		`"payload":{"slide_index":0,"text":"Speaker notes here"}}`
 	resp := ExecuteCommand(e, setReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("set_notes failed: %s", resp)

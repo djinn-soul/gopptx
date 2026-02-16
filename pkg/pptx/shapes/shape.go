@@ -47,6 +47,8 @@ type TextFrame struct {
 }
 
 // NewTextFrame creates a text frame with default margins (0.05 inches).
+//
+//nolint:mnd // Default margins are from OOXML spec
 func NewTextFrame() TextFrame {
 	return TextFrame{
 		MarginLeft:   styling.Inches(0.05),
@@ -210,6 +212,7 @@ func (f ShapeGradientFill) Validate() error {
 	if !IsShapeGradientType(f.Type) {
 		return fmt.Errorf("invalid gradient type %q", f.Type)
 	}
+	//nolint:mnd // Minimum gradient stops
 	if len(f.Stops) < 2 {
 		return errors.New("gradient must have at least 2 stops")
 	}
@@ -386,49 +389,65 @@ func (s Shape) WithAutoFit(autoFit TextFrameAutoFit) Shape {
 
 // Validate checks for validity of shape parameters.
 func (s Shape) Validate(slideIndex, shapeIndex int) error {
+	if err := s.validateShapeBounds(slideIndex, shapeIndex); err != nil {
+		return err
+	}
+	if !IsShapeType(s.Type) {
+		return fmt.Errorf("shape %d type %q is invalid on slide %d", shapeIndex, s.Type, slideIndex)
+	}
+
+	if err := s.validateFills(slideIndex, shapeIndex); err != nil {
+		return err
+	}
+	if err := s.validateLinesAndRotation(slideIndex, shapeIndex); err != nil {
+		return err
+	}
+	return s.validateActions(slideIndex, shapeIndex)
+}
+
+func (s Shape) validateShapeBounds(slideIndex, shapeIndex int) error {
 	if s.X < 0 || s.Y < 0 {
 		return fmt.Errorf("shape %d on slide %d position cannot be negative", shapeIndex, slideIndex)
 	}
 	if s.CX <= 0 || s.CY <= 0 {
 		return fmt.Errorf("shape %d on slide %d size must be > 0", shapeIndex, slideIndex)
 	}
+	return nil
+}
 
-	if !IsShapeType(s.Type) {
-		return fmt.Errorf("shape %d type %q is invalid on slide %d", shapeIndex, s.Type, slideIndex)
+func (s Shape) validateFills(slideIndex, shapeIndex int) error {
+	if s.Fill != nil && s.GradientFill != nil {
+		return fmt.Errorf("shape %d (type %q) on slide %d cannot set both solid and gradient fill",
+			shapeIndex, s.Type, slideIndex)
 	}
-
 	if s.Fill != nil {
-		if s.GradientFill != nil {
-			return fmt.Errorf(
-				"shape %d (type %q) on slide %d cannot set both solid and gradient fill",
-				shapeIndex,
-				s.Type,
-				slideIndex,
-			)
-		}
 		if err := s.Fill.Validate(); err != nil {
 			return fmt.Errorf("shape %d on slide %d has invalid fill: %w", shapeIndex, slideIndex, err)
 		}
 	}
-
-	if s.Line != nil {
-		if err := s.Line.Validate(); err != nil {
-			return fmt.Errorf("shape %d on slide %d has invalid line: %w", shapeIndex, slideIndex, err)
-		}
-	}
-
 	if s.GradientFill != nil {
 		if err := s.GradientFill.Validate(); err != nil {
 			return fmt.Errorf("shape %d on slide %d has invalid gradient fill: %w", shapeIndex, slideIndex, err)
 		}
 	}
+	return nil
+}
 
+func (s Shape) validateLinesAndRotation(slideIndex, shapeIndex int) error {
+	if s.Line != nil {
+		if err := s.Line.Validate(); err != nil {
+			return fmt.Errorf("shape %d on slide %d has invalid line: %w", shapeIndex, slideIndex, err)
+		}
+	}
 	if s.RotationDeg != nil {
 		if *s.RotationDeg < -360 || *s.RotationDeg > 360 {
 			return fmt.Errorf("shape %d on slide %d rotation must be in [-360,360]", shapeIndex, slideIndex)
 		}
 	}
+	return nil
+}
 
+func (s Shape) validateActions(slideIndex, shapeIndex int) error {
 	if s.ClickAction != nil {
 		if err := s.ClickAction.Validate(); err != nil {
 			return fmt.Errorf("shape %d on slide %d has invalid click action: %w", shapeIndex, slideIndex, err)

@@ -78,7 +78,7 @@ func TestSlidesFromMarkdown_InlineRichTextRuns(t *testing.T) {
 	}
 }
 
-func hasRun(runs []elements.TextRun, text string, bold bool, italic bool, code bool) bool {
+func hasRun(runs []elements.Run, text string, bold bool, italic bool, code bool) bool {
 	for _, run := range runs {
 		if run.Text == text && run.Bold == bold && run.Italic == italic && run.Code == code {
 			return true

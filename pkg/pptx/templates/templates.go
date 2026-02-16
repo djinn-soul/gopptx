@@ -58,7 +58,7 @@ type ProposalTemplate struct {
 	Branding BrandingSpec // Optional branding/theme
 }
 
-// ApplyBranding applies branding settings to a slide.
+// Apply applies branding settings to a slide.
 func (b BrandingSpec) Apply(s elements.SlideContent) elements.SlideContent {
 	if b.Footer != "" {
 		s.FooterText = b.Footer
@@ -131,6 +131,7 @@ func (t TrainingTemplate) Build() ([]elements.SlideContent, error) {
 		return nil, errors.New("training template title cannot be empty")
 	}
 
+	//nolint:mnd // Initial capacity for standard training slides (Title, Agenda, Summary)
 	funcs := make([]func() elements.SlideContent, 0, 3+len(t.Concepts))
 	funcs = append(funcs, func() elements.SlideContent {
 		return elements.NewSlide(t.Title).WithCenteredTitleLayout()

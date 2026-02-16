@@ -41,6 +41,11 @@ const (
 	borderSideRight  = "right"
 	borderSideTop    = "top"
 	borderSideBottom = "bottom"
+
+	defaultTableX  = 457200
+	defaultTableY  = 1600200
+	defaultTableCX = 8230200
+	defaultTableCY = 3200400
 )
 
 // Table is a simple slide table with fixed columns and text cells.
@@ -61,10 +66,10 @@ func NewTable(columnWidths []styling.Length) Table {
 	widths := make([]styling.Length, len(columnWidths))
 	copy(widths, columnWidths)
 	return Table{
-		X:            styling.Emu(457200),
-		Y:            styling.Emu(1600200),
-		CX:           styling.Emu(8230200),
-		CY:           styling.Emu(3200400),
+		X:            styling.Emu(defaultTableX),
+		Y:            styling.Emu(defaultTableY),
+		CX:           styling.Emu(defaultTableCX),
+		CY:           styling.Emu(defaultTableCY),
 		ColumnWidths: widths,
 		RowHeights:   nil,
 		Rows:         make([][]string, 0),

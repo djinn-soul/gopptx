@@ -80,7 +80,7 @@ func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 	}
 	coreData, _ := ps.Get(common.CorePropsPath)
 	coreProps, _ := parseCoreProperties(coreData)
-	editor.metadata = common.PresentationMetadata{
+	editor.metadata = common.Metadata{
 		Title:          coreProps.Title,
 		SlideCount:     len(slideRefs),
 		SlideSize:      slideSize,

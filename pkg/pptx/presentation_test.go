@@ -95,7 +95,7 @@ func TestCreateWithSlidesValidation(t *testing.T) {
 func TestCreateWithSlidesEmbedsImage(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := filepath.Join(tmpDir, "sample.png")
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("write image: %v", err)
 	}
 
@@ -230,8 +230,8 @@ func TestCreateWithSlidesRejectsStyledTableInvalidColor(t *testing.T) {
 }
 
 func TestCreateWithMetadataEmitsMultipleMasters(t *testing.T) {
-	meta := pptx.PresentationMetadata{
-		PresentationMetadata: pptx.PresentationMetadataFields{Title: "Multi Master"},
+	meta := pptx.Metadata{
+		Metadata: pptx.MetadataFields{Title: "Multi Master"},
 		Masters: []*pptx.SlideMaster{
 			pptx.NewMaster().WithFooter("Master One"),
 			pptx.NewMaster().WithFooter("Master Two"),

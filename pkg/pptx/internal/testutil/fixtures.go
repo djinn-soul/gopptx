@@ -22,7 +22,7 @@ func RootTestdataDir() string {
 	return base
 }
 
-// FixtureZipReader reads a fixture file from testdata/ppt_rs and returns a zip.Reader.
+// FixtureZipReader reads a fixture file from testdata/ppt_rs and returns a [zip.Reader].
 func FixtureZipReader(t *testing.T, fixtureName string) *zip.Reader {
 	t.Helper()
 	fixturePath := filepath.Join(RootTestdataDir(), "ppt_rs", fixtureName)
@@ -37,7 +37,7 @@ func FixtureZipReader(t *testing.T, fixtureName string) *zip.Reader {
 	return zr
 }
 
-// ReadAllSlidesXML reads and concatenates all slide XMLs from a zip.Reader.
+// ReadAllSlidesXML reads and concatenates all slide XMLs from a [zip.Reader].
 func ReadAllSlidesXML(t *testing.T, zr *zip.Reader) string {
 	t.Helper()
 	names := make([]string, 0)

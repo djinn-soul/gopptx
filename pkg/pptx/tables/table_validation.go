@@ -21,12 +21,39 @@ func IsHexColor(color string) bool {
 }
 
 func validateTable(table Table, slideIndex int) error {
+	if err := validateTableDimensions(table, slideIndex); err != nil {
+		return err
+	}
+	if err := validateTableColumns(table, slideIndex); err != nil {
+		return err
+	}
+
+	rows := tableRowsForRender(table)
+	if err := validateTableRowCounts(table, rows, slideIndex); err != nil {
+		return err
+	}
+
+	if err := validateTableCells(table, rows, slideIndex); err != nil {
+		return err
+	}
+
+	if _, err := TableRowsWithMerges(table, slideIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateTableDimensions(table Table, slideIndex int) error {
 	if table.X < 0 || table.Y < 0 {
 		return fmt.Errorf("slide %d table position cannot be negative", slideIndex)
 	}
 	if table.CX <= 0 || table.CY <= 0 {
 		return fmt.Errorf("slide %d table size must be > 0", slideIndex)
 	}
+	return nil
+}
+
+func validateTableColumns(table Table, slideIndex int) error {
 	if len(table.ColumnWidths) == 0 {
 		return fmt.Errorf("slide %d table must define at least one column", slideIndex)
 	}
@@ -35,19 +62,17 @@ func validateTable(table Table, slideIndex int) error {
 			return fmt.Errorf("slide %d table column %d width must be > 0", slideIndex, columnIndex+1)
 		}
 	}
+	return nil
+}
 
-	rows := tableRowsForRender(table)
+func validateTableRowCounts(table Table, rows [][]TableCell, slideIndex int) error {
 	if len(rows) == 0 {
 		return fmt.Errorf("slide %d table must define at least one row", slideIndex)
 	}
 	if len(table.RowHeights) > 0 {
 		if len(table.RowHeights) != len(rows) {
-			return fmt.Errorf(
-				"slide %d table row heights count %d must match row count %d",
-				slideIndex,
-				len(table.RowHeights),
-				len(rows),
-			)
+			return fmt.Errorf("slide %d table row heights count %d must match row count %d",
+				slideIndex, len(table.RowHeights), len(rows))
 		}
 		for rowIndex, height := range table.RowHeights {
 			if height <= 0 {
@@ -55,15 +80,13 @@ func validateTable(table Table, slideIndex int) error {
 			}
 		}
 	}
+	return nil
+}
+
+func validateTableCells(table Table, rows [][]TableCell, slideIndex int) error {
 	for rowIndex, row := range rows {
 		if len(row) != len(table.ColumnWidths) {
-			return fmt.Errorf(
-				"slide %d table row %d has %d cells; expected %d",
-				slideIndex,
-				rowIndex+1,
-				len(row),
-				len(table.ColumnWidths),
-			)
+			return fmt.Errorf("slide %d table row %d has %d cells; expected %d", slideIndex, rowIndex+1, len(row), len(table.ColumnWidths))
 		}
 		for cellIndex, cell := range row {
 			if err := validateTableCell(cell, slideIndex, rowIndex+1, cellIndex+1); err != nil {
@@ -71,43 +94,46 @@ func validateTable(table Table, slideIndex int) error {
 			}
 		}
 	}
-	if _, err := TableRowsWithMerges(table, slideIndex); err != nil {
-		return err
-	}
 	return nil
 }
 
 func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex int) error {
+	if err := validateTableCellSpans(cell, slideIndex, rowIndex, cellIndex); err != nil {
+		return err
+	}
+	if err := validateTableCellBasicProps(cell, slideIndex, rowIndex, cellIndex); err != nil {
+		return err
+	}
+	if err := validateTableCellMargins(cell, slideIndex, rowIndex, cellIndex); err != nil {
+		return err
+	}
+	return validateTableCellBorders(cell, slideIndex, rowIndex, cellIndex)
+}
+
+func validateTableCellSpans(cell TableCell, slideIndex, rowIndex, cellIndex int) error {
 	if cell.RowSpan <= 0 {
 		return fmt.Errorf("slide %d table row %d cell %d row span must be >= 1", slideIndex, rowIndex, cellIndex)
 	}
 	if cell.ColSpan <= 0 {
 		return fmt.Errorf("slide %d table row %d cell %d col span must be >= 1", slideIndex, rowIndex, cellIndex)
 	}
+	return nil
+}
+
+func validateTableCellBasicProps(cell TableCell, slideIndex, rowIndex, cellIndex int) error {
 	if color := strings.TrimSpace(cell.BackgroundColor); color != "" && !IsHexColor(color) {
-		return fmt.Errorf(
-			"slide %d table row %d cell %d background color must be 6-digit RGB hex",
-			slideIndex,
-			rowIndex,
-			cellIndex,
-		)
+		return fmt.Errorf("slide %d table row %d cell %d background color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex)
 	}
 	if align := strings.TrimSpace(cell.Align); align != "" && !isTableAlign(align) {
-		return fmt.Errorf(
-			"slide %d table row %d cell %d align must be one of l|ctr|r|just",
-			slideIndex,
-			rowIndex,
-			cellIndex,
-		)
+		return fmt.Errorf("slide %d table row %d cell %d align must be one of l|ctr|r|just", slideIndex, rowIndex, cellIndex)
 	}
 	if vAlign := strings.TrimSpace(cell.VAlign); vAlign != "" && !isTableVAlign(vAlign) {
-		return fmt.Errorf(
-			"slide %d table row %d cell %d valign must be one of t|ctr|b",
-			slideIndex,
-			rowIndex,
-			cellIndex,
-		)
+		return fmt.Errorf("slide %d table row %d cell %d valign must be one of t|ctr|b", slideIndex, rowIndex, cellIndex)
 	}
+	return nil
+}
+
+func validateTableCellMargins(cell TableCell, slideIndex, rowIndex, cellIndex int) error {
 	if err := validateTableCellMargin(cell.MarginLeftPt, slideIndex, rowIndex, cellIndex, "left"); err != nil {
 		return err
 	}
@@ -117,42 +143,21 @@ func validateTableCell(cell TableCell, slideIndex int, rowIndex int, cellIndex i
 	if err := validateTableCellMargin(cell.MarginTopPt, slideIndex, rowIndex, cellIndex, "top"); err != nil {
 		return err
 	}
-	if err := validateTableCellMargin(cell.MarginBottomPt, slideIndex, rowIndex, cellIndex, "bottom"); err != nil {
-		return err
-	}
+	return validateTableCellMargin(cell.MarginBottomPt, slideIndex, rowIndex, cellIndex, "bottom")
+}
 
+func validateTableCellBorders(cell TableCell, slideIndex, rowIndex, cellIndex int) error {
 	if cell.hasExplicitBorderSides() {
-		if err := validateTableCellBorder(
-			cell.BorderLeft,
-			slideIndex,
-			rowIndex,
-			cellIndex,
-			borderSideLeft,
-		); err != nil {
+		if err := validateTableCellBorder(cell.BorderLeft, slideIndex, rowIndex, cellIndex, borderSideLeft); err != nil {
 			return err
 		}
-		if err := validateTableCellBorder(
-			cell.BorderRight,
-			slideIndex,
-			rowIndex,
-			cellIndex,
-			borderSideRight,
-		); err != nil {
+		if err := validateTableCellBorder(cell.BorderRight, slideIndex, rowIndex, cellIndex, borderSideRight); err != nil {
 			return err
 		}
 		if err := validateTableCellBorder(cell.BorderTop, slideIndex, rowIndex, cellIndex, borderSideTop); err != nil {
 			return err
 		}
-		if err := validateTableCellBorder(
-			cell.BorderBottom,
-			slideIndex,
-			rowIndex,
-			cellIndex,
-			borderSideBottom,
-		); err != nil {
-			return err
-		}
-		return nil
+		return validateTableCellBorder(cell.BorderBottom, slideIndex, rowIndex, cellIndex, borderSideBottom)
 	}
 
 	return validateTableCellBorder(cell.uniformLegacyBorder(), slideIndex, rowIndex, cellIndex, "")

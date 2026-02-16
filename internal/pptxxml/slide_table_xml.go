@@ -271,8 +271,8 @@ func tableCellBorderXML(side string, border TableCellBorderSpec) string {
 
 func tableCellBorderDash(dash string) string {
 	switch strings.ToLower(strings.TrimSpace(dash)) {
-	case "", "solid":
-		return "solid"
+	case "", strokeDashSolid:
+		return strokeDashSolid
 	case "dash":
 		return "dash"
 	case "dot":

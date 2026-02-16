@@ -46,7 +46,7 @@ const (
 	ShapeTypeLineInv = "lineInv"
 )
 
-func init() {
+func initMathShapes() {
 	for _, t := range []string{
 		ShapeTypeMathPlus, ShapeTypeMathMinus,
 		ShapeTypeMathMultiply, ShapeTypeMathDivide,

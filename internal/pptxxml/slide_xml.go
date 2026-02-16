@@ -15,6 +15,10 @@ const (
 	slideLayoutTwoColumn       = "twoColumn"
 )
 
+const (
+	startImageRID = 2
+)
+
 // PlaceholderOverrideSpec describes content override for a placeholder.
 type PlaceholderOverrideSpec struct {
 	Index int
@@ -26,7 +30,10 @@ type PlaceholderOverrideSpec struct {
 }
 
 const slideHeaderStart = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+	`xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" ` +
+	`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+	`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>`
 
 const slideDefaultBackground = `
@@ -200,12 +207,39 @@ func SlideWithLayout(
 	showDateTime bool,
 	width, height int64,
 ) string {
+	// TODO: [MEDIUM] Verify documentation comment for duplication.
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
+
 	b.WriteString(slideHeaderStart)
 	b.WriteString(backgroundXML(background))
 	b.WriteString(slideHeaderEndBodyXML(width, height))
 
+	nextID := slideRenderBaseElements(
+		&b, layoutMode, title, table, bullets, bulletStyles, bulletRuns, contentStyle, width, height,
+	)
+
+	if chart != nil {
+		b.WriteString(chartFrameShape(chart, nextID))
+		nextID++
+	}
+
+	nextID = slideRenderImages(&b, images, nextID)
+	shapeIDs, nextID := slideRenderShapes(&b, shapes, nextID)
+	nextID = slideRenderConnectors(&b, connectors, shapeIDs, nextID)
+
+	b.WriteString(slideContentFooter)
+	b.WriteString(slideFooterClrMap)
+
+	nextID = slideRenderPlaceholders(&b, placeholders, nextID)
+	slideRenderFeatures(&b, transitionXML, animationsXML, showSlideNumber, footerText, showDateTime, width, height, nextID)
+
+	b.WriteString(slideFooterEnd)
+	return b.String()
+}
+
+func slideRenderBaseElements(b *strings.Builder, layoutMode string, title TitleSpec, table *TableSpec, bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, contentStyle ContentStyleSpec, width, height int64) int {
+	// TODO: Verify parameter usage to ensure no data loss. Reviewer suggested removing width/height but they are used.
 	nextID := 2
 	if layoutMode != slideLayoutBlank {
 		if layoutMode == slideLayoutCenteredTitle {
@@ -220,59 +254,65 @@ func SlideWithLayout(
 		b.WriteString(tableShape(table, nextID))
 		nextID++
 	} else if len(bullets) > 0 {
-		switch layoutMode {
-		case slideLayoutTitleAndContent:
-			b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
+		nextID = slideRenderBullets(b, layoutMode, bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height)
+	}
+	return nextID
+}
+
+func slideRenderBullets(b *strings.Builder, layoutMode string, bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, contentStyle ContentStyleSpec, nextID int, width, height int64) int {
+	switch layoutMode {
+	case slideLayoutTitleAndContent:
+		b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
+		nextID++
+	case slideLayoutTitleBigContent:
+		b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
+		nextID++
+	case slideLayoutTwoColumn:
+		leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)
+		leftStyles, rightStyles := splitBulletStylesForTwoColumns(bulletStyles, len(leftBullets))
+		leftRuns, rightRuns := splitBulletRunsForTwoColumns(bulletRuns, len(leftBullets))
+		b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID, width, height))
+		nextID++
+		if len(rightBullets) > 0 {
+			b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height))
 			nextID++
-		case slideLayoutTitleBigContent:
-			b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
-			nextID++
-		case slideLayoutTwoColumn:
-			leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)
-			leftStyles, rightStyles := splitBulletStylesForTwoColumns(bulletStyles, len(leftBullets))
-			leftRuns, rightRuns := splitBulletRunsForTwoColumns(bulletRuns, len(leftBullets))
-			b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID, width, height))
-			nextID++
-			if len(rightBullets) > 0 {
-				b.WriteString(
-					rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height),
-				)
-				nextID++
-			}
 		}
 	}
+	return nextID
+}
 
-	if chart != nil {
-		b.WriteString(chartFrameShape(chart, nextID))
-		nextID++
-	}
-
+func slideRenderImages(b *strings.Builder, images []ImageRef, nextID int) int {
 	for i, image := range images {
 		b.WriteString(imageShape(image, nextID+i))
 	}
-	nextID += len(images)
+	return nextID + len(images)
+}
 
+func slideRenderShapes(b *strings.Builder, shapes []ShapeSpec, nextID int) ([]int, int) {
 	shapeIDs, shapeXMLParts := renderCustomShapeXMLConcurrently(shapes, nextID)
 	for _, part := range shapeXMLParts {
 		b.WriteString(part)
 	}
-	nextID += len(shapes)
+	return shapeIDs, nextID + len(shapes)
+}
 
+func slideRenderConnectors(b *strings.Builder, connectors []ConnectorSpec, shapeIDs []int, nextID int) int {
 	for i, connector := range connectors {
 		startShapeID := shapeAnchorID(shapeIDs, connector.StartShapeIndex)
 		endShapeID := shapeAnchorID(shapeIDs, connector.EndShapeIndex)
 		b.WriteString(connectorXML(connector, nextID+i, startShapeID, endShapeID))
 	}
-	nextID += len(connectors)
+	return nextID + len(connectors)
+}
 
-	b.WriteString(slideContentFooter)
-	b.WriteString(slideFooterClrMap)
-
-	// Placeholders
+func slideRenderPlaceholders(b *strings.Builder, placeholders []PlaceholderOverrideSpec, nextID int) int {
 	for i, ph := range placeholders {
 		b.WriteString(placeholderShape(ph, nextID+i))
 	}
+	return nextID + len(placeholders)
+}
 
+func slideRenderFeatures(b *strings.Builder, transitionXML, animationsXML string, showSlideNumber bool, footerText string, showDateTime bool, width, height int64, nextID int) {
 	if tx := strings.TrimSpace(transitionXML); tx != "" {
 		b.WriteString("\n")
 		b.WriteString(tx)
@@ -281,26 +321,20 @@ func SlideWithLayout(
 		b.WriteString("\n")
 		b.WriteString(ax)
 	}
-
 	if showSlideNumber {
 		b.WriteString(slideNumberShape(width, height, nextID))
 		nextID++
 	}
-
 	if footerText != "" {
 		b.WriteString(footerShape(footerText, width, height, nextID))
 		nextID++
 	}
-
 	if showDateTime {
 		b.WriteString(dateTimeShape(width, height, nextID))
 	}
-
-	b.WriteString(slideFooterEnd)
-	return b.String()
 }
 
-// SlideRelationships renders ppt/slides/_rels/slideN.xml.rels.
+// ChartRel describes one chart relationship entry for slide relationships XML.
 type ChartRel struct {
 	RID    string
 	Target string
@@ -354,19 +388,22 @@ func SlideRelationshipsWithMultiCharts(
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="` + Escape(layoutTarget) + `"/>`)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" ` +
+		`Target="` + Escape(layoutTarget) + `"/>`)
 	maxRID := 1
 	for i, target := range imageTargets {
-		rid := i + 2
+		rid := i + startImageRID
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`, rid, Escape(target)))
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" `+
+			`Target="%s"/>`, rid, Escape(target)))
 		if rid > maxRID {
 			maxRID = rid
 		}
 	}
 	if chartRel != nil {
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="%s"/>`,
+<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" `+
+			`Target="%s"/>`,
 			Escape(chartRel.RID),
 			Escape(chartRel.Target),
 		))
@@ -392,7 +429,8 @@ func SlideRelationshipsWithMultiCharts(
 	}
 	if strings.TrimSpace(notesTarget) != "" {
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="%s"/>`,
+<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" `+
+			`Target="%s"/>`,
 			maxRID+1,
 			Escape(notesTarget),
 		))

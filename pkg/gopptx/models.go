@@ -12,6 +12,10 @@ import (
 
 const (
 	NSP = "http://schemas.openxmlformats.org/presentationml/2006/main"
+
+	// Default slide sizes in EMUs (10x7.5 inches for 4:3).
+	defaultWidth  = 9144000
+	defaultHeight = 6858000
 )
 
 // Presentation represents the main presentation XML component.
@@ -29,14 +33,20 @@ func (p *Presentation) AddSlide() *Slide {
 
 // Save writes the presentation to a .pptx file.
 func (p *Presentation) Save(path string) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
+	f, createErr := os.Create(path)
+	if createErr != nil {
+		return createErr
 	}
 	defer f.Close()
 
 	w := opc.NewWriter(f)
-	defer w.Close()
+	defer func() {
+		if err := w.Close(); err != nil {
+			// TODO: Verify error handling logic ensures no data corruption on disk full.
+			// Currently we log nothing to avoid external dependencies in this model.
+			_ = err
+		}
+	}()
 
 	slideCount := len(p.Slides)
 
@@ -56,7 +66,10 @@ func (p *Presentation) Save(path string) error {
 	// but here we use the struct for now as it's the intended models.go design.
 	// However, the struct must match the expected RID and ID from PresentationRelationships.
 	// For simplicity in this fix, we'll use pptxxml.Presentation to ensure validity.
-	presXML := pptxxml.Presentation("Presentation", slideCount, false, 9144000, 6858000, 1)
+	// TODO: This produced .pptx is currently invalid as it lacks mandatory OOXML parts
+	// (masters, layouts, themes). We must integrate with internal/pptxxml/package_writer.go
+	// or similar to generate a complete, valid OPC package.
+	presXML := pptxxml.Presentation("Presentation", slideCount, false, defaultWidth, defaultHeight, 1)
 	if err := w.AddFile("ppt/presentation.xml", []byte(presXML)); err != nil {
 		return err
 	}

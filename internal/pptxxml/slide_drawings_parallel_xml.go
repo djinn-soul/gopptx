@@ -26,7 +26,7 @@ func renderCustomShapeXMLConcurrently(shapes []ShapeSpec, firstShapeID int) ([]i
 	workerCount := max(runtime.GOMAXPROCS(0), 1)
 	workerCount = min(workerCount, len(shapes))
 
-	jobs := make(chan int, workerCount*2)
+	jobs := make(chan int, workerCount*2) //nolint:mnd // Buffer factor of 2 is standard for worker pools.
 	var wg sync.WaitGroup
 	wg.Add(workerCount)
 	for range workerCount {

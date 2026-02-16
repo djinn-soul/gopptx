@@ -12,6 +12,13 @@ import (
 
 var markdownTableSeparatorPattern = regexp.MustCompile(`^:?-{3,}:?$`)
 
+const (
+	blockquotePartsCapacity   = 2
+	fencedCodeLinesCapacity   = 16
+	markdownTableRowsCapacity = 4
+	defaultTableWidthEMU      = 8230200
+)
+
 func isMarkdownFenceStart(trimmedLine string) bool {
 	return strings.HasPrefix(trimmedLine, "```")
 }
@@ -21,7 +28,7 @@ func (p *markdownParser) consumeBlockquote(startLine int) error {
 		return err
 	}
 
-	parts := make([]string, 0, 2)
+	parts := make([]string, 0, blockquotePartsCapacity)
 	for p.index < len(p.lines) {
 		trimmed := strings.TrimSpace(p.lines[p.index])
 		if !strings.HasPrefix(trimmed, ">") {
@@ -39,7 +46,7 @@ func (p *markdownParser) consumeBlockquote(startLine int) error {
 
 	for _, part := range parts {
 		runs, _ := parseInlineTextRuns(part)
-		para := elements.NewTextParagraph()
+		para := elements.NewParagraph()
 		para.Runs = runs
 		*p.current = p.current.AddNoteParagraph(para)
 	}
@@ -51,7 +58,7 @@ func (p *markdownParser) consumeFencedBlock(startLine int) error {
 	lang := strings.TrimSpace(strings.TrimPrefix(opening, "```"))
 
 	p.index++
-	codeLines := make([]string, 0, 16)
+	codeLines := make([]string, 0, fencedCodeLinesCapacity)
 	for p.index < len(p.lines) {
 		trimmed := strings.TrimSpace(p.lines[p.index])
 		if strings.HasPrefix(trimmed, "```") {
@@ -107,15 +114,15 @@ func (p *markdownParser) consumeTable(startLine int) error {
 	}
 	p.index += 2 // skip header + separator
 
-	rows := make([][]string, 0, 4)
+	rows := make([][]string, 0, markdownTableRowsCapacity)
 	rows = append(rows, header)
 	for p.index < len(p.lines) {
 		trimmed := strings.TrimSpace(p.lines[p.index])
 		if !looksLikeMarkdownTableRow(trimmed) {
 			break
 		}
-		row, ok := parseMarkdownTableRow(trimmed)
-		if !ok {
+		row, rowOK := parseMarkdownTableRow(trimmed)
+		if !rowOK {
 			return fmt.Errorf("line %d: invalid markdown table row", p.index+1)
 		}
 		rows = append(rows, row)
@@ -137,7 +144,7 @@ func (p *markdownParser) consumeTable(startLine int) error {
 		}
 	}
 
-	columnWidth := styling.Emu(int64(8230200 / columnCount))
+	columnWidth := styling.Emu(int64(defaultTableWidthEMU / columnCount))
 	columnWidths := make([]styling.Length, columnCount)
 	for i := range columnWidths {
 		columnWidths[i] = columnWidth

@@ -82,7 +82,7 @@ const (
 	LineDashLongDashDot = styling.LineDashLongDashDot
 )
 
-// Unit conversion helpers.
+// Inches converts inches to EMU-backed [Length].
 func Inches(v float64) Length      { return styling.Inches(v) }
 func InchesToEMU(v float64) Length { return styling.InchesToEMU(v) }
 func Centimeters(v float64) Length { return styling.Centimeters(v) }

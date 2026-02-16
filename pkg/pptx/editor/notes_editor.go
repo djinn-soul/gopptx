@@ -71,8 +71,8 @@ func (e *PresentationEditor) SetNotes(slideIndex int, textContent string) error 
 		}
 	}
 
-	paras := []text.TextParagraph{{
-		Runs: []text.TextRun{{Text: textContent}},
+	paras := []text.Paragraph{{
+		Runs: []text.Run{{Text: textContent}},
 	}}
 	xmlContent := pptxxml.NotesSlide(paras)
 

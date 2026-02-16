@@ -59,7 +59,7 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	b.WriteString(`" u="`)
 	b.WriteString(runUnderlineValue(run.Underline, contentStyle.Underline))
 	b.WriteString(`"`)
-	if run.Strikethrough != "" && run.Strikethrough != "none" {
+	if run.Strikethrough != "" && run.Strikethrough != valNone {
 		b.WriteString(fmt.Sprintf(` strike="%s"`, Escape(run.Strikethrough)))
 	}
 	if run.Subscript {
@@ -111,10 +111,10 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 
 func runSizeValueWithDefault(sizePt int, defaultSizePt int) string {
 	if sizePt > 0 {
-		return strconv.Itoa(sizePt * 100)
+		return strconv.Itoa(sizePt * ptFactor)
 	}
 	if defaultSizePt > 0 {
-		return strconv.Itoa(defaultSizePt * 100)
+		return strconv.Itoa(defaultSizePt * ptFactor)
 	}
 	return strconv.Itoa(defaultBulletRunSize)
 }
@@ -129,14 +129,16 @@ func runFont(run TextRunSpec) string {
 	return ""
 }
 
+const valNone = "none"
+
 func runUnderlineValue(underline string, defaultUnderline bool) string {
-	if underline != "" && underline != "none" {
+	if underline != "" && underline != valNone {
 		return underline
 	}
 	if defaultUnderline {
 		return "sng"
 	}
-	return "none"
+	return valNone
 }
 
 func boolToFlag(enabled bool) string {

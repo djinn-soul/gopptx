@@ -201,8 +201,8 @@ func readZipEntry(zr *zip.Reader, name string) (string, error) {
 		}
 		defer func() { _ = rc.Close() }()
 		var buf bytes.Buffer
-		if _, err := buf.ReadFrom(rc); err != nil {
-			return "", err
+		if _, readErr := buf.ReadFrom(rc); readErr != nil {
+			return "", readErr
 		}
 		return buf.String(), nil
 	}

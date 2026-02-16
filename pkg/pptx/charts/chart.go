@@ -19,6 +19,11 @@ const (
 
 	ValueAxisCrossBetweenBetween     = "between"
 	ValueAxisCrossBetweenMidCategory = "midCat"
+
+	defaultChartX  = 685800
+	defaultChartY  = 1800000
+	defaultChartCX = 7772400
+	defaultChartCY = 4114800
 )
 
 // BarChart is a simple categorical bar chart.
@@ -54,10 +59,10 @@ func NewBarChart(categories []string, values []float64) BarChart {
 		Title:      "Chart",
 		Categories: cats,
 		Values:     vals,
-		X:          styling.Emu(685800),
-		Y:          styling.Emu(1800000),
-		CX:         styling.Emu(7772400),
-		CY:         styling.Emu(4114800),
+		X:          styling.Emu(defaultChartX),
+		Y:          styling.Emu(defaultChartY),
+		CX:         styling.Emu(defaultChartCX),
+		CY:         styling.Emu(defaultChartCY),
 
 		BarColor:              "4F81BD",
 		SeriesName:            "Series 1",
@@ -130,10 +135,10 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		Title:      "Chart",
 		Categories: cats,
 		Values:     vals,
-		X:          styling.Emu(685800),
-		Y:          styling.Emu(1800000),
-		CX:         styling.Emu(7772400),
-		CY:         styling.Emu(4114800),
+		X:          styling.Emu(defaultChartX),
+		Y:          styling.Emu(defaultChartY),
+		CX:         styling.Emu(defaultChartCX),
+		CY:         styling.Emu(defaultChartCY),
 
 		LineColor:             "C0504D",
 		SeriesName:            "Series 1",
@@ -206,38 +211,11 @@ func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
 
 // Validate checks the bar chart for consistency.
 func (c BarChart) Validate(slideIndex int) error {
-	if err := validateChartCore(
-		slideIndex,
-		c.Title,
-		c.Categories,
-		c.Values,
-		c.X,
-		c.Y,
-		c.CX,
-		c.CY,
-		false,
-	); err != nil {
-		return err
-	}
-	if !IsHexColor(c.BarColor) {
-		return fmt.Errorf("slide %d bar chart color must be 6-digit RGB hex", slideIndex)
-	}
-	if strings.TrimSpace(c.SeriesName) == "" {
-		return fmt.Errorf("slide %d bar chart series name cannot be empty", slideIndex)
-	}
-	if !IsLegendPosition(c.LegendPosition) {
-		return fmt.Errorf("slide %d bar chart legend position must be one of r,l,t,b", slideIndex)
-	}
-	if strings.TrimSpace(c.ValueFormat) == "" {
-		return fmt.Errorf("slide %d bar chart value format cannot be empty", slideIndex)
-	}
-	if !IsValueAxisCrossBetween(c.ValueAxisCrossBetween) {
-		return fmt.Errorf("slide %d bar chart value-axis crossBetween must be between or midCat", slideIndex)
-	}
-	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
-		return err
-	}
-	return nil
+	return validateChartCommon(
+		slideIndex, c.Title, c.Categories, c.Values, c.X, c.Y, c.CX, c.CY,
+		false, c.BarColor, c.SeriesName, c.LegendPosition, c.ValueFormat,
+		c.ValueAxisCrossBetween, c.MinValue, c.MaxValue, "bar",
+	)
 }
 
 func (c BarChart) GetCategories() []string {
@@ -281,38 +259,44 @@ func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 
 // Validate checks the line chart for consistency.
 func (c LineChart) Validate(slideIndex int) error {
-	if err := validateChartCore(
-		slideIndex,
-		c.Title,
-		c.Categories,
-		c.Values,
-		c.X,
-		c.Y,
-		c.CX,
-		c.CY,
-		true,
-	); err != nil {
+	return validateChartCommon(slideIndex, c.Title, c.Categories, c.Values, c.X, c.Y, c.CX, c.CY, true, c.LineColor, c.SeriesName, c.LegendPosition, c.ValueFormat, c.ValueAxisCrossBetween, c.MinValue, c.MaxValue, "line")
+}
+
+func validateChartCommon(
+	slideIndex int,
+	title string,
+	categories []string,
+	values []float64,
+	x, y, cx, cy styling.Length,
+	allowNegative bool,
+	color string,
+	seriesName string,
+	legendPosition string,
+	valueFormat string,
+	crossBetween string,
+	minValue *float64,
+	maxValue *float64,
+	chartType string,
+) error {
+	if err := validateChartCore(slideIndex, title, categories, values, x, y, cx, cy, allowNegative); err != nil {
 		return err
 	}
-	if !IsHexColor(c.LineColor) {
-		return fmt.Errorf("slide %d line chart color must be 6-digit RGB hex", slideIndex)
+	if !IsHexColor(color) {
+		return fmt.Errorf("slide %d %s chart color must be 6-digit RGB hex", slideIndex, chartType)
 	}
-	if strings.TrimSpace(c.SeriesName) == "" {
-		return fmt.Errorf("slide %d line chart series name cannot be empty", slideIndex)
+	if strings.TrimSpace(seriesName) == "" {
+		return fmt.Errorf("slide %d %s chart series name cannot be empty", slideIndex, chartType)
 	}
-	if !IsLegendPosition(c.LegendPosition) {
-		return fmt.Errorf("slide %d line chart legend position must be one of r,l,t,b", slideIndex)
+	if !IsLegendPosition(legendPosition) {
+		return fmt.Errorf("slide %d %s chart legend position must be one of r,l,t,b", slideIndex, chartType)
 	}
-	if strings.TrimSpace(c.ValueFormat) == "" {
-		return fmt.Errorf("slide %d line chart value format cannot be empty", slideIndex)
+	if strings.TrimSpace(valueFormat) == "" {
+		return fmt.Errorf("slide %d %s chart value format cannot be empty", slideIndex, chartType)
 	}
-	if !IsValueAxisCrossBetween(c.ValueAxisCrossBetween) {
-		return fmt.Errorf("slide %d line chart value-axis crossBetween must be between or midCat", slideIndex)
+	if !IsValueAxisCrossBetween(crossBetween) {
+		return fmt.Errorf("slide %d %s chart value-axis crossBetween must be between or midCat", slideIndex, chartType)
 	}
-	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
-		return err
-	}
-	return nil
+	return validateValueRange(minValue, maxValue, slideIndex)
 }
 
 func (c LineChart) GetCategories() []string {
