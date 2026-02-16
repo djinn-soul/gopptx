@@ -47,8 +47,8 @@ func TestImageDeduplication(t *testing.T) {
 	}
 
 	// 4. Save and verify parts in the archive
-	if err := editor.Save(modifiedPath); err != nil {
-		t.Fatalf("failed to save: %v", err)
+	if saveErr := editor.Save(modifiedPath); saveErr != nil {
+		t.Fatalf("failed to save: %v", saveErr)
 	}
 
 	// We can use the editor again to open the saved file and check part list

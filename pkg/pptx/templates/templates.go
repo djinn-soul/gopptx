@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -23,7 +23,7 @@ type SimpleTemplate struct {
 // Build generates slides for SimpleTemplate.
 func (t SimpleTemplate) Build() ([]elements.SlideContent, error) {
 	if t.Title == "" {
-		return nil, fmt.Errorf("simple template title cannot be empty")
+		return nil, errors.New("simple template title cannot be empty")
 	}
 
 	return buildParallel(
@@ -69,7 +69,7 @@ func (b BrandingSpec) Apply(s elements.SlideContent) elements.SlideContent {
 // Build generates slides for ProposalTemplate.
 func (t ProposalTemplate) Build() ([]elements.SlideContent, error) {
 	if t.Title == "" {
-		return nil, fmt.Errorf("proposal template title cannot be empty")
+		return nil, errors.New("proposal template title cannot be empty")
 	}
 
 	slides := buildParallel(
@@ -128,7 +128,7 @@ type TrainingTemplate struct {
 // Build generates slides for TrainingTemplate.
 func (t TrainingTemplate) Build() ([]elements.SlideContent, error) {
 	if t.Title == "" {
-		return nil, fmt.Errorf("training template title cannot be empty")
+		return nil, errors.New("training template title cannot be empty")
 	}
 
 	funcs := make([]func() elements.SlideContent, 0, 3+len(t.Concepts))
@@ -176,7 +176,7 @@ type StatusTemplate struct {
 // Build generates slides for StatusTemplate.
 func (t StatusTemplate) Build() ([]elements.SlideContent, error) {
 	if t.Project == "" {
-		return nil, fmt.Errorf("status template project name cannot be empty")
+		return nil, errors.New("status template project name cannot be empty")
 	}
 
 	slides := buildParallel(
@@ -220,7 +220,7 @@ type TechnicalTemplate struct {
 // Build generates slides for TechnicalTemplate.
 func (t TechnicalTemplate) Build() ([]elements.SlideContent, error) {
 	if t.Title == "" {
-		return nil, fmt.Errorf("technical template title cannot be empty")
+		return nil, errors.New("technical template title cannot be empty")
 	}
 
 	slides := buildParallel(

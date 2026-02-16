@@ -42,7 +42,8 @@ func TestTransitionSound(t *testing.T) {
 	// 1. Check if audio file exists in ppt/media
 	foundAudio := false
 	for _, f := range r.File {
-		if strings.HasPrefix(f.Name, "ppt/media/image") && strings.HasSuffix(f.Name, ".wav") { // Note: CURRENT implementation uses image prefix
+		if strings.HasPrefix(f.Name, "ppt/media/image") &&
+			strings.HasSuffix(f.Name, ".wav") { // Note: CURRENT implementation uses image prefix
 			foundAudio = true
 		}
 	}

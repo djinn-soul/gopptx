@@ -24,13 +24,13 @@ func TestPresentationEditorUpdateSlideRendersAnimations(t *testing.T) {
 	updated := elements.NewSlide("Animated").
 		AddShape(shapes.NewShape("rect", 0, 0, 100, 100)).
 		AddAnimation(animations.NewAnimation(1, animations.AnimationEntranceFade))
-	if err := editor.UpdateSlide(0, updated); err != nil {
-		t.Fatalf("update slide: %v", err)
+	if updateErr := editor.UpdateSlide(0, updated); updateErr != nil {
+		t.Fatalf("update slide: %v", updateErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "edited-animated.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	slideXML := string(readZipFileBytes(t, outPath, "ppt/slides/slide1.xml"))

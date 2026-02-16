@@ -1,6 +1,7 @@
 package styling
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 )
@@ -48,7 +49,7 @@ func ValidateColorScheme(cs ColorScheme) error {
 // ValidateTheme validates a Theme's required fields.
 func ValidateTheme(t Theme) error {
 	if t.Name == "" {
-		return fmt.Errorf("theme name is required")
+		return errors.New("theme name is required")
 	}
 	if err := ValidateColorScheme(t.Colors); err != nil {
 		return fmt.Errorf("theme %q colors: %w", t.Name, err)

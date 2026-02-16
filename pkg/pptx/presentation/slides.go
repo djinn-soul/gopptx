@@ -12,7 +12,15 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
-func renderSlides(pw *pptxxml.PackageWriter, meta PresentationMetadata, slides []elements.SlideContent, mediaCatalog *media.MediaCatalog, chartBySlide map[int][]chartPart, notesTargets map[int]string, masterCount int) error {
+func renderSlides(
+	pw *pptxxml.PackageWriter,
+	meta PresentationMetadata,
+	slides []elements.SlideContent,
+	mediaCatalog *media.MediaCatalog,
+	chartBySlide map[int][]chartPart,
+	notesTargets map[int]string,
+	masterCount int,
+) error {
 	for i, slide := range slides {
 		num := i + 1
 		builder := &slidePartBuilder{
@@ -113,7 +121,11 @@ type slideParts struct {
 	placeholderChartRels []pptxxml.ChartRel
 }
 
-func (b *slidePartBuilder) build(idx int, slide elements.SlideContent, chartBySlide map[int][]chartPart) (*slideParts, error) {
+func (b *slidePartBuilder) build(
+	idx int,
+	slide elements.SlideContent,
+	chartBySlide map[int][]chartPart,
+) (*slideParts, error) {
 	p := &slideParts{
 		title:        b.buildTitleSpec(slide),
 		contentStyle: b.buildContentStyleSpec(slide),
@@ -127,9 +139,9 @@ func (b *slidePartBuilder) build(idx int, slide elements.SlideContent, chartBySl
 		p.table = spec
 	}
 
-	imageRefs, err := b.mapImages(slide.Images)
-	if err != nil {
-		return nil, err
+	imageRefs, mapErr := b.mapImages(slide.Images)
+	if mapErr != nil {
+		return nil, mapErr
 	}
 	p.imageRefs = imageRefs
 
@@ -199,10 +211,11 @@ func (b *slidePartBuilder) mapBackground(bg *elements.SlideBackground) string {
 
 func (b *slidePartBuilder) handleTransitionSound(slide *elements.SlideContent) {
 	if slide.Transition != nil {
-		if opt, ok := slide.Transition.(transitions.TransitionOptions); ok && opt.Sound != nil && strings.HasPrefix(opt.Sound.RelID, "file:") {
+		if opt, ok := slide.Transition.(transitions.TransitionOptions); ok && opt.Sound != nil &&
+			strings.HasPrefix(opt.Sound.RelID, "file:") {
 			path := strings.TrimPrefix(opt.Sound.RelID, "file:")
 			soundMedia := shapes.Image{Path: path}
-			if mediaName, ok := b.catalog.MediaNameForImage(soundMedia); ok {
+			if mediaName, found := b.catalog.MediaNameForImage(soundMedia); found {
 				rid := b.nextRID()
 				b.targets = append(b.targets, fmt.Sprintf("../media/%s", mediaName))
 				opt.Sound.RelID = rid
@@ -212,7 +225,11 @@ func (b *slidePartBuilder) handleTransitionSound(slide *elements.SlideContent) {
 	}
 }
 
-func (b *slidePartBuilder) mapPlaceholders(specs *[]pptxxml.PlaceholderOverrideSpec, chartRels *[]pptxxml.ChartRel, overrides []shapes.PlaceholderContent) error {
+func (b *slidePartBuilder) mapPlaceholders(
+	specs *[]pptxxml.PlaceholderOverrideSpec,
+	chartRels *[]pptxxml.ChartRel,
+	overrides []shapes.PlaceholderContent,
+) error {
 	imageRefs := make(map[int]*pptxxml.ImageRef)
 	tableSpecs := make(map[int]*pptxxml.TableSpec)
 

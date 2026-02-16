@@ -69,9 +69,9 @@ func (c StockHLCChart) WithValueAxisCrossBetween(mode string) StockHLCChart {
 	return c
 }
 
-func (c StockHLCChart) WithValueRange(min float64, max float64) StockHLCChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c StockHLCChart) WithValueRange(minValue float64, maxValue float64) StockHLCChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }
 
@@ -135,8 +135,8 @@ func (c StockOHLCChart) WithValueAxisCrossBetween(mode string) StockOHLCChart {
 	return c
 }
 
-func (c StockOHLCChart) WithValueRange(min float64, max float64) StockOHLCChart {
-	c.StockHLCChart = c.StockHLCChart.WithValueRange(min, max)
+func (c StockOHLCChart) WithValueRange(minValue float64, maxValue float64) StockOHLCChart {
+	c.StockHLCChart = c.StockHLCChart.WithValueRange(minValue, maxValue)
 	return c
 }
 
@@ -203,8 +203,8 @@ func (c ComboChart) WithValueAxisCrossBetween(mode string) ComboChart {
 	return c
 }
 
-func (c ComboChart) WithValueRange(min float64, max float64) ComboChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c ComboChart) WithValueRange(minValue float64, maxValue float64) ComboChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }

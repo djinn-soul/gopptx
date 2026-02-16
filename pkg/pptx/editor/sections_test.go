@@ -24,11 +24,11 @@ func TestPresentationEditor_Sections(t *testing.T) {
 	defer func() { _ = editor.Close() }()
 
 	// 1. Test AddSection
-	if err := editor.AddSection("Intro", []int{0}); err != nil {
-		t.Errorf("failed to add intro section: %v", err)
+	if addIntroErr := editor.AddSection("Intro", []int{0}); addIntroErr != nil {
+		t.Errorf("failed to add intro section: %v", addIntroErr)
 	}
-	if err := editor.AddSection("Content", []int{1, 2}); err != nil {
-		t.Errorf("failed to add content section: %v", err)
+	if addContentErr := editor.AddSection("Content", []int{1, 2}); addContentErr != nil {
+		t.Errorf("failed to add content section: %v", addContentErr)
 	}
 
 	if len(editor.Sections()) != 2 {
@@ -36,29 +36,29 @@ func TestPresentationEditor_Sections(t *testing.T) {
 	}
 
 	// 2. Test RenameSection
-	if err := editor.RenameSection("Intro", "Introduction"); err != nil {
-		t.Errorf("failed to rename section: %v", err)
+	if renameErr := editor.RenameSection("Intro", "Introduction"); renameErr != nil {
+		t.Errorf("failed to rename section: %v", renameErr)
 	}
 	if editor.Sections()[0].Name != "Introduction" {
 		t.Errorf("expected section name 'Introduction', got %q", editor.Sections()[0].Name)
 	}
 
 	// 3. Test RemoveSection
-	if err := editor.RemoveSection("Content"); err != nil {
-		t.Errorf("failed to remove section: %v", err)
+	if removeErr := editor.RemoveSection("Content"); removeErr != nil {
+		t.Errorf("failed to remove section: %v", removeErr)
 	}
 	if len(editor.Sections()) != 1 {
 		t.Errorf("expected 1 section after removal, got %d", len(editor.Sections()))
 	}
 
 	// 4. Test Error Cases
-	if err := editor.AddSection("", []int{0}); err == nil {
+	if addErr := editor.AddSection("", []int{0}); addErr == nil {
 		t.Error("expected error for empty section name")
 	}
-	if err := editor.AddSection("Invalid", []int{99}); err == nil {
+	if addErr := editor.AddSection("Invalid", []int{99}); addErr == nil {
 		t.Error("expected error for out of range slide index")
 	}
-	if err := editor.RenameSection("NonExistent", "New"); err == nil {
+	if renameErr := editor.RenameSection("NonExistent", "New"); renameErr == nil {
 		t.Error("expected error for renaming non-existent section")
 	}
 }
@@ -75,13 +75,13 @@ func TestPresentationEditor_SectionsPersistence(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 
-	if err := editor.AddSection("Main", []int{0, 1}); err != nil {
-		t.Fatalf("add section: %v", err)
+	if addErr := editor.AddSection("Main", []int{0, 1}); addErr != nil {
+		t.Fatalf("add section: %v", addErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "sections_saved.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save: %v", saveErr)
 	}
 	_ = editor.Close()
 
@@ -151,16 +151,16 @@ func TestPresentationEditor_SectionsPreservedOnMove(t *testing.T) {
 	idA := slides[0].SlideID
 	idB := slides[1].SlideID
 
-	if err := editor.AddSection("Section A", []int{0}); err != nil {
-		t.Fatalf("add section A: %v", err)
+	if addAErr := editor.AddSection("Section A", []int{0}); addAErr != nil {
+		t.Fatalf("add section A: %v", addAErr)
 	}
-	if err := editor.AddSection("Section B", []int{1}); err != nil {
-		t.Fatalf("add section B: %v", err)
+	if addBErr := editor.AddSection("Section B", []int{1}); addBErr != nil {
+		t.Fatalf("add section B: %v", addBErr)
 	}
 
 	// Move slide 0 to index 1: [B, A]
-	if err := editor.MoveSlide(0, 1); err != nil {
-		t.Fatalf("move slide: %v", err)
+	if moveErr := editor.MoveSlide(0, 1); moveErr != nil {
+		t.Fatalf("move slide: %v", moveErr)
 	}
 
 	// Sections track SlideIDs, so they should still point to the same slides

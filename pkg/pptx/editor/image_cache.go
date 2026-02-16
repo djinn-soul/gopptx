@@ -13,27 +13,23 @@ type imagePathCacheEntry struct {
 	partPath string
 }
 
-func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string) (string, string, error) {
+func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string) (string, error) {
 	cleanPath := filepath.Clean(imagePath)
 	e.imagePathMu.RLock()
 	entry, ok := e.imagePathCache[cleanPath]
 	e.imagePathMu.RUnlock()
 	if ok && entry.partPath != "" {
-		format := normalizeImageFormatHint(formatHint)
-		if format == "" {
-			format = entry.format
-		}
-		return entry.partPath, format, nil
+		return entry.partPath, nil
 	}
 
 	data, format, err := e.loadImageFromPath(cleanPath, formatHint)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	partPath, err := e.RegisterImage(data, format)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	e.imagePathMu.Lock()
@@ -43,7 +39,7 @@ func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string)
 		partPath: partPath,
 	}
 	e.imagePathMu.Unlock()
-	return partPath, format, nil
+	return partPath, nil
 }
 
 func (e *PresentationEditor) loadImageFromPath(cleanPath, formatHint string) ([]byte, string, error) {

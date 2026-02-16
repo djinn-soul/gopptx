@@ -17,7 +17,7 @@ func NewTableCell(text string) TableCell {
 	return tables.NewTableCell(text)
 }
 
-// Table Constants
+// Table Constants.
 const (
 	TableAlignLeft    = tables.TableAlignLeft
 	TableAlignCenter  = tables.TableAlignCenter

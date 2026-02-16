@@ -25,11 +25,14 @@ func addCodeBlock(slide *elements.SlideContent, lang string, code string) {
 		normalizedLang = "text"
 	}
 	header := []elements.TextRun{
-		elements.NewTextRun("[" + strings.ToUpper(normalizedLang) + "]").WithBold(true).WithColor("1F4E78").WithSizePt(13),
+		elements.NewTextRun("[" + strings.ToUpper(normalizedLang) + "]").
+			WithBold(true).
+			WithColor("1F4E78").
+			WithSizePt(13),
 	}
 	*slide = slide.AddBulletRunsWithStyle(header, style)
 
-	for _, line := range strings.Split(code, "\n") {
+	for line := range strings.SplitSeq(code, "\n") {
 		if strings.TrimSpace(line) == "" {
 			*slide = slide.AddBulletWithStyle(" ", style)
 			continue
@@ -261,7 +264,7 @@ func mermaidSummaryLine(code string) string {
 }
 
 func firstNonEmptyLine(text string) string {
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed != "" {
 			return trimmed

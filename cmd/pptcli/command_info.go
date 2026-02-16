@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -76,7 +77,7 @@ func inspectPPTX(path string) (pptxFileInfo, error) {
 		modifiedAt: meta.ModTime(),
 	}
 	if !meta.Mode().IsRegular() {
-		return out, fmt.Errorf("path is not a regular file")
+		return out, errors.New("path is not a regular file")
 	}
 
 	file, err := os.Open(path)

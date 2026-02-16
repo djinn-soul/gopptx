@@ -15,7 +15,7 @@ func main() {
 	if err := run(); err != nil {
 		log.Fatalf("Smoke test failed: %v", err)
 	}
-	fmt.Println("Smart Merge Smoke Test: SUCCESS")
+	log.Println("Smart Merge Smoke Test: SUCCESS")
 }
 
 func run() error {
@@ -83,7 +83,7 @@ func run() error {
 		}
 	}()
 
-	fmt.Println("Merging...")
+	log.Println("Merging...")
 	if err := dstEdit.MergeFromFile(sourcePPTXPath); err != nil {
 		return fmt.Errorf("MergeFromFile failed: %w", err)
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -47,5 +46,5 @@ func main() {
 		log.Fatalf("failed to write file: %v", err)
 	}
 
-	fmt.Printf("Generated %s\n", outputPath)
+	log.Printf("Generated %s\n", outputPath)
 }

@@ -161,10 +161,16 @@ func TestCreateWithSlidesImageAndChartRelationshipOrder(t *testing.T) {
 	}
 
 	relsXML := readZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
-	if !strings.Contains(relsXML, `Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"`) {
+	if !strings.Contains(
+		relsXML,
+		`Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"`,
+	) {
 		t.Fatalf("expected image rel at rId2")
 	}
-	if !strings.Contains(relsXML, `Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"`) {
+	if !strings.Contains(
+		relsXML,
+		`Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"`,
+	) {
 		t.Fatalf("expected chart rel at rId3")
 	}
 

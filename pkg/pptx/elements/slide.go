@@ -1,8 +1,10 @@
 package elements
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
@@ -115,16 +117,16 @@ func (s SlideContent) Validate(index int) error {
 	}
 
 	if (s.TitleSize != 0 && s.TitleSize < 1) || s.TitleSize > 400 {
-		return fmt.Errorf("title size must be between 1 and 400 pt (or 0 for default)")
+		return errors.New("title size must be between 1 and 400 pt (or 0 for default)")
 	}
 	if s.TitleColor != "" && !common.IsHexColor(s.TitleColor) {
-		return fmt.Errorf("title color must be 6-digit RGB hex")
+		return errors.New("title color must be 6-digit RGB hex")
 	}
 	if (s.ContentSize != 0 && s.ContentSize < 1) || s.ContentSize > 400 {
-		return fmt.Errorf("content size must be between 1 and 400 pt (or 0 for default)")
+		return errors.New("content size must be between 1 and 400 pt (or 0 for default)")
 	}
 	if s.ContentColor != "" && !common.IsHexColor(s.ContentColor) {
-		return fmt.Errorf("content color must be 6-digit RGB hex")
+		return errors.New("content color must be 6-digit RGB hex")
 	}
 	if s.Background != nil {
 		if err := s.Background.Validate(); err != nil {
@@ -145,10 +147,8 @@ func (s SlideContent) Validate(index int) error {
 	}
 
 	// Validate bullets
-	for _, b := range s.Bullets {
-		if b == "" {
-			return fmt.Errorf("bullet cannot be empty")
-		}
+	if slices.Contains(s.Bullets, "") {
+		return errors.New("bullet cannot be empty")
 	}
 
 	if s.TitleAlign != "" {
@@ -168,7 +168,7 @@ func (s SlideContent) Validate(index int) error {
 	}
 
 	if s.Title == "" && s.Layout != SlideLayoutBlank {
-		return fmt.Errorf("title cannot be empty")
+		return errors.New("title cannot be empty")
 	}
 
 	for i, anim := range s.Animations {
@@ -176,8 +176,9 @@ func (s SlideContent) Validate(index int) error {
 			return err
 		}
 		// First animation in a sequence (on a slide) cannot be WithPrevious/AfterPrevious
-		if i == 0 && (anim.Trigger == animations.AnimationWithPrevious || anim.Trigger == animations.AnimationAfterPrevious) {
-			return fmt.Errorf("first animation trigger cannot be with/after previous")
+		if i == 0 &&
+			(anim.Trigger == animations.AnimationWithPrevious || anim.Trigger == animations.AnimationAfterPrevious) {
+			return errors.New("first animation trigger cannot be with/after previous")
 		}
 	}
 
@@ -192,7 +193,7 @@ const (
 	SlideLayoutTitleAndBigContent = "title_and_big_content"
 	SlideLayoutTwoColumn          = "two_column"
 
-	// Legacy or descriptive aliases
+	// Legacy or descriptive aliases.
 	SlideLayoutTitle          = "Title Slide"
 	SlideLayoutSectionHeader  = "Section Header"
 	SlideLayoutTwoContent     = "Two Content"
@@ -402,7 +403,7 @@ func (s SlideContent) AddLettered(text string) SlideContent {
 	return s.AddBulletWithStyle(text, DefaultTextParagraphStyle().WithLetteredLower())
 }
 
-// Adding bullet at index 1..8
+// Adding bullet at index 1..8.
 func (s SlideContent) AddSubBullet(level int, text string) SlideContent {
 	s.Bullets = append(s.Bullets, text)
 	s.BulletRuns = append(s.BulletRuns, nil)
@@ -449,7 +450,7 @@ func (s SlideContent) WithBulletStyleName(styleName string) SlideContent {
 	return s.WithBulletStyle(style)
 }
 
-// WithSubtitleLayout sets the layout to Title and Content. (Convenience)
+// WithSubtitleLayout sets the layout to Title and Content. (Convenience).
 func (s SlideContent) WithLayout(layout string) SlideContent {
 	s.Layout = NormalizeSlideLayout(layout)
 	return s

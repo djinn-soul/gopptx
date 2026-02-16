@@ -64,9 +64,9 @@ func (c BarChart) WithValueAxisCrossBetween(mode string) BarChart {
 }
 
 // WithValueRange sets optional value-axis min/max.
-func (c BarChart) WithValueRange(min float64, max float64) BarChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c BarChart) WithValueRange(minValue float64, maxValue float64) BarChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }
 
@@ -132,9 +132,9 @@ func (c LineChart) WithValueAxisCrossBetween(mode string) LineChart {
 }
 
 // WithValueRange sets optional value-axis min/max.
-func (c LineChart) WithValueRange(min float64, max float64) LineChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c LineChart) WithValueRange(minValue float64, maxValue float64) LineChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }
 

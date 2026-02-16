@@ -4,13 +4,18 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // deepCloneSlideAssets walks through the relationships of a source slide and copies
 // all referenced assets (images, charts, etc.) to the target editor.
 // It returns a modified relationships XML byte slice where targets are remapped to the new locations.
-func (e *PresentationEditor) deepCloneSlideAssets(srcEditor *PresentationEditor, srcSlidePart string, srcSlideRelsBytes []byte, dstSlidePart string) ([]byte, error) {
+func (e *PresentationEditor) deepCloneSlideAssets(
+	srcEditor *PresentationEditor,
+	srcSlidePart string,
+	srcSlideRelsBytes []byte,
+	dstSlidePart string,
+) ([]byte, error) {
 	rels, err := parseRelationshipsXML(srcSlideRelsBytes)
 	if err != nil {
 		return nil, err
@@ -55,10 +60,7 @@ func (e *PresentationEditor) deepCloneSlideAssets(srcEditor *PresentationEditor,
 	}
 
 	if changed {
-		rendered, err := renderRelationshipsXML(rels)
-		if err != nil {
-			return nil, err
-		}
+		rendered := renderRelationshipsXML(rels)
 		return []byte(rendered), nil
 	}
 
@@ -99,47 +101,37 @@ func (e *PresentationEditor) copyChartAsset(srcEditor *PresentationEditor, srcPa
 	srcRelsPath := common.SlideRelsPartName(srcPath)
 	srcRelsData, hasRels := srcEditor.parts.Get(srcRelsPath)
 
-	if hasRels {
-		rels, err := parseRelationshipsXML(srcRelsData)
-		if err != nil {
-			return "", fmt.Errorf("parse source chart rels: %w", err)
-		}
-
-		changed := false
-		for i, rel := range rels {
-			srcTargetAbs := common.ResolveRelationshipTarget(srcPath, rel.Target)
-
-			// Check for Excel embedding
-			if rel.Type == "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" {
-				newExcelPath, err := e.copyExcelAsset(srcEditor, srcTargetAbs)
-				if err != nil {
-					return "", err
-				}
-
-				// Relink
-				relPath := common.MakeRelativePath(newChartPath, newExcelPath)
-				rels[i].Target = relPath
-
-				// Also need to update the rId validation in the chart XML if strictly required,
-				// but usually rId stays same if we preserve order.
-				// However, if we filter rels, rIDs might change?
-				// Actually, we are copying the rels file, so we keep IDs stable.
-				changed = true
-			}
-			// TODO: Handle chart colors/styles if external?
-		}
-
-		if changed {
-			newRelsData, err := renderRelationshipsXML(rels)
-			if err != nil {
-				return "", err
-			}
-			e.parts.Set(common.SlideRelsPartName(newChartPath), []byte(newRelsData))
-		} else {
-			e.parts.Set(common.SlideRelsPartName(newChartPath), srcRelsData)
-		}
+	if !hasRels {
+		e.parts.Set(newChartPath, data)
+		return newChartPath, nil
 	}
 
+	rels, err := parseRelationshipsXML(srcRelsData)
+	if err != nil {
+		return "", fmt.Errorf("parse source chart rels: %w", err)
+	}
+
+	changed := false
+	for i, rel := range rels {
+		if rel.Type != common.RelTypePackage {
+			continue
+		}
+
+		srcTargetAbs := common.ResolveRelationshipTarget(srcPath, rel.Target)
+		newExcelPath, copyErr := e.copyExcelAsset(srcEditor, srcTargetAbs)
+		if copyErr != nil {
+			return "", copyErr
+		}
+		rels[i].Target = common.MakeRelativePath(newChartPath, newExcelPath)
+		changed = true
+	}
+
+	if changed {
+		newRelsData := renderRelationshipsXML(rels)
+		e.parts.Set(common.SlideRelsPartName(newChartPath), []byte(newRelsData))
+	} else {
+		e.parts.Set(common.SlideRelsPartName(newChartPath), srcRelsData)
+	}
 	e.parts.Set(newChartPath, data)
 
 	// Track embeddings if needed? e.chartEmbeddings
@@ -156,7 +148,10 @@ func (e *PresentationEditor) copyExcelAsset(srcEditor *PresentationEditor, srcPa
 	return e.registerExcelEmbedding(data)
 }
 
-func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, srcPath, dstSlidePart string) (string, error) {
+func (e *PresentationEditor) copyNotesSlideAsset(
+	srcEditor *PresentationEditor,
+	srcPath, dstSlidePart string,
+) (string, error) {
 	data, ok := srcEditor.parts.Get(srcPath)
 	if !ok {
 		return "", fmt.Errorf("source notes part not found: %s", srcPath)
@@ -172,7 +167,7 @@ func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, 
 	e.parts.Set(newNotesPath, cloneBytes(data))
 
 	srcNotesRelsPath := common.SlideRelsPartName(srcPath)
-	if relsData, ok := srcEditor.parts.Get(srcNotesRelsPath); ok {
+	if relsData, relsOK := srcEditor.parts.Get(srcNotesRelsPath); relsOK {
 		rels, err := parseRelationshipsXML(relsData)
 		if err != nil {
 			return "", fmt.Errorf("parse source notes rels: %w", err)
@@ -185,10 +180,7 @@ func (e *PresentationEditor) copyNotesSlideAsset(srcEditor *PresentationEditor, 
 				rels[i].Target = "../notesMasters/notesMaster1.xml"
 			}
 		}
-		rendered, err := renderRelationshipsXML(rels)
-		if err != nil {
-			return "", fmt.Errorf("render notes rels: %w", err)
-		}
+		rendered := renderRelationshipsXML(rels)
 		e.parts.Set(common.SlideRelsPartName(newNotesPath), []byte(rendered))
 	}
 

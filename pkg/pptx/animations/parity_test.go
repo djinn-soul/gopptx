@@ -15,7 +15,7 @@ func TestAnimationXMLDeterminism(t *testing.T) {
 	slide := pptx.NewSlide("Deterministic Anim").
 		AddShape(pptx.NewShape("rect", 0, 0, 100, 100))
 
-	for i := 0; i < 60; i++ {
+	for i := range 60 {
 		effect := pptx.AnimationEntranceAppear
 		if i%2 == 0 {
 			effect = pptx.AnimationEntranceFade

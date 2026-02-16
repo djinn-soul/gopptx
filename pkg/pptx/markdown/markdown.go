@@ -1,7 +1,7 @@
 package markdown
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"strings"
 
@@ -25,10 +25,10 @@ type parsedMarkdownBullet struct {
 // - GFM tables are mapped to native table elements
 // - fenced code blocks are rendered as no-bullet code paragraphs
 // - fenced mermaid blocks are converted to placeholder shapes
-// - blockquotes are parsed into slide speaker notes
+// - blockquotes are parsed into slide speaker notes.
 func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
-		return nil, fmt.Errorf("markdown content cannot be empty")
+		return nil, errors.New("markdown content cannot be empty")
 	}
 	parser := newMarkdownParser(markdown)
 	return parser.parse()
@@ -36,9 +36,9 @@ func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
 
 func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
 	for _, marker := range []string{"- ", "* ", "+ "} {
-		if strings.HasPrefix(line, marker) {
+		if after, ok := strings.CutPrefix(line, marker); ok {
 			return parsedMarkdownBullet{
-				text:  strings.TrimSpace(strings.TrimPrefix(line, marker)),
+				text:  strings.TrimSpace(after),
 				style: elements.DefaultTextParagraphStyle(),
 			}, true
 		}
@@ -73,9 +73,9 @@ func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 	hasStyled := false
 	for i := 0; i < len(input); {
 		if input[i] == '`' {
-			close := strings.Index(input[i+1:], "`")
-			if close >= 0 {
-				end := i + 1 + close
+			closeIdx := strings.Index(input[i+1:], "`")
+			if closeIdx >= 0 {
+				end := i + 1 + closeIdx
 				if end > i+1 {
 					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Code: true})
 					hasStyled = true
@@ -89,9 +89,9 @@ func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 		}
 
 		if strings.HasPrefix(input[i:], "**") {
-			close := strings.Index(input[i+2:], "**")
-			if close >= 0 {
-				end := i + 2 + close
+			closeIdx := strings.Index(input[i+2:], "**")
+			if closeIdx >= 0 {
+				end := i + 2 + closeIdx
 				if end > i+2 {
 					runs = append(runs, elements.TextRun{Text: input[i+2 : end], Bold: true})
 					hasStyled = true
@@ -105,9 +105,9 @@ func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
 		}
 
 		if input[i] == '*' {
-			close := strings.Index(input[i+1:], "*")
-			if close >= 0 {
-				end := i + 1 + close
+			closeIdx := strings.Index(input[i+1:], "*")
+			if closeIdx >= 0 {
+				end := i + 1 + closeIdx
 				if end > i+1 {
 					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Italic: true})
 					hasStyled = true

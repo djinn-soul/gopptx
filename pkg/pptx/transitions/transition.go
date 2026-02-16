@@ -1,6 +1,7 @@
 package transitions
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -104,7 +105,7 @@ func (o TransitionOptions) Validate() error {
 
 	if o.Sound != nil {
 		if strings.TrimSpace(o.Sound.RelID) == "" {
-			return fmt.Errorf("transition sound requires a valid relationship ID")
+			return errors.New("transition sound requires a valid relationship ID")
 		}
 	}
 
@@ -142,7 +143,11 @@ func (o TransitionOptions) Validate() error {
 			case TransitionDirUp, TransitionDirDown, TransitionDirLeft, TransitionDirRight,
 				TransitionDirUpLeft, TransitionDirUpRight, TransitionDirDownLeft, TransitionDirDownRight:
 			default:
-				return fmt.Errorf("invalid direction %q for transition %q (expected u|d|l|r|lu|ru|ld|rd)", o.Direction, o.Type)
+				return fmt.Errorf(
+					"invalid direction %q for transition %q (expected u|d|l|r|lu|ru|ld|rd)",
+					o.Direction,
+					o.Type,
+				)
 			}
 		case TransitionStrips:
 			switch o.Direction {

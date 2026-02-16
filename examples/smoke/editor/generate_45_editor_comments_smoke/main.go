@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -37,14 +38,14 @@ func run() error {
 	if err := pptx.WriteFile(basePath, "Comments API Smoke Test", baseSlides); err != nil {
 		return fmt.Errorf("create base file: %w", err)
 	}
-	fmt.Printf("1. Created base: %s\n", basePath)
+	log.Printf("1. Created base: %s\n", basePath)
 
 	// 2. Open with Editor
 	editor, err := pptx.OpenPresentationEditor(basePath)
 	if err != nil {
 		return fmt.Errorf("open editor: %w", err)
 	}
-	fmt.Println("2. Opened presentation with Editor")
+	log.Println("2. Opened presentation with Editor")
 
 	// 3. Add Authors
 	authorA, err := editor.AddAuthor("Alice Reviewer", "AR")
@@ -55,7 +56,7 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("add author Bob: %w", err)
 	}
-	fmt.Printf("3. Registered authors: Alice (ID=%d), Bob (ID=%d)\n", authorA.ID, authorB.ID)
+	log.Printf("3. Registered authors: Alice (ID=%d), Bob (ID=%d)\n", authorA.ID, authorB.ID)
 
 	// 4. Add comments to Slide 1 (Index 0)
 	err = editor.AddComment(0, authorA.ID, "Looks good, but check the font size.", 500000, 500000)
@@ -66,27 +67,27 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("add bob comment on slide 1: %w", err)
 	}
-	fmt.Println("4. Added comments to Slide 1 from Alice and Bob")
+	log.Println("4. Added comments to Slide 1 from Alice and Bob")
 
 	// 5. Add comment to Slide 2 (Index 1)
 	err = editor.AddComment(1, authorA.ID, "Need comparison chart here.", 1000000, 1000000)
 	if err != nil {
 		return fmt.Errorf("add alice comment on slide 2: %w", err)
 	}
-	fmt.Println("5. Added comment to Slide 2 from Alice")
+	log.Println("5. Added comment to Slide 2 from Alice")
 
 	// 6. List and Remove logic verification
 	comments, err := editor.GetComments(0)
 	if err != nil {
 		return fmt.Errorf("get comments slide 0: %w", err)
 	}
-	fmt.Printf("6. Verified %d comments on Slide 1\n", len(comments))
+	log.Printf("6. Verified %d comments on Slide 1\n", len(comments))
 
 	// 7. Save final result
 	if err := editor.Save(finalPath); err != nil {
 		return fmt.Errorf("save modified: %w", err)
 	}
-	fmt.Printf("7. Saved final presentation with comments: %s\n", finalPath)
+	log.Printf("7. Saved final presentation with comments: %s\n", finalPath)
 
 	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -39,51 +40,51 @@ func run() error {
 	if err := pptx.WriteFile(basePath, "Editor Base Demo", baseSlides); err != nil {
 		return fmt.Errorf("create base file: %w", err)
 	}
-	fmt.Printf("1. Created base: %s\n", basePath)
+	log.Printf("1. Created base: %s\n", basePath)
 
 	// 2. Open with Editor
 	editor, err := pptx.OpenPresentationEditor(basePath)
 	if err != nil {
 		return fmt.Errorf("open editor: %w", err)
 	}
-	fmt.Println("2. Opened presentation with Editor")
+	log.Println("2. Opened presentation with Editor")
 
 	// 3. Update a slide (Slide 3 is at index 2)
 	updated := pptx.NewSlide("Updated Slide 3").AddBullet("Content has been changed via UpdateSlide")
 	if err := editor.UpdateSlide(2, updated); err != nil {
 		return fmt.Errorf("update slide: %w", err)
 	}
-	fmt.Println("3. Updated Slide 3")
+	log.Println("3. Updated Slide 3")
 
 	// 4. Remove a slide (Slide 2 is at index 1)
 	if err := editor.RemoveSlide(1); err != nil {
 		return fmt.Errorf("remove slide: %w", err)
 	}
-	fmt.Println("4. Removed Slide 2")
+	log.Println("4. Removed Slide 2")
 
 	// 5. Add a new slide
 	newSlide := pptx.NewSlide("Newly Added Slide").AddBullet("Added via AddSlide")
 	if _, err := editor.AddSlide(newSlide); err != nil {
 		return fmt.Errorf("add slide: %w", err)
 	}
-	fmt.Println("5. Added a new slide")
+	log.Println("5. Added a new slide")
 
 	// 6. Merge from another file (reusing a simple sample if it exists)
 	if _, err := os.Stat(basicSample); err == nil {
 		if err := editor.MergeFromFile(basicSample); err != nil {
-			fmt.Printf("Warning: merge failed (likely due to asset constraints): %v\n", err)
+			log.Printf("Warning: merge failed (likely due to asset constraints): %v\n", err)
 		} else {
-			fmt.Println("6. Merged slides from 01_basic_pptx.pptx")
+			log.Println("6. Merged slides from 01_basic_pptx.pptx")
 		}
 	} else {
-		fmt.Println("6. Skipping merge (01_basic_pptx.pptx not found)")
+		log.Println("6. Skipping merge (01_basic_pptx.pptx not found)")
 	}
 
 	// 7. Save final result
 	if err := editor.Save(finalPath); err != nil {
 		return fmt.Errorf("save modified: %w", err)
 	}
-	fmt.Printf("7. Saved final modified presentation: %s\n", finalPath)
+	log.Printf("7. Saved final modified presentation: %s\n", finalPath)
 
 	return nil
 }

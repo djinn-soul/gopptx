@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -36,14 +37,14 @@ func run() error {
 	if err := pptx.WriteFile(targetPath, "Editor Overwrite Demo", baseSlides); err != nil {
 		return fmt.Errorf("create base deck: %w", err)
 	}
-	fmt.Printf("1. Created existing deck: %s\n", targetPath)
+	log.Printf("1. Created existing deck: %s\n", targetPath)
 
 	// 2) Open existing file with editor.
 	editor, err := pptx.OpenPresentationEditor(targetPath)
 	if err != nil {
 		return fmt.Errorf("open existing deck: %w", err)
 	}
-	fmt.Println("2. Opened existing deck with PresentationEditor")
+	log.Println("2. Opened existing deck with PresentationEditor")
 
 	// 3) Edit slides + presentation properties.
 	theme := styling.ThemeTech
@@ -84,20 +85,20 @@ func run() error {
 	if err := editor.SetSlideSize(pptx.SlideSize16x9); err != nil {
 		return fmt.Errorf("set slide size: %w", err)
 	}
-	fmt.Println("3. Edited slides, theme, and slide size")
+	log.Println("3. Edited slides, theme, and slide size")
 
 	// 4) Save back to the same path (overwrite existing PPTX).
 	if err := editor.Save(targetPath); err != nil {
 		return fmt.Errorf("overwrite save: %w", err)
 	}
-	fmt.Printf("4. Overwrote existing file successfully: %s\n", targetPath)
+	log.Printf("4. Overwrote existing file successfully: %s\n", targetPath)
 
 	// 5) Reopen to verify overwrite result is readable.
 	edited, err := pptx.OpenPresentationEditor(targetPath)
 	if err != nil {
 		return fmt.Errorf("reopen overwritten deck: %w", err)
 	}
-	fmt.Printf("5. Verified overwritten file. Slide count: %d\n", edited.SlideCount())
+	log.Printf("5. Verified overwritten file. Slide count: %d\n", edited.SlideCount())
 
 	return nil
 }

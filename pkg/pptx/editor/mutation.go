@@ -2,6 +2,7 @@ package editor
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -9,29 +10,36 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 var (
-	sldIdLstPattern          = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
-	notesMasterIDListPattern = regexp.MustCompile(`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`)
+	sldIDLstPattern          = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
+	notesMasterIDListPattern = regexp.MustCompile(
+		`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`,
+	)
 	slideMasterIDListPattern = regexp.MustCompile(`(?s)<p:sldMasterIdLst>.*?</p:sldMasterIdLst>|<p:sldMasterIdLst\s*/>`)
 	slideMasterIDPattern     = regexp.MustCompile(`id="(\d+)"`)
 )
 
+const (
+	initialSlideMasterID   int64 = 2147483648
+	patternSubmatchPairLen int   = 2
+)
+
 func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
 	replacement := buildPresentationSlideListXML(slides)
-	if !sldIdLstPattern.MatchString(source) {
-		return "", fmt.Errorf("presentation XML does not contain <p:sldIdLst>")
+	if !sldIDLstPattern.MatchString(source) {
+		return "", errors.New("presentation XML does not contain <p:sldIdLst>")
 	}
 
 	found := false
-	result := sldIdLstPattern.ReplaceAllStringFunc(source, func(match string) string {
+	result := sldIDLstPattern.ReplaceAllStringFunc(source, func(match string) string {
 		if found {
 			return match
 		}
@@ -46,7 +54,7 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	b.WriteString("<p:sldIdLst>")
 	for _, slide := range slides {
 		b.WriteString("\n<p:sldId id=\"")
-		b.WriteString(fmt.Sprintf("%d", slide.SlideID))
+		b.WriteString(strconv.FormatInt(slide.SlideID, 10))
 		b.WriteString("\" r:id=\"")
 		b.WriteString(slide.RelID)
 		b.WriteString("\"/>")
@@ -60,7 +68,7 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 
 func rewritePresentationNotesMasterList(current []byte, relID string, enable bool) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
@@ -71,10 +79,12 @@ func rewritePresentationNotesMasterList(current []byte, relID string, enable boo
 		return source, nil
 	}
 	if strings.TrimSpace(relID) == "" {
-		return "", fmt.Errorf("notes master relationship id is required")
+		return "", errors.New("notes master relationship id is required")
 	}
 
-	replacement := "<p:notesMasterIdLst>\n<p:notesMasterId r:id=\"" + common.XMLEscape(relID) + "\"/>\n</p:notesMasterIdLst>"
+	replacement := "<p:notesMasterIdLst>\n<p:notesMasterId r:id=\"" + common.XMLEscape(
+		relID,
+	) + "\"/>\n</p:notesMasterIdLst>"
 	if notesMasterIDListPattern.MatchString(source) {
 		return notesMasterIDListPattern.ReplaceAllString(source, replacement), nil
 	}
@@ -86,22 +96,22 @@ func rewritePresentationNotesMasterList(current []byte, relID string, enable boo
 	if idx := strings.Index(source, "<p:sldIdLst"); idx >= 0 {
 		return source[:idx] + replacement + "\n" + source[idx:], nil
 	}
-	return "", fmt.Errorf("presentation XML does not contain insertion point for notesMasterIdLst")
+	return "", errors.New("presentation XML does not contain insertion point for notesMasterIdLst")
 }
 
 func rewritePresentationSlideMasterList(current []byte, relID string) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	if strings.TrimSpace(relID) == "" {
-		return "", fmt.Errorf("slide master relationship id is required")
+		return "", errors.New("slide master relationship id is required")
 	}
 	source := string(current)
 
 	matches := slideMasterIDPattern.FindAllStringSubmatch(source, -1)
-	nextMasterID := int64(2147483648)
+	nextMasterID := initialSlideMasterID
 	for _, m := range matches {
-		if len(m) != 2 {
+		if len(m) != patternSubmatchPairLen {
 			continue
 		}
 		val, err := strconv.ParseInt(m[1], 10, 64)
@@ -136,21 +146,89 @@ func rewritePresentationSlideMasterList(current []byte, relID string) (string, e
 		replacement := "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>\n"
 		return source[:idx] + replacement + source[idx:], nil
 	}
-	return "", fmt.Errorf("presentation XML does not contain insertion point for sldMasterIdLst")
+	return "", errors.New("presentation XML does not contain insertion point for sldMasterIdLst")
 }
 
-func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []common.EditorSlideRef, hasSections bool) (string, error) {
-	rels := make([]common.EditorRelationship, 0, len(nonSlide)+len(slides)+1)
-	used := map[string]struct{}{}
+func renderPresentationRelsXML(
+	nonSlide []common.EditorRelationship,
+	slides []common.EditorSlideRef,
+	hasSections bool,
+) (string, error) {
+	rels, used, hasSectionRel, err := collectNonSlideRelationships(nonSlide, len(slides))
+	if err != nil {
+		return "", err
+	}
+	if hasSections && !hasSectionRel {
+		rels = append(rels, makeSectionListRelationship(rels, slides))
+	}
+	rels = appendMissingSlideRelationships(rels, used, slides)
+	return renderRelationshipsXML(rels), nil
+}
 
+func renderRelationshipsXML(rels []common.EditorRelationship) string {
+	sortRelationshipsByID(rels)
+	return relationshipsXMLDocument(rels)
+}
+
+func rewriteContentTypes(
+	current []byte,
+	slides []common.EditorSlideRef,
+	mediaPaths []string,
+	hasSections bool,
+	chartPaths []string,
+	notesPaths []string,
+	themePaths []string,
+	layoutPaths []string,
+	masterPaths []string,
+	hasNotesMaster bool,
+	hasCommentAuthors bool,
+	commentPaths []string,
+) (string, error) {
+	doc, err := parseContentTypesDocument(current)
+	if err != nil {
+		return "", err
+	}
+	ensureContentTypeDefaults(&doc, mediaPaths)
+
+	overrides := filterDynamicOverrides(doc.Overrides, len(slides))
+	overrides = appendSlideOverrides(overrides, slides)
+	overrides = appendOptionalContentTypeOverride(overrides, hasSections, "/ppt/sectionList.xml",
+		"application/vnd.microsoft.powerpoint.sectionList+xml")
+	overrides = appendPathOverrides(overrides, chartPaths,
+		"application/vnd.openxmlformats-officedocument.drawingml.chart+xml")
+	overrides = appendPathOverrides(overrides, notesPaths,
+		"application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml")
+	overrides = appendPathOverrides(overrides, themePaths,
+		"application/vnd.openxmlformats-officedocument.theme+xml")
+	overrides = appendPathOverrides(overrides, layoutPaths,
+		"application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml")
+	overrides = appendPathOverrides(overrides, masterPaths,
+		"application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml")
+	overrides = appendOptionalContentTypeOverride(overrides, hasNotesMaster, "/ppt/notesMasters/notesMaster1.xml",
+		"application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml")
+	overrides = appendOptionalContentTypeOverride(overrides, hasCommentAuthors, "/ppt/commentAuthors.xml",
+		"application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml")
+	overrides = appendPathOverrides(overrides, commentPaths, commentsPartType)
+
+	sort.Slice(overrides, func(i, j int) bool { return overrides[i].PartName < overrides[j].PartName })
+	doc.Overrides = overrides
+	return renderContentTypesDocument(doc)
+}
+
+func collectNonSlideRelationships(
+	nonSlide []common.EditorRelationship,
+	slideCapacity int,
+) ([]common.EditorRelationship, map[string]struct{}, bool, error) {
+	rels := make([]common.EditorRelationship, 0, len(nonSlide)+slideCapacity+1)
+	used := map[string]struct{}{}
 	hasSectionRel := false
 	for _, rel := range nonSlide {
 		id := strings.TrimSpace(rel.ID)
 		if id == "" {
-			return "", fmt.Errorf("non-slide relationship has empty Id")
+			return nil, nil, false, errors.New("non-slide relationship has empty Id")
 		}
 		if _, exists := used[id]; exists {
-			return "", fmt.Errorf("duplicate relationship Id %q", id)
+			return nil, nil, false, fmt.Errorf("duplicate relationship Id %q", id)
 		}
 		used[id] = struct{}{}
 		rels = append(rels, rel)
@@ -158,31 +236,44 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 			hasSectionRel = true
 		}
 	}
+	return rels, used, hasSectionRel, nil
+}
 
-	if hasSections && !hasSectionRel {
-		// Allocate next rId for sectionList
-		maxNum := 0
-		for _, r := range rels {
-			if n, ok := parseRelationshipNumber(r.ID); ok && n > maxNum {
-				maxNum = n
-			}
-		}
-		for _, s := range slides {
-			if n, ok := parseRelationshipNumber(s.RelID); ok && n > maxNum {
-				maxNum = n
-			}
-		}
-		sectionRelID := fmt.Sprintf("rId%d", maxNum+1)
-		rels = append(rels, common.EditorRelationship{
-			ID:     sectionRelID,
-			Type:   common.RelTypeSectionList,
-			Target: "sectionList.xml",
-		})
+func makeSectionListRelationship(
+	rels []common.EditorRelationship,
+	slides []common.EditorSlideRef,
+) common.EditorRelationship {
+	maxNum := maxRelationshipNumber(rels, slides)
+	return common.EditorRelationship{
+		ID:     fmt.Sprintf("rId%d", maxNum+1),
+		Type:   common.RelTypeSectionList,
+		Target: "sectionList.xml",
 	}
+}
 
+func maxRelationshipNumber(rels []common.EditorRelationship, slides []common.EditorSlideRef) int {
+	maxNum := 0
+	for _, r := range rels {
+		if n, ok := parseRelationshipNumber(r.ID); ok && n > maxNum {
+			maxNum = n
+		}
+	}
+	for _, slide := range slides {
+		if n, ok := parseRelationshipNumber(slide.RelID); ok && n > maxNum {
+			maxNum = n
+		}
+	}
+	return maxNum
+}
+
+func appendMissingSlideRelationships(
+	rels []common.EditorRelationship,
+	used map[string]struct{},
+	slides []common.EditorSlideRef,
+) []common.EditorRelationship {
 	for _, slide := range slides {
 		if _, exists := used[slide.RelID]; exists {
-			continue // Already in rels? (Shouldn't happen with slides usually)
+			continue
 		}
 		rels = append(rels, common.EditorRelationship{
 			ID:     slide.RelID,
@@ -190,38 +281,10 @@ func renderPresentationRelsXML(nonSlide []common.EditorRelationship, slides []co
 			Target: slide.Target,
 		})
 	}
-
-	sort.Slice(rels, func(i, j int) bool {
-		a, aok := parseRelationshipNumber(rels[i].ID)
-		b, bok := parseRelationshipNumber(rels[j].ID)
-		if aok && bok && a != b {
-			return a < b
-		}
-		return rels[i].ID < rels[j].ID
-	})
-
-	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
-	b.WriteString("\n")
-	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)
-	for _, rel := range rels {
-		b.WriteString("\n<Relationship Id=\"")
-		b.WriteString(common.XMLEscape(rel.ID))
-		b.WriteString("\" Type=\"")
-		b.WriteString(common.XMLEscape(rel.Type))
-		b.WriteString("\" Target=\"")
-		b.WriteString(common.XMLEscape(rel.Target))
-		b.WriteString("\"")
-		if strings.TrimSpace(rel.TargetMode) != "" {
-			b.WriteString(` TargetMode="` + common.XMLEscape(rel.TargetMode) + `"`)
-		}
-		b.WriteString("/>")
-	}
-	b.WriteString("\n</Relationships>")
-	return b.String(), nil
+	return rels
 }
 
-func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
+func sortRelationshipsByID(rels []common.EditorRelationship) {
 	sort.Slice(rels, func(i, j int) bool {
 		a, aok := common.ParseRelationshipNumber(rels[i].ID)
 		b, bok := common.ParseRelationshipNumber(rels[j].ID)
@@ -230,157 +293,156 @@ func renderRelationshipsXML(rels []common.EditorRelationship) (string, error) {
 		}
 		return rels[i].ID < rels[j].ID
 	})
+}
 
+func relationshipsXMLDocument(rels []common.EditorRelationship) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
 	b.WriteString("\n")
 	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)
 	for _, rel := range rels {
-		b.WriteString("\n<Relationship Id=\"")
-		b.WriteString(common.XMLEscape(rel.ID))
-		b.WriteString("\" Type=\"")
-		b.WriteString(common.XMLEscape(rel.Type))
-		b.WriteString("\" Target=\"")
-		b.WriteString(common.XMLEscape(rel.Target))
-		b.WriteString("\"")
-		if strings.TrimSpace(rel.TargetMode) != "" {
-			b.WriteString(` TargetMode="` + common.XMLEscape(rel.TargetMode) + `"`)
-		}
-		b.WriteString("/>")
+		writeRelationshipXML(&b, rel)
 	}
 	b.WriteString("\n</Relationships>")
-	return b.String(), nil
+	return b.String()
 }
 
-func rewriteContentTypes(current []byte, slides []common.EditorSlideRef, mediaPaths []string, hasSections bool, chartPaths []string, notesPaths []string, themePaths []string, layoutPaths []string, masterPaths []string, hasNotesMaster bool, hasCommentAuthors bool, commentPaths []string) (string, error) {
+func writeRelationshipXML(b *strings.Builder, rel common.EditorRelationship) {
+	b.WriteString("\n<Relationship Id=\"")
+	b.WriteString(common.XMLEscape(rel.ID))
+	b.WriteString("\" Type=\"")
+	b.WriteString(common.XMLEscape(rel.Type))
+	b.WriteString("\" Target=\"")
+	b.WriteString(common.XMLEscape(rel.Target))
+	b.WriteString("\"")
+	if strings.TrimSpace(rel.TargetMode) != "" {
+		b.WriteString(` TargetMode="` + common.XMLEscape(rel.TargetMode) + `"`)
+	}
+	b.WriteString("/>")
+}
+
+func parseContentTypesDocument(current []byte) (contentTypesDocument, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing content types content")
+		return contentTypesDocument{}, errors.New("missing content types content")
 	}
 
 	var doc contentTypesDocument
 	if err := xml.Unmarshal(current, &doc); err != nil {
-		return "", fmt.Errorf("parse content types: %w", err)
+		return contentTypesDocument{}, fmt.Errorf("parse content types: %w", err)
 	}
 	if strings.TrimSpace(doc.XMLNS) == "" {
 		doc.XMLNS = common.ContentTypesXMLNS
 	}
+	return doc, nil
+}
 
-	// 1. Manage Defaults (Media Extensions)
-	exts := make(map[string]struct{})
+func ensureContentTypeDefaults(doc *contentTypesDocument, mediaPaths []string) {
+	exts := make(map[string]struct{}, len(doc.Defaults))
 	for _, d := range doc.Defaults {
 		exts[strings.ToLower(d.Extension)] = struct{}{}
 	}
-	for _, m := range mediaPaths {
-		ext := strings.TrimPrefix(strings.ToLower(path.Ext(strings.TrimSpace(m))), ".")
-		if _, ok := exts[ext]; !ok {
-			contentType := ""
-			switch ext {
-			case "png":
-				contentType = "image/png"
-			case "jpg", "jpeg":
-				contentType = "image/jpeg"
-			case "gif":
-				contentType = "image/gif"
-			case "xlsx":
-				contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-			}
-			if contentType != "" {
-				doc.Defaults = append(doc.Defaults, contentTypeDefault{
-					Extension:   ext,
-					ContentType: contentType,
-				})
-				exts[ext] = struct{}{}
-			}
-		}
-	}
-
-	// 2. Manage Overrides (Slides, SectionList, and Comments)
-	filtered := make([]contentTypeOverride, 0, len(doc.Overrides)+len(slides)+1)
-	for _, override := range doc.Overrides {
-		part := common.CanonicalPartPath(override.PartName)
-		if isSlidePartOverride(part) {
+	for _, mediaPath := range mediaPaths {
+		ext := strings.TrimPrefix(strings.ToLower(path.Ext(strings.TrimSpace(mediaPath))), ".")
+		if _, ok := exts[ext]; ok {
 			continue
 		}
-		if part == "ppt/sectionList.xml" ||
-			part == "ppt/commentAuthors.xml" ||
-			strings.HasPrefix(part, "ppt/charts/chart") ||
-			strings.HasPrefix(part, "ppt/notesSlides/notesSlide") ||
-			strings.HasPrefix(part, "ppt/notesMasters/notesMaster") ||
-			strings.HasPrefix(part, "ppt/theme/theme") ||
-			strings.HasPrefix(part, "ppt/slideLayouts/slideLayout") ||
-			strings.HasPrefix(part, "ppt/slideMasters/slideMaster") ||
-			strings.HasPrefix(part, "ppt/comments/comment") {
+		contentType := contentTypeForExtension(ext)
+		if contentType == "" {
+			continue
+		}
+		doc.Defaults = append(doc.Defaults, contentTypeDefault{
+			Extension:   ext,
+			ContentType: contentType,
+		})
+		exts[ext] = struct{}{}
+	}
+}
+
+func contentTypeForExtension(ext string) string {
+	switch ext {
+	case "png":
+		return "image/png"
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	case "gif":
+		return "image/gif"
+	case "xlsx":
+		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	default:
+		return ""
+	}
+}
+
+func filterDynamicOverrides(existing []contentTypeOverride, slideCapacity int) []contentTypeOverride {
+	filtered := make([]contentTypeOverride, 0, len(existing)+slideCapacity+1)
+	for _, override := range existing {
+		part := common.CanonicalPartPath(override.PartName)
+		if shouldSkipOverridePart(part) {
 			continue
 		}
 		filtered = append(filtered, override)
 	}
+	return filtered
+}
 
+func shouldSkipOverridePart(part string) bool {
+	if isSlidePartOverride(part) {
+		return true
+	}
+	return part == "ppt/sectionList.xml" ||
+		part == "ppt/commentAuthors.xml" ||
+		strings.HasPrefix(part, "ppt/charts/chart") ||
+		strings.HasPrefix(part, "ppt/notesSlides/notesSlide") ||
+		strings.HasPrefix(part, "ppt/notesMasters/notesMaster") ||
+		strings.HasPrefix(part, "ppt/theme/theme") ||
+		strings.HasPrefix(part, "ppt/slideLayouts/slideLayout") ||
+		strings.HasPrefix(part, "ppt/slideMasters/slideMaster") ||
+		strings.HasPrefix(part, "ppt/comments/comment")
+}
+
+func appendSlideOverrides(
+	overrides []contentTypeOverride,
+	slides []common.EditorSlideRef,
+) []contentTypeOverride {
 	for _, slide := range slides {
-		filtered = append(filtered, contentTypeOverride{
+		overrides = append(overrides, contentTypeOverride{
 			PartName:    "/" + common.CanonicalPartPath(slide.Part),
 			ContentType: common.SlideContentType,
 		})
 	}
-	if hasSections {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/ppt/sectionList.xml",
-			ContentType: "application/vnd.microsoft.powerpoint.sectionList+xml",
-		})
-	}
-	for _, p := range chartPaths {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/" + common.CanonicalPartPath(p),
-			ContentType: "application/vnd.openxmlformats-officedocument.drawingml.chart+xml",
-		})
-	}
-	for _, p := range notesPaths {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/" + common.CanonicalPartPath(p),
-			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml",
-		})
-	}
-	for _, p := range themePaths {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/" + common.CanonicalPartPath(p),
-			ContentType: "application/vnd.openxmlformats-officedocument.theme+xml",
-		})
-	}
-	for _, p := range layoutPaths {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/" + common.CanonicalPartPath(p),
-			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml",
-		})
-	}
-	for _, p := range masterPaths {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/" + common.CanonicalPartPath(p),
-			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml",
-		})
-	}
-	if hasNotesMaster {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/ppt/notesMasters/notesMaster1.xml",
-			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml",
-		})
-	}
-	if hasCommentAuthors {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/ppt/commentAuthors.xml",
-			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml",
-		})
-	}
-	for _, p := range commentPaths {
-		filtered = append(filtered, contentTypeOverride{
-			PartName:    "/" + common.CanonicalPartPath(p),
-			ContentType: "application/vnd.openxmlformats-officedocument.presentationml.comments+xml",
-		})
-	}
+	return overrides
+}
 
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i].PartName < filtered[j].PartName
+func appendPathOverrides(
+	overrides []contentTypeOverride,
+	paths []string,
+	contentType string,
+) []contentTypeOverride {
+	for _, p := range paths {
+		overrides = append(overrides, contentTypeOverride{
+			PartName:    "/" + common.CanonicalPartPath(p),
+			ContentType: contentType,
+		})
+	}
+	return overrides
+}
+
+func appendOptionalContentTypeOverride(
+	overrides []contentTypeOverride,
+	include bool,
+	partName,
+	contentType string,
+) []contentTypeOverride {
+	if !include {
+		return overrides
+	}
+	return append(overrides, contentTypeOverride{
+		PartName:    partName,
+		ContentType: contentType,
 	})
-	doc.Overrides = filtered
+}
 
+func renderContentTypesDocument(doc contentTypesDocument) (string, error) {
 	rendered, err := xml.MarshalIndent(doc, "", "")
 	if err != nil {
 		return "", err
@@ -410,7 +472,7 @@ func isSlidePartOverride(partName string) bool {
 	return strings.HasPrefix(clean, "ppt/slides/slide") && strings.HasSuffix(clean, ".xml")
 }
 
-func buildSectionListXML(sections []EditorSection) string {
+func buildSectionListXML(sections []Section) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
 	b.WriteString("\n")
@@ -452,9 +514,9 @@ func rewriteChartExternalData(current []byte, newRelID string) []byte {
 
 var extLstPattern = regexp.MustCompile(`(?s)<p:extLst>.*?</p:extLst>|<p:extLst\s*/>`)
 
-func rewritePresentationSections(current []byte, sections []EditorSection) (string, error) {
+func rewritePresentationSections(current []byte, sections []Section) (string, error) {
 	if len(current) == 0 {
-		return "", fmt.Errorf("missing presentation XML content")
+		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
@@ -475,30 +537,10 @@ func rewritePresentationSections(current []byte, sections []EditorSection) (stri
 	//    a. Insert new <p:extLst> at end of presentation (before closing tag).
 
 	if extLstPattern.MatchString(source) {
-		return extLstPattern.ReplaceAllStringFunc(source, func(match string) string {
-			// Check if our extension exists
-			if strings.Contains(match, extURI) {
-				// Regex to replace specific extension?
-				// For simplicity/robustness, let's parse or strict regex.
-				// Since we control usage, let's try a regex for the specific p:ext
-				pExtPattern := regexp.MustCompile(fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)))
-				if pExtPattern.MatchString(match) {
-					return pExtPattern.ReplaceAllString(match, fullExtBlock)
-				}
-				// URI not found, but list exists. Append.
-				// Insert before closing </p:extLst>
-				if strings.Contains(match, "</p:extLst>") {
-					return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
-				}
-				// Self closing <p:extLst/>?
-				return strings.Replace(match, "/>", ">"+fullExtBlock+"</p:extLst>", 1)
-			}
-			// Extension not present, append it.
-			if strings.Contains(match, "</p:extLst>") {
-				return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
-			}
-			return strings.Replace(match, "/>", ">\n"+fullExtBlock+"\n</p:extLst>", 1)
-		}), nil
+		rewritten := extLstPattern.ReplaceAllStringFunc(source, func(match string) string {
+			return rewriteExtListMatch(match, extURI, fullExtBlock)
+		})
+		return rewritten, nil
 	}
 
 	// No extLst, insert it.
@@ -508,10 +550,32 @@ func rewritePresentationSections(current []byte, sections []EditorSection) (stri
 		return source[:idx] + newExtLst + source[idx:], nil
 	}
 
-	return "", fmt.Errorf("presentation XML malformed (missing </p:presentation>)")
+	return "", errors.New("presentation XML malformed (missing </p:presentation>)")
 }
 
-func buildPresentationSectionExtensionXML(sections []EditorSection) string {
+func rewriteExtListMatch(match, extURI, fullExtBlock string) string {
+	if strings.Contains(match, extURI) {
+		return replaceSectionExtension(match, extURI, fullExtBlock)
+	}
+	return appendSectionExtension(match, fullExtBlock)
+}
+
+func replaceSectionExtension(match, extURI, fullExtBlock string) string {
+	pExtPattern := regexp.MustCompile(fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)))
+	if pExtPattern.MatchString(match) {
+		return pExtPattern.ReplaceAllString(match, fullExtBlock)
+	}
+	return appendSectionExtension(match, fullExtBlock)
+}
+
+func appendSectionExtension(match, fullExtBlock string) string {
+	if strings.Contains(match, "</p:extLst>") {
+		return strings.Replace(match, "</p:extLst>", "\n"+fullExtBlock+"\n</p:extLst>", 1)
+	}
+	return strings.Replace(match, "/>", ">\n"+fullExtBlock+"\n</p:extLst>", 1)
+}
+
+func buildPresentationSectionExtensionXML(sections []Section) string {
 	if len(sections) == 0 {
 		return ""
 	}

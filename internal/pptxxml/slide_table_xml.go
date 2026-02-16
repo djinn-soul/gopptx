@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -171,12 +172,12 @@ func tableCellOpenTag(cell TableCellSpec) string {
 	b.WriteString("<a:tc")
 	if cell.RowSpan > 1 {
 		b.WriteString(` rowSpan="`)
-		b.WriteString(fmt.Sprintf("%d", cell.RowSpan))
+		b.WriteString(strconv.Itoa(cell.RowSpan))
 		b.WriteString(`"`)
 	}
 	if cell.ColSpan > 1 {
 		b.WriteString(` gridSpan="`)
-		b.WriteString(fmt.Sprintf("%d", cell.ColSpan))
+		b.WriteString(strconv.Itoa(cell.ColSpan))
 		b.WriteString(`"`)
 	}
 	if cell.VMerge {
@@ -263,7 +264,7 @@ func cloneTableCellBorderSpec(border *TableCellBorderSpec) *TableCellBorderSpec 
 func tableCellBorderXML(side string, border TableCellBorderSpec) string {
 	dash := tableCellBorderDash(border.Dash)
 	return `<a:` + side +
-		` w="` + fmt.Sprintf("%d", border.Width) +
+		` w="` + strconv.FormatInt(border.Width, 10) +
 		`"><a:solidFill><a:srgbClr val="` + Escape(border.Color) +
 		`"/></a:solidFill><a:prstDash val="` + Escape(dash) + `"/></a:` + side + `>`
 }

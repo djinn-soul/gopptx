@@ -52,7 +52,7 @@ func TestAdaptedReaderAt(t *testing.T) {
 		},
 		{
 			name:  "non-convertible to ReaderAt",
-			input: bytes.NewBuffer([]byte("abcdef")),
+			input: bytes.NewBufferString("abcdef"),
 			operations: []operation{
 				{
 					offset:          0,
@@ -77,7 +77,7 @@ func TestAdaptedReaderAt(t *testing.T) {
 		},
 		{
 			name:  "bytes gap",
-			input: bytes.NewBuffer([]byte("FIRSTxxxxxxxxxxxxxxxxWORLDxxxxxxxxxxxxxxHELLO")),
+			input: bytes.NewBufferString("FIRSTxxxxxxxxxxxxxxxxWORLDxxxxxxxxxxxxxxHELLO"),
 			operations: []operation{
 				{
 					offset:          0,
@@ -109,7 +109,6 @@ func TestAdaptedReaderAt(t *testing.T) {
 	}
 
 	for _, tc := range tcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			ra := ioadapters.ToReaderAt(tc.input)
 			for i, op := range tc.operations {

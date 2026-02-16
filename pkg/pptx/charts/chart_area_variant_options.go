@@ -74,8 +74,8 @@ func (c AreaStackedChart) WithValueAxisCrossBetween(mode string) AreaStackedChar
 	return c
 }
 
-func (c AreaStackedChart) WithValueRange(min float64, max float64) AreaStackedChart {
-	c.AreaChart = c.AreaChart.WithValueRange(min, max)
+func (c AreaStackedChart) WithValueRange(minValue float64, maxValue float64) AreaStackedChart {
+	c.AreaChart = c.AreaChart.WithValueRange(minValue, maxValue)
 	return c
 }
 
@@ -149,7 +149,7 @@ func (c AreaStacked100Chart) WithValueAxisCrossBetween(mode string) AreaStacked1
 	return c
 }
 
-func (c AreaStacked100Chart) WithValueRange(min float64, max float64) AreaStacked100Chart {
-	c.AreaChart = c.AreaChart.WithValueRange(min, max)
+func (c AreaStacked100Chart) WithValueRange(minValue float64, maxValue float64) AreaStacked100Chart {
+	c.AreaChart = c.AreaChart.WithValueRange(minValue, maxValue)
 	return c
 }

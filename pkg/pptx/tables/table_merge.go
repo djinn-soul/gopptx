@@ -35,10 +35,20 @@ func applyTableCellMerges(rows [][]TableCell, columnCount int, slideIndex int) (
 			cell := mergedRows[rowIdx][cellIdx]
 
 			if cell.RowSpan <= 0 {
-				return nil, fmt.Errorf("slide %d table row %d cell %d row span must be >= 1", slideIndex, rowIdx+1, cellIdx+1)
+				return nil, fmt.Errorf(
+					"slide %d table row %d cell %d row span must be >= 1",
+					slideIndex,
+					rowIdx+1,
+					cellIdx+1,
+				)
 			}
 			if cell.ColSpan <= 0 {
-				return nil, fmt.Errorf("slide %d table row %d cell %d col span must be >= 1", slideIndex, rowIdx+1, cellIdx+1)
+				return nil, fmt.Errorf(
+					"slide %d table row %d cell %d col span must be >= 1",
+					slideIndex,
+					rowIdx+1,
+					cellIdx+1,
+				)
 			}
 
 			if covered := coverage[rowIdx][cellIdx]; covered != nil {

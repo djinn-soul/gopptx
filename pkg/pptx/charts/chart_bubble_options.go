@@ -53,9 +53,9 @@ func (c BubbleChart) WithValueAxisCrossBetween(mode string) BubbleChart {
 	return c
 }
 
-func (c BubbleChart) WithValueRange(min float64, max float64) BubbleChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c BubbleChart) WithValueRange(minValue float64, maxValue float64) BubbleChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }
 

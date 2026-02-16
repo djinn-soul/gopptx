@@ -74,8 +74,8 @@ func (c LineMarkersChart) WithValueAxisCrossBetween(mode string) LineMarkersChar
 	return c
 }
 
-func (c LineMarkersChart) WithValueRange(min float64, max float64) LineMarkersChart {
-	c.LineChart = c.LineChart.WithValueRange(min, max)
+func (c LineMarkersChart) WithValueRange(minValue float64, maxValue float64) LineMarkersChart {
+	c.LineChart = c.LineChart.WithValueRange(minValue, maxValue)
 	return c
 }
 
@@ -149,7 +149,7 @@ func (c LineStackedChart) WithValueAxisCrossBetween(mode string) LineStackedChar
 	return c
 }
 
-func (c LineStackedChart) WithValueRange(min float64, max float64) LineStackedChart {
-	c.LineChart = c.LineChart.WithValueRange(min, max)
+func (c LineStackedChart) WithValueRange(minValue float64, maxValue float64) LineStackedChart {
+	c.LineChart = c.LineChart.WithValueRange(minValue, maxValue)
 	return c
 }

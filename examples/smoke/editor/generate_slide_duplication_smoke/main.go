@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -73,7 +74,7 @@ func run() error {
 	if err := editor.Save(finalPath); err != nil {
 		return fmt.Errorf("save: %w", err)
 	}
-	fmt.Printf("Generated slide duplication smoke sample: %s\n", finalPath)
+	log.Printf("Generated slide duplication smoke sample: %s\n", finalPath)
 
 	return nil
 }

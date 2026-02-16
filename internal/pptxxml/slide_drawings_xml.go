@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -171,8 +172,8 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <a:p/>
 </p:txBody>`)
 	} else {
-		bodyPrAttr := ""
 		autoFitXML := `<a:spAutoFit/>`
+		bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" marL="45720" marT="45720" marR="45720" marB="45720"`
 
 		if shape.TextFrame != nil {
 			bodyPrAttr = fmt.Sprintf(` wrap="%s" rtlCol="0" anchor="%s" marL="%d" marT="%d" marR="%d" marB="%d"`,
@@ -191,8 +192,6 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 			default:
 				autoFitXML = ""
 			}
-		} else {
-			bodyPrAttr = ` wrap="square" rtlCol="0" anchor="ctr" marL="45720" marT="45720" marR="45720" marB="45720"`
 		}
 
 		b.WriteString(fmt.Sprintf(`
@@ -231,9 +230,9 @@ func shapeLineXML(line ShapeLineSpec) string {
 	if strings.TrimSpace(line.Dash) != "" && line.Dash != "solid" {
 		dash = `<a:prstDash val="` + Escape(line.Dash) + `"/>`
 	}
-	cap := ""
+	lineCapAttr := ""
 	if strings.TrimSpace(line.Cap) != "" {
-		cap = ` cap="` + Escape(line.Cap) + `"`
+		lineCapAttr = ` cap="` + Escape(line.Cap) + `"`
 	}
 	join := ""
 	switch strings.TrimSpace(line.Join) {
@@ -245,7 +244,7 @@ func shapeLineXML(line ShapeLineSpec) string {
 		join = `<a:round/>`
 	}
 	return `
-<a:ln w="` + fmt.Sprintf("%d", line.Width) + `"` + cap + `>
+<a:ln w="` + strconv.FormatInt(line.Width, 10) + `"` + lineCapAttr + `>
 <a:solidFill><a:srgbClr val="` + Escape(line.Color) + `"/></a:solidFill>
 ` + dash + `
 ` + join + `
@@ -372,20 +371,14 @@ func alphaFromNormalizedTransparency(transparency float64) int {
 	return int((1.0 - transparency) * 100000)
 }
 
-func connectorBounds(connector ConnectorSpec) (x int64, y int64, cx int64, cy int64) {
-	x = connector.StartX
-	if connector.EndX < x {
-		x = connector.EndX
-	}
-	y = connector.StartY
-	if connector.EndY < y {
-		y = connector.EndY
-	}
-	cx = connector.EndX - connector.StartX
+func connectorBounds(connector ConnectorSpec) (int64, int64, int64, int64) {
+	x := min(connector.EndX, connector.StartX)
+	y := min(connector.EndY, connector.StartY)
+	cx := connector.EndX - connector.StartX
 	if cx < 0 {
 		cx = -cx
 	}
-	cy = connector.EndY - connector.StartY
+	cy := connector.EndY - connector.StartY
 	if cy < 0 {
 		cy = -cy
 	}

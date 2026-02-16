@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
@@ -25,8 +25,8 @@ func TestPresentationEditorDuplicateSlide(t *testing.T) {
 	defer func() { _ = editor.Close() }()
 
 	// Duplicate Slide 1 to the end
-	if _, err := editor.DuplicateSlide(0, 2); err != nil {
-		t.Fatalf("duplicate slide 0 to 2: %v", err)
+	if _, duplicateErr := editor.DuplicateSlide(0, 2); duplicateErr != nil {
+		t.Fatalf("duplicate slide 0 to 2: %v", duplicateErr)
 	}
 
 	if editor.SlideCount() != 3 {
@@ -39,8 +39,8 @@ func TestPresentationEditorDuplicateSlide(t *testing.T) {
 	}
 
 	// Duplicate Slide 2 between 1 and its copy
-	if _, err := editor.DuplicateSlide(1, 1); err != nil {
-		t.Fatalf("duplicate slide 1 to 1: %v", err)
+	if _, duplicateErr := editor.DuplicateSlide(1, 1); duplicateErr != nil {
+		t.Fatalf("duplicate slide 1 to 1: %v", duplicateErr)
 	}
 
 	if editor.SlideCount() != 4 {
@@ -54,8 +54,8 @@ func TestPresentationEditorDuplicateSlide(t *testing.T) {
 	}
 
 	outPath := filepath.Join(t.TempDir(), "duplicated.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save deck: %v", saveErr)
 	}
 
 	// Reopen and check
@@ -98,13 +98,13 @@ func TestDuplicateSlideWithImage(t *testing.T) {
 	defer func() { _ = editor.Close() }()
 
 	// Duplicate Image Slide
-	if _, err := editor.DuplicateSlide(0, 2); err != nil {
-		t.Fatalf("duplicate image slide: %v", err)
+	if _, duplicateErr := editor.DuplicateSlide(0, 2); duplicateErr != nil {
+		t.Fatalf("duplicate image slide: %v", duplicateErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "duplicated_image.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save: %v", saveErr)
 	}
 
 	// Verify rels for the copy
@@ -130,8 +130,8 @@ func TestPresentationEditorMoveSlide(t *testing.T) {
 	defer func() { _ = editor.Close() }()
 
 	// Move B to start: [B, A, C]
-	if err := editor.MoveSlide(1, 0); err != nil {
-		t.Fatalf("move 1 to 0: %v", err)
+	if moveErr := editor.MoveSlide(1, 0); moveErr != nil {
+		t.Fatalf("move 1 to 0: %v", moveErr)
 	}
 
 	slides := editor.Slides()
@@ -140,8 +140,8 @@ func TestPresentationEditorMoveSlide(t *testing.T) {
 	}
 
 	// Move A to end: [B, C, A]
-	if err := editor.MoveSlide(1, 2); err != nil {
-		t.Fatalf("move 1 to 2: %v", err)
+	if moveErr := editor.MoveSlide(1, 2); moveErr != nil {
+		t.Fatalf("move 1 to 2: %v", moveErr)
 	}
 
 	slides = editor.Slides()
@@ -150,8 +150,8 @@ func TestPresentationEditorMoveSlide(t *testing.T) {
 	}
 
 	outPath := filepath.Join(t.TempDir(), "moved.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save deck: %v", saveErr)
 	}
 
 	reopened, err := OpenPresentationEditor(outPath)
@@ -179,8 +179,8 @@ func TestDuplicateSlide_AppendsCopySuffixToTitlePlaceholder(t *testing.T) {
 	srcPart := editor.Slides()[0].PartName
 	editor.parts.Set(srcPart, []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title")))
 
-	if _, err := editor.DuplicateSlide(0, 1); err != nil {
-		t.Fatalf("duplicate slide: %v", err)
+	if _, duplicateErr := editor.DuplicateSlide(0, 1); duplicateErr != nil {
+		t.Fatalf("duplicate slide: %v", duplicateErr)
 	}
 
 	copyPart := editor.Slides()[1].PartName
@@ -208,8 +208,8 @@ func TestDuplicateSlide_AppendsCopySuffixToLastTitleRun(t *testing.T) {
 	srcPart := editor.Slides()[0].PartName
 	editor.parts.Set(srcPart, []byte(slideWithBodyAndMultiRunTitlePlaceholderXML("Body Text", "Main ", "Title")))
 
-	if _, err := editor.DuplicateSlide(0, 1); err != nil {
-		t.Fatalf("duplicate slide: %v", err)
+	if _, duplicateErr := editor.DuplicateSlide(0, 1); duplicateErr != nil {
+		t.Fatalf("duplicate slide: %v", duplicateErr)
 	}
 
 	copyPart := editor.Slides()[1].PartName
@@ -240,8 +240,8 @@ func TestSetSlideTitle_TargetsTitlePlaceholder(t *testing.T) {
 	part := editor.Slides()[0].PartName
 	editor.parts.Set(part, []byte(slideWithBodyAndTitlePlaceholderXML("Body Text", "Main Title")))
 
-	if err := editor.SetSlideTitle(0, "Renamed Title"); err != nil {
-		t.Fatalf("set slide title: %v", err)
+	if setErr := editor.SetSlideTitle(0, "Renamed Title"); setErr != nil {
+		t.Fatalf("set slide title: %v", setErr)
 	}
 
 	xmlData, _ := editor.parts.Get(part)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -94,6 +95,6 @@ func run() error {
 		return fmt.Errorf("core title mismatch: got %q want %q", got.Title, props.Title)
 	}
 
-	fmt.Printf("Generated presentation properties example: %s\n", outputPath)
+	log.Printf("Generated presentation properties example: %s\n", outputPath)
 	return nil
 }

@@ -19,13 +19,16 @@ func TestPresentationEditorAddNotesInjectsMasterAndWiring(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.UpdateSlide(0, elements.NewSlide("Slide 1").AddBullet("Body").WithNotes("Speaker script")); err != nil {
-		t.Fatalf("update slide with notes: %v", err)
+	if updateErr := editor.UpdateSlide(
+		0,
+		elements.NewSlide("Slide 1").AddBullet("Body").WithNotes("Speaker script"),
+	); updateErr != nil {
+		t.Fatalf("update slide with notes: %v", updateErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "with-notes.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	if part := readZipFileBytes(t, outPath, "ppt/notesMasters/notesMaster1.xml"); len(part) == 0 {
@@ -70,13 +73,13 @@ func TestPresentationEditorMoveSlidePreservesNotesAttachment(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.MoveSlide(0, 1); err != nil {
-		t.Fatalf("move slide: %v", err)
+	if moveErr := editor.MoveSlide(0, 1); moveErr != nil {
+		t.Fatalf("move slide: %v", moveErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "moved-with-notes.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	slide1Rels := string(readZipFileBytes(t, outPath, "ppt/slides/_rels/slide1.xml.rels"))
@@ -97,13 +100,13 @@ func TestPresentationEditorRemoveSlideRemovesAssociatedNotes(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.RemoveSlide(0); err != nil {
-		t.Fatalf("remove slide: %v", err)
+	if removeErr := editor.RemoveSlide(0); removeErr != nil {
+		t.Fatalf("remove slide: %v", removeErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "removed-with-notes.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	if part := readZipFileBytes(t, outPath, "ppt/notesSlides/notesSlide1.xml"); len(part) != 0 {

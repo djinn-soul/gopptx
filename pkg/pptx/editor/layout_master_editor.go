@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 var (
@@ -16,6 +16,8 @@ var (
 	masterNumPattern = regexp.MustCompile(`^slideMaster(\d+)\.xml$`)
 	themeNumPattern  = regexp.MustCompile(`^theme(\d+)\.xml$`)
 )
+
+const partPatternSubmatchSize = 2
 
 func (e *PresentationEditor) ListSlideLayouts() ([]common.SlideLayoutInfo, error) {
 	layoutParts := e.parts.KeysWithPrefix("ppt/slideLayouts/slideLayout")
@@ -74,108 +76,155 @@ func (e *PresentationEditor) RebindSlideLayout(slideIndex int, layoutPart string
 	if !found {
 		return fmt.Errorf("slide %d has no layout relationship", slideIndex)
 	}
-	rendered, err := renderRelationshipsXML(rels)
-	if err != nil {
-		return err
-	}
+	rendered := renderRelationshipsXML(rels)
 	e.parts.Set(relsPath, []byte(rendered))
 	return nil
 }
 
 func (e *PresentationEditor) CloneLayoutMasterFamily(layoutPart string) (common.SlideMasterCloneResult, error) {
-	layoutPart = common.CanonicalPartPath(layoutPart)
-	if !e.parts.Has(layoutPart) {
-		return common.SlideMasterCloneResult{}, fmt.Errorf("layout part %s not found", layoutPart)
-	}
-	sourceMaster, err := e.layoutMasterPart(layoutPart)
+	sourceMaster, layoutFamily, err := e.cloneFamilyInputs(layoutPart)
 	if err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
 
-	layoutFamily, err := e.layoutsForMaster(sourceMaster)
+	newMaster := e.nextMasterPartPath()
+	layoutMap := e.buildLayoutCloneMap(layoutFamily)
+	masterXML, masterRels, err := e.loadMasterCloneSource(sourceMaster)
 	if err != nil {
 		return common.SlideMasterCloneResult{}, err
-	}
-	if len(layoutFamily) == 0 {
-		return common.SlideMasterCloneResult{}, fmt.Errorf("no layouts found for master %s", sourceMaster)
-	}
-
-	newMaster := fmt.Sprintf("ppt/slideMasters/slideMaster%d.xml", e.nextPartNumber(masterNumPattern, "ppt/slideMasters"))
-	layoutMap := make(map[string]string, len(layoutFamily))
-	nextLayoutNum := e.nextPartNumber(layoutNumPattern, "ppt/slideLayouts")
-	for _, oldLayout := range layoutFamily {
-		layoutMap[oldLayout] = fmt.Sprintf("ppt/slideLayouts/slideLayout%d.xml", nextLayoutNum)
-		nextLayoutNum++
-	}
-
-	masterXML, ok := e.parts.Get(sourceMaster)
-	if !ok {
-		return common.SlideMasterCloneResult{}, fmt.Errorf("master part not found: %s", sourceMaster)
-	}
-	masterRelsPath := common.RelsPathFor(sourceMaster)
-	masterRelsData, ok := e.parts.Get(masterRelsPath)
-	if !ok {
-		return common.SlideMasterCloneResult{}, fmt.Errorf("master rels part not found: %s", masterRelsPath)
-	}
-	masterRels, err := parseRelationshipsXML(masterRelsData)
-	if err != nil {
-		return common.SlideMasterCloneResult{}, fmt.Errorf("parse master rels: %w", err)
 	}
 
 	themePart, newThemePart, err := e.cloneMasterTheme(masterRels, sourceMaster)
 	if err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
+	cloneLayoutErr := e.cloneLayoutParts(layoutMap, newMaster)
+	if cloneLayoutErr != nil {
+		return common.SlideMasterCloneResult{}, cloneLayoutErr
+	}
+	e.writeClonedMaster(sourceMaster, newMaster, masterXML, masterRels, layoutMap, newThemePart)
+	registerErr := e.registerClonedMaster(newMaster)
+	if registerErr != nil {
+		return common.SlideMasterCloneResult{}, registerErr
+	}
 
-	// clone layouts first
+	return common.SlideMasterCloneResult{
+		MasterPart: newMaster,
+		ThemePart:  cloneResultTheme(themePart, newThemePart),
+		LayoutMap:  layoutMap,
+	}, nil
+}
+
+func (e *PresentationEditor) cloneFamilyInputs(layoutPart string) (string, []string, error) {
+	layoutPart = common.CanonicalPartPath(layoutPart)
+	if !e.parts.Has(layoutPart) {
+		return "", nil, fmt.Errorf("layout part %s not found", layoutPart)
+	}
+	sourceMaster, err := e.layoutMasterPart(layoutPart)
+	if err != nil {
+		return "", nil, err
+	}
+	layoutFamily, err := e.layoutsForMaster(sourceMaster)
+	if err != nil {
+		return "", nil, err
+	}
+	if len(layoutFamily) == 0 {
+		return "", nil, fmt.Errorf("no layouts found for master %s", sourceMaster)
+	}
+	return sourceMaster, layoutFamily, nil
+}
+
+func (e *PresentationEditor) nextMasterPartPath() string {
+	return fmt.Sprintf(
+		"ppt/slideMasters/slideMaster%d.xml",
+		e.nextPartNumber(masterNumPattern, "ppt/slideMasters"),
+	)
+}
+
+func (e *PresentationEditor) buildLayoutCloneMap(layoutFamily []string) map[string]string {
+	layoutMap := make(map[string]string, len(layoutFamily))
+	nextLayoutNum := e.nextPartNumber(layoutNumPattern, "ppt/slideLayouts")
+	for _, oldLayout := range layoutFamily {
+		layoutMap[oldLayout] = fmt.Sprintf("ppt/slideLayouts/slideLayout%d.xml", nextLayoutNum)
+		nextLayoutNum++
+	}
+	return layoutMap
+}
+
+func (e *PresentationEditor) loadMasterCloneSource(
+	sourceMaster string,
+) ([]byte, []common.EditorRelationship, error) {
+	masterXML, ok := e.parts.Get(sourceMaster)
+	if !ok {
+		return nil, nil, fmt.Errorf("master part not found: %s", sourceMaster)
+	}
+	masterRelsPath := common.RelsPathFor(sourceMaster)
+	masterRelsData, ok := e.parts.Get(masterRelsPath)
+	if !ok {
+		return nil, nil, fmt.Errorf("master rels part not found: %s", masterRelsPath)
+	}
+	masterRels, err := parseRelationshipsXML(masterRelsData)
+	if err != nil {
+		return nil, nil, fmt.Errorf("parse master rels: %w", err)
+	}
+	return masterXML, masterRels, nil
+}
+
+func (e *PresentationEditor) cloneLayoutParts(layoutMap map[string]string, newMaster string) error {
 	for oldLayout, clonedLayout := range layoutMap {
-		layoutXML, ok := e.parts.Get(oldLayout)
-		if !ok {
-			return common.SlideMasterCloneResult{}, fmt.Errorf("layout part not found: %s", oldLayout)
+		layoutXML, layoutOK := e.parts.Get(oldLayout)
+		if !layoutOK {
+			return fmt.Errorf("layout part not found: %s", oldLayout)
 		}
 		e.parts.Set(clonedLayout, append([]byte(nil), layoutXML...))
 
 		layoutRelsPath := common.RelsPathFor(oldLayout)
-		layoutRelsData, ok := e.parts.Get(layoutRelsPath)
-		if !ok {
-			return common.SlideMasterCloneResult{}, fmt.Errorf("layout rels missing: %s", layoutRelsPath)
+		layoutRelsData, relsOK := e.parts.Get(layoutRelsPath)
+		if !relsOK {
+			return fmt.Errorf("layout rels missing: %s", layoutRelsPath)
 		}
-		layoutRels, err := parseRelationshipsXML(layoutRelsData)
-		if err != nil {
-			return common.SlideMasterCloneResult{}, fmt.Errorf("parse layout rels: %w", err)
+		layoutRels, parseErr := parseRelationshipsXML(layoutRelsData)
+		if parseErr != nil {
+			return fmt.Errorf("parse layout rels: %w", parseErr)
 		}
 		for i := range layoutRels {
 			if layoutRels[i].Type == common.RelTypeSlideMaster {
 				layoutRels[i].Target = common.MakeRelativePath(clonedLayout, newMaster)
 			}
 		}
-		rendered, err := renderRelationshipsXML(layoutRels)
-		if err != nil {
-			return common.SlideMasterCloneResult{}, err
-		}
+		rendered := renderRelationshipsXML(layoutRels)
 		e.parts.Set(common.RelsPathFor(clonedLayout), []byte(rendered))
 	}
+	return nil
+}
 
-	// clone master xml and rels
+func (e *PresentationEditor) writeClonedMaster(
+	sourceMaster string,
+	newMaster string,
+	masterXML []byte,
+	masterRels []common.EditorRelationship,
+	layoutMap map[string]string,
+	newThemePart string,
+) {
 	e.parts.Set(newMaster, append([]byte(nil), masterXML...))
 	for i := range masterRels {
-		if masterRels[i].Type == common.RelTypeSlideLayout {
+		switch masterRels[i].Type {
+		case common.RelTypeSlideLayout:
 			oldLayout := common.CanonicalPartPath(path.Join(path.Dir(sourceMaster), masterRels[i].Target))
-			if newLayout, ok := layoutMap[oldLayout]; ok {
+			if newLayout, mapped := layoutMap[oldLayout]; mapped {
 				masterRels[i].Target = common.MakeRelativePath(newMaster, newLayout)
 			}
-		}
-		if masterRels[i].Type == common.RelTypeTheme && newThemePart != "" {
-			masterRels[i].Target = common.MakeRelativePath(newMaster, newThemePart)
+		case common.RelTypeTheme:
+			if newThemePart != "" {
+				masterRels[i].Target = common.MakeRelativePath(newMaster, newThemePart)
+			}
 		}
 	}
-	renderedMasterRels, err := renderRelationshipsXML(masterRels)
-	if err != nil {
-		return common.SlideMasterCloneResult{}, err
-	}
+	renderedMasterRels := renderRelationshipsXML(masterRels)
 	e.parts.Set(common.RelsPathFor(newMaster), []byte(renderedMasterRels))
+}
 
-	// register master in presentation rels + XML master list
+func (e *PresentationEditor) registerClonedMaster(newMaster string) error {
 	e.recalculateNextRelIDNum()
 	newMasterRelID := fmt.Sprintf("rId%d", e.nextRelIDNum)
 	e.nextRelIDNum++
@@ -184,21 +233,20 @@ func (e *PresentationEditor) CloneLayoutMasterFamily(layoutPart string) (common.
 		Type:   common.RelTypeSlideMaster,
 		Target: common.MakeRelativePath(common.PresentationXMLPath, newMaster),
 	})
+
 	updatedPresentationXML, err := rewritePresentationSlideMasterList([]byte(e.presentationXML), newMasterRelID)
 	if err != nil {
-		return common.SlideMasterCloneResult{}, err
+		return err
 	}
 	e.presentationXML = updatedPresentationXML
+	return nil
+}
 
-	outTheme := themePart
+func cloneResultTheme(themePart, newThemePart string) string {
 	if newThemePart != "" {
-		outTheme = newThemePart
+		return newThemePart
 	}
-	return common.SlideMasterCloneResult{
-		MasterPart: newMaster,
-		ThemePart:  outTheme,
-		LayoutMap:  layoutMap,
-	}, nil
+	return themePart
 }
 
 func (e *PresentationEditor) layoutMasterPart(layoutPart string) (string, error) {
@@ -251,17 +299,20 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 	return out, nil
 }
 
-func (e *PresentationEditor) cloneMasterTheme(masterRels []common.EditorRelationship, sourceMaster string) (oldTheme string, newTheme string, err error) {
+func (e *PresentationEditor) cloneMasterTheme(
+	masterRels []common.EditorRelationship,
+	sourceMaster string,
+) (string, string, error) {
 	for _, rel := range masterRels {
 		if rel.Type != common.RelTypeTheme {
 			continue
 		}
-		oldTheme = common.CanonicalPartPath(path.Join(path.Dir(sourceMaster), rel.Target))
+		oldTheme := common.CanonicalPartPath(path.Join(path.Dir(sourceMaster), rel.Target))
 		themeXML, ok := e.parts.Get(oldTheme)
 		if !ok {
 			return "", "", fmt.Errorf("theme part not found: %s", oldTheme)
 		}
-		newTheme = fmt.Sprintf("ppt/theme/theme%d.xml", e.nextPartNumber(themeNumPattern, "ppt/theme"))
+		newTheme := fmt.Sprintf("ppt/theme/theme%d.xml", e.nextPartNumber(themeNumPattern, "ppt/theme"))
 		e.parts.Set(newTheme, append([]byte(nil), themeXML...))
 		return oldTheme, newTheme, nil
 	}
@@ -273,7 +324,7 @@ func (e *PresentationEditor) nextPartNumber(pattern *regexp.Regexp, dir string) 
 	for _, part := range e.parts.KeysWithPrefix(dir + "/") {
 		base := path.Base(part)
 		m := pattern.FindStringSubmatch(base)
-		if len(m) != 2 {
+		if len(m) != partPatternSubmatchSize {
 			continue
 		}
 		n, err := strconv.Atoi(m[1])

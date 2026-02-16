@@ -142,7 +142,11 @@ func TestBulletStylesParityFixtureAgainstPptRsDeck(t *testing.T) {
 }
 
 func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T) {
-	reference := testutil.ReadZipFile(t, testutil.FixtureZipReader(t, "comprehensive_demo.pptx"), "ppt/slides/slide29.xml")
+	reference := testutil.ReadZipFile(
+		t,
+		testutil.FixtureZipReader(t, "comprehensive_demo.pptx"),
+		"ppt/slides/slide29.xml",
+	)
 	ours := generatedSlideXML(t,
 		pptx.NewSlide("Text Enhancements - New Formatting").
 			AddBulletRuns([]pptx.TextRun{pptx.NewTextRun("Strike").WithStrikethrough(true)}).

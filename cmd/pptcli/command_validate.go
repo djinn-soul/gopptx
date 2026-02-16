@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -66,7 +67,7 @@ func validatePPTXFile(path string) ([]string, error) {
 		return nil, err
 	}
 	if !meta.Mode().IsRegular() {
-		return nil, fmt.Errorf("path is not a regular file")
+		return nil, errors.New("path is not a regular file")
 	}
 
 	file, err := os.Open(path)
@@ -90,7 +91,8 @@ func validatePPTXFile(path string) ([]string, error) {
 		}
 		names[name] = struct{}{}
 		lower := strings.ToLower(name)
-		if strings.HasPrefix(lower, "ppt/slides/slide") && strings.HasSuffix(lower, ".xml") && !strings.Contains(lower, "/_rels/") {
+		if strings.HasPrefix(lower, "ppt/slides/slide") && strings.HasSuffix(lower, ".xml") &&
+			!strings.Contains(lower, "/_rels/") {
 			slideCount++
 		}
 		if strings.HasSuffix(lower, ".xml") || strings.HasSuffix(lower, ".rels") {
@@ -124,13 +126,13 @@ func validateEntryXML(entry *zip.File) error {
 		return err
 	}
 	if len(bytes.TrimSpace(data)) == 0 {
-		return fmt.Errorf("empty XML content")
+		return errors.New("empty XML content")
 	}
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	for {
 		if _, err := decoder.Token(); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return fmt.Errorf("invalid XML: %w", err)

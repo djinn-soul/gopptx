@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -34,12 +33,12 @@ func main() {
 		log.Fatalf("failed to duplicate slide: %v", err)
 	}
 
-	fmt.Printf("Duplicated chart slide to index %d\n", newIndex)
+	log.Printf("Duplicated chart slide to index %d\n", newIndex)
 
 	// 3. Save
 	if err := editor.Save(outPath); err != nil {
 		log.Fatalf("failed to save edited pptx: %v", err)
 	}
 
-	fmt.Printf("Successfully generated %s\n", outPath)
+	log.Printf("Successfully generated %s\n", outPath)
 }

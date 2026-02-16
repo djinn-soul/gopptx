@@ -1,16 +1,17 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // ListSlideImages returns image relationships for a slide in relationship order.
 func (e *PresentationEditor) ListSlideImages(slideIndex int) ([]common.SlideImageRef, error) {
 	if e == nil {
-		return nil, fmt.Errorf("editor cannot be nil")
+		return nil, errors.New("editor cannot be nil")
 	}
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return nil, fmt.Errorf("slide index %d out of range [0,%d)", slideIndex, len(e.slides))
@@ -49,14 +50,14 @@ func (e *PresentationEditor) SwapImageByIndex(slideIndex, imageIndex int, data [
 // SwapImageByRelID replaces one slide image relationship target by relationship ID.
 func (e *PresentationEditor) SwapImageByRelID(slideIndex int, relID string, data []byte, format string) error {
 	if strings.TrimSpace(relID) == "" {
-		return fmt.Errorf("relationship id cannot be empty")
+		return errors.New("relationship id cannot be empty")
 	}
 	return e.swapImageByRelID(slideIndex, relID, data, format)
 }
 
 func (e *PresentationEditor) swapImageByRelID(slideIndex int, relID string, data []byte, format string) error {
 	if e == nil {
-		return fmt.Errorf("editor cannot be nil")
+		return errors.New("editor cannot be nil")
 	}
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range [0,%d)", slideIndex, len(e.slides))
@@ -93,10 +94,7 @@ func (e *PresentationEditor) swapImageByRelID(slideIndex int, relID string, data
 		}
 	}
 
-	rendered, err := renderRelationshipsXML(rels)
-	if err != nil {
-		return err
-	}
+	rendered := renderRelationshipsXML(rels)
 	e.parts.Set(relsPath, []byte(rendered))
 	return nil
 }

@@ -3,11 +3,12 @@ package editor
 import (
 	"archive/zip"
 	"fmt"
+	"maps"
 	"os"
 	"sort"
 	"sync"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // PartStore provides lazy-loading access to PPTX package parts.
@@ -38,7 +39,7 @@ type PartStore struct {
 }
 
 // newPartStoreFromZip creates a lazy store backed by the given zip reader.
-// The os.File must remain open for the lifetime of the store.
+// The [os.File] must remain open for the lifetime of the store.
 func newPartStoreFromZip(file *os.File, zr *zip.Reader) *PartStore {
 	index := make(map[string]*zip.File, len(zr.File))
 	for _, entry := range zr.File {
@@ -69,9 +70,7 @@ func NewPartStore() *PartStore {
 // already loaded (e.g. from MergeFromEditor).
 func newPartStoreFromMap(parts map[string][]byte) *PartStore {
 	cached := make(map[string][]byte, len(parts))
-	for k, v := range parts {
-		cached[k] = v
-	}
+	maps.Copy(cached, parts)
 	return &PartStore{
 		index:     make(map[string]*zip.File),
 		cache:     cached,
@@ -86,52 +85,22 @@ func newPartStoreFromMap(parts map[string][]byte) *PartStore {
 // then cached data, then lazy-reads from the zip archive.
 func (ps *PartStore) Get(name string) ([]byte, bool) {
 	ps.mu.RLock()
-	if ps.deleted[name] {
-		ps.mu.RUnlock()
-		return nil, false
-	}
-	if data, ok := ps.modified[name]; ok {
+	if data, ok, pending := ps.getPriorityDataLocked(name); ok {
 		ps.mu.RUnlock()
 		return data, true
-	}
-	if data, ok := ps.cache[name]; ok {
+	} else if pending != nil {
 		ps.mu.RUnlock()
-		return data, true
-	}
-	if pending, ok := ps.inflight[name]; ok {
-		p := pending
-		ch := p.ch
-		ps.mu.RUnlock()
-		<-ch
-		if p.err != nil {
-			return nil, false
-		}
-		return p.data, true
+		return waitInflightRead(pending)
 	}
 	ps.mu.RUnlock()
 
 	ps.mu.Lock()
-	if ps.deleted[name] {
-		ps.mu.Unlock()
-		return nil, false
-	}
-	if data, ok := ps.modified[name]; ok {
+	if data, ok, pending := ps.getPriorityDataLocked(name); ok {
 		ps.mu.Unlock()
 		return data, true
-	}
-	if data, ok := ps.cache[name]; ok {
+	} else if pending != nil {
 		ps.mu.Unlock()
-		return data, true
-	}
-	if pending, ok := ps.inflight[name]; ok {
-		p := pending
-		ch := p.ch
-		ps.mu.Unlock()
-		<-ch
-		if p.err != nil {
-			return nil, false
-		}
-		return p.data, true
+		return waitInflightRead(pending)
 	}
 	entry, ok := ps.index[name]
 	if !ok {
@@ -150,10 +119,10 @@ func (ps *PartStore) Get(name string) ([]byte, bool) {
 	if err == nil {
 		if ps.deleted[name] {
 			err = fmt.Errorf("part %q was deleted during read", name)
-		} else if current, ok := ps.modified[name]; ok {
-			data = current
-		} else if current, ok := ps.cache[name]; ok {
-			data = current
+		} else if modifiedData, modifiedOK := ps.modified[name]; modifiedOK {
+			data = modifiedData
+		} else if cachedData, cachedOK := ps.cache[name]; cachedOK {
+			data = cachedData
 		} else {
 			ps.cache[name] = data
 		}

@@ -1,8 +1,8 @@
 package pptxxml
 
 import (
-	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -13,7 +13,7 @@ const (
 )
 
 func shapeTextSizeXML(shape ShapeSpec) string {
-	return fmt.Sprintf("%d", autoFitShapeTextSizePt(shape)*100)
+	return strconv.Itoa(autoFitShapeTextSizePt(shape) * 100)
 }
 
 func autoFitShapeTextSizePt(shape ShapeSpec) int {
@@ -28,10 +28,7 @@ func autoFitShapeTextSizePt(shape ShapeSpec) int {
 	sizeByBounds := int(math.Round(dimensionPts * 0.28))
 	sizeByChars := int(math.Round(42 - 0.50*float64(chars)))
 
-	sizePt := sizeByChars
-	if sizeByBounds < sizePt {
-		sizePt = sizeByBounds
-	}
+	sizePt := min(sizeByBounds, sizeByChars)
 	return clampInt(sizePt, shapeTextMinPt, shapeTextMaxPt)
 }
 

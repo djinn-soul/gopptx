@@ -81,12 +81,23 @@ func imageShape(image ImageRef, shapeID int) string {
 	if image.Shadow || image.Reflection {
 		effectsXML = "<a:effectLst>"
 		if image.Shadow {
-			effectsXML += fmt.Sprintf(`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
-				defaultShadowBlurRad, defaultShadowDist, defaultShadowDir, defaultShadowAlpha)
+			effectsXML += fmt.Sprintf(
+				`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
+				defaultShadowBlurRad,
+				defaultShadowDist,
+				defaultShadowDir,
+				defaultShadowAlpha,
+			)
 		}
 		if image.Reflection {
-			effectsXML += fmt.Sprintf(`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" sy="-100000" algn="bl" rotWithShape="0"/>`,
-				defaultReflectionBlur, defaultReflectionStA, defaultReflectionEndA, defaultReflectionEndPos, defaultShadowDir)
+			effectsXML += fmt.Sprintf(
+				`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" sy="-100000" algn="bl" rotWithShape="0"/>`,
+				defaultReflectionBlur,
+				defaultReflectionStA,
+				defaultReflectionEndA,
+				defaultReflectionEndPos,
+				defaultShadowDir,
+			)
 		}
 		effectsXML += "</a:effectLst>"
 	}

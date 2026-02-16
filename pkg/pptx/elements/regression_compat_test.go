@@ -25,7 +25,11 @@ func TestCalculateShapeIDs_IncludesChartSlot(t *testing.T) {
 		t.Fatalf("expected one shape id in each case, got withChart=%v withoutChart=%v", idsWithChart, idsWithoutChart)
 	}
 	if idsWithChart[0] != idsWithoutChart[0]+1 {
-		t.Fatalf("expected chart to reserve one shape slot: withChart=%v withoutChart=%v", idsWithChart, idsWithoutChart)
+		t.Fatalf(
+			"expected chart to reserve one shape slot: withChart=%v withoutChart=%v",
+			idsWithChart,
+			idsWithoutChart,
+		)
 	}
 }
 

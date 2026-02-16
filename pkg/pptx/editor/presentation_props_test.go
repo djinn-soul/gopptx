@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -30,16 +30,16 @@ func TestPresentationEditorApplyThemeAndSlideSize(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.ApplyTheme(styling.ThemeTech); err != nil {
-		t.Fatalf("apply theme: %v", err)
+	if applyErr := editor.ApplyTheme(styling.ThemeTech); applyErr != nil {
+		t.Fatalf("apply theme: %v", applyErr)
 	}
-	if err := editor.SetSlideSize(SlideSize16x9); err != nil {
-		t.Fatalf("set slide size: %v", err)
+	if sizeErr := editor.SetSlideSize(SlideSize16x9()); sizeErr != nil {
+		t.Fatalf("set slide size: %v", sizeErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "edited-theme-size.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	themeXML := string(readZipFileBytes(t, outPath, "ppt/theme/theme1.xml"))
@@ -48,7 +48,8 @@ func TestPresentationEditorApplyThemeAndSlideSize(t *testing.T) {
 	}
 
 	presentationXML := string(readZipFileBytes(t, outPath, "ppt/presentation.xml"))
-	expectedSz := fmt.Sprintf(`<p:sldSz cx="%d" cy="%d" type="screen16x9"/>`, SlideSize16x9.Width, SlideSize16x9.Height)
+	slideSize16x9 := SlideSize16x9()
+	expectedSz := fmt.Sprintf(`<p:sldSz cx="%d" cy="%d" type="screen16x9"/>`, slideSize16x9.Width, slideSize16x9.Height)
 	if !strings.Contains(presentationXML, expectedSz) {
 		t.Fatalf("expected updated slide size %q in presentation.xml", expectedSz)
 	}
@@ -62,17 +63,18 @@ func TestPresentationEditorSetSlideSizeInsertsWhenMissing(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.SetSlideSize(SlideSize4x3); err != nil {
-		t.Fatalf("set slide size: %v", err)
+	if sizeErr := editor.SetSlideSize(SlideSize4x3()); sizeErr != nil {
+		t.Fatalf("set slide size: %v", sizeErr)
 	}
 
 	outPath := filepath.Join(t.TempDir(), "inserted-size.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	presentationXML := string(readZipFileBytes(t, outPath, "ppt/presentation.xml"))
-	expectedSz := fmt.Sprintf(`<p:sldSz cx="%d" cy="%d" type="screen4x3"/>`, SlideSize4x3.Width, SlideSize4x3.Height)
+	slideSize4x3 := SlideSize4x3()
+	expectedSz := fmt.Sprintf(`<p:sldSz cx="%d" cy="%d" type="screen4x3"/>`, slideSize4x3.Width, slideSize4x3.Height)
 	if !strings.Contains(presentationXML, expectedSz) {
 		t.Fatalf("expected inserted slide size %q in presentation.xml", expectedSz)
 	}
@@ -86,7 +88,7 @@ func TestPresentationEditorApplyThemeRequiresThemePart(t *testing.T) {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
-	if err := editor.ApplyTheme(styling.ThemeCorporate); err == nil {
+	if applyErr := editor.ApplyTheme(styling.ThemeCorporate); applyErr == nil {
 		t.Fatalf("expected missing theme part error")
 	}
 }
@@ -136,8 +138,8 @@ func TestPresentationEditorCoreProperties(t *testing.T) {
 
 	// 3. Save
 	outPath := filepath.Join(t.TempDir(), "edited-props.pptx")
-	if err := editor.Save(outPath); err != nil {
-		t.Fatalf("save edited deck: %v", err)
+	if saveErr := editor.Save(outPath); saveErr != nil {
+		t.Fatalf("save edited deck: %v", saveErr)
 	}
 
 	// 4. Verify output XML

@@ -1,95 +1,58 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, slideNumber int, existingNotesTarget string, width, height int64) (string, string, error) {
+const (
+	firstImageRelationshipID = 2
+	rotationDegreeToOOXML    = 60000
+	cropFractionToOOXML      = 100000
+)
+
+var errNoSlideTable = errors.New("slide has no table")
+
+func renderEditorSlideParts(
+	e *PresentationEditor,
+	slide elements.SlideContent,
+	slideNumber int,
+	existingNotesTarget string,
+	width, height int64,
+) (string, string, error) {
 	tableSpec, err := renderEditorTableSpec(slide, slideNumber)
+	if err != nil && !errors.Is(err, errNoSlideTable) {
+		return "", "", err
+	}
+	if errors.Is(err, errNoSlideTable) {
+		tableSpec = nil
+	}
+
+	imageRefs, imageTargets, err := e.renderSlideImages(slide.Images, slideNumber)
 	if err != nil {
 		return "", "", err
 	}
 
-	imageRefs := make([]pptxxml.ImageRef, 0, len(slide.Images))
-	imageTargets := make([]string, 0, len(slide.Images))
-
-	for i, img := range slide.Images {
-		var (
-			partPath string
-			err      error
-		)
-		if img.Path != "" && len(img.Data) == 0 {
-			partPath, _, err = e.registerImageFromPath(img.Path, img.Format)
-			if err != nil {
-				return "", "", fmt.Errorf("read image %d: %w", i+1, err)
-			}
-		} else if len(img.Data) > 0 {
-			partPath, err = e.RegisterImage(img.Data, img.Format)
-			if err != nil {
-				return "", "", err
-			}
-		} else {
-			return "", "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, i+1)
-		}
-
-		relID := fmt.Sprintf("rId%d", i+2)
-		imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-
-		ref := pptxxml.ImageRef{
-			RelID:        relID,
-			Name:         fmt.Sprintf("Picture %d", i+1),
-			X:            img.X.Emu(),
-			Y:            img.Y.Emu(),
-			CX:           img.CX.Emu(),
-			CY:           img.CY.Emu(),
-			Rotation:     int64(img.Rotation * 60000),
-			FlipH:        img.FlipH,
-			FlipV:        img.FlipV,
-			Shadow:       img.Shadow,
-			Reflection:   img.Reflection,
-			AltText:      img.AltText,
-			IsDecorative: img.IsDecorative,
-		}
-		if img.Crop != (shapes.ImageCrop{}) {
-			ref.Crop = &pptxxml.ImageCropRef{
-				Left:   int64(img.Crop.Left * 100000),
-				Right:  int64(img.Crop.Right * 100000),
-				Top:    int64(img.Crop.Top * 100000),
-				Bottom: int64(img.Crop.Bottom * 100000),
-			}
-		}
-		imageRefs = append(imageRefs, ref)
+	backgroundRID, backgroundTarget, err := e.renderBackgroundImageTarget(slide.Background, len(imageTargets))
+	if err != nil {
+		return "", "", err
 	}
-
-	backgroundRID := ""
-	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture && slide.Background.PictureFill != nil {
-		img := *slide.Background.PictureFill
-		if img.Path != "" && len(img.Data) == 0 {
-			partPath, _, err := e.registerImageFromPath(img.Path, img.Format)
-			if err != nil {
-				return "", "", fmt.Errorf("read background image: %w", err)
-			}
-			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
-			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-		} else if len(img.Data) > 0 {
-			partPath, err := e.RegisterImage(img.Data, img.Format)
-			if err != nil {
-				return "", "", err
-			}
-			backgroundRID = fmt.Sprintf("rId%d", len(imageTargets)+2)
-			imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-		}
+	if backgroundTarget != "" {
+		imageTargets = append(imageTargets, backgroundTarget)
 	}
 
 	layoutMode := elements.SlideLayoutXMLMode(slide.Layout)
-	hyperlinkRIDs, hyperlinks, nextRID := elements.BuildSlideHyperlinkRels(slide, len(imageTargets)+2)
+	hyperlinkRIDs, hyperlinks, nextRID := elements.BuildSlideHyperlinkRels(
+		slide,
+		len(imageTargets)+firstImageRelationshipID,
+	)
 
 	// Process placeholder overrides
 	placeholderSpecs, phImageTargets, phChartRels, err := renderEditorPlaceholderSpecs(e, slide, slideNumber, nextRID)
@@ -140,34 +103,7 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 		height,
 	)
 
-	// Speaker Notes
-	notesTarget := strings.TrimSpace(existingNotesTarget)
-	if strings.TrimSpace(slide.Notes) != "" {
-		e.ensureNotesInfrastructure()
-
-		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
-		notesPath, ok := e.notesInventory[slidePath]
-		if !ok {
-			notesPath = fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
-			e.nextNotesNum++
-			e.notesInventory[slidePath] = notesPath
-		}
-
-		var body []elements.TextParagraph
-		if len(slide.NotesBody) > 0 {
-			body = slide.NotesBody
-		} else {
-			p := elements.NewTextParagraph()
-			p.Runs = append(p.Runs, elements.NewTextRun(slide.Notes))
-			body = []elements.TextParagraph{p}
-		}
-		e.parts.Set(notesPath, []byte(pptxxml.NotesSlide(body)))
-
-		notesRelsPath := common.SlideRelsPartName(notesPath)
-		e.parts.Set(notesRelsPath, []byte(pptxxml.NotesSlideRelationships(slideNumber)))
-
-		notesTarget = "../notesSlides/" + path.Base(notesPath)
-	}
+	notesTarget := e.renderSlideNotesTarget(slide, slideNumber, existingNotesTarget)
 
 	relsXML := pptxxml.SlideRelationshipsWithMultiCharts(
 		elements.SlideLayoutTarget(slide.Layout),
@@ -180,9 +116,107 @@ func renderEditorSlideParts(e *PresentationEditor, slide elements.SlideContent, 
 	return slideXML, relsXML, nil
 }
 
+func (e *PresentationEditor) renderSlideImages(
+	images []shapes.Image,
+	slideNumber int,
+) ([]pptxxml.ImageRef, []string, error) {
+	imageRefs := make([]pptxxml.ImageRef, 0, len(images))
+	imageTargets := make([]string, 0, len(images))
+	for i, img := range images {
+		ref, target, err := e.renderSlideImageRef(img, i, slideNumber)
+		if err != nil {
+			return nil, nil, err
+		}
+		imageRefs = append(imageRefs, ref)
+		imageTargets = append(imageTargets, target)
+	}
+	return imageRefs, imageTargets, nil
+}
+
+func (e *PresentationEditor) renderSlideImageRef(
+	img shapes.Image,
+	index int,
+	slideNumber int,
+) (pptxxml.ImageRef, string, error) {
+	partPath, imgErr := e.registerEditorImage(img.Path, img.Data, img.Format)
+	if imgErr != nil {
+		if errors.Is(imgErr, errImagePayloadEmpty) {
+			return pptxxml.ImageRef{}, "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, index+1)
+		}
+		return pptxxml.ImageRef{}, "", fmt.Errorf("read image %d: %w", index+1, imgErr)
+	}
+
+	relID := fmt.Sprintf("rId%d", index+firstImageRelationshipID)
+	ref := pptxxml.ImageRef{
+		RelID:        relID,
+		Name:         fmt.Sprintf("Picture %d", index+1),
+		X:            img.X.Emu(),
+		Y:            img.Y.Emu(),
+		CX:           img.CX.Emu(),
+		CY:           img.CY.Emu(),
+		Rotation:     int64(img.Rotation * rotationDegreeToOOXML),
+		FlipH:        img.FlipH,
+		FlipV:        img.FlipV,
+		Shadow:       img.Shadow,
+		Reflection:   img.Reflection,
+		AltText:      img.AltText,
+		IsDecorative: img.IsDecorative,
+	}
+	if img.Crop != (shapes.ImageCrop{}) {
+		ref.Crop = &pptxxml.ImageCropRef{
+			Left:   int64(img.Crop.Left * cropFractionToOOXML),
+			Right:  int64(img.Crop.Right * cropFractionToOOXML),
+			Top:    int64(img.Crop.Top * cropFractionToOOXML),
+			Bottom: int64(img.Crop.Bottom * cropFractionToOOXML),
+		}
+	}
+	return ref, "../media/" + path.Base(partPath), nil
+}
+
+func (e *PresentationEditor) renderSlideNotesTarget(
+	slide elements.SlideContent,
+	slideNumber int,
+	existingNotesTarget string,
+) string {
+	notesTarget := strings.TrimSpace(existingNotesTarget)
+	if strings.TrimSpace(slide.Notes) == "" {
+		return notesTarget
+	}
+
+	e.ensureNotesInfrastructure()
+	slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
+	notesPath := e.ensureSlideNotesPart(slidePath)
+	e.parts.Set(notesPath, []byte(pptxxml.NotesSlide(editorNotesBody(slide))))
+
+	notesRelsPath := common.SlideRelsPartName(notesPath)
+	e.parts.Set(notesRelsPath, []byte(pptxxml.NotesSlideRelationships(slideNumber)))
+	return "../notesSlides/" + path.Base(notesPath)
+}
+
+func (e *PresentationEditor) ensureSlideNotesPart(slidePath string) string {
+	notesPath, ok := e.notesInventory[slidePath]
+	if ok {
+		return notesPath
+	}
+	notesPath = fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
+	e.nextNotesNum++
+	e.notesInventory[slidePath] = notesPath
+	return notesPath
+}
+
+func editorNotesBody(slide elements.SlideContent) []elements.TextParagraph {
+	if len(slide.NotesBody) > 0 {
+		return slide.NotesBody
+	}
+
+	p := elements.NewTextParagraph()
+	p.Runs = append(p.Runs, elements.NewTextRun(slide.Notes))
+	return []elements.TextParagraph{p}
+}
+
 func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxxml.TableSpec, error) {
 	if slide.Table == nil {
-		return nil, nil
+		return nil, errNoSlideTable
 	}
 	return slide.Table.ToTableSpec(slideNumber)
 }
@@ -190,7 +224,12 @@ func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxx
 // renderEditorPlaceholderSpecs converts SlideContent.PlaceholderOverrides into
 // XML specs for the editor rendering path. It returns the specs, any additional
 // image relationship targets, chart rels, and an error.
-func renderEditorPlaceholderSpecs(e *PresentationEditor, slide elements.SlideContent, slideNumber int, startRID int) ([]pptxxml.PlaceholderOverrideSpec, []string, []pptxxml.ChartRel, error) {
+func renderEditorPlaceholderSpecs(
+	e *PresentationEditor,
+	slide elements.SlideContent,
+	slideNumber int,
+	startRID int,
+) ([]pptxxml.PlaceholderOverrideSpec, []string, []pptxxml.ChartRel, error) {
 	if len(slide.PlaceholderOverrides) == 0 {
 		return nil, nil, nil, nil
 	}
@@ -209,38 +248,14 @@ func renderEditorPlaceholderSpecs(e *PresentationEditor, slide elements.SlideCon
 
 		// Handle image placeholder
 		if override.Image != nil {
-			if override.Image.Path != "" && len(override.Image.Data) == 0 {
-				partPath, _, err := e.registerImageFromPath(override.Image.Path, override.Image.Format)
-				if err != nil {
-					return nil, nil, nil, fmt.Errorf("placeholder image %d: %w", override.Index, err)
-				}
-				rid := fmt.Sprintf("rId%d", currentRID)
+			imageRef, imageTarget, imageErr := e.renderPlaceholderImageRef(override, currentRID)
+			if imageErr != nil {
+				return nil, nil, nil, imageErr
+			}
+			if imageRef != nil {
+				spec.Image = imageRef
+				imageTargets = append(imageTargets, imageTarget)
 				currentRID++
-				imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-				spec.Image = &pptxxml.ImageRef{
-					RelID: rid,
-					Name:  "Placeholder Picture",
-					X:     override.Image.X.Emu(),
-					Y:     override.Image.Y.Emu(),
-					CX:    override.Image.CX.Emu(),
-					CY:    override.Image.CY.Emu(),
-				}
-			} else if len(override.Image.Data) > 0 {
-				partPath, err := e.RegisterImage(override.Image.Data, override.Image.Format)
-				if err != nil {
-					return nil, nil, nil, err
-				}
-				rid := fmt.Sprintf("rId%d", currentRID)
-				currentRID++
-				imageTargets = append(imageTargets, "../media/"+path.Base(partPath))
-				spec.Image = &pptxxml.ImageRef{
-					RelID: rid,
-					Name:  "Placeholder Picture",
-					X:     override.Image.X.Emu(),
-					Y:     override.Image.Y.Emu(),
-					CX:    override.Image.CX.Emu(),
-					CY:    override.Image.CY.Emu(),
-				}
 			}
 		}
 
@@ -278,6 +293,70 @@ func renderEditorPlaceholderSpecs(e *PresentationEditor, slide elements.SlideCon
 	}
 
 	return specs, imageTargets, chartRels, nil
+}
+
+var errImagePayloadEmpty = errors.New("image has no data or path")
+
+func (e *PresentationEditor) registerEditorImage(pathValue string, data []byte, format string) (string, error) {
+	switch {
+	case pathValue != "" && len(data) == 0:
+		return e.registerImageFromPath(pathValue, format)
+	case len(data) > 0:
+		return e.RegisterImage(data, format)
+	default:
+		return "", errImagePayloadEmpty
+	}
+}
+
+func (e *PresentationEditor) renderBackgroundImageTarget(
+	background *elements.SlideBackground,
+	currentImageCount int,
+) (string, string, error) {
+	if background == nil || background.Type != elements.SlideBackgroundPicture || background.PictureFill == nil {
+		return "", "", nil
+	}
+
+	partPath, err := e.registerEditorImage(
+		background.PictureFill.Path,
+		background.PictureFill.Data,
+		background.PictureFill.Format,
+	)
+	if err != nil {
+		if errors.Is(err, errImagePayloadEmpty) {
+			return "", "", nil
+		}
+		return "", "", fmt.Errorf("read background image: %w", err)
+	}
+
+	backgroundRID := fmt.Sprintf("rId%d", currentImageCount+firstImageRelationshipID)
+	return backgroundRID, "../media/" + path.Base(partPath), nil
+}
+
+func (e *PresentationEditor) renderPlaceholderImageRef(
+	override shapes.PlaceholderContent,
+	ridIndex int,
+) (*pptxxml.ImageRef, string, error) {
+	if override.Image == nil {
+		return nil, "", nil
+	}
+
+	partPath, err := e.registerEditorImage(override.Image.Path, override.Image.Data, override.Image.Format)
+	if err != nil {
+		if errors.Is(err, errImagePayloadEmpty) {
+			return nil, "", nil
+		}
+		return nil, "", fmt.Errorf("placeholder image %d: %w", override.Index, err)
+	}
+
+	imageRef := &pptxxml.ImageRef{
+		RelID: fmt.Sprintf("rId%d", ridIndex),
+		Name:  "Placeholder Picture",
+		X:     override.Image.X.Emu(),
+		Y:     override.Image.Y.Emu(),
+		CX:    override.Image.CX.Emu(),
+		CY:    override.Image.CY.Emu(),
+	}
+	return imageRef, "../media/" + path.Base(partPath), nil
 }
 
 func editorEnsureSlideRelsExistPS(ps *PartStore, slidePart string) error {

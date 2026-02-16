@@ -74,8 +74,8 @@ func (c BarHorizontalChart) WithValueAxisCrossBetween(mode string) BarHorizontal
 	return c
 }
 
-func (c BarHorizontalChart) WithValueRange(min float64, max float64) BarHorizontalChart {
-	c.BarChart = c.BarChart.WithValueRange(min, max)
+func (c BarHorizontalChart) WithValueRange(minValue float64, maxValue float64) BarHorizontalChart {
+	c.BarChart = c.BarChart.WithValueRange(minValue, maxValue)
 	return c
 }
 
@@ -149,8 +149,8 @@ func (c BarStackedChart) WithValueAxisCrossBetween(mode string) BarStackedChart 
 	return c
 }
 
-func (c BarStackedChart) WithValueRange(min float64, max float64) BarStackedChart {
-	c.BarChart = c.BarChart.WithValueRange(min, max)
+func (c BarStackedChart) WithValueRange(minValue float64, maxValue float64) BarStackedChart {
+	c.BarChart = c.BarChart.WithValueRange(minValue, maxValue)
 	return c
 }
 
@@ -224,7 +224,7 @@ func (c BarStacked100Chart) WithValueAxisCrossBetween(mode string) BarStacked100
 	return c
 }
 
-func (c BarStacked100Chart) WithValueRange(min float64, max float64) BarStacked100Chart {
-	c.BarChart = c.BarChart.WithValueRange(min, max)
+func (c BarStacked100Chart) WithValueRange(minValue float64, maxValue float64) BarStacked100Chart {
+	c.BarChart = c.BarChart.WithValueRange(minValue, maxValue)
 	return c
 }

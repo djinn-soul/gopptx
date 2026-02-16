@@ -135,15 +135,21 @@ func NormalizeDrawingLineDash(dash string) string {
 
 func IsDrawingLineDash(dash string) bool {
 	switch NormalizeDrawingLineDash(dash) {
-	case LineDashSolid, LineDashDash, LineDashDot, LineDashDashDot, LineDashDashDotDot, LineDashLongDash, LineDashLongDashDot:
+	case LineDashSolid,
+		LineDashDash,
+		LineDashDot,
+		LineDashDashDot,
+		LineDashDashDotDot,
+		LineDashLongDash,
+		LineDashLongDashDot:
 		return true
 	default:
 		return false
 	}
 }
 
-func NormalizeLineCap(cap string) string {
-	switch strings.ToLower(strings.TrimSpace(cap)) {
+func NormalizeLineCap(lineCap string) string {
+	switch strings.ToLower(strings.TrimSpace(lineCap)) {
 	case "", LineCapFlat:
 		return LineCapFlat
 	case "round", "rnd":
@@ -151,12 +157,12 @@ func NormalizeLineCap(cap string) string {
 	case "square", "sq":
 		return LineCapSquare
 	default:
-		return strings.TrimSpace(cap)
+		return strings.TrimSpace(lineCap)
 	}
 }
 
-func IsLineCap(cap string) bool {
-	switch NormalizeLineCap(cap) {
+func IsLineCap(lineCap string) bool {
+	switch NormalizeLineCap(lineCap) {
 	case LineCapFlat, LineCapRound, LineCapSquare:
 		return true
 	default:

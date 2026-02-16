@@ -1,4 +1,4 @@
-package common
+package editorcommon
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ const (
 	ContentTypesPath    = "[Content_Types].xml"
 	CorePropsPath       = "docProps/core.xml"
 
-	// Metadata Namespaces
+	// DCNamespace and related metadata XML namespaces.
 	DCNamespace       = "http://purl.org/dc/elements/1.1/"
 	DCTermsNamespace  = "http://purl.org/dc/terms/"
 	DCMITypeNamespace = "http://purl.org/dc/dcmitype/"
@@ -65,8 +65,8 @@ func XMLEscape(value string) string {
 // CanonicalPartPath cleans a path to use forward slashes and removes leading slash.
 func CanonicalPartPath(target string) string {
 	clean := strings.TrimSpace(strings.ReplaceAll(target, "\\", "/"))
-	if strings.HasPrefix(clean, "/") {
-		return strings.TrimPrefix(clean, "/")
+	if after, ok := strings.CutPrefix(clean, "/"); ok {
+		return after
 	}
 	return clean
 }
@@ -158,24 +158,24 @@ type ShapeSearchResult struct {
 
 // ChartSelector identifies a slide chart by index and/or relationship ID.
 type ChartSelector struct {
-	Index *int
-	RelID string
+	Index *int   `json:"index,omitempty"`
+	RelID string `json:"rel_id,omitempty"`
 }
 
 // ChartSeriesData carries one chart series worth of input data.
 type ChartSeriesData struct {
-	Name       *string
-	Categories []string
-	Values     []float64
-	XValues    []float64
-	YValues    []float64
-	Sizes      []float64
+	Name       *string   `json:"name,omitempty"`
+	Categories []string  `json:"categories,omitempty"`
+	Values     []float64 `json:"values,omitempty"`
+	XValues    []float64 `json:"x_values,omitempty"`
+	YValues    []float64 `json:"y_values,omitempty"`
+	Sizes      []float64 `json:"sizes,omitempty"`
 }
 
 // ChartDataUpdate is the complete chart update payload.
 type ChartDataUpdate struct {
-	Categories []string
-	Series     []ChartSeriesData
+	Categories []string          `json:"categories,omitempty"`
+	Series     []ChartSeriesData `json:"series,omitempty"`
 }
 
 // SlideChartRef describes a chart relationship discovered on a slide.
@@ -201,18 +201,18 @@ type SlideMasterCloneResult struct {
 
 // ShapeProps defines optional properties when creating a shape.
 type ShapeProps struct {
-	Name string
+	Name string `json:"name,omitempty"`
 	// Add other properties as needed for Phase 1
 }
 
 // ShapeUpdate defines fields that can be updated on a shape.
 // Pointers are used to indicate which fields are being updated (non-nil).
 type ShapeUpdate struct {
-	Text *string
-	X    *int
-	Y    *int
-	W    *int
-	H    *int
+	Text *string `json:"text,omitempty"`
+	X    *int    `json:"x,omitempty"`
+	Y    *int    `json:"y,omitempty"`
+	W    *int    `json:"w,omitempty"`
+	H    *int    `json:"h,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.

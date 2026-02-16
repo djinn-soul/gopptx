@@ -2,6 +2,7 @@ package editor
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
@@ -10,10 +11,10 @@ import (
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
-	"github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-// Internal XML structures for relationships (for read/modify)
+// Internal XML structures for relationships (for read/modify).
 type relationships struct {
 	XMLName xml.Name       `xml:"Relationships"`
 	Xmlns   string         `xml:"xmlns,attr"`
@@ -33,7 +34,7 @@ const (
 	commentsPartType = "application/vnd.openxmlformats-officedocument.presentationml.comments+xml"
 )
 
-// Internal XML structures for comments (for unmarshaling)
+// Internal XML structures for comments (for unmarshaling).
 type cmLst struct {
 	Comments []cm `xml:"cm"`
 }
@@ -51,21 +52,23 @@ type cmPos struct {
 	Y int64 `xml:"y,attr"`
 }
 
-var commentTimestampLayouts = []string{
-	"2006-01-02T15:04:05.000",
-	"2006-01-02T15:04:05",
-	"2006-01-02T15:04:05.000Z07:00",
-	"2006-01-02T15:04:05Z07:00",
-	time.RFC3339Nano,
-	time.RFC3339,
+func commentTimestampLayouts() []string {
+	return []string{
+		"2006-01-02T15:04:05.000",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04:05.000Z07:00",
+		"2006-01-02T15:04:05Z07:00",
+		time.RFC3339Nano,
+		time.RFC3339,
+	}
 }
 
 func parseCommentTimestamp(value string) (time.Time, error) {
 	ts := strings.TrimSpace(value)
 	if ts == "" {
-		return time.Time{}, fmt.Errorf("empty comment timestamp")
+		return time.Time{}, errors.New("empty comment timestamp")
 	}
-	for _, layout := range commentTimestampLayouts {
+	for _, layout := range commentTimestampLayouts() {
 		if t, err := time.Parse(layout, ts); err == nil {
 			return t, nil
 		}
@@ -76,7 +79,7 @@ func parseCommentTimestamp(value string) (time.Time, error) {
 // GetComments returns all comments for a specific slide.
 func (e *PresentationEditor) GetComments(slideIndex int) ([]comments.Comment, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return nil, fmt.Errorf("slide index out of range")
+		return nil, errors.New("slide index out of range")
 	}
 
 	relsPath := common.SlideRelsPartName(e.slides[slideIndex].Part)
@@ -137,7 +140,7 @@ func (e *PresentationEditor) GetComments(slideIndex int) ([]comments.Comment, er
 // AddComment adds a new comment to the specified slide.
 func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text string, x, y int64) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return fmt.Errorf("slide index out of range")
+		return errors.New("slide index out of range")
 	}
 
 	// Ensure author exists
@@ -193,14 +196,22 @@ func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text str
 			Target: "../comments/" + newPartName,
 		})
 
-		// Save rels
-		out, _ := xml.Marshal(rels)
-		e.parts.Set(relsPath, out)
+		// Save rels using standardized internal renderer
+		editorRels := make([]common.EditorRelationship, len(rels.Rels))
+		for i, r := range rels.Rels {
+			editorRels[i] = common.EditorRelationship{
+				ID:         r.ID,
+				Type:       r.Type,
+				Target:     r.Target,
+				TargetMode: r.TargetMode,
+			}
+		}
+		e.parts.Set(relsPath, []byte(renderRelationshipsXML(editorRels)))
 	}
 
 	// 2. Read existing comments
 	var lst cmLst
-	if data, ok := e.parts.Get(commentPartPath); ok {
+	if data, commentsOK := e.parts.Get(commentPartPath); commentsOK {
 		_ = xml.Unmarshal(data, &lst)
 	}
 
@@ -251,13 +262,13 @@ func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text str
 // RemoveComment removes a specific comment identified by author and author-index.
 func (e *PresentationEditor) RemoveComment(slideIndex int, authorID int64, authorIndex int) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return fmt.Errorf("slide index out of range")
+		return errors.New("slide index out of range")
 	}
 
 	relsPath := common.SlideRelsPartName(e.slides[slideIndex].Part)
 	relsData, ok := e.parts.Get(relsPath)
 	if !ok {
-		return fmt.Errorf("no relationships found for slide")
+		return errors.New("no relationships found for slide")
 	}
 
 	var rels relationships
@@ -276,12 +287,12 @@ func (e *PresentationEditor) RemoveComment(slideIndex int, authorID int64, autho
 	}
 
 	if commentPartPath == "" {
-		return fmt.Errorf("no comments part found for slide")
+		return errors.New("no comments part found for slide")
 	}
 
 	cmData, ok := e.parts.Get(commentPartPath)
 	if !ok {
-		return fmt.Errorf("comments part not found in store")
+		return errors.New("comments part not found in store")
 	}
 
 	var lst cmLst
@@ -328,29 +339,29 @@ func (e *PresentationEditor) RemoveComment(slideIndex int, authorID int64, autho
 }
 
 func (e *PresentationEditor) nextRelID(rels []relationship) int {
-	max := 0
+	maxID := 0
 	for _, r := range rels {
 		if n, ok := common.ParseRelationshipNumber(r.ID); ok {
-			if n > max {
-				max = n
+			if n > maxID {
+				maxID = n
 			}
 		}
 	}
-	return max + 1
+	return maxID + 1
 }
 
 func (e *PresentationEditor) nextCommentPartName() string {
 	keys := e.parts.Keys()
-	max := 0
+	maxID := 0
 	for _, p := range keys {
 		if strings.HasPrefix(p, "ppt/comments/comment") && strings.HasSuffix(p, ".xml") {
 			base := strings.TrimPrefix(p, "ppt/comments/comment")
 			base = strings.TrimSuffix(base, ".xml")
 			n, _ := strconv.Atoi(base)
-			if n > max {
-				max = n
+			if n > maxID {
+				maxID = n
 			}
 		}
 	}
-	return fmt.Sprintf("comment%d.xml", max+1)
+	return fmt.Sprintf("comment%d.xml", maxID+1)
 }

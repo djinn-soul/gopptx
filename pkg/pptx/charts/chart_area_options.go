@@ -64,8 +64,8 @@ func (c AreaChart) WithValueAxisCrossBetween(mode string) AreaChart {
 }
 
 // WithValueRange sets optional value-axis min/max.
-func (c AreaChart) WithValueRange(min float64, max float64) AreaChart {
-	c.MinValue = &min
-	c.MaxValue = &max
+func (c AreaChart) WithValueRange(minValue float64, maxValue float64) AreaChart {
+	c.MinValue = &minValue
+	c.MaxValue = &maxValue
 	return c
 }

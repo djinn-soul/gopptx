@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
@@ -10,7 +9,7 @@ import (
 
 func main() {
 	// 1. Create base
-	fmt.Println("Creating base presentation...")
+	log.Println("Creating base presentation...")
 	p := pptx.NewPresentationBuilder("Comment Test")
 	p.AddTitleSlide("Slide 1")
 	basePath := "comment_base.pptx"
@@ -21,7 +20,7 @@ func main() {
 	// defer os.Remove(basePath)
 
 	// 2. Open Editor
-	fmt.Println("Opening editor...")
+	log.Println("Opening editor...")
 	ed, err := editor.OpenPresentationEditor(basePath)
 	if err != nil {
 		log.Fatalf("failed to open editor: %v", err)
@@ -33,7 +32,7 @@ func main() {
 	}()
 
 	// 3. Add Authors
-	fmt.Println("Adding authors...")
+	log.Println("Adding authors...")
 	alice, err := ed.AddAuthor("Alice Inchains", "AI")
 	if err != nil {
 		log.Fatal(err)
@@ -45,7 +44,7 @@ func main() {
 
 	// 4. Add Comments
 	// Slide 1 (index 0)
-	fmt.Println("Adding comments...")
+	log.Println("Adding comments...")
 	if err := ed.AddComment(0, alice.ID, "This title is too short.", 100, 100); err != nil {
 		log.Fatal(err)
 	}
@@ -55,9 +54,9 @@ func main() {
 
 	// 5. Save
 	outPath := "comment_output.pptx"
-	fmt.Printf("Saving to %s...\n", outPath)
+	log.Printf("Saving to %s...\n", outPath)
 	if err := ed.Save(outPath); err != nil {
 		log.Fatalf("failed to save output: %v", err)
 	}
-	fmt.Println("Done!")
+	log.Println("Done!")
 }

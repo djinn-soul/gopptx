@@ -12,6 +12,32 @@ type inflightRead struct {
 	err  error
 }
 
+func waitInflightRead(pending *inflightRead) ([]byte, bool) {
+	<-pending.ch
+	if pending.err != nil {
+		return nil, false
+	}
+	return pending.data, true
+}
+
+// getPriorityDataLocked checks deleted/modified/cache/inflight in priority order.
+// Callers must hold at least a read lock on ps.mu.
+func (ps *PartStore) getPriorityDataLocked(name string) ([]byte, bool, *inflightRead) {
+	if ps.deleted[name] {
+		return nil, false, nil
+	}
+	if data, ok := ps.modified[name]; ok {
+		return data, true, nil
+	}
+	if data, ok := ps.cache[name]; ok {
+		return data, true, nil
+	}
+	if pending, ok := ps.inflight[name]; ok {
+		return nil, false, pending
+	}
+	return nil, false, nil
+}
+
 // KeysWithPrefix returns part names that start with the given prefix.
 func (ps *PartStore) KeysWithPrefix(prefix string) []string {
 	all := ps.Keys()

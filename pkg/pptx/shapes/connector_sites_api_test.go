@@ -11,8 +11,10 @@ import (
 )
 
 func TestCreateWithSlidesRendersConnectorAutoSitesHorizontal(t *testing.T) {
-	left := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Left")
-	right := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).WithText("Right")
+	left := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Left")
+	right := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Right")
 	connector := pptx.NewStraightConnector(pptx.Inches(3), pptx.Inches(2.5), pptx.Inches(5), pptx.Inches(2.5)).
 		ConnectStartAuto(1).
 		ConnectEndAuto(2)
@@ -45,8 +47,10 @@ func TestCreateWithSlidesRendersConnectorAutoSitesHorizontal(t *testing.T) {
 }
 
 func TestCreateWithSlidesRendersConnectorAutoSitesVertical(t *testing.T) {
-	top := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(1), pptx.Inches(2), pptx.Inches(1)).WithText("Top")
-	bottom := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).WithText("Bottom")
+	top := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(1), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Top")
+	bottom := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Bottom")
 	connector := pptx.NewStraightConnector(pptx.Inches(4), pptx.Inches(2), pptx.Inches(4), pptx.Inches(4)).
 		ConnectStartAuto(1).
 		ConnectEndAuto(2)
@@ -79,8 +83,10 @@ func TestCreateWithSlidesRendersConnectorAutoSitesVertical(t *testing.T) {
 }
 
 func TestCreateWithSlidesRendersConnectorAutoSitesDiagonal(t *testing.T) {
-	start := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(2), pptx.Inches(1)).WithText("Start")
-	end := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).WithText("End")
+	start := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(1), pptx.Inches(1), pptx.Inches(2), pptx.Inches(1)).
+		WithText("Start")
+	end := pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).
+		WithText("End")
 	connector := pptx.NewStraightConnector(pptx.Inches(3), pptx.Inches(2), pptx.Inches(5), pptx.Inches(4)).
 		ConnectStartAuto(1).
 		ConnectEndAuto(2)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -101,5 +100,5 @@ func main() {
 		log.Fatalf("failed to write file: %v", err)
 	}
 
-	fmt.Printf("Successfully generated smoke sample: %s\n", filename)
+	log.Printf("Successfully generated smoke sample: %s\n", filename)
 }

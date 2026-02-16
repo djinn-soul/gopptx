@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func titleShape(title TitleSpec, width, height int64) string {
+func titleShape(title TitleSpec, width, _ int64) string {
 	// Standard margin is 0.5 inches (457200 EMU)
 	margin := int64(457200)
 	x := margin
@@ -48,7 +48,12 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 
 	fontXML := ""
 	if title.Font != "" {
-		fontXML = fmt.Sprintf(`<a:latin typeface="%s"/><a:ea typeface="%s"/><a:cs typeface="%s"/>`, Escape(title.Font), Escape(title.Font), Escape(title.Font))
+		fontXML = fmt.Sprintf(
+			`<a:latin typeface="%s"/><a:ea typeface="%s"/><a:cs typeface="%s"/>`,
+			Escape(title.Font),
+			Escape(title.Font),
+			Escape(title.Font),
+		)
 	}
 
 	return fmt.Sprintf(`
@@ -80,7 +85,14 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 </p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue("", title.Underline), colorXML, fontXML, escaped)
 }
 
-func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+func contentShape(
+	bullets []string,
+	bulletStyles []BulletParagraphSpec,
+	bulletRuns [][]TextRunSpec,
+	style ContentStyleSpec,
+	shapeID int,
+	width, _ int64,
+) string {
 	margin := int64(457200)
 	x := margin
 	y := int64(1600200) // Fixed top offset
@@ -97,7 +109,14 @@ func contentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRu
 	)
 }
 
-func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+func bigContentShape(
+	bullets []string,
+	bulletStyles []BulletParagraphSpec,
+	bulletRuns [][]TextRunSpec,
+	style ContentStyleSpec,
+	shapeID int,
+	_, _ int64,
+) string {
 	margin := int64(457200)
 	x := margin
 	y := int64(1189200) // Lower top offset for big content
@@ -114,7 +133,14 @@ func bigContentShape(bullets []string, bulletStyles []BulletParagraphSpec, bulle
 	)
 }
 
-func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+func leftTwoColumnShape(
+	bullets []string,
+	bulletStyles []BulletParagraphSpec,
+	bulletRuns [][]TextRunSpec,
+	style ContentStyleSpec,
+	shapeID int,
+	width, _ int64,
+) string {
 	margin := int64(457200)
 	columnGap := int64(457200) // 0.5 inch gap
 	x := margin
@@ -132,7 +158,14 @@ func leftTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bu
 	)
 }
 
-func rightTwoColumnShape(bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, style ContentStyleSpec, shapeID int, width, height int64) string {
+func rightTwoColumnShape(
+	bullets []string,
+	bulletStyles []BulletParagraphSpec,
+	bulletRuns [][]TextRunSpec,
+	style ContentStyleSpec,
+	shapeID int,
+	width, _ int64,
+) string {
 	margin := int64(457200)
 	columnGap := int64(457200)
 	cx := (width - 2*margin - columnGap) / 2
@@ -211,7 +244,10 @@ func splitBulletsForTwoColumns(bullets []string) ([]string, []string) {
 	return bullets[:mid], bullets[mid:]
 }
 
-func splitBulletStylesForTwoColumns(styles []BulletParagraphSpec, leftCount int) ([]BulletParagraphSpec, []BulletParagraphSpec) {
+func splitBulletStylesForTwoColumns(
+	styles []BulletParagraphSpec,
+	leftCount int,
+) ([]BulletParagraphSpec, []BulletParagraphSpec) {
 	if len(styles) == 0 {
 		return nil, nil
 	}
@@ -338,7 +374,7 @@ func footerShape(text string, width, height int64, shapeID int) string {
 </p:sp>`, shapeID, x, y, cx, cy, Escape(text))
 }
 
-func dateTimeShape(width, height int64, shapeID int) string {
+func dateTimeShape(_ int64, height int64, shapeID int) string {
 	cx := int64(2133600)
 	cy := int64(396240)
 	x := int64(457200)

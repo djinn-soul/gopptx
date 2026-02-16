@@ -34,8 +34,12 @@ func TestSlideStyleValidation(t *testing.T) {
 			wantErr: "content color must be 6-digit RGB hex",
 		},
 		{
-			name:  "Valid Styles",
-			slide: pptx.NewSlide("Test").WithTitleSize(24).WithTitleColor("FF0000").WithContentSize(18).WithContentColor("00FF00"),
+			name: "Valid Styles",
+			slide: pptx.NewSlide("Test").
+				WithTitleSize(24).
+				WithTitleColor("FF0000").
+				WithContentSize(18).
+				WithContentColor("00FF00"),
 		},
 	}
 

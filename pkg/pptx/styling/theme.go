@@ -42,7 +42,7 @@ type Theme struct {
 
 // Theme presets, parity with ppt-rs.
 var (
-	// ThemeCorporate - Professional and trustworthy
+	// ThemeCorporate - Professional and trustworthy.
 	ThemeCorporate = Theme{
 		Name: "Corporate",
 		Colors: ColorScheme{
@@ -61,7 +61,7 @@ var (
 		Background: "FFFFFF", Text: "212121", Light: "E3F2FD", Dark: "0D47A1",
 	}
 
-	// ThemeModern - Clean and simple
+	// ThemeModern - Clean and simple.
 	ThemeModern = Theme{
 		Name: "Modern",
 		Colors: ColorScheme{
@@ -80,7 +80,7 @@ var (
 		Background: "FAFAFA", Text: "212121", Light: "F5F5F5", Dark: "424242",
 	}
 
-	// ThemeVibrant - Bold and colorful
+	// ThemeVibrant - Bold and colorful.
 	ThemeVibrant = Theme{
 		Name: "Vibrant",
 		Colors: ColorScheme{
@@ -99,7 +99,7 @@ var (
 		Background: "FFFFFF", Text: "212121", Light: "FCE4EC", Dark: "880E4F",
 	}
 
-	// ThemeDark - Easy on the eyes
+	// ThemeDark - Easy on the eyes.
 	ThemeDark = Theme{
 		Name: "Dark",
 		Colors: ColorScheme{
@@ -118,7 +118,7 @@ var (
 		Background: "121212", Text: "FFFFFF", Light: "1E1E1E", Dark: "000000",
 	}
 
-	// ThemeNature - Fresh and organic
+	// ThemeNature - Fresh and organic.
 	ThemeNature = Theme{
 		Name: "Nature",
 		Colors: ColorScheme{
@@ -137,7 +137,7 @@ var (
 		Background: "FFFFFF", Text: "1B5E20", Light: "E8F5E9", Dark: "1B5E20",
 	}
 
-	// ThemeTech - Modern technology feel
+	// ThemeTech - Modern technology feel.
 	ThemeTech = Theme{
 		Name: "Tech",
 		Colors: ColorScheme{
@@ -156,7 +156,7 @@ var (
 		Background: "FAFAFA", Text: "263238", Light: "E3F2FD", Dark: "01579B",
 	}
 
-	// ThemeCarbon - IBM's design system
+	// ThemeCarbon - IBM's design system.
 	ThemeCarbon = Theme{
 		Name: "Carbon",
 		Colors: ColorScheme{

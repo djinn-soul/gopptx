@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,7 +10,7 @@ import (
 func writeOutputFile(path string, data []byte) error {
 	cleanPath := strings.TrimSpace(path)
 	if cleanPath == "" {
-		return fmt.Errorf("output path cannot be empty")
+		return errors.New("output path cannot be empty")
 	}
 	if err := ensureParentDir(cleanPath); err != nil {
 		return err

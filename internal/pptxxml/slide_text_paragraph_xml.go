@@ -43,7 +43,13 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 		marRXML = fmt.Sprintf(` marR="%d"`, style.RightIndent)
 	}
 
-	base := `<a:pPr lvl="` + strconv.Itoa(style.Level) + `" marL="` + strconv.Itoa(marL) + `" indent="` + strconv.Itoa(indent) + `"` + marRXML
+	base := `<a:pPr lvl="` + strconv.Itoa(
+		style.Level,
+	) + `" marL="` + strconv.Itoa(
+		marL,
+	) + `" indent="` + strconv.Itoa(
+		indent,
+	) + `"` + marRXML
 	if style.Align != "" {
 		base += ` algn="` + Escape(style.Align) + `"`
 	}

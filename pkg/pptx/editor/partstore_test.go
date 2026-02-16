@@ -147,7 +147,7 @@ func TestPartStoreLazyLoadFromZip(t *testing.T) {
 	}
 
 	// part2 should still not be cached
-	if _, ok := ps.cache["part2.xml"]; ok {
+	if _, cached := ps.cache["part2.xml"]; cached {
 		t.Fatalf("part2.xml should not be cached yet")
 	}
 }
@@ -206,30 +206,45 @@ func TestPartStoreFromMapIsolation(t *testing.T) {
 }
 
 func TestPartStoreConcurrentGet(t *testing.T) {
-	dir := t.TempDir()
-	zipPath := filepath.Join(dir, "concurrent.zip")
+	zipPath := buildConcurrentPartStoreZip(t, 10)
+	ps := openConcurrentPartStore(t, zipPath)
+	defer func() { _ = ps.Close() }()
 
-	f, err := os.Create(zipPath)
+	names := ps.KeysWithPrefix("ppt/slides/")
+	runConcurrentReadWorkers(t, ps, names, 20, 200)
+}
+
+func buildConcurrentPartStoreZip(t *testing.T, slideCount int) string {
+	t.Helper()
+	zipPath := filepath.Join(t.TempDir(), "concurrent.zip")
+	file, err := os.Create(zipPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	zw := zip.NewWriter(f)
-	for i := 0; i < 10; i++ {
-		w, err := zw.Create(filepath.ToSlash(filepath.Join("ppt", "slides", "slide"+string(rune('0'+i))+".xml")))
-		if err != nil {
-			t.Fatal(err)
+	writer := zip.NewWriter(file)
+	for i := range slideCount {
+		partName := filepath.ToSlash(filepath.Join("ppt", "slides", "slide"+string(rune('0'+i))+".xml"))
+		entry, createErr := writer.Create(partName)
+		if createErr != nil {
+			t.Fatal(createErr)
 		}
-		if _, err := w.Write([]byte("data")); err != nil {
-			t.Fatal(err)
+		if _, writeErr := entry.Write([]byte("data")); writeErr != nil {
+			t.Fatal(writeErr)
 		}
 	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
+	closeWriterErr := writer.Close()
+	if closeWriterErr != nil {
+		t.Fatal(closeWriterErr)
 	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
+	closeFileErr := file.Close()
+	if closeFileErr != nil {
+		t.Fatal(closeFileErr)
 	}
+	return zipPath
+}
 
+func openConcurrentPartStore(t *testing.T, zipPath string) *PartStore {
+	t.Helper()
 	file, err := os.Open(zipPath)
 	if err != nil {
 		t.Fatal(err)
@@ -238,29 +253,41 @@ func TestPartStoreConcurrentGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	zr, err := zip.NewReader(file, stat.Size())
+	reader, err := zip.NewReader(file, stat.Size())
 	if err != nil {
 		t.Fatal(err)
 	}
+	return newPartStoreFromZip(file, reader)
+}
 
-	ps := newPartStoreFromZip(file, zr)
-	defer func() { _ = ps.Close() }()
-
-	names := ps.KeysWithPrefix("ppt/slides/")
+func runConcurrentReadWorkers(
+	t *testing.T,
+	ps *PartStore,
+	names []string,
+	workerCount int,
+	iterations int,
+) {
+	t.Helper()
 	var wg sync.WaitGroup
-	for g := 0; g < 20; g++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for i := 0; i < 200; i++ {
-				for _, name := range names {
-					if _, ok := ps.Get(name); !ok {
-						t.Errorf("missing part %q during concurrent Get", name)
-						return
-					}
+	for range workerCount {
+		wg.Go(func() {
+			for range iterations {
+				if !assertAllPartsReadable(t, ps, names) {
+					return
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
+}
+
+func assertAllPartsReadable(t *testing.T, ps *PartStore, names []string) bool {
+	t.Helper()
+	for _, name := range names {
+		if _, ok := ps.Get(name); !ok {
+			t.Errorf("missing part %q during concurrent Get", name)
+			return false
+		}
+	}
+	return true
 }
