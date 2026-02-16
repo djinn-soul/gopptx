@@ -703,8 +703,7 @@ func generateThemeMaster() ([]byte, error) {
 	builder := pptx.NewPresentationBuilder("Task 54: Theme & Master").
 		WithTheme(neonTheme).
 		WithMaster(master).
-		WithSlideSize(pptx.SlideSize16x9)
-
+		WithSlideSize(pptx.SlideSize16x9())
 	builder.AddTitleSlide("Neon Theme Showcase")
 	builder.AddBulletSlide("Features", []string{"Custom Colors", "Global Footer", "Master Shapes"})
 
