@@ -9,15 +9,8 @@ import (
 const (
 	titleHeightEmu   = 1143000 // 1.25 inches
 	contentHeightEmu = 4572000 // 5 inches
-	bigContentHeight = 5668800
 	titleTopOffset   = 274638
 	contentTopOffset = 1600200
-	bigContentTop    = 1189200
-	twoColumnGap     = 457200
-	footerHeightEmu  = 396240
-	footerSpanEmu    = 2133600
-	slideNumWidth    = 548640
-	lowerMargin      = 274320
 )
 
 func titleShape(title TitleSpec, width, _ int64) string {

@@ -66,7 +66,7 @@ func main() {
 	builder := pptx.NewPresentationBuilder("NeonStream Corporate Identity").
 		WithTheme(neonTheme).
 		WithMaster(master).
-		WithSlideSize(pptx.SlideSize16x9)
+		WithSlideSize(pptx.SlideSize16x9())
 
 	// Add slides
 	builder.AddTitleSlide("NeonStream: The Future of Streaming")

@@ -10,23 +10,23 @@ import (
 )
 
 const (
-	outputDir = "examples/output"
-	fileName  = "37_slide_duplication.pptx"
+	outputDirDup = "examples/output"
+	fileName     = "37_slide_duplication.pptx"
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := runSlideDuplication(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+func runSlideDuplication() error {
+	if err := os.MkdirAll(outputDirDup, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	finalPath := filepath.Join(outputDir, fileName)
+	finalPath := filepath.Join(outputDirDup, fileName)
 
 	// 1. Create a base presentation in memory using CreateWithSlides
 	baseSlides := []pptx.SlideContent{

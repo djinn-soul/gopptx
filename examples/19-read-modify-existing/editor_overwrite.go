@@ -15,7 +15,7 @@ const (
 	overwriteFN = "19_editor_overwrite.pptx"
 )
 
-func main() {
+func overwriteExample() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -82,7 +82,7 @@ func run() error {
 	if err := editor.ApplyTheme(theme); err != nil {
 		return fmt.Errorf("apply theme: %w", err)
 	}
-	if err := editor.SetSlideSize(pptx.SlideSize16x9); err != nil {
+	if err := editor.SetSlideSize(pptx.SlideSize16x9()); err != nil {
 		return fmt.Errorf("set slide size: %w", err)
 	}
 	log.Println("3. Edited slides, theme, and slide size")

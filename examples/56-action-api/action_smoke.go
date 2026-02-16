@@ -13,7 +13,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
-func main() {
+func smokeActionAPI() {
 	slides := []pptx.SlideContent{
 		buildClickActionSlide(),
 		buildHoverActionSlide(),
@@ -78,30 +78,30 @@ func buildHoverActionSlide() pptx.SlideContent {
 
 func buildTextRunHyperlinkSlide() pptx.SlideContent {
 	return pptx.NewSlide("Text Run Hyperlinks").
-		AddBulletRuns([]text.TextRun{
-			text.NewTextRun("Click "),
-			text.NewTextRun("this link").
+		AddBulletRuns([]text.Run{
+			text.NewRun("Click "),
+			text.NewRun("this link").
 				WithHyperlink(action.NewHyperlink(action.HyperlinkURL("https://example.com")).
 					WithTooltip("External link")).
 				WithColor("1565C0").
 				WithUnderline(true),
-			text.NewTextRun(" to visit example.com"),
+			text.NewRun(" to visit example.com"),
 		}).
-		AddBulletRuns([]text.TextRun{
-			text.NewTextRun("Jump to "),
-			text.NewTextRun("slide 1").
+		AddBulletRuns([]text.Run{
+			text.NewRun("Jump to "),
+			text.NewRun("slide 1").
 				WithHyperlink(action.NewHyperlink(action.HyperlinkSlide(1))).
 				WithColor("2E7D32").
 				WithUnderline(true),
-			text.NewTextRun(" (internal navigation)"),
+			text.NewRun(" (internal navigation)"),
 		}).
-		AddBulletRuns([]text.TextRun{
-			text.NewTextRun("Hover over "),
-			text.NewTextRun("this text").
+		AddBulletRuns([]text.Run{
+			text.NewRun("Hover over "),
+			text.NewRun("this text").
 				WithHoverAction(action.NewHyperlink(action.HyperlinkNextSlide()).
 					WithTooltip("Hover tooltip on text")).
 				WithColor("E65100").
 				WithBold(true),
-			text.NewTextRun(" to see a tooltip"),
+			text.NewRun(" to see a tooltip"),
 		})
 }

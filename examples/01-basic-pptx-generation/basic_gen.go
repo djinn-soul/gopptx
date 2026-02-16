@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -13,15 +13,17 @@ func main() {
 	pres.AddSlide()
 
 	outDir := "examples/output"
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		log.Fatalf("Failed to create output directory: %v", err)
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
+		fmt.Printf("Failed to create output directory: %v\n", err)
+		os.Exit(1)
 	}
 
 	filename := filepath.Join(outDir, "01_hello_world.pptx")
 	err := pres.Save(filename)
 	if err != nil {
-		log.Fatalf("Failed to save presentation: %v", err)
+		fmt.Printf("Failed to save presentation: %v\n", err)
+		os.Exit(1)
 	}
 
-	log.Printf("Successfully generated %s\n", filename)
+	fmt.Printf("Successfully generated %s\n", filename)
 }

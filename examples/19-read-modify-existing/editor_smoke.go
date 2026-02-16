@@ -10,26 +10,26 @@ import (
 )
 
 const (
-	outputDir   = "examples/output"
-	baseFile    = "19_editor_base.pptx"
-	finalFile   = "19_editor_modified.pptx"
-	basicSample = "examples/assets/01/01_basic_pptx.pptx"
+	outputDirSmoke = "examples/output"
+	baseFile       = "19_editor_base.pptx"
+	finalFile      = "19_editor_modified.pptx"
+	basicSample    = "examples/assets/01/01_basic_pptx.pptx"
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := runEditorSmoke(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+func runEditorSmoke() error {
+	if err := os.MkdirAll(outputDirSmoke, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	basePath := filepath.Join(outputDir, baseFile)
-	finalPath := filepath.Join(outputDir, finalFile)
+	basePath := filepath.Join(outputDirSmoke, baseFile)
+	finalPath := filepath.Join(outputDirSmoke, finalFile)
 
 	// 1. Create a base presentation
 	baseSlides := []pptx.SlideContent{
@@ -64,6 +64,9 @@ func run() error {
 
 	// 5. Add a new slide
 	newSlide := pptx.NewSlide("Newly Added Slide").AddBullet("Added via AddSlide")
+	if err := editor.SetSlideSize(pptx.SlideSize16x9()); err != nil {
+		return fmt.Errorf("set slide size: %w", err)
+	}
 	if _, addErr := editor.AddSlide(newSlide); addErr != nil {
 		return fmt.Errorf("add slide: %w", addErr)
 	}

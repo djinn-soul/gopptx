@@ -16,7 +16,7 @@ const (
 	outFile   = "37_complex_duplication.pptx"
 )
 
-func main() {
+func complexDuplicationExample() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

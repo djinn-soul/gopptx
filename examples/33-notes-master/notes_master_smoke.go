@@ -22,9 +22,9 @@ func main() {
 	})
 
 	// 3. Create presentation metadata
-	meta := pptx.PresentationMetadata{
-		PresentationMetadata: pptx.PresentationMetadataFields{Title: "Notes Master Smoke"},
-		NotesMaster:          nm,
+	meta := pptx.Metadata{
+		Metadata:    pptx.MetadataFields{Title: "Notes Master Smoke"},
+		NotesMaster: nm,
 	}
 
 	// 4. Create slides with speaker notes

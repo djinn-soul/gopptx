@@ -8,7 +8,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func main() {
+func mainTextFrame() { //nolint:unused
+	//nolint:unused
 	outDir := "examples/output"
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)

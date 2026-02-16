@@ -8,20 +8,20 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func main() {
+func mainEditorChartSmoke() {
 	templatePath := "ppt-rs/chart_example.pptx"
-	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	outputDirChart := "examples/output"
+	if err := os.MkdirAll(outputDirChart, 0o755); err != nil {
 		log.Fatalf("failed to create output dir: %v", err)
 	}
-	outPath := filepath.Join(outputDir, "39_editor_chart_smoke.pptx")
+	outPath := filepath.Join(outputDirChart, "39_editor_chart_smoke.pptx")
 
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 		log.Fatalf("template file %s not found. Please ensure it exists.", templatePath)
 	}
 
 	// 1. Open with Editor
-	editor, openErr := pptx.OpenEditor(templatePath)
+	editor, openErr := pptx.OpenPresentationEditor(templatePath)
 	if openErr != nil {
 		log.Fatalf("failed to open editor: %v", openErr)
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func main() {
+func mainSectionSmoke() {
 	templatePath := "examples/assets/37/162301-moneybox-template-16x9.pptx"
 	outputPath := "examples/output/39_modular_sections.pptx"
 

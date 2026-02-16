@@ -121,8 +121,8 @@ func contains(s, substr string) bool {
 }
 
 func createMinimalPPTX(filename string) error {
-	meta := pptx.PresentationMetadata{
-		PresentationMetadata: pptx.PresentationMetadataFields{
+	meta := pptx.Metadata{
+		Metadata: pptx.MetadataFields{
 			Title:   "Initial Title",
 			Creator: "Initial Creator",
 		},

@@ -34,10 +34,10 @@ func main() {
 			{Level: 1, SizePt: 24, Color: "EF6C00", BulletChar: "•"},
 		})
 
-	meta := pptx.PresentationMetadata{
-		Masters: []*pptx.SlideMaster{master1, master2},
+	meta := pptx.Metadata{
+		Metadata: pptx.MetadataFields{Title: "Multi-Master Smoke"},
+		Masters:  []*pptx.SlideMaster{master1, master2},
 	}
-	meta.Title = "Master Styling Smoke Test"
 
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Slide 1 (Master 1)").

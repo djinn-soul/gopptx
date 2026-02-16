@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	outputDir = "examples/output"
-	baseFile  = "45_comments_base.pptx"
-	finalFile = "45_comments_smoke.pptx"
+	outputDirComments = "examples/output"
+	baseFile          = "45_comments_base.pptx"
+	finalFile         = "45_comments_smoke.pptx"
 )
 
-func main() {
+func mainCommentingSmoke() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -23,12 +23,12 @@ func main() {
 }
 
 func run() error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDirComments, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	basePath := filepath.Join(outputDir, baseFile)
-	finalPath := filepath.Join(outputDir, finalFile)
+	basePath := filepath.Join(outputDirComments, baseFile)
+	finalPath := filepath.Join(outputDirComments, finalFile)
 
 	// 1. Create a base presentation
 	baseSlides := []pptx.SlideContent{

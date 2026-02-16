@@ -8,7 +8,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func main() {
+func mainTextEnhancements() {
 	builder := pptx.NewPresentationBuilder("Text Enhancements Showcase")
 
 	// Slide 1: Case Controls
