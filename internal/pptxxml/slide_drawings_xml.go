@@ -196,7 +196,10 @@ func customShapeTextBody(shape ShapeSpec) string {
 	}
 
 	autoFitXML := `<a:spAutoFit/>`
-	bodyPrAttr := fmt.Sprintf(` wrap="square" rtlCol="0" anchor="ctr" marL="%d" marT="%d" marR="%d" marB="%d"`, defaultMargin, defaultMargin, defaultMargin, defaultMargin)
+	bodyPrAttr := fmt.Sprintf(
+		` wrap="square" rtlCol="0" anchor="ctr" marL="%d" marT="%d" marR="%d" marB="%d"`,
+		defaultMargin, defaultMargin, defaultMargin, defaultMargin,
+	)
 
 	if shape.TextFrame != nil {
 		bodyPrAttr = fmt.Sprintf(` wrap="%s" rtlCol="0" anchor="%s" marL="%d" marT="%d" marR="%d" marB="%d"`,

@@ -51,13 +51,17 @@ func (p *Presentation) Save(path string) error {
 	slideCount := len(p.Slides)
 
 	// 1. Mandatory OPC parts
-	if err := w.AddFile("[Content_Types].xml", []byte(pptxxml.ContentTypes(slideCount, nil, 0, nil, false, 0, 1, 0))); err != nil {
+	if err := w.AddFile("[Content_Types].xml", []byte(pptxxml.ContentTypes(
+		slideCount, nil, 0, nil, false, 0, 1, 0,
+	))); err != nil {
 		return err
 	}
 	if err := w.AddFile("_rels/.rels", []byte(pptxxml.RootRelationships())); err != nil {
 		return err
 	}
-	if err := w.AddFile("ppt/_rels/presentation.xml.rels", []byte(pptxxml.PresentationRelationships(slideCount, false, 0, 1))); err != nil {
+	if err := w.AddFile("ppt/_rels/presentation.xml.rels", []byte(pptxxml.PresentationRelationships(
+		slideCount, false, 0, 1,
+	))); err != nil {
 		return err
 	}
 

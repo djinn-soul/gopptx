@@ -73,7 +73,12 @@ func addSlideMedia(catalog *Catalog, client *http.Client, slide elements.SlideCo
 	return addTransitionSoundToCatalog(catalog, client, slide, slideIndex)
 }
 
-func addBackgroundImageToCatalog(catalog *Catalog, client *http.Client, slide elements.SlideContent, slideIndex int) error {
+func addBackgroundImageToCatalog(
+	catalog *Catalog,
+	client *http.Client,
+	slide elements.SlideContent,
+	slideIndex int,
+) error {
 	if slide.Background == nil ||
 		slide.Background.Type != elements.SlideBackgroundPicture ||
 		slide.Background.PictureFill == nil {
@@ -85,7 +90,12 @@ func addBackgroundImageToCatalog(catalog *Catalog, client *http.Client, slide el
 	return nil
 }
 
-func addTransitionSoundToCatalog(catalog *Catalog, client *http.Client, slide elements.SlideContent, slideIndex int) error {
+func addTransitionSoundToCatalog(
+	catalog *Catalog,
+	client *http.Client,
+	slide elements.SlideContent,
+	slideIndex int,
+) error {
 	if slide.Transition == nil {
 		return nil
 	}

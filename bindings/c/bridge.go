@@ -14,12 +14,25 @@ import (
 	"unsafe"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+//nolint:gochecknoglobals // global bridge state
 var (
 	globalErrorMu sync.RWMutex
 	globalError   string
 	deckRegistry  = editor.NewEditorRegistry()
+)
+
+//nolint:gochecknoglobals // theme presets
+var (
+	ThemeCorporate = styling.ThemeCorporate
+	ThemeModern    = styling.ThemeModern
+	ThemeVibrant   = styling.ThemeVibrant
+	ThemeDark      = styling.ThemeDark
+	ThemeNature    = styling.ThemeNature
+	ThemeTech      = styling.ThemeTech
+	ThemeCarbon    = styling.ThemeCarbon
 )
 
 // setGlobalError safely sets the global error message.
@@ -75,7 +88,7 @@ func deck_open(path *C.char) C.DeckHandle {
 }
 
 //export deck_execute_json
-func deck_execute_json(h C.DeckHandle, json_input *C.char) *C.char {
+func deck_execute_json(h C.DeckHandle, jsonInput *C.char) *C.char {
 	handle := editor.Handle(h)
 	defer recoverPanic(handle)
 
@@ -85,7 +98,7 @@ func deck_execute_json(h C.DeckHandle, json_input *C.char) *C.char {
 		return C.CString(`{"ok": false, "error": {"code": "INVALID_HANDLE", "message": "Handle not found"}}`)
 	}
 
-	goInput := C.GoString(json_input)
+	goInput := C.GoString(jsonInput)
 	response := editor.ExecuteCommand(e, goInput)
 	return C.CString(response)
 }

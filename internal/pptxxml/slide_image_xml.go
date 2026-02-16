@@ -143,13 +143,20 @@ func imageEffectsXML(shadow, reflection bool) string {
 	b.WriteString("<a:effectLst>")
 	if shadow {
 		b.WriteString(fmt.Sprintf(
-			`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
-			defaultShadowBlurRad, defaultShadowDist, defaultShadowDir, defaultShadowAlpha))
+			`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0">`+
+				`<a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
+			defaultShadowBlurRad, defaultShadowDist,
+			defaultShadowDir, defaultShadowAlpha,
+		))
 	}
 	if reflection {
 		b.WriteString(fmt.Sprintf(
-			`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" sy="-100000" algn="bl" rotWithShape="0"/>`,
-			defaultReflectionBlur, defaultReflectionStA, defaultReflectionEndA, defaultReflectionEndPos, defaultShadowDir))
+			`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" `+
+				`sy="-100000" algn="bl" rotWithShape="0"/>`,
+			defaultReflectionBlur, defaultReflectionStA,
+			defaultReflectionEndA, defaultReflectionEndPos,
+			defaultShadowDir,
+		))
 	}
 	b.WriteString("</a:effectLst>")
 	return b.String()

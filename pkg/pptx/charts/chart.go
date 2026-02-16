@@ -9,7 +9,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-var hexColorPattern = regexp.MustCompile(`^[0-9A-F]{6}$`)
+var hexColorPattern = regexp.MustCompile(`^[0-9A-Fa-f]{6}$`)
 
 const (
 	LegendPositionRight  = "r"
@@ -212,9 +212,12 @@ func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
 // Validate checks the bar chart for consistency.
 func (c BarChart) Validate(slideIndex int) error {
 	return validateChartCommon(
-		slideIndex, c.Title, c.Categories, c.Values, c.X, c.Y, c.CX, c.CY,
-		false, c.BarColor, c.SeriesName, c.LegendPosition, c.ValueFormat,
-		c.ValueAxisCrossBetween, c.MinValue, c.MaxValue, "bar",
+		slideIndex, c.Title, c.Categories,
+		c.Values, c.X, c.Y, c.CX, c.CY,
+		false, c.BarColor, c.SeriesName,
+		c.LegendPosition, c.ValueFormat,
+		c.ValueAxisCrossBetween,
+		c.MinValue, c.MaxValue, "bar",
 	)
 }
 
@@ -259,7 +262,14 @@ func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 
 // Validate checks the line chart for consistency.
 func (c LineChart) Validate(slideIndex int) error {
-	return validateChartCommon(slideIndex, c.Title, c.Categories, c.Values, c.X, c.Y, c.CX, c.CY, true, c.LineColor, c.SeriesName, c.LegendPosition, c.ValueFormat, c.ValueAxisCrossBetween, c.MinValue, c.MaxValue, "line")
+	return validateChartCommon(
+		slideIndex, c.Title, c.Categories,
+		c.Values, c.X, c.Y, c.CX, c.CY,
+		true, c.LineColor, c.SeriesName,
+		c.LegendPosition, c.ValueFormat,
+		c.ValueAxisCrossBetween,
+		c.MinValue, c.MaxValue, "line",
+	)
 }
 
 func validateChartCommon(

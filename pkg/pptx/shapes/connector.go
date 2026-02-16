@@ -416,8 +416,12 @@ func (c Connector) validateBasicProps(slideIndex, connectorIndex int) error {
 			c.Type,
 		)
 	}
-	if c.StartX < 0 || c.StartY < 0 || c.EndX < 0 || c.EndY < 0 {
-		return fmt.Errorf("slide %d connector %d coordinates cannot be negative", slideIndex, connectorIndex)
+	if c.StartX < 0 || c.StartY < 0 ||
+		c.EndX < 0 || c.EndY < 0 {
+		return fmt.Errorf(
+			"slide %d connector %d coordinates cannot be negative",
+			slideIndex, connectorIndex,
+		)
 	}
 	if c.StartX == c.EndX && c.StartY == c.EndY {
 		return fmt.Errorf("slide %d connector %d must have distinct start and end points", slideIndex, connectorIndex)
@@ -461,7 +465,9 @@ func (c Connector) validateArrows(slideIndex, connectorIndex int) error {
 }
 
 func (c Connector) validateAnchors(shapeCountUX int, slideIndex, connectorIndex int) error {
-	if err := validateConnectorAnchor("start", c.StartShapeIndex, c.StartSite, shapeCountUX, slideIndex, connectorIndex); err != nil {
+	if err := validateConnectorAnchor(
+		"start", c.StartShapeIndex, c.StartSite, shapeCountUX, slideIndex, connectorIndex,
+	); err != nil {
 		return err
 	}
 	return validateConnectorAnchor("end", c.EndShapeIndex, c.EndSite, shapeCountUX, slideIndex, connectorIndex)
@@ -470,16 +476,25 @@ func (c Connector) validateAnchors(shapeCountUX int, slideIndex, connectorIndex 
 func (c Connector) validateAdjustments(slideIndex, connectorIndex int) error {
 	for i, adj := range c.Adjustments {
 		if strings.TrimSpace(adj.Name) == "" {
-			return fmt.Errorf("slide %d connector %d adjustment %d name cannot be empty", slideIndex, connectorIndex, i+1)
+			return fmt.Errorf(
+				"slide %d connector %d adjustment %d name cannot be empty",
+				slideIndex, connectorIndex, i+1,
+			)
 		}
 		if strings.TrimSpace(adj.Formula) == "" {
-			return fmt.Errorf("slide %d connector %d adjustment %d formula cannot be empty", slideIndex, connectorIndex, i+1)
+			return fmt.Errorf(
+				"slide %d connector %d adjustment %d formula cannot be empty",
+				slideIndex, connectorIndex, i+1,
+			)
 		}
 	}
 	if len(c.Adjustments) > 0 {
 		ct := NormalizeConnectorType(c.Type)
 		if ct != ConnectorTypeElbow && ct != ConnectorTypeCurved {
-			return fmt.Errorf("slide %d connector %d adjustments are only supported for elbow/curved connectors", slideIndex, connectorIndex)
+			return fmt.Errorf(
+				"slide %d connector %d adjustments are only supported for elbow/curved connectors",
+				slideIndex, connectorIndex,
+			)
 		}
 	}
 	return nil

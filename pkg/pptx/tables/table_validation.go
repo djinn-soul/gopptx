@@ -86,7 +86,8 @@ func validateTableRowCounts(table Table, rows [][]TableCell, slideIndex int) err
 func validateTableCells(table Table, rows [][]TableCell, slideIndex int) error {
 	for rowIndex, row := range rows {
 		if len(row) != len(table.ColumnWidths) {
-			return fmt.Errorf("slide %d table row %d has %d cells; expected %d", slideIndex, rowIndex+1, len(row), len(table.ColumnWidths))
+			return fmt.Errorf("slide %d table row %d has %d cells; expected %d",
+				slideIndex, rowIndex+1, len(row), len(table.ColumnWidths))
 		}
 		for cellIndex, cell := range row {
 			if err := validateTableCell(cell, slideIndex, rowIndex+1, cellIndex+1); err != nil {
@@ -122,13 +123,22 @@ func validateTableCellSpans(cell TableCell, slideIndex, rowIndex, cellIndex int)
 
 func validateTableCellBasicProps(cell TableCell, slideIndex, rowIndex, cellIndex int) error {
 	if color := strings.TrimSpace(cell.BackgroundColor); color != "" && !IsHexColor(color) {
-		return fmt.Errorf("slide %d table row %d cell %d background color must be 6-digit RGB hex", slideIndex, rowIndex, cellIndex)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d background color must be 6-digit RGB hex",
+			slideIndex, rowIndex, cellIndex,
+		)
 	}
 	if align := strings.TrimSpace(cell.Align); align != "" && !isTableAlign(align) {
-		return fmt.Errorf("slide %d table row %d cell %d align must be one of l|ctr|r|just", slideIndex, rowIndex, cellIndex)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d align must be one of l|ctr|r|just",
+			slideIndex, rowIndex, cellIndex,
+		)
 	}
 	if vAlign := strings.TrimSpace(cell.VAlign); vAlign != "" && !isTableVAlign(vAlign) {
-		return fmt.Errorf("slide %d table row %d cell %d valign must be one of t|ctr|b", slideIndex, rowIndex, cellIndex)
+		return fmt.Errorf(
+			"slide %d table row %d cell %d valign must be one of t|ctr|b",
+			slideIndex, rowIndex, cellIndex,
+		)
 	}
 	return nil
 }
@@ -148,10 +158,14 @@ func validateTableCellMargins(cell TableCell, slideIndex, rowIndex, cellIndex in
 
 func validateTableCellBorders(cell TableCell, slideIndex, rowIndex, cellIndex int) error {
 	if cell.hasExplicitBorderSides() {
-		if err := validateTableCellBorder(cell.BorderLeft, slideIndex, rowIndex, cellIndex, borderSideLeft); err != nil {
+		if err := validateTableCellBorder(
+			cell.BorderLeft, slideIndex, rowIndex, cellIndex, borderSideLeft,
+		); err != nil {
 			return err
 		}
-		if err := validateTableCellBorder(cell.BorderRight, slideIndex, rowIndex, cellIndex, borderSideRight); err != nil {
+		if err := validateTableCellBorder(
+			cell.BorderRight, slideIndex, rowIndex, cellIndex, borderSideRight,
+		); err != nil {
 			return err
 		}
 		if err := validateTableCellBorder(cell.BorderTop, slideIndex, rowIndex, cellIndex, borderSideTop); err != nil {

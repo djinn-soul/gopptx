@@ -229,6 +229,8 @@ func escape(value string) string {
 }
 
 // TODO: [HIGH] Performance regression in transitionEscapeReplacer. Ensure this remains a package-level variable.
+//
+//nolint:gochecknoglobals // global replacer
 var transitionEscapeReplacerVar = strings.NewReplacer(
 	"&", "&amp;",
 	"<", "&lt;",

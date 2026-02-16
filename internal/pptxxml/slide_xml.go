@@ -232,13 +232,27 @@ func SlideWithLayout(
 	b.WriteString(slideFooterClrMap)
 
 	nextID = slideRenderPlaceholders(&b, placeholders, nextID)
-	slideRenderFeatures(&b, transitionXML, animationsXML, showSlideNumber, footerText, showDateTime, width, height, nextID)
+	slideRenderFeatures(
+		&b, transitionXML, animationsXML,
+		showSlideNumber, footerText, showDateTime,
+		width, height, nextID,
+	)
 
 	b.WriteString(slideFooterEnd)
 	return b.String()
 }
 
-func slideRenderBaseElements(b *strings.Builder, layoutMode string, title TitleSpec, table *TableSpec, bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, contentStyle ContentStyleSpec, width, height int64) int {
+func slideRenderBaseElements(
+	b *strings.Builder,
+	layoutMode string,
+	title TitleSpec,
+	table *TableSpec,
+	bullets []string,
+	bulletStyles []BulletParagraphSpec,
+	bulletRuns [][]TextRunSpec,
+	contentStyle ContentStyleSpec,
+	width, height int64,
+) int {
 	// TODO: Verify parameter usage to ensure no data loss. Reviewer suggested removing width/height but they are used.
 	nextID := 2
 	if layoutMode != slideLayoutBlank {
@@ -254,12 +268,24 @@ func slideRenderBaseElements(b *strings.Builder, layoutMode string, title TitleS
 		b.WriteString(tableShape(table, nextID))
 		nextID++
 	} else if len(bullets) > 0 {
-		nextID = slideRenderBullets(b, layoutMode, bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height)
+		nextID = slideRenderBullets(
+			b, layoutMode, bullets, bulletStyles,
+			bulletRuns, contentStyle, nextID, width, height,
+		)
 	}
 	return nextID
 }
 
-func slideRenderBullets(b *strings.Builder, layoutMode string, bullets []string, bulletStyles []BulletParagraphSpec, bulletRuns [][]TextRunSpec, contentStyle ContentStyleSpec, nextID int, width, height int64) int {
+func slideRenderBullets(
+	b *strings.Builder,
+	layoutMode string,
+	bullets []string,
+	bulletStyles []BulletParagraphSpec,
+	bulletRuns [][]TextRunSpec,
+	contentStyle ContentStyleSpec,
+	nextID int,
+	width, height int64,
+) int {
 	switch layoutMode {
 	case slideLayoutTitleAndContent:
 		b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
@@ -274,7 +300,9 @@ func slideRenderBullets(b *strings.Builder, layoutMode string, bullets []string,
 		b.WriteString(leftTwoColumnShape(leftBullets, leftStyles, leftRuns, contentStyle, nextID, width, height))
 		nextID++
 		if len(rightBullets) > 0 {
-			b.WriteString(rightTwoColumnShape(rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height))
+			b.WriteString(rightTwoColumnShape(
+				rightBullets, rightStyles, rightRuns, contentStyle, nextID, width, height,
+			))
 			nextID++
 		}
 	}
@@ -312,7 +340,15 @@ func slideRenderPlaceholders(b *strings.Builder, placeholders []PlaceholderOverr
 	return nextID + len(placeholders)
 }
 
-func slideRenderFeatures(b *strings.Builder, transitionXML, animationsXML string, showSlideNumber bool, footerText string, showDateTime bool, width, height int64, nextID int) {
+func slideRenderFeatures(
+	b *strings.Builder,
+	transitionXML, animationsXML string,
+	showSlideNumber bool,
+	footerText string,
+	showDateTime bool,
+	width, height int64,
+	nextID int,
+) {
 	if tx := strings.TrimSpace(transitionXML); tx != "" {
 		b.WriteString("\n")
 		b.WriteString(tx)

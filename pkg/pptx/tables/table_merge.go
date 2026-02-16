@@ -121,7 +121,10 @@ func updateCoverage(
 				continue
 			}
 			if coverage[rr][cc] != nil {
-				return fmt.Errorf("slide %d table row %d cell %d has overlapping merged ranges", slideIndex, rowIdx+1, cellIdx+1)
+				return fmt.Errorf(
+					"slide %d table row %d cell %d has overlapping merged ranges",
+					slideIndex, rowIdx+1, cellIdx+1,
+				)
 			}
 			coverage[rr][cc] = &tableMergeCoverage{
 				AnchorRow: rowIdx,

@@ -59,7 +59,10 @@ func WritePackageFiles(
 	masterCount := len(effectiveMasters)
 	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0, masterCount)
 
-	addBasicPropertyFiles(pw, meta, slideCount, len(notesParts), len(chartParts), notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions())
+	addBasicPropertyFiles(
+		pw, meta, slideCount, len(notesParts), len(chartParts),
+		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
+	)
 	addLayoutFiles(pw, masterCount)
 	addMasterFiles(pw, effectiveMasters, mediaCatalog)
 	addThemeFiles(pw, meta.Theme, masterCount)
@@ -118,14 +121,29 @@ func addBasicPropertyFiles(
 ) {
 	hasNotes := notesPartCount > 0
 	pw.AddPart("[Content_Types].xml", pptxxml.ContentTypes(
-		slideCount, mediaExtensions, chartPartCount, notes.SlideNumbers(notesParts), hasNotes, len(meta.CustomXML), masterCount, notesThemeIndex))
+		slideCount, mediaExtensions, chartPartCount,
+		notes.SlideNumbers(notesParts), hasNotes,
+		len(meta.CustomXML), masterCount, notesThemeIndex,
+	))
 	pw.AddPart("_rels/.rels", pptxxml.RootRelationships())
-	pw.AddPart("ppt/_rels/presentation.xml.rels", pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount))
-	pw.AddPart("ppt/presentation.xml", pptxxml.Presentation(meta.Title, slideCount, hasNotes, meta.SlideSize.Width, meta.SlideSize.Height, masterCount))
+	pw.AddPart(
+		"ppt/_rels/presentation.xml.rels",
+		pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount),
+	)
+	pw.AddPart(
+		"ppt/presentation.xml",
+		pptxxml.Presentation(
+			meta.Title, slideCount, hasNotes,
+			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
+		),
+	)
 	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
 		Title: meta.Title, Subject: meta.Subject, Creator: meta.Creator, Description: meta.Description,
 	}))
-	pw.AddPart("docProps/app.xml", pptxxml.AppProperties(slideCount, notesPartCount, meta.SlideSize.Width, meta.SlideSize.Height))
+	pw.AddPart(
+		"docProps/app.xml",
+		pptxxml.AppProperties(slideCount, notesPartCount, meta.SlideSize.Width, meta.SlideSize.Height),
+	)
 }
 
 func addLayoutFiles(pw *pptxxml.PackageWriter, masterCount int) {
@@ -156,7 +174,10 @@ func addMasterFiles(pw *pptxxml.PackageWriter, masters []*elements.SlideMaster, 
 			spec.MasterIndex = masterNum
 		}
 		pw.AddPart(fmt.Sprintf("ppt/slideMasters/slideMaster%d.xml", masterNum), pptxxml.SlideMaster(spec))
-		pw.AddPart(fmt.Sprintf("ppt/slideMasters/_rels/slideMaster%d.xml.rels", masterNum), pptxxml.SlideMasterRelationships(targets, masterNum, masterNum))
+		pw.AddPart(
+			fmt.Sprintf("ppt/slideMasters/_rels/slideMaster%d.xml.rels", masterNum),
+			pptxxml.SlideMasterRelationships(targets, masterNum, masterNum),
+		)
 	}
 }
 

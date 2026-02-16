@@ -6,11 +6,16 @@ import (
 )
 
 // shapeTypeRegistry holds all valid OOXML preset shape type names.
+//
+//nolint:gochecknoglobals // global registry
 var shapeTypeRegistry = map[string]bool{}
 
 // shapeAliasRegistry maps common aliases to canonical OOXML preset names.
+//
+//nolint:gochecknoglobals // global registry
 var shapeAliasRegistry = map[string]string{}
 
+//nolint:gochecknoglobals // global sync
 var registryOnce sync.Once
 
 // ensureRegistryInitialized populates the registries if they are not already.
