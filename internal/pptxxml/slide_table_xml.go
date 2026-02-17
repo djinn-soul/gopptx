@@ -81,6 +81,7 @@ func tableShape(table *TableSpec, shapeID int) string {
 
 func tableGraphicXML(table *TableSpec) string {
 	var b strings.Builder
+	columnWidths := tableColumnWidthsForRender(table)
 	b.WriteString(`
 <a:graphic>
 <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
@@ -90,7 +91,7 @@ func tableGraphicXML(table *TableSpec) string {
 </a:tblPr>
 <a:tblGrid>`)
 
-	for _, width := range table.ColumnWidths {
+	for _, width := range columnWidths {
 		b.WriteString(fmt.Sprintf(`
 <a:gridCol w="%d"/>`, width))
 	}
@@ -129,6 +130,43 @@ func tableGraphicXML(table *TableSpec) string {
 </a:graphicData>
 </a:graphic>`)
 	return b.String()
+}
+
+func tableColumnWidthsForRender(table *TableSpec) []int64 {
+	if len(table.ColumnWidths) > 0 {
+		widths := make([]int64, len(table.ColumnWidths))
+		copy(widths, table.ColumnWidths)
+		return widths
+	}
+
+	columnCount := 0
+	for _, row := range table.Rows {
+		if len(row) > columnCount {
+			columnCount = len(row)
+		}
+	}
+	for _, row := range table.StyledRows {
+		if len(row) > columnCount {
+			columnCount = len(row)
+		}
+	}
+	if columnCount == 0 {
+		columnCount = 1
+	}
+
+	defaultWidth := int64(1828800)
+	if table.CX > 0 {
+		defaultWidth = table.CX / int64(columnCount)
+		if defaultWidth <= 0 {
+			defaultWidth = 1828800
+		}
+	}
+
+	widths := make([]int64, 0, columnCount)
+	for i := 0; i < columnCount; i++ {
+		widths = append(widths, defaultWidth)
+	}
+	return widths
 }
 
 func tableStyledRows(table *TableSpec) [][]TableCellSpec {

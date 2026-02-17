@@ -57,6 +57,10 @@ func writeSmartArtFiles(pw *pptxxml.PackageWriter, parts []SmartArtPart) error {
 		// QuickStyle (stub)
 		pw.AddPart(fmt.Sprintf("ppt/diagrams/quickStyle%d.xml", num),
 			pptxxml.SmartArtStyleXML(part.spec.QuickStyleID))
+
+		// Drawing (required by PowerPoint for SmartArt wiring)
+		pw.AddPart(fmt.Sprintf("ppt/diagrams/drawing%d.xml", num),
+			pptxxml.SmartArtDrawingXML(part.spec))
 	}
 	return nil
 }

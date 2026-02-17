@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 )
 
@@ -39,8 +40,7 @@ func (pw *PackageWriter) WriteTo(zw *zip.Writer) error {
 			return createErr
 		}
 		if _, err := w.Write(content); err != nil {
-			// TODO: Verify resource cleanup procedures on write failure.
-			return err
+			return fmt.Errorf("write package part %q: %w", path, err)
 		}
 	}
 	return nil

@@ -55,9 +55,10 @@ func ContentTypes(
 	for i := 1; i <= smartArtCount; i++ {
 		b.WriteString(fmt.Sprintf(`
 <Override PartName="/ppt/diagrams/data%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"/>
-<Override PartName="/ppt/diagrams/layout%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayoutDefinition+xml"/>
+<Override PartName="/ppt/diagrams/layout%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"/>
 <Override PartName="/ppt/diagrams/colors%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"/>
-<Override PartName="/ppt/diagrams/quickStyle%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramStyle+xml"/>`, i, i, i, i))
+<Override PartName="/ppt/diagrams/quickStyle%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramStyle+xml"/>
+<Override PartName="/ppt/diagrams/drawing%d.xml" ContentType="application/vnd.ms-office.drawingml.diagramDrawing+xml"/>`, i, i, i, i, i))
 	}
 
 	for _, slideNumber := range notesSlides {
@@ -101,10 +102,6 @@ func ContentTypes(
 		}
 	}
 	b.WriteString(`
-<Override PartName="/ppt/notesSlides/notesSlide1.xml" ` +
-		`ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>
-<Override PartName="/ppt/theme/theme1.xml" ` +
-		`ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
 <Override PartName="/docProps/core.xml" ` +
 		`ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
 <Override PartName="/docProps/app.xml" ` +
@@ -125,8 +122,6 @@ var xmlEscapeReplacer = strings.NewReplacer(
 	"\"", "&quot;",
 	"'", "&apos;",
 )
-
-// TODO: Verify performance improvement of replacer reuse.
 
 func imageContentType(ext string) (string, bool) {
 	switch ext {

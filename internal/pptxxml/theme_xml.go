@@ -400,7 +400,6 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 
 // Theme renders ppt/theme/theme1.xml.
 func Theme(spec *ThemeSpec) string {
-	// TODO: [MEDIUM] Duplicated documentation comment. Remove one instance.
 	name := "Office Theme"
 	if spec != nil && spec.Name != "" {
 		name = spec.Name

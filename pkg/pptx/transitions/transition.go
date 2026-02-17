@@ -187,10 +187,24 @@ func (o TransitionOptions) XML() string {
 	if o.AdvanceAfterMS > 0 {
 		fmt.Fprintf(&b, ` advTm="%d"`, o.AdvanceAfterMS)
 	}
-	if o.DurationMS > 0 {
-		fmt.Fprintf(&b, ` dur="%d"`, o.DurationMS)
-	}
 	b.WriteString(`>`)
+
+	b.WriteString(`<p:`)
+	b.WriteString(o.Type.transitionElementName())
+
+	if o.Direction != "" {
+		fmt.Fprintf(&b, ` dir="%s"`, o.Direction)
+	}
+	if o.Orientation != "" {
+		fmt.Fprintf(&b, ` orient="%s"`, o.Orientation)
+	}
+	if o.SpokeCount > 0 {
+		fmt.Fprintf(&b, ` spokes="%d"`, o.SpokeCount)
+	}
+	if o.ThruBlk {
+		b.WriteString(` thruBlk="1"`)
+	}
+	b.WriteString(`/>`)
 
 	if o.Sound != nil {
 		b.WriteString(`<p:sndAc><p:stSnd`)
@@ -205,22 +219,7 @@ func (o TransitionOptions) XML() string {
 		b.WriteString(`</p:stSnd></p:sndAc>`)
 	}
 
-	b.WriteString(`<p:`)
-	b.WriteString(string(o.Type))
-
-	if o.Direction != "" {
-		fmt.Fprintf(&b, ` dir="%s"`, o.Direction)
-	}
-	if o.Orientation != "" {
-		fmt.Fprintf(&b, ` orient="%s"`, o.Orientation)
-	}
-	if o.SpokeCount > 0 {
-		fmt.Fprintf(&b, ` spokes="%d"`, o.SpokeCount)
-	}
-	if o.ThruBlk {
-		b.WriteString(` thruBlk="1"`)
-	}
-	b.WriteString(`/></p:transition>`)
+	b.WriteString(`</p:transition>`)
 	return b.String()
 }
 
@@ -239,8 +238,6 @@ var transitionEscapeReplacerVar = strings.NewReplacer(
 	"\"", "&quot;",
 	"'", "&apos;",
 )
-
-// TODO: Verify replacer reuse.
 
 func (t TransitionType) Validate() error {
 	switch t {
@@ -277,6 +274,13 @@ func (t TransitionType) XML() string {
 	case TransitionCover:
 		return `<p:transition><p:cover dir="r"/></p:transition>`
 	default:
-		return fmt.Sprintf(`<p:transition><p:%s/></p:transition>`, t)
+		return fmt.Sprintf(`<p:transition><p:%s/></p:transition>`, t.transitionElementName())
 	}
+}
+
+func (t TransitionType) transitionElementName() string {
+	if t == TransitionShape {
+		return string(TransitionClock)
+	}
+	return string(t)
 }

@@ -2,12 +2,14 @@ package pptxxml
 
 import (
 	"fmt"
+	"strings"
 )
 
 func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
 	phAttr := fmt.Sprintf(` idx="%d"`, ph.Index)
-	if ph.Type != "" {
-		phAttr += fmt.Sprintf(` type="%s"`, ph.Type)
+	phType := normalizePlaceholderType(ph.Type)
+	if phType != "" {
+		phAttr += fmt.Sprintf(` type="%s"`, phType)
 	}
 
 	if ph.Image != nil {
@@ -63,14 +65,21 @@ func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
 }
 
 func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) string {
-	xfrm := ""
-	if tbl.X != 0 || tbl.Y != 0 || tbl.CX != 0 || tbl.CY != 0 {
-		xfrm = fmt.Sprintf(`
+	x := tbl.X
+	y := tbl.Y
+	cx := tbl.CX
+	cy := tbl.CY
+	if cx == 0 {
+		cx = 5486400
+	}
+	if cy == 0 {
+		cy = 2743200
+	}
+	xfrm := fmt.Sprintf(`
   <p:xfrm>
     <a:off x="%d" y="%d"/>
     <a:ext cx="%d" cy="%d"/>
-  </p:xfrm>`, tbl.X, tbl.Y, tbl.CX, tbl.CY)
-	}
+  </p:xfrm>`, x, y, cx, cy)
 
 	return fmt.Sprintf(`
 <p:graphicFrame>
@@ -87,14 +96,21 @@ func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) st
 }
 
 func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) string {
-	xfrm := ""
-	if ch.X != 0 || ch.Y != 0 || ch.CX != 0 || ch.CY != 0 {
-		xfrm = fmt.Sprintf(`
+	x := ch.X
+	y := ch.Y
+	cx := ch.CX
+	cy := ch.CY
+	if cx == 0 {
+		cx = 5486400
+	}
+	if cy == 0 {
+		cy = 2743200
+	}
+	xfrm := fmt.Sprintf(`
   <p:xfrm>
     <a:off x="%d" y="%d"/>
     <a:ext cx="%d" cy="%d"/>
-  </p:xfrm>`, ch.X, ch.Y, ch.CX, ch.CY)
-	}
+  </p:xfrm>`, x, y, cx, cy)
 
 	return fmt.Sprintf(`
 <p:graphicFrame>
@@ -148,4 +164,19 @@ func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string)
   <p:spPr/>
 %s
 </p:sp>`, id, ph.Index, phAttr, txBody)
+}
+
+func normalizePlaceholderType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "picture", "pic":
+		return "pic"
+	case "title":
+		return "title"
+	case "body":
+		return "body"
+	case "ctrtitle", "centeredtitle", "centered_title":
+		return "ctrTitle"
+	default:
+		return strings.TrimSpace(raw)
+	}
 }

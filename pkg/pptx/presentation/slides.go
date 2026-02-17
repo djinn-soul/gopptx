@@ -344,16 +344,18 @@ func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) erro
 
 		dataRID := b.nextRID()
 		layoutRID := b.nextRID()
-		colorsRID := b.nextRID()
 		styleRID := b.nextRID()
+		colorsRID := b.nextRID()
+		drawingRID := b.nextRID()
 
 		// Add 4 relationships
 		num := part.partNumber
 		p.smartArtRels = append(p.smartArtRels,
 			pptxxml.SmartArtRel{RID: dataRID, Target: fmt.Sprintf("../diagrams/data%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData"},
 			pptxxml.SmartArtRel{RID: layoutRID, Target: fmt.Sprintf("../diagrams/layout%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout"},
-			pptxxml.SmartArtRel{RID: colorsRID, Target: fmt.Sprintf("../diagrams/colors%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"},
 			pptxxml.SmartArtRel{RID: styleRID, Target: fmt.Sprintf("../diagrams/quickStyle%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle"},
+			pptxxml.SmartArtRel{RID: colorsRID, Target: fmt.Sprintf("../diagrams/colors%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"},
+			pptxxml.SmartArtRel{RID: drawingRID, Target: fmt.Sprintf("../diagrams/drawing%d.xml", num), Type: "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing"},
 		)
 
 		// Create frame

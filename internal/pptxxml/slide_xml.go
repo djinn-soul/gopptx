@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -213,7 +214,6 @@ func SlideWithLayout(
 	showDateTime bool,
 	width, height int64,
 ) string {
-	// TODO: [MEDIUM] Verify documentation comment for duplication.
 	var b strings.Builder
 	layoutMode := normalizeSlideLayoutMode(layout)
 
@@ -239,15 +239,20 @@ func SlideWithLayout(
 		nextID++
 	}
 
+	nextID = slideRenderPlaceholders(&b, placeholders, nextID)
+	nextID = slideRenderOverlayShapes(
+		&b,
+		showSlideNumber,
+		footerText,
+		showDateTime,
+		width,
+		height,
+		nextID,
+	)
+
 	b.WriteString(slideContentFooter)
 	b.WriteString(slideFooterClrMap)
-
-	nextID = slideRenderPlaceholders(&b, placeholders, nextID)
-	slideRenderFeatures(
-		&b, transitionXML, animationsXML,
-		showSlideNumber, footerText, showDateTime,
-		width, height, nextID,
-	)
+	slideRenderTimelineFeatures(&b, transitionXML, animationsXML)
 
 	b.WriteString(slideFooterEnd)
 	return b.String()
@@ -264,7 +269,6 @@ func slideRenderBaseElements(
 	contentStyle ContentStyleSpec,
 	width, height int64,
 ) int {
-	// TODO: Verify parameter usage to ensure no data loss. Reviewer suggested removing width/height but they are used.
 	nextID := 2
 	if layoutMode != slideLayoutBlank {
 		if layoutMode == slideLayoutCenteredTitle {
@@ -351,14 +355,9 @@ func slideRenderPlaceholders(b *strings.Builder, placeholders []PlaceholderOverr
 	return nextID + len(placeholders)
 }
 
-func slideRenderFeatures(
+func slideRenderTimelineFeatures(
 	b *strings.Builder,
 	transitionXML, animationsXML string,
-	showSlideNumber bool,
-	footerText string,
-	showDateTime bool,
-	width, height int64,
-	nextID int,
 ) {
 	if tx := strings.TrimSpace(transitionXML); tx != "" {
 		b.WriteString("\n")
@@ -368,6 +367,16 @@ func slideRenderFeatures(
 		b.WriteString("\n")
 		b.WriteString(ax)
 	}
+}
+
+func slideRenderOverlayShapes(
+	b *strings.Builder,
+	showSlideNumber bool,
+	footerText string,
+	showDateTime bool,
+	width, height int64,
+	nextID int,
+) int {
 	if showSlideNumber {
 		b.WriteString(slideNumberShape(width, height, nextID))
 		nextID++
@@ -378,7 +387,9 @@ func slideRenderFeatures(
 	}
 	if showDateTime {
 		b.WriteString(dateTimeShape(width, height, nextID))
+		nextID++
 	}
+	return nextID
 }
 
 // ChartRel describes one chart relationship entry for slide relationships XML.
@@ -441,9 +452,10 @@ func SlideRelationshipsWithMultiCharts(
 	maxRID := 1
 	for i, target := range imageTargets {
 		rid := i + startImageRID
+		relType := slideMediaRelationshipType(target)
 		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" `+
-			`Target="%s"/>`, rid, Escape(target)))
+<Relationship Id="rId%d" Type="%s" `+
+			`Target="%s"/>`, rid, relType, Escape(target)))
 		if rid > maxRID {
 			maxRID = rid
 		}
@@ -532,4 +544,14 @@ func ridNumber(rid string) int {
 		return 0
 	}
 	return n
+}
+
+func slideMediaRelationshipType(target string) string {
+	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(target)))
+	switch ext {
+	case ".wav", ".mp3", ".m4a":
+		return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"
+	default:
+		return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+	}
 }

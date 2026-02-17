@@ -70,12 +70,17 @@ func TestTransitionXML(t *testing.T) {
 		{
 			name: "fade",
 			opts: TransitionOptions{Type: TransitionFade, DurationMS: 2000},
-			want: `<p:transition dur="2000"><p:fade/></p:transition>`,
+			want: `<p:transition><p:fade/></p:transition>`,
 		},
 		{
 			name: "push right",
 			opts: TransitionOptions{Type: TransitionPush, Direction: TransitionDirRight},
 			want: `<p:transition><p:push dir="r"/></p:transition>`,
+		},
+		{
+			name: "shape serializes as wheel",
+			opts: TransitionOptions{Type: TransitionShape},
+			want: `<p:transition><p:wheel/></p:transition>`,
 		},
 		{
 			name: "split horizontal out",
@@ -92,7 +97,7 @@ func TestTransitionXML(t *testing.T) {
 				Type:  TransitionFade,
 				Sound: &TransitionSound{RelID: "rId2", Name: "Applause.wav"},
 			},
-			want: `<p:transition><p:sndAc><p:stSnd><p:snd r:embed="rId2" name="Applause.wav"/></p:stSnd></p:sndAc><p:fade/></p:transition>`,
+			want: `<p:transition><p:fade/><p:sndAc><p:stSnd><p:snd r:embed="rId2" name="Applause.wav"/></p:stSnd></p:sndAc></p:transition>`,
 		},
 		{
 			name: "fade with looping sound",
@@ -100,7 +105,7 @@ func TestTransitionXML(t *testing.T) {
 				Type:  TransitionFade,
 				Sound: &TransitionSound{RelID: "rId3", Loop: true},
 			},
-			want: `<p:transition><p:sndAc><p:stSnd loop="1"><p:snd r:embed="rId3"/></p:stSnd></p:sndAc><p:fade/></p:transition>`,
+			want: `<p:transition><p:fade/><p:sndAc><p:stSnd loop="1"><p:snd r:embed="rId3"/></p:stSnd></p:sndAc></p:transition>`,
 		},
 		{
 			name: "cut with sound",
@@ -108,7 +113,7 @@ func TestTransitionXML(t *testing.T) {
 				Type:  TransitionCut,
 				Sound: &TransitionSound{RelID: "rId4"},
 			},
-			want: `<p:transition><p:sndAc><p:stSnd><p:snd r:embed="rId4"/></p:stSnd></p:sndAc><p:cut/></p:transition>`,
+			want: `<p:transition><p:cut/><p:sndAc><p:stSnd><p:snd r:embed="rId4"/></p:stSnd></p:sndAc></p:transition>`,
 		},
 		{
 			name: "sound with special characters",
@@ -116,7 +121,7 @@ func TestTransitionXML(t *testing.T) {
 				Type:  TransitionFade,
 				Sound: &TransitionSound{RelID: "rId5", Name: `Applause "Special".wav`},
 			},
-			want: `<p:transition><p:sndAc><p:stSnd><p:snd r:embed="rId5" name="Applause &quot;Special&quot;.wav"/></p:stSnd></p:sndAc><p:fade/></p:transition>`,
+			want: `<p:transition><p:fade/><p:sndAc><p:stSnd><p:snd r:embed="rId5" name="Applause &quot;Special&quot;.wav"/></p:stSnd></p:sndAc></p:transition>`,
 		},
 	}
 

@@ -172,8 +172,8 @@ func chartLineSeriesXML(chart *ChartSpec) string {
 	}
 	return strings.Replace(
 		base,
-		"</c:ser>",
-		"<c:marker><c:symbol val=\"circle\"/></c:marker></c:ser>",
+		"</c:spPr>",
+		"</c:spPr><c:marker><c:symbol val=\"circle\"/></c:marker>",
 		1,
 	)
 }
@@ -237,9 +237,9 @@ func chartAxesXML(chart *ChartSpec) string {
 </c:valAx>`,
 		categoryAxisTitle,
 		valueScaling,
+		majorGrid,
 		valueAxisTitle,
 		valueFormat,
-		majorGrid,
 		crossBetween,
 	)
 }

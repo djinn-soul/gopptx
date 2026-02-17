@@ -16,22 +16,22 @@ type Layout string
 // Phase-1 supported SmartArt layouts.
 const (
 	// List layouts.
-	BasicBlockList      Layout = "urn:microsoft.com/office/officeart/2005/8/layout/vList1"
-	VerticalBlockList   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/vList2"
+	BasicBlockList      Layout = "urn:microsoft.com/office/officeart/2005/8/layout/default"
+	VerticalBlockList   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/vList5"
 	HorizontalBulletLst Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hList1"
-	SquareAccentList    Layout = "urn:microsoft.com/office/officeart/2005/8/layout/vList3"
-	PictureAccentList   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/vList5"
+	SquareAccentList    Layout = "urn:microsoft.com/office/officeart/2008/layout/SquareAccentList"
+	PictureAccentList   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hList2"
 
 	// Process layouts.
 	BasicProcess           Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process1"
-	AccentProcess          Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process2"
-	AlternatingFlow        Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process3"
-	ContinuousBlockProcess Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process4"
+	AccentProcess          Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process3"
+	AlternatingFlow        Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hProcess4"
+	ContinuousBlockProcess Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hProcess9"
 
 	// Cycle layouts.
-	BasicCycle Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle1"
-	TextCycle  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle2"
-	BlockCycle Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle3"
+	BasicCycle Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle2"
+	TextCycle  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle1"
+	BlockCycle Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle5"
 
 	// Hierarchy layouts.
 	OrgChart            Layout = "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1"
@@ -40,21 +40,21 @@ const (
 
 	// Relationship layouts.
 	BasicVenn   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn1"
-	LinearVenn  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn2"
-	StackedVenn Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn3"
+	LinearVenn  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn3"
+	StackedVenn Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn2"
 	BasicRadial Layout = "urn:microsoft.com/office/officeart/2005/8/layout/radial1"
 
 	// Matrix layouts.
-	BasicMatrix  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/matrix1"
-	TitledMatrix Layout = "urn:microsoft.com/office/officeart/2005/8/layout/matrix2"
+	BasicMatrix  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/matrix3"
+	TitledMatrix Layout = "urn:microsoft.com/office/officeart/2005/8/layout/matrix1"
 
 	// Pyramid layouts.
 	BasicPyramid    Layout = "urn:microsoft.com/office/officeart/2005/8/layout/pyramid1"
-	InvertedPyramid Layout = "urn:microsoft.com/office/officeart/2005/8/layout/pyramid2"
+	InvertedPyramid Layout = "urn:microsoft.com/office/officeart/2005/8/layout/pyramid3"
 
 	// Picture layouts.
-	PictureStrips Layout = "urn:microsoft.com/office/officeart/2005/8/layout/picture1"
-	PictureGrid   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/picture2"
+	PictureStrips Layout = "urn:microsoft.com/office/officeart/2008/layout/PictureStrips"
+	PictureGrid   Layout = "urn:microsoft.com/office/officeart/2008/layout/PictureGrid"
 )
 
 // Name returns the human-readable name of the layout.

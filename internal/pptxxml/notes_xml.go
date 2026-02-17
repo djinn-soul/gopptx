@@ -141,7 +141,7 @@ func notesMasterHeader(text string) string {
 <a:lstStyle/>
 <a:p>
 <a:r>
-<a:rPr lang="en-US" sm="1"/>
+<a:rPr lang="en-US"/>
 <a:t>` + Escape(text) + `</a:t>
 </a:r>
 </a:p>
@@ -162,7 +162,7 @@ func notesMasterDate() string {
 <a:bodyPr/>
 <a:lstStyle/>
 <a:p><a:fld id="{8583B92D-B326-4076-96F9-126CB471A9B6}" type="datetime1">` +
-		`<a:rPr lang="en-US" sm="1"/><a:pPr/><a:t></a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
+		`<a:rPr lang="en-US"/><a:pPr/><a:t></a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
 </p:txBody>
 </p:sp>`
 }
@@ -221,7 +221,7 @@ func notesMasterFooter(text string) string {
 <a:lstStyle/>
 <a:p>
 <a:r>
-<a:rPr lang="en-US" sm="1"/>
+<a:rPr lang="en-US"/>
 <a:t>` + Escape(text) + `</a:t>
 </a:r>
 </a:p>
@@ -242,7 +242,7 @@ func notesMasterSlideNum() string {
 <a:bodyPr/>
 <a:lstStyle/>
 <a:p><a:fld id="{1E4E639B-83C3-4404-B32B-98A843E836FB}" type="slidenum">` +
-		`<a:rPr lang="en-US" sm="1"/><a:t>‹#›</a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
+		`<a:rPr lang="en-US"/><a:t>‹#›</a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
 </p:txBody>
 </p:sp>`
 }

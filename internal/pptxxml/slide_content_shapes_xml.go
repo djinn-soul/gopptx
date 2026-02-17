@@ -341,8 +341,7 @@ func slideNumberShape(width, height int64, shapeID int) string {
     <a:lstStyle/>
     <a:p>
       <a:pPr algn="r"/>
-      <a:fld type="slnum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
-        <a:pPr algn="r"/>
+      <a:fld type="slidenum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
         <a:rPr lang="en-US" smtClean="0"/>
         <a:t>‹#›</a:t>
       </a:fld>
@@ -424,10 +423,10 @@ func dateTimeShape(_ int64, height int64, shapeID int) string {
     <a:p>
       <a:pPr algn="l"/>
       <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
-        <a:rPr lang="en-US" sz="1200" dirty="0"/>
+        <a:rPr lang="en-US" dirty="0"/>
         <a:t>`+time.Now().Format("2006-01-02")+`</a:t>
       </a:fld>
-      <a:endParaRPr lang="en-US" sz="1200" dirty="0"/>
+      <a:endParaRPr lang="en-US" dirty="0"/>
     </a:p>
   </p:txBody>
 </p:sp>`, shapeID, x, y, cx, cy)

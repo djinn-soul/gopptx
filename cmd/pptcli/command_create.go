@@ -38,7 +38,6 @@ func runCreateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 	if writeErr := writeOutputFile(outPath, data); writeErr != nil {
 		printErrorf(stderr, "failed to write %q: %v", outPath, writeErr)
-		// TODO: Verify idiomatic error variable naming.
 		return exitIO
 	}
 
