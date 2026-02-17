@@ -196,6 +196,7 @@ func customShapeTextBody(shape ShapeSpec) string {
 	}
 
 	autoFitXML := `<a:spAutoFit/>`
+	bodyPrChildren := autoFitXML
 	bodyPrAttr := fmt.Sprintf(
 		` wrap="square" rtlCol="0" anchor="ctr" lIns="%d" tIns="%d" rIns="%d" bIns="%d"`,
 		defaultMargin, defaultMargin, defaultMargin, defaultMargin,
@@ -214,10 +215,15 @@ func customShapeTextBody(shape ShapeSpec) string {
 		case "spAutoFit":
 			autoFitXML = `<a:spAutoFit/>`
 		case "normAutoFit":
-			autoFitXML = `<a:normAutoFit/>`
+			autoFitXML = `<a:normAutofit/>`
 		default:
 			autoFitXML = ""
 		}
+	}
+	if shape.TextFrame != nil && shape.TextFrame.AutoFit == "normAutoFit" {
+		bodyPrChildren = `<a:prstTxWarp prst="textNoShape"><a:avLst/></a:prstTxWarp>` + "\n" + autoFitXML
+	} else {
+		bodyPrChildren = autoFitXML
 	}
 
 	hyperlinkXML := ""
@@ -240,7 +246,7 @@ func customShapeTextBody(shape ShapeSpec) string {
 <a:t>%s</a:t>
 </a:r>
 </a:p>
-</p:txBody>`, bodyPrAttr, autoFitXML, shapeTextSizeXML(shape), shapeTextRunPropertiesXML(shape), hyperlinkXML, Escape(shape.Text))
+</p:txBody>`, bodyPrAttr, bodyPrChildren, shapeTextSizeXML(shape), shapeTextRunPropertiesXML(shape), hyperlinkXML, Escape(shape.Text))
 }
 
 func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endShapeID int) string {

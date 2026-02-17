@@ -18,13 +18,10 @@ func main() { //nolint:unused
 	}
 
 	slide := pptx.NewSlide("Text Frame Properties").
-		AddBullet("Custom Margins").
-		AddBullet("Vertical Alignment (Anchor)").
-		AddBullet("Word Wrap toggling").
-		AddBullet("Auto-fit behaviors")
+		WithLayout(pptx.SlideLayoutTitleOnly)
 
 	// 1. Large Margin
-	slide.AddShape(
+	slide = slide.AddShape(
 		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(0.5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1.5)).
 			WithText("Large internal margins (0.5 in)").
 			WithFill(pptx.NewShapeFill("FFC000")).
@@ -32,7 +29,7 @@ func main() { //nolint:unused
 	)
 
 	// 2. Top Anchor
-	slide.AddShape(
+	slide = slide.AddShape(
 		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1.5)).
 			WithText("Top Anchored Text").
 			WithFill(pptx.NewShapeFill("5B9BD5")).
@@ -40,7 +37,7 @@ func main() { //nolint:unused
 	)
 
 	// 3. Bottom Anchor
-	slide.AddShape(
+	slide = slide.AddShape(
 		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5.5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1.5)).
 			WithText("Bottom Anchored Text").
 			WithFill(pptx.NewShapeFill("70AD47")).
@@ -48,7 +45,7 @@ func main() { //nolint:unused
 	)
 
 	// 4. No Wrap
-	slide.AddShape(
+	slide = slide.AddShape(
 		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(0.5), pptx.Inches(4), pptx.Inches(2), pptx.Inches(0.5)).
 			WithText("This text should NOT wrap and spill out").
 			WithFill(pptx.NewShapeFill("ED7D31")).
@@ -56,7 +53,7 @@ func main() { //nolint:unused
 	)
 
 	// 5. Shrink Text (normAutoFit)
-	slide.AddShape(
+	slide = slide.AddShape(
 		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(4), pptx.Inches(2), pptx.Inches(1)).
 			WithText("This is a lot of text that should shrink to fit inside the box without expanding the box itself.").
 			WithFill(pptx.NewShapeFill("A5A5A5")).
