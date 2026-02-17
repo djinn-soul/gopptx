@@ -61,7 +61,6 @@ func run() error {
 
 	sourcePPTXPath := filepath.Join(tmpDir, "merge_source.pptx")
 	if err := srcDeck.WriteToFile(sourcePPTXPath); err != nil {
-		// TODO: [CRITICAL] Returning incorrect error variable hides failures. Return err instead of tempErr.
 		return err
 	}
 

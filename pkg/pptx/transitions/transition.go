@@ -228,7 +228,8 @@ func escape(value string) string {
 	return transitionEscapeReplacerVar.Replace(value)
 }
 
-// TODO: [HIGH] Performance regression in transitionEscapeReplacer. Ensure this remains a package-level variable.
+// NOTE: The use of a package-level variable here is intentional to avoid repeated [strings.Replacer] allocation.
+// Do not move this to a local scope.
 //
 //nolint:gochecknoglobals // global replacer
 var transitionEscapeReplacerVar = strings.NewReplacer(

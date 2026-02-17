@@ -46,6 +46,13 @@ Use the following commands to run the examples:
 - `56-action-api` (Smoke): `go run ./examples/56-action-api/action_smoke.go` -> `56_action_smoke.pptx`
 - `56-action-api` (API): `go run ./examples/56-action-api/action_api_smoke.go` -> `56_action_api_smoke.pptx`
 
+### Python Examples (`examples/python/`)
+
+- `python_comprehensive_test.py`: Full API verification.
+- `python_advanced_features.py`: Advanced search/replace, comments, etc.
+- `python_image_test.py`: Image insertion.
+- Run them via `python examples/python/script.py` (from root).
+
 ## Example Assets
 
 Shared fixture assets live under: `examples/assets/[task-number]/`

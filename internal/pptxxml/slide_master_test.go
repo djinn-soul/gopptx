@@ -136,7 +136,7 @@ func TestPresentationRelationshipsMultiMaster(t *testing.T) {
 }
 
 func TestContentTypesMultiMaster(t *testing.T) {
-	xml := pptxxml.ContentTypes(1, nil, 0, nil, false, 0, 2, 0)
+	xml := pptxxml.ContentTypes(1, nil, 0, 0, nil, false, 0, 2, 0)
 	if !strings.Contains(xml, `/ppt/slideMasters/slideMaster1.xml`) {
 		t.Error("missing slideMaster1 content-type override")
 	}

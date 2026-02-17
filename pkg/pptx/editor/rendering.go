@@ -93,6 +93,7 @@ func renderEditorSlideParts(
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 		placeholderSpecs,
+		nil, // smartArtFrames
 		elements.ToXMLBackgroundSpec(slide.Background, backgroundRID),
 		elements.SlideTransitionXML(slide),
 		elements.SlideAnimationsXML(slide, elements.CalculateShapeIDs(slide)),
@@ -110,6 +111,7 @@ func renderEditorSlideParts(
 		imageTargets,
 		nil,
 		phChartRels,
+		nil, // smartArtRels
 		notesTarget,
 		hyperlinks,
 	)

@@ -11,7 +11,6 @@ import (
 	"github.com/richardlehane/mscfb"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
-	"golang.org/x/text/transform"
 
 	"github.com/djinn-soul/gopptx/internal/ioadapters"
 )
@@ -219,10 +218,7 @@ func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries ma
 			return "", err
 		}
 
-		// TODO: Verify infinite loop fix. Check if block.Size() vs len(block.Data()) is correct.
-		// TODO: [MEDIUM] Hardcoded record size increment. Use int(block.Size()) + headerSize instead.
-		//nolint:mnd // Record header size
-		i += len(block.Data()) + 8
+		i += len(block.Data()) + headerSize
 	}
 
 	return out.String(), nil
@@ -333,24 +329,38 @@ func readTextFromTextBytesAtom(atom record, out *strings.Builder, dec *encoding.
 // decodeTextBytesAtom transforms text from TextBytesAtom, which is an array of bytes representing lower parts of UTF-16
 // characters into UTF-8 data.
 func decodeTextBytesAtom(data []byte, dec *encoding.Decoder) ([]byte, error) {
-	var (
-		// buffer for UTF-16 char
-		buf [2]byte
-		err error
-	)
-	result := make([]byte, 0, len(data))
-	for i := range data {
-		// filling upper part of character with zero
-		// buf[1] remains 0
-		buf[0] = data[i]
+	// 	var (
+	// 	// buffer for UTF-16 char
+	// 	buf [2]byte
+	// 	err error
+	// )
+	// result := make([]byte, 0, len(data))
+	// for i := range data {
+	// 	// filling upper part of character with zero
+	// 	// buf[1] remains 0
+	// 	buf[0] = data[i]
 
-		// transform single UTF-16 char into UTF-8 rune and append it into result
-		result, _, err = transform.Append(dec, result, buf[:])
-		if err != nil {
-			return nil, err
-		}
+	// 	// transform single UTF-16 char into UTF-8 rune and append it into result
+	// 	result, _, err = transform.Append(dec, result, buf[:])
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// return result, nil
+	// TextBytesAtom contains 1-byte characters effectively acting as the lower byte of a UTF-16 word.
+	// We expand this to full UTF-16 (little-endian) by interleaving zeros.
+	//
+	// Optimization: Allocate one buffer for the expanded UTF-16 data and decode in one pass
+	// instead of calling transform.Append for every single byte.
+
+	utf16Data := make([]byte, len(data)*2)
+	for i, b := range data {
+		// Little-endian: [byte, 0]
+		utf16Data[i*2] = b
+		utf16Data[i*2+1] = 0
 	}
-	return result, nil
+
+	return dec.Bytes(utf16Data)
 }
 
 // skipRecords reads headers and skips data of records of provided types.

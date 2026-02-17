@@ -54,13 +54,14 @@ func WritePackageFiles(
 	}
 
 	chartParts := BuildChartParts(slides)
+	smartArtParts := BuildSmartArtParts(slides)
 	notesParts := notes.BuildRenderedNotesParts(slides)
 	effectiveMasters := getEffectiveMasters(meta)
 	masterCount := len(effectiveMasters)
 	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0, masterCount)
 
 	addBasicPropertyFiles(
-		pw, meta, slideCount, len(notesParts), len(chartParts),
+		pw, meta, slideCount, len(notesParts), len(chartParts), len(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
 	)
 	addLayoutFiles(pw, masterCount)
@@ -74,13 +75,17 @@ func WritePackageFiles(
 	if err := writeChartFiles(pw, chartParts); err != nil {
 		return err
 	}
+	if err := writeSmartArtFiles(pw, smartArtParts); err != nil {
+		return err
+	}
 	if err := notes.WriteNotesFiles(pw, notesParts); err != nil {
 		return err
 	}
 
 	chartBySlide := chartPartBySlide(chartParts)
+	smartArtBySlide := smartArtPartBySlide(smartArtParts)
 	notesTargets := notes.TargetBySlide(notesParts)
-	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, notesTargets, masterCount); err != nil {
+	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, smartArtBySlide, notesTargets, masterCount); err != nil {
 		return err
 	}
 
@@ -114,14 +119,14 @@ func getNotesThemeIndex(hasNotes bool, masterCount int) int {
 func addBasicPropertyFiles(
 	pw *pptxxml.PackageWriter,
 	meta Metadata,
-	slideCount, notesPartCount, chartPartCount int,
+	slideCount, notesPartCount, chartPartCount, smartArtPartCount int,
 	notesParts []notes.RenderedNotesPart,
 	masterCount, notesThemeIndex int,
 	mediaExtensions []string,
 ) {
 	hasNotes := notesPartCount > 0
 	pw.AddPart("[Content_Types].xml", pptxxml.ContentTypes(
-		slideCount, mediaExtensions, chartPartCount,
+		slideCount, mediaExtensions, chartPartCount, smartArtPartCount,
 		notes.SlideNumbers(notesParts), hasNotes,
 		len(meta.CustomXML), masterCount, notesThemeIndex,
 	))

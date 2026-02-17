@@ -108,3 +108,28 @@ func TestCommandNotesOps(t *testing.T) {
 		t.Fatalf("get_notes mismatch after update: %s", resp)
 	}
 }
+
+func TestCommandUpdateSlidePreservesTitleWhenOmitted(t *testing.T) {
+	basePath := writeDeckFixture(t, "bridge-update-slide-title-preserve.pptx", []elements.SlideContent{
+		elements.NewSlide("Keep Title").AddBullet("before"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	updateReq := `{"api_version":1,"request_id":"u1","op":"update_slide","payload":{"slide_index":0,"bullets":["after"]}}`
+	resp := ExecuteCommand(e, updateReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("update_slide failed: %s", resp)
+	}
+
+	slides := e.Slides()
+	if len(slides) != 1 {
+		t.Fatalf("expected 1 slide, got %d", len(slides))
+	}
+	if slides[0].Title != "Keep Title" {
+		t.Fatalf("expected title to be preserved, got %q", slides[0].Title)
+	}
+}

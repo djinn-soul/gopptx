@@ -3,7 +3,9 @@ package editor
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -70,6 +72,8 @@ func commandHandlerForSlidesAndMeta(op string) (commandHandler, bool) {
 		return handleRemoveSection, true
 	case OpRenameSection:
 		return handleRenameSection, true
+	case OpGetSections:
+		return handleGetSections, true
 	case OpGetCoreProperties:
 		return handleGetCoreProperties, true
 	case OpSetCoreProperties:
@@ -78,6 +82,20 @@ func commandHandlerForSlidesAndMeta(op string) (commandHandler, bool) {
 		return handleApplyTheme, true
 	case OpSetSlideSize:
 		return handleSetSlideSize, true
+	case OpSetSlideTitle:
+		return handleSetSlideTitle, true
+	case OpMergeFromFile:
+		return handleMergeFromFile, true
+	case OpUpdateSlide:
+		return handleUpdateSlide, true
+	case OpAddChart:
+		return handleAddChart, true
+	case OpListSlides:
+		return handleListSlides, true
+	case OpFindAndReplace:
+		return handleFindAndReplace, true
+	case OpSearchShapes:
+		return handleSearchShapes, true
 	default:
 		return nil, false
 	}
@@ -89,6 +107,8 @@ func commandHandlerForShapesAndNotes(op string) (commandHandler, bool) {
 		return handleListShapes, true
 	case OpAddShape:
 		return handleAddShape, true
+	case OpAddImage:
+		return handleAddImage, true
 	case OpRemoveShape:
 		return handleRemoveShape, true
 	case OpUpdateShape:
@@ -97,6 +117,16 @@ func commandHandlerForShapesAndNotes(op string) (commandHandler, bool) {
 		return handleGetNotes, true
 	case OpSetNotes:
 		return handleSetNotes, true
+	case OpGetAuthors:
+		return handleGetAuthors, true
+	case OpAddAuthor:
+		return handleAddAuthor, true
+	case OpGetComments:
+		return handleGetComments, true
+	case OpAddComment:
+		return handleAddComment, true
+	case OpRemoveComment:
+		return handleRemoveComment, true
 	default:
 		return nil, false
 	}
@@ -145,12 +175,21 @@ func handleSlideCount(e *PresentationEditor, _ json.RawMessage) (any, error) {
 
 func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
-		Title string `json:"title"`
+		Title   string   `json:"title"`
+		Layout  string   `json:"layout"`
+		Bullets []string `json:"bullets"`
 	}
 	if err := json.Unmarshal(payload, &p); err != nil {
 		return nil, err
 	}
-	index, err := e.AddSlide(elements.NewSlide(p.Title))
+	slide := elements.NewSlide(p.Title)
+	if p.Layout != "" {
+		slide = slide.WithLayout(p.Layout)
+	}
+	for _, b := range p.Bullets {
+		slide = slide.AddBullet(b)
+	}
+	index, err := e.AddSlide(slide)
 	if err != nil {
 		return nil, err
 	}
@@ -315,6 +354,10 @@ func handleRenameSection(e *PresentationEditor, payload json.RawMessage) (any, e
 	return map[string]bool{"renamed": true}, nil
 }
 
+func handleGetSections(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	return map[string]any{"sections": e.Sections()}, nil
+}
+
 func handleGetCoreProperties(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	return e.GetCoreProperties(), nil
 }
@@ -371,6 +414,113 @@ func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (any, er
 		return nil, err
 	}
 	return map[string]bool{"updated": true}, nil
+}
+
+func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex int    `json:"slide_index"`
+		Title      string `json:"title"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.SetSlideTitle(p.SlideIndex, p.Title); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"updated": true}, nil
+}
+
+func handleMergeFromFile(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.MergeFromFile(p.Path); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"merged": true}, nil
+}
+
+func handleUpdateSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex int       `json:"slide_index"`
+		Title      *string   `json:"title"`
+		Layout     *string   `json:"layout"`
+		Bullets    *[]string `json:"bullets"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if p.SlideIndex < 0 || p.SlideIndex >= len(e.slides) {
+		return nil, fmt.Errorf("slide index %d out of range [0,%d)", p.SlideIndex, len(e.slides))
+	}
+
+	title := e.slides[p.SlideIndex].Title
+	if p.Title != nil {
+		title = *p.Title
+	}
+
+	slide := elements.NewSlide(title)
+	if p.Layout != nil && *p.Layout != "" {
+		slide = slide.WithLayout(*p.Layout)
+	}
+	if p.Bullets != nil {
+		for _, b := range *p.Bullets {
+			slide = slide.AddBullet(b)
+		}
+	}
+	if err := e.UpdateSlide(p.SlideIndex, slide); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"updated": true}, nil
+}
+
+func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex int       `json:"slide_index"`
+		ChartType  string    `json:"chart_type"`
+		Title      string    `json:"title"`
+		Categories []string  `json:"categories"`
+		Values     []float64 `json:"values"`
+		X          int64     `json:"x"`
+		Y          int64     `json:"y"`
+		W          int64     `json:"w"`
+		H          int64     `json:"h"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+
+	var chart charts.ChartDefinition
+	switch strings.ToLower(p.ChartType) {
+	case "bar":
+		c := charts.NewBarChart(p.Categories, p.Values).WithTitle(p.Title)
+		if p.W > 0 {
+			c = c.Size(styling.Emu(p.W), styling.Emu(p.H)).Position(styling.Emu(p.X), styling.Emu(p.Y))
+		}
+		chart = c
+	case "line":
+		c := charts.NewLineChart(p.Categories, p.Values).WithTitle(p.Title)
+		if p.W > 0 {
+			c = c.Size(styling.Emu(p.W), styling.Emu(p.H)).Position(styling.Emu(p.X), styling.Emu(p.Y))
+		}
+		chart = c
+	case "pie":
+		c := charts.NewPieChart(p.Categories, p.Values).WithTitle(p.Title)
+		if p.W > 0 {
+			c = c.Size(styling.Emu(p.W), styling.Emu(p.H)).Position(styling.Emu(p.X), styling.Emu(p.Y))
+		}
+		chart = c
+	default:
+		return nil, fmt.Errorf("unsupported chart type: %q", p.ChartType)
+	}
+
+	if err := e.AddChart(p.SlideIndex, chart); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"added": true}, nil
 }
 
 func errorResponse(code, message, reqID string) string {
@@ -438,6 +588,25 @@ func handleAddShape(e *PresentationEditor, payload json.RawMessage) (any, error)
 	return map[string]int{"shape_id": id}, nil
 }
 
+func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex int     `json:"slide_index"`
+		Path       string  `json:"path"`
+		X          float64 `json:"x"`
+		Y          float64 `json:"y"`
+		W          float64 `json:"w"`
+		H          float64 `json:"h"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	id, err := e.AddImage(p.SlideIndex, p.Path, p.X, p.Y, p.W, p.H)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]int{"shape_id": id}, nil
+}
+
 func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p struct {
 		SlideIndex int `json:"slide_index"`
@@ -494,4 +663,104 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 		return nil, err
 	}
 	return map[string]bool{"updated": true}, nil
+}
+
+func handleListSlides(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	return map[string]any{"slides": e.Slides()}, nil
+}
+
+func handleFindAndReplace(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		Find    string `json:"find"`
+		Replace string `json:"replace"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	count, err := e.FindAndReplaceInShapes(p.Find, p.Replace)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]int{"replacements": count}, nil
+}
+
+func handleSearchShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var query common.ShapeSearchQuery
+	if err := json.Unmarshal(payload, &query); err != nil {
+		return nil, err
+	}
+	results, err := e.SearchShapes(query)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"results": results}, nil
+}
+
+func handleGetAuthors(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	authors, err := e.GetAuthors()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"authors": authors}, nil
+}
+
+func handleAddAuthor(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		Name     string `json:"name"`
+		Initials string `json:"initials"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	author, err := e.AddAuthor(p.Name, p.Initials)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]int64{"author_id": author.ID}, nil
+}
+
+func handleGetComments(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex int `json:"slide_index"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	comments, err := e.GetComments(p.SlideIndex)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"comments": comments}, nil
+}
+
+func handleAddComment(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex int    `json:"slide_index"`
+		AuthorID   int64  `json:"author_id"`
+		Text       string `json:"text"`
+		X          int64  `json:"x"`
+		Y          int64  `json:"y"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.AddComment(p.SlideIndex, p.AuthorID, p.Text, p.X, p.Y); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"added": true}, nil
+}
+
+func handleRemoveComment(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		SlideIndex  int   `json:"slide_index"`
+		AuthorID    int64 `json:"author_id"`
+		AuthorIndex int   `json:"author_index"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	if err := e.RemoveComment(p.SlideIndex, p.AuthorID, p.AuthorIndex); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"removed": true}, nil
 }

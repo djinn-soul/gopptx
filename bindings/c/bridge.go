@@ -9,10 +9,12 @@ import "C"
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 	"sync"
 	"unsafe"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -78,6 +80,44 @@ func deck_open(path *C.char) C.DeckHandle {
 
 	goPath := C.GoString(path)
 	e, err := editor.OpenPresentationEditor(goPath)
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	h := editor.RegisterEditor(deckRegistry, e)
+	return C.DeckHandle(h)
+}
+
+//export deck_new
+func deck_new(title *C.char) C.DeckHandle {
+	defer recoverPanic(0)
+	setGlobalError(nil)
+
+	goTitle := C.GoString(title)
+	// Create a minimal 1-slide PPTX in memory
+	data, err := pptx.Create(goTitle, 1)
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	// We need to write it to a temp file to open it with the editor
+	// (Current editor requires a file path)
+	tmpFile, err := os.CreateTemp("", "gopptx-new-*.pptx")
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+	tmpPath := tmpFile.Name()
+	_ = tmpFile.Close()
+
+	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	e, err := editor.OpenPresentationEditor(tmpPath)
 	if err != nil {
 		setGlobalError(err)
 		return 0

@@ -16,12 +16,26 @@ const (
 	OpAddSection              = "add_section"
 	OpRemoveSection           = "remove_section"
 	OpRenameSection           = "rename_section"
+	OpGetSections             = "get_sections"
 	OpGetCoreProperties       = "get_core_properties"
 	OpSetCoreProperties       = "set_core_properties"
 	OpApplyTheme              = "apply_theme"
 	OpSetSlideSize            = "set_slide_size"
+	OpSetSlideTitle           = "set_slide_title"
+	OpMergeFromFile           = "merge_from_file"
+	OpUpdateSlide             = "update_slide"
+	OpAddChart                = "add_chart"
+	OpListSlides              = "list_slides"
+	OpFindAndReplace          = "find_and_replace"
+	OpSearchShapes            = "search_shapes"
+	OpGetAuthors              = "get_authors"
+	OpAddAuthor               = "add_author"
+	OpGetComments             = "get_comments"
+	OpAddComment              = "add_comment"
+	OpRemoveComment           = "remove_comment"
 	OpListShapes              = "list_shapes"
 	OpAddShape                = "add_shape"
+	OpAddImage                = "add_image"
 	OpRemoveShape             = "remove_shape"
 	OpUpdateShape             = "update_shape"
 	OpGetNotes                = "get_notes"
@@ -45,12 +59,26 @@ func SupportedOps() []string {
 		OpAddSection,
 		OpRemoveSection,
 		OpRenameSection,
+		OpGetSections,
 		OpGetCoreProperties,
 		OpSetCoreProperties,
 		OpApplyTheme,
 		OpSetSlideSize,
+		OpSetSlideTitle,
+		OpMergeFromFile,
+		OpUpdateSlide,
+		OpAddChart,
+		OpListSlides,
+		OpFindAndReplace,
+		OpSearchShapes,
+		OpGetAuthors,
+		OpAddAuthor,
+		OpGetComments,
+		OpAddComment,
+		OpRemoveComment,
 		OpListShapes,
 		OpAddShape,
+		OpAddImage,
 		OpRemoveShape,
 		OpUpdateShape,
 		OpGetNotes,

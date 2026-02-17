@@ -52,7 +52,7 @@ func (p *Presentation) Save(path string) error {
 
 	// 1. Mandatory OPC parts
 	if err := w.AddFile("[Content_Types].xml", []byte(pptxxml.ContentTypes(
-		slideCount, nil, 0, nil, false, 0, 1, 0,
+		slideCount, nil, 0, 0, nil, false, 0, 0, 0,
 	))); err != nil {
 		return err
 	}

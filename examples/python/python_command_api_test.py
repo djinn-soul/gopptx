@@ -2,10 +2,14 @@ from gopptx import Presentation
 import os
 import sys
 
+# Add project root to sys.path to find 'gopptx' package
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(os.path.join(project_root, "python"))
+
 # Ensure smoke sample exists
-input_deck = "examples/assets/01/01_basic_pptx.pptx"
+input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")
 if not os.path.exists(input_deck):
-    print("Error: smoke sample missing. Run smoke tests first.")
+    print("Error: smoke sample missing or path incorrect.")
     exit(1)
 
 try:
@@ -39,7 +43,9 @@ try:
         print(f"Final slide count: {pres.slide_count}")
 
         # 6. Save
-        out_path = "examples/python_management_output.pptx"
+        output_dir = os.path.join(project_root, "examples/output")
+        os.makedirs(output_dir, exist_ok=True)
+        out_path = os.path.join(output_dir, "python_management_output.pptx")
         print(f"Saving to {out_path}...")
         pres.save(out_path)
         print("Saved.")

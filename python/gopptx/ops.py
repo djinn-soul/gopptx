@@ -14,12 +14,26 @@ OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
 OP_ADD_SECTION = "add_section"
 OP_REMOVE_SECTION = "remove_section"
 OP_RENAME_SECTION = "rename_section"
+OP_GET_SECTIONS = "get_sections"
 OP_GET_CORE_PROPERTIES = "get_core_properties"
 OP_SET_CORE_PROPERTIES = "set_core_properties"
 OP_APPLY_THEME = "apply_theme"
 OP_SET_SLIDE_SIZE = "set_slide_size"
+OP_SET_SLIDE_TITLE = "set_slide_title"
+OP_MERGE_FROM_FILE = "merge_from_file"
+OP_UPDATE_SLIDE = "update_slide"
+OP_ADD_CHART = "add_chart"
+OP_LIST_SLIDES = "list_slides"
+OP_FIND_AND_REPLACE = "find_and_replace"
+OP_SEARCH_SHAPES = "search_shapes"
+OP_GET_AUTHORS = "get_authors"
+OP_ADD_AUTHOR = "add_author"
+OP_GET_COMMENTS = "get_comments"
+OP_ADD_COMMENT = "add_comment"
+OP_REMOVE_COMMENT = "remove_comment"
 OP_LIST_SHAPES = "list_shapes"
 OP_ADD_SHAPE = "add_shape"
+OP_ADD_IMAGE = "add_image"
 OP_REMOVE_SHAPE = "remove_shape"
 OP_UPDATE_SHAPE = "update_shape"
 OP_GET_NOTES = "get_notes"
@@ -44,6 +58,14 @@ SUPPORTED_OPS = (
     OP_SET_CORE_PROPERTIES,
     OP_APPLY_THEME,
     OP_SET_SLIDE_SIZE,
+    OP_LIST_SLIDES,
+    OP_FIND_AND_REPLACE,
+    OP_SEARCH_SHAPES,
+    OP_GET_AUTHORS,
+    OP_ADD_AUTHOR,
+    OP_GET_COMMENTS,
+    OP_ADD_COMMENT,
+    OP_REMOVE_COMMENT,
     OP_LIST_SHAPES,
     OP_ADD_SHAPE,
     OP_REMOVE_SHAPE,

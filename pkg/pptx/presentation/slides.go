@@ -25,6 +25,7 @@ func renderSlides(
 	slides []elements.SlideContent,
 	mediaCatalog *media.Catalog,
 	chartBySlide map[int][]ChartPart,
+	smartArtBySlide map[int][]SmartArtPart,
 	notesTargets map[int]string,
 	masterCount int,
 ) error {
@@ -37,7 +38,7 @@ func renderSlides(
 			ridNext: firstSlideRelID,
 		}
 
-		parts, err := builder.build(i, slide, chartBySlide)
+		parts, err := builder.build(i, slide, chartBySlide, smartArtBySlide)
 		if err != nil {
 			return err
 		}
@@ -57,6 +58,7 @@ func renderSlides(
 			shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 			shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 			parts.placeholders,
+			parts.smartArtFrames,
 			elements.ToXMLBackgroundSpec(slide.Background, parts.backgroundRID),
 			parts.transitionXML,
 			elements.SlideAnimationsXML(slide, elements.CalculateShapeIDs(slide)),
@@ -83,7 +85,9 @@ func renderSlides(
 			layoutTarget,
 			builder.targets,
 			parts.chartRel,
+
 			parts.placeholderChartRels,
+			parts.smartArtRels,
 			notesTargets[num],
 			hyperlinks,
 		))
@@ -126,12 +130,15 @@ type slideParts struct {
 	chartFrame           *pptxxml.ChartFrame
 	chartRel             *pptxxml.ChartRel
 	placeholderChartRels []pptxxml.ChartRel
+	smartArtFrames       []pptxxml.SmartArtFrame
+	smartArtRels         []pptxxml.SmartArtRel
 }
 
 func (b *slidePartBuilder) build(
 	idx int,
 	slide elements.SlideContent,
 	chartBySlide map[int][]ChartPart,
+	smartArtBySlide map[int][]SmartArtPart,
 ) (*slideParts, error) {
 	p := &slideParts{
 		title:        b.buildTitleSpec(slide),
@@ -154,6 +161,8 @@ func (b *slidePartBuilder) build(
 
 	p.backgroundRID = b.mapBackground(slide.Background)
 	p.placeholderChartRels = make([]pptxxml.ChartRel, 0)
+	p.smartArtFrames = make([]pptxxml.SmartArtFrame, 0)
+	p.smartArtRels = make([]pptxxml.SmartArtRel, 0)
 
 	b.handleTransitionSound(&slide)
 	p.transitionXML = elements.SlideTransitionXML(slide)
@@ -163,6 +172,12 @@ func (b *slidePartBuilder) build(
 
 	if parts, ok := chartBySlide[idx]; ok {
 		if err := b.mapCharts(p, parts, slide); err != nil {
+			return nil, err
+		}
+	}
+
+	if parts, ok := smartArtBySlide[idx]; ok {
+		if err := b.mapSmartArt(p, parts); err != nil {
 			return nil, err
 		}
 	}
@@ -316,6 +331,42 @@ func (b *slidePartBuilder) mapCharts(p *slideParts, parts []ChartPart, slide ele
 				Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
 			})
 		}
+	}
+	return nil
+}
+
+func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) error {
+	for _, part := range parts {
+		// Allocate 4 RIDs for the 5 parts (drawing is internal to the diagram, usually not referenced by slide directly?
+		// Wait, dgm:relIds has 4 attributes: r:dm, r:lo, r:qs, r:cs.
+		// drawing is referenced by data model usually? Or implicitly?
+		// ppt-rs uses 4 relationships.
+
+		dataRID := b.nextRID()
+		layoutRID := b.nextRID()
+		colorsRID := b.nextRID()
+		styleRID := b.nextRID()
+
+		// Add 4 relationships
+		num := part.partNumber
+		p.smartArtRels = append(p.smartArtRels,
+			pptxxml.SmartArtRel{RID: dataRID, Target: fmt.Sprintf("../diagrams/data%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData"},
+			pptxxml.SmartArtRel{RID: layoutRID, Target: fmt.Sprintf("../diagrams/layout%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout"},
+			pptxxml.SmartArtRel{RID: colorsRID, Target: fmt.Sprintf("../diagrams/colors%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"},
+			pptxxml.SmartArtRel{RID: styleRID, Target: fmt.Sprintf("../diagrams/quickStyle%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle"},
+		)
+
+		// Create frame
+		p.smartArtFrames = append(p.smartArtFrames, pptxxml.SmartArtFrame{
+			X:           part.spec.X,
+			Y:           part.spec.Y,
+			CX:          part.spec.CX,
+			CY:          part.spec.CY,
+			DataRelID:   dataRID,
+			LayoutRelID: layoutRID,
+			ColorRelID:  colorsRID,
+			StyleRelID:  styleRID,
+		})
 	}
 	return nil
 }

@@ -64,9 +64,8 @@ func validateSlideCharts(s SlideContent, index int) error {
 }
 
 func collectSlideCharts(s SlideContent) []ChartDefinition {
-	// TODO: [LOW] Verify if capacity should be dynamic or derived from constants.
 	const expectedChartTypeCount = 19
-	// TODO: Verify magic number usage for slice capacity.
+	// NOTE: Capacity derived from constant expectedChartTypeCount.
 	chartsOnSlide := make([]ChartDefinition, 0, expectedChartTypeCount)
 	if s.Chart != nil {
 		chartsOnSlide = append(chartsOnSlide, s.Chart)
@@ -124,6 +123,11 @@ func collectSlideCharts(s SlideContent) []ChartDefinition {
 	}
 	if s.Combo != nil {
 		chartsOnSlide = append(chartsOnSlide, s.Combo)
+	}
+	for _, override := range s.PlaceholderOverrides {
+		if override.Chart != nil {
+			chartsOnSlide = append(chartsOnSlide, override.Chart)
+		}
 	}
 	return chartsOnSlide
 }

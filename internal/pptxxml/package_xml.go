@@ -15,9 +15,11 @@ func ContentTypes(
 	slideCount int,
 	imageExtensions []string,
 	chartCount int,
+	smartArtCount int,
 	notesSlides []int,
 	includeNotesMaster bool,
 	customXMLCount int,
+
 	masterCount int,
 	notesThemeIndex int,
 ) string {
@@ -50,6 +52,14 @@ func ContentTypes(
 		b.WriteString(fmt.Sprintf(`
 <Override PartName="/ppt/charts/chart%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`, i))
 	}
+	for i := 1; i <= smartArtCount; i++ {
+		b.WriteString(fmt.Sprintf(`
+<Override PartName="/ppt/diagrams/data%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"/>
+<Override PartName="/ppt/diagrams/layout%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayoutDefinition+xml"/>
+<Override PartName="/ppt/diagrams/colors%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"/>
+<Override PartName="/ppt/diagrams/quickStyle%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramStyle+xml"/>`, i, i, i, i))
+	}
+
 	for _, slideNumber := range notesSlides {
 		b.WriteString(fmt.Sprintf(`
 <Override PartName="/ppt/notesSlides/notesSlide%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`, slideNumber))
@@ -104,8 +114,8 @@ func ContentTypes(
 	return b.String()
 }
 
-// TODO: [HIGH] Performance regression due to repeated [strings.Replacer] allocation.
-// Ensure this remains a package-level variable.
+// NOTE: The use of a package-level variable here is intentional to avoid repeated [strings.Replacer] allocation.
+// Do not move this to a local scope.
 //
 //nolint:gochecknoglobals // Reused for performance
 var xmlEscapeReplacer = strings.NewReplacer(
@@ -173,7 +183,7 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	b.WriteString(fmt.Sprintf(`
 <Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`, masterCount+1))
 
-	// Slide relationships: rId(masterCount+1)..rId(masterCount+slideCount+1)
+	// Slide relationships: rId(masterCount+2)..rId(masterCount+slideCount+1)
 	for i := 1; i <= slideCount; i++ {
 		rid := masterCount + 1 + i
 		b.WriteString(fmt.Sprintf(`

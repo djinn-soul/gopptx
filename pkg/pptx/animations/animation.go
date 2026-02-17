@@ -177,7 +177,7 @@ func (t AnimationTrigger) Validate() error {
 }
 
 func (a Animation) PresetID() uint32 {
-	// TODO: [HIGH] High-frequency map allocation in PresetID. Ensure this remains a switch statement.
+	// NOTE: This switch statement avoids high-frequency map allocation. Do not convert to a map lookup.
 	switch a.PresetClass() {
 	case "entr", "exit":
 		return a.presetIDEntranceExit()

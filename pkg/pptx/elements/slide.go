@@ -8,6 +8,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
@@ -90,6 +91,7 @@ type SlideContent struct {
 	StockOHLC            *charts.StockOHLCChart
 	Combo                *charts.ComboChart
 	Animations           []animations.Animation
+	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
 }
 
@@ -414,6 +416,12 @@ func (s SlideContent) WithSlideNumber(show bool) SlideContent {
 // AddAnimation adds an animation to the slide.
 func (s SlideContent) AddAnimation(anim animations.AnimationDefinition) SlideContent {
 	s.Animations = append(s.Animations, anim.ToAnimation())
+	return s
+}
+
+// AddSmartArt adds a SmartArt diagram to the slide.
+func (s SlideContent) AddSmartArt(sa smartart.SmartArt) SlideContent {
+	s.SmartArtDiagrams = append(s.SmartArtDiagrams, sa)
 	return s
 }
 

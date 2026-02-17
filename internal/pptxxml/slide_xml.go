@@ -153,7 +153,9 @@ func SlideWithContent(
 	table *TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
+	smartArtFrames []SmartArtFrame,
 	background *SlideBackgroundSpec,
+
 	transitionXML string,
 	animationsXML string,
 	showSlideNumber bool,
@@ -174,7 +176,9 @@ func SlideWithContent(
 		nil,
 		nil,
 		nil,
+		smartArtFrames,
 		background,
+
 		transitionXML,
 		animationsXML,
 		showSlideNumber,
@@ -199,7 +203,9 @@ func SlideWithLayout(
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
 	placeholders []PlaceholderOverrideSpec,
+	smartArtFrames []SmartArtFrame,
 	background *SlideBackgroundSpec,
+
 	transitionXML string,
 	animationsXML string,
 	showSlideNumber bool,
@@ -227,6 +233,11 @@ func SlideWithLayout(
 	nextID = slideRenderImages(&b, images, nextID)
 	shapeIDs, nextID := slideRenderShapes(&b, shapes, nextID)
 	nextID = slideRenderConnectors(&b, connectors, shapeIDs, nextID)
+
+	for _, sa := range smartArtFrames {
+		b.WriteString(smartArtFrameShape(&sa, nextID))
+		nextID++
+	}
 
 	b.WriteString(slideContentFooter)
 	b.WriteString(slideFooterClrMap)
@@ -409,15 +420,16 @@ func SlideRelationshipsWithHyperlinks(
 	notesTarget string,
 	hyperlinks []HyperlinkRel,
 ) string {
-	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, notesTarget, hyperlinks)
+	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, nil, notesTarget, hyperlinks)
 }
 
-// SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts.
+// SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts and SmartArt.
 func SlideRelationshipsWithMultiCharts(
 	layoutTarget string,
 	imageTargets []string,
 	chartRel *ChartRel,
 	placeholderCharts []ChartRel,
+	smartArtRels []SmartArtRel,
 	notesTarget string,
 	hyperlinks []HyperlinkRel,
 ) string {
@@ -454,6 +466,17 @@ func SlideRelationshipsWithMultiCharts(
 			Escape(phChart.Target),
 		))
 		if rid := ridNumber(phChart.RID); rid > maxRID {
+			maxRID = rid
+		}
+	}
+	for _, saRel := range smartArtRels {
+		b.WriteString(fmt.Sprintf(`
+<Relationship Id="%s" Type="%s" Target="%s"/>`,
+			Escape(saRel.RID),
+			Escape(saRel.Type),
+			Escape(saRel.Target),
+		))
+		if rid := ridNumber(saRel.RID); rid > maxRID {
 			maxRID = rid
 		}
 	}

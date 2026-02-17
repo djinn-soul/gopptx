@@ -24,8 +24,6 @@ func ensureParentDir(path string) error {
 		return nil
 	}
 	return os.MkdirAll(parent, 0o750)
-	// TODO: [LOW] Unnecessary TODO comment in production code. Resolve security implications or remove.
-	// TODO: Verify security implications of permission change.
 }
 
 func defaultOutputPathFromMarkdown(markdownPath string) string {
