@@ -244,7 +244,7 @@ func TestShapeHoverAction_EmitsHlinkHoverInSlideXML(t *testing.T) {
 	t.Error("slide1.xml not found")
 }
 
-func TestTextRunHoverAction_EmitsHlinkHoverInSlideXML(t *testing.T) {
+func TestTextRunHoverAction_EmitsHlinkMouseOverInSlideXML(t *testing.T) {
 	slide := pptx.NewSlide("Text Hover").
 		AddBulletRuns([]pptx.TextRun{
 			pptx.NewTextRun("Hover text").
@@ -269,8 +269,8 @@ func TestTextRunHoverAction_EmitsHlinkHoverInSlideXML(t *testing.T) {
 			_, _ = buf.ReadFrom(rc)
 			_ = rc.Close()
 			content := buf.String()
-			if !strings.Contains(content, "hlinkHover") {
-				t.Error("expected hlinkHover in slide XML for text run hover action")
+			if !strings.Contains(content, "hlinkMouseOver") {
+				t.Error("expected hlinkMouseOver in slide XML for text run hover action")
 			}
 			if !strings.Contains(content, "Text hover tip") {
 				t.Error("expected tooltip text in slide XML")

@@ -376,7 +376,7 @@ func TestCreateWithSlidesTitleFontAndNumber(t *testing.T) {
 	if !strings.Contains(slideXML, sldNumNeedle) {
 		t.Fatalf("expected slide number placeholder %q in slide XML", sldNumNeedle)
 	}
-	fldNeedle := `type="slnum"`
+	fldNeedle := `type="slidenum"`
 	if !strings.Contains(slideXML, fldNeedle) {
 		t.Fatalf("expected slide number field %q in slide XML", fldNeedle)
 	}

@@ -286,6 +286,47 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 	return b.String()
 }
 
+func connectorLabelShape(connector ConnectorSpec, shapeID int) string {
+	label := strings.TrimSpace(connector.Label)
+	if label == "" {
+		return ""
+	}
+	x := (connector.StartX + connector.EndX) / 2
+	y := (connector.StartY + connector.EndY) / 2
+	const (
+		labelWidth  = 914400
+		labelHeight = 228600
+	)
+	return fmt.Sprintf(`
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="%d" name="Connector Label %d"/>
+<p:cNvSpPr txBox="1"/>
+<p:nvPr/>
+</p:nvSpPr>
+<p:spPr>
+<a:xfrm>
+<a:off x="%d" y="%d"/>
+<a:ext cx="%d" cy="%d"/>
+</a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+<a:noFill/>
+<a:ln><a:noFill/></a:ln>
+</p:spPr>
+<p:txBody>
+<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+<a:lstStyle/>
+<a:p>
+<a:pPr algn="ctr"/>
+<a:r>
+<a:rPr lang="en-US" sz="1000" b="0" i="0" u="none" dirty="0"/>
+<a:t>%s</a:t>
+</a:r>
+</a:p>
+</p:txBody>
+</p:sp>`, shapeID, shapeID, x-labelWidth/2, y-labelHeight/2, labelWidth, labelHeight, Escape(label))
+}
+
 func connectorTransform(connector ConnectorSpec) string {
 	x, y, cx, cy := connectorBounds(connector)
 	flipH := ""

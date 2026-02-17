@@ -340,12 +340,18 @@ func slideRenderShapes(b *strings.Builder, shapes []ShapeSpec, nextID int) ([]in
 }
 
 func slideRenderConnectors(b *strings.Builder, connectors []ConnectorSpec, shapeIDs []int, nextID int) int {
-	for i, connector := range connectors {
+	currentID := nextID
+	for _, connector := range connectors {
 		startShapeID := shapeAnchorID(shapeIDs, connector.StartShapeIndex)
 		endShapeID := shapeAnchorID(shapeIDs, connector.EndShapeIndex)
-		b.WriteString(connectorXML(connector, nextID+i, startShapeID, endShapeID))
+		b.WriteString(connectorXML(connector, currentID, startShapeID, endShapeID))
+		currentID++
+		if labelXML := connectorLabelShape(connector, currentID); labelXML != "" {
+			b.WriteString(labelXML)
+			currentID++
+		}
 	}
-	return nextID + len(connectors)
+	return currentID
 }
 
 func slideRenderPlaceholders(b *strings.Builder, placeholders []PlaceholderOverrideSpec, nextID int) int {
