@@ -85,7 +85,7 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 			slide := pptx.NewSlide("Layout Helpers (2x3 Grid)")
 			boxes, _ := pptx.Grid(2, 3, pptx.Inches(0.5))
 			for i, box := range boxes {
-				slide.AddShape(
+				slide = slide.AddShape(
 					pptx.NewShape(pptx.ShapeTypeRoundedRectangle, box.X, box.Y, box.CX, box.CY).
 						WithText(fmt.Sprintf("Item %d", i+1)).
 						WithFill(pptx.NewShapeFill("ED7D31")).
