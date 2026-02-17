@@ -74,13 +74,6 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	}
 	b.WriteString(` dirty="0">`)
 
-	if run.Hyperlink != nil {
-		b.WriteString(HyperlinkXML(*run.Hyperlink, "a:hlinkClick"))
-	}
-	if run.HoverAction != nil {
-		b.WriteString(HyperlinkXML(*run.HoverAction, "a:hlinkHover"))
-	}
-
 	if highlight := strings.TrimSpace(run.Highlight); highlight != "" {
 		b.WriteString(`<a:highlight><a:srgbClr val="`)
 		b.WriteString(Escape(highlight))
@@ -101,6 +94,12 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 		b.WriteString(`<a:latin typeface="`)
 		b.WriteString(Escape(font))
 		b.WriteString(`"/>`)
+	}
+	if run.Hyperlink != nil {
+		b.WriteString(HyperlinkXML(*run.Hyperlink, "a:hlinkClick"))
+	}
+	if run.HoverAction != nil {
+		b.WriteString(HyperlinkXML(*run.HoverAction, "a:hlinkMouseOver"))
 	}
 
 	b.WriteString(`</a:rPr><a:t>`)

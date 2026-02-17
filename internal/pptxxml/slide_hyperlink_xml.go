@@ -13,7 +13,8 @@ type HyperlinkSpec struct {
 	Action         string // ppaction:// for internal navigation
 }
 
-// HyperlinkXML generates the <a:hlinkClick> or <a:hlinkHover> element.
+// HyperlinkXML generates drawing hyperlink elements such as
+// <a:hlinkClick> or <a:hlinkMouseOver>.
 func HyperlinkXML(spec HyperlinkSpec, tagName string) string {
 	xml := fmt.Sprintf(`<%s r:id="%s"`, Escape(tagName), Escape(spec.RelID))
 

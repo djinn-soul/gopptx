@@ -281,7 +281,6 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 	b.WriteString(`
 </a:ln>
 </p:spPr>`)
-	b.WriteString(connectorLabel(connector))
 	b.WriteString(`
 </p:cxnSp>`)
 	return b.String()
@@ -404,23 +403,6 @@ func connectorLineJoin(join string) string {
 	default:
 		return ""
 	}
-}
-
-func connectorLabel(connector ConnectorSpec) string {
-	if strings.TrimSpace(connector.Label) == "" {
-		return ""
-	}
-	return `
-<p:txBody>
-<a:bodyPr/>
-<a:lstStyle/>
-<a:p>
-<a:r>
-<a:rPr lang="en-US" sz="1000" b="0" i="0" u="none" dirty="0"/>
-<a:t>` + Escape(connector.Label) + `</a:t>
-</a:r>
-</a:p>
-</p:txBody>`
 }
 
 func alphaFromNormalizedTransparency(transparency float64) int {
