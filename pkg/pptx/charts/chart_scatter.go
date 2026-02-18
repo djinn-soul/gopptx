@@ -52,10 +52,10 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 		Title:   "Chart",
 		XValues: xs,
 		YValues: ys,
-		X:       styling.Emu(685800),
-		Y:       styling.Emu(1800000),
-		CX:      styling.Emu(7772400),
-		CY:      styling.Emu(4114800),
+		X:       styling.Emu(defaultChartX),
+		Y:       styling.Emu(defaultChartY),
+		CX:      styling.Emu(defaultChartCX),
+		CY:      styling.Emu(defaultChartCY),
 
 		LineColor:             "4F81BD",
 		SeriesName:            "Series 1",
@@ -127,26 +127,31 @@ func (c ScatterChart) ToChartSpec() *pptxxml.ChartSpec {
 
 // Validate checks the scatter chart for consistency.
 func (c ScatterChart) Validate(slideIndex int) error {
+	if err := c.validateLayout(slideIndex); err != nil {
+		return err
+	}
+	if err := c.validateMetadata(slideIndex); err != nil {
+		return err
+	}
+	if err := c.validatePoints(slideIndex); err != nil {
+		return err
+	}
+	return validateValueRange(c.MinValue, c.MaxValue, slideIndex)
+}
+
+func (c ScatterChart) validateLayout(slideIndex int) error {
 	if c.X < 0 || c.Y < 0 {
 		return fmt.Errorf("slide %d scatter chart position cannot be negative", slideIndex)
 	}
 	if c.CX <= 0 || c.CY <= 0 {
 		return fmt.Errorf("slide %d scatter chart size must be > 0", slideIndex)
 	}
+	return nil
+}
 
+func (c ScatterChart) validateMetadata(slideIndex int) error {
 	if strings.TrimSpace(c.Title) == "" {
 		return fmt.Errorf("slide %d scatter chart title cannot be empty", slideIndex)
-	}
-	if len(c.XValues) == 0 {
-		return fmt.Errorf("slide %d scatter chart must define at least one point", slideIndex)
-	}
-	if len(c.XValues) != len(c.YValues) {
-		return fmt.Errorf(
-			"slide %d scatter chart x/y length mismatch (%d vs %d)",
-			slideIndex,
-			len(c.XValues),
-			len(c.YValues),
-		)
 	}
 	if !IsHexColor(c.LineColor) {
 		return fmt.Errorf("slide %d scatter chart color must be 6-digit RGB hex", slideIndex)
@@ -158,10 +163,7 @@ func (c ScatterChart) Validate(slideIndex int) error {
 		return fmt.Errorf("slide %d scatter chart legend position must be one of r,l,t,b", slideIndex)
 	}
 	if !isScatterStyle(c.ScatterStyle) {
-		return fmt.Errorf(
-			"slide %d scatter style must be one of marker,lineMarker,smoothMarker",
-			slideIndex,
-		)
+		return fmt.Errorf("slide %d scatter style must be one of marker,lineMarker,smoothMarker", slideIndex)
 	}
 	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d scatter chart value format cannot be empty", slideIndex)
@@ -169,10 +171,17 @@ func (c ScatterChart) Validate(slideIndex int) error {
 	if !IsValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d scatter chart value-axis crossBetween must be between or midCat", slideIndex)
 	}
-	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
-		return err
-	}
+	return nil
+}
 
+func (c ScatterChart) validatePoints(slideIndex int) error {
+	if len(c.XValues) == 0 {
+		return fmt.Errorf("slide %d scatter chart must define at least one point", slideIndex)
+	}
+	if len(c.XValues) != len(c.YValues) {
+		return fmt.Errorf("slide %d scatter chart x/y length mismatch (%d vs %d)",
+			slideIndex, len(c.XValues), len(c.YValues))
+	}
 	for i := range c.XValues {
 		if math.IsNaN(c.XValues[i]) || math.IsInf(c.XValues[i], 0) {
 			return fmt.Errorf("slide %d scatter x value %d must be finite", slideIndex, i+1)

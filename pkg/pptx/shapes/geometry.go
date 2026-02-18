@@ -90,6 +90,7 @@ const (
 
 // NormalizeShapeType resolves aliases and normalizes casing for shape types.
 func NormalizeShapeType(shapeType string) string {
+	ensureRegistryInitialized()
 	trimmed := strings.TrimSpace(shapeType)
 	t := strings.ToLower(trimmed)
 
@@ -318,6 +319,7 @@ func NormalizeConnectionSite(site string) string {
 }
 
 func ConnectionSiteIndex(site string) (int, bool) {
+	//nolint:mnd // OOXML connection site indices
 	switch NormalizeConnectionSite(site) {
 	case ConnectionSiteTop:
 		return 0, true

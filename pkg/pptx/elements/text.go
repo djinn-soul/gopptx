@@ -5,14 +5,14 @@ import (
 )
 
 type (
-	// TextRun describes a single piece of text with uniform styling.
-	TextRun = text.TextRun
+	// Run describes a single piece of text with uniform styling.
+	Run = text.Run
 
-	// TextParagraphStyle describes paragraph-level formatting for one bullet line.
-	TextParagraphStyle = text.TextParagraphStyle
+	// ParagraphStyle describes paragraph-level formatting for one bullet line.
+	ParagraphStyle = text.ParagraphStyle
 
-	// TextParagraph represents a single paragraph of text with runs and styling.
-	TextParagraph = text.TextParagraph
+	// Paragraph represents a single paragraph of text with runs and styling.
+	Paragraph = text.Paragraph
 )
 
 const (
@@ -33,34 +33,45 @@ const (
 	TextAlignJustify = text.TextAlignJustify
 )
 
-func NewTextRun(txt string) TextRun {
-	return text.NewTextRun(txt)
+// NewRun creates a new text run.
+func NewRun(t string) Run {
+	return text.NewRun(t)
 }
 
-func NewTextParagraph() TextParagraph {
-	return text.NewTextParagraph()
+// NewParagraph creates a new text paragraph with default style.
+func NewParagraph() Paragraph {
+	return text.NewParagraph()
 }
 
-func DefaultTextParagraphStyle() TextParagraphStyle {
-	return text.DefaultTextParagraphStyle()
+// NewParagraphStyle creates a new paragraph style with default settings.
+func NewParagraphStyle() ParagraphStyle {
+	return text.NewParagraphStyle()
 }
 
+// DefaultParagraphStyle returns the standard paragraph styling.
+func DefaultParagraphStyle() ParagraphStyle {
+	return text.DefaultParagraphStyle()
+}
+
+// NormalizeTextAlign ensures the alignment string is one of the predefined constants.
 func NormalizeTextAlign(align string) string {
 	return text.NormalizeTextAlign(align)
 }
 
+// NormalizeBulletStyle ensures the bullet style string is one of the predefined constants.
 func NormalizeBulletStyle(style string) string {
 	return text.NormalizeBulletStyle(style)
 }
 
-func NormalizeTextParagraphStyle(style TextParagraphStyle) TextParagraphStyle {
-	return text.NormalizeTextParagraphStyle(style)
+// NormalizeParagraphStyle ensures all fields are within expected bounds.
+func NormalizeParagraphStyle(style ParagraphStyle) ParagraphStyle {
+	return text.NormalizeParagraphStyle(style)
 }
 
-func NormalizeTextRuns(runs []TextRun) []TextRun {
-	return text.NormalizeTextRuns(runs)
+func NormalizeRuns(runs []Run) []Run {
+	return text.NormalizeRuns(runs)
 }
 
-func RunsToPlainText(runs []TextRun) string {
+func RunsToPlainText(runs []Run) string {
 	return text.RunsToPlainText(runs)
 }

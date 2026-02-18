@@ -116,7 +116,9 @@ func TestUpdateChartDataFailsWhenEmbeddingMissing(t *testing.T) {
 	e.parts.Delete("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx")
 	delete(e.chartEmbeddings, "ppt/charts/chart1.xml")
 	e.parts.Set("ppt/charts/_rels/chart1.xml.rels", []byte(
-		`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" Target="../embeddings/Microsoft_Excel_Worksheet1.xlsx"/></Relationships>`,
+		`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" `+
+			`Target="../embeddings/Microsoft_Excel_Worksheet1.xlsx"/></Relationships>`,
 	))
 
 	idx := 0
@@ -145,13 +147,16 @@ func newChartUpdateEditorFixture() *PresentationEditor {
 	e.parts.Set(
 		"ppt/slides/slide1.xml",
 		[]byte(
-			`<p:sld><p:spTree><p:graphicFrame><a:graphic><a:graphicData><c:chart r:id="rIdChart"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:sld>`,
+			`<p:sld><p:spTree><p:graphicFrame><a:graphic><a:graphicData>`+
+				`<c:chart r:id="rIdChart"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:sld>`,
 		),
 	)
 	e.parts.Set(
 		"ppt/slides/_rels/slide1.xml.rels",
 		[]byte(
-			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdChart" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/></Relationships>`,
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+				`<Relationship Id="rIdChart" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" `+
+				`Target="../charts/chart1.xml"/></Relationships>`,
 		),
 	)
 	e.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx", []byte("old"))
@@ -159,13 +164,28 @@ func newChartUpdateEditorFixture() *PresentationEditor {
 }
 
 func categoryChartXML() string {
-	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><c:plotArea><c:barChart><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>Series 1</c:v></c:tx><c:spPr><a:solidFill/></c:spPr><c:cat><c:strRef><c:f>Sheet1!$A$2:$A$2</c:f><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Old</c:v></c:pt></c:strCache></c:strRef></c:cat><c:val><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser></c:barChart></c:plotArea></c:chartSpace>`
+	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+		`<c:plotArea><c:barChart><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>Series 1</c:v></c:tx>` +
+		`<c:spPr><a:solidFill/></c:spPr><c:cat><c:strRef><c:f>Sheet1!$A$2:$A$2</c:f>` +
+		`<c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Old</c:v></c:pt></c:strCache></c:strRef></c:cat>` +
+		`<c:val><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt>` +
+		`</c:numCache></c:numRef></c:val></c:ser></c:barChart></c:plotArea></c:chartSpace>`
 }
 
 func scatterChartXML() string {
-	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:plotArea><c:scatterChart><c:ser><c:xVal><c:numRef><c:f>Sheet1!$A$2:$A$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>2</c:v></c:pt></c:numCache></c:numRef></c:yVal></c:ser></c:scatterChart></c:plotArea></c:chartSpace>`
+	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:plotArea><c:scatterChart><c:ser>` +
+		`<c:xVal><c:numRef><c:f>Sheet1!$A$2:$A$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt>` +
+		`</c:numCache></c:numRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f>` +
+		`<c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>2</c:v></c:pt></c:numCache></c:numRef></c:yVal></c:ser>` +
+		`</c:scatterChart></c:plotArea></c:chartSpace>`
 }
 
 func bubbleChartXML() string {
-	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:plotArea><c:bubbleChart><c:ser><c:xVal><c:numRef><c:f>Sheet1!$A$2:$A$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>2</c:v></c:pt></c:numCache></c:numRef></c:yVal><c:bubbleSize><c:numRef><c:f>Sheet1!$C$2:$C$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>3</c:v></c:pt></c:numCache></c:numRef></c:bubbleSize></c:ser></c:bubbleChart></c:plotArea></c:chartSpace>`
+	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:plotArea>` +
+		`<c:bubbleChart><c:ser>` +
+		`<c:xVal><c:numRef><c:f>Sheet1!$A$2:$A$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt>` +
+		`</c:numCache></c:numRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f>` +
+		`<c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>2</c:v></c:pt></c:numCache></c:numRef></c:yVal>` +
+		`<c:bubbleSize><c:numRef><c:f>Sheet1!$C$2:$C$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>3</c:v></c:pt>` +
+		`</c:numCache></c:numRef></c:bubbleSize></c:ser></c:bubbleChart></c:plotArea></c:chartSpace>`
 }

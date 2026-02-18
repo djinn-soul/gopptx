@@ -10,7 +10,8 @@ var hexColorPattern = regexp.MustCompile(`^[0-9A-F]{6}$`)
 // NormalizeHexColor sanitizes hex color strings and expands 3-digit codes.
 func NormalizeHexColor(color string) string {
 	clean := strings.TrimPrefix(strings.TrimSpace(color), "#")
-	if len(clean) == 3 {
+	const hex3DigitLen = 3
+	if len(clean) == hex3DigitLen {
 		return strings.ToUpper(string([]byte{clean[0], clean[0], clean[1], clean[1], clean[2], clean[2]}))
 	}
 	return strings.ToUpper(clean)

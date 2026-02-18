@@ -266,7 +266,8 @@ func (e *PresentationEditor) createChartGraphicFrameXML(id int, name, rID string
 		</p:xfrm>
 		<a:graphic>
 			<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
-				<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="%s"/>
+				<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" `+
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="%s"/>
 			</a:graphicData>
 		</a:graphic>
 	</p:graphicFrame>`, id, name, x, y, cx, cy, rID)

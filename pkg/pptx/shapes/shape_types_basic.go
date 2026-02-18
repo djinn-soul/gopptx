@@ -100,7 +100,7 @@ const (
 	ShapeTypeChevron = "chevron"
 )
 
-func init() {
+func initBasicShapes() {
 	for _, t := range []string{
 		ShapeTypeRectangle, ShapeTypeRoundedRectangle, ShapeTypeEllipse,
 		ShapeTypeTriangle, ShapeTypeRightTriangle, ShapeTypeDiamond,

@@ -12,21 +12,25 @@ import (
 )
 
 type (
-	// PresentationMetadata defines non-content properties of a PPTX.
-	PresentationMetadata = presentation.PresentationMetadata
-	// PresentationMetadataFields defines the basic descriptive fields for a PPTX.
-	PresentationMetadataFields = common.PresentationMetadata
+	// Metadata defines non-content properties of a PPTX.
+	Metadata = presentation.Metadata
+	// MetadataFields defines the basic descriptive fields for a PPTX.
+	MetadataFields = common.Metadata
 	// SlideSize defines presentation dimensions in EMUs.
 	SlideSize = presentation.SlideSize
 	// CustomXMLPart represents an embedded custom XML document.
 	CustomXMLPart = common.CustomXMLPart
 )
 
-// Default slide sizes.
-var (
-	SlideSize4x3  = presentation.SlideSize4x3
-	SlideSize16x9 = presentation.SlideSize16x9
-)
+// SlideSize4x3 returns the standard 4:3 slide size.
+func SlideSize4x3() SlideSize {
+	return presentation.GetSlideSize4x3()
+}
+
+// SlideSize16x9 returns the standard 16:9 widescreen slide size.
+func SlideSize16x9() SlideSize {
+	return presentation.GetSlideSize16x9()
+}
 
 // Create builds a valid PPTX with generated slide titles.
 func Create(title string, slideCount int) ([]byte, error) {
@@ -47,7 +51,7 @@ func Create(title string, slideCount int) ([]byte, error) {
 	}
 
 	return CreateWithMetadata(
-		PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}},
+		Metadata{Metadata: common.Metadata{Title: title}},
 		slides,
 	)
 }
@@ -55,13 +59,13 @@ func Create(title string, slideCount int) ([]byte, error) {
 // CreateWithSlides builds a PPTX from caller-provided slide content.
 func CreateWithSlides(title string, slides []SlideContent) ([]byte, error) {
 	return CreateWithMetadata(
-		PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title}},
+		Metadata{Metadata: common.Metadata{Title: title}},
 		slides,
 	)
 }
 
 // CreateWithMetadata builds a PPTX from metadata and caller-provided slide content.
-func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byte, error) {
+func CreateWithMetadata(meta Metadata, slides []SlideContent) ([]byte, error) {
 	if meta.Title == "" {
 		return nil, errors.New("presentation title cannot be empty")
 	}
@@ -75,7 +79,7 @@ func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byt
 	}
 
 	if meta.SlideSize.Width == 0 || meta.SlideSize.Height == 0 {
-		meta.SlideSize = SlideSize4x3
+		meta.SlideSize = SlideSize4x3()
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -95,7 +99,7 @@ func CreateWithMetadata(meta PresentationMetadata, slides []SlideContent) ([]byt
 // WriteFile is a convenience helper that writes the generated PPTX to disk.
 func WriteFile(path string, title string, slides []SlideContent) error {
 	data, err := CreateWithMetadata(
-		PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Title: title, SlideSize: SlideSize4x3}},
+		Metadata{Metadata: common.Metadata{Title: title, SlideSize: SlideSize4x3()}},
 		slides,
 	)
 	if err != nil {

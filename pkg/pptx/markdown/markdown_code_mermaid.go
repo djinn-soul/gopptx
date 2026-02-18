@@ -13,22 +13,35 @@ const (
 	codeKeywordColor      = "005A9E"
 	codeCommentColor      = "2E7D32"
 	codeStringColor       = "A31515"
+
+	codeHeaderFontSizePt = 13
+	codeBodyFontSizePt   = 14
+
+	mermaidShapeX  = 762000
+	mermaidShapeY  = 1524000
+	mermaidShapeCX = 8001000
+	mermaidShapeCY = 1714500
+
+	mermaidFillTransparency = 0.08
+	mermaidLineWidth        = 15875
+	mermaidSummaryMaxChars  = 70
+	mermaidSummaryTrimChars = 67
 )
 
 func addCodeBlock(slide *elements.SlideContent, lang string, code string) {
 	if slide == nil {
 		return
 	}
-	style := elements.DefaultTextParagraphStyle().WithNoBullet()
+	style := elements.DefaultParagraphStyle().WithNoBullet()
 	normalizedLang := strings.ToLower(strings.TrimSpace(lang))
 	if normalizedLang == "" {
 		normalizedLang = "text"
 	}
-	header := []elements.TextRun{
-		elements.NewTextRun("[" + strings.ToUpper(normalizedLang) + "]").
+	header := []elements.Run{
+		elements.NewRun("[" + strings.ToUpper(normalizedLang) + "]").
 			WithBold(true).
 			WithColor("1F4E78").
-			WithSizePt(13),
+			WithSizePt(codeHeaderFontSizePt),
 	}
 	*slide = slide.AddBulletRunsWithStyle(header, style)
 
@@ -37,11 +50,11 @@ func addCodeBlock(slide *elements.SlideContent, lang string, code string) {
 			*slide = slide.AddBulletWithStyle(" ", style)
 			continue
 		}
-		run := elements.NewTextRun(line).
+		run := elements.NewRun(line).
 			WithCode(true).
 			WithColor(codeLineColor(normalizedLang, line)).
-			WithSizePt(14)
-		*slide = slide.AddBulletRunsWithStyle([]elements.TextRun{run}, style)
+			WithSizePt(codeBodyFontSizePt)
+		*slide = slide.AddBulletRunsWithStyle([]elements.Run{run}, style)
 	}
 }
 
@@ -126,12 +139,101 @@ func addMermaidDiagram(slide *elements.SlideContent, code string, lineNumber int
 		text += "\n" + summary
 	}
 
-	shape := shapes.NewShape(style.shapeType, 762000, 1524000, 8001000, 1714500).
-		WithFill(shapes.NewShapeFill(style.fillColor).WithTransparency(0.08)).
-		WithLine(shapes.NewShapeLine(style.lineColor, 15875)).
+	shape := shapes.NewShape(style.shapeType, mermaidShapeX, mermaidShapeY, mermaidShapeCX, mermaidShapeCY).
+		WithFill(shapes.NewShapeFill(style.fillColor).WithTransparency(mermaidFillTransparency)).
+		WithLine(shapes.NewShapeLine(style.lineColor, mermaidLineWidth)).
 		WithText(text)
 	*slide = slide.AddShape(shape)
 	return nil
+}
+
+func getMermaidStyles() map[string]mermaidDiagramStyle {
+	return map[string]mermaidDiagramStyle{
+		"flowchart": {
+			kind:      "Flowchart",
+			shapeType: shapes.ShapeTypeFlowChartProcess,
+			fillColor: "DCE6F2",
+			lineColor: "2F5597",
+		},
+		"graph": {
+			kind:      "Flowchart",
+			shapeType: shapes.ShapeTypeFlowChartProcess,
+			fillColor: "DCE6F2",
+			lineColor: "2F5597",
+		},
+		"sequencediagram": {
+			kind:      "Sequence Diagram",
+			shapeType: shapes.ShapeTypeRectangle,
+			fillColor: "E2F0D9",
+			lineColor: "2E7D32",
+		},
+		"classdiagram": {
+			kind:      "Class Diagram",
+			shapeType: shapes.ShapeTypeRectangle,
+			fillColor: "FCE4D6",
+			lineColor: "A64D00",
+		},
+		"statediagram": {
+			kind:      "State Diagram",
+			shapeType: shapes.ShapeTypeRoundedRectangle,
+			fillColor: "EDE2F7",
+			lineColor: "6A1B9A",
+		},
+		"statediagram-v2": {
+			kind:      "State Diagram",
+			shapeType: shapes.ShapeTypeRoundedRectangle,
+			fillColor: "EDE2F7",
+			lineColor: "6A1B9A",
+		},
+		"erdiagram": {
+			kind:      "Entity-Relationship Diagram",
+			shapeType: shapes.ShapeTypeRectangle,
+			fillColor: "E8F5E9",
+			lineColor: "1B5E20",
+		},
+		"journey": {
+			kind:      "User Journey",
+			shapeType: shapes.ShapeTypeRoundedRectangle,
+			fillColor: "FFF2CC",
+			lineColor: "8A6D1A",
+		},
+		"gantt": {
+			kind:      "Gantt Chart",
+			shapeType: shapes.ShapeTypeRectangle,
+			fillColor: "E2EFDA",
+			lineColor: "2F6B2F",
+		},
+		"pie": {
+			kind:      "Pie Chart",
+			shapeType: shapes.ShapeTypeEllipse,
+			fillColor: "FBE5D6",
+			lineColor: "C65911",
+		},
+		"mindmap": {
+			kind:      "Mindmap",
+			shapeType: shapes.ShapeTypeEllipse,
+			fillColor: "E4DFEC",
+			lineColor: "5B4B8A",
+		},
+		"quadrantchart": {
+			kind:      "Quadrant Chart",
+			shapeType: shapes.ShapeTypeRectangle,
+			fillColor: "D9E1F2",
+			lineColor: "203864",
+		},
+		"timeline": {
+			kind:      "Timeline",
+			shapeType: shapes.ShapeTypeRightArrow,
+			fillColor: "DEEAF6",
+			lineColor: "2F75B5",
+		},
+		"gitgraph": {
+			kind:      "Git Graph",
+			shapeType: shapes.ShapeTypeParallelogram,
+			fillColor: "EDEDED",
+			lineColor: "595959",
+		},
+	}
 }
 
 func detectMermaidDiagram(code string, lineNumber int) (mermaidDiagramStyle, error) {
@@ -146,103 +248,16 @@ func detectMermaidDiagram(code string, lineNumber int) (mermaidDiagramStyle, err
 	}
 
 	directive := strings.ToLower(strings.TrimSpace(fields[0]))
-	switch directive {
-	case "flowchart", "graph":
-		subtitle := "Flow"
-		if len(fields) > 1 {
-			subtitle = strings.ToUpper(fields[1])
-		}
-		return mermaidDiagramStyle{
-			kind:      "Flowchart",
-			subtitle:  subtitle,
-			shapeType: shapes.ShapeTypeFlowChartProcess,
-			fillColor: "DCE6F2",
-			lineColor: "2F5597",
-		}, nil
-	case "sequencediagram":
-		return mermaidDiagramStyle{
-			kind:      "Sequence Diagram",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "E2F0D9",
-			lineColor: "2E7D32",
-		}, nil
-	case "classdiagram":
-		return mermaidDiagramStyle{
-			kind:      "Class Diagram",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "FCE4D6",
-			lineColor: "A64D00",
-		}, nil
-	case "statediagram", "statediagram-v2":
-		return mermaidDiagramStyle{
-			kind:      "State Diagram",
-			shapeType: shapes.ShapeTypeRoundedRectangle,
-			fillColor: "EDE2F7",
-			lineColor: "6A1B9A",
-		}, nil
-	case "erdiagram":
-		return mermaidDiagramStyle{
-			kind:      "Entity-Relationship Diagram",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "E8F5E9",
-			lineColor: "1B5E20",
-		}, nil
-	case "journey":
-		return mermaidDiagramStyle{
-			kind:      "User Journey",
-			shapeType: shapes.ShapeTypeRoundedRectangle,
-			fillColor: "FFF2CC",
-			lineColor: "8A6D1A",
-		}, nil
-	case "gantt":
-		return mermaidDiagramStyle{
-			kind:      "Gantt Chart",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "E2EFDA",
-			lineColor: "2F6B2F",
-		}, nil
-	case "pie":
-		return mermaidDiagramStyle{
-			kind:      "Pie Chart",
-			shapeType: shapes.ShapeTypeEllipse,
-			fillColor: "FBE5D6",
-			lineColor: "C65911",
-		}, nil
-	case "mindmap":
-		return mermaidDiagramStyle{
-			kind:      "Mindmap",
-			shapeType: shapes.ShapeTypeEllipse,
-			fillColor: "E4DFEC",
-			lineColor: "5B4B8A",
-		}, nil
-	case "quadrantchart":
-		return mermaidDiagramStyle{
-			kind:      "Quadrant Chart",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "D9E1F2",
-			lineColor: "203864",
-		}, nil
-	case "timeline":
-		return mermaidDiagramStyle{
-			kind:      "Timeline",
-			shapeType: shapes.ShapeTypeRightArrow,
-			fillColor: "DEEAF6",
-			lineColor: "2F75B5",
-		}, nil
-	case "gitgraph":
-		return mermaidDiagramStyle{
-			kind:      "Git Graph",
-			shapeType: shapes.ShapeTypeParallelogram,
-			fillColor: "EDEDED",
-			lineColor: "595959",
-		}, nil
-	default:
-		return mermaidDiagramStyle{}, fmt.Errorf(
-			"line %d: unsupported mermaid diagram %q",
-			lineNumber,
-			fields[0],
-		)
+	style, ok := getMermaidStyles()[directive]
+	if !ok {
+		return mermaidDiagramStyle{}, fmt.Errorf("line %d: unsupported mermaid diagram %q", lineNumber, fields[0])
 	}
+
+	if (directive == "flowchart" || directive == "graph") && len(fields) > 1 {
+		style.subtitle = strings.ToUpper(fields[1])
+	}
+
+	return style, nil
 }
 
 func mermaidSummaryLine(code string) string {
@@ -255,8 +270,8 @@ func mermaidSummaryLine(code string) string {
 		if strings.HasPrefix(trimmed, "%%") {
 			continue
 		}
-		if len(trimmed) > 70 {
-			return trimmed[:67] + "..."
+		if len(trimmed) > mermaidSummaryMaxChars {
+			return trimmed[:mermaidSummaryTrimChars] + "..."
 		}
 		return trimmed
 	}

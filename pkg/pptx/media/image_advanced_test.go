@@ -17,7 +17,7 @@ func TestImageAdvancedSources(t *testing.T) {
 	)
 
 	// 2. Setup a mock HTTP server for URL testing
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		if _, err := w.Write(redPixelPNG); err != nil {
 			return
@@ -53,7 +53,7 @@ func TestImageAdvancedSources(t *testing.T) {
 	slide.AddImage(imgEffect)
 
 	pptxFile := filepath.Join(t.TempDir(), "image_advanced_test.pptx")
-	if err := pptx.WriteFile(pptxFile, "Image Test", []pptx.SlideContent{slide}); err != nil {
-		t.Fatalf("failed to write pptx: %v", err)
+	if writeErr := pptx.WriteFile(pptxFile, "Image Test", []pptx.SlideContent{slide}); writeErr != nil {
+		t.Fatalf("failed to write pptx: %v", writeErr)
 	}
 }

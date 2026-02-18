@@ -13,9 +13,9 @@ func doughnutChartPartXML(chart *ChartSpec) string {
 		chart.LegendOverlay,
 		fmt.Sprintf(`
 <c:doughnutChart>
-<c:varyColors val="1"/>
-<c:holeSize val="%d"/>%s
+<c:varyColors val="1"/>%s
 %s
-</c:doughnutChart>`, chart.HoleSize, series, labels),
+<c:holeSize val="%d"/>
+</c:doughnutChart>`, series, labels, chart.HoleSize),
 	)
 }

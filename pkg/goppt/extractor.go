@@ -11,32 +11,35 @@ import (
 	"github.com/richardlehane/mscfb"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
-	"golang.org/x/text/transform"
 
 	"github.com/djinn-soul/gopptx/internal/ioadapters"
 )
 
-// skipped metadata or non-readable records in slide container.
-var slideSkippedRecordsTypes = []recordType{
-	recordTypeExternalObjectList,
-	recordTypeEnvironment,
-	recordTypeSoundCollection,
-	recordTypeDrawingGroup,
-	recordTypeSlideListWithText,
-	recordTypeList,
-	recordTypeHeadersFooters,
-}
-
-// skipped metadata or non-readable records in drawing container.
-var drawingSkippedRecordsTypes = []recordType{
-	recordTypeSlideShowSlideInfoAtom,
-	recordTypeHeadersFooters,
-	recordTypeRoundTripSlideSyncInfo12,
-}
-
 const (
 	userPersistIDRefOffset = 16
 )
+
+// skippedSlideRecordTypes returns metadata or non-readable records in slide container.
+func skippedSlideRecordTypes() []recordType {
+	return []recordType{
+		recordTypeExternalObjectList,
+		recordTypeEnvironment,
+		recordTypeSoundCollection,
+		recordTypeDrawingGroup,
+		recordTypeSlideListWithText,
+		recordTypeList,
+		recordTypeHeadersFooters,
+	}
+}
+
+// skippedDrawingRecordTypes returns metadata or non-readable records in drawing container.
+func skippedDrawingRecordTypes() []recordType {
+	return []recordType{
+		recordTypeSlideShowSlideInfoAtom,
+		recordTypeHeadersFooters,
+		recordTypeRoundTripSlideSyncInfo12,
+	}
+}
 
 // ExtractText parses PPT file represented by Reader r and extracts text from it.
 func ExtractText(r io.Reader) (string, error) {
@@ -47,8 +50,8 @@ func ExtractText(r io.Reader) (string, error) {
 		return "", err
 	}
 	currentUser, pptDocument := getCurrentUserAndPPTDoc(d)
-	if err := isValidPPT(currentUser, pptDocument); err != nil {
-		return "", err
+	if validErr := isValidPPT(currentUser, pptDocument); validErr != nil {
+		return "", validErr
 	}
 	offsetPersistDirectory, liveRecord, err := getUserEditAtomsData(currentUser, pptDocument)
 	if err != nil {
@@ -164,7 +167,9 @@ func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[u
 
 		for j := 0; j < len(rgPersistDirEntryData); {
 			persist := rgPersistDirEntryData.LongAt(j)
+			//nolint:mnd // Persist ID mask
 			persistID := persist & 0x000FFFFF
+			//nolint:mnd // Count mask and shift
 			cPersist := ((persist & 0xFFF00000) >> 20) & 0x00000FFF
 			j += 4
 
@@ -180,7 +185,7 @@ func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[u
 // readSlides reads text from slides of given DocumentContainer.
 func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries map[uint32]int64) (string, error) {
 	const slideSkipInitialOffset = 48
-	offset, err := skipRecords(documentContainer, slideSkipInitialOffset, slideSkippedRecordsTypes)
+	offset, err := skipRecords(documentContainer, slideSkipInitialOffset, skippedSlideRecordTypes())
 	if err != nil {
 		return "", err
 	}
@@ -195,9 +200,9 @@ func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries ma
 	data := slideList.Data()
 	n := len(data)
 	for i := 0; i < n; {
-		block, err := readRecord(slideList, int64(i), recordTypeUnspecified)
-		if err != nil {
-			return "", err
+		block, blockErr := readRecord(slideList, int64(i), recordTypeUnspecified)
+		if blockErr != nil {
+			return "", blockErr
 		}
 		switch block.Type() {
 		case recordTypeSlidePersistAtom:
@@ -206,12 +211,14 @@ func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries ma
 			err = readTextFromTextCharsAtom(block, &out, utf16Decoder)
 		case recordTypeTextBytesAtom:
 			err = readTextFromTextBytesAtom(block, &out, utf16Decoder)
+		default:
+			// Ignore non-text record types within SlideListWithText.
 		}
 		if err != nil {
 			return "", err
 		}
 
-		i += len(block.Data()) + 8
+		i += len(block.Data()) + headerSize
 	}
 
 	return out.String(), nil
@@ -224,19 +231,14 @@ func readTextFromSlidePersistAtom(
 	out *strings.Builder,
 	utf16Decoder *encoding.Decoder,
 ) error {
-	const (
-		slidePersistAtomSkipInitialOffset = 32
-		headerRecordTypeOffset            = 2
-	)
+	const slidePersistAtomSkipInitialOffset = 32
 
 	persistDirID := block.LongAt(0)
-	// extract slide from persist directory
 	slide, err := readRecord(pptDocument, persistDirEntries[persistDirID], recordTypeSlide)
 	if err != nil {
 		return err
 	}
-	// skip metadata
-	offset, err := skipRecords(slide, slidePersistAtomSkipInitialOffset, drawingSkippedRecordsTypes)
+	offset, err := skipRecords(slide, slidePersistAtomSkipInitialOffset, skippedDrawingRecordTypes())
 	if err != nil {
 		return err
 	}
@@ -245,38 +247,46 @@ func readTextFromSlidePersistAtom(
 	if err != nil {
 		return err
 	}
+	return extractTextFromDrawing(drawing, out, utf16Decoder)
+}
+
+func extractTextFromDrawing(drawing record, out *strings.Builder, utf16Decoder *encoding.Decoder) error {
+	const headerRecordTypeOffset = 2
 	drawingBytes := drawing.Data()
 	from := 0
 	for {
-		// instead of parsing binary PPT format, search text records directly
 		pocketIdx := matchPocket(drawingBytes, from)
 		if pocketIdx == -1 {
 			break
 		}
-		// check if it is really a text record - recordType bytes must be preceded by 1-byte version and 3-byte instance
-		// fields with zero values
 		if pocketIdx >= 2 && bytes.Equal(drawingBytes[pocketIdx-headerRecordTypeOffset:pocketIdx], []byte{0x00, 0x00}) {
-			var rec record
-			if drawingBytes[pocketIdx] == recordTypeTextBytesAtom.LowerPart() {
-				rec, err = readRecord(drawing, int64(pocketIdx-headerRecordTypeOffset), recordTypeTextBytesAtom)
-				if err != nil {
-					return err
-				}
-				err = readTextFromTextBytesAtom(rec, out, utf16Decoder)
-			} else {
-				rec, err = readRecord(drawing, int64(pocketIdx-headerRecordTypeOffset), recordTypeTextCharsAtom)
-				if err != nil {
-					return err
-				}
-				err = readTextFromTextCharsAtom(rec, out, utf16Decoder)
-			}
-			if err != nil {
+			if err := processTextRecord(drawing, pocketIdx, out, utf16Decoder); err != nil {
 				return err
 			}
 		}
+		//nolint:mnd // Header offset
 		from = pocketIdx + 2
 	}
 	return nil
+}
+
+func processTextRecord(drawing record, pocketIdx int, out *strings.Builder, utf16Decoder *encoding.Decoder) error {
+	const headerRecordTypeOffset = 2
+	drawingBytes := drawing.Data()
+	var rec record
+	var err error
+	if drawingBytes[pocketIdx] == recordTypeTextBytesAtom.LowerPart() {
+		rec, err = readRecord(drawing, int64(pocketIdx-headerRecordTypeOffset), recordTypeTextBytesAtom)
+		if err != nil {
+			return err
+		}
+		return readTextFromTextBytesAtom(rec, out, utf16Decoder)
+	}
+	rec, err = readRecord(drawing, int64(pocketIdx-headerRecordTypeOffset), recordTypeTextCharsAtom)
+	if err != nil {
+		return err
+	}
+	return readTextFromTextCharsAtom(rec, out, utf16Decoder)
 }
 
 func matchPocket(data []byte, from int) int {
@@ -319,24 +329,38 @@ func readTextFromTextBytesAtom(atom record, out *strings.Builder, dec *encoding.
 // decodeTextBytesAtom transforms text from TextBytesAtom, which is an array of bytes representing lower parts of UTF-16
 // characters into UTF-8 data.
 func decodeTextBytesAtom(data []byte, dec *encoding.Decoder) ([]byte, error) {
-	var (
-		// buffer for UTF-16 char
-		buf [2]byte
-		err error
-	)
-	result := make([]byte, 0, len(data))
-	for i := range data {
-		// filling upper part of character with zero
-		// buf[1] remains 0
-		buf[0] = data[i]
+	// 	var (
+	// 	// buffer for UTF-16 char
+	// 	buf [2]byte
+	// 	err error
+	// )
+	// result := make([]byte, 0, len(data))
+	// for i := range data {
+	// 	// filling upper part of character with zero
+	// 	// buf[1] remains 0
+	// 	buf[0] = data[i]
 
-		// transform single UTF-16 char into UTF-8 rune and append it into result
-		result, _, err = transform.Append(dec, result, buf[:])
-		if err != nil {
-			return nil, err
-		}
+	// 	// transform single UTF-16 char into UTF-8 rune and append it into result
+	// 	result, _, err = transform.Append(dec, result, buf[:])
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+	// return result, nil
+	// TextBytesAtom contains 1-byte characters effectively acting as the lower byte of a UTF-16 word.
+	// We expand this to full UTF-16 (little-endian) by interleaving zeros.
+	//
+	// Optimization: Allocate one buffer for the expanded UTF-16 data and decode in one pass
+	// instead of calling transform.Append for every single byte.
+
+	utf16Data := make([]byte, len(data)*2)
+	for i, b := range data {
+		// Little-endian: [byte, 0]
+		utf16Data[i*2] = b
+		utf16Data[i*2+1] = 0
 	}
-	return result, nil
+
+	return dec.Bytes(utf16Data)
 }
 
 // skipRecords reads headers and skips data of records of provided types.

@@ -10,6 +10,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const masterImageRelIDStart = 8
+
 func mapThemeToSpec(theme *styling.Theme) *pptxxml.ThemeSpec {
 	if theme == nil {
 		return nil
@@ -68,7 +70,7 @@ func mapMasterToSpec(master *elements.SlideMaster, imageRefs []pptxxml.ImageRef)
 }
 
 // buildMasterImageInfo registers master images and returns relationship targets and ImageRef specs.
-func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.MediaCatalog) ([]string, []pptxxml.ImageRef) {
+func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.Catalog) ([]string, []pptxxml.ImageRef) {
 	if master == nil || len(master.Images) == 0 {
 		return nil, nil
 	}
@@ -80,7 +82,7 @@ func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.MediaCata
 			continue // skip unresolved master images
 		}
 		// Master image RIDs start at rId8 (rId1-6 are layouts, rId7 is theme).
-		relID := fmt.Sprintf("rId%d", 8+i)
+		relID := fmt.Sprintf("rId%d", masterImageRelIDStart+i)
 		targets = append(targets, fmt.Sprintf("../media/%s", mediaName))
 		refs = append(refs, pptxxml.ImageRef{
 			RelID: relID,
@@ -97,7 +99,7 @@ func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.MediaCata
 	return targets, refs
 }
 
-func writeMediaFiles(pw *pptxxml.PackageWriter, catalog *media.MediaCatalog) error {
+func writeMediaFiles(pw *pptxxml.PackageWriter, catalog *media.Catalog) error {
 	for _, asset := range catalog.Assets() {
 		path := fmt.Sprintf("ppt/media/%s", asset.MediaName())
 		pw.AddBinaryPart(path, asset.Data())

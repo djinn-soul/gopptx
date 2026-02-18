@@ -19,8 +19,8 @@ const (
 	StrikethroughStyleDouble = "dblStrike"
 )
 
-// TextRun describes a single piece of text with uniform styling.
-type TextRun struct {
+// Run describes a single piece of text with uniform styling.
+type Run struct {
 	Text          string
 	Bold          bool
 	Italic        bool
@@ -39,25 +39,25 @@ type TextRun struct {
 	HoverAction   *action.Hyperlink // Hover behavior
 }
 
-// NewTextRun creates a simple text run.
-func NewTextRun(text string) TextRun {
-	return TextRun{Text: text}
+// NewRun creates a simple text run.
+func NewRun(text string) Run {
+	return Run{Text: text}
 }
 
 // WithBold sets bold property.
-func (r TextRun) WithBold(bold bool) TextRun {
+func (r Run) WithBold(bold bool) Run {
 	r.Bold = bold
 	return r
 }
 
 // WithItalic sets italic property.
-func (r TextRun) WithItalic(italic bool) TextRun {
+func (r Run) WithItalic(italic bool) Run {
 	r.Italic = italic
 	return r
 }
 
 // WithUnderline sets underline property (boolean compatibility).
-func (r TextRun) WithUnderline(underline bool) TextRun {
+func (r Run) WithUnderline(underline bool) Run {
 	if underline {
 		r.Underline = UnderlineStyleSingle
 	} else {
@@ -67,13 +67,13 @@ func (r TextRun) WithUnderline(underline bool) TextRun {
 }
 
 // WithUnderlineStyle sets a specific underline style.
-func (r TextRun) WithUnderlineStyle(style string) TextRun {
+func (r Run) WithUnderlineStyle(style string) Run {
 	r.Underline = style
 	return r
 }
 
 // WithStrikethrough sets strikethrough property (boolean compatibility).
-func (r TextRun) WithStrikethrough(strikethrough bool) TextRun {
+func (r Run) WithStrikethrough(strikethrough bool) Run {
 	if strikethrough {
 		r.Strikethrough = StrikethroughStyleSingle
 	} else {
@@ -83,13 +83,13 @@ func (r TextRun) WithStrikethrough(strikethrough bool) TextRun {
 }
 
 // WithStrikethroughStyle sets a specific strikethrough style.
-func (r TextRun) WithStrikethroughStyle(style string) TextRun {
+func (r Run) WithStrikethroughStyle(style string) Run {
 	r.Strikethrough = style
 	return r
 }
 
 // WithSubscript sets subscript property.
-func (r TextRun) WithSubscript(subscript bool) TextRun {
+func (r Run) WithSubscript(subscript bool) Run {
 	r.Subscript = subscript
 	if subscript {
 		r.Superscript = false
@@ -98,7 +98,7 @@ func (r TextRun) WithSubscript(subscript bool) TextRun {
 }
 
 // WithSuperscript sets superscript property.
-func (r TextRun) WithSuperscript(superscript bool) TextRun {
+func (r Run) WithSuperscript(superscript bool) Run {
 	r.Superscript = superscript
 	if superscript {
 		r.Subscript = false
@@ -107,37 +107,37 @@ func (r TextRun) WithSuperscript(superscript bool) TextRun {
 }
 
 // WithColor sets hex color.
-func (r TextRun) WithColor(color string) TextRun {
+func (r Run) WithColor(color string) Run {
 	r.Color = common.NormalizeHexColor(color)
 	return r
 }
 
 // WithHighlight sets highlight color.
-func (r TextRun) WithHighlight(color string) TextRun {
+func (r Run) WithHighlight(color string) Run {
 	r.Highlight = common.NormalizeHexColor(color)
 	return r
 }
 
 // WithFont sets font name.
-func (r TextRun) WithFont(font string) TextRun {
+func (r Run) WithFont(font string) Run {
 	r.Font = strings.TrimSpace(font)
 	return r
 }
 
 // WithSizePt sets font size in points.
-func (r TextRun) WithSizePt(size int) TextRun {
+func (r Run) WithSizePt(size int) Run {
 	r.SizePt = size
 	return r
 }
 
 // WithCode sets code format (monospaced).
-func (r TextRun) WithCode(code bool) TextRun {
+func (r Run) WithCode(code bool) Run {
 	r.Code = code
 	return r
 }
 
 // WithAllCaps sets the text to be all uppercase.
-func (r TextRun) WithAllCaps(allCaps bool) TextRun {
+func (r Run) WithAllCaps(allCaps bool) Run {
 	r.AllCaps = allCaps
 	if allCaps {
 		r.SmallCaps = false
@@ -146,7 +146,7 @@ func (r TextRun) WithAllCaps(allCaps bool) TextRun {
 }
 
 // WithSmallCaps sets the text to be small caps.
-func (r TextRun) WithSmallCaps(smallCaps bool) TextRun {
+func (r Run) WithSmallCaps(smallCaps bool) Run {
 	r.SmallCaps = smallCaps
 	if smallCaps {
 		r.AllCaps = false
@@ -155,19 +155,19 @@ func (r TextRun) WithSmallCaps(smallCaps bool) TextRun {
 }
 
 // WithHyperlink sets a click action for the run.
-func (r TextRun) WithHyperlink(link action.Hyperlink) TextRun {
+func (r Run) WithHyperlink(link action.Hyperlink) Run {
 	r.Hyperlink = &link
 	return r
 }
 
 // WithHoverAction sets a hover action for the run.
-func (r TextRun) WithHoverAction(link action.Hyperlink) TextRun {
+func (r Run) WithHoverAction(link action.Hyperlink) Run {
 	r.HoverAction = &link
 	return r
 }
 
 // Validate checks for invalid text run properties.
-func (r TextRun) Validate() error {
+func (r Run) Validate() error {
 	if r.SizePt < 0 {
 		return errors.New("size must be >= 0")
 	}

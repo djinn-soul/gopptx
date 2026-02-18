@@ -24,7 +24,7 @@ const (
 	ShapeTypeCornerTabs = "cornerTabs"
 )
 
-func init() {
+func initRectVariantShapes() {
 	for _, t := range []string{
 		ShapeTypeSnip1Rect, ShapeTypeSnip2SameRect, ShapeTypeSnip2DiagRect,
 		ShapeTypeRound1Rect, ShapeTypeRound2SameRect, ShapeTypeRound2DiagRect,

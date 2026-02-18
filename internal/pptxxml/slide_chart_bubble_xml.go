@@ -16,13 +16,13 @@ func bubbleChartPartXML(chart *ChartSpec) string {
 		chart.LegendOverlay,
 		fmt.Sprintf(`
 <c:bubbleChart>
-<c:varyColors val="0"/>
-<c:bubbleScale val="%d"/>%s
+<c:varyColors val="0"/>%s
 %s
+<c:bubbleScale val="%d"/>
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
 </c:bubbleChart>
-%s`, chart.BubbleScale, series, labels, scatterAxesXML(chart)),
+%s`, series, labels, chart.BubbleScale, scatterAxesXML(chart)),
 	)
 }
 

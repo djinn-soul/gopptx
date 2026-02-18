@@ -5,9 +5,16 @@ import (
 )
 
 type (
-	TextRun            = text.TextRun
-	TextParagraphStyle = text.TextParagraphStyle
-	TextParagraph      = text.TextParagraph
+	// Run is an alias for text.Run.
+	Run = text.Run
+	// ParagraphStyle is an alias for text.ParagraphStyle.
+	ParagraphStyle = text.ParagraphStyle
+	// Paragraph is an alias for text.Paragraph.
+	Paragraph = text.Paragraph
+
+	TextRun            = Run
+	TextParagraphStyle = ParagraphStyle
+	TextParagraph      = Paragraph
 )
 
 const (
@@ -36,26 +43,56 @@ const (
 	TextSizeXLarge   = text.TextSizeXLarge
 )
 
+// NewRun creates a new text run.
+func NewRun(txt string) Run {
+	return text.NewRun(txt)
+}
+
+// NewTextRun is an alias for NewRun.
 func NewTextRun(txt string) TextRun {
-	return text.NewTextRun(txt)
+	return NewRun(txt)
 }
 
+// NewParagraph creates a new text paragraph.
+func NewParagraph() Paragraph {
+	return text.NewParagraph()
+}
+
+// NewTextParagraph is an alias for NewParagraph.
 func NewTextParagraph() TextParagraph {
-	return text.NewTextParagraph()
+	return NewParagraph()
 }
 
+// NewParagraphStyle creates a new paragraph style.
+func NewParagraphStyle() ParagraphStyle {
+	return text.NewParagraphStyle()
+}
+
+// NewTextParagraphStyle is an alias for NewParagraphStyle.
 func NewTextParagraphStyle() TextParagraphStyle {
-	return text.NewTextParagraphStyle()
+	return NewParagraphStyle()
 }
 
+// DefaultParagraphStyle returns the standard paragraph styling.
+func DefaultParagraphStyle() ParagraphStyle {
+	return text.DefaultParagraphStyle()
+}
+
+// DefaultTextParagraphStyle is an alias for DefaultParagraphStyle.
 func DefaultTextParagraphStyle() TextParagraphStyle {
-	return text.DefaultTextParagraphStyle()
+	return DefaultParagraphStyle()
 }
 
 func NormalizeTextAlign(align string) string {
 	return text.NormalizeTextAlign(align)
 }
 
-func NormalizeTextRuns(runs []TextRun) []TextRun {
-	return text.NormalizeTextRuns(runs)
+// NormalizeRuns combines adjacent runs with identical styling.
+func NormalizeRuns(runs []Run) []Run {
+	return text.NormalizeRuns(runs)
+}
+
+// NormalizeTextRuns is an alias for NormalizeRuns.
+func NormalizeTextRuns(runs []TextRun) []Run {
+	return NormalizeRuns(runs)
 }

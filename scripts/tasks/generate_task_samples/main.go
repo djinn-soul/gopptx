@@ -9,11 +9,13 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const outDir = "examples/output"
+
 func main() {
-	outDir := "smoke_samples"
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
@@ -48,13 +50,15 @@ func main() {
 		{"53_slide_properties", generateSlideProperties},
 		{"54_theme_master", generateThemeMaster},
 		{"55_background_fills", generateSlideBackgrounds},
+		{"55_background_fills", generateSlideBackgrounds},
 		{"56_action_api", generateActionAPI},
+		{"24_smartart", generateSmartArt},
 	}
 
 	for _, g := range generators {
-		data, err := g.fn()
-		if err != nil {
-			log.Printf("Error generating %s: %v", g.name, err)
+		data, genErr := g.fn()
+		if genErr != nil {
+			log.Printf("Error generating %s: %v", g.name, genErr)
 			continue
 		}
 		path := filepath.Join(outDir, g.name+".pptx")
@@ -93,20 +97,20 @@ func generateSlideLayouts() ([]byte, error) {
 
 func generateTextFormatting() ([]byte, error) {
 	slide := pptx.NewSlide("Text Formatting").
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Bold ").WithBold(true),
-			pptx.NewTextRun("Italic ").WithItalic(true),
-			pptx.NewTextRun("Underline ").WithUnderline(true),
-			pptx.NewTextRun("Strikethrough").WithStrikethrough(true),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Bold ").WithBold(true),
+			pptx.NewRun("Italic ").WithItalic(true),
+			pptx.NewRun("Underline ").WithUnderline(true),
+			pptx.NewRun("Strikethrough").WithStrikethrough(true),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Red ").WithColor("FF0000"),
-			pptx.NewTextRun("Green ").WithColor("00FF00"),
-			pptx.NewTextRun("Blue").WithColor("0000FF"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Red ").WithColor("FF0000"),
+			pptx.NewRun("Green ").WithColor("00FF00"),
+			pptx.NewRun("Blue").WithColor("0000FF"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Large ").WithSizePt(24),
-			pptx.NewTextRun("Small").WithSizePt(10),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Large ").WithSizePt(24),
+			pptx.NewRun("Small").WithSizePt(10),
 		})
 	return pptx.CreateWithSlides("Task 04: Text Formatting", []pptx.SlideContent{slide})
 }
@@ -118,30 +122,30 @@ func generateBulletStyles() ([]byte, error) {
 		AddBullet("Third bullet point")
 
 	slide2 := pptx.NewSlide("Numbered Bullets").
-		AddBulletWithStyle("First item", pptx.NewTextParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
-		AddBulletWithStyle("Second item", pptx.NewTextParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
-		AddBulletWithStyle("Third item", pptx.NewTextParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber))
+		AddBulletWithStyle("First item", pptx.NewParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
+		AddBulletWithStyle("Second item", pptx.NewParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber)).
+		AddBulletWithStyle("Third item", pptx.NewParagraphStyle().WithBulletStyle(pptx.BulletStyleNumber))
 
 	return pptx.CreateWithSlides("Task 05: Bullet Styles", []pptx.SlideContent{slide, slide2})
 }
 
 func generateTextEnhancements() ([]byte, error) {
 	slide := pptx.NewSlide("Text Enhancements").
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("H"),
-			pptx.NewTextRun("2").WithSubscript(true),
-			pptx.NewTextRun("O - Subscript"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("H"),
+			pptx.NewRun("2").WithSubscript(true),
+			pptx.NewRun("O - Subscript"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("E=mc"),
-			pptx.NewTextRun("2").WithSuperscript(true),
-			pptx.NewTextRun(" - Superscript"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("E=mc"),
+			pptx.NewRun("2").WithSuperscript(true),
+			pptx.NewRun(" - Superscript"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Highlighted text").WithHighlight("FFFF00"),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Highlighted text").WithHighlight("FFFF00"),
 		}).
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Code style").WithCode(true),
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Code style").WithCode(true),
 		})
 	return pptx.CreateWithSlides("Task 06: Text Enhancements", []pptx.SlideContent{slide})
 }
@@ -299,7 +303,7 @@ func generateCharts() ([]byte, error) {
 }
 
 func generateImages() ([]byte, error) {
-	imagePath := filepath.Join("smoke_samples", "sampleimage", "repository-open-graph-template.png")
+	imagePath := filepath.Join("examples", "assets", "55", "repository-open-graph-template.png")
 	// If path doesn't exist relative to where script is run, fall back to dummy
 	_, err := os.Stat(imagePath)
 	var img pptx.Image
@@ -326,7 +330,7 @@ func generateImages() ([]byte, error) {
 }
 
 func generateImagesAdvanced() ([]byte, error) {
-	imagePath := filepath.Join("smoke_samples", "sampleimage", "repository-open-graph-template.png")
+	imagePath := filepath.Join("examples", "assets", "55", "repository-open-graph-template.png")
 	_, err := os.Stat(imagePath)
 	var img1, img2 pptx.Image
 	if err == nil {
@@ -442,14 +446,14 @@ func generateTransitions() ([]byte, error) {
 		WithTransitionOptions(pptx.TransitionOptions{
 			Type: pptx.TransitionShape,
 		}).
-		WithTransitionSound(filepath.Join("smoke_samples", "transition_sound.wav")).
+		WithTransitionSound(filepath.Join(outDir, "transition_sound.wav")).
 		AddBullet("This slide has a circle transition with sound")
 
 	slides = append(slides, transitionsWithSound)
 
 	// Create a dummy WAV file for the test
 	wavData := generateSineWaveWAV()
-	if err := os.WriteFile(filepath.Join("smoke_samples", "transition_sound.wav"), wavData, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "transition_sound.wav"), wavData, 0o644); err != nil {
 		return nil, fmt.Errorf("failed to write wav file: %w", err)
 	}
 
@@ -514,9 +518,9 @@ func generateMerge() ([]byte, error) {
 	// Create first presentation
 	s1 := pptx.NewSlide("Presentation One").
 		AddBullet("Slide from the first presentation")
-	data1, err := pptx.CreateWithSlides("Merge Target", []pptx.SlideContent{s1})
-	if err != nil {
-		return nil, err
+	data1, buildErr := pptx.CreateWithSlides("Merge Target", []pptx.SlideContent{s1})
+	if buildErr != nil {
+		return nil, buildErr
 	}
 
 	// Create second presentation
@@ -598,9 +602,9 @@ func generateHyperlinks() ([]byte, error) {
 			WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com")).WithTooltip("Open website"))).
 		AddBullet("Shape with URL hyperlink").
 		AddBullet("Tooltip on hover").
-		AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Text hyperlink: "),
-			pptx.NewTextRun("Click here to visit example.com").
+		AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Text hyperlink: "),
+			pptx.NewRun("Click here to visit example.com").
 				WithHyperlink(pptx.NewHyperlink(pptx.HyperlinkURL("https://example.com"))).
 				WithColor("0000FF").
 				WithUnderline(true),
@@ -628,7 +632,7 @@ func generateLayoutHelpers() ([]byte, error) {
 	slide := pptx.NewSlide("Layout Helpers")
 	boxes, _ := pptx.Grid(2, 2, pptx.Inches(0.5))
 	for i, b := range boxes {
-		slide.AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
+		slide = slide.AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
 			WithText(fmt.Sprintf("Grid %d", i+1)).
 			WithFill(pptx.NewShapeFill("4472C4")))
 	}
@@ -703,8 +707,7 @@ func generateThemeMaster() ([]byte, error) {
 	builder := pptx.NewPresentationBuilder("Task 54: Theme & Master").
 		WithTheme(neonTheme).
 		WithMaster(master).
-		WithSlideSize(pptx.SlideSize16x9)
-
+		WithSlideSize(pptx.SlideSize16x9())
 	builder.AddTitleSlide("Neon Theme Showcase")
 	builder.AddBulletSlide("Features", []string{"Custom Colors", "Global Footer", "Master Shapes"})
 
@@ -737,5 +740,59 @@ func generateActionAPI() ([]byte, error) {
 			WithClickAction(pptx.NewHyperlink(pptx.HyperlinkURL("https://github.com/djinn-soul/gopptx"))))
 
 	builder.AddSlide(slide)
+	return builder.Build()
+}
+
+func generateSmartArt() ([]byte, error) {
+	builder := pptx.NewPresentationBuilder("Task 24: SmartArt")
+	builder.AddBulletSlide("SmartArt Demo", []string{
+		"This slide contains SmartArt diagrams.",
+		"See following slides.",
+	})
+
+	// List Layout
+	saList := smartart.NewSmartArt(smartart.VerticalBlockList).
+		AddNode(smartart.NewNode("Block 1")).
+		AddNode(smartart.NewNode("Block 2").WithColor("FF0000")).
+		AddNode(smartart.NewNode("Block 3")).
+		Position(styling.Points(50), styling.Points(150)).
+		Size(styling.Points(400), styling.Points(300))
+
+	builder.AddSlide(pptx.NewSlide("Vertical Block List").AddSmartArt(saList))
+
+	// Process Layout
+	saProcess := smartart.NewSmartArt(smartart.BasicProcess).
+		AddNode(smartart.NewNode("Phase 1")).
+		AddNode(smartart.NewNode("Phase 2")).
+		AddNode(smartart.NewNode("Phase 3")).
+		Position(styling.Points(50), styling.Points(150)).
+		Size(styling.Points(600), styling.Points(200)).
+		WithColorStyle("urn:microsoft.com/office/officeart/2005/8/colors/colorful1").
+		WithQuickStyle("urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1")
+
+	builder.AddSlide(pptx.NewSlide("Basic Process").AddSmartArt(saProcess))
+
+	// Hierarchy Layout
+	saOrg := smartart.NewSmartArt(smartart.OrgChart).
+		AddNode(smartart.NewNode("CEO").
+			WithChild(smartart.NewNode("VP Sales").
+				WithChild(smartart.NewNode("Manager 1")).
+				WithChild(smartart.NewNode("Manager 2"))).
+			WithChild(smartart.NewNode("VP Eng").
+				WithChild(smartart.NewNode("Dev 1")).
+				WithChild(smartart.NewNode("Dev 2")))).
+		Position(styling.Points(50), styling.Points(150)).
+		Size(styling.Points(600), styling.Points(400))
+
+	builder.AddSlide(pptx.NewSlide("Organization Chart").AddSmartArt(saOrg))
+
+	// Cycle Layout
+	saCycle := smartart.NewSmartArt(smartart.BasicCycle).
+		AddItems([]string{"Plan", "Develop", "Test", "Deploy", "Monitor"}).
+		Position(styling.Points(150), styling.Points(150)).
+		Size(styling.Points(400), styling.Points(400))
+
+	builder.AddSlide(pptx.NewSlide("Basic Cycle").AddSmartArt(saCycle))
+
 	return builder.Build()
 }

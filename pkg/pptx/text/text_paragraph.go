@@ -8,34 +8,34 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-// TextParagraph represents a single paragraph of text with runs and styling.
-type TextParagraph struct {
-	Runs  []TextRun
-	Style TextParagraphStyle
+// Paragraph represents a single paragraph of text with runs and styling.
+type Paragraph struct {
+	Runs  []Run
+	Style ParagraphStyle
 }
 
-// NewTextParagraph creates a new paragraph with default style.
-func NewTextParagraph() TextParagraph {
-	return TextParagraph{
-		Runs:  make([]TextRun, 0),
-		Style: DefaultTextParagraphStyle(),
+// NewParagraph creates a new paragraph with default style.
+func NewParagraph() Paragraph {
+	return Paragraph{
+		Runs:  make([]Run, 0),
+		Style: DefaultParagraphStyle(),
 	}
 }
 
 // AddRun appends a text run to the paragraph.
-func (p TextParagraph) AddRun(run TextRun) TextParagraph {
+func (p Paragraph) AddRun(run Run) Paragraph {
 	p.Runs = append(p.Runs, run)
 	return p
 }
 
 // WithStyle sets the paragraph style.
-func (p TextParagraph) WithStyle(style TextParagraphStyle) TextParagraph {
+func (p Paragraph) WithStyle(style ParagraphStyle) Paragraph {
 	p.Style = style
 	return p
 }
 
-// TextParagraphStyle describes paragraph-level formatting for one bullet line.
-type TextParagraphStyle struct {
+// ParagraphStyle describes paragraph-level formatting for one bullet line.
+type ParagraphStyle struct {
 	Align          string
 	SpaceBeforePt  int
 	SpaceAfterPt   int
@@ -50,148 +50,148 @@ type TextParagraphStyle struct {
 	HangingIndent  styling.Length // EMU
 }
 
-// DefaultTextParagraphStyle returns the standard paragraph styling.
-func DefaultTextParagraphStyle() TextParagraphStyle {
-	return TextParagraphStyle{
+// DefaultParagraphStyle returns the standard paragraph styling.
+func DefaultParagraphStyle() ParagraphStyle {
+	return ParagraphStyle{
 		BulletStyle: BulletStyleBullet,
 	}
 }
 
-// NewTextParagraphStyle creates one paragraph style with default settings.
-func NewTextParagraphStyle() TextParagraphStyle {
-	return NormalizeTextParagraphStyle(TextParagraphStyle{})
+// NewParagraphStyle creates one paragraph style with default settings.
+func NewParagraphStyle() ParagraphStyle {
+	return NormalizeParagraphStyle(ParagraphStyle{})
 }
 
 // WithAlign sets paragraph alignment.
-func (p TextParagraphStyle) WithAlign(align string) TextParagraphStyle {
+func (p ParagraphStyle) WithAlign(align string) ParagraphStyle {
 	p.Align = NormalizeTextAlign(align)
 	return p
 }
 
 // WithAlignLeft sets left alignment.
-func (p TextParagraphStyle) WithAlignLeft() TextParagraphStyle {
+func (p ParagraphStyle) WithAlignLeft() ParagraphStyle {
 	p.Align = TextAlignLeft
 	return p
 }
 
 // WithAlignCenter sets center alignment.
-func (p TextParagraphStyle) WithAlignCenter() TextParagraphStyle {
+func (p ParagraphStyle) WithAlignCenter() ParagraphStyle {
 	p.Align = TextAlignCenter
 	return p
 }
 
 // WithAlignRight sets right alignment.
-func (p TextParagraphStyle) WithAlignRight() TextParagraphStyle {
+func (p ParagraphStyle) WithAlignRight() ParagraphStyle {
 	p.Align = TextAlignRight
 	return p
 }
 
 // WithAlignJustify sets justified alignment.
-func (p TextParagraphStyle) WithAlignJustify() TextParagraphStyle {
+func (p ParagraphStyle) WithAlignJustify() ParagraphStyle {
 	p.Align = TextAlignJustify
 	return p
 }
 
 // WithNumbered sets the bullet style to numbered.
-func (p TextParagraphStyle) WithNumbered() TextParagraphStyle {
+func (p ParagraphStyle) WithNumbered() ParagraphStyle {
 	p.BulletStyle = BulletStyleNumber
 	return p
 }
 
 // WithBulletStyle sets the bullet style by name.
-func (p TextParagraphStyle) WithBulletStyle(style string) TextParagraphStyle {
+func (p ParagraphStyle) WithBulletStyle(style string) ParagraphStyle {
 	p.BulletStyle = NormalizeBulletStyle(style)
 	return p
 }
 
 // WithLetteredLower sets lowercase lettered list style.
-func (p TextParagraphStyle) WithLetteredLower() TextParagraphStyle {
+func (p ParagraphStyle) WithLetteredLower() ParagraphStyle {
 	p.BulletStyle = BulletStyleLetterLower
 	return p
 }
 
 // WithRomanUpper sets uppercase roman list style.
-func (p TextParagraphStyle) WithRomanUpper() TextParagraphStyle {
+func (p ParagraphStyle) WithRomanUpper() ParagraphStyle {
 	p.BulletStyle = BulletStyleRomanUpper
 	return p
 }
 
 // WithCustomBullet sets custom single-character bullet style.
-func (p TextParagraphStyle) WithCustomBullet(char string) TextParagraphStyle {
+func (p ParagraphStyle) WithCustomBullet(char string) ParagraphStyle {
 	p.BulletStyle = BulletStyleCustom
 	p.BulletChar = strings.TrimSpace(char)
 	return p
 }
 
 // WithNoBullet sets the bullet style to none.
-func (p TextParagraphStyle) WithNoBullet() TextParagraphStyle {
+func (p ParagraphStyle) WithNoBullet() ParagraphStyle {
 	p.BulletStyle = BulletStyleNone
 	return p
 }
 
 // WithLevel sets paragraph bullet nesting level (0..8).
-func (p TextParagraphStyle) WithLevel(level int) TextParagraphStyle {
+func (p ParagraphStyle) WithLevel(level int) ParagraphStyle {
 	p.Level = level
 	return p
 }
 
 // WithBulletChar sets custom bullet character.
-func (p TextParagraphStyle) WithBulletChar(char string) TextParagraphStyle {
+func (p ParagraphStyle) WithBulletChar(char string) ParagraphStyle {
 	p.BulletChar = strings.TrimSpace(char)
 	return p
 }
 
 // WithBulletColor sets hex color for bullet.
-func (p TextParagraphStyle) WithBulletColor(color string) TextParagraphStyle {
+func (p ParagraphStyle) WithBulletColor(color string) ParagraphStyle {
 	p.BulletColor = common.NormalizeHexColor(color)
 	return p
 }
 
 // WithBulletSize sets bullet size as percentage of text size.
-func (p TextParagraphStyle) WithBulletSize(size int) TextParagraphStyle {
+func (p ParagraphStyle) WithBulletSize(size int) ParagraphStyle {
 	p.BulletSize = size
 	return p
 }
 
 // WithSpaceBeforePt sets space before paragraph in points.
-func (p TextParagraphStyle) WithSpaceBeforePt(pt int) TextParagraphStyle {
+func (p ParagraphStyle) WithSpaceBeforePt(pt int) ParagraphStyle {
 	p.SpaceBeforePt = pt
 	return p
 }
 
 // WithSpaceAfterPt sets space after paragraph in points.
-func (p TextParagraphStyle) WithSpaceAfterPt(pt int) TextParagraphStyle {
+func (p ParagraphStyle) WithSpaceAfterPt(pt int) ParagraphStyle {
 	p.SpaceAfterPt = pt
 	return p
 }
 
 // WithLineSpacingPct sets line spacing as percentage (e.g. 100).
-func (p TextParagraphStyle) WithLineSpacingPct(pct int) TextParagraphStyle {
+func (p ParagraphStyle) WithLineSpacingPct(pct int) ParagraphStyle {
 	p.LineSpacingPct = pct
 	return p
 }
 
 // WithLeftIndent sets the left margin for the paragraph in EMUs.
-func (p TextParagraphStyle) WithLeftIndent(emu styling.Length) TextParagraphStyle {
+func (p ParagraphStyle) WithLeftIndent(emu styling.Length) ParagraphStyle {
 	p.LeftIndent = emu
 	return p
 }
 
 // WithRightIndent sets the right margin for the paragraph in EMUs.
-func (p TextParagraphStyle) WithRightIndent(emu styling.Length) TextParagraphStyle {
+func (p ParagraphStyle) WithRightIndent(emu styling.Length) ParagraphStyle {
 	p.RightIndent = emu
 	return p
 }
 
 // WithHangingIndent sets the hanging indent (indent of the first line) in EMUs.
 // Note: Usually negative to shift the first line to the left of the rest.
-func (p TextParagraphStyle) WithHangingIndent(emu styling.Length) TextParagraphStyle {
+func (p ParagraphStyle) WithHangingIndent(emu styling.Length) ParagraphStyle {
 	p.HangingIndent = emu
 	return p
 }
 
 // Validate checks for invalid text paragraph style properties.
-func (p TextParagraphStyle) Validate() error {
+func (p ParagraphStyle) Validate() error {
 	if p.BulletColor != "" && !common.IsHexColor(p.BulletColor) {
 		return errors.New("bullet color must be hex")
 	}

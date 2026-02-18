@@ -1,6 +1,9 @@
 package pptxxml
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // ImageRef describes one image reference in a slide.
 type ImageRef struct {
@@ -45,69 +48,10 @@ func imageShape(image ImageRef, shapeID int) string {
 		name = "Picture"
 	}
 
-	xfrmAttrs := ""
-	if image.Rotation != 0 {
-		xfrmAttrs += fmt.Sprintf(` rot="%d"`, image.Rotation)
-	}
-	if image.FlipH {
-		xfrmAttrs += ` flipH="1"`
-	}
-	if image.FlipV {
-		xfrmAttrs += ` flipV="1"`
-	}
-
-	srcRect := ""
-	if c := image.Crop; c != nil {
-		// Only emit non-zero attributes to keep XML clean
-		attrs := ""
-		if c.Left != 0 {
-			attrs += fmt.Sprintf(` l="%d"`, c.Left)
-		}
-		if c.Top != 0 {
-			attrs += fmt.Sprintf(` t="%d"`, c.Top)
-		}
-		if c.Right != 0 {
-			attrs += fmt.Sprintf(` r="%d"`, c.Right)
-		}
-		if c.Bottom != 0 {
-			attrs += fmt.Sprintf(` b="%d"`, c.Bottom)
-		}
-		if attrs != "" {
-			srcRect = fmt.Sprintf(`<a:srcRect%s/>`, attrs)
-		}
-	}
-
-	effectsXML := ""
-	if image.Shadow || image.Reflection {
-		effectsXML = "<a:effectLst>"
-		if image.Shadow {
-			effectsXML += fmt.Sprintf(
-				`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
-				defaultShadowBlurRad,
-				defaultShadowDist,
-				defaultShadowDir,
-				defaultShadowAlpha,
-			)
-		}
-		if image.Reflection {
-			effectsXML += fmt.Sprintf(
-				`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" sy="-100000" algn="bl" rotWithShape="0"/>`,
-				defaultReflectionBlur,
-				defaultReflectionStA,
-				defaultReflectionEndA,
-				defaultReflectionEndPos,
-				defaultShadowDir,
-			)
-		}
-		effectsXML += "</a:effectLst>"
-	}
-
-	descrAttr := ""
-	if image.IsDecorative {
-		descrAttr = ` descr=""`
-	} else if image.AltText != "" {
-		descrAttr = fmt.Sprintf(` descr="%s"`, Escape(image.AltText))
-	}
+	descrAttr := imageDescriptionAttr(image)
+	srcRect := imageSrcRectXML(image.Crop)
+	effectsXML := imageEffectsXML(image.Shadow, image.Reflection)
+	xfrmAttrs := imageTransformAttrs(image.Rotation, image.FlipH, image.FlipV)
 
 	return fmt.Sprintf(`
 <p:pic>
@@ -142,4 +86,78 @@ func imageShape(image ImageRef, shapeID int) string {
 		image.CY,
 		effectsXML,
 	)
+}
+
+func imageDescriptionAttr(image ImageRef) string {
+	if image.IsDecorative {
+		return ` descr=""`
+	}
+	if image.AltText != "" {
+		return fmt.Sprintf(` descr="%s"`, Escape(image.AltText))
+	}
+	return ""
+}
+
+func imageTransformAttrs(rot int64, flipH, flipV bool) string {
+	attrs := ""
+	if rot != 0 {
+		attrs += fmt.Sprintf(` rot="%d"`, rot)
+	}
+	if flipH {
+		attrs += ` flipH="1"`
+	}
+	if flipV {
+		attrs += ` flipV="1"`
+	}
+	return attrs
+}
+
+func imageSrcRectXML(c *ImageCropRef) string {
+	if c == nil {
+		return ""
+	}
+	attrs := ""
+	if c.Left != 0 {
+		attrs += fmt.Sprintf(` l="%d"`, c.Left)
+	}
+	if c.Top != 0 {
+		attrs += fmt.Sprintf(` t="%d"`, c.Top)
+	}
+	if c.Right != 0 {
+		attrs += fmt.Sprintf(` r="%d"`, c.Right)
+	}
+	if c.Bottom != 0 {
+		attrs += fmt.Sprintf(` b="%d"`, c.Bottom)
+	}
+	if attrs != "" {
+		return fmt.Sprintf(`<a:srcRect%s/>`, attrs)
+	}
+	return ""
+}
+
+func imageEffectsXML(shadow, reflection bool) string {
+	if !shadow && !reflection {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<a:effectLst>")
+	if shadow {
+		b.WriteString(fmt.Sprintf(
+			`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0">`+
+				`<a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
+			defaultShadowBlurRad, defaultShadowDist,
+			defaultShadowDir, defaultShadowAlpha,
+		))
+	}
+	if reflection {
+		b.WriteString(fmt.Sprintf(
+			`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" `+
+				`sy="-100000" algn="bl" rotWithShape="0"/>`,
+			defaultReflectionBlur, defaultReflectionStA,
+			defaultReflectionEndA, defaultReflectionEndPos,
+			defaultShadowDir,
+		))
+	}
+	b.WriteString("</a:effectLst>")
+	return b.String()
 }

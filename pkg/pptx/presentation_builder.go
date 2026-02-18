@@ -11,7 +11,7 @@ import (
 // PresentationBuilder provides a fluent API for creating presentations.
 type PresentationBuilder struct {
 	title           string
-	metadata        PresentationMetadata
+	metadata        Metadata
 	slides          []SlideContent
 	showSlideNumber bool
 	footerText      string
@@ -26,7 +26,7 @@ func NewPresentationBuilder(title string) *PresentationBuilder {
 }
 
 // WithMetadata sets the presentation metadata.
-func (b *PresentationBuilder) WithMetadata(meta PresentationMetadata) *PresentationBuilder {
+func (b *PresentationBuilder) WithMetadata(meta Metadata) *PresentationBuilder {
 	b.metadata = meta
 	return b
 }
@@ -108,6 +108,18 @@ func (b *PresentationBuilder) WithDateTime(show bool) *PresentationBuilder {
 	return b
 }
 
+// WithModifyPassword sets a "Password to Modify" on the presentation.
+func (b *PresentationBuilder) WithModifyPassword(password string) *PresentationBuilder {
+	b.metadata.Protection.ModifyPassword = password
+	return b
+}
+
+// WithMarkAsFinal sets the "Mark as Final" property on the presentation.
+func (b *PresentationBuilder) WithMarkAsFinal(final bool) *PresentationBuilder {
+	b.metadata.Protection.MarkAsFinal = final
+	return b
+}
+
 // Build compiles the presentation into a PPTX byte slice.
 func (b *PresentationBuilder) Build() ([]byte, error) {
 	// Metadata title overrides builder title if both are present.
@@ -127,5 +139,5 @@ func (b *PresentationBuilder) WriteToFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to build presentation: %w", err)
 	}
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o600)
 }

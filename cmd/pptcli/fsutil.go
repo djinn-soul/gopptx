@@ -23,7 +23,7 @@ func ensureParentDir(path string) error {
 	if parent == "." || parent == "" {
 		return nil
 	}
-	return os.MkdirAll(parent, 0o755)
+	return os.MkdirAll(parent, 0o750)
 }
 
 func defaultOutputPathFromMarkdown(markdownPath string) string {

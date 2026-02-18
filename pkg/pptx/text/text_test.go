@@ -9,32 +9,32 @@ import (
 func TestTextRunValidation(t *testing.T) {
 	tests := []struct {
 		name    string
-		run     TextRun
+		run     Run
 		wantErr bool
 	}{
 		{
 			name:    "valid run",
-			run:     NewTextRun("hello").WithBold(true).WithColor("FF0000"),
+			run:     NewRun("hello").WithBold(true).WithColor("FF0000"),
 			wantErr: false,
 		},
 		{
 			name:    "negative size",
-			run:     NewTextRun("hello").WithSizePt(-1),
+			run:     NewRun("hello").WithSizePt(-1),
 			wantErr: true,
 		},
 		{
 			name:    "invalid color",
-			run:     NewTextRun("hello").WithColor("red"),
+			run:     NewRun("hello").WithColor("red"),
 			wantErr: true,
 		},
 		{
 			name:    "conflicting baseline",
-			run:     TextRun{Text: "hello", Subscript: true, Superscript: true},
+			run:     Run{Text: "hello", Subscript: true, Superscript: true},
 			wantErr: true,
 		},
 		{
 			name: "valid hyperlink",
-			run:  NewTextRun("link").WithHyperlink(action.NewHyperlink(action.HyperlinkURL("http://example.com"))),
+			run:  NewRun("link").WithHyperlink(action.NewHyperlink(action.HyperlinkURL("http://example.com"))),
 		},
 	}
 
@@ -51,22 +51,22 @@ func TestTextRunValidation(t *testing.T) {
 func TestTextParagraphStyleValidation(t *testing.T) {
 	tests := []struct {
 		name    string
-		style   TextParagraphStyle
+		style   ParagraphStyle
 		wantErr bool
 	}{
 		{
 			name:    "valid style",
-			style:   NewTextParagraphStyle().WithAlignCenter().WithSpaceBeforePt(10),
+			style:   NewParagraphStyle().WithAlignCenter().WithSpaceBeforePt(10),
 			wantErr: false,
 		},
 		{
 			name:    "invalid align",
-			style:   TextParagraphStyle{Align: "diagonal"},
+			style:   ParagraphStyle{Align: "diagonal"},
 			wantErr: true,
 		},
 		{
 			name:    "negative spacing",
-			style:   NewTextParagraphStyle().WithSpaceAfterPt(-1),
+			style:   NewParagraphStyle().WithSpaceAfterPt(-1),
 			wantErr: true,
 		},
 	}
@@ -82,13 +82,13 @@ func TestTextParagraphStyleValidation(t *testing.T) {
 }
 
 func TestNormalizeTextRuns(t *testing.T) {
-	runs := []TextRun{
+	runs := []Run{
 		{Text: "a", Bold: true},
 		{Text: "b", Bold: true},
 		{Text: "", Bold: true},
 		{Text: "c", Bold: false},
 	}
-	normalized := NormalizeTextRuns(runs)
+	normalized := NormalizeRuns(runs)
 	if len(normalized) != 2 {
 		t.Errorf("expected 2 runs, got %d", len(normalized))
 	}

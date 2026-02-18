@@ -47,7 +47,7 @@ func NewConnector(connectorType string, startX, startY, endX, endY styling.Lengt
 		StartY:          startY,
 		EndX:            endX,
 		EndY:            endY,
-		Line:            NewShapeLine("000000", styling.Emu(12700)),
+		Line:            NewShapeLine("000000", styling.Emu(int64(styling.EmuPerPt))),
 		StartArrow:      ArrowTypeNone,
 		StartArrowWidth: ArrowSizeMedium,
 		StartArrowLen:   ArrowSizeMedium,
@@ -283,7 +283,9 @@ type connectionSiteCandidate struct {
 }
 
 func shapeConnectionSiteCandidates(shape Shape) [9]connectionSiteCandidate {
+	//nolint:mnd // Center point divisor
 	cx := shape.X + shape.CX/2
+	//nolint:mnd // Center point divisor
 	cy := shape.Y + shape.CY/2
 	right := shape.X + shape.CX
 	bottom := shape.Y + shape.CY
@@ -345,6 +347,7 @@ func allowedConnectionSitesForShape(shapeType string) []string {
 }
 
 func siteFromIndex(idx int) string {
+	//nolint:mnd // OOXML connection site indices
 	switch idx {
 	case 0:
 		return ConnectionSiteTop
@@ -391,112 +394,106 @@ func SiteIndexPointer(site string) *int {
 }
 
 // Validate checks connector properties and anchor references.
-func (connector Connector) Validate(shapeCount int, slideIndex int, connectorIndex int) error {
-	if !IsConnectorType(connector.Type) {
-		return fmt.Errorf("slide %d connector %d type %q is not supported", slideIndex, connectorIndex, connector.Type)
+func (c Connector) Validate(shapeCount int, slideIndex int, connectorIndex int) error {
+	if err := c.validateBasicProps(slideIndex, connectorIndex); err != nil {
+		return err
 	}
-	if connector.StartX < 0 || connector.StartY < 0 || connector.EndX < 0 || connector.EndY < 0 {
-		return fmt.Errorf("slide %d connector %d coordinates cannot be negative", slideIndex, connectorIndex)
+	if err := c.validateArrows(slideIndex, connectorIndex); err != nil {
+		return err
 	}
-	if connector.StartX == connector.EndX && connector.StartY == connector.EndY {
+	if err := c.validateAnchors(shapeCount, slideIndex, connectorIndex); err != nil {
+		return err
+	}
+	return c.validateAdjustments(slideIndex, connectorIndex)
+}
+
+func (c Connector) validateBasicProps(slideIndex, connectorIndex int) error {
+	if !IsConnectorType(c.Type) {
+		return fmt.Errorf(
+			"slide %d connector %d type %q is not supported",
+			slideIndex,
+			connectorIndex,
+			c.Type,
+		)
+	}
+	if c.StartX < 0 || c.StartY < 0 ||
+		c.EndX < 0 || c.EndY < 0 {
+		return fmt.Errorf(
+			"slide %d connector %d coordinates cannot be negative",
+			slideIndex, connectorIndex,
+		)
+	}
+	if c.StartX == c.EndX && c.StartY == c.EndY {
 		return fmt.Errorf("slide %d connector %d must have distinct start and end points", slideIndex, connectorIndex)
 	}
-	if err := connector.Line.Validate(); err != nil {
+	if err := c.Line.Validate(); err != nil {
 		return fmt.Errorf("slide %d connector %d invalid line: %w", slideIndex, connectorIndex, err)
 	}
-	if !IsArrowType(connector.StartArrow) {
-		return fmt.Errorf(
-			"slide %d connector %d start arrow %q is invalid",
-			slideIndex,
-			connectorIndex,
-			connector.StartArrow,
-		)
+	return nil
+}
+
+func (c Connector) validateArrows(slideIndex, connectorIndex int) error {
+	if !IsArrowType(c.StartArrow) {
+		return fmt.Errorf("slide %d connector %d start arrow %q is invalid", slideIndex, connectorIndex, c.StartArrow)
 	}
-	if !IsArrowType(connector.EndArrow) {
-		return fmt.Errorf(
-			"slide %d connector %d end arrow %q is invalid",
-			slideIndex,
-			connectorIndex,
-			connector.EndArrow,
-		)
+	if !IsArrowType(c.EndArrow) {
+		return fmt.Errorf("slide %d connector %d end arrow %q is invalid", slideIndex, connectorIndex, c.EndArrow)
 	}
-	if !IsArrowSize(connector.StartArrowWidth) {
-		return fmt.Errorf(
-			"slide %d connector %d start arrow width %q is invalid",
-			slideIndex,
-			connectorIndex,
-			connector.StartArrowWidth,
-		)
+	if !IsArrowSize(c.StartArrowWidth) {
+		return fmt.Errorf("slide %d connector %d start arrow width %q is invalid",
+			slideIndex, connectorIndex, c.StartArrowWidth)
 	}
-	if !IsArrowSize(connector.StartArrowLen) {
+	if !IsArrowSize(c.StartArrowLen) {
 		return fmt.Errorf(
 			"slide %d connector %d start arrow length %q is invalid",
-			slideIndex,
-			connectorIndex,
-			connector.StartArrowLen,
+			slideIndex, connectorIndex, c.StartArrowLen,
 		)
 	}
-	if !IsArrowSize(connector.EndArrowWidth) {
+	if !IsArrowSize(c.EndArrowWidth) {
 		return fmt.Errorf(
 			"slide %d connector %d end arrow width %q is invalid",
-			slideIndex,
-			connectorIndex,
-			connector.EndArrowWidth,
+			slideIndex, connectorIndex, c.EndArrowWidth,
 		)
 	}
-	if !IsArrowSize(connector.EndArrowLen) {
+	if !IsArrowSize(c.EndArrowLen) {
 		return fmt.Errorf(
 			"slide %d connector %d end arrow length %q is invalid",
-			slideIndex,
-			connectorIndex,
-			connector.EndArrowLen,
+			slideIndex, connectorIndex, c.EndArrowLen,
 		)
 	}
+	return nil
+}
+
+func (c Connector) validateAnchors(shapeCountUX int, slideIndex, connectorIndex int) error {
 	if err := validateConnectorAnchor(
-		"start",
-		connector.StartShapeIndex,
-		connector.StartSite,
-		shapeCount,
-		slideIndex,
-		connectorIndex,
+		"start", c.StartShapeIndex, c.StartSite, shapeCountUX, slideIndex, connectorIndex,
 	); err != nil {
 		return err
 	}
-	if err := validateConnectorAnchor(
-		"end",
-		connector.EndShapeIndex,
-		connector.EndSite,
-		shapeCount,
-		slideIndex,
-		connectorIndex,
-	); err != nil {
-		return err
-	}
-	for i, adj := range connector.Adjustments {
+	return validateConnectorAnchor("end", c.EndShapeIndex, c.EndSite, shapeCountUX, slideIndex, connectorIndex)
+}
+
+func (c Connector) validateAdjustments(slideIndex, connectorIndex int) error {
+	for i, adj := range c.Adjustments {
 		if strings.TrimSpace(adj.Name) == "" {
 			return fmt.Errorf(
 				"slide %d connector %d adjustment %d name cannot be empty",
-				slideIndex,
-				connectorIndex,
-				i+1,
+				slideIndex, connectorIndex, i+1,
 			)
 		}
 		if strings.TrimSpace(adj.Formula) == "" {
 			return fmt.Errorf(
 				"slide %d connector %d adjustment %d formula cannot be empty",
-				slideIndex,
-				connectorIndex,
-				i+1,
+				slideIndex, connectorIndex, i+1,
 			)
 		}
 	}
-	if len(connector.Adjustments) > 0 {
-		connectorType := NormalizeConnectorType(connector.Type)
-		if connectorType != ConnectorTypeElbow && connectorType != ConnectorTypeCurved {
+	if len(c.Adjustments) > 0 {
+		ct := NormalizeConnectorType(c.Type)
+		if ct != ConnectorTypeElbow && ct != ConnectorTypeCurved {
 			return fmt.Errorf(
 				"slide %d connector %d adjustments are only supported for elbow/curved connectors",
-				slideIndex,
-				connectorIndex,
+				slideIndex, connectorIndex,
 			)
 		}
 	}
@@ -504,14 +501,14 @@ func (connector Connector) Validate(shapeCount int, slideIndex int, connectorInd
 }
 
 // ValidateWithShapes checks connector fields and validates site compatibility with connected shape types.
-func (connector Connector) ValidateWithShapes(shapes []Shape, slideIndex, connectorIndex int) error {
-	if err := connector.Validate(len(shapes), slideIndex, connectorIndex); err != nil {
+func (c Connector) ValidateWithShapes(shapes []Shape, slideIndex, connectorIndex int) error {
+	if err := c.Validate(len(shapes), slideIndex, connectorIndex); err != nil {
 		return err
 	}
 	if err := validateConnectorSiteForShape(
 		"start",
-		connector.StartShapeIndex,
-		connector.StartSite,
+		c.StartShapeIndex,
+		c.StartSite,
 		shapes,
 		slideIndex,
 		connectorIndex,
@@ -520,8 +517,8 @@ func (connector Connector) ValidateWithShapes(shapes []Shape, slideIndex, connec
 	}
 	if err := validateConnectorSiteForShape(
 		"end",
-		connector.EndShapeIndex,
-		connector.EndSite,
+		c.EndShapeIndex,
+		c.EndSite,
 		shapes,
 		slideIndex,
 		connectorIndex,

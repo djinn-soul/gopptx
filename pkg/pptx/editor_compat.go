@@ -5,10 +5,12 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-// Re-export types for backward compatibility.
+// PresentationEditor and related types are re-exported for backward compatibility.
 type (
+	// PresentationEditor is an alias for editor.PresentationEditor.
 	PresentationEditor = editor.PresentationEditor
-	SlideMetadata      = common.SlideMetadata
+	// SlideMetadata is an alias for common.SlideMetadata.
+	SlideMetadata = common.SlideMetadata
 )
 
 // OpenPresentationEditor re-exports the function from the editor package.

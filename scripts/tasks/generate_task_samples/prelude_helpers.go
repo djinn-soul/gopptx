@@ -7,8 +7,8 @@ import (
 
 func generatePreludeHelpers() ([]byte, error) {
 	builder := pptx.NewPresentationBuilder("GoPPTX Prelude Helpers Showcase").
-		WithMetadata(pptx.PresentationMetadata{
-			PresentationMetadata: common.PresentationMetadata{Creator: "GoPPTX Agent"},
+		WithMetadata(pptx.Metadata{
+			Metadata: common.Metadata{Creator: "GoPPTX Agent"},
 		})
 
 	builder.AddTitleSlide("Ergonomic Prelude Helpers")

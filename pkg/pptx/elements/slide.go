@@ -1,189 +1,17 @@
 package elements
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
-
-// Validate checks the slide for consistency.
-func (s SlideContent) Validate(index int) error {
-	for shapeIndex, shape := range s.Shapes {
-		if err := shape.Validate(index, shapeIndex+1); err != nil {
-			return err
-		}
-	}
-	for connectorIndex, connector := range s.Connectors {
-		if err := connector.ValidateWithShapes(s.Shapes, index, connectorIndex+1); err != nil {
-			return err
-		}
-	}
-	for imageIndex, image := range s.Images {
-		if err := image.Validate(index, imageIndex+1); err != nil {
-			return err
-		}
-	}
-
-	// Validate charts
-	var slideCharts []ChartDefinition
-	if s.Chart != nil {
-		slideCharts = append(slideCharts, s.Chart)
-	}
-	if s.BarHorizontal != nil {
-		slideCharts = append(slideCharts, s.BarHorizontal)
-	}
-	if s.BarStacked != nil {
-		slideCharts = append(slideCharts, s.BarStacked)
-	}
-	if s.BarStacked100 != nil {
-		slideCharts = append(slideCharts, s.BarStacked100)
-	}
-	if s.Line != nil {
-		slideCharts = append(slideCharts, s.Line)
-	}
-	if s.LineMarkers != nil {
-		slideCharts = append(slideCharts, s.LineMarkers)
-	}
-	if s.LineStacked != nil {
-		slideCharts = append(slideCharts, s.LineStacked)
-	}
-	if s.Scatter != nil {
-		slideCharts = append(slideCharts, s.Scatter)
-	}
-	if s.Area != nil {
-		slideCharts = append(slideCharts, s.Area)
-	}
-	if s.AreaStacked != nil {
-		slideCharts = append(slideCharts, s.AreaStacked)
-	}
-	if s.AreaStacked100 != nil {
-		slideCharts = append(slideCharts, s.AreaStacked100)
-	}
-	if s.Pie != nil {
-		slideCharts = append(slideCharts, s.Pie)
-	}
-	if s.Doughnut != nil {
-		slideCharts = append(slideCharts, s.Doughnut)
-	}
-	if s.Bubble != nil {
-		slideCharts = append(slideCharts, s.Bubble)
-	}
-	if s.Radar != nil {
-		slideCharts = append(slideCharts, s.Radar)
-	}
-	if s.RadarFilled != nil {
-		slideCharts = append(slideCharts, s.RadarFilled)
-	}
-	if s.StockHLC != nil {
-		slideCharts = append(slideCharts, s.StockHLC)
-	}
-	if s.StockOHLC != nil {
-		slideCharts = append(slideCharts, s.StockOHLC)
-	}
-	if s.Combo != nil {
-		slideCharts = append(slideCharts, s.Combo)
-	}
-
-	for _, c := range slideCharts {
-		if err := c.Validate(index); err != nil {
-			return err
-		}
-	}
-
-	// Validate text styles and runs
-	if err := s.DefaultBulletStyle.Validate(); err != nil {
-		return err
-	}
-	for _, style := range s.BulletStyles {
-		if err := style.Validate(); err != nil {
-			return err
-		}
-	}
-	for _, runs := range s.BulletRuns {
-		for _, run := range runs {
-			if err := run.Validate(); err != nil {
-				return err
-			}
-		}
-	}
-
-	if (s.TitleSize != 0 && s.TitleSize < 1) || s.TitleSize > 400 {
-		return errors.New("title size must be between 1 and 400 pt (or 0 for default)")
-	}
-	if s.TitleColor != "" && !common.IsHexColor(s.TitleColor) {
-		return errors.New("title color must be 6-digit RGB hex")
-	}
-	if (s.ContentSize != 0 && s.ContentSize < 1) || s.ContentSize > 400 {
-		return errors.New("content size must be between 1 and 400 pt (or 0 for default)")
-	}
-	if s.ContentColor != "" && !common.IsHexColor(s.ContentColor) {
-		return errors.New("content color must be 6-digit RGB hex")
-	}
-	if s.Background != nil {
-		if err := s.Background.Validate(); err != nil {
-			return fmt.Errorf("invalid background: %w", err)
-		}
-	}
-
-	// Validate transition
-	if err := ValidateSlideTransition(s, index); err != nil {
-		return err
-	}
-
-	// Validate table
-	if s.Table != nil {
-		if err := s.Table.Validate(index); err != nil {
-			return err
-		}
-	}
-
-	// Validate bullets
-	if slices.Contains(s.Bullets, "") {
-		return errors.New("bullet cannot be empty")
-	}
-
-	if s.TitleAlign != "" {
-		switch s.TitleAlign {
-		case "l", "ctr", "r", "just":
-		default:
-			return fmt.Errorf("invalid title alignment: %q (expected l|ctr|r|just)", s.TitleAlign)
-		}
-	}
-
-	if s.ContentVAlign != "" {
-		switch s.ContentVAlign {
-		case "t", "ctr", "b":
-		default:
-			return fmt.Errorf("invalid content vertical alignment: %q (expected t|ctr|b)", s.ContentVAlign)
-		}
-	}
-
-	if s.Title == "" && s.Layout != SlideLayoutBlank {
-		return errors.New("title cannot be empty")
-	}
-
-	for i, anim := range s.Animations {
-		if err := anim.Validate(); err != nil {
-			return err
-		}
-		// First animation in a sequence (on a slide) cannot be WithPrevious/AfterPrevious
-		if i == 0 &&
-			(anim.Trigger == animations.AnimationWithPrevious || anim.Trigger == animations.AnimationAfterPrevious) {
-			return errors.New("first animation trigger cannot be with/after previous")
-		}
-	}
-
-	return nil
-}
 
 const (
 	SlideLayoutTitleAndContent    = "title_and_content"
@@ -193,13 +21,20 @@ const (
 	SlideLayoutTitleAndBigContent = "title_and_big_content"
 	SlideLayoutTwoColumn          = "two_column"
 
-	// Legacy or descriptive aliases.
+	// SlideLayoutTitle starts the legacy/descriptive layout aliases.
 	SlideLayoutTitle          = "Title Slide"
 	SlideLayoutSectionHeader  = "Section Header"
 	SlideLayoutTwoContent     = "Two Content"
 	SlideLayoutComparison     = "Comparison"
 	SlideLayoutContentCaption = "Content with Caption"
 	SlideLayoutPictureCaption = "Picture with Caption"
+
+	placeholderTypeTitle = "title"
+	placeholderTypeBody  = "body"
+	placeholderTypePic   = "pic"
+
+	defaultSlideTitleSizePt   = 44
+	defaultSlideContentSizePt = 18
 )
 
 // ChartDefinition describes the public interface for all chart types.
@@ -224,14 +59,14 @@ type SlideContent struct {
 	Layout               string
 	Background           *SlideBackground
 	Transition           transitions.SlideTransition
-	DefaultBulletStyle   TextParagraphStyle
+	DefaultBulletStyle   ParagraphStyle
 	Bullets              []string
-	BulletRuns           [][]TextRun
-	BulletStyles         []TextParagraphStyle
+	BulletRuns           [][]Run
+	BulletStyles         []ParagraphStyle
 	ShowSlideNumber      bool
 	FooterText           string
 	Notes                string
-	NotesBody            []TextParagraph
+	NotesBody            []Paragraph
 	Images               []shapes.Image
 	Shapes               []shapes.Shape
 	Connectors           []shapes.Connector
@@ -256,7 +91,23 @@ type SlideContent struct {
 	StockOHLC            *charts.StockOHLCChart
 	Combo                *charts.ComboChart
 	Animations           []animations.Animation
+	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
+}
+
+// NewSlide creates a new slide with default settings and a title.
+func NewSlide(title string) SlideContent {
+	return SlideContent{
+		Title:       title,
+		TitleSize:   defaultSlideTitleSizePt,
+		ContentSize: defaultSlideContentSizePt,
+		Layout:      SlideLayoutTitleAndContent,
+	}
+}
+
+// Validate checks the slide for consistency.
+func (s SlideContent) Validate(index int) error {
+	return validateSlideContent(s, index)
 }
 
 // AddBullet appends one bullet item and returns the updated slide.
@@ -268,7 +119,7 @@ func (s SlideContent) AddBullet(text string) SlideContent {
 }
 
 // AddBulletWithStyle appends one bullet item with explicit styling.
-func (s SlideContent) AddBulletWithStyle(text string, style TextParagraphStyle) SlideContent {
+func (s SlideContent) AddBulletWithStyle(text string, style ParagraphStyle) SlideContent {
 	s.Bullets = append(s.Bullets, text)
 	s.BulletRuns = append(s.BulletRuns, nil)
 	s.BulletStyles = append(s.BulletStyles, style)
@@ -276,7 +127,7 @@ func (s SlideContent) AddBulletWithStyle(text string, style TextParagraphStyle) 
 }
 
 // AddBulletRuns appends one bullet item with rich text runs.
-func (s SlideContent) AddBulletRuns(runs []TextRun) SlideContent {
+func (s SlideContent) AddBulletRuns(runs []Run) SlideContent {
 	s.Bullets = append(s.Bullets, RunsToPlainText(runs))
 	s.BulletRuns = append(s.BulletRuns, runs)
 	s.BulletStyles = append(s.BulletStyles, s.DefaultBulletStyle)
@@ -284,7 +135,7 @@ func (s SlideContent) AddBulletRuns(runs []TextRun) SlideContent {
 }
 
 // AddBulletRunsWithStyle appends one bullet item with rich text runs and paragraph styling.
-func (s SlideContent) AddBulletRunsWithStyle(runs []TextRun, style TextParagraphStyle) SlideContent {
+func (s SlideContent) AddBulletRunsWithStyle(runs []Run, style ParagraphStyle) SlideContent {
 	s.Bullets = append(s.Bullets, RunsToPlainText(runs))
 	s.BulletRuns = append(s.BulletRuns, runs)
 	s.BulletStyles = append(s.BulletStyles, style)
@@ -298,33 +149,23 @@ func (s SlideContent) AddShape(sd shapes.ShapeDefinition) SlideContent {
 }
 
 // WithDefaultBulletStyle sets the base style for new bullets.
-func (s SlideContent) WithDefaultBulletStyle(style TextParagraphStyle) SlideContent {
+func (s SlideContent) WithDefaultBulletStyle(style ParagraphStyle) SlideContent {
 	s.DefaultBulletStyle = style
 	return s
-}
-
-// NewSlide creates a new slide with default settings and a title.
-func NewSlide(title string) SlideContent {
-	return SlideContent{
-		Title:       title,
-		TitleSize:   44,
-		ContentSize: 18,
-		Layout:      SlideLayoutTitleAndContent,
-	}
 }
 
 // WithNotes sets the speaker notes for the slide.
 func (s SlideContent) WithNotes(notes string) SlideContent {
 	s.Notes = notes
 	// Also populate NotesBody for internal consistency
-	p := NewTextParagraph()
-	p.Runs = append(p.Runs, NewTextRun(notes))
-	s.NotesBody = []TextParagraph{p}
+	p := NewParagraph()
+	p.Runs = append(p.Runs, NewRun(notes))
+	s.NotesBody = []Paragraph{p}
 	return s
 }
 
 // WithRichNotes sets the speaker notes using rich text paragraphs.
-func (s SlideContent) WithRichNotes(body []TextParagraph) SlideContent {
+func (s SlideContent) WithRichNotes(body []Paragraph) SlideContent {
 	s.NotesBody = body
 	// Sync to plain text Notes
 	var sb strings.Builder
@@ -341,7 +182,7 @@ func (s SlideContent) WithRichNotes(body []TextParagraph) SlideContent {
 }
 
 // AddNoteParagraph appends a rich text paragraph to the speaker notes.
-func (s SlideContent) AddNoteParagraph(p TextParagraph) SlideContent {
+func (s SlideContent) AddNoteParagraph(p Paragraph) SlideContent {
 	s.NotesBody = append(s.NotesBody, p)
 	// Sync to plain text Notes
 	if s.Notes != "" {
@@ -355,24 +196,24 @@ func (s SlideContent) AddNoteParagraph(p TextParagraph) SlideContent {
 
 // AddNoteBullet appends a bulleted paragraph to the speaker notes.
 func (s SlideContent) AddNoteBullet(text string) SlideContent {
-	p := NewTextParagraph()
-	p.Runs = append(p.Runs, NewTextRun(text))
+	p := NewParagraph()
+	p.Runs = append(p.Runs, NewRun(text))
 	p.Style.BulletStyle = BulletStyleBullet
 	return s.AddNoteParagraph(p)
 }
 
 // AddNoteNumbered appends a numbered paragraph to the speaker notes.
 func (s SlideContent) AddNoteNumbered(text string) SlideContent {
-	p := NewTextParagraph()
-	p.Runs = append(p.Runs, NewTextRun(text))
+	p := NewParagraph()
+	p.Runs = append(p.Runs, NewRun(text))
 	p.Style.BulletStyle = BulletStyleNumber
 	return s.AddNoteParagraph(p)
 }
 
 // AddNoteSubBullet appends an indented bullet paragraph to the speaker notes.
 func (s SlideContent) AddNoteSubBullet(level int, text string) SlideContent {
-	p := NewTextParagraph()
-	p.Runs = append(p.Runs, NewTextRun(text))
+	p := NewParagraph()
+	p.Runs = append(p.Runs, NewRun(text))
 	p.Style.BulletStyle = BulletStyleBullet
 	p.Style.Level = level
 	return s.AddNoteParagraph(p)
@@ -385,7 +226,7 @@ func (s SlideContent) WithTable(t tables.Table) SlideContent {
 }
 
 // WithBulletStyle sets the bullet style for all bullets on this slide.
-func (s SlideContent) WithBulletStyle(style TextParagraphStyle) SlideContent {
+func (s SlideContent) WithBulletStyle(style ParagraphStyle) SlideContent {
 	s.DefaultBulletStyle = style
 	for i := range s.BulletStyles {
 		s.BulletStyles[i] = style
@@ -395,15 +236,15 @@ func (s SlideContent) WithBulletStyle(style TextParagraphStyle) SlideContent {
 
 // AddNumbered appends one numbered bullet item.
 func (s SlideContent) AddNumbered(text string) SlideContent {
-	return s.AddBulletWithStyle(text, DefaultTextParagraphStyle().WithNumbered())
+	return s.AddBulletWithStyle(text, DefaultParagraphStyle().WithNumbered())
 }
 
 // AddLettered appends one lettered bullet item.
 func (s SlideContent) AddLettered(text string) SlideContent {
-	return s.AddBulletWithStyle(text, DefaultTextParagraphStyle().WithLetteredLower())
+	return s.AddBulletWithStyle(text, DefaultParagraphStyle().WithLetteredLower())
 }
 
-// Adding bullet at index 1..8.
+// AddSubBullet adds a bullet at level index 1..8.
 func (s SlideContent) AddSubBullet(level int, text string) SlideContent {
 	s.Bullets = append(s.Bullets, text)
 	s.BulletRuns = append(s.BulletRuns, nil)
@@ -450,7 +291,7 @@ func (s SlideContent) WithBulletStyleName(styleName string) SlideContent {
 	return s.WithBulletStyle(style)
 }
 
-// WithSubtitleLayout sets the layout to Title and Content. (Convenience).
+// WithLayout sets the slide layout (supports canonical and compatibility aliases).
 func (s SlideContent) WithLayout(layout string) SlideContent {
 	s.Layout = NormalizeSlideLayout(layout)
 	return s
@@ -575,6 +416,12 @@ func (s SlideContent) WithSlideNumber(show bool) SlideContent {
 // AddAnimation adds an animation to the slide.
 func (s SlideContent) AddAnimation(anim animations.AnimationDefinition) SlideContent {
 	s.Animations = append(s.Animations, anim.ToAnimation())
+	return s
+}
+
+// AddSmartArt adds a SmartArt diagram to the slide.
+func (s SlideContent) AddSmartArt(sa smartart.SmartArt) SlideContent {
+	s.SmartArtDiagrams = append(s.SmartArtDiagrams, sa)
 	return s
 }
 
@@ -738,16 +585,16 @@ func (s SlideContent) WithPlaceholderChartAs(index int, placeholderType string, 
 
 func defaultPlaceholderTextType(index int) string {
 	if index == 0 {
-		return "title"
+		return placeholderTypeTitle
 	}
-	return "body"
+	return placeholderTypeBody
 }
 
 func defaultPlaceholderImageType(index int) string {
 	if index == 0 {
-		return "title"
+		return placeholderTypeTitle
 	}
-	return "pic"
+	return placeholderTypePic
 }
 
 // AddConnector adds a connector to the slide.
@@ -768,125 +615,125 @@ func (s SlideContent) AutoRerouteConnectors() SlideContent {
 
 // WithBarChart sets one bar chart for the slide.
 func (s SlideContent) WithBarChart(chart charts.BarChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Chart = &chart
 	return s
 }
 
 func (s SlideContent) WithBarHorizontalChart(chart charts.BarHorizontalChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.BarHorizontal = &chart
 	return s
 }
 
 func (s SlideContent) WithBarStackedChart(chart charts.BarStackedChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.BarStacked = &chart
 	return s
 }
 
 func (s SlideContent) WithBarStacked100Chart(chart charts.BarStacked100Chart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.BarStacked100 = &chart
 	return s
 }
 
 // WithLineChart sets one line chart for the slide.
 func (s SlideContent) WithLineChart(chart charts.LineChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Line = &chart
 	return s
 }
 
 func (s SlideContent) WithLineMarkersChart(chart charts.LineMarkersChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.LineMarkers = &chart
 	return s
 }
 
 func (s SlideContent) WithLineStackedChart(chart charts.LineStackedChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.LineStacked = &chart
 	return s
 }
 
 // WithScatterChart sets one scatter chart for the slide.
 func (s SlideContent) WithScatterChart(chart charts.ScatterChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Scatter = &chart
 	return s
 }
 
 // WithAreaChart sets one area chart for the slide.
 func (s SlideContent) WithAreaChart(chart charts.AreaChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Area = &chart
 	return s
 }
 
 func (s SlideContent) WithAreaStackedChart(chart charts.AreaStackedChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.AreaStacked = &chart
 	return s
 }
 
 func (s SlideContent) WithAreaStacked100Chart(chart charts.AreaStacked100Chart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.AreaStacked100 = &chart
 	return s
 }
 
 // WithPieChart sets one pie chart for the slide.
 func (s SlideContent) WithPieChart(chart charts.PieChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Pie = &chart
 	return s
 }
 
 // WithDoughnutChart sets one doughnut chart for the slide.
 func (s SlideContent) WithDoughnutChart(chart charts.DoughnutChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Doughnut = &chart
 	return s
 }
 
 func (s SlideContent) WithBubbleChart(chart charts.BubbleChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Bubble = &chart
 	return s
 }
 
 func (s SlideContent) WithRadarChart(chart charts.RadarChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Radar = &chart
 	return s
 }
 
 func (s SlideContent) WithRadarFilledChart(chart charts.RadarFilledChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.RadarFilled = &chart
 	return s
 }
 
 func (s SlideContent) WithStockHLCChart(chart charts.StockHLCChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.StockHLC = &chart
 	return s
 }
 
 func (s SlideContent) WithStockOHLCChart(chart charts.StockOHLCChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.StockOHLC = &chart
 	return s
 }
 
 func (s SlideContent) WithComboChart(chart charts.ComboChart) SlideContent {
-	s.clearCharts()
+	clearCharts(&s)
 	s.Combo = &chart
 	return s
 }
 
-func (s *SlideContent) clearCharts() {
+func clearCharts(s *SlideContent) {
 	s.Chart = nil
 	s.BarHorizontal = nil
 	s.BarStacked = nil

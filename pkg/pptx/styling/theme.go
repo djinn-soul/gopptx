@@ -41,6 +41,8 @@ type Theme struct {
 }
 
 // Theme presets, parity with ppt-rs.
+//
+//nolint:gochecknoglobals // theme presets
 var (
 	// ThemeCorporate - Professional and trustworthy.
 	ThemeCorporate = Theme{

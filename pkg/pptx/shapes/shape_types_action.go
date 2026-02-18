@@ -28,7 +28,7 @@ const (
 	ShapeTypeActionButtonInformation = "actionButtonInformation"
 )
 
-func init() {
+func initActionShapes() {
 	for _, t := range []string{
 		ShapeTypeActionButtonBlank, ShapeTypeActionButtonHome,
 		ShapeTypeActionButtonHelp, ShapeTypeActionButtonBackPrevious,

@@ -36,7 +36,7 @@ const (
 	ShapeTypeCloudCallout = "cloudCallout"
 )
 
-func init() {
+func initCalloutShapes() {
 	for _, t := range []string{
 		ShapeTypeCallout1, ShapeTypeCallout2, ShapeTypeCallout3,
 		ShapeTypeBorderCallout1, ShapeTypeBorderCallout2, ShapeTypeBorderCallout3,

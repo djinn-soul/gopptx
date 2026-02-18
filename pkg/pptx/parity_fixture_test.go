@@ -101,10 +101,10 @@ func TestLayoutParityFixtureAgainstPptRsDeck(t *testing.T) {
 func TestTextFormattingParityFixtureAgainstPptRsProfessionalDeck(t *testing.T) {
 	reference := testutil.ReadAllSlidesXML(t, testutil.FixtureZipReader(t, "professional.pptx"))
 	ours := generatedAllSlidesXML(t, []pptx.SlideContent{
-		pptx.NewSlide("Text Parity").AddBulletRuns([]pptx.TextRun{
-			pptx.NewTextRun("Dark blue title style").WithBold(true).WithColor("003366"),
-			pptx.NewTextRun("Orange italic style").WithItalic(true).WithColor("FF6600"),
-			pptx.NewTextRun("Underlined emphasis").WithUnderline(true),
+		pptx.NewSlide("Text Parity").AddBulletRuns([]pptx.Run{
+			pptx.NewRun("Dark blue title style").WithBold(true).WithColor("003366"),
+			pptx.NewRun("Orange italic style").WithItalic(true).WithColor("FF6600"),
+			pptx.NewRun("Underlined emphasis").WithUnderline(true),
 		}),
 	})
 
@@ -123,11 +123,11 @@ func TestBulletStylesParityFixtureAgainstPptRsDeck(t *testing.T) {
 	reference := testutil.ReadAllSlidesXML(t, testutil.FixtureZipReader(t, "bullet_styles.pptx"))
 	ours := generatedAllSlidesXML(t, []pptx.SlideContent{
 		pptx.NewSlide("Bullet Styles").
-			AddBulletWithStyle("First step", pptx.NewTextParagraphStyle().WithNumbered()).
-			AddBulletWithStyle("Option A", pptx.NewTextParagraphStyle().WithLetteredLower()).
-			AddBulletWithStyle("Chapter I", pptx.NewTextParagraphStyle().WithRomanUpper()).
-			AddBulletWithStyle("Nested", pptx.NewTextParagraphStyle().WithNumbered().WithLevel(1)).
-			AddBulletWithStyle("Custom", pptx.NewTextParagraphStyle().WithCustomBullet("~")),
+			AddBulletWithStyle("First step", pptx.NewParagraphStyle().WithNumbered()).
+			AddBulletWithStyle("Option A", pptx.NewParagraphStyle().WithLetteredLower()).
+			AddBulletWithStyle("Chapter I", pptx.NewParagraphStyle().WithRomanUpper()).
+			AddBulletWithStyle("Nested", pptx.NewParagraphStyle().WithNumbered().WithLevel(1)).
+			AddBulletWithStyle("Custom", pptx.NewParagraphStyle().WithCustomBullet("~")),
 	})
 
 	tokens := []string{
@@ -149,10 +149,10 @@ func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T
 	)
 	ours := generatedSlideXML(t,
 		pptx.NewSlide("Text Enhancements - New Formatting").
-			AddBulletRuns([]pptx.TextRun{pptx.NewTextRun("Strike").WithStrikethrough(true)}).
-			AddBulletRuns([]pptx.TextRun{pptx.NewTextRun("Highlight").WithHighlight("FFFF00")}).
-			AddBulletRuns([]pptx.TextRun{pptx.NewTextRun("H2O").WithSubscript(true)}).
-			AddBulletRuns([]pptx.TextRun{pptx.NewTextRun("x2").WithSuperscript(true)}),
+			AddBulletRuns([]pptx.Run{pptx.NewRun("Strike").WithStrikethrough(true)}).
+			AddBulletRuns([]pptx.Run{pptx.NewRun("Highlight").WithHighlight("FFFF00")}).
+			AddBulletRuns([]pptx.Run{pptx.NewRun("H2O").WithSubscript(true)}).
+			AddBulletRuns([]pptx.Run{pptx.NewRun("x2").WithSuperscript(true)}),
 	)
 
 	tokens := []string{
@@ -173,7 +173,7 @@ func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
 		mime string
 		data []byte
 	}{
-		{name: "png", ext: "png", mime: "image/png", data: testutil.TinyPNG},
+		{name: "png", ext: "png", mime: "image/png", data: testutil.TinyPNG()},
 		{name: "jpg", ext: "jpg", mime: "image/jpeg", data: []byte{0xFF, 0xD8, 0xFF, 0xD9}},
 		{name: "jpeg", ext: "jpeg", mime: "image/jpeg", data: []byte{0xFF, 0xD8, 0xFF, 0xD9}},
 		{name: "gif", ext: "gif", mime: "image/gif", data: []byte("GIF89a")},

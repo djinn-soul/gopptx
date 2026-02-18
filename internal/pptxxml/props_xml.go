@@ -22,7 +22,9 @@ func CoreProperties(info CorePropertiesInfo) string {
 
 	now := time.Now().UTC().Format("2006-01-02T15:04:05Z")
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" `+
+		`xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" `+
+		`xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 <dc:title>%s</dc:title>
 <dc:subject>%s</dc:subject>
 <dc:creator>%s</dc:creator>
@@ -31,7 +33,8 @@ func CoreProperties(info CorePropertiesInfo) string {
 <cp:revision>1</cp:revision>
 <dcterms:created xsi:type="dcterms:W3CDTF">%s</dcterms:created>
 <dcterms:modified xsi:type="dcterms:W3CDTF">%s</dcterms:modified>
-</cp:coreProperties>`, Escape(info.Title), Escape(info.Subject), Escape(creator), Escape(creator), Escape(info.Description), now, now)
+</cp:coreProperties>`, Escape(info.Title), Escape(info.Subject), Escape(creator),
+		Escape(creator), Escape(info.Description), now, now)
 }
 
 // AppProperties renders docProps/app.xml.
@@ -44,7 +47,8 @@ func AppProperties(slideCount int, notesCount int, width, height int64) string {
 	}
 
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" `+
+		`xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
 <TotalTime>0</TotalTime>
 <Words>0</Words>
 <Application>gopptx</Application>

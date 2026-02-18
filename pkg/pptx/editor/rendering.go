@@ -93,6 +93,7 @@ func renderEditorSlideParts(
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
 		placeholderSpecs,
+		nil, // smartArtFrames
 		elements.ToXMLBackgroundSpec(slide.Background, backgroundRID),
 		elements.SlideTransitionXML(slide),
 		elements.SlideAnimationsXML(slide, elements.CalculateShapeIDs(slide)),
@@ -110,6 +111,7 @@ func renderEditorSlideParts(
 		imageTargets,
 		nil,
 		phChartRels,
+		nil, // smartArtRels
 		notesTarget,
 		hyperlinks,
 	)
@@ -204,14 +206,14 @@ func (e *PresentationEditor) ensureSlideNotesPart(slidePath string) string {
 	return notesPath
 }
 
-func editorNotesBody(slide elements.SlideContent) []elements.TextParagraph {
+func editorNotesBody(slide elements.SlideContent) []elements.Paragraph {
 	if len(slide.NotesBody) > 0 {
 		return slide.NotesBody
 	}
 
-	p := elements.NewTextParagraph()
-	p.Runs = append(p.Runs, elements.NewTextRun(slide.Notes))
-	return []elements.TextParagraph{p}
+	p := elements.NewParagraph()
+	p.Runs = append(p.Runs, elements.NewRun(slide.Notes))
+	return []elements.Paragraph{p}
 }
 
 func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxxml.TableSpec, error) {

@@ -4,25 +4,31 @@ func tableRowsForRender(table Table) [][]TableCell {
 	if len(table.renderRows) > 0 {
 		return copyTableRows(table.renderRows)
 	}
-	if len(table.StyledRows) > 0 && len(table.StyledRows) == len(table.Rows) {
-		rows := make([][]TableCell, len(table.Rows))
-		for i := range table.Rows {
-			styled := copyTableCells(table.StyledRows[i])
-			if len(styled) == len(table.Rows[i]) {
-				rows[i] = styled
-				continue
-			}
-			rows[i] = plainRowToCells(table.Rows[i])
+	if len(table.StyledRows) > 0 {
+		if len(table.Rows) == 0 {
+			return copyTableRows(table.StyledRows)
 		}
-		return rows
-	}
-	if len(table.StyledRows) > 0 && len(table.Rows) == 0 {
-		return copyTableRows(table.StyledRows)
+		if len(table.StyledRows) == len(table.Rows) {
+			return mergeStyledAndPlainRows(table.Rows, table.StyledRows)
+		}
 	}
 
 	rows := make([][]TableCell, len(table.Rows))
 	for i := range table.Rows {
 		rows[i] = plainRowToCells(table.Rows[i])
+	}
+	return rows
+}
+
+func mergeStyledAndPlainRows(plainRows [][]string, styledRows [][]TableCell) [][]TableCell {
+	rows := make([][]TableCell, len(plainRows))
+	for i := range plainRows {
+		styled := copyTableCells(styledRows[i])
+		if len(styled) == len(plainRows[i]) {
+			rows[i] = styled
+		} else {
+			rows[i] = plainRowToCells(plainRows[i])
+		}
 	}
 	return rows
 }

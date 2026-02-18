@@ -31,12 +31,12 @@ func main() {
 	results := compare(referenceXML, ourXML)
 	report := renderReport(results)
 
-	if err := os.MkdirAll("reports", 0o755); err != nil {
-		fail("create reports directory", err)
+	if mkdirErr := os.MkdirAll("reports", 0o755); mkdirErr != nil {
+		fail("create reports directory", mkdirErr)
 	}
 	reportPath := filepath.Join("reports", "chart_parity_report.md")
-	if err := os.WriteFile(reportPath, []byte(report), 0o644); err != nil {
-		fail("write parity report", err)
+	if writeErr := os.WriteFile(reportPath, []byte(report), 0o644); writeErr != nil {
+		fail("write parity report", writeErr)
 	}
 
 	log.Printf("Wrote %s\n", reportPath)
@@ -68,8 +68,8 @@ func loadReferenceXML() (map[string]string, error) {
 		return nil, err
 	}
 	var out map[string]string
-	if err := json.Unmarshal(output, &out); err != nil {
-		return nil, fmt.Errorf("decode reference JSON: %w", err)
+	if decodeErr := json.Unmarshal(output, &out); decodeErr != nil {
+		return nil, fmt.Errorf("decode reference JSON: %w", decodeErr)
 	}
 	return out, nil
 }
@@ -134,8 +134,8 @@ func readZipFile(zr *zip.Reader, name string) (string, error) {
 		}
 		defer func() { _ = r.Close() }()
 		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(r); err != nil {
-			return "", err
+		if _, readErr := buf.ReadFrom(r); readErr != nil {
+			return "", readErr
 		}
 		return buf.String(), nil
 	}

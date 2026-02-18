@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	indentStep = 457200
+	pctFactor  = 1000
+	ptFactor   = 100
+)
+
 // BulletParagraphSpec describes paragraph formatting for one bullet line.
 type BulletParagraphSpec struct {
 	Align          string
@@ -56,13 +62,13 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 	base += ">"
 
 	if style.LineSpacingPct > 0 {
-		base += `<a:lnSpc><a:spcPct val="` + strconv.Itoa(style.LineSpacingPct*1000) + `"/></a:lnSpc>`
+		base += `<a:lnSpc><a:spcPct val="` + strconv.Itoa(style.LineSpacingPct*pctFactor) + `"/></a:lnSpc>`
 	}
 	if style.SpaceBeforePt > 0 {
-		base += `<a:spcBef><a:spcPts val="` + strconv.Itoa(style.SpaceBeforePt*100) + `"/></a:spcBef>`
+		base += `<a:spcBef><a:spcPts val="` + strconv.Itoa(style.SpaceBeforePt*ptFactor) + `"/></a:spcBef>`
 	}
 	if style.SpaceAfterPt > 0 {
-		base += `<a:spcAft><a:spcPts val="` + strconv.Itoa(style.SpaceAfterPt*100) + `"/></a:spcAft>`
+		base += `<a:spcAft><a:spcPts val="` + strconv.Itoa(style.SpaceAfterPt*ptFactor) + `"/></a:spcAft>`
 	}
 
 	base += bulletNodeXML(style)
@@ -71,8 +77,8 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 }
 
 func bulletIndent(level int) (int, int) {
-	indent := 457200 + (level * 457200)
-	marginLeft := level*457200 + indent
+	indent := indentStep + (level * indentStep)
+	marginLeft := level*indentStep + indent
 	return marginLeft, -indent
 }
 
@@ -86,7 +92,7 @@ func bulletNodeXML(style BulletParagraphSpec) string {
 	}
 	if style.BulletSize > 0 {
 		b.WriteString(`<a:buSzPct val="`)
-		b.WriteString(strconv.Itoa(style.BulletSize * 1000))
+		b.WriteString(strconv.Itoa(style.BulletSize * pctFactor))
 		b.WriteString(`"/>`)
 	}
 
@@ -107,7 +113,7 @@ func bulletNodeXML(style BulletParagraphSpec) string {
 		b.WriteString(`<a:buChar char="`)
 		b.WriteString(Escape(strings.TrimSpace(style.BulletChar)))
 		b.WriteString(`"/>`)
-	case "none":
+	case arrowTypeNone:
 		b.WriteString(`<a:buNone/>`)
 	default:
 		panic(fmt.Sprintf("unsupported bullet style: %q", style.BulletStyle))

@@ -20,6 +20,8 @@ const (
 	OrientationHorizontal = "horizontal"
 	// OrientationVertical represents top-to-bottom or vertical distribution.
 	OrientationVertical = "vertical"
+
+	centerDivisor styling.Length = 2
 )
 
 // Center calculates the (X, Y) coordinates to center an element of size (cx, cy)
@@ -31,14 +33,14 @@ func Center(cx, cy styling.Length) (styling.Length, styling.Length) {
 // CenterInSize calculates the (X, Y) coordinates to center an element of size (cx, cy)
 // within total dimensions (totalW, totalH).
 func CenterInSize(cx, cy, totalW, totalH styling.Length) (styling.Length, styling.Length) {
-	return (totalW - cx) / 2, (totalH - cy) / 2
+	return (totalW - cx) / centerDivisor, (totalH - cy) / centerDivisor
 }
 
 // CenterInBox calculates the (X, Y) coordinates to center an element of size (cx, cy)
 // within a specific bounding box.
 func CenterInBox(cx, cy styling.Length, bounds common.Box) (styling.Length, styling.Length) {
-	x := bounds.X + (bounds.CX-cx)/2
-	y := bounds.Y + (bounds.CY-cy)/2
+	x := bounds.X + (bounds.CX-cx)/centerDivisor
+	y := bounds.Y + (bounds.CY-cy)/centerDivisor
 	return x, y
 }
 

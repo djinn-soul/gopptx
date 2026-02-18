@@ -8,6 +8,8 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
+const defaultBubbleScale = 100
+
 // BubbleChart is a bubble chart using x/y coordinates and bubble sizes.
 type BubbleChart struct {
 	Title                 string
@@ -47,10 +49,10 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 		XValues:               xs,
 		YValues:               ys,
 		BubbleSizes:           bs,
-		X:                     685800,
-		Y:                     1800000,
-		CX:                    7772400,
-		CY:                    4114800,
+		X:                     defaultChartX,
+		Y:                     defaultChartY,
+		CX:                    defaultChartCX,
+		CY:                    defaultChartCY,
 		LineColor:             "4F81BD",
 		SeriesName:            "Series 1",
 		ShowLegend:            false,
@@ -59,7 +61,7 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 		ShowMajorGridlines:    true,
 		ValueFormat:           "General",
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
-		BubbleScale:           100,
+		BubbleScale:           defaultBubbleScale,
 	}
 }
 
@@ -117,20 +119,31 @@ func (c BubbleChart) ToChartSpec() *pptxxml.ChartSpec {
 
 // Validate checks the bubble chart for consistency.
 func (c BubbleChart) Validate(slideIndex int) error {
+	if err := c.validateCoordinates(slideIndex); err != nil {
+		return err
+	}
+	if err := c.validateMetadata(slideIndex); err != nil {
+		return err
+	}
+	if err := c.validatePoints(slideIndex); err != nil {
+		return err
+	}
+	return validateValueRange(c.MinValue, c.MaxValue, slideIndex)
+}
+
+func (c BubbleChart) validateCoordinates(slideIndex int) error {
 	if c.X < 0 || c.Y < 0 {
 		return fmt.Errorf("slide %d bubble chart position cannot be negative", slideIndex)
 	}
 	if c.CX <= 0 || c.CY <= 0 {
 		return fmt.Errorf("slide %d bubble chart size must be > 0", slideIndex)
 	}
+	return nil
+}
+
+func (c BubbleChart) validateMetadata(slideIndex int) error {
 	if strings.TrimSpace(c.Title) == "" {
 		return fmt.Errorf("slide %d bubble chart title cannot be empty", slideIndex)
-	}
-	if len(c.XValues) == 0 {
-		return fmt.Errorf("slide %d bubble chart must define at least one point", slideIndex)
-	}
-	if len(c.XValues) != len(c.YValues) || len(c.XValues) != len(c.BubbleSizes) {
-		return fmt.Errorf("slide %d bubble chart x/y/size lengths must match", slideIndex)
 	}
 	if !IsHexColor(c.LineColor) {
 		return fmt.Errorf("slide %d bubble chart color must be 6-digit RGB hex", slideIndex)
@@ -150,22 +163,36 @@ func (c BubbleChart) Validate(slideIndex int) error {
 	if c.BubbleScale < 1 || c.BubbleScale > 300 {
 		return fmt.Errorf("slide %d bubble chart scale must be between 1 and 300", slideIndex)
 	}
-	if err := validateValueRange(c.MinValue, c.MaxValue, slideIndex); err != nil {
-		return err
+	return nil
+}
+
+func (c BubbleChart) validatePoints(slideIndex int) error {
+	if len(c.XValues) == 0 {
+		return fmt.Errorf("slide %d bubble chart must define at least one point", slideIndex)
+	}
+	if len(c.XValues) != len(c.YValues) || len(c.XValues) != len(c.BubbleSizes) {
+		return fmt.Errorf("slide %d bubble chart x/y/size lengths must match", slideIndex)
 	}
 	for i := range c.XValues {
-		if math.IsNaN(c.XValues[i]) || math.IsInf(c.XValues[i], 0) {
-			return fmt.Errorf("slide %d bubble x value %d must be finite", slideIndex, i+1)
+		if err := c.validatePoint(slideIndex, i); err != nil {
+			return err
 		}
-		if math.IsNaN(c.YValues[i]) || math.IsInf(c.YValues[i], 0) {
-			return fmt.Errorf("slide %d bubble y value %d must be finite", slideIndex, i+1)
-		}
-		if math.IsNaN(c.BubbleSizes[i]) || math.IsInf(c.BubbleSizes[i], 0) {
-			return fmt.Errorf("slide %d bubble size %d must be finite", slideIndex, i+1)
-		}
-		if c.BubbleSizes[i] < 0 {
-			return fmt.Errorf("slide %d bubble size %d cannot be negative", slideIndex, i+1)
-		}
+	}
+	return nil
+}
+
+func (c BubbleChart) validatePoint(slideIndex, i int) error {
+	if math.IsNaN(c.XValues[i]) || math.IsInf(c.XValues[i], 0) {
+		return fmt.Errorf("slide %d bubble x value %d must be finite", slideIndex, i+1)
+	}
+	if math.IsNaN(c.YValues[i]) || math.IsInf(c.YValues[i], 0) {
+		return fmt.Errorf("slide %d bubble y value %d must be finite", slideIndex, i+1)
+	}
+	if math.IsNaN(c.BubbleSizes[i]) || math.IsInf(c.BubbleSizes[i], 0) {
+		return fmt.Errorf("slide %d bubble size %d must be finite", slideIndex, i+1)
+	}
+	if c.BubbleSizes[i] < 0 {
+		return fmt.Errorf("slide %d bubble size %d cannot be negative", slideIndex, i+1)
 	}
 	return nil
 }

@@ -59,8 +59,8 @@ func runMD2PPTCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		printErrorf(stderr, "pptx generation failed: %v", err)
 		return exitInternal
 	}
-	if err := writeOutputFile(outPath, data); err != nil {
-		printErrorf(stderr, "failed to write %q: %v", outPath, err)
+	if writeErr := writeOutputFile(outPath, data); writeErr != nil {
+		printErrorf(stderr, "failed to write %q: %v", outPath, writeErr)
 		return exitIO
 	}
 

@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+const chartSeriesCapacity = 4
+
 func stockChartPartXML(chart *ChartSpec) string {
-	seriesParts := make([]string, 0, 4)
+	seriesParts := make([]string, 0, chartSeriesCapacity)
 	index := 0
 	if chart.Kind == ChartKindStockOHLC {
 		seriesParts = append(seriesParts, chartSeriesWithValues(chart, "Open", chart.OpenValues, index))

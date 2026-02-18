@@ -2,6 +2,11 @@ package charts
 
 import "github.com/djinn-soul/gopptx/internal/pptxxml"
 
+const (
+	chartGroupingStacked        = "stacked"
+	chartGroupingPercentStacked = "percentStacked"
+)
+
 // BarHorizontalChart is a horizontal clustered bar chart variant.
 type BarHorizontalChart struct {
 	BarChart
@@ -37,7 +42,7 @@ func NewBarStackedChart(categories []string, values []float64) BarStackedChart {
 func (c BarStackedChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarStacked
-	spec.Grouping = "stacked"
+	spec.Grouping = chartGroupingStacked
 	return spec
 }
 
@@ -59,7 +64,7 @@ func NewBarStacked100Chart(categories []string, values []float64) BarStacked100C
 func (c BarStacked100Chart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarStacked100
-	spec.Grouping = "percentStacked"
+	spec.Grouping = chartGroupingPercentStacked
 	return spec
 }
 
@@ -103,7 +108,7 @@ func NewLineStackedChart(categories []string, values []float64) LineStackedChart
 func (c LineStackedChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.LineChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindLineStacked
-	spec.Grouping = "stacked"
+	spec.Grouping = chartGroupingStacked
 	return spec
 }
 
@@ -125,7 +130,7 @@ func NewAreaStackedChart(categories []string, values []float64) AreaStackedChart
 func (c AreaStackedChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.AreaChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindAreaStacked
-	spec.Grouping = "stacked"
+	spec.Grouping = chartGroupingStacked
 	return spec
 }
 
@@ -147,7 +152,7 @@ func NewAreaStacked100Chart(categories []string, values []float64) AreaStacked10
 func (c AreaStacked100Chart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.AreaChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindAreaStacked100
-	spec.Grouping = "percentStacked"
+	spec.Grouping = chartGroupingPercentStacked
 	return spec
 }
 

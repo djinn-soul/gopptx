@@ -3,7 +3,6 @@ package charts_test
 import (
 	"archive/zip"
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
@@ -31,59 +30,40 @@ func TestPlaceholderMultiChart(t *testing.T) {
 		t.Fatalf("zip.NewReader failed: %v", err)
 	}
 
-	// Verify slide XML contains both chart references
+	verifySlideContent(t, zr)
+	verifySlideRelationships(t, zr)
+	verifyChartFilesExist(t, zr)
+}
+
+func verifySlideContent(t *testing.T, zr *zip.Reader) {
 	foundSlide := false
 	for _, f := range zr.File {
 		if f.Name == "ppt/slides/slide1.xml" {
 			foundSlide = true
-			rc, err := f.Open()
-			if err != nil {
-				t.Fatalf("failed to open slide1.xml: %v", err)
-			}
-			content, err := io.ReadAll(rc)
-			if err != nil {
-				t.Fatalf("failed to read slide1.xml: %v", err)
-			}
-			if err := rc.Close(); err != nil {
-				t.Errorf("failed to close rc: %v", err)
-			}
-			xml := string(content)
+			xml := readZipFile(t, zr, "ppt/slides/slide1.xml")
 
-			if !strings.Contains(xml, `r:id="rId2"`) {
-				t.Errorf("missing rId2 for chart 1 in slide1.xml")
+			expectedStrings := []string{
+				`r:id="rId2"`, `r:id="rId3"`,
+				"Placeholder Chart 1", "Placeholder Chart 2",
 			}
-			if !strings.Contains(xml, `r:id="rId3"`) {
-				t.Errorf("missing rId3 for chart 2 in slide1.xml")
-			}
-			if !strings.Contains(xml, "Placeholder Chart 1") {
-				t.Errorf("missing name for placeholder chart 1")
-			}
-			if !strings.Contains(xml, "Placeholder Chart 2") {
-				t.Errorf("missing name for placeholder chart 2")
+			for _, s := range expectedStrings {
+				if !strings.Contains(xml, s) {
+					t.Errorf("missing %s in slide1.xml", s)
+				}
 			}
 		}
 	}
 	if !foundSlide {
 		t.Fatal("ppt/slides/slide1.xml not found")
 	}
+}
 
-	// Verify relationships
+func verifySlideRelationships(t *testing.T, zr *zip.Reader) {
 	foundRels := false
 	for _, f := range zr.File {
 		if f.Name == "ppt/slides/_rels/slide1.xml.rels" {
 			foundRels = true
-			rc, err := f.Open()
-			if err != nil {
-				t.Fatalf("failed to open slide1.xml.rels: %v", err)
-			}
-			content, err := io.ReadAll(rc)
-			if err != nil {
-				t.Fatalf("failed to read slide1.xml.rels: %v", err)
-			}
-			if err := rc.Close(); err != nil {
-				t.Errorf("failed to close rc: %v", err)
-			}
-			xml := string(content)
+			xml := readZipFile(t, zr, "ppt/slides/_rels/slide1.xml.rels")
 
 			if !strings.Contains(xml, `Id="rId2"`) || !strings.Contains(xml, `Target="../charts/chart1.xml"`) {
 				t.Errorf("incorrect rel for chart 1: %s", xml)
@@ -96,10 +76,10 @@ func TestPlaceholderMultiChart(t *testing.T) {
 	if !foundRels {
 		t.Fatal("ppt/slides/_rels/slide1.xml.rels not found")
 	}
+}
 
-	// Verify both chart files exist
-	chart1Found := false
-	chart2Found := false
+func verifyChartFilesExist(t *testing.T, zr *zip.Reader) {
+	chart1Found, chart2Found := false, false
 	for _, f := range zr.File {
 		if f.Name == "ppt/charts/chart1.xml" {
 			chart1Found = true

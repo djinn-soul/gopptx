@@ -6,7 +6,8 @@ repos:
         entry: go
         language: system
         pass_filenames: false
-        args: ["vet", "./cmd/...", "./internal/...", "./pkg/..."]
+        args:
+          ["vet", "./cmd/...", "./internal/...", "./pkg/...", "./examples/..."]
 
       - id: golangci-lint
         name: golangci-lint
@@ -14,7 +15,15 @@ repos:
         language: system
         pass_filenames: false
         args:
-          ["run", "--config", ".golangci.yml", "./cmd/...", "./internal/...", "./pkg/..."]
+          [
+            "run",
+            "--config",
+            ".golangci.yml",
+            "./cmd/...",
+            "./internal/...",
+            "./pkg/...",
+            "./examples/...",
+          ]
 
       - id: go-mod-tidy
         name: go mod tidy
@@ -28,4 +37,5 @@ repos:
         entry: go
         language: system
         pass_filenames: false
-        args: ["test", "./cmd/...", "./internal/...", "./pkg/..."]
+        args:
+          ["test", "./cmd/...", "./internal/...", "./pkg/...", "./examples/..."]

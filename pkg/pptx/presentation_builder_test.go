@@ -18,7 +18,9 @@ func TestPresentationBuilder(t *testing.T) {
 	outPath := filepath.Join(tmpDir, "builder_test.pptx")
 
 	builder := pptx.NewPresentationBuilder("Fluent Presentation").
-		WithMetadata(pptx.PresentationMetadata{PresentationMetadata: common.PresentationMetadata{Creator: "Test Builder"}}).
+		WithMetadata(pptx.Metadata{
+			Metadata: common.Metadata{Creator: "Test Builder"},
+		}).
 		AddSlide(pptx.NewSlide("Slide 1").AddShape(pptx.NewRectangle(1, 1, 2, 2))).
 		AddSlide(pptx.NewSlide("Slide 2").AddShape(pptx.NewEllipse(3, 1, 2, 2)))
 
@@ -30,11 +32,11 @@ func TestPresentationBuilder(t *testing.T) {
 		t.Errorf("Build returned empty data")
 	}
 
-	if err := builder.WriteToFile(outPath); err != nil {
-		t.Fatalf("WriteToFile failed: %v", err)
+	if writeErr := builder.WriteToFile(outPath); writeErr != nil {
+		t.Fatalf("WriteToFile failed: %v", writeErr)
 	}
-	if _, err := os.Stat(outPath); err != nil {
-		t.Errorf("output file not created: %v", err)
+	if _, statErr := os.Stat(outPath); statErr != nil {
+		t.Errorf("output file not created: %v", statErr)
 	}
 
 	emptyBuilder := pptx.NewPresentationBuilder("Empty")
@@ -63,7 +65,9 @@ func TestCustomXML(t *testing.T) {
 		t.Fatalf("zip.NewReader failed: %v", err)
 	}
 
-	itemIDPattern := regexp.MustCompile(`ds:itemID="\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}"`)
+	itemIDPattern := regexp.MustCompile(
+		`ds:itemID="\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}"`,
+	)
 	itemPropsPathPattern := regexp.MustCompile(`^customXml/itemProps\d+\.xml$`)
 	foundIDs := make(map[string]struct{})
 	propsCount := 0
@@ -74,14 +78,14 @@ func TestCustomXML(t *testing.T) {
 		}
 		propsCount++
 
-		rc, err := f.Open()
-		if err != nil {
-			t.Fatalf("open %s: %v", f.Name, err)
+		rc, openErr := f.Open()
+		if openErr != nil {
+			t.Fatalf("open %s: %v", f.Name, openErr)
 		}
-		content, err := io.ReadAll(rc)
+		content, readErr := io.ReadAll(rc)
 		_ = rc.Close()
-		if err != nil {
-			t.Fatalf("read %s: %v", f.Name, err)
+		if readErr != nil {
+			t.Fatalf("read %s: %v", f.Name, readErr)
 		}
 
 		matches := itemIDPattern.FindAllString(string(content), -1)

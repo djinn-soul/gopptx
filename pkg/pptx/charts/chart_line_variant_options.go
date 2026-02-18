@@ -4,6 +4,11 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+func (c LineMarkersChart) WithTitle(title string) LineMarkersChart {
+	c.LineChart = c.LineChart.WithTitle(title)
+	return c
+}
+
 func (c LineMarkersChart) Position(x styling.Length, y styling.Length) LineMarkersChart {
 	c.LineChart = c.LineChart.Position(x, y)
 	return c
@@ -11,11 +16,6 @@ func (c LineMarkersChart) Position(x styling.Length, y styling.Length) LineMarke
 
 func (c LineMarkersChart) Size(cx styling.Length, cy styling.Length) LineMarkersChart {
 	c.LineChart = c.LineChart.Size(cx, cy)
-	return c
-}
-
-func (c LineMarkersChart) WithTitle(title string) LineMarkersChart {
-	c.LineChart = c.LineChart.WithTitle(title)
 	return c
 }
 

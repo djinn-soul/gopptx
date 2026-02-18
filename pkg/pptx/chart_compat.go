@@ -4,28 +4,48 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
-// Chart aliases for backward compatibility.
+// BarChart and related types are chart aliases for backward compatibility.
 type (
-	BarChart            = charts.BarChart
-	BarHorizontalChart  = charts.BarHorizontalChart
-	BarStackedChart     = charts.BarStackedChart
-	BarStacked100Chart  = charts.BarStacked100Chart
-	LineChart           = charts.LineChart
-	LineMarkersChart    = charts.LineMarkersChart
-	LineStackedChart    = charts.LineStackedChart
-	ScatterChart        = charts.ScatterChart
-	AreaChart           = charts.AreaChart
-	AreaStackedChart    = charts.AreaStackedChart
+	// BarChart is an alias for charts.BarChart.
+	BarChart = charts.BarChart
+	// BarHorizontalChart is an alias for charts.BarHorizontalChart.
+	BarHorizontalChart = charts.BarHorizontalChart
+	// BarStackedChart is an alias for charts.BarStackedChart.
+	BarStackedChart = charts.BarStackedChart
+	// BarStacked100Chart is an alias for charts.BarStacked100Chart.
+	BarStacked100Chart = charts.BarStacked100Chart
+	// LineChart is an alias for charts.LineChart.
+	LineChart = charts.LineChart
+	// LineMarkersChart is an alias for charts.LineMarkersChart.
+	LineMarkersChart = charts.LineMarkersChart
+	// LineStackedChart is an alias for charts.LineStackedChart.
+	LineStackedChart = charts.LineStackedChart
+	// ScatterChart is an alias for charts.ScatterChart.
+	ScatterChart = charts.ScatterChart
+	// AreaChart is an alias for charts.AreaChart.
+	AreaChart = charts.AreaChart
+	// AreaStackedChart is an alias for charts.AreaStackedChart.
+	AreaStackedChart = charts.AreaStackedChart
+	// AreaStacked100Chart is an alias for charts.AreaStacked100Chart.
 	AreaStacked100Chart = charts.AreaStacked100Chart
-	PieChart            = charts.PieChart
-	DoughnutChart       = charts.DoughnutChart
-	BubbleChart         = charts.BubbleChart
-	RadarChart          = charts.RadarChart
-	RadarFilledChart    = charts.RadarFilledChart
-	StockHLCChart       = charts.StockHLCChart
-	StockOHLCChart      = charts.StockOHLCChart
-	ComboChart          = charts.ComboChart
-	Series              = charts.Series
+	// PieChart is an alias for charts.PieChart.
+	PieChart = charts.PieChart
+	// DoughnutChart is an alias for charts.DoughnutChart.
+	DoughnutChart = charts.DoughnutChart
+	// BubbleChart is an alias for charts.BubbleChart.
+	BubbleChart = charts.BubbleChart
+	// RadarChart is an alias for charts.RadarChart.
+	RadarChart = charts.RadarChart
+	// RadarFilledChart is an alias for charts.RadarFilledChart.
+	RadarFilledChart = charts.RadarFilledChart
+	// StockHLCChart is an alias for charts.StockHLCChart.
+	StockHLCChart = charts.StockHLCChart
+	// StockOHLCChart is an alias for charts.StockOHLCChart.
+	StockOHLCChart = charts.StockOHLCChart
+	// ComboChart is an alias for charts.ComboChart.
+	ComboChart = charts.ComboChart
+	// Series is an alias for charts.Series.
+	Series = charts.Series
 )
 
 type (

@@ -155,8 +155,8 @@ func loadTransitionParityFixture(t *testing.T) []transitionParityFixtureEntry {
 		t.Fatalf("read transition fixture %s: %v", path, err)
 	}
 	var entries []transitionParityFixtureEntry
-	if err := json.Unmarshal(data, &entries); err != nil {
-		t.Fatalf("decode transition fixture %s: %v", path, err)
+	if decodeErr := json.Unmarshal(data, &entries); decodeErr != nil {
+		t.Fatalf("decode transition fixture %s: %v", path, decodeErr)
 	}
 	return entries
 }
@@ -176,7 +176,7 @@ func TestTransitionOptions(t *testing.T) {
 				AdvanceAfterMS:        2000,
 				DurationMS:            1500,
 			},
-			expectXML: `<p:transition advClick="0" advTm="2000" dur="1500"><p:push dir="r"/></p:transition>`,
+			expectXML: `<p:transition advClick="0" advTm="2000"><p:push dir="r"/></p:transition>`,
 		},
 		{
 			name: "fade through black",

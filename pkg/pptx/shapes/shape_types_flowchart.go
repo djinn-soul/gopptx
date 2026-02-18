@@ -71,7 +71,7 @@ const (
 	ShapeTypeFlowChartMagneticDrum = "flowChartMagneticDrum"
 )
 
-func init() {
+func initFlowchartShapes() {
 	for _, t := range []string{
 		ShapeTypeFlowChartProcess, ShapeTypeFlowChartDecision,
 		ShapeTypeFlowChartTerminator, ShapeTypeFlowChartDocument,

@@ -8,6 +8,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const defaultDoughnutHoleSize = 50
+
 // DoughnutChart is a simple categorical doughnut chart.
 type DoughnutChart struct {
 	Title        string
@@ -34,16 +36,16 @@ func NewDoughnutChart(categories []string, values []float64) DoughnutChart {
 		Title:      "Chart",
 		Categories: cats,
 		Values:     vals,
-		X:          styling.Emu(685800),
-		Y:          styling.Emu(1800000),
-		CX:         styling.Emu(7772400),
-		CY:         styling.Emu(4114800),
+		X:          styling.Emu(defaultChartX),
+		Y:          styling.Emu(defaultChartY),
+		CX:         styling.Emu(defaultChartCX),
+		CY:         styling.Emu(defaultChartCY),
 
 		SeriesName:     "Series 1",
 		ShowLegend:     false,
 		LegendPosition: LegendPositionRight,
 		ShowDataLabels: false,
-		HoleSize:       50,
+		HoleSize:       defaultDoughnutHoleSize,
 	}
 }
 
