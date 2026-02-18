@@ -18,6 +18,7 @@ Use the following commands to run the examples:
 - `31-hyperlinks`: `go run ./examples/31-hyperlinks/main.go` -> `31_advanced_hyperlink_smoke.pptx`
 - `53-slide-properties`: `go run ./examples/53-slide-properties/slide_props_smoke.go` -> `53_slide_properties.pptx`
 - `55-background-fills`: `go run ./examples/55-background-fills/background_smoke.go` -> `55_background_fills.pptx`
+- `57-placeholder-overrides`: `go run ./examples/57-placeholder-overrides/placeholder_override_smoke.go` -> `57_placeholder_override_smoke.pptx`
 
 ### Masters & Layouts
 
