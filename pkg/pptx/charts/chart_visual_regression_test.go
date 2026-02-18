@@ -47,7 +47,9 @@ func TestChartVisualRegressionFixtures(t *testing.T) {
 		}
 		if got[chart] != want {
 			t.Fatalf(
-				"visual regression for %q: expected %s, got %s (run UPDATE_CHART_VISUAL_FIXTURES=1 go test ./pkg/pptx -run TestChartVisualRegressionFixtures -count=1 to refresh fixtures)",
+				"visual regression for %q: expected %s, got %s\n"+
+					"(run UPDATE_CHART_VISUAL_FIXTURES=1 go test ./pkg/pptx "+
+					"-run TestChartVisualRegressionFixtures -count=1 to refresh fixtures)",
 				chart,
 				want,
 				got[chart],
@@ -71,25 +73,35 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 			charts.NewAreaStackedChart([]string{"Q1", "Q2", "Q3"}, []float64{14, 17, 23}).WithTitle("Area Stacked"),
 		),
 		"areaStacked100": pptx.NewSlide("Area Stacked 100").WithAreaStacked100Chart(
-			charts.NewAreaStacked100Chart([]string{"Q1", "Q2", "Q3"}, []float64{14, 17, 23}).
-				WithTitle("Area Stacked 100"),
+			charts.NewAreaStacked100Chart(
+				[]string{"Q1", "Q2", "Q3"},
+				[]float64{14, 17, 23},
+			).WithTitle("Area Stacked 100"),
 		),
 		"bar": pptx.NewSlide("Bar").WithBarChart(
 			charts.NewBarChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar"),
 		),
 		"barHorizontal": pptx.NewSlide("Bar Horizontal").WithBarHorizontalChart(
-			charts.NewBarHorizontalChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar Horizontal"),
+			charts.NewBarHorizontalChart(
+				[]string{"Q1", "Q2", "Q3"},
+				[]float64{12, 18, 24},
+			).WithTitle("Bar Horizontal"),
 		),
 		"barStacked": pptx.NewSlide("Bar Stacked").WithBarStackedChart(
 			charts.NewBarStackedChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar Stacked"),
 		),
 		"barStacked100": pptx.NewSlide("Bar Stacked 100").WithBarStacked100Chart(
-			charts.NewBarStacked100Chart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).
-				WithTitle("Bar Stacked 100"),
+			charts.NewBarStacked100Chart(
+				[]string{"Q1", "Q2", "Q3"},
+				[]float64{12, 18, 24},
+			).WithTitle("Bar Stacked 100"),
 		),
 		"bubble": pptx.NewSlide("Bubble").WithBubbleChart(
-			charts.NewBubbleChart([]float64{1, 2, 3}, []float64{10, 20, 30}, []float64{10, 20, 30}).
-				WithTitle("Bubble").WithSeriesName("Series 1").WithBubbleScale(100),
+			charts.NewBubbleChart(
+				[]float64{1, 2, 3},
+				[]float64{10, 20, 30},
+				[]float64{10, 20, 30},
+			).WithTitle("Bubble").WithSeriesName("Series 1").WithBubbleScale(100),
 		),
 		"combo": pptx.NewSlide("Combo").WithComboChart(
 			charts.NewComboChart(
@@ -105,7 +117,10 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 			charts.NewLineChart([]string{"Q1", "Q2", "Q3"}, []float64{10, 16, 22}).WithTitle("Line"),
 		),
 		"lineMarkers": pptx.NewSlide("Line Markers").WithLineMarkersChart(
-			charts.NewLineMarkersChart([]string{"Q1", "Q2", "Q3"}, []float64{10, 16, 22}).WithTitle("Line Markers"),
+			charts.NewLineMarkersChart(
+				[]string{"Q1", "Q2", "Q3"},
+				[]float64{10, 16, 22},
+			).WithTitle("Line Markers"),
 		),
 		"lineStacked": pptx.NewSlide("Line Stacked").WithLineStackedChart(
 			charts.NewLineStackedChart([]string{"Q1", "Q2", "Q3"}, []float64{10, 16, 22}).WithTitle("Line Stacked"),
@@ -121,15 +136,18 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 		),
 		"scatter": pptx.NewSlide("Scatter Marker").WithScatterChart(
 			charts.NewScatterChart([]float64{1, 2, 3}, []float64{10, 15, 20}).
-				WithTitle("Scatter Marker").WithScatterStyle(charts.ScatterStyleMarker),
+				WithTitle("Scatter Marker").
+				WithScatterStyle(charts.ScatterStyleMarker),
 		),
 		"scatterLines": pptx.NewSlide("Scatter Lines").WithScatterChart(
 			charts.NewScatterChart([]float64{1, 2, 3}, []float64{10, 15, 20}).
-				WithTitle("Scatter Lines").WithScatterStyle(charts.ScatterStyleLineMarker),
+				WithTitle("Scatter Lines").
+				WithScatterStyle(charts.ScatterStyleLineMarker),
 		),
 		"scatterSmooth": pptx.NewSlide("Scatter Smooth").WithScatterChart(
 			charts.NewScatterChart([]float64{1, 2, 3}, []float64{10, 15, 20}).
-				WithTitle("Scatter Smooth").WithScatterStyle(charts.ScatterStyleSmoothMarker),
+				WithTitle("Scatter Smooth").
+				WithScatterStyle(charts.ScatterStyleSmoothMarker),
 		),
 		"stockHLC": pptx.NewSlide("StockHLC").WithStockHLCChart(
 			charts.NewStockHLCChart(
@@ -160,8 +178,8 @@ func loadChartVisualFixtures(t *testing.T) map[string]string {
 	}
 
 	var entries []chartVisualFixtureEntry
-	if err := json.Unmarshal(data, &entries); err != nil {
-		t.Fatalf("decode chart visual fixtures: %v", err)
+	if unmarshalErr := json.Unmarshal(data, &entries); unmarshalErr != nil {
+		t.Fatalf("decode chart visual fixtures: %v", unmarshalErr)
 	}
 	if len(entries) == 0 {
 		t.Fatalf("chart visual fixtures file is empty")
@@ -199,11 +217,11 @@ func writeChartVisualFixtures(t *testing.T, fixtures map[string]string) {
 	data = append(data, '\n')
 
 	path := chartVisualFixturePath()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("create chart visual fixtures dir: %v", err)
+	if mkdirErr := os.MkdirAll(filepath.Dir(path), 0o755); mkdirErr != nil {
+		t.Fatalf("create chart visual fixtures dir: %v", mkdirErr)
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		t.Fatalf("write chart visual fixtures: %v", err)
+	if writeErr := os.WriteFile(path, data, 0o600); writeErr != nil {
+		t.Fatalf("write chart visual fixtures: %v", writeErr)
 	}
 }
 

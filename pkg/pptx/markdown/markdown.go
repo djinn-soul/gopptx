@@ -10,9 +10,16 @@ import (
 
 var numberedListPattern = regexp.MustCompile(`^\d+\.\s+(.+)$`)
 
+const defaultInlineRunsCapacity = 4
+
+const (
+	numberedListMatchCount = 2
+	boldMarkerLength       = 2
+)
+
 type parsedMarkdownBullet struct {
 	text  string
-	style elements.TextParagraphStyle
+	style elements.ParagraphStyle
 }
 
 // SlidesFromMarkdown converts a markdown document into slide content.
@@ -39,22 +46,22 @@ func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
 		if after, ok := strings.CutPrefix(line, marker); ok {
 			return parsedMarkdownBullet{
 				text:  strings.TrimSpace(after),
-				style: elements.DefaultTextParagraphStyle(),
+				style: elements.DefaultParagraphStyle(),
 			}, true
 		}
 	}
 
 	matches := numberedListPattern.FindStringSubmatch(line)
-	if len(matches) == 2 {
+	if len(matches) == numberedListMatchCount {
 		return parsedMarkdownBullet{
 			text:  strings.TrimSpace(matches[1]),
-			style: elements.DefaultTextParagraphStyle().WithNumbered(),
+			style: elements.DefaultParagraphStyle().WithNumbered(),
 		}, true
 	}
 	return parsedMarkdownBullet{}, false
 }
 
-func appendMarkdownBullet(slide *elements.SlideContent, text string, style elements.TextParagraphStyle) {
+func appendMarkdownBullet(slide *elements.SlideContent, text string, style elements.ParagraphStyle) {
 	runs, rich := parseInlineTextRuns(text)
 	if rich {
 		*slide = slide.AddBulletRunsWithStyle(runs, style)
@@ -63,78 +70,83 @@ func appendMarkdownBullet(slide *elements.SlideContent, text string, style eleme
 	*slide = slide.AddBulletWithStyle(text, style)
 }
 
-func parseInlineTextRuns(text string) ([]elements.TextRun, bool) {
+func parseInlineTextRuns(text string) ([]elements.Run, bool) {
 	input := strings.TrimSpace(text)
 	if input == "" {
 		return nil, false
 	}
 
-	runs := make([]elements.TextRun, 0, 4)
+	runs := make([]elements.Run, 0, defaultInlineRunsCapacity)
 	hasStyled := false
 	for i := 0; i < len(input); {
-		if input[i] == '`' {
-			closeIdx := strings.Index(input[i+1:], "`")
-			if closeIdx >= 0 {
-				end := i + 1 + closeIdx
-				if end > i+1 {
-					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Code: true})
-					hasStyled = true
-				}
-				i = end + 1
-				continue
-			}
-			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
-			i++
-			continue
-		}
-
-		if strings.HasPrefix(input[i:], "**") {
-			closeIdx := strings.Index(input[i+2:], "**")
-			if closeIdx >= 0 {
-				end := i + 2 + closeIdx
-				if end > i+2 {
-					runs = append(runs, elements.TextRun{Text: input[i+2 : end], Bold: true})
-					hasStyled = true
-				}
-				i = end + 2
-				continue
-			}
-			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
-			i++
-			continue
-		}
-
-		if input[i] == '*' {
-			closeIdx := strings.Index(input[i+1:], "*")
-			if closeIdx >= 0 {
-				end := i + 1 + closeIdx
-				if end > i+1 {
-					runs = append(runs, elements.TextRun{Text: input[i+1 : end], Italic: true})
-					hasStyled = true
-				}
-				i = end + 1
-				continue
-			}
-			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
-			i++
+		if run, nextI, handled := tryHandleRichRun(input, i); handled {
+			runs = append(runs, run)
+			hasStyled = true
+			i = nextI
 			continue
 		}
 
 		next := nextInlineMarkerOffset(input[i:])
 		if next < 0 {
-			runs = append(runs, elements.TextRun{Text: input[i:]})
+			runs = append(runs, elements.Run{Text: input[i:]})
 			break
 		}
 		if next == 0 {
-			runs = append(runs, elements.TextRun{Text: input[i : i+1]})
+			runs = append(runs, elements.Run{Text: input[i : i+1]})
 			i++
 			continue
 		}
-		runs = append(runs, elements.TextRun{Text: input[i : i+next]})
+		runs = append(runs, elements.Run{Text: input[i : i+next]})
 		i += next
 	}
 
-	return elements.NormalizeTextRuns(runs), hasStyled
+	return elements.NormalizeRuns(runs), hasStyled
+}
+
+func tryHandleRichRun(input string, i int) (elements.Run, int, bool) {
+	if input[i] == '`' {
+		return handleCodeRun(input, i)
+	}
+	if strings.HasPrefix(input[i:], "**") {
+		return handleBoldRun(input, i)
+	}
+	if input[i] == '*' {
+		return handleItalicRun(input, i)
+	}
+	return elements.Run{}, i, false
+}
+
+func handleCodeRun(input string, i int) (elements.Run, int, bool) {
+	closeIdx := strings.Index(input[i+1:], "`")
+	if closeIdx >= 0 {
+		end := i + 1 + closeIdx
+		if end > i+1 {
+			return elements.Run{Text: input[i+1 : end], Code: true}, end + 1, true
+		}
+	}
+	return elements.Run{}, i, false
+}
+
+func handleBoldRun(input string, i int) (elements.Run, int, bool) {
+	closeIdx := strings.Index(input[i+boldMarkerLength:], "**")
+	if closeIdx >= 0 {
+		end := i + boldMarkerLength + closeIdx
+		if end > i+boldMarkerLength {
+			return elements.Run{Text: input[i+boldMarkerLength : end], Bold: true}, end + boldMarkerLength, true
+		}
+	}
+	return elements.Run{}, i, false
+}
+
+func handleItalicRun(input string, i int) (elements.Run, int, bool) {
+	closeIdx := strings.Index(input[i+1:], "*")
+	if closeIdx >= 0 {
+		end := i + 1 + closeIdx
+		if end > i+1 {
+			return elements.Run{Text: input[i+1 : end], Italic: true}, end + 1, true
+		}
+	}
+	return elements.Run{}, i, false
 }
 
 func nextInlineMarkerOffset(input string) int {

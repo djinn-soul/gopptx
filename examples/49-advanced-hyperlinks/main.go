@@ -55,9 +55,9 @@ func run() error {
 }
 
 func verifyRelationships(pptxPath string) (retErr error) {
-	r, err := zip.OpenReader(pptxPath)
-	if err != nil {
-		return fmt.Errorf("failed to open pptx for verification: %w", err)
+	r, openErr := zip.OpenReader(pptxPath)
+	if openErr != nil {
+		return fmt.Errorf("failed to open pptx for verification: %w", openErr)
 	}
 	defer func() {
 		if closeErr := r.Close(); closeErr != nil && retErr == nil {
@@ -73,9 +73,9 @@ func verifyRelationships(pptxPath string) (retErr error) {
 
 	for i, target := range expected {
 		relPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", i+1)
-		content, err := readZipFile(r, relPath)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %w", relPath, err)
+		content, readErr := readZipFile(r, relPath)
+		if readErr != nil {
+			return fmt.Errorf("failed to read %s: %w", relPath, readErr)
 		}
 
 		// Check for TargetMode="External"

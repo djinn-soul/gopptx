@@ -1,0 +1,61 @@
+version: '3'
+
+vars:
+  GO_BRIDGE_SRC: bindings/c/bridge.go
+  PYTHON_PKG_DIR: python/gopptx
+  LIB_NAME:
+    sh: |
+      case "$(uname -s)" in
+        Darwin) echo "libgopptx.dylib" ;;
+        MSYS*|MINGW*|CYGWIN*) echo "gopptx.dll" ;;
+        *) echo "libgopptx.so" ;;
+      esac
+
+tasks:
+  default:
+    desc: Build and test everything
+    deps: [test]
+
+  build:go:
+    desc: Build Go bridge for Python
+    sources:
+      - 'bindings/c/**/*.go'
+      - 'pkg/**/*.go'
+      - 'internal/**/*.go'
+      - go.mod
+      - go.sum
+    generates:
+      - '{{.PYTHON_PKG_DIR}}/{{.LIB_NAME}}'
+    cmds:
+      - go build -o {{.PYTHON_PKG_DIR}}/{{.LIB_NAME}} -buildmode=c-shared {{.GO_BRIDGE_SRC}}
+
+  setup:python:
+    desc: Setup Python environment using uv
+    sources:
+      - pyproject.toml
+    generates:
+      - .venv/pyvenv.cfg
+    cmds:
+      - uv venv
+      - uv pip install -e .[dev]
+
+  test:go:
+    desc: Run Go unit tests
+    cmds:
+      - go test ./pkg/... ./internal/...
+
+  test:python:
+    desc: Run Python tests
+    deps: [build:go, setup:python]
+    cmds:
+      - uv run python -c "import gopptx; print('Python package imported successfully')"
+
+  test:
+    desc: Run all tests
+    deps: [test:go, test:python]
+
+  lint:
+    desc: Run all linters
+    cmds:
+      - golangci-lint run ./...
+      - uv run basedpyright

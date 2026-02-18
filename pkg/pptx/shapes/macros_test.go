@@ -7,6 +7,11 @@ import (
 )
 
 func TestShapeMacros(t *testing.T) {
+	testStandardShapes(t)
+	testSpecialMacros(t)
+}
+
+func testStandardShapes(t *testing.T) {
 	tests := []struct {
 		name     string
 		shape    Shape
@@ -51,14 +56,15 @@ func TestShapeMacros(t *testing.T) {
 			}
 		})
 	}
+}
 
-	// Double check text box has text
-	tb := NewTextBox("hello", 1, 1, 2, 2)
-	if tb.Text != "hello" {
-		t.Errorf("NewTextBox() text = %v, want 'hello'", tb.Text)
-	}
+func testSpecialMacros(t *testing.T) {
+	testSimpleMacros(t)
+	testFlowChartMacros(t)
+	testMiscellaneousMacros(t)
+}
 
-	// New macros with specific dimensions
+func testSimpleMacros(t *testing.T) {
 	t.Run("Circle", func(t *testing.T) {
 		s := NewCircle(1, 1, 2)
 		if s.Type != ShapeTypeEllipse || s.CX != styling.Inches(2) || s.CY != styling.Inches(2) {
@@ -79,7 +85,9 @@ func TestShapeMacros(t *testing.T) {
 			t.Errorf("NewHeart() unexpected properties: %+v", s)
 		}
 	})
+}
 
+func testFlowChartMacros(t *testing.T) {
 	t.Run("FlowChartDocument", func(t *testing.T) {
 		s := NewFlowChartDocument(1, 1, 2, 2)
 		if s.Type != ShapeTypeFlowChartDocument || s.CX != styling.Inches(2) || s.CY != styling.Inches(2) {
@@ -93,6 +101,14 @@ func TestShapeMacros(t *testing.T) {
 			t.Errorf("NewFlowChartData() unexpected properties: %+v", s)
 		}
 	})
+}
+
+func testMiscellaneousMacros(t *testing.T) {
+	// Double check text box has text
+	tb := NewTextBox("hello", 1, 1, 2, 2)
+	if tb.Text != "hello" {
+		t.Errorf("NewTextBox() text = %v, want 'hello'", tb.Text)
+	}
 
 	t.Run("Badge", func(t *testing.T) {
 		s := NewBadge("NEW", 1, 1, styling.ColorMaterialGreen)

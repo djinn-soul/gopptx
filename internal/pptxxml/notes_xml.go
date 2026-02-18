@@ -9,10 +9,12 @@ import (
 )
 
 // NotesSlide renders one notes slide XML part.
-func NotesSlide(paragraphs []text.TextParagraph) string {
+func NotesSlide(paragraphs []text.Paragraph) string {
 	paragraphsXML := notesParagraphsXML(paragraphs)
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>
 <p:spTree>
 <p:nvGrpSpPr>
@@ -58,8 +60,10 @@ func NotesSlide(paragraphs []text.TextParagraph) string {
 func NotesSlideRelationships(slideNumber int) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide%d.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="../notesMasters/notesMaster1.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" `+
+		`Target="../slides/slide%d.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" `+
+		`Target="../notesMasters/notesMaster1.xml"/>
 </Relationships>`, slideNumber)
 }
 
@@ -87,9 +91,27 @@ func NotesMaster(spec *NotesMasterSpec) string {
 	}
 
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:notesMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:notesMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>
-<p:spTree>
+<p:spTree>` +
+		notesMasterCommonRootGrp() +
+		notesMasterHeader(spec.HeaderText) +
+		notesMasterDate() +
+		notesMasterSlideImage() +
+		notesMasterBody() +
+		notesMasterFooter(spec.FooterText) +
+		notesMasterSlideNum() + `
+</p:spTree>
+</p:cSld>
+<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" ` +
+		`accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>` + notesStyleXML + `
+</p:notesMaster>`
+}
+
+func notesMasterCommonRootGrp() string {
+	return `
 <p:nvGrpSpPr>
 <p:cNvPr id="1" name=""/>
 <p:cNvGrpSpPr/>
@@ -102,7 +124,11 @@ func NotesMaster(spec *NotesMasterSpec) string {
 <a:chOff x="0" y="0"/>
 <a:chExt cx="0" cy="0"/>
 </a:xfrm>
-</p:grpSpPr>
+</p:grpSpPr>`
+}
+
+func notesMasterHeader(text string) string {
+	return `
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="2" name="Header Placeholder 1"/>
@@ -115,12 +141,16 @@ func NotesMaster(spec *NotesMasterSpec) string {
 <a:lstStyle/>
 <a:p>
 <a:r>
-<a:rPr lang="en-US" sm="1"/>
-<a:t>` + Escape(spec.HeaderText) + `</a:t>
+<a:rPr lang="en-US"/>
+<a:t>` + Escape(text) + `</a:t>
 </a:r>
 </a:p>
 </p:txBody>
-</p:sp>
+</p:sp>`
+}
+
+func notesMasterDate() string {
+	return `
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="3" name="Date Placeholder 2"/>
@@ -131,9 +161,14 @@ func NotesMaster(spec *NotesMasterSpec) string {
 <p:txBody>
 <a:bodyPr/>
 <a:lstStyle/>
-<a:p><a:fld id="{8583B92D-B326-4076-96F9-126CB471A9B6}" type="datetime1"><a:rPr lang="en-US" sm="1"/><a:pPr/><a:t></a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
+<a:p><a:fld id="{8583B92D-B326-4076-96F9-126CB471A9B6}" type="datetime1">` +
+		`<a:rPr lang="en-US"/><a:pPr/><a:t></a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
 </p:txBody>
-</p:sp>
+</p:sp>`
+}
+
+func notesMasterSlideImage() string {
+	return `
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="4" name="Slide Image Placeholder 3"/>
@@ -147,7 +182,11 @@ func NotesMaster(spec *NotesMasterSpec) string {
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
 </p:spPr>
-</p:sp>
+</p:sp>`
+}
+
+func notesMasterBody() string {
+	return `
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="5" name="Notes Placeholder 4"/>
@@ -165,7 +204,11 @@ func NotesMaster(spec *NotesMasterSpec) string {
 <a:lstStyle/>
 <a:p><a:endParaRPr lang="en-US"/></a:p>
 </p:txBody>
-</p:sp>
+</p:sp>`
+}
+
+func notesMasterFooter(text string) string {
+	return `
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="6" name="Footer Placeholder 5"/>
@@ -178,12 +221,16 @@ func NotesMaster(spec *NotesMasterSpec) string {
 <a:lstStyle/>
 <a:p>
 <a:r>
-<a:rPr lang="en-US" sm="1"/>
-<a:t>` + Escape(spec.FooterText) + `</a:t>
+<a:rPr lang="en-US"/>
+<a:t>` + Escape(text) + `</a:t>
 </a:r>
 </a:p>
 </p:txBody>
-</p:sp>
+</p:sp>`
+}
+
+func notesMasterSlideNum() string {
+	return `
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="7" name="Slide Number Placeholder 6"/>
@@ -194,13 +241,10 @@ func NotesMaster(spec *NotesMasterSpec) string {
 <p:txBody>
 <a:bodyPr/>
 <a:lstStyle/>
-<a:p><a:fld id="{1E4E639B-83C3-4404-B32B-98A843E836FB}" type="slidenum"><a:rPr lang="en-US" sm="1"/><a:t>‹#›</a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
+<a:p><a:fld id="{1E4E639B-83C3-4404-B32B-98A843E836FB}" type="slidenum">` +
+		`<a:rPr lang="en-US"/><a:t>‹#›</a:t></a:fld><a:endParaRPr lang="en-US"/></a:p>
 </p:txBody>
-</p:sp>
-</p:spTree>
-</p:cSld>
-<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>` + notesStyleXML + `
-</p:notesMaster>`
+</p:sp>`
 }
 
 // NotesMasterRelationships renders notesMaster1.xml.rels.
@@ -211,17 +255,19 @@ func NotesMasterRelationships(themeIndex ...int) string {
 	}
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(idx) + `.xml"/>
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" ` +
+		`Target="../theme/theme` + strconv.Itoa(idx) + `.xml"/>
 </Relationships>`
 }
 
-func notesParagraphsXML(paragraphs []text.TextParagraph) string {
+func notesParagraphsXML(paragraphs []text.Paragraph) string {
 	if len(paragraphs) == 0 {
 		return `
 <a:p><a:endParaRPr lang="en-US"/></a:p>`
 	}
 	var b strings.Builder
-	defaultStyle := ContentStyleSpec{SizePt: 12} // Default notes size
+	//nolint:mnd // Default notes font size (12pt)
+	defaultStyle := ContentStyleSpec{SizePt: 12}
 
 	for _, p := range paragraphs {
 		styleSpec := convertNotesStyle(p.Style)
@@ -234,7 +280,7 @@ func notesParagraphsXML(paragraphs []text.TextParagraph) string {
 	return b.String()
 }
 
-func convertNotesStyle(s text.TextParagraphStyle) BulletParagraphSpec {
+func convertNotesStyle(s text.ParagraphStyle) BulletParagraphSpec {
 	return BulletParagraphSpec{
 		Align:          s.Align,
 		SpaceBeforePt:  s.SpaceBeforePt,
@@ -251,7 +297,7 @@ func convertNotesStyle(s text.TextParagraphStyle) BulletParagraphSpec {
 	}
 }
 
-func convertNotesRun(r text.TextRun) TextRunSpec {
+func convertNotesRun(r text.Run) TextRunSpec {
 	// Map internal Action Hyperlink to XML spec if needed,
 	// for now treating as no-op or basic mapping if TextRunSpec supports it.
 	// TextRunSpec has *HyperlinkSpec.

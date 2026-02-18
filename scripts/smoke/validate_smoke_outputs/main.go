@@ -99,9 +99,9 @@ func collectPPTXFiles(dirPath, singleFile string) ([]string, error) {
 			if strings.ToLower(filepath.Ext(path)) != ".pptx" {
 				return nil
 			}
-			abs, err := filepath.Abs(path)
+			abs, absErr := filepath.Abs(path)
 			if err != nil {
-				return err
+				return absErr
 			}
 			if _, ok := seen[abs]; ok {
 				return nil

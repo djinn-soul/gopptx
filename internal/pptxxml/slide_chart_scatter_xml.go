@@ -98,9 +98,9 @@ func scatterAxesXML(chart *ChartSpec) string {
 </c:valAx>`,
 		xAxisTitle,
 		yScaling,
+		majorGrid,
 		yAxisTitle,
 		yFormat,
-		majorGrid,
 		crossBetween,
 	)
 }

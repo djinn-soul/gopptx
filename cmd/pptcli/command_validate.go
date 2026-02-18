@@ -13,13 +13,16 @@ import (
 	"strings"
 )
 
-var requiredPPTXParts = []string{
+const initialIssueCapacity = 8
+
+var requiredParts = []string{
 	"[Content_Types].xml",
 	"_rels/.rels",
 	"ppt/presentation.xml",
 	"docProps/core.xml",
 }
 
+// runValidateCommand validates a PPTX file structure.
 func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
@@ -81,7 +84,7 @@ func validatePPTXFile(path string) ([]string, error) {
 		return []string{"file is not a valid ZIP archive"}, nil
 	}
 
-	issues := make([]string, 0, 8)
+	issues := make([]string, 0, initialIssueCapacity)
 	names := make(map[string]struct{}, len(zr.File))
 	slideCount := 0
 	for _, entry := range zr.File {
@@ -96,13 +99,13 @@ func validatePPTXFile(path string) ([]string, error) {
 			slideCount++
 		}
 		if strings.HasSuffix(lower, ".xml") || strings.HasSuffix(lower, ".rels") {
-			if err := validateEntryXML(entry); err != nil {
-				issues = append(issues, fmt.Sprintf("%s: %v", name, err))
+			if xmlErr := validateEntryXML(entry); xmlErr != nil {
+				issues = append(issues, fmt.Sprintf("%s: %v", name, xmlErr))
 			}
 		}
 	}
 
-	for _, required := range requiredPPTXParts {
+	for _, required := range requiredParts {
 		if _, ok := names[required]; !ok {
 			issues = append(issues, fmt.Sprintf("missing required part %q", required))
 		}
@@ -131,11 +134,11 @@ func validateEntryXML(entry *zip.File) error {
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	for {
-		if _, err := decoder.Token(); err != nil {
-			if errors.Is(err, io.EOF) {
+		if _, tokenErr := decoder.Token(); tokenErr != nil {
+			if errors.Is(tokenErr, io.EOF) {
 				break
 			}
-			return fmt.Errorf("invalid XML: %w", err)
+			return fmt.Errorf("invalid XML: %w", tokenErr)
 		}
 	}
 	return nil

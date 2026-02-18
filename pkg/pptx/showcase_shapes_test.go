@@ -7,7 +7,7 @@ import (
 
 func TestShapeShowcasePublicAPI(t *testing.T) {
 	builder := NewPresentationBuilder("Shape Showcase Public API")
-	builder.WithSlideSize(SlideSize16x9)
+	builder.WithSlideSize(SlideSize16x9())
 
 	groups := []struct {
 		name   string

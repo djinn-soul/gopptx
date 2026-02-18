@@ -20,13 +20,13 @@ func main() {
 
 func run() error {
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "gopptx-merge-assets-*")
-	if err != nil {
-		return fmt.Errorf("create temp dir: %w", err)
+	tmpDir, tempErr := os.MkdirTemp("", "gopptx-merge-assets-*")
+	if tempErr != nil {
+		return fmt.Errorf("create temp dir: %w", tempErr)
 	}
 	defer func() {
 		if err := os.RemoveAll(tmpDir); err != nil {
@@ -50,7 +50,7 @@ func run() error {
 	srcDeck := pptx.NewPresentationBuilder("Source Deck")
 
 	sourceImagePath := filepath.Join(tmpDir, "source_image.png")
-	if err := os.WriteFile(sourceImagePath, pngData, 0o644); err != nil {
+	if err := os.WriteFile(sourceImagePath, pngData, 0o600); err != nil {
 		return fmt.Errorf("failed to write source image: %w", err)
 	}
 
@@ -84,14 +84,14 @@ func run() error {
 	}()
 
 	log.Println("Merging...")
-	if err := dstEdit.MergeFromFile(sourcePPTXPath); err != nil {
-		return fmt.Errorf("MergeFromFile failed: %w", err)
+	if mergeErr := dstEdit.MergeFromFile(sourcePPTXPath); mergeErr != nil {
+		return fmt.Errorf("MergeFromFile failed: %w", mergeErr)
 	}
 
 	// Save Result
 	resultPPTXPath := filepath.Join(outputDir, "42_smart_merge_assets.pptx")
-	if err := dstEdit.Save(resultPPTXPath); err != nil {
-		return err
+	if saveErr := dstEdit.Save(resultPPTXPath); saveErr != nil {
+		return saveErr
 	}
 
 	// 4. Verification

@@ -16,7 +16,7 @@ import (
 func TestImageEffects(t *testing.T) {
 	tmpDir := t.TempDir()
 	imgPath := filepath.Join(tmpDir, "test.png")
-	if err := os.WriteFile(imgPath, testutil.TinyPNG, 0o600); err != nil {
+	if err := os.WriteFile(imgPath, testutil.TinyPNG(), 0o600); err != nil {
 		t.Fatalf("failed to write test image: %v", err)
 	}
 
@@ -43,8 +43,8 @@ func TestImageEffects(t *testing.T) {
 			found = true
 			rc, _ := f.Open()
 			content, _ := io.ReadAll(rc)
-			if err := rc.Close(); err != nil {
-				t.Errorf("failed to close rc: %v", err)
+			if closeErr := rc.Close(); closeErr != nil {
+				t.Errorf("failed to close rc: %v", closeErr)
 			}
 			xml := string(content)
 

@@ -8,10 +8,14 @@ type Length int64
 const (
 	emuPerInch float64 = 914400
 	emuPerCM   float64 = 360000
-	emuPerPT   float64 = 12700
+
+	// EmuPerPt is the number of EMUs in one point.
+	EmuPerPt float64 = 12700
 
 	// MaxEMU is the maximum EMU value allowed by OOXML (int32 max).
 	MaxEMU Length = 2147483647 // 0x7FFFFFFF
+
+	fontSizeMultiplier = 100
 )
 
 // Inches converts inches to Length (EMU) with overflow protection.
@@ -36,7 +40,7 @@ func CMToEMU(value float64) Length {
 
 // Points converts points to Length (EMU) with overflow protection.
 func Points(value float64) Length {
-	return clampToLength(value * emuPerPT)
+	return clampToLength(value * EmuPerPt)
 }
 
 // PointsToEMU is an alias for Points.
@@ -61,7 +65,7 @@ func (l Length) Cm() float64 {
 
 // Pt returns the length in points.
 func (l Length) Pt() float64 {
-	return float64(l) / emuPerPT
+	return float64(l) / EmuPerPt
 }
 
 // Emu returns the length in EMU units.
@@ -71,7 +75,7 @@ func (l Length) Emu() int64 {
 
 // FontSize converts points to OOXML size units (hundredths of a point).
 func FontSize(pt float64) int {
-	val := math.Round(pt * 100)
+	val := math.Round(pt * fontSizeMultiplier)
 	if val > math.MaxInt32 {
 		return math.MaxInt32
 	}

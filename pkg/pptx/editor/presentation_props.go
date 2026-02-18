@@ -139,12 +139,9 @@ func rewritePresentationSlideSize(current string, size common.SlideSize) (string
 }
 
 func slideSizeType(size common.SlideSize) string {
-	slideSize4x3 := common.SlideSize4x3()
-	if size.Width == slideSize4x3.Width && size.Height == slideSize4x3.Height {
+	if size.Width == common.SlideSize4x3().Width && size.Height == common.SlideSize4x3().Height {
 		return "screen4x3"
-	}
-	slideSize16x9 := common.SlideSize16x9()
-	if size.Width == slideSize16x9.Width && size.Height == slideSize16x9.Height {
+	} else if size.Width == common.SlideSize16x9().Width && size.Height == common.SlideSize16x9().Height {
 		return "screen16x9"
 	}
 	return "custom"

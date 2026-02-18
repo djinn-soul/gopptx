@@ -28,9 +28,9 @@ func run() error {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "gopptx-props-example-*")
-	if err != nil {
-		return fmt.Errorf("create temp directory: %w", err)
+	tmpDir, tempErr := os.MkdirTemp("", "gopptx-props-example-*")
+	if tempErr != nil {
+		return fmt.Errorf("create temp directory: %w", tempErr)
 	}
 	defer func() {
 		if err := os.RemoveAll(tmpDir); err != nil {
@@ -62,7 +62,7 @@ func run() error {
 	if err := editor.ApplyTheme(styling.ThemeCorporate); err != nil {
 		return fmt.Errorf("apply theme: %w", err)
 	}
-	if err := editor.SetSlideSize(pptx.SlideSize16x9); err != nil {
+	if err := editor.SetSlideSize(pptx.SlideSize16x9()); err != nil {
 		return fmt.Errorf("set slide size: %w", err)
 	}
 

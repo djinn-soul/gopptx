@@ -518,6 +518,8 @@ func NewFlowChartData(x, y, w, h float64) Shape {
 }
 
 // NewBadge creates a badge (rounded rectangle with text) at a default size (1.5x0.4 inches).
+//
+//nolint:mnd // Default badge sizes are from design spec
 func NewBadge(text string, x, y float64, color string) Shape {
 	if color == "" {
 		color = styling.ColorMaterialGreen

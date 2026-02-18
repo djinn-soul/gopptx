@@ -68,7 +68,7 @@ const (
 	ShapeTypeUpDownArrowCallout = "upDownArrowCallout"
 )
 
-func init() {
+func initArrowShapes() {
 	for _, t := range []string{
 		ShapeTypeRightArrow, ShapeTypeLeftArrow,
 		ShapeTypeUpArrow, ShapeTypeDownArrow,

@@ -35,37 +35,7 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	if strings.TrimSpace(markdownPath) != "" {
-		if strings.TrimSpace(title) == "" {
-			printErrorf(stderr, "title is required when using -md")
-			return exitUsage
-		}
-		markdown, err := os.ReadFile(markdownPath)
-		if err != nil {
-			printErrorf(stderr, "failed to read markdown %q: %v", markdownPath, err)
-			return exitIO
-		}
-		slides, err := pptx.SlidesFromMarkdown(string(markdown))
-		if err != nil {
-			printErrorf(stderr, "markdown parse failed: %v", err)
-			return exitParse
-		}
-		data, err := pptx.CreateWithSlides(strings.TrimSpace(title), slides)
-		if err != nil {
-			printErrorf(stderr, "pptx generation failed: %v", err)
-			return exitInternal
-		}
-		if err := writeOutputFile(outPath, data); err != nil {
-			printErrorf(stderr, "failed to write %q: %v", outPath, err)
-			return exitIO
-		}
-		_, _ = fmt.Fprintf(
-			stdout,
-			"OK: wrote %s from %s (%d slide(s))\n",
-			strings.TrimSpace(outPath),
-			markdownPath,
-			len(slides),
-		)
-		return exitOK
+		return runMarkdownConversion(stdout, stderr, markdownPath, title, outPath)
 	}
 
 	slides := []pptx.SlideContent{
@@ -77,10 +47,44 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 		printErrorf(stderr, "pptx generation failed: %v", err)
 		return exitInternal
 	}
-	if err := writeOutputFile(outPath, data); err != nil {
-		printErrorf(stderr, "failed to write %q: %v", outPath, err)
+	if writeErr := writeOutputFile(outPath, data); writeErr != nil {
+		printErrorf(stderr, "failed to write %q: %v", outPath, writeErr)
 		return exitIO
 	}
 	_, _ = fmt.Fprintf(stdout, "OK: wrote %s (%d slide(s))\n", strings.TrimSpace(outPath), len(slides))
+	return exitOK
+}
+
+func runMarkdownConversion(stdout, stderr io.Writer, markdownPath, title, outPath string) int {
+	if strings.TrimSpace(title) == "" {
+		printErrorf(stderr, "title is required when using -md")
+		return exitUsage
+	}
+	markdown, err := os.ReadFile(markdownPath)
+	if err != nil {
+		printErrorf(stderr, "failed to read markdown %q: %v", markdownPath, err)
+		return exitIO
+	}
+	slides, err := pptx.SlidesFromMarkdown(string(markdown))
+	if err != nil {
+		printErrorf(stderr, "markdown parse failed: %v", err)
+		return exitParse
+	}
+	data, err := pptx.CreateWithSlides(strings.TrimSpace(title), slides)
+	if err != nil {
+		printErrorf(stderr, "pptx generation failed: %v", err)
+		return exitInternal
+	}
+	if writeErr := writeOutputFile(outPath, data); writeErr != nil {
+		printErrorf(stderr, "failed to write %q: %v", outPath, writeErr)
+		return exitIO
+	}
+	_, _ = fmt.Fprintf(
+		stdout,
+		"OK: wrote %s from %s (%d slide(s))\n",
+		strings.TrimSpace(outPath),
+		markdownPath,
+		len(slides),
+	)
 	return exitOK
 }

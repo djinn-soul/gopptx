@@ -8,6 +8,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
+const minMergeInputs = 2
+
 func runMergeCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("merge", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -25,7 +27,7 @@ func runMergeCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	inputs := fs.Args()
-	if len(inputs) < 2 {
+	if len(inputs) < minMergeInputs {
 		printErrorf(stderr, "at least two input PPTX files are required for merge")
 		return exitUsage
 	}
@@ -37,14 +39,14 @@ func runMergeCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	for _, input := range inputs[1:] {
-		if err := editor.MergeFromFile(input); err != nil {
-			printErrorf(stderr, "failed to merge %q: %v", input, err)
+		if mergeErr := editor.MergeFromFile(input); mergeErr != nil {
+			printErrorf(stderr, "failed to merge %q: %v", input, mergeErr)
 			return exitInternal
 		}
 	}
 
-	if err := editor.Save(output); err != nil {
-		printErrorf(stderr, "failed to save merged presentation to %q: %v", output, err)
+	if saveErr := editor.Save(output); saveErr != nil {
+		printErrorf(stderr, "failed to save merged presentation to %q: %v", output, saveErr)
 		return exitInternal
 	}
 

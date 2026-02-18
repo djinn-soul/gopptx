@@ -26,10 +26,10 @@ type parsedShape struct {
 
 // parseSlideShapes scans the slide XML for shape nodes and extracts their properties and byte ranges.
 func parseSlideShapes(content []byte) ([]parsedShape, error) {
-	return scanShapesWithOffsets(content)
+	return scanShapesWithOffsets(content, false)
 }
 
-func scanShapesWithOffsets(content []byte) ([]parsedShape, error) {
+func scanShapesWithOffsets(content []byte, skipProperties bool) ([]parsedShape, error) {
 	reader := bytes.NewReader(content)
 	decoder := xml.NewDecoder(reader)
 	var shapes []parsedShape
@@ -62,7 +62,7 @@ func scanShapesWithOffsets(content []byte) ([]parsedShape, error) {
 			// So `startOffset` is the end of the *previous* token.
 
 			// Let's extract this node.
-			shape, endOffset, extractErr := extractShapeNode(content, startOffset, decoder, se.Name.Local)
+			shape, endOffset, extractErr := extractShapeNode(content, startOffset, decoder, se.Name.Local, skipProperties)
 			if extractErr != nil {
 				return nil, extractErr
 			}
@@ -84,6 +84,7 @@ func extractShapeNode(
 	startOffset int64,
 	decoder *xml.Decoder,
 	stopTag string,
+	skipProperties bool,
 ) (parsedShape, int64, error) {
 	depth := 1
 
@@ -104,9 +105,21 @@ func extractShapeNode(
 			depth = nextDepth
 			if done {
 				endOffset := decoder.InputOffset()
-				pShape, parseErr := buildParsedShapeFromRange(fullContent, startOffset, endOffset, stopTag)
-				if parseErr != nil {
-					return parsedShape{}, 0, parseErr
+				var pShape parsedShape
+				var parseErr error
+
+				if skipProperties {
+					// Optimization: Just record boundaries/type
+					pShape = parsedShape{
+						Start: startOffset,
+						End:   endOffset,
+						Type:  stopTag,
+					}
+				} else {
+					pShape, parseErr = buildParsedShapeFromRange(fullContent, startOffset, endOffset, stopTag)
+					if parseErr != nil {
+						return parsedShape{}, 0, parseErr
+					}
 				}
 				return pShape, endOffset, nil
 			}
@@ -328,7 +341,8 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 	}
 
 	// Parse existing shapes to find max ID and last shape position
-	shapes, err := parseSlideShapes(content)
+	// OPTIMIZATION: We only need the offsets, not the full properties.
+	shapes, err := scanShapesWithOffsets(content, true) // true = skip properties parsing
 	if err != nil {
 		return 0, fmt.Errorf("parse shapes: %w", err)
 	}

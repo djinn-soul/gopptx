@@ -41,9 +41,9 @@ func run() error {
 	log.Printf("Created base file: %s\n", inputFile)
 
 	// 2. Open with Editor
-	edit, err := editor.OpenPresentationEditor(inputFile)
-	if err != nil {
-		return fmt.Errorf("failed to open editor: %w", err)
+	edit, openErr := editor.OpenPresentationEditor(inputFile)
+	if openErr != nil {
+		return fmt.Errorf("failed to open editor: %w", openErr)
 	}
 	defer func() {
 		if closeErr := edit.Close(); closeErr != nil {

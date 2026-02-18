@@ -75,7 +75,7 @@ func hyperlinkRelationshipType(actionType action.HyperlinkActionType) string {
 	return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 }
 
-func ToXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*action.Hyperlink]string) [][]pptxxml.TextRunSpec {
+func ToXMLTextRunRows(rows [][]Run, hyperlinkRIDs map[*action.Hyperlink]string) [][]pptxxml.TextRunSpec {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -129,7 +129,7 @@ func ToXMLTextRunRows(rows [][]TextRun, hyperlinkRIDs map[*action.Hyperlink]stri
 	return out
 }
 
-func ToXMLBulletParagraphStyles(styles []TextParagraphStyle) []pptxxml.BulletParagraphSpec {
+func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagraphSpec {
 	if len(styles) == 0 {
 		return nil
 	}

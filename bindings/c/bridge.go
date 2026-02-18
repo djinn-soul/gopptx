@@ -9,17 +9,32 @@ import "C"
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 	"sync"
 	"unsafe"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+//nolint:gochecknoglobals // global bridge state
 var (
 	globalErrorMu sync.RWMutex
 	globalError   string
 	deckRegistry  = editor.NewEditorRegistry()
+)
+
+//nolint:gochecknoglobals // theme presets
+var (
+	ThemeCorporate = styling.ThemeCorporate
+	ThemeModern    = styling.ThemeModern
+	ThemeVibrant   = styling.ThemeVibrant
+	ThemeDark      = styling.ThemeDark
+	ThemeNature    = styling.ThemeNature
+	ThemeTech      = styling.ThemeTech
+	ThemeCarbon    = styling.ThemeCarbon
 )
 
 // setGlobalError safely sets the global error message.
@@ -74,8 +89,50 @@ func deck_open(path *C.char) C.DeckHandle {
 	return C.DeckHandle(h)
 }
 
+//export deck_new
+func deck_new(title *C.char) C.DeckHandle {
+	defer recoverPanic(0)
+	setGlobalError(nil)
+
+	goTitle := C.GoString(title)
+	// Create a minimal 1-slide PPTX in memory
+	data, err := pptx.Create(goTitle, 1)
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	// We need to write it to a temp file to open it with the editor
+	// (Current editor requires a file path)
+	tmpFile, err := os.CreateTemp("", "gopptx-new-*.pptx")
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+	tmpPath := tmpFile.Name()
+	_ = tmpFile.Close()
+
+	if err := os.WriteFile(tmpPath, data, 0o600); err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	e, err := editor.OpenPresentationEditor(tmpPath)
+	if err != nil {
+		_ = os.Remove(tmpPath)
+		setGlobalError(err)
+		return 0
+	}
+	e.SetCleanupOnClose(func() {
+		_ = os.Remove(tmpPath)
+	})
+
+	h := editor.RegisterEditor(deckRegistry, e)
+	return C.DeckHandle(h)
+}
+
 //export deck_execute_json
-func deck_execute_json(h C.DeckHandle, json_input *C.char) *C.char {
+func deck_execute_json(h C.DeckHandle, jsonInput *C.char) *C.char {
 	handle := editor.Handle(h)
 	defer recoverPanic(handle)
 
@@ -85,7 +142,7 @@ func deck_execute_json(h C.DeckHandle, json_input *C.char) *C.char {
 		return C.CString(`{"ok": false, "error": {"code": "INVALID_HANDLE", "message": "Handle not found"}}`)
 	}
 
-	goInput := C.GoString(json_input)
+	goInput := C.GoString(jsonInput)
 	response := editor.ExecuteCommand(e, goInput)
 	return C.CString(response)
 }

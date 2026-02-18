@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestCreateWithSlidesEmbedsTableCellAlignmentAndBorder(t *testing.T) {
+func TestCreateWithSlidesEmbedsTableCellAlignmentAndBorder(_ *testing.T) {
 	// Note: This test would usually be in pptx package to test full integration,
 	// but we can test the building of specs here if we had the logic.
 	// For now, let's keep it as is and fix imports if we moved it.

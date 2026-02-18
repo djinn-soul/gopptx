@@ -6,13 +6,21 @@ import (
 	"time"
 )
 
+const (
+	titleHeightEmu   = 1143000 // 1.25 inches
+	contentHeightEmu = 4572000 // 5 inches
+	titleTopOffset   = 274638
+	contentTopOffset = 1600200
+)
+
 func titleShape(title TitleSpec, width, _ int64) string {
 	// Standard margin is 0.5 inches (457200 EMU)
-	margin := int64(457200)
-	x := margin
-	y := int64(274638) // Fixed top offset
-	cx := width - 2*margin
-	cy := int64(1143000) // Fixed height (1.25 inches)
+	margin := defaultMargin
+	x := int64(margin)
+	y := int64(titleTopOffset) // Fixed top offset
+	//nolint:mnd // Bi-lateral margin factor
+	cx := width - 2*int64(margin)
+	cy := int64(titleHeightEmu) // Fixed height (1.25 inches)
 	align := title.Align
 	if align == "" {
 		align = "l"
@@ -20,6 +28,7 @@ func titleShape(title TitleSpec, width, _ int64) string {
 	return titleShapeAt(title, x, y, cx, cy, align)
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func centeredTitleShape(title TitleSpec, width, height int64) string {
 	// Standard margin is 0.5 inches (457200 EMU)
 	margin := int64(457200)
@@ -38,6 +47,7 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 	escaped := Escape(title.Text)
 	sz := 4400
 	if title.SizePt > 0 {
+		//nolint:mnd // Points to centipoints (1/100th of a point)
 		sz = title.SizePt * 100
 	}
 
@@ -93,11 +103,12 @@ func contentShape(
 	shapeID int,
 	width, _ int64,
 ) string {
-	margin := int64(457200)
-	x := margin
-	y := int64(1600200) // Fixed top offset
-	cx := width - 2*margin
-	cy := int64(4572000) // Fixed height
+	margin := defaultMargin
+	x := int64(margin)
+	y := int64(contentTopOffset) // Fixed top offset
+	//nolint:mnd // Bi-lateral margin factor
+	cx := width - 2*int64(margin)
+	cy := int64(contentHeightEmu) // Fixed height
 	return contentShapeAt(
 		shapeID,
 		"Content",
@@ -109,6 +120,7 @@ func contentShape(
 	)
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func bigContentShape(
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
@@ -133,6 +145,7 @@ func bigContentShape(
 	)
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func leftTwoColumnShape(
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
@@ -158,6 +171,7 @@ func leftTwoColumnShape(
 	)
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func rightTwoColumnShape(
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
@@ -240,6 +254,7 @@ func splitBulletsForTwoColumns(bullets []string) ([]string, []string) {
 	if len(bullets) == 0 {
 		return nil, nil
 	}
+	//nolint:mnd // Split point for two-column balancing
 	mid := (len(bullets) + 1) / 2
 	return bullets[:mid], bullets[mid:]
 }
@@ -275,6 +290,7 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 	escaped := Escape(text)
 	sz := 2800
 	if style.SizePt > 0 {
+		//nolint:mnd // Points to centipoints (1/100th of a point)
 		sz = style.SizePt * 100
 	}
 
@@ -293,6 +309,7 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 </a:p>`, bulletParagraphPropsXML(pStyle), sz, boolToFlag(style.Bold), boolToFlag(style.Italic), runUnderlineValue("", style.Underline), colorXML, escaped)
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func slideNumberShape(width, height int64, shapeID int) string {
 	// Standard bottom right position for slide numbers
 	cx := int64(548640)
@@ -324,8 +341,7 @@ func slideNumberShape(width, height int64, shapeID int) string {
     <a:lstStyle/>
     <a:p>
       <a:pPr algn="r"/>
-      <a:fld type="slnum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
-        <a:pPr algn="r"/>
+      <a:fld type="slidenum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
         <a:rPr lang="en-US" smtClean="0"/>
         <a:t>‹#›</a:t>
       </a:fld>
@@ -335,6 +351,7 @@ func slideNumberShape(width, height int64, shapeID int) string {
 </p:sp>`, shapeID, x, y, cx, cy)
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func footerShape(text string, width, height int64, shapeID int) string {
 	cx := int64(2133600)
 	cy := int64(396240)
@@ -374,6 +391,7 @@ func footerShape(text string, width, height int64, shapeID int) string {
 </p:sp>`, shapeID, x, y, cx, cy, Escape(text))
 }
 
+//nolint:mnd // Layout constants from OOXML spec
 func dateTimeShape(_ int64, height int64, shapeID int) string {
 	cx := int64(2133600)
 	cy := int64(396240)
@@ -405,10 +423,10 @@ func dateTimeShape(_ int64, height int64, shapeID int) string {
     <a:p>
       <a:pPr algn="l"/>
       <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
-        <a:rPr lang="en-US" sz="1200" dirty="0"/>
+        <a:rPr lang="en-US" dirty="0"/>
         <a:t>`+time.Now().Format("2006-01-02")+`</a:t>
       </a:fld>
-      <a:endParaRPr lang="en-US" sz="1200" dirty="0"/>
+      <a:endParaRPr lang="en-US" dirty="0"/>
     </a:p>
   </p:txBody>
 </p:sp>`, shapeID, x, y, cx, cy)

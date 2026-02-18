@@ -11,8 +11,8 @@ type readerAtAdapter struct {
 	readBytes []byte
 }
 
-// ToReaderAt returns an io.ReaderAt from an io.Reader.
-// If the reader already implements ReaderAt, it is returned directly.
+// ToReaderAt returns an [io.ReaderAt] from an [io.Reader].
+// If the reader already implements [io.ReaderAt], it is returned directly.
 // Otherwise, it returns an adapter that buffers the read data.
 func ToReaderAt(r io.Reader) io.ReaderAt {
 	ra, ok := r.(io.ReaderAt)
@@ -52,7 +52,7 @@ func (r *readerAtAdapter) expandBuffer(newSize int) error {
 	return nil
 }
 
-// BytesReadAt returns an io.ReaderAt from a byte slice.
+// BytesReadAt returns an [io.ReaderAt] view over a byte slice.
 func BytesReadAt(src []byte, dst []byte, off int64) (int, error) {
 	return bytesReaderAt(src).ReadAt(dst, off)
 }

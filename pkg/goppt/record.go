@@ -44,8 +44,9 @@ func (r recordType) LowerPart() byte {
 var errMismatchRecordType = errors.New("mismatch record type")
 
 type record struct {
-	header [headerSize]byte
 	recordData
+
+	header [headerSize]byte
 }
 
 // Type returns recordType of record contained in it's header.

@@ -12,7 +12,9 @@ func TestCommandUpdateChartData(t *testing.T) {
 	e := newChartUpdateEditorFixture()
 	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXML()))
 
-	req := `{"api_version":1,"request_id":"r1","op":"update_chart_data","payload":{"slide_index":0,"chart_selector":{"index":0},"data":{"categories":["A"],"series":[{"values":[2]}]}}}`
+	req := `{"api_version":1,"request_id":"r1","op":"update_chart_data",` +
+		`"payload":{"slide_index":0,"chart_selector":{"index":0},` +
+		`"data":{"categories":["A"],"series":[{"values":[2]}]}}}`
 	resp := ExecuteCommand(e, req)
 	var out map[string]any
 	if err := json.Unmarshal([]byte(resp), &out); err != nil {
@@ -37,7 +39,8 @@ func TestCommandLayoutOps(t *testing.T) {
 
 	cloneResp := ExecuteCommand(
 		e,
-		`{"api_version":1,"request_id":"r2","op":"clone_layout_master_family","payload":{"layout_part":"ppt/slideLayouts/slideLayout1.xml"}}`,
+		`{"api_version":1,"request_id":"r2","op":"clone_layout_master_family",`+
+			`"payload":{"layout_part":"ppt/slideLayouts/slideLayout1.xml"}}`,
 	)
 	if err := json.Unmarshal([]byte(cloneResp), &out); err != nil {
 		t.Fatalf("invalid clone response: %v", err)
@@ -53,19 +56,22 @@ func TestCommandSectionOps(t *testing.T) {
 		slides: []common.EditorSlideRef{{SlideID: 256}},
 	}
 
-	addReq := `{"api_version":1,"op":"add_section","payload":{"name":"Intro","slide_indices":[0]}}`
+	addReq := `{"api_version":1,"op":"add_section",` +
+		`"payload":{"name":"Intro","slide_indices":[0]}}`
 	resp := ExecuteCommand(e, addReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("add_section failed: %s", resp)
 	}
 
-	renameReq := `{"api_version":1,"op":"rename_section","payload":{"old_name":"Intro","new_name":"Introduction"}}`
+	renameReq := `{"api_version":1,"op":"rename_section",` +
+		`"payload":{"old_name":"Intro","new_name":"Introduction"}}`
 	resp = ExecuteCommand(e, renameReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("rename_section failed: %s", resp)
 	}
 
-	removeReq := `{"api_version":1,"op":"remove_section","payload":{"name":"Introduction"}}`
+	removeReq := `{"api_version":1,"op":"remove_section",` +
+		`"payload":{"name":"Introduction"}}`
 	resp = ExecuteCommand(e, removeReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("remove_section failed: %s", resp)
@@ -77,7 +83,8 @@ func TestCommandPropsOps(t *testing.T) {
 		parts: NewPartStore(),
 	}
 
-	setReq := `{"api_version":1,"op":"set_core_properties","payload":{"title":"New Title","creator":"Test"}}`
+	setReq := `{"api_version":1,"op":"set_core_properties",` +
+		`"payload":{"title":"New Title","creator":"Test"}}`
 	resp := ExecuteCommand(e, setReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("set_core_properties failed: %s", resp)
@@ -98,13 +105,15 @@ func TestCommandThemeAndSizeOps(t *testing.T) {
 		presentationXML: `<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldSz cx="9144000" cy="6858000"/></p:presentation>`,
 	}
 
-	themeReq := `{"api_version":1,"op":"apply_theme","payload":{"theme_name":"Modern"}}`
+	themeReq := `{"api_version":1,"op":"apply_theme",` +
+		`"payload":{"theme_name":"Modern"}}`
 	resp := ExecuteCommand(e, themeReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("apply_theme failed: %s", resp)
 	}
 
-	sizeReq := `{"api_version":1,"op":"set_slide_size","payload":{"width":12192000,"height":6858000}}`
+	sizeReq := `{"api_version":1,"op":"set_slide_size",` +
+		`"payload":{"width":12192000,"height":6858000}}`
 	resp = ExecuteCommand(e, sizeReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("set_slide_size failed: %s", resp)

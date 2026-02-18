@@ -14,92 +14,98 @@ func ToXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*action.Hyperlink]string)
 	}
 	specs := make([]pptxxml.ShapeSpec, 0, len(shapes))
 	for _, shape := range shapes {
-		spec := pptxxml.ShapeSpec{
-			Type:         NormalizeShapeType(shape.Type),
-			X:            shape.X.Emu(),
-			Y:            shape.Y.Emu(),
-			CX:           shape.CX.Emu(),
-			CY:           shape.CY.Emu(),
-			Text:         shape.Text,
-			AltText:      shape.AltText,
-			IsDecorative: shape.IsDecorative,
-		}
-
-		if shape.Fill != nil {
-			spec.Fill = &pptxxml.ShapeFillSpec{
-				Color:        common.NormalizeHexColor(shape.Fill.Color),
-				Transparency: shape.Fill.Transparency,
-			}
-		}
-		if shape.GradientFill != nil {
-			stops := make([]pptxxml.ShapeGradientStopSpec, 0, len(shape.GradientFill.Stops))
-			for _, stop := range shape.GradientFill.Stops {
-				stops = append(stops, pptxxml.ShapeGradientStopSpec{
-					PositionPct:  stop.PositionPct,
-					Color:        common.NormalizeHexColor(stop.Color),
-					Transparency: stop.Transparency,
-				})
-			}
-			spec.GradientFill = &pptxxml.ShapeGradientFillSpec{
-				Type:     NormalizeShapeGradientType(shape.GradientFill.Type),
-				Stops:    stops,
-				AngleDeg: shape.GradientFill.AngleDeg,
-			}
-		}
-		if shape.Line != nil {
-			spec.Line = &pptxxml.ShapeLineSpec{
-				Color: common.NormalizeHexColor(shape.Line.Color),
-				Width: shape.Line.Width.Emu(),
-				Dash:  NormalizeDrawingLineDash(shape.Line.Dash),
-			}
-		}
-
-		spec.RotationDeg = shape.RotationDeg
-		if shape.TextFrame != nil {
-			spec.TextFrame = &pptxxml.TextFrameSpec{
-				MarginLeft:   shape.TextFrame.MarginLeft.Emu(),
-				MarginRight:  shape.TextFrame.MarginRight.Emu(),
-				MarginTop:    shape.TextFrame.MarginTop.Emu(),
-				MarginBottom: shape.TextFrame.MarginBottom.Emu(),
-				Anchor:       string(shape.TextFrame.Anchor),
-
-				Wrap:    string(shape.TextFrame.Wrap),
-				AutoFit: string(shape.TextFrame.AutoFit),
-			}
-		}
-		if shape.ClickAction != nil {
-			if rid, ok := hyperlinkRIDs[shape.ClickAction]; ok {
-				spec.ClickAction = &pptxxml.HyperlinkSpec{
-					RelID:          rid,
-					Tooltip:        shape.ClickAction.Tooltip,
-					HighlightClick: shape.ClickAction.HighlightClick,
-					Action:         shape.ClickAction.Action.ActionType(),
-				}
-			}
-		} else if shape.Hyperlink != nil {
-			if rid, ok := hyperlinkRIDs[shape.Hyperlink]; ok {
-				spec.ClickAction = &pptxxml.HyperlinkSpec{
-					RelID:          rid,
-					Tooltip:        shape.Hyperlink.Tooltip,
-					HighlightClick: shape.Hyperlink.HighlightClick,
-					Action:         shape.Hyperlink.Action.ActionType(),
-				}
-			}
-		}
-
-		if shape.HoverAction != nil {
-			if rid, ok := hyperlinkRIDs[shape.HoverAction]; ok {
-				spec.HoverAction = &pptxxml.HyperlinkSpec{
-					RelID:          rid,
-					Tooltip:        shape.HoverAction.Tooltip,
-					HighlightClick: shape.HoverAction.HighlightClick,
-					Action:         shape.HoverAction.Action.ActionType(),
-				}
-			}
-		}
+		spec := toXMLShapeSpec(shape, hyperlinkRIDs)
 		specs = append(specs, spec)
 	}
 	return specs
+}
+
+func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) pptxxml.ShapeSpec {
+	spec := pptxxml.ShapeSpec{
+		Type:         NormalizeShapeType(shape.Type),
+		X:            shape.X.Emu(),
+		Y:            shape.Y.Emu(),
+		CX:           shape.CX.Emu(),
+		CY:           shape.CY.Emu(),
+		Text:         shape.Text,
+		AltText:      shape.AltText,
+		IsDecorative: shape.IsDecorative,
+		RotationDeg:  shape.RotationDeg,
+	}
+
+	if shape.Fill != nil {
+		spec.Fill = &pptxxml.ShapeFillSpec{
+			Color:        common.NormalizeHexColor(shape.Fill.Color),
+			Transparency: shape.Fill.Transparency,
+		}
+	}
+	if shape.GradientFill != nil {
+		spec.GradientFill = toXMLGradientFillSpec(shape.GradientFill)
+	}
+	if shape.Line != nil {
+		spec.Line = &pptxxml.ShapeLineSpec{
+			Color: common.NormalizeHexColor(shape.Line.Color),
+			Width: shape.Line.Width.Emu(),
+			Dash:  NormalizeDrawingLineDash(shape.Line.Dash),
+		}
+	}
+
+	if shape.TextFrame != nil {
+		spec.TextFrame = toXMLTextFrameSpec(shape.TextFrame)
+	}
+
+	spec.ClickAction = resolveActionSpec(shape.ClickAction, shape.Hyperlink, hyperlinkRIDs)
+	spec.HoverAction = resolveActionSpec(shape.HoverAction, nil, hyperlinkRIDs)
+
+	return spec
+}
+
+func toXMLGradientFillSpec(fill *ShapeGradientFill) *pptxxml.ShapeGradientFillSpec {
+	stops := make([]pptxxml.ShapeGradientStopSpec, 0, len(fill.Stops))
+	for _, stop := range fill.Stops {
+		stops = append(stops, pptxxml.ShapeGradientStopSpec{
+			PositionPct:  stop.PositionPct,
+			Color:        common.NormalizeHexColor(stop.Color),
+			Transparency: stop.Transparency,
+		})
+	}
+	return &pptxxml.ShapeGradientFillSpec{
+		Type:     NormalizeShapeGradientType(fill.Type),
+		Stops:    stops,
+		AngleDeg: fill.AngleDeg,
+	}
+}
+
+func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
+	return &pptxxml.TextFrameSpec{
+		MarginLeft:   tf.MarginLeft.Emu(),
+		MarginRight:  tf.MarginRight.Emu(),
+		MarginTop:    tf.MarginTop.Emu(),
+		MarginBottom: tf.MarginBottom.Emu(),
+		Anchor:       string(tf.Anchor),
+		Wrap:         string(tf.Wrap),
+		AutoFit:      string(tf.AutoFit),
+	}
+}
+
+func resolveActionSpec(primary, secondary *action.Hyperlink, rids map[*action.Hyperlink]string) *pptxxml.HyperlinkSpec {
+	h := primary
+	if h == nil {
+		h = secondary
+	}
+	if h == nil {
+		return nil
+	}
+
+	if rid, ok := rids[h]; ok {
+		return &pptxxml.HyperlinkSpec{
+			RelID:          rid,
+			Tooltip:        h.Tooltip,
+			HighlightClick: h.HighlightClick,
+			Action:         h.Action.ActionType(),
+		}
+	}
+	return nil
 }
 
 func ToXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.ConnectorSpec {

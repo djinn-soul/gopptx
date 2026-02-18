@@ -138,89 +138,94 @@ func (e *PresentationEditor) GetComments(slideIndex int) ([]comments.Comment, er
 }
 
 // AddComment adds a new comment to the specified slide.
+// AddComment adds a new comment to the specified slide.
 func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text string, x, y int64) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
 	}
 
-	// Ensure author exists
+	if err := e.ensureAuthorExists(authorID); err != nil {
+		return err
+	}
+
+	commentPartPath, err := e.ensureCommentPart(slideIndex)
+	if err != nil {
+		return err
+	}
+
+	return e.saveSlideComment(commentPartPath, authorID, text, x, y)
+}
+
+func (e *PresentationEditor) ensureAuthorExists(authorID int64) error {
 	e.authorCacheMu.RLock()
 	_, ok := e.authorCache[authorID]
 	e.authorCacheMu.RUnlock()
-	if !ok {
-		// Try loading
-		_, _ = e.GetAuthors()
-		e.authorCacheMu.RLock()
-		_, ok = e.authorCache[authorID]
-		e.authorCacheMu.RUnlock()
-		if !ok {
-			return fmt.Errorf("author ID %d not found", authorID)
-		}
+	if ok {
+		return nil
 	}
 
-	// 1. Find or create comments part
+	// Try loading
+	_, _ = e.GetAuthors()
+	e.authorCacheMu.RLock()
+	_, ok = e.authorCache[authorID]
+	e.authorCacheMu.RUnlock()
+	if !ok {
+		return fmt.Errorf("author ID %d not found", authorID)
+	}
+	return nil
+}
+
+func (e *PresentationEditor) ensureCommentPart(slideIndex int) (string, error) {
 	relsPath := common.SlideRelsPartName(e.slides[slideIndex].Part)
 	relsData, ok := e.parts.Get(relsPath)
 
 	var rels relationships
 	if ok {
 		if err := xml.Unmarshal(relsData, &rels); err != nil {
-			return fmt.Errorf("parse rels: %w", err)
+			return "", fmt.Errorf("parse rels: %w", err)
 		}
 	} else {
 		rels.Xmlns = relsNamespace
 	}
 
-	var commentPartPath string
-
 	for _, r := range rels.Rels {
 		if r.Type == commentsRelType {
 			slideDir := path.Dir(e.slides[slideIndex].Part)
-			commentPartPath = path.Join(slideDir, r.Target)
-			commentPartPath = strings.ReplaceAll(commentPartPath, "\\", "/")
-			break
+			commentPartPath := path.Join(slideDir, r.Target)
+			return strings.ReplaceAll(commentPartPath, "\\", "/"), nil
 		}
 	}
 
-	if commentPartPath == "" {
-		// Need new part
-		newPartName := e.nextCommentPartName()
-		commentPartPath = "ppt/comments/" + newPartName
+	newPartName := e.nextCommentPartName()
+	commentPartPath := "ppt/comments/" + newPartName
 
-		// Add relationship
-		nextRelID := e.nextRelID(rels.Rels)
-		relID := fmt.Sprintf("rId%d", nextRelID)
-		rels.Rels = append(rels.Rels, relationship{
-			ID:     relID,
-			Type:   commentsRelType,
-			Target: "../comments/" + newPartName,
-		})
+	nextRelID := e.nextRelID(rels.Rels)
+	rels.Rels = append(rels.Rels, relationship{
+		ID:     fmt.Sprintf("rId%d", nextRelID),
+		Type:   commentsRelType,
+		Target: "../comments/" + newPartName,
+	})
 
-		// Save rels using standardized internal renderer
-		editorRels := make([]common.EditorRelationship, len(rels.Rels))
-		for i, r := range rels.Rels {
-			editorRels[i] = common.EditorRelationship{
-				ID:         r.ID,
-				Type:       r.Type,
-				Target:     r.Target,
-				TargetMode: r.TargetMode,
-			}
+	editorRels := make([]common.EditorRelationship, len(rels.Rels))
+	for i, r := range rels.Rels {
+		editorRels[i] = common.EditorRelationship{
+			ID: r.ID, Type: r.Type, Target: r.Target, TargetMode: r.TargetMode,
 		}
-		e.parts.Set(relsPath, []byte(renderRelationshipsXML(editorRels)))
 	}
+	e.parts.Set(relsPath, []byte(renderRelationshipsXML(editorRels)))
+	return commentPartPath, nil
+}
 
-	// 2. Read existing comments
+func (e *PresentationEditor) saveSlideComment(commentPartPath string, authorID int64, text string, x, y int64) error {
 	var lst cmLst
-	if data, commentsOK := e.parts.Get(commentPartPath); commentsOK {
+	if data, ok := e.parts.Get(commentPartPath); ok {
 		_ = xml.Unmarshal(data, &lst)
 	}
 
-	// 3. Update author index
 	author := e.authorCache[authorID]
 	newIdx := author.LastIndex + 1
 	e.updateAuthorLastIndex(authorID, newIdx)
 
-	// 4. Add comment
 	now := time.Now().Format("2006-01-02T15:04:05.000")
 	lst.Comments = append(lst.Comments, cm{
 		AuthorID: authorID,
@@ -230,7 +235,6 @@ func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text str
 		Text:     text,
 	})
 
-	// 5. Save comments part using pptxxml generator
 	domainComments := make([]comments.Comment, len(lst.Comments))
 	for i, c := range lst.Comments {
 		t, err := parseCommentTimestamp(c.Dt)
@@ -247,8 +251,7 @@ func (e *PresentationEditor) AddComment(slideIndex int, authorID int64, text str
 		}
 	}
 
-	xmlContent := pptxxml.CommentsXML(domainComments)
-	e.parts.Set(commentPartPath, []byte(xmlContent))
+	e.parts.Set(commentPartPath, []byte(pptxxml.CommentsXML(domainComments)))
 	return nil
 }
 

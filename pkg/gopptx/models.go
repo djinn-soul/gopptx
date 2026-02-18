@@ -2,12 +2,11 @@ package gopptx
 
 import (
 	"encoding/xml"
-	"fmt"
+	"errors"
 	"os"
-	"strconv"
+	"path/filepath"
 
-	"github.com/djinn-soul/gopptx/internal/opc"
-	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 const (
@@ -28,55 +27,68 @@ func (p *Presentation) AddSlide() *Slide {
 }
 
 // Save writes the presentation to a .pptx file.
+//
+// TODO: This is currently a placeholder implementation that generates a generic presentation
+// with fixed slide content. It does not yet serialize the actual data within the Presentation
+// and Slide structs. Future work should refactor this to use xml.Marshal for true data-to-XML
+// serialization, ensuring all struct fields are respected in the output.
 func (p *Presentation) Save(path string) error {
-	f, err := os.Create(path)
+	slideCount := len(p.Slides)
+	if slideCount < 1 {
+		return errors.New("at least one slide is required")
+	}
+
+	data, err := pptx.Create("Presentation", slideCount)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-
-	w := opc.NewWriter(f)
-	defer w.Close()
-
-	slideCount := len(p.Slides)
-
-	// 1. Mandatory OPC parts
-	if err := w.AddFile("[Content_Types].xml", []byte(pptxxml.ContentTypes(slideCount, nil, 0, nil, false, 0, 1, 0))); err != nil {
-		return err
-	}
-	if err := w.AddFile("_rels/.rels", []byte(pptxxml.RootRelationships())); err != nil {
-		return err
-	}
-	if err := w.AddFile("ppt/_rels/presentation.xml.rels", []byte(pptxxml.PresentationRelationships(slideCount, false, 0, 1))); err != nil {
-		return err
-	}
-
-	// 2. Marshal Presentation
-	// Note: Standard Presentation generator from pptxxml is more complete,
-	// but here we use the struct for now as it's the intended models.go design.
-	// However, the struct must match the expected RID and ID from PresentationRelationships.
-	// For simplicity in this fix, we'll use pptxxml.Presentation to ensure validity.
-	presXML := pptxxml.Presentation("Presentation", slideCount, false, 9144000, 6858000, 1)
-	if err := w.AddFile("ppt/presentation.xml", []byte(presXML)); err != nil {
-		return err
-	}
-
-	// 3. Marshal Slides
-	for i := range p.Slides {
-		// Using a minimal valid slide XML for now to ensure it's openable
-		slideXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Slide ` + strconv.Itoa(i+1) + `</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
-		filename := fmt.Sprintf("ppt/slides/slide%d.xml", i+1)
-		if err := w.AddFile(filename, []byte(slideXML)); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writeFileAtomically(path, data, 0o600)
 }
 
 // Slide represents a single slide XML component.
 type Slide struct {
 	XMLName xml.Name `xml:"http://schemas.openxmlformats.org/presentationml/2006/main sld"`
+}
+
+func writeFileAtomically(path string, content []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	tmpFile, err := os.CreateTemp(dir, ".gopptx-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmpFile.Name()
+	committed := false
+	defer func() {
+		_ = tmpFile.Close()
+		if !committed {
+			_ = os.Remove(tmpPath)
+		}
+	}()
+
+	if _, err = tmpFile.Write(content); err != nil {
+		return err
+	}
+	if err = tmpFile.Chmod(perm); err != nil {
+		return err
+	}
+	if err = tmpFile.Sync(); err != nil {
+		return err
+	}
+	if err = tmpFile.Close(); err != nil {
+		return err
+	}
+
+	if _, err = os.Stat(path); err == nil {
+		if err = os.Remove(path); err != nil {
+			return err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	if err = os.Rename(tmpPath, path); err != nil {
+		return err
+	}
+	committed = true
+	return nil
 }

@@ -18,16 +18,16 @@ func TestSpeakerNotesShowcase(t *testing.T) {
 
 	// 2. Rich Text Notes (Bold, Italic) via API
 	s2 := pptx.NewSlide("Rich API Notes")
-	para1 := pptx.NewTextParagraph()
-	para1 = para1.AddRun(pptx.NewTextRun("This is "))
-	para1 = para1.AddRun(pptx.NewTextRun("bold").WithBold(true))
-	para1 = para1.AddRun(pptx.NewTextRun(" text."))
+	para1 := pptx.NewParagraph()
+	para1 = para1.AddRun(pptx.NewRun("This is "))
+	para1 = para1.AddRun(pptx.NewRun("bold").WithBold(true))
+	para1 = para1.AddRun(pptx.NewRun(" text."))
 	s2 = s2.AddNoteParagraph(para1)
 
-	para2 := pptx.NewTextParagraph()
-	para2 = para2.AddRun(pptx.NewTextRun("This is "))
-	para2 = para2.AddRun(pptx.NewTextRun("italic").WithItalic(true))
-	para2 = para2.AddRun(pptx.NewTextRun(" text."))
+	para2 := pptx.NewParagraph()
+	para2 = para2.AddRun(pptx.NewRun("This is "))
+	para2 = para2.AddRun(pptx.NewRun("italic").WithItalic(true))
+	para2 = para2.AddRun(pptx.NewRun(" text."))
 	s2 = s2.AddNoteParagraph(para2)
 	builder.AddSlide(s2)
 
@@ -47,7 +47,7 @@ func TestSpeakerNotesShowcase(t *testing.T) {
 	}
 
 	outPath := filepath.Join(t.TempDir(), "notes_showcase.pptx")
-	if err := builder.WriteToFile(outPath); err != nil {
-		t.Fatalf("failed to write presentation: %s", err)
+	if writeErr := builder.WriteToFile(outPath); writeErr != nil {
+		t.Fatalf("failed to write presentation: %s", writeErr)
 	}
 }

@@ -26,9 +26,9 @@ func run() error {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "gopptx-section-management-*")
-	if err != nil {
-		return fmt.Errorf("create temp dir: %w", err)
+	tmpDir, tempErr := os.MkdirTemp("", "gopptx-section-management-*")
+	if tempErr != nil {
+		return fmt.Errorf("create temp dir: %w", tempErr)
 	}
 	defer func() {
 		if cleanupErr := os.RemoveAll(tmpDir); cleanupErr != nil {

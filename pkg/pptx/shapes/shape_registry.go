@@ -1,12 +1,36 @@
 package shapes
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
 // shapeTypeRegistry holds all valid OOXML preset shape type names.
+//
+//nolint:gochecknoglobals // global registry
 var shapeTypeRegistry = map[string]bool{}
 
 // shapeAliasRegistry maps common aliases to canonical OOXML preset names.
+//
+//nolint:gochecknoglobals // global registry
 var shapeAliasRegistry = map[string]string{}
+
+//nolint:gochecknoglobals // global sync
+var registryOnce sync.Once
+
+// ensureRegistryInitialized populates the registries if they are not already.
+func ensureRegistryInitialized() {
+	registryOnce.Do(func() {
+		initActionShapes()
+		initArrowShapes()
+		initBasicShapes()
+		initCalloutShapes()
+		initFlowchartShapes()
+		initMathShapes()
+		initRectVariantShapes()
+		initStarShapes()
+	})
+}
 
 // registerShapeType adds a shape type to the valid registry.
 func registerShapeType(name string) {

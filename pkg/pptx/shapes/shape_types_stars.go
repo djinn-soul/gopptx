@@ -58,7 +58,7 @@ const (
 	ShapeTypeSeal32 = "seal32"
 )
 
-func init() {
+func initStarShapes() {
 	for _, t := range []string{
 		ShapeTypeStar5, ShapeTypeStar4, ShapeTypeStar6,
 		ShapeTypeStar7, ShapeTypeStar8, ShapeTypeStar10,

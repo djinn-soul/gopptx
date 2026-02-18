@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+const (
+	twoColumnDivisor = 2
+	animIDStride     = 2
+	animIDOffset     = 3
+)
+
 // CalculateShapeIDs replicates the ID generation order in pptxxml.SlideWithLayout.
 func CalculateShapeIDs(s SlideContent) []int {
 	// Shape IDs start at 2 (Title = 2).
@@ -21,7 +27,7 @@ func CalculateShapeIDs(s SlideContent) []int {
 	} else if len(s.Bullets) > 0 || len(s.BulletRuns) > 0 {
 		nextID++
 		if s.Layout == SlideLayoutTwoColumn {
-			leftCount := (len(s.Bullets) + 1) / 2
+			leftCount := (len(s.Bullets) + 1) / twoColumnDivisor
 			if len(s.Bullets[leftCount:]) > 0 {
 				nextID++
 			}
@@ -102,7 +108,7 @@ func SlideAnimationsXML(s SlideContent, shapeIDs []int) string {
 		if actualID == 0 {
 			continue
 		}
-		animationsXML[i] = anim.XML(i*2+3, actualID)
+		animationsXML[i] = anim.XML(i*animIDStride+animIDOffset, actualID)
 	}
 
 	var finalXML []string

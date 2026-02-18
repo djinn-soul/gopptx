@@ -17,7 +17,7 @@ func TestPresentation_Save(t *testing.T) {
 		t.Fatalf("Failed to save presentation: %v", err)
 	}
 
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
+	if _, statErr := os.Stat(filename); os.IsNotExist(statErr) {
 		t.Errorf("Expected file %s to be created", filename)
 	}
 }
