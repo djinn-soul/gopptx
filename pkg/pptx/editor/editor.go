@@ -63,9 +63,9 @@ type PresentationEditor struct {
 	authorCacheMu sync.RWMutex
 }
 
-// Metadata returns presentation-level metadata parsed from the package.
-func (e *PresentationEditor) Metadata() common.Metadata {
-	return e.metadata
+// Metadata returns a pointer to the presentation-level metadata.
+func (e *PresentationEditor) Metadata() *common.Metadata {
+	return &e.metadata
 }
 
 // Close releases any resources held by the editor (e.g. the underlying file handle).

@@ -88,7 +88,7 @@ func TestSlideMasterWithoutTxStyles(t *testing.T) {
 }
 
 func TestPresentationMultiMaster(t *testing.T) {
-	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3)
+	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil)
 
 	// Should have 3 master IDs
 	if count := strings.Count(xml, "sldMasterId"); count != 2+3 {
@@ -132,6 +132,42 @@ func TestPresentationRelationshipsMultiMaster(t *testing.T) {
 	// Slides should start at rId3 with 2 masters
 	if !strings.Contains(xml, `Id="rId3"`) {
 		t.Error("first slide should be rId3 with 2 masters")
+	}
+}
+
+func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
+	xml := pptxxml.Presentation(
+		"Protected",
+		1,
+		false,
+		12192000,
+		6858000,
+		1,
+		&pptxxml.ProtectionInfo{
+			HashAlgSID: 14,
+			HashData:   "HASH",
+			SaltData:   "SALT",
+			SpinCount:  100000,
+		},
+	)
+
+	if !strings.Contains(xml, `cryptProviderType="rsaAES"`) {
+		t.Error("missing rsaAES provider")
+	}
+	if !strings.Contains(xml, `cryptAlgorithmSid="14"`) {
+		t.Error("missing SHA-512 algorithm SID")
+	}
+	if !strings.Contains(xml, `saltData="SALT"`) {
+		t.Error("missing saltData attribute")
+	}
+	if !strings.Contains(xml, `hashData="HASH"`) {
+		t.Error("missing hashData attribute")
+	}
+	if strings.Contains(xml, `saltValue=`) {
+		t.Error("legacy saltValue attribute should not be emitted")
+	}
+	if strings.Contains(xml, `hashValue=`) {
+		t.Error("legacy hashValue attribute should not be emitted")
 	}
 }
 

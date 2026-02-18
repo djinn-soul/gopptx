@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -27,6 +28,8 @@ func ContentTypes(
 		masterCount = 1
 	}
 	var b strings.Builder
+	b.Grow(4096 + slideCount*160 + chartCount*120 + smartArtCount*560 + len(notesSlides)*140 +
+		customXMLCount*220 + masterCount*560 + len(imageExtensions)*96)
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -34,36 +37,60 @@ func ContentTypes(
 <Override PartName="/ppt/presentation.xml" ` +
 		`ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
 
+	writeInt := func(v int) {
+		b.WriteString(strconv.Itoa(v))
+	}
+
 	for _, ext := range imageExtensions {
 		contentType, ok := imageContentType(ext)
 		if !ok {
-			panic(fmt.Sprintf("unsupported image extension in content types: %s", ext))
+			panic("unsupported image extension in content types: " + ext)
 		}
-		b.WriteString(fmt.Sprintf(`
-<Default Extension="%s" ContentType="%s"/>`, ext, contentType))
+		b.WriteString(`
+<Default Extension="`)
+		b.WriteString(ext)
+		b.WriteString(`" ContentType="`)
+		b.WriteString(contentType)
+		b.WriteString(`"/>`)
 	}
 
 	for i := 1; i <= slideCount; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/slides/slide%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`, i))
+		b.WriteString(`
+<Override PartName="/ppt/slides/slide`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`)
 	}
 
 	for i := 1; i <= chartCount; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/charts/chart%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`, i))
+		b.WriteString(`
+<Override PartName="/ppt/charts/chart`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`)
 	}
 	for i := 1; i <= smartArtCount; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/diagrams/data%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"/>
-<Override PartName="/ppt/diagrams/layout%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"/>
-<Override PartName="/ppt/diagrams/colors%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"/>
-<Override PartName="/ppt/diagrams/quickStyle%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramStyle+xml"/>
-<Override PartName="/ppt/diagrams/drawing%d.xml" ContentType="application/vnd.ms-office.drawingml.diagramDrawing+xml"/>`, i, i, i, i, i))
+		b.WriteString(`
+<Override PartName="/ppt/diagrams/data`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"/>
+<Override PartName="/ppt/diagrams/layout`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"/>
+<Override PartName="/ppt/diagrams/colors`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"/>
+<Override PartName="/ppt/diagrams/quickStyle`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramStyle+xml"/>
+<Override PartName="/ppt/diagrams/drawing`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.ms-office.drawingml.diagramDrawing+xml"/>`)
 	}
 
 	for _, slideNumber := range notesSlides {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/notesSlides/notesSlide%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`, slideNumber))
+		b.WriteString(`
+<Override PartName="/ppt/notesSlides/notesSlide`)
+		writeInt(slideNumber)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`)
 	}
 	if includeNotesMaster {
 		b.WriteString(`
@@ -71,34 +98,42 @@ func ContentTypes(
 	}
 
 	for i := 1; i <= customXMLCount; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/customXml/item%d.xml" ContentType="application/xml"/>`, i))
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/customXml/itemProps%d.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/>`, i))
+		b.WriteString(`
+<Override PartName="/customXml/item`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/xml"/>
+<Override PartName="/customXml/itemProps`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/>`)
 	}
 
 	for i := 1; i <= masterCount*6; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/slideLayouts/slideLayout%d.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`, i))
+		b.WriteString(`
+<Override PartName="/ppt/slideLayouts/slideLayout`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`)
 	}
 	for i := 1; i <= masterCount; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/slideMasters/slideMaster%d.xml" `+
-			`ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`, i))
+		b.WriteString(`
+<Override PartName="/ppt/slideMasters/slideMaster`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`)
 	}
 	for i := 1; i <= masterCount; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/theme/theme%d.xml" `+
-			`ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, i))
+		b.WriteString(`
+<Override PartName="/ppt/theme/theme`)
+		writeInt(i)
+		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`)
 	}
 	if includeNotesMaster {
 		if notesThemeIndex < 1 {
 			notesThemeIndex = 2
 		}
 		if notesThemeIndex > masterCount {
-			b.WriteString(fmt.Sprintf(`
-<Override PartName="/ppt/theme/theme%d.xml" `+
-				`ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`, notesThemeIndex))
+			b.WriteString(`
+<Override PartName="/ppt/theme/theme`)
+			writeInt(notesThemeIndex)
+			b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`)
 		}
 	}
 	b.WriteString(`
@@ -212,8 +247,23 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	return b.String()
 }
 
+// ProtectionInfo defines the XML attributes for p:modifyVerifier.
+type ProtectionInfo struct {
+	HashAlgSID int
+	HashData   string
+	SaltData   string
+	SpinCount  int
+}
+
 // Presentation renders ppt/presentation.xml.
-func Presentation(title string, slideCount int, includeNotesMaster bool, width, height int64, masterCount int) string {
+func Presentation(
+	title string,
+	slideCount int,
+	includeNotesMaster bool,
+	width, height int64,
+	masterCount int,
+	protection *ProtectionInfo,
+) string {
 	_ = title
 	if masterCount < 1 {
 		masterCount = 1
@@ -265,7 +315,33 @@ func Presentation(title string, slideCount int, includeNotesMaster bool, width, 
 	b.WriteString(fmt.Sprintf(`
 </p:sldIdLst>
 <p:sldSz cx="%d" cy="%d" type="%s"/>
-<p:notesSz cx="6858000" cy="9144000"/>
-</p:presentation>`, width, height, typeAttr))
+<p:notesSz cx="6858000" cy="9144000"/>`, width, height, typeAttr))
+
+	if protection != nil {
+		algSid := protection.HashAlgSID
+		if algSid == 0 {
+			algSid = 14 // SHA-512 in Office crypto SID mapping
+		}
+		b.WriteString(fmt.Sprintf(`
+<p:modifyVerifier cryptProviderType="rsaAES" cryptAlgorithmClass="hash" cryptAlgorithmType="typeAny" cryptAlgorithmSid="%d" spinCount="%d" saltData="%s" hashData="%s"/>`,
+			algSid, protection.SpinCount, protection.SaltData, protection.HashData))
+	}
+
+	b.WriteString(`
+</p:presentation>`)
 	return b.String()
+}
+
+// CustomProperties renders docProps/custom.xml.
+func CustomProperties(markAsFinal bool) string {
+	if !markAsFinal {
+		return ""
+	}
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" ` +
+		`xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="_MarkAsFinal">
+<vt:bool>true</vt:bool>
+</property>
+</Properties>`
 }

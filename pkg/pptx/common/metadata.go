@@ -45,6 +45,13 @@ type Metadata struct {
 	SlideCount     int
 	CustomXML      []CustomXMLPart
 	CoreProperties CoreProperties
+	Protection     Protection
+}
+
+// Protection defines write-protection and suggested read-only settings.
+type Protection struct {
+	ModifyPassword string
+	MarkAsFinal    bool
 }
 
 // CoreProperties represents the docProps/core.xml metadata.

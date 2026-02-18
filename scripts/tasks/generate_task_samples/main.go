@@ -632,7 +632,7 @@ func generateLayoutHelpers() ([]byte, error) {
 	slide := pptx.NewSlide("Layout Helpers")
 	boxes, _ := pptx.Grid(2, 2, pptx.Inches(0.5))
 	for i, b := range boxes {
-		slide.AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
+		slide = slide.AddShape(pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
 			WithText(fmt.Sprintf("Grid %d", i+1)).
 			WithFill(pptx.NewShapeFill("4472C4")))
 	}

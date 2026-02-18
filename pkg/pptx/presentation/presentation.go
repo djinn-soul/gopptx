@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"archive/zip"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -9,6 +10,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/media"
 	"github.com/djinn-soul/gopptx/pkg/pptx/notes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/presentation/protection"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -61,7 +63,7 @@ func WritePackageFiles(
 	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0, masterCount)
 
 	addBasicPropertyFiles(
-		pw, meta, slideCount, len(notesParts), len(chartParts), len(smartArtParts),
+		pw, meta, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
 	)
 	addLayoutFiles(pw, masterCount)
@@ -135,13 +137,32 @@ func addBasicPropertyFiles(
 		"ppt/_rels/presentation.xml.rels",
 		pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount),
 	)
+	var protInfo *pptxxml.ProtectionInfo
+	if meta.Protection.ModifyPassword != "" {
+		// PPT uses 16 bytes of salt by default
+		salt := []byte("gopptx-salt-1234") // For now deterministic for testing, can be randomized later
+		spinCount := 100000
+		hash := protection.HashModifyPassword(meta.Protection.ModifyPassword, salt, spinCount)
+		protInfo = &pptxxml.ProtectionInfo{
+			HashAlgSID: 14,
+			HashData:   hash,
+			SaltData:   base64.StdEncoding.EncodeToString(salt),
+			SpinCount:  spinCount,
+		}
+	}
+
 	pw.AddPart(
 		"ppt/presentation.xml",
 		pptxxml.Presentation(
 			meta.Title, slideCount, hasNotes,
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
+			protInfo,
 		),
 	)
+
+	if meta.Protection.MarkAsFinal {
+		pw.AddPart("docProps/custom.xml", pptxxml.CustomProperties(true))
+	}
 	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
 		Title: meta.Title, Subject: meta.Subject, Creator: meta.Creator, Description: meta.Description,
 	}))

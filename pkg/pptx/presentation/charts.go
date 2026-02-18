@@ -13,6 +13,10 @@ type ChartPart struct {
 	spec       pptxxml.ChartSpec
 }
 
+func ChartPartCount(parts []ChartPart) int {
+	return len(parts)
+}
+
 func BuildChartParts(slides []elements.SlideContent) []ChartPart {
 	out := make([]ChartPart, 0)
 	for i, slide := range slides {

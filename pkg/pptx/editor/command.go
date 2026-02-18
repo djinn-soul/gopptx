@@ -96,6 +96,10 @@ func commandHandlerForSlidesAndMeta(op string) (commandHandler, bool) {
 		return handleFindAndReplace, true
 	case OpSearchShapes:
 		return handleSearchShapes, true
+	case OpSetModifyPassword:
+		return handleSetModifyPassword, true
+	case OpSetMarkAsFinal:
+		return handleSetMarkAsFinal, true
 	default:
 		return nil, false
 	}
@@ -763,4 +767,26 @@ func handleRemoveComment(e *PresentationEditor, payload json.RawMessage) (any, e
 		return nil, err
 	}
 	return map[string]bool{"removed": true}, nil
+}
+
+func handleSetModifyPassword(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		Password string `json:"password"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	e.Metadata().Protection.ModifyPassword = p.Password
+	return map[string]bool{"updated": true}, nil
+}
+
+func handleSetMarkAsFinal(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p struct {
+		Final bool `json:"final"`
+	}
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+	e.Metadata().Protection.MarkAsFinal = p.Final
+	return map[string]bool{"updated": true}, nil
 }

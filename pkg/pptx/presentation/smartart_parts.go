@@ -14,6 +14,10 @@ type SmartArtPart struct {
 	spec       pptxxml.SmartArtSpec
 }
 
+func SmartArtPartCount(parts []SmartArtPart) int {
+	return len(parts)
+}
+
 func BuildSmartArtParts(slides []elements.SlideContent) []SmartArtPart {
 	out := make([]SmartArtPart, 0)
 	for i, slide := range slides {

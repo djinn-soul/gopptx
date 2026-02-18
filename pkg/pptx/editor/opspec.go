@@ -40,6 +40,8 @@ const (
 	OpUpdateShape             = "update_shape"
 	OpGetNotes                = "get_notes"
 	OpSetNotes                = "set_notes"
+	OpSetModifyPassword       = "set_modify_password"
+	OpSetMarkAsFinal          = "set_mark_as_final"
 )
 
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
@@ -83,5 +85,7 @@ func SupportedOps() []string {
 		OpUpdateShape,
 		OpGetNotes,
 		OpSetNotes,
+		OpSetModifyPassword,
+		OpSetMarkAsFinal,
 	}
 }

@@ -108,6 +108,18 @@ func (b *PresentationBuilder) WithDateTime(show bool) *PresentationBuilder {
 	return b
 }
 
+// WithModifyPassword sets a "Password to Modify" on the presentation.
+func (b *PresentationBuilder) WithModifyPassword(password string) *PresentationBuilder {
+	b.metadata.Protection.ModifyPassword = password
+	return b
+}
+
+// WithMarkAsFinal sets the "Mark as Final" property on the presentation.
+func (b *PresentationBuilder) WithMarkAsFinal(final bool) *PresentationBuilder {
+	b.metadata.Protection.MarkAsFinal = final
+	return b
+}
+
 // Build compiles the presentation into a PPTX byte slice.
 func (b *PresentationBuilder) Build() ([]byte, error) {
 	// Metadata title overrides builder title if both are present.
