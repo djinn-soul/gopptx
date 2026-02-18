@@ -61,6 +61,9 @@ type PresentationEditor struct {
 	authorCache   map[int64]comments.Author
 	nextAuthorID  int64
 	authorCacheMu sync.RWMutex
+
+	// cleanupOnClose is an optional function called during Close().
+	cleanupOnClose func()
 }
 
 // Metadata returns a pointer to the presentation-level metadata.
@@ -73,7 +76,19 @@ func (e *PresentationEditor) Close() error {
 	if e == nil || e.parts == nil {
 		return nil
 	}
-	return e.parts.Close()
+	err := e.parts.Close()
+	if e.cleanupOnClose != nil {
+		e.cleanupOnClose()
+		e.cleanupOnClose = nil
+	}
+	return err
+}
+
+// SetCleanupOnClose registers a function to be called when the editor is closed.
+func (e *PresentationEditor) SetCleanupOnClose(fn func()) {
+	if e != nil {
+		e.cleanupOnClose = fn
+	}
 }
 
 // SlideCount returns the number of slides currently tracked by the editor.

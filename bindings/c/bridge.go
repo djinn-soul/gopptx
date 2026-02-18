@@ -112,16 +112,20 @@ func deck_new(title *C.char) C.DeckHandle {
 	tmpPath := tmpFile.Name()
 	_ = tmpFile.Close()
 
-	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
+	if err := os.WriteFile(tmpPath, data, 0o600); err != nil {
 		setGlobalError(err)
 		return 0
 	}
 
 	e, err := editor.OpenPresentationEditor(tmpPath)
 	if err != nil {
+		_ = os.Remove(tmpPath)
 		setGlobalError(err)
 		return 0
 	}
+	e.SetCleanupOnClose(func() {
+		_ = os.Remove(tmpPath)
+	})
 
 	h := editor.RegisterEditor(deckRegistry, e)
 	return C.DeckHandle(h)
