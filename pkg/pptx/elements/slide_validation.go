@@ -17,6 +17,9 @@ func validateSlideContent(s SlideContent, index int) error {
 	if err := validateSlideCharts(s, index); err != nil {
 		return err
 	}
+	if err := validateSlideSmartArt(s, index); err != nil {
+		return err
+	}
 	if err := validateSlideTextStyles(s); err != nil {
 		return err
 	}
@@ -221,4 +224,13 @@ func validateSlideAnimations(s SlideContent) error {
 
 func isPrevBasedAnimation(trigger animations.AnimationTrigger) bool {
 	return trigger == animations.AnimationWithPrevious || trigger == animations.AnimationAfterPrevious
+}
+
+func validateSlideSmartArt(s SlideContent, index int) error {
+	for _, diagram := range s.SmartArtDiagrams {
+		if err := diagram.Validate(index); err != nil {
+			return err
+		}
+	}
+	return nil
 }

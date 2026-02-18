@@ -1,0 +1,94 @@
+package editor
+
+import "encoding/json"
+
+type batchCommand struct {
+	Op        string          `json:"op"`
+	Payload   json.RawMessage `json:"payload"`
+	RequestID string          `json:"request_id,omitempty"`
+}
+
+type batchPayload struct {
+	Commands    []batchCommand `json:"commands"`
+	StopOnError bool           `json:"stop_on_error,omitempty"`
+}
+
+type batchResult struct {
+	OK        bool         `json:"ok"`
+	Op        string       `json:"op"`
+	RequestID string       `json:"request_id,omitempty"`
+	Result    any          `json:"result,omitempty"`
+	Error     *ErrorDetail `json:"error,omitempty"`
+}
+
+func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var p batchPayload
+	if err := json.Unmarshal(payload, &p); err != nil {
+		return nil, err
+	}
+
+	results := make([]batchResult, 0, len(p.Commands))
+	for i, cmd := range p.Commands {
+		if cmd.Op == OpBatchExecute {
+			results = append(results, batchResult{
+				OK:        false,
+				Op:        cmd.Op,
+				RequestID: cmd.RequestID,
+				Error: &ErrorDetail{
+					Code:    "INVALID_BATCH_ITEM",
+					Message: "nested batch_execute is not supported",
+					Details: map[string]int{"index": i},
+				},
+			})
+			if p.StopOnError {
+				break
+			}
+			continue
+		}
+
+		handler, ok := commandHandlerFor(cmd.Op)
+		if !ok {
+			results = append(results, batchResult{
+				OK:        false,
+				Op:        cmd.Op,
+				RequestID: cmd.RequestID,
+				Error: &ErrorDetail{
+					Code:    "UNKNOWN_OP",
+					Message: "Operation " + `"` + cmd.Op + `"` + " not recognized",
+					Details: map[string]int{"index": i},
+				},
+			})
+			if p.StopOnError {
+				break
+			}
+			continue
+		}
+
+		result, err := handler(e, cmd.Payload)
+		if err != nil {
+			results = append(results, batchResult{
+				OK:        false,
+				Op:        cmd.Op,
+				RequestID: cmd.RequestID,
+				Error: &ErrorDetail{
+					Code:    "OP_FAILED",
+					Message: err.Error(),
+					Details: map[string]int{"index": i},
+				},
+			})
+			if p.StopOnError {
+				break
+			}
+			continue
+		}
+
+		results = append(results, batchResult{
+			OK:        true,
+			Op:        cmd.Op,
+			RequestID: cmd.RequestID,
+			Result:    result,
+		})
+	}
+
+	return map[string]any{"results": results}, nil
+}

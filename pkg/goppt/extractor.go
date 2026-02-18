@@ -200,11 +200,27 @@ func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries ma
 	data := slideList.Data()
 	n := len(data)
 	for i := 0; i < n; {
-		block, blockErr := readRecord(slideList, int64(i), recordTypeUnspecified)
-		if blockErr != nil {
-			return "", blockErr
+		if i+headerSize > n {
+			break
 		}
-		switch block.Type() {
+		recType := recordType(binary.LittleEndian.Uint16(data[i+2 : i+4]))
+		recLen := binary.LittleEndian.Uint32(data[i+4 : i+8])
+
+		if i+headerSize+int(recLen) > n {
+			break
+		}
+		blockData := data[i+headerSize : i+headerSize+int(recLen)]
+
+		// Create a temporary record view for legacy handlers that expect it.
+		// We reuse the header slice if possible or just use a local.
+		var header [headerSize]byte
+		copy(header[:], data[i:i+headerSize])
+		block := record{
+			recordData: blockData,
+			header:     header,
+		}
+
+		switch recType {
 		case recordTypeSlidePersistAtom:
 			err = readTextFromSlidePersistAtom(block, pptDocument, persistDirEntries, &out, utf16Decoder)
 		case recordTypeTextCharsAtom:
@@ -218,7 +234,7 @@ func readSlides(documentContainer, pptDocument io.ReaderAt, persistDirEntries ma
 			return "", err
 		}
 
-		i += len(block.Data()) + headerSize
+		i += int(recLen) + headerSize
 	}
 
 	return out.String(), nil
@@ -272,21 +288,32 @@ func extractTextFromDrawing(drawing record, out *strings.Builder, utf16Decoder *
 
 func processTextRecord(drawing record, pocketIdx int, out *strings.Builder, utf16Decoder *encoding.Decoder) error {
 	const headerRecordTypeOffset = 2
-	drawingBytes := drawing.Data()
-	var rec record
-	var err error
-	if drawingBytes[pocketIdx] == recordTypeTextBytesAtom.LowerPart() {
-		rec, err = readRecord(drawing, int64(pocketIdx-headerRecordTypeOffset), recordTypeTextBytesAtom)
-		if err != nil {
-			return err
-		}
-		return readTextFromTextBytesAtom(rec, out, utf16Decoder)
+	data := drawing.Data()
+	if pocketIdx+headerSize-headerRecordTypeOffset > len(data) {
+		return nil
 	}
-	rec, err = readRecord(drawing, int64(pocketIdx-headerRecordTypeOffset), recordTypeTextCharsAtom)
-	if err != nil {
-		return err
+	recType := recordType(binary.LittleEndian.Uint16(data[pocketIdx-headerRecordTypeOffset+2 : pocketIdx-headerRecordTypeOffset+4]))
+	recLen := binary.LittleEndian.Uint32(data[pocketIdx-headerRecordTypeOffset+4 : pocketIdx-headerRecordTypeOffset+8])
+
+	if pocketIdx-headerRecordTypeOffset+headerSize+int(recLen) > len(data) {
+		return nil
 	}
-	return readTextFromTextCharsAtom(rec, out, utf16Decoder)
+	blockData := data[pocketIdx-headerRecordTypeOffset+headerSize : pocketIdx-headerRecordTypeOffset+headerSize+int(recLen)]
+
+	var header [headerSize]byte
+	copy(header[:], data[pocketIdx-headerRecordTypeOffset:pocketIdx-headerRecordTypeOffset+headerSize])
+	block := record{
+		recordData: blockData,
+		header:     header,
+	}
+
+	if recType == recordTypeTextCharsAtom {
+		return readTextFromTextCharsAtom(block, out, utf16Decoder)
+	}
+	if recType == recordTypeTextBytesAtom {
+		return readTextFromTextBytesAtom(block, out, utf16Decoder)
+	}
+	return nil
 }
 
 func matchPocket(data []byte, from int) int {

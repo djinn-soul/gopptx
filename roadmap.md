@@ -275,3 +275,11 @@
 - Added `Strips` transition support with `ul|ur|dl|dr` direction mapping.
 - Added `pptcli merge` command to combine multiple PPTX files into one.
 - Added CLI integration tests for `merge` command and validation coverage in `pkg/pptx/slide_transition_test.go`.
+
+26. Accessibility and Alt-Text parity slice:
+
+- Implemented accessibility validation for Alt-Text length (max 150 chars) across Shape, Image, Connector, Table, Chart, and SmartArt types.
+- Defined `MaxAltTextLength` constant in a common package and integrated it into `Validate()` methods for all slide elements.
+- Added support for "Mark as Decorative" property via `IsDecorative` flag.
+- Ensured OOXML rendering parity for `descr` and `title` attributes on all shape and graphic frame non-visual properties.
+- Expanded unit tests in `pkg/pptx/accessibility_test.go` to cover all supported element types.

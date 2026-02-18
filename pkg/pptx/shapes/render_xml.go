@@ -31,6 +31,7 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		AltText:      shape.AltText,
 		IsDecorative: shape.IsDecorative,
 		RotationDeg:  shape.RotationDeg,
+		Name:         shape.Name,
 	}
 
 	if shape.Fill != nil {

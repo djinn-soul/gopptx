@@ -44,6 +44,16 @@ const (
 	TransitionDoors      TransitionType = "doors"
 	TransitionBox        TransitionType = "box"
 	TransitionRandom     TransitionType = "random"
+	TransitionMorph      TransitionType = "morph"
+)
+
+// MorphOption defines the granularity of a Morph transition.
+type MorphOption string
+
+const (
+	MorphOptionObject    MorphOption = "obj"
+	MorphOptionWord      MorphOption = "word"
+	MorphOptionCharacter MorphOption = "char"
 )
 
 // TransitionDirection defines the direction of a transition.
@@ -88,6 +98,7 @@ type TransitionOptions struct {
 	Sound                 *TransitionSound
 	DisableAdvanceOnClick bool
 	AdvanceAfterMS        uint32
+	MorphOption           MorphOption
 }
 
 func (o TransitionOptions) Validate() error {
@@ -138,8 +149,25 @@ func (o TransitionOptions) validateDirection() error {
 		return validateUncoverDirection(o.Direction)
 	case TransitionStrips:
 		return validateStripsDirection(o.Direction)
+	case TransitionMorph:
+		return o.validateMorph()
 	default:
 		return fmt.Errorf("transition %q does not support direction", o.Type)
+	}
+}
+
+func (o TransitionOptions) validateMorph() error {
+	if o.Direction != "" {
+		return errors.New("morph transition does not support direction")
+	}
+	if o.Orientation != "" {
+		return errors.New("morph transition does not support orientation")
+	}
+	switch o.MorphOption {
+	case "", MorphOptionObject, MorphOptionWord, MorphOptionCharacter:
+		return nil
+	default:
+		return fmt.Errorf("invalid morph option %q", o.MorphOption)
 	}
 }
 
@@ -179,6 +207,10 @@ func (o TransitionOptions) XML() string {
 	if o.Type == TransitionNone || (o.Type == TransitionCut && o.Sound == nil) {
 		return ""
 	}
+	if o.Type == TransitionMorph {
+		return o.morphXML()
+	}
+
 	var b strings.Builder
 	b.WriteString(`<p:transition`)
 	if o.DisableAdvanceOnClick {
@@ -187,8 +219,10 @@ func (o TransitionOptions) XML() string {
 	if o.AdvanceAfterMS > 0 {
 		fmt.Fprintf(&b, ` advTm="%d"`, o.AdvanceAfterMS)
 	}
+	if o.ThruBlk {
+		b.WriteString(` thruBlk="1"`)
+	}
 	b.WriteString(`>`)
-
 	b.WriteString(`<p:`)
 	b.WriteString(o.Type.transitionElementName())
 
@@ -206,20 +240,81 @@ func (o TransitionOptions) XML() string {
 	}
 	b.WriteString(`/>`)
 
-	if o.Sound != nil {
-		b.WriteString(`<p:sndAc><p:stSnd`)
-		if o.Sound.Loop {
-			b.WriteString(` loop="1"`)
-		}
-		b.WriteString(`><p:snd r:embed="` + escape(o.Sound.RelID) + `"`)
-		if o.Sound.Name != "" {
-			b.WriteString(` name="` + escape(o.Sound.Name) + `"`)
-		}
-		b.WriteString(`/>`)
-		b.WriteString(`</p:stSnd></p:sndAc>`)
-	}
+	b.WriteString(transitionSoundXML(o.Sound))
 
 	b.WriteString(`</p:transition>`)
+	return b.String()
+}
+
+func (o TransitionOptions) morphXML() string {
+	var b strings.Builder
+	speed := "slow"
+	durationMS := o.DurationMS
+	if durationMS == 0 {
+		durationMS = 2000
+	}
+	soundXML := transitionSoundXML(o.Sound)
+	choiceOption := morphChoiceOption(o.MorphOption)
+	const morphExt = `<p:extLst mod="1"><p:ext uri="{AE3914FA-7E93-4B9E-9A96-D1E12CAF14E6}">` +
+		`<p15:morph xmlns:p15="http://schemas.microsoft.com/office/powerpoint/2015/09/main" ` +
+		`xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns=""/>` +
+		`</p:ext></p:extLst>`
+
+	b.WriteString(`<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">`)
+	b.WriteString(`<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">`)
+	fmt.Fprintf(&b, `<p:transition spd="%s" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" p14:dur="%d"`,
+		speed, durationMS)
+	if o.DisableAdvanceOnClick {
+		b.WriteString(` advClick="0"`)
+	}
+	if o.AdvanceAfterMS > 0 {
+		fmt.Fprintf(&b, ` advTm="%d"`, o.AdvanceAfterMS)
+	}
+	b.WriteString(`>`)
+	fmt.Fprintf(&b, `<p159:morph option="%s"/>`, choiceOption)
+	b.WriteString(morphExt)
+	b.WriteString(soundXML)
+	b.WriteString(`</p:transition></mc:Choice>`)
+	fmt.Fprintf(&b, `<mc:Fallback><p:transition spd="%s"`, speed)
+	if o.DisableAdvanceOnClick {
+		b.WriteString(` advClick="0"`)
+	}
+	if o.AdvanceAfterMS > 0 {
+		fmt.Fprintf(&b, ` advTm="%d"`, o.AdvanceAfterMS)
+	}
+	b.WriteString(`><p:fade/>`)
+	b.WriteString(morphExt)
+	b.WriteString(soundXML)
+	b.WriteString(`</p:transition></mc:Fallback></mc:AlternateContent>`)
+	return b.String()
+}
+
+func morphChoiceOption(option MorphOption) string {
+	switch option {
+	case MorphOptionWord:
+		return "byWord"
+	case MorphOptionCharacter:
+		return "byChar"
+	default:
+		return "byObject"
+	}
+}
+
+func transitionSoundXML(sound *TransitionSound) string {
+	if sound == nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(`<p:sndAc><p:stSnd`)
+	if sound.Loop {
+		b.WriteString(` loop="1"`)
+	}
+	b.WriteString(`><p:snd r:embed="` + escape(sound.RelID) + `"`)
+	if sound.Name != "" {
+		b.WriteString(` name="` + escape(sound.Name) + `"`)
+	}
+	b.WriteString(`/>`)
+	b.WriteString(`</p:stSnd></p:sndAc>`)
 	return b.String()
 }
 
@@ -247,7 +342,7 @@ func (t TransitionType) Validate() error {
 		TransitionStrips, TransitionBlinds, TransitionClock, TransitionRipple,
 		TransitionHoneycomb, TransitionGlitter, TransitionVortex, TransitionShred,
 		TransitionSwitch, TransitionFlip, TransitionGallery, TransitionCube,
-		TransitionDoors, TransitionBox, TransitionRandom:
+		TransitionDoors, TransitionBox, TransitionRandom, TransitionMorph:
 		return nil
 	default:
 		return fmt.Errorf("unsupported transition type: %q", string(t))

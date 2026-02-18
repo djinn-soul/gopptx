@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -67,11 +68,12 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 	if index < 0 || index >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range [0,%d)", index, len(e.slides))
 	}
+	ref := e.slides[index]
+	slide = preserveExistingSlideTransition(e.parts, ref.Part, slide)
 	if err := validateEditorSlideContent(slide); err != nil {
 		return err
 	}
 
-	ref := e.slides[index]
 	existingRels, err := e.slideRelationships(ref.Part)
 	if err != nil {
 		return err
@@ -319,6 +321,8 @@ func scanSupportedSlideRels(rels []common.EditorRelationship) (string, error) {
 		case common.RelTypeNotesSlide:
 			notesTarget = rel.Target
 		case common.RelTypeHyperlink:
+		case common.RelTypeImage, common.RelTypeChart, common.RelTypeAudio, common.RelTypeVideo, common.RelTypeTheme:
+			// Shared assets supported by existing slide/update flows.
 		default:
 			return "", fmt.Errorf("unsupported relationship type %q", rel.Type)
 		}
@@ -359,7 +363,8 @@ func validateEditorSlideContent(slide elements.SlideContent) error {
 	return nil
 }
 
-var aTTitlePattern = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
+var aTTitlePattern = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
+var titlePlaceholderPattern = regexp.MustCompile(`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`)
 
 func appendCopySuffixToXML(content []byte) []byte {
 	res, _ := replaceTitleLikeText(content, replaceLastTextRun, func(match []byte) []byte {
@@ -429,7 +434,7 @@ func isTitlePlaceholderShape(shape []byte) bool {
 	if !bytes.Contains(shape, []byte("<p:ph")) {
 		return false
 	}
-	return bytes.Contains(shape, []byte(`type="title"`)) || bytes.Contains(shape, []byte(`type="ctrTitle"`))
+	return titlePlaceholderPattern.Match(shape)
 }
 
 func replaceFirstTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
@@ -461,6 +466,32 @@ func replaceLastTextRun(content []byte, replaceFn func(match []byte) []byte) ([]
 	return out, true
 }
 
+func replaceAllTextRuns(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
+	modified := false
+	replacedFirst := false
+	res := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
+		modified = true
+		if !replacedFirst {
+			replacedFirst = true
+			return replaceFn(match)
+		}
+		return clearTextRun(match)
+	})
+	return res, modified
+}
+
+func clearTextRun(match []byte) []byte {
+	endOpenTag := bytes.IndexByte(match, '>')
+	if endOpenTag < 0 {
+		return []byte("<a:t></a:t>")
+	}
+	openTag := match[:endOpenTag+1]
+	out := make([]byte, 0, len(openTag)+len("</a:t>"))
+	out = append(out, openTag...)
+	out = append(out, []byte("</a:t>")...)
+	return out
+}
+
 func (e *PresentationEditor) recalculateNextRelIDNum() {
 	maxNum := 0
 	// Scan slide references
@@ -478,7 +509,7 @@ func (e *PresentationEditor) recalculateNextRelIDNum() {
 	e.nextRelIDNum = maxNum + 1
 }
 
-// SetSlideTitle updates the text of the first title-like element in the slide XML.
+// SetSlideTitle replaces title placeholder text runs with the provided title.
 func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
@@ -493,7 +524,7 @@ func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 		return fmt.Errorf("slide part %q missing", ref.Part)
 	}
 
-	newContent, modified := replaceTitleLikeText(content, replaceFirstTextRun, func(_ []byte) []byte {
+	newContent, modified := replaceTitleLikeText(content, replaceAllTextRuns, func(_ []byte) []byte {
 		return []byte("<a:t>" + common.XMLEscape(title) + "</a:t>")
 	})
 	if !modified {
@@ -514,18 +545,19 @@ func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, 
 		return "", errors.New("image data cannot be empty")
 	}
 
-	e.mediaMu.Lock()
-	defer e.mediaMu.Unlock()
-
+	// Calculate hash outside the lock to avoid blocking other image registrations.
 	hash := sha256.Sum256(data)
 	hexHash := hex.EncodeToString(hash[:])
 
-	if path, ok := e.mediaInventory[hexHash]; ok {
-		return path, nil
+	e.mediaMu.Lock()
+	defer e.mediaMu.Unlock()
+
+	if part, ok := e.mediaInventory[hexHash]; ok {
+		return part, nil
 	}
 
-	// New image
-	partPath := fmt.Sprintf("ppt/media/image%d.%s", e.nextMediaNum, format)
+	// New image - use strconv for minor speedup over fmt.Sprintf
+	partPath := "ppt/media/image" + strconv.Itoa(e.nextMediaNum) + "." + format
 	e.nextMediaNum++
 
 	e.parts.Set(partPath, data)

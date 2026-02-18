@@ -9,7 +9,7 @@ func smartArtFrameShape(frame *SmartArtFrame, shapeID int) string {
 	return fmt.Sprintf(`
 <p:graphicFrame>
 <p:nvGraphicFramePr>
-<p:cNvPr id="%d" name="Diagram %d"/>
+<p:cNvPr id="%d" name="Diagram %d"%s/>
 <p:cNvGraphicFramePr/>
 <p:nvPr/>
 </p:nvGraphicFramePr>
@@ -27,13 +27,14 @@ func smartArtFrameShape(frame *SmartArtFrame, shapeID int) string {
 </p:graphicFrame>`,
 		shapeID,
 		shapeID,
+		makeCNvPrAttrs(frame.AltText, frame.IsDecorative),
 		frame.X,
 		frame.Y,
 		frame.CX,
 		frame.CY,
-		Escape(frame.DataRelID),
-		Escape(frame.LayoutRelID),
-		Escape(frame.StyleRelID),
-		Escape(frame.ColorRelID),
+		FastEscapeRID(frame.DataRelID),
+		FastEscapeRID(frame.LayoutRelID),
+		FastEscapeRID(frame.StyleRelID),
+		FastEscapeRID(frame.ColorRelID),
 	)
 }

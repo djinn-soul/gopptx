@@ -46,7 +46,7 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 	// Note: Right indent (marR) is also supported in a:pPr
 	marRXML := ""
 	if style.RightIndent != 0 {
-		marRXML = fmt.Sprintf(` marR="%d"`, style.RightIndent)
+		marRXML = ` marR="` + strconv.FormatInt(style.RightIndent, 10) + `"`
 	}
 
 	base := `<a:pPr lvl="` + strconv.Itoa(

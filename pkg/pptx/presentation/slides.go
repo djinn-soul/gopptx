@@ -297,82 +297,87 @@ func (b *slidePartBuilder) mapCharts(p *slideParts, parts []ChartPart, slide ele
 		part := parts[partIdx]
 		partIdx++
 		rid := b.nextRID()
-		p.chartFrame = &pptxxml.ChartFrame{
-			RelID: rid,
-			X:     part.spec.X,
-			Y:     part.spec.Y,
-			CX:    part.spec.CX,
-			CY:    part.spec.CY,
-		}
-		p.chartRel = &pptxxml.ChartRel{
-			RID:    rid,
-			Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
-		}
-	}
-
-	for i, override := range slide.PlaceholderOverrides {
-		if override.Chart != nil {
-			if partIdx >= len(parts) {
-				return fmt.Errorf("slide %d: missing chart part for placeholder index %d", b.num, override.Index)
+					p.chartFrame = &pptxxml.ChartFrame{
+					RelID:        rid,
+					X:            part.spec.X,
+					Y:            part.spec.Y,
+					CX:           part.spec.CX,
+					CY:           part.spec.CY,
+					AltText:      part.spec.AltText,
+					IsDecorative: part.spec.IsDecorative,
+				}
+				p.chartRel = &pptxxml.ChartRel{
+					RID:    rid,
+					Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
+				}
 			}
-			part := parts[partIdx]
-			partIdx++
-			rid := b.nextRID()
-			frame := &pptxxml.ChartFrame{
-				RelID: rid,
-				X:     part.spec.X,
-				Y:     part.spec.Y,
-				CX:    part.spec.CX,
-				CY:    part.spec.CY,
+		
+			for i, override := range slide.PlaceholderOverrides {
+				if override.Chart != nil {
+					if partIdx >= len(parts) {
+						return fmt.Errorf("slide %d: missing chart part for placeholder index %d", b.num, override.Index)
+					}
+					part := parts[partIdx]
+					partIdx++
+					rid := b.nextRID()
+					frame := &pptxxml.ChartFrame{
+						RelID:        rid,
+						X:            part.spec.X,
+						Y:            part.spec.Y,
+						CX:           part.spec.CX,
+						CY:           part.spec.CY,
+						AltText:      part.spec.AltText,
+						IsDecorative: part.spec.IsDecorative,
+					}
+					p.placeholders[i].Chart = frame
+					p.placeholderChartRels = append(p.placeholderChartRels, pptxxml.ChartRel{
+						RID:    rid,
+						Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
+					})
+				}
 			}
-			p.placeholders[i].Chart = frame
-			p.placeholderChartRels = append(p.placeholderChartRels, pptxxml.ChartRel{
-				RID:    rid,
-				Target: fmt.Sprintf("../charts/chart%d.xml", part.partNumber),
-			})
+			return nil
 		}
-	}
-	return nil
-}
-
-func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) error {
-	for _, part := range parts {
-		// Allocate 4 RIDs for the 5 parts (drawing is internal to the diagram, usually not referenced by slide directly?
-		// Wait, dgm:relIds has 4 attributes: r:dm, r:lo, r:qs, r:cs.
-		// drawing is referenced by data model usually? Or implicitly?
-		// ppt-rs uses 4 relationships.
-
-		dataRID := b.nextRID()
-		layoutRID := b.nextRID()
-		styleRID := b.nextRID()
-		colorsRID := b.nextRID()
-		drawingRID := b.nextRID()
-
-		// Add 4 relationships
-		num := part.partNumber
-		p.smartArtRels = append(p.smartArtRels,
-			pptxxml.SmartArtRel{RID: dataRID, Target: fmt.Sprintf("../diagrams/data%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData"},
-			pptxxml.SmartArtRel{RID: layoutRID, Target: fmt.Sprintf("../diagrams/layout%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout"},
-			pptxxml.SmartArtRel{RID: styleRID, Target: fmt.Sprintf("../diagrams/quickStyle%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle"},
-			pptxxml.SmartArtRel{RID: colorsRID, Target: fmt.Sprintf("../diagrams/colors%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"},
-			pptxxml.SmartArtRel{RID: drawingRID, Target: fmt.Sprintf("../diagrams/drawing%d.xml", num), Type: "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing"},
-		)
-
-		// Create frame
-		p.smartArtFrames = append(p.smartArtFrames, pptxxml.SmartArtFrame{
-			X:           part.spec.X,
-			Y:           part.spec.Y,
-			CX:          part.spec.CX,
-			CY:          part.spec.CY,
-			DataRelID:   dataRID,
-			LayoutRelID: layoutRID,
-			ColorRelID:  colorsRID,
-			StyleRelID:  styleRID,
-		})
-	}
-	return nil
-}
-
+		
+		func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) error {
+			for _, part := range parts {
+				// Allocate 4 RIDs for the 5 parts (drawing is internal to the diagram, usually not referenced by slide directly?
+				// Wait, dgm:relIds has 4 attributes: r:dm, r:lo, r:qs, r:cs.
+				// drawing is referenced by data model usually? Or implicitly?
+				// ppt-rs uses 4 relationships.
+		
+				dataRID := b.nextRID()
+				layoutRID := b.nextRID()
+				styleRID := b.nextRID()
+				colorsRID := b.nextRID()
+				drawingRID := b.nextRID()
+		
+				// Add 4 relationships
+				num := part.partNumber
+				p.smartArtRels = append(p.smartArtRels,
+					pptxxml.SmartArtRel{RID: dataRID, Target: fmt.Sprintf("../diagrams/data%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData"},
+					pptxxml.SmartArtRel{RID: layoutRID, Target: fmt.Sprintf("../diagrams/layout%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout"},
+					pptxxml.SmartArtRel{RID: styleRID, Target: fmt.Sprintf("../diagrams/quickStyle%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle"},
+					pptxxml.SmartArtRel{RID: colorsRID, Target: fmt.Sprintf("../diagrams/colors%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"},
+					pptxxml.SmartArtRel{RID: drawingRID, Target: fmt.Sprintf("../diagrams/drawing%d.xml", num), Type: "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing"},
+				)
+		
+				// Create frame
+				p.smartArtFrames = append(p.smartArtFrames, pptxxml.SmartArtFrame{
+					X:            part.spec.X,
+					Y:            part.spec.Y,
+					CX:           part.spec.CX,
+					CY:           part.spec.CY,
+					DataRelID:    dataRID,
+					LayoutRelID:  layoutRID,
+					ColorRelID:   colorsRID,
+					StyleRelID:   styleRID,
+					AltText:      part.spec.AltText,
+					IsDecorative: part.spec.IsDecorative,
+				})
+			}
+			return nil
+		}
 func (b *slidePartBuilder) buildTitleSpec(slide elements.SlideContent) pptxxml.TitleSpec {
 	return pptxxml.TitleSpec{
 		Text:      slide.Title,

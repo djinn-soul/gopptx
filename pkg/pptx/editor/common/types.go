@@ -29,6 +29,8 @@ const (
 	RelTypeHyperlink   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	RelTypeImage       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 	RelTypeChart       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
+	RelTypeAudio       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"
+	RelTypeVideo       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video"
 	RelTypeTheme       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
 	RelTypeSectionList = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
 	RelTypePackage     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"

@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"archive/zip"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 
@@ -62,10 +63,12 @@ func WritePackageFiles(
 	masterCount := len(effectiveMasters)
 	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0, masterCount)
 
-	addBasicPropertyFiles(
+	if err := addBasicPropertyFiles(
 		pw, meta, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
-	)
+	); err != nil {
+		return err
+	}
 	addLayoutFiles(pw, masterCount)
 	addMasterFiles(pw, effectiveMasters, mediaCatalog)
 	addThemeFiles(pw, meta.Theme, masterCount)
@@ -125,7 +128,7 @@ func addBasicPropertyFiles(
 	notesParts []notes.RenderedNotesPart,
 	masterCount, notesThemeIndex int,
 	mediaExtensions []string,
-) {
+) error {
 	hasNotes := notesPartCount > 0
 	pw.AddPart("[Content_Types].xml", pptxxml.ContentTypes(
 		slideCount, mediaExtensions, chartPartCount, smartArtPartCount,
@@ -139,8 +142,11 @@ func addBasicPropertyFiles(
 	)
 	var protInfo *pptxxml.ProtectionInfo
 	if meta.Protection.ModifyPassword != "" {
-		// PPT uses 16 bytes of salt by default
-		salt := []byte("gopptx-salt-1234") // For now deterministic for testing, can be randomized later
+		// PPT uses 16 bytes of salt by default.
+		salt := make([]byte, 16)
+		if _, err := rand.Read(salt); err != nil {
+			return fmt.Errorf("generate protection salt: %w", err)
+		}
 		spinCount := 100000
 		hash := protection.HashModifyPassword(meta.Protection.ModifyPassword, salt, spinCount)
 		protInfo = &pptxxml.ProtectionInfo{
@@ -170,6 +176,7 @@ func addBasicPropertyFiles(
 		"docProps/app.xml",
 		pptxxml.AppProperties(slideCount, notesPartCount, meta.SlideSize.Width, meta.SlideSize.Height),
 	)
+	return nil
 }
 
 func addLayoutFiles(pw *pptxxml.PackageWriter, masterCount int) {

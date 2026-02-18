@@ -61,7 +61,7 @@ func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
     </a:stretch>
   </p:blipFill>
   %s
-</p:pic>`, id, Escape(img.Name), phAttr, img.RelID, xfrm)
+</p:pic>`, id, Escape(img.Name), phAttr, FastEscapeRID(img.RelID), xfrm)
 }
 
 func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) string {
@@ -81,10 +81,10 @@ func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) st
     <a:ext cx="%d" cy="%d"/>
   </p:xfrm>`, x, y, cx, cy)
 
-	return fmt.Sprintf(`
+return fmt.Sprintf(`
 <p:graphicFrame>
   <p:nvGraphicFramePr>
-    <p:cNvPr id="%d" name="Placeholder Table %d"/>
+    <p:cNvPr id="%d" name="Placeholder Table %d"%s/>
     <p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>
     <p:nvPr>
       <p:ph%s/>
@@ -92,7 +92,7 @@ func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) st
   </p:nvGraphicFramePr>
   %s
   %s
-</p:graphicFrame>`, id, index, phAttr, xfrm, tableGraphicXML(tbl))
+</p:graphicFrame>`, id, index, makeCNvPrAttrs(tbl.AltText, tbl.IsDecorative), phAttr, xfrm, tableGraphicXML(tbl))
 }
 
 func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) string {
@@ -112,10 +112,10 @@ func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) st
     <a:ext cx="%d" cy="%d"/>
   </p:xfrm>`, x, y, cx, cy)
 
-	return fmt.Sprintf(`
+return fmt.Sprintf(`
 <p:graphicFrame>
   <p:nvGraphicFramePr>
-    <p:cNvPr id="%d" name="Placeholder Chart %d"/>
+    <p:cNvPr id="%d" name="Placeholder Chart %d"%s/>
     <p:cNvGraphicFramePr/>
     <p:nvPr>
       <p:ph%s/>
@@ -127,7 +127,7 @@ func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) st
       <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="%s"/>
     </a:graphicData>
   </a:graphic>
-</p:graphicFrame>`, id, index, phAttr, xfrm, Escape(ch.RelID))
+</p:graphicFrame>`, id, index, makeCNvPrAttrs(ch.AltText, ch.IsDecorative), phAttr, xfrm, FastEscapeRID(ch.RelID))
 }
 
 func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string) string {

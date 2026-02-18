@@ -252,6 +252,7 @@ type Shape struct {
 	AltText      string
 	IsDecorative bool
 	TextFrame    *TextFrame
+	Name         string
 }
 
 // NewShape creates one shape.
@@ -387,8 +388,18 @@ func (s Shape) WithAutoFit(autoFit TextFrameAutoFit) Shape {
 	return s
 }
 
+// WithName sets the name of the shape for Morph transitions and selection pane.
+func (s Shape) WithName(name string) Shape {
+	s.Name = name
+	return s
+}
+
 // Validate checks for validity of shape parameters.
 func (s Shape) Validate(slideIndex, shapeIndex int) error {
+	if !s.IsDecorative && len(s.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("shape %d on slide %d alt text exceeds %d characters", shapeIndex, slideIndex, common.MaxAltTextLength)
+	}
+
 	if err := s.validateShapeBounds(slideIndex, shapeIndex); err != nil {
 		return err
 	}

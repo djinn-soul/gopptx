@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -58,13 +57,11 @@ func NotesSlide(paragraphs []text.Paragraph) string {
 
 // NotesSlideRelationships renders notesSlideN.xml.rels.
 func NotesSlideRelationships(slideNumber int) string {
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" `+
-		`Target="../slides/slide%d.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" `+
-		`Target="../notesMasters/notesMaster1.xml"/>
-</Relationships>`, slideNumber)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide` + strconv.Itoa(slideNumber) + `.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="../notesMasters/notesMaster1.xml"/>
+</Relationships>`
 }
 
 // NotesMasterSpec defines the content for notesMaster1.xml.

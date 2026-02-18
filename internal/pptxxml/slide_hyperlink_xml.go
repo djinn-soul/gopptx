@@ -16,7 +16,7 @@ type HyperlinkSpec struct {
 // HyperlinkXML generates drawing hyperlink elements such as
 // <a:hlinkClick> or <a:hlinkMouseOver>.
 func HyperlinkXML(spec HyperlinkSpec, tagName string) string {
-	xml := fmt.Sprintf(`<%s r:id="%s"`, Escape(tagName), Escape(spec.RelID))
+	xml := `<` + tagName + ` r:id="` + FastEscapeRID(spec.RelID) + `"`
 
 	if spec.Tooltip != "" {
 		xml += fmt.Sprintf(` tooltip="%s"`, Escape(spec.Tooltip))
@@ -46,7 +46,7 @@ func HyperlinkRelationshipXML(relID, target string, external bool, relType strin
 	}
 	return fmt.Sprintf(
 		`<Relationship Id="%s" Type="%s" Target="%s"%s/>`,
-		Escape(relID),
+		FastEscapeRID(relID),
 		Escape(typeValue),
 		Escape(target),
 		targetMode,

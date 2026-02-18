@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -9,6 +8,17 @@ import (
 // Escape replaces XML-sensitive characters with entity references.
 func Escape(value string) string {
 	return xmlEscapeReplacer.Replace(value)
+}
+
+// FastEscapeRID is a specialized version of Escape for Relationship IDs (rIdN).
+// Since RIDs are known to be alphanumeric, we can skip the expensive Replacer checks.
+func FastEscapeRID(rid string) string {
+	return rid
+}
+
+// WriteRID appends an escaped RID to a builder without extra allocations.
+func WriteRID(b *strings.Builder, rid string) {
+	b.WriteString(rid)
 }
 
 // ContentTypes renders [Content_Types].xml.
@@ -205,25 +215,35 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 
 	// Master relationships: rId1..rIdN for N masters
 	for i := range masterCount {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster%d.xml"/>`, i+1, i+1))
+		b.WriteString("\n<Relationship Id=\"rId")
+		b.WriteString(strconv.Itoa(i + 1))
+		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster\" Target=\"slideMasters/slideMaster")
+		b.WriteString(strconv.Itoa(i + 1))
+		b.WriteString(".xml\"/>")
 	}
 
 	// Theme relationship: rId(masterCount+1)
-	b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`, masterCount+1))
+	b.WriteString(`
+<Relationship Id="rId`)
+	b.WriteString(strconv.Itoa(masterCount + 1))
+	b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`)
 
 	// Slide relationships: rId(masterCount+2)..rId(masterCount+slideCount+1)
 	for i := 1; i <= slideCount; i++ {
 		rid := masterCount + 1 + i
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide%d.xml"/>`, rid, i))
+		b.WriteString("\n<Relationship Id=\"rId")
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide")
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(".xml\"/>")
 	}
 	if includeNotesMaster {
 		//nolint:mnd // OOXML relationship ID offset
 		rid := masterCount + slideCount + 2
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`, rid))
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`)
 	}
 
 	//nolint:mnd // OOXML relationship ID offset
@@ -234,12 +254,21 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	for i := 1; i <= customXMLCount; i++ {
 		//nolint:mnd // Custom XML ID pair spacing
 		rid := baseRid + (i-1)*2
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" `+
-			`Target="../customXml/item%d.xml"/>`, rid, i))
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" `+
-			`Target="../customXml/itemProps%d.xml"/>`, rid+1, i))
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" ` +
+			`Target="../customXml/item`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`.xml"/>`)
+
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(rid + 1))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" ` +
+			`Target="../customXml/itemProps`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`.xml"/>`)
 	}
 
 	b.WriteString(`
@@ -279,8 +308,11 @@ func Presentation(
 		//nolint:mnd // OOXML master ID base
 		masterID := int64(2147483648) + int64(i*7)
 		rid := i + 1
-		b.WriteString(fmt.Sprintf(`
-<p:sldMasterId id="%d" r:id="rId%d"/>`, masterID, rid))
+		b.WriteString("\n<p:sldMasterId id=\"")
+		b.WriteString(strconv.FormatInt(masterID, 10))
+		b.WriteString("\" r:id=\"rId")
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString("\"/>")
 	}
 	b.WriteString(`
 </p:sldMasterIdLst>`)
@@ -288,10 +320,12 @@ func Presentation(
 	if includeNotesMaster {
 		//nolint:mnd // OOXML notes master relationship ID offset
 		rid := masterCount + slideCount + 2
-		b.WriteString(fmt.Sprintf(`
+		b.WriteString(`
 <p:notesMasterIdLst>
-<p:notesMasterId r:id="rId%d"/>
-</p:notesMasterIdLst>`, rid))
+<p:notesMasterId r:id="rId`)
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString(`"/>
+</p:notesMasterIdLst>`)
 	}
 
 	b.WriteString(`
@@ -301,8 +335,11 @@ func Presentation(
 		//nolint:mnd // OOXML slide ID base and rId offset
 		slideID := 256 + i
 		rid := masterCount + 1 + i
-		b.WriteString(fmt.Sprintf(`
-<p:sldId id="%d" r:id="rId%d"/>`, slideID, rid))
+		b.WriteString("\n<p:sldId id=\"")
+		b.WriteString(strconv.Itoa(slideID))
+		b.WriteString("\" r:id=\"rId")
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString("\"/>")
 	}
 
 	typeAttr := "custom"
@@ -312,19 +349,32 @@ func Presentation(
 		typeAttr = "screen16x9"
 	}
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 </p:sldIdLst>
-<p:sldSz cx="%d" cy="%d" type="%s"/>
-<p:notesSz cx="6858000" cy="9144000"/>`, width, height, typeAttr))
+<p:sldSz cx="`)
+	b.WriteString(strconv.FormatInt(width, 10))
+	b.WriteString(`" cy="`)
+	b.WriteString(strconv.FormatInt(height, 10))
+	b.WriteString(`" type="`)
+	b.WriteString(typeAttr)
+	b.WriteString(`"/>
+<p:notesSz cx="6858000" cy="9144000"/>`)
 
 	if protection != nil {
 		algSid := protection.HashAlgSID
 		if algSid == 0 {
 			algSid = 14 // SHA-512 in Office crypto SID mapping
 		}
-		b.WriteString(fmt.Sprintf(`
-<p:modifyVerifier cryptProviderType="rsaAES" cryptAlgorithmClass="hash" cryptAlgorithmType="typeAny" cryptAlgorithmSid="%d" spinCount="%d" saltData="%s" hashData="%s"/>`,
-			algSid, protection.SpinCount, protection.SaltData, protection.HashData))
+		b.WriteString(`
+<p:modifyVerifier cryptProviderType="rsaAES" cryptAlgorithmClass="hash" cryptAlgorithmType="typeAny" cryptAlgorithmSid="`)
+		b.WriteString(strconv.Itoa(algSid))
+		b.WriteString(`" spinCount="`)
+		b.WriteString(strconv.Itoa(protection.SpinCount))
+		b.WriteString(`" saltData="`)
+		b.WriteString(Escape(protection.SaltData))
+		b.WriteString(`" hashData="`)
+		b.WriteString(Escape(protection.HashData))
+		b.WriteString(`"/>`)
 	}
 
 	b.WriteString(`

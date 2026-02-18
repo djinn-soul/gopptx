@@ -1,7 +1,10 @@
 package editor
 
+//go:generate go run ../../../cmd/gen_ops opspec.go ../../../python/gopptx/ops.py ../../../python/gopptx/ops.pyi
+
 // Command operation names shared between bridge clients and Go dispatcher.
 const (
+	OpBatchExecute            = "batch_execute"
 	OpSlideCount              = "slide_count"
 	OpAddSlide                = "add_slide"
 	OpRemoveSlide             = "remove_slide"
@@ -47,6 +50,7 @@ const (
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
 func SupportedOps() []string {
 	return []string{
+		OpBatchExecute,
 		OpSlideCount,
 		OpAddSlide,
 		OpRemoveSlide,

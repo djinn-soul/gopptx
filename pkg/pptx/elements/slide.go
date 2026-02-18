@@ -266,6 +266,24 @@ func (s SlideContent) WithTransitionOptions(opt transitions.TransitionOptions) S
 	return s
 }
 
+// WithMorphTransition sets a Morph transition using PowerPoint's default mode.
+// We intentionally omit the option attribute to maximize compatibility.
+func (s SlideContent) WithMorphTransition() SlideContent {
+	s.Transition = transitions.TransitionOptions{
+		Type: transitions.TransitionMorph,
+	}
+	return s
+}
+
+// WithMorphTransitionOptions sets a Morph transition with explicit options.
+func (s SlideContent) WithMorphTransitionOptions(option transitions.MorphOption) SlideContent {
+	s.Transition = transitions.TransitionOptions{
+		Type:        transitions.TransitionMorph,
+		MorphOption: option,
+	}
+	return s
+}
+
 // WithTransitionSound sets a sound file for the slide transition.
 func (s SlideContent) WithTransitionSound(path string) SlideContent {
 	// If transition is nil or not options, default to cut.
