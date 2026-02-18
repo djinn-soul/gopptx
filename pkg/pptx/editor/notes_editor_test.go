@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 func TestPresentationEditorAddNotesInjectsMasterAndWiring(t *testing.T) {
@@ -35,11 +37,8 @@ func TestPresentationEditorAddNotesInjectsMasterAndWiring(t *testing.T) {
 		t.Fatalf("expected notes master part")
 	}
 	masterRels := string(readZipFileBytes(t, outPath, "ppt/notesMasters/_rels/notesMaster1.xml.rels"))
-	if !strings.Contains(masterRels, `Target="../theme/theme2.xml"`) {
-		t.Fatalf("expected notes master rels to target theme2")
-	}
-	if part := readZipFileBytes(t, outPath, "ppt/theme/theme2.xml"); len(part) == 0 {
-		t.Fatalf("expected dedicated notes theme part")
+	if !strings.Contains(masterRels, `Target="../theme/theme1.xml"`) {
+		t.Fatalf("expected notes master rels to target theme1")
 	}
 
 	presRels := string(readZipFileBytes(t, outPath, "ppt/_rels/presentation.xml.rels"))
@@ -119,6 +118,55 @@ func TestPresentationEditorRemoveSlideRemovesAssociatedNotes(t *testing.T) {
 	contentTypes := string(readZipFileBytes(t, outPath, "[Content_Types].xml"))
 	if strings.Contains(contentTypes, "/ppt/notesSlides/notesSlide1.xml") {
 		t.Fatalf("did not expect removed notes slide override in content types")
+	}
+}
+
+func TestPresentationEditorUpdateNotesMasterSupportsFlagsAndPictureBackground(t *testing.T) {
+	basePath := writeDeckFixture(t, "notes-master-update.pptx", []elements.SlideContent{
+		elements.NewSlide("Slide 1").AddBullet("Body"),
+	})
+
+	editor, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	img := shapes.NewImageFromBytes(testutil.TinyPNG(), "png", 0, 0, 0, 0)
+	bg := elements.NewPictureBackground(img)
+	master := elements.NewNotesMaster().
+		WithHeader("CONFIDENTIAL").
+		WithFooter("Internal").
+		WithDateTime(false).
+		WithSlideNumber(false).
+		WithBackground(bg)
+
+	if err := editor.UpdateNotesMaster(master); err != nil {
+		t.Fatalf("update notes master: %v", err)
+	}
+
+	outPath := filepath.Join(t.TempDir(), "notes-master-updated.pptx")
+	if err := editor.Save(outPath); err != nil {
+		t.Fatalf("save edited deck: %v", err)
+	}
+
+	notesMasterXML := string(readZipFileBytes(t, outPath, "ppt/notesMasters/notesMaster1.xml"))
+	if strings.Contains(notesMasterXML, `type="dt"`) {
+		t.Fatalf("did not expect date placeholder in notes master")
+	}
+	if strings.Contains(notesMasterXML, `type="sldNum"`) {
+		t.Fatalf("did not expect slide number placeholder in notes master")
+	}
+	if !strings.Contains(notesMasterXML, `a:blip r:embed="rId2"`) {
+		t.Fatalf("expected notes master picture background relationship in xml")
+	}
+
+	masterRels := string(readZipFileBytes(t, outPath, "ppt/notesMasters/_rels/notesMaster1.xml.rels"))
+	if !strings.Contains(masterRels, `Target="../theme/theme1.xml"`) {
+		t.Fatalf("expected notes master rels to target theme1")
+	}
+	if !strings.Contains(masterRels, `Id="rId2"`) || !strings.Contains(masterRels, `/relationships/image`) {
+		t.Fatalf("expected image relationship in notes master rels")
 	}
 }
 

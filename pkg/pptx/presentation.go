@@ -77,6 +77,11 @@ func CreateWithMetadata(meta Metadata, slides []SlideContent) ([]byte, error) {
 			return nil, err
 		}
 	}
+	if meta.NotesMaster != nil {
+		if err := meta.NotesMaster.Validate(); err != nil {
+			return nil, err
+		}
+	}
 
 	if meta.SlideSize.Width == 0 || meta.SlideSize.Height == 0 {
 		meta.SlideSize = SlideSize4x3()
@@ -86,7 +91,7 @@ func CreateWithMetadata(meta Metadata, slides []SlideContent) ([]byte, error) {
 	zw := zip.NewWriter(buf)
 	count := len(slides)
 
-	if err := presentation.WritePackageFiles(zw, meta, slides, count); err != nil {
+	if err := presentation.WritePresentationPackage(zw, meta, slides, count); err != nil {
 		_ = zw.Close()
 		return nil, err
 	}

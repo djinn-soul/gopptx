@@ -25,11 +25,11 @@ func TestRenderCustomShapeXMLConcurrentlyPreservesOrder(t *testing.T) {
 	}
 
 	expectations := []string{
-		`<p:cNvPr id="7" name="Shape 7"/>`,
+		`<p:cNvPr id="7" name="Shape 7" descr=""/>`,
 		`<a:t>A</a:t>`,
-		`<p:cNvPr id="8" name="Shape 8"/>`,
+		`<p:cNvPr id="8" name="Shape 8" descr=""/>`,
 		`<a:t>B</a:t>`,
-		`<p:cNvPr id="9" name="Shape 9"/>`,
+		`<p:cNvPr id="9" name="Shape 9" descr=""/>`,
 		`<a:t>C</a:t>`,
 	}
 	for idx, needle := range expectations {

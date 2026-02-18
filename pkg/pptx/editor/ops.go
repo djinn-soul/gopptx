@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +17,8 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
+
+const notesMasterThemeIndex = 1
 
 // AddSlide appends a new slide and returns its 0-based index.
 func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) {
@@ -33,6 +37,7 @@ func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) 
 	slideXML, slideRelsXML, err := renderEditorSlideParts(
 		e,
 		slide,
+		part,
 		slideNumber,
 		"",
 		e.metadata.SlideSize.Width,
@@ -93,6 +98,7 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 	slideXML, relsXML, err := renderEditorSlideParts(
 		e,
 		slide,
+		ref.Part,
 		number,
 		notesTarget,
 		e.metadata.SlideSize.Width,
@@ -363,8 +369,10 @@ func validateEditorSlideContent(slide elements.SlideContent) error {
 	return nil
 }
 
-var aTTitlePattern = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
-var titlePlaceholderPattern = regexp.MustCompile(`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`)
+var (
+	aTTitlePattern          = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
+	titlePlaceholderPattern = regexp.MustCompile(`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`)
+)
 
 func appendCopySuffixToXML(content []byte) []byte {
 	res, _ := replaceTitleLikeText(content, replaceLastTextRun, func(match []byte) []byte {
@@ -798,15 +806,83 @@ func cloneBytes(b []byte) []byte {
 	return c
 }
 
+// UpdateNotesMaster configures the global notes master for the presentation.
+func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) error {
+	if e == nil {
+		return errors.New("editor cannot be nil")
+	}
+	if master != nil {
+		if err := master.Validate(); err != nil {
+			return err
+		}
+	}
+	e.ensureNotesInfrastructure()
+	e.ensureNotesMasterThemePart()
+
+	var backgroundRID string
+	var mediaNames []string
+
+	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture && master.Background.PictureFill != nil {
+		img := master.Background.PictureFill
+
+		var data []byte
+		var err error
+
+		if len(img.Data) > 0 {
+			data = img.Data
+		} else if img.Path != "" {
+			data, err = os.ReadFile(img.Path)
+			if err != nil {
+				return fmt.Errorf("read background image: %w", err)
+			}
+		}
+
+		if len(data) > 0 {
+			format := img.Format
+			if format == "" {
+				if img.Path != "" {
+					format = strings.TrimPrefix(filepath.Ext(img.Path), ".")
+				}
+				if format == "" {
+					format = "png"
+				}
+			}
+
+			internalPath, err := e.RegisterImage(data, format)
+			if err != nil {
+				return fmt.Errorf("register background image: %w", err)
+			}
+
+			// internalPath is like "ppt/media/image1.png"
+			// Target relative to "ppt/notesMasters/" is "../media/image1.png"
+			base := path.Base(internalPath)
+			target := "../media/" + base
+
+			backgroundRID = "rId2"
+			mediaNames = []string{target}
+		}
+	}
+
+	spec := elements.MapNotesMasterToSpec(master, backgroundRID)
+	e.parts.Set("ppt/notesMasters/notesMaster1.xml", []byte(pptxxml.NotesMaster(spec)))
+	e.parts.Set(
+		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
+		[]byte(pptxxml.NotesMasterRelationships(notesMasterThemeIndex, mediaNames)),
+	)
+
+	return nil
+}
+
 func (e *PresentationEditor) ensureNotesInfrastructure() {
 	if e.parts.Has("ppt/notesMasters/notesMaster1.xml") {
 		return
 	}
+	e.ensureNotesMasterThemePart()
 	e.parts.Set("ppt/notesMasters/notesMaster1.xml", []byte(pptxxml.NotesMaster(nil)))
-	e.parts.Set("ppt/notesMasters/_rels/notesMaster1.xml.rels", []byte(pptxxml.NotesMasterRelationships()))
-	if !e.parts.Has("ppt/theme/theme2.xml") {
-		e.parts.Set("ppt/theme/theme2.xml", []byte(pptxxml.Theme(nil)))
-	}
+	e.parts.Set(
+		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
+		[]byte(pptxxml.NotesMasterRelationships(notesMasterThemeIndex, nil)),
+	)
 
 	for _, rel := range e.nonSlideRels {
 		if rel.Type == common.RelTypeNotesMaster {
@@ -820,4 +896,17 @@ func (e *PresentationEditor) ensureNotesInfrastructure() {
 		Target: "notesMasters/notesMaster1.xml",
 	})
 	e.nextRelIDNum++
+}
+
+func (e *PresentationEditor) ensureNotesMasterThemePart() {
+	if e.parts.Has("ppt/theme/theme2.xml") {
+		return
+	}
+	theme1, ok := e.parts.Get("ppt/theme/theme1.xml")
+	if !ok {
+		return
+	}
+	clone := make([]byte, len(theme1))
+	copy(clone, theme1)
+	e.parts.Set("ppt/theme/theme2.xml", clone)
 }

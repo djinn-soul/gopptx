@@ -1,5 +1,7 @@
 package elements
 
+import "fmt"
+
 // NotesMaster defines the configuration for the notes master part.
 type NotesMaster struct {
 	HeaderText   string
@@ -52,4 +54,15 @@ func (n *NotesMaster) WithBackground(bg SlideBackground) *NotesMaster {
 func (n *NotesMaster) WithBodyStyle(styles []TextLevelStyle) *NotesMaster {
 	n.BodyStyle = styles
 	return n
+}
+
+// Validate checks notes master configuration for unsupported values.
+func (n *NotesMaster) Validate() error {
+	if n == nil || n.Background == nil {
+		return nil
+	}
+	if err := n.Background.Validate(); err != nil {
+		return fmt.Errorf("invalid notes master background: %w", err)
+	}
+	return nil
 }

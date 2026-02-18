@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -77,7 +78,16 @@ func (e *PresentationEditor) Save(filePath string) error {
 			content = data
 		}
 
-		w, createErr := zw.Create(name)
+		var (
+			w         io.Writer
+			createErr error
+		)
+		if saveZipMethod(name) == zip.Store {
+			header := &zip.FileHeader{Name: name, Method: zip.Store}
+			w, createErr = zw.CreateHeader(header)
+		} else {
+			w, createErr = zw.Create(name)
+		}
 		if createErr != nil {
 			return fmt.Errorf("create zip entry %q: %w", name, createErr)
 		}
@@ -265,4 +275,11 @@ func filterXMLPartPaths(paths []string) []string {
 		}
 	}
 	return filtered
+}
+
+func saveZipMethod(path string) uint16 {
+	if strings.HasPrefix(strings.ToLower(path), "ppt/notes") {
+		return zip.Store
+	}
+	return zip.Deflate
 }

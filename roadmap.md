@@ -23,7 +23,8 @@
 ## Active parity backlog
 
 1. Add fixture parity checks for styled bullet and enhanced-text decks from `ppt-rs` examples.
-2. Expand slide surface parity beyond layout selection (placeholder-level controls).
+
+- [x] Expand slide surface parity beyond layout selection (placeholder-level geometry and styling overrides).
 
 ## Completed recently
 
@@ -283,3 +284,20 @@
 - Added support for "Mark as Decorative" property via `IsDecorative` flag.
 - Ensured OOXML rendering parity for `descr` and `title` attributes on all shape and graphic frame non-visual properties.
 - Expanded unit tests in `pkg/pptx/accessibility_test.go` to cover all supported element types.
+
+27. Notes Master parity slice:
+
+- Implemented `NotesMasterPart` architecture with three-way relationship model (Presentation -> NotesMaster -> Theme).
+- Added support for default placeholders (`sldImg`, `body`, `hdr`, `ftr`) and `a:fld` for automatic slide numbers.
+- Implemented `NotesStyle` for master text style definitions (Lvl1-9) with theme color mapping.
+- Added full background support (solid, gradient, picture) for Notes Master.
+- Achieved editor parity via `UpdateNotesMaster` in `PresentationEditor`.
+- Added integration coverage in `pkg/pptx/presentation_notes_test.go` and `pkg/pptx/notes_master_test.go`.
+
+28. Placeholder-level controls parity slice:
+
+- Added `PlaceholderTarget` model for identifying layout placeholders by type, index, or name.
+- Added `PlaceholderOverrideOptions` for per-placeholder geometry (`X, Y, CX, CY`) and text style overrides.
+- Implemented `WithPlaceholderOverride` fluent API for `SlideContent`.
+- Extended OOXML slide rendering in `internal/pptxxml/placeholder_shapes_xml.go` to emit `<a:xfrm>` and `<p:txBody>` styling for overridden placeholders.
+- Added integration coverage in `pkg/pptx/presentation/placeholder_override_smoke_test.go` and XML emission tests in `internal/pptxxml/placeholder_shapes_xml_test.go`.

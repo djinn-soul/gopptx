@@ -17,7 +17,7 @@ import (
 
 const (
 	minMasterCountWithNativeNotesTheme = 2
-	singleMasterNotesThemeIndex        = 2
+	singleMasterNotesThemeIndex        = 1
 )
 
 // Metadata defines non-content properties of a PPTX.
@@ -43,7 +43,7 @@ func GetSlideSize16x9() SlideSize {
 	return common.GetSlideSize16x9()
 }
 
-func WritePackageFiles(
+func WritePresentationPackage(
 	zw *zip.Writer,
 	meta Metadata,
 	slides []elements.SlideContent,
@@ -51,7 +51,7 @@ func WritePackageFiles(
 ) error {
 	pw := pptxxml.NewPackageWriter()
 
-	mediaCatalog, mediaErr := media.BuildMediaCatalog(slides)
+	mediaCatalog, mediaErr := media.BuildMediaCatalog(slides, meta.NotesMaster)
 	if mediaErr != nil {
 		return mediaErr
 	}
@@ -72,7 +72,7 @@ func WritePackageFiles(
 	addLayoutFiles(pw, masterCount)
 	addMasterFiles(pw, effectiveMasters, mediaCatalog)
 	addThemeFiles(pw, meta.Theme, masterCount)
-	addNotesMasterFiles(pw, meta, masterCount, notesThemeIndex)
+	addNotesMasterFiles(pw, meta, masterCount, notesThemeIndex, mediaCatalog)
 
 	if err := writeMediaFiles(pw, mediaCatalog); err != nil {
 		return err
@@ -101,6 +101,16 @@ func WritePackageFiles(
 	return pw.WriteTo(zw)
 }
 
+// WritePackageFiles is kept for backward compatibility. Use [WritePresentationPackage].
+func WritePackageFiles(
+	zw *zip.Writer,
+	meta Metadata,
+	slides []elements.SlideContent,
+	slideCount int,
+) error {
+	return WritePresentationPackage(zw, meta, slides, slideCount)
+}
+
 func getEffectiveMasters(meta Metadata) []*elements.SlideMaster {
 	if len(meta.Masters) > 0 {
 		return meta.Masters
@@ -114,9 +124,6 @@ func getEffectiveMasters(meta Metadata) []*elements.SlideMaster {
 func getNotesThemeIndex(hasNotes bool, masterCount int) int {
 	if !hasNotes {
 		return 0
-	}
-	if masterCount >= minMasterCountWithNativeNotesTheme {
-		return masterCount + 1
 	}
 	return singleMasterNotesThemeIndex
 }
@@ -221,13 +228,27 @@ func addThemeFiles(pw *pptxxml.PackageWriter, theme *styling.Theme, masterCount 
 	}
 }
 
-func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, notesThemeIndex int) {
+func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, notesThemeIndex int, mc *media.Catalog) {
 	if notesThemeIndex == 0 {
 		return
 	}
-	spec := elements.MapNotesMasterToSpec(meta.NotesMaster)
+
+	var backgroundRID string
+	var mediaName []string
+
+	if meta.NotesMaster != nil && meta.NotesMaster.Background != nil &&
+		meta.NotesMaster.Background.Type == elements.SlideBackgroundPicture &&
+		meta.NotesMaster.Background.PictureFill != nil {
+
+		if name, ok := mc.MediaNameForImage(*meta.NotesMaster.Background.PictureFill); ok {
+			backgroundRID = "rId2"
+			mediaName = []string{"../media/" + name}
+		}
+	}
+	spec := elements.MapNotesMasterToSpec(meta.NotesMaster, backgroundRID)
 	pw.AddPart("ppt/notesMasters/notesMaster1.xml", pptxxml.NotesMaster(spec))
-	pw.AddPart("ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships(notesThemeIndex))
+	pw.AddPart("ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships(notesThemeIndex, mediaName))
+
 	if notesThemeIndex > masterCount {
 		pw.AddPart(fmt.Sprintf("ppt/theme/theme%d.xml", notesThemeIndex), pptxxml.Theme(mapThemeToSpec(meta.Theme)))
 	}

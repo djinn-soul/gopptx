@@ -13,7 +13,8 @@ func main() {
 		WithHeader("CONFIDENTIAL - internal use only").
 		WithFooter("Notes Master Smoke Test").
 		WithDateTime(true).
-		WithSlideNumber(true)
+		WithSlideNumber(true).
+		WithBackground(pptx.NewSolidBackground("F0F0F0"))
 
 	// 2. Set default text style for notes levels
 	nm.WithBodyStyle([]pptx.TextLevelStyle{

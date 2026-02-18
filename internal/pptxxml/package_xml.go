@@ -137,7 +137,7 @@ func ContentTypes(
 	}
 	if includeNotesMaster {
 		if notesThemeIndex < 1 {
-			notesThemeIndex = 2
+			notesThemeIndex = 1
 		}
 		if notesThemeIndex > masterCount {
 			b.WriteString(`

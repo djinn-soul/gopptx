@@ -23,6 +23,9 @@ func validateSlideContent(s SlideContent, index int) error {
 	if err := validateSlideTextStyles(s); err != nil {
 		return err
 	}
+	if err := validateSlidePlaceholderOverrides(s); err != nil {
+		return err
+	}
 	if err := validateSlideTypography(s); err != nil {
 		return err
 	}
@@ -172,6 +175,15 @@ func validateSlideTypography(s SlideContent) error {
 	}
 	if err := s.Background.Validate(); err != nil {
 		return fmt.Errorf("invalid background: %w", err)
+	}
+	return nil
+}
+
+func validateSlidePlaceholderOverrides(s SlideContent) error {
+	for _, override := range s.PlaceholderOverrides {
+		if err := override.ValidateOverride(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

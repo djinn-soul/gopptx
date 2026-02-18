@@ -27,6 +27,21 @@ type PlaceholderOverrideSpec struct {
 	Image *ImageRef
 	Table *TableSpec
 	Chart *ChartFrame
+
+	// Extension: Layout/Style Overrides
+	X, Y, CX, CY *int64
+	TextStyle    *PlaceholderTextStyleSpec
+}
+
+// PlaceholderTextStyleSpec describes text formatting overrides for a placeholder.
+type PlaceholderTextStyleSpec struct {
+	SizePt    *int
+	Color     *string
+	Bold      *bool
+	Italic    *bool
+	Underline *string
+	Align     *string
+	Font      *string
 }
 
 const slideHeaderStart = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

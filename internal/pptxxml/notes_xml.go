@@ -66,12 +66,12 @@ func NotesSlideRelationships(slideNumber int) string {
 
 // NotesMasterSpec defines the content for notesMaster1.xml.
 type NotesMasterSpec struct {
-	HeaderText     string
-	FooterText     string
-	ShowDateTime   bool
-	ShowSlideNum   bool
-	BackgroundSpec string
-	NotesStyle     []TextLevelStyle
+	HeaderText   string
+	FooterText   string
+	ShowDateTime bool
+	ShowSlideNum bool
+	Background   *SlideBackgroundSpec
+	NotesStyle   []TextLevelStyle
 }
 
 // NotesMaster renders a notes master part.
@@ -87,19 +87,30 @@ func NotesMaster(spec *NotesMasterSpec) string {
 </p:notesStyle>`
 	}
 
+	dateXML := ""
+	if spec.ShowDateTime {
+		dateXML = notesMasterDate()
+	}
+
+	slideNumXML := ""
+	if spec.ShowSlideNum {
+		slideNumXML = notesMasterSlideNum()
+	}
+
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:notesMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
 		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-<p:cSld>
+<p:cSld>` +
+		backgroundXML(spec.Background) + `
 <p:spTree>` +
 		notesMasterCommonRootGrp() +
 		notesMasterHeader(spec.HeaderText) +
-		notesMasterDate() +
+		dateXML +
 		notesMasterSlideImage() +
 		notesMasterBody() +
 		notesMasterFooter(spec.FooterText) +
-		notesMasterSlideNum() + `
+		slideNumXML + `
 </p:spTree>
 </p:cSld>
 <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" ` +
@@ -245,16 +256,23 @@ func notesMasterSlideNum() string {
 }
 
 // NotesMasterRelationships renders notesMaster1.xml.rels.
-func NotesMasterRelationships(themeIndex ...int) string {
-	idx := 2
-	if len(themeIndex) > 0 && themeIndex[0] > 0 {
-		idx = themeIndex[0]
+func NotesMasterRelationships(themeIndex int, imageTargets []string) string {
+	if themeIndex <= 0 {
+		themeIndex = 1
 	}
-	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" ` +
-		`Target="../theme/theme` + strconv.Itoa(idx) + `.xml"/>
-</Relationships>`
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(themeIndex) + `.xml"/>`)
+
+	for i, target := range imageTargets {
+		rid := i + 2
+		b.WriteString(`
+<Relationship Id="rId` + strconv.Itoa(rid) + `" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="` + Escape(target) + `"/>`)
+	}
+	b.WriteString(`
+</Relationships>`)
+	return b.String()
 }
 
 func notesParagraphsXML(paragraphs []text.Paragraph) string {

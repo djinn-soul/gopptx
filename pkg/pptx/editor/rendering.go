@@ -10,6 +10,7 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
@@ -23,6 +24,7 @@ var errNoSlideTable = errors.New("slide has no table")
 func renderEditorSlideParts(
 	e *PresentationEditor,
 	slide elements.SlideContent,
+	slidePart string,
 	slideNumber int,
 	existingNotesTarget string,
 	width, height int64,
@@ -55,7 +57,13 @@ func renderEditorSlideParts(
 	)
 
 	// Process placeholder overrides
-	placeholderSpecs, phImageTargets, phChartRels, err := renderEditorPlaceholderSpecs(e, slide, slideNumber, nextRID)
+	placeholderSpecs, phImageTargets, phChartRels, err := renderEditorPlaceholderSpecs(
+		e,
+		slide,
+		slidePart,
+		slideNumber,
+		nextRID,
+	)
 	if err != nil {
 		return "", "", err
 	}
@@ -229,6 +237,7 @@ func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxx
 func renderEditorPlaceholderSpecs(
 	e *PresentationEditor,
 	slide elements.SlideContent,
+	slidePart string,
 	slideNumber int,
 	startRID int,
 ) ([]pptxxml.PlaceholderOverrideSpec, []string, []pptxxml.ChartRel, error) {
@@ -240,12 +249,28 @@ func renderEditorPlaceholderSpecs(
 	var imageTargets []string
 	var chartRels []pptxxml.ChartRel
 	currentRID := startRID
+	placeholders, err := lookupSlidePlaceholders(e, slidePart)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	for _, override := range slide.PlaceholderOverrides {
+		targetType, targetIndex, err := resolveEditorPlaceholderTarget(override, placeholders)
+		if err != nil {
+			return nil, nil, nil, err
+		}
 		spec := pptxxml.PlaceholderOverrideSpec{
-			Index: override.Index,
-			Type:  override.Type,
+			Index: targetIndex,
+			Type:  targetType,
 			Text:  override.Text,
+		}
+
+		if override.Override != nil {
+			spec.X = mapEditorOptionalLength(override.Override.X)
+			spec.Y = mapEditorOptionalLength(override.Override.Y)
+			spec.CX = mapEditorOptionalLength(override.Override.CX)
+			spec.CY = mapEditorOptionalLength(override.Override.CY)
+			spec.TextStyle = mapEditorPlaceholderTextStyle(override.Override.TextStyle)
 		}
 
 		// Handle image placeholder
@@ -265,7 +290,7 @@ func renderEditorPlaceholderSpecs(
 		if override.Table != nil {
 			tableSpec, err := override.Table.ToTableSpec(slideNumber)
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("placeholder table %d: %w", override.Index, err)
+				return nil, nil, nil, fmt.Errorf("placeholder table %d: %w", targetIndex, err)
 			}
 			spec.Table = tableSpec
 		}
@@ -273,7 +298,7 @@ func renderEditorPlaceholderSpecs(
 		// Handle chart placeholder
 		if override.Chart != nil {
 			chartSpec := override.Chart.ToChartSpec()
-			chartPath := fmt.Sprintf("ppt/charts/chart_ph_%d_%d.xml", slideNumber, override.Index)
+			chartPath := fmt.Sprintf("ppt/charts/chart_ph_%d_%d.xml", slideNumber, targetIndex)
 			e.parts.Set(chartPath, []byte(pptxxml.ChartPartXML(chartSpec)))
 
 			rid := fmt.Sprintf("rId%d", currentRID)
@@ -359,6 +384,77 @@ func (e *PresentationEditor) renderPlaceholderImageRef(
 		CY:    override.Image.CY.Emu(),
 	}
 	return imageRef, "../media/" + path.Base(partPath), nil
+}
+
+func mapEditorOptionalLength(l *styling.Length) *int64 {
+	if l == nil {
+		return nil
+	}
+	val := l.Emu()
+	return &val
+}
+
+func mapEditorPlaceholderTextStyle(ts *shapes.PlaceholderTextStyle) *pptxxml.PlaceholderTextStyleSpec {
+	if ts == nil {
+		return nil
+	}
+	return &pptxxml.PlaceholderTextStyleSpec{
+		SizePt:    ts.SizePt,
+		Color:     ts.Color,
+		Bold:      ts.Bold,
+		Italic:    ts.Italic,
+		Underline: ts.Underline,
+		Align:     ts.Align,
+		Font:      ts.Font,
+	}
+}
+
+func lookupSlidePlaceholders(e *PresentationEditor, slidePart string) ([]Placeholder, error) {
+	if strings.TrimSpace(slidePart) == "" {
+		return nil, nil
+	}
+	content, ok := e.parts.Get(slidePart)
+	if !ok {
+		return nil, fmt.Errorf("slide part %q missing for placeholder resolution", slidePart)
+	}
+	return parsePlaceholdersFromSlideXML(content), nil
+}
+
+func resolveEditorPlaceholderTarget(
+	override shapes.PlaceholderContent,
+	placeholders []Placeholder,
+) (string, int, error) {
+	targetType := strings.TrimSpace(override.Type)
+	targetIndex := override.Index
+	target := override.Target
+	if target == nil {
+		return targetType, targetIndex, nil
+	}
+
+	if t := strings.TrimSpace(target.Type); t != "" {
+		return t, target.Index, nil
+	}
+
+	name := strings.TrimSpace(target.Name)
+	if name == "" {
+		return targetType, targetIndex, nil
+	}
+
+	matches := make([]Placeholder, 0, 1)
+	for _, ph := range placeholders {
+		if strings.EqualFold(strings.TrimSpace(ph.Name), name) {
+			matches = append(matches, ph)
+		}
+	}
+
+	switch len(matches) {
+	case 1:
+		return matches[0].Type, matches[0].Index, nil
+	case 0:
+		return "", 0, fmt.Errorf("placeholder name %q not found", name)
+	default:
+		return "", 0, fmt.Errorf("placeholder name %q is ambiguous (%d matches)", name, len(matches))
+	}
 }
 
 func editorEnsureSlideRelsExistPS(ps *PartStore, slidePart string) error {

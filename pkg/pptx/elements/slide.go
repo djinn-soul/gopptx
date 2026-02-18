@@ -601,6 +601,23 @@ func (s SlideContent) WithPlaceholderChartAs(index int, placeholderType string, 
 	return s
 }
 
+// WithPlaceholderOverride adds custom geometry or style overrides to a placeholder.
+func (s SlideContent) WithPlaceholderOverride(target shapes.PlaceholderTarget, options shapes.PlaceholderOverrideOptions) SlideContent {
+	// If no type/index specified, default to title (index 0)
+	if target.Type == "" && target.Index == 0 && target.Name == "" {
+		target.Index = 0
+		target.Type = placeholderTypeTitle
+	}
+
+	s.PlaceholderOverrides = append(s.PlaceholderOverrides, shapes.PlaceholderContent{
+		Index:    target.Index,
+		Type:     target.Type,
+		Target:   &target,
+		Override: &options,
+	})
+	return s
+}
+
 func defaultPlaceholderTextType(index int) string {
 	if index == 0 {
 		return placeholderTypeTitle
