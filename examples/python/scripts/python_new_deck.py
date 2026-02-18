@@ -1,11 +1,11 @@
 import sys
 import os
+from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 sys.path.append(os.path.join(project_root, "python"))
 
-from gopptx import Presentation
 
 # Create output directory
 output_dir = os.path.join(project_root, "examples/output")

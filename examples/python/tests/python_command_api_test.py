@@ -3,7 +3,7 @@ import os
 import sys
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 sys.path.append(os.path.join(project_root, "python"))
 
 # Ensure smoke sample exists

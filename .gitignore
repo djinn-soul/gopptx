@@ -38,6 +38,7 @@ gha-creds-*.json
 tasks/
 p*-pptx
 logs/
+examples/output/
 scripts/*.py
 tools/*
 testdata/
