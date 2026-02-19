@@ -3,6 +3,7 @@ from __future__ import annotations
 import ctypes
 import json
 import os
+import re
 import sys
 import threading
 import uuid
@@ -13,6 +14,24 @@ from .api_batch import _BatchContext
 from .api_errors import GopptxError
 from .api_slide import Slide
 from .types import PresentationMetadata, SlideMetadata
+
+
+def _snake_case(name: str) -> str:
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
+def _with_key_aliases(obj: Any) -> Any:
+    if isinstance(obj, list):
+        return [_with_key_aliases(item) for item in obj]
+    if not isinstance(obj, dict):
+        return obj
+    out: Dict[str, Any] = {}
+    for k, v in obj.items():
+        out[k] = _with_key_aliases(v)
+        out[k.lower()] = out[k]
+        out[_snake_case(k)] = out[k]
+    return out
 
 
 class PresentationBase:
@@ -28,6 +47,7 @@ class PresentationBase:
         self._batch_active = False
         self._batch_stop_on_error = False
         self._batch_commands: list[dict] = []
+        self._comment_ref_cache: Dict[int, tuple[int, int, int]] = {}
         if path:
             self.open(path)
 
@@ -163,13 +183,15 @@ class PresentationBase:
         with self._lock:
             if self._slides_metadata_cache is not None:
                 return self._slides_metadata_cache
-            self._slides_metadata_cache = cast(list[SlideMetadata], self.execute(ops.OP_LIST_SLIDES, {}).get("slides", []))
+            slides = self.execute(ops.OP_LIST_SLIDES, {}).get("slides", [])
+            self._slides_metadata_cache = cast(list[SlideMetadata], _with_key_aliases(slides))
             return self._slides_metadata_cache
 
     def invalidate_cache(self) -> None:
         with self._lock:
             self._slides_metadata_cache = None
             self._metadata_cache = None
+            self._comment_ref_cache = {}
 
     def _get_last_error(self) -> str:
         with self._lock:

@@ -7,13 +7,21 @@ import (
 )
 
 func handleListShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int `json:"slide_index"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
 		return nil, err
 	}
-	shapes, err := e.GetShapes(p.SlideIndex)
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	shapes, err := e.GetShapes(slideIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -21,28 +29,50 @@ func handleListShapes(e *PresentationEditor, payload json.RawMessage) (any, erro
 }
 
 func handleAddShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int                `json:"slide_index"`
-		Type       string             `json:"type"`
-		X          float64            `json:"x"`
-		Y          float64            `json:"y"`
-		W          float64            `json:"w"`
-		H          float64            `json:"h"`
-		Text       string             `json:"text"`
-		Properties *common.ShapeProps `json:"properties"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
-		return nil, err
-	}
-
-	id, err := e.AddShape(p.SlideIndex, p.Type, p.X, p.Y, p.W, p.H)
+	p, err := ParseRawPayload(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	if p.Text != "" {
-		updates := common.ShapeUpdate{Text: &p.Text}
-		if updateErr := e.UpdateShape(p.SlideIndex, id, updates); updateErr != nil {
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeType, ok := v.RequireString(p, "type")
+	if !ok {
+		return nil, v.Error()
+	}
+	x, ok := v.RequireFloat64(p, "x")
+	if !ok {
+		return nil, v.Error()
+	}
+	y, ok := v.RequireFloat64(p, "y")
+	if !ok {
+		return nil, v.Error()
+	}
+	w, ok := v.RequireFloat64(p, "w")
+	if !ok {
+		return nil, v.Error()
+	}
+	h, ok := v.RequireFloat64(p, "h")
+	if !ok {
+		return nil, v.Error()
+	}
+	text := v.OptionalString(p, "text")
+
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	id, err := e.AddShape(slideIndex, shapeType, x, y, w, h)
+	if err != nil {
+		return nil, err
+	}
+
+	if text != "" {
+		updates := common.ShapeUpdate{Text: &text}
+		if updateErr := e.UpdateShape(slideIndex, id, updates); updateErr != nil {
 			return nil, updateErr
 		}
 	}
@@ -50,18 +80,42 @@ func handleAddShape(e *PresentationEditor, payload json.RawMessage) (any, error)
 }
 
 func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int     `json:"slide_index"`
-		Path       string  `json:"path"`
-		X          float64 `json:"x"`
-		Y          float64 `json:"y"`
-		W          float64 `json:"w"`
-		H          float64 `json:"h"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
 		return nil, err
 	}
-	id, err := e.AddImage(p.SlideIndex, p.Path, p.X, p.Y, p.W, p.H)
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	path, ok := v.RequireString(p, "path")
+	if !ok {
+		return nil, v.Error()
+	}
+	x, ok := v.RequireFloat64(p, "x")
+	if !ok {
+		return nil, v.Error()
+	}
+	y, ok := v.RequireFloat64(p, "y")
+	if !ok {
+		return nil, v.Error()
+	}
+	w, ok := v.RequireFloat64(p, "w")
+	if !ok {
+		return nil, v.Error()
+	}
+	h, ok := v.RequireFloat64(p, "h")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	id, err := e.AddImage(slideIndex, path, x, y, w, h)
 	if err != nil {
 		return nil, err
 	}
@@ -69,42 +123,82 @@ func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error)
 }
 
 func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int `json:"slide_index"`
-		ShapeID    int `json:"shape_id"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
 		return nil, err
 	}
-	if err := e.RemoveShape(p.SlideIndex, p.ShapeID); err != nil {
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	if err := e.RemoveShape(slideIndex, shapeID); err != nil {
 		return nil, err
 	}
 	return map[string]bool{"removed": true}, nil
 }
 
 func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int                `json:"slide_index"`
-		ShapeID    int                `json:"shape_id"`
-		Updates    common.ShapeUpdate `json:"updates"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
 		return nil, err
 	}
-	if err := e.UpdateShape(p.SlideIndex, p.ShapeID, p.Updates); err != nil {
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	// For embedded updates struct, we can unmarshal just that branch if it exists
+	var updates common.ShapeUpdate
+	if updatesRaw, ok := p["updates"]; ok {
+		raw, _ := json.Marshal(updatesRaw)
+		if err := json.Unmarshal(raw, &updates); err != nil {
+			return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+		}
+	}
+
+	if err := e.UpdateShape(slideIndex, shapeID, updates); err != nil {
 		return nil, err
 	}
 	return map[string]bool{"updated": true}, nil
 }
 
 func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int `json:"slide_index"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
 		return nil, err
 	}
-	notes, err := e.GetNotes(p.SlideIndex)
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	notes, err := e.GetNotes(slideIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -112,14 +206,25 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 }
 
 func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p struct {
-		SlideIndex int    `json:"slide_index"`
-		Text       string `json:"text"`
-	}
-	if err := json.Unmarshal(payload, &p); err != nil {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
 		return nil, err
 	}
-	if err := e.SetNotes(p.SlideIndex, p.Text); err != nil {
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	text, ok := v.RequireString(p, "text")
+	if !ok {
+		return nil, v.Error()
+	}
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	if err := e.SetNotes(slideIndex, text); err != nil {
 		return nil, err
 	}
 	return map[string]bool{"updated": true}, nil

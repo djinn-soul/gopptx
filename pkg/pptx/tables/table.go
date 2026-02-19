@@ -166,6 +166,7 @@ func (t Table) ToTableSpec(slideNumber int) (*pptxxml.TableSpec, error) {
 				Text:            cell.Text,
 				Bold:            cell.Bold,
 				BackgroundColor: cell.BackgroundColor,
+				Color:           cell.Color,
 				Align:           cell.Align,
 				VAlign:          cell.VAlign,
 				MarginLeft:      TableMarginEMU(cell.MarginLeftPt),

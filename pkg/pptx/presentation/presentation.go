@@ -17,7 +17,6 @@ import (
 
 const (
 	minMasterCountWithNativeNotesTheme = 2
-	singleMasterNotesThemeIndex        = 1
 )
 
 // Metadata defines non-content properties of a PPTX.
@@ -125,7 +124,8 @@ func getNotesThemeIndex(hasNotes bool, masterCount int) int {
 	if !hasNotes {
 		return 0
 	}
-	return singleMasterNotesThemeIndex
+	_ = masterCount
+	return minMasterCountWithNativeNotesTheme
 }
 
 func addBasicPropertyFiles(

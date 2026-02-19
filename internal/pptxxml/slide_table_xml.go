@@ -26,6 +26,7 @@ type TableCellSpec struct {
 	Text            string
 	Bold            bool
 	BackgroundColor string
+	Color           string
 	Align           string
 	VAlign          string
 	MarginLeft      *int64
@@ -127,9 +128,9 @@ func tableGraphicXML(table *TableSpec) string {
 			b.WriteString(tableCellParagraphPropsXML(cell.Align))
 			b.WriteString(`
 <a:r>
-<a:rPr lang="en-US" dirty="0"`)
-			b.WriteString(tableCellBoldAttr(cell.Bold))
-			b.WriteString(`/>
+`)
+			b.WriteString(tableCellRunPropsXML(cell))
+			b.WriteString(`
 <a:t>`)
 			b.WriteString(Escape(cell.Text))
 			b.WriteString(`</a:t>
@@ -209,6 +210,22 @@ func tableStyledRows(table *TableSpec) [][]TableCellSpec {
 		rows[i] = cells
 	}
 	return rows
+}
+
+func tableCellRunPropsXML(cell TableCellSpec) string {
+	var b strings.Builder
+	b.WriteString(`<a:rPr lang="en-US" dirty="0"`)
+	if cell.Bold {
+		b.WriteString(` b="1"`)
+	}
+	b.WriteString(`>`)
+	if strings.TrimSpace(cell.Color) != "" {
+		b.WriteString(`<a:solidFill><a:srgbClr val="`)
+		b.WriteString(Escape(cell.Color))
+		b.WriteString(`"/></a:solidFill>`)
+	}
+	b.WriteString(`</a:rPr>`)
+	return b.String()
 }
 
 func tableCellBoldAttr(bold bool) string {

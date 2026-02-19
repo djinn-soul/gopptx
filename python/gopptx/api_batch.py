@@ -46,3 +46,9 @@ class _BatchContext:
         """Returns the results of the batch execution."""
         return self._results
 
+    def __getattr__(self, name: str):
+        # Forward mutating API calls to Presentation while batch mode is active.
+        target = getattr(self._presentation, name)
+        if callable(target):
+            return target
+        raise AttributeError(name)

@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // Template defines the interface for high-level presentation builders.
@@ -16,8 +15,9 @@ type Template interface {
 
 // SimpleTemplate creates a basic 2-slide deck: a title slide and a content slide.
 type SimpleTemplate struct {
-	Title   string // Main title for the first slide
-	Content string // Bullet point content for the second slide
+	Title    string       // Main title for the first slide
+	Content  string       // Bullet point content for the second slide
+	Branding BrandingSpec // Optional branding/theme
 }
 
 // Build generates slides for SimpleTemplate.
@@ -26,7 +26,7 @@ func (t SimpleTemplate) Build() ([]elements.SlideContent, error) {
 		return nil, errors.New("simple template title cannot be empty")
 	}
 
-	return buildParallel(
+	slides := buildParallel(
 		func() elements.SlideContent {
 			return elements.NewSlide(t.Title).WithCenteredTitleLayout()
 		},
@@ -37,33 +37,22 @@ func (t SimpleTemplate) Build() ([]elements.SlideContent, error) {
 			}
 			return s
 		},
-	), nil
-}
-
-// BrandingSpec defines visual branding for a template.
-type BrandingSpec struct {
-	Theme  *styling.Theme
-	Header string
-	Footer string
+	)
+	for i := range slides {
+		slides[i] = t.Branding.ApplyAt(slides[i], i)
+	}
+	return slides, nil
 }
 
 // ProposalTemplate creates a standard 5-slide proposal deck.
 type ProposalTemplate struct {
-	Title    string       // Main proposal title
-	Subtitle string       // Optional subtitle
-	Context  string       // Problem or background context
-	Solution string       // Proposed solution details
-	Pricing  []string     // List of pricing items or tiers
-	Timeline string       // Project timeline or milestones
-	Branding BrandingSpec // Optional branding/theme
-}
-
-// Apply applies branding settings to a slide.
-func (b BrandingSpec) Apply(s elements.SlideContent) elements.SlideContent {
-	if b.Footer != "" {
-		s.FooterText = b.Footer
-	}
-	return s
+	Title    string        // Main proposal title
+	Subtitle string        // Optional subtitle
+	Context  string        // Problem or background context
+	Solution string        // Proposed solution details
+	Pricing  []PricingTier // List of pricing items or tiers
+	Timeline []Milestone   // Project timeline or milestones
+	Branding BrandingSpec  // Optional branding/theme
 }
 
 // Build generates slides for ProposalTemplate.
@@ -96,22 +85,22 @@ func (t ProposalTemplate) Build() ([]elements.SlideContent, error) {
 		},
 		func() elements.SlideContent {
 			s := elements.NewSlide("Pricing")
-			for _, item := range t.Pricing {
-				s = s.AddBullet(item)
+			if len(t.Pricing) > 0 {
+				s = s.WithTable(renderPricingTable(t.Pricing))
 			}
 			return s
 		},
 		func() elements.SlideContent {
 			s := elements.NewSlide("Timeline")
-			if t.Timeline != "" {
-				s = s.AddBullet(t.Timeline)
+			if len(t.Timeline) > 0 {
+				s = s.WithTable(renderTimelineTable(t.Timeline))
 			}
 			return s
 		},
 	)
 
 	for i := range slides {
-		slides[i] = t.Branding.Apply(slides[i])
+		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
 	return slides, nil
 }
@@ -161,7 +150,7 @@ func (t TrainingTemplate) Build() ([]elements.SlideContent, error) {
 
 	slides := buildParallel(funcs...)
 	for i := range slides {
-		slides[i] = t.Branding.Apply(slides[i])
+		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
 	return slides, nil
 }
@@ -172,6 +161,7 @@ type StatusTemplate struct {
 	OKRs      []string // Current status of key metrics or OKRs
 	Risks     []string // Active risks or blocking issues
 	NextSteps []string // Upcoming tasks or milestones
+	Branding  BrandingSpec
 }
 
 // Build generates slides for StatusTemplate.
@@ -206,6 +196,9 @@ func (t StatusTemplate) Build() ([]elements.SlideContent, error) {
 			return s
 		},
 	)
+	for i := range slides {
+		slides[i] = t.Branding.ApplyAt(slides[i], i)
+	}
 	return slides, nil
 }
 
@@ -252,7 +245,7 @@ func (t TechnicalTemplate) Build() ([]elements.SlideContent, error) {
 	)
 
 	for i := range slides {
-		slides[i] = t.Branding.Apply(slides[i])
+		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
 	return slides, nil
 }

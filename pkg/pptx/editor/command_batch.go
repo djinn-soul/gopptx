@@ -24,7 +24,7 @@ type batchResult struct {
 func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	var p batchPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return nil, err
+		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
 
 	results := make([]batchResult, 0, len(p.Commands))
@@ -53,7 +53,7 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 				Op:        cmd.Op,
 				RequestID: cmd.RequestID,
 				Error: &ErrorDetail{
-					Code:    "UNKNOWN_OP",
+					Code:    ErrCodeUnknownOp,
 					Message: "Operation " + `"` + cmd.Op + `"` + " not recognized",
 					Details: map[string]int{"index": i},
 				},
@@ -66,14 +66,22 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 
 		result, err := handler(e, cmd.Payload)
 		if err != nil {
+			// Check if error is a BridgeError with specific code
+			var bridgeErr *BridgeError
+			code := ErrCodeOpFailed
+			details := any(map[string]int{"index": i})
+			if AsBridgeError(err, &bridgeErr) {
+				code = bridgeErr.Code
+				details = bridgeErr.Details
+			}
 			results = append(results, batchResult{
 				OK:        false,
 				Op:        cmd.Op,
 				RequestID: cmd.RequestID,
 				Error: &ErrorDetail{
-					Code:    "OP_FAILED",
+					Code:    code,
 					Message: err.Error(),
-					Details: map[string]int{"index": i},
+					Details: details,
 				},
 			})
 			if p.StopOnError {
@@ -91,4 +99,13 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 	}
 
 	return map[string]any{"results": results}, nil
+}
+
+// AsBridgeError checks if an error is a BridgeError and extracts it.
+func AsBridgeError(err error, target **BridgeError) bool {
+	if be, ok := err.(*BridgeError); ok {
+		*target = be
+		return true
+	}
+	return false
 }
