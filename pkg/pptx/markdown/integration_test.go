@@ -67,7 +67,7 @@ func TestSlidesFromMarkdown_Integration_Md2PptDemoFixture(t *testing.T) {
 		if strings.Contains(slideXML, "<a:tbl>") {
 			foundTable = true
 		}
-		if strings.Contains(slideXML, "Mermaid Diagram:") {
+		if strings.Contains(slideXML, "Diagram:") || strings.Contains(slideXML, "Web Browser") {
 			foundMermaid = true
 		}
 		if foundTable && foundMermaid {

@@ -63,6 +63,7 @@ type ShapeSpec struct {
 	IsDecorative bool
 	TextFrame    *TextFrameSpec
 	Name         string
+	Adjustments  []ConnectorAdjustmentSpec
 }
 
 // TextFrameSpec describes the text layout within a shape.
@@ -143,7 +144,9 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	b.WriteString(`
 <a:prstGeom prst="`)
 	b.WriteString(Escape(shape.Type))
-	b.WriteString(`"><a:avLst/></a:prstGeom>`)
+	b.WriteString(`">`)
+	b.WriteString(shapeAdjustments(shape))
+	b.WriteString(`</a:prstGeom>`)
 	b.WriteString(fillXML)
 	b.WriteString(lineXML)
 	b.WriteString(`
@@ -153,6 +156,19 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	b.WriteString(`
 </p:sp>`)
 	return b.String()
+}
+
+func shapeAdjustments(shape ShapeSpec) string {
+	if len(shape.Adjustments) == 0 {
+		return "<a:avLst/>"
+	}
+	var av strings.Builder
+	av.WriteString("<a:avLst>")
+	for _, adj := range shape.Adjustments {
+		av.WriteString(`<a:gd name="` + Escape(adj.Name) + `" fmla="` + Escape(adj.Formula) + `"/>`)
+	}
+	av.WriteString("</a:avLst>")
+	return av.String()
 }
 
 func customShapeNonVisualProperties(shape ShapeSpec) string {

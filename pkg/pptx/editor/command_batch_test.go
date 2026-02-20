@@ -108,3 +108,62 @@ func TestCommandBatchExecuteUnknownOpContinuesWhenStopOnErrorFalse(t *testing.T)
 		t.Fatalf("expected second command to run when stop_on_error is false")
 	}
 }
+
+func TestCommandBatchExecuteMixedResultsIncludePerItemDetails(t *testing.T) {
+	basePath := writeDeckFixture(t, "batch-mixed-details.pptx", []elements.SlideContent{
+		elements.NewSlide("A"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	req := `{"api_version":1,"request_id":"b5","op":"batch_execute","payload":{"commands":[` +
+		`{"op":"slide_count","payload":{}},` +
+		`{"op":"missing_op","payload":{}},` +
+		`{"op":"set_slide_title","payload":{"slide_index":0,"title":"C"}}` +
+		`]}}`
+	resp := ExecuteCommand(e, req)
+
+	var out struct {
+		OK     bool `json:"ok"`
+		Result struct {
+			Results []struct {
+				OK    bool `json:"ok"`
+				Op    string
+				Error struct {
+					Code    string `json:"code"`
+					Message string `json:"message"`
+					Details struct {
+						Index int `json:"index"`
+					} `json:"details"`
+				} `json:"error"`
+			} `json:"results"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal([]byte(resp), &out); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if !out.OK {
+		t.Fatalf("expected top-level OK for mixed batch, got %s", resp)
+	}
+	if len(out.Result.Results) != 3 {
+		t.Fatalf("expected 3 batch results, got %d", len(out.Result.Results))
+	}
+	if !out.Result.Results[0].OK || out.Result.Results[0].Op != "slide_count" {
+		t.Fatalf("unexpected first result ordering/content")
+	}
+	if out.Result.Results[1].OK || out.Result.Results[1].Error.Code != ErrCodeUnknownOp {
+		t.Fatalf("expected second result unknown-op failure, got %+v", out.Result.Results[1])
+	}
+	if out.Result.Results[1].Error.Details.Index != 1 {
+		t.Fatalf("expected second result details.index=1, got %d", out.Result.Results[1].Error.Details.Index)
+	}
+	if !out.Result.Results[2].OK || out.Result.Results[2].Op != "set_slide_title" {
+		t.Fatalf("unexpected third result ordering/content")
+	}
+	if e.Slides()[0].Title != "C" {
+		t.Fatalf("expected third command to execute after failure")
+	}
+}

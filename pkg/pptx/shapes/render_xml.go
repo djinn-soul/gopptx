@@ -32,6 +32,7 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		IsDecorative: shape.IsDecorative,
 		RotationDeg:  shape.RotationDeg,
 		Name:         shape.Name,
+		Adjustments:  toXMLShapeAdjustments(shape.Adjustments),
 	}
 
 	if shape.Fill != nil {
@@ -163,6 +164,20 @@ func ToXMLShapeLineSpec(line ShapeLine) pptxxml.ShapeLineSpec {
 		Cap:   lineCap,
 		Join:  join,
 	}
+}
+
+func toXMLShapeAdjustments(adjustments []ShapeAdjustment) []pptxxml.ConnectorAdjustmentSpec {
+	if len(adjustments) == 0 {
+		return nil
+	}
+	specs := make([]pptxxml.ConnectorAdjustmentSpec, 0, len(adjustments))
+	for _, adj := range adjustments {
+		specs = append(specs, pptxxml.ConnectorAdjustmentSpec{
+			Name:    adj.Name,
+			Formula: adj.Formula,
+		})
+	}
+	return specs
 }
 
 func toXMLConnectorAdjustments(adjustments []ConnectorAdjustment) []pptxxml.ConnectorAdjustmentSpec {

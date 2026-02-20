@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
-	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/mermaid"
 )
 
 const (
@@ -16,16 +16,6 @@ const (
 
 	codeHeaderFontSizePt = 13
 	codeBodyFontSizePt   = 14
-
-	mermaidShapeX  = 762000
-	mermaidShapeY  = 1524000
-	mermaidShapeCX = 8001000
-	mermaidShapeCY = 1714500
-
-	mermaidFillTransparency = 0.08
-	mermaidLineWidth        = 15875
-	mermaidSummaryMaxChars  = 70
-	mermaidSummaryTrimChars = 67
 )
 
 func addCodeBlock(slide *elements.SlideContent, lang string, code string) {
@@ -110,180 +100,16 @@ func codeKeywordsByLanguage(lang string) []string {
 }
 
 func addMermaidPlaceholder(slide *elements.SlideContent, code string, lineNumber int) error {
-	return addMermaidDiagram(slide, code, lineNumber)
-}
-
-type mermaidDiagramStyle struct {
-	kind      string
-	subtitle  string
-	shapeType string
-	fillColor string
-	lineColor string
-}
-
-func addMermaidDiagram(slide *elements.SlideContent, code string, lineNumber int) error {
-	if slide == nil {
-		return fmt.Errorf("line %d: mermaid block requires an active slide", lineNumber)
-	}
-
-	style, err := detectMermaidDiagram(code, lineNumber)
+	diagram, err := mermaid.CreateDiagram(code)
 	if err != nil {
-		return err
+		return fmt.Errorf("line %d: %w", lineNumber, err)
 	}
 
-	text := "Mermaid Diagram: " + style.kind
-	if style.subtitle != "" {
-		text += " (" + style.subtitle + ")"
+	for _, s := range diagram.Shapes {
+		*slide = slide.AddShape(s)
 	}
-	if summary := mermaidSummaryLine(code); summary != "" {
-		text += "\n" + summary
+	for _, c := range diagram.Connectors {
+		*slide = slide.AddConnector(c)
 	}
-
-	shape := shapes.NewShape(style.shapeType, mermaidShapeX, mermaidShapeY, mermaidShapeCX, mermaidShapeCY).
-		WithFill(shapes.NewShapeFill(style.fillColor).WithTransparency(mermaidFillTransparency)).
-		WithLine(shapes.NewShapeLine(style.lineColor, mermaidLineWidth)).
-		WithText(text)
-	*slide = slide.AddShape(shape)
 	return nil
-}
-
-func getMermaidStyles() map[string]mermaidDiagramStyle {
-	return map[string]mermaidDiagramStyle{
-		"flowchart": {
-			kind:      "Flowchart",
-			shapeType: shapes.ShapeTypeFlowChartProcess,
-			fillColor: "DCE6F2",
-			lineColor: "2F5597",
-		},
-		"graph": {
-			kind:      "Flowchart",
-			shapeType: shapes.ShapeTypeFlowChartProcess,
-			fillColor: "DCE6F2",
-			lineColor: "2F5597",
-		},
-		"sequencediagram": {
-			kind:      "Sequence Diagram",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "E2F0D9",
-			lineColor: "2E7D32",
-		},
-		"classdiagram": {
-			kind:      "Class Diagram",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "FCE4D6",
-			lineColor: "A64D00",
-		},
-		"statediagram": {
-			kind:      "State Diagram",
-			shapeType: shapes.ShapeTypeRoundedRectangle,
-			fillColor: "EDE2F7",
-			lineColor: "6A1B9A",
-		},
-		"statediagram-v2": {
-			kind:      "State Diagram",
-			shapeType: shapes.ShapeTypeRoundedRectangle,
-			fillColor: "EDE2F7",
-			lineColor: "6A1B9A",
-		},
-		"erdiagram": {
-			kind:      "Entity-Relationship Diagram",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "E8F5E9",
-			lineColor: "1B5E20",
-		},
-		"journey": {
-			kind:      "User Journey",
-			shapeType: shapes.ShapeTypeRoundedRectangle,
-			fillColor: "FFF2CC",
-			lineColor: "8A6D1A",
-		},
-		"gantt": {
-			kind:      "Gantt Chart",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "E2EFDA",
-			lineColor: "2F6B2F",
-		},
-		"pie": {
-			kind:      "Pie Chart",
-			shapeType: shapes.ShapeTypeEllipse,
-			fillColor: "FBE5D6",
-			lineColor: "C65911",
-		},
-		"mindmap": {
-			kind:      "Mindmap",
-			shapeType: shapes.ShapeTypeEllipse,
-			fillColor: "E4DFEC",
-			lineColor: "5B4B8A",
-		},
-		"quadrantchart": {
-			kind:      "Quadrant Chart",
-			shapeType: shapes.ShapeTypeRectangle,
-			fillColor: "D9E1F2",
-			lineColor: "203864",
-		},
-		"timeline": {
-			kind:      "Timeline",
-			shapeType: shapes.ShapeTypeRightArrow,
-			fillColor: "DEEAF6",
-			lineColor: "2F75B5",
-		},
-		"gitgraph": {
-			kind:      "Git Graph",
-			shapeType: shapes.ShapeTypeParallelogram,
-			fillColor: "EDEDED",
-			lineColor: "595959",
-		},
-	}
-}
-
-func detectMermaidDiagram(code string, lineNumber int) (mermaidDiagramStyle, error) {
-	first := firstNonEmptyLine(code)
-	if first == "" {
-		return mermaidDiagramStyle{}, fmt.Errorf("line %d: mermaid block is empty", lineNumber)
-	}
-
-	fields := strings.Fields(first)
-	if len(fields) == 0 {
-		return mermaidDiagramStyle{}, fmt.Errorf("line %d: mermaid block is empty", lineNumber)
-	}
-
-	directive := strings.ToLower(strings.TrimSpace(fields[0]))
-	style, ok := getMermaidStyles()[directive]
-	if !ok {
-		return mermaidDiagramStyle{}, fmt.Errorf("line %d: unsupported mermaid diagram %q", lineNumber, fields[0])
-	}
-
-	if (directive == "flowchart" || directive == "graph") && len(fields) > 1 {
-		style.subtitle = strings.ToUpper(fields[1])
-	}
-
-	return style, nil
-}
-
-func mermaidSummaryLine(code string) string {
-	lines := strings.Split(code, "\n")
-	for _, line := range lines[1:] {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
-		}
-		if strings.HasPrefix(trimmed, "%%") {
-			continue
-		}
-		if len(trimmed) > mermaidSummaryMaxChars {
-			return trimmed[:mermaidSummaryTrimChars] + "..."
-		}
-		return trimmed
-	}
-	return ""
-}
-
-func firstNonEmptyLine(text string) string {
-	for line := range strings.SplitSeq(text, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
 }

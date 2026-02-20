@@ -65,7 +65,7 @@ func TestSlidesFromMarkdown_MermaidBlock(t *testing.T) {
 	input := `# Diagram
 ` + "```mermaid" + `
 flowchart LR
-    A --> B --> C
+    A --> B
 ` + "```"
 
 	slides, err := SlidesFromMarkdown(input)
@@ -75,26 +75,33 @@ flowchart LR
 	if len(slides) != 1 {
 		t.Fatalf("expected 1 slide, got %d", len(slides))
 	}
-	if len(slides[0].Shapes) != 1 {
-		t.Fatalf("expected one mermaid placeholder shape, got %d", len(slides[0].Shapes))
+	// A --> B produces 2 nodes and 1 connector
+	if len(slides[0].Shapes) != 2 {
+		t.Fatalf("expected two mermaid shapes, got %d", len(slides[0].Shapes))
 	}
-	if !strings.Contains(slides[0].Shapes[0].Text, "Flowchart") {
-		t.Fatalf("expected flowchart placeholder text, got %q", slides[0].Shapes[0].Text)
+	if len(slides[0].Connectors) != 1 {
+		t.Fatalf("expected one mermaid connector, got %d", len(slides[0].Connectors))
 	}
 }
 
-func TestSlidesFromMarkdown_RejectsUnsupportedMermaid(t *testing.T) {
+func TestSlidesFromMarkdown_MermaidPlaceholder(t *testing.T) {
 	input := `# Diagram
 ` + "```mermaid" + `
 unknownDiagram
     A --> B
 ` + "```"
-	_, err := SlidesFromMarkdown(input)
-	if err == nil {
-		t.Fatalf("expected unsupported mermaid error")
+	slides, err := SlidesFromMarkdown(input)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
 	}
-	if !strings.Contains(err.Error(), "unsupported mermaid") {
-		t.Fatalf("unexpected error: %v", err)
+	if len(slides) != 1 {
+		t.Fatalf("expected 1 slide, got %d", len(slides))
+	}
+	if len(slides[0].Shapes) != 1 {
+		t.Fatalf("expected one placeholder shape, got %d", len(slides[0].Shapes))
+	}
+	if !strings.Contains(slides[0].Shapes[0].Text, "Diagram: unknownDiagram") {
+		t.Fatalf("expected placeholder text, got %q", slides[0].Shapes[0].Text)
 	}
 }
 

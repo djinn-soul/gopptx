@@ -15,6 +15,23 @@ from .api_errors import GopptxError
 from .api_slide import Slide
 from .types import PresentationMetadata, SlideMetadata
 
+try:
+    import orjson as _orjson  # type: ignore[import-not-found]
+except ImportError:
+    _orjson = None
+
+
+def _json_dumps(payload: Dict[str, Any]) -> bytes:
+    if _orjson is not None:
+        return _orjson.dumps(payload)
+    return json.dumps(payload, separators=(",", ":")).encode("utf-8")
+
+
+def _json_loads(raw: bytes) -> Any:
+    if _orjson is not None:
+        return _orjson.loads(raw)
+    return json.loads(raw.decode("utf-8"))
+
 
 def _snake_case(name: str) -> str:
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
@@ -112,11 +129,11 @@ class PresentationBase:
                 return {"_batched": True}
 
             envelope = {"api_version": 1, "request_id": str(uuid.uuid4()), "op": op, "payload": payload or {}}
-            res_ptr = self._lib.deck_execute_json(self._handle, json.dumps(envelope).encode("utf-8"))
+            res_ptr = self._lib.deck_execute_json(self._handle, _json_dumps(envelope))
             if not res_ptr:
                 raise GopptxError("Received null response from Go engine")
             try:
-                response = json.loads(ctypes.string_at(res_ptr).decode("utf-8"))
+                response = _json_loads(ctypes.string_at(res_ptr))
                 if not response.get("ok", False):
                     err = response.get("error", {})
                     raise GopptxError(err.get("message", "Unknown engine error"), code=err.get("code"))
@@ -130,6 +147,11 @@ class PresentationBase:
                 self._lib.deck_free_string(res_ptr)
 
     def execute_batch(self, commands: list[dict], stop_on_error: bool = False) -> list[Dict[str, Any]]:
+        """Execute multiple bridge commands in one boundary crossing.
+
+        Returns ordered per-command results. Each result has `ok` plus either
+        `result` or `error` fields from the Go bridge.
+        """
         if not commands:
             return []
         result = self.execute(ops.OP_BATCH_EXECUTE, {"commands": commands, "stop_on_error": stop_on_error})
@@ -137,6 +159,7 @@ class PresentationBase:
         return cast(list[Dict[str, Any]], result.get("results", []))
 
     def batch(self, stop_on_error: bool = False) -> _BatchContext:
+        """Context manager for buffered mutating operations executed as one batch."""
         return _BatchContext(self, stop_on_error=stop_on_error)
 
     def _begin_batch(self, stop_on_error: bool) -> None:
