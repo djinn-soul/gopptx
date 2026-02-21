@@ -3,7 +3,10 @@ package editor
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
+
+const maxTableDimension = 1000
 
 // handleAddTable handles the OP_ADD_TABLE JSON-RPC command.
 func handleAddTable(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -26,10 +29,21 @@ func handleAddTable(e *PresentationEditor, payload json.RawMessage) (any, error)
 		return nil, v.Error()
 	}
 
+	if rowCount < 1 || rowCount > maxTableDimension {
+		return nil, fmt.Errorf("rows %d must be between 1 and %d", rowCount, maxTableDimension)
+	}
+	if colCount < 1 || colCount > maxTableDimension {
+		return nil, fmt.Errorf("cols %d must be between 1 and %d", colCount, maxTableDimension)
+	}
+
 	x, _ := v.OptionalInt64(p, "x")
 	y, _ := v.OptionalInt64(p, "y")
 	cx, _ := v.OptionalInt64(p, "cx")
 	cy, _ := v.OptionalInt64(p, "cy")
+
+	if v.HasErrors() {
+		return nil, v.Error()
+	}
 
 	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
@@ -68,14 +82,28 @@ func handleMergeTableCells(e *PresentationEditor, payload json.RawMessage) (any,
 		return nil, err
 	}
 	v := NewPayloadValidator()
-	slideIndex, _ := v.RequireInt(p, "slide_index")
-	shapeID, _ := v.RequireInt(p, "shape_id")
-	row1, _ := v.RequireInt(p, "row1")
-	col1, _ := v.RequireInt(p, "col1")
-	row2, _ := v.RequireInt(p, "row2")
-	col2, _ := v.RequireInt(p, "col2")
-
-	if v.HasErrors() {
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+	row1, ok := v.RequireInt(p, "row1")
+	if !ok {
+		return nil, v.Error()
+	}
+	col1, ok := v.RequireInt(p, "col1")
+	if !ok {
+		return nil, v.Error()
+	}
+	row2, ok := v.RequireInt(p, "row2")
+	if !ok {
+		return nil, v.Error()
+	}
+	col2, ok := v.RequireInt(p, "col2")
+	if !ok {
 		return nil, v.Error()
 	}
 
@@ -91,12 +119,20 @@ func handleSplitTableCell(e *PresentationEditor, payload json.RawMessage) (any, 
 		return nil, err
 	}
 	v := NewPayloadValidator()
-	slideIndex, _ := v.RequireInt(p, "slide_index")
-	shapeID, _ := v.RequireInt(p, "shape_id")
-	row, _ := v.RequireInt(p, "row")
-	col, _ := v.RequireInt(p, "col")
-
-	if v.HasErrors() {
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+	row, ok := v.RequireInt(p, "row")
+	if !ok {
+		return nil, v.Error()
+	}
+	col, ok := v.RequireInt(p, "col")
+	if !ok {
 		return nil, v.Error()
 	}
 

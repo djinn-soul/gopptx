@@ -10,6 +10,18 @@ if TYPE_CHECKING:
     from .api_presentation import Presentation
 
 
+def _normalize_table_index(value: Any) -> int:
+    if isinstance(value, bool):
+        raise ValueError("table index must be an integer")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError("table index must be integral")
+        return int(value)
+    raise ValueError("table index must be an integer")
+
+
 class Cell:
     def __init__(self, table: Table, row: int, col: int):
         self._table = table
@@ -140,10 +152,12 @@ class Table:
             self._cell_map = {}
             cells = self._cache.get("cells", [])
             for c in cells:
-                row = c.get("row")
-                col = c.get("col")
-                if row is not None and col is not None:
-                    self._cell_map[row, col] = c
+                try:
+                    row_idx = _normalize_table_index(c["row"])
+                    col_idx = _normalize_table_index(c["col"])
+                except (KeyError, ValueError):
+                    continue
+                self._cell_map[(row_idx, col_idx)] = c
 
             # Permanent cache of dimensions
             self._row_count = int(self._cache.get("row_count", 0))
