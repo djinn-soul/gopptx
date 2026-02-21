@@ -42,10 +42,16 @@ class PresentationContentMixin:
                 title = str(args[0])
                 x, y, w, h = cast(tuple[int, int, int, int], args[1:])
             else:
-                raise TypeError("add_chart expects 0, 4, or 5 positional args after values")
+                raise TypeError(
+                    "add_chart expects 0, 4, or 5 positional args after values"
+                )
 
         values: list[float]
-        if isinstance(values_or_series, list) and values_or_series and isinstance(values_or_series[0], dict):
+        if (
+            isinstance(values_or_series, list)
+            and values_or_series
+            and isinstance(values_or_series[0], dict)
+        ):
             first = cast(dict[str, Any], values_or_series[0])
             values = cast(list[float], first.get("values", []))
             title = str(first.get("name", title))
@@ -69,7 +75,9 @@ class PresentationContentMixin:
         return int(result.get("shape_id", result.get("chart_id", 0)))
 
     def find_and_replace(self, find_text: str, replace_text: str) -> int:
-        result = self.execute(ops.OP_FIND_AND_REPLACE, {"find": find_text, "replace": replace_text})
+        result = self.execute(
+            ops.OP_FIND_AND_REPLACE, {"find": find_text, "replace": replace_text}
+        )
         return int(result.get("replacements", 0))
 
     def search_shapes(self, query: ShapeSearchQuery | str) -> list[ShapeSearchResult]:
@@ -89,14 +97,27 @@ class PresentationContentMixin:
     def get_comments(self, slide_index: int) -> list[Comment]:
         result = self.execute(ops.OP_GET_COMMENTS, {"slide_index": slide_index})
         raw_comments = result.get("comments")
-        comments = cast(list[Comment], raw_comments if isinstance(raw_comments, list) else [])
+        comments = cast(
+            list[Comment], raw_comments if isinstance(raw_comments, list) else []
+        )
         for c in cast(list[dict], comments):
             if "Index" in c and "index" not in c:
                 c["index"] = c["Index"]
         return comments
 
-    def add_comment(self, slide_index: int, author_id: int, text: str, x: int = 0, y: int = 0) -> int:
-        self.execute(ops.OP_ADD_COMMENT, {"slide_index": slide_index, "author_id": author_id, "text": text, "x": x, "y": y})
+    def add_comment(
+        self, slide_index: int, author_id: int, text: str, x: int = 0, y: int = 0
+    ) -> int:
+        self.execute(
+            ops.OP_ADD_COMMENT,
+            {
+                "slide_index": slide_index,
+                "author_id": author_id,
+                "text": text,
+                "x": x,
+                "y": y,
+            },
+        )
         comments = self.get_comments(slide_index)
         author_index = 0
         for c in reversed(cast(list[dict[str, Any]], comments)):
@@ -107,19 +128,32 @@ class PresentationContentMixin:
         self._comment_ref_cache[author_index] = (slide_index, author_id, author_index)
         return author_index
 
-    def remove_comment(self, slide_index_or_index: int, author_id: Optional[int] = None, author_index: Optional[int] = None) -> None:
+    def remove_comment(
+        self,
+        slide_index_or_index: int,
+        author_id: Optional[int] = None,
+        author_index: Optional[int] = None,
+    ) -> None:
         if author_id is None and author_index is None:
             ref = self._comment_ref_cache.get(slide_index_or_index)
             if ref is None:
-                raise ValueError("unknown comment index; call remove_comment(slide_index, author_id, author_index)")
+                raise ValueError(
+                    "unknown comment index; call remove_comment(slide_index, author_id, author_index)"
+                )
             slide_index, author_id, author_index = ref
         else:
             slide_index = slide_index_or_index
             if author_id is None or author_index is None:
-                raise TypeError("remove_comment requires either (comment_index) or (slide_index, author_id, author_index)")
+                raise TypeError(
+                    "remove_comment requires either (comment_index) or (slide_index, author_id, author_index)"
+                )
         self.execute(
             ops.OP_REMOVE_COMMENT,
-            {"slide_index": slide_index, "author_id": author_id, "author_index": author_index},
+            {
+                "slide_index": slide_index,
+                "author_id": author_id,
+                "author_index": author_index,
+            },
         )
 
     def list_shapes(self, slide_index: int) -> list[Shape]:
@@ -137,7 +171,14 @@ class PresentationContentMixin:
         text: Optional[str] = None,
         properties: Optional[ShapeProps] = None,
     ) -> int:
-        payload: Dict[str, Any] = {"slide_index": slide_index, "type": shape_type, "x": x, "y": y, "w": w, "h": h}
+        payload: Dict[str, Any] = {
+            "slide_index": slide_index,
+            "type": shape_type,
+            "x": x,
+            "y": y,
+            "w": w,
+            "h": h,
+        }
         if text is not None:
             payload["text"] = text
         if properties is not None:
@@ -145,7 +186,9 @@ class PresentationContentMixin:
         result = self.execute(ops.OP_ADD_SHAPE, payload)
         return int(result.get("shape_id", -1))
 
-    def add_image(self, slide_index: int, path: str, x: float, y: float, w: float, h: float) -> int:
+    def add_image(
+        self, slide_index: int, path: str, x: float, y: float, w: float, h: float
+    ) -> int:
         result = self.execute(
             ops.OP_ADD_IMAGE,
             {"slide_index": slide_index, "path": path, "x": x, "y": y, "w": w, "h": h},
@@ -153,10 +196,17 @@ class PresentationContentMixin:
         return int(result.get("shape_id", -1))
 
     def remove_shape(self, slide_index: int, shape_id: int) -> None:
-        self.execute(ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id})
+        self.execute(
+            ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id}
+        )
 
-    def update_shape(self, slide_index: int, shape_id: int, updates: ShapeUpdate) -> None:
-        self.execute(ops.OP_UPDATE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id, "updates": updates})
+    def update_shape(
+        self, slide_index: int, shape_id: int, updates: ShapeUpdate
+    ) -> None:
+        self.execute(
+            ops.OP_UPDATE_SHAPE,
+            {"slide_index": slide_index, "shape_id": shape_id, "updates": updates},
+        )
 
     def get_notes(self, slide_index: int) -> str:
         result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
@@ -169,9 +219,18 @@ class PresentationContentMixin:
         result = self.execute(ops.OP_LIST_SLIDE_CHARTS, {"slide_index": slide_index})
         return cast(list[SlideChartRef], result.get("charts", []))
 
-    def update_chart_data(self, slide_index: int, chart_selector: ChartSelector | list[str], data: ChartDataUpdate | list[dict]) -> None:
+    def update_chart_data(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector | list[str],
+        data: ChartDataUpdate | list[dict],
+    ) -> None:
         if isinstance(chart_selector, dict):
-            payload = {"slide_index": slide_index, "chart_selector": chart_selector, "data": data}
+            payload = {
+                "slide_index": slide_index,
+                "chart_selector": chart_selector,
+                "data": data,
+            }
             self.execute(ops.OP_UPDATE_CHART_DATA, cast(Dict[str, Any], payload))
             return
 

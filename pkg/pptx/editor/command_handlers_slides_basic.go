@@ -180,6 +180,33 @@ func handleListSlideLayouts(e *PresentationEditor, _ json.RawMessage) (any, erro
 	return map[string]any{"layouts": layouts}, nil
 }
 
+func handleListSlideMasters(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	masters, err := e.ListSlideMasters()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"masters": masters}, nil
+}
+
+func handleListMasterLayouts(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	masterPart, ok := v.RequireString(p, "master_part")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	layouts, err := e.ListMasterLayouts(masterPart)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"layouts": layouts}, nil
+}
+
 func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
 	if err != nil {

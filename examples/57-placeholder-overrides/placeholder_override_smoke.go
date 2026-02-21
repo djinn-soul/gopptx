@@ -56,4 +56,3 @@ func ptrLength(v styling.Length) *styling.Length { return &v }
 func intPtr(v int) *int                          { return &v }
 func boolPtr(v bool) *bool                       { return &v }
 func strPtr(v string) *string                    { return &v }
-

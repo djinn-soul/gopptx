@@ -1,5 +1,7 @@
-import sys
 import os
+import pathlib
+import sys
+
 from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
@@ -9,12 +11,12 @@ sys.path.append(os.path.join(project_root, "python"))
 
 # Create output directory
 output_dir = os.path.join(project_root, "examples/output")
-os.makedirs(output_dir, exist_ok=True)
+pathlib.Path(output_dir).mkdir(exist_ok=True, parents=True)
 
 input_path = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")
 output_path = os.path.join(output_dir, "python_advanced_output.pptx")
 
-if not os.path.exists(input_path):
+if not pathlib.Path(input_path).exists():
     print(f"Input file {input_path} not found. Skipping test.")
     exit(0)
 
@@ -35,7 +37,9 @@ try:
         print("Searching for shapes...")
         results = pres.search_shapes({"text_contains": "SUPER"})
         for res in results:
-            print(f"  Found shape '{res['Shape']['Name']}' on slide {res['SlideIndex']} with text: '{res['Shape']['Text']}'")
+            print(
+                f"  Found shape '{res['Shape']['Name']}' on slide {res['SlideIndex']} with text: '{res['Shape']['Text']}'"
+            )
 
         # 4. Comments and Authors
         print("Testing Comments...")
@@ -44,7 +48,9 @@ try:
         print(f"  Added author 'Jane Doe' with ID: {author_id}")
 
         # Add a comment
-        pres.add_comment(0, author_id, "This is a comment from Python!", x=100000, y=100000)
+        pres.add_comment(
+            0, author_id, "This is a comment from Python!", x=100000, y=100000
+        )
         print("  Added comment to slide 0.")
 
         # Get authors
@@ -68,4 +74,5 @@ try:
 except Exception as e:
     print(f"Error during verification: {e}")
     import traceback
+
     traceback.print_exc()

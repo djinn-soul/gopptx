@@ -67,10 +67,10 @@ func parseGantt(code string) *GanttDiagram {
 			parts := strings.Split(trimmed, ":")
 			taskName := strings.TrimSpace(parts[0])
 			taskDetails := strings.TrimSpace(parts[1])
-			
+
 			details := strings.Split(taskDetails, ",")
 			task := GanttTask{Name: taskName}
-			
+
 			// Very basic parsing of task details
 			// Format: [status,] [id,] [start,] duration
 			for i, detail := range details {
@@ -101,7 +101,7 @@ func parseGantt(code string) *GanttDiagram {
 
 func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 	var shapesList []shapes.Shape
-	
+
 	if len(gantt.Sections) == 0 {
 		return createPlaceholder("gantt (no data)", theme)
 	}
@@ -113,7 +113,7 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 	chartWidth := styling.Inches(6)
 	rowHeight := styling.Inches(0.5)
 	sectionHeight := styling.Inches(0.6)
-	
+
 	currentY := startY
 
 	// Title
@@ -166,7 +166,7 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 			// Task bar (simplified layout: all tasks same width for now as we don't parse dates fully)
 			barWidth := styling.Inches(2)
 			barX := startX + labelWidth + styling.Inches(0.5)
-			
+
 			barShape := shapes.NewShape(
 				shapes.ShapeTypeRoundedRectangle,
 				barX,

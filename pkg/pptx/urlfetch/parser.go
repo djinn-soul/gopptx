@@ -18,6 +18,7 @@ const (
 	KindImage                        // img
 	KindTable                        // table
 	KindQuote                        // blockquote
+	KindLink                         // standalone a[href]
 )
 
 // ContentBlock is a single semantic unit extracted from an HTML document.
@@ -28,6 +29,7 @@ type ContentBlock struct {
 	TableRows    [][]string
 	ImageSrc     string
 	ImageAlt     string
+	LinkHref     string
 	HeadingLevel int
 }
 
@@ -127,7 +129,7 @@ const (
 
 // WebParser extracts structured content from an HTML document.
 type WebParser struct {
-	cfg Web2PptConfig
+	cfg URLFetchConfig
 }
 
 // NewWebParser creates a WebParser with default config.
@@ -136,7 +138,7 @@ func NewWebParser() *WebParser {
 }
 
 // NewWebParserWithConfig creates a WebParser with custom config.
-func NewWebParserWithConfig(cfg Web2PptConfig) *WebParser {
+func NewWebParserWithConfig(cfg URLFetchConfig) *WebParser {
 	return &WebParser{cfg: cfg}
 }
 
@@ -264,6 +266,17 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 				})
 			}
 		}
+	case "a":
+		if p.cfg.ExtractLinks {
+			href, _ := sel.Attr("href")
+			t := cleanText(sel)
+			if href != "" && t != "" {
+				wc.Blocks = append(wc.Blocks, ContentBlock{
+					Kind: KindLink, Text: t, LinkHref: href,
+				})
+			}
+		}
+		return // avoid double-counting link text via child recursion
 	case "table":
 		if p.cfg.IncludeTables {
 			rows := extractTableRows(sel)

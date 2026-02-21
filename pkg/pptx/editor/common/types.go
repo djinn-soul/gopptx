@@ -194,6 +194,11 @@ type SlideLayoutInfo struct {
 	MasterPart string
 }
 
+// SlideMasterInfo describes one available slide master part.
+type SlideMasterInfo struct {
+	Part string
+}
+
 // SlideMasterCloneResult summarizes an in-package layout/master clone operation.
 type SlideMasterCloneResult struct {
 	MasterPart string

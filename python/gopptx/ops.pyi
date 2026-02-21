@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from typing import FrozenSet, Tuple
 
@@ -20,10 +19,12 @@ OP_GET_CORE_PROPERTIES: str
 OP_GET_METADATA: str
 OP_GET_NOTES: str
 OP_GET_SECTIONS: str
+OP_LIST_MASTER_LAYOUTS: str
 OP_LIST_SHAPES: str
 OP_LIST_SLIDES: str
 OP_LIST_SLIDE_CHARTS: str
 OP_LIST_SLIDE_LAYOUTS: str
+OP_LIST_SLIDE_MASTERS: str
 OP_MERGE_FROM_FILE: str
 OP_MOVE_SLIDE: str
 OP_REBIND_SLIDE_LAYOUT: str

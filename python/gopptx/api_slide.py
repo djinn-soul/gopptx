@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Optional
 
 from .types import Shape, ShapeProps, ShapeUpdate, SlideChartRef, SlideMetadata
 
-
 if TYPE_CHECKING:
     from .api_presentation import Presentation
 
@@ -57,7 +56,9 @@ class Slide:
         text: Optional[str] = None,
         properties: Optional[ShapeProps] = None,
     ) -> int:
-        return self._presentation.add_shape(self.index, shape_type, x, y, w, h, text=text, properties=properties)
+        return self._presentation.add_shape(
+            self.index, shape_type, x, y, w, h, text=text, properties=properties
+        )
 
     def add_image(self, path: str, x: float, y: float, w: float, h: float) -> int:
         return self._presentation.add_image(self.index, path, x, y, w, h)
@@ -85,17 +86,26 @@ class Slide:
         w: int = 0,
         h: int = 0,
     ) -> None:
-        self._presentation.add_chart(self.index, chart_type, categories, values, title=title, x=x, y=y, w=w, h=h)
+        self._presentation.add_chart(
+            self.index, chart_type, categories, values, title=title, x=x, y=y, w=w, h=h
+        )
 
-    def update(self, title: Optional[str] = None, layout: Optional[str] = None, bullets: Optional[list[str]] = None) -> None:
-        self._presentation.update_slide(self.index, title=title, layout=layout, bullets=bullets)
+    def update(
+        self,
+        title: Optional[str] = None,
+        layout: Optional[str] = None,
+        bullets: Optional[list[str]] = None,
+    ) -> None:
+        self._presentation.update_slide(
+            self.index, title=title, layout=layout, bullets=bullets
+        )
         if title:
             self._metadata["Title"] = title
 
     def remove(self) -> None:
         self._presentation.remove_slide(self.index)
 
-    def duplicate(self, insert_at: Optional[int] = None) -> "Slide":
+    def duplicate(self, insert_at: Optional[int] = None) -> Slide:
         new_idx = self._presentation.duplicate_slide(self.index, insert_at=insert_at)
         return self._presentation.slides[new_idx]
 

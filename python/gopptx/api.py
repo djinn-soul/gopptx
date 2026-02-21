@@ -5,4 +5,3 @@ from .api_presentation import Presentation
 from .api_slide import Slide
 
 __all__ = ["GopptxError", "Presentation", "Slide"]
-

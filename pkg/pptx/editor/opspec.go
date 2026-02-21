@@ -14,6 +14,8 @@ const (
 	OpUpdateChartData         = "update_chart_data"
 	OpListSlideCharts         = "list_slide_charts"
 	OpListSlideLayouts        = "list_slide_layouts"
+	OpListSlideMasters        = "list_slide_masters"
+	OpListMasterLayouts       = "list_master_layouts"
 	OpRebindSlideLayout       = "rebind_slide_layout"
 	OpCloneLayoutMasterFamily = "clone_layout_master_family"
 	OpAddSection              = "add_section"
@@ -60,6 +62,8 @@ func SupportedOps() []string {
 		OpUpdateChartData,
 		OpListSlideCharts,
 		OpListSlideLayouts,
+		OpListSlideMasters,
+		OpListMasterLayouts,
 		OpRebindSlideLayout,
 		OpCloneLayoutMasterFamily,
 		OpAddSection,

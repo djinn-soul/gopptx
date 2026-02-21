@@ -3,16 +3,25 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, cast
 
 from . import ops
+from .api_master import SlideMasters
 from .api_slide import Slide
 from .types import CoreProperties, Section, SlideLayoutInfo, SlideMasterCloneResult
 
 
 class PresentationSlidesMixin:
     @property
+    def slide_masters(self) -> SlideMasters:
+        if getattr(self, "_slide_masters_obj", None) is None:
+            self._slide_masters_obj = SlideMasters(self)  # type: ignore
+        return self._slide_masters_obj  # type: ignore
+
+    @property
     def sections(self) -> list[Section]:
         result = self.execute(ops.OP_GET_SECTIONS, {})
         raw_sections = result.get("sections")
-        sections = cast(list[dict], raw_sections if isinstance(raw_sections, list) else [])
+        sections = cast(
+            list[dict], raw_sections if isinstance(raw_sections, list) else []
+        )
         for s in sections:
             if "Name" in s and "name" not in s:
                 s["name"] = s["Name"]
@@ -28,7 +37,12 @@ class PresentationSlidesMixin:
     def get_sections(self) -> list[Section]:
         return self.sections
 
-    def add_slide(self, title: str, layout: Optional[str] = None, bullets: Optional[list[str]] = None) -> Slide:
+    def add_slide(
+        self,
+        title: str,
+        layout: Optional[str] = None,
+        bullets: Optional[list[str]] = None,
+    ) -> Slide:
         payload: Dict[str, Any] = {"title": title}
         if layout:
             payload["layout"] = layout
@@ -63,11 +77,19 @@ class PresentationSlidesMixin:
     def duplicate_slide(self, index: int, insert_at: Optional[int] = None) -> int:
         if insert_at is None:
             insert_at = index + 1
-        result = self.execute(ops.OP_DUPLICATE_SLIDE, {"index": index, "insert_at": insert_at})
+        result = self.execute(
+            ops.OP_DUPLICATE_SLIDE, {"index": index, "insert_at": insert_at}
+        )
         self.invalidate_cache()
         return int(result.get("new_index", -1))
 
-    def update_slide(self, index: int, title: Optional[str] = None, layout: Optional[str] = None, bullets: Optional[list[str]] = None) -> None:
+    def update_slide(
+        self,
+        index: int,
+        title: Optional[str] = None,
+        layout: Optional[str] = None,
+        bullets: Optional[list[str]] = None,
+    ) -> None:
         payload: Dict[str, Any] = {"slide_index": index}
         if title is not None:
             payload["title"] = title
@@ -93,7 +115,10 @@ class PresentationSlidesMixin:
         self.execute(ops.OP_REMOVE_SECTION, {"name": str(name)})
 
     def rename_section(self, old_name: str, new_name: str) -> None:
-        self.execute(ops.OP_RENAME_SECTION, {"old_name": str(old_name), "new_name": str(new_name)})
+        self.execute(
+            ops.OP_RENAME_SECTION,
+            {"old_name": str(old_name), "new_name": str(new_name)},
+        )
 
     @property
     def core_properties(self) -> CoreProperties:
@@ -164,11 +189,16 @@ class PresentationSlidesMixin:
                 if layout.get("name") == target_layout:
                     target_layout = cast(str, layout.get("part", target_layout))
                     break
-        self.execute(ops.OP_REBIND_SLIDE_LAYOUT, {"slide_index": slide_index, "layout_part": target_layout})
+        self.execute(
+            ops.OP_REBIND_SLIDE_LAYOUT,
+            {"slide_index": slide_index, "layout_part": target_layout},
+        )
         self.invalidate_cache()
 
     def clone_layout_master_family(self, layout_part: str) -> SlideMasterCloneResult:
-        result = self.execute(ops.OP_CLONE_LAYOUT_MASTER_FAMILY, {"layout_part": layout_part})
+        result = self.execute(
+            ops.OP_CLONE_LAYOUT_MASTER_FAMILY, {"layout_part": layout_part}
+        )
         self.invalidate_cache()
         return cast(SlideMasterCloneResult, result)
 

@@ -153,7 +153,7 @@ func TestConverter_GroupedSlides(t *testing.T) {
 	cfg.GroupByHeadings = true
 
 	opts := urlfetch.DefaultConversionOptions()
-	data, err := urlfetch.NewWeb2PptWithConfig(cfg).Convert(wc, &opts)
+	data, err := urlfetch.NewURLFetchConverterWithConfig(cfg).Convert(wc, &opts)
 	if err != nil {
 		t.Fatalf("convert: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestConverter_LinearSlides(t *testing.T) {
 	cfg.GroupByHeadings = false
 
 	opts := urlfetch.DefaultConversionOptions()
-	data, err := urlfetch.NewWeb2PptWithConfig(cfg).Convert(wc, &opts)
+	data, err := urlfetch.NewURLFetchConverterWithConfig(cfg).Convert(wc, &opts)
 	if err != nil {
 		t.Fatalf("convert: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestConverter_MaxSlides(t *testing.T) {
 
 	cfg := urlfetch.DefaultConfig().WithMaxSlides(2)
 	opts := urlfetch.DefaultConversionOptions()
-	data, err := urlfetch.NewWeb2PptWithConfig(cfg).Convert(wc, &opts)
+	data, err := urlfetch.NewURLFetchConverterWithConfig(cfg).Convert(wc, &opts)
 	if err != nil {
 		t.Fatalf("convert: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestConverter_CustomTitle(t *testing.T) {
 	}
 
 	opts := urlfetch.DefaultConversionOptions().WithTitle("My Custom Title")
-	data, err := urlfetch.NewWeb2Ppt().Convert(wc, &opts)
+	data, err := urlfetch.NewURLFetchConverter().Convert(wc, &opts)
 	if err != nil {
 		t.Fatalf("convert: %v", err)
 	}

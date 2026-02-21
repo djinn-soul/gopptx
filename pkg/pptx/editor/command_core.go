@@ -48,6 +48,8 @@ func initHandlers() {
 		OpUpdateChartData:         handleUpdateChartData,
 		OpListSlideCharts:         handleListSlideCharts,
 		OpListSlideLayouts:        handleListSlideLayouts,
+		OpListSlideMasters:        handleListSlideMasters,
+		OpListMasterLayouts:       handleListMasterLayouts,
 		OpRebindSlideLayout:       handleRebindSlideLayout,
 		OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
 		OpAddSection:              handleAddSection,

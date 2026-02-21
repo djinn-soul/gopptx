@@ -15,23 +15,34 @@ const (
 	maxCodeBullet = 150
 )
 
-// Web2Ppt converts WebContent into a PPTX byte slice.
-type Web2Ppt struct {
-	cfg Web2PptConfig
+// URLFetchConverter converts parsed web content into a PPTX byte slice.
+type URLFetchConverter struct {
+	cfg URLFetchConfig
 }
+
+// NewURLFetchConverter creates a converter with the default config.
+func NewURLFetchConverter() *URLFetchConverter {
+	return &URLFetchConverter{cfg: DefaultConfig()}
+}
+
+// NewURLFetchConverterWithConfig creates a converter with a custom config.
+func NewURLFetchConverterWithConfig(cfg URLFetchConfig) *URLFetchConverter {
+	return &URLFetchConverter{cfg: cfg}
+}
+
+// Web2Ppt is a compatibility alias for URLFetchConverter.
+type Web2Ppt = URLFetchConverter
 
 // NewWeb2Ppt creates a converter with the default config.
-func NewWeb2Ppt() *Web2Ppt {
-	return &Web2Ppt{cfg: DefaultConfig()}
-}
+func NewWeb2Ppt() *URLFetchConverter { return NewURLFetchConverter() }
 
 // NewWeb2PptWithConfig creates a converter with a custom config.
-func NewWeb2PptWithConfig(cfg Web2PptConfig) *Web2Ppt {
-	return &Web2Ppt{cfg: cfg}
+func NewWeb2PptWithConfig(cfg URLFetchConfig) *URLFetchConverter {
+	return NewURLFetchConverterWithConfig(cfg)
 }
 
-// Convert transforms WebContent into PPTX bytes.
-func (c *Web2Ppt) Convert(content *WebContent, opts *ConversionOptions) ([]byte, error) {
+// Convert transforms parsed web content into PPTX bytes.
+func (c *URLFetchConverter) Convert(content *WebContent, opts *ConversionOptions) ([]byte, error) {
 	slides, err := c.buildSlides(content, opts)
 	if err != nil {
 		return nil, err
@@ -42,11 +53,22 @@ func (c *Web2Ppt) Convert(content *WebContent, opts *ConversionOptions) ([]byte,
 		title = *opts.Title
 	}
 
-	return presentationCreate(title, slides)
+	if opts != nil && opts.AddPageNumbers {
+		for i := range slides {
+			slides[i] = slides[i].WithSlideNumber(true)
+		}
+	}
+
+	creator := ""
+	if opts != nil && opts.Author != nil {
+		creator = *opts.Author
+	}
+
+	return presentationCreateWithMetadata(title, creator, slides)
 }
 
 // buildSlides constructs the slide list from extracted web content.
-func (c *Web2Ppt) buildSlides(content *WebContent, opts *ConversionOptions) ([]elements.SlideContent, error) {
+func (c *URLFetchConverter) buildSlides(content *WebContent, opts *ConversionOptions) ([]elements.SlideContent, error) {
 	var slides []elements.SlideContent
 
 	titleText := content.Title
@@ -79,7 +101,7 @@ func (c *Web2Ppt) buildSlides(content *WebContent, opts *ConversionOptions) ([]e
 	return slides, nil
 }
 
-func (c *Web2Ppt) buildGroupedSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
+func (c *URLFetchConverter) buildGroupedSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
 	groups := content.GroupedByHeadings()
 	if len(groups) == 0 {
 		return c.buildLinearSlides(content, slides)
@@ -113,7 +135,7 @@ func (c *Web2Ppt) buildGroupedSlides(content *WebContent, slides []elements.Slid
 	return slides, nil
 }
 
-func (c *Web2Ppt) buildLinearSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
+func (c *URLFetchConverter) buildLinearSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
 	if len(content.Blocks) == 0 {
 		if content.Description != "" {
 			s := elements.NewSlide("Content").WithTitleAndContentLayout().AddBullet(content.Description)
@@ -161,7 +183,7 @@ func (c *Web2Ppt) buildLinearSlides(content *WebContent, slides []elements.Slide
 	return slides, nil
 }
 
-func (c *Web2Ppt) appendBlock(slide elements.SlideContent, block ContentBlock, bulletCount int) (elements.SlideContent, int) {
+func (c *URLFetchConverter) appendBlock(slide elements.SlideContent, block ContentBlock, bulletCount int) (elements.SlideContent, int) {
 	switch block.Kind {
 	case KindParagraph:
 		slide = slide.AddBullet(truncateText(block.Text, maxParaLen))
@@ -185,6 +207,15 @@ func (c *Web2Ppt) appendBlock(slide elements.SlideContent, block ContentBlock, b
 	case KindImage:
 		if c.cfg.IncludeImages && block.ImageAlt != "" {
 			slide = slide.AddBullet("[Image: " + block.ImageAlt + "]")
+			bulletCount++
+		}
+	case KindLink:
+		if c.cfg.ExtractLinks {
+			linkText := block.Text
+			if block.LinkHref != "" && block.LinkHref != block.Text {
+				linkText = linkText + " (" + block.LinkHref + ")"
+			}
+			slide = slide.AddBullet("[Link] " + truncateText(linkText, maxListLen))
 			bulletCount++
 		}
 	}

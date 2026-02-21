@@ -4,8 +4,8 @@
 // HTML tables are rendered as real PPTX tables rather than summary bullets.
 package urlfetch
 
-// Web2PptConfig holds options that control content extraction and slide generation.
-type Web2PptConfig struct {
+// URLFetchConfig holds options that control content extraction and slide generation.
+type URLFetchConfig struct {
 	// MaxSlides caps the total number of generated slides.
 	MaxSlides int
 	// MaxBulletsPerSlide caps how many bullet points appear on a single slide.
@@ -25,11 +25,16 @@ type Web2PptConfig struct {
 	UserAgent string
 	// TimeoutSecs is the HTTP timeout in seconds.
 	TimeoutSecs int
+	// MaxBodyBytes caps the fetched HTTP response body size in bytes.
+	MaxBodyBytes int64
 }
 
-// DefaultConfig returns a Web2PptConfig with sensible defaults.
-func DefaultConfig() Web2PptConfig {
-	return Web2PptConfig{
+// Web2PptConfig is a compatibility alias for URLFetchConfig.
+type Web2PptConfig = URLFetchConfig
+
+// DefaultConfig returns a URLFetchConfig with sensible defaults.
+func DefaultConfig() URLFetchConfig {
+	return URLFetchConfig{
 		MaxSlides:          20,
 		MaxBulletsPerSlide: 6,
 		IncludeImages:      true,
@@ -39,60 +44,67 @@ func DefaultConfig() Web2PptConfig {
 		GroupByHeadings:    true,
 		UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 		TimeoutSecs:        30,
+		MaxBodyBytes:       10 * 1024 * 1024,
 	}
 }
 
 // WithMaxSlides sets the maximum slide count.
-func (c Web2PptConfig) WithMaxSlides(n int) Web2PptConfig {
+func (c URLFetchConfig) WithMaxSlides(n int) URLFetchConfig {
 	c.MaxSlides = n
 	return c
 }
 
 // WithMaxBullets sets the maximum bullets-per-slide.
-func (c Web2PptConfig) WithMaxBullets(n int) Web2PptConfig {
+func (c URLFetchConfig) WithMaxBullets(n int) URLFetchConfig {
 	c.MaxBulletsPerSlide = n
 	return c
 }
 
 // WithImages enables or disables image extraction.
-func (c Web2PptConfig) WithImages(v bool) Web2PptConfig {
+func (c URLFetchConfig) WithImages(v bool) URLFetchConfig {
 	c.IncludeImages = v
 	return c
 }
 
 // WithTables enables or disables table extraction.
-func (c Web2PptConfig) WithTables(v bool) Web2PptConfig {
+func (c URLFetchConfig) WithTables(v bool) URLFetchConfig {
 	c.IncludeTables = v
 	return c
 }
 
 // WithCode enables or disables code-block extraction.
-func (c Web2PptConfig) WithCode(v bool) Web2PptConfig {
+func (c URLFetchConfig) WithCode(v bool) URLFetchConfig {
 	c.IncludeCode = v
 	return c
 }
 
 // WithLinks enables or disables link extraction.
-func (c Web2PptConfig) WithLinks(v bool) Web2PptConfig {
+func (c URLFetchConfig) WithLinks(v bool) URLFetchConfig {
 	c.ExtractLinks = v
 	return c
 }
 
 // WithGroupByHeadings sets the slide-grouping strategy.
-func (c Web2PptConfig) WithGroupByHeadings(v bool) Web2PptConfig {
+func (c URLFetchConfig) WithGroupByHeadings(v bool) URLFetchConfig {
 	c.GroupByHeadings = v
 	return c
 }
 
 // WithUserAgent overrides the HTTP User-Agent header.
-func (c Web2PptConfig) WithUserAgent(ua string) Web2PptConfig {
+func (c URLFetchConfig) WithUserAgent(ua string) URLFetchConfig {
 	c.UserAgent = ua
 	return c
 }
 
 // WithTimeout sets the HTTP request timeout in seconds.
-func (c Web2PptConfig) WithTimeout(secs int) Web2PptConfig {
+func (c URLFetchConfig) WithTimeout(secs int) URLFetchConfig {
 	c.TimeoutSecs = secs
+	return c
+}
+
+// WithMaxBodyBytes sets the maximum response body size in bytes.
+func (c URLFetchConfig) WithMaxBodyBytes(n int64) URLFetchConfig {
+	c.MaxBodyBytes = n
 	return c
 }
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import ctypes
 import json
 import os
+import pathlib
 import re
 import sys
 import threading
@@ -34,8 +35,8 @@ def _json_loads(raw: bytes) -> Any:
 
 
 def _snake_case(name: str) -> str:
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+    s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
 def _with_key_aliases(obj: Any) -> Any:
@@ -74,18 +75,29 @@ class PresentationBase:
             if cls._lib:
                 return
             pkg_dir = os.path.dirname(__file__)
-            lib_name = "gopptx.dll" if sys.platform == "win32" else ("libgopptx.dylib" if sys.platform == "darwin" else "libgopptx.so")
+            lib_name = (
+                "gopptx.dll"
+                if sys.platform == "win32"
+                else ("libgopptx.dylib" if sys.platform == "darwin" else "libgopptx.so")
+            )
             search_paths: list[str] = []
             env_path = os.environ.get("GOPPTX_LIB_PATH")
             if env_path:
-                if os.path.isdir(env_path):
+                if pathlib.Path(env_path).is_dir():
                     search_paths.append(os.path.join(env_path, lib_name))
                 else:
                     search_paths.append(env_path)
-            search_paths.extend([os.path.join(pkg_dir, lib_name), os.path.join(pkg_dir, "../../bindings/c/build", lib_name)])
-            lib_path = next((os.path.abspath(c) for c in search_paths if os.path.exists(c)), None)
+            search_paths.extend([
+                os.path.join(pkg_dir, lib_name),
+                os.path.join(pkg_dir, "../../bindings/c/build", lib_name),
+            ])
+            lib_path = next(
+                (os.path.abspath(c) for c in search_paths if pathlib.Path(c).exists()), None
+            )
             if not lib_path:
-                raise GopptxError(f"Could not find shared library {lib_name}. Please build it first.")
+                raise GopptxError(
+                    f"Could not find shared library {lib_name}. Please build it first."
+                )
 
             cls._lib = ctypes.CDLL(lib_path)
             cls._lib.deck_open.argtypes = [ctypes.c_char_p]
@@ -106,29 +118,43 @@ class PresentationBase:
             cls._lib.deck_close.restype = None
 
     @classmethod
-    def new(cls, title: str) -> "PresentationBase":
+    def new(cls, title: str) -> PresentationBase:
         pres = cls()
         handle = cls._lib.deck_new(title.encode("utf-8"))
         if not handle:
             err_ptr = cls._lib.deck_global_error()
-            msg = ctypes.string_at(err_ptr).decode("utf-8") if err_ptr else "Unknown error"
+            msg = (
+                ctypes.string_at(err_ptr).decode("utf-8")
+                if err_ptr
+                else "Unknown error"
+            )
             if err_ptr:
                 cls._lib.deck_free_string(err_ptr)
             raise GopptxError(f"Failed to create new deck: {msg}")
         pres._handle = int(handle)
         return pres
 
-    def execute(self, op: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute(
+        self, op: str, payload: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         with self._lock:
             if not self._handle:
                 raise GopptxError("Presentation is not open.")
             if self._batch_active and op != ops.OP_BATCH_EXECUTE:
                 if op in _BatchContext._READ_OPS:
-                    raise GopptxError(f"read operation {op!r} is not allowed inside batch()", code="BATCH_READ_OP_NOT_ALLOWED")
+                    raise GopptxError(
+                        f"read operation {op!r} is not allowed inside batch()",
+                        code="BATCH_READ_OP_NOT_ALLOWED",
+                    )
                 self._batch_commands.append({"op": op, "payload": payload or {}})
                 return {"_batched": True}
 
-            envelope = {"api_version": 1, "request_id": str(uuid.uuid4()), "op": op, "payload": payload or {}}
+            envelope = {
+                "api_version": 1,
+                "request_id": str(uuid.uuid4()),
+                "op": op,
+                "payload": payload or {},
+            }
             res_ptr = self._lib.deck_execute_json(self._handle, _json_dumps(envelope))
             if not res_ptr:
                 raise GopptxError("Received null response from Go engine")
@@ -136,7 +162,9 @@ class PresentationBase:
                 response = _json_loads(ctypes.string_at(res_ptr))
                 if not response.get("ok", False):
                     err = response.get("error", {})
-                    raise GopptxError(err.get("message", "Unknown engine error"), code=err.get("code"))
+                    raise GopptxError(
+                        err.get("message", "Unknown engine error"), code=err.get("code")
+                    )
                 result = response.get("result")
                 if result is None:
                     return {}
@@ -146,7 +174,9 @@ class PresentationBase:
             finally:
                 self._lib.deck_free_string(res_ptr)
 
-    def execute_batch(self, commands: list[dict], stop_on_error: bool = False) -> list[Dict[str, Any]]:
+    def execute_batch(
+        self, commands: list[dict], stop_on_error: bool = False
+    ) -> list[Dict[str, Any]]:
         """Execute multiple bridge commands in one boundary crossing.
 
         Returns ordered per-command results. Each result has `ok` plus either
@@ -154,7 +184,9 @@ class PresentationBase:
         """
         if not commands:
             return []
-        result = self.execute(ops.OP_BATCH_EXECUTE, {"commands": commands, "stop_on_error": stop_on_error})
+        result = self.execute(
+            ops.OP_BATCH_EXECUTE, {"commands": commands, "stop_on_error": stop_on_error}
+        )
         self.invalidate_cache()
         return cast(list[Dict[str, Any]], result.get("results", []))
 
@@ -165,7 +197,10 @@ class PresentationBase:
     def _begin_batch(self, stop_on_error: bool) -> None:
         with self._lock:
             if self._batch_active:
-                raise GopptxError("nested batch() calls are not allowed", code="BATCH_NESTED_NOT_ALLOWED")
+                raise GopptxError(
+                    "nested batch() calls are not allowed",
+                    code="BATCH_NESTED_NOT_ALLOWED",
+                )
             self._batch_active = True
             self._batch_stop_on_error = stop_on_error
             self._batch_commands = []
@@ -183,7 +218,11 @@ class PresentationBase:
             self._batch_active = False
             self._batch_stop_on_error = False
             self._batch_commands = []
-        return self.execute_batch(commands, stop_on_error=stop_on_error) if commands else []
+        return (
+            self.execute_batch(commands, stop_on_error=stop_on_error)
+            if commands
+            else []
+        )
 
     @property
     def slide_count(self) -> int:
@@ -194,7 +233,9 @@ class PresentationBase:
         with self._lock:
             if self._metadata_cache is not None:
                 return self._metadata_cache
-            self._metadata_cache = cast(PresentationMetadata, self.execute(ops.OP_GET_METADATA, {}))
+            self._metadata_cache = cast(
+                PresentationMetadata, self.execute(ops.OP_GET_METADATA, {})
+            )
             return self._metadata_cache
 
     @property
@@ -207,7 +248,9 @@ class PresentationBase:
             if self._slides_metadata_cache is not None:
                 return self._slides_metadata_cache
             slides = self.execute(ops.OP_LIST_SLIDES, {}).get("slides", [])
-            self._slides_metadata_cache = cast(list[SlideMetadata], _with_key_aliases(slides))
+            self._slides_metadata_cache = cast(
+                list[SlideMetadata], _with_key_aliases(slides)
+            )
             return self._slides_metadata_cache
 
     def invalidate_cache(self) -> None:
@@ -234,7 +277,11 @@ class PresentationBase:
             handle = self._lib.deck_open(path.encode("utf-8"))
             if not handle:
                 err_ptr = self._lib.deck_global_error()
-                msg = ctypes.string_at(err_ptr).decode("utf-8") if err_ptr else "Unknown error"
+                msg = (
+                    ctypes.string_at(err_ptr).decode("utf-8")
+                    if err_ptr
+                    else "Unknown error"
+                )
                 if err_ptr:
                     self._lib.deck_free_string(err_ptr)
                 raise GopptxError(f"Failed to open deck: {msg}")
@@ -255,7 +302,7 @@ class PresentationBase:
                 self._handle = None
             self.invalidate_cache()
 
-    def __enter__(self) -> "PresentationBase":
+    def __enter__(self) -> PresentationBase:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

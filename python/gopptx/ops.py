@@ -18,10 +18,12 @@ OP_GET_CORE_PROPERTIES = "get_core_properties"
 OP_GET_METADATA = "get_metadata"
 OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
+OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
 OP_LIST_SHAPES = "list_shapes"
 OP_LIST_SLIDES = "list_slides"
 OP_LIST_SLIDE_CHARTS = "list_slide_charts"
 OP_LIST_SLIDE_LAYOUTS = "list_slide_layouts"
+OP_LIST_SLIDE_MASTERS = "list_slide_masters"
 OP_MERGE_FROM_FILE = "merge_from_file"
 OP_MOVE_SLIDE = "move_slide"
 OP_REBIND_SLIDE_LAYOUT = "rebind_slide_layout"
@@ -61,10 +63,12 @@ SUPPORTED_OPS = (
     OP_GET_METADATA,
     OP_GET_NOTES,
     OP_GET_SECTIONS,
+    OP_LIST_MASTER_LAYOUTS,
     OP_LIST_SHAPES,
     OP_LIST_SLIDES,
     OP_LIST_SLIDE_CHARTS,
     OP_LIST_SLIDE_LAYOUTS,
+    OP_LIST_SLIDE_MASTERS,
     OP_MERGE_FROM_FILE,
     OP_MOVE_SLIDE,
     OP_REBIND_SLIDE_LAYOUT,

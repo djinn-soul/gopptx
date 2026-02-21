@@ -83,7 +83,7 @@ func parseTimeline(code string) *TimelineDiagram {
 
 func generateTimelineElements(timeline *TimelineDiagram, theme Theme) DiagramElements {
 	var shapesList []shapes.Shape
-	
+
 	if len(timeline.Events) == 0 {
 		return createPlaceholder("timeline (no data)", theme)
 	}
@@ -93,7 +93,7 @@ func generateTimelineElements(timeline *TimelineDiagram, theme Theme) DiagramEle
 	startY := styling.Inches(3.5)
 	eventWidth := styling.Inches(1.8)
 	eventSpacing := styling.Inches(0.5)
-	
+
 	// Title
 	if timeline.Title != "" {
 		titleShape := shapes.NewShape(
@@ -124,7 +124,7 @@ func generateTimelineElements(timeline *TimelineDiagram, theme Theme) DiagramEle
 
 	for i, event := range timeline.Events {
 		x := startX + styling.Length(i)*(eventWidth+eventSpacing)
-		
+
 		// Date marker
 		markerSize := styling.Inches(0.2)
 		marker := shapes.NewShape(

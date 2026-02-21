@@ -6,6 +6,15 @@ import (
 )
 
 // presentationCreate generates PPTX bytes from a title and slide list.
-func presentationCreate(title string, slides []elements.SlideContent) ([]byte, error) {
-	return pptx.CreateWithSlides(title, slides)
+func presentationCreateWithMetadata(
+	title, creator string,
+	slides []elements.SlideContent,
+) ([]byte, error) {
+	meta := pptx.Metadata{
+		Metadata: pptx.MetadataFields{
+			Title:   title,
+			Creator: creator,
+		},
+	}
+	return pptx.CreateWithMetadata(meta, slides)
 }

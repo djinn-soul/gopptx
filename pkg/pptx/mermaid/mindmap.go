@@ -55,7 +55,7 @@ func parseMindmap(code string) *MindmapNode {
 
 		// Parse node label and shape
 		_, label, shape := ParseNodeDef(cleanLine)
-		
+
 		// Handle icons or other mindmap specific syntax (simplified)
 		if strings.Contains(label, "::icon") {
 			label = strings.Split(label, "::icon")[0]

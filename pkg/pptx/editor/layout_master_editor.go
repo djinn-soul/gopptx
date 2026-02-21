@@ -19,6 +19,42 @@ var (
 
 const partPatternSubmatchSize = 2
 
+func (e *PresentationEditor) ListSlideMasters() ([]common.SlideMasterInfo, error) {
+	masterParts := e.parts.KeysWithPrefix("ppt/slideMasters/slideMaster")
+	infos := make([]common.SlideMasterInfo, 0, len(masterParts))
+	for _, part := range masterParts {
+		if !strings.HasSuffix(part, ".xml") {
+			continue
+		}
+		infos = append(infos, common.SlideMasterInfo{
+			Part: part,
+		})
+	}
+	sort.Slice(infos, func(i, j int) bool { return infos[i].Part < infos[j].Part })
+	return infos, nil
+}
+
+func (e *PresentationEditor) ListMasterLayouts(masterPart string) ([]common.SlideLayoutInfo, error) {
+	masterPart = common.CanonicalPartPath(masterPart)
+	layouts, err := e.layoutsForMaster(masterPart)
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]common.SlideLayoutInfo, 0, len(layouts))
+	for _, part := range layouts {
+		xmlData, ok := e.parts.Get(part)
+		if !ok {
+			return nil, fmt.Errorf("layout part not found: %s", part)
+		}
+		infos = append(infos, common.SlideLayoutInfo{
+			Part:       part,
+			Name:       parseLayoutName(xmlData),
+			MasterPart: masterPart,
+		})
+	}
+	return infos, nil
+}
+
 func (e *PresentationEditor) ListSlideLayouts() ([]common.SlideLayoutInfo, error) {
 	layoutParts := e.parts.KeysWithPrefix("ppt/slideLayouts/slideLayout")
 	infos := make([]common.SlideLayoutInfo, 0, len(layoutParts))
