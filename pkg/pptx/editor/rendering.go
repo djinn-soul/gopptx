@@ -122,6 +122,7 @@ func renderEditorSlideParts(
 		nil, // smartArtRels
 		notesTarget,
 		hyperlinks,
+		"", // commentsTarget
 	)
 	return slideXML, relsXML, nil
 }

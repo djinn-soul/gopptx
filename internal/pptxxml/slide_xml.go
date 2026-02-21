@@ -453,10 +453,10 @@ func SlideRelationshipsWithHyperlinks(
 	notesTarget string,
 	hyperlinks []HyperlinkRel,
 ) string {
-	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, nil, notesTarget, hyperlinks)
+	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, nil, notesTarget, hyperlinks, "")
 }
 
-// SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts and SmartArt.
+// SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts, SmartArt, and comments.
 func SlideRelationshipsWithMultiCharts(
 	layoutTarget string,
 	imageTargets []string,
@@ -465,6 +465,7 @@ func SlideRelationshipsWithMultiCharts(
 	smartArtRels []SmartArtRel,
 	notesTarget string,
 	hyperlinks []HyperlinkRel,
+	commentsTarget string,
 ) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -533,6 +534,15 @@ func SlideRelationshipsWithMultiCharts(
 		b.WriteString(strconv.Itoa(maxRID + 1))
 		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="`)
 		b.WriteString(Escape(notesTarget))
+		b.WriteString(`"/>`)
+		maxRID++
+	}
+	if strings.TrimSpace(commentsTarget) != "" {
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(maxRID + 1))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="`)
+		b.WriteString(Escape(commentsTarget))
 		b.WriteString(`"/>`)
 	}
 	b.WriteString(`

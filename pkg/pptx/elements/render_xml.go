@@ -148,6 +148,7 @@ func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagra
 			LeftIndent:     style.LeftIndent.Emu(),
 			RightIndent:    style.RightIndent.Emu(),
 			HangingIndent:  style.HangingIndent.Emu(),
+			RTL:            style.RTL,
 		}
 	}
 	return out

@@ -140,7 +140,13 @@ class PresentationContentMixin:
         raise GopptxError(f"table cell [{row},{col}] not found", code="OP_FAILED")
 
     def merge_table_cells(
-        self, slide_index: int, shape_id: int, row1: int, col1: int, row2: int, col2: int
+        self,
+        slide_index: int,
+        shape_id: int,
+        row1: int,
+        col1: int,
+        row2: int,
+        col2: int,
     ) -> None:
         self.execute(
             ops.OP_MERGE_TABLE_CELLS,
@@ -154,7 +160,9 @@ class PresentationContentMixin:
             },
         )
 
-    def split_table_cell(self, slide_index: int, shape_id: int, row: int, col: int) -> None:
+    def split_table_cell(
+        self, slide_index: int, shape_id: int, row: int, col: int
+    ) -> None:
         self.execute(
             ops.OP_SPLIT_TABLE_CELL,
             {"slide_index": slide_index, "shape_id": shape_id, "row": row, "col": col},
@@ -284,6 +292,18 @@ class PresentationContentMixin:
     def remove_shape(self, slide_index: int, shape_id: int) -> None:
         self.execute(
             ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id}
+        )
+
+    def move_shape_to_front(self, slide_index: int, shape_id: int) -> None:
+        self.execute(
+            ops.OP_MOVE_SHAPE_TO_FRONT,
+            {"slide_index": slide_index, "shape_id": shape_id},
+        )
+
+    def move_shape_to_back(self, slide_index: int, shape_id: int) -> None:
+        self.execute(
+            ops.OP_MOVE_SHAPE_TO_BACK,
+            {"slide_index": slide_index, "shape_id": shape_id},
         )
 
     def update_shape(

@@ -43,6 +43,8 @@ const (
 	OpAddImage                = "add_image"
 	OpRemoveShape             = "remove_shape"
 	OpUpdateShape             = "update_shape"
+	OpMoveShapeToFront        = "move_shape_to_front"
+	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
 	OpSetNotes                = "set_notes"
 	OpSetModifyPassword       = "set_modify_password"
@@ -97,6 +99,8 @@ func SupportedOps() []string {
 		OpAddImage,
 		OpRemoveShape,
 		OpUpdateShape,
+		OpMoveShapeToFront,
+		OpMoveShapeToBack,
 		OpGetNotes,
 		OpSetNotes,
 		OpSetModifyPassword,

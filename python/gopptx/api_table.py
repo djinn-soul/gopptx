@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Tuple, Union, cast
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
 
 from . import ops
+from .api_errors import GopptxError
 
 if TYPE_CHECKING:
     from .api_presentation import Presentation
@@ -41,7 +43,16 @@ class Cell:
         self._table._update_cell(self.row, self.col, {"text": str(value)})
 
     def split(self) -> None:
-        """Splits a merged cell back into a 1x1 cell."""
+        """Splits a merged cell back into a 1x1 cell.
+
+        Note: This method is disallowed within a batch() context as structural
+        changes invalidate the coordinate mapping.
+        """
+        if getattr(self._table._prs, "_batch_active", False):
+            raise GopptxError(
+                "structural changes (split) are not allowed inside a batch",
+                code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
+            )
         self._table._prs.execute(
             ops.OP_SPLIT_TABLE_CELL,
             {
@@ -70,10 +81,17 @@ class CellRange:
         self.col_end = min(table.col_count, col_end)
 
     def merge(self) -> None:
-        """
-        Merges all cells in this range into a single spanned cell.
+        """Merges all cells in this range into a single spanned cell.
         Follows Python exclusive slice convention for end indices.
+
+        Note: This method is disallowed within a batch() context as structural
+        changes invalidate the coordinate mapping.
         """
+        if getattr(self._table._prs, "_batch_active", False):
+            raise GopptxError(
+                "structural changes (merge) are not allowed inside a batch",
+                code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
+            )
         if self.row_end <= self.row_start + 1 and self.col_end <= self.col_start + 1:
             return  # Nothing to merge
 
@@ -93,8 +111,7 @@ class CellRange:
 
 
 class Table:
-    """
-    Pythonic Table API for gopptx.
+    """Pythonic Table API for gopptx.
     Provides grid-based access via slicing: table[row, col] or table[r1:r2, c1:c2].
     """
 
@@ -126,7 +143,7 @@ class Table:
                 row = c.get("row")
                 col = c.get("col")
                 if row is not None and col is not None:
-                    self._cell_map[(row, col)] = c
+                    self._cell_map[row, col] = c
 
             # Permanent cache of dimensions
             self._row_count = int(self._cache.get("row_count", 0))
@@ -145,6 +162,12 @@ class Table:
         return self._cell_map.get((row, col), {})
 
     def _update_cell(self, row: int, col: int, updates: Dict[str, Any]) -> None:
+        """Updates a cell and its local cache representation.
+
+        Note: The local cache update is a best-effort sync for properties like text.
+        Structural changes or complex aggregate properties may still require a full
+        re-fetch outside of batch mode.
+        """
         self._prs.execute(
             ops.OP_UPDATE_TABLE_CELL,
             {
@@ -157,7 +180,7 @@ class Table:
         )
         # Update local cache to support reading updated values during batch
         if (row, col) in self._cell_map:
-            self._cell_map[(row, col)].update(updates)
+            self._cell_map[row, col].update(updates)
 
         # Do not invalidate the whole cache for simple cell updates,
         # especially during batch mode where re-fetching is forbidden.
@@ -186,7 +209,9 @@ class Table:
 
         row_idx, col_idx = idx
 
-        # Support negative indexing for integers
+        # Support negative indexing for integers (e.g., -1 for last row).
+        # We use a single addition rather than modulo (%) to match standard Python
+        # behavior where indices like [-len-1] raise IndexError instead of wrapping.
         if isinstance(row_idx, int) and row_idx < 0:
             row_idx += self.row_count
         if isinstance(col_idx, int) and col_idx < 0:
