@@ -21,7 +21,8 @@ func main() {
 
 	// Apply Protection
 	builder.WithModifyPassword("test").
-		WithMarkAsFinal(true)
+		WithMarkAsFinal(true).
+		WithSignaturesEnabled(true)
 
 	// Save
 	outputPath := "examples/output/46_presentation_protection.pptx"

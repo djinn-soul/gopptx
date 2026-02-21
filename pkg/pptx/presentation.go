@@ -20,6 +20,8 @@ type (
 	SlideSize = presentation.SlideSize
 	// CustomXMLPart represents an embedded custom XML document.
 	CustomXMLPart = common.CustomXMLPart
+	// Section defines a presentation section.
+	Section = presentation.Section
 )
 
 // SlideSize4x3 returns the standard 4:3 slide size.

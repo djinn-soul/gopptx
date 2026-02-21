@@ -14,6 +14,7 @@ from .types import (
 
 if TYPE_CHECKING:
     from .api_presentation import Presentation
+    from .api_table import Table
 
 
 class Slide:
@@ -86,10 +87,10 @@ class Slide:
         return self._presentation.get_table(self.index, shape_id)
 
     def table(self, shape_id: int) -> Table:
-        """
-        Returns a Table object for the given shape_id, providing a Pythonic grid API.
+        """Returns a Table object for the given shape_id, providing a Pythonic grid API.
         """
         from .api_table import Table
+
         return Table(self._presentation, self.index, shape_id)
 
     def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
@@ -104,13 +105,21 @@ class Slide:
     def merge_table_cells(
         self, shape_id: int, row1: int, col1: int, row2: int, col2: int
     ) -> None:
-        self._presentation.merge_table_cells(self.index, shape_id, row1, col1, row2, col2)
+        self._presentation.merge_table_cells(
+            self.index, shape_id, row1, col1, row2, col2
+        )
 
     def split_table_cell(self, shape_id: int, row: int, col: int) -> None:
         self._presentation.split_table_cell(self.index, shape_id, row, col)
 
     def remove_shape(self, shape_id: int) -> None:
         self._presentation.remove_shape(self.index, shape_id)
+
+    def move_shape_to_front(self, shape_id: int) -> None:
+        self._presentation.move_shape_to_front(self.index, shape_id)
+
+    def move_shape_to_back(self, shape_id: int) -> None:
+        self._presentation.move_shape_to_back(self.index, shape_id)
 
     def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None:
         self._presentation.update_shape(self.index, shape_id, updates)

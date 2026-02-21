@@ -381,3 +381,42 @@ func TestCreateWithSlidesTitleFontAndNumber(t *testing.T) {
 		t.Fatalf("expected slide number field %q in slide XML", fldNeedle)
 	}
 }
+
+func TestCreateWithSections(t *testing.T) {
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Slide 1"),
+		pptx.NewSlide("Slide 2"),
+	}
+
+	meta := pptx.Metadata{
+		Metadata: pptx.MetadataFields{Title: "Sections Demo"},
+		Sections: []pptx.Section{
+			{Name: "Intro", SlideIndices: []int{0}},
+			{Name: "Main", SlideIndices: []int{1}},
+		},
+	}
+
+	data, err := pptx.CreateWithMetadata(meta, slides)
+	if err != nil {
+		t.Fatalf("CreateWithMetadata error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	if !testutil.ZipHasFile(zr, "ppt/sectionList.xml") {
+		t.Fatalf("missing sectionList.xml")
+	}
+
+	sectionXML := testutil.ReadZipFile(t, zr, "ppt/sectionList.xml")
+	if !strings.Contains(sectionXML, `name="Intro"`) || !strings.Contains(sectionXML, `name="Main"`) {
+		t.Fatalf("expected section names in sectionList.xml")
+	}
+
+	presXML := testutil.ReadZipFile(t, zr, "ppt/presentation.xml")
+	if !strings.Contains(presXML, `<p14:sectionLst`) {
+		t.Fatalf("expected p14:sectionLst in presentation.xml")
+	}
+}

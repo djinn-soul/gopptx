@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from typing import FrozenSet, Tuple
 
@@ -30,6 +29,8 @@ OP_LIST_SLIDE_LAYOUTS: str
 OP_LIST_SLIDE_MASTERS: str
 OP_MERGE_FROM_FILE: str
 OP_MERGE_TABLE_CELLS: str
+OP_MOVE_SHAPE_TO_BACK: str
+OP_MOVE_SHAPE_TO_FRONT: str
 OP_MOVE_SLIDE: str
 OP_REBIND_SLIDE_LAYOUT: str
 OP_REMOVE_COMMENT: str

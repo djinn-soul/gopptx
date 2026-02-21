@@ -7,6 +7,21 @@ import (
 	"fmt"
 )
 
+var tableFlagAttributeMap = map[string]string{
+	"first_row": "firstRow",
+	"firstRow":  "firstRow",
+	"band_row":  "bandRow",
+	"bandRow":   "bandRow",
+	"first_col": "firstCol",
+	"firstCol":  "firstCol",
+	"last_row":  "lastRow",
+	"lastRow":   "lastRow",
+	"last_col":  "lastCol",
+	"lastCol":   "lastCol",
+	"band_col":  "bandCol",
+	"bandCol":   "bandCol",
+}
+
 // GetTable reads a table's structure entirely from XML.
 func (e *PresentationEditor) GetTable(slideIndex, shapeID int) (map[string]any, error) {
 	_, _, _, _, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
@@ -89,19 +104,10 @@ func (e *PresentationEditor) UpdateTableFlags(slideIndex, shapeID int, flags map
 	tblPrEnd := tblPrStart + tblPrRelEnd + 1
 	tblPrXML := append([]byte(nil), frame[tblPrStart:tblPrEnd]...)
 
-	camelMap := map[string]string{
-		"first_row": "firstRow",
-		"band_row":  "bandRow",
-		"first_col": "firstCol",
-		"last_row":  "lastRow",
-		"last_col":  "lastCol",
-		"band_col":  "bandCol",
-	}
-
 	for k, v := range flags {
-		xmlKey, ok := camelMap[k]
+		xmlKey, ok := tableFlagAttributeMap[k]
 		if !ok {
-			xmlKey = k
+			continue
 		}
 		boolVal, ok := v.(bool)
 		if !ok {

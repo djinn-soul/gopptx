@@ -26,6 +26,7 @@ type BulletParagraphSpec struct {
 	LeftIndent     int64
 	RightIndent    int64
 	HangingIndent  int64
+	RTL            bool
 }
 
 func bulletStyleAt(all []BulletParagraphSpec, index int) BulletParagraphSpec {
@@ -56,6 +57,9 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 	) + `" indent="` + strconv.Itoa(
 		indent,
 	) + `"` + marRXML
+	if style.RTL {
+		base += ` rtl="1"`
+	}
 	if style.Align != "" {
 		base += ` algn="` + Escape(style.Align) + `"`
 	}

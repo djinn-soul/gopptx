@@ -93,6 +93,16 @@ type SlideContent struct {
 	Animations           []animations.Animation
 	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
+	Comments             []SlideComment
+}
+
+// SlideComment describes an author's comment on a slide.
+type SlideComment struct {
+	AuthorName string
+	Text       string
+	// Optional coordinates in EMU. If 0, defaults are applied locally.
+	X int64
+	Y int64
 }
 
 // NewSlide creates a new slide with default settings and a title.
@@ -145,6 +155,15 @@ func (s SlideContent) AddBulletRunsWithStyle(runs []Run, style ParagraphStyle) S
 // AddShape appends one shape and returns the updated slide content.
 func (s SlideContent) AddShape(sd shapes.ShapeDefinition) SlideContent {
 	s.Shapes = append(s.Shapes, sd.ToShape())
+	return s
+}
+
+// AddComment appends a comment from the specified author.
+func (s SlideContent) AddComment(authorName, text string) SlideContent {
+	s.Comments = append(s.Comments, SlideComment{
+		AuthorName: authorName,
+		Text:       text,
+	})
 	return s
 }
 

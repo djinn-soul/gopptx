@@ -28,6 +28,8 @@ OP_LIST_SLIDE_LAYOUTS = "list_slide_layouts"
 OP_LIST_SLIDE_MASTERS = "list_slide_masters"
 OP_MERGE_FROM_FILE = "merge_from_file"
 OP_MERGE_TABLE_CELLS = "merge_table_cells"
+OP_MOVE_SHAPE_TO_BACK = "move_shape_to_back"
+OP_MOVE_SHAPE_TO_FRONT = "move_shape_to_front"
 OP_MOVE_SLIDE = "move_slide"
 OP_REBIND_SLIDE_LAYOUT = "rebind_slide_layout"
 OP_REMOVE_COMMENT = "remove_comment"
@@ -79,6 +81,8 @@ SUPPORTED_OPS = (
     OP_LIST_SLIDE_MASTERS,
     OP_MERGE_FROM_FILE,
     OP_MERGE_TABLE_CELLS,
+    OP_MOVE_SHAPE_TO_BACK,
+    OP_MOVE_SHAPE_TO_FRONT,
     OP_MOVE_SLIDE,
     OP_REBIND_SLIDE_LAYOUT,
     OP_REMOVE_COMMENT,

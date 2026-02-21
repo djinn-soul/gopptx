@@ -7,16 +7,14 @@ def test_execute_batch_mixed_results_preserve_order_and_error_details():
     with Presentation.new("Batch Mixed") as prs:
         prs.add_slide("A")
 
-        results = prs.execute_batch(
-            [
-                {"op": ops.OP_SLIDE_COUNT, "payload": {}},
-                {"op": "missing_op", "payload": {}},
-                {
-                    "op": ops.OP_SET_SLIDE_TITLE,
-                    "payload": {"slide_index": 0, "title": "B"},
-                },
-            ]
-        )
+        results = prs.execute_batch([
+            {"op": ops.OP_SLIDE_COUNT, "payload": {}},
+            {"op": "missing_op", "payload": {}},
+            {
+                "op": ops.OP_SET_SLIDE_TITLE,
+                "payload": {"slide_index": 0, "title": "B"},
+            },
+        ])
 
         assert len(results) == 3
         assert results[0].get("ok") is True

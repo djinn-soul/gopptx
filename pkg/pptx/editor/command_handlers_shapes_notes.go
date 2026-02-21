@@ -148,6 +148,58 @@ func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, err
 	return map[string]bool{"removed": true}, nil
 }
 
+func handleMoveShapeToFront(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	if err := e.MoveShapeToFront(slideIndex, shapeID); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"moved": true}, nil
+}
+
+func handleMoveShapeToBack(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return nil, v.Error()
+	}
+
+	if err := e.MoveShapeToBack(slideIndex, shapeID); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"moved": true}, nil
+}
+
 func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
 	if err != nil {

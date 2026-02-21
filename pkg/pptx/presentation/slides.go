@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/media"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -28,6 +29,7 @@ func renderSlides(
 	smartArtBySlide map[int][]SmartArtPart,
 	notesTargets map[int]string,
 	masterCount int,
+	commentsBySlide map[int][]comments.Comment,
 ) error {
 	for i, slide := range slides {
 		num := i + 1
@@ -81,6 +83,12 @@ func renderSlides(
 		}
 
 		pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), slideXML)
+		commentTarget := ""
+		if len(commentsBySlide[i]) > 0 {
+			pw.AddPart(fmt.Sprintf("ppt/comments/comment%d.xml", num), pptxxml.CommentsXML(commentsBySlide[i]))
+			commentTarget = fmt.Sprintf("../comments/comment%d.xml", num)
+		}
+
 		pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), pptxxml.SlideRelationshipsWithMultiCharts(
 			layoutTarget,
 			builder.targets,
@@ -90,6 +98,7 @@ func renderSlides(
 			parts.smartArtRels,
 			notesTargets[num],
 			hyperlinks,
+			commentTarget,
 		))
 	}
 	return nil
