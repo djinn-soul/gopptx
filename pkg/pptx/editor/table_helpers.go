@@ -74,13 +74,7 @@ func replaceTableFrame(slideContent []byte, frameStart, frameEnd int, frame []by
 }
 
 func extractTableXML(frame []byte) ([]byte, error) {
-	tblStart := bytes.Index(frame, []byte("<a:tbl>"))
-	if tblStart == -1 {
-		tblStart = bytes.Index(frame, []byte("<a:tbl "))
-		if tblStart == -1 {
-			tblStart = bytes.Index(frame, []byte("<a:tbl>"))
-		}
-	}
+	tblStart := bytes.Index(frame, []byte("<a:tbl"))
 	if tblStart == -1 {
 		return nil, errors.New("graphicFrame does not contain a table")
 	}

@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from collections.abc import Iterator
+from typing import Any, Dict, Optional, Tuple, Union
 
 from .types import (
     Author,
@@ -52,7 +53,9 @@ class Table:
     def row_count(self) -> int: ...
     @property
     def col_count(self) -> int: ...
-    def __getitem__(self, idx: Tuple[Union[int, slice], Union[int, slice]]) -> Union[Cell, CellRange]: ...
+    def __getitem__(
+        self, idx: Tuple[Union[int, slice], Union[int, slice]]
+    ) -> Union[Cell, CellRange]: ...
     def cell(self, row: int, col: int) -> Cell: ...
     def iter_cells(self) -> Iterator[Cell]: ...
     @property
@@ -133,7 +136,7 @@ class SlideLayout:
     @property
     def name(self) -> str: ...
     @property
-    def slide_master(self) -> "SlideMaster": ...
+    def slide_master(self) -> SlideMaster: ...
 
 class SlideLayouts:
     def __len__(self) -> int: ...
@@ -219,7 +222,13 @@ class Presentation:
         self, slide_index: int, shape_id: int, row: int, col: int
     ) -> TableCellInfo: ...
     def merge_table_cells(
-        self, slide_index: int, shape_id: int, row1: int, col1: int, row2: int, col2: int
+        self,
+        slide_index: int,
+        shape_id: int,
+        row1: int,
+        col1: int,
+        row2: int,
+        col2: int,
     ) -> None: ...
     def split_table_cell(
         self, slide_index: int, shape_id: int, row: int, col: int

@@ -20,6 +20,18 @@ from .types import (
 )
 
 
+def _normalize_table_index(value: Any) -> int:
+    if isinstance(value, bool):
+        raise ValueError("table index must be an integer")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError("table index must be integral")
+        return int(value)
+    raise ValueError("table index must be an integer")
+
+
 class PresentationContentMixin:
     def add_chart(
         self,
@@ -134,13 +146,27 @@ class PresentationContentMixin:
     ) -> TableCellInfo:
         table = self.get_table(slide_index, shape_id)
         cells = table.get("cells", [])
+        cell_map: dict[tuple[int, int], dict[str, Any]] = {}
         for cell in cells:
-            if cell.get("row") == row and cell.get("col") == col:
-                return cast(TableCellInfo, cell)
+            try:
+                row_idx = _normalize_table_index(cell["row"])
+                col_idx = _normalize_table_index(cell["col"])
+            except (KeyError, ValueError):
+                continue
+            cell_map[(row_idx, col_idx)] = cell
+        cell = cell_map.get((row, col))
+        if cell is not None:
+            return cast(TableCellInfo, cell)
         raise GopptxError(f"table cell [{row},{col}] not found", code="OP_FAILED")
 
     def merge_table_cells(
-        self, slide_index: int, shape_id: int, row1: int, col1: int, row2: int, col2: int
+        self,
+        slide_index: int,
+        shape_id: int,
+        row1: int,
+        col1: int,
+        row2: int,
+        col2: int,
     ) -> None:
         self.execute(
             ops.OP_MERGE_TABLE_CELLS,
@@ -154,7 +180,9 @@ class PresentationContentMixin:
             },
         )
 
-    def split_table_cell(self, slide_index: int, shape_id: int, row: int, col: int) -> None:
+    def split_table_cell(
+        self, slide_index: int, shape_id: int, row: int, col: int
+    ) -> None:
         self.execute(
             ops.OP_SPLIT_TABLE_CELL,
             {"slide_index": slide_index, "shape_id": shape_id, "row": row, "col": col},
@@ -284,6 +312,18 @@ class PresentationContentMixin:
     def remove_shape(self, slide_index: int, shape_id: int) -> None:
         self.execute(
             ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id}
+        )
+
+    def move_shape_to_front(self, slide_index: int, shape_id: int) -> None:
+        self.execute(
+            ops.OP_MOVE_SHAPE_TO_FRONT,
+            {"slide_index": slide_index, "shape_id": shape_id},
+        )
+
+    def move_shape_to_back(self, slide_index: int, shape_id: int) -> None:
+        self.execute(
+            ops.OP_MOVE_SHAPE_TO_BACK,
+            {"slide_index": slide_index, "shape_id": shape_id},
         )
 
     def update_shape(

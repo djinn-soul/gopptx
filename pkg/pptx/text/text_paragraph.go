@@ -48,6 +48,7 @@ type ParagraphStyle struct {
 	LeftIndent     styling.Length // EMU
 	RightIndent    styling.Length // EMU
 	HangingIndent  styling.Length // EMU
+	RTL            bool
 }
 
 // DefaultParagraphStyle returns the standard paragraph styling.
@@ -180,6 +181,12 @@ func (p ParagraphStyle) WithLeftIndent(emu styling.Length) ParagraphStyle {
 // WithRightIndent sets the right margin for the paragraph in EMUs.
 func (p ParagraphStyle) WithRightIndent(emu styling.Length) ParagraphStyle {
 	p.RightIndent = emu
+	return p
+}
+
+// WithRTL sets the Right-To-Left flag for this paragraph.
+func (p ParagraphStyle) WithRTL(rtl bool) ParagraphStyle {
+	p.RTL = rtl
 	return p
 }
 

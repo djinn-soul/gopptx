@@ -21,7 +21,7 @@ func TestToSnakeCase(t *testing.T) {
 	if got := toSnakeCase("BatchExecute"); got != "BATCH_EXECUTE" {
 		t.Fatalf("unexpected snake case: %q", got)
 	}
-	if got := toSnakeCase("URLFetch"); got != "U_R_L_FETCH" {
+	if got := toSnakeCase("URLFetch"); got != "URL_FETCH" {
 		t.Fatalf("unexpected snake case for acronym: %q", got)
 	}
 }

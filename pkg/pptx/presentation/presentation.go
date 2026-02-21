@@ -5,8 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/media"
@@ -27,6 +31,14 @@ type Metadata struct {
 	Master      *elements.SlideMaster
 	Masters     []*elements.SlideMaster
 	NotesMaster *elements.NotesMaster
+	Sections    []Section
+	RTL         bool
+}
+
+// Section describes a PowerPoint section for newly created presentations.
+type Section struct {
+	Name         string
+	SlideIndices []int // 0-based indices of slides in this section
 }
 
 // SlideSize defines presentation dimensions in EMUs.
@@ -62,9 +74,12 @@ func WritePresentationPackage(
 	masterCount := len(effectiveMasters)
 	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0, masterCount)
 
+	authors, commentsBySlide, commentSlideIndices := prepareComments(meta, slides)
+
 	if err := addBasicPropertyFiles(
 		pw, meta, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
+		authors, commentSlideIndices,
 	); err != nil {
 		return err
 	}
@@ -86,11 +101,16 @@ func WritePresentationPackage(
 		return err
 	}
 
+	
 	chartBySlide := chartPartBySlide(chartParts)
 	smartArtBySlide := smartArtPartBySlide(smartArtParts)
 	notesTargets := notes.TargetBySlide(notesParts)
-	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, smartArtBySlide, notesTargets, masterCount); err != nil {
+	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, smartArtBySlide, notesTargets, masterCount, commentsBySlide); err != nil {
 		return err
+	}
+
+	if len(authors) > 0 {
+		pw.AddPart("ppt/commentAuthors.xml", pptxxml.CommentAuthorsXML(authors))
 	}
 
 	if err := writeCustomXMLParts(pw, meta.CustomXML); err != nil {
@@ -135,17 +155,28 @@ func addBasicPropertyFiles(
 	notesParts []notes.RenderedNotesPart,
 	masterCount, notesThemeIndex int,
 	mediaExtensions []string,
+	authors []comments.Author,
+	commentSlideIndices []int,
 ) error {
 	hasNotes := notesPartCount > 0
+
+	xSections, err := convertSections(meta.Sections)
+	if err != nil {
+		return err
+	}
+	hasSections := len(xSections) > 0
+	hasCommentAuthors := len(authors) > 0
+
 	pw.AddPart("[Content_Types].xml", pptxxml.ContentTypes(
 		slideCount, mediaExtensions, chartPartCount, smartArtPartCount,
 		notes.SlideNumbers(notesParts), hasNotes,
-		len(meta.CustomXML), masterCount, notesThemeIndex,
+		len(meta.CustomXML), masterCount, notesThemeIndex, hasSections, commentSlideIndices,
+		meta.Protection.SignaturesEnabled,
 	))
-	pw.AddPart("_rels/.rels", pptxxml.RootRelationships())
+	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
 	pw.AddPart(
 		"ppt/_rels/presentation.xml.rels",
-		pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount),
+		pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount, hasSections, hasCommentAuthors),
 	)
 	var protInfo *pptxxml.ProtectionInfo
 	if meta.Protection.ModifyPassword != "" {
@@ -169,13 +200,22 @@ func addBasicPropertyFiles(
 		pptxxml.Presentation(
 			meta.Title, slideCount, hasNotes,
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
-			protInfo,
+			protInfo, xSections, meta.RTL,
 		),
 	)
+
+	if hasSections {
+		pw.AddPart("ppt/sectionList.xml", pptxxml.SectionListXML(xSections))
+	}
 
 	if meta.Protection.MarkAsFinal {
 		pw.AddPart("docProps/custom.xml", pptxxml.CustomProperties(true))
 	}
+
+	if meta.Protection.SignaturesEnabled {
+		pw.AddPart("_xmlsignatures/origin.sigs", pptxxml.SignatureOrigin())
+	}
+
 	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
 		Title: meta.Title, Subject: meta.Subject, Creator: meta.Creator, Description: meta.Description,
 	}))
@@ -184,6 +224,110 @@ func addBasicPropertyFiles(
 		pptxxml.AppProperties(slideCount, notesPartCount, meta.SlideSize.Width, meta.SlideSize.Height),
 	)
 	return nil
+}
+
+func convertSections(sections []Section) ([]pptxxml.Section, error) {
+	if len(sections) == 0 {
+		return nil, nil
+	}
+	out := make([]pptxxml.Section, len(sections))
+	for i, s := range sections {
+		ids := make([]int64, len(s.SlideIndices))
+		for j, idx := range s.SlideIndices {
+			ids[j] = int64(256 + 1 + idx)
+		}
+		guid, err := generateGUID()
+		if err != nil {
+			return nil, err
+		}
+		out[i] = pptxxml.Section{
+			Name:     s.Name,
+			GUID:     guid,
+			SlideIDs: ids,
+		}
+	}
+	return out, nil
+}
+
+func generateGUID() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate random bytes for GUID: %w", err)
+	}
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
+}
+
+func prepareComments(meta Metadata, slides []elements.SlideContent) ([]comments.Author, map[int][]comments.Comment, []int) {
+	var authors []comments.Author
+	authorMap := make(map[string]int)
+
+	slideComments := make(map[int][]comments.Comment)
+	var commentSlideIndices []int
+
+	commentDate := meta.GeneratedDate
+	if commentDate.IsZero() {
+		commentDate = time.Now()
+	}
+
+	for i, s := range slides {
+		if len(s.Comments) == 0 {
+			continue
+		}
+		var slideCms []comments.Comment
+		for _, c := range s.Comments {
+			idx, ok := authorMap[c.AuthorName]
+			if !ok {
+				idx = len(authors)
+				authorMap[c.AuthorName] = idx
+
+				initials := ""
+				parts := strings.Fields(c.AuthorName)
+				for _, p := range parts {
+					if r, _ := utf8.DecodeRuneInString(p); r != utf8.RuneError {
+						initials += string(r)
+					}
+				}
+				if len([]rune(initials)) > 2 {
+					initials = string([]rune(initials)[:2])
+				}
+				if initials == "" {
+					initials = "A"
+				}
+
+				authors = append(authors, comments.Author{
+					ID:         int64(idx + 1),
+					Name:       c.AuthorName,
+					Initials:   initials,
+					ColorIndex: idx % 10,
+					LastIndex:  0,
+				})
+			}
+
+			authors[idx].LastIndex++
+
+			x := c.X
+			y := c.Y
+			if x == 0 && y == 0 {
+				x = 100000
+				y = 100000
+			}
+
+			slideCms = append(slideCms, comments.Comment{
+				ID:       int64(len(slideCms) + 1),
+				AuthorID: authors[idx].ID,
+				Text:     c.Text,
+				Date:     commentDate,
+				X:        x,
+				Y:        y,
+				Index:    authors[idx].LastIndex,
+			})
+		}
+		slideComments[i] = slideCms
+		commentSlideIndices = append(commentSlideIndices, i+1)
+	}
+	return authors, slideComments, commentSlideIndices
 }
 
 func addLayoutFiles(pw *pptxxml.PackageWriter, masterCount int) {

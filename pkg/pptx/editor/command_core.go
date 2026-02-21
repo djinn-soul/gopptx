@@ -77,6 +77,8 @@ func initHandlers() {
 		OpAddImage:                handleAddImage,
 		OpRemoveShape:             handleRemoveShape,
 		OpUpdateShape:             handleUpdateShape,
+		OpMoveShapeToFront:        handleMoveShapeToFront,
+		OpMoveShapeToBack:         handleMoveShapeToBack,
 		OpGetNotes:                handleGetNotes,
 		OpSetNotes:                handleSetNotes,
 		OpSetModifyPassword:       handleSetModifyPassword,

@@ -120,6 +120,12 @@ func (b *PresentationBuilder) WithMarkAsFinal(final bool) *PresentationBuilder {
 	return b
 }
 
+// WithSignaturesEnabled enables the digital signature origin part placeholder.
+func (b *PresentationBuilder) WithSignaturesEnabled(enabled bool) *PresentationBuilder {
+	b.metadata.Protection.SignaturesEnabled = enabled
+	return b
+}
+
 // Build compiles the presentation into a PPTX byte slice.
 func (b *PresentationBuilder) Build() ([]byte, error) {
 	// Metadata title overrides builder title if both are present.

@@ -1,6 +1,6 @@
 from .api import GopptxError, Presentation, Slide
-from .api_table import Cell, Table
 from .api_master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
+from .api_table import Cell, Table
 from .constants import (
     ALIGN_CENTER,
     ALIGN_JUSTIFY,

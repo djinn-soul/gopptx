@@ -127,7 +127,15 @@ func toSnakeCase(s string) string {
 	var result strings.Builder
 	for i, r := range s {
 		if i > 0 && r >= 'A' && r <= 'Z' {
-			result.WriteRune('_')
+			prev := rune(s[i-1])
+			if !(prev >= 'A' && prev <= 'Z') {
+				result.WriteRune('_')
+			} else if i+1 < len(s) {
+				next := rune(s[i+1])
+				if next >= 'a' && next <= 'z' {
+					result.WriteRune('_')
+				}
+			}
 		}
 		result.WriteRune(r)
 	}

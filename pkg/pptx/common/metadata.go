@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // Forward declarations or interface if needed?
 // Actually, SlideMaster is in elements. elements imports common.
 // styling doesn't import common.
@@ -41,6 +43,7 @@ type Metadata struct {
 	Description    string
 	FooterText     string
 	ShowDateTime   bool
+	GeneratedDate  time.Time
 	SlideSize      SlideSize
 	SlideCount     int
 	CustomXML      []CustomXMLPart
@@ -50,8 +53,9 @@ type Metadata struct {
 
 // Protection defines write-protection and suggested read-only settings.
 type Protection struct {
-	ModifyPassword string
-	MarkAsFinal    bool
+	ModifyPassword    string
+	MarkAsFinal       bool
+	SignaturesEnabled bool
 }
 
 // CoreProperties represents the docProps/core.xml metadata.

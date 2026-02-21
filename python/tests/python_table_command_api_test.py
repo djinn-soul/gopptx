@@ -1,9 +1,8 @@
 import os
 import pathlib
+
 import pytest
-
 from gopptx import Presentation
-
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")

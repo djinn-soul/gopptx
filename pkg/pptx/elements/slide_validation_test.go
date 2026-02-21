@@ -15,7 +15,7 @@ func TestValidateSlideSmartArt(t *testing.T) {
 		{
 			name: "Valid SmartArt",
 			slide: SlideContent{
-				Title:  "Valid Slide",
+				Title: "Valid Slide",
 				SmartArtDiagrams: []smartart.SmartArt{
 					smartart.NewSmartArt(smartart.BasicBlockList).
 						AddNode(smartart.NewNode("Node 1")),
@@ -26,7 +26,7 @@ func TestValidateSlideSmartArt(t *testing.T) {
 		{
 			name: "Invalid SmartArt - No Nodes",
 			slide: SlideContent{
-				Title:  "Invalid Slide",
+				Title: "Invalid Slide",
 				SmartArtDiagrams: []smartart.SmartArt{
 					smartart.NewSmartArt(smartart.BasicBlockList),
 				},
@@ -36,7 +36,7 @@ func TestValidateSlideSmartArt(t *testing.T) {
 		{
 			name: "Invalid SmartArt - Empty Node Text",
 			slide: SlideContent{
-				Title:  "Invalid Slide",
+				Title: "Invalid Slide",
 				SmartArtDiagrams: []smartart.SmartArt{
 					smartart.NewSmartArt(smartart.BasicBlockList).
 						AddNode(smartart.NewNode("")),
