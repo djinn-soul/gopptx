@@ -5,9 +5,9 @@ vars:
   PYTHON_PKG_DIR: python/gopptx
   LIB_NAME:
     sh: |
-      case "$(uname -s)" in
-        Darwin) echo "libgopptx.dylib" ;;
-        MSYS*|MINGW*|CYGWIN*) echo "gopptx.dll" ;;
+      case "$(go env GOOS)" in
+        darwin) echo "libgopptx.dylib" ;;
+        windows) echo "gopptx.dll" ;;
         *) echo "libgopptx.so" ;;
       esac
 

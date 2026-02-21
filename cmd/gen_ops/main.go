@@ -18,7 +18,7 @@ type opSpec struct {
 
 func main() {
 	if len(os.Args) < 4 {
-		fmt.Println("Usage: gen_ops <input_go_file> <output_py_file> <output_pyi_file>")
+		fmt.Fprintln(os.Stderr, "Usage: gen_ops <input_go_file> <output_py_file> <output_pyi_file>")
 		os.Exit(1)
 	}
 
@@ -28,7 +28,7 @@ func main() {
 
 	ops, err := parseOpsFromGo(input)
 	if err != nil {
-		fmt.Printf("Error parsing ops: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error parsing ops: %v\n", err)
 		os.Exit(1)
 	}
 	sort.Slice(ops, func(i, j int) bool {
@@ -37,14 +37,14 @@ func main() {
 
 	pyFile, err := os.Create(outputPy)
 	if err != nil {
-		fmt.Printf("Error creating file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error creating file: %v\n", err)
 		os.Exit(1)
 	}
 	defer pyFile.Close()
 
 	pyiFile, err := os.Create(outputPyi)
 	if err != nil {
-		fmt.Printf("Error creating file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error creating file: %v\n", err)
 		os.Exit(1)
 	}
 	defer pyiFile.Close()

@@ -77,7 +77,10 @@ type NotesMasterSpec struct {
 // NotesMaster renders a notes master part.
 func NotesMaster(spec *NotesMasterSpec) string {
 	if spec == nil {
-		spec = &NotesMasterSpec{}
+		spec = &NotesMasterSpec{
+			ShowDateTime: true,
+			ShowSlideNum: true,
+		}
 	}
 
 	notesStyleXML := ""

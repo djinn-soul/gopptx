@@ -133,11 +133,9 @@ func TestCommandBatchExecuteMixedResultsIncludePerItemDetails(t *testing.T) {
 				OK    bool `json:"ok"`
 				Op    string
 				Error struct {
-					Code    string `json:"code"`
-					Message string `json:"message"`
-					Details struct {
-						Index int `json:"index"`
-					} `json:"details"`
+					Code    string         `json:"code"`
+					Message string         `json:"message"`
+					Details map[string]any `json:"details"`
 				} `json:"error"`
 			} `json:"results"`
 		} `json:"result"`
@@ -157,13 +155,63 @@ func TestCommandBatchExecuteMixedResultsIncludePerItemDetails(t *testing.T) {
 	if out.Result.Results[1].OK || out.Result.Results[1].Error.Code != ErrCodeUnknownOp {
 		t.Fatalf("expected second result unknown-op failure, got %+v", out.Result.Results[1])
 	}
-	if out.Result.Results[1].Error.Details.Index != 1 {
-		t.Fatalf("expected second result details.index=1, got %d", out.Result.Results[1].Error.Details.Index)
+	idx, _ := out.Result.Results[1].Error.Details["index"].(float64)
+	if int(idx) != 1 {
+		t.Fatalf("expected second result details.index=1, got %v", out.Result.Results[1].Error.Details["index"])
 	}
 	if !out.Result.Results[2].OK || out.Result.Results[2].Op != "set_slide_title" {
 		t.Fatalf("unexpected third result ordering/content")
 	}
 	if e.Slides()[0].Title != "C" {
 		t.Fatalf("expected third command to execute after failure")
+	}
+}
+
+func TestCommandBatchExecuteBridgeErrorIncludesBatchIndexAndCauseDetails(t *testing.T) {
+	basePath := writeDeckFixture(t, "batch-bridge-error-index.pptx", []elements.SlideContent{
+		elements.NewSlide("A"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	req := `{"api_version":1,"request_id":"b6","op":"batch_execute","payload":{"commands":[` +
+		`{"op":"set_slide_title","payload":{"slide_index":99,"title":"Nope"}}` +
+		`]}}`
+	resp := ExecuteCommand(e, req)
+
+	var out struct {
+		OK     bool `json:"ok"`
+		Result struct {
+			Results []struct {
+				OK    bool           `json:"ok"`
+				Error *ErrorDetail   `json:"error"`
+				Op    string         `json:"op"`
+				Raw   map[string]any `json:"-"`
+			} `json:"results"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal([]byte(resp), &out); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if !out.OK || len(out.Result.Results) != 1 {
+		t.Fatalf("expected top-level success with one failed batch item: %s", resp)
+	}
+	item := out.Result.Results[0]
+	if item.OK || item.Error == nil {
+		t.Fatalf("expected failed batch item with error details: %+v", item)
+	}
+	details, ok := item.Error.Details.(map[string]any)
+	if !ok {
+		t.Fatalf("expected details map, got: %#v", item.Error.Details)
+	}
+	idx, _ := details["index"].(float64)
+	if int(idx) != 0 {
+		t.Fatalf("expected details.index=0, got: %#v", details["index"])
+	}
+	if _, hasCause := details["cause"]; !hasCause {
+		t.Fatalf("expected bridge error cause details to be preserved, got: %#v", details)
 	}
 }

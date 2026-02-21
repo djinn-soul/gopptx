@@ -297,3 +297,4 @@ go.work.sum
 # .idea/
 # .vscode/
 .gocache/
+.task

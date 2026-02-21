@@ -47,6 +47,12 @@ const (
 	OpSetNotes                = "set_notes"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
+	OpAddTable                = "add_table"
+	OpGetTable                = "get_table"
+	OpMergeTableCells         = "merge_table_cells"
+	OpSplitTableCell          = "split_table_cell"
+	OpUpdateTableFlags        = "update_table_flags"
+	OpUpdateTableCell         = "update_table_cell"
 )
 
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
@@ -95,5 +101,11 @@ func SupportedOps() []string {
 		OpSetNotes,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,
+		OpAddTable,
+		OpGetTable,
+		OpMergeTableCells,
+		OpSplitTableCell,
+		OpUpdateTableFlags,
+		OpUpdateTableCell,
 	}
 }

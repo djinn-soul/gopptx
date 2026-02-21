@@ -81,6 +81,12 @@ func initHandlers() {
 		OpSetNotes:                handleSetNotes,
 		OpSetModifyPassword:       handleSetModifyPassword,
 		OpSetMarkAsFinal:          handleSetMarkAsFinal,
+		OpAddTable:                handleAddTable,
+		OpGetTable:                handleGetTable,
+		OpMergeTableCells:         handleMergeTableCells,
+		OpSplitTableCell:          handleSplitTableCell,
+		OpUpdateTableFlags:        handleUpdateTableFlags,
+		OpUpdateTableCell:         handleUpdateTableCell,
 	}
 }
 

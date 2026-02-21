@@ -133,3 +133,47 @@ class Comment(TypedDict):
     X: int
     Y: int
     Index: int
+
+
+class BatchCommand(TypedDict, total=False):
+    op: str
+    payload: dict
+    request_id: str
+
+
+class BatchErrorDetail(TypedDict, total=False):
+    code: str
+    message: str
+    details: dict
+
+
+class BatchItemResult(TypedDict, total=False):
+    ok: bool
+    op: str
+    request_id: str
+    result: dict
+    error: BatchErrorDetail
+
+
+class TableCellInfo(TypedDict):
+    row: int
+    col: int
+    row_span: int
+    col_span: int
+    v_merge: bool
+    h_merge: bool
+    is_merge_origin: bool
+    is_spanned: bool
+    text: str
+
+
+class TableInfo(TypedDict):
+    row_count: int
+    col_count: int
+    first_row: bool
+    first_col: bool
+    last_row: bool
+    last_col: bool
+    band_row: bool
+    band_col: bool
+    cells: List[TableCellInfo]

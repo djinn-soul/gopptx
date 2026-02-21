@@ -7,6 +7,7 @@ OP_ADD_IMAGE = "add_image"
 OP_ADD_SECTION = "add_section"
 OP_ADD_SHAPE = "add_shape"
 OP_ADD_SLIDE = "add_slide"
+OP_ADD_TABLE = "add_table"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
@@ -18,6 +19,7 @@ OP_GET_CORE_PROPERTIES = "get_core_properties"
 OP_GET_METADATA = "get_metadata"
 OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
+OP_GET_TABLE = "get_table"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
 OP_LIST_SHAPES = "list_shapes"
 OP_LIST_SLIDES = "list_slides"
@@ -25,6 +27,7 @@ OP_LIST_SLIDE_CHARTS = "list_slide_charts"
 OP_LIST_SLIDE_LAYOUTS = "list_slide_layouts"
 OP_LIST_SLIDE_MASTERS = "list_slide_masters"
 OP_MERGE_FROM_FILE = "merge_from_file"
+OP_MERGE_TABLE_CELLS = "merge_table_cells"
 OP_MOVE_SLIDE = "move_slide"
 OP_REBIND_SLIDE_LAYOUT = "rebind_slide_layout"
 OP_REMOVE_COMMENT = "remove_comment"
@@ -40,9 +43,12 @@ OP_SET_NOTES = "set_notes"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SLIDE_COUNT = "slide_count"
+OP_SPLIT_TABLE_CELL = "split_table_cell"
 OP_UPDATE_CHART_DATA = "update_chart_data"
 OP_UPDATE_SHAPE = "update_shape"
 OP_UPDATE_SLIDE = "update_slide"
+OP_UPDATE_TABLE_CELL = "update_table_cell"
+OP_UPDATE_TABLE_FLAGS = "update_table_flags"
 
 SUPPORTED_OPS = (
     OP_ADD_AUTHOR,
@@ -52,6 +58,7 @@ SUPPORTED_OPS = (
     OP_ADD_SECTION,
     OP_ADD_SHAPE,
     OP_ADD_SLIDE,
+    OP_ADD_TABLE,
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
     OP_CLONE_LAYOUT_MASTER_FAMILY,
@@ -63,6 +70,7 @@ SUPPORTED_OPS = (
     OP_GET_METADATA,
     OP_GET_NOTES,
     OP_GET_SECTIONS,
+    OP_GET_TABLE,
     OP_LIST_MASTER_LAYOUTS,
     OP_LIST_SHAPES,
     OP_LIST_SLIDES,
@@ -70,6 +78,7 @@ SUPPORTED_OPS = (
     OP_LIST_SLIDE_LAYOUTS,
     OP_LIST_SLIDE_MASTERS,
     OP_MERGE_FROM_FILE,
+    OP_MERGE_TABLE_CELLS,
     OP_MOVE_SLIDE,
     OP_REBIND_SLIDE_LAYOUT,
     OP_REMOVE_COMMENT,
@@ -85,9 +94,12 @@ SUPPORTED_OPS = (
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
     OP_SLIDE_COUNT,
+    OP_SPLIT_TABLE_CELL,
     OP_UPDATE_CHART_DATA,
     OP_UPDATE_SHAPE,
     OP_UPDATE_SLIDE,
+    OP_UPDATE_TABLE_CELL,
+    OP_UPDATE_TABLE_FLAGS,
 )
 
 SUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)

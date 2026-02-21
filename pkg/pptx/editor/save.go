@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -278,7 +279,12 @@ func filterXMLPartPaths(paths []string) []string {
 }
 
 func saveZipMethod(path string) uint16 {
-	if strings.HasPrefix(strings.ToLower(path), "ppt/notes") {
+	lowerPath := strings.ToLower(path)
+	if strings.HasPrefix(lowerPath, "ppt/notes") {
+		return zip.Store
+	}
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".mp3", ".m4a", ".wav", ".mp4", ".avi":
 		return zip.Store
 	}
 	return zip.Deflate
