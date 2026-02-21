@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator, List, Optional, cast
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, List, Optional, cast
 
 from . import ops
 from .types import SlideLayoutInfo

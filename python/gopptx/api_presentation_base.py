@@ -92,7 +92,8 @@ class PresentationBase:
                 os.path.join(pkg_dir, "../../bindings/c/build", lib_name),
             ])
             lib_path = next(
-                (os.path.abspath(c) for c in search_paths if pathlib.Path(c).exists()), None
+                (os.path.abspath(c) for c in search_paths if pathlib.Path(c).exists()),
+                None,
             )
             if not lib_path:
                 raise GopptxError(

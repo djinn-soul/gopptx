@@ -1,4 +1,3 @@
-
 from typing import FrozenSet, Tuple
 
 OP_ADD_AUTHOR: str
