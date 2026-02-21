@@ -18,7 +18,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
-const notesMasterThemeIndex = 1
+const notesMasterThemeIndex = 2
 
 // AddSlide appends a new slide and returns its 0-based index.
 func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) {

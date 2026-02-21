@@ -36,10 +36,47 @@ func TestCommandLayoutOps(t *testing.T) {
 	if ok, _ := out["ok"].(bool); !ok {
 		t.Fatalf("expected list success: %s", listResp)
 	}
+	result, _ := out["result"].(map[string]any)
+	layouts, _ := result["layouts"].([]any)
+	if len(layouts) == 0 {
+		t.Fatalf("expected non-empty layout list: %s", listResp)
+	}
+
+	mastersResp := ExecuteCommand(
+		e,
+		`{"api_version":1,"request_id":"r2","op":"list_slide_masters","payload":{}}`,
+	)
+	if err := json.Unmarshal([]byte(mastersResp), &out); err != nil {
+		t.Fatalf("invalid masters response: %v", err)
+	}
+	if ok, _ := out["ok"].(bool); !ok {
+		t.Fatalf("expected masters success: %s", mastersResp)
+	}
+	result, _ = out["result"].(map[string]any)
+	masters, _ := result["masters"].([]any)
+	if len(masters) != 1 {
+		t.Fatalf("expected one master, got %d: %s", len(masters), mastersResp)
+	}
+
+	masterLayoutsResp := ExecuteCommand(
+		e,
+		`{"api_version":1,"request_id":"r3","op":"list_master_layouts","payload":{"master_part":"ppt/slideMasters/slideMaster1.xml"}}`,
+	)
+	if err := json.Unmarshal([]byte(masterLayoutsResp), &out); err != nil {
+		t.Fatalf("invalid master layouts response: %v", err)
+	}
+	if ok, _ := out["ok"].(bool); !ok {
+		t.Fatalf("expected master layouts success: %s", masterLayoutsResp)
+	}
+	result, _ = out["result"].(map[string]any)
+	masterLayouts, _ := result["layouts"].([]any)
+	if len(masterLayouts) != 1 {
+		t.Fatalf("expected one layout for master, got %d: %s", len(masterLayouts), masterLayoutsResp)
+	}
 
 	cloneResp := ExecuteCommand(
 		e,
-		`{"api_version":1,"request_id":"r2","op":"clone_layout_master_family",`+
+		`{"api_version":1,"request_id":"r4","op":"clone_layout_master_family",`+
 			`"payload":{"layout_part":"ppt/slideLayouts/slideLayout1.xml"}}`,
 	)
 	if err := json.Unmarshal([]byte(cloneResp), &out); err != nil {

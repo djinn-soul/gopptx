@@ -1,6 +1,8 @@
 package editor
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"path"
 	"regexp"
@@ -20,22 +22,30 @@ var (
 const partPatternSubmatchSize = 2
 
 func (e *PresentationEditor) ListSlideMasters() ([]common.SlideMasterInfo, error) {
-	masterParts := e.parts.KeysWithPrefix("ppt/slideMasters/slideMaster")
-	infos := make([]common.SlideMasterInfo, 0, len(masterParts))
-	for _, part := range masterParts {
-		if !strings.HasSuffix(part, ".xml") {
+	infos := make([]common.SlideMasterInfo, 0, len(e.nonSlideRels))
+	seen := make(map[string]struct{}, len(e.nonSlideRels))
+	for _, rel := range e.nonSlideRels {
+		if rel.Type != common.RelTypeSlideMaster {
 			continue
 		}
-		infos = append(infos, common.SlideMasterInfo{
-			Part: part,
-		})
+		masterPart := common.CanonicalPartPath(path.Join(path.Dir(common.PresentationXMLPath), rel.Target))
+		if _, ok := seen[masterPart]; ok {
+			continue
+		}
+		if !e.parts.Has(masterPart) {
+			return nil, fmt.Errorf("slide master part not found: %s", masterPart)
+		}
+		seen[masterPart] = struct{}{}
+		infos = append(infos, common.SlideMasterInfo{Part: masterPart})
 	}
-	sort.Slice(infos, func(i, j int) bool { return infos[i].Part < infos[j].Part })
 	return infos, nil
 }
 
 func (e *PresentationEditor) ListMasterLayouts(masterPart string) ([]common.SlideLayoutInfo, error) {
 	masterPart = common.CanonicalPartPath(masterPart)
+	if !e.parts.Has(masterPart) {
+		return nil, fmt.Errorf("master part not found: %s", masterPart)
+	}
 	layouts, err := e.layoutsForMaster(masterPart)
 	if err != nil {
 		return nil, err
@@ -304,34 +314,26 @@ func (e *PresentationEditor) layoutMasterPart(layoutPart string) (string, error)
 }
 
 func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, error) {
-	relsParts := e.parts.KeysWithPrefix("ppt/slideLayouts/_rels/slideLayout")
-	out := make([]string, 0, len(relsParts))
-	for _, relsPath := range relsParts {
-		if !strings.HasSuffix(relsPath, ".xml.rels") {
-			continue
-		}
-		layoutName := strings.TrimSuffix(path.Base(relsPath), ".rels")
-		layoutPart := path.Join("ppt/slideLayouts", layoutName)
-		relsData, ok := e.parts.Get(relsPath)
-		if !ok {
-			continue
-		}
-		rels, err := parseRelationshipsXML(relsData)
-		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", relsPath, err)
-		}
-		for _, rel := range rels {
-			if rel.Type != common.RelTypeSlideMaster {
-				continue
-			}
-			target := common.CanonicalPartPath(path.Join(path.Dir(layoutPart), rel.Target))
-			if target == masterPart {
-				out = append(out, layoutPart)
-				break
-			}
-		}
+	masterRelsPath := common.RelsPathFor(masterPart)
+	masterRelsData, ok := e.parts.Get(masterRelsPath)
+	if !ok {
+		return nil, fmt.Errorf("master rels part not found: %s", masterRelsPath)
 	}
-	sort.Strings(out)
+	rels, err := parseRelationshipsXML(masterRelsData)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", masterRelsPath, err)
+	}
+	out := make([]string, 0, len(rels))
+	for _, rel := range rels {
+		if rel.Type != common.RelTypeSlideLayout {
+			continue
+		}
+		layoutPart := common.CanonicalPartPath(path.Join(path.Dir(masterPart), rel.Target))
+		if !e.parts.Has(layoutPart) {
+			return nil, fmt.Errorf("layout part not found: %s", layoutPart)
+		}
+		out = append(out, layoutPart)
+	}
 	return out, nil
 }
 
@@ -375,16 +377,22 @@ func (e *PresentationEditor) nextPartNumber(pattern *regexp.Regexp, dir string) 
 }
 
 func parseLayoutName(layoutXML []byte) string {
-	s := string(layoutXML)
-	const marker = `name="`
-	pos := strings.Index(s, marker)
-	if pos < 0 {
-		return ""
+	decoder := xml.NewDecoder(bytes.NewReader(layoutXML))
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			return ""
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if start.Name.Local == "sldLayout" || start.Name.Local == "cSld" {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "name" {
+					return attr.Value
+				}
+			}
+		}
 	}
-	start := pos + len(marker)
-	end := strings.Index(s[start:], `"`)
-	if end < 0 {
-		return ""
-	}
-	return s[start : start+end]
 }

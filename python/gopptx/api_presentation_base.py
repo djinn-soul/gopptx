@@ -88,8 +88,8 @@ class PresentationBase:
                 else:
                     search_paths.append(env_path)
             search_paths.extend([
-                os.path.join(pkg_dir, lib_name),
                 os.path.join(pkg_dir, "../../bindings/c/build", lib_name),
+                os.path.join(pkg_dir, lib_name),
             ])
             lib_path = next(
                 (os.path.abspath(c) for c in search_paths if pathlib.Path(c).exists()),

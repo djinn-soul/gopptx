@@ -63,6 +63,54 @@ func TestLayoutMasterCloneAndRebindRoundTrip(t *testing.T) {
 	}
 }
 
+func TestListSlideMastersUsesPresentationRelationships(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+	editor.parts.Set(
+		"ppt/slideMasters/slideMaster99.xml",
+		[]byte(`<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>`),
+	)
+
+	masters, err := editor.ListSlideMasters()
+	if err != nil {
+		t.Fatalf("ListSlideMasters failed: %v", err)
+	}
+	if len(masters) != 1 {
+		t.Fatalf("expected one presentation-linked master, got %d", len(masters))
+	}
+	if masters[0].Part != "ppt/slideMasters/slideMaster1.xml" {
+		t.Fatalf("unexpected master part: %s", masters[0].Part)
+	}
+}
+
+func TestListMasterLayoutsUsesMasterRelationships(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+	editor.parts.Set(
+		"ppt/slideLayouts/slideLayout99.xml",
+		[]byte(`<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld name="Orphan"/></p:sldLayout>`),
+	)
+	editor.parts.Set(
+		"ppt/slideLayouts/_rels/slideLayout99.xml.rels",
+		[]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
+</Relationships>`),
+	)
+
+	layouts, err := editor.ListMasterLayouts("ppt/slideMasters/slideMaster1.xml")
+	if err != nil {
+		t.Fatalf("ListMasterLayouts failed: %v", err)
+	}
+	if len(layouts) != 1 {
+		t.Fatalf("expected one master-linked layout, got %d", len(layouts))
+	}
+	if layouts[0].Part != "ppt/slideLayouts/slideLayout1.xml" {
+		t.Fatalf("unexpected layout part: %s", layouts[0].Part)
+	}
+	if layouts[0].Name != "Title and Content" {
+		t.Fatalf("unexpected layout name: %q", layouts[0].Name)
+	}
+}
+
 func newLayoutFixtureEditor(t *testing.T) *PresentationEditor {
 	t.Helper()
 	ps := NewPartStore()

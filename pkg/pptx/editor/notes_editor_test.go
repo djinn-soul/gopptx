@@ -37,8 +37,8 @@ func TestPresentationEditorAddNotesInjectsMasterAndWiring(t *testing.T) {
 		t.Fatalf("expected notes master part")
 	}
 	masterRels := string(readZipFileBytes(t, outPath, "ppt/notesMasters/_rels/notesMaster1.xml.rels"))
-	if !strings.Contains(masterRels, `Target="../theme/theme1.xml"`) {
-		t.Fatalf("expected notes master rels to target theme1")
+	if !strings.Contains(masterRels, `Target="../theme/theme2.xml"`) {
+		t.Fatalf("expected notes master rels to target theme2")
 	}
 
 	presRels := string(readZipFileBytes(t, outPath, "ppt/_rels/presentation.xml.rels"))
@@ -162,8 +162,8 @@ func TestPresentationEditorUpdateNotesMasterSupportsFlagsAndPictureBackground(t 
 	}
 
 	masterRels := string(readZipFileBytes(t, outPath, "ppt/notesMasters/_rels/notesMaster1.xml.rels"))
-	if !strings.Contains(masterRels, `Target="../theme/theme1.xml"`) {
-		t.Fatalf("expected notes master rels to target theme1")
+	if !strings.Contains(masterRels, `Target="../theme/theme2.xml"`) {
+		t.Fatalf("expected notes master rels to target theme2")
 	}
 	if !strings.Contains(masterRels, `Id="rId2"`) || !strings.Contains(masterRels, `/relationships/image`) {
 		t.Fatalf("expected image relationship in notes master rels")

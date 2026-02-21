@@ -111,75 +111,19 @@ func countChildrenForParent(parentID string, cxns []smartArtConnection) int {
 	return count
 }
 
-// SmartArtLayoutXML renders a minimal dgm:layoutDef (layoutX.xml).
-//
-// PowerPoint uses the layout URI from the data to resolve the actual
-// layout algorithm internally; we emit a stub.
-func SmartArtLayoutXML(layoutURI, category string) string {
+// SmartArtLayoutXML renders dgm:layoutDef (layoutX.xml) from template.
+func SmartArtLayoutXML(layoutURI, _ string) string {
 	return renderSmartArtLayoutFromTemplate(layoutURI)
-
-	if category == "" {
-		category = "list"
-	}
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<dgm:layoutDef xmlns:dgm="%s" uniqueId="%s" minVer="12.0">
-  <dgm:title val=""/>
-  <dgm:desc val=""/>
-  <dgm:catLst>
-    <dgm:cat type="%s" pri="100"/>
-  </dgm:catLst>
-  <dgm:layoutNode name="diagram">
-    <dgm:alg type="lin"/>
-    <dgm:shape type="rect"/>
-    <dgm:presOf/>
-  </dgm:layoutNode>
-</dgm:layoutDef>`, dgmDataNS, Escape(layoutURI), category)
 }
 
-// SmartArtColorsXML renders a minimal dgm:colorsDef (colorsX.xml).
+// SmartArtColorsXML renders dgm:colorsDef (colorsX.xml) from template.
 func SmartArtColorsXML(colorStyleID string) string {
 	return renderSmartArtColorsFromTemplate(colorStyleID)
-
-	csType := colorStyleID
-	if csType == "" {
-		csType = "urn:microsoft.com/office/officeart/2005/8/colors/accent1_2"
-	}
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<dgm:colorsDef xmlns:dgm="%s" xmlns:a="%s"
-  uniqueId="%s" minVer="12.0"/>`, dgmDataNS, drawingMainNS, Escape(csType))
 }
 
-// SmartArtStyleXML renders a minimal dgm:styleDef (quickStyleX.xml).
+// SmartArtStyleXML renders dgm:styleDef (quickStyleX.xml) from template.
 func SmartArtStyleXML(quickStyleID string) string {
 	return renderSmartArtStyleFromTemplate(quickStyleID)
-
-	qsType := quickStyleID
-	if qsType == "" {
-		qsType = "urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1"
-	}
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<dgm:styleDef xmlns:dgm="%s" xmlns:a="%s"
-  uniqueId="%s" minVer="12.0">
-  <dgm:title val=""/>
-  <dgm:desc val=""/>
-  <dgm:catLst>
-    <dgm:cat type="simple" pri="100"/>
-  </dgm:catLst>
-  <dgm:styleLbl name="node0">
-    <dgm:scene3d>
-      <a:camera prst="orthographicFront"/>
-      <a:lightRig rig="threePt" dir="t"/>
-    </dgm:scene3d>
-    <dgm:sp3d/>
-    <dgm:txPr/>
-    <dgm:style>
-      <a:lnRef idx="2"><a:scrgbClr r="0" g="0" b="0"/></a:lnRef>
-      <a:fillRef idx="1"><a:scrgbClr r="0" g="0" b="0"/></a:fillRef>
-      <a:effectRef idx="0"><a:scrgbClr r="0" g="0" b="0"/></a:effectRef>
-      <a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef>
-    </dgm:style>
-  </dgm:styleLbl>
-</dgm:styleDef>`, dgmDataNS, drawingMainNS, Escape(qsType))
 }
 
 // SmartArtDrawingXML renders a minimal dsp:drawing (drawingX.xml).

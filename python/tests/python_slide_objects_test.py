@@ -5,7 +5,7 @@ import sys
 from gopptx import SHAPE_ROUNDED_RECTANGLE, Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 sys.path.append(os.path.join(project_root, "python"))
 
 
@@ -46,7 +46,21 @@ try:
         print(f"Duplicated slide title: '{new_slide.title}'")
         new_slide.title = "I am the copy"
 
-        # 6. Save
+        # 6. Verify newly exposed master/layout object proxies
+        masters = pres.slide_masters
+        print(f"Number of slide masters: {len(masters)}")
+        if len(masters) > 0:
+            first_master = masters[0]
+            print(f"First master part: {first_master.part}")
+            master_layouts = first_master.slide_layouts
+            print(f"Number of layouts in first master: {len(master_layouts)}")
+            if len(master_layouts) > 0:
+                first_layout = master_layouts[0]
+                print(
+                    f"First layout part: {first_layout.part}, name: '{first_layout.name}'"
+                )
+
+        # 7. Save
         pres.save(output_path)
         print(f"Saved to {output_path}")
 
