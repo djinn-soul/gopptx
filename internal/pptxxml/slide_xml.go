@@ -296,7 +296,7 @@ func slideRenderBaseElements(
 	}
 
 	if table != nil {
-		b.WriteString(tableShape(table, nextID))
+		b.WriteString(RenderTable(table, nextID))
 		nextID++
 	} else if len(bullets) > 0 {
 		nextID = slideRenderBullets(

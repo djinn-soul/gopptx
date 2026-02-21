@@ -133,3 +133,27 @@ class Comment(TypedDict):
     X: int
     Y: int
     Index: int
+
+
+class TableCellInfo(TypedDict):
+    row: int
+    col: int
+    row_span: int
+    col_span: int
+    v_merge: bool
+    h_merge: bool
+    is_merge_origin: bool
+    is_spanned: bool
+    text: str
+
+
+class TableInfo(TypedDict):
+    row_count: int
+    col_count: int
+    first_row: bool
+    first_col: bool
+    last_row: bool
+    last_col: bool
+    band_row: bool
+    band_col: bool
+    cells: List[TableCellInfo]

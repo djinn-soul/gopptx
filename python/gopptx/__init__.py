@@ -51,6 +51,8 @@ from .types import (
     SlideMasterCloneResult,
     SlideMetadata,
     SlideSize,
+    TableCellInfo,
+    TableInfo,
 )
 
 __all__ = [
@@ -107,4 +109,6 @@ __all__ = [
     "SlideMasters",
     "SlideMetadata",
     "SlideSize",
+    "TableCellInfo",
+    "TableInfo",
 ]

@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from .types import Shape, ShapeProps, ShapeUpdate, SlideChartRef, SlideMetadata
+from .types import (
+    Shape,
+    ShapeProps,
+    ShapeUpdate,
+    SlideChartRef,
+    SlideMetadata,
+    TableCellInfo,
+    TableInfo,
+)
 
 if TYPE_CHECKING:
     from .api_presentation import Presentation
@@ -62,6 +70,37 @@ class Slide:
 
     def add_image(self, path: str, x: float, y: float, w: float, h: float) -> int:
         return self._presentation.add_image(self.index, path, x, y, w, h)
+
+    def add_table(
+        self,
+        rows: int,
+        cols: int,
+        x: int,
+        y: int,
+        cx: int,
+        cy: int,
+    ) -> int:
+        return self._presentation.add_table(self.index, rows, cols, x, y, cx, cy)
+
+    def get_table(self, shape_id: int) -> TableInfo:
+        return self._presentation.get_table(self.index, shape_id)
+
+    def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
+        self._presentation.set_table_flags(self.index, shape_id, flags)
+
+    def set_table_cell_text(self, shape_id: int, row: int, col: int, text: str) -> None:
+        self._presentation.set_table_cell_text(self.index, shape_id, row, col, text)
+
+    def get_table_cell(self, shape_id: int, row: int, col: int) -> TableCellInfo:
+        return self._presentation.get_table_cell(self.index, shape_id, row, col)
+
+    def merge_table_cells(
+        self, shape_id: int, row1: int, col1: int, row2: int, col2: int
+    ) -> None:
+        self._presentation.merge_table_cells(self.index, shape_id, row1, col1, row2, col2)
+
+    def split_table_cell(self, shape_id: int, row: int, col: int) -> None:
+        self._presentation.split_table_cell(self.index, shape_id, row, col)
 
     def remove_shape(self, shape_id: int) -> None:
         self._presentation.remove_shape(self.index, shape_id)

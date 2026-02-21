@@ -15,6 +15,8 @@ from .types import (
     ShapeSearchResult,
     ShapeUpdate,
     SlideChartRef,
+    TableCellInfo,
+    TableInfo,
 )
 
 
@@ -73,6 +75,90 @@ class PresentationContentMixin:
             },
         )
         return int(result.get("shape_id", result.get("chart_id", 0)))
+
+    def add_table(
+        self,
+        slide_index: int,
+        rows: int,
+        cols: int,
+        x: int,
+        y: int,
+        cx: int,
+        cy: int,
+    ) -> int:
+        result = self.execute(
+            ops.OP_ADD_TABLE,
+            {
+                "slide_index": slide_index,
+                "rows": rows,
+                "cols": cols,
+                "x": x,
+                "y": y,
+                "cx": cx,
+                "cy": cy,
+            },
+        )
+        return int(result.get("shape_id", 0))
+
+    def get_table(self, slide_index: int, shape_id: int) -> TableInfo:
+        result = self.execute(
+            ops.OP_GET_TABLE, {"slide_index": slide_index, "shape_id": shape_id}
+        )
+        table = cast(dict[str, Any], result.get("table", {}))
+        return cast(TableInfo, table)
+
+    def set_table_flags(
+        self, slide_index: int, shape_id: int, flags: dict[str, bool]
+    ) -> None:
+        self.execute(
+            ops.OP_UPDATE_TABLE_FLAGS,
+            {"slide_index": slide_index, "shape_id": shape_id, "flags": flags},
+        )
+
+    def set_table_cell_text(
+        self, slide_index: int, shape_id: int, row: int, col: int, text: str
+    ) -> None:
+        self.execute(
+            ops.OP_UPDATE_TABLE_CELL,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "row": row,
+                "col": col,
+                "updates": {"text": text},
+            },
+        )
+
+    def get_table_cell(
+        self, slide_index: int, shape_id: int, row: int, col: int
+    ) -> TableCellInfo:
+        table = self.get_table(slide_index, shape_id)
+        cells = table.get("cells", [])
+        for cell in cells:
+            if cell.get("row") == row and cell.get("col") == col:
+                return cast(TableCellInfo, cell)
+        raise GopptxError(f"table cell [{row},{col}] not found", code="OP_FAILED")
+
+    def merge_table_cells(
+        self, slide_index: int, shape_id: int, row1: int, col1: int, row2: int, col2: int
+    ) -> None:
+        self.execute(
+            ops.OP_MERGE_TABLE_CELLS,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "row1": row1,
+                "col1": col1,
+                "row2": row2,
+                "col2": col2,
+            },
+        )
+
+    def split_table_cell(self, slide_index: int, shape_id: int, row: int, col: int) -> None:
+        self.execute(
+            ops.OP_SPLIT_TABLE_CELL,
+            {"slide_index": slide_index, "shape_id": shape_id, "row": row, "col": col},
+        )
 
     def find_and_replace(self, find_text: str, replace_text: str) -> int:
         result = self.execute(
