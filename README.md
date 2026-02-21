@@ -21,7 +21,7 @@ go get github.com/djinn-soul/gopptx
 
 ## Python Library
 
-`gopptx` can be used as a high-performance Python library. It provides a high-level API similar to `python-pptx` but utilizes the Go engine for heavy-duty operations.
+`gopptx` can be used as a high-performance Python library. It provides an explicit command-first API over the Go engine.
 
 ### Build and Install
 
@@ -43,6 +43,8 @@ with Presentation("input.pptx") as pres:
     pres.add_slide("Hello from Python")
     pres.save("output.pptx")
 ```
+
+See also: [`python/README.md`](python/README.md) for batch patterns and table command API examples.
 
 ### Bridge Throughput Tips
 
@@ -71,6 +73,8 @@ with Presentation.new("Batch Context") as pres:
 ```
 
 Optional: install `orjson` to speed up Python-side bridge JSON encode/decode.
+
+Batch request/response contract details: [`docs/architecture/batch_execute_envelope.md`](docs/architecture/batch_execute_envelope.md)
 
 ## JSON Command Bridge
 
@@ -124,7 +128,9 @@ See [`docs/architecture/bridge-phase1-ops.md`](docs/architecture/bridge-phase1-o
 - Go bridge microbench:
   - `go test ./pkg/pptx/editor -run ^$ -bench "BenchmarkBridge(Execute|JSON)" -benchmem -count=3`
 - Python bridge benchmark script:
-  - `PYTHONPATH=python py -3 examples/python/tests/python_bridge_perf_benchmark.py`
+  - `uv run python scripts/smoke/python_batch_latency_benchmark.py`
+- JSON profile and transport decision record:
+  - [`docs/benchmarks/json_bridge_profile_2026-02-21.md`](docs/benchmarks/json_bridge_profile_2026-02-21.md)
 
 ## SmartArt Troubleshooting
 

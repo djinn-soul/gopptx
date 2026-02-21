@@ -14,7 +14,7 @@ from . import ops
 from .api_batch import _BatchContext
 from .api_errors import GopptxError
 from .api_slide import Slide
-from .types import PresentationMetadata, SlideMetadata
+from .types import BatchCommand, BatchItemResult, PresentationMetadata, SlideMetadata
 
 try:
     import orjson as _orjson  # type: ignore[import-not-found]
@@ -176,8 +176,8 @@ class PresentationBase:
                 self._lib.deck_free_string(res_ptr)
 
     def execute_batch(
-        self, commands: list[dict], stop_on_error: bool = False
-    ) -> list[Dict[str, Any]]:
+        self, commands: list[BatchCommand], stop_on_error: bool = False
+    ) -> list[BatchItemResult]:
         """Execute multiple bridge commands in one boundary crossing.
 
         Returns ordered per-command results. Each result has `ok` plus either
@@ -189,7 +189,7 @@ class PresentationBase:
             ops.OP_BATCH_EXECUTE, {"commands": commands, "stop_on_error": stop_on_error}
         )
         self.invalidate_cache()
-        return cast(list[Dict[str, Any]], result.get("results", []))
+        return cast(list[BatchItemResult], result.get("results", []))
 
     def batch(self, stop_on_error: bool = False) -> _BatchContext:
         """Context manager for buffered mutating operations executed as one batch."""
@@ -212,7 +212,7 @@ class PresentationBase:
             self._batch_stop_on_error = False
             self._batch_commands = []
 
-    def _end_batch(self) -> list[Dict[str, Any]]:
+    def _end_batch(self) -> list[BatchItemResult]:
         with self._lock:
             commands = self._batch_commands
             stop_on_error = self._batch_stop_on_error

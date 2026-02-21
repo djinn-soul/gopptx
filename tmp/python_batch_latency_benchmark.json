@@ -1,0 +1,10 @@
+{
+  "runs": 25,
+  "ops_per_run": 40,
+  "total_ops": 1000,
+  "single_total_sec": 0.103914,
+  "batch_total_sec": 0.02538,
+  "single_ms_per_op": 0.103914,
+  "batch_ms_per_op": 0.02538,
+  "speedup_x": 4.094
+}

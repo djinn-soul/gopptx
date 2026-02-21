@@ -36,6 +36,8 @@ from .ops import (
 )
 from .types import (
     Author,
+    BatchCommand,
+    BatchItemResult,
     ChartDataUpdate,
     ChartSelector,
     ChartSeriesData,
@@ -87,6 +89,8 @@ __all__ = [
     "VALIGN_CENTER",
     "VALIGN_TOP",
     "Author",
+    "BatchCommand",
+    "BatchItemResult",
     "ChartDataUpdate",
     "ChartSelector",
     "ChartSeriesData",

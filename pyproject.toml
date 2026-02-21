@@ -14,7 +14,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = ["orjson>=3.11.7"]
 
 [project.optional-dependencies]
 dev = [
@@ -24,9 +24,6 @@ dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "hypothesis>=6.150.0",
-    # Runtime Validation
-    "pydantic[email]>=2.12.5",
-    "beartype>=0.22.9",
     # Security
     "bandit>=1.9.2",
     "pip-audit>=2.10.0",

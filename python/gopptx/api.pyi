@@ -2,6 +2,8 @@ from typing import Any, Dict, Optional
 
 from .types import (
     Author,
+    BatchCommand,
+    BatchItemResult,
     ChartDataUpdate,
     ChartSelector,
     Comment,
@@ -122,6 +124,9 @@ class Presentation:
     def execute(
         self, op: str, payload: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]: ...
+    def execute_batch(
+        self, commands: list[BatchCommand], stop_on_error: bool = False
+    ) -> list[BatchItemResult]: ...
     @property
     def slide_count(self) -> int: ...
     @property

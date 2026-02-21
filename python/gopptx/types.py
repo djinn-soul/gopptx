@@ -135,6 +135,26 @@ class Comment(TypedDict):
     Index: int
 
 
+class BatchCommand(TypedDict, total=False):
+    op: str
+    payload: dict
+    request_id: str
+
+
+class BatchErrorDetail(TypedDict, total=False):
+    code: str
+    message: str
+    details: dict
+
+
+class BatchItemResult(TypedDict, total=False):
+    ok: bool
+    op: str
+    request_id: str
+    result: dict
+    error: BatchErrorDetail
+
+
 class TableCellInfo(TypedDict):
     row: int
     col: int

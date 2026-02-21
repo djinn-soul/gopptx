@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from . import ops
+from .types import BatchItemResult
 
 if TYPE_CHECKING:
     from .api_presentation import Presentation
@@ -29,7 +30,7 @@ class _BatchContext:
     def __init__(self, presentation: Presentation, stop_on_error: bool = False):
         self._presentation = presentation
         self._stop_on_error = stop_on_error
-        self._results: list[Dict[str, Any]] = []
+        self._results: list[BatchItemResult] = []
 
     def __enter__(self) -> _BatchContext:
         self._presentation._begin_batch(self._stop_on_error)
@@ -42,7 +43,7 @@ class _BatchContext:
             self._presentation._abort_batch()
 
     @property
-    def results(self) -> list[Dict[str, Any]]:
+    def results(self) -> list[BatchItemResult]:
         """Returns the results of the batch execution."""
         return self._results
 
