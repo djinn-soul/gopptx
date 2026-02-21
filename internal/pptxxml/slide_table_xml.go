@@ -60,7 +60,7 @@ type tableCellBorderSet struct {
 	Bottom *TableCellBorderSpec
 }
 
-func tableShape(table *TableSpec, shapeID int) string {
+func RenderTable(table *TableSpec, shapeID int) string {
 	return `
 <p:graphicFrame>
 <p:nvGraphicFramePr>

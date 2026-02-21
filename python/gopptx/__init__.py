@@ -1,4 +1,5 @@
 from .api import GopptxError, Presentation, Slide
+from .api_table import Cell, Table
 from .api_master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
 from .constants import (
     ALIGN_CENTER,
@@ -36,6 +37,8 @@ from .ops import (
 )
 from .types import (
     Author,
+    BatchCommand,
+    BatchItemResult,
     ChartDataUpdate,
     ChartSelector,
     ChartSeriesData,
@@ -51,6 +54,8 @@ from .types import (
     SlideMasterCloneResult,
     SlideMetadata,
     SlideSize,
+    TableCellInfo,
+    TableInfo,
 )
 
 __all__ = [
@@ -85,6 +90,9 @@ __all__ = [
     "VALIGN_CENTER",
     "VALIGN_TOP",
     "Author",
+    "BatchCommand",
+    "BatchItemResult",
+    "Cell",
     "ChartDataUpdate",
     "ChartSelector",
     "ChartSeriesData",
@@ -107,4 +115,7 @@ __all__ = [
     "SlideMasters",
     "SlideMetadata",
     "SlideSize",
+    "Table",
+    "TableCellInfo",
+    "TableInfo",
 ]

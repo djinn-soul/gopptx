@@ -69,10 +69,10 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 			// Check if error is a BridgeError with specific code
 			var bridgeErr *BridgeError
 			code := ErrCodeOpFailed
-			details := any(map[string]int{"index": i})
+			details := any(map[string]any{"index": i})
 			if AsBridgeError(err, &bridgeErr) {
 				code = bridgeErr.Code
-				details = bridgeErr.Details
+				details = withBatchIndex(i, bridgeErr.Details)
 			}
 			results = append(results, batchResult{
 				OK:        false,
@@ -99,6 +99,21 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 	}
 
 	return map[string]any{"results": results}, nil
+}
+
+func withBatchIndex(index int, details any) map[string]any {
+	out := map[string]any{"index": index}
+	if details == nil {
+		return out
+	}
+	if m, ok := details.(map[string]any); ok {
+		for k, v := range m {
+			out[k] = v
+		}
+		return out
+	}
+	out["cause"] = details
+	return out
 }
 
 // AsBridgeError checks if an error is a BridgeError and extracts it.
