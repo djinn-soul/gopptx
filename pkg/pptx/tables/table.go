@@ -59,6 +59,10 @@ type Table struct {
 	Rows         [][]string
 	StyledRows   [][]TableCell
 	renderRows   [][]TableCell
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewTable creates a table with default placement and size.
@@ -76,6 +80,18 @@ func NewTable(columnWidths []styling.Length) Table {
 		StyledRows:   make([][]TableCell, 0),
 		renderRows:   make([][]TableCell, 0),
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (t Table) WithAltText(text string) Table {
+	t.AltText = text
+	return t
+}
+
+// WithDecorative marks the table as decorative (ignored by screen readers).
+func (t Table) WithDecorative(enabled bool) Table {
+	t.IsDecorative = enabled
+	return t
 }
 
 // AddRow appends one plain-text row and returns the updated table.
@@ -150,6 +166,7 @@ func (t Table) ToTableSpec(slideNumber int) (*pptxxml.TableSpec, error) {
 				Text:            cell.Text,
 				Bold:            cell.Bold,
 				BackgroundColor: cell.BackgroundColor,
+				Color:           cell.Color,
 				Align:           cell.Align,
 				VAlign:          cell.VAlign,
 				MarginLeft:      TableMarginEMU(cell.MarginLeftPt),
@@ -190,6 +207,8 @@ func (t Table) ToTableSpec(slideNumber int) (*pptxxml.TableSpec, error) {
 		RowHeights:   rowHeights,
 		Rows:         rows,
 		StyledRows:   styledSpecRows,
+		AltText:      t.AltText,
+		IsDecorative: t.IsDecorative,
 	}, nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-const minShapesForParallel = 4
+const minShapesForParallel = 32
 
 func renderCustomShapeXMLConcurrently(shapes []ShapeSpec, firstShapeID int) ([]int, []string) {
 	if len(shapes) == 0 {

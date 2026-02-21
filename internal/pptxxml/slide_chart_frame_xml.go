@@ -9,13 +9,17 @@ type ChartFrame struct {
 	Y     int64
 	CX    int64
 	CY    int64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 func chartFrameShape(chart *ChartFrame, shapeID int) string {
 	return fmt.Sprintf(`
 <p:graphicFrame>
 <p:nvGraphicFramePr>
-<p:cNvPr id="%d" name="Chart %d"/>
+<p:cNvPr id="%d" name="Chart %d"%s/>
 <p:cNvGraphicFramePr/>
 <p:nvPr/>
 </p:nvGraphicFramePr>
@@ -31,6 +35,7 @@ func chartFrameShape(chart *ChartFrame, shapeID int) string {
 </p:graphicFrame>`,
 		shapeID,
 		shapeID,
+		makeCNvPrAttrs(chart.AltText, chart.IsDecorative),
 		chart.X,
 		chart.Y,
 		chart.CX,

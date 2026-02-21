@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -33,6 +34,10 @@ type StockHLCChart struct {
 	ValueAxisCrossBetween string
 	MinValue              *float64
 	MaxValue              *float64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 func NewStockHLCChart(categories []string, high []float64, low []float64, closeValues []float64) StockHLCChart {
@@ -58,6 +63,18 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, closeV
 		ValueFormat:           "General",
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c StockHLCChart) WithAltText(text string) StockHLCChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c StockHLCChart) WithDecorative(enabled bool) StockHLCChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // ToChartSpec converts StockHLCChart to internal XML spec.
@@ -86,11 +103,16 @@ func (c StockHLCChart) ToChartSpec() *pptxxml.ChartSpec {
 		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the stock chart for consistency.
 func (c StockHLCChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d stock chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := validateStockCore(
 		slideIndex,
 		c.Title,
@@ -158,6 +180,18 @@ func (c StockOHLCChart) ToChartSpec() *pptxxml.ChartSpec {
 	return spec
 }
 
+// WithAltText sets the alternative text for accessibility.
+func (c StockOHLCChart) WithAltText(text string) StockOHLCChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c StockOHLCChart) WithDecorative(enabled bool) StockOHLCChart {
+	c.IsDecorative = enabled
+	return c
+}
+
 // Validate checks the stock chart for consistency.
 func (c StockOHLCChart) Validate(slideIndex int) error {
 	if err := c.StockHLCChart.Validate(slideIndex); err != nil {
@@ -197,6 +231,10 @@ type ComboChart struct {
 	ValueAxisCrossBetween string
 	MinValue              *float64
 	MaxValue              *float64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 func NewComboChart(categories []string, barSeries []Series, lineSeries []Series) ComboChart {
@@ -217,6 +255,18 @@ func NewComboChart(categories []string, barSeries []Series, lineSeries []Series)
 		ValueFormat:           "General",
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c ComboChart) WithAltText(text string) ComboChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c ComboChart) WithDecorative(enabled bool) ComboChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // ToChartSpec converts ComboChart to internal XML spec.
@@ -244,11 +294,16 @@ func (c ComboChart) ToChartSpec() *pptxxml.ChartSpec {
 		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the combo chart for consistency.
 func (c ComboChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d combo chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := validateChartCore(
 		slideIndex,
 		c.Title,

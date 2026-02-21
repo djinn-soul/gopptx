@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -50,6 +51,10 @@ type BarChart struct {
 	ValueAxisCrossBetween string
 	MinValue              *float64
 	MaxValue              *float64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewBarChart creates a bar chart with default layout and style.
@@ -73,6 +78,18 @@ func NewBarChart(categories []string, values []float64) BarChart {
 		ValueFormat:           "General",
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c BarChart) WithAltText(text string) BarChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c BarChart) WithDecorative(enabled bool) BarChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Position sets chart position in EMU.
@@ -126,6 +143,10 @@ type LineChart struct {
 	MinValue              *float64
 	MaxValue              *float64
 	Smooth                bool
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewLineChart creates a line chart with default layout and style.
@@ -150,6 +171,18 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 		Smooth:                false,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c LineChart) WithAltText(text string) LineChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c LineChart) WithDecorative(enabled bool) LineChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Position sets chart position in EMU.
@@ -206,11 +239,16 @@ func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
 		BarDir:                "col",
 		Grouping:              "clustered",
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the bar chart for consistency.
 func (c BarChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d bar chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	return validateChartCommon(
 		slideIndex, c.Title, c.Categories,
 		c.Values, c.X, c.Y, c.CX, c.CY,
@@ -257,11 +295,16 @@ func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
 		Grouping:              "standard",
 		Smooth:                c.Smooth,
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the line chart for consistency.
 func (c LineChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d line chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	return validateChartCommon(
 		slideIndex, c.Title, c.Categories,
 		c.Values, c.X, c.Y, c.CX, c.CY,

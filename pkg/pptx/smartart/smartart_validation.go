@@ -3,6 +3,8 @@ package smartart
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
 var hexColorRE = regexp.MustCompile(`^[0-9A-Fa-f]{6}$`)
@@ -17,6 +19,9 @@ func (sa SmartArt) Validate(slideIndex int) error {
 	}
 	if sa.X < 0 || sa.Y < 0 {
 		return fmt.Errorf("slide %d: SmartArt position must be non-negative (x=%d, y=%d)", slideIndex, sa.X, sa.Y)
+	}
+	if !sa.IsDecorative && len(sa.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d: SmartArt alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
 	}
 	for i, node := range sa.Nodes {
 		if err := validateNode(node, slideIndex, i); err != nil {

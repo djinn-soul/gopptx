@@ -3,12 +3,18 @@
 High-performance PowerPoint (PPTX) engine powered by Go.
 
 ## Features
+
 - **Fast**: Blazing fast PPTX generation and manipulation.
 - **Concurrent**: Optimized for multi-threaded slide processing.
 - **Lazy Loading**: Efficient memory usage for large presentations.
+- **12+ Mermaid Diagram Types**: Native shape-based rendering for all common Mermaid types (Flowchart, Sequence, Gantt, etc.).
+- **Mermaid Themes**: Support for Mermaid themes (Forest, Dark, Neutral) and custom initialization blocks.
+- **True Pie Slices**: Native PowerPoint pie slice rendering for Mermaid pie charts.
 - **Cross-Language**: C-compatible bindings for Python and other languages.
+- **JSON Command API**: Stable, typed JSON bridge for C/Python clients.
 
 ## Installation (Go)
+
 ```bash
 go get github.com/djinn-soul/gopptx
 ```
@@ -37,6 +43,88 @@ with Presentation("input.pptx") as pres:
     pres.add_slide("Hello from Python")
     pres.save("output.pptx")
 ```
+
+### Bridge Throughput Tips
+
+Use batching for write-heavy loops to reduce Python -> C -> Go boundary crossings:
+
+```python
+from gopptx import Presentation, ops
+
+with Presentation.new("Batch Demo") as pres:
+    commands = [
+        {"op": ops.OP_ADD_SLIDE, "payload": {"title": f"Slide {i}"}}
+        for i in range(200)
+    ]
+    results = pres.execute_batch(commands)
+    assert all(item.get("ok", False) for item in results)
+```
+
+Or use the context manager for fluent code:
+
+```python
+with Presentation.new("Batch Context") as pres:
+    with pres.batch(stop_on_error=False) as batch:
+        batch.add_slide("A")
+        batch.add_slide("B")
+        batch.set_slide_title(0, "Updated")
+```
+
+Optional: install `orjson` to speed up Python-side bridge JSON encode/decode.
+
+## JSON Command Bridge
+
+The bridge exposes a stable JSON API for C/Python clients. All operations use a JSON envelope format:
+
+### Request
+
+```json
+{
+  "api_version": 1,
+  "request_id": "uuid",
+  "op": "add_slide",
+  "payload": { "title": "New Slide" }
+}
+```
+
+### Response
+
+```json
+{
+  "ok": true,
+  "result": { "index": 1 },
+  "request_id": "uuid"
+}
+```
+
+### Supported Operations (40 ops)
+
+**Slide Operations**: `slide_count`, `add_slide`, `remove_slide`, `move_slide`, `duplicate_slide`, `update_slide`, `list_slides`, `set_slide_title`
+
+**Metadata**: `get_metadata`, `get_core_properties`, `set_core_properties`, `set_slide_size`, `apply_theme`, `set_modify_password`, `set_mark_as_final`
+
+**Shapes**: `list_shapes`, `add_shape`, `remove_shape`, `update_shape`, `search_shapes`, `find_and_replace`
+
+**Images/Charts**: `add_image`, `add_chart`, `list_slide_charts`, `update_chart_data`
+
+**Sections**: `get_sections`, `add_section`, `remove_section`, `rename_section`
+
+**Comments**: `get_authors`, `add_author`, `get_comments`, `add_comment`, `remove_comment`
+
+**Notes**: `get_notes`, `set_notes`
+
+**Layout/Master**: `list_slide_layouts`, `rebind_slide_layout`, `clone_layout_master_family`
+
+**Other**: `merge_from_file`, `batch_execute`
+
+See [`docs/architecture/bridge-phase1-ops.md`](docs/architecture/bridge-phase1-ops.md) for complete specifications and [`bindings/c/README.md`](bindings/c/README.md) for C API details.
+
+### Performance Benchmarks
+
+- Go bridge microbench:
+  - `go test ./pkg/pptx/editor -run ^$ -bench "BenchmarkBridge(Execute|JSON)" -benchmem -count=3`
+- Python bridge benchmark script:
+  - `PYTHONPATH=python py -3 examples/python/tests/python_bridge_perf_benchmark.py`
 
 ## SmartArt Troubleshooting
 

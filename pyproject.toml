@@ -8,7 +8,7 @@ version = "0.1.0"
 authors = [{ name = "djinn-soul" }]
 description = "High-performance PPTX engine powered by Go"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -17,7 +17,28 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["basedpyright>=1.23.0", "pytest>=8.0.0"]
+dev = [
+    # Linting & Formatting
+    "ruff>=0.14.13",
+    # Testing
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "hypothesis>=6.150.0",
+    # Runtime Validation
+    "pydantic[email]>=2.12.5",
+    "beartype>=0.22.9",
+    # Security
+    "bandit>=1.9.2",
+    "pip-audit>=2.10.0",
+    "detect-secrets>=1.5.0",
+    # CI/Automation
+    "prek>=0.2.30",
+    "poethepoet>=0.40.0",
+    # Advanced Static Analysis
+    "basedpyright>=1.38.1",
+    "vulture>=2.14",
+    "gitingest",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["python/gopptx"]
@@ -31,8 +52,297 @@ include = [
     "/go.sum",
 ]
 
+# ============================================================================
+# RUFF - Ultra-fast linter and formatter
+# ============================================================================
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+src = ["python/gopptx", "tests", "examples"]
+exclude = ["vulture_whitelist.py"]
+preview = true
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "UP",
+    "ARG",
+    "SIM",
+    "TCH",
+    "PTH",
+    "ERA",
+    "PL",
+    "RUF",
+    "S",
+    "A",
+    "COM",
+    "DTZ",
+    "T10",
+    "T20",
+    "EXE",
+    "ISC",
+    "ICN",
+    "LOG",
+    "G",
+    "PIE",
+    "PYI",
+    "Q",
+    "RSE",
+    "RET",
+    "SLF",
+    "SLOT",
+    "TID",
+    "INT",
+    "FLY",
+    "PERF",
+    "FURB",
+    "N",
+    "ASYNC",
+    "ANN",
+    "FBT",
+    "D",
+]
+ignore = ["E501", "COM812", "ISC001", "S603", "S607"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-nested-blocks = 3
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"python/gopptx/**/*.py" = ["TCH"]
+"tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
+"examples/**/*.py" = ["T201", "INP001", "D"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# ============================================================================
+# PYTEST - Testing configuration
+# ============================================================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+    "-W error",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+filterwarnings = ["error", "ignore::DeprecationWarning"]
+
+# ============================================================================
+# COVERAGE - Code coverage configuration
+# ============================================================================
+[tool.coverage.run]
+source = ["python/gopptx"]
+branch = true
+parallel = true
+omit = ["tests/*", "**/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+fail_under = 80
+show_missing = true
+skip_covered = true
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# ============================================================================
+# BANDIT - Security linting
+# ============================================================================
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101"]
+
+# ============================================================================
+# BASED-PYRIGHT - Strict type checking
+# ============================================================================
 [tool.basedpyright]
 include = ["python/gopptx"]
-exclude = ["**/__pycache__"]
-typeCheckingMode = "strict"
 pythonVersion = "3.12"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportMissingTypeStubs = true
+reportUndefinedVariable = true
+reportAssertAlwaysTrue = true
+reportInvalidStringEscapeSequence = true
+
+reportOptionalSubscript = true
+reportOptionalMemberAccess = true
+reportOptionalCall = true
+reportOptionalIterable = true
+reportOptionalContextManager = true
+reportOptionalOperand = true
+reportAny = true
+reportExplicitAny = true
+reportIgnoreCommentWithoutRule = false
+reportPrivateLocalImportUsage = true
+
+reportMissingParameterType = true
+reportMissingTypeArgument = true
+reportUnknownParameterType = true
+reportUnknownLambdaType = true
+reportUnknownArgumentType = true
+reportUnknownVariableType = true
+reportUnknownMemberType = true
+reportUntypedFunctionDecorator = true
+reportUntypedClassDecorator = true
+reportUntypedBaseClass = true
+reportUntypedNamedTuple = true
+
+reportIncompatibleMethodOverride = true
+reportIncompatibleVariableOverride = true
+reportInconsistentConstructor = true
+reportUninitializedInstanceVariable = true
+reportOverlappingOverload = true
+reportMissingSuperCall = true
+
+reportPrivateUsage = true
+reportConstantRedefinition = true
+reportInvalidStubStatement = true
+reportIncompleteStub = true
+reportUnsupportedDunderAll = true
+reportUnusedClass = "error"
+reportUnusedFunction = "error"
+reportUnusedVariable = "error"
+reportUnusedImport = "error"
+reportDuplicateImport = "error"
+
+reportUnnecessaryIsInstance = "error"
+reportUnnecessaryCast = "error"
+reportUnnecessaryComparison = "error"
+reportUnnecessaryContains = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
+
+reportGeneralTypeIssues = true
+reportPropertyTypeMismatch = true
+reportFunctionMemberAccess = true
+reportCallInDefaultInitializer = true
+reportImplicitStringConcatenation = true
+
+reportImplicitOverride = true
+reportDeprecated = "warning"
+reportImportCycles = "warning"
+
+exclude = [
+    "vulture_whitelist.py",
+    "**/__pycache__",
+    "**/node_modules",
+    ".git",
+    ".mypy_cache",
+    ".pyright_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    ".venv",
+    "venv",
+    "env",
+    "logs",
+    "output",
+    "data",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+executionEnvironments = [
+    { root = "tests", reportUnknownArgumentType = "none", reportUnknownVariableType = "none", reportUnknownMemberType = "none", reportAny = "none", reportExplicitAny = "none", reportUntypedFunctionDecorator = "none", reportUntypedClassDecorator = "none", reportUntypedBaseClass = "none" },
+]
+
+venvPath = "."
+venv = ".venv"
+
+# ============================================================================
+# PYLINT - Duplicate code detection (R0801)
+# ============================================================================
+[tool.pylint.main]
+ignore = [".venv", "tests", "vulture_whitelist.py", "examples"]
+jobs = 0
+
+[tool.pylint."messages control"]
+disable = "all"
+enable = "R0801"
+
+[tool.pylint.similarities]
+min-similarity-lines = 5
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
+ignore-signatures = true
+
+# ============================================================================
+# POE THE POET - Task Runner (replaces Makefile)
+# ============================================================================
+[tool.poe]
+default_task_type = "cmd"
+
+[tool.poe.tasks]
+format = { sequence = [
+    { cmd = "ruff format ." },
+    { cmd = "ruff check . --fix" },
+], help = "Format code and fix linting issues" }
+
+lint = { cmd = "ruff check .", help = "Run linter (check only)" }
+lint-unsafe = { cmd = "ruff check . --fix --unsafe-fixes", help = "Lint with unsafe fixes" }
+
+typecheck = { sequence = [
+    "typecheck-basedpyright",
+], help = "Run all type checkers" }
+typecheck-basedpyright = { cmd = "basedpyright --level error", help = "Run BasedPyright" }
+typecheck-ty = { cmd = "ty check .", help = "Run ty" }
+
+security = { sequence = [
+    "security-bandit",
+    "security-semgrep",
+    "security-audit",
+    "security-secrets",
+], help = "Run all security scans" }
+security-bandit = { cmd = "bandit -r python/gopptx/ -c pyproject.toml", help = "Run Bandit" }
+security-semgrep = { cmd = "semgrep scan --config auto --config .semgrep/ --error", env = { PYTHONUTF8 = "1" }, help = "Run Semgrep" }
+security-audit = { cmd = "pip-audit", help = "Audit dependencies" }
+security-secrets = { cmd = "detect-secrets scan --all-files --exclude-files '(.venv|uv.lock|.ruff_cache|.pytest_cache|.*\\.egg-info|build|dist)'", help = "Scan for secrets" }
+
+test = { cmd = "pytest --cov=python/gopptx --cov-report=term-missing", help = "Run tests with coverage" }
+test-fast = { cmd = "pytest", help = "Run tests without coverage" }
+
+quality = { sequence = [
+    "format",
+    "typecheck",
+    "security",
+    { cmd = "pyscn check ." },
+], help = "Run FULL quality suite" }
+
+install = { cmd = "uv sync --all-extras", help = "Install all dependencies" }
+setup = { sequence = [
+    "install",
+    { cmd = "prek install" },
+], help = "Full project setup" }
+clean = { cmd = "python scripts/clean.py", help = "Clean build artifacts" }

@@ -61,7 +61,7 @@ func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
     </a:stretch>
   </p:blipFill>
   %s
-</p:pic>`, id, Escape(img.Name), phAttr, img.RelID, xfrm)
+</p:pic>`, id, Escape(img.Name), phAttr, FastEscapeRID(img.RelID), xfrm)
 }
 
 func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) string {
@@ -84,7 +84,7 @@ func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) st
 	return fmt.Sprintf(`
 <p:graphicFrame>
   <p:nvGraphicFramePr>
-    <p:cNvPr id="%d" name="Placeholder Table %d"/>
+    <p:cNvPr id="%d" name="Placeholder Table %d"%s/>
     <p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>
     <p:nvPr>
       <p:ph%s/>
@@ -92,7 +92,7 @@ func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) st
   </p:nvGraphicFramePr>
   %s
   %s
-</p:graphicFrame>`, id, index, phAttr, xfrm, tableGraphicXML(tbl))
+</p:graphicFrame>`, id, index, makeCNvPrAttrs(tbl.AltText, tbl.IsDecorative), phAttr, xfrm, tableGraphicXML(tbl))
 }
 
 func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) string {
@@ -115,7 +115,7 @@ func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) st
 	return fmt.Sprintf(`
 <p:graphicFrame>
   <p:nvGraphicFramePr>
-    <p:cNvPr id="%d" name="Placeholder Chart %d"/>
+    <p:cNvPr id="%d" name="Placeholder Chart %d"%s/>
     <p:cNvGraphicFramePr/>
     <p:nvPr>
       <p:ph%s/>
@@ -127,7 +127,7 @@ func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) st
       <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="%s"/>
     </a:graphicData>
   </a:graphic>
-</p:graphicFrame>`, id, index, phAttr, xfrm, Escape(ch.RelID))
+</p:graphicFrame>`, id, index, makeCNvPrAttrs(ch.AltText, ch.IsDecorative), phAttr, xfrm, FastEscapeRID(ch.RelID))
 }
 
 func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string) string {
@@ -137,19 +137,20 @@ func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string)
   <a:lstStyle/>
   <a:p/>
 </p:txBody>`
-	if ph.Text != "" {
+	if ph.Text != "" || ph.TextStyle != nil {
 		escaped := Escape(ph.Text)
+		textStyle := renderPlaceholderTextStyle(ph.TextStyle)
 		txBody = fmt.Sprintf(`
 <p:txBody>
   <a:bodyPr/>
   <a:lstStyle/>
   <a:p>
-    <a:r>
+    %s<a:r>
       <a:rPr lang="en-US" dirty="0"/>
       <a:t>%s</a:t>
     </a:r>
   </a:p>
-</p:txBody>`, escaped)
+</p:txBody>`, textStyle, escaped)
 	}
 
 	return fmt.Sprintf(`
@@ -161,9 +162,74 @@ func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string)
       <p:ph%s/>
     </p:nvPr>
   </p:nvSpPr>
-  <p:spPr/>
+  %s
 %s
-</p:sp>`, id, ph.Index, phAttr, txBody)
+</p:sp>`, id, ph.Index, phAttr, renderOverrideXfrm(ph.X, ph.Y, ph.CX, ph.CY), txBody)
+}
+
+func renderOverrideXfrm(x, y, cx, cy *int64) string {
+	if x == nil && y == nil && cx == nil && cy == nil {
+		return "<p:spPr/>"
+	}
+	// Default to 0 if not specified but others are
+	xv, yv, cxv, cyv := int64(0), int64(0), int64(0), int64(0)
+	if x != nil {
+		xv = *x
+	}
+	if y != nil {
+		yv = *y
+	}
+	if cx != nil {
+		cxv = *cx
+	}
+	if cy != nil {
+		cyv = *cy
+	}
+	return fmt.Sprintf(`
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="%d" y="%d"/>
+      <a:ext cx="%d" cy="%d"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>`, xv, yv, cxv, cyv)
+}
+
+func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
+	if ts == nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<a:pPr")
+	if ts.Align != nil {
+		b.WriteString(fmt.Sprintf(` algn="%s"`, Escape(*ts.Align)))
+	}
+	b.WriteString(">")
+	if ts.Bold != nil || ts.Italic != nil || ts.SizePt != nil || ts.Color != nil || ts.Underline != nil || ts.Font != nil {
+		b.WriteString("<a:defRPr")
+		if ts.Bold != nil {
+			b.WriteString(fmt.Sprintf(` b="%s"`, boolToFlag(*ts.Bold)))
+		}
+		if ts.Italic != nil {
+			b.WriteString(fmt.Sprintf(` i="%s"`, boolToFlag(*ts.Italic)))
+		}
+		if ts.SizePt != nil {
+			b.WriteString(fmt.Sprintf(` sz="%d"`, *ts.SizePt*ptFactor))
+		}
+		if ts.Underline != nil {
+			b.WriteString(fmt.Sprintf(` u="%s"`, Escape(*ts.Underline)))
+		}
+		b.WriteString(">")
+		if ts.Color != nil {
+			b.WriteString(fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, strings.TrimPrefix(*ts.Color, "#")))
+		}
+		if ts.Font != nil {
+			b.WriteString(fmt.Sprintf(`<a:latin typeface="%s"/>`, Escape(*ts.Font)))
+		}
+		b.WriteString("</a:defRPr>")
+	}
+	b.WriteString("</a:pPr>")
+	return b.String()
 }
 
 func normalizePlaceholderType(raw string) string {

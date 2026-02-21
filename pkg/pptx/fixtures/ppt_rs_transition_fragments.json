@@ -1,38 +1,38 @@
 [
-  {
-    "transition": "none",
-    "xml": ""
-  },
-  {
-    "transition": "cut",
-    "xml": ""
-  },
-  {
-    "transition": "fade",
-    "xml": "<p:transition><p:fade/></p:transition>"
-  },
-  {
-    "transition": "push",
-    "xml": "<p:transition><p:push dir=\"r\"/></p:transition>"
-  },
-  {
-    "transition": "wipe",
-    "xml": "<p:transition><p:wipe dir=\"r\"/></p:transition>"
-  },
-  {
-    "transition": "split",
-    "xml": "<p:transition><p:split dir=\"out\" orient=\"horz\"/></p:transition>"
-  },
-  {
-    "transition": "reveal",
-    "xml": "<p:transition><p:reveal dir=\"r\"/></p:transition>"
-  },
-  {
-    "transition": "cover",
-    "xml": "<p:transition><p:cover dir=\"r\"/></p:transition>"
-  },
-  {
-    "transition": "zoom",
-    "xml": "<p:transition><p:zoom dir=\"in\"/></p:transition>"
-  }
+    {
+        "transition": "none",
+        "xml": ""
+    },
+    {
+        "transition": "cut",
+        "xml": ""
+    },
+    {
+        "transition": "fade",
+        "xml": "<p:transition><p:fade/></p:transition>"
+    },
+    {
+        "transition": "push",
+        "xml": "<p:transition><p:push dir=\"r\"/></p:transition>"
+    },
+    {
+        "transition": "wipe",
+        "xml": "<p:transition><p:wipe dir=\"r\"/></p:transition>"
+    },
+    {
+        "transition": "split",
+        "xml": "<p:transition><p:split dir=\"out\" orient=\"horz\"/></p:transition>"
+    },
+    {
+        "transition": "reveal",
+        "xml": "<p:transition><p:reveal dir=\"r\"/></p:transition>"
+    },
+    {
+        "transition": "cover",
+        "xml": "<p:transition><p:cover dir=\"r\"/></p:transition>"
+    },
+    {
+        "transition": "zoom",
+        "xml": "<p:transition><p:zoom dir=\"in\"/></p:transition>"
+    }
 ]

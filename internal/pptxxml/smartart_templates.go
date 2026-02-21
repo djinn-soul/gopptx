@@ -257,9 +257,11 @@ func drawingShapeHasNonEmptyText(shape string) bool {
 	return false
 }
 
-var placeholderTextRunPattern = regexp.MustCompile(`<a:t>\[Text(?: [0-9]+)?\]</a:t>`)     //nolint:gochecknoglobals
-var drawingShapePattern = regexp.MustCompile(`(?s)<dsp:sp modelId="([^"]+)".*?</dsp:sp>`) //nolint:gochecknoglobals
-var paragraphPattern = regexp.MustCompile(`(?s)<a:p(?: [^>]*)?>.*?</a:p>`)                //nolint:gochecknoglobals
+var (
+	placeholderTextRunPattern = regexp.MustCompile(`<a:t>\[Text(?: [0-9]+)?\]</a:t>`)           //nolint:gochecknoglobals
+	drawingShapePattern       = regexp.MustCompile(`(?s)<dsp:sp modelId="([^"]+)".*?</dsp:sp>`) //nolint:gochecknoglobals
+	paragraphPattern          = regexp.MustCompile(`(?s)<a:p(?: [^>]*)?>.*?</a:p>`)             //nolint:gochecknoglobals
+)
 
 //nolint:gochecknoglobals // static mapping for embedded template selection
 var layoutTemplateKeyByURI = map[string]string{

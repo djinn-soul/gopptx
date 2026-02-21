@@ -1,7 +1,10 @@
 package editor
 
+//go:generate go run ../../../cmd/gen_ops opspec.go ../../../python/gopptx/ops.py ../../../python/gopptx/ops.pyi
+
 // Command operation names shared between bridge clients and Go dispatcher.
 const (
+	OpBatchExecute            = "batch_execute"
 	OpSlideCount              = "slide_count"
 	OpAddSlide                = "add_slide"
 	OpRemoveSlide             = "remove_slide"
@@ -11,6 +14,8 @@ const (
 	OpUpdateChartData         = "update_chart_data"
 	OpListSlideCharts         = "list_slide_charts"
 	OpListSlideLayouts        = "list_slide_layouts"
+	OpListSlideMasters        = "list_slide_masters"
+	OpListMasterLayouts       = "list_master_layouts"
 	OpRebindSlideLayout       = "rebind_slide_layout"
 	OpCloneLayoutMasterFamily = "clone_layout_master_family"
 	OpAddSection              = "add_section"
@@ -47,6 +52,7 @@ const (
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
 func SupportedOps() []string {
 	return []string{
+		OpBatchExecute,
 		OpSlideCount,
 		OpAddSlide,
 		OpRemoveSlide,
@@ -56,6 +62,8 @@ func SupportedOps() []string {
 		OpUpdateChartData,
 		OpListSlideCharts,
 		OpListSlideLayouts,
+		OpListSlideMasters,
+		OpListMasterLayouts,
 		OpRebindSlideLayout,
 		OpCloneLayoutMasterFamily,
 		OpAddSection,

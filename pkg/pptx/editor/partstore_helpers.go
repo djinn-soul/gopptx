@@ -2,9 +2,17 @@ package editor
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
+	"sync"
 )
+
+var zipReadChunkPool = sync.Pool{
+	New: func() any {
+		return make([]byte, 32*1024)
+	},
+}
 
 type inflightRead struct {
 	ch   chan struct{}
@@ -77,9 +85,24 @@ func readZipEntry(entry *zip.File) ([]byte, error) {
 		return nil, fmt.Errorf("open zip entry %q: %w", entry.Name, err)
 	}
 	defer func() { _ = rc.Close() }()
-	data, err := io.ReadAll(rc)
-	if err != nil {
+
+	const maxInt = int(^uint(0) >> 1)
+	size64 := entry.UncompressedSize64
+	if size64 > 0 && size64 <= uint64(maxInt) {
+		// Pre-allocate the exact size when available.
+		data := make([]byte, int(size64))
+		if _, err := io.ReadFull(rc, data); err != nil {
+			return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)
+		}
+		return data, nil
+	}
+
+	// Fallback for unknown sizes: use a pooled read buffer to reduce temporary allocations.
+	chunk := zipReadChunkPool.Get().([]byte)
+	defer zipReadChunkPool.Put(chunk)
+	var out bytes.Buffer
+	if _, err := io.CopyBuffer(&out, rc, chunk); err != nil {
 		return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)
 	}
-	return data, nil
+	return out.Bytes(), nil
 }

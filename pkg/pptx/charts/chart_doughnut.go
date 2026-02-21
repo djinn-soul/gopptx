@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -27,6 +28,10 @@ type DoughnutChart struct {
 	LegendOverlay  bool
 	ShowDataLabels bool
 	HoleSize       int
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewDoughnutChart creates a doughnut chart with default layout and style.
@@ -47,6 +52,18 @@ func NewDoughnutChart(categories []string, values []float64) DoughnutChart {
 		ShowDataLabels: false,
 		HoleSize:       defaultDoughnutHoleSize,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c DoughnutChart) WithAltText(text string) DoughnutChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c DoughnutChart) WithDecorative(enabled bool) DoughnutChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Position sets chart position in EMU.
@@ -88,11 +105,16 @@ func (c DoughnutChart) ToChartSpec() *pptxxml.ChartSpec {
 		LegendOverlay:  c.LegendOverlay,
 		ShowDataLabels: c.ShowDataLabels,
 		HoleSize:       c.HoleSize,
+		AltText:        c.AltText,
+		IsDecorative:   c.IsDecorative,
 	}
 }
 
 // Validate checks the doughnut chart for consistency.
 func (c DoughnutChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d doughnut chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := validateChartCore(
 		slideIndex,
 		c.Title,

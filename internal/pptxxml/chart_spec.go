@@ -41,6 +41,10 @@ type ChartSpec struct {
 	MaxValue              *float64
 	Smooth                bool
 	ExternalDataID        string
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 type ChartSeries struct {

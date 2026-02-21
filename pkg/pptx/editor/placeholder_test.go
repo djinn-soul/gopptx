@@ -74,6 +74,9 @@ func TestSlide_Placeholders_DiscoversPHElements(t *testing.T) {
 	if placeholders[0].Index != 0 {
 		t.Errorf("expected index 0 for title, got %d", placeholders[0].Index)
 	}
+	if placeholders[0].Name != "Title 1" {
+		t.Errorf("expected name 'Title 1', got %q", placeholders[0].Name)
+	}
 
 	// Second placeholder: body idx=1
 	if placeholders[1].Type != "body" {
@@ -82,6 +85,9 @@ func TestSlide_Placeholders_DiscoversPHElements(t *testing.T) {
 	if placeholders[1].Index != 1 {
 		t.Errorf("expected index 1 for body, got %d", placeholders[1].Index)
 	}
+	if placeholders[1].Name != "Body 2" {
+		t.Errorf("expected name 'Body 2', got %q", placeholders[1].Name)
+	}
 
 	// Third placeholder: footer idx=10
 	if placeholders[2].Type != "ftr" {
@@ -89,5 +95,8 @@ func TestSlide_Placeholders_DiscoversPHElements(t *testing.T) {
 	}
 	if placeholders[2].Index != 10 {
 		t.Errorf("expected index 10 for footer, got %d", placeholders[2].Index)
+	}
+	if placeholders[2].Name != "Footer 3" {
+		t.Errorf("expected name 'Footer 3', got %q", placeholders[2].Name)
 	}
 }

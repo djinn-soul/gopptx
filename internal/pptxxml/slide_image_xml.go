@@ -1,7 +1,7 @@
 package pptxxml
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -53,39 +53,27 @@ func imageShape(image ImageRef, shapeID int) string {
 	effectsXML := imageEffectsXML(image.Shadow, image.Reflection)
 	xfrmAttrs := imageTransformAttrs(image.Rotation, image.FlipH, image.FlipV)
 
-	return fmt.Sprintf(`
+	return `
 <p:pic>
 <p:nvPicPr>
-<p:cNvPr id="%d" name="%s"%s/>
+<p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="` + Escape(name) + `"` + descrAttr + `/>
 <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
 <p:nvPr/>
 </p:nvPicPr>
 <p:blipFill>
-<a:blip r:embed="%s"/>
-%s
+<a:blip r:embed="` + FastEscapeRID(image.RelID) + `"/>
+` + srcRect + `
 <a:stretch><a:fillRect/></a:stretch>
 </p:blipFill>
 <p:spPr>
-<a:xfrm%s>
-<a:off x="%d" y="%d"/>
-<a:ext cx="%d" cy="%d"/>
+<a:xfrm` + xfrmAttrs + `>
+<a:off x="` + strconv.FormatInt(image.X, 10) + `" y="` + strconv.FormatInt(image.Y, 10) + `"/>
+<a:ext cx="` + strconv.FormatInt(image.CX, 10) + `" cy="` + strconv.FormatInt(image.CY, 10) + `"/>
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-%s
+` + effectsXML + `
 </p:spPr>
-</p:pic>`,
-		shapeID,
-		Escape(name),
-		descrAttr,
-		Escape(image.RelID),
-		srcRect,
-		xfrmAttrs,
-		image.X,
-		image.Y,
-		image.CX,
-		image.CY,
-		effectsXML,
-	)
+</p:pic>`
 }
 
 func imageDescriptionAttr(image ImageRef) string {
@@ -93,15 +81,16 @@ func imageDescriptionAttr(image ImageRef) string {
 		return ` descr=""`
 	}
 	if image.AltText != "" {
-		return fmt.Sprintf(` descr="%s"`, Escape(image.AltText))
+		escaped := Escape(image.AltText)
+		return ` descr="` + escaped + `" title="` + escaped + `"`
 	}
-	return ""
+	return ` descr=""`
 }
 
 func imageTransformAttrs(rot int64, flipH, flipV bool) string {
 	attrs := ""
 	if rot != 0 {
-		attrs += fmt.Sprintf(` rot="%d"`, rot)
+		attrs += ` rot="` + strconv.FormatInt(rot, 10) + `"`
 	}
 	if flipH {
 		attrs += ` flipH="1"`
@@ -118,19 +107,19 @@ func imageSrcRectXML(c *ImageCropRef) string {
 	}
 	attrs := ""
 	if c.Left != 0 {
-		attrs += fmt.Sprintf(` l="%d"`, c.Left)
+		attrs += ` l="` + strconv.FormatInt(c.Left, 10) + `"`
 	}
 	if c.Top != 0 {
-		attrs += fmt.Sprintf(` t="%d"`, c.Top)
+		attrs += ` t="` + strconv.FormatInt(c.Top, 10) + `"`
 	}
 	if c.Right != 0 {
-		attrs += fmt.Sprintf(` r="%d"`, c.Right)
+		attrs += ` r="` + strconv.FormatInt(c.Right, 10) + `"`
 	}
 	if c.Bottom != 0 {
-		attrs += fmt.Sprintf(` b="%d"`, c.Bottom)
+		attrs += ` b="` + strconv.FormatInt(c.Bottom, 10) + `"`
 	}
 	if attrs != "" {
-		return fmt.Sprintf(`<a:srcRect%s/>`, attrs)
+		return `<a:srcRect` + attrs + `/>`
 	}
 	return ""
 }
@@ -142,21 +131,28 @@ func imageEffectsXML(shadow, reflection bool) string {
 	var b strings.Builder
 	b.WriteString("<a:effectLst>")
 	if shadow {
-		b.WriteString(fmt.Sprintf(
-			`<a:outerShdw blurRad="%d" dist="%d" dir="%d" rotWithShape="0">`+
-				`<a:srgbClr val="000000"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
-			defaultShadowBlurRad, defaultShadowDist,
-			defaultShadowDir, defaultShadowAlpha,
-		))
+		b.WriteString(`<a:outerShdw blurRad="`)
+		b.WriteString(strconv.Itoa(defaultShadowBlurRad))
+		b.WriteString(`" dist="`)
+		b.WriteString(strconv.Itoa(defaultShadowDist))
+		b.WriteString(`" dir="`)
+		b.WriteString(strconv.Itoa(defaultShadowDir))
+		b.WriteString(`" rotWithShape="0"><a:srgbClr val="000000"><a:alpha val="`)
+		b.WriteString(strconv.Itoa(defaultShadowAlpha))
+		b.WriteString(`"/></a:srgbClr></a:outerShdw>`)
 	}
 	if reflection {
-		b.WriteString(fmt.Sprintf(
-			`<a:ref blurRad="%d" stA="%d" endA="%d" endPos="%d" dist="0" dir="%d" `+
-				`sy="-100000" algn="bl" rotWithShape="0"/>`,
-			defaultReflectionBlur, defaultReflectionStA,
-			defaultReflectionEndA, defaultReflectionEndPos,
-			defaultShadowDir,
-		))
+		b.WriteString(`<a:ref blurRad="`)
+		b.WriteString(strconv.Itoa(defaultReflectionBlur))
+		b.WriteString(`" stA="`)
+		b.WriteString(strconv.Itoa(defaultReflectionStA))
+		b.WriteString(`" endA="`)
+		b.WriteString(strconv.Itoa(defaultReflectionEndA))
+		b.WriteString(`" endPos="`)
+		b.WriteString(strconv.Itoa(defaultReflectionEndPos))
+		b.WriteString(`" dist="0" dir="`)
+		b.WriteString(strconv.Itoa(defaultShadowDir))
+		b.WriteString(`" sy="-100000" algn="bl" rotWithShape="0"/>`)
 	}
 	b.WriteString("</a:effectLst>")
 	return b.String()

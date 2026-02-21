@@ -30,12 +30,15 @@ func (e *PresentationEditor) GetSlide(index int) (*Slide, error) {
 type Placeholder struct {
 	Index int
 	Type  string
+	Name  string
 }
 
 var (
-	phPattern     = regexp.MustCompile(`<p:ph\b([^>]*)/?>`)
-	phIdxPattern  = regexp.MustCompile(`idx="(\d+)"`)
-	phTypePattern = regexp.MustCompile(`type="([^"]*)"`)
+	phPattern      = regexp.MustCompile(`(?i)<p:ph\b([^>]*)/?>`)
+	phIdxPattern   = regexp.MustCompile(`(?i)\bidx\s*=\s*(?:"(\d+)"|'(\d+)')`)
+	phTypePattern  = regexp.MustCompile(`(?i)\btype\s*=\s*(?:"([^"]*)"|'([^']*)')`)
+	phNamePattern  = regexp.MustCompile(`(?i)<p:cNvPr\b[^>]*\bname\s*=\s*(?:"([^"]*)"|'([^']*)')`)
+	shapeSPPattern = regexp.MustCompile(`(?s)<p:sp\b.*?</p:sp>`)
 )
 
 // Placeholders parses the slide XML and returns all placeholder elements found.
@@ -45,22 +48,44 @@ func (s *Slide) Placeholders() ([]Placeholder, error) {
 		return nil, fmt.Errorf("slide part %q not found", s.PartName)
 	}
 
-	matches := phPattern.FindAllSubmatch(content, -1)
-	result := make([]Placeholder, 0, len(matches))
+	return parsePlaceholdersFromSlideXML(content), nil
+}
 
-	for _, match := range matches {
+func parsePlaceholdersFromSlideXML(content []byte) []Placeholder {
+	shapeMatches := shapeSPPattern.FindAll(content, -1)
+	result := make([]Placeholder, 0, len(shapeMatches))
+	for _, shape := range shapeMatches {
+		match := phPattern.FindSubmatch(shape)
+		if match == nil {
+			continue
+		}
 		ph := Placeholder{}
 		attrs := string(match[1])
 
 		if m := phIdxPattern.FindStringSubmatch(attrs); m != nil {
-			val, _ := strconv.Atoi(m[1])
+			value := m[1]
+			if value == "" {
+				value = m[2]
+			}
+			val, _ := strconv.Atoi(value)
 			ph.Index = val
 		}
 		if m := phTypePattern.FindStringSubmatch(attrs); m != nil {
-			ph.Type = m[1]
+			value := m[1]
+			if value == "" {
+				value = m[2]
+			}
+			ph.Type = value
+		}
+		if m := phNamePattern.FindSubmatch(shape); m != nil {
+			value := string(m[1])
+			if value == "" {
+				value = string(m[2])
+			}
+			ph.Name = value
 		}
 
 		result = append(result, ph)
 	}
-	return result, nil
+	return result
 }

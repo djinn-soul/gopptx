@@ -184,7 +184,7 @@ func TestTransitionOptions(t *testing.T) {
 				Type:    pptx.TransitionFade,
 				ThruBlk: true,
 			},
-			expectXML: `<p:transition><p:fade thruBlk="1"/></p:transition>`,
+			expectXML: `<p:transition thruBlk="1"><p:fade thruBlk="1"/></p:transition>`,
 		},
 		{
 			name: "split vertical in",
@@ -249,6 +249,13 @@ func TestTransitionOptions(t *testing.T) {
 				Type: pptx.TransitionFade,
 			},
 			expectXML: `<p:transition><p:fade/></p:transition>`,
+		},
+		{
+			name: "morph default",
+			options: pptx.TransitionOptions{
+				Type: pptx.TransitionMorph,
+			},
+			expectXML: `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159"><p:transition spd="slow" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" p14:dur="2000"><p159:morph option="byObject"/>`,
 		},
 	}
 

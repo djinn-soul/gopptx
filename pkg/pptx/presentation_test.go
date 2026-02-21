@@ -206,7 +206,7 @@ func TestCreateWithSlidesEmbedsStyledTableCell(t *testing.T) {
 
 	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
 	checks := []string{
-		`<a:rPr lang="en-US" dirty="0" b="1"/>`,
+		`<a:rPr lang="en-US" dirty="0" b="1"`,
 		`<a:tcPr><a:solidFill><a:srgbClr val="1F497D"/></a:solidFill></a:tcPr>`,
 		`<a:t>Header</a:t>`,
 	}

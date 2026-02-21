@@ -47,6 +47,7 @@ const (
 	TransitionDoors      = transitions.TransitionDoors
 	TransitionBox        = transitions.TransitionBox
 	TransitionRandom     = transitions.TransitionRandom
+	TransitionMorph      = transitions.TransitionMorph
 )
 
 const (

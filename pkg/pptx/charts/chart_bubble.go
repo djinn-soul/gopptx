@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
 const defaultBubbleScale = 100
@@ -35,6 +36,10 @@ type BubbleChart struct {
 	MinValue              *float64
 	MaxValue              *float64
 	BubbleScale           int
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64) BubbleChart {
@@ -63,6 +68,18 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 		BubbleScale:           defaultBubbleScale,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c BubbleChart) WithAltText(text string) BubbleChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c BubbleChart) WithDecorative(enabled bool) BubbleChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 func (c BubbleChart) Position(x int64, y int64) BubbleChart {
@@ -114,11 +131,16 @@ func (c BubbleChart) ToChartSpec() *pptxxml.ChartSpec {
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
 		BubbleScale:           c.BubbleScale,
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the bubble chart for consistency.
 func (c BubbleChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d bubble chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := c.validateCoordinates(slideIndex); err != nil {
 		return err
 	}

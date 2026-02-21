@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -40,6 +41,10 @@ type ScatterChart struct {
 	ValueAxisCrossBetween string
 	MinValue              *float64
 	MaxValue              *float64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewScatterChart creates a scatter chart with default layout and style.
@@ -67,6 +72,18 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 		ValueFormat:           "General",
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c ScatterChart) WithAltText(text string) ScatterChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c ScatterChart) WithDecorative(enabled bool) ScatterChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Position sets chart position in EMU.
@@ -122,11 +139,16 @@ func (c ScatterChart) ToChartSpec() *pptxxml.ChartSpec {
 		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the scatter chart for consistency.
 func (c ScatterChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d scatter chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := c.validateLayout(slideIndex); err != nil {
 		return err
 	}

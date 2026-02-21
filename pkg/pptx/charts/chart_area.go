@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -32,6 +33,10 @@ type AreaChart struct {
 	ValueAxisCrossBetween string
 	MinValue              *float64
 	MaxValue              *float64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewAreaChart creates an area chart with default layout and style.
@@ -55,6 +60,18 @@ func NewAreaChart(categories []string, values []float64) AreaChart {
 		ValueFormat:           "General",
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c AreaChart) WithAltText(text string) AreaChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c AreaChart) WithDecorative(enabled bool) AreaChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Position sets chart position in EMU.
@@ -110,11 +127,16 @@ func (c AreaChart) ToChartSpec() *pptxxml.ChartSpec {
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
 		Grouping:              "standard",
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the area chart for consistency.
 func (c AreaChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d area chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := validateChartCore(
 		slideIndex,
 		c.Title,

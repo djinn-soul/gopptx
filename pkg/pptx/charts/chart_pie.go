@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -24,6 +25,10 @@ type PieChart struct {
 	LegendPosition string
 	LegendOverlay  bool
 	ShowDataLabels bool
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewPieChart creates a pie chart with default layout and style.
@@ -43,6 +48,18 @@ func NewPieChart(categories []string, values []float64) PieChart {
 		LegendPosition: LegendPositionRight,
 		ShowDataLabels: false,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c PieChart) WithAltText(text string) PieChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c PieChart) WithDecorative(enabled bool) PieChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Position sets chart position in EMU.
@@ -83,11 +100,16 @@ func (c PieChart) ToChartSpec() *pptxxml.ChartSpec {
 		LegendPosition: c.LegendPosition,
 		LegendOverlay:  c.LegendOverlay,
 		ShowDataLabels: c.ShowDataLabels,
+		AltText:        c.AltText,
+		IsDecorative:   c.IsDecorative,
 	}
 }
 
 // Validate checks the pie chart for consistency.
 func (c PieChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d pie chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := validateChartCore(
 		slideIndex,
 		c.Title,

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
@@ -10,6 +11,8 @@ import (
 )
 
 func main() {
+	const outputPath = "examples/output/24_smartart_smoke.pptx"
+
 	pres := pptx.NewPresentationBuilder("SmartArt Demo")
 	pres.AddBulletSlide("SmartArt Demo", []string{
 		"This slide contains SmartArt diagrams.",
@@ -60,8 +63,11 @@ func main() {
 
 	pres.AddSlide(pptx.NewSlide("Basic Cycle").AddSmartArt(saCycle))
 
-	if err := pres.WriteToFile("smartart_smoke.pptx"); err != nil {
+	if err := os.MkdirAll("examples/output", 0o755); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Saved smartart_smoke.pptx")
+	if err := pres.WriteToFile(outputPath); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Saved", outputPath)
 }

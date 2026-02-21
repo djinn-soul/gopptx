@@ -36,18 +36,25 @@ type PartStore struct {
 
 	// inflight deduplicates concurrent lazy reads for the same part.
 	inflight map[string]*inflightRead
+
+	// allKeys maintains the set of all active part names to avoid O(N) map scans in Keys().
+	allKeys map[string]struct{}
 }
 
 // newPartStoreFromZip creates a lazy store backed by the given zip reader.
 // The [os.File] must remain open for the lifetime of the store.
 func newPartStoreFromZip(file *os.File, zr *zip.Reader) *PartStore {
+	allKeys := make(map[string]struct{}, len(zr.File))
 	index := make(map[string]*zip.File, len(zr.File))
 	for _, entry := range zr.File {
 		if entry.FileInfo().IsDir() {
 			continue
 		}
-		index[common.CanonicalPartPath(entry.Name)] = entry
+		name := common.CanonicalPartPath(entry.Name)
+		index[name] = entry
+		allKeys[name] = struct{}{}
 	}
+
 	return &PartStore{
 		file:      file,
 		index:     index,
@@ -56,6 +63,7 @@ func newPartStoreFromZip(file *os.File, zr *zip.Reader) *PartStore {
 		deleted:   make(map[string]bool),
 		keysDirty: true,
 		inflight:  make(map[string]*inflightRead),
+		allKeys:   allKeys,
 	}
 }
 
@@ -71,6 +79,10 @@ func NewPartStore() *PartStore {
 func newPartStoreFromMap(parts map[string][]byte) *PartStore {
 	cached := make(map[string][]byte, len(parts))
 	maps.Copy(cached, parts)
+	allKeys := make(map[string]struct{}, len(parts))
+	for k := range parts {
+		allKeys[k] = struct{}{}
+	}
 	return &PartStore{
 		index:     make(map[string]*zip.File),
 		cache:     cached,
@@ -78,6 +90,7 @@ func newPartStoreFromMap(parts map[string][]byte) *PartStore {
 		deleted:   make(map[string]bool),
 		keysDirty: true,
 		inflight:  make(map[string]*inflightRead),
+		allKeys:   allKeys,
 	}
 }
 
@@ -144,6 +157,7 @@ func (ps *PartStore) Set(name string, data []byte) {
 	defer ps.mu.Unlock()
 	delete(ps.deleted, name)
 	ps.modified[name] = data
+	ps.allKeys[name] = struct{}{}
 	ps.invalidateKeysLocked()
 }
 
@@ -153,6 +167,7 @@ func (ps *PartStore) Delete(name string) {
 	defer ps.mu.Unlock()
 	delete(ps.modified, name)
 	delete(ps.cache, name)
+	delete(ps.allKeys, name)
 	if _, ok := ps.index[name]; ok {
 		ps.deleted[name] = true
 	} else {
@@ -194,22 +209,8 @@ func (ps *PartStore) Keys() []string {
 		return append([]string(nil), ps.keysCache...)
 	}
 
-	seen := make(map[string]struct{})
-	for name := range ps.index {
-		if !ps.deleted[name] {
-			seen[name] = struct{}{}
-		}
-	}
-	for name := range ps.cache {
-		if !ps.deleted[name] {
-			seen[name] = struct{}{}
-		}
-	}
-	for name := range ps.modified {
-		seen[name] = struct{}{}
-	}
-	out := make([]string, 0, len(seen))
-	for name := range seen {
+	out := make([]string, 0, len(ps.allKeys))
+	for name := range ps.allKeys {
 		out = append(out, name)
 	}
 	sort.Strings(out)

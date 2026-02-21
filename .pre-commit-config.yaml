@@ -1,6 +1,97 @@
+# Organized Pre-commit Configuration
+# Run `uv run prek auto-update` periodically to update hook versions
+
+default_stages: [commit]
+
 repos:
+  # --- Standard Hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: requirements-txt-fixer
+      - id: detect-private-key
+      - id: pretty-format-json
+        args: [--autofix, --indent=4, --no-sort-keys]
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args:
+          [
+            "--ignore-words-list=nd,ot,tt,astroid",
+            "--skip=./.venv,./uv.lock,./.git",
+          ]
+        exclude: ^uv\.lock$
+
+  # --- Dependency Management (uv) ---
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.26
+    hooks:
+      - id: uv-lock
+      - id: uv-export
+        name: Export requirements.txt
+        args: ["--output-file", "requirements.txt", "--no-hashes"]
+        always_run: true
+      - id: uv-export
+        name: Export requirements-dev.txt
+        args: ["--extra", "dev", "--output-file", "requirements-dev.txt"]
+        always_run: true
+
+  # ==========================================================================
+  # Ruff - Linting & Formatting
+  # ==========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.13
+    hooks:
+      - id: ruff-format
+        name: ruff-format (commit)
+      - id: ruff
+        name: ruff check --fix (commit)
+        args: ["--fix"]
+
+  # ==========================================================================
+  # Local Hooks - Environment Consistent Scans & Go Checks
+  # ==========================================================================
   - repo: local
     hooks:
+      - id: basedpyright
+        name: basedpyright strict type-check (push)
+        entry: uv run basedpyright --level error
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [push]
+
+      - id: pip-audit
+        name: pip-audit dependency scan
+        entry: uv run pip-audit -r requirements.txt
+        language: system
+        pass_filenames: false
+
+      - id: bandit
+        name: bandit security scan
+        entry: uv run bandit -r src/ -c pyproject.toml
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: vulture
+        name: vulture dead code detection
+        entry: uv run vulture src/ vulture_whitelist.py --min-confidence 60
+        language: system
+        types: [python]
+        pass_filenames: false
+
       - id: go-vet
         name: go vet
         entry: go

@@ -1,7 +1,9 @@
 import os
 import subprocess
 import sys
+
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
+
 
 class CustomBuildHook(BuildHookInterface):
     def initialize(self, version, build_data):
@@ -11,14 +13,14 @@ class CustomBuildHook(BuildHookInterface):
         project_root = self.root
         go_bridge_src = os.path.join(project_root, "bindings/c/bridge.go")
         pkg_dir = os.path.join(project_root, "python/gopptx")
-        
+
         if sys.platform == "win32":
             lib_name = "gopptx.dll"
         elif sys.platform == "darwin":
             lib_name = "libgopptx.dylib"
         else:
             lib_name = "libgopptx.so"
-            
+
         out_path = os.path.join(pkg_dir, lib_name)
 
         print(f"Building Go engine: {out_path}")

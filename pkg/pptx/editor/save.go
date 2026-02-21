@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -30,6 +31,17 @@ func (e *PresentationEditor) Save(filePath string) error {
 		return fmt.Errorf("prepare updated parts: %w", err)
 	}
 
+	// Pre-verification: Ensure all required parts are available before we start writing to disk.
+	// This prevents truncated/corrupt files if a lazy-read fails mid-save.
+	keys := e.parts.Keys()
+	for _, name := range keys {
+		if _, updatedOK := updatedParts[name]; !updatedOK {
+			if _, ok := e.parts.Get(name); !ok {
+				return fmt.Errorf("critical failure: part %q missing from store during pre-save scan", name)
+			}
+		}
+	}
+
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", filePath, err)
@@ -41,7 +53,7 @@ func (e *PresentationEditor) Save(filePath string) error {
 
 	// Iterate over ALL unique part names from both existing state and updates
 	allNamesSet := make(map[string]struct{})
-	for _, k := range e.parts.Keys() {
+	for _, k := range keys {
 		allNamesSet[k] = struct{}{}
 	}
 	for k := range updatedParts {
@@ -66,7 +78,16 @@ func (e *PresentationEditor) Save(filePath string) error {
 			content = data
 		}
 
-		w, createErr := zw.Create(name)
+		var (
+			w         io.Writer
+			createErr error
+		)
+		if saveZipMethod(name) == zip.Store {
+			header := &zip.FileHeader{Name: name, Method: zip.Store}
+			w, createErr = zw.CreateHeader(header)
+		} else {
+			w, createErr = zw.Create(name)
+		}
 		if createErr != nil {
 			return fmt.Errorf("create zip entry %q: %w", name, createErr)
 		}
@@ -254,4 +275,11 @@ func filterXMLPartPaths(paths []string) []string {
 		}
 	}
 	return filtered
+}
+
+func saveZipMethod(path string) uint16 {
+	if strings.HasPrefix(strings.ToLower(path), "ppt/notes") {
+		return zip.Store
+	}
+	return zip.Deflate
 }

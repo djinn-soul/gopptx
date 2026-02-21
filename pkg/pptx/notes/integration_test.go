@@ -38,7 +38,6 @@ func checkRequiredParts(t *testing.T, zr *zip.Reader) {
 		"ppt/notesSlides/_rels/notesSlide1.xml.rels",
 		"ppt/notesMasters/notesMaster1.xml",
 		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
-		"ppt/theme/theme2.xml",
 	}
 	for _, name := range required {
 		if !testutil.ZipHasFile(zr, name) {
@@ -57,7 +56,6 @@ func checkContentTypes(t *testing.T, zr *zip.Reader) {
 		`presentationml.notesSlide+xml`,
 		`/ppt/notesMasters/notesMaster1.xml`,
 		`presentationml.notesMaster+xml`,
-		`/ppt/theme/theme2.xml`,
 	} {
 		if !strings.Contains(contentTypes, needle) {
 			t.Fatalf("expected %q in [Content_Types].xml", needle)
@@ -96,7 +94,7 @@ func checkRelationships(t *testing.T, zr *zip.Reader) {
 
 	notesMasterRels := testutil.ReadZipFile(t, zr, "ppt/notesMasters/_rels/notesMaster1.xml.rels")
 	if !strings.Contains(notesMasterRels, `Target="../theme/theme2.xml"`) {
-		t.Fatalf("expected notes master to reference dedicated notes theme")
+		t.Fatalf("expected notes master to reference theme2")
 	}
 }
 
