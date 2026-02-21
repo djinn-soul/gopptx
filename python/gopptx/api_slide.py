@@ -85,6 +85,13 @@ class Slide:
     def get_table(self, shape_id: int) -> TableInfo:
         return self._presentation.get_table(self.index, shape_id)
 
+    def table(self, shape_id: int) -> Table:
+        """
+        Returns a Table object for the given shape_id, providing a Pythonic grid API.
+        """
+        from .api_table import Table
+        return Table(self._presentation, self.index, shape_id)
+
     def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
         self._presentation.set_table_flags(self.index, shape_id, flags)
 
