@@ -2,6 +2,8 @@ package templates
 
 import (
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 func TestSimpleTemplate(t *testing.T) {
@@ -25,6 +27,9 @@ func TestSimpleTemplate(t *testing.T) {
 	if slides[1].Title != "Content" {
 		t.Errorf("expected second slide title 'Content', got %q", slides[1].Title)
 	}
+	if slides[0].Background == nil {
+		t.Fatalf("expected simple template cover slide to have background color")
+	}
 }
 
 func TestProposalTemplate(t *testing.T) {
@@ -32,8 +37,13 @@ func TestProposalTemplate(t *testing.T) {
 		Title:    "Big Project",
 		Context:  "The problem",
 		Solution: "The solution",
-		Pricing:  []string{"$100", "$200"},
-		Timeline: "Next month",
+		Pricing: []PricingTier{
+			{Name: "Basic", Price: "$100", Features: []string{"Feature 1"}},
+			{Name: "Pro", Price: "$200", Features: []string{"Feature 1", "Feature 2"}},
+		},
+		Timeline: []Milestone{
+			{Date: "2026-03-01", Task: "Phase 1", Status: "Planned"},
+		},
 	}
 
 	slides, err := tmpl.Build()
@@ -82,6 +92,9 @@ func TestStatusTemplate(t *testing.T) {
 	if len(slides) != 4 {
 		t.Errorf("expected 4 slides, got %d", len(slides))
 	}
+	if slides[0].Background == nil || slides[1].Background == nil {
+		t.Fatalf("expected status template slides to have color styling")
+	}
 }
 
 func TestTechnicalTemplate(t *testing.T) {
@@ -113,5 +126,93 @@ func TestTemplateValidation(t *testing.T) {
 	_, err = tmpl2.Build()
 	if err == nil {
 		t.Error("expected error for empty title in ProposalTemplate")
+	}
+}
+
+func TestBrandingPresets(t *testing.T) {
+	tests := []struct {
+		preset BrandingPreset
+		expect string
+	}{
+		{PresetCorporate, "Corporate"},
+		{PresetModern, "Modern"},
+		{PresetCreative, "Vibrant"},
+	}
+
+	for _, tt := range tests {
+		theme := MapPreset(tt.preset)
+		if theme.Name != tt.expect {
+			t.Errorf("expected preset %q to map to theme %q, got %q", tt.preset, tt.expect, theme.Name)
+		}
+	}
+}
+
+func TestPresetToThemeMapping(t *testing.T) {
+	tests := []struct {
+		name   string
+		preset BrandingPreset
+		expect string
+	}{
+		{name: "corporate", preset: PresetCorporate, expect: "Corporate"},
+		{name: "modern", preset: PresetModern, expect: "Modern"},
+		{name: "creative", preset: PresetCreative, expect: "Vibrant"},
+		{name: "default", preset: BrandingPreset("unknown"), expect: "Corporate"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			theme := presetToTheme(tt.preset)
+			if theme.Name != tt.expect {
+				t.Fatalf("expected %q, got %q", tt.expect, theme.Name)
+			}
+		})
+	}
+}
+
+func TestRenderPricingTableStructuredRows(t *testing.T) {
+	table := renderPricingTable([]PricingTier{
+		{Name: "Starter", Price: "$9", Features: []string{"A", "B"}},
+		{Name: "Pro", Price: "$19", Features: []string{"A", "B", "C"}},
+	})
+
+	if got, want := len(table.Rows), 3; got != want {
+		t.Fatalf("expected %d total rows (header + data), got %d", want, got)
+	}
+
+	if table.Rows[0][0] != "Tier" || table.Rows[0][1] != "Price" || table.Rows[0][2] != "Features" {
+		t.Fatalf("unexpected pricing header row: %#v", table.Rows[0])
+	}
+
+	if table.Rows[1][0] != "Starter" || table.Rows[1][1] != "$9" || table.Rows[1][2] != "A, B" {
+		t.Fatalf("unexpected first pricing data row: %#v", table.Rows[1])
+	}
+}
+
+func TestBrandingApplyAtAddsCoverAndBodyDynamics(t *testing.T) {
+	branding := BrandingSpec{Preset: PresetModern, Footer: "Footer"}
+	cover := branding.ApplyAt(elements.NewSlide("Cover"), 0)
+	body := branding.ApplyAt(elements.NewSlide("Body"), 1)
+
+	if cover.Background == nil || cover.Background.Type != elements.SlideBackgroundSolid {
+		t.Fatalf("expected cover slide to have solid background")
+	}
+	if cover.TitleColor == "" {
+		t.Fatalf("expected cover slide title color to be set")
+	}
+	if cover.TitleSize <= 44 {
+		t.Fatalf("expected larger cover title size, got %d", cover.TitleSize)
+	}
+	if cover.FooterText != "Footer" {
+		t.Fatalf("expected footer to be applied")
+	}
+
+	if body.Background == nil || body.Background.Type != elements.SlideBackgroundSolid {
+		t.Fatalf("expected body slide to have solid background")
+	}
+	if body.TitleColor == "" {
+		t.Fatalf("expected body title color to be set")
+	}
+	if body.ContentColor == "" {
+		t.Fatalf("expected body content color to be set")
 	}
 }

@@ -41,7 +41,17 @@ func (pw *PackageWriter) WriteTo(zw *zip.Writer) error {
 	// but [Content_Types].xml and _rels/.rels are usually first.
 	// For now, we just iterate the map.
 	for path, content := range pw.textParts {
-		w, createErr := zw.Create(path)
+		method := packageZipMethod(path)
+		var (
+			w         io.Writer
+			createErr error
+		)
+		if method == zip.Deflate {
+			w, createErr = zw.Create(path)
+		} else {
+			header := &zip.FileHeader{Name: path, Method: method}
+			w, createErr = zw.CreateHeader(header)
+		}
 		if createErr != nil {
 			return createErr
 		}
@@ -50,7 +60,7 @@ func (pw *PackageWriter) WriteTo(zw *zip.Writer) error {
 		}
 	}
 	for path, content := range pw.binaryParts {
-		method := binaryZipMethod(path)
+		method := packageZipMethod(path)
 		var (
 			w         io.Writer
 			createErr error
@@ -80,6 +90,13 @@ func WriteFile(w io.Writer, content string) error {
 }
 
 func binaryZipMethod(path string) uint16 {
+	return packageZipMethod(path)
+}
+
+func packageZipMethod(path string) uint16 {
+	if strings.HasPrefix(strings.ToLower(path), "ppt/notes") {
+		return zip.Store
+	}
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".mp3", ".m4a", ".wav", ".mp4", ".avi":
 		return zip.Store

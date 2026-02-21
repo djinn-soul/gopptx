@@ -225,15 +225,19 @@ func MapTextLevelStyles(levels []TextLevelStyle) []pptxxml.TextLevelStyle {
 	return out
 }
 
-func MapNotesMasterToSpec(master *NotesMaster) *pptxxml.NotesMasterSpec {
+func MapNotesMasterToSpec(master *NotesMaster, backgroundRID string) *pptxxml.NotesMasterSpec {
 	if master == nil {
 		return nil
 	}
-	return &pptxxml.NotesMasterSpec{
+	spec := &pptxxml.NotesMasterSpec{
 		HeaderText:   master.HeaderText,
 		FooterText:   master.FooterText,
 		ShowDateTime: master.ShowDateTime,
 		ShowSlideNum: master.ShowSlideNum,
 		NotesStyle:   MapTextLevelStyles(master.BodyStyle),
 	}
+	if master.Background != nil {
+		spec.Background = ToXMLBackgroundSpec(master.Background, backgroundRID)
+	}
+	return spec
 }

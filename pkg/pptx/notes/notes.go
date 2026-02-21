@@ -88,7 +88,7 @@ func TargetBySlide(parts []RenderedNotesPart) map[int]string {
 
 // WriteNotesFiles writes all notes-related XML files to the presentation package.
 func WriteNotesFiles(pw *pptxxml.PackageWriter, parts []RenderedNotesPart) error {
-	// Note: We use theme1.xml from the main presentation, so we don't need to write theme2.xml anymore.
+	// Notes slide/theme wiring is handled by presentation and editor packaging code.
 
 	for _, part := range parts {
 		path := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", part.SlideNumber)

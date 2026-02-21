@@ -165,6 +165,22 @@ func TestPartStoreHas(t *testing.T) {
 	}
 }
 
+func TestPartStoreMaterializePreservesKeysAndClosesFile(t *testing.T) {
+	zipPath := buildConcurrentPartStoreZip(t, 3)
+	ps := openConcurrentPartStore(t, zipPath)
+
+	if err := ps.Materialize(); err != nil {
+		t.Fatalf("materialize failed: %v", err)
+	}
+	if ps.file != nil {
+		t.Fatalf("expected backing file to be closed after materialize")
+	}
+	keys := ps.KeysWithPrefix("ppt/slides/")
+	if len(keys) == 0 {
+		t.Fatalf("expected materialized keys to remain visible")
+	}
+}
+
 func TestPartStoreCloseNilFile(t *testing.T) {
 	ps := newPartStoreFromMap(map[string][]byte{})
 	if err := ps.Close(); err != nil {

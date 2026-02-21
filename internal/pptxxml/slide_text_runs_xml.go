@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -60,7 +59,9 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	b.WriteString(runUnderlineValue(run.Underline, contentStyle.Underline))
 	b.WriteString(`"`)
 	if run.Strikethrough != "" && run.Strikethrough != valNone {
-		b.WriteString(fmt.Sprintf(` strike="%s"`, Escape(run.Strikethrough)))
+		b.WriteString(` strike="`)
+		b.WriteString(Escape(run.Strikethrough))
+		b.WriteString(`"`)
 	}
 	if run.Subscript {
 		b.WriteString(` baseline="-25000"`)

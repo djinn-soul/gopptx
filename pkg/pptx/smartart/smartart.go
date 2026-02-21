@@ -136,6 +136,10 @@ type SmartArt struct {
 	CY         styling.Length
 	ColorStyle string // optional csTypeId, e.g. "colorful1"
 	QuickStyle string // optional qsTypeId
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // NewSmartArt creates a SmartArt diagram with the given layout and default size.
@@ -147,6 +151,18 @@ func NewSmartArt(layout Layout) SmartArt {
 		CX:     defaultCX,
 		CY:     defaultCY,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (sa SmartArt) WithAltText(text string) SmartArt {
+	sa.AltText = text
+	return sa
+}
+
+// WithDecorative marks the SmartArt as decorative (ignored by screen readers).
+func (sa SmartArt) WithDecorative(enabled bool) SmartArt {
+	sa.IsDecorative = enabled
+	return sa
 }
 
 // AddNode appends a top-level node to the diagram.
@@ -204,6 +220,8 @@ func (sa SmartArt) ToSpec() pptxxml.SmartArtSpec {
 		Y:            int64(sa.Y),
 		CX:           int64(sa.CX),
 		CY:           int64(sa.CY),
+		AltText:      sa.AltText,
+		IsDecorative: sa.IsDecorative,
 	}
 }
 

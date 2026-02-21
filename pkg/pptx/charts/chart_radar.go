@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -38,6 +39,10 @@ type RadarChart struct {
 	MinValue              *float64
 	MaxValue              *float64
 	RadarStyle            string
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 func NewRadarChart(categories []string, values []float64) RadarChart {
@@ -61,6 +66,18 @@ func NewRadarChart(categories []string, values []float64) RadarChart {
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 		RadarStyle:            RadarStyleMarker,
 	}
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c RadarChart) WithAltText(text string) RadarChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c RadarChart) WithDecorative(enabled bool) RadarChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 func (c RadarChart) Position(x styling.Length, y styling.Length) RadarChart {
@@ -112,11 +129,16 @@ func (c RadarChart) ToChartSpec() *pptxxml.ChartSpec {
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
 		RadarStyle:            c.RadarStyle,
+		AltText:               c.AltText,
+		IsDecorative:          c.IsDecorative,
 	}
 }
 
 // Validate checks the radar chart for consistency.
 func (c RadarChart) Validate(slideIndex int) error {
+	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d radar chart alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
+	}
 	if err := validateChartCore(
 		slideIndex,
 		c.Title,
@@ -179,6 +201,18 @@ func (c RadarFilledChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec.Kind = pptxxml.ChartKindRadarFilled
 	spec.RadarStyle = RadarStyleFilled
 	return spec
+}
+
+// WithAltText sets the alternative text for accessibility.
+func (c RadarFilledChart) WithAltText(text string) RadarFilledChart {
+	c.AltText = text
+	return c
+}
+
+// WithDecorative marks the chart as decorative (ignored by screen readers).
+func (c RadarFilledChart) WithDecorative(enabled bool) RadarFilledChart {
+	c.IsDecorative = enabled
+	return c
 }
 
 // Validate checks the radar chart for consistency.

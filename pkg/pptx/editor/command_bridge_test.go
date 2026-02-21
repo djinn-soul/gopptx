@@ -3,6 +3,7 @@ package editor
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -131,5 +132,72 @@ func TestCommandUpdateSlidePreservesTitleWhenOmitted(t *testing.T) {
 	}
 	if slides[0].Title != "Keep Title" {
 		t.Fatalf("expected title to be preserved, got %q", slides[0].Title)
+	}
+}
+
+func TestCommandUpdateSlidePreservesTransitionWhenOmitted(t *testing.T) {
+	basePath := filepath.Join(t.TempDir(), "bridge-update-slide-transition-preserve.pptx")
+	if err := writeZipFixture(basePath, map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>` +
+			`<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>` +
+			`</Relationships>`,
+		"ppt/presentation.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+			`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+			`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+			`<p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>` +
+			`</Relationships>`,
+		"ppt/slides/slide1.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
+			`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
+			`xmlns:p15="http://schemas.microsoft.com/office/powerpoint/2015/09/main" ` +
+			`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+			`<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/>` +
+			`<p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+			`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/>` +
+			`<p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/>` +
+			`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Keep Transition</a:t></a:r></a:p></p:txBody>` +
+			`</p:sp></p:spTree></p:cSld>` +
+			`<p:transition><p:extLst><p:ext uri="{AE3914FA-7E93-4B9E-9A96-D1E12CAF14E6}">` +
+			`<p15:morph option="obj"/></p:ext></p:extLst></p:transition>` +
+			`</p:sld>`,
+		"ppt/slides/_rels/slide1.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`,
+	}); err != nil {
+		t.Fatalf("write fixture deck: %v", err)
+	}
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	updateReq := `{"api_version":1,"request_id":"u2","op":"update_slide","payload":{"slide_index":0,"bullets":["after"]}}`
+	resp := ExecuteCommand(e, updateReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("update_slide failed: %s", resp)
+	}
+
+	partName := e.Slides()[0].PartName
+	slideXML, ok := e.parts.Get(partName)
+	if !ok {
+		t.Fatalf("missing slide part %q", partName)
+	}
+	if !strings.Contains(string(slideXML), `<p:ext uri="{AE3914FA-7E93-4B9E-9A96-D1E12CAF14E6}">`) {
+		t.Fatalf("expected preserved morph transition ext URI in updated slide XML")
+	}
+	if !strings.Contains(string(slideXML), `<p15:morph`) {
+		t.Fatalf("expected preserved morph transition node in updated slide XML")
 	}
 }

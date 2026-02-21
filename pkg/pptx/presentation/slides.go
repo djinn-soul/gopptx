@@ -256,6 +256,9 @@ func (b *slidePartBuilder) mapPlaceholders(
 	tableSpecs := make(map[int]*pptxxml.TableSpec)
 
 	for _, override := range overrides {
+		if err := validateCreatePlaceholderTarget(override); err != nil {
+			return err
+		}
 		if override.Image != nil {
 			if mediaName, ok := b.catalog.MediaNameForImage(*override.Image); ok {
 				rid := b.nextRID()
@@ -286,7 +289,73 @@ func (b *slidePartBuilder) mapPlaceholders(
 			Text:  override.Text,
 			Image: imageRefs[override.Index],
 			Table: tableSpecs[override.Index],
+
+			// Extension: Overrides
+			X:         mapOptionalLength(override.Override),
+			Y:         mapOptionalLengthY(override.Override),
+			CX:        mapOptionalLengthCX(override.Override),
+			CY:        mapOptionalLengthCY(override.Override),
+			TextStyle: mapPlaceholderTextStyle(override.Override),
 		})
+	}
+	return nil
+}
+
+func mapOptionalLength(o *shapes.PlaceholderOverrideOptions) *int64 {
+	if o == nil || o.X == nil {
+		return nil
+	}
+	val := o.X.Emu()
+	return &val
+}
+
+func mapOptionalLengthY(o *shapes.PlaceholderOverrideOptions) *int64 {
+	if o == nil || o.Y == nil {
+		return nil
+	}
+	val := o.Y.Emu()
+	return &val
+}
+
+func mapOptionalLengthCX(o *shapes.PlaceholderOverrideOptions) *int64 {
+	if o == nil || o.CX == nil {
+		return nil
+	}
+	val := o.CX.Emu()
+	return &val
+}
+
+func mapOptionalLengthCY(o *shapes.PlaceholderOverrideOptions) *int64 {
+	if o == nil || o.CY == nil {
+		return nil
+	}
+	val := o.CY.Emu()
+	return &val
+}
+
+func mapPlaceholderTextStyle(o *shapes.PlaceholderOverrideOptions) *pptxxml.PlaceholderTextStyleSpec {
+	if o == nil || o.TextStyle == nil {
+		return nil
+	}
+	ts := o.TextStyle
+	return &pptxxml.PlaceholderTextStyleSpec{
+		SizePt:    ts.SizePt,
+		Color:     ts.Color,
+		Bold:      ts.Bold,
+		Italic:    ts.Italic,
+		Underline: ts.Underline,
+		Align:     ts.Align,
+		Font:      ts.Font,
+	}
+}
+
+func validateCreatePlaceholderTarget(override shapes.PlaceholderContent) error {
+	if override.Target == nil {
+		return nil
+	}
+	target := override.Target
+	if strings.TrimSpace(target.Name) != "" && strings.TrimSpace(target.Type) == "" {
+		return fmt.Errorf("placeholder name-only target %q is unsupported in create path; use type+index", target.Name)
 	}
 	return nil
 }
@@ -298,11 +367,13 @@ func (b *slidePartBuilder) mapCharts(p *slideParts, parts []ChartPart, slide ele
 		partIdx++
 		rid := b.nextRID()
 		p.chartFrame = &pptxxml.ChartFrame{
-			RelID: rid,
-			X:     part.spec.X,
-			Y:     part.spec.Y,
-			CX:    part.spec.CX,
-			CY:    part.spec.CY,
+			RelID:        rid,
+			X:            part.spec.X,
+			Y:            part.spec.Y,
+			CX:           part.spec.CX,
+			CY:           part.spec.CY,
+			AltText:      part.spec.AltText,
+			IsDecorative: part.spec.IsDecorative,
 		}
 		p.chartRel = &pptxxml.ChartRel{
 			RID:    rid,
@@ -319,11 +390,13 @@ func (b *slidePartBuilder) mapCharts(p *slideParts, parts []ChartPart, slide ele
 			partIdx++
 			rid := b.nextRID()
 			frame := &pptxxml.ChartFrame{
-				RelID: rid,
-				X:     part.spec.X,
-				Y:     part.spec.Y,
-				CX:    part.spec.CX,
-				CY:    part.spec.CY,
+				RelID:        rid,
+				X:            part.spec.X,
+				Y:            part.spec.Y,
+				CX:           part.spec.CX,
+				CY:           part.spec.CY,
+				AltText:      part.spec.AltText,
+				IsDecorative: part.spec.IsDecorative,
 			}
 			p.placeholders[i].Chart = frame
 			p.placeholderChartRels = append(p.placeholderChartRels, pptxxml.ChartRel{
@@ -360,14 +433,16 @@ func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) erro
 
 		// Create frame
 		p.smartArtFrames = append(p.smartArtFrames, pptxxml.SmartArtFrame{
-			X:           part.spec.X,
-			Y:           part.spec.Y,
-			CX:          part.spec.CX,
-			CY:          part.spec.CY,
-			DataRelID:   dataRID,
-			LayoutRelID: layoutRID,
-			ColorRelID:  colorsRID,
-			StyleRelID:  styleRID,
+			X:            part.spec.X,
+			Y:            part.spec.Y,
+			CX:           part.spec.CX,
+			CY:           part.spec.CY,
+			DataRelID:    dataRID,
+			LayoutRelID:  layoutRID,
+			ColorRelID:   colorsRID,
+			StyleRelID:   styleRID,
+			AltText:      part.spec.AltText,
+			IsDecorative: part.spec.IsDecorative,
 		})
 	}
 	return nil

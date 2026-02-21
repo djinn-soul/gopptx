@@ -29,6 +29,8 @@ const (
 	RelTypeHyperlink   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 	RelTypeImage       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 	RelTypeChart       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
+	RelTypeAudio       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"
+	RelTypeVideo       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video"
 	RelTypeTheme       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
 	RelTypeSectionList = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
 	RelTypePackage     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
@@ -190,6 +192,11 @@ type SlideLayoutInfo struct {
 	Part       string
 	Name       string
 	MasterPart string
+}
+
+// SlideMasterInfo describes one available slide master part.
+type SlideMasterInfo struct {
+	Part string
 }
 
 // SlideMasterCloneResult summarizes an in-package layout/master clone operation.

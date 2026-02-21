@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -16,6 +15,10 @@ type TableSpec struct {
 	RowHeights   []int64
 	Rows         [][]string
 	StyledRows   [][]TableCellSpec
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // TableCellSpec describes one table cell with optional style.
@@ -23,6 +26,7 @@ type TableCellSpec struct {
 	Text            string
 	Bold            bool
 	BackgroundColor string
+	Color           string
 	Align           string
 	VAlign          string
 	MarginLeft      *int64
@@ -57,26 +61,27 @@ type tableCellBorderSet struct {
 }
 
 func tableShape(table *TableSpec, shapeID int) string {
-	return fmt.Sprintf(`
+	return `
 <p:graphicFrame>
 <p:nvGraphicFramePr>
-<p:cNvPr id="%d" name="Table 1"/>
+<p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Table 1"` + makeCNvPrAttrs(table.AltText, table.IsDecorative) + `/>
 <p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>
 <p:nvPr/>
 </p:nvGraphicFramePr>
 <p:xfrm>
-<a:off x="%d" y="%d"/>
-<a:ext cx="%d" cy="%d"/>
+<a:off x="` + strconv.FormatInt(table.X, 10) + `" y="` + strconv.FormatInt(table.Y, 10) + `"/>
+<a:ext cx="` + strconv.FormatInt(table.CX, 10) + `" cy="` + strconv.FormatInt(table.CY, 10) + `"/>
 </p:xfrm>
-%s
-</p:graphicFrame>`,
-		shapeID,
-		table.X,
-		table.Y,
-		table.CX,
-		table.CY,
-		tableGraphicXML(table),
-	)
+` + tableGraphicXML(table) + `
+</p:graphicFrame>`
+}
+
+func makeCNvPrAttrs(altText string, isDecorative bool) string {
+	if isDecorative || altText == "" {
+		return ` descr=""`
+	}
+	escaped := Escape(altText)
+	return ` descr="` + escaped + `" title="` + escaped + `"`
 }
 
 func tableGraphicXML(table *TableSpec) string {
@@ -92,8 +97,10 @@ func tableGraphicXML(table *TableSpec) string {
 <a:tblGrid>`)
 
 	for _, width := range columnWidths {
-		b.WriteString(fmt.Sprintf(`
-<a:gridCol w="%d"/>`, width))
+		b.WriteString(`
+<a:gridCol w="`)
+		b.WriteString(strconv.FormatInt(width, 10))
+		b.WriteString(`"/>`)
 	}
 
 	b.WriteString(`
@@ -102,24 +109,38 @@ func tableGraphicXML(table *TableSpec) string {
 	rows := tableStyledRows(table)
 	rowHeights := tableRowHeightsForRender(table, len(rows))
 	for rowIndex, row := range rows {
-		b.WriteString(fmt.Sprintf(`
-<a:tr h="%d">`, rowHeights[rowIndex]))
+		b.WriteString(`
+<a:tr h="`)
+		b.WriteString(strconv.FormatInt(rowHeights[rowIndex], 10))
+		b.WriteString(`">`)
 		for _, cell := range row {
-			b.WriteString(fmt.Sprintf(`
-%s
+			b.WriteString(`
+`)
+			b.WriteString(tableCellOpenTag(cell))
+			b.WriteString(`
 <a:txBody>
-%s
+`)
+			b.WriteString(tableCellBodyPrXML(cell))
+			b.WriteString(`
 <a:lstStyle/>
 <a:p>
-%s
+`)
+			b.WriteString(tableCellParagraphPropsXML(cell.Align))
+			b.WriteString(`
 <a:r>
-<a:rPr lang="en-US" dirty="0"%s/>
-<a:t>%s</a:t>
+`)
+			b.WriteString(tableCellRunPropsXML(cell))
+			b.WriteString(`
+<a:t>`)
+			b.WriteString(Escape(cell.Text))
+			b.WriteString(`</a:t>
 </a:r>
 </a:p>
 </a:txBody>
-%s
-</a:tc>`, tableCellOpenTag(cell), tableCellBodyPrXML(cell), tableCellParagraphPropsXML(cell.Align), tableCellBoldAttr(cell.Bold), Escape(cell.Text), tableCellPropsXML(cell)))
+`)
+			b.WriteString(tableCellPropsXML(cell))
+			b.WriteString(`
+</a:tc>`)
 		}
 		b.WriteString(`
 </a:tr>`)
@@ -189,6 +210,22 @@ func tableStyledRows(table *TableSpec) [][]TableCellSpec {
 		rows[i] = cells
 	}
 	return rows
+}
+
+func tableCellRunPropsXML(cell TableCellSpec) string {
+	var b strings.Builder
+	b.WriteString(`<a:rPr lang="en-US" dirty="0"`)
+	if cell.Bold {
+		b.WriteString(` b="1"`)
+	}
+	b.WriteString(`>`)
+	if strings.TrimSpace(cell.Color) != "" {
+		b.WriteString(`<a:solidFill><a:srgbClr val="`)
+		b.WriteString(Escape(cell.Color))
+		b.WriteString(`"/></a:solidFill>`)
+	}
+	b.WriteString(`</a:rPr>`)
+	return b.String()
 }
 
 func tableCellBoldAttr(bold bool) string {

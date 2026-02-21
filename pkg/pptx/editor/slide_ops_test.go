@@ -257,6 +257,65 @@ func TestSetSlideTitle_TargetsTitlePlaceholder(t *testing.T) {
 	}
 }
 
+func TestSetSlideTitle_ReplacesAllTitleRuns(t *testing.T) {
+	path := writeDeckFixture(t, "set_title_multirun.pptx", []elements.SlideContent{
+		elements.NewSlide("Main Title"),
+	})
+
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	part := editor.Slides()[0].PartName
+	editor.parts.Set(part, []byte(slideWithBodyAndMultiRunTitlePlaceholderXML("Body Text", "Main ", "Title")))
+
+	if setErr := editor.SetSlideTitle(0, "Renamed Title"); setErr != nil {
+		t.Fatalf("set slide title: %v", setErr)
+	}
+
+	xmlData, _ := editor.parts.Get(part)
+	xmlStr := string(xmlData)
+	if !strings.Contains(xmlStr, "<a:t>Renamed Title</a:t>") {
+		t.Fatalf("expected updated title text in slide XML")
+	}
+	if strings.Contains(xmlStr, "<a:t>Main </a:t>") || strings.Contains(xmlStr, "<a:t>Title</a:t>") {
+		t.Fatalf("expected previous multi-run title text to be fully replaced")
+	}
+	if !strings.Contains(xmlStr, "Body Text") {
+		t.Fatalf("expected non-title text to remain unchanged")
+	}
+}
+
+func TestSetSlideTitle_TargetsSingleQuotedPlaceholderType(t *testing.T) {
+	path := writeDeckFixture(t, "set_title_single_quote_placeholder.pptx", []elements.SlideContent{
+		elements.NewSlide("Main Title"),
+	})
+
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	part := editor.Slides()[0].PartName
+	editor.parts.Set(part, []byte(slideWithBodyAndSingleQuotedTitlePlaceholderXML("Body Text", "Main Title")))
+
+	if setErr := editor.SetSlideTitle(0, "Renamed Title"); setErr != nil {
+		t.Fatalf("set slide title: %v", setErr)
+	}
+
+	xmlData, _ := editor.parts.Get(part)
+	xmlStr := string(xmlData)
+	if !strings.Contains(xmlStr, "Renamed Title") {
+		t.Fatalf("expected updated title text in slide XML")
+	}
+	if !strings.Contains(xmlStr, "Body Text") {
+		t.Fatalf("expected non-title text to remain unchanged")
+	}
+}
+
 func slideWithBodyAndTitlePlaceholderXML(bodyText, titleText string) string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
 		`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
@@ -278,5 +337,17 @@ func slideWithBodyAndMultiRunTitlePlaceholderXML(bodyText, titlePrefix, titleSuf
 		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + bodyText + `</a:t></a:r></a:p></p:txBody></p:sp>` +
 		`<p:sp><p:nvSpPr><p:cNvPr id="3" name="Title 1"/><p:cNvSpPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/>` +
 		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + titlePrefix + `</a:t></a:r><a:r><a:t>` + titleSuffix + `</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`</p:spTree></p:cSld></p:sld>`
+}
+
+func slideWithBodyAndSingleQuotedTitlePlaceholderXML(bodyText, titleText string) string {
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + bodyText + `</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="3" name="Title 1"/><p:cNvSpPr/><p:nvPr><p:ph type='title'/></p:nvPr></p:nvSpPr><p:spPr/>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>` + titleText + `</a:t></a:r></a:p></p:txBody></p:sp>` +
 		`</p:spTree></p:cSld></p:sld>`
 }

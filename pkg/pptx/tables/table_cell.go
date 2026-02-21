@@ -12,6 +12,7 @@ type TableCell struct {
 	Text            string
 	Bold            bool
 	BackgroundColor string
+	Color           string // Text color
 	Align           string
 	VAlign          string
 	MarginLeftPt    *float64

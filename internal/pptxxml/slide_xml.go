@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,6 +27,21 @@ type PlaceholderOverrideSpec struct {
 	Image *ImageRef
 	Table *TableSpec
 	Chart *ChartFrame
+
+	// Extension: Layout/Style Overrides
+	X, Y, CX, CY *int64
+	TextStyle    *PlaceholderTextStyleSpec
+}
+
+// PlaceholderTextStyleSpec describes text formatting overrides for a placeholder.
+type PlaceholderTextStyleSpec struct {
+	SizePt    *int
+	Color     *string
+	Bold      *bool
+	Italic    *bool
+	Underline *string
+	Align     *string
+	Font      *string
 }
 
 const slideHeaderStart = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -56,10 +70,10 @@ func backgroundXML(bg *SlideBackgroundSpec) string {
 	switch bg.Type {
 	case "solid":
 		if bg.SolidFill != nil {
-			xml += fmt.Sprintf(`
+			xml += `
 <a:solidFill>
-<a:srgbClr val="%s"/>
-</a:solidFill>`, strings.TrimPrefix(bg.SolidFill.Color, "#"))
+<a:srgbClr val="` + strings.TrimPrefix(bg.SolidFill.Color, "#") + `"/>
+</a:solidFill>`
 		}
 	case "gradient":
 		if bg.GradientFill != nil {
@@ -67,13 +81,13 @@ func backgroundXML(bg *SlideBackgroundSpec) string {
 		}
 	case "picture":
 		if bg.PictureFill != nil {
-			xml += fmt.Sprintf(`
+			xml += `
 <a:blipFill>
-<a:blip r:embed="%s"/>
+<a:blip r:embed="` + FastEscapeRID(bg.PictureFill.RelID) + `"/>
 <a:stretch>
 <a:fillRect/>
 </a:stretch>
-</a:blipFill>`, Escape(bg.PictureFill.RelID))
+</a:blipFill>`
 		}
 	}
 
@@ -85,7 +99,9 @@ func backgroundXML(bg *SlideBackgroundSpec) string {
 }
 
 func slideHeaderEndBodyXML(width, height int64) string {
-	return fmt.Sprintf(`
+	wStr := strconv.FormatInt(width, 10)
+	hStr := strconv.FormatInt(height, 10)
+	return `
 <p:spTree>
 <p:nvGrpSpPr>
 <p:cNvPr id="1" name=""/>
@@ -95,11 +111,11 @@ func slideHeaderEndBodyXML(width, height int64) string {
 <p:grpSpPr>
 <a:xfrm>
 <a:off x="0" y="0"/>
-<a:ext cx="%d" cy="%d"/>
+<a:ext cx="` + wStr + `" cy="` + hStr + `"/>
 <a:chOff x="0" y="0"/>
-<a:chExt cx="%d" cy="%d"/>
+<a:chExt cx="` + wStr + `" cy="` + hStr + `"/>
 </a:xfrm>
-</p:grpSpPr>`, width, height, width, height)
+</p:grpSpPr>`
 }
 
 const slideContentFooter = `
@@ -459,41 +475,48 @@ func SlideRelationshipsWithMultiCharts(
 	for i, target := range imageTargets {
 		rid := i + startImageRID
 		relType := slideMediaRelationshipType(target)
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="%s" `+
-			`Target="%s"/>`, rid, relType, Escape(target)))
+		b.WriteString("\n<Relationship Id=\"rId")
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString("\" Type=\"")
+		b.WriteString(relType)
+		b.WriteString("\" Target=\"")
+		b.WriteString(Escape(target))
+		b.WriteString("\"/>")
 		if rid > maxRID {
 			maxRID = rid
 		}
 	}
 	if chartRel != nil {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" `+
-			`Target="%s"/>`,
-			Escape(chartRel.RID),
-			Escape(chartRel.Target),
-		))
+		b.WriteString("\n<Relationship Id=\"")
+		b.WriteString(FastEscapeRID(chartRel.RID))
+		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
+		b.WriteString(Escape(chartRel.Target))
+		b.WriteString("\"/>")
+
 		if rid := ridNumber(chartRel.RID); rid > maxRID {
 			maxRID = rid
 		}
 	}
 	for _, phChart := range placeholderCharts {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="%s"/>`,
-			Escape(phChart.RID),
-			Escape(phChart.Target),
-		))
+		b.WriteString("\n<Relationship Id=\"")
+		b.WriteString(FastEscapeRID(phChart.RID))
+		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
+		b.WriteString(Escape(phChart.Target))
+		b.WriteString("\"/>")
+
 		if rid := ridNumber(phChart.RID); rid > maxRID {
 			maxRID = rid
 		}
 	}
 	for _, saRel := range smartArtRels {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="%s" Type="%s" Target="%s"/>`,
-			Escape(saRel.RID),
-			Escape(saRel.Type),
-			Escape(saRel.Target),
-		))
+		b.WriteString(`
+<Relationship Id="`)
+		b.WriteString(FastEscapeRID(saRel.RID))
+		b.WriteString(`" Type="`)
+		b.WriteString(Escape(saRel.Type))
+		b.WriteString(`" Target="`)
+		b.WriteString(Escape(saRel.Target))
+		b.WriteString(`"/>`)
 		if rid := ridNumber(saRel.RID); rid > maxRID {
 			maxRID = rid
 		}
@@ -505,12 +528,12 @@ func SlideRelationshipsWithMultiCharts(
 		}
 	}
 	if strings.TrimSpace(notesTarget) != "" {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" `+
-			`Target="%s"/>`,
-			maxRID+1,
-			Escape(notesTarget),
-		))
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(maxRID + 1))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="`)
+		b.WriteString(Escape(notesTarget))
+		b.WriteString(`"/>`)
 	}
 	b.WriteString(`
 </Relationships>`)

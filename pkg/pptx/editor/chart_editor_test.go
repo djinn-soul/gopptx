@@ -197,7 +197,7 @@ func TestReplaceChartData(t *testing.T) {
 	// Mock Slide Rels
 	editor.parts.Set("ppt/slides/_rels/slide1.xml.rels", []byte(`
 		<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-			<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" 
+			<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 				Target="../charts/chart1.xml"/>
 		</Relationships>
 	`))

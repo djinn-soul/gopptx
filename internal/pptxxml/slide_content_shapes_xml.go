@@ -1,7 +1,7 @@
 package pptxxml
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -53,20 +53,18 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 
 	colorXML := ""
 	if title.Color != "" {
-		colorXML = fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, Escape(title.Color))
+		colorXML = `<a:solidFill><a:srgbClr val="` + Escape(title.Color) + `"/></a:solidFill>`
 	}
 
 	fontXML := ""
 	if title.Font != "" {
-		fontXML = fmt.Sprintf(
-			`<a:latin typeface="%s"/><a:ea typeface="%s"/><a:cs typeface="%s"/>`,
-			Escape(title.Font),
-			Escape(title.Font),
-			Escape(title.Font),
-		)
+		escFont := Escape(title.Font)
+		fontXML = `<a:latin typeface="` + escFont + `"/><a:ea typeface="` + escFont + `"/><a:cs typeface="` + escFont + `"/>`
 	}
 
-	return fmt.Sprintf(`
+	var b strings.Builder
+	b.Grow(1024)
+	b.WriteString(`
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="2" name="Title"/>
@@ -75,8 +73,16 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 </p:nvSpPr>
 <p:spPr>
 <a:xfrm>
-<a:off x="%d" y="%d"/>
-<a:ext cx="%d" cy="%d"/>
+<a:off x="`)
+	b.WriteString(strconv.FormatInt(x, 10))
+	b.WriteString(`" y="`)
+	b.WriteString(strconv.FormatInt(y, 10))
+	b.WriteString(`"/>
+<a:ext cx="`)
+	b.WriteString(strconv.FormatInt(cx, 10))
+	b.WriteString(`" cy="`)
+	b.WriteString(strconv.FormatInt(cy, 10))
+	b.WriteString(`"/>
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
 <a:noFill/>
@@ -85,14 +91,30 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
 <a:lstStyle/>
 <a:p>
-      <a:pPr algn="%s"/>
+      <a:pPr algn="`)
+	b.WriteString(Escape(align))
+	b.WriteString(`"/>
       <a:r>
-        <a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s%s</a:rPr>
-        <a:t>%s</a:t>
+        <a:rPr lang="en-US" sz="`)
+	b.WriteString(strconv.Itoa(sz))
+	b.WriteString(`" b="`)
+	b.WriteString(boolToFlag(title.Bold))
+	b.WriteString(`" i="`)
+	b.WriteString(boolToFlag(title.Italic))
+	b.WriteString(`" u="`)
+	b.WriteString(runUnderlineValue("", title.Underline))
+	b.WriteString(`" dirty="0">`)
+	b.WriteString(colorXML)
+	b.WriteString(fontXML)
+	b.WriteString(`</a:rPr>
+        <a:t>`)
+	b.WriteString(escaped)
+	b.WriteString(`</a:t>
       </a:r>
     </a:p>
   </p:txBody>
-</p:sp>`, x, y, cx, cy, Escape(align), sz, boolToFlag(title.Bold), boolToFlag(title.Italic), runUnderlineValue("", title.Underline), colorXML, fontXML, escaped)
+</p:sp>`)
+	return b.String()
 }
 
 func contentShape(
@@ -210,29 +232,44 @@ func contentShapeAt(
 	style ContentStyleSpec,
 ) string {
 	var b strings.Builder
+	b.Grow(2048)
 	vAlign := style.VAlign
 	if vAlign == "" {
 		vAlign = "t"
 	}
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <p:sp>
 <p:nvSpPr>
-<p:cNvPr id="%d" name="%s"/>
+<p:cNvPr id="`)
+	b.WriteString(strconv.Itoa(shapeID))
+	b.WriteString(`" name="`)
+	b.WriteString(Escape(shapeName))
+	b.WriteString(`"/>
 <p:cNvSpPr txBox="1"/>
 <p:nvPr/>
 </p:nvSpPr>
 <p:spPr>
 <a:xfrm>
-<a:off x="%d" y="%d"/>
-<a:ext cx="%d" cy="%d"/>
+<a:off x="`)
+	b.WriteString(strconv.FormatInt(x, 10))
+	b.WriteString(`" y="`)
+	b.WriteString(strconv.FormatInt(y, 10))
+	b.WriteString(`"/>
+<a:ext cx="`)
+	b.WriteString(strconv.FormatInt(cx, 10))
+	b.WriteString(`" cy="`)
+	b.WriteString(strconv.FormatInt(cy, 10))
+	b.WriteString(`"/>
 </a:xfrm>
 <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
 <a:noFill/>
 </p:spPr>
 <p:txBody>
-<a:bodyPr wrap="square" rtlCol="0" anchor="%s"/>
-<a:lstStyle/>`, shapeID, Escape(shapeName), x, y, cx, cy, Escape(vAlign)))
+<a:bodyPr wrap="square" rtlCol="0" anchor="`)
+	b.WriteString(Escape(vAlign))
+	b.WriteString(`"/>
+<a:lstStyle/>`)
 
 	for i, bullet := range bullets {
 		pStyle := bulletStyleAt(bulletStyles, i)
@@ -296,17 +333,17 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 
 	colorXML := ""
 	if style.Color != "" {
-		colorXML = fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, Escape(style.Color))
+		colorXML = `<a:solidFill><a:srgbClr val="` + Escape(style.Color) + `"/></a:solidFill>`
 	}
 
-	return fmt.Sprintf(`
+	return `
 <a:p>
-%s
+` + bulletParagraphPropsXML(pStyle) + `
 <a:r>
-<a:rPr lang="en-US" sz="%d" b="%s" i="%s" u="%s" dirty="0">%s</a:rPr>
-<a:t>%s</a:t>
+<a:rPr lang="en-US" sz="` + strconv.Itoa(sz) + `" b="` + boolToFlag(style.Bold) + `" i="` + boolToFlag(style.Italic) + `" u="` + runUnderlineValue("", style.Underline) + `" dirty="0">` + colorXML + `</a:rPr>
+<a:t>` + escaped + `</a:t>
 </a:r>
-</a:p>`, bulletParagraphPropsXML(pStyle), sz, boolToFlag(style.Bold), boolToFlag(style.Italic), runUnderlineValue("", style.Underline), colorXML, escaped)
+</a:p>`
 }
 
 //nolint:mnd // Layout constants from OOXML spec
@@ -317,10 +354,10 @@ func slideNumberShape(width, height int64, shapeID int) string {
 	x := width - cx - int64(457200)  // margin
 	y := height - cy - int64(274320) // lower margin
 
-	return fmt.Sprintf(`
+	return `
 <p:sp>
   <p:nvSpPr>
-    <p:cNvPr id="%d" name="Slide Number Placeholder"/>
+    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Slide Number Placeholder"/>
     <p:cNvSpPr>
       <a:spLocks noGrp="1"/>
     </p:cNvSpPr>
@@ -330,8 +367,8 @@ func slideNumberShape(width, height int64, shapeID int) string {
   </p:nvSpPr>
   <p:spPr>
     <a:xfrm>
-      <a:off x="%d" y="%d"/>
-      <a:ext cx="%d" cy="%d"/>
+      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
+      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
     <a:noFill/>
@@ -348,7 +385,7 @@ func slideNumberShape(width, height int64, shapeID int) string {
       <a:endParaRPr lang="en-US" smtClean="0"/>
     </a:p>
   </p:txBody>
-</p:sp>`, shapeID, x, y, cx, cy)
+</p:sp>`
 }
 
 //nolint:mnd // Layout constants from OOXML spec
@@ -358,10 +395,10 @@ func footerShape(text string, width, height int64, shapeID int) string {
 	x := (width - cx) / 2
 	y := height - cy - int64(274320)
 
-	return fmt.Sprintf(`
+	return `
 <p:sp>
   <p:nvSpPr>
-    <p:cNvPr id="%d" name="Footer Placeholder"/>
+    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Footer Placeholder"/>
     <p:cNvSpPr>
       <a:spLocks noGrp="1"/>
     </p:cNvSpPr>
@@ -371,8 +408,8 @@ func footerShape(text string, width, height int64, shapeID int) string {
   </p:nvSpPr>
   <p:spPr>
     <a:xfrm>
-      <a:off x="%d" y="%d"/>
-      <a:ext cx="%d" cy="%d"/>
+      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
+      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
     <a:noFill/>
@@ -384,11 +421,11 @@ func footerShape(text string, width, height int64, shapeID int) string {
       <a:pPr algn="ctr"/>
       <a:r>
         <a:rPr lang="en-US" sz="1200" dirty="0"/>
-        <a:t>%s</a:t>
+        <a:t>` + Escape(text) + `</a:t>
       </a:r>
     </a:p>
   </p:txBody>
-</p:sp>`, shapeID, x, y, cx, cy, Escape(text))
+</p:sp>`
 }
 
 //nolint:mnd // Layout constants from OOXML spec
@@ -398,10 +435,10 @@ func dateTimeShape(_ int64, height int64, shapeID int) string {
 	x := int64(457200)
 	y := height - cy - int64(274320)
 
-	return fmt.Sprintf(`
+	return `
 <p:sp>
   <p:nvSpPr>
-    <p:cNvPr id="%d" name="Date Placeholder"/>
+    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Date Placeholder"/>
     <p:cNvSpPr>
       <a:spLocks noGrp="1"/>
     </p:cNvSpPr>
@@ -411,8 +448,8 @@ func dateTimeShape(_ int64, height int64, shapeID int) string {
   </p:nvSpPr>
   <p:spPr>
     <a:xfrm>
-      <a:off x="%d" y="%d"/>
-      <a:ext cx="%d" cy="%d"/>
+      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
+      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
     <a:noFill/>
@@ -424,10 +461,10 @@ func dateTimeShape(_ int64, height int64, shapeID int) string {
       <a:pPr algn="l"/>
       <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
         <a:rPr lang="en-US" dirty="0"/>
-        <a:t>`+time.Now().Format("2006-01-02")+`</a:t>
+        <a:t>` + time.Now().Format("2006-01-02") + `</a:t>
       </a:fld>
       <a:endParaRPr lang="en-US" dirty="0"/>
     </a:p>
   </p:txBody>
-</p:sp>`, shapeID, x, y, cx, cy)
+</p:sp>`
 }

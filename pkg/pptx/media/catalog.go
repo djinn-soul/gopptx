@@ -35,7 +35,7 @@ const defaultImageExt = "png"
 const imageFetchTimeout = 30 * time.Second
 
 // BuildMediaCatalog constructs a catalog from multiple slides.
-func BuildMediaCatalog(slides []elements.SlideContent) (*Catalog, error) {
+func BuildMediaCatalog(slides []elements.SlideContent, notesMaster *elements.NotesMaster) (*Catalog, error) {
 	catalog := &Catalog{
 		byKey:   make(map[string]Asset),
 		ordered: make([]Asset, 0),
@@ -50,7 +50,25 @@ func BuildMediaCatalog(slides []elements.SlideContent) (*Catalog, error) {
 		}
 	}
 
+	if notesMaster != nil {
+		if err := addNotesMasterMedia(catalog, client, notesMaster); err != nil {
+			return nil, err
+		}
+	}
+
 	return catalog, nil
+}
+
+func addNotesMasterMedia(catalog *Catalog, client *http.Client, master *elements.NotesMaster) error {
+	if master.Background == nil ||
+		master.Background.Type != elements.SlideBackgroundPicture ||
+		master.Background.PictureFill == nil {
+		return nil
+	}
+	if err := addImageToCatalog(catalog, client, *master.Background.PictureFill); err != nil {
+		return fmt.Errorf("notes master background image: %w", err)
+	}
+	return nil
 }
 
 func addSlideMedia(catalog *Catalog, client *http.Client, slide elements.SlideContent, slideIndex int) error {

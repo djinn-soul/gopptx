@@ -5,6 +5,8 @@ import (
 	"math"
 	"regexp"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
 var hexColorPattern = regexp.MustCompile(`^[0-9A-F]{6}$`)
@@ -26,6 +28,9 @@ func validateTable(table Table, slideIndex int) error {
 	}
 	if err := validateTableColumns(table, slideIndex); err != nil {
 		return err
+	}
+	if !table.IsDecorative && len(table.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("slide %d table alt text exceeds %d characters", slideIndex, common.MaxAltTextLength)
 	}
 
 	rows := tableRowsForRender(table)

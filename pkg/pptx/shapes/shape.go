@@ -3,6 +3,7 @@ package shapes
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
@@ -234,6 +235,12 @@ func (f ShapeGradientFill) Validate() error {
 	return nil
 }
 
+// ShapeAdjustment represents one geometry adjustment point (<a:gd>) entry.
+type ShapeAdjustment struct {
+	Name    string
+	Formula string
+}
+
 // Shape is one auto shape.
 type Shape struct {
 	Type         string
@@ -252,6 +259,8 @@ type Shape struct {
 	AltText      string
 	IsDecorative bool
 	TextFrame    *TextFrame
+	Name         string
+	Adjustments  []ShapeAdjustment
 }
 
 // NewShape creates one shape.
@@ -276,6 +285,20 @@ func (s Shape) WithFill(fill ShapeFill) Shape {
 func (s Shape) WithLine(line ShapeLine) Shape {
 	s.Line = &line
 	return s
+}
+
+// WithAdjustment appends one geometry adjustment point.
+func (s Shape) WithAdjustment(name, formula string) Shape {
+	s.Adjustments = append(s.Adjustments, ShapeAdjustment{
+		Name:    strings.TrimSpace(name),
+		Formula: strings.TrimSpace(formula),
+	})
+	return s
+}
+
+// WithAdjustmentValue appends one "val" adjustment helper entry.
+func (s Shape) WithAdjustmentValue(name string, value int) Shape {
+	return s.WithAdjustment(name, fmt.Sprintf("val %d", value))
 }
 
 // WithClickAction adds a click behavior to the shape.
@@ -387,8 +410,18 @@ func (s Shape) WithAutoFit(autoFit TextFrameAutoFit) Shape {
 	return s
 }
 
+// WithName sets the name of the shape for Morph transitions and selection pane.
+func (s Shape) WithName(name string) Shape {
+	s.Name = name
+	return s
+}
+
 // Validate checks for validity of shape parameters.
 func (s Shape) Validate(slideIndex, shapeIndex int) error {
+	if !s.IsDecorative && len(s.AltText) > common.MaxAltTextLength {
+		return fmt.Errorf("shape %d on slide %d alt text exceeds %d characters", shapeIndex, slideIndex, common.MaxAltTextLength)
+	}
+
 	if err := s.validateShapeBounds(slideIndex, shapeIndex); err != nil {
 		return err
 	}

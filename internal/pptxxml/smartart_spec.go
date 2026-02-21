@@ -15,6 +15,10 @@ type SmartArtSpec struct {
 	QuickStyleID string
 	Nodes        []SmartArtNodeSpec
 	X, Y, CX, CY int64
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // SmartArtFrame describes SmartArt placement in slide XML.
@@ -28,6 +32,10 @@ type SmartArtFrame struct {
 	LayoutRelID string // r:lo
 	StyleRelID  string // r:qs
 	ColorRelID  string // r:cs
+
+	// Accessibility
+	AltText      string
+	IsDecorative bool
 }
 
 // SmartArtRel describes one SmartArt relationship entry for slide relationships XML.
