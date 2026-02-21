@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, cast, Union, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Tuple, Union, cast
 
 from . import ops
 
@@ -82,7 +82,7 @@ class CellRange:
             {
                 "slide_index": self._table._slide_index,
                 "shape_id": self._table._shape_id,
-                # Python slices are exclusive at the end, calculate last index inclusive for Go backend  
+                # Python slices are exclusive at the end, calculate last index inclusive for Go backend
                 "row1": self.row_start,
                 "col1": self.col_start,
                 "row2": self.row_end - 1,
@@ -104,6 +104,12 @@ class Table:
         self._shape_id = shape_id
         self._cache: Optional[Dict[str, Any]] = None
         self._cell_map: Dict[Tuple[int, int], Dict[str, Any]] = {}
+        self._row_count: Optional[int] = None
+        self._col_count: Optional[int] = None
+
+        # Pre-fetch table structure if not in batch mode to enable usage during batch
+        if not getattr(self._prs, "_batch_active", False):
+            self._ensure_cache()
 
     def _ensure_cache(self) -> None:
         if self._cache is None:
@@ -112,7 +118,7 @@ class Table:
                 {"slide_index": self._slide_index, "shape_id": self._shape_id},
             )
             self._cache = cast(Dict[str, Any], res.get("table", {}))
-            
+
             # Optimization: Build coordinate map for O(1) cell lookup
             self._cell_map = {}
             cells = self._cache.get("cells", [])
@@ -122,9 +128,17 @@ class Table:
                 if row is not None and col is not None:
                     self._cell_map[(row, col)] = c
 
+            # Permanent cache of dimensions
+            self._row_count = int(self._cache.get("row_count", 0))
+            self._col_count = int(self._cache.get("col_count", 0))
+
     def _invalidate_cache(self) -> None:
-        self._cache = None
-        self._cell_map = {}
+        # If we are in a batch, we MUST NOT invalidate the cache as we cannot re-fetch it.
+        # This is safe because structural changes (merge/split) are rare and we can't
+        # properly support them in batch while also supporting batched cell updates.
+        if not getattr(self._prs, "_batch_active", False):
+            self._cache = None
+            self._cell_map = {}
 
     def _get_cell_info(self, row: int, col: int) -> Dict[str, Any]:
         self._ensure_cache()
@@ -141,17 +155,28 @@ class Table:
                 "updates": updates,
             },
         )
-        self._invalidate_cache()
+        # Update local cache to support reading updated values during batch
+        if (row, col) in self._cell_map:
+            self._cell_map[(row, col)].update(updates)
+
+        # Do not invalidate the whole cache for simple cell updates,
+        # especially during batch mode where re-fetching is forbidden.
+        if not getattr(self._prs, "_batch_active", False):
+            self._invalidate_cache()
 
     @property
     def row_count(self) -> int:
+        if self._row_count is not None:
+            return self._row_count
         self._ensure_cache()
-        return int(self._cache.get("row_count", 0))  # type: ignore
+        return self._row_count or 0
 
     @property
     def col_count(self) -> int:
+        if self._col_count is not None:
+            return self._col_count
         self._ensure_cache()
-        return int(self._cache.get("col_count", 0))  # type: ignore
+        return self._col_count or 0
 
     def __getitem__(
         self, idx: Tuple[Union[int, slice], Union[int, slice]]
@@ -160,6 +185,12 @@ class Table:
             raise TypeError("Table indices must be a tuple of (row, col)")
 
         row_idx, col_idx = idx
+
+        # Support negative indexing for integers
+        if isinstance(row_idx, int) and row_idx < 0:
+            row_idx += self.row_count
+        if isinstance(col_idx, int) and col_idx < 0:
+            col_idx += self.col_count
 
         if isinstance(row_idx, slice) or isinstance(col_idx, slice):
             # Resolve slices
@@ -173,10 +204,10 @@ class Table:
                 if isinstance(col_idx, slice)
                 else (col_idx, col_idx + 1, 1)
             )
-            
+
             if r_step != 1 or c_step != 1:
                 raise ValueError("Table slicing does not support steps other than 1")
-                
+
             return CellRange(self, r_start, r_end, c_start, c_end)
 
         # Single cell access
@@ -208,12 +239,13 @@ class Table:
                 "flags": flags,
             },
         )
-        self._invalidate_cache()
+        if not getattr(self._prs, "_batch_active", False):
+            self._invalidate_cache()
 
     @property
     def has_header_row(self) -> bool:
         self._ensure_cache()
-        return bool(self._cache.get("first_row", False))  # type: ignore
+        return bool(self._cache.get("first_row", False)) if self._cache else False
 
     @has_header_row.setter
     def has_header_row(self, value: bool) -> None:
@@ -222,7 +254,7 @@ class Table:
     @property
     def has_banded_rows(self) -> bool:
         self._ensure_cache()
-        return bool(self._cache.get("band_row", False))  # type: ignore
+        return bool(self._cache.get("band_row", False)) if self._cache else False
 
     @has_banded_rows.setter
     def has_banded_rows(self, value: bool) -> None:

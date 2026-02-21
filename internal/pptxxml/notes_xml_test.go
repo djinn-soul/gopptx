@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+func TestNotesMasterDefaultsEnableDateAndSlideNumber(t *testing.T) {
+	xml := NotesMaster(nil)
+	if !strings.Contains(xml, `type="dt"`) {
+		t.Fatalf("expected default notes master to include date placeholder")
+	}
+	if !strings.Contains(xml, `type="sldNum"`) {
+		t.Fatalf("expected default notes master to include slide number placeholder")
+	}
+}
+
 func TestNotesMasterHidesDateTimeAndSlideNumberWhenDisabled(t *testing.T) {
 	xml := NotesMaster(&NotesMasterSpec{
 		ShowDateTime: false,

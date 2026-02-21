@@ -25,6 +25,7 @@ class _BatchContext:
         ops.OP_GET_NOTES,
         ops.OP_LIST_SLIDE_CHARTS,
         ops.OP_LIST_SLIDE_LAYOUTS,
+        ops.OP_GET_TABLE,
     }
 
     def __init__(self, presentation: Presentation, stop_on_error: bool = False):
