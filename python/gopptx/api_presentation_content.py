@@ -9,7 +9,7 @@ from .api_errors import GopptxError
 from .utils import _normalize_table_index
 
 if TYPE_CHECKING:
-    from .types import (
+    from .schemas import (
         Author,
         ChartDataUpdate,
         ChartSelector,
@@ -24,6 +24,10 @@ if TYPE_CHECKING:
         TableInfo,
     )
 
+# Constants for backward compatibility positional argument handling
+_CHART_ARGS_POSITIONAL_ONLY = 4  # x, y, w, h
+_CHART_ARGS_WITH_TITLE = 5  # title, x, y, w, h
+
 
 class PresentationContentMixin:
     """Mixin providing content manipulation methods for Presentation."""
@@ -33,8 +37,8 @@ class PresentationContentMixin:
         slide_index: int,
         chart_type: str,
         categories: list[str],
-        values_or_series: Any,
-        *args: Any,
+        values_or_series: Any,  # noqa: ANN401 - Flexible for list[float] or list[dict] series
+        *args: Any,  # noqa: ANN401 - Backward compatibility positional args
         title: str = "Chart",
         x: int = 0,
         y: int = 0,
@@ -42,13 +46,10 @@ class PresentationContentMixin:
         h: int = 0,
     ) -> int:
         """Add a chart to a slide."""
-        # Backward compatibility:
-        # - add_chart(slide, type, categories, values, title=..., x=..., y=..., w=..., h=...)
-        # - add_chart(slide, type, categories, series, x, y, w, h)
         if args:
-            if len(args) == 4:
+            if len(args) == _CHART_ARGS_POSITIONAL_ONLY:
                 x, y, w, h = cast("tuple[int, int, int, int]", args)
-            elif len(args) == 5:
+            elif len(args) == _CHART_ARGS_WITH_TITLE:
                 title = str(args[0])
                 x, y, w, h = cast("tuple[int, int, int, int]", args[1:])
             else:
@@ -371,6 +372,13 @@ class PresentationContentMixin:
         chart_selector: ChartSelector | list[str],
         data: ChartDataUpdate | list[dict],
     ) -> None:
+        """Update chart data for a chart on a slide.
+
+        Args:
+            slide_index: Index of the slide containing the chart.
+            chart_selector: Selector dict or categories list for legacy compatibility.
+            data: Chart data update payload or series list for legacy compatibility.
+        """
         if isinstance(chart_selector, dict):
             payload = {
                 "slide_index": slide_index,

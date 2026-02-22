@@ -10,14 +10,19 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from .api_presentation_base import PresentationBase
-    from .types import SlideLayoutInfo
+    from .schemas import SlideLayoutInfo
 
 
 class SlideLayout:
     """Represents a slide layout within a slide master."""
 
     def __init__(self, master: SlideMaster, info: SlideLayoutInfo) -> None:
-        """Initialize the slide layout."""
+        """Initialize the slide layout.
+
+        Args:
+            master: The parent slide master.
+            info: The layout information dictionary.
+        """
         self._master = master
         self._part = info.get("part", info.get("Part", ""))
         self._name = info.get("name", info.get("Name", ""))
@@ -39,20 +44,39 @@ class SlideLayout:
 
 
 class SlideLayouts:
+    """Collection of slide layouts within a slide master."""
+
     def __init__(self, master: SlideMaster, layouts: list[SlideLayoutInfo]) -> None:
+        """Initialize the slide layouts collection.
+
+        Args:
+            master: The parent slide master.
+            layouts: List of layout information dictionaries.
+        """
         self._master = master
         self._layouts = [SlideLayout(master, info) for info in layouts]
 
     def __len__(self) -> int:
+        """Return the number of layouts."""
         return len(self._layouts)
 
     def __getitem__(self, idx: int) -> SlideLayout:
+        """Get a layout by index."""
         return self._layouts[idx]
 
     def __iter__(self) -> Iterator[SlideLayout]:
+        """Iterate over all layouts."""
         return iter(self._layouts)
 
     def get_by_name(self, name: str) -> SlideLayout | None:
+        """Get a layout by name.
+
+        Args:
+            name: The name of the layout to find.
+
+        Returns:
+            The layout with the given name, or None if not found.
+        """
         for layout in self._layouts:
             if layout.name == name:
                 return layout
@@ -60,17 +84,27 @@ class SlideLayouts:
 
 
 class SlideMaster:
+    """Represents a slide master in the presentation."""
+
     def __init__(self, prs: PresentationBase, part: str) -> None:
+        """Initialize the slide master.
+
+        Args:
+            prs: The presentation base instance.
+            part: The part path of this slide master.
+        """
         self._prs = prs
         self._part = part
         self._slide_layouts: SlideLayouts | None = None
 
     @property
     def part(self) -> str:
+        """The part path of this slide master."""
         return self._part
 
     @property
     def slide_layouts(self) -> SlideLayouts:
+        """Get the slide layouts for this master."""
         if self._slide_layouts is None:
             # Rebind OP_LIST_MASTER_LAYOUTS to the presentation base execute
             result = self._prs.execute(
@@ -84,11 +118,19 @@ class SlideMaster:
 
 
 class SlideMasters:
+    """Collection of slide masters in the presentation."""
+
     def __init__(self, prs: PresentationBase) -> None:
+        """Initialize the slide masters collection.
+
+        Args:
+            prs: The presentation base instance.
+        """
         self._prs = prs
         self._masters: list[SlideMaster] | None = None
 
     def _load(self) -> None:
+        """Load the slide masters from the presentation."""
         if self._masters is not None:
             return
         result = self._prs.execute(ops.OP_LIST_SLIDE_MASTERS, {})
@@ -99,16 +141,25 @@ class SlideMasters:
             self._masters.append(SlideMaster(self._prs, part))
 
     def __len__(self) -> int:
+        """Return the number of slide masters."""
         self._load()
-        assert self._masters is not None
+        if self._masters is None:  # pragma: no cover
+            msg = "Masters not loaded"
+            raise RuntimeError(msg)
         return len(self._masters)
 
     def __getitem__(self, idx: int) -> SlideMaster:
+        """Get a slide master by index."""
         self._load()
-        assert self._masters is not None
+        if self._masters is None:  # pragma: no cover
+            msg = "Masters not loaded"
+            raise RuntimeError(msg)
         return self._masters[idx]
 
     def __iter__(self) -> Iterator[SlideMaster]:
+        """Iterate over all slide masters."""
         self._load()
-        assert self._masters is not None
+        if self._masters is None:  # pragma: no cover
+            msg = "Masters not loaded"
+            raise RuntimeError(msg)
         return iter(self._masters)

@@ -16,12 +16,14 @@ from typing import TYPE_CHECKING, Any, cast
 from typing_extensions import Self
 
 from . import ops
-from .api_batch import _BatchContext
+from .api_batch import BatchContext
 from .api_errors import GopptxError
 from .api_slide import Slide
 
 if TYPE_CHECKING:
-    from .types import (
+    from types import TracebackType
+
+    from .schemas import (
         BatchCommand,
         BatchItemResult,
         PresentationMetadata,
@@ -35,23 +37,27 @@ except ImportError:
 
 
 def _json_dumps(payload: dict[str, Any]) -> bytes:
+    """Serialize a dictionary to JSON bytes."""
     if _orjson is not None:
         return _orjson.dumps(payload)
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
 
-def _json_loads(raw: bytes) -> Any:
+def _json_loads(raw: bytes) -> Any:  # noqa: ANN401 - JSON return type is intentionally dynamic
+    """Deserialize JSON bytes to Python objects."""
     if _orjson is not None:
         return _orjson.loads(raw)
     return json.loads(raw.decode("utf-8"))
 
 
 def _snake_case(name: str) -> str:
+    """Convert CamelCase to snake_case."""
     s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def _with_key_aliases(obj: Any) -> Any:
+def _with_key_aliases(obj: Any) -> Any:  # noqa: ANN401 - Recursive JSON transform is intentionally dynamic
+    """Add lowercase and snake_case aliases for all keys in a nested structure."""
     if isinstance(obj, list):
         return [_with_key_aliases(item) for item in obj]
     if not isinstance(obj, dict):
@@ -65,10 +71,17 @@ def _with_key_aliases(obj: Any) -> Any:
 
 
 class PresentationBase:
+    """Base class for Presentation with core library loading and execution."""
+
     _lib = None
     _lib_lock = threading.Lock()
 
     def __init__(self, path: str | None = None) -> None:
+        """Initialize the presentation, optionally opening a file.
+
+        Args:
+            path: Optional path to an existing presentation file to open.
+        """
         self._load_library()
         self._lock = threading.RLock()
         self._handle: int | None = None
@@ -76,7 +89,7 @@ class PresentationBase:
         self._metadata_cache: PresentationMetadata | None = None
         self._batch_active = False
         self._batch_stop_on_error = False
-        self._batch_commands: list[dict] = []
+        self._batch_commands: list[dict[str, Any]] = []
         self._comment_ref_cache: dict[int, tuple[int, int, int]] = {}
         if path:
             self.open(path)
@@ -92,23 +105,20 @@ class PresentationBase:
                 if sys.platform == "win32"
                 else ("libgopptx.dylib" if sys.platform == "darwin" else "libgopptx.so")
             )
-            search_paths: list[str] = []
+            search_paths: list[pathlib.Path] = []
             env_path = os.environ.get("GOPPTX_LIB_PATH")
             if env_path:
-                if pathlib.Path(env_path).is_dir():
-                    search_paths.append(os.path.join(env_path, lib_name))
+                env_as_path = pathlib.Path(env_path)
+                if env_as_path.is_dir():
+                    search_paths.append(env_as_path / lib_name)
                 else:
-                    search_paths.append(env_path)
+                    search_paths.append(env_as_path)
             search_paths.extend([
-                os.path.join(pkg_dir, "../../bindings/c/build", lib_name),
-                os.path.join(pkg_dir, lib_name),
+                pkg_dir / "../../bindings/c/build" / lib_name,
+                pkg_dir / lib_name,
             ])
             lib_path = next(
-                (
-                    pathlib.Path(c).resolve()
-                    for c in search_paths
-                    if pathlib.Path(c).exists()
-                ),
+                (c.resolve() for c in search_paths if c.exists()),
                 None,
             )
             if not lib_path:
@@ -136,6 +146,14 @@ class PresentationBase:
 
     @classmethod
     def new(cls, title: str) -> PresentationBase:
+        """Create a new presentation with the given title.
+
+        Args:
+            title: The title for the new presentation.
+
+        Returns:
+            A new PresentationBase instance.
+        """
         pres = cls()
         handle = cls._lib.deck_new(title.encode("utf-8"))
         if not handle:
@@ -152,11 +170,20 @@ class PresentationBase:
         return pres
 
     def execute(self, op: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Execute a bridge operation.
+
+        Args:
+            op: The operation name.
+            payload: Optional payload for the operation.
+
+        Returns:
+            The result dictionary from the operation.
+        """
         with self._lock:
             if not self._handle:
                 raise GopptxError("Presentation is not open.")
             if self._batch_active and op != ops.OP_BATCH_EXECUTE:
-                if op in _BatchContext._READ_OPS:
+                if op in BatchContext.READ_OPS:
                     raise GopptxError(
                         f"read operation {op!r} is not allowed inside batch()",
                         code="BATCH_READ_OP_NOT_ALLOWED",
@@ -190,12 +217,19 @@ class PresentationBase:
                 self._lib.deck_free_string(res_ptr)
 
     def execute_batch(
-        self, commands: list[BatchCommand], stop_on_error: bool = False
+        self, commands: list[BatchCommand], *, stop_on_error: bool = False
     ) -> list[BatchItemResult]:
         """Execute multiple bridge commands in one boundary crossing.
 
         Returns ordered per-command results. Each result has `ok` plus either
         `result` or `error` fields from the Go bridge.
+
+        Args:
+            commands: List of batch commands to execute.
+            stop_on_error: If True, stop execution on first error.
+
+        Returns:
+            List of results for each command.
         """
         if not commands:
             return []
@@ -205,11 +239,23 @@ class PresentationBase:
         self.invalidate_cache()
         return cast("list[BatchItemResult]", result.get("results", []))
 
-    def batch(self, stop_on_error: bool = False) -> _BatchContext:
-        """Context manager for buffered mutating operations executed as one batch."""
-        return _BatchContext(self, stop_on_error=stop_on_error)
+    def batch(self, *, stop_on_error: bool = False) -> BatchContext:
+        """Context manager for buffered mutating operations executed as one batch.
 
-    def _begin_batch(self, stop_on_error: bool) -> None:
+        Args:
+            stop_on_error: If True, stop batch execution on first error.
+
+        Returns:
+            A batch context manager.
+        """
+        return BatchContext(self, stop_on_error=stop_on_error)
+
+    def begin_batch(self, *, stop_on_error: bool = False) -> None:
+        """Begin a batch operation context.
+
+        Args:
+            stop_on_error: If True, stop batch execution on first error.
+        """
         with self._lock:
             if self._batch_active:
                 raise GopptxError(
@@ -220,13 +266,19 @@ class PresentationBase:
             self._batch_stop_on_error = stop_on_error
             self._batch_commands = []
 
-    def _abort_batch(self) -> None:
+    def abort_batch(self) -> None:
+        """Abort the current batch operation."""
         with self._lock:
             self._batch_active = False
             self._batch_stop_on_error = False
             self._batch_commands = []
 
-    def _end_batch(self) -> list[BatchItemResult]:
+    def end_batch(self) -> list[BatchItemResult]:
+        """End the batch operation and execute all queued commands.
+
+        Returns:
+            List of results for each batched command.
+        """
         with self._lock:
             commands = self._batch_commands
             stop_on_error = self._batch_stop_on_error
@@ -241,10 +293,12 @@ class PresentationBase:
 
     @property
     def slide_count(self) -> int:
+        """The number of slides in the presentation."""
         return int(self.execute(ops.OP_SLIDE_COUNT, {}).get("count", 0))
 
     @property
     def metadata(self) -> PresentationMetadata:
+        """The presentation metadata."""
         with self._lock:
             if self._metadata_cache is not None:
                 return self._metadata_cache
@@ -255,10 +309,12 @@ class PresentationBase:
 
     @property
     def slides(self) -> list[Slide]:
+        """List of slide proxies for all slides in the presentation."""
         return [Slide(self, m) for m in self.slides_metadata]
 
     @property
     def slides_metadata(self) -> list[SlideMetadata]:
+        """List of metadata for all slides in the presentation."""
         with self._lock:
             if self._slides_metadata_cache is not None:
                 return self._slides_metadata_cache
@@ -269,12 +325,14 @@ class PresentationBase:
             return self._slides_metadata_cache
 
     def invalidate_cache(self) -> None:
+        """Clear all cached data for the presentation."""
         with self._lock:
             self._slides_metadata_cache = None
             self._metadata_cache = None
             self._comment_ref_cache = {}
 
     def _get_last_error(self) -> str:
+        """Get the last error message from the Go engine."""
         with self._lock:
             if not self._handle:
                 return "No active session"
@@ -286,6 +344,11 @@ class PresentationBase:
             return "Unknown error"
 
     def open(self, path: str) -> None:
+        """Open an existing presentation file.
+
+        Args:
+            path: Path to the presentation file.
+        """
         with self._lock:
             if self._handle:
                 self.close()
@@ -304,6 +367,11 @@ class PresentationBase:
             self.invalidate_cache()
 
     def save(self, path: str) -> None:
+        """Save the presentation to a file.
+
+        Args:
+            path: Path to save the presentation to.
+        """
         with self._lock:
             if not self._handle:
                 raise GopptxError("Presentation is not open.")
@@ -311,6 +379,7 @@ class PresentationBase:
                 raise GopptxError(f"Failed to save deck: {self._get_last_error()}")
 
     def close(self) -> None:
+        """Close the presentation and release resources."""
         with self._lock:
             if self._handle:
                 self._lib.deck_close(self._handle)
@@ -318,14 +387,24 @@ class PresentationBase:
             self.invalidate_cache()
 
     def __enter__(self) -> Self:
+        """Enter context manager."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Exit context manager and close presentation."""
         self.close()
 
     def __del__(self) -> None:
+        """Clean up resources on deletion."""
         with contextlib.suppress(Exception):
             self.close()
 
     def __repr__(self) -> str:
-        return f"<Presentation title='{self.title}' slides={self.slide_count}>"
+        """Return string representation of the presentation."""
+        title = self.metadata.get("title", "") if self._handle else ""
+        return f"<Presentation title='{title}' slides={self.slide_count}>"

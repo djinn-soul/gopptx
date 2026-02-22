@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .api_table import Table
+
 if TYPE_CHECKING:
     from .api_presentation import Presentation
-    from .api_table import Table
-    from .types import (
+    from .schemas import (
         Shape,
         ShapeProps,
         ShapeUpdate,
@@ -95,8 +96,6 @@ class Slide:
 
     def table(self, shape_id: int) -> Table:
         """Returns a Table object for the given shape_id, providing a Pythonic grid API."""
-        from .api_table import Table
-
         return Table(self._presentation, self.index, shape_id)
 
     def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:

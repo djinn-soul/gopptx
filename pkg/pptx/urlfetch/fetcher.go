@@ -1,6 +1,7 @@
 package urlfetch
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -57,7 +58,7 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid MaxBodyBytes: %d", f.cfg.MaxBodyBytes)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, rawURL, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("build request: %w", err)
 	}

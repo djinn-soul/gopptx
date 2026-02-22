@@ -1,30 +1,28 @@
-import os
 import pathlib
 import sys
+import traceback
 
 from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../../..")
-).resolve()
-sys.path.append(os.path.join(project_root, "python"))
+project_root = (pathlib.Path(__file__).parent / ".." / ".." / "..").resolve()
+sys.path.append(str(project_root / "python"))
 
 
 # Create output directory
-output_dir = os.path.join(project_root, "examples/output")
-pathlib.Path(output_dir).mkdir(exist_ok=True, parents=True)
+output_dir = project_root / "examples" / "output"
+output_dir.mkdir(exist_ok=True, parents=True)
 
-input_path = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")
-output_path = os.path.join(output_dir, "python_advanced_output.pptx")
+input_path = project_root / "examples" / "assets" / "01" / "01_basic_pptx.pptx"
+output_path = output_dir / "python_advanced_output.pptx"
 
-if not pathlib.Path(input_path).exists():
+if not input_path.exists():
     print(f"Input file {input_path} not found. Skipping test.")
     sys.exit(0)
 
 try:
     print(f"Opening presentation: {input_path}")
-    with Presentation(input_path) as pres:
+    with Presentation(str(input_path)) as pres:
         # 1. List Slides
         print("Listing slides...")
         for slide in pres.slides:
@@ -68,13 +66,11 @@ try:
             print(f"    - Author {c['AuthorID']}: {c['Text']} (Index: {c['Index']})")
 
         # 5. Save
-        pres.save(output_path)
+        pres.save(str(output_path))
         print(f"Saved to {output_path}")
 
     print("\nSuccess! Advanced Python features verified.")
 
-except Exception as e:
+except (OSError, RuntimeError, ValueError) as e:
     print(f"Error during verification: {e}")
-    import traceback
-
     traceback.print_exc()

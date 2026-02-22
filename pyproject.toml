@@ -119,11 +119,11 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "python/gopptx/**/*.pyi" = ["ANN401", "ANN001"]
-"python/gopptx/**/*.py" = ["TCH", "D", "ANN", "SLF001", "FBT", "PLR0913", "PLR0917", "PLR0904", "A005", "S105", "PLC0415", "RUF012", "S101", "PTH", "ERA001"]
 "tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
 "python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D", "PTH", "T201", "BLE001", "PLC1901"]
 "examples/**/*.py" = ["T201", "INP001", "D"]
 "scripts/**/*.py" = ["T201", "INP001", "D", "PTH", "ANN", "S110", "BLE001", "PERF203", "PLR2004"]
+
 
 [tool.ruff.format]
 quote-style = "double"
@@ -317,7 +317,6 @@ typecheck = { sequence = [
     "typecheck-basedpyright",
 ], help = "Run all type checkers" }
 typecheck-basedpyright = { cmd = "basedpyright --level error", help = "Run BasedPyright" }
-typecheck-ty = { cmd = "ty check .", help = "Run ty" }
 
 security = { sequence = [
     "security-bandit",
@@ -337,7 +336,6 @@ quality = { sequence = [
     "format",
     "typecheck",
     "security",
-    { cmd = "pyscn check ." },
 ], help = "Run FULL quality suite" }
 
 install = { cmd = "uv sync --all-extras", help = "Install all dependencies" }
@@ -345,4 +343,3 @@ setup = { sequence = [
     "install",
     { cmd = "prek install" },
 ], help = "Full project setup" }
-clean = { cmd = "python scripts/clean.py", help = "Clean build artifacts" }

@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
     from .api_presentation import Presentation
 
+# Constants for table indexing
+_TABLE_INDEX_DIMENSIONS = 2  # (row, col)
+
 
 class Cell:
     """Proxy object for a table cell."""
@@ -26,33 +29,33 @@ class Cell:
     @property
     def is_merge_origin(self) -> bool:
         """Check if this cell is the origin of a merged cell range."""
-        return self._table._get_cell_info(self.row, self.col).get(
+        return self._table.get_cell_info(self.row, self.col).get(
             "is_merge_origin", False
         )
 
     @property
     def is_spanned(self) -> bool:
         """Check if this cell is spanned by another merged cell."""
-        return self._table._get_cell_info(self.row, self.col).get("is_spanned", False)
+        return self._table.get_cell_info(self.row, self.col).get("is_spanned", False)
 
     @property
     def row_span(self) -> int:
         """Get the number of rows this cell spans."""
-        return self._table._get_cell_info(self.row, self.col).get("row_span", 1)
+        return self._table.get_cell_info(self.row, self.col).get("row_span", 1)
 
     @property
     def col_span(self) -> int:
         """Get the number of columns this cell spans."""
-        return self._table._get_cell_info(self.row, self.col).get("col_span", 1)
+        return self._table.get_cell_info(self.row, self.col).get("col_span", 1)
 
     @property
     def text(self) -> str:
         """Get the text content of this cell."""
-        return str(self._table._get_cell_info(self.row, self.col).get("text", ""))
+        return str(self._table.get_cell_info(self.row, self.col).get("text", ""))
 
     @text.setter
     def text(self, value: str) -> None:
-        self._table._update_cell(self.row, self.col, {"text": str(value)})
+        self._table.update_cell(self.row, self.col, {"text": str(value)})
 
     def split(self) -> None:
         """Splits a merged cell back into a 1x1 cell.
@@ -60,23 +63,24 @@ class Cell:
         Note: This method is disallowed within a batch() context as structural
         changes invalidate the coordinate mapping.
         """
-        if getattr(self._table._prs, "_batch_active", False):
+        if getattr(self._table.prs, "_batch_active", False):
             raise GopptxError(
                 "structural changes (split) are not allowed inside a batch",
                 code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
             )
-        self._table._prs.execute(
+        self._table.prs.execute(
             ops.OP_SPLIT_TABLE_CELL,
             {
-                "slide_index": self._table._slide_index,
-                "shape_id": self._table._shape_id,
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
                 "row": self.row,
                 "col": self.col,
             },
         )
-        self._table._invalidate_cache()
+        self._table.invalidate_cache()
 
     def __repr__(self) -> str:
+        """Return a string representation of the cell."""
         return f"<Cell [{self.row}, {self.col}] text={self.text!r}>"
 
 
@@ -86,6 +90,7 @@ class CellRange:
     def __init__(
         self, table: Table, row_start: int, row_end: int, col_start: int, col_end: int
     ) -> None:
+        """Initialize the cell range with bounds."""
         self._table = table
         self.row_start = max(0, row_start)
         self.row_end = min(table.row_count, row_end)
@@ -94,12 +99,12 @@ class CellRange:
 
     def merge(self) -> None:
         """Merges all cells in this range into a single spanned cell.
-        Follows Python exclusive slice convention for end indices.
 
+        Follows Python exclusive slice convention for end indices.
         Note: This method is disallowed within a batch() context as structural
         changes invalidate the coordinate mapping.
         """
-        if getattr(self._table._prs, "_batch_active", False):
+        if getattr(self._table.prs, "_batch_active", False):
             raise GopptxError(
                 "structural changes (merge) are not allowed inside a batch",
                 code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
@@ -107,11 +112,11 @@ class CellRange:
         if self.row_end <= self.row_start + 1 and self.col_end <= self.col_start + 1:
             return  # Nothing to merge
 
-        self._table._prs.execute(
+        self._table.prs.execute(
             ops.OP_MERGE_TABLE_CELLS,
             {
-                "slide_index": self._table._slide_index,
-                "shape_id": self._table._shape_id,
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
                 # Python slices are exclusive at the end, calculate last index inclusive for Go backend
                 "row1": self.row_start,
                 "col1": self.col_start,
@@ -119,7 +124,7 @@ class CellRange:
                 "col2": self.col_end - 1,
             },
         )
-        self._table._invalidate_cache()
+        self._table.invalidate_cache()
 
 
 class Table:
@@ -130,23 +135,23 @@ class Table:
 
     def __init__(self, prs: Presentation, slide_index: int, shape_id: int) -> None:
         """Initialize the table proxy."""
-        self._prs = prs
-        self._slide_index = slide_index
-        self._shape_id = shape_id
+        self.prs = prs  # Public for companion classes (Cell, CellRange)
+        self.slide_index = slide_index  # Public for companion classes
+        self.shape_id = shape_id  # Public for companion classes
         self._cache: dict[str, Any] | None = None
         self._cell_map: dict[tuple[int, int], dict[str, Any]] = {}
         self._row_count: int | None = None
         self._col_count: int | None = None
 
         # Pre-fetch table structure if not in batch mode to enable usage during batch
-        if not getattr(self._prs, "_batch_active", False):
+        if not getattr(self.prs, "_batch_active", False):
             self._ensure_cache()
 
     def _ensure_cache(self) -> None:
         if self._cache is None:
-            res = self._prs.execute(
+            res = self.prs.execute(
                 ops.OP_GET_TABLE,
-                {"slide_index": self._slide_index, "shape_id": self._shape_id},
+                {"slide_index": self.slide_index, "shape_id": self.shape_id},
             )
             self._cache = cast("dict[str, Any]", res.get("table", {}))
 
@@ -165,30 +170,34 @@ class Table:
             self._row_count = int(self._cache.get("row_count", 0))
             self._col_count = int(self._cache.get("col_count", 0))
 
-    def _invalidate_cache(self) -> None:
-        # If we are in a batch, we MUST NOT invalidate the cache as we cannot re-fetch it.
-        # This is safe because structural changes (merge/split) are rare and we can't
-        # properly support them in batch while also supporting batched cell updates.
-        if not getattr(self._prs, "_batch_active", False):
+    def invalidate_cache(self) -> None:
+        """Invalidate the table cache.
+
+        If we are in a batch, we MUST NOT invalidate the cache as we cannot re-fetch it.
+        This is safe because structural changes (merge/split) are rare and we can't
+        properly support them in batch while also supporting batched cell updates.
+        """
+        if not getattr(self.prs, "_batch_active", False):
             self._cache = None
             self._cell_map = {}
 
-    def _get_cell_info(self, row: int, col: int) -> dict[str, Any]:
+    def get_cell_info(self, row: int, col: int) -> dict[str, Any]:
+        """Get cell information for the specified row and column."""
         self._ensure_cache()
         return self._cell_map.get((row, col), {})
 
-    def _update_cell(self, row: int, col: int, updates: dict[str, Any]) -> None:
+    def update_cell(self, row: int, col: int, updates: dict[str, Any]) -> None:
         """Updates a cell and its local cache representation.
 
         Note: The local cache update is a best-effort sync for properties like text.
         Structural changes or complex aggregate properties may still require a full
         re-fetch outside of batch mode.
         """
-        self._prs.execute(
+        self.prs.execute(
             ops.OP_UPDATE_TABLE_CELL,
             {
-                "slide_index": self._slide_index,
-                "shape_id": self._shape_id,
+                "slide_index": self.slide_index,
+                "shape_id": self.shape_id,
                 "row": row,
                 "col": col,
                 "updates": updates,
@@ -200,8 +209,8 @@ class Table:
 
         # Do not invalidate the whole cache for simple cell updates,
         # especially during batch mode where re-fetching is forbidden.
-        if not getattr(self._prs, "_batch_active", False):
-            self._invalidate_cache()
+        if not getattr(self.prs, "_batch_active", False):
+            self.invalidate_cache()
 
     @property
     def row_count(self) -> int:
@@ -221,7 +230,7 @@ class Table:
 
     def __getitem__(self, idx: tuple[int | slice, int | slice]) -> Cell | CellRange:
         """Get a cell or range of cells by index."""
-        if not isinstance(idx, tuple) or len(idx) != 2:
+        if len(idx) != _TABLE_INDEX_DIMENSIONS:
             raise TypeError("Table indices must be a tuple of (row, col)")
 
         row_idx, col_idx = idx
@@ -275,16 +284,16 @@ class Table:
 
     # Style Flags
     def _update_flags(self, flags: dict[str, bool]) -> None:
-        self._prs.execute(
+        self.prs.execute(
             ops.OP_UPDATE_TABLE_FLAGS,
             {
-                "slide_index": self._slide_index,
-                "shape_id": self._shape_id,
+                "slide_index": self.slide_index,
+                "shape_id": self.shape_id,
                 "flags": flags,
             },
         )
-        if not getattr(self._prs, "_batch_active", False):
-            self._invalidate_cache()
+        if not getattr(self.prs, "_batch_active", False):
+            self.invalidate_cache()
 
     @property
     def has_header_row(self) -> bool:

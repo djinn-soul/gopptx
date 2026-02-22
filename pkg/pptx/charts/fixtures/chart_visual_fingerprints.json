@@ -1,39 +1,39 @@
 [
     {
         "chart": "area",
-        "fingerprint": "42c1936f45771f165e19a086d7d359716fc0d4befb6168c73c67232b287d0299"
+        "fingerprint": "737dfcebd25be8cb45b3c01e1d03e0b00eee050127c8e92ec7701c9012bd77de"
     },
     {
         "chart": "areaStacked",
-        "fingerprint": "c74bbc756c4222d8c7cffe5f025882f29f9883c6e348a20bb9f97a58df0cb6c6"
+        "fingerprint": "a3470f9b18eb0366efdfd86689c0ef4279c0d906cfdd84fa109eb56964ca6372"
     },
     {
         "chart": "areaStacked100",
-        "fingerprint": "9d16a4760aa911dbe3ab200e574ba73cd22d564793ed3094e50394bf1266d2ae"
+        "fingerprint": "ca0e0476d1496f33d53717d349b3442dbf52acb3126d64e6c9838c944d92f7a2"
     },
     {
         "chart": "bar",
-        "fingerprint": "843f441c6d5fee0a17e52e89d00029d24df2eae8132d79513f4b57966feb1614"
+        "fingerprint": "f8096bbdc5603d8bfe94b47d84229ec00706807f80c5bb5ac1acff2b01c43829"
     },
     {
         "chart": "barHorizontal",
-        "fingerprint": "098c3fbc877bb7ff97cac8a64aa2c79345ebc1de95009bf7fdaf6d035a5c71ce"
+        "fingerprint": "a66e8875da4af5251ca7f7fc3bfb3307700eed2ecff166a5cce6433e617ddba8"
     },
     {
         "chart": "barStacked",
-        "fingerprint": "5fcaccf215e1beb94c9bb9f8a8332c4ded0e5a46065da1d5da151c3f971e925f"
+        "fingerprint": "e0083e9bd317e1d287749bbd837338462d0b2f2443e0ddb86cf6adb07067575a"
     },
     {
         "chart": "barStacked100",
-        "fingerprint": "c6fa146c17899c279b8646dd9a90da6511ba4cb28eb530aaefd9ceeb8c5adc3f"
+        "fingerprint": "dea67d2a5fd0ad298ad816b6725658d05d24ecbf3c28029d843c972b452198f9"
     },
     {
         "chart": "bubble",
-        "fingerprint": "7492598136e743aa54971bd78d9718348e59726637288cbbf439644ec84da374"
+        "fingerprint": "4e703cf9640adcf06b831c2ab46ec1c593c8e45f5d098ba8a7f660aeb42bb1e5"
     },
     {
         "chart": "combo",
-        "fingerprint": "abb75a7073db9814d71bef0c346582e486b75f262034f8abe226b5b03b1af81b"
+        "fingerprint": "713ca1fbd5b8679c425c226101d62d67155ed6be158a4cf96bc058f2ee306881"
     },
     {
         "chart": "doughnut",
@@ -41,15 +41,15 @@
     },
     {
         "chart": "line",
-        "fingerprint": "b28979f85c0af5284e7218513fe780398ba0f75f3fbe14935885d7d0efdc0c65"
+        "fingerprint": "59725a86b043bb7aed7f387aebe1ca8ee6a402830f376e229e37a0422e0248d6"
     },
     {
         "chart": "lineMarkers",
-        "fingerprint": "a29062e6592cbf86b3005fce2ff37874e2a1963058f84eed346aafb803c68206"
+        "fingerprint": "ef136cd27da2c240c098ff58a412fc9c282c507eae72c794bbf9a65c4f5981ff"
     },
     {
         "chart": "lineStacked",
-        "fingerprint": "ee1af1c87ea5d434fdfa79f5aa62050765e89dff822ce29bbe2d188f4f57bb2c"
+        "fingerprint": "edb41cb1d5d772bc0ece0e9fa9352b8fecc8eb000ab4ad93063c05ef5330b873"
     },
     {
         "chart": "pie",
@@ -57,30 +57,30 @@
     },
     {
         "chart": "radar",
-        "fingerprint": "2f07a752178f6eca328c64b68328e86d565737a56bcbfc35fadd97c616d71ac3"
+        "fingerprint": "10fd67cb07e722ad6ea5e96dfba43e637c945be987c9728a7e64b295bc3afd69"
     },
     {
         "chart": "radarFilled",
-        "fingerprint": "9c1a7194368796b2643a768b898cdeeb85dcf2004db37d6e3971b8505a1e7100"
+        "fingerprint": "28e9a90f2f8aa77718964744db94c0c3123d02fd7dc6f9bdbc2ba3d217d6695f"
     },
     {
         "chart": "scatter",
-        "fingerprint": "e3853cf8c541c5451cc1980f19c8a470acb8f1a91d4622c5e7eb7ae2c009706d"
+        "fingerprint": "a5eed27e94caa1151d062df3c9888a3af9fcacf2920c0cce3d766b4cf1b0b06a"
     },
     {
         "chart": "scatterLines",
-        "fingerprint": "5165599e22c48efdc84149bf5f978fd62428dd6e84688902c1d8dae48afc2cab"
+        "fingerprint": "65f6440b0f21b76ac2226e7f50a96cae608c7c6a1ee8bebdadbf3d8823c87d75"
     },
     {
         "chart": "scatterSmooth",
-        "fingerprint": "a250a930038d0f125c9992ec9e26a532515cdecb11d62b7db02a9c0b88c8f9cc"
+        "fingerprint": "a96b51bfbb39188b5c4b8ac3781b665ddfeec06072bff6a47cf543463f5a60d3"
     },
     {
         "chart": "stockHLC",
-        "fingerprint": "8af8275b548257b9d1c6f961f15eae68f477346e8f9f3bccb90fbaacd0dc0138"
+        "fingerprint": "381e09cdcc62d7b0094a70ae431033d243ff91dccf153fe63ae5198187890dec"
     },
     {
         "chart": "stockOHLC",
-        "fingerprint": "71dd260720afa0ccf779bcadd0586256903793590b2f0939a4247657e7e0220b"
+        "fingerprint": "a5cec8eefe9dd48b3d3989e94843bb3e08eb96efd66a8262140ff665708aa90c"
     }
 ]

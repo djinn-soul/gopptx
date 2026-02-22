@@ -69,11 +69,15 @@ class Shape(TypedDict):
 
 
 class ChartSelector(TypedDict, total=False):
+    """Chart selector for identifying charts."""
+
     index: int
     rel_id: str
 
 
 class ChartSeriesData(TypedDict, total=False):
+    """Chart series data for updates."""
+
     name: str
     categories: list[str]
     values: list[float]
@@ -83,29 +87,39 @@ class ChartSeriesData(TypedDict, total=False):
 
 
 class ChartDataUpdate(TypedDict, total=False):
+    """Chart data update payload."""
+
     categories: list[str]
     series: list[ChartSeriesData]
 
 
 class SlideChartRef(TypedDict):
+    """Reference to a chart on a slide."""
+
     Index: int
     RelID: str
     ChartPart: str
 
 
 class SlideLayoutInfo(TypedDict):
+    """Information about a slide layout."""
+
     Part: str
     Name: str
     MasterPart: str
 
 
 class SlideMasterCloneResult(TypedDict):
+    """Result of cloning a slide master."""
+
     MasterPart: str
     ThemePart: str
     LayoutMap: dict[str, str]
 
 
 class SlideMetadata(TypedDict):
+    """Metadata for a slide."""
+
     Index: int
     SlideID: int
     RelationshipID: str
@@ -114,12 +128,16 @@ class SlideMetadata(TypedDict):
 
 
 class Section(TypedDict):
+    """Section in a presentation."""
+
     Name: str
     GUID: str
     SlideIDs: list[int]
 
 
 class ShapeSearchQuery(TypedDict, total=False):
+    """Query parameters for searching shapes."""
+
     name_contains: str
     type_equals: str
     text_contains: str
@@ -127,11 +145,15 @@ class ShapeSearchQuery(TypedDict, total=False):
 
 
 class ShapeSearchResult(TypedDict):
+    """Result of a shape search."""
+
     SlideIndex: int
     Shape: Shape
 
 
 class Author(TypedDict):
+    """Author information for comments."""
+
     ID: int
     Name: str
     Initials: str
@@ -139,6 +161,8 @@ class Author(TypedDict):
 
 
 class Comment(TypedDict):
+    """Comment on a slide."""
+
     AuthorID: int
     Text: str
     Created: str
@@ -148,18 +172,24 @@ class Comment(TypedDict):
 
 
 class BatchCommand(TypedDict, total=False):
+    """Command for batch operations."""
+
     op: str
     payload: dict
     request_id: str
 
 
 class BatchErrorDetail(TypedDict, total=False):
+    """Error details for a failed batch item."""
+
     code: str
     message: str
     details: dict
 
 
 class BatchItemResult(TypedDict, total=False):
+    """Result of a single batch item."""
+
     ok: bool
     op: str
     request_id: str
@@ -168,6 +198,8 @@ class BatchItemResult(TypedDict, total=False):
 
 
 class TableCellInfo(TypedDict):
+    """Information about a table cell."""
+
     row: int
     col: int
     row_span: int
@@ -180,6 +212,8 @@ class TableCellInfo(TypedDict):
 
 
 class TableInfo(TypedDict):
+    """Information about a table."""
+
     row_count: int
     col_count: int
     first_row: bool

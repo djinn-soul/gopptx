@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -83,7 +84,7 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 	// 4. Run conversion with LibreOffice
 	// soffice --headless --convert-to pdf <temp_file> --outdir <output_dir>
 	outputDir := filepath.Dir(outputPath)
-	cmd := exec.Command(sofficeCmd, "--headless", "--convert-to", "pdf", tmpFile, "--outdir", outputDir)
+	cmd := exec.CommandContext(context.Background(), sofficeCmd, "--headless", "--convert-to", "pdf", tmpFile, "--outdir", outputDir)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("LibreOffice conversion failed: %v\nOutput: %s", err, string(output))
@@ -147,7 +148,7 @@ try {
 `, pptxPath, pdfPath)
 
 	// Run PowerShell
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", psScript)
+	cmd := exec.CommandContext(context.Background(), "powershell", "-NoProfile", "-NonInteractive", "-Command", psScript)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("PowerShell execution failed: %v\nOutput: %s", err, string(output))

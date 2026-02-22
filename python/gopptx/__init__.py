@@ -37,7 +37,7 @@ from .ops import (
     OP_SLIDE_COUNT,
     SUPPORTED_OPS,
 )
-from .types import (
+from .schemas import (
     Author,
     BatchCommand,
     BatchItemResult,
