@@ -1,5 +1,8 @@
+"""Base presentation class with core functionality for gopptx library."""
+
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import json
 import os
@@ -8,13 +11,22 @@ import re
 import sys
 import threading
 import uuid
-from typing import Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
+
+from typing_extensions import Self
 
 from . import ops
 from .api_batch import _BatchContext
 from .api_errors import GopptxError
 from .api_slide import Slide
-from .types import BatchCommand, BatchItemResult, PresentationMetadata, SlideMetadata
+
+if TYPE_CHECKING:
+    from .types import (
+        BatchCommand,
+        BatchItemResult,
+        PresentationMetadata,
+        SlideMetadata,
+    )
 
 try:
     import orjson as _orjson  # type: ignore[import-not-found]
@@ -22,7 +34,7 @@ except ImportError:
     _orjson = None
 
 
-def _json_dumps(payload: Dict[str, Any]) -> bytes:
+def _json_dumps(payload: dict[str, Any]) -> bytes:
     if _orjson is not None:
         return _orjson.dumps(payload)
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -44,7 +56,7 @@ def _with_key_aliases(obj: Any) -> Any:
         return [_with_key_aliases(item) for item in obj]
     if not isinstance(obj, dict):
         return obj
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for k, v in obj.items():
         out[k] = _with_key_aliases(v)
         out[k.lower()] = out[k]
@@ -56,16 +68,16 @@ class PresentationBase:
     _lib = None
     _lib_lock = threading.Lock()
 
-    def __init__(self, path: Optional[str] = None):
+    def __init__(self, path: str | None = None) -> None:
         self._load_library()
         self._lock = threading.RLock()
-        self._handle: Optional[int] = None
-        self._slides_metadata_cache: Optional[list[SlideMetadata]] = None
-        self._metadata_cache: Optional[PresentationMetadata] = None
+        self._handle: int | None = None
+        self._slides_metadata_cache: list[SlideMetadata] | None = None
+        self._metadata_cache: PresentationMetadata | None = None
         self._batch_active = False
         self._batch_stop_on_error = False
         self._batch_commands: list[dict] = []
-        self._comment_ref_cache: Dict[int, tuple[int, int, int]] = {}
+        self._comment_ref_cache: dict[int, tuple[int, int, int]] = {}
         if path:
             self.open(path)
 
@@ -74,7 +86,7 @@ class PresentationBase:
         with cls._lib_lock:
             if cls._lib:
                 return
-            pkg_dir = os.path.dirname(__file__)
+            pkg_dir = pathlib.Path(__file__).parent
             lib_name = (
                 "gopptx.dll"
                 if sys.platform == "win32"
@@ -92,7 +104,11 @@ class PresentationBase:
                 os.path.join(pkg_dir, lib_name),
             ])
             lib_path = next(
-                (os.path.abspath(c) for c in search_paths if pathlib.Path(c).exists()),
+                (
+                    pathlib.Path(c).resolve()
+                    for c in search_paths
+                    if pathlib.Path(c).exists()
+                ),
                 None,
             )
             if not lib_path:
@@ -135,9 +151,7 @@ class PresentationBase:
         pres._handle = int(handle)
         return pres
 
-    def execute(
-        self, op: str, payload: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def execute(self, op: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         with self._lock:
             if not self._handle:
                 raise GopptxError("Presentation is not open.")
@@ -171,7 +185,7 @@ class PresentationBase:
                     return {}
                 if not isinstance(result, dict):
                     raise GopptxError("Invalid response payload type")
-                return cast(Dict[str, Any], result)
+                return cast("dict[str, Any]", result)
             finally:
                 self._lib.deck_free_string(res_ptr)
 
@@ -189,7 +203,7 @@ class PresentationBase:
             ops.OP_BATCH_EXECUTE, {"commands": commands, "stop_on_error": stop_on_error}
         )
         self.invalidate_cache()
-        return cast(list[BatchItemResult], result.get("results", []))
+        return cast("list[BatchItemResult]", result.get("results", []))
 
     def batch(self, stop_on_error: bool = False) -> _BatchContext:
         """Context manager for buffered mutating operations executed as one batch."""
@@ -235,7 +249,7 @@ class PresentationBase:
             if self._metadata_cache is not None:
                 return self._metadata_cache
             self._metadata_cache = cast(
-                PresentationMetadata, self.execute(ops.OP_GET_METADATA, {})
+                "PresentationMetadata", self.execute(ops.OP_GET_METADATA, {})
             )
             return self._metadata_cache
 
@@ -250,7 +264,7 @@ class PresentationBase:
                 return self._slides_metadata_cache
             slides = self.execute(ops.OP_LIST_SLIDES, {}).get("slides", [])
             self._slides_metadata_cache = cast(
-                list[SlideMetadata], _with_key_aliases(slides)
+                "list[SlideMetadata]", _with_key_aliases(slides)
             )
             return self._slides_metadata_cache
 
@@ -303,17 +317,15 @@ class PresentationBase:
                 self._handle = None
             self.invalidate_cache()
 
-    def __enter__(self) -> PresentationBase:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()
 
     def __del__(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.close()
-        except Exception:
-            pass
 
     def __repr__(self) -> str:
         return f"<Presentation title='{self.title}' slides={self.slide_count}>"

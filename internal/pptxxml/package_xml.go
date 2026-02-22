@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const sectionListRelationshipType = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
+
 // Escape replaces XML-sensitive characters with entity references.
 func Escape(value string) string {
 	return xmlEscapeReplacer.Replace(value)
@@ -34,6 +36,7 @@ func ContentTypes(
 	notesThemeIndex int,
 	hasSections bool,
 	commentSlides []int,
+	hasCustomProps bool,
 	hasSignatures bool,
 ) string {
 	if masterCount < 1 {
@@ -170,6 +173,11 @@ func ContentTypes(
 <Override PartName="/docProps/app.xml" ` +
 		`ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>`)
 
+	if hasCustomProps {
+		b.WriteString(`
+<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`)
+	}
+
 	if hasSignatures {
 		b.WriteString(`
 <Override PartName="/_xmlsignatures/origin.sigs" ContentType="application/vnd.openxmlformats-package.digital-signature-origin"/>`)
@@ -241,6 +249,7 @@ func RootRelationships(hasCustomProps, hasSignatures bool) string {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(rId))
 		b.WriteString(`" Type="http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin" Target="_xmlsignatures/origin.sigs"/>`)
+		rId++
 	}
 	b.WriteString("\n</Relationships>")
 	return b.String()
@@ -316,7 +325,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.microsoft.com/office/2006/relationships/sectionList" Target="sectionList.xml"/>`)
+		b.WriteString(`" Type="`)
+		b.WriteString(sectionListRelationshipType)
+		b.WriteString(`" Target="sectionList.xml"/>`)
 		nextRid++
 	}
 
@@ -347,24 +358,51 @@ func SectionListXML(sections []Section) string {
 	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
-	b.WriteString("\n<s:sectionLst xmlns:s=\"http://schemas.microsoft.com/office/powerpoint/2010/main\">")
+	b.WriteString(sectionListBody("s", "http://schemas.microsoft.com/office/powerpoint/2010/main", sections))
+	return b.String()
+}
+
+func sectionListBody(prefix, namespace string, sections []Section) string {
+	var b strings.Builder
+	b.WriteString("\n<")
+	b.WriteString(prefix)
+	b.WriteString(":sectionLst")
+	if namespace != "" {
+		b.WriteString(" xmlns:")
+		b.WriteString(prefix)
+		b.WriteString("=\"")
+		b.WriteString(namespace)
+		b.WriteString("\"")
+	}
+	b.WriteString(">")
 	for _, s := range sections {
-		// PPT uses braces for GUIDs, e.g. "{BA8A57BE-2A2B-4EF9-A77E-97BDDEBBA9AC}"
-		b.WriteString("\n  <s:section name=\"")
+		b.WriteString("\n  <")
+		b.WriteString(prefix)
+		b.WriteString(":section name=\"")
 		b.WriteString(Escape(s.Name))
 		b.WriteString("\" id=\"")
 		b.WriteString(s.GUID)
 		b.WriteString("\">")
-		b.WriteString("\n    <s:sldIdLst>")
+		b.WriteString("\n    <")
+		b.WriteString(prefix)
+		b.WriteString(":sldIdLst>")
 		for _, slideID := range s.SlideIDs {
-			b.WriteString("\n      <s:sldId id=\"")
+			b.WriteString("\n      <")
+			b.WriteString(prefix)
+			b.WriteString(":sldId id=\"")
 			b.WriteString(strconv.FormatInt(slideID, 10))
 			b.WriteString("\"/>")
 		}
-		b.WriteString("\n    </s:sldIdLst>")
-		b.WriteString("\n  </s:section>")
+		b.WriteString("\n    </")
+		b.WriteString(prefix)
+		b.WriteString(":sldIdLst>")
+		b.WriteString("\n  </")
+		b.WriteString(prefix)
+		b.WriteString(":section>")
 	}
-	b.WriteString("\n</s:sectionLst>")
+	b.WriteString("\n</")
+	b.WriteString(prefix)
+	b.WriteString(":sectionLst>")
 	return b.String()
 }
 
@@ -478,25 +516,9 @@ func Presentation(
 	if len(sections) > 0 {
 		b.WriteString(`
 <p:extLst>
-<p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}">
-<p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">`)
-		for _, s := range sections {
-			b.WriteString("\n<p14:section name=\"")
-			b.WriteString(Escape(s.Name))
-			b.WriteString("\" id=\"")
-			b.WriteString(s.GUID)
-			b.WriteString("\">")
-			b.WriteString("\n<p14:sldIdLst>")
-			for _, sid := range s.SlideIDs {
-				b.WriteString("\n<p14:sldId id=\"")
-				b.WriteString(strconv.FormatInt(sid, 10))
-				b.WriteString("\"/>")
-			}
-			b.WriteString("\n</p14:sldIdLst>")
-			b.WriteString("\n</p14:section>")
-		}
+<p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}">`)
+		b.WriteString(sectionListBody("p14", "http://schemas.microsoft.com/office/powerpoint/2010/main", sections))
 		b.WriteString(`
-</p14:sectionLst>
 </p:ext>
 </p:extLst>`)
 	}

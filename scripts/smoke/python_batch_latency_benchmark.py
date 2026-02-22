@@ -59,13 +59,10 @@ def main() -> None:
             "speedup_x": round(speedup, 3),
         }
 
-        print(json.dumps(report, indent=2))
-
         output_dir = pathlib.Path("tmp")
         output_dir.mkdir(parents=True, exist_ok=True)
         out_path = output_dir / "python_batch_latency_benchmark.json"
         out_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-        print(f"Wrote benchmark report: {out_path}")
 
 
 if __name__ == "__main__":

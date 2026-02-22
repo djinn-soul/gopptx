@@ -1,3 +1,5 @@
+"""Main Presentation class for gopptx library."""
+
 from __future__ import annotations
 
 from .api_presentation_base import PresentationBase

@@ -544,6 +544,7 @@ func SlideRelationshipsWithMultiCharts(
 		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="`)
 		b.WriteString(Escape(commentsTarget))
 		b.WriteString(`"/>`)
+		maxRID++
 	}
 	b.WriteString(`
 </Relationships>`)

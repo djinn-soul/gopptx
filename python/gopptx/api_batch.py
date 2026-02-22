@@ -1,18 +1,22 @@
+"""Batch execution context for gopptx library."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from typing_extensions import Self
+
 from . import ops
-from .types import BatchItemResult
 
 if TYPE_CHECKING:
     from .api_presentation import Presentation
+    from .types import BatchItemResult
 
 
 class _BatchContext:
     """Context manager for buffering operations and executing them as a batch."""
 
-    _READ_OPS = {
+    _READ_OPS: set[str] = {
         ops.OP_SLIDE_COUNT,
         ops.OP_GET_METADATA,
         ops.OP_LIST_SLIDES,
@@ -28,12 +32,12 @@ class _BatchContext:
         ops.OP_GET_TABLE,
     }
 
-    def __init__(self, presentation: Presentation, stop_on_error: bool = False):
+    def __init__(self, presentation: Presentation, stop_on_error: bool = False) -> None:
         self._presentation = presentation
         self._stop_on_error = stop_on_error
         self._results: list[BatchItemResult] = []
 
-    def __enter__(self) -> _BatchContext:
+    def __enter__(self) -> Self:
         self._presentation._begin_batch(self._stop_on_error)
         return self
 

@@ -101,7 +101,6 @@ func WritePresentationPackage(
 		return err
 	}
 
-	
 	chartBySlide := chartPartBySlide(chartParts)
 	smartArtBySlide := smartArtPartBySlide(smartArtParts)
 	notesTargets := notes.TargetBySlide(notesParts)
@@ -160,7 +159,7 @@ func addBasicPropertyFiles(
 ) error {
 	hasNotes := notesPartCount > 0
 
-	xSections, err := convertSections(meta.Sections)
+	xSections, err := convertSections(meta.Sections, slideCount)
 	if err != nil {
 		return err
 	}
@@ -171,6 +170,7 @@ func addBasicPropertyFiles(
 		slideCount, mediaExtensions, chartPartCount, smartArtPartCount,
 		notes.SlideNumbers(notesParts), hasNotes,
 		len(meta.CustomXML), masterCount, notesThemeIndex, hasSections, commentSlideIndices,
+		meta.Protection.MarkAsFinal,
 		meta.Protection.SignaturesEnabled,
 	))
 	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
@@ -226,7 +226,7 @@ func addBasicPropertyFiles(
 	return nil
 }
 
-func convertSections(sections []Section) ([]pptxxml.Section, error) {
+func convertSections(sections []Section, slideCount int) ([]pptxxml.Section, error) {
 	if len(sections) == 0 {
 		return nil, nil
 	}
@@ -234,6 +234,9 @@ func convertSections(sections []Section) ([]pptxxml.Section, error) {
 	for i, s := range sections {
 		ids := make([]int64, len(s.SlideIndices))
 		for j, idx := range s.SlideIndices {
+			if idx < 0 || idx >= slideCount {
+				return nil, fmt.Errorf("section %q references slide index %d outside [0,%d)", s.Name, idx, slideCount)
+			}
 			ids[j] = int64(256 + 1 + idx)
 		}
 		guid, err := generateGUID()

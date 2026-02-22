@@ -6,7 +6,7 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 
 class CustomBuildHook(BuildHookInterface):
-    def initialize(self, version, build_data):
+    def initialize(self, version, build_data) -> None:
         if self.target_name != "wheel":
             return
 
@@ -23,13 +23,11 @@ class CustomBuildHook(BuildHookInterface):
 
         out_path = os.path.join(pkg_dir, lib_name)
 
-        print(f"Building Go engine: {out_path}")
         cmd = ["go", "build", "-o", out_path, "-buildmode=c-shared", go_bridge_src]
 
         try:
             subprocess.run(cmd, check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Go build failed: {e.stderr}", file=sys.stderr)
+        except subprocess.CalledProcessError:
             sys.exit(1)
 
         build_data["artifacts"].append(f"python/gopptx/{lib_name}")

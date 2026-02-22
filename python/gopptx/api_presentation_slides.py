@@ -1,26 +1,34 @@
+"""Presentation slides mixin for gopptx library."""
+
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from . import ops
 from .api_master import SlideMasters
 from .api_slide import Slide
-from .types import CoreProperties, Section, SlideLayoutInfo, SlideMasterCloneResult
+
+if TYPE_CHECKING:
+    from .types import CoreProperties, Section, SlideLayoutInfo, SlideMasterCloneResult
 
 
 class PresentationSlidesMixin:
+    """Mixin providing slide-related methods for Presentation."""
+
     @property
     def slide_masters(self) -> SlideMasters:
+        """Get the slide masters collection."""
         if getattr(self, "_slide_masters_obj", None) is None:
             self._slide_masters_obj = SlideMasters(self)  # type: ignore
         return self._slide_masters_obj  # type: ignore
 
     @property
     def sections(self) -> list[Section]:
+        """Get all sections in the presentation."""
         result = self.execute(ops.OP_GET_SECTIONS, {})
         raw_sections = result.get("sections")
         sections = cast(
-            list[dict], raw_sections if isinstance(raw_sections, list) else []
+            "list[dict]", raw_sections if isinstance(raw_sections, list) else []
         )
         for s in sections:
             if "Name" in s and "name" not in s:
@@ -32,18 +40,20 @@ class PresentationSlidesMixin:
             # Backward-compatible alias used by legacy tests.
             if "id" not in s and "name" in s:
                 s["id"] = s["name"]
-        return cast(list[Section], sections)
+        return cast("list[Section]", sections)
 
     def get_sections(self) -> list[Section]:
+        """Get all sections in the presentation."""
         return self.sections
 
     def add_slide(
         self,
         title: str,
-        layout: Optional[str] = None,
-        bullets: Optional[list[str]] = None,
+        layout: str | None = None,
+        bullets: list[str] | None = None,
     ) -> Slide:
-        payload: Dict[str, Any] = {"title": title}
+        """Add a new slide to the presentation."""
+        payload: dict[str, Any] = {"title": title}
         if layout:
             payload["layout"] = layout
         if bullets:
@@ -62,19 +72,22 @@ class PresentationSlidesMixin:
                 "part_name": "",
                 "title": title,
             }
-            return Slide(self, cast(Any, placeholder))
+            return Slide(self, cast("Any", placeholder))
         self.invalidate_cache()
         return self.slides[int(result.get("index", -1))]
 
     def remove_slide(self, index: int) -> None:
+        """Remove a slide from the presentation."""
         self.execute(ops.OP_REMOVE_SLIDE, {"index": index})
         self.invalidate_cache()
 
     def move_slide(self, from_index: int, to_index: int) -> None:
+        """Move a slide to a new position."""
         self.execute(ops.OP_MOVE_SLIDE, {"from": from_index, "to": to_index})
         self.invalidate_cache()
 
-    def duplicate_slide(self, index: int, insert_at: Optional[int] = None) -> int:
+    def duplicate_slide(self, index: int, insert_at: int | None = None) -> int:
+        """Duplicate a slide and return the new slide index."""
         if insert_at is None:
             insert_at = index + 1
         result = self.execute(
@@ -86,11 +99,12 @@ class PresentationSlidesMixin:
     def update_slide(
         self,
         index: int,
-        title: Optional[str] = None,
-        layout: Optional[str] = None,
-        bullets: Optional[list[str]] = None,
+        title: str | None = None,
+        layout: str | None = None,
+        bullets: list[str] | None = None,
     ) -> None:
-        payload: Dict[str, Any] = {"slide_index": index}
+        """Update slide properties."""
+        payload: dict[str, Any] = {"slide_index": index}
         if title is not None:
             payload["title"] = title
         if layout is not None:
@@ -122,7 +136,7 @@ class PresentationSlidesMixin:
 
     @property
     def core_properties(self) -> CoreProperties:
-        return cast(CoreProperties, self.execute(ops.OP_GET_CORE_PROPERTIES, {}))
+        return cast("CoreProperties", self.execute(ops.OP_GET_CORE_PROPERTIES, {}))
 
     def get_core_properties(self) -> CoreProperties:
         return self.core_properties
@@ -172,7 +186,7 @@ class PresentationSlidesMixin:
 
     def list_slide_layouts(self) -> list[SlideLayoutInfo]:
         result = self.execute(ops.OP_LIST_SLIDE_LAYOUTS, {})
-        layouts = cast(list[dict], result.get("layouts", []))
+        layouts = cast("list[dict]", result.get("layouts", []))
         for item in layouts:
             if "Name" in item and "name" not in item:
                 item["name"] = item["Name"]
@@ -180,14 +194,14 @@ class PresentationSlidesMixin:
                 item["part"] = item["Part"]
             if "MasterPart" in item and "master_part" not in item:
                 item["master_part"] = item["MasterPart"]
-        return cast(list[SlideLayoutInfo], layouts)
+        return cast("list[SlideLayoutInfo]", layouts)
 
     def rebind_slide_layout(self, slide_index: int, layout_part: str) -> None:
         target_layout = layout_part
         if "/" not in target_layout:
             for layout in self.list_slide_layouts():
                 if layout.get("name") == target_layout:
-                    target_layout = cast(str, layout.get("part", target_layout))
+                    target_layout = cast("str", layout.get("part", target_layout))
                     break
         self.execute(
             ops.OP_REBIND_SLIDE_LAYOUT,
@@ -200,7 +214,7 @@ class PresentationSlidesMixin:
             ops.OP_CLONE_LAYOUT_MASTER_FAMILY, {"layout_part": layout_part}
         )
         self.invalidate_cache()
-        return cast(SlideMasterCloneResult, result)
+        return cast("SlideMasterCloneResult", result)
 
     def set_modify_password(self, password: str) -> None:
         self.execute(ops.OP_SET_MODIFY_PASSWORD, {"password": password})

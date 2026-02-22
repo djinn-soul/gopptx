@@ -1,5 +1,7 @@
 from collections.abc import Iterator
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
+
+from typing_extensions import Self
 
 from .types import (
     Author,
@@ -25,8 +27,8 @@ from .types import (
 )
 
 class GopptxError(Exception):
-    code: Optional[str]
-    def __init__(self, message: str, code: Optional[str] = None) -> None: ...
+    code: str | None
+    def __init__(self, message: str, code: str | None = None) -> None: ...
 
 class Cell:
     row: int
@@ -53,9 +55,7 @@ class Table:
     def row_count(self) -> int: ...
     @property
     def col_count(self) -> int: ...
-    def __getitem__(
-        self, idx: Tuple[Union[int, slice], Union[int, slice]]
-    ) -> Union[Cell, CellRange]: ...
+    def __getitem__(self, idx: tuple[int | slice, int | slice]) -> Cell | CellRange: ...
     def cell(self, row: int, col: int) -> Cell: ...
     def iter_cells(self) -> Iterator[Cell]: ...
     @property
@@ -88,8 +88,8 @@ class Slide:
         y: float,
         w: float,
         h: float,
-        text: Optional[str] = None,
-        properties: Optional[ShapeProps] = None,
+        text: str | None = None,
+        properties: ShapeProps | None = None,
     ) -> int: ...
     def add_table(
         self, rows: int, cols: int, x: int, y: int, cx: int, cy: int
@@ -123,12 +123,12 @@ class Slide:
     ) -> None: ...
     def update(
         self,
-        title: Optional[str] = None,
-        layout: Optional[str] = None,
-        bullets: Optional[list[str]] = None,
+        title: str | None = None,
+        layout: str | None = None,
+        bullets: list[str] | None = None,
     ) -> None: ...
     def remove(self) -> None: ...
-    def duplicate(self, insert_at: Optional[int] = None) -> Slide: ...
+    def duplicate(self, insert_at: int | None = None) -> Slide: ...
 
 class SlideLayout:
     @property
@@ -142,7 +142,7 @@ class SlideLayouts:
     def __len__(self) -> int: ...
     def __getitem__(self, idx: int) -> SlideLayout: ...
     def __iter__(self) -> Any: ...
-    def get_by_name(self, name: str) -> Optional[SlideLayout]: ...
+    def get_by_name(self, name: str) -> SlideLayout | None: ...
 
 class SlideMaster:
     @property
@@ -157,14 +157,14 @@ class SlideMasters:
 
 class Presentation:
     _lib: Any
-    _handle: Optional[int]
+    _handle: int | None
 
-    def __init__(self, path: Optional[str] = None) -> None: ...
+    def __init__(self, path: str | None = None) -> None: ...
     @classmethod
     def new(cls, title: str) -> Presentation: ...
     def execute(
-        self, op: str, payload: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]: ...
+        self, op: str, payload: dict[str, Any] | None = None
+    ) -> dict[str, Any]: ...
     def execute_batch(
         self, commands: list[BatchCommand], stop_on_error: bool = False
     ) -> list[BatchItemResult]: ...
@@ -183,18 +183,18 @@ class Presentation:
     def add_slide(
         self,
         title: str,
-        layout: Optional[str] = None,
-        bullets: Optional[list[str]] = None,
+        layout: str | None = None,
+        bullets: list[str] | None = None,
     ) -> Slide: ...
     def remove_slide(self, index: int) -> None: ...
     def move_slide(self, from_index: int, to_index: int) -> None: ...
-    def duplicate_slide(self, index: int, insert_at: Optional[int] = None) -> int: ...
+    def duplicate_slide(self, index: int, insert_at: int | None = None) -> int: ...
     def update_slide(
         self,
         index: int,
-        title: Optional[str] = None,
-        layout: Optional[str] = None,
-        bullets: Optional[list[str]] = None,
+        title: str | None = None,
+        layout: str | None = None,
+        bullets: list[str] | None = None,
     ) -> None: ...
     def add_chart(
         self,
@@ -278,8 +278,8 @@ class Presentation:
         y: float,
         w: float,
         h: float,
-        text: Optional[str] = None,
-        properties: Optional[ShapeProps] = None,
+        text: str | None = None,
+        properties: ShapeProps | None = None,
     ) -> int: ...
     def add_image(
         self, slide_index: int, path: str, x: float, y: float, w: float, h: float
@@ -297,5 +297,5 @@ class Presentation:
     def open(self, path: str) -> None: ...
     def save(self, path: str) -> None: ...
     def close(self) -> None: ...
-    def __enter__(self) -> Presentation: ...
+    def __enter__(self) -> Self: ...
     def __exit__(self, exc_type, exc_val, exc_tb) -> None: ...

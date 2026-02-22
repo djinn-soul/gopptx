@@ -1,6 +1,3 @@
-
-from typing import FrozenSet, Tuple
-
 OP_ADD_AUTHOR: str
 OP_ADD_CHART: str
 OP_ADD_COMMENT: str
@@ -52,5 +49,5 @@ OP_UPDATE_SHAPE: str
 OP_UPDATE_SLIDE: str
 OP_UPDATE_TABLE_CELL: str
 OP_UPDATE_TABLE_FLAGS: str
-SUPPORTED_OPS: Tuple[str, ...]
-SUPPORTED_OPS_SET: FrozenSet[str]
+SUPPORTED_OPS: tuple[str, ...]
+SUPPORTED_OPS_SET: frozenset[str]

@@ -118,9 +118,12 @@ max-nested-blocks = 3
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"python/gopptx/**/*.py" = ["TCH"]
+"python/gopptx/**/*.pyi" = ["ANN401", "ANN001"]
+"python/gopptx/**/*.py" = ["TCH", "D", "ANN", "SLF001", "FBT", "PLR0913", "PLR0917", "PLR0904", "A005", "S105", "PLC0415", "RUF012", "S101", "PTH", "ERA001"]
 "tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
+"python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D", "PTH", "T201", "BLE001", "PLC1901"]
 "examples/**/*.py" = ["T201", "INP001", "D"]
+"scripts/**/*.py" = ["T201", "INP001", "D", "PTH", "ANN", "S110", "BLE001", "PERF203", "PLR2004"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -1,6 +1,6 @@
-from __future__ import annotations
+"""Type definitions for gopptx library."""
 
-from typing import List
+from __future__ import annotations
 
 try:
     from typing import TypedDict
@@ -9,17 +9,23 @@ except ImportError:  # pragma: no cover
 
 
 class SlideSize(TypedDict):
+    """Slide dimensions in EMUs."""
+
     width: int
     height: int
 
 
 class PresentationMetadata(TypedDict):
+    """Presentation metadata."""
+
     title: str
     slide_count: int
     size: SlideSize
 
 
 class CoreProperties(TypedDict, total=False):
+    """Core document properties."""
+
     title: str
     subject: str
     creator: str
@@ -34,10 +40,14 @@ class CoreProperties(TypedDict, total=False):
 
 
 class ShapeProps(TypedDict, total=False):
+    """Shape properties."""
+
     name: str
 
 
 class ShapeUpdate(TypedDict, total=False):
+    """Shape update parameters."""
+
     text: str
     x: int
     y: int
@@ -46,6 +56,8 @@ class ShapeUpdate(TypedDict, total=False):
 
 
 class Shape(TypedDict):
+    """Shape information."""
+
     ID: int
     Name: str
     Type: str
@@ -63,16 +75,16 @@ class ChartSelector(TypedDict, total=False):
 
 class ChartSeriesData(TypedDict, total=False):
     name: str
-    categories: List[str]
-    values: List[float]
-    x_values: List[float]
-    y_values: List[float]
-    sizes: List[float]
+    categories: list[str]
+    values: list[float]
+    x_values: list[float]
+    y_values: list[float]
+    sizes: list[float]
 
 
 class ChartDataUpdate(TypedDict, total=False):
-    categories: List[str]
-    series: List[ChartSeriesData]
+    categories: list[str]
+    series: list[ChartSeriesData]
 
 
 class SlideChartRef(TypedDict):
@@ -104,7 +116,7 @@ class SlideMetadata(TypedDict):
 class Section(TypedDict):
     Name: str
     GUID: str
-    SlideIDs: List[int]
+    SlideIDs: list[int]
 
 
 class ShapeSearchQuery(TypedDict, total=False):
@@ -176,4 +188,4 @@ class TableInfo(TypedDict):
     last_col: bool
     band_row: bool
     band_col: bool
-    cells: List[TableCellInfo]
+    cells: list[TableCellInfo]

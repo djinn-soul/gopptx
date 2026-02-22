@@ -1,53 +1,53 @@
+"""Table and Cell proxy classes for gopptx library."""
+
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from . import ops
 from .api_errors import GopptxError
+from .utils import _normalize_table_index
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from .api_presentation import Presentation
 
 
-def _normalize_table_index(value: Any) -> int:
-    if isinstance(value, bool):
-        raise ValueError("table index must be an integer")
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        if not value.is_integer():
-            raise ValueError("table index must be integral")
-        return int(value)
-    raise ValueError("table index must be an integer")
-
-
 class Cell:
-    def __init__(self, table: Table, row: int, col: int):
+    """Proxy object for a table cell."""
+
+    def __init__(self, table: Table, row: int, col: int) -> None:
+        """Initialize the cell proxy."""
         self._table = table
         self.row = row
         self.col = col
 
     @property
     def is_merge_origin(self) -> bool:
+        """Check if this cell is the origin of a merged cell range."""
         return self._table._get_cell_info(self.row, self.col).get(
             "is_merge_origin", False
         )
 
     @property
     def is_spanned(self) -> bool:
+        """Check if this cell is spanned by another merged cell."""
         return self._table._get_cell_info(self.row, self.col).get("is_spanned", False)
 
     @property
     def row_span(self) -> int:
+        """Get the number of rows this cell spans."""
         return self._table._get_cell_info(self.row, self.col).get("row_span", 1)
 
     @property
     def col_span(self) -> int:
+        """Get the number of columns this cell spans."""
         return self._table._get_cell_info(self.row, self.col).get("col_span", 1)
 
     @property
     def text(self) -> str:
+        """Get the text content of this cell."""
         return str(self._table._get_cell_info(self.row, self.col).get("text", ""))
 
     @text.setter
@@ -85,7 +85,7 @@ class CellRange:
 
     def __init__(
         self, table: Table, row_start: int, row_end: int, col_start: int, col_end: int
-    ):
+    ) -> None:
         self._table = table
         self.row_start = max(0, row_start)
         self.row_end = min(table.row_count, row_end)
@@ -124,17 +124,19 @@ class CellRange:
 
 class Table:
     """Pythonic Table API for gopptx.
+
     Provides grid-based access via slicing: table[row, col] or table[r1:r2, c1:c2].
     """
 
-    def __init__(self, prs: Presentation, slide_index: int, shape_id: int):
+    def __init__(self, prs: Presentation, slide_index: int, shape_id: int) -> None:
+        """Initialize the table proxy."""
         self._prs = prs
         self._slide_index = slide_index
         self._shape_id = shape_id
-        self._cache: Optional[Dict[str, Any]] = None
-        self._cell_map: Dict[Tuple[int, int], Dict[str, Any]] = {}
-        self._row_count: Optional[int] = None
-        self._col_count: Optional[int] = None
+        self._cache: dict[str, Any] | None = None
+        self._cell_map: dict[tuple[int, int], dict[str, Any]] = {}
+        self._row_count: int | None = None
+        self._col_count: int | None = None
 
         # Pre-fetch table structure if not in batch mode to enable usage during batch
         if not getattr(self._prs, "_batch_active", False):
@@ -146,7 +148,7 @@ class Table:
                 ops.OP_GET_TABLE,
                 {"slide_index": self._slide_index, "shape_id": self._shape_id},
             )
-            self._cache = cast(Dict[str, Any], res.get("table", {}))
+            self._cache = cast("dict[str, Any]", res.get("table", {}))
 
             # Optimization: Build coordinate map for O(1) cell lookup
             self._cell_map = {}
@@ -157,7 +159,7 @@ class Table:
                     col_idx = _normalize_table_index(c["col"])
                 except (KeyError, ValueError):
                     continue
-                self._cell_map[(row_idx, col_idx)] = c
+                self._cell_map[row_idx, col_idx] = c
 
             # Permanent cache of dimensions
             self._row_count = int(self._cache.get("row_count", 0))
@@ -171,11 +173,11 @@ class Table:
             self._cache = None
             self._cell_map = {}
 
-    def _get_cell_info(self, row: int, col: int) -> Dict[str, Any]:
+    def _get_cell_info(self, row: int, col: int) -> dict[str, Any]:
         self._ensure_cache()
         return self._cell_map.get((row, col), {})
 
-    def _update_cell(self, row: int, col: int, updates: Dict[str, Any]) -> None:
+    def _update_cell(self, row: int, col: int, updates: dict[str, Any]) -> None:
         """Updates a cell and its local cache representation.
 
         Note: The local cache update is a best-effort sync for properties like text.
@@ -203,6 +205,7 @@ class Table:
 
     @property
     def row_count(self) -> int:
+        """Get the number of rows in the table."""
         if self._row_count is not None:
             return self._row_count
         self._ensure_cache()
@@ -210,14 +213,14 @@ class Table:
 
     @property
     def col_count(self) -> int:
+        """Get the number of columns in the table."""
         if self._col_count is not None:
             return self._col_count
         self._ensure_cache()
         return self._col_count or 0
 
-    def __getitem__(
-        self, idx: Tuple[Union[int, slice], Union[int, slice]]
-    ) -> Union[Cell, CellRange]:
+    def __getitem__(self, idx: tuple[int | slice, int | slice]) -> Cell | CellRange:
+        """Get a cell or range of cells by index."""
         if not isinstance(idx, tuple) or len(idx) != 2:
             raise TypeError("Table indices must be a tuple of (row, col)")
 
@@ -261,15 +264,17 @@ class Table:
 
     # Alias for compatibility with traditional APIs
     def cell(self, row: int, col: int) -> Cell:
+        """Get a cell by row and column index."""
         return self[row, col]  # type: ignore
 
     def iter_cells(self) -> Iterator[Cell]:
+        """Iterate over all cells in the table."""
         for r in range(self.row_count):
             for c in range(self.col_count):
                 yield Cell(self, r, c)
 
     # Style Flags
-    def _update_flags(self, flags: Dict[str, bool]) -> None:
+    def _update_flags(self, flags: dict[str, bool]) -> None:
         self._prs.execute(
             ops.OP_UPDATE_TABLE_FLAGS,
             {
@@ -283,6 +288,7 @@ class Table:
 
     @property
     def has_header_row(self) -> bool:
+        """Check if the table has a header row."""
         self._ensure_cache()
         return bool(self._cache.get("first_row", False)) if self._cache else False
 
@@ -292,6 +298,7 @@ class Table:
 
     @property
     def has_banded_rows(self) -> bool:
+        """Check if the table has banded rows."""
         self._ensure_cache()
         return bool(self._cache.get("band_row", False)) if self._cache else False
 

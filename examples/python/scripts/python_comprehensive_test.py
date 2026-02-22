@@ -5,7 +5,9 @@ import sys
 from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+project_root = pathlib.Path(
+    os.path.join(pathlib.Path(__file__).parent, "../../..")
+).resolve()
 sys.path.append(os.path.join(project_root, "python"))
 
 
@@ -18,7 +20,7 @@ output_path = os.path.join(output_dir, "python_comprehensive_output.pptx")
 
 if not pathlib.Path(input_path).exists():
     print(f"Input file {input_path} not found. Skipping test.")
-    exit(0)
+    sys.exit(0)
 
 try:
     print(f"Opening presentation: {input_path}")

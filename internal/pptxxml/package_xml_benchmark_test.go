@@ -28,6 +28,7 @@ func BenchmarkContentTypesLargeDeck(b *testing.B) {
 			false,
 			nil,
 			false,
+			false,
 		)
 	}
 }

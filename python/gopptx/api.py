@@ -1,3 +1,5 @@
+"""Public API exports for gopptx library."""
+
 from __future__ import annotations
 
 from .api_errors import GopptxError

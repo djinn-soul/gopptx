@@ -3,7 +3,7 @@ from __future__ import annotations
 from gopptx import Presentation, ops
 
 
-def test_execute_batch_mixed_results_preserve_order_and_error_details():
+def test_execute_batch_mixed_results_preserve_order_and_error_details() -> None:
     with Presentation.new("Batch Mixed") as prs:
         prs.add_slide("A")
 
@@ -31,7 +31,7 @@ def test_execute_batch_mixed_results_preserve_order_and_error_details():
         assert prs.slides[0].title == "B"
 
 
-def test_execute_batch_stop_on_error_stops_following_commands():
+def test_execute_batch_stop_on_error_stops_following_commands() -> None:
     with Presentation.new("Batch Stop") as prs:
         prs.add_slide("A")
         initial_title = prs.slides[0].title
