@@ -120,9 +120,9 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "python/gopptx/**/*.pyi" = ["ANN401", "ANN001"]
 "tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
-"python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D", "PTH", "T201", "BLE001", "PLC1901"]
+
 "examples/**/*.py" = ["T201", "INP001", "D"]
-"scripts/**/*.py" = ["T201", "INP001", "D", "PTH", "ANN", "S110", "BLE001", "PERF203", "PLR2004"]
+
 
 
 [tool.ruff.format]

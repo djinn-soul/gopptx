@@ -32,7 +32,9 @@ class BatchContext:
         ops.OP_GET_TABLE,
     }
 
-    def __init__(self, presentation: Presentation, *, stop_on_error: bool = False) -> None:
+    def __init__(
+        self, presentation: Presentation, *, stop_on_error: bool = False
+    ) -> None:
         """Initialize the batch context.
 
         Args:

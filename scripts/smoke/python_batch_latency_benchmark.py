@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: D100
 
 import json
 import os
@@ -11,7 +11,7 @@ RUNS = 25
 OPS_PER_RUN = 40
 
 
-def bench_single(pres: Presentation, ops_per_run: int, runs: int) -> float:
+def bench_single(pres: Presentation, ops_per_run: int, runs: int) -> float:  # noqa: D103
     start = time.perf_counter()
     for run in range(runs):
         for i in range(ops_per_run):
@@ -22,7 +22,7 @@ def bench_single(pres: Presentation, ops_per_run: int, runs: int) -> float:
     return time.perf_counter() - start
 
 
-def bench_batch(pres: Presentation, ops_per_run: int, runs: int) -> float:
+def bench_batch(pres: Presentation, ops_per_run: int, runs: int) -> float:  # noqa: D103
     start = time.perf_counter()
     for run in range(runs):
         commands = [
@@ -36,7 +36,7 @@ def bench_batch(pres: Presentation, ops_per_run: int, runs: int) -> float:
     return time.perf_counter() - start
 
 
-def main() -> None:
+def main() -> None:  # noqa: D103
     with Presentation.new("Python Batch Benchmark") as pres:
         pres.add_slide("Slide 1")
 

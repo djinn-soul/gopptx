@@ -1,4 +1,4 @@
-import os
+import os  # noqa: D100
 import pathlib
 import sys
 
@@ -6,16 +6,16 @@ from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
 project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")
+    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
 ).resolve()
-sys.path.append(os.path.join(project_root, "python"))
+sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
 
 
 # Create output directory
-output_dir = os.path.join(project_root, "examples/output")
+output_dir = os.path.join(project_root, "examples/output")  # noqa: PTH118
 pathlib.Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-output_path = os.path.join(output_dir, "python_sections_test.pptx")
+output_path = os.path.join(output_dir, "python_sections_test.pptx")  # noqa: PTH118
 
 try:
     with Presentation.new("Sections Test") as pres:
@@ -36,13 +36,13 @@ try:
         # 4. Verify dynamic indexing
         pres.remove_slide(0)
 
-        if s3.index == 2:
+        if s3.index == 2:  # noqa: PLR2004
             pass
 
         pres.save(output_path)
 
 
-except Exception:
+except Exception:  # noqa: BLE001
     import traceback
 
     traceback.print_exc()

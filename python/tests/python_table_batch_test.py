@@ -1,22 +1,22 @@
-import os
+import os  # noqa: D100
 import pathlib
 
 import pytest
 from gopptx import Presentation
 
 project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")
+    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
 ).resolve()
-input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")
+input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
 
 
-def test_table_batch_mode() -> None:
+def test_table_batch_mode() -> None:  # noqa: D103
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
     with Presentation(input_deck) as prs:
         slide = prs.add_slide("Table Batch Test")
-        shape_id = slide.add_table(3, 3, 1000, 1000, 5000, 2000)
+        shape_id = slide.add_table(3, 3, bounds=(1000, 1000, 5000, 2000))
 
         # Initialize table OUTSIDE batch to fetch structure
         table = slide.table(shape_id)
@@ -28,29 +28,29 @@ def test_table_batch_mode() -> None:
             table[-1, -1].text = "Last"  # Test negative indexing
 
             # Read back from local cache should work inside batch
-            assert table[0, 0].text == "R0C0"
-            assert table[-1, -1].text == "Last"
+            assert table[0, 0].text == "R0C0"  # noqa: S101
+            assert table[-1, -1].text == "Last"  # noqa: S101
 
         # Verify after batch
-        assert table[0, 0].text == "R0C0"
-        assert table[0, 1].text == "R0C1"
-        assert table[2, 2].text == "Last"
+        assert table[0, 0].text == "R0C0"  # noqa: S101
+        assert table[0, 1].text == "R0C1"  # noqa: S101
+        assert table[2, 2].text == "Last"  # noqa: S101
 
 
-def test_table_negative_indexing() -> None:
+def test_table_negative_indexing() -> None:  # noqa: D103
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
     with Presentation(input_deck) as prs:
         slide = prs.add_slide("Table Indexing Test")
-        shape_id = slide.add_table(3, 3, 1000, 1000, 5000, 2000)
+        shape_id = slide.add_table(3, 3, bounds=(1000, 1000, 5000, 2000))
         table = slide.table(shape_id)
 
         table[0, 0].text = "TopLeft"
         table[2, 2].text = "BottomRight"
 
-        assert table[-3, -3].text == "TopLeft"
-        assert table[-1, -1].text == "BottomRight"
+        assert table[-3, -3].text == "TopLeft"  # noqa: S101
+        assert table[-1, -1].text == "BottomRight"  # noqa: S101
 
         with pytest.raises(IndexError):
             _ = table[3, 0]

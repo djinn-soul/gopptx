@@ -19,13 +19,45 @@ if TYPE_CHECKING:
     )
 
 
-class Slide:
-    """Proxy object for a slide within a presentation."""
+class SlideShapeMixin:
+    """Mixin providing shape manipulation methods for Slide objects."""
 
-    def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:
-        """Initialize the slide proxy."""
-        self._presentation = presentation
-        self._metadata = metadata
+    def add_shape(
+        self,
+        shape_type: str,
+        bounds: tuple[float, float, float, float],
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a shape to this slide."""
+        return self._presentation.add_shape(self.index, shape_type, bounds, **kwargs)
+
+    def add_image(self, path: str, bounds: tuple[float, float, float, float]) -> int:
+        """Add an image to this slide."""
+        return self._presentation.add_image(self.index, path, bounds)
+
+    def remove_shape(self, shape_id: int) -> None:
+        """Remove a shape from this slide."""
+        self._presentation.remove_shape(self.index, shape_id)
+
+    def move_shape_to_front(self, shape_id: int) -> None:
+        """Move a shape to the front of the z-order."""
+        self._presentation.move_shape_to_front(self.index, shape_id)
+
+    def move_shape_to_back(self, shape_id: int) -> None:
+        """Move a shape to the back of the z-order."""
+        self._presentation.move_shape_to_back(self.index, shape_id)
+
+    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None:
+        """Update shape properties."""
+        self._presentation.update_shape(self.index, shape_id, updates)
+
+    def list_shapes(self) -> list[Shape]:
+        """List all shapes on this slide."""
+        return self._presentation.list_shapes(self.index)
+
+
+class SlideBase:
+    """Base class providing core slide properties (index, title, notes)."""
 
     @property
     def index(self) -> int:
@@ -59,36 +91,37 @@ class Slide:
     def notes(self, value: str) -> None:
         self._presentation.set_notes(self.index, value)
 
-    def add_shape(
+
+class SlideChartMixin:
+    """Mixin providing chart-related methods for Slide objects."""
+
+    def list_charts(self) -> list[SlideChartRef]:
+        """List all charts on this slide."""
+        return self._presentation.list_slide_charts(self.index)
+
+    def add_chart(
         self,
-        shape_type: str,
-        x: float,
-        y: float,
-        w: float,
-        h: float,
-        text: str | None = None,
-        properties: ShapeProps | None = None,
+        chart_type: str,
+        categories: list[str],
+        values_or_series: list[float] | list[dict[str, str | list[float]]],
+        **kwargs: str | tuple[float, float, float, float],
     ) -> int:
-        """Add a shape to this slide."""
-        return self._presentation.add_shape(
-            self.index, shape_type, x, y, w, h, text=text, properties=properties
+        """Add a chart to this slide.
+
+        Returns:
+            int: The created chart shape ID.
+        """
+        return self._presentation.add_chart(
+            self.index, chart_type, categories, values_or_series, **kwargs
         )
 
-    def add_image(self, path: str, x: float, y: float, w: float, h: float) -> int:
-        """Add an image to this slide."""
-        return self._presentation.add_image(self.index, path, x, y, w, h)
 
-    def add_table(
-        self,
-        rows: int,
-        cols: int,
-        x: int,
-        y: int,
-        cx: int,
-        cy: int,
-    ) -> int:
+class SlideTableMixin:
+    """Mixin providing table manipulation methods for Slide objects."""
+
+    def add_table(self, rows: int, cols: int, bounds: tuple[int, int, int, int]) -> int:
         """Add a table to this slide."""
-        return self._presentation.add_table(self.index, rows, cols, x, y, cx, cy)
+        return self._presentation.add_table(self.index, rows, cols, bounds)
 
     def get_table(self, shape_id: int) -> TableInfo:
         """Get table information for a table shape."""
@@ -111,56 +144,23 @@ class Slide:
         return self._presentation.get_table_cell(self.index, shape_id, row, col)
 
     def merge_table_cells(
-        self, shape_id: int, row1: int, col1: int, row2: int, col2: int
+        self, shape_id: int, cell_range: tuple[int, int, int, int]
     ) -> None:
         """Merge a range of table cells."""
-        self._presentation.merge_table_cells(
-            self.index, shape_id, row1, col1, row2, col2
-        )
+        self._presentation.merge_table_cells(self.index, shape_id, cell_range)
 
     def split_table_cell(self, shape_id: int, row: int, col: int) -> None:
         """Split a merged table cell."""
         self._presentation.split_table_cell(self.index, shape_id, row, col)
 
-    def remove_shape(self, shape_id: int) -> None:
-        """Remove a shape from this slide."""
-        self._presentation.remove_shape(self.index, shape_id)
 
-    def move_shape_to_front(self, shape_id: int) -> None:
-        """Move a shape to the front of the z-order."""
-        self._presentation.move_shape_to_front(self.index, shape_id)
+class Slide(SlideTableMixin, SlideChartMixin, SlideBase, SlideShapeMixin):
+    """Proxy object for a slide within a presentation."""
 
-    def move_shape_to_back(self, shape_id: int) -> None:
-        """Move a shape to the back of the z-order."""
-        self._presentation.move_shape_to_back(self.index, shape_id)
-
-    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None:
-        """Update shape properties."""
-        self._presentation.update_shape(self.index, shape_id, updates)
-
-    def list_shapes(self) -> list[Shape]:
-        """List all shapes on this slide."""
-        return self._presentation.list_shapes(self.index)
-
-    def list_charts(self) -> list[SlideChartRef]:
-        """List all charts on this slide."""
-        return self._presentation.list_slide_charts(self.index)
-
-    def add_chart(
-        self,
-        chart_type: str,
-        categories: list[str],
-        values: list[float],
-        title: str = "Chart",
-        x: int = 0,
-        y: int = 0,
-        w: int = 0,
-        h: int = 0,
-    ) -> None:
-        """Add a chart to this slide."""
-        self._presentation.add_chart(
-            self.index, chart_type, categories, values, title=title, x=x, y=y, w=w, h=h
-        )
+    def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:
+        """Initialize the slide proxy."""
+        self._presentation = presentation
+        self._metadata = metadata
 
     def update(
         self,

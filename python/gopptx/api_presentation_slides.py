@@ -19,15 +19,85 @@ if TYPE_CHECKING:
     )
 
 
-class PresentationSlidesMixin:
-    """Mixin providing slide-related methods for Presentation."""
+class PresentationLayoutMixin:
+    """Mixin providing slide layout management methods."""
 
-    @property
-    def slide_masters(self) -> SlideMasters:
-        """Get the slide masters collection."""
-        if getattr(self, "_slide_masters_obj", None) is None:
-            self._slide_masters_obj = SlideMasters(self)  # type: ignore
-        return self._slide_masters_obj  # type: ignore
+    def list_slide_layouts(self) -> list[SlideLayoutInfo]:
+        """List all available slide layouts."""
+        result = self.execute(ops.OP_LIST_SLIDE_LAYOUTS, {})
+        layouts = cast("list[dict]", result.get("layouts", []))
+        for item in layouts:
+            if "Name" in item and "name" not in item:
+                item["name"] = item["Name"]
+            if "Part" in item and "part" not in item:
+                item["part"] = item["Part"]
+            if "MasterPart" in item and "master_part" not in item:
+                item["master_part"] = item["MasterPart"]
+        return cast("list[SlideLayoutInfo]", layouts)
+
+    def rebind_slide_layout(self, slide_index: int, layout_part: str) -> None:
+        """Rebind a slide to a different layout.
+
+        Args:
+            slide_index: Index of the slide.
+            layout_part: Part name of the layout.
+        """
+        target_layout = layout_part
+        if "/" not in target_layout:
+            for layout in self.list_slide_layouts():
+                if layout.get("name") == target_layout:
+                    target_layout = cast("str", layout.get("part", target_layout))
+                    break
+        self.execute(
+            ops.OP_REBIND_SLIDE_LAYOUT,
+            {"slide_index": slide_index, "layout_part": target_layout},
+        )
+        self.invalidate_cache()
+
+    def clone_layout_master_family(self, layout_part: str) -> SlideMasterCloneResult:
+        """Clone a layout and its master family.
+
+        Args:
+            layout_part: Part name of the layout to clone.
+
+        Returns:
+            Result containing the new layout and master parts.
+        """
+        result = self.execute(
+            ops.OP_CLONE_LAYOUT_MASTER_FAMILY, {"layout_part": layout_part}
+        )
+        self.invalidate_cache()
+        return cast("SlideMasterCloneResult", result)
+
+
+class PresentationThemeMixin:
+    """Mixin providing theme and slide size configuration methods."""
+
+    def apply_theme(self, theme_name: str) -> None:
+        """Apply a theme to the presentation.
+
+        Args:
+            theme_name: Name of the theme to apply.
+        """
+        theme = theme_name
+        if theme_name.lower() == "office":
+            theme = "Corporate"
+        self.execute(ops.OP_APPLY_THEME, {"theme_name": theme})
+        self.invalidate_cache()
+
+    def set_slide_size(self, width: int, height: int) -> None:
+        """Set the slide size.
+
+        Args:
+            width: Width in EMUs.
+            height: Height in EMUs.
+        """
+        self.execute(ops.OP_SET_SLIDE_SIZE, {"width": width, "height": height})
+        self.invalidate_cache()
+
+
+class PresentationSectionMixin:
+    """Mixin providing section management methods."""
 
     @property
     def sections(self) -> list[Section]:
@@ -44,7 +114,6 @@ class PresentationSlidesMixin:
                 s["guid"] = s["GUID"]
             if "SlideIDs" in s and "slide_ids" not in s:
                 s["slide_ids"] = s["SlideIDs"]
-            # Backward-compatible alias used by legacy tests.
             if "id" not in s and "name" in s:
                 s["id"] = s["name"]
         return cast("list[Section]", sections)
@@ -53,11 +122,105 @@ class PresentationSlidesMixin:
         """Get all sections in the presentation."""
         return self.sections
 
+    def add_section(self, name: str, slide_indices: list[int]) -> None:
+        """Add a section to the presentation.
+
+        Args:
+            name: Name of the section.
+            slide_indices: List of slide indices to include in the section.
+        """
+        self.execute(ops.OP_ADD_SECTION, {"name": name, "slide_indices": slide_indices})
+
+    def remove_section(self, name: str) -> None:
+        """Remove a section from the presentation.
+
+        Args:
+            name: Name of the section to remove.
+        """
+        self.execute(ops.OP_REMOVE_SECTION, {"name": str(name)})
+
+    def rename_section(self, old_name: str, new_name: str) -> None:
+        """Rename a section.
+
+        Args:
+            old_name: Current name of the section.
+            new_name: New name for the section.
+        """
+        self.execute(
+            ops.OP_RENAME_SECTION,
+            {"old_name": str(old_name), "new_name": str(new_name)},
+        )
+
+
+class PresentationPropertiesMixin:
+    """Mixin providing document properties and protection methods."""
+
+    @property
+    def core_properties(self) -> CoreProperties:
+        """Get the core properties of the presentation."""
+        return cast("CoreProperties", self.execute(ops.OP_GET_CORE_PROPERTIES, {}))
+
+    def get_core_properties(self) -> CoreProperties:
+        """Get the core properties of the presentation."""
+        return self.core_properties
+
+    @core_properties.setter
+    def core_properties(self, props: CoreProperties) -> None:
+        self.execute(ops.OP_SET_CORE_PROPERTIES, props)
+
+    def set_core_properties(self, props: CoreProperties) -> None:
+        """Set the core properties of the presentation.
+
+        Args:
+            props: Dictionary of core properties to set.
+        """
+        self.core_properties = props
+
+    @property
+    def title(self) -> str:
+        """The title of the presentation."""
+        return self.core_properties.get("title", "")
+
+    @title.setter
+    def title(self, value: str) -> None:
+        props = self.core_properties
+        props["title"] = value
+        self.core_properties = props
+
+    def set_modify_password(self, password: str) -> None:
+        """Set the modify password for the presentation.
+
+        Args:
+            password: Password to set.
+        """
+        self.execute(ops.OP_SET_MODIFY_PASSWORD, {"password": password})
+
+    def set_mark_as_final(self, *, final: bool = True) -> None:
+        """Mark the presentation as final.
+
+        Args:
+            final: True to mark as final, False to unmark.
+        """
+        self.execute(ops.OP_SET_MARK_AS_FINAL, {"final": final})
+
+
+class PresentationSlidesMixin(
+    PresentationPropertiesMixin,
+    PresentationSectionMixin,
+    PresentationThemeMixin,
+    PresentationLayoutMixin,
+):
+    """Mixin providing slide-related methods for Presentation."""
+
+    @property
+    def slide_masters(self) -> SlideMasters:
+        """Get the slide masters collection."""
+        if getattr(self, "_slide_masters_obj", None) is None:
+            self._slide_masters_obj = SlideMasters(self)
+        return self._slide_masters_obj
+
     def add_slide(
-        self,
-        title: str,
-        layout: str | None = None,
-        bullets: list[str] | None = None,
+        self, title: str, layout: str | None = None, bullets: list[str] | None = None
     ) -> Slide:
         """Add a new slide to the presentation."""
         payload: dict[str, Any] = {"title": title}
@@ -140,67 +303,6 @@ class PresentationSlidesMixin:
         self.execute(ops.OP_MERGE_FROM_FILE, {"path": path})
         self.invalidate_cache()
 
-    def add_section(self, name: str, slide_indices: list[int]) -> None:
-        """Add a section to the presentation.
-
-        Args:
-            name: Name of the section.
-            slide_indices: List of slide indices to include in the section.
-        """
-        self.execute(ops.OP_ADD_SECTION, {"name": name, "slide_indices": slide_indices})
-
-    def remove_section(self, name: str) -> None:
-        """Remove a section from the presentation.
-
-        Args:
-            name: Name of the section to remove.
-        """
-        self.execute(ops.OP_REMOVE_SECTION, {"name": str(name)})
-
-    def rename_section(self, old_name: str, new_name: str) -> None:
-        """Rename a section.
-
-        Args:
-            old_name: Current name of the section.
-            new_name: New name for the section.
-        """
-        self.execute(
-            ops.OP_RENAME_SECTION,
-            {"old_name": str(old_name), "new_name": str(new_name)},
-        )
-
-    @property
-    def core_properties(self) -> CoreProperties:
-        """Get the core properties of the presentation."""
-        return cast("CoreProperties", self.execute(ops.OP_GET_CORE_PROPERTIES, {}))
-
-    def get_core_properties(self) -> CoreProperties:
-        """Get the core properties of the presentation."""
-        return self.core_properties
-
-    @core_properties.setter
-    def core_properties(self, props: CoreProperties) -> None:
-        self.execute(ops.OP_SET_CORE_PROPERTIES, props)
-
-    def set_core_properties(self, props: CoreProperties) -> None:
-        """Set the core properties of the presentation.
-
-        Args:
-            props: Dictionary of core properties to set.
-        """
-        self.core_properties = props
-
-    @property
-    def title(self) -> str:
-        """The title of the presentation."""
-        return self.core_properties.get("title", "")
-
-    @title.setter
-    def title(self, value: str) -> None:
-        props = self.core_properties
-        props["title"] = value
-        self.core_properties = props
-
     def add_title_slide(self, title: str) -> Slide:
         """Add a title slide to the presentation.
 
@@ -235,88 +337,3 @@ class PresentationSlidesMixin:
     def __iter__(self) -> Iterator[Slide]:
         """Iterate over all slides."""
         return iter(self.slides)
-
-    def apply_theme(self, theme_name: str) -> None:
-        """Apply a theme to the presentation.
-
-        Args:
-            theme_name: Name of the theme to apply.
-        """
-        theme = theme_name
-        if theme_name.lower() == "office":
-            theme = "Corporate"
-        self.execute(ops.OP_APPLY_THEME, {"theme_name": theme})
-        self.invalidate_cache()
-
-    def set_slide_size(self, width: int, height: int) -> None:
-        """Set the slide size.
-
-        Args:
-            width: Width in EMUs.
-            height: Height in EMUs.
-        """
-        self.execute(ops.OP_SET_SLIDE_SIZE, {"width": width, "height": height})
-        self.invalidate_cache()
-
-    def list_slide_layouts(self) -> list[SlideLayoutInfo]:
-        """List all available slide layouts."""
-        result = self.execute(ops.OP_LIST_SLIDE_LAYOUTS, {})
-        layouts = cast("list[dict]", result.get("layouts", []))
-        for item in layouts:
-            if "Name" in item and "name" not in item:
-                item["name"] = item["Name"]
-            if "Part" in item and "part" not in item:
-                item["part"] = item["Part"]
-            if "MasterPart" in item and "master_part" not in item:
-                item["master_part"] = item["MasterPart"]
-        return cast("list[SlideLayoutInfo]", layouts)
-
-    def rebind_slide_layout(self, slide_index: int, layout_part: str) -> None:
-        """Rebind a slide to a different layout.
-
-        Args:
-            slide_index: Index of the slide.
-            layout_part: Part name of the layout.
-        """
-        target_layout = layout_part
-        if "/" not in target_layout:
-            for layout in self.list_slide_layouts():
-                if layout.get("name") == target_layout:
-                    target_layout = cast("str", layout.get("part", target_layout))
-                    break
-        self.execute(
-            ops.OP_REBIND_SLIDE_LAYOUT,
-            {"slide_index": slide_index, "layout_part": target_layout},
-        )
-        self.invalidate_cache()
-
-    def clone_layout_master_family(self, layout_part: str) -> SlideMasterCloneResult:
-        """Clone a layout and its master family.
-
-        Args:
-            layout_part: Part name of the layout to clone.
-
-        Returns:
-            Result containing the new layout and master parts.
-        """
-        result = self.execute(
-            ops.OP_CLONE_LAYOUT_MASTER_FAMILY, {"layout_part": layout_part}
-        )
-        self.invalidate_cache()
-        return cast("SlideMasterCloneResult", result)
-
-    def set_modify_password(self, password: str) -> None:
-        """Set the modify password for the presentation.
-
-        Args:
-            password: Password to set.
-        """
-        self.execute(ops.OP_SET_MODIFY_PASSWORD, {"password": password})
-
-    def set_mark_as_final(self, *, final: bool = True) -> None:
-        """Mark the presentation as final.
-
-        Args:
-            final: True to mark as final, False to unmark.
-        """
-        self.execute(ops.OP_SET_MARK_AS_FINAL, {"final": final})

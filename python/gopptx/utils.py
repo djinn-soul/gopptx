@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
 
-
-def _normalize_table_index(value: Any) -> int:
+def _normalize_table_index(value: float) -> int:
     """Normalize a table index value to an integer."""
     if isinstance(value, bool):
         raise ValueError("table index must be an integer")

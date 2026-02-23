@@ -1,7 +1,7 @@
 """Custom build hook for building Go bridge during wheel build."""
 
 import pathlib
-import subprocess
+import subprocess  # noqa: S404
 import sys
 from typing import Any
 
