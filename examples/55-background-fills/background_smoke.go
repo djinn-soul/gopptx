@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -58,7 +59,7 @@ func main() {
 
 	// Save
 	outDir := "examples/output"
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 	outPath := filepath.Join(outDir, "55_background_fills.pptx")

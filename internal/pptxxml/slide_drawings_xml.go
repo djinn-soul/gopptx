@@ -13,6 +13,8 @@ const (
 	emusPerDegree       = 60000
 	transparencyBase    = 100000
 	defaultMargin       = 457200
+	customShapeGrowCap  = 2048
+	midpointDivisor     = 2
 )
 
 // ShapeFillSpec describes solid fill properties for a custom shape.
@@ -123,7 +125,7 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	}
 
 	var b strings.Builder
-	b.Grow(2048)
+	b.Grow(customShapeGrowCap)
 	b.WriteString(`
 <p:sp>
 <p:nvSpPr>
@@ -367,8 +369,8 @@ func connectorLabelShape(connector ConnectorSpec, shapeID int) string {
 	if label == "" {
 		return ""
 	}
-	x := (connector.StartX + connector.EndX) / 2
-	y := (connector.StartY + connector.EndY) / 2
+	x := (connector.StartX + connector.EndX) / midpointDivisor
+	y := (connector.StartY + connector.EndY) / midpointDivisor
 	const (
 		labelWidth  = 914400
 		labelHeight = 228600

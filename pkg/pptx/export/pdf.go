@@ -16,6 +16,8 @@ import (
 
 // PDF exports the presentation to a PDF file using LibreOffice.
 // Requires 'soffice' (or LibreOffice default path on macOS) to be installed.
+//
+//nolint:gocognit // Cross-platform conversion path keeps explicit fallback/error branches for reliability.
 func PDF(title string, slides []elements.SlideContent, outputPath string) error {
 	// 1. Create temporary PPTX
 	// Sanitize title for filename
@@ -37,7 +39,7 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 	// Use the output directory for the temp file to avoid "Temp" folder permission/trust issues with Office
 	// Office sometimes sandboxes files in AppData\Local\Temp
 	tmpDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
+	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
 		tmpDir = os.TempDir() // Fallback
 	}
 	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("gopptx_%s_temp.pptx", safeTitle))
@@ -49,7 +51,7 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 		return fmt.Errorf("failed to generate PPTX: %w", err)
 	}
 
-	if err := os.WriteFile(tmpFile, pptxBytes, 0o666); err != nil {
+	if err := os.WriteFile(tmpFile, pptxBytes, 0o600); err != nil {
 		return fmt.Errorf("failed to write temp PPTX: %w", err)
 	}
 	// defer os.Remove(tmpFile)
@@ -106,32 +108,31 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 	generatedPDF := filepath.Join(outputDir, pdfName)
 
 	if generatedPDF != outputPath {
-		// If output path is different, move it.
-		// Note: outputPath might be relative, generatedPDF is absolute if outputDir is absolute?
-		// outputDir comes from filepath.Dir(outputPath).
-		// So generatedPDF is effectively <dir>/<basename>.pdf.
-
-		// If outputPath is just "output.pdf", outputDir is ".".
-
-		// We should verify existence before rename.
-		if _, err := os.Stat(generatedPDF); err != nil {
-			return fmt.Errorf("expected generated PDF not found at %s", generatedPDF)
-		}
-
-		// Move
-		if err := os.Rename(generatedPDF, outputPath); err != nil {
-			// Fallback: Copy and delete
-			input, err := os.ReadFile(generatedPDF)
-			if err != nil {
-				return err
-			}
-			if err := os.WriteFile(outputPath, input, 0o644); err != nil {
-				return err
-			}
-			os.Remove(generatedPDF)
+		if err := moveGeneratedPDF(generatedPDF, outputPath); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func moveGeneratedPDF(generatedPDF, outputPath string) error {
+	if _, err := os.Stat(generatedPDF); err != nil {
+		return fmt.Errorf("expected generated PDF not found at %s", generatedPDF)
+	}
+	if err := os.Rename(generatedPDF, outputPath); err == nil {
+		return nil
+	}
+	input, err := os.ReadFile(generatedPDF)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(outputPath, input, 0o600); err != nil {
+		return err
+	}
+	if err := os.Remove(generatedPDF); err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	return nil
 }
 

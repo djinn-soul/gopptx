@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -23,7 +24,7 @@ func mainCommentingSmoke() {
 }
 
 func run() error {
-	if err := os.MkdirAll(outputDirComments, 0o755); err != nil {
+	if err := os.MkdirAll(outputDirComments, 0o750); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
@@ -91,3 +92,5 @@ func run() error {
 
 	return nil
 }
+
+var _ = mainCommentingSmoke

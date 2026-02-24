@@ -124,15 +124,28 @@ func renderImage(img shapes.Image) string {
 	)
 }
 
-//nolint:gochecknoglobals // Shared escaper is immutable and avoids repeated allocations.
-var htmlReplacer = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	"\"", "&quot;",
-	"'", "&#39;",
-)
-
 func escapeHTML(s string) string {
-	return htmlReplacer.Replace(s)
+	if !strings.ContainsAny(s, `&<>"'`) {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch r {
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
+		case '"':
+			b.WriteString("&quot;")
+		case '\'':
+			b.WriteString("&#39;")
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }

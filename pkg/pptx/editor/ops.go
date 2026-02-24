@@ -447,18 +447,6 @@ func isTitlePlaceholderShape(shape []byte) bool {
 	return titlePlaceholderPattern.Match(shape)
 }
 
-func replaceFirstTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
-	modified := false
-	res := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
-		if modified {
-			return match
-		}
-		modified = true
-		return replaceFn(match)
-	})
-	return res, modified
-}
-
 func replaceLastTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
 	indexes := aTTitlePattern.FindAllIndex(content, -1)
 	if len(indexes) == 0 {
@@ -809,6 +797,8 @@ func cloneBytes(b []byte) []byte {
 }
 
 // UpdateNotesMaster configures the global notes master for the presentation.
+//
+//nolint:gocognit // Notes-master update coordinates validation, media registration, and rel wiring in one flow.
 func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
@@ -824,6 +814,7 @@ func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) err
 	var backgroundRID string
 	var mediaNames []string
 
+	//nolint:nestif // Background media registration requires staged checks to preserve error context.
 	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture &&
 		master.Background.PictureFill != nil {
 		img := master.Background.PictureFill

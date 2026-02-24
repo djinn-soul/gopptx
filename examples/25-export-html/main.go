@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -36,26 +36,26 @@ func main() {
 	outputPDF := "examples/output/25_export.pdf"
 
 	// Ensure output dir exists
-	if err := os.MkdirAll("examples/output", 0o755); err != nil {
-		fmt.Printf("Error creating output directory: %v\n", err)
+	if err := os.MkdirAll("examples/output", 0o750); err != nil {
+		log.Printf("Error creating output directory: %v", err)
 		return
 	}
 
 	// 3. Export HTML
-	fmt.Println("Exporting to HTML...")
+	log.Println("Exporting to HTML...")
 	htmlContent := export.HTML(title, slides)
-	if err := os.WriteFile(outputHTML, []byte(htmlContent), 0o644); err != nil {
-		fmt.Printf("Error writing HTML: %v\n", err)
+	if err := os.WriteFile(outputHTML, []byte(htmlContent), 0o600); err != nil {
+		log.Printf("Error writing HTML: %v", err)
 		return
 	}
-	fmt.Printf("HTML exported to %s\n", outputHTML)
+	log.Printf("HTML exported to %s", outputHTML)
 
 	// 4. Export PDF (if LibreOffice available)
-	fmt.Println("Attempting PDF export (requires LibreOffice)...")
+	log.Println("Attempting PDF export (requires LibreOffice)...")
 	if err := export.PDF(title, slides, outputPDF); err != nil {
-		fmt.Printf("PDF export failed (expected if LibreOffice not installed): %v\n", err)
+		log.Printf("PDF export failed (expected if LibreOffice not installed): %v", err)
 	} else {
-		fmt.Printf("PDF exported to %s\n", outputPDF)
+		log.Printf("PDF exported to %s", outputPDF)
 	}
 }
 
@@ -72,7 +72,7 @@ func createDummyImage(path string) {
 		0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44,
 		0xAE, 0x42, 0x60, 0x82,
 	}
-	_ = os.WriteFile(path, data, 0o644)
+	_ = os.WriteFile(path, data, 0o600)
 	abs, _ := filepath.Abs(path)
-	fmt.Printf("Created dummy image at %s\n", abs)
+	log.Printf("Created dummy image at %s", abs)
 }

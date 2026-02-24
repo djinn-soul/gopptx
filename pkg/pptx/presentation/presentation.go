@@ -21,6 +21,15 @@ import (
 
 const (
 	minMasterCountWithNativeNotesTheme = 2
+	protectionSaltBytes                = 16
+	protectionHashAlgSIDSHA512         = 14
+	guidRandomBytes                    = 16
+	guidVersionMask                    = 0x0f
+	guidVersionNibble                  = 0x40
+	guidVariantMask                    = 0x3f
+	guidVariantNibble                  = 0x80
+	maxAuthorInitialRunes              = 2
+	authorColorPaletteSize             = 10
 )
 
 // Metadata defines non-content properties of a PPTX.
@@ -198,14 +207,14 @@ func addBasicPropertyFiles(
 	var protInfo *pptxxml.ProtectionInfo
 	if meta.Protection.ModifyPassword != "" {
 		// PPT uses 16 bytes of salt by default.
-		salt := make([]byte, 16)
+		salt := make([]byte, protectionSaltBytes)
 		if _, err := rand.Read(salt); err != nil {
 			return fmt.Errorf("generate protection salt: %w", err)
 		}
 		spinCount := 100000
 		hash := protection.HashModifyPassword(meta.Protection.ModifyPassword, salt, spinCount)
 		protInfo = &pptxxml.ProtectionInfo{
-			HashAlgSID: 14,
+			HashAlgSID: protectionHashAlgSIDSHA512,
 			HashData:   hash,
 			SaltData:   base64.StdEncoding.EncodeToString(salt),
 			SpinCount:  spinCount,
@@ -270,15 +279,16 @@ func convertSections(sections []Section, slideCount int) ([]pptxxml.Section, err
 }
 
 func generateGUID() (string, error) {
-	b := make([]byte, 16)
+	b := make([]byte, guidRandomBytes)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("generate random bytes for GUID: %w", err)
 	}
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
+	b[6] = (b[6] & guidVersionMask) | guidVersionNibble
+	b[8] = (b[8] & guidVariantMask) | guidVariantNibble
 	return fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
+//nolint:gocognit // Comment-author normalization and per-slide indexing is intentionally explicit for deterministic IDs.
 func prepareComments(
 	meta Metadata,
 	slides []elements.SlideContent,
@@ -314,8 +324,8 @@ func prepareComments(
 					}
 				}
 				initials += initialsSb290.String()
-				if len([]rune(initials)) > 2 {
-					initials = string([]rune(initials)[:2])
+				if len([]rune(initials)) > maxAuthorInitialRunes {
+					initials = string([]rune(initials)[:maxAuthorInitialRunes])
 				}
 				if initials == "" {
 					initials = "A"
@@ -325,7 +335,7 @@ func prepareComments(
 					ID:         int64(idx + 1),
 					Name:       c.AuthorName,
 					Initials:   initials,
-					ColorIndex: idx % 10,
+					ColorIndex: idx % authorColorPaletteSize,
 					LastIndex:  0,
 				})
 			}

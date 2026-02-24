@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -43,3 +43,5 @@ func mainSectionSmoke() {
 
 	log.Println("Done!")
 }
+
+var _ = mainSectionSmoke

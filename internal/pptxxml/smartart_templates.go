@@ -10,6 +10,14 @@ import (
 //go:embed templates/smartart/*.xml templates/smartart/layouts/*/*.xml
 var smartArtTemplateFS embed.FS
 
+const (
+	flattenSmartArtTextsInitCap = 8
+	verifierLCGMultiplier       = int64(1664525)
+	verifierLCGIncrement        = int64(1013904223)
+	verifierNounIndexDivisor    = int64(256)
+	verifierLCGModulus          = int64(1 << 32)
+)
+
 func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 	data := mustTemplate(templatePathForLayout(spec.LayoutURI, "data.xml"))
 	data = strings.Replace(data,
@@ -65,7 +73,7 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 }
 
 func flattenSmartArtNodeTexts(nodes []SmartArtNodeSpec) []string {
-	out := make([]string, 0, 8)
+	out := make([]string, 0, flattenSmartArtTextsInitCap)
 	var walk func([]SmartArtNodeSpec)
 	walk = func(items []SmartArtNodeSpec) {
 		for _, n := range items {
@@ -95,13 +103,97 @@ func mustTemplate(path string) string {
 }
 
 func templatePathForLayout(layoutURI, fileName string) string {
-	if key, ok := layoutTemplateKeyByURI[layoutURI]; ok {
+	if key, ok := layoutTemplateKey(layoutURI); ok {
 		candidate := "templates/smartart/layouts/" + key + "/" + fileName
 		if _, err := smartArtTemplateFS.ReadFile(candidate); err == nil {
 			return candidate
 		}
 	}
 	return "templates/smartart/" + fileName
+}
+
+func layoutTemplateKey(layoutURI string) (string, bool) {
+	if key, ok := layoutTemplateKeyList(layoutURI); ok {
+		return key, true
+	}
+	if key, ok := layoutTemplateKeyProcess(layoutURI); ok {
+		return key, true
+	}
+	if key, ok := layoutTemplateKeyDiagram(layoutURI); ok {
+		return key, true
+	}
+	return "", false
+}
+
+func layoutTemplateKeyList(layoutURI string) (string, bool) {
+	switch layoutURI {
+	case "urn:microsoft.com/office/officeart/2005/8/layout/default":
+		return "basic_block_list", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/vList5":
+		return "vertical_block_list", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/hList1":
+		return "horizontal_bullet_list", true
+	case "urn:microsoft.com/office/officeart/2008/layout/SquareAccentList":
+		return "square_accent_list", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/hList2":
+		return "picture_accent_list", true
+	default:
+		return "", false
+	}
+}
+
+func layoutTemplateKeyProcess(layoutURI string) (string, bool) {
+	switch layoutURI {
+	case "urn:microsoft.com/office/officeart/2005/8/layout/process1":
+		return "basic_process", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/process3":
+		return "accent_process", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/hProcess4":
+		return "alternating_flow", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/hProcess9":
+		return "continuous_block_process", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/cycle2":
+		return "basic_cycle", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/cycle1":
+		return "text_cycle", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/cycle5":
+		return "block_cycle", true
+	default:
+		return "", false
+	}
+}
+
+func layoutTemplateKeyDiagram(layoutURI string) (string, bool) {
+	switch layoutURI {
+	case "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1":
+		return "org_chart", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy1":
+		return "hierarchy", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy2":
+		return "horizontal_hierarchy", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/venn1":
+		return "basic_venn", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/venn3":
+		return "linear_venn", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/venn2":
+		return "stacked_venn", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/radial1":
+		return "basic_radial", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/matrix3":
+		return "basic_matrix", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/matrix1":
+		return "titled_matrix", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/pyramid1":
+		return "basic_pyramid", true
+	case "urn:microsoft.com/office/officeart/2005/8/layout/pyramid3":
+		return "inverted_pyramid", true
+	case "urn:microsoft.com/office/officeart/2008/layout/PictureStrips":
+		return "picture_strips", true
+	case "urn:microsoft.com/office/officeart/2008/layout/PictureGrid":
+		return "picture_grid", true
+	default:
+		return "", false
+	}
 }
 
 func injectSmartArtNodeTexts(data string, texts []string) string {
@@ -144,9 +236,12 @@ func generatedVerifierText(idx int) string {
 		"Vertex", "Signal", "Pulse", "Summit", "Vector",
 	}
 
-	v := uint32(idx+1)*1664525 + 1013904223
-	a := adjectives[v%uint32(len(adjectives))]
-	n := nouns[(v>>8)%uint32(len(nouns))]
+	v := ((int64(idx)+1)*verifierLCGMultiplier + verifierLCGIncrement) % verifierLCGModulus
+	if v < 0 {
+		v += verifierLCGModulus
+	}
+	a := adjectives[v%int64(len(adjectives))]
+	n := nouns[(v/verifierNounIndexDivisor)%int64(len(nouns))]
 	return fmt.Sprintf("%s-%s-%02d", a, n, idx+1)
 }
 
@@ -262,32 +357,3 @@ var (
 	drawingShapePattern       = regexp.MustCompile(`(?s)<dsp:sp modelId="([^"]+)".*?</dsp:sp>`)
 	paragraphPattern          = regexp.MustCompile(`(?s)<a:p(?: [^>]*)?>.*?</a:p>`)
 )
-
-//nolint:gochecknoglobals // static mapping for embedded template selection
-var layoutTemplateKeyByURI = map[string]string{
-	"urn:microsoft.com/office/officeart/2005/8/layout/default":        "basic_block_list",
-	"urn:microsoft.com/office/officeart/2005/8/layout/vList5":         "vertical_block_list",
-	"urn:microsoft.com/office/officeart/2005/8/layout/hList1":         "horizontal_bullet_list",
-	"urn:microsoft.com/office/officeart/2008/layout/SquareAccentList": "square_accent_list",
-	"urn:microsoft.com/office/officeart/2005/8/layout/hList2":         "picture_accent_list",
-	"urn:microsoft.com/office/officeart/2005/8/layout/process1":       "basic_process",
-	"urn:microsoft.com/office/officeart/2005/8/layout/process3":       "accent_process",
-	"urn:microsoft.com/office/officeart/2005/8/layout/hProcess4":      "alternating_flow",
-	"urn:microsoft.com/office/officeart/2005/8/layout/hProcess9":      "continuous_block_process",
-	"urn:microsoft.com/office/officeart/2005/8/layout/cycle2":         "basic_cycle",
-	"urn:microsoft.com/office/officeart/2005/8/layout/cycle1":         "text_cycle",
-	"urn:microsoft.com/office/officeart/2005/8/layout/cycle5":         "block_cycle",
-	"urn:microsoft.com/office/officeart/2005/8/layout/orgChart1":      "org_chart",
-	"urn:microsoft.com/office/officeart/2005/8/layout/hierarchy1":     "hierarchy",
-	"urn:microsoft.com/office/officeart/2005/8/layout/hierarchy2":     "horizontal_hierarchy",
-	"urn:microsoft.com/office/officeart/2005/8/layout/venn1":          "basic_venn",
-	"urn:microsoft.com/office/officeart/2005/8/layout/venn3":          "linear_venn",
-	"urn:microsoft.com/office/officeart/2005/8/layout/venn2":          "stacked_venn",
-	"urn:microsoft.com/office/officeart/2005/8/layout/radial1":        "basic_radial",
-	"urn:microsoft.com/office/officeart/2005/8/layout/matrix3":        "basic_matrix",
-	"urn:microsoft.com/office/officeart/2005/8/layout/matrix1":        "titled_matrix",
-	"urn:microsoft.com/office/officeart/2005/8/layout/pyramid1":       "basic_pyramid",
-	"urn:microsoft.com/office/officeart/2005/8/layout/pyramid3":       "inverted_pyramid",
-	"urn:microsoft.com/office/officeart/2008/layout/PictureStrips":    "picture_strips",
-	"urn:microsoft.com/office/officeart/2008/layout/PictureGrid":      "picture_grid",
-}

@@ -99,137 +99,51 @@ func generateGitGraphElements(diagram *GitGraphDiagram, theme Theme) DiagramElem
 	startY := styling.Inches(2)
 	commitSpacing := styling.Inches(0.8)
 	branchSpacing := styling.Inches(0.6)
-	labelWidth := func(text string, minInches, maxInches float64) styling.Length {
-		width := minInches + float64(len(text))*0.04
-		if width > maxInches {
-			width = maxInches
-		}
-		if width < minInches {
-			width = minInches
-		}
-		return styling.Inches(width)
-	}
+	maxCommitX := gitgraphMaxCommitX(diagram.Commits)
+	shapesList = append(
+		shapesList,
+		gitgraphBranchShapes(diagram, theme, startX, startY, commitSpacing, branchSpacing, maxCommitX)...)
 
-	// Draw branch lines
-	for name, yIdx := range diagram.Branches {
-		y := startY + styling.Length(yIdx)*branchSpacing
-		color := theme.PrimaryStroke
-		if yIdx > 0 {
-			color = theme.SecondaryStroke
-		}
-
-		// Find max X for this branch
-		maxX := 0
-		for _, commit := range diagram.Commits {
-			if commit.X > maxX {
-				maxX = commit.X
-			}
-		}
-
-		line := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			startX,
-			y,
-			styling.Length(maxX)*commitSpacing,
-			styling.Emu(20000),
-		).WithFill(shapes.NewShapeFill(color))
-		shapesList = append(shapesList, line)
-
-		// Branch label
-		branchLabelWidth := labelWidth(name, 0.8, 1.6)
-		label := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			startX-branchLabelWidth-styling.Inches(0.1),
-			y-styling.Inches(0.15),
-			branchLabelWidth,
-			styling.Inches(0.3),
-		).WithText(name).
-			WithFill(shapes.NewShapeFill(theme.Background)).
-			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
-			WithAutoFit(shapes.TextAutoFitNormal)
-		shapesList = append(shapesList, label)
-	}
-
-	// Draw commits and connections
 	for i, commit := range diagram.Commits {
 		x := startX + styling.Length(commit.X)*commitSpacing
 		y := startY + styling.Length(commit.Y)*branchSpacing
 
-		color := theme.PrimaryStroke
-		if diagram.Branches[commit.Branch] > 0 {
-			color = theme.SecondaryStroke
-		}
-
-		// Commit dot
-		dotSize := styling.Inches(0.2)
-		dot := shapes.NewShape(
-			shapes.ShapeTypeEllipse,
-			x-dotSize/2,
-			y-dotSize/2,
-			dotSize,
-			dotSize,
-		).WithFill(shapes.NewShapeFill(color)).
-			WithLine(shapes.NewShapeLine(theme.Background, theme.LineWeight))
-		shapesList = append(shapesList, dot)
+		color := gitgraphBranchColor(diagram.Branches[commit.Branch], theme)
+		shapesList = append(shapesList, gitgraphCommitDot(x, y, color, theme))
 
 		if commit.Label != "" {
-			commitLabelWidth := labelWidth(commit.Label, 0.8, 1.8)
-			label := shapes.NewShape(
-				shapes.ShapeTypeRectangle,
-				x-commitLabelWidth/2,
-				y+styling.Inches(0.15),
-				commitLabelWidth,
-				styling.Inches(0.3),
-			).WithText(commit.Label).
-				WithFill(shapes.NewShapeFill(theme.Background)).
-				WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
-				WithAutoFit(shapes.TextAutoFitNormal)
-			shapesList = append(shapesList, label)
+			shapesList = append(shapesList, gitgraphCommitLabel(commit.Label, x, y, theme))
 		}
 
-		// Horizontal connection to previous commit on same branch
-		for j := i - 1; j >= 0; j-- {
-			if diagram.Commits[j].Branch == commit.Branch {
-				prevX := startX + styling.Length(diagram.Commits[j].X)*commitSpacing
-				prevY := startY + styling.Length(diagram.Commits[j].Y)*branchSpacing
-
-				connector := shapes.NewConnector(
-					shapes.ConnectorTypeStraight,
-					prevX, prevY, x, y,
-				).WithLine(shapes.NewShapeLine(color, theme.LineWeight))
-				connectors = append(connectors, connector)
-				break
-			}
+		if connector, ok := gitgraphPrevBranchConnector(
+			diagram.Commits,
+			i,
+			commit.Branch,
+			x,
+			y,
+			color,
+			theme,
+			startX,
+			startY,
+			commitSpacing,
+			branchSpacing,
+		); ok {
+			connectors = append(connectors, connector)
 		}
 
-		// Merge connection
-		if commit.IsMerge {
-			fromYIdx := diagram.Branches[commit.MergeFrom]
-			fromY := startY + styling.Length(fromYIdx)*branchSpacing
-
-			fromColor := theme.PrimaryStroke
-			if fromYIdx > 0 {
-				fromColor = theme.SecondaryStroke
-			}
-
-			// Find last commit on fromBranch before current X
-			var lastFromX styling.Length
-			found := false
-			for j := i - 1; j >= 0; j-- {
-				if diagram.Commits[j].Branch == commit.MergeFrom {
-					lastFromX = startX + styling.Length(diagram.Commits[j].X)*commitSpacing
-					found = true
-					break
-				}
-			}
-
-			if found {
-				connector := shapes.NewConnector(
-					shapes.ConnectorTypeStraight,
-					lastFromX, fromY, x, y,
-				).WithLine(shapes.NewShapeLine(fromColor, theme.LineWeight))
-				connectors = append(connectors, connector)
-			}
+		if connector, ok := gitgraphMergeConnector(
+			diagram,
+			i,
+			commit,
+			x,
+			y,
+			theme,
+			startX,
+			startY,
+			commitSpacing,
+			branchSpacing,
+		); ok {
+			connectors = append(connectors, connector)
 		}
 	}
 
@@ -244,4 +158,160 @@ func generateGitGraphElements(diagram *GitGraphDiagram, theme Theme) DiagramElem
 			CY: styling.Inches(4),
 		},
 	}
+}
+
+func gitgraphLabelWidth(text string, minInches, maxInches float64) styling.Length {
+	width := minInches + float64(len(text))*0.04
+	if width > maxInches {
+		width = maxInches
+	}
+	if width < minInches {
+		width = minInches
+	}
+	return styling.Inches(width)
+}
+
+func gitgraphMaxCommitX(commits []GitCommitInfo) int {
+	maxX := 0
+	for _, commit := range commits {
+		if commit.X > maxX {
+			maxX = commit.X
+		}
+	}
+	return maxX
+}
+
+func gitgraphBranchColor(yIdx int, theme Theme) string {
+	if yIdx > 0 {
+		return theme.SecondaryStroke
+	}
+	return theme.PrimaryStroke
+}
+
+func gitgraphBranchShapes(
+	diagram *GitGraphDiagram,
+	theme Theme,
+	startX styling.Length,
+	startY styling.Length,
+	commitSpacing styling.Length,
+	branchSpacing styling.Length,
+	maxCommitX int,
+) []shapes.Shape {
+	out := make([]shapes.Shape, 0, len(diagram.Branches)*2)
+	for name, yIdx := range diagram.Branches {
+		y := startY + styling.Length(yIdx)*branchSpacing
+		color := gitgraphBranchColor(yIdx, theme)
+		out = append(out, shapes.NewShape(
+			shapes.ShapeTypeRectangle,
+			startX,
+			y,
+			styling.Length(maxCommitX)*commitSpacing,
+			styling.Emu(20000),
+		).WithFill(shapes.NewShapeFill(color)))
+		out = append(out, gitgraphBranchLabel(name, y, startX, theme))
+	}
+	return out
+}
+
+func gitgraphBranchLabel(name string, y styling.Length, startX styling.Length, theme Theme) shapes.Shape {
+	branchLabelWidth := gitgraphLabelWidth(name, 0.8, 1.6)
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		startX-branchLabelWidth-styling.Inches(0.1),
+		y-styling.Inches(0.15),
+		branchLabelWidth,
+		styling.Inches(0.3),
+	).WithText(name).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithAutoFit(shapes.TextAutoFitNormal)
+}
+
+func gitgraphCommitDot(x styling.Length, y styling.Length, color string, theme Theme) shapes.Shape {
+	dotSize := styling.Inches(0.2)
+	return shapes.NewShape(
+		shapes.ShapeTypeEllipse,
+		x-dotSize/2,
+		y-dotSize/2,
+		dotSize,
+		dotSize,
+	).WithFill(shapes.NewShapeFill(color)).
+		WithLine(shapes.NewShapeLine(theme.Background, theme.LineWeight))
+}
+
+func gitgraphCommitLabel(label string, x styling.Length, y styling.Length, theme Theme) shapes.Shape {
+	commitLabelWidth := gitgraphLabelWidth(label, 0.8, 1.8)
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		x-commitLabelWidth/2,
+		y+styling.Inches(0.15),
+		commitLabelWidth,
+		styling.Inches(0.3),
+	).WithText(label).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithAutoFit(shapes.TextAutoFitNormal)
+}
+
+func gitgraphPrevBranchConnector(
+	commits []GitCommitInfo,
+	i int,
+	branch string,
+	x styling.Length,
+	y styling.Length,
+	color string,
+	theme Theme,
+	startX styling.Length,
+	startY styling.Length,
+	commitSpacing styling.Length,
+	branchSpacing styling.Length,
+) (shapes.Connector, bool) {
+	prevCommit, ok := gitgraphFindPreviousOnBranch(commits, i, branch)
+	if !ok {
+		return shapes.Connector{}, false
+	}
+	prevX := startX + styling.Length(prevCommit.X)*commitSpacing
+	prevY := startY + styling.Length(prevCommit.Y)*branchSpacing
+	return shapes.NewConnector(
+		shapes.ConnectorTypeStraight,
+		prevX, prevY, x, y,
+	).WithLine(shapes.NewShapeLine(color, theme.LineWeight)), true
+}
+
+func gitgraphFindPreviousOnBranch(commits []GitCommitInfo, fromIndex int, branch string) (GitCommitInfo, bool) {
+	for j := fromIndex - 1; j >= 0; j-- {
+		if commits[j].Branch == branch {
+			return commits[j], true
+		}
+	}
+	return GitCommitInfo{}, false
+}
+
+func gitgraphMergeConnector(
+	diagram *GitGraphDiagram,
+	i int,
+	commit GitCommitInfo,
+	x styling.Length,
+	y styling.Length,
+	theme Theme,
+	startX styling.Length,
+	startY styling.Length,
+	commitSpacing styling.Length,
+	branchSpacing styling.Length,
+) (shapes.Connector, bool) {
+	if !commit.IsMerge {
+		return shapes.Connector{}, false
+	}
+	fromCommit, ok := gitgraphFindPreviousOnBranch(diagram.Commits, i, commit.MergeFrom)
+	if !ok {
+		return shapes.Connector{}, false
+	}
+	fromX := startX + styling.Length(fromCommit.X)*commitSpacing
+	fromYIdx := diagram.Branches[commit.MergeFrom]
+	fromY := startY + styling.Length(fromYIdx)*branchSpacing
+	fromColor := gitgraphBranchColor(fromYIdx, theme)
+	return shapes.NewConnector(
+		shapes.ConnectorTypeStraight,
+		fromX, fromY, x, y,
+	).WithLine(shapes.NewShapeLine(fromColor, theme.LineWeight)), true
 }

@@ -17,6 +17,12 @@ import (
 
 const (
 	userPersistIDRefOffset = 16
+	utf16WordBytes         = 2
+	persistIDMask          = 0x000FFFFF
+	persistCountMask       = 0xFFF00000
+	persistCountShift      = 20
+	persistCountValueMask  = 0x00000FFF
+	recordTypeOffset       = 2
 )
 
 // skippedSlideRecordTypes returns metadata or non-readable records in slide container.
@@ -167,10 +173,8 @@ func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[u
 
 		for j := 0; j < len(rgPersistDirEntryData); {
 			persist := rgPersistDirEntryData.LongAt(j)
-			//nolint:mnd // Persist ID mask
-			persistID := persist & 0x000FFFFF
-			//nolint:mnd // Count mask and shift
-			cPersist := ((persist & 0xFFF00000) >> 20) & 0x00000FFF
+			persistID := persist & persistIDMask
+			cPersist := ((persist & persistCountMask) >> persistCountShift) & persistCountValueMask
 			j += 4
 
 			for k := range cPersist {
@@ -280,8 +284,7 @@ func extractTextFromDrawing(drawing record, out *strings.Builder, utf16Decoder *
 				return err
 			}
 		}
-		//nolint:mnd // Header offset
-		from = pocketIdx + 2
+		from = pocketIdx + recordTypeOffset
 	}
 	return nil
 }
@@ -382,11 +385,11 @@ func decodeTextBytesAtom(data []byte, dec *encoding.Decoder) ([]byte, error) {
 	// Optimization: Allocate one buffer for the expanded UTF-16 data and decode in one pass
 	// instead of calling transform.Append for every single byte.
 
-	utf16Data := make([]byte, len(data)*2)
+	utf16Data := make([]byte, len(data)*utf16WordBytes)
 	for i, b := range data {
 		// Little-endian: [byte, 0]
-		utf16Data[i*2] = b
-		utf16Data[i*2+1] = 0
+		utf16Data[i*utf16WordBytes] = b
+		utf16Data[i*utf16WordBytes+1] = 0
 	}
 
 	return dec.Bytes(utf16Data)

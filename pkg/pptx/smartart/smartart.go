@@ -59,39 +59,87 @@ const (
 
 // Name returns the human-readable name of the layout.
 func (l Layout) Name() string {
-	if n, ok := layoutNames[l]; ok {
-		return n
+	if name, ok := processLayoutName(l); ok {
+		return name
+	}
+	if name, ok := relationshipLayoutName(l); ok {
+		return name
+	}
+	if name, ok := matrixPictureLayoutName(l); ok {
+		return name
 	}
 	return string(l)
 }
 
-//nolint:gochecknoglobals // lookup table
-var layoutNames = map[Layout]string{
-	BasicBlockList:         "Basic Block List",
-	VerticalBlockList:      "Vertical Block List",
-	HorizontalBulletLst:    "Horizontal Bullet List",
-	SquareAccentList:       "Square Accent List",
-	PictureAccentList:      "Picture Accent List",
-	BasicProcess:           "Basic Process",
-	AccentProcess:          "Accent Process",
-	AlternatingFlow:        "Alternating Flow",
-	ContinuousBlockProcess: "Continuous Block Process",
-	BasicCycle:             "Basic Cycle",
-	TextCycle:              "Text Cycle",
-	BlockCycle:             "Block Cycle",
-	OrgChart:               "Organization Chart",
-	Hierarchy:              "Hierarchy",
-	HorizontalHierarchy:    "Horizontal Hierarchy",
-	BasicVenn:              "Basic Venn",
-	LinearVenn:             "Linear Venn",
-	StackedVenn:            "Stacked Venn",
-	BasicRadial:            "Basic Radial",
-	BasicMatrix:            "Basic Matrix",
-	TitledMatrix:           "Titled Matrix",
-	BasicPyramid:           "Basic Pyramid",
-	InvertedPyramid:        "Inverted Pyramid",
-	PictureStrips:          "Picture Strips",
-	PictureGrid:            "Picture Grid",
+func processLayoutName(l Layout) (string, bool) {
+	switch l {
+	case BasicBlockList:
+		return "Basic Block List", true
+	case VerticalBlockList:
+		return "Vertical Block List", true
+	case HorizontalBulletLst:
+		return "Horizontal Bullet List", true
+	case SquareAccentList:
+		return "Square Accent List", true
+	case PictureAccentList:
+		return "Picture Accent List", true
+	case BasicProcess:
+		return "Basic Process", true
+	case AccentProcess:
+		return "Accent Process", true
+	case AlternatingFlow:
+		return "Alternating Flow", true
+	case ContinuousBlockProcess:
+		return "Continuous Block Process", true
+	case BasicCycle:
+		return "Basic Cycle", true
+	case TextCycle:
+		return "Text Cycle", true
+	case BlockCycle:
+		return "Block Cycle", true
+	case OrgChart:
+		return "Organization Chart", true
+	case Hierarchy:
+		return "Hierarchy", true
+	case HorizontalHierarchy:
+		return "Horizontal Hierarchy", true
+	default:
+		return "", false
+	}
+}
+
+func relationshipLayoutName(l Layout) (string, bool) {
+	switch l {
+	case BasicVenn:
+		return "Basic Venn", true
+	case LinearVenn:
+		return "Linear Venn", true
+	case StackedVenn:
+		return "Stacked Venn", true
+	case BasicRadial:
+		return "Basic Radial", true
+	case BasicMatrix:
+		return "Basic Matrix", true
+	case TitledMatrix:
+		return "Titled Matrix", true
+	case BasicPyramid:
+		return "Basic Pyramid", true
+	case InvertedPyramid:
+		return "Inverted Pyramid", true
+	default:
+		return "", false
+	}
+}
+
+func matrixPictureLayoutName(l Layout) (string, bool) {
+	switch l {
+	case PictureStrips:
+		return "Picture Strips", true
+	case PictureGrid:
+		return "Picture Grid", true
+	default:
+		return "", false
+	}
 }
 
 const (

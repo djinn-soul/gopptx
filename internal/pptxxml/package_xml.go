@@ -24,6 +24,8 @@ func WriteRID(b *strings.Builder, rid string) {
 }
 
 // ContentTypes renders [Content_Types].xml.
+//
+//nolint:gocognit,funlen // OPC content-type emission branches over many optional package parts by design.
 func ContentTypes(
 	slideCount int,
 	imageExtensions []string,
@@ -265,6 +267,8 @@ func RootRelationships(hasCustomProps, hasSignatures bool) string {
 }
 
 // PresentationRelationships renders ppt/_rels/presentation.xml.rels.
+//
+//nolint:funlen // Relationship writer enumerates all optional package relationships explicitly.
 func PresentationRelationships(
 	slideCount int,
 	includeNotesMaster bool,
@@ -440,6 +444,8 @@ type ProtectionInfo struct {
 }
 
 // Presentation renders ppt/presentation.xml.
+//
+//nolint:funlen // Presentation XML root contains many optional sections emitted in one ordered block.
 func Presentation(
 	title string,
 	slideCount int,

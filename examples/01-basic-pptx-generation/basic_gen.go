@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/gopptx"
 )
@@ -14,16 +15,16 @@ func main() {
 
 	outDir := "examples/output"
 	if err := os.MkdirAll(outDir, 0o750); err != nil {
-		fmt.Printf("Failed to create output directory: %v\n", err)
+		log.Printf("Failed to create output directory: %v", err)
 		os.Exit(1)
 	}
 
 	filename := filepath.Join(outDir, "01_hello_world.pptx")
 	err := pres.Save(filename)
 	if err != nil {
-		fmt.Printf("Failed to save presentation: %v\n", err)
+		log.Printf("Failed to save presentation: %v", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Successfully generated %s\n", filename)
+	log.Printf("Successfully generated %s", filename)
 }

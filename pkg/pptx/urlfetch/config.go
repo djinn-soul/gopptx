@@ -4,8 +4,16 @@
 // HTML tables are rendered as real PPTX tables rather than summary bullets.
 package urlfetch
 
-// URLFetchConfig holds options that control content extraction and slide generation.
-type URLFetchConfig struct { //nolint:revive // keeping exported name for API compatibility
+const (
+	defaultMaxSlides          = 20
+	defaultMaxBulletsPerSlide = 6
+	defaultTimeoutSecs        = 30
+	bytesPerMiB               = 1024 * 1024
+	defaultMaxBodyBytes       = 10 * bytesPerMiB
+)
+
+// Config holds options that control content extraction and slide generation.
+type Config struct {
 	// MaxSlides caps the total number of generated slides.
 	MaxSlides int
 	// MaxBulletsPerSlide caps how many bullet points appear on a single slide.
@@ -29,81 +37,81 @@ type URLFetchConfig struct { //nolint:revive // keeping exported name for API co
 	MaxBodyBytes int64
 }
 
-// Web2PptConfig is a compatibility alias for URLFetchConfig.
-type Web2PptConfig = URLFetchConfig
+// Web2PptConfig is a compatibility alias for Config.
+type Web2PptConfig = Config
 
-// DefaultConfig returns a URLFetchConfig with sensible defaults.
-func DefaultConfig() URLFetchConfig {
-	return URLFetchConfig{
-		MaxSlides:          20,
-		MaxBulletsPerSlide: 6,
+// DefaultConfig returns a Config with sensible defaults.
+func DefaultConfig() Config {
+	return Config{
+		MaxSlides:          defaultMaxSlides,
+		MaxBulletsPerSlide: defaultMaxBulletsPerSlide,
 		IncludeImages:      true,
 		IncludeTables:      true,
 		IncludeCode:        true,
 		ExtractLinks:       true,
 		GroupByHeadings:    true,
 		UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-		TimeoutSecs:        30,
-		MaxBodyBytes:       10 * 1024 * 1024,
+		TimeoutSecs:        defaultTimeoutSecs,
+		MaxBodyBytes:       defaultMaxBodyBytes,
 	}
 }
 
 // WithMaxSlides sets the maximum slide count.
-func (c URLFetchConfig) WithMaxSlides(n int) URLFetchConfig {
+func (c Config) WithMaxSlides(n int) Config {
 	c.MaxSlides = n
 	return c
 }
 
 // WithMaxBullets sets the maximum bullets-per-slide.
-func (c URLFetchConfig) WithMaxBullets(n int) URLFetchConfig {
+func (c Config) WithMaxBullets(n int) Config {
 	c.MaxBulletsPerSlide = n
 	return c
 }
 
 // WithImages enables or disables image extraction.
-func (c URLFetchConfig) WithImages(v bool) URLFetchConfig {
+func (c Config) WithImages(v bool) Config {
 	c.IncludeImages = v
 	return c
 }
 
 // WithTables enables or disables table extraction.
-func (c URLFetchConfig) WithTables(v bool) URLFetchConfig {
+func (c Config) WithTables(v bool) Config {
 	c.IncludeTables = v
 	return c
 }
 
 // WithCode enables or disables code-block extraction.
-func (c URLFetchConfig) WithCode(v bool) URLFetchConfig {
+func (c Config) WithCode(v bool) Config {
 	c.IncludeCode = v
 	return c
 }
 
 // WithLinks enables or disables link extraction.
-func (c URLFetchConfig) WithLinks(v bool) URLFetchConfig {
+func (c Config) WithLinks(v bool) Config {
 	c.ExtractLinks = v
 	return c
 }
 
 // WithGroupByHeadings sets the slide-grouping strategy.
-func (c URLFetchConfig) WithGroupByHeadings(v bool) URLFetchConfig {
+func (c Config) WithGroupByHeadings(v bool) Config {
 	c.GroupByHeadings = v
 	return c
 }
 
 // WithUserAgent overrides the HTTP User-Agent header.
-func (c URLFetchConfig) WithUserAgent(ua string) URLFetchConfig {
+func (c Config) WithUserAgent(ua string) Config {
 	c.UserAgent = ua
 	return c
 }
 
 // WithTimeout sets the HTTP request timeout in seconds.
-func (c URLFetchConfig) WithTimeout(secs int) URLFetchConfig {
+func (c Config) WithTimeout(secs int) Config {
 	c.TimeoutSecs = secs
 	return c
 }
 
 // WithMaxBodyBytes sets the maximum response body size in bytes.
-func (c URLFetchConfig) WithMaxBodyBytes(n int64) URLFetchConfig {
+func (c Config) WithMaxBodyBytes(n int64) Config {
 	c.MaxBodyBytes = n
 	return c
 }

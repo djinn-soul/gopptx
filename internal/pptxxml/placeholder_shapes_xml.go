@@ -205,6 +205,7 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 		b.WriteString(fmt.Sprintf(` algn="%s"`, Escape(*ts.Align)))
 	}
 	b.WriteString(">")
+	//nolint:nestif // Attribute emission is intentionally explicit per optional style field.
 	if ts.Bold != nil || ts.Italic != nil || ts.SizePt != nil || ts.Color != nil || ts.Underline != nil ||
 		ts.Font != nil {
 		b.WriteString("<a:defRPr")

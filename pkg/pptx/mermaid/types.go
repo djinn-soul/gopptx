@@ -5,36 +5,36 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-// MermaidType represents the supported Mermaid diagram types.
-type MermaidType string //nolint:revive // keeping exported name for API compatibility
+// Type represents the supported Mermaid diagram types.
+type Type string
 
 const (
 	// Flowchart represents a Mermaid flowchart.
-	Flowchart MermaidType = "flowchart"
+	Flowchart Type = "flowchart"
 	// Sequence represents a Mermaid sequence diagram.
-	Sequence MermaidType = "sequence"
+	Sequence Type = "sequence"
 	// Pie represents a Mermaid pie chart.
-	Pie MermaidType = "pie"
+	Pie Type = "pie"
 	// Gantt represents a Mermaid gantt chart.
-	Gantt MermaidType = "gantt"
+	Gantt Type = "gantt"
 	// Class represents a Mermaid class diagram.
-	Class MermaidType = "class"
+	Class Type = "class"
 	// State represents a Mermaid state diagram.
-	State MermaidType = "state"
+	State Type = "state"
 	// ER represents a Mermaid entity relationship diagram.
-	ER MermaidType = "er"
+	ER Type = "er"
 	// Mindmap represents a Mermaid mindmap.
-	Mindmap MermaidType = "mindmap"
+	Mindmap Type = "mindmap"
 	// Timeline represents a Mermaid timeline diagram.
-	Timeline MermaidType = "timeline"
+	Timeline Type = "timeline"
 	// Journey represents a Mermaid user journey diagram.
-	Journey MermaidType = "journey"
+	Journey Type = "journey"
 	// Quadrant represents a Mermaid quadrant chart.
-	Quadrant MermaidType = "quadrant"
+	Quadrant Type = "quadrant"
 	// GitGraph represents a Mermaid git graph.
-	GitGraph MermaidType = "gitgraph"
+	GitGraph Type = "gitgraph"
 	// Unknown represents an unsupported or unrecognized Mermaid diagram type.
-	Unknown MermaidType = "unknown"
+	Unknown Type = "unknown"
 )
 
 // DiagramBounds defines the bounding box of a diagram.

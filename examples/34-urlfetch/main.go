@@ -118,7 +118,7 @@ const apiHTML = `<!DOCTYPE html>
 
 func main() {
 	outDir := filepath.Join("examples", "output")
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		fmt.Fprintf(os.Stderr, "mkdir: %v\n", err)
 		os.Exit(1)
 	}

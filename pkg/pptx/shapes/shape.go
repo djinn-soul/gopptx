@@ -47,15 +47,18 @@ type TextFrame struct {
 	AutoFit      TextFrameAutoFit
 }
 
+const (
+	defaultTextMarginInches = 0.05
+	minGradientStops        = 2
+)
+
 // NewTextFrame creates a text frame with default margins (0.05 inches).
-//
-//nolint:mnd // Default margins are from OOXML spec
 func NewTextFrame() TextFrame {
 	return TextFrame{
-		MarginLeft:   styling.Inches(0.05),
-		MarginRight:  styling.Inches(0.05),
-		MarginTop:    styling.Inches(0.05),
-		MarginBottom: styling.Inches(0.05),
+		MarginLeft:   styling.Inches(defaultTextMarginInches),
+		MarginRight:  styling.Inches(defaultTextMarginInches),
+		MarginTop:    styling.Inches(defaultTextMarginInches),
+		MarginBottom: styling.Inches(defaultTextMarginInches),
 
 		Anchor:  TextAnchorMiddle,
 		Wrap:    TextWrapSquare,
@@ -213,8 +216,7 @@ func (f ShapeGradientFill) Validate() error {
 	if !IsShapeGradientType(f.Type) {
 		return fmt.Errorf("invalid gradient type %q", f.Type)
 	}
-	//nolint:mnd // Minimum gradient stops
-	if len(f.Stops) < 2 {
+	if len(f.Stops) < minGradientStops {
 		return errors.New("gradient must have at least 2 stops")
 	}
 	for i, stop := range f.Stops {

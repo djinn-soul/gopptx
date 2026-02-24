@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sync"
 )
 
 // RequestEnvelope is the standard wrapper for all incoming commands.
@@ -31,73 +30,156 @@ type ErrorDetail struct {
 
 type commandHandler func(*PresentationEditor, json.RawMessage) (any, error)
 
-var (
-	//nolint:gochecknoglobals // Command registry is initialized once and shared process-wide.
-	handlersOnce sync.Once
-	//nolint:gochecknoglobals // Immutable-after-init command dispatch table.
-	handlers map[string]commandHandler
-)
+func commandHandlerFor(op string) (commandHandler, bool) {
+	for _, lookup := range []func(string) (commandHandler, bool){
+		commandHandlerForSlides,
+		commandHandlerForLayoutMetadata,
+		commandHandlerForContent,
+		commandHandlerForCommentsShapes,
+		commandHandlerForNotesTables,
+	} {
+		if h, ok := lookup(op); ok {
+			return h, true
+		}
+	}
+	return nil, false
+}
 
-func initHandlers() {
-	handlers = map[string]commandHandler{
-		OpBatchExecute:            handleBatchExecute,
-		OpSlideCount:              handleSlideCount,
-		OpAddSlide:                handleAddSlide,
-		OpRemoveSlide:             handleRemoveSlide,
-		OpMoveSlide:               handleMoveSlide,
-		OpDuplicateSlide:          handleDuplicateSlide,
-		OpGetMetadata:             handleGetMetadata,
-		OpUpdateChartData:         handleUpdateChartData,
-		OpListSlideCharts:         handleListSlideCharts,
-		OpListSlideLayouts:        handleListSlideLayouts,
-		OpListSlideMasters:        handleListSlideMasters,
-		OpListMasterLayouts:       handleListMasterLayouts,
-		OpRebindSlideLayout:       handleRebindSlideLayout,
-		OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
-		OpAddSection:              handleAddSection,
-		OpRemoveSection:           handleRemoveSection,
-		OpRenameSection:           handleRenameSection,
-		OpGetSections:             handleGetSections,
-		OpGetCoreProperties:       handleGetCoreProperties,
-		OpSetCoreProperties:       handleSetCoreProperties,
-		OpApplyTheme:              handleApplyTheme,
-		OpSetSlideSize:            handleSetSlideSize,
-		OpSetSlideTitle:           handleSetSlideTitle,
-		OpMergeFromFile:           handleMergeFromFile,
-		OpUpdateSlide:             handleUpdateSlide,
-		OpAddChart:                handleAddChart,
-		OpListSlides:              handleListSlides,
-		OpFindAndReplace:          handleFindAndReplace,
-		OpSearchShapes:            handleSearchShapes,
-		OpGetAuthors:              handleGetAuthors,
-		OpAddAuthor:               handleAddAuthor,
-		OpGetComments:             handleGetComments,
-		OpAddComment:              handleAddComment,
-		OpRemoveComment:           handleRemoveComment,
-		OpListShapes:              handleListShapes,
-		OpAddShape:                handleAddShape,
-		OpAddImage:                handleAddImage,
-		OpRemoveShape:             handleRemoveShape,
-		OpUpdateShape:             handleUpdateShape,
-		OpMoveShapeToFront:        handleMoveShapeToFront,
-		OpMoveShapeToBack:         handleMoveShapeToBack,
-		OpGetNotes:                handleGetNotes,
-		OpSetNotes:                handleSetNotes,
-		OpSetModifyPassword:       handleSetModifyPassword,
-		OpSetMarkAsFinal:          handleSetMarkAsFinal,
-		OpAddTable:                handleAddTable,
-		OpGetTable:                handleGetTable,
-		OpMergeTableCells:         handleMergeTableCells,
-		OpSplitTableCell:          handleSplitTableCell,
-		OpUpdateTableFlags:        handleUpdateTableFlags,
-		OpUpdateTableCell:         handleUpdateTableCell,
+func commandHandlerForSlides(op string) (commandHandler, bool) {
+	switch op {
+	case OpBatchExecute:
+		return handleBatchExecute, true
+	case OpSlideCount:
+		return handleSlideCount, true
+	case OpAddSlide:
+		return handleAddSlide, true
+	case OpRemoveSlide:
+		return handleRemoveSlide, true
+	case OpMoveSlide:
+		return handleMoveSlide, true
+	case OpDuplicateSlide:
+		return handleDuplicateSlide, true
+	case OpListSlides:
+		return handleListSlides, true
+	case OpSetSlideTitle:
+		return handleSetSlideTitle, true
+	case OpUpdateSlide:
+		return handleUpdateSlide, true
+	default:
+		return nil, false
 	}
 }
 
-func commandHandlerFor(op string) (commandHandler, bool) {
-	handlersOnce.Do(initHandlers)
-	h, ok := handlers[op]
-	return h, ok
+func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
+	switch op {
+	case OpGetMetadata:
+		return handleGetMetadata, true
+	case OpListSlideCharts:
+		return handleListSlideCharts, true
+	case OpUpdateChartData:
+		return handleUpdateChartData, true
+	case OpAddChart:
+		return handleAddChart, true
+	case OpListSlideLayouts:
+		return handleListSlideLayouts, true
+	case OpListSlideMasters:
+		return handleListSlideMasters, true
+	case OpListMasterLayouts:
+		return handleListMasterLayouts, true
+	case OpRebindSlideLayout:
+		return handleRebindSlideLayout, true
+	case OpCloneLayoutMasterFamily:
+		return handleCloneLayoutMasterFamily, true
+	case OpApplyTheme:
+		return handleApplyTheme, true
+	case OpSetSlideSize:
+		return handleSetSlideSize, true
+	case OpMergeFromFile:
+		return handleMergeFromFile, true
+	case OpGetCoreProperties:
+		return handleGetCoreProperties, true
+	case OpSetCoreProperties:
+		return handleSetCoreProperties, true
+	default:
+		return nil, false
+	}
+}
+
+func commandHandlerForContent(op string) (commandHandler, bool) {
+	switch op {
+	case OpAddSection:
+		return handleAddSection, true
+	case OpRemoveSection:
+		return handleRemoveSection, true
+	case OpRenameSection:
+		return handleRenameSection, true
+	case OpGetSections:
+		return handleGetSections, true
+	case OpFindAndReplace:
+		return handleFindAndReplace, true
+	case OpSearchShapes:
+		return handleSearchShapes, true
+	case OpSetModifyPassword:
+		return handleSetModifyPassword, true
+	case OpSetMarkAsFinal:
+		return handleSetMarkAsFinal, true
+	default:
+		return nil, false
+	}
+}
+
+func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
+	switch op {
+	case OpGetAuthors:
+		return handleGetAuthors, true
+	case OpAddAuthor:
+		return handleAddAuthor, true
+	case OpGetComments:
+		return handleGetComments, true
+	case OpAddComment:
+		return handleAddComment, true
+	case OpRemoveComment:
+		return handleRemoveComment, true
+	case OpListShapes:
+		return handleListShapes, true
+	case OpAddShape:
+		return handleAddShape, true
+	case OpAddImage:
+		return handleAddImage, true
+	case OpRemoveShape:
+		return handleRemoveShape, true
+	case OpUpdateShape:
+		return handleUpdateShape, true
+	case OpMoveShapeToFront:
+		return handleMoveShapeToFront, true
+	case OpMoveShapeToBack:
+		return handleMoveShapeToBack, true
+	default:
+		return nil, false
+	}
+}
+
+func commandHandlerForNotesTables(op string) (commandHandler, bool) {
+	switch op {
+	case OpGetNotes:
+		return handleGetNotes, true
+	case OpSetNotes:
+		return handleSetNotes, true
+	case OpAddTable:
+		return handleAddTable, true
+	case OpGetTable:
+		return handleGetTable, true
+	case OpMergeTableCells:
+		return handleMergeTableCells, true
+	case OpSplitTableCell:
+		return handleSplitTableCell, true
+	case OpUpdateTableFlags:
+		return handleUpdateTableFlags, true
+	case OpUpdateTableCell:
+		return handleUpdateTableCell, true
+	default:
+		return nil, false
+	}
 }
 
 // ExecuteCommand dispatches a JSON command to the appropriate editor method.

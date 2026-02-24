@@ -467,6 +467,8 @@ func SlideRelationshipsWithHyperlinks(
 }
 
 // SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts, SmartArt, and comments.
+//
+//nolint:funlen // Slide relationship XML must enumerate media/chart/notes/smartart links with stable ordering.
 func SlideRelationshipsWithMultiCharts(
 	layoutTarget string,
 	imageTargets []string,

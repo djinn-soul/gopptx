@@ -29,12 +29,12 @@ func main() {
 	}
 
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		fmt.Fprintf(os.Stderr, "mkdir error: %v\n", err)
 		os.Exit(1)
 	}
 	outPath := filepath.Join(outputDir, "56_action_smoke.pptx")
-	if err := os.WriteFile(outPath, data, 0o644); err != nil {
+	if err := os.WriteFile(outPath, data, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "Write error: %v\n", err)
 		os.Exit(1)
 	}

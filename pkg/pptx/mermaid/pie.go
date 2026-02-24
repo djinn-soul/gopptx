@@ -75,102 +75,20 @@ func generatePieElements(pie *PieDiagram, theme Theme) DiagramElements {
 		return createPlaceholder("pie (invalid totals)", theme)
 	}
 
-	// Layout parameters
-	centerX := styling.Inches(4)
-	centerY := styling.Inches(3.5)
-	radius := styling.Inches(2.0)
+	layout := pieLayout{
+		centerX: styling.Inches(4),
+		centerY: styling.Inches(3.5),
+		radius:  styling.Inches(2.0),
+	}
+	palette := piePalette(theme)
 
-	// Title
 	if pie.Title != "" {
-		titleShape := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			centerX-styling.Inches(3),
-			centerY-radius-styling.Inches(1.0),
-			styling.Inches(6),
-			styling.Inches(0.6),
-		).WithText(pie.Title).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, titleShape)
+		shapesList = append(shapesList, pieTitleShape(pie.Title, layout))
 	}
 
-	// Pie slices
-	currentAngle := 0.0
-	palette := []string{
-		theme.PrimaryFill,
-		theme.SecondaryFill,
-		"4285F4", "EA4335", "FBBC05", "34A853", "FF6D01", "46BDC6", "7BAAF7", "F07B72",
-	}
-
-	for i, d := range pie.Data {
-		sliceAngle := (d.Value / total) * 360.0
-		endAngle := currentAngle + sliceAngle
-
-		color := palette[i%len(palette)]
-
-		slice := shapes.NewPieSlice(
-			centerX-radius,
-			centerY-radius,
-			radius*2,
-			radius*2,
-			currentAngle,
-			endAngle,
-		).WithFill(shapes.NewShapeFill(color)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight))
-
-		shapesList = append(shapesList, slice)
-		currentAngle = endAngle
-	}
-
-	// Legend
-	legendX := centerX + radius + styling.Inches(0.5)
-	legendY := centerY - radius
-	itemHeight := styling.Inches(0.35)
-
-	for i, d := range pie.Data {
-		percentage := (d.Value / total) * 100
-		color := palette[i%len(palette)]
-
-		// Color box
-		boxSize := styling.Inches(0.15)
-		colorBox := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			legendX,
-			legendY+styling.Length(i)*itemHeight+(itemHeight-boxSize)/2,
-			boxSize,
-			boxSize,
-		).WithFill(shapes.NewShapeFill(color)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, styling.Emu(12700)))
-		shapesList = append(shapesList, colorBox)
-
-		// Label
-		label := fmt.Sprintf("%s: %.1f%%", d.Label, percentage)
-		labelShape := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			legendX+boxSize+styling.Inches(0.1),
-			legendY+styling.Length(i)*itemHeight,
-			styling.Inches(3.0),
-			itemHeight,
-		).WithText(label).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
-		labelShape.Fill = nil
-		labelShape.Line = nil
-
-		shapesList = append(shapesList, labelShape)
-	}
-
-	// Calculate bounds
-	minX := centerX - radius
-	minY := centerY - radius
-	if pie.Title != "" {
-		minY = centerY - radius - styling.Inches(0.8)
-	}
-	maxX := legendX + styling.Inches(3)
-	maxY := centerY + radius
-	if styling.Length(len(pie.Data))*itemHeight > radius*2 {
-		maxY = legendY + styling.Length(len(pie.Data))*itemHeight
-	}
+	shapesList = append(shapesList, pieSliceShapes(pie, total, layout, theme, palette)...)
+	shapesList = append(shapesList, pieLegendShapes(pie, total, layout, theme, palette)...)
+	minX, minY, maxX, maxY := pieBounds(pie, layout)
 
 	return DiagramElements{
 		Shapes:  shapesList,
@@ -182,4 +100,128 @@ func generatePieElements(pie *PieDiagram, theme Theme) DiagramElements {
 			CY: maxY - minY,
 		},
 	}
+}
+
+type pieLayout struct {
+	centerX styling.Length
+	centerY styling.Length
+	radius  styling.Length
+}
+
+func piePalette(theme Theme) []string {
+	return []string{
+		theme.PrimaryFill,
+		theme.SecondaryFill,
+		"4285F4", "EA4335", "FBBC05", "34A853", "FF6D01", "46BDC6", "7BAAF7", "F07B72",
+	}
+}
+
+func pieTitleShape(title string, layout pieLayout) shapes.Shape {
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		layout.centerX-styling.Inches(3),
+		layout.centerY-layout.radius-styling.Inches(1.0),
+		styling.Inches(6),
+		styling.Inches(0.6),
+	).WithText(title).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+}
+
+func pieSliceShapes(pie *PieDiagram, total float64, layout pieLayout, theme Theme, palette []string) []shapes.Shape {
+	out := make([]shapes.Shape, 0, len(pie.Data))
+	currentAngle := 0.0
+
+	for i, d := range pie.Data {
+		endAngle := currentAngle + (d.Value/total)*360.0
+		color := palette[i%len(palette)]
+		out = append(out, shapes.NewPieSlice(
+			layout.centerX-layout.radius,
+			layout.centerY-layout.radius,
+			layout.radius*2,
+			layout.radius*2,
+			currentAngle,
+			endAngle,
+		).WithFill(shapes.NewShapeFill(color)).
+			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)))
+		currentAngle = endAngle
+	}
+	return out
+}
+
+func pieLegendShapes(pie *PieDiagram, total float64, layout pieLayout, theme Theme, palette []string) []shapes.Shape {
+	legendX := layout.centerX + layout.radius + styling.Inches(0.5)
+	legendY := layout.centerY - layout.radius
+	itemHeight := styling.Inches(0.35)
+	boxSize := styling.Inches(0.15)
+
+	out := make([]shapes.Shape, 0, len(pie.Data)*2)
+	for i, d := range pie.Data {
+		color := palette[i%len(palette)]
+		percentage := (d.Value / total) * 100
+		out = append(out, pieLegendColorBox(i, legendX, legendY, itemHeight, boxSize, color, theme))
+		out = append(out, pieLegendLabel(i, legendX, legendY, itemHeight, boxSize, d.Label, percentage))
+	}
+	return out
+}
+
+func pieLegendColorBox(
+	index int,
+	legendX styling.Length,
+	legendY styling.Length,
+	itemHeight styling.Length,
+	boxSize styling.Length,
+	color string,
+	theme Theme,
+) shapes.Shape {
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		legendX,
+		legendY+styling.Length(index)*itemHeight+(itemHeight-boxSize)/2,
+		boxSize,
+		boxSize,
+	).WithFill(shapes.NewShapeFill(color)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, styling.Emu(12700)))
+}
+
+func pieLegendLabel(
+	index int,
+	legendX styling.Length,
+	legendY styling.Length,
+	itemHeight styling.Length,
+	boxSize styling.Length,
+	label string,
+	percentage float64,
+) shapes.Shape {
+	text := fmt.Sprintf("%s: %.1f%%", label, percentage)
+	labelShape := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		legendX+boxSize+styling.Inches(0.1),
+		legendY+styling.Length(index)*itemHeight,
+		styling.Inches(3.0),
+		itemHeight,
+	).WithText(text).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
+	labelShape.Fill = nil
+	labelShape.Line = nil
+	return labelShape
+}
+
+func pieBounds(pie *PieDiagram, layout pieLayout) (styling.Length, styling.Length, styling.Length, styling.Length) {
+	minX := layout.centerX - layout.radius
+	minY := layout.centerY - layout.radius
+	if pie.Title != "" {
+		minY = layout.centerY - layout.radius - styling.Inches(0.8)
+	}
+
+	legendX := layout.centerX + layout.radius + styling.Inches(0.5)
+	itemHeight := styling.Inches(0.35)
+	legendY := layout.centerY - layout.radius
+	maxX := legendX + styling.Inches(3)
+	maxY := layout.centerY + layout.radius
+	if styling.Length(len(pie.Data))*itemHeight > layout.radius*2 {
+		maxY = legendY + styling.Length(len(pie.Data))*itemHeight
+	}
+	return minX, minY, maxX, maxY
 }

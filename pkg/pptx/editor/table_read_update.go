@@ -7,20 +7,23 @@ import (
 	"fmt"
 )
 
-//nolint:gochecknoglobals // Static lookup table for API flag aliases to XML attribute names.
-var tableFlagAttributeMap = map[string]string{
-	"first_row": "firstRow",
-	"firstRow":  "firstRow",
-	"band_row":  "bandRow",
-	"bandRow":   "bandRow",
-	"first_col": "firstCol",
-	"firstCol":  "firstCol",
-	"last_row":  "lastRow",
-	"lastRow":   "lastRow",
-	"last_col":  "lastCol",
-	"lastCol":   "lastCol",
-	"band_col":  "bandCol",
-	"bandCol":   "bandCol",
+func tableFlagAttributeName(flag string) (string, bool) {
+	switch flag {
+	case "first_row", "firstRow":
+		return "firstRow", true
+	case "band_row", "bandRow":
+		return "bandRow", true
+	case "first_col", "firstCol":
+		return "firstCol", true
+	case "last_row", "lastRow":
+		return "lastRow", true
+	case "last_col", "lastCol":
+		return "lastCol", true
+	case "band_col", "bandCol":
+		return "bandCol", true
+	default:
+		return "", false
+	}
 }
 
 // GetTable reads a table's structure entirely from XML.
@@ -106,7 +109,7 @@ func (e *PresentationEditor) UpdateTableFlags(slideIndex, shapeID int, flags map
 	tblPrXML := append([]byte(nil), frame[tblPrStart:tblPrEnd]...)
 
 	for k, v := range flags {
-		xmlKey, ok := tableFlagAttributeMap[k]
+		xmlKey, ok := tableFlagAttributeName(k)
 		if !ok {
 			continue
 		}

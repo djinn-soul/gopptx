@@ -9,7 +9,7 @@ import (
 )
 
 // DetectType identifies the Mermaid diagram type from the provided code.
-func DetectType(code string) MermaidType {
+func DetectType(code string) Type {
 	lines := strings.Split(code, "\n")
 	var firstLine string
 	for _, line := range lines {

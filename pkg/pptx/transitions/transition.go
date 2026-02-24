@@ -325,20 +325,30 @@ func transitionSoundXML(sound *TransitionSound) string {
 }
 
 func escape(value string) string {
-	return transitionEscapeReplacerVar.Replace(value)
-}
+	if !strings.ContainsAny(value, `&<>"'`) {
+		return value
+	}
 
-// NOTE: The use of a package-level variable here is intentional to avoid repeated [strings.Replacer] allocation.
-// Do not move this to a local scope.
-//
-//nolint:gochecknoglobals // global replacer
-var transitionEscapeReplacerVar = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	"\"", "&quot;",
-	"'", "&apos;",
-)
+	var b strings.Builder
+	b.Grow(len(value))
+	for _, r := range value {
+		switch r {
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
+		case '"':
+			b.WriteString("&quot;")
+		case '\'':
+			b.WriteString("&apos;")
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
 
 func (t TransitionType) Validate() error {
 	switch t {

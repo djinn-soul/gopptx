@@ -16,8 +16,15 @@ type opSpec struct {
 	Value  string
 }
 
+const (
+	minCLIArgs     = 4
+	initialOpsCap  = 64
+	opNamePrefix   = "Op"
+	opPyNamePrefix = "OP_"
+)
+
 func main() {
-	if len(os.Args) < 4 {
+	if len(os.Args) < minCLIArgs {
 		fmt.Fprintln(os.Stderr, "Usage: gen_ops <input_go_file> <output_py_file> <output_pyi_file>")
 		os.Exit(1)
 	}
@@ -67,7 +74,7 @@ func parseOpsFromGo(input string) ([]opSpec, error) {
 		return nil, err
 	}
 
-	ops := make([]opSpec, 0, 64)
+	ops := make([]opSpec, 0, initialOpsCap)
 	for _, decl := range node.Decls {
 		gen, ok := decl.(*ast.GenDecl)
 		if !ok || gen.Tok != token.CONST {
@@ -75,29 +82,42 @@ func parseOpsFromGo(input string) ([]opSpec, error) {
 		}
 		for _, spec := range gen.Specs {
 			vspec, ok := spec.(*ast.ValueSpec)
-			if !ok || len(vspec.Names) == 0 || len(vspec.Values) == 0 {
+			if !ok {
 				continue
 			}
-			name := vspec.Names[0].Name
-			if !strings.HasPrefix(name, "Op") {
+			op, ok, err := parseOpSpec(vspec)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
 				continue
 			}
-			lit, ok := vspec.Values[0].(*ast.BasicLit)
-			if !ok || lit.Kind != token.STRING {
-				return nil, fmt.Errorf("op %q must be a string literal", name)
-			}
-			value, unquoteErr := unquote(lit.Value)
-			if unquoteErr != nil {
-				return nil, fmt.Errorf("unquote op %q: %w", name, unquoteErr)
-			}
-
-			ops = append(ops, opSpec{
-				PyName: "OP_" + toSnakeCase(strings.TrimPrefix(name, "Op")),
-				Value:  value,
-			})
+			ops = append(ops, op)
 		}
 	}
 	return ops, nil
+}
+
+func parseOpSpec(vspec *ast.ValueSpec) (opSpec, bool, error) {
+	if len(vspec.Names) == 0 || len(vspec.Values) == 0 {
+		return opSpec{}, false, nil
+	}
+	name := vspec.Names[0].Name
+	if !strings.HasPrefix(name, opNamePrefix) {
+		return opSpec{}, false, nil
+	}
+	lit, ok := vspec.Values[0].(*ast.BasicLit)
+	if !ok || lit.Kind != token.STRING {
+		return opSpec{}, false, fmt.Errorf("op %q must be a string literal", name)
+	}
+	value, unquoteErr := unquote(lit.Value)
+	if unquoteErr != nil {
+		return opSpec{}, false, fmt.Errorf("unquote op %q: %w", name, unquoteErr)
+	}
+	return opSpec{
+		PyName: opPyNamePrefix + toSnakeCase(strings.TrimPrefix(name, opNamePrefix)),
+		Value:  value,
+	}, true, nil
 }
 
 func writeOpsPy(f *os.File, ops []opSpec) {

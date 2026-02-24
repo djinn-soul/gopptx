@@ -7,6 +7,8 @@ import (
 	"strconv"
 )
 
+const attrInsertOverheadBytes = 4
+
 func setOrInsertAttr(openingTag []byte, attrName, attrValue string) []byte {
 	attrStr := []byte(" " + attrName + `="`)
 	idx := bytes.Index(openingTag, attrStr)
@@ -27,7 +29,7 @@ func setOrInsertAttr(openingTag []byte, attrName, attrValue string) []byte {
 	if insertAt > 0 && openingTag[insertAt-1] == '/' {
 		insertAt--
 	}
-	updated := make([]byte, 0, len(openingTag)+len(attrName)+len(attrValue)+4)
+	updated := make([]byte, 0, len(openingTag)+len(attrName)+len(attrValue)+attrInsertOverheadBytes)
 	updated = append(updated, openingTag[:insertAt]...)
 	updated = append(updated, []byte(" "+attrName+`="`+attrValue+`"`)...)
 	updated = append(updated, openingTag[insertAt:]...)
@@ -145,6 +147,7 @@ func mutateTableElements(
 	return out.Bytes(), nil
 }
 
+//nolint:gocognit // Merge behavior needs explicit XML-state checks for correctness and bounds safety.
 func (e *PresentationEditor) MergeTableCells(slideIndex, shapeID, row1, col1, row2, col2 int) error {
 	if row1 < 0 || col1 < 0 || row2 < 0 || col2 < 0 {
 		return errors.New("merge coordinates must be non-negative")
