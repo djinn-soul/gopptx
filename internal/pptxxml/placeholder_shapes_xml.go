@@ -205,7 +205,9 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 		b.WriteString(fmt.Sprintf(` algn="%s"`, Escape(*ts.Align)))
 	}
 	b.WriteString(">")
-	if ts.Bold != nil || ts.Italic != nil || ts.SizePt != nil || ts.Color != nil || ts.Underline != nil || ts.Font != nil {
+	//nolint:nestif // Attribute emission is intentionally explicit per optional style field.
+	if ts.Bold != nil || ts.Italic != nil || ts.SizePt != nil || ts.Color != nil || ts.Underline != nil ||
+		ts.Font != nil {
 		b.WriteString("<a:defRPr")
 		if ts.Bold != nil {
 			b.WriteString(fmt.Sprintf(` b="%s"`, boolToFlag(*ts.Bold)))
@@ -221,7 +223,9 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 		}
 		b.WriteString(">")
 		if ts.Color != nil {
-			b.WriteString(fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, strings.TrimPrefix(*ts.Color, "#")))
+			b.WriteString(
+				fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, strings.TrimPrefix(*ts.Color, "#")),
+			)
 		}
 		if ts.Font != nil {
 			b.WriteString(fmt.Sprintf(`<a:latin typeface="%s"/>`, Escape(*ts.Font)))

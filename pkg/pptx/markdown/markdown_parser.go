@@ -17,11 +17,12 @@ type markdownParser struct {
 	continuationTitle string
 }
 
+const initialMarkdownSlideCapacity = 8
+
 func newMarkdownParser(markdown string) *markdownParser {
 	return &markdownParser{
-		lines: strings.Split(markdown, "\n"),
-		//nolint:mnd // Initial capacity for slides
-		slides: make([]elements.SlideContent, 0, 8),
+		lines:  strings.Split(markdown, "\n"),
+		slides: make([]elements.SlideContent, 0, initialMarkdownSlideCapacity),
 	}
 }
 

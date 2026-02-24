@@ -1,28 +1,37 @@
 package pptxxml
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 )
 
 func bubbleChartPartXML(chart *ChartSpec) string {
 	series := chartBubbleSeriesXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	var plot strings.Builder
+	plot.WriteString(`
+<c:bubbleChart>
+<c:varyColors val="0"/>`)
+	plot.WriteString(series)
+	plot.WriteString(`
+`)
+	plot.WriteString(labels)
+	plot.WriteString(`
+<c:bubbleScale val="`)
+	plot.WriteString(strconv.Itoa(chart.BubbleScale))
+	plot.WriteString(`"/>
+<c:axId val="48650112"/>
+<c:axId val="48672768"/>
+</c:bubbleChart>
+`)
+	plot.WriteString(scatterAxesXML(chart))
 	return chartPartEnvelope(
 		chart.Title,
 		chart.TitleOverlay,
 		chart.ShowLegend,
 		chart.LegendPosition,
 		chart.LegendOverlay,
-		fmt.Sprintf(`
-<c:bubbleChart>
-<c:varyColors val="0"/>%s
-%s
-<c:bubbleScale val="%d"/>
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
-</c:bubbleChart>
-%s`, series, labels, chart.BubbleScale, scatterAxesXML(chart)),
+		plot.String(),
 	)
 }
 
@@ -36,34 +45,52 @@ func chartBubbleSeriesXML(chart *ChartSpec) string {
 <c:spPr><a:solidFill><a:srgbClr val="` + Escape(chart.Color) + `"/></a:solidFill></c:spPr>
 <c:xVal><c:numLit>`)
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <c:formatCode>General</c:formatCode>
-<c:ptCount val="%d"/>`, len(chart.XValues)))
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.XValues)))
+	b.WriteString(`"/>`)
 	for i, value := range chart.XValues {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%.6f</c:v></c:pt>`, i, value))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:numLit></c:xVal>
 <c:yVal><c:numLit>`)
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <c:formatCode>General</c:formatCode>
-<c:ptCount val="%d"/>`, len(chart.Values)))
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.Values)))
+	b.WriteString(`"/>`)
 	for i, value := range chart.Values {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%.6f</c:v></c:pt>`, i, value))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:numLit></c:yVal>
 <c:bubbleSize><c:numLit>`)
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <c:formatCode>General</c:formatCode>
-<c:ptCount val="%d"/>`, len(chart.BubbleSizes)))
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.BubbleSizes)))
+	b.WriteString(`"/>`)
 	for i, value := range chart.BubbleSizes {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%.6f</c:v></c:pt>`, i, value))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:numLit></c:bubbleSize>

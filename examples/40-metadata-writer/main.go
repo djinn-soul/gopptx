@@ -2,6 +2,9 @@ package main
 
 import (
 	"archive/zip"
+	"errors"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,14 +16,20 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		log.Fatalf("Failed to create output dir: %v", err)
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
+		return fmt.Errorf("failed to create output dir: %w", err)
 	}
 
 	tmpDir, tempErr := os.MkdirTemp("", "gopptx-metadata-writer-*")
 	if tempErr != nil {
-		log.Fatalf("Failed to create temp dir: %v", tempErr)
+		return fmt.Errorf("failed to create temp dir: %w", tempErr)
 	}
 	defer func() {
 		if err := os.RemoveAll(tmpDir); err != nil {
@@ -34,7 +43,7 @@ func main() {
 	// 1. Create a minimal valid PPTX file
 	log.Printf("Generating minimal PPTX: %s...\n", inputFile)
 	if err := createMinimalPPTX(inputFile); err != nil {
-		log.Fatalf("Failed to create minimal PPTX: %v", err)
+		return fmt.Errorf("failed to create minimal PPTX: %w", err)
 	}
 	defer func() {
 		// optional cleanup
@@ -47,7 +56,7 @@ func main() {
 	log.Printf("Opening %s...\n", inputFile)
 	ppt, err := editor.OpenPresentationEditor(inputFile)
 	if err != nil {
-		log.Fatalf("Failed to open presentation: %v", err)
+		return fmt.Errorf("failed to open presentation: %w", err)
 	}
 	defer func() { _ = ppt.Close() }()
 
@@ -55,7 +64,7 @@ func main() {
 	props := ppt.GetCoreProperties()
 	log.Printf("Initial Title: %s\n", props.Title)
 	if props.Title != "Initial Title" {
-		log.Fatalf("Expected 'Initial Title', got '%s'", props.Title)
+		return fmt.Errorf("expected 'Initial Title', got %q", props.Title)
 	}
 
 	// 4. Update metadata
@@ -72,48 +81,64 @@ func main() {
 	// 5. Save
 	log.Printf("Saving to %s...\n", outputFile)
 	if err := ppt.Save(outputFile); err != nil {
-		log.Fatalf("Failed to save: %v", err)
+		return fmt.Errorf("failed to save: %w", err)
 	}
 
 	// 6. Verify output
-	verifyOutput(outputFile)
+	if err := verifyOutput(outputFile); err != nil {
+		return err
+	}
 
 	log.Println("Done! Smoke test passed.")
+	return nil
 }
 
-func verifyOutput(filename string) {
+func verifyOutput(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
-		log.Fatalf("Failed to open output file: %v", err)
+		return fmt.Errorf("failed to open output file: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
-	fi, _ := f.Stat()
+	fi, statErr := f.Stat()
+	if statErr != nil {
+		return fmt.Errorf("failed to stat output file: %w", statErr)
+	}
 	z, err := zip.NewReader(f, fi.Size())
 	if err != nil {
-		log.Fatalf("Failed to open zip: %v", err)
+		return fmt.Errorf("failed to open zip: %w", err)
 	}
 
 	foundCore := false
-	for _, f := range z.File {
-		if f.Name == "docProps/core.xml" {
-			foundCore = true
-			rc, _ := f.Open()
-			content := make([]byte, f.UncompressedSize64)
-			_, _ = rc.Read(content)
-			_ = rc.Close()
-			s := string(content)
-			if !contains(s, "Updated Title") {
-				log.Fatalf("Output missing updated title")
-			}
-			if !contains(s, "Updated Description") {
-				log.Fatalf("Output missing updated description")
-			}
+	for _, zf := range z.File {
+		if zf.Name != "docProps/core.xml" {
+			continue
+		}
+		foundCore = true
+		rc, openErr := zf.Open()
+		if openErr != nil {
+			return fmt.Errorf("failed to open docProps/core.xml: %w", openErr)
+		}
+		content, readErr := io.ReadAll(rc)
+		closeErr := rc.Close()
+		if readErr != nil {
+			return fmt.Errorf("failed to read docProps/core.xml: %w", readErr)
+		}
+		if closeErr != nil {
+			return fmt.Errorf("failed to close docProps/core.xml stream: %w", closeErr)
+		}
+		s := string(content)
+		if !contains(s, "Updated Title") {
+			return errors.New("output missing updated title")
+		}
+		if !contains(s, "Updated Description") {
+			return errors.New("output missing updated description")
 		}
 	}
 	if !foundCore {
-		log.Fatalf("Output missing docProps/core.xml")
+		return errors.New("output missing docProps/core.xml")
 	}
+	return nil
 }
 
 func contains(s, substr string) bool {
@@ -133,5 +158,5 @@ func createMinimalPPTX(filename string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filename, data, 0o644)
+	return os.WriteFile(filename, data, 0o600)
 }

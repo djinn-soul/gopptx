@@ -3,15 +3,24 @@ package editor
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
 )
 
-var zipReadChunkPool = sync.Pool{
-	New: func() any {
-		return make([]byte, 32*1024)
-	},
+const (
+	maxUnknownZipEntryBytes = 256 * 1024 * 1024
+	zipReadChunkBytes       = 32 * 1024
+)
+
+func newZipReadChunkPool() sync.Pool {
+	return sync.Pool{
+		New: func() any {
+			b := make([]byte, zipReadChunkBytes)
+			return &b
+		},
+	}
 }
 
 type inflightRead struct {
@@ -98,11 +107,20 @@ func readZipEntry(entry *zip.File) ([]byte, error) {
 	}
 
 	// Fallback for unknown sizes: use a pooled read buffer to reduce temporary allocations.
-	chunk := zipReadChunkPool.Get().([]byte)
-	defer zipReadChunkPool.Put(chunk)
+	pool := newZipReadChunkPool()
+	chunkPtr, ok := pool.Get().(*[]byte)
+	if !ok || chunkPtr == nil {
+		return nil, errors.New("zip read pool returned invalid buffer")
+	}
+	defer pool.Put(chunkPtr)
+	chunk := *chunkPtr
 	var out bytes.Buffer
-	if _, err := io.CopyBuffer(&out, rc, chunk); err != nil {
+	limitedReader := io.LimitReader(rc, maxUnknownZipEntryBytes+1)
+	if _, err := io.CopyBuffer(&out, limitedReader, chunk); err != nil {
 		return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)
+	}
+	if out.Len() > maxUnknownZipEntryBytes {
+		return nil, fmt.Errorf("zip entry %q exceeds max size %d bytes", entry.Name, maxUnknownZipEntryBytes)
 	}
 	return out.Bytes(), nil
 }

@@ -174,7 +174,7 @@ func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
 }
 
 func TestContentTypesMultiMaster(t *testing.T) {
-	xml := pptxxml.ContentTypes(1, nil, 0, 0, nil, false, 0, 2, 0, false, nil, false)
+	xml := pptxxml.ContentTypes(1, nil, 0, 0, nil, false, 0, 2, 0, false, nil, false, false)
 	if !strings.Contains(xml, `/ppt/slideMasters/slideMaster1.xml`) {
 		t.Error("missing slideMaster1 content-type override")
 	}

@@ -3,6 +3,18 @@ package shapes
 import "strings"
 
 const (
+	connectionSiteTopIndex = iota
+	connectionSiteRightIndex
+	connectionSiteBottomIndex
+	connectionSiteLeftIndex
+	connectionSiteTopLeftIndex
+	connectionSiteTopRightIndex
+	connectionSiteBottomRightIndex
+	connectionSiteBottomLeftIndex
+	connectionSiteCenterIndex
+)
+
+const (
 	// LineDashSolid emits a solid line.
 	LineDashSolid = "solid"
 	// LineDashDash emits a dashed line.
@@ -311,7 +323,7 @@ func NormalizeConnectionSite(site string) string {
 		return ConnectionSiteBottomRight
 	case "bottomleft", "bottom-left", "bottom_left", "bl":
 		return ConnectionSiteBottomLeft
-	case strings.ToLower(ConnectionSiteCenter), "ctr", "c":
+	case strings.ToLower(ConnectionSiteCenter), string(TextAnchorMiddle), "c":
 		return ConnectionSiteCenter
 	default:
 		return strings.TrimSpace(site)
@@ -319,26 +331,25 @@ func NormalizeConnectionSite(site string) string {
 }
 
 func ConnectionSiteIndex(site string) (int, bool) {
-	//nolint:mnd // OOXML connection site indices
 	switch NormalizeConnectionSite(site) {
 	case ConnectionSiteTop:
-		return 0, true
+		return connectionSiteTopIndex, true
 	case ConnectionSiteRight:
-		return 1, true
+		return connectionSiteRightIndex, true
 	case ConnectionSiteBottom:
-		return 2, true
+		return connectionSiteBottomIndex, true
 	case ConnectionSiteLeft:
-		return 3, true
+		return connectionSiteLeftIndex, true
 	case ConnectionSiteTopLeft:
-		return 4, true
+		return connectionSiteTopLeftIndex, true
 	case ConnectionSiteTopRight:
-		return 5, true
+		return connectionSiteTopRightIndex, true
 	case ConnectionSiteBottomRight:
-		return 6, true
+		return connectionSiteBottomRightIndex, true
 	case ConnectionSiteBottomLeft:
-		return 7, true
+		return connectionSiteBottomLeftIndex, true
 	case ConnectionSiteCenter:
-		return 8, true
+		return connectionSiteCenterIndex, true
 	default:
 		return 0, false
 	}

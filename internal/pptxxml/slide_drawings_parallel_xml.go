@@ -5,7 +5,10 @@ import (
 	"sync"
 )
 
-const minShapesForParallel = 32
+const (
+	minShapesForParallel   = 32
+	workerQueueBufferRatio = 2
+)
 
 func renderCustomShapeXMLConcurrently(shapes []ShapeSpec, firstShapeID int) ([]int, []string) {
 	if len(shapes) == 0 {
@@ -26,7 +29,7 @@ func renderCustomShapeXMLConcurrently(shapes []ShapeSpec, firstShapeID int) ([]i
 	workerCount := max(runtime.GOMAXPROCS(0), 1)
 	workerCount = min(workerCount, len(shapes))
 
-	jobs := make(chan int, workerCount*2) //nolint:mnd // Buffer factor of 2 is standard for worker pools.
+	jobs := make(chan int, workerCount*workerQueueBufferRatio)
 	var wg sync.WaitGroup
 	wg.Add(workerCount)
 	for range workerCount {

@@ -186,9 +186,7 @@ func (b *slidePartBuilder) build(
 	}
 
 	if parts, ok := smartArtBySlide[idx]; ok {
-		if err := b.mapSmartArt(p, parts); err != nil {
-			return nil, err
-		}
+		b.mapSmartArt(p, parts)
 	}
 
 	return p, nil
@@ -417,7 +415,7 @@ func (b *slidePartBuilder) mapCharts(p *slideParts, parts []ChartPart, slide ele
 	return nil
 }
 
-func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) error {
+func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) {
 	for _, part := range parts {
 		// Allocate 4 RIDs for the 5 parts (drawing is internal to the diagram, usually not referenced by slide directly?
 		// Wait, dgm:relIds has 4 attributes: r:dm, r:lo, r:qs, r:cs.
@@ -432,12 +430,33 @@ func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) erro
 
 		// Add 4 relationships
 		num := part.partNumber
-		p.smartArtRels = append(p.smartArtRels,
-			pptxxml.SmartArtRel{RID: dataRID, Target: fmt.Sprintf("../diagrams/data%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData"},
-			pptxxml.SmartArtRel{RID: layoutRID, Target: fmt.Sprintf("../diagrams/layout%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout"},
-			pptxxml.SmartArtRel{RID: styleRID, Target: fmt.Sprintf("../diagrams/quickStyle%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle"},
-			pptxxml.SmartArtRel{RID: colorsRID, Target: fmt.Sprintf("../diagrams/colors%d.xml", num), Type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"},
-			pptxxml.SmartArtRel{RID: drawingRID, Target: fmt.Sprintf("../diagrams/drawing%d.xml", num), Type: "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing"},
+		p.smartArtRels = append(
+			p.smartArtRels,
+			pptxxml.SmartArtRel{
+				RID:    dataRID,
+				Target: fmt.Sprintf("../diagrams/data%d.xml", num),
+				Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData",
+			},
+			pptxxml.SmartArtRel{
+				RID:    layoutRID,
+				Target: fmt.Sprintf("../diagrams/layout%d.xml", num),
+				Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout",
+			},
+			pptxxml.SmartArtRel{
+				RID:    styleRID,
+				Target: fmt.Sprintf("../diagrams/quickStyle%d.xml", num),
+				Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle",
+			},
+			pptxxml.SmartArtRel{
+				RID:    colorsRID,
+				Target: fmt.Sprintf("../diagrams/colors%d.xml", num),
+				Type:   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors",
+			},
+			pptxxml.SmartArtRel{
+				RID:    drawingRID,
+				Target: fmt.Sprintf("../diagrams/drawing%d.xml", num),
+				Type:   "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing",
+			},
 		)
 
 		// Create frame
@@ -454,7 +473,6 @@ func (b *slidePartBuilder) mapSmartArt(p *slideParts, parts []SmartArtPart) erro
 			IsDecorative: part.spec.IsDecorative,
 		})
 	}
-	return nil
 }
 
 func (b *slidePartBuilder) buildTitleSpec(slide elements.SlideContent) pptxxml.TitleSpec {

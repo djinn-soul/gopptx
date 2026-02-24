@@ -63,7 +63,6 @@ func (wc *WebContent) GroupedByHeadings() []HeadingGroup {
 	var groups []HeadingGroup
 	var cur *HeadingGroup
 	for _, b := range wc.Blocks {
-		b := b // copy
 		if b.IsHeading() {
 			if cur != nil {
 				groups = append(groups, *cur)
@@ -79,43 +78,54 @@ func (wc *WebContent) GroupedByHeadings() []HeadingGroup {
 	return groups
 }
 
-// mainContentSelectors lists CSS selectors tried in priority order to find
-// the primary content area of a page.
-var mainContentSelectors = []string{
-	"main article",
-	"article",
-	"main",
-	"[role=main]",
-	".content",
-	".post-content",
-	".article-content",
-	".entry-content",
-	".markdown-body",
-	".prose",
-	"#content",
-	"#main",
-	"#article",
-	".article",
-	"body",
+func mainContentSelectors() []string {
+	return []string{
+		"main article",
+		"article",
+		"main",
+		"[role=main]",
+		".content",
+		".post-content",
+		".article-content",
+		".entry-content",
+		".markdown-body",
+		".prose",
+		"#content",
+		"#main",
+		"#article",
+		".article",
+		"body",
+	}
 }
 
-// skipTags lists HTML elements whose subtrees are always discarded.
-var skipTags = map[string]bool{
-	"script": true, "style": true, "noscript": true, "svg": true,
-	"form": true, "button": true, "input": true, "select": true,
-	"textarea": true, "iframe": true,
+func shouldSkipTag(tag string) bool {
+	switch tag {
+	case "script", "style", "noscript", "svg",
+		"form", "button", "input", "select",
+		"textarea", "iframe":
+		return true
+	default:
+		return false
+	}
 }
 
-// noRecurseTags lists elements that are treated as leaves (text extracted, children skipped).
-var noRecurseTags = map[string]bool{
-	"p": true, "li": true, "pre": true, "code": true,
-	"img": true, "table": true, "blockquote": true,
-	"h1": true, "h2": true, "h3": true, "h4": true, "h5": true, "h6": true,
+func shouldSkipClass(cls string) bool {
+	lower := strings.ToLower(cls)
+	return strings.Contains(lower, "advertisement") ||
+		strings.Contains(lower, "ad-container") ||
+		strings.Contains(lower, "social-share") ||
+		strings.Contains(lower, "comment-section")
 }
 
-// skipClasses contains substrings that flag an element as advertising / chrome.
-var skipClasses = []string{
-	"advertisement", "ad-container", "social-share", "comment-section",
+func isNoRecurseTag(tag string) bool {
+	switch tag {
+	case "p", "li", "pre", "code",
+		"img", "table", "blockquote",
+		"h1", "h2", "h3", "h4", "h5", "h6":
+		return true
+	default:
+		return false
+	}
 }
 
 const (
@@ -129,7 +139,7 @@ const (
 
 // WebParser extracts structured content from an HTML document.
 type WebParser struct {
-	cfg URLFetchConfig
+	cfg Config
 }
 
 // NewWebParser creates a WebParser with default config.
@@ -138,7 +148,7 @@ func NewWebParser() *WebParser {
 }
 
 // NewWebParserWithConfig creates a WebParser with custom config.
-func NewWebParserWithConfig(cfg URLFetchConfig) *WebParser {
+func NewWebParserWithConfig(cfg Config) *WebParser {
 	return &WebParser{cfg: cfg}
 }
 
@@ -196,7 +206,7 @@ func (p *WebParser) extractMetaDescription(doc *goquery.Document) string {
 }
 
 func (p *WebParser) findMainContent(doc *goquery.Document) *goquery.Selection {
-	for _, sel := range mainContentSelectors {
+	for _, sel := range mainContentSelectors() {
 		found := doc.Find(sel).First()
 		if found.Length() == 0 {
 			continue
@@ -208,19 +218,17 @@ func (p *WebParser) findMainContent(doc *goquery.Document) *goquery.Selection {
 	return nil
 }
 
+//nolint:gocyclo,cyclop,gocognit,funlen // DOM-walk branching is intentionally linear and explicit.
 func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth int) {
 	tag := goquery.NodeName(sel)
 
-	if skipTags[tag] {
+	if shouldSkipTag(tag) {
 		return
 	}
 
 	if cls, exists := sel.Attr("class"); exists {
-		cls = strings.ToLower(cls)
-		for _, skip := range skipClasses {
-			if strings.Contains(cls, skip) {
-				return
-			}
+		if shouldSkipClass(cls) {
+			return
 		}
 	}
 
@@ -287,7 +295,7 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 		return // table handled fully; don't recurse
 	}
 
-	if noRecurseTags[tag] {
+	if isNoRecurseTag(tag) {
 		return
 	}
 

@@ -21,6 +21,15 @@ type Milestone struct {
 	Status string
 }
 
+const (
+	pricingTierColWidthIn       = 2.0
+	pricingPriceColWidthIn      = 1.5
+	pricingFeaturesColWidthIn   = 4.5
+	timelineDateColWidthIn      = 2.0
+	timelineMilestoneColWidthIn = 4.0
+	timelineStatusColWidthIn    = 2.0
+)
+
 func renderPricingTable(tiers []PricingTier) tables.Table {
 	rows := make([][]string, 0, len(tiers))
 	for _, tier := range tiers {
@@ -29,7 +38,11 @@ func renderPricingTable(tiers []PricingTier) tables.Table {
 	}
 
 	return renderTable(
-		[]styling.Length{styling.Inches(2.0), styling.Inches(1.5), styling.Inches(4.5)},
+		[]styling.Length{
+			styling.Inches(pricingTierColWidthIn),
+			styling.Inches(pricingPriceColWidthIn),
+			styling.Inches(pricingFeaturesColWidthIn),
+		},
 		[]string{"Tier", "Price", "Features"},
 		rows,
 	)
@@ -42,7 +55,11 @@ func renderTimelineTable(milestones []Milestone) tables.Table {
 	}
 
 	return renderTable(
-		[]styling.Length{styling.Inches(2.0), styling.Inches(4.0), styling.Inches(2.0)},
+		[]styling.Length{
+			styling.Inches(timelineDateColWidthIn),
+			styling.Inches(timelineMilestoneColWidthIn),
+			styling.Inches(timelineStatusColWidthIn),
+		},
 		[]string{"Date", "Milestone", "Status"},
 		rows,
 	)

@@ -26,7 +26,7 @@ func main() {
 }
 
 func runEditorSmoke() error {
-	if err := os.MkdirAll(outputDirSmoke, 0o755); err != nil {
+	if err := os.MkdirAll(outputDirSmoke, 0o750); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 

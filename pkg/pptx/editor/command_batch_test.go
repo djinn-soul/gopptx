@@ -130,8 +130,8 @@ func TestCommandBatchExecuteMixedResultsIncludePerItemDetails(t *testing.T) {
 		OK     bool `json:"ok"`
 		Result struct {
 			Results []struct {
-				OK    bool `json:"ok"`
-				Op    string
+				OK    bool   `json:"ok"`
+				Op    string `json:"op"`
 				Error struct {
 					Code    string         `json:"code"`
 					Message string         `json:"message"`

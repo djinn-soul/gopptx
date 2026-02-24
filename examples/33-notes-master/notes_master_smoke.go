@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
 	"os"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -43,7 +44,7 @@ func main() {
 	}
 
 	outputPath := "examples/output/33_notes_master_smoke.pptx"
-	if err := os.WriteFile(outputPath, data, 0o644); err != nil {
+	if err := os.WriteFile(outputPath, data, 0o600); err != nil {
 		log.Fatalf("failed to write file: %v", err)
 	}
 

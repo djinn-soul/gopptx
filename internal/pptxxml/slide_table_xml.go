@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const defaultTableColumnWidthEmu = int64(1828800)
+
 // TableSpec describes one table in a slide.
 type TableSpec struct {
 	X            int64
@@ -175,16 +177,16 @@ func tableColumnWidthsForRender(table *TableSpec) []int64 {
 		columnCount = 1
 	}
 
-	defaultWidth := int64(1828800)
+	defaultWidth := defaultTableColumnWidthEmu
 	if table.CX > 0 {
 		defaultWidth = table.CX / int64(columnCount)
 		if defaultWidth <= 0 {
-			defaultWidth = 1828800
+			defaultWidth = defaultTableColumnWidthEmu
 		}
 	}
 
 	widths := make([]int64, 0, columnCount)
-	for i := 0; i < columnCount; i++ {
+	for range columnCount {
 		widths = append(widths, defaultWidth)
 	}
 	return widths
@@ -226,13 +228,6 @@ func tableCellRunPropsXML(cell TableCellSpec) string {
 	}
 	b.WriteString(`</a:rPr>`)
 	return b.String()
-}
-
-func tableCellBoldAttr(bold bool) string {
-	if bold {
-		return ` b="1"`
-	}
-	return ""
 }
 
 func tableCellParagraphPropsXML(align string) string {

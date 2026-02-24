@@ -283,11 +283,11 @@ type connectionSiteCandidate struct {
 	y    styling.Length
 }
 
+const connectionSiteCenterDivisor = 2
+
 func shapeConnectionSiteCandidates(shape Shape) [9]connectionSiteCandidate {
-	//nolint:mnd // Center point divisor
-	cx := shape.X + shape.CX/2
-	//nolint:mnd // Center point divisor
-	cy := shape.Y + shape.CY/2
+	cx := shape.X + shape.CX/connectionSiteCenterDivisor
+	cy := shape.Y + shape.CY/connectionSiteCenterDivisor
 	right := shape.X + shape.CX
 	bottom := shape.Y + shape.CY
 
@@ -348,25 +348,24 @@ func allowedConnectionSitesForShape(shapeType string) []string {
 }
 
 func siteFromIndex(idx int) string {
-	//nolint:mnd // OOXML connection site indices
 	switch idx {
-	case 0:
+	case connectionSiteTopIndex:
 		return ConnectionSiteTop
-	case 1:
+	case connectionSiteRightIndex:
 		return ConnectionSiteRight
-	case 2:
+	case connectionSiteBottomIndex:
 		return ConnectionSiteBottom
-	case 3:
+	case connectionSiteLeftIndex:
 		return ConnectionSiteLeft
-	case 4:
+	case connectionSiteTopLeftIndex:
 		return ConnectionSiteTopLeft
-	case 5:
+	case connectionSiteTopRightIndex:
 		return ConnectionSiteTopRight
-	case 6:
+	case connectionSiteBottomRightIndex:
 		return ConnectionSiteBottomRight
-	case 7:
+	case connectionSiteBottomLeftIndex:
 		return ConnectionSiteBottomLeft
-	case 8:
+	case connectionSiteCenterIndex:
 		return ConnectionSiteCenter
 	default:
 		return ""
@@ -397,7 +396,12 @@ func SiteIndexPointer(site string) *int {
 // Validate checks connector properties and anchor references.
 func (c Connector) Validate(shapeCount int, slideIndex int, connectorIndex int) error {
 	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
-		return fmt.Errorf("slide %d connector %d alt text exceeds %d characters", slideIndex, connectorIndex, common.MaxAltTextLength)
+		return fmt.Errorf(
+			"slide %d connector %d alt text exceeds %d characters",
+			slideIndex,
+			connectorIndex,
+			common.MaxAltTextLength,
+		)
 	}
 
 	if err := c.validateBasicProps(slideIndex, connectorIndex); err != nil {

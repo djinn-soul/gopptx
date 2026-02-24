@@ -1,3 +1,4 @@
+# ruff: noqa: PLR6301
 """
 Smoke tests for the Python bridge command API.
 
@@ -7,13 +8,13 @@ correctly communicates with the Go engine via the JSON command bridge.
 
 from __future__ import annotations
 
-import os
 import shutil
+import struct
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 
-# Import the gopptx module
 import gopptx
 from gopptx import ops
 
@@ -22,13 +23,13 @@ class TestBridgeSlideOperations(unittest.TestCase):
     """Test slide-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_slide_count(self) -> None:
@@ -65,7 +66,6 @@ class TestBridgeSlideOperations(unittest.TestCase):
         try:
             pres.add_slide("Original Title")
             pres.set_slide_title(1, "Updated Title")
-            # Verify by checking slides metadata
             slides = pres.slides_metadata
             if len(slides) > 1:
                 self.assertIn("Updated", slides[1].get("title", ""))
@@ -77,13 +77,13 @@ class TestBridgeMetadataOperations(unittest.TestCase):
     """Test metadata-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_get_metadata(self) -> None:
@@ -121,13 +121,13 @@ class TestBridgeShapeOperations(unittest.TestCase):
     """Test shape-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_list_shapes(self) -> None:
@@ -143,7 +143,7 @@ class TestBridgeShapeOperations(unittest.TestCase):
         """Test add_shape operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            shape_id = pres.add_shape(0, "rect", 100, 100, 200, 100)
+            shape_id = pres.add_shape(0, "rect", (100, 100, 200, 100))
             self.assertIsInstance(shape_id, int)
             self.assertGreater(shape_id, 0)
         finally:
@@ -153,9 +153,7 @@ class TestBridgeShapeOperations(unittest.TestCase):
         """Test find_and_replace operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            # Add a shape with text
-            pres.add_shape(0, "rect", 100, 100, 200, 100, text="Hello World")
-            # Find and replace
+            pres.add_shape(0, "rect", (100, 100, 200, 100), text="Hello World")
             count = pres.find_and_replace("World", "Bridge")
             self.assertGreaterEqual(count, 0)
         finally:
@@ -166,13 +164,13 @@ class TestBridgeSectionOperations(unittest.TestCase):
     """Test section-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_get_sections_empty(self) -> None:
@@ -202,13 +200,13 @@ class TestBridgeNotesOperations(unittest.TestCase):
     """Test notes-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_set_and_get_notes(self) -> None:
@@ -226,13 +224,13 @@ class TestBridgeCommentOperations(unittest.TestCase):
     """Test comment-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_get_authors(self) -> None:
@@ -267,13 +265,13 @@ class TestBridgeLayoutOperations(unittest.TestCase):
     """Test layout-related bridge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_list_slide_layouts(self) -> None:
@@ -290,13 +288,13 @@ class TestBridgeBatchOperations(unittest.TestCase):
     """Test batch execution operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_batch_context(self) -> None:
@@ -329,13 +327,13 @@ class TestBridgeSaveLoad(unittest.TestCase):
     """Test save and load operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_save_and_reload(self) -> None:
@@ -343,12 +341,10 @@ class TestBridgeSaveLoad(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             pres.add_slide("Added Slide")
-            pres.save(self.test_file)
+            pres.save(str(self.test_file))
         finally:
             pres.close()
-
-        # Reload
-        pres2 = gopptx.Presentation(self.test_file)
+        pres2 = gopptx.Presentation(str(self.test_file))
         try:
             self.assertGreaterEqual(pres2.slide_count, 2)
         finally:
@@ -403,7 +399,6 @@ class TestBridgeOpsConstants(unittest.TestCase):
             "OP_SET_MODIFY_PASSWORD",
             "OP_SET_MARK_AS_FINAL",
         ]
-
         for op_name in expected_ops:
             self.assertTrue(hasattr(ops, op_name), f"Missing op constant: {op_name}")
             op_value = getattr(ops, op_name)
@@ -424,7 +419,7 @@ class TestBridgeErrorHandling(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             with self.assertRaises(gopptx.GopptxError):
-                pres.list_shapes(999)  # Invalid index
+                pres.list_shapes(999)
         finally:
             pres.close()
 
@@ -440,13 +435,13 @@ class TestBridgeSlideAdvancedOperations(unittest.TestCase):
     """Test advanced slide operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_remove_slide(self) -> None:
@@ -455,7 +450,7 @@ class TestBridgeSlideAdvancedOperations(unittest.TestCase):
         try:
             pres.add_slide("Slide to Remove")
             initial_count = pres.slide_count
-            pres.remove_slide(initial_count - 1)  # Remove last slide
+            pres.remove_slide(initial_count - 1)
             self.assertEqual(pres.slide_count, initial_count - 1)
         finally:
             pres.close()
@@ -465,7 +460,7 @@ class TestBridgeSlideAdvancedOperations(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             pres.add_slide("Second Slide")
-            pres.move_slide(0, 1)  # Move first slide to position 1
+            pres.move_slide(0, 1)
             slides = pres.slides_metadata
             self.assertEqual(len(slides), 2)
         finally:
@@ -496,21 +491,20 @@ class TestBridgeThemeAndSizeOperations(unittest.TestCase):
     """Test theme and slide size operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_set_slide_size(self) -> None:
         """Test set_slide_size operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            # Set to 16:9 widescreen
-            pres.set_slide_size(12192000, 6858000)  # EMUs
+            pres.set_slide_size(12192000, 6858000)
             meta = pres.metadata
             self.assertIsNotNone(meta)
         finally:
@@ -520,11 +514,8 @@ class TestBridgeThemeAndSizeOperations(unittest.TestCase):
         """Test apply_theme operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            # Apply a built-in theme
             pres.apply_theme("office")
-            # No exception means success
         except gopptx.GopptxError:
-            # Theme might not be available, that's ok for smoke test
             pass
         finally:
             pres.close()
@@ -534,22 +525,21 @@ class TestBridgeShapeAdvancedOperations(unittest.TestCase):
     """Test advanced shape operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_remove_shape(self) -> None:
         """Test remove_shape operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            shape_id = pres.add_shape(0, "rect", 100, 100, 200, 100)
+            shape_id = pres.add_shape(0, "rect", (100, 100, 200, 100))
             pres.remove_shape(0, shape_id)
-            # Shape should be removed
         finally:
             pres.close()
 
@@ -557,9 +547,8 @@ class TestBridgeShapeAdvancedOperations(unittest.TestCase):
         """Test update_shape operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            shape_id = pres.add_shape(0, "rect", 100, 100, 200, 100)
+            shape_id = pres.add_shape(0, "rect", (100, 100, 200, 100))
             pres.update_shape(0, shape_id, {"text": "Updated Text"})
-            # Shape should be updated
         finally:
             pres.close()
 
@@ -567,7 +556,7 @@ class TestBridgeShapeAdvancedOperations(unittest.TestCase):
         """Test search_shapes operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            pres.add_shape(0, "rect", 100, 100, 200, 100, text="SearchTarget")
+            pres.add_shape(0, "rect", (100, 100, 200, 100), text="SearchTarget")
             results = pres.search_shapes("SearchTarget")
             self.assertIsInstance(results, list)
         finally:
@@ -578,48 +567,40 @@ class TestBridgeImageOperations(unittest.TestCase):
     """Test image operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    @staticmethod
+    def _create_minimal_png() -> bytes:
+        """Create a minimal 1x1 transparent PNG."""
+        width, height = (1, 1)
+        raw_data = b"\x00\x00\x00\x00"
+        compressed = zlib.compress(raw_data)
+
+        def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
+            chunk_len = struct.pack(">I", len(data))
+            chunk_crc = struct.pack(">I", zlib.crc32(chunk_type + data) & 4294967295)
+            return chunk_len + chunk_type + data + chunk_crc
+
+        signature = b"\x89PNG\r\n\x1a\n"
+        ihdr = png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+        idat = png_chunk(b"IDAT", compressed)
+        iend = png_chunk(b"IEND", b"")
+        return signature + ihdr + idat + iend
 
     def test_add_image(self) -> None:
         """Test add_image operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            # Create a minimal test image
-            import struct
-            import zlib
-
-            def create_minimal_png():
-                # Minimal 1x1 transparent PNG
-                width, height = 1, 1
-                raw_data = b"\x00\x00\x00\x00"  # RGBA: transparent
-                compressed = zlib.compress(raw_data)
-
-                def png_chunk(chunk_type, data):
-                    chunk_len = struct.pack(">I", len(data))
-                    chunk_crc = struct.pack(
-                        ">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF
-                    )
-                    return chunk_len + chunk_type + data + chunk_crc
-
-                signature = b"\x89PNG\r\n\x1a\n"
-                ihdr = png_chunk(
-                    b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-                )
-                idat = png_chunk(b"IDAT", compressed)
-                iend = png_chunk(b"IEND", b"")
-                return signature + ihdr + idat + iend
-
-            img_path = os.path.join(self.temp_dir, "test.png")
-            Path(img_path).write_bytes(create_minimal_png())
-
-            image_id = pres.add_image(0, img_path, 100, 100, 200, 100)
+            img_path = self.temp_dir / "test.png"
+            img_path.write_bytes(self._create_minimal_png())
+            image_id = pres.add_image(0, str(img_path), (100, 100, 200, 100))
             self.assertIsInstance(image_id, int)
         finally:
             pres.close()
@@ -629,13 +610,13 @@ class TestBridgeChartOperations(unittest.TestCase):
     """Test chart operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_add_chart(self) -> None:
@@ -647,10 +628,7 @@ class TestBridgeChartOperations(unittest.TestCase):
                 "bar",
                 ["Q1", "Q2", "Q3"],
                 [{"name": "Sales", "values": [100, 200, 150]}],
-                100,
-                100,
-                400,
-                300,
+                bounds=(100, 100, 400, 300),
             )
             self.assertIsInstance(chart_id, int)
         finally:
@@ -665,10 +643,7 @@ class TestBridgeChartOperations(unittest.TestCase):
                 "bar",
                 ["Q1", "Q2"],
                 [{"name": "Sales", "values": [100, 200]}],
-                100,
-                100,
-                400,
-                300,
+                bounds=(100, 100, 400, 300),
             )
             charts = pres.list_slide_charts(0)
             self.assertIsInstance(charts, list)
@@ -685,17 +660,13 @@ class TestBridgeChartOperations(unittest.TestCase):
                 "bar",
                 ["Q1", "Q2"],
                 [{"name": "Sales", "values": [100, 200]}],
-                100,
-                100,
-                400,
-                300,
+                bounds=(100, 100, 400, 300),
             )
             pres.update_chart_data(
                 chart_id,
                 ["Q1", "Q2", "Q3"],
                 [{"name": "Sales", "values": [100, 200, 150]}],
             )
-            # Chart should be updated
         finally:
             pres.close()
 
@@ -704,13 +675,13 @@ class TestBridgeSectionAdvancedOperations(unittest.TestCase):
     """Test advanced section operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_remove_section(self) -> None:
@@ -745,13 +716,13 @@ class TestBridgeCommentAdvancedOperations(unittest.TestCase):
     """Test advanced comment operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_add_comment(self) -> None:
@@ -771,7 +742,6 @@ class TestBridgeCommentAdvancedOperations(unittest.TestCase):
             author_id = pres.add_author("Test User", "TU")
             comment_id = pres.add_comment(0, author_id, "Comment to remove")
             pres.remove_comment(comment_id)
-            # Comment should be removed
         finally:
             pres.close()
 
@@ -780,13 +750,13 @@ class TestBridgeLayoutAdvancedOperations(unittest.TestCase):
     """Test advanced layout operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_rebind_slide_layout(self) -> None:
@@ -795,10 +765,8 @@ class TestBridgeLayoutAdvancedOperations(unittest.TestCase):
         try:
             layouts = pres.list_slide_layouts()
             if len(layouts) > 0:
-                # Try to rebind to first available layout
                 pres.rebind_slide_layout(0, layouts[0].get("name", ""))
         except gopptx.GopptxError:
-            # Layout rebinding might not work on all presentations
             pass
         finally:
             pres.close()
@@ -808,32 +776,29 @@ class TestBridgeMergeOperations(unittest.TestCase):
     """Test merge operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
-        self.source_file = os.path.join(self.temp_dir, "source.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
+        self.source_file = self.temp_dir / "source.pptx"
 
     def tearDown(self) -> None:
         for f in [self.test_file, self.source_file]:
-            if Path(f).exists():
-                Path(f).unlink()
-        if Path(self.temp_dir).exists():
+            if f.exists():
+                f.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_merge_from_file(self) -> None:
         """Test merge_from_file operation."""
-        # Create source presentation
         source = gopptx.Presentation.new("Source Deck")
         try:
             source.add_slide("Source Slide")
-            source.save(self.source_file)
+            source.save(str(self.source_file))
         finally:
             source.close()
-
-        # Merge into target
         target = gopptx.Presentation.new("Target Deck")
         try:
             initial_count = target.slide_count
-            target.merge_from_file(self.source_file)
+            target.merge_from_file(str(self.source_file))
             self.assertGreater(target.slide_count, initial_count)
         finally:
             target.close()
@@ -843,13 +808,13 @@ class TestBridgeProtectionOperations(unittest.TestCase):
     """Test protection operations."""
 
     def setUp(self) -> None:
-        self.temp_dir = tempfile.mkdtemp()
-        self.test_file = os.path.join(self.temp_dir, "test.pptx")
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.test_file = self.temp_dir / "test.pptx"
 
     def tearDown(self) -> None:
-        if Path(self.test_file).exists():
-            Path(self.test_file).unlink()
-        if Path(self.temp_dir).exists():
+        if self.test_file.exists():
+            self.test_file.unlink()
+        if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_set_modify_password(self) -> None:
@@ -857,7 +822,6 @@ class TestBridgeProtectionOperations(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             pres.set_modify_password("testpassword123")
-            # Password protection should be set
         finally:
             pres.close()
 
@@ -865,8 +829,7 @@ class TestBridgeProtectionOperations(unittest.TestCase):
         """Test set_mark_as_final operation."""
         pres = gopptx.Presentation.new("Test Deck")
         try:
-            pres.set_mark_as_final(True)
-            # Presentation should be marked as final
+            pres.set_mark_as_final()
         finally:
             pres.close()
 

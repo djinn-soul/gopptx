@@ -7,10 +7,12 @@ import (
 )
 
 const (
-	titleHeightEmu   = 1143000 // 1.25 inches
-	contentHeightEmu = 4572000 // 5 inches
-	titleTopOffset   = 274638
-	contentTopOffset = 1600200
+	titleHeightEmu      = 1143000 // 1.25 inches
+	contentHeightEmu    = 4572000 // 5 inches
+	titleTopOffset      = 274638
+	contentTopOffset    = 1600200
+	titleShapeGrowCap   = 1024
+	contentShapeGrowCap = 2048
 )
 
 func titleShape(title TitleSpec, width, _ int64) string {
@@ -63,7 +65,7 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 	}
 
 	var b strings.Builder
-	b.Grow(1024)
+	b.Grow(titleShapeGrowCap)
 	b.WriteString(`
 <p:sp>
 <p:nvSpPr>
@@ -232,7 +234,7 @@ func contentShapeAt(
 	style ContentStyleSpec,
 ) string {
 	var b strings.Builder
-	b.Grow(2048)
+	b.Grow(contentShapeGrowCap)
 	vAlign := style.VAlign
 	if vAlign == "" {
 		vAlign = "t"

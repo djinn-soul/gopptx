@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -21,26 +20,16 @@ func main() {
 
 func run() error {
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	// 1. Create a base presentation with a known shape
-	deck := pptx.NewPresentationBuilder("Smoke Test")
-
-	// Add a TextBox (Inches)
-	// 1 Inch = 914400 EMUs
-	// Shape at 1,1 inches. Size 5x2 inches.
-	tb := pptx.NewTextBox("Original Text", 1.0, 1.0, 5.0, 2.0)
-	deck.AddShapesSlide("Title Slide", tb)
-
 	inputFile := filepath.Join(outputDir, "41_shape_original.pptx")
-	if err := deck.WriteToFile(inputFile); err != nil {
-		return fmt.Errorf("failed to save input file: %w", err)
+	if err := createBaseDeck(inputFile); err != nil {
+		return err
 	}
 	log.Printf("Created base file: %s\n", inputFile)
 
-	// 2. Open with Editor
 	edit, openErr := editor.OpenPresentationEditor(inputFile)
 	if openErr != nil {
 		return fmt.Errorf("failed to open editor: %w", openErr)
@@ -50,53 +39,73 @@ func run() error {
 			log.Printf("warning: failed to close editor: %v", closeErr)
 		}
 	}()
-	shapes, err := edit.GetShapes(0)
+	shapes, targetIndex, err := getShapesAndTarget(edit, "Original Text")
 	if err != nil {
-		return fmt.Errorf("GetShapes failed: %w", err)
+		return err
 	}
 
-	targetIndex := -1
-	for i, s := range shapes {
-		log.Printf("Shape %d: ID=%d Name=%q Text=%q\n", i, s.ID, s.Name, s.Text)
-		if s.Text == "Original Text" {
-			targetIndex = i
-		}
-	}
-
-	if targetIndex == -1 {
-		return errors.New("could not find shape with text 'Original Text'")
-	}
-
-	// 4. Update the shape
-	// Note: editor works with raw EMUs.
-	// We want to verify update persistence.
-	// Let's set it to exactly 500,000 EMUs (approx 0.5 inches) just to have a clean integer number to verify.
-	log.Println("Updating shape...")
 	updatedX := 500000
 	updatedY := 500000
-
-	newText := "Edited Text"
-	// Create vars for pointers
-	newXVal := updatedX
-	newYVal := updatedY
-
-	err = edit.UpdateShape(0, shapes[targetIndex].ID, common.ShapeUpdate{
-		Text: &newText,
-		X:    &newXVal,
-		Y:    &newYVal,
-	})
-	if err != nil {
-		return fmt.Errorf("UpdateShape failed: %w", err)
+	if err := updateTargetShape(edit, shapes[targetIndex].ID, "Edited Text", updatedX, updatedY); err != nil {
+		return err
 	}
 
-	// 5. Save
 	outputFile := filepath.Join(outputDir, "41_shape_edited.pptx")
 	if err := edit.Save(outputFile); err != nil {
 		return fmt.Errorf("failed to save output file: %w", err)
 	}
 	log.Printf("Saved edited file: %s\n", outputFile)
 
-	// 6. Verify by re-opening
+	return verifyEditedShape(outputFile, "Edited Text", updatedX, updatedY)
+}
+
+func createBaseDeck(inputFile string) error {
+	deck := pptx.NewPresentationBuilder("Smoke Test")
+	tb := pptx.NewTextBox("Original Text", 1.0, 1.0, 5.0, 2.0)
+	deck.AddShapesSlide("Title Slide", tb)
+	if err := deck.WriteToFile(inputFile); err != nil {
+		return fmt.Errorf("failed to save input file: %w", err)
+	}
+	return nil
+}
+
+func getShapesAndTarget(edit *editor.PresentationEditor, text string) ([]common.Shape, int, error) {
+	shapes, err := edit.GetShapes(0)
+	if err != nil {
+		return nil, -1, fmt.Errorf("GetShapes failed: %w", err)
+	}
+	targetIndex := findShapeByText(shapes, text)
+	if targetIndex == -1 {
+		return nil, -1, fmt.Errorf("could not find shape with text %q", text)
+	}
+	return shapes, targetIndex, nil
+}
+
+func findShapeByText(shapes []common.Shape, text string) int {
+	for i, s := range shapes {
+		log.Printf("Shape %d: ID=%d Name=%q Text=%q\n", i, s.ID, s.Name, s.Text)
+		if s.Text == text {
+			return i
+		}
+	}
+	return -1
+}
+
+func updateTargetShape(edit *editor.PresentationEditor, shapeID int, newText string, updatedX int, updatedY int) error {
+	log.Println("Updating shape...")
+	newXVal := updatedX
+	newYVal := updatedY
+	if err := edit.UpdateShape(0, shapeID, common.ShapeUpdate{
+		Text: &newText,
+		X:    &newXVal,
+		Y:    &newYVal,
+	}); err != nil {
+		return fmt.Errorf("UpdateShape failed: %w", err)
+	}
+	return nil
+}
+
+func verifyEditedShape(outputFile string, expectedText string, expectedX int, expectedY int) error {
 	verifyEdit, err := editor.OpenPresentationEditor(outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to open verification file: %w", err)
@@ -111,19 +120,23 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("verification GetShapes failed: %w", err)
 	}
+	if !hasEditedShape(vShapes, expectedText, expectedX, expectedY) {
+		return fmt.Errorf(
+			"verification failed: could not find shape with %q at %d,%d",
+			expectedText,
+			expectedX,
+			expectedY,
+		)
+	}
+	return nil
+}
 
-	foundEdited := false
-	for _, s := range vShapes {
+func hasEditedShape(shapes []common.Shape, expectedText string, expectedX int, expectedY int) bool {
+	for _, s := range shapes {
 		log.Printf("Verification Shape: ID=%d Text=%q X=%d Y=%d\n", s.ID, s.Text, s.X, s.Y)
-		if s.Text == "Edited Text" && s.X == updatedX && s.Y == updatedY {
-			foundEdited = true
-			break
+		if s.Text == expectedText && s.X == expectedX && s.Y == expectedY {
+			return true
 		}
 	}
-
-	if !foundEdited {
-		return fmt.Errorf("verification failed: could not find shape with 'Edited Text' at %d,%d", updatedX, updatedY)
-	}
-
-	return nil
+	return false
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -47,19 +48,19 @@ func HTML(title string, slides []elements.SlideContent) string {
 }
 
 func renderSlide(b *strings.Builder, slide elements.SlideContent, index int) {
-	b.WriteString(fmt.Sprintf("<div class=\"slide\" id=\"slide-%d\">\n", index))
+	fmt.Fprintf(b, "<div class=\"slide\" id=\"slide-%d\">\n", index)
 
 	// Slide Number
-	b.WriteString(fmt.Sprintf("<div class=\"slide-number\">%d</div>\n", index))
+	fmt.Fprintf(b, "<div class=\"slide-number\">%d</div>\n", index)
 
 	// Title
 	slideTitle := slide.Title
 	if slideTitle == "" {
 		// Try to find title in shapes? ppt-rs relies on 'slide.title' field.
 		// gopptx elements.SlideContent has explicit Title field.
-		slideTitle = "Slide " + fmt.Sprintf("%d", index)
+		slideTitle = "Slide " + strconv.Itoa(index)
 	}
-	b.WriteString(fmt.Sprintf("<h2>%s</h2>\n", escapeHTML(slideTitle)))
+	fmt.Fprintf(b, "<h2>%s</h2>\n", escapeHTML(slideTitle))
 
 	// Content Container
 	b.WriteString("<div class=\"content\">\n")
@@ -68,7 +69,7 @@ func renderSlide(b *strings.Builder, slide elements.SlideContent, index int) {
 	if len(slide.Bullets) > 0 {
 		b.WriteString("<ul>\n")
 		for _, bullet := range slide.Bullets {
-			b.WriteString(fmt.Sprintf("<li>%s</li>\n", escapeHTML(bullet)))
+			fmt.Fprintf(b, "<li>%s</li>\n", escapeHTML(bullet))
 		}
 		b.WriteString("</ul>\n")
 	}
@@ -84,7 +85,7 @@ func renderSlide(b *strings.Builder, slide elements.SlideContent, index int) {
 	// Iterate through shapes to find text that isn't the title.
 	for _, shape := range slide.Shapes {
 		if shape.Text != "" {
-			b.WriteString(fmt.Sprintf("<p>%s</p>\n", escapeHTML(shape.Text)))
+			fmt.Fprintf(b, "<p>%s</p>\n", escapeHTML(shape.Text))
 		}
 	}
 
@@ -123,14 +124,28 @@ func renderImage(img shapes.Image) string {
 	)
 }
 
-var htmlReplacer = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	"\"", "&quot;",
-	"'", "&#39;",
-)
-
 func escapeHTML(s string) string {
-	return htmlReplacer.Replace(s)
+	if !strings.ContainsAny(s, `&<>"'`) {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch r {
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
+		case '"':
+			b.WriteString("&quot;")
+		case '\'':
+			b.WriteString("&#39;")
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }

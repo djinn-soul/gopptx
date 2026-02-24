@@ -43,7 +43,8 @@ func run() error {
 	}
 
 	// Mark original slides from Template 1
-	for i := 0; i < editor.SlideCount(); i++ {
+	initialSlideCount := editor.SlideCount()
+	for i := range initialSlideCount {
 		origTitle := editor.Slides()[i].Title
 		if origTitle == "" {
 			origTitle = "Slide Title"
@@ -58,7 +59,8 @@ func run() error {
 	}
 
 	// Mark original slides from Template 2
-	for i := mergeStartIdx; i < editor.SlideCount(); i++ {
+	postMergeSlideCount := editor.SlideCount()
+	for i := mergeStartIdx; i < postMergeSlideCount; i++ {
 		origTitle := editor.Slides()[i].Title
 		if origTitle == "" {
 			origTitle = "Slide Title"

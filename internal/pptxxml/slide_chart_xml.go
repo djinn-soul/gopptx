@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -142,22 +143,34 @@ func chartSeriesXML(chart *ChartSpec) string {
 <c:spPr><a:solidFill><a:srgbClr val="` + Escape(chart.Color) + `"/></a:solidFill></c:spPr>
 <c:cat><c:strLit>`)
 
-	b.WriteString(fmt.Sprintf(`
-<c:ptCount val="%d"/>`, len(chart.Categories)))
+	b.WriteString(`
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.Categories)))
+	b.WriteString(`"/>`)
 	for i, category := range chart.Categories {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%s</c:v></c:pt>`, i, Escape(category)))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(Escape(category))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:strLit></c:cat>
 <c:val><c:numLit>`)
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <c:formatCode>General</c:formatCode>
-<c:ptCount val="%d"/>`, len(chart.Values)))
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.Values)))
+	b.WriteString(`"/>`)
 	for i, value := range chart.Values {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%.6f</c:v></c:pt>`, i, value))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 	</c:numLit></c:val>
@@ -208,13 +221,15 @@ func chartAxesXML(chart *ChartSpec) string {
 		majorGrid = "<c:majorGridlines/>"
 	}
 
-	return fmt.Sprintf(`
+	var b strings.Builder
+	b.WriteString(`
 <c:catAx>
 <c:axId val="48650112"/>
 <c:scaling><c:orientation val="minMax"/></c:scaling>
 <c:delete val="0"/>
-<c:axPos val="b"/>
-%s
+<c:axPos val="b"/>`)
+	b.WriteString(categoryAxisTitle)
+	b.WriteString(`
 <c:tickLblPos val="nextTo"/>
 <c:crossAx val="48672768"/>
 <c:crosses val="autoZero"/>
@@ -223,25 +238,23 @@ func chartAxesXML(chart *ChartSpec) string {
 <c:lblOffset val="100"/>
 </c:catAx>
 <c:valAx>
-<c:axId val="48672768"/>
-%s
+<c:axId val="48672768"/>`)
+	b.WriteString(valueScaling)
+	b.WriteString(`
 <c:delete val="0"/>
-<c:axPos val="l"/>
-%s
-%s
-%s
+<c:axPos val="l"/>`)
+	b.WriteString(majorGrid)
+	b.WriteString(valueAxisTitle)
+	b.WriteString(valueFormat)
+	b.WriteString(`
 <c:tickLblPos val="nextTo"/>
 <c:crossAx val="48650112"/>
 <c:crosses val="autoZero"/>
-<c:crossBetween val="%s"/>
-</c:valAx>`,
-		categoryAxisTitle,
-		valueScaling,
-		majorGrid,
-		valueAxisTitle,
-		valueFormat,
-		crossBetween,
-	)
+<c:crossBetween val="`)
+	b.WriteString(crossBetween)
+	b.WriteString(`"/>
+</c:valAx>`)
+	return b.String()
 }
 
 func chartAxisTitleXML(title string) string {
@@ -249,11 +262,15 @@ func chartAxisTitleXML(title string) string {
 	if trimmed == "" {
 		return ""
 	}
-	return fmt.Sprintf(`
+	var b strings.Builder
+	b.WriteString(`
 <c:title>
-<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p></c:rich></c:tx>
+<c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>`)
+	b.WriteString(Escape(trimmed))
+	b.WriteString(`</a:t></a:r></a:p></c:rich></c:tx>
 <c:overlay val="0"/>
-</c:title>`, Escape(trimmed))
+</c:title>`)
+	return b.String()
 }
 
 func chartValueFormatXML(format string) string {
@@ -266,19 +283,30 @@ func chartValueFormatXML(format string) string {
 	if strings.EqualFold(trimmed, "General") {
 		sourceLinked = "1"
 	}
-	return fmt.Sprintf(`<c:numFmt formatCode="%s" sourceLinked="%s"/>`, Escape(trimmed), sourceLinked)
+	var b strings.Builder
+	b.WriteString(`<c:numFmt formatCode="`)
+	b.WriteString(Escape(trimmed))
+	b.WriteString(`" sourceLinked="`)
+	b.WriteString(sourceLinked)
+	b.WriteString(`"/>`)
+	return b.String()
 }
 
 func valueAxisScalingXML(minValue *float64, maxValue *float64) string {
-	minXML := ""
-	maxXML := ""
+	var b strings.Builder
+	b.WriteString(`<c:scaling><c:orientation val="minMax"/>`)
 	if minValue != nil {
-		minXML = fmt.Sprintf(`<c:min val="%.6f"/>`, *minValue)
+		b.WriteString(`<c:min val="`)
+		b.WriteString(strconv.FormatFloat(*minValue, 'f', 6, 64))
+		b.WriteString(`"/>`)
 	}
 	if maxValue != nil {
-		maxXML = fmt.Sprintf(`<c:max val="%.6f"/>`, *maxValue)
+		b.WriteString(`<c:max val="`)
+		b.WriteString(strconv.FormatFloat(*maxValue, 'f', 6, 64))
+		b.WriteString(`"/>`)
 	}
-	return `<c:scaling><c:orientation val="minMax"/>` + minXML + maxXML + `</c:scaling>`
+	b.WriteString(`</c:scaling>`)
+	return b.String()
 }
 
 func normalizedValueAxisCrossBetween(mode string) string {

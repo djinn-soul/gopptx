@@ -1,24 +1,30 @@
 package pptxxml
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 )
 
 func pieChartPartXML(chart *ChartSpec) string {
 	series := chartPieSeriesXML(chart)
 	labels := chartPieDataLabelsXML(chart.ShowDataLabels)
+	var plot strings.Builder
+	plot.WriteString(`
+<c:pieChart>
+<c:varyColors val="1"/>`)
+	plot.WriteString(series)
+	plot.WriteString(`
+`)
+	plot.WriteString(labels)
+	plot.WriteString(`
+</c:pieChart>`)
 	return chartPartEnvelope(
 		chart.Title,
 		chart.TitleOverlay,
 		chart.ShowLegend,
 		chart.LegendPosition,
 		chart.LegendOverlay,
-		fmt.Sprintf(`
-<c:pieChart>
-<c:varyColors val="1"/>%s
-%s
-</c:pieChart>`, series, labels),
+		plot.String(),
 	)
 }
 
@@ -47,22 +53,34 @@ func chartPieSeriesXML(chart *ChartSpec) string {
 <c:tx><c:v>` + Escape(seriesName) + `</c:v></c:tx>
 <c:cat><c:strLit>`)
 
-	b.WriteString(fmt.Sprintf(`
-<c:ptCount val="%d"/>`, len(chart.Categories)))
+	b.WriteString(`
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.Categories)))
+	b.WriteString(`"/>`)
 	for i, category := range chart.Categories {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%s</c:v></c:pt>`, i, Escape(category)))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(Escape(category))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:strLit></c:cat>
 <c:val><c:numLit>`)
 
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <c:formatCode>General</c:formatCode>
-<c:ptCount val="%d"/>`, len(chart.Values)))
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.Values)))
+	b.WriteString(`"/>`)
 	for i, value := range chart.Values {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%.6f</c:v></c:pt>`, i, value))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:numLit></c:val>

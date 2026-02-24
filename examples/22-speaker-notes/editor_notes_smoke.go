@@ -1,17 +1,25 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		log.Fatalf("failed to create output dir: %v", err)
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
+		return fmt.Errorf("failed to create output dir: %w", err)
 	}
 	outPath := filepath.Join(outputDir, "22_editor_notes_smoke.pptx")
 
@@ -24,14 +32,14 @@ func main() {
 
 	tmpPath := filepath.Join(outputDir, "40_editor_notes_template.pptx")
 	if err := builder.WriteToFile(tmpPath); err != nil {
-		log.Fatalf("failed to save template: %v", err)
+		return fmt.Errorf("failed to save template: %w", err)
 	}
 	defer func() { _ = os.Remove(tmpPath) }()
 
 	// 2. Open with Editor
 	editor, openErr := pptx.OpenEditor(tmpPath)
 	if openErr != nil {
-		log.Fatalf("failed to open editor: %v", openErr)
+		return fmt.Errorf("failed to open editor: %w", openErr)
 	}
 
 	// 3. Add a new slide with notes
@@ -40,7 +48,7 @@ func main() {
 		WithNotes("Secret speaker notes for slide 2.")
 
 	if _, addErr := editor.AddSlide(slide2); addErr != nil {
-		log.Fatalf("failed to add slide: %v", addErr)
+		return fmt.Errorf("failed to add slide: %w", addErr)
 	}
 
 	// 4. Update existing slide notes
@@ -49,13 +57,14 @@ func main() {
 		WithNotes("Updated notes content.")
 
 	if updateErr := editor.UpdateSlide(0, slide1Updated); updateErr != nil {
-		log.Fatalf("failed to update slide: %v", updateErr)
+		return fmt.Errorf("failed to update slide: %w", updateErr)
 	}
 
 	// 5. Save
 	if err := editor.Save(outPath); err != nil {
-		log.Fatalf("failed to save edited pptx: %v", err)
+		return fmt.Errorf("failed to save edited pptx: %w", err)
 	}
 
 	log.Printf("Successfully generated %s\n", outPath)
+	return nil
 }

@@ -3,6 +3,7 @@ package elements
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -71,71 +72,53 @@ func validateSlideCharts(s SlideContent, index int) error {
 
 func collectSlideCharts(s SlideContent) []ChartDefinition {
 	const expectedChartTypeCount = 19
-	// NOTE: Capacity derived from constant expectedChartTypeCount.
 	chartsOnSlide := make([]ChartDefinition, 0, expectedChartTypeCount)
-	if s.Chart != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Chart)
+	candidates := []ChartDefinition{
+		s.Chart,
+		s.BarHorizontal,
+		s.BarStacked,
+		s.BarStacked100,
+		s.Line,
+		s.LineMarkers,
+		s.LineStacked,
+		s.Scatter,
+		s.Area,
+		s.AreaStacked,
+		s.AreaStacked100,
+		s.Pie,
+		s.Doughnut,
+		s.Bubble,
+		s.Radar,
+		s.RadarFilled,
+		s.StockHLC,
+		s.StockOHLC,
+		s.Combo,
 	}
-	if s.BarHorizontal != nil {
-		chartsOnSlide = append(chartsOnSlide, s.BarHorizontal)
-	}
-	if s.BarStacked != nil {
-		chartsOnSlide = append(chartsOnSlide, s.BarStacked)
-	}
-	if s.BarStacked100 != nil {
-		chartsOnSlide = append(chartsOnSlide, s.BarStacked100)
-	}
-	if s.Line != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Line)
-	}
-	if s.LineMarkers != nil {
-		chartsOnSlide = append(chartsOnSlide, s.LineMarkers)
-	}
-	if s.LineStacked != nil {
-		chartsOnSlide = append(chartsOnSlide, s.LineStacked)
-	}
-	if s.Scatter != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Scatter)
-	}
-	if s.Area != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Area)
-	}
-	if s.AreaStacked != nil {
-		chartsOnSlide = append(chartsOnSlide, s.AreaStacked)
-	}
-	if s.AreaStacked100 != nil {
-		chartsOnSlide = append(chartsOnSlide, s.AreaStacked100)
-	}
-	if s.Pie != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Pie)
-	}
-	if s.Doughnut != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Doughnut)
-	}
-	if s.Bubble != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Bubble)
-	}
-	if s.Radar != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Radar)
-	}
-	if s.RadarFilled != nil {
-		chartsOnSlide = append(chartsOnSlide, s.RadarFilled)
-	}
-	if s.StockHLC != nil {
-		chartsOnSlide = append(chartsOnSlide, s.StockHLC)
-	}
-	if s.StockOHLC != nil {
-		chartsOnSlide = append(chartsOnSlide, s.StockOHLC)
-	}
-	if s.Combo != nil {
-		chartsOnSlide = append(chartsOnSlide, s.Combo)
+	for _, candidate := range candidates {
+		if isNilChartDefinition(candidate) {
+			continue
+		}
+		chartsOnSlide = append(chartsOnSlide, candidate)
 	}
 	for _, override := range s.PlaceholderOverrides {
-		if override.Chart != nil {
+		if !isNilChartDefinition(override.Chart) {
 			chartsOnSlide = append(chartsOnSlide, override.Chart)
 		}
 	}
 	return chartsOnSlide
+}
+
+func isNilChartDefinition(chart ChartDefinition) bool {
+	if chart == nil {
+		return true
+	}
+	value := reflect.ValueOf(chart)
+	switch value.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return value.IsNil()
+	default:
+		return false
+	}
 }
 
 func validateSlideTextStyles(s SlideContent) error {

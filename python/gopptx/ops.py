@@ -1,3 +1,5 @@
+"""Operation constants for gopptx library."""
+
 from __future__ import annotations
 
 OP_ADD_AUTHOR = "add_author"

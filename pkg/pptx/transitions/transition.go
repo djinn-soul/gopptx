@@ -261,9 +261,15 @@ func (o TransitionOptions) morphXML() string {
 		`</p:ext></p:extLst>`
 
 	b.WriteString(`<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">`)
-	b.WriteString(`<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">`)
-	fmt.Fprintf(&b, `<p:transition spd="%s" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" p14:dur="%d"`,
-		speed, durationMS)
+	b.WriteString(
+		`<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">`,
+	)
+	fmt.Fprintf(
+		&b,
+		`<p:transition spd="%s" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" p14:dur="%d"`,
+		speed,
+		durationMS,
+	)
 	if o.DisableAdvanceOnClick {
 		b.WriteString(` advClick="0"`)
 	}
@@ -319,20 +325,30 @@ func transitionSoundXML(sound *TransitionSound) string {
 }
 
 func escape(value string) string {
-	return transitionEscapeReplacerVar.Replace(value)
-}
+	if !strings.ContainsAny(value, `&<>"'`) {
+		return value
+	}
 
-// NOTE: The use of a package-level variable here is intentional to avoid repeated [strings.Replacer] allocation.
-// Do not move this to a local scope.
-//
-//nolint:gochecknoglobals // global replacer
-var transitionEscapeReplacerVar = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	"\"", "&quot;",
-	"'", "&apos;",
-)
+	var b strings.Builder
+	b.Grow(len(value))
+	for _, r := range value {
+		switch r {
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
+		case '"':
+			b.WriteString("&quot;")
+		case '\'':
+			b.WriteString("&apos;")
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
 
 func (t TransitionType) Validate() error {
 	switch t {

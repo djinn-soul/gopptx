@@ -43,53 +43,27 @@ func parseJourney(code string) *JourneyDiagram {
 		trimmed := strings.TrimSpace(line)
 		lower := strings.ToLower(trimmed)
 
-		if lower == "journey" {
+		if lower == "journey" || trimmed == "" {
 			continue
 		}
 
-		if strings.HasPrefix(lower, "title ") {
-			journey.Title = strings.TrimSpace(trimmed[6:])
+		if title, ok := parseJourneyTitle(trimmed, lower); ok {
+			journey.Title = title
 			continue
 		}
 
-		if strings.HasPrefix(lower, "section ") {
-			if currentSection != nil {
-				journey.Sections = append(journey.Sections, *currentSection)
-			}
-			currentSection = &JourneySection{
-				Title: strings.TrimSpace(trimmed[8:]),
-			}
+		if sectionTitle, ok := parseJourneySectionTitle(trimmed, lower); ok {
+			currentSection = startJourneySection(journey, currentSection, sectionTitle)
 			continue
 		}
 
-		if strings.Contains(trimmed, ":") {
-			parts := strings.Split(trimmed, ":")
-			if len(parts) >= 2 {
-				task := JourneyTask{
-					Description: strings.TrimSpace(parts[0]),
-				}
-
-				score, err := strconv.Atoi(strings.TrimSpace(parts[1]))
-				if err == nil {
-					task.Score = score
-				}
-
-				if len(parts) >= 3 {
-					actors := strings.Split(parts[2], ",")
-					for _, actor := range actors {
-						task.Actors = append(task.Actors, strings.TrimSpace(actor))
-					}
-				}
-
-				if currentSection != nil {
-					currentSection.Tasks = append(currentSection.Tasks, task)
-				} else {
-					// Default section if none defined
-					currentSection = &JourneySection{Title: "Default"}
-					currentSection.Tasks = append(currentSection.Tasks, task)
-				}
-			}
+		task, ok := parseJourneyTask(trimmed)
+		if !ok {
+			continue
 		}
+
+		currentSection = ensureJourneySection(currentSection)
+		currentSection.Tasks = append(currentSection.Tasks, task)
 	}
 
 	if currentSection != nil {
@@ -97,6 +71,68 @@ func parseJourney(code string) *JourneyDiagram {
 	}
 
 	return journey
+}
+
+func parseJourneyTitle(trimmed string, lower string) (string, bool) {
+	if !strings.HasPrefix(lower, "title ") {
+		return "", false
+	}
+	return strings.TrimSpace(trimmed[6:]), true
+}
+
+func parseJourneySectionTitle(trimmed string, lower string) (string, bool) {
+	if !strings.HasPrefix(lower, "section ") {
+		return "", false
+	}
+	return strings.TrimSpace(trimmed[8:]), true
+}
+
+func startJourneySection(
+	journey *JourneyDiagram,
+	currentSection *JourneySection,
+	title string,
+) *JourneySection {
+	if currentSection != nil {
+		journey.Sections = append(journey.Sections, *currentSection)
+	}
+	return &JourneySection{Title: title}
+}
+
+func parseJourneyTask(trimmed string) (JourneyTask, bool) {
+	parts := strings.SplitN(trimmed, ":", 3)
+	if len(parts) < 2 {
+		return JourneyTask{}, false
+	}
+
+	task := JourneyTask{Description: strings.TrimSpace(parts[0])}
+	task.Score = parseJourneyScore(parts[1])
+	if len(parts) == 3 {
+		task.Actors = parseJourneyActors(parts[2])
+	}
+	return task, true
+}
+
+func parseJourneyScore(scoreText string) int {
+	score, err := strconv.Atoi(strings.TrimSpace(scoreText))
+	if err != nil {
+		return 0
+	}
+	return score
+}
+
+func parseJourneyActors(actorText string) []string {
+	actors := make([]string, 0)
+	for actor := range strings.SplitSeq(actorText, ",") {
+		actors = append(actors, strings.TrimSpace(actor))
+	}
+	return actors
+}
+
+func ensureJourneySection(currentSection *JourneySection) *JourneySection {
+	if currentSection != nil {
+		return currentSection
+	}
+	return &JourneySection{Title: "Default"}
 }
 
 func generateJourneyElements(journey *JourneyDiagram, theme Theme) DiagramElements {
@@ -119,7 +155,7 @@ func generateJourneyElements(journey *JourneyDiagram, theme Theme) DiagramElemen
 	}
 
 	rowHeights := make([]styling.Length, maxTasksPerSection)
-	for row := 0; row < maxTasksPerSection; row++ {
+	for row := range maxTasksPerSection {
 		maxLines := 3
 		for _, section := range journey.Sections {
 			if row >= len(section.Tasks) {
@@ -135,7 +171,7 @@ func generateJourneyElements(journey *JourneyDiagram, theme Theme) DiagramElemen
 
 	rowTopY := make([]styling.Length, maxTasksPerSection)
 	currentRowY := startY + styling.Inches(0.5) + spacing
-	for row := 0; row < maxTasksPerSection; row++ {
+	for row := range maxTasksPerSection {
 		rowTopY[row] = currentRowY
 		currentRowY += rowHeights[row] + spacing
 	}

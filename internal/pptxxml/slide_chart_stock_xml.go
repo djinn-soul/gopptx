@@ -1,7 +1,7 @@
 package pptxxml
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +21,22 @@ func stockChartPartXML(chart *ChartSpec) string {
 	seriesParts = append(seriesParts, chartSeriesWithValues(chart, "Close", chart.CloseValues, index))
 	visuals := stockVisualsXML(chart)
 	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	var plot strings.Builder
+	plot.WriteString(`
+<c:stockChart>`)
+	plot.WriteString(strings.Join(seriesParts, ""))
+	plot.WriteString(`
+`)
+	plot.WriteString(visuals)
+	plot.WriteString(`
+`)
+	plot.WriteString(labels)
+	plot.WriteString(`
+<c:axId val="48650112"/>
+<c:axId val="48672768"/>
+</c:stockChart>
+`)
+	plot.WriteString(chartAxesXML(chart))
 
 	return chartPartEnvelope(
 		chart.Title,
@@ -28,39 +44,50 @@ func stockChartPartXML(chart *ChartSpec) string {
 		chart.ShowLegend,
 		chart.LegendPosition,
 		chart.LegendOverlay,
-		fmt.Sprintf(`
-<c:stockChart>%s
-%s
-%s
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
-</c:stockChart>
-%s`, strings.Join(seriesParts, ""), visuals, labels, chartAxesXML(chart)),
+		plot.String(),
 	)
 }
 
 func chartSeriesWithValues(chart *ChartSpec, seriesName string, values []float64, idx int) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`
+	b.WriteString(`
 <c:ser>
-<c:idx val="%d"/>
-<c:order val="%d"/>
-<c:tx><c:v>%s</c:v></c:tx>
+<c:idx val="`)
+	b.WriteString(strconv.Itoa(idx))
+	b.WriteString(`"/>
+<c:order val="`)
+	b.WriteString(strconv.Itoa(idx))
+	b.WriteString(`"/>
+<c:tx><c:v>`)
+	b.WriteString(Escape(seriesName))
+	b.WriteString(`</c:v></c:tx>
 <c:cat><c:strLit>
-<c:ptCount val="%d"/>`, idx, idx, Escape(seriesName), len(chart.Categories)))
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(chart.Categories)))
+	b.WriteString(`"/>`)
 	for i, category := range chart.Categories {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%s</c:v></c:pt>`, i, Escape(category)))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(Escape(category))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 </c:strLit></c:cat>
 <c:val><c:numLit>
 <c:formatCode>General</c:formatCode>`)
-	b.WriteString(fmt.Sprintf(`
-<c:ptCount val="%d"/>`, len(values)))
+	b.WriteString(`
+<c:ptCount val="`)
+	b.WriteString(strconv.Itoa(len(values)))
+	b.WriteString(`"/>`)
 	for i, value := range values {
-		b.WriteString(fmt.Sprintf(`
-<c:pt idx="%d"><c:v>%.6f</c:v></c:pt>`, i, value))
+		b.WriteString(`
+<c:pt idx="`)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`"><c:v>`)
+		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
+		b.WriteString(`</c:v></c:pt>`)
 	}
 	b.WriteString(`
 	</c:numLit></c:val>

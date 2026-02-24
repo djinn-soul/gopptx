@@ -2,8 +2,12 @@ package editor
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"strconv"
 )
+
+const attrInsertOverheadBytes = 4
 
 func setOrInsertAttr(openingTag []byte, attrName, attrValue string) []byte {
 	attrStr := []byte(" " + attrName + `="`)
@@ -25,7 +29,7 @@ func setOrInsertAttr(openingTag []byte, attrName, attrValue string) []byte {
 	if insertAt > 0 && openingTag[insertAt-1] == '/' {
 		insertAt--
 	}
-	updated := make([]byte, 0, len(openingTag)+len(attrName)+len(attrValue)+4)
+	updated := make([]byte, 0, len(openingTag)+len(attrName)+len(attrValue)+attrInsertOverheadBytes)
 	updated = append(updated, openingTag[:insertAt]...)
 	updated = append(updated, []byte(" "+attrName+`="`+attrValue+`"`)...)
 	updated = append(updated, openingTag[insertAt:]...)
@@ -78,40 +82,7 @@ func mutateTableRows(
 	rowEnd int,
 	mutator func(row int, rowContent []byte) ([]byte, error),
 ) ([]byte, error) {
-	var out bytes.Buffer
-	cursor := 0
-	row := 0
-
-	for {
-		trRel := bytes.Index(frame[cursor:], []byte("<a:tr"))
-		if trRel == -1 {
-			out.Write(frame[cursor:])
-			break
-		}
-		trStart := cursor + trRel
-		trEndRel := bytes.Index(frame[trStart:], []byte("</a:tr>"))
-		if trEndRel == -1 {
-			return nil, fmt.Errorf("invalid tr xml at row %d", row)
-		}
-		trEnd := trStart + trEndRel + len("</a:tr>")
-
-		out.Write(frame[cursor:trStart])
-		rowContent := frame[trStart:trEnd]
-		if row >= rowStart && row <= rowEnd {
-			updated, err := mutator(row, rowContent)
-			if err != nil {
-				return nil, err
-			}
-			out.Write(updated)
-		} else {
-			out.Write(rowContent)
-		}
-
-		cursor = trEnd
-		row++
-	}
-
-	return out.Bytes(), nil
+	return mutateTableElements(frame, []byte("<a:tr"), []byte("</a:tr>"), rowStart, rowEnd, "row", mutator)
 }
 
 func mutateTableCells(
@@ -120,48 +91,69 @@ func mutateTableCells(
 	colEnd int,
 	mutator func(col int, cellContent []byte) ([]byte, error),
 ) ([]byte, error) {
+	return mutateTableElements(
+		rowContent,
+		[]byte("<a:tc"),
+		[]byte("</a:tc>"),
+		colStart,
+		colEnd,
+		"col",
+		mutator,
+	)
+}
+
+func mutateTableElements(
+	content []byte,
+	openTag []byte,
+	closeTag []byte,
+	start int,
+	end int,
+	label string,
+	mutator func(index int, cellContent []byte) ([]byte, error),
+) ([]byte, error) {
 	var out bytes.Buffer
 	cursor := 0
-	col := 0
+	index := 0
 
 	for {
-		tcRel := bytes.Index(rowContent[cursor:], []byte("<a:tc"))
-		if tcRel == -1 {
-			out.Write(rowContent[cursor:])
+		rel := bytes.Index(content[cursor:], openTag)
+		if rel == -1 {
+			out.Write(content[cursor:])
 			break
 		}
-		tcStart := cursor + tcRel
-		tcEndRel := bytes.Index(rowContent[tcStart:], []byte("</a:tc>"))
-		if tcEndRel == -1 {
-			return nil, fmt.Errorf("invalid tc xml at col %d", col)
+		elementStart := cursor + rel
+		elementEndRel := bytes.Index(content[elementStart:], closeTag)
+		if elementEndRel == -1 {
+			return nil, fmt.Errorf("invalid %s xml at %s %d", string(openTag), label, index)
 		}
-		tcEnd := tcStart + tcEndRel + len("</a:tc>")
+		elementEnd := elementStart + elementEndRel + len(closeTag)
 
-		out.Write(rowContent[cursor:tcStart])
-		cellContent := rowContent[tcStart:tcEnd]
-		if col >= colStart && col <= colEnd {
-			updated, err := mutator(col, cellContent)
+		out.Write(content[cursor:elementStart])
+		elementContent := content[elementStart:elementEnd]
+		if index >= start && index <= end {
+			updated, err := mutator(index, elementContent)
 			if err != nil {
 				return nil, err
 			}
 			out.Write(updated)
 		} else {
-			out.Write(cellContent)
+			out.Write(elementContent)
 		}
 
-		cursor = tcEnd
-		col++
+		cursor = elementEnd
+		index++
 	}
 
 	return out.Bytes(), nil
 }
 
+//nolint:gocognit // Merge behavior needs explicit XML-state checks for correctness and bounds safety.
 func (e *PresentationEditor) MergeTableCells(slideIndex, shapeID, row1, col1, row2, col2 int) error {
 	if row1 < 0 || col1 < 0 || row2 < 0 || col2 < 0 {
-		return fmt.Errorf("merge coordinates must be non-negative")
+		return errors.New("merge coordinates must be non-negative")
 	}
 	if row1 > row2 || col1 > col2 {
-		return fmt.Errorf("merge coordinates must be ordered: row1<=row2 and col1<=col2")
+		return errors.New("merge coordinates must be ordered: row1<=row2 and col1<=col2")
 	}
 
 	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
@@ -189,10 +181,10 @@ func (e *PresentationEditor) MergeTableCells(slideIndex, shapeID, row1, col1, ro
 
 			if r == row1 && c == col1 {
 				if rowSpan > 1 {
-					cellContent = setTcAttr(cellContent, "rowSpan", fmt.Sprintf("%d", rowSpan))
+					cellContent = setTcAttr(cellContent, "rowSpan", strconv.Itoa(rowSpan))
 				}
 				if colSpan > 1 {
-					cellContent = setTcAttr(cellContent, "gridSpan", fmt.Sprintf("%d", colSpan))
+					cellContent = setTcAttr(cellContent, "gridSpan", strconv.Itoa(colSpan))
 				}
 				return cellContent, nil
 			}

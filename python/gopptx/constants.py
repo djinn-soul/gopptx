@@ -1,3 +1,5 @@
+"""Constants for gopptx library."""
+
 from __future__ import annotations
 
 # Theme Presets

@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const sectionListRelationshipType = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
+
 // Escape replaces XML-sensitive characters with entity references.
 func Escape(value string) string {
 	return xmlEscapeReplacer.Replace(value)
@@ -22,6 +24,8 @@ func WriteRID(b *strings.Builder, rid string) {
 }
 
 // ContentTypes renders [Content_Types].xml.
+//
+//nolint:gocognit,funlen // OPC content-type emission branches over many optional package parts by design.
 func ContentTypes(
 	slideCount int,
 	imageExtensions []string,
@@ -34,6 +38,7 @@ func ContentTypes(
 	notesThemeIndex int,
 	hasSections bool,
 	commentSlides []int,
+	hasCustomProps bool,
 	hasSignatures bool,
 ) string {
 	if masterCount < 1 {
@@ -107,7 +112,9 @@ func ContentTypes(
 		b.WriteString(`
 <Override PartName="/ppt/notesSlides/notesSlide`)
 		writeInt(slideNumber)
-		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`)
+		b.WriteString(
+			`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`,
+		)
 	}
 	if includeNotesMaster {
 		b.WriteString(`
@@ -139,13 +146,17 @@ func ContentTypes(
 		b.WriteString(`
 <Override PartName="/ppt/slideLayouts/slideLayout`)
 		writeInt(i)
-		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`)
+		b.WriteString(
+			`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`,
+		)
 	}
 	for i := 1; i <= masterCount; i++ {
 		b.WriteString(`
 <Override PartName="/ppt/slideMasters/slideMaster`)
 		writeInt(i)
-		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`)
+		b.WriteString(
+			`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`,
+		)
 	}
 	for i := 1; i <= masterCount; i++ {
 		b.WriteString(`
@@ -169,6 +180,11 @@ func ContentTypes(
 		`ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
 <Override PartName="/docProps/app.xml" ` +
 		`ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>`)
+
+	if hasCustomProps {
+		b.WriteString(`
+<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`)
+	}
 
 	if hasSignatures {
 		b.WriteString(`
@@ -230,24 +246,37 @@ func RootRelationships(hasCustomProps, hasSignatures bool) string {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
 <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>`)
-	rId := 4
+	rID := 4
 	if hasCustomProps {
 		b.WriteString("\n<Relationship Id=\"rId")
-		b.WriteString(strconv.Itoa(rId))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>`)
-		rId++
+		b.WriteString(strconv.Itoa(rID))
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>`,
+		)
+		rID++
 	}
 	if hasSignatures {
 		b.WriteString("\n<Relationship Id=\"rId")
-		b.WriteString(strconv.Itoa(rId))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin" Target="_xmlsignatures/origin.sigs"/>`)
+		b.WriteString(strconv.Itoa(rID))
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin" Target="_xmlsignatures/origin.sigs"/>`,
+		)
 	}
 	b.WriteString("\n</Relationships>")
 	return b.String()
 }
 
 // PresentationRelationships renders ppt/_rels/presentation.xml.rels.
-func PresentationRelationships(slideCount int, includeNotesMaster bool, customXMLCount int, masterCount int, hasSections bool, hasCommentAuthors bool) string {
+//
+//nolint:funlen // Relationship writer enumerates all optional package relationships explicitly.
+func PresentationRelationships(
+	slideCount int,
+	includeNotesMaster bool,
+	customXMLCount int,
+	masterCount int,
+	hasSections bool,
+	hasCommentAuthors bool,
+) string {
 	if masterCount < 1 {
 		masterCount = 1
 	}
@@ -261,7 +290,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	for i := range masterCount {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster\" Target=\"slideMasters/slideMaster")
+		b.WriteString(
+			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster\" Target=\"slideMasters/slideMaster",
+		)
 		b.WriteString(strconv.Itoa(i + 1))
 		b.WriteString(".xml\"/>")
 		nextRid++
@@ -271,14 +302,18 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	b.WriteString(`
 <Relationship Id="rId`)
 	b.WriteString(strconv.Itoa(nextRid))
-	b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`)
+	b.WriteString(
+		`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`,
+	)
 	nextRid++
 
 	// Slide relationships
 	for i := 1; i <= slideCount; i++ {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide")
+		b.WriteString(
+			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide",
+		)
 		b.WriteString(strconv.Itoa(i))
 		b.WriteString(".xml\"/>")
 		nextRid++
@@ -288,7 +323,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`)
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`,
+		)
 		nextRid++
 	}
 
@@ -316,7 +353,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.microsoft.com/office/2006/relationships/sectionList" Target="sectionList.xml"/>`)
+		b.WriteString(`" Type="`)
+		b.WriteString(sectionListRelationshipType)
+		b.WriteString(`" Target="sectionList.xml"/>`)
 		nextRid++
 	}
 
@@ -324,8 +363,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors" Target="commentAuthors.xml"/>`)
-		nextRid++
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors" Target="commentAuthors.xml"/>`,
+		)
 	}
 
 	b.WriteString(`
@@ -347,24 +387,51 @@ func SectionListXML(sections []Section) string {
 	}
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
-	b.WriteString("\n<s:sectionLst xmlns:s=\"http://schemas.microsoft.com/office/powerpoint/2010/main\">")
+	b.WriteString(sectionListBody("s", "http://schemas.microsoft.com/office/powerpoint/2010/main", sections))
+	return b.String()
+}
+
+func sectionListBody(prefix, namespace string, sections []Section) string {
+	var b strings.Builder
+	b.WriteString("\n<")
+	b.WriteString(prefix)
+	b.WriteString(":sectionLst")
+	if namespace != "" {
+		b.WriteString(" xmlns:")
+		b.WriteString(prefix)
+		b.WriteString("=\"")
+		b.WriteString(namespace)
+		b.WriteString("\"")
+	}
+	b.WriteString(">")
 	for _, s := range sections {
-		// PPT uses braces for GUIDs, e.g. "{BA8A57BE-2A2B-4EF9-A77E-97BDDEBBA9AC}"
-		b.WriteString("\n  <s:section name=\"")
+		b.WriteString("\n  <")
+		b.WriteString(prefix)
+		b.WriteString(":section name=\"")
 		b.WriteString(Escape(s.Name))
 		b.WriteString("\" id=\"")
 		b.WriteString(s.GUID)
 		b.WriteString("\">")
-		b.WriteString("\n    <s:sldIdLst>")
+		b.WriteString("\n    <")
+		b.WriteString(prefix)
+		b.WriteString(":sldIdLst>")
 		for _, slideID := range s.SlideIDs {
-			b.WriteString("\n      <s:sldId id=\"")
+			b.WriteString("\n      <")
+			b.WriteString(prefix)
+			b.WriteString(":sldId id=\"")
 			b.WriteString(strconv.FormatInt(slideID, 10))
 			b.WriteString("\"/>")
 		}
-		b.WriteString("\n    </s:sldIdLst>")
-		b.WriteString("\n  </s:section>")
+		b.WriteString("\n    </")
+		b.WriteString(prefix)
+		b.WriteString(":sldIdLst>")
+		b.WriteString("\n  </")
+		b.WriteString(prefix)
+		b.WriteString(":section>")
 	}
-	b.WriteString("\n</s:sectionLst>")
+	b.WriteString("\n</")
+	b.WriteString(prefix)
+	b.WriteString(":sectionLst>")
 	return b.String()
 }
 
@@ -377,6 +444,8 @@ type ProtectionInfo struct {
 }
 
 // Presentation renders ppt/presentation.xml.
+//
+//nolint:funlen // Presentation XML root contains many optional sections emitted in one ordered block.
 func Presentation(
 	title string,
 	slideCount int,
@@ -478,25 +547,9 @@ func Presentation(
 	if len(sections) > 0 {
 		b.WriteString(`
 <p:extLst>
-<p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}">
-<p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">`)
-		for _, s := range sections {
-			b.WriteString("\n<p14:section name=\"")
-			b.WriteString(Escape(s.Name))
-			b.WriteString("\" id=\"")
-			b.WriteString(s.GUID)
-			b.WriteString("\">")
-			b.WriteString("\n<p14:sldIdLst>")
-			for _, sid := range s.SlideIDs {
-				b.WriteString("\n<p14:sldId id=\"")
-				b.WriteString(strconv.FormatInt(sid, 10))
-				b.WriteString("\"/>")
-			}
-			b.WriteString("\n</p14:sldIdLst>")
-			b.WriteString("\n</p14:section>")
-		}
+<p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}">`)
+		b.WriteString(sectionListBody("p14", "http://schemas.microsoft.com/office/powerpoint/2010/main", sections))
 		b.WriteString(`
-</p14:sectionLst>
 </p:ext>
 </p:extLst>`)
 	}

@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -91,12 +92,12 @@ func main() {
 	}
 
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		log.Fatalf("failed to create output dir: %v", err)
 	}
 
 	filename := filepath.Join(outputDir, "54_theme_master.pptx")
-	if err := os.WriteFile(filename, data, 0o644); err != nil {
+	if err := os.WriteFile(filename, data, 0o600); err != nil {
 		log.Fatalf("failed to write file: %v", err)
 	}
 
