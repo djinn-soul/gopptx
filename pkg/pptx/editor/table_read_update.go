@@ -7,6 +7,7 @@ import (
 	"fmt"
 )
 
+//nolint:gochecknoglobals // Static lookup table for API flag aliases to XML attribute names.
 var tableFlagAttributeMap = map[string]string{
 	"first_row": "firstRow",
 	"firstRow":  "firstRow",
@@ -147,7 +148,9 @@ func (e *PresentationEditor) UpdateTableCellText(slideIndex, shapeID, rowIdx, co
 	if err := xml.EscapeText(&escaped, []byte(text)); err != nil {
 		return fmt.Errorf("escape cell text: %w", err)
 	}
-	newTxBody := []byte(`<a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr/><a:t>` + escaped.String() + `</a:t></a:r></a:p></a:txBody>`)
+	newTxBody := []byte(
+		`<a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr/><a:t>` + escaped.String() + `</a:t></a:r></a:p></a:txBody>`,
+	)
 
 	updatedFrame, err := mutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
 		return mutateTableCells(rowContent, colIdx, colIdx, func(_ int, cellContent []byte) ([]byte, error) {
@@ -174,11 +177,4 @@ func (e *PresentationEditor) UpdateTableCellText(slideIndex, shapeID, rowIdx, co
 
 	e.parts.Set(partPath, replaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
 	return nil
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

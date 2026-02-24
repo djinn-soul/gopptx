@@ -419,7 +419,12 @@ func (s Shape) WithName(name string) Shape {
 // Validate checks for validity of shape parameters.
 func (s Shape) Validate(slideIndex, shapeIndex int) error {
 	if !s.IsDecorative && len(s.AltText) > common.MaxAltTextLength {
-		return fmt.Errorf("shape %d on slide %d alt text exceeds %d characters", shapeIndex, slideIndex, common.MaxAltTextLength)
+		return fmt.Errorf(
+			"shape %d on slide %d alt text exceeds %d characters",
+			shapeIndex,
+			slideIndex,
+			common.MaxAltTextLength,
+		)
 	}
 
 	if err := s.validateShapeBounds(slideIndex, shapeIndex); err != nil {

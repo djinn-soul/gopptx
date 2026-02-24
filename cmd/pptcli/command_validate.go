@@ -15,6 +15,7 @@ import (
 
 const initialIssueCapacity = 8
 
+//nolint:gochecknoglobals // Static required-part set for validate command.
 var requiredParts = []string{
 	"[Content_Types].xml",
 	"_rels/.rels",

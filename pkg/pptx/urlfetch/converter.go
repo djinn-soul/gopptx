@@ -16,7 +16,7 @@ const (
 )
 
 // URLFetchConverter converts parsed web content into a PPTX byte slice.
-type URLFetchConverter struct {
+type URLFetchConverter struct { //nolint:revive // keeping exported name for API compatibility
 	cfg URLFetchConfig
 }
 
@@ -101,7 +101,10 @@ func (c *URLFetchConverter) buildSlides(content *WebContent, opts *ConversionOpt
 	return slides, nil
 }
 
-func (c *URLFetchConverter) buildGroupedSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
+func (c *URLFetchConverter) buildGroupedSlides(
+	content *WebContent,
+	slides []elements.SlideContent,
+) ([]elements.SlideContent, error) {
 	groups := content.GroupedByHeadings()
 	if len(groups) == 0 {
 		return c.buildLinearSlides(content, slides)
@@ -135,7 +138,10 @@ func (c *URLFetchConverter) buildGroupedSlides(content *WebContent, slides []ele
 	return slides, nil
 }
 
-func (c *URLFetchConverter) buildLinearSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
+func (c *URLFetchConverter) buildLinearSlides(
+	content *WebContent,
+	slides []elements.SlideContent,
+) ([]elements.SlideContent, error) {
 	if len(content.Blocks) == 0 {
 		if content.Description != "" {
 			s := elements.NewSlide("Content").WithTitleAndContentLayout().AddBullet(content.Description)
@@ -183,8 +189,14 @@ func (c *URLFetchConverter) buildLinearSlides(content *WebContent, slides []elem
 	return slides, nil
 }
 
-func (c *URLFetchConverter) appendBlock(slide elements.SlideContent, block ContentBlock, bulletCount int) (elements.SlideContent, int) {
+func (c *URLFetchConverter) appendBlock(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+) (elements.SlideContent, int) {
 	switch block.Kind {
+	case KindTitle, KindHeading:
+		// Headings are handled by slide grouping/creation logic.
 	case KindParagraph:
 		slide = slide.AddBullet(truncateText(block.Text, maxParaLen))
 		bulletCount++

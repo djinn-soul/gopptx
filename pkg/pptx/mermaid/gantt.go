@@ -75,12 +75,13 @@ func parseGantt(code string) *GanttDiagram {
 			// Format: [status,] [id,] [start,] duration
 			for i, detail := range details {
 				detail = strings.TrimSpace(detail)
-				if i == len(details)-1 {
+				switch {
+				case i == len(details)-1:
 					task.Duration = detail
-				} else if i == 0 {
+				case i == 0:
 					// Could be status, id, or start
 					task.ID = detail
-				} else if i == 1 {
+				case i == 1:
 					task.Start = detail
 				}
 			}

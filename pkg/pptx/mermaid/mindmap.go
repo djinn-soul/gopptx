@@ -43,13 +43,15 @@ func parseMindmap(code string) *MindmapNode {
 
 		// Determine level by counting leading spaces
 		indent := 0
+	indentLoop:
 		for _, char := range line {
-			if char == ' ' {
+			switch char {
+			case ' ':
 				indent++
-			} else if char == '	' {
+			case '	':
 				indent += 4
-			} else {
-				break
+			default:
+				break indentLoop
 			}
 		}
 
@@ -105,12 +107,18 @@ func generateMindmapElements(root *MindmapNode, theme Theme) DiagramElements {
 
 		shapeType := shapes.ShapeTypeRectangle
 		switch node.Shape {
+		case NodeShapeRectangle:
+			shapeType = shapes.ShapeTypeRectangle
 		case NodeShapeCircle:
 			shapeType = shapes.ShapeTypeEllipse
 		case NodeShapeRoundedRect:
 			shapeType = shapes.ShapeTypeRoundedRectangle
 		case NodeShapeStadium:
 			shapeType = shapes.ShapeTypeFlowChartConnector
+		case NodeShapeDiamond:
+			shapeType = shapes.ShapeTypeDiamond
+		case NodeShapeHexagon:
+			shapeType = shapes.ShapeTypeHexagon
 		}
 
 		fillColor := theme.PrimaryFill

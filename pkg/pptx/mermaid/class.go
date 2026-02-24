@@ -42,9 +42,11 @@ func parseClass(code string) *ClassDiagram {
 
 	var currentClass *ClassNode
 
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := lines[i]
-		if strings.HasPrefix(line, "classDiagram") || strings.HasPrefix(line, "class ") && !strings.Contains(line, "{") && !strings.Contains(line, ":") && i == 0 {
+		if strings.HasPrefix(line, "classDiagram") ||
+			strings.HasPrefix(line, "class ") && !strings.Contains(line, "{") && !strings.Contains(line, ":") &&
+				i == 0 {
 			continue
 		}
 
@@ -131,13 +133,13 @@ func parseClass(code string) *ClassDiagram {
 func splitClassRelationship(line string) (string, string, string, bool) {
 	relTypes := []string{"<|--", "*--", "o--", "-->", "--", "..>", "..", "<|..", "*..", "o.."}
 	for _, rt := range relTypes {
-		if idx := strings.Index(line, rt); idx != -1 {
-			from := strings.TrimSpace(line[:idx])
-			rest := strings.TrimSpace(line[idx+len(rt):])
+		if before, after, ok := strings.Cut(line, rt); ok {
+			from := strings.TrimSpace(before)
+			rest := strings.TrimSpace(after)
 			// Rest might contain a label: "To : label"
 			to := rest
-			if labelIdx := strings.Index(rest, ":"); labelIdx != -1 {
-				to = strings.TrimSpace(rest[:labelIdx])
+			if before, _, ok := strings.Cut(rest, ":"); ok {
+				to = strings.TrimSpace(before)
 			}
 			return from, rt, to, true
 		}
@@ -305,7 +307,9 @@ func generateClassElements(diagram *ClassDiagram, theme Theme) DiagramElements {
 			}
 
 			if strings.Contains(rel.Type, "..") {
-				connector = connector.WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight).WithDash(shapes.LineDashDash))
+				connector = connector.WithLine(
+					shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight).WithDash(shapes.LineDashDash),
+				)
 			}
 
 			connector = connector.WithArrows(startArrow, endArrow)

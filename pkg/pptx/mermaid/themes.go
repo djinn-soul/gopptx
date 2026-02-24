@@ -14,6 +14,7 @@ type Theme struct {
 	LineWeight      styling.Length
 }
 
+//nolint:gochecknoglobals // Static theme catalog shared by all Mermaid renders.
 var themes = map[string]Theme{
 	"default": {
 		Name:            "default",

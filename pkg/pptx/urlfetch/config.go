@@ -1,11 +1,11 @@
-// package urlfetch converts web pages or raw HTML into PPTX presentations.
+// Package urlfetch converts web pages or raw HTML into PPTX presentations.
 //
 // It is a Go port of ppt-rs/src/web2ppt with improvements:
 // HTML tables are rendered as real PPTX tables rather than summary bullets.
 package urlfetch
 
 // URLFetchConfig holds options that control content extraction and slide generation.
-type URLFetchConfig struct {
+type URLFetchConfig struct { //nolint:revive // keeping exported name for API compatibility
 	// MaxSlides caps the total number of generated slides.
 	MaxSlides int
 	// MaxBulletsPerSlide caps how many bullet points appear on a single slide.

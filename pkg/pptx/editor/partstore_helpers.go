@@ -3,14 +3,17 @@ package editor
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
 )
 
+//nolint:gochecknoglobals // Shared reusable buffers reduce allocations in zip reads.
 var zipReadChunkPool = sync.Pool{
 	New: func() any {
-		return make([]byte, 32*1024)
+		b := make([]byte, 32*1024)
+		return &b
 	},
 }
 
@@ -98,8 +101,12 @@ func readZipEntry(entry *zip.File) ([]byte, error) {
 	}
 
 	// Fallback for unknown sizes: use a pooled read buffer to reduce temporary allocations.
-	chunk := zipReadChunkPool.Get().([]byte)
-	defer zipReadChunkPool.Put(chunk)
+	chunkPtr, ok := zipReadChunkPool.Get().(*[]byte)
+	if !ok || chunkPtr == nil {
+		return nil, errors.New("zip read pool returned invalid buffer")
+	}
+	defer zipReadChunkPool.Put(chunkPtr)
+	chunk := *chunkPtr
 	var out bytes.Buffer
 	if _, err := io.CopyBuffer(&out, rc, chunk); err != nil {
 		return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)

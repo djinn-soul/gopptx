@@ -32,8 +32,10 @@ type ErrorDetail struct {
 type commandHandler func(*PresentationEditor, json.RawMessage) (any, error)
 
 var (
+	//nolint:gochecknoglobals // Command registry is initialized once and shared process-wide.
 	handlersOnce sync.Once
-	handlers     map[string]commandHandler
+	//nolint:gochecknoglobals // Immutable-after-init command dispatch table.
+	handlers map[string]commandHandler
 )
 
 func initHandlers() {

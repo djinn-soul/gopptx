@@ -23,7 +23,11 @@ func (t rawSlideTransition) XML() string {
 	return strings.TrimSpace(t.xml)
 }
 
-func preserveExistingSlideTransition(parts *PartStore, slidePart string, slide elements.SlideContent) elements.SlideContent {
+func preserveExistingSlideTransition(
+	parts *PartStore,
+	slidePart string,
+	slide elements.SlideContent,
+) elements.SlideContent {
 	if slide.Transition != nil {
 		return slide
 	}

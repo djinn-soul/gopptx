@@ -8,7 +8,10 @@ import (
 func TestSignatureOriginXML(t *testing.T) {
 	xml := SignatureOrigin()
 
-	if !strings.Contains(xml, `<SignatureOrigin xmlns="http://schemas.openxmlformats.org/package/2006/digital-signature"/>`) {
+	if !strings.Contains(
+		xml,
+		`<SignatureOrigin xmlns="http://schemas.openxmlformats.org/package/2006/digital-signature"/>`,
+	) {
 		t.Fatalf("unexpected signature origin xml: %s", xml)
 	}
 	if strings.Contains(xml, "<vnd.openxmlformats-package.digital-signature-origin") {
@@ -18,7 +21,10 @@ func TestSignatureOriginXML(t *testing.T) {
 
 func TestContentTypesCustomPropertiesOverride(t *testing.T) {
 	withCustom := ContentTypes(1, nil, 0, 0, nil, false, 0, 1, 0, false, nil, true, false)
-	if !strings.Contains(withCustom, `<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`) {
+	if !strings.Contains(
+		withCustom,
+		`<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`,
+	) {
 		t.Fatalf("missing custom properties override in content types: %s", withCustom)
 	}
 

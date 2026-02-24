@@ -36,7 +36,12 @@ func validateNode(n Node, slideIndex, nodeIndex int) error {
 		return fmt.Errorf("slide %d: SmartArt node %d has empty text", slideIndex, nodeIndex)
 	}
 	if n.Color != "" && !hexColorRE.MatchString(n.Color) {
-		return fmt.Errorf("slide %d: SmartArt node %d has invalid color %q (expected 6-digit hex)", slideIndex, nodeIndex, n.Color)
+		return fmt.Errorf(
+			"slide %d: SmartArt node %d has invalid color %q (expected 6-digit hex)",
+			slideIndex,
+			nodeIndex,
+			n.Color,
+		)
 	}
 	for i, child := range n.Children {
 		if err := validateNode(child, slideIndex, i); err != nil {

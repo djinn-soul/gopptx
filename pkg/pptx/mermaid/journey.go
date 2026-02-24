@@ -75,8 +75,8 @@ func parseJourney(code string) *JourneyDiagram {
 				}
 
 				if len(parts) >= 3 {
-					actors := strings.Split(parts[2], ",")
-					for _, actor := range actors {
+					actors := strings.SplitSeq(parts[2], ",")
+					for actor := range actors {
 						task.Actors = append(task.Actors, strings.TrimSpace(actor))
 					}
 				}
@@ -119,7 +119,7 @@ func generateJourneyElements(journey *JourneyDiagram, theme Theme) DiagramElemen
 	}
 
 	rowHeights := make([]styling.Length, maxTasksPerSection)
-	for row := 0; row < maxTasksPerSection; row++ {
+	for row := range maxTasksPerSection {
 		maxLines := 3
 		for _, section := range journey.Sections {
 			if row >= len(section.Tasks) {
@@ -135,7 +135,7 @@ func generateJourneyElements(journey *JourneyDiagram, theme Theme) DiagramElemen
 
 	rowTopY := make([]styling.Length, maxTasksPerSection)
 	currentRowY := startY + styling.Inches(0.5) + spacing
-	for row := 0; row < maxTasksPerSection; row++ {
+	for row := range maxTasksPerSection {
 		rowTopY[row] = currentRowY
 		currentRowY += rowHeights[row] + spacing
 	}

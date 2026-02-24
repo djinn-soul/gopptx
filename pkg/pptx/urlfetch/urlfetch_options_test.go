@@ -38,8 +38,7 @@ func readZipPart(t *testing.T, b []byte, name string) string {
 }
 
 func TestFetchWithURLReturnsCanonicalRedirectTarget(t *testing.T) {
-	var srv *httptest.Server
-	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/start":
 			http.Redirect(w, r, "/final", http.StatusFound)
@@ -105,8 +104,7 @@ func TestURLToPPTXWithOptionsFollowsRedirects(t *testing.T) {
 		`It keeps going so the extracted main text length is comfortably above one hundred characters. ` +
 		`That avoids ErrNoContent from the main-content detector.</p></main></body></html>`
 
-	var srv *httptest.Server
-	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/start":
 			http.Redirect(w, r, "/final", http.StatusFound)

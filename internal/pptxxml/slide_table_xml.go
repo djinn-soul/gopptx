@@ -184,7 +184,7 @@ func tableColumnWidthsForRender(table *TableSpec) []int64 {
 	}
 
 	widths := make([]int64, 0, columnCount)
-	for i := 0; i < columnCount; i++ {
+	for range columnCount {
 		widths = append(widths, defaultWidth)
 	}
 	return widths

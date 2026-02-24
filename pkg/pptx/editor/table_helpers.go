@@ -45,14 +45,14 @@ func truthyAttr(v string) bool {
 	return v == "1" || strings.EqualFold(v, "true")
 }
 
-func findTableFrame(slideContent []byte, shapeID int) (frameStart int, frameEnd int, frame []byte, err error) {
-	idStr := []byte(fmt.Sprintf(` id="%d"`, shapeID))
+func findTableFrame(slideContent []byte, shapeID int) (int, int, []byte, error) {
+	idStr := fmt.Appendf(nil, ` id="%d"`, shapeID)
 	idIdx := bytes.Index(slideContent, idStr)
 	if idIdx == -1 {
 		return 0, 0, nil, fmt.Errorf("shape id %d not found", shapeID)
 	}
 
-	frameStart = bytes.LastIndex(slideContent[:idIdx], []byte("<p:graphicFrame"))
+	frameStart := bytes.LastIndex(slideContent[:idIdx], []byte("<p:graphicFrame"))
 	if frameStart == -1 {
 		return 0, 0, nil, fmt.Errorf("shape %d is not a graphicFrame", shapeID)
 	}
@@ -61,7 +61,7 @@ func findTableFrame(slideContent []byte, shapeID int) (frameStart int, frameEnd 
 	if relEnd == -1 {
 		return 0, 0, nil, errors.New("invalid graphicFrame xml")
 	}
-	frameEnd = idIdx + relEnd + len("</p:graphicFrame>")
+	frameEnd := idIdx + relEnd + len("</p:graphicFrame>")
 	return frameStart, frameEnd, slideContent[frameStart:frameEnd], nil
 }
 
@@ -108,23 +108,26 @@ func tableDimensions(parsed *tableXML) (int, int) {
 }
 
 func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
-	partPath string,
-	slideContent []byte,
-	frameStart int,
-	frameEnd int,
-	frame []byte,
-	err error,
+	string,
+	[]byte,
+	int,
+	int,
+	[]byte,
+	error,
 ) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		err = fmt.Errorf("slide index %d out of range", slideIndex)
-		return
+		return "", nil, 0, 0, nil, fmt.Errorf("slide index %d out of range", slideIndex)
 	}
-	partPath = e.slides[slideIndex].Part
-	slideContent, ok := e.parts.Get(partPath)
+	partPath := e.slides[slideIndex].Part
+	var ok bool
+	var slideContent []byte
+	slideContent, ok = e.parts.Get(partPath)
 	if !ok {
-		err = errors.New("slide part not found")
-		return
+		return "", nil, 0, 0, nil, errors.New("slide part not found")
 	}
-	frameStart, frameEnd, frame, err = findTableFrame(slideContent, shapeID)
-	return
+	frameStart, frameEnd, frame, err := findTableFrame(slideContent, shapeID)
+	if err != nil {
+		return "", nil, 0, 0, nil, err
+	}
+	return partPath, slideContent, frameStart, frameEnd, frame, nil
 }

@@ -62,7 +62,13 @@ func scanShapesWithOffsets(content []byte, skipProperties bool) ([]parsedShape, 
 			// So `startOffset` is the end of the *previous* token.
 
 			// Let's extract this node.
-			shape, endOffset, extractErr := extractShapeNode(content, startOffset, decoder, se.Name.Local, skipProperties)
+			shape, endOffset, extractErr := extractShapeNode(
+				content,
+				startOffset,
+				decoder,
+				se.Name.Local,
+				skipProperties,
+			)
 			if extractErr != nil {
 				return nil, extractErr
 			}

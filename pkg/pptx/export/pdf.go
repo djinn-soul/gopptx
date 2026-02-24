@@ -2,11 +2,13 @@ package export
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -19,18 +21,16 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 	// Sanitize title for filename
 	safeTitle := "presentation"
 	if title != "" {
-		safeTitle = map[string]string{" ": "_", "/": "_", "\\": "_", ":": "_"}[title]
-		if safeTitle == "" {
-			safeTitle = "presentation"
-		}
-		// Simple replace for common chars
-		safeTitle = ""
+		var safeTitleBuilder strings.Builder
 		for _, c := range title {
 			if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
-				safeTitle += string(c)
+				safeTitleBuilder.WriteRune(c)
 			} else {
-				safeTitle += "_"
+				safeTitleBuilder.WriteByte('_')
 			}
+		}
+		if safeTitleBuilder.Len() > 0 {
+			safeTitle = safeTitleBuilder.String()
 		}
 	}
 
@@ -78,16 +78,25 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 			}
 			return nil
 		}
-		return fmt.Errorf("LibreOffice ('soffice') not found in PATH")
+		return errors.New("LibreOffice ('soffice') not found in PATH")
 	}
 
 	// 4. Run conversion with LibreOffice
 	// soffice --headless --convert-to pdf <temp_file> --outdir <output_dir>
 	outputDir := filepath.Dir(outputPath)
-	cmd := exec.CommandContext(context.Background(), sofficeCmd, "--headless", "--convert-to", "pdf", tmpFile, "--outdir", outputDir)
+	cmd := exec.CommandContext(
+		context.Background(),
+		sofficeCmd,
+		"--headless",
+		"--convert-to",
+		"pdf",
+		tmpFile,
+		"--outdir",
+		outputDir,
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("LibreOffice conversion failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf("LibreOffice conversion failed: %w\nOutput: %s", err, string(output))
 	}
 
 	// 5. Rename result
@@ -148,10 +157,17 @@ try {
 `, pptxPath, pdfPath)
 
 	// Run PowerShell
-	cmd := exec.CommandContext(context.Background(), "powershell", "-NoProfile", "-NonInteractive", "-Command", psScript)
+	cmd := exec.CommandContext(
+		context.Background(),
+		"powershell",
+		"-NoProfile",
+		"-NonInteractive",
+		"-Command",
+		psScript,
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("PowerShell execution failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, string(output))
 	}
 	return nil
 }

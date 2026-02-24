@@ -22,10 +22,10 @@ func (e *PresentationEditor) AddTable(slideIndex, rowCount, colCount int, x, y, 
 		StyledRows: make([][]pptxxml.TableCellSpec, rowCount),
 	}
 
-	for i := 0; i < rowCount; i++ {
+	for i := range rowCount {
 		spec.Rows[i] = make([]string, colCount)
 		spec.StyledRows[i] = make([]pptxxml.TableCellSpec, colCount)
-		for j := 0; j < colCount; j++ {
+		for j := range colCount {
 			spec.StyledRows[i][j] = pptxxml.TableCellSpec{}
 		}
 	}

@@ -30,7 +30,7 @@ func (p *Presentation) AddSlide() *Slide {
 //
 // TODO: This is currently a placeholder implementation that generates a generic presentation
 // with fixed slide content. It does not yet serialize the actual data within the Presentation
-// and Slide structs. Future work should refactor this to use xml.Marshal for true data-to-XML
+// and Slide structs. Future work should refactor this to use [xml.Marshal] for true data-to-XML
 // serialization, ensuring all struct fields are respected in the output.
 func (p *Presentation) Save(path string) error {
 	slideCount := len(p.Slides)

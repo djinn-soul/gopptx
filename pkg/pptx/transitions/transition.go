@@ -261,9 +261,15 @@ func (o TransitionOptions) morphXML() string {
 		`</p:ext></p:extLst>`
 
 	b.WriteString(`<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">`)
-	b.WriteString(`<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">`)
-	fmt.Fprintf(&b, `<p:transition spd="%s" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" p14:dur="%d"`,
-		speed, durationMS)
+	b.WriteString(
+		`<mc:Choice xmlns:p159="http://schemas.microsoft.com/office/powerpoint/2015/09/main" Requires="p159">`,
+	)
+	fmt.Fprintf(
+		&b,
+		`<p:transition spd="%s" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" p14:dur="%d"`,
+		speed,
+		durationMS,
+	)
 	if o.DisableAdvanceOnClick {
 		b.WriteString(` advClick="0"`)
 	}

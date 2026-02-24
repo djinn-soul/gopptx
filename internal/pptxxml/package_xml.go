@@ -110,7 +110,9 @@ func ContentTypes(
 		b.WriteString(`
 <Override PartName="/ppt/notesSlides/notesSlide`)
 		writeInt(slideNumber)
-		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`)
+		b.WriteString(
+			`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>`,
+		)
 	}
 	if includeNotesMaster {
 		b.WriteString(`
@@ -142,13 +144,17 @@ func ContentTypes(
 		b.WriteString(`
 <Override PartName="/ppt/slideLayouts/slideLayout`)
 		writeInt(i)
-		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`)
+		b.WriteString(
+			`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>`,
+		)
 	}
 	for i := 1; i <= masterCount; i++ {
 		b.WriteString(`
 <Override PartName="/ppt/slideMasters/slideMaster`)
 		writeInt(i)
-		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`)
+		b.WriteString(
+			`.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>`,
+		)
 	}
 	for i := 1; i <= masterCount; i++ {
 		b.WriteString(`
@@ -238,25 +244,35 @@ func RootRelationships(hasCustomProps, hasSignatures bool) string {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
 <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>`)
-	rId := 4
+	rID := 4
 	if hasCustomProps {
 		b.WriteString("\n<Relationship Id=\"rId")
-		b.WriteString(strconv.Itoa(rId))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>`)
-		rId++
+		b.WriteString(strconv.Itoa(rID))
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties" Target="docProps/custom.xml"/>`,
+		)
+		rID++
 	}
 	if hasSignatures {
 		b.WriteString("\n<Relationship Id=\"rId")
-		b.WriteString(strconv.Itoa(rId))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin" Target="_xmlsignatures/origin.sigs"/>`)
-		rId++
+		b.WriteString(strconv.Itoa(rID))
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin" Target="_xmlsignatures/origin.sigs"/>`,
+		)
 	}
 	b.WriteString("\n</Relationships>")
 	return b.String()
 }
 
 // PresentationRelationships renders ppt/_rels/presentation.xml.rels.
-func PresentationRelationships(slideCount int, includeNotesMaster bool, customXMLCount int, masterCount int, hasSections bool, hasCommentAuthors bool) string {
+func PresentationRelationships(
+	slideCount int,
+	includeNotesMaster bool,
+	customXMLCount int,
+	masterCount int,
+	hasSections bool,
+	hasCommentAuthors bool,
+) string {
 	if masterCount < 1 {
 		masterCount = 1
 	}
@@ -270,7 +286,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	for i := range masterCount {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster\" Target=\"slideMasters/slideMaster")
+		b.WriteString(
+			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster\" Target=\"slideMasters/slideMaster",
+		)
 		b.WriteString(strconv.Itoa(i + 1))
 		b.WriteString(".xml\"/>")
 		nextRid++
@@ -280,14 +298,18 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 	b.WriteString(`
 <Relationship Id="rId`)
 	b.WriteString(strconv.Itoa(nextRid))
-	b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`)
+	b.WriteString(
+		`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>`,
+	)
 	nextRid++
 
 	// Slide relationships
 	for i := 1; i <= slideCount; i++ {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide")
+		b.WriteString(
+			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide",
+		)
 		b.WriteString(strconv.Itoa(i))
 		b.WriteString(".xml\"/>")
 		nextRid++
@@ -297,7 +319,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`)
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>`,
+		)
 		nextRid++
 	}
 
@@ -335,8 +359,9 @@ func PresentationRelationships(slideCount int, includeNotesMaster bool, customXM
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors" Target="commentAuthors.xml"/>`)
-		nextRid++
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors" Target="commentAuthors.xml"/>`,
+		)
 	}
 
 	b.WriteString(`

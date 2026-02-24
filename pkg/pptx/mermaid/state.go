@@ -106,14 +106,14 @@ func ensureState(states map[string]*StateNode, id string) {
 }
 
 func splitStateTransition(line string) (string, string, string, bool) {
-	if idx := strings.Index(line, "-->"); idx != -1 {
-		from := strings.TrimSpace(line[:idx])
-		rest := strings.TrimSpace(line[idx+3:])
+	if before, after, ok := strings.Cut(line, "-->"); ok {
+		from := strings.TrimSpace(before)
+		rest := strings.TrimSpace(after)
 		to := rest
 		label := ""
-		if labelIdx := strings.Index(rest, ":"); labelIdx != -1 {
-			to = strings.TrimSpace(rest[:labelIdx])
-			label = strings.TrimSpace(rest[labelIdx+1:])
+		if before, after, ok := strings.Cut(rest, ":"); ok {
+			to = strings.TrimSpace(before)
+			label = strings.TrimSpace(after)
 		}
 		return from, to, label, true
 	}
@@ -206,28 +206,29 @@ func generateStateElements(diagram *StateDiagram, theme Theme) DiagramElements {
 			var startSite, endSite string
 
 			// Simple logic to decide connection points
-			if fromPos.x < toPos.x {
+			switch {
+			case fromPos.x < toPos.x:
 				startX = fromPos.x + stateWidth
 				startY = fromPos.y + stateHeight/2
 				startSite = shapes.ConnectionSiteRight
 				endSite = shapes.ConnectionSiteLeft
 				endX = toPos.x
 				endY = toPos.y + stateHeight/2
-			} else if fromPos.x > toPos.x {
+			case fromPos.x > toPos.x:
 				startX = fromPos.x
 				startY = fromPos.y + stateHeight/2
 				startSite = shapes.ConnectionSiteLeft
 				endSite = shapes.ConnectionSiteRight
 				endX = toPos.x + stateWidth
 				endY = toPos.y + stateHeight/2
-			} else if fromPos.y < toPos.y {
+			case fromPos.y < toPos.y:
 				startX = fromPos.x + stateWidth/2
 				startY = fromPos.y + stateHeight
 				startSite = shapes.ConnectionSiteBottom
 				endSite = shapes.ConnectionSiteTop
 				endX = toPos.x + stateWidth/2
 				endY = toPos.y
-			} else {
+			default:
 				startX = fromPos.x + stateWidth/2
 				startY = fromPos.y
 				startSite = shapes.ConnectionSiteTop

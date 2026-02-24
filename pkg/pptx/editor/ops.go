@@ -371,7 +371,9 @@ func validateEditorSlideContent(slide elements.SlideContent) error {
 
 var (
 	aTTitlePattern          = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
-	titlePlaceholderPattern = regexp.MustCompile(`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`)
+	titlePlaceholderPattern = regexp.MustCompile(
+		`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`,
+	)
 )
 
 func appendCopySuffixToXML(content []byte) []byte {
@@ -822,7 +824,8 @@ func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) err
 	var backgroundRID string
 	var mediaNames []string
 
-	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture && master.Background.PictureFill != nil {
+	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture &&
+		master.Background.PictureFill != nil {
 		img := master.Background.PictureFill
 
 		var data []byte

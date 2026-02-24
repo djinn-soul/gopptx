@@ -58,8 +58,8 @@ func parseFlowchart(code string) *FlowchartDiagram {
 	for i := 1; i < len(lines); i++ {
 		line := lines[i]
 
-		if strings.HasPrefix(line, "subgraph") {
-			name := strings.TrimSpace(strings.TrimPrefix(line, "subgraph"))
+		if after, ok := strings.CutPrefix(line, "subgraph"); ok {
+			name := strings.TrimSpace(after)
 			currentSubgraph = &Subgraph{Name: name, Nodes: []string{}}
 			continue
 		}
@@ -138,6 +138,7 @@ func parseArrowStyle(arrow string) ArrowStyle {
 	}
 }
 
+//nolint:gocyclo,cyclop // layout/render branches are intentionally explicit for diagram readability
 func generateFlowchartElements(flowchart *FlowchartDiagram, theme Theme) DiagramElements {
 	var shapesList []shapes.Shape
 	var connectors []shapes.Connector
@@ -280,10 +281,7 @@ func generateFlowchartElements(flowchart *FlowchartDiagram, theme Theme) Diagram
 		startY := styling.Inches(1.5)
 		cols := 1
 		if isHorizontal {
-			cols = nodeCount
-			if cols > 5 {
-				cols = 5
-			}
+			cols = min(nodeCount, 5)
 		}
 
 		for i, node := range flowchart.Nodes {
@@ -354,6 +352,8 @@ func generateFlowchartElements(flowchart *FlowchartDiagram, theme Theme) Diagram
 			lineWidth := theme.LineWeight
 			lineDash := shapes.LineDashSolid
 			switch conn.ArrowStyle {
+			case ArrowStyleArrow:
+				// Default style; nothing to override.
 			case ArrowStyleThick:
 				lineWidth = theme.LineWeight * 2
 			case ArrowStyleDotted:

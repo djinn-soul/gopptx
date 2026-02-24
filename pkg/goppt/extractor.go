@@ -292,7 +292,9 @@ func processTextRecord(drawing record, pocketIdx int, out *strings.Builder, utf1
 	if pocketIdx+headerSize-headerRecordTypeOffset > len(data) {
 		return nil
 	}
-	recType := recordType(binary.LittleEndian.Uint16(data[pocketIdx-headerRecordTypeOffset+2 : pocketIdx-headerRecordTypeOffset+4]))
+	recType := recordType(
+		binary.LittleEndian.Uint16(data[pocketIdx-headerRecordTypeOffset+2 : pocketIdx-headerRecordTypeOffset+4]),
+	)
 	recLen := binary.LittleEndian.Uint32(data[pocketIdx-headerRecordTypeOffset+4 : pocketIdx-headerRecordTypeOffset+8])
 
 	if pocketIdx-headerRecordTypeOffset+headerSize+int(recLen) > len(data) {

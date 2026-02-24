@@ -258,9 +258,9 @@ func drawingShapeHasNonEmptyText(shape string) bool {
 }
 
 var (
-	placeholderTextRunPattern = regexp.MustCompile(`<a:t>\[Text(?: [0-9]+)?\]</a:t>`)           //nolint:gochecknoglobals
-	drawingShapePattern       = regexp.MustCompile(`(?s)<dsp:sp modelId="([^"]+)".*?</dsp:sp>`) //nolint:gochecknoglobals
-	paragraphPattern          = regexp.MustCompile(`(?s)<a:p(?: [^>]*)?>.*?</a:p>`)             //nolint:gochecknoglobals
+	placeholderTextRunPattern = regexp.MustCompile(`<a:t>\[Text(?: [0-9]+)?\]</a:t>`)
+	drawingShapePattern       = regexp.MustCompile(`(?s)<dsp:sp modelId="([^"]+)".*?</dsp:sp>`)
+	paragraphPattern          = regexp.MustCompile(`(?s)<a:p(?: [^>]*)?>.*?</a:p>`)
 )
 
 //nolint:gochecknoglobals // static mapping for embedded template selection

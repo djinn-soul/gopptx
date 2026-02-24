@@ -397,7 +397,12 @@ func SiteIndexPointer(site string) *int {
 // Validate checks connector properties and anchor references.
 func (c Connector) Validate(shapeCount int, slideIndex int, connectorIndex int) error {
 	if !c.IsDecorative && len(c.AltText) > common.MaxAltTextLength {
-		return fmt.Errorf("slide %d connector %d alt text exceeds %d characters", slideIndex, connectorIndex, common.MaxAltTextLength)
+		return fmt.Errorf(
+			"slide %d connector %d alt text exceeds %d characters",
+			slideIndex,
+			connectorIndex,
+			common.MaxAltTextLength,
+		)
 	}
 
 	if err := c.validateBasicProps(slideIndex, connectorIndex); err != nil {

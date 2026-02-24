@@ -50,11 +50,11 @@ func parseSequence(code string) *SequenceDiagram {
 	for i := 1; i < len(lines); i++ {
 		line := lines[i]
 
-		if strings.HasPrefix(line, "participant") {
-			rest := strings.TrimSpace(strings.TrimPrefix(line, "participant"))
-			if idx := strings.Index(rest, " as "); idx != -1 {
-				id := strings.TrimSpace(rest[:idx])
-				displayName := strings.TrimSpace(rest[idx+4:])
+		if after, ok := strings.CutPrefix(line, "participant"); ok {
+			rest := strings.TrimSpace(after)
+			if before, after, ok := strings.Cut(rest, " as "); ok {
+				id := strings.TrimSpace(before)
+				displayName := strings.TrimSpace(after)
 				addParticipant(id, displayName)
 			} else {
 				id := strings.Fields(rest)[0]

@@ -241,7 +241,7 @@ func TestOpConstantsNamingConvention(t *testing.T) {
 	for _, op := range SupportedOps() {
 		// Op names should be snake_case (lowercase with underscores)
 		for _, r := range op {
-			if !((r >= 'a' && r <= 'z') || r == '_') {
+			if (r < 'a' || r > 'z') && r != '_' {
 				t.Fatalf("op %q contains invalid character %q, expected snake_case", op, r)
 			}
 		}

@@ -6,7 +6,7 @@ import (
 )
 
 // MermaidType represents the supported Mermaid diagram types.
-type MermaidType string
+type MermaidType string //nolint:revive // keeping exported name for API compatibility
 
 const (
 	// Flowchart represents a Mermaid flowchart.

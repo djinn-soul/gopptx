@@ -20,29 +20,30 @@ func DetectType(code string) MermaidType {
 		}
 	}
 
-	if strings.HasPrefix(firstLine, "graph") || strings.HasPrefix(firstLine, "flowchart") {
+	switch {
+	case strings.HasPrefix(firstLine, "graph"), strings.HasPrefix(firstLine, "flowchart"):
 		return Flowchart
-	} else if strings.HasPrefix(firstLine, "sequencediagram") || strings.HasPrefix(firstLine, "sequence") {
+	case strings.HasPrefix(firstLine, "sequencediagram"), strings.HasPrefix(firstLine, "sequence"):
 		return Sequence
-	} else if strings.HasPrefix(firstLine, "pie") {
+	case strings.HasPrefix(firstLine, "pie"):
 		return Pie
-	} else if strings.HasPrefix(firstLine, "gantt") {
+	case strings.HasPrefix(firstLine, "gantt"):
 		return Gantt
-	} else if strings.HasPrefix(firstLine, "classdiagram") || strings.HasPrefix(firstLine, "class") {
+	case strings.HasPrefix(firstLine, "classdiagram"), strings.HasPrefix(firstLine, "class"):
 		return Class
-	} else if strings.HasPrefix(firstLine, "statediagram") || strings.HasPrefix(firstLine, "state") {
+	case strings.HasPrefix(firstLine, "statediagram"), strings.HasPrefix(firstLine, "state"):
 		return State
-	} else if strings.HasPrefix(firstLine, "erdiagram") || strings.HasPrefix(firstLine, "er") {
+	case strings.HasPrefix(firstLine, "erdiagram"), strings.HasPrefix(firstLine, "er"):
 		return ER
-	} else if strings.HasPrefix(firstLine, "mindmap") {
+	case strings.HasPrefix(firstLine, "mindmap"):
 		return Mindmap
-	} else if strings.HasPrefix(firstLine, "timeline") {
+	case strings.HasPrefix(firstLine, "timeline"):
 		return Timeline
-	} else if strings.HasPrefix(firstLine, "journey") {
+	case strings.HasPrefix(firstLine, "journey"):
 		return Journey
-	} else if strings.HasPrefix(firstLine, "quadrantchart") || strings.HasPrefix(firstLine, "quadrant") {
+	case strings.HasPrefix(firstLine, "quadrantchart"), strings.HasPrefix(firstLine, "quadrant"):
 		return Quadrant
-	} else if strings.HasPrefix(firstLine, "gitgraph") || strings.HasPrefix(firstLine, "git") {
+	case strings.HasPrefix(firstLine, "gitgraph"), strings.HasPrefix(firstLine, "git"):
 		return GitGraph
 	}
 

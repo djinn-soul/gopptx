@@ -15,44 +15,44 @@ type Layout string
 
 // Phase-1 supported SmartArt layouts.
 const (
-	// List layouts.
+	// BasicBlockList and related list layouts.
 	BasicBlockList      Layout = "urn:microsoft.com/office/officeart/2005/8/layout/default"
 	VerticalBlockList   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/vList5"
 	HorizontalBulletLst Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hList1"
 	SquareAccentList    Layout = "urn:microsoft.com/office/officeart/2008/layout/SquareAccentList"
 	PictureAccentList   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hList2"
 
-	// Process layouts.
+	// BasicProcess and related process layouts.
 	BasicProcess           Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process1"
 	AccentProcess          Layout = "urn:microsoft.com/office/officeart/2005/8/layout/process3"
 	AlternatingFlow        Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hProcess4"
 	ContinuousBlockProcess Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hProcess9"
 
-	// Cycle layouts.
+	// BasicCycle and related cycle layouts.
 	BasicCycle Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle2"
 	TextCycle  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle1"
 	BlockCycle Layout = "urn:microsoft.com/office/officeart/2005/8/layout/cycle5"
 
-	// Hierarchy layouts.
+	// OrgChart and related hierarchy layouts.
 	OrgChart            Layout = "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1"
 	Hierarchy           Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy1"
 	HorizontalHierarchy Layout = "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy2"
 
-	// Relationship layouts.
+	// BasicVenn and related relationship layouts.
 	BasicVenn   Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn1"
 	LinearVenn  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn3"
 	StackedVenn Layout = "urn:microsoft.com/office/officeart/2005/8/layout/venn2"
 	BasicRadial Layout = "urn:microsoft.com/office/officeart/2005/8/layout/radial1"
 
-	// Matrix layouts.
+	// BasicMatrix and related matrix layouts.
 	BasicMatrix  Layout = "urn:microsoft.com/office/officeart/2005/8/layout/matrix3"
 	TitledMatrix Layout = "urn:microsoft.com/office/officeart/2005/8/layout/matrix1"
 
-	// Pyramid layouts.
+	// BasicPyramid and related pyramid layouts.
 	BasicPyramid    Layout = "urn:microsoft.com/office/officeart/2005/8/layout/pyramid1"
 	InvertedPyramid Layout = "urn:microsoft.com/office/officeart/2005/8/layout/pyramid3"
 
-	// Picture layouts.
+	// PictureStrips and related picture layouts.
 	PictureStrips Layout = "urn:microsoft.com/office/officeart/2008/layout/PictureStrips"
 	PictureGrid   Layout = "urn:microsoft.com/office/officeart/2008/layout/PictureGrid"
 )

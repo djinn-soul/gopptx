@@ -36,7 +36,10 @@ func main() {
 	outputPDF := "examples/output/25_export.pdf"
 
 	// Ensure output dir exists
-	os.MkdirAll("examples/output", 0o755)
+	if err := os.MkdirAll("examples/output", 0o755); err != nil {
+		fmt.Printf("Error creating output directory: %v\n", err)
+		return
+	}
 
 	// 3. Export HTML
 	fmt.Println("Exporting to HTML...")

@@ -58,7 +58,7 @@ func deck_global_error() *C.char {
 	return C.CString(globalError)
 }
 
-// main is required for cgo build but not used for library
+// main is required for cgo build but not used for library.
 func main() {}
 
 // recoverPanic prevents Go panics from crashing the C host.

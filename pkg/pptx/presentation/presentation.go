@@ -104,7 +104,17 @@ func WritePresentationPackage(
 	chartBySlide := chartPartBySlide(chartParts)
 	smartArtBySlide := smartArtPartBySlide(smartArtParts)
 	notesTargets := notes.TargetBySlide(notesParts)
-	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, smartArtBySlide, notesTargets, masterCount, commentsBySlide); err != nil {
+	if err := renderSlides(
+		pw,
+		meta,
+		slides,
+		mediaCatalog,
+		chartBySlide,
+		smartArtBySlide,
+		notesTargets,
+		masterCount,
+		commentsBySlide,
+	); err != nil {
 		return err
 	}
 
@@ -176,7 +186,14 @@ func addBasicPropertyFiles(
 	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
 	pw.AddPart(
 		"ppt/_rels/presentation.xml.rels",
-		pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount, hasSections, hasCommentAuthors),
+		pptxxml.PresentationRelationships(
+			slideCount,
+			hasNotes,
+			len(meta.CustomXML),
+			masterCount,
+			hasSections,
+			hasCommentAuthors,
+		),
 	)
 	var protInfo *pptxxml.ProtectionInfo
 	if meta.Protection.ModifyPassword != "" {
@@ -262,7 +279,10 @@ func generateGUID() (string, error) {
 	return fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
-func prepareComments(meta Metadata, slides []elements.SlideContent) ([]comments.Author, map[int][]comments.Comment, []int) {
+func prepareComments(
+	meta Metadata,
+	slides []elements.SlideContent,
+) ([]comments.Author, map[int][]comments.Comment, []int) {
 	var authors []comments.Author
 	authorMap := make(map[string]int)
 
@@ -286,12 +306,14 @@ func prepareComments(meta Metadata, slides []elements.SlideContent) ([]comments.
 				authorMap[c.AuthorName] = idx
 
 				initials := ""
-				parts := strings.Fields(c.AuthorName)
-				for _, p := range parts {
+				parts := strings.FieldsSeq(c.AuthorName)
+				var initialsSb290 strings.Builder
+				for p := range parts {
 					if r, _ := utf8.DecodeRuneInString(p); r != utf8.RuneError {
-						initials += string(r)
+						initialsSb290.WriteRune(r)
 					}
 				}
+				initials += initialsSb290.String()
 				if len([]rune(initials)) > 2 {
 					initials = string([]rune(initials)[:2])
 				}
@@ -375,7 +397,12 @@ func addThemeFiles(pw *pptxxml.PackageWriter, theme *styling.Theme, masterCount 
 	}
 }
 
-func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, notesThemeIndex int, mc *media.Catalog) {
+func addNotesMasterFiles(
+	pw *pptxxml.PackageWriter,
+	meta Metadata,
+	masterCount, notesThemeIndex int,
+	mc *media.Catalog,
+) {
 	if notesThemeIndex == 0 {
 		return
 	}
@@ -386,7 +413,6 @@ func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, 
 	if meta.NotesMaster != nil && meta.NotesMaster.Background != nil &&
 		meta.NotesMaster.Background.Type == elements.SlideBackgroundPicture &&
 		meta.NotesMaster.Background.PictureFill != nil {
-
 		if name, ok := mc.MediaNameForImage(*meta.NotesMaster.Background.PictureFill); ok {
 			backgroundRID = "rId2"
 			mediaName = []string{"../media/" + name}
@@ -394,7 +420,10 @@ func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, 
 	}
 	spec := elements.MapNotesMasterToSpec(meta.NotesMaster, backgroundRID)
 	pw.AddPart("ppt/notesMasters/notesMaster1.xml", pptxxml.NotesMaster(spec))
-	pw.AddPart("ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships(notesThemeIndex, mediaName))
+	pw.AddPart(
+		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
+		pptxxml.NotesMasterRelationships(notesThemeIndex, mediaName),
+	)
 
 	if notesThemeIndex > masterCount {
 		pw.AddPart(fmt.Sprintf("ppt/theme/theme%d.xml", notesThemeIndex), pptxxml.Theme(mapThemeToSpec(meta.Theme)))

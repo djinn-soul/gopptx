@@ -48,7 +48,8 @@ func parseGitGraph(code string) *GitGraphDiagram {
 			continue
 		}
 
-		if strings.HasPrefix(lower, "commit") {
+		switch {
+		case strings.HasPrefix(lower, "commit"):
 			label := ""
 			if strings.Contains(trimmed, "id:") {
 				parts := strings.Split(trimmed, "id:")
@@ -62,15 +63,15 @@ func parseGitGraph(code string) *GitGraphDiagram {
 				Label:  label,
 			})
 			currentX++
-		} else if strings.HasPrefix(lower, "branch ") {
+		case strings.HasPrefix(lower, "branch "):
 			branchName := strings.TrimSpace(trimmed[7:])
 			if _, ok := diagram.Branches[branchName]; !ok {
 				diagram.Branches[branchName] = nextBranchIdx
 				nextBranchIdx++
 			}
-		} else if strings.HasPrefix(lower, "checkout ") {
+		case strings.HasPrefix(lower, "checkout "):
 			currentBranch = strings.TrimSpace(trimmed[9:])
-		} else if strings.HasPrefix(lower, "merge ") {
+		case strings.HasPrefix(lower, "merge "):
 			fromBranch := strings.TrimSpace(trimmed[6:])
 			diagram.Commits = append(diagram.Commits, GitCommitInfo{
 				Branch:    currentBranch,

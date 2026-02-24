@@ -12,10 +12,6 @@ type BridgeError struct {
 	Details any    `json:"details,omitempty"`
 }
 
-func (e *BridgeError) Error() string {
-	return e.Message
-}
-
 // Error codes for the bridge API.
 const (
 	ErrCodeInvalidJSON    = "INVALID_JSON"
@@ -40,6 +36,10 @@ func NewBridgeError(code, message string) *BridgeError {
 // NewBridgeErrorWithDetails creates a new BridgeError with details.
 func NewBridgeErrorWithDetails(code, message string, details any) *BridgeError {
 	return &BridgeError{Code: code, Message: message, Details: details}
+}
+
+func (e *BridgeError) Error() string {
+	return e.Message
 }
 
 // PayloadValidator provides validation helpers for command payloads.
@@ -359,10 +359,13 @@ func (v *PayloadValidator) OptionalFloat64Slice(payload map[string]any, field st
 }
 
 // IndexBounds checks if an index is within valid bounds.
-func (v *PayloadValidator) IndexBounds(index, min, max int, field string) bool {
-	if index < min || index >= max {
+func (v *PayloadValidator) IndexBounds(index, minValue, maxValue int, field string) bool {
+	if index < minValue || index >= maxValue {
 		v.setCode(ErrCodeInvalidIndex)
-		v.errors = append(v.errors, fmt.Sprintf("%s %d out of bounds [%d, %d)", field, index, min, max))
+		v.errors = append(
+			v.errors,
+			fmt.Sprintf("%s %d out of bounds [%d, %d)", field, index, minValue, maxValue),
+		)
 		return false
 	}
 	return true
@@ -381,7 +384,7 @@ func (v *PayloadValidator) Error() error {
 	return NewBridgeErrorWithDetails(v.code, "payload validation failed", v.errors)
 }
 
-// ParseRawPayload parses json.RawMessage into a map for validation.
+// ParseRawPayload parses [json.RawMessage] into a map for validation.
 func ParseRawPayload(payload json.RawMessage) (map[string]any, error) {
 	if len(payload) == 0 {
 		return nil, NewBridgeError(ErrCodeInvalidPayload, "empty payload")

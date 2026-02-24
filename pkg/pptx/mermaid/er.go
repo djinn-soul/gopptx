@@ -46,8 +46,8 @@ func parseER(code string) *ERDiagram {
 		}
 
 		// Handle entity definition with braces
-		if strings.HasSuffix(line, "{") {
-			name := strings.TrimSpace(strings.TrimSuffix(line, "{"))
+		if before, ok := strings.CutSuffix(line, "{"); ok {
+			name := strings.TrimSpace(before)
 			if _, ok := entities[name]; !ok {
 				entities[name] = &EREntity{Name: name}
 			}
@@ -103,19 +103,33 @@ func parseER(code string) *ERDiagram {
 }
 
 func splitERRelationship(line string) (string, string, string, string, bool) {
-	relTypes := []string{"||--o{", "||--|{", "}|--|{", "}|--o{", "|o--o{", "|o--|{", "o{--}o", "o{--|{", "o{--o{", "||--||", "||--|o", "|o--|o", "|o--||"}
+	relTypes := []string{
+		"||--o{",
+		"||--|{",
+		"}|--|{",
+		"}|--o{",
+		"|o--o{",
+		"|o--|{",
+		"o{--}o",
+		"o{--|{",
+		"o{--o{",
+		"||--||",
+		"||--|o",
+		"|o--|o",
+		"|o--||",
+	}
 	// Also simpler ones
 	relTypes = append(relTypes, "||--", "}|--", "o{--", "--o{", "--|{", "--}o", "--")
 
 	for _, rt := range relTypes {
-		if idx := strings.Index(line, rt); idx != -1 {
-			from := strings.TrimSpace(line[:idx])
-			rest := strings.TrimSpace(line[idx+len(rt):])
+		if before, after, ok := strings.Cut(line, rt); ok {
+			from := strings.TrimSpace(before)
+			rest := strings.TrimSpace(after)
 			to := rest
 			label := ""
-			if labelIdx := strings.Index(rest, ":"); labelIdx != -1 {
-				to = strings.TrimSpace(rest[:labelIdx])
-				label = strings.TrimSpace(rest[labelIdx+1:])
+			if before, after, ok := strings.Cut(rest, ":"); ok {
+				to = strings.TrimSpace(before)
+				label = strings.TrimSpace(after)
 			}
 			return from, rt, to, label, true
 		}
@@ -242,9 +256,7 @@ func generateERElements(diagram *ERDiagram, theme Theme) DiagramElements {
 			startArrow := shapes.ArrowTypeNone
 			endArrow := shapes.ArrowTypeTriangle
 
-			if strings.Contains(rel.Type, "o") {
-				// Optional
-			}
+			_ = strings.Contains(rel.Type, "o")
 			if strings.Contains(rel.Type, "{") || strings.Contains(rel.Type, "}") {
 				// Many
 				endArrow = shapes.ArrowTypeStealth

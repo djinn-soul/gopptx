@@ -63,7 +63,6 @@ func (wc *WebContent) GroupedByHeadings() []HeadingGroup {
 	var groups []HeadingGroup
 	var cur *HeadingGroup
 	for _, b := range wc.Blocks {
-		b := b // copy
 		if b.IsHeading() {
 			if cur != nil {
 				groups = append(groups, *cur)
@@ -81,6 +80,8 @@ func (wc *WebContent) GroupedByHeadings() []HeadingGroup {
 
 // mainContentSelectors lists CSS selectors tried in priority order to find
 // the primary content area of a page.
+//
+//nolint:gochecknoglobals // Ordered selector priority for main-content discovery.
 var mainContentSelectors = []string{
 	"main article",
 	"article",
@@ -100,6 +101,8 @@ var mainContentSelectors = []string{
 }
 
 // skipTags lists HTML elements whose subtrees are always discarded.
+//
+//nolint:gochecknoglobals // Static exclusion set for non-content tags.
 var skipTags = map[string]bool{
 	"script": true, "style": true, "noscript": true, "svg": true,
 	"form": true, "button": true, "input": true, "select": true,
@@ -107,6 +110,8 @@ var skipTags = map[string]bool{
 }
 
 // noRecurseTags lists elements that are treated as leaves (text extracted, children skipped).
+//
+//nolint:gochecknoglobals // Tags treated as leaf nodes during DOM traversal.
 var noRecurseTags = map[string]bool{
 	"p": true, "li": true, "pre": true, "code": true,
 	"img": true, "table": true, "blockquote": true,
@@ -114,6 +119,8 @@ var noRecurseTags = map[string]bool{
 }
 
 // skipClasses contains substrings that flag an element as advertising / chrome.
+//
+//nolint:gochecknoglobals // Class substrings that identify chrome/ads.
 var skipClasses = []string{
 	"advertisement", "ad-container", "social-share", "comment-section",
 }
@@ -208,6 +215,7 @@ func (p *WebParser) findMainContent(doc *goquery.Document) *goquery.Selection {
 	return nil
 }
 
+//nolint:gocyclo,cyclop // DOM-walk branching is intentionally linear and explicit
 func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth int) {
 	tag := goquery.NodeName(sel)
 

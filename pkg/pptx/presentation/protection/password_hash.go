@@ -32,7 +32,7 @@ func HashModifyPassword(password string, salt []byte, spinCount int) string {
 
 	// 3. Iterative Hashing (Spin Count)
 	var spinInput [sha512.Size + 4]byte
-	for i := 0; i < spinCount; i++ {
+	for i := range spinCount {
 		copy(spinInput[:sha512.Size], hash[:])
 		binary.LittleEndian.PutUint32(spinInput[sha512.Size:], uint32(i))
 		hash = sha512.Sum512(spinInput[:])

@@ -22,7 +22,10 @@ func ValidateSlideTransition(s SlideContent, index int) error {
 	if strings.HasPrefix(xml, "<mc:AlternateContent") && strings.HasSuffix(xml, "</mc:AlternateContent>") {
 		return nil
 	}
-	return fmt.Errorf("slide %d transition XML must be wrapped in <p:transition>...</p:transition> or <mc:AlternateContent>...</mc:AlternateContent>", index)
+	return fmt.Errorf(
+		"slide %d transition XML must be wrapped in <p:transition>...</p:transition> or <mc:AlternateContent>...</mc:AlternateContent>",
+		index,
+	)
 }
 
 func SlideTransitionXML(s SlideContent) string {

@@ -40,17 +40,24 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error creating file: %v\n", err)
 		os.Exit(1)
 	}
-	defer pyFile.Close()
 
 	pyiFile, err := os.Create(outputPyi)
 	if err != nil {
+		_ = pyFile.Close()
 		fmt.Fprintf(os.Stderr, "Error creating file: %v\n", err)
 		os.Exit(1)
 	}
-	defer pyiFile.Close()
 
 	writeOpsPy(pyFile, ops)
 	writeOpsPyi(pyiFile, ops)
+	if err := pyFile.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error closing file: %v\n", err)
+		os.Exit(1)
+	}
+	if err := pyiFile.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error closing file: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func parseOpsFromGo(input string) ([]opSpec, error) {
@@ -128,7 +135,7 @@ func toSnakeCase(s string) string {
 	for i, r := range s {
 		if i > 0 && r >= 'A' && r <= 'Z' {
 			prev := rune(s[i-1])
-			if !(prev >= 'A' && prev <= 'Z') {
+			if prev < 'A' || prev > 'Z' {
 				result.WriteRune('_')
 			} else if i+1 < len(s) {
 				next := rune(s[i+1])

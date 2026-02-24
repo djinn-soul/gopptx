@@ -235,11 +235,35 @@ func customShapeTextBody(shape ShapeSpec) string {
 	}
 
 	autoFitXML := `<a:spAutoFit/>`
-	bodyPrChildren := autoFitXML
-	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(defaultMargin) + `" tIns="` + strconv.Itoa(defaultMargin) + `" rIns="` + strconv.Itoa(defaultMargin) + `" bIns="` + strconv.Itoa(defaultMargin) + `"`
+	var bodyPrChildren string
+	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `" tIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `" rIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `" bIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `"`
 
 	if shape.TextFrame != nil {
-		bodyPrAttr = ` wrap="` + Escape(shape.TextFrame.Wrap) + `" rtlCol="0" anchor="` + Escape(shape.TextFrame.Anchor) + `" lIns="` + strconv.FormatInt(shape.TextFrame.MarginLeft, 10) + `" tIns="` + strconv.FormatInt(shape.TextFrame.MarginTop, 10) + `" rIns="` + strconv.FormatInt(shape.TextFrame.MarginRight, 10) + `" bIns="` + strconv.FormatInt(shape.TextFrame.MarginBottom, 10) + `"`
+		bodyPrAttr = ` wrap="` + Escape(
+			shape.TextFrame.Wrap,
+		) + `" rtlCol="0" anchor="` + Escape(
+			shape.TextFrame.Anchor,
+		) + `" lIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginLeft,
+			10,
+		) + `" tIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginTop,
+			10,
+		) + `" rIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginRight,
+			10,
+		) + `" bIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginBottom,
+			10,
+		) + `"`
 		switch shape.TextFrame.AutoFit {
 		case "spAutoFit":
 			autoFitXML = `<a:spAutoFit/>`

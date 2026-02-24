@@ -58,6 +58,7 @@ func TestParseNodeDef(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo,cyclop // table-driven assertions across many diagram variants
 func TestCreateDiagram(t *testing.T) {
 	t.Run("Flowchart", func(t *testing.T) {
 		code := `flowchart LR

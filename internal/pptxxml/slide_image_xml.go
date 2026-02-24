@@ -78,13 +78,13 @@ func imageShape(image ImageRef, shapeID int) string {
 
 func imageDescriptionAttr(image ImageRef) string {
 	if image.IsDecorative {
-		return ` descr=""`
+		return shapeDescrAttrEmpty
 	}
 	if image.AltText != "" {
 		escaped := Escape(image.AltText)
 		return ` descr="` + escaped + `" title="` + escaped + `"`
 	}
-	return ` descr=""`
+	return shapeDescrAttrEmpty
 }
 
 func imageTransformAttrs(rot int64, flipH, flipV bool) string {
