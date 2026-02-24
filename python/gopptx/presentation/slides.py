@@ -1,102 +1,33 @@
 """Presentation slides mixin for gopptx library."""
+# ruff: noqa: D102
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+import uuid
+from typing import TYPE_CHECKING, cast
 
-from . import ops
-from .api_master import SlideMasters
-from .api_slide import Slide
+from .. import ops
+from ..slide.slide import Slide
+from .helpers import PresentationProtocol
+from .layout_theme import PresentationLayoutMixin, PresentationThemeMixin
+from .master import SlideMasters
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .schemas import (
+    from ..schemas import (
         CoreProperties,
         Section,
-        SlideLayoutInfo,
-        SlideMasterCloneResult,
+        SlideMetadata,
     )
+    from .presentation import Presentation
+else:
+
+    class PresentationProtocol:
+        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
-class PresentationLayoutMixin:
-    """Mixin providing slide layout management methods."""
-
-    def list_slide_layouts(self) -> list[SlideLayoutInfo]:
-        """List all available slide layouts."""
-        result = self.execute(ops.OP_LIST_SLIDE_LAYOUTS, {})
-        layouts = cast("list[dict]", result.get("layouts", []))
-        for item in layouts:
-            if "Name" in item and "name" not in item:
-                item["name"] = item["Name"]
-            if "Part" in item and "part" not in item:
-                item["part"] = item["Part"]
-            if "MasterPart" in item and "master_part" not in item:
-                item["master_part"] = item["MasterPart"]
-        return cast("list[SlideLayoutInfo]", layouts)
-
-    def rebind_slide_layout(self, slide_index: int, layout_part: str) -> None:
-        """Rebind a slide to a different layout.
-
-        Args:
-            slide_index: Index of the slide.
-            layout_part: Part name of the layout.
-        """
-        target_layout = layout_part
-        if "/" not in target_layout:
-            for layout in self.list_slide_layouts():
-                if layout.get("name") == target_layout:
-                    target_layout = cast("str", layout.get("part", target_layout))
-                    break
-        self.execute(
-            ops.OP_REBIND_SLIDE_LAYOUT,
-            {"slide_index": slide_index, "layout_part": target_layout},
-        )
-        self.invalidate_cache()
-
-    def clone_layout_master_family(self, layout_part: str) -> SlideMasterCloneResult:
-        """Clone a layout and its master family.
-
-        Args:
-            layout_part: Part name of the layout to clone.
-
-        Returns:
-            Result containing the new layout and master parts.
-        """
-        result = self.execute(
-            ops.OP_CLONE_LAYOUT_MASTER_FAMILY, {"layout_part": layout_part}
-        )
-        self.invalidate_cache()
-        return cast("SlideMasterCloneResult", result)
-
-
-class PresentationThemeMixin:
-    """Mixin providing theme and slide size configuration methods."""
-
-    def apply_theme(self, theme_name: str) -> None:
-        """Apply a theme to the presentation.
-
-        Args:
-            theme_name: Name of the theme to apply.
-        """
-        theme = theme_name
-        if theme_name.lower() == "office":
-            theme = "Corporate"
-        self.execute(ops.OP_APPLY_THEME, {"theme_name": theme})
-        self.invalidate_cache()
-
-    def set_slide_size(self, width: int, height: int) -> None:
-        """Set the slide size.
-
-        Args:
-            width: Width in EMUs.
-            height: Height in EMUs.
-        """
-        self.execute(ops.OP_SET_SLIDE_SIZE, {"width": width, "height": height})
-        self.invalidate_cache()
-
-
-class PresentationSectionMixin:
+class PresentationSectionMixin(PresentationProtocol):
     """Mixin providing section management methods."""
 
     @property
@@ -105,7 +36,8 @@ class PresentationSectionMixin:
         result = self.execute(ops.OP_GET_SECTIONS, {})
         raw_sections = result.get("sections")
         sections = cast(
-            "list[dict]", raw_sections if isinstance(raw_sections, list) else []
+            "list[dict[str, object]]",
+            raw_sections if isinstance(raw_sections, list) else [],
         )
         for s in sections:
             if "Name" in s and "name" not in s:
@@ -152,7 +84,7 @@ class PresentationSectionMixin:
         )
 
 
-class PresentationPropertiesMixin:
+class PresentationPropertiesMixin(PresentationProtocol):
     """Mixin providing document properties and protection methods."""
 
     @property
@@ -166,7 +98,7 @@ class PresentationPropertiesMixin:
 
     @core_properties.setter
     def core_properties(self, props: CoreProperties) -> None:
-        self.execute(ops.OP_SET_CORE_PROPERTIES, props)
+        self.execute(ops.OP_SET_CORE_PROPERTIES, cast("dict[str, object]", props))
 
     def set_core_properties(self, props: CoreProperties) -> None:
         """Set the core properties of the presentation.
@@ -212,39 +144,49 @@ class PresentationSlidesMixin(
 ):
     """Mixin providing slide-related methods for Presentation."""
 
+    if TYPE_CHECKING:
+
+        @property
+        def slides(self) -> list[Slide]: ...
+
+        @property
+        def slide_count(self) -> int: ...
+
+    _slide_masters_obj: SlideMasters | None = None
+
     @property
     def slide_masters(self) -> SlideMasters:
         """Get the slide masters collection."""
-        if getattr(self, "_slide_masters_obj", None) is None:
-            self._slide_masters_obj = SlideMasters(self)
+        if self._slide_masters_obj is None:
+            self._slide_masters_obj = SlideMasters(cast("PresentationProtocol", self))
         return self._slide_masters_obj
 
     def add_slide(
         self, title: str, layout: str | None = None, bullets: list[str] | None = None
     ) -> Slide:
         """Add a new slide to the presentation."""
-        payload: dict[str, Any] = {"title": title}
+        payload: dict[str, object] = {"title": title}
         if layout:
             payload["layout"] = layout
         if bullets:
             payload["bullets"] = bullets
         result = self.execute(ops.OP_ADD_SLIDE, payload)
         if result.get("_batched", False):
-            placeholder = {
-                "Index": -1,
-                "SlideID": -1,
-                "RelationshipID": "",
-                "PartName": "",
+            # Batch mode optimization: return a Slide object with a dummy index
+            # This allows safe construction of slide layouts/designs within a batch
+            placeholder_metadata = {
                 "Title": title,
-                "index": -1,
-                "slide_id": -1,
-                "relationship_id": "",
-                "part_name": "",
-                "title": title,
+                "SlideID": -1,
+                "RelationshipID": str(uuid.uuid4()),
+                "PartName": "/ppt/slides/slide_placeholder.xml",
+                "Index": -1,
             }
-            return Slide(self, cast("Any", placeholder))
+            return Slide(
+                cast("Presentation", self),
+                cast("SlideMetadata", placeholder_metadata),
+            )
         self.invalidate_cache()
-        return self.slides[int(result.get("index", -1))]
+        return self.slides[int(cast("int", result.get("index", -1)))]
 
     def remove_slide(self, index: int) -> None:
         """Remove a slide from the presentation."""
@@ -264,7 +206,7 @@ class PresentationSlidesMixin(
             ops.OP_DUPLICATE_SLIDE, {"index": index, "insert_at": insert_at}
         )
         self.invalidate_cache()
-        return int(result.get("new_index", -1))
+        return int(cast("int", result.get("new_index", -1)))
 
     def update_slide(
         self,
@@ -274,7 +216,7 @@ class PresentationSlidesMixin(
         bullets: list[str] | None = None,
     ) -> None:
         """Update slide properties."""
-        payload: dict[str, Any] = {"slide_index": index}
+        payload: dict[str, object] = {"slide_index": index}
         if title is not None:
             payload["title"] = title
         if layout is not None:
@@ -326,8 +268,8 @@ class PresentationSlidesMixin(
         """
         return self.add_slide(title, layout="title_and_content", bullets=bullets)
 
-    def __getitem__(self, index: int) -> Slide:
-        """Get a slide by index."""
+    def __getitem__(self, index: int | slice) -> Slide | list[Slide]:
+        """Get a slide by index or slice."""
         return self.slides[index]
 
     def __len__(self) -> int:

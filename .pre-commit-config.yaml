@@ -80,14 +80,14 @@ repos:
 
       - id: bandit
         name: bandit security scan
-        entry: uv run bandit -r src/ -c pyproject.toml
+        entry: uv run bandit -r python/gopptx -c pyproject.toml
         language: system
         types: [python]
         pass_filenames: false
 
       - id: vulture
         name: vulture dead code detection
-        entry: uv run vulture src/ vulture_whitelist.py --min-confidence 60
+        entry: uv run vulture python/gopptx vulture_whitelist.py --min-confidence 60
         language: system
         types: [python]
         pass_filenames: false

@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from typing_extensions import Self
 
-from . import ops
+from .. import ops
 
 if TYPE_CHECKING:
-    from .api_presentation import Presentation
-    from .schemas import BatchItemResult
+    from ..schemas import BatchItemResult
+    from .helpers import PresentationProtocol
 
 
 class BatchContext:
@@ -33,7 +33,7 @@ class BatchContext:
     }
 
     def __init__(
-        self, presentation: Presentation, *, stop_on_error: bool = False
+        self, presentation: PresentationProtocol, *, stop_on_error: bool = False
     ) -> None:
         """Initialize the batch context.
 
@@ -41,6 +41,7 @@ class BatchContext:
             presentation: The presentation to batch operations for.
             stop_on_error: If True, stop batch execution on first error.
         """
+        super().__init__()
         self._presentation = presentation
         self._stop_on_error = stop_on_error
         self._results: list[BatchItemResult] = []
@@ -70,7 +71,7 @@ class BatchContext:
     def __getattr__(self, name: str) -> object:
         """Forward attribute access to the presentation."""
         # Forward mutating API calls to Presentation while batch mode is active.
-        target = getattr(self._presentation, name)
+        target = cast("object", getattr(self._presentation, name))
         if callable(target):
             return target
         raise AttributeError(name)

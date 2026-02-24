@@ -1,14 +1,15 @@
 """Slide proxy class for gopptx library."""
+# ruff: noqa: D102
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .api_table import Table
+from .table import Table
 
 if TYPE_CHECKING:
-    from .api_presentation import Presentation
-    from .schemas import (
+    from ..presentation.presentation import Presentation
+    from ..schemas import (
         Shape,
         ShapeProps,
         ShapeUpdate,
@@ -21,6 +22,12 @@ if TYPE_CHECKING:
 
 class SlideShapeMixin:
     """Mixin providing shape manipulation methods for Slide objects."""
+
+    if TYPE_CHECKING:
+        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+
+        @property
+        def index(self) -> int: ...
 
     def add_shape(
         self,
@@ -59,6 +66,10 @@ class SlideShapeMixin:
 class SlideBase:
     """Base class providing core slide properties (index, title, notes)."""
 
+    if TYPE_CHECKING:
+        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _metadata: SlideMetadata  # pyright: ignore[reportUninitializedInstanceVariable]
+
     @property
     def index(self) -> int:
         """The zero-based index of this slide."""
@@ -95,6 +106,12 @@ class SlideBase:
 class SlideChartMixin:
     """Mixin providing chart-related methods for Slide objects."""
 
+    if TYPE_CHECKING:
+        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+
+        @property
+        def index(self) -> int: ...
+
     def list_charts(self) -> list[SlideChartRef]:
         """List all charts on this slide."""
         return self._presentation.list_slide_charts(self.index)
@@ -118,6 +135,12 @@ class SlideChartMixin:
 
 class SlideTableMixin:
     """Mixin providing table manipulation methods for Slide objects."""
+
+    if TYPE_CHECKING:
+        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+
+        @property
+        def index(self) -> int: ...
 
     def add_table(self, rows: int, cols: int, bounds: tuple[int, int, int, int]) -> int:
         """Add a table to this slide."""
@@ -159,6 +182,7 @@ class Slide(SlideTableMixin, SlideChartMixin, SlideBase, SlideShapeMixin):
 
     def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:
         """Initialize the slide proxy."""
+        super().__init__()
         self._presentation = presentation
         self._metadata = metadata
 
@@ -184,6 +208,6 @@ class Slide(SlideTableMixin, SlideChartMixin, SlideBase, SlideShapeMixin):
         new_idx = self._presentation.duplicate_slide(self.index, insert_at=insert_at)
         return self._presentation.slides[new_idx]
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pyright: ignore[reportImplicitOverride]
         """Return a string representation of this slide."""
         return f"<Slide index={self.index} title='{self.title}'>"

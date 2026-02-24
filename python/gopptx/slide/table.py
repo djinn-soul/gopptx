@@ -2,129 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
-from . import ops
-from .api_errors import GopptxError
-from .utils import _normalize_table_index
+from .. import ops
+from ..utils import normalize_table_index
+from .table_cells import Cell, CellRange
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .api_presentation import Presentation
+    from ..presentation.presentation import Presentation
 
 # Constants for table indexing
 _TABLE_INDEX_DIMENSIONS = 2  # (row, col)
-
-
-class Cell:
-    """Proxy object for a table cell."""
-
-    def __init__(self, table: Table, row: int, col: int) -> None:
-        """Initialize the cell proxy."""
-        self._table = table
-        self.row = row
-        self.col = col
-
-    @property
-    def is_merge_origin(self) -> bool:
-        """Check if this cell is the origin of a merged cell range."""
-        return self._table.get_cell_info(self.row, self.col).get(
-            "is_merge_origin", False
-        )
-
-    @property
-    def is_spanned(self) -> bool:
-        """Check if this cell is spanned by another merged cell."""
-        return self._table.get_cell_info(self.row, self.col).get("is_spanned", False)
-
-    @property
-    def row_span(self) -> int:
-        """Get the number of rows this cell spans."""
-        return self._table.get_cell_info(self.row, self.col).get("row_span", 1)
-
-    @property
-    def col_span(self) -> int:
-        """Get the number of columns this cell spans."""
-        return self._table.get_cell_info(self.row, self.col).get("col_span", 1)
-
-    @property
-    def text(self) -> str:
-        """Get the text content of this cell."""
-        return str(self._table.get_cell_info(self.row, self.col).get("text", ""))
-
-    @text.setter
-    def text(self, value: str) -> None:
-        self._table.update_cell(self.row, self.col, {"text": str(value)})
-
-    def split(self) -> None:
-        """Splits a merged cell back into a 1x1 cell.
-
-        Note: This method is disallowed within a batch() context as structural
-        changes invalidate the coordinate mapping.
-        """
-        if getattr(self._table.prs, "_batch_active", False):
-            raise GopptxError(
-                "structural changes (split) are not allowed inside a batch",
-                code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
-            )
-        self._table.prs.execute(
-            ops.OP_SPLIT_TABLE_CELL,
-            {
-                "slide_index": self._table.slide_index,
-                "shape_id": self._table.shape_id,
-                "row": self.row,
-                "col": self.col,
-            },
-        )
-        self._table.invalidate_cache()
-
-    def __repr__(self) -> str:
-        """Return a string representation of the cell."""
-        return f"<Cell [{self.row}, {self.col}] text={self.text!r}>"
-
-
-class CellRange:
-    """Represents a 2D slice of cells in a table, allowing bulk operations like merging."""
-
-    def __init__(
-        self, table: Table, row_start: int, row_end: int, col_start: int, col_end: int
-    ) -> None:
-        """Initialize the cell range with bounds."""
-        self._table = table
-        self.row_start = max(0, row_start)
-        self.row_end = min(table.row_count, row_end)
-        self.col_start = max(0, col_start)
-        self.col_end = min(table.col_count, col_end)
-
-    def merge(self) -> None:
-        """Merges all cells in this range into a single spanned cell.
-
-        Follows Python exclusive slice convention for end indices.
-        Note: This method is disallowed within a batch() context as structural
-        changes invalidate the coordinate mapping.
-        """
-        if getattr(self._table.prs, "_batch_active", False):
-            raise GopptxError(
-                "structural changes (merge) are not allowed inside a batch",
-                code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
-            )
-        if self.row_end <= self.row_start + 1 and self.col_end <= self.col_start + 1:
-            return  # Nothing to merge
-
-        self._table.prs.execute(
-            ops.OP_MERGE_TABLE_CELLS,
-            {
-                "slide_index": self._table.slide_index,
-                "shape_id": self._table.shape_id,
-                # Python slices are exclusive at the end, calculate last index inclusive for Go backend
-                "row1": self.row_start,
-                "col1": self.col_start,
-                "row2": self.row_end - 1,
-                "col2": self.col_end - 1,
-            },
-        )
-        self._table.invalidate_cache()
+__all__ = ["Cell", "CellRange", "Table"]
 
 
 class Table:
@@ -135,11 +26,12 @@ class Table:
 
     def __init__(self, prs: Presentation, slide_index: int, shape_id: int) -> None:
         """Initialize the table proxy."""
+        super().__init__()
         self.prs = prs  # Public for companion classes (Cell, CellRange)
         self.slide_index = slide_index  # Public for companion classes
         self.shape_id = shape_id  # Public for companion classes
-        self._cache: dict[str, Any] | None = None
-        self._cell_map: dict[tuple[int, int], dict[str, Any]] = {}
+        self._cache: dict[str, object] | None = None
+        self._cell_map: dict[tuple[int, int], dict[str, object]] = {}
         self._row_count: int | None = None
         self._col_count: int | None = None
 
@@ -153,22 +45,22 @@ class Table:
                 ops.OP_GET_TABLE,
                 {"slide_index": self.slide_index, "shape_id": self.shape_id},
             )
-            self._cache = cast("dict[str, Any]", res.get("table", {}))
+            self._cache = cast("dict[str, object]", res.get("table", {}))
 
             # Optimization: Build coordinate map for O(1) cell lookup
             self._cell_map = {}
-            cells = self._cache.get("cells", [])
+            cells = cast("list[dict[str, object]]", self._cache.get("cells", []))
             for c in cells:
                 try:
-                    row_idx = _normalize_table_index(c["row"])
-                    col_idx = _normalize_table_index(c["col"])
+                    row_idx = normalize_table_index(c["row"])
+                    col_idx = normalize_table_index(c["col"])
                 except (KeyError, ValueError):
                     continue
                 self._cell_map[row_idx, col_idx] = c
 
             # Permanent cache of dimensions
-            self._row_count = int(self._cache.get("row_count", 0))
-            self._col_count = int(self._cache.get("col_count", 0))
+            self._row_count = int(cast("int", self._cache.get("row_count", 0)))
+            self._col_count = int(cast("int", self._cache.get("col_count", 0)))
 
     def invalidate_cache(self) -> None:
         """Invalidate the table cache.
@@ -181,12 +73,12 @@ class Table:
             self._cache = None
             self._cell_map = {}
 
-    def get_cell_info(self, row: int, col: int) -> dict[str, Any]:
+    def get_cell_info(self, row: int, col: int) -> dict[str, object]:
         """Get cell information for the specified row and column."""
         self._ensure_cache()
         return self._cell_map.get((row, col), {})
 
-    def update_cell(self, row: int, col: int, updates: dict[str, Any]) -> None:
+    def update_cell(self, row: int, col: int, updates: dict[str, object]) -> None:
         """Updates a cell and its local cache representation.
 
         Note: The local cache update is a best-effort sync for properties like text.
@@ -299,7 +191,7 @@ class Table:
     def has_header_row(self) -> bool:
         """Check if the table has a header row."""
         self._ensure_cache()
-        return bool(self._cache.get("first_row", False)) if self._cache else False
+        return self._cache.get("first_row", False) is True if self._cache else False
 
     @has_header_row.setter
     def has_header_row(self, value: bool) -> None:
@@ -309,7 +201,7 @@ class Table:
     def has_banded_rows(self) -> bool:
         """Check if the table has banded rows."""
         self._ensure_cache()
-        return bool(self._cache.get("band_row", False)) if self._cache else False
+        return self._cache.get("band_row", False) is True if self._cache else False
 
     @has_banded_rows.setter
     def has_banded_rows(self, value: bool) -> None:

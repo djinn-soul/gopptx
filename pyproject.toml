@@ -119,6 +119,9 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "python/gopptx/**/*.pyi" = ["ANN401", "ANN001"]
+"python/gopptx/presentation/**/*.py" = ["TID252"]
+"python/gopptx/slide/**/*.py" = ["TID252"]
+"python/gopptx/ops.py" = ["S105"]
 "tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
 
 "examples/**/*.py" = ["T201", "INP001", "D"]
@@ -181,7 +184,7 @@ directory = "htmlcov"
 # ============================================================================
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
-skips = ["B101"]
+skips = ["B101", "B105"]
 
 # ============================================================================
 # BASED-PYRIGHT - Strict type checking

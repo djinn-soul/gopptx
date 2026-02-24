@@ -175,7 +175,7 @@ class BatchCommand(TypedDict, total=False):
     """Command for batch operations."""
 
     op: str
-    payload: dict
+    payload: dict[str, object]
     request_id: str
 
 
@@ -184,7 +184,7 @@ class BatchErrorDetail(TypedDict, total=False):
 
     code: str
     message: str
-    details: dict
+    details: dict[str, object]
 
 
 class BatchItemResult(TypedDict, total=False):
@@ -193,7 +193,7 @@ class BatchItemResult(TypedDict, total=False):
     ok: bool
     op: str
     request_id: str
-    result: dict
+    result: dict[str, object]
     error: BatchErrorDetail
 
 

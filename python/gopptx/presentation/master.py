@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from . import ops
+from .. import ops
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .api_presentation_base import PresentationBase
-    from .schemas import SlideLayoutInfo
+    from ..schemas import SlideLayoutInfo
+    from .base import PresentationProtocol
 
 
 class SlideLayout:
@@ -23,9 +23,10 @@ class SlideLayout:
             master: The parent slide master.
             info: The layout information dictionary.
         """
+        super().__init__()
         self._master = master
-        self._part = info.get("part", info.get("Part", ""))
-        self._name = info.get("name", info.get("Name", ""))
+        self._part = str(info.get("part", info.get("Part", "")))
+        self._name = str(info.get("name", info.get("Name", "")))
 
     @property
     def part(self) -> str:
@@ -53,6 +54,7 @@ class SlideLayouts:
             master: The parent slide master.
             layouts: List of layout information dictionaries.
         """
+        super().__init__()
         self._master = master
         self._layouts = [SlideLayout(master, info) for info in layouts]
 
@@ -86,13 +88,14 @@ class SlideLayouts:
 class SlideMaster:
     """Represents a slide master in the presentation."""
 
-    def __init__(self, prs: PresentationBase, part: str) -> None:
+    def __init__(self, prs: PresentationProtocol, part: str) -> None:
         """Initialize the slide master.
 
         Args:
             prs: The presentation base instance.
             part: The part path of this slide master.
         """
+        super().__init__()
         self._prs = prs
         self._part = part
         self._slide_layouts: SlideLayouts | None = None
@@ -110,7 +113,7 @@ class SlideMaster:
             result = self._prs.execute(
                 ops.OP_LIST_MASTER_LAYOUTS, {"master_part": self._part}
             )
-            layouts = cast("list[dict]", result.get("layouts", []))
+            layouts = cast("list[dict[str, object]]", result.get("layouts", []))
             self._slide_layouts = SlideLayouts(
                 self, cast("list[SlideLayoutInfo]", layouts)
             )
@@ -120,12 +123,13 @@ class SlideMaster:
 class SlideMasters:
     """Collection of slide masters in the presentation."""
 
-    def __init__(self, prs: PresentationBase) -> None:
+    def __init__(self, prs: PresentationProtocol) -> None:
         """Initialize the slide masters collection.
 
         Args:
             prs: The presentation base instance.
         """
+        super().__init__()
         self._prs = prs
         self._masters: list[SlideMaster] | None = None
 
@@ -134,10 +138,10 @@ class SlideMasters:
         if self._masters is not None:
             return
         result = self._prs.execute(ops.OP_LIST_SLIDE_MASTERS, {})
-        master_infos = cast("list[dict]", result.get("masters", []))
+        master_infos = cast("list[dict[str, object]]", result.get("masters", []))
         self._masters = []
         for info in master_infos:
-            part = info.get("part", info.get("Part", ""))
+            part = str(info.get("part", info.get("Part", "")))
             self._masters.append(SlideMaster(self._prs, part))
 
     def __len__(self) -> int:
