@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -16,7 +17,7 @@ const (
 )
 
 func main() {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		log.Fatalf("failed to create output directory: %v", err)
 	}
 
@@ -45,7 +46,7 @@ func main() {
 	}
 
 	outputPath := filepath.Join(outputDir, outputFile)
-	if err := os.WriteFile(outputPath, data, 0o644); err != nil {
+	if err := os.WriteFile(outputPath, data, 0o600); err != nil {
 		log.Fatalf("failed to write presentation: %v", err)
 	}
 

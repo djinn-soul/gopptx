@@ -113,7 +113,12 @@ func (img Image) WithDecorative(enabled bool) Image {
 // Validate checks the image for common constraints.
 func (img Image) Validate(slideIndex, imageIndex int) error {
 	if !img.IsDecorative && len(img.AltText) > common.MaxAltTextLength {
-		return fmt.Errorf("slide %d image %d alt text exceeds %d characters", slideIndex, imageIndex, common.MaxAltTextLength)
+		return fmt.Errorf(
+			"slide %d image %d alt text exceeds %d characters",
+			slideIndex,
+			imageIndex,
+			common.MaxAltTextLength,
+		)
 	}
 
 	if img.Path == "" && len(img.Data) == 0 && img.SourceURL == "" {

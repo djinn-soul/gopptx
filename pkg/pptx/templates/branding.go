@@ -7,6 +7,11 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const (
+	defaultCoverTitleSizePt  = 44
+	emphasisCoverTitleSizePt = 52
+)
+
 // BrandingPreset defines visual styles for templates.
 type BrandingPreset string
 
@@ -89,8 +94,8 @@ func applyCoverSlideVisuals(s elements.SlideContent, theme styling.Theme) elemen
 	if strings.TrimSpace(s.ContentColor) == "" {
 		s = s.WithContentColor(theme.Colors.Lt1)
 	}
-	if s.TitleSize == 44 {
-		s = s.WithTitleSize(52)
+	if s.TitleSize == defaultCoverTitleSizePt {
+		s = s.WithTitleSize(emphasisCoverTitleSizePt)
 	}
 	if strings.TrimSpace(s.TitleFont) == "" && strings.TrimSpace(theme.Fonts.MajorFont) != "" {
 		s = s.WithTitleFont(theme.Fonts.MajorFont)

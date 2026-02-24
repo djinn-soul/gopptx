@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
@@ -9,7 +8,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Generating Morph Transition Presentation...")
+	log.Println("Generating Morph Transition Presentation...")
 
 	builder := pptx.NewPresentationBuilder("Morph Transition Demo")
 
@@ -38,8 +37,8 @@ func main() {
 		log.Fatalf("Failed to write presentation: %v", err)
 	}
 
-	fmt.Printf("Successfully generated morph transition presentation at: %s\n", outputPath)
-	fmt.Println("Please verify manually in PowerPoint:")
-	fmt.Println("1. Go to slide 2.")
-	fmt.Println("2. You should see a Morph transition animation from the red square to the blue rectangle.")
+	log.Printf("Successfully generated morph transition presentation at: %s", outputPath)
+	log.Println("Please verify manually in PowerPoint:")
+	log.Println("1. Go to slide 2.")
+	log.Println("2. You should see a Morph transition animation from the red square to the blue rectangle.")
 }

@@ -13,36 +13,37 @@ const (
 	maxListLen    = 180
 	maxQuoteLen   = 180
 	maxCodeBullet = 150
+	utf8ContMask  = 0x80
 )
 
-// URLFetchConverter converts parsed web content into a PPTX byte slice.
-type URLFetchConverter struct {
-	cfg URLFetchConfig
+// Converter converts parsed web content into a PPTX byte slice.
+type Converter struct {
+	cfg Config
 }
 
 // NewURLFetchConverter creates a converter with the default config.
-func NewURLFetchConverter() *URLFetchConverter {
-	return &URLFetchConverter{cfg: DefaultConfig()}
+func NewURLFetchConverter() *Converter {
+	return &Converter{cfg: DefaultConfig()}
 }
 
 // NewURLFetchConverterWithConfig creates a converter with a custom config.
-func NewURLFetchConverterWithConfig(cfg URLFetchConfig) *URLFetchConverter {
-	return &URLFetchConverter{cfg: cfg}
+func NewURLFetchConverterWithConfig(cfg Config) *Converter {
+	return &Converter{cfg: cfg}
 }
 
-// Web2Ppt is a compatibility alias for URLFetchConverter.
-type Web2Ppt = URLFetchConverter
+// Web2Ppt is a compatibility alias for Converter.
+type Web2Ppt = Converter
 
 // NewWeb2Ppt creates a converter with the default config.
-func NewWeb2Ppt() *URLFetchConverter { return NewURLFetchConverter() }
+func NewWeb2Ppt() *Converter { return NewURLFetchConverter() }
 
 // NewWeb2PptWithConfig creates a converter with a custom config.
-func NewWeb2PptWithConfig(cfg URLFetchConfig) *URLFetchConverter {
+func NewWeb2PptWithConfig(cfg Config) *Converter {
 	return NewURLFetchConverterWithConfig(cfg)
 }
 
 // Convert transforms parsed web content into PPTX bytes.
-func (c *URLFetchConverter) Convert(content *WebContent, opts *ConversionOptions) ([]byte, error) {
+func (c *Converter) Convert(content *WebContent, opts *ConversionOptions) ([]byte, error) {
 	slides, err := c.buildSlides(content, opts)
 	if err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (c *URLFetchConverter) Convert(content *WebContent, opts *ConversionOptions
 }
 
 // buildSlides constructs the slide list from extracted web content.
-func (c *URLFetchConverter) buildSlides(content *WebContent, opts *ConversionOptions) ([]elements.SlideContent, error) {
+func (c *Converter) buildSlides(content *WebContent, opts *ConversionOptions) ([]elements.SlideContent, error) {
 	var slides []elements.SlideContent
 
 	titleText := content.Title
@@ -101,7 +102,10 @@ func (c *URLFetchConverter) buildSlides(content *WebContent, opts *ConversionOpt
 	return slides, nil
 }
 
-func (c *URLFetchConverter) buildGroupedSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
+func (c *Converter) buildGroupedSlides(
+	content *WebContent,
+	slides []elements.SlideContent,
+) ([]elements.SlideContent, error) {
 	groups := content.GroupedByHeadings()
 	if len(groups) == 0 {
 		return c.buildLinearSlides(content, slides)
@@ -135,7 +139,10 @@ func (c *URLFetchConverter) buildGroupedSlides(content *WebContent, slides []ele
 	return slides, nil
 }
 
-func (c *URLFetchConverter) buildLinearSlides(content *WebContent, slides []elements.SlideContent) ([]elements.SlideContent, error) {
+func (c *Converter) buildLinearSlides(
+	content *WebContent,
+	slides []elements.SlideContent,
+) ([]elements.SlideContent, error) {
 	if len(content.Blocks) == 0 {
 		if content.Description != "" {
 			s := elements.NewSlide("Content").WithTitleAndContentLayout().AddBullet(content.Description)
@@ -183,8 +190,14 @@ func (c *URLFetchConverter) buildLinearSlides(content *WebContent, slides []elem
 	return slides, nil
 }
 
-func (c *URLFetchConverter) appendBlock(slide elements.SlideContent, block ContentBlock, bulletCount int) (elements.SlideContent, int) {
+func (c *Converter) appendBlock(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+) (elements.SlideContent, int) {
 	switch block.Kind {
+	case KindTitle, KindHeading:
+		// Headings are handled by slide grouping/creation logic.
 	case KindParagraph:
 		slide = slide.AddBullet(truncateText(block.Text, maxParaLen))
 		bulletCount++
@@ -277,5 +290,5 @@ func truncateText(text string, maxLen int) string {
 }
 
 func isRuneStart(b byte) bool {
-	return b&0xC0 != 0x80
+	return b&0xC0 != utf8ContMask
 }

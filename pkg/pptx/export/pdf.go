@@ -1,11 +1,14 @@
 package export
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -13,30 +16,30 @@ import (
 
 // PDF exports the presentation to a PDF file using LibreOffice.
 // Requires 'soffice' (or LibreOffice default path on macOS) to be installed.
+//
+//nolint:gocognit // Cross-platform conversion path keeps explicit fallback/error branches for reliability.
 func PDF(title string, slides []elements.SlideContent, outputPath string) error {
 	// 1. Create temporary PPTX
 	// Sanitize title for filename
 	safeTitle := "presentation"
 	if title != "" {
-		safeTitle = map[string]string{" ": "_", "/": "_", "\\": "_", ":": "_"}[title]
-		if safeTitle == "" {
-			safeTitle = "presentation"
-		}
-		// Simple replace for common chars
-		safeTitle = ""
+		var safeTitleBuilder strings.Builder
 		for _, c := range title {
 			if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
-				safeTitle += string(c)
+				safeTitleBuilder.WriteRune(c)
 			} else {
-				safeTitle += "_"
+				safeTitleBuilder.WriteByte('_')
 			}
+		}
+		if safeTitleBuilder.Len() > 0 {
+			safeTitle = safeTitleBuilder.String()
 		}
 	}
 
 	// Use the output directory for the temp file to avoid "Temp" folder permission/trust issues with Office
 	// Office sometimes sandboxes files in AppData\Local\Temp
 	tmpDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
+	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
 		tmpDir = os.TempDir() // Fallback
 	}
 	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("gopptx_%s_temp.pptx", safeTitle))
@@ -48,7 +51,7 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 		return fmt.Errorf("failed to generate PPTX: %w", err)
 	}
 
-	if err := os.WriteFile(tmpFile, pptxBytes, 0o666); err != nil {
+	if err := os.WriteFile(tmpFile, pptxBytes, 0o600); err != nil {
 		return fmt.Errorf("failed to write temp PPTX: %w", err)
 	}
 	// defer os.Remove(tmpFile)
@@ -77,16 +80,25 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 			}
 			return nil
 		}
-		return fmt.Errorf("LibreOffice ('soffice') not found in PATH")
+		return errors.New("LibreOffice ('soffice') not found in PATH")
 	}
 
 	// 4. Run conversion with LibreOffice
 	// soffice --headless --convert-to pdf <temp_file> --outdir <output_dir>
 	outputDir := filepath.Dir(outputPath)
-	cmd := exec.Command(sofficeCmd, "--headless", "--convert-to", "pdf", tmpFile, "--outdir", outputDir)
+	cmd := exec.CommandContext(
+		context.Background(),
+		sofficeCmd,
+		"--headless",
+		"--convert-to",
+		"pdf",
+		tmpFile,
+		"--outdir",
+		outputDir,
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("LibreOffice conversion failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf("LibreOffice conversion failed: %w\nOutput: %s", err, string(output))
 	}
 
 	// 5. Rename result
@@ -96,32 +108,31 @@ func PDF(title string, slides []elements.SlideContent, outputPath string) error 
 	generatedPDF := filepath.Join(outputDir, pdfName)
 
 	if generatedPDF != outputPath {
-		// If output path is different, move it.
-		// Note: outputPath might be relative, generatedPDF is absolute if outputDir is absolute?
-		// outputDir comes from filepath.Dir(outputPath).
-		// So generatedPDF is effectively <dir>/<basename>.pdf.
-
-		// If outputPath is just "output.pdf", outputDir is ".".
-
-		// We should verify existence before rename.
-		if _, err := os.Stat(generatedPDF); err != nil {
-			return fmt.Errorf("expected generated PDF not found at %s", generatedPDF)
-		}
-
-		// Move
-		if err := os.Rename(generatedPDF, outputPath); err != nil {
-			// Fallback: Copy and delete
-			input, err := os.ReadFile(generatedPDF)
-			if err != nil {
-				return err
-			}
-			if err := os.WriteFile(outputPath, input, 0o644); err != nil {
-				return err
-			}
-			os.Remove(generatedPDF)
+		if err := moveGeneratedPDF(generatedPDF, outputPath); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func moveGeneratedPDF(generatedPDF, outputPath string) error {
+	if _, err := os.Stat(generatedPDF); err != nil {
+		return fmt.Errorf("expected generated PDF not found at %s", generatedPDF)
+	}
+	if err := os.Rename(generatedPDF, outputPath); err == nil {
+		return nil
+	}
+	input, err := os.ReadFile(generatedPDF)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(outputPath, input, 0o600); err != nil {
+		return err
+	}
+	if err := os.Remove(generatedPDF); err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	return nil
 }
 
@@ -147,10 +158,17 @@ try {
 `, pptxPath, pdfPath)
 
 	// Run PowerShell
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", psScript)
+	cmd := exec.CommandContext(
+		context.Background(),
+		"powershell",
+		"-NoProfile",
+		"-NonInteractive",
+		"-Command",
+		psScript,
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("PowerShell execution failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, string(output))
 	}
 	return nil
 }

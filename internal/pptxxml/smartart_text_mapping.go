@@ -2,6 +2,8 @@ package pptxxml
 
 import "strings"
 
+const smartArtPresOfLinksInitCap = 16
+
 type smartArtPresOfLink struct {
 	srcModelID  string
 	destModelID string
@@ -80,7 +82,7 @@ func parseSmartArtPresAssocIDs(data string) map[string]string {
 }
 
 func parseSmartArtPresOfLinks(data string) []smartArtPresOfLink {
-	links := make([]smartArtPresOfLink, 0, 16)
+	links := make([]smartArtPresOfLink, 0, smartArtPresOfLinksInitCap)
 	segments := strings.Split(data, "<dgm:cxn ")
 	for i := 1; i < len(segments); i++ {
 		cxn := "<dgm:cxn " + segments[i]

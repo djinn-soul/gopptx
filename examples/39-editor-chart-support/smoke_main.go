@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -11,7 +12,7 @@ import (
 func mainEditorChartSmoke() {
 	templatePath := "ppt-rs/chart_example.pptx"
 	outputDirChart := "examples/output"
-	if err := os.MkdirAll(outputDirChart, 0o755); err != nil {
+	if err := os.MkdirAll(outputDirChart, 0o750); err != nil {
 		log.Fatalf("failed to create output dir: %v", err)
 	}
 	outPath := filepath.Join(outputDirChart, "39_editor_chart_smoke.pptx")
@@ -42,3 +43,5 @@ func mainEditorChartSmoke() {
 
 	log.Printf("Successfully generated %s\n", outPath)
 }
+
+var _ = mainEditorChartSmoke

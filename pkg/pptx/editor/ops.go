@@ -371,7 +371,9 @@ func validateEditorSlideContent(slide elements.SlideContent) error {
 
 var (
 	aTTitlePattern          = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
-	titlePlaceholderPattern = regexp.MustCompile(`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`)
+	titlePlaceholderPattern = regexp.MustCompile(
+		`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`,
+	)
 )
 
 func appendCopySuffixToXML(content []byte) []byte {
@@ -443,18 +445,6 @@ func isTitlePlaceholderShape(shape []byte) bool {
 		return false
 	}
 	return titlePlaceholderPattern.Match(shape)
-}
-
-func replaceFirstTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
-	modified := false
-	res := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
-		if modified {
-			return match
-		}
-		modified = true
-		return replaceFn(match)
-	})
-	return res, modified
 }
 
 func replaceLastTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
@@ -807,6 +797,8 @@ func cloneBytes(b []byte) []byte {
 }
 
 // UpdateNotesMaster configures the global notes master for the presentation.
+//
+//nolint:gocognit // Notes-master update coordinates validation, media registration, and rel wiring in one flow.
 func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
@@ -822,7 +814,9 @@ func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) err
 	var backgroundRID string
 	var mediaNames []string
 
-	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture && master.Background.PictureFill != nil {
+	//nolint:nestif // Background media registration requires staged checks to preserve error context.
+	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture &&
+		master.Background.PictureFill != nil {
 		img := master.Background.PictureFill
 
 		var data []byte

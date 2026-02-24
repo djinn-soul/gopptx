@@ -235,6 +235,8 @@ func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxx
 // renderEditorPlaceholderSpecs converts SlideContent.PlaceholderOverrides into
 // XML specs for the editor rendering path. It returns the specs, any additional
 // image relationship targets, chart rels, and an error.
+//
+//nolint:gocognit // Placeholder rendering must keep explicit branching for supported override kinds.
 func renderEditorPlaceholderSpecs(
 	e *PresentationEditor,
 	slide elements.SlideContent,

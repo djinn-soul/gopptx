@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 func main() {
-	fmt.Println("Generating Protected Presentation...")
+	log.Println("Generating Protected Presentation...")
 
 	builder := pptx.NewPresentationBuilder("Protected Presentation")
 
@@ -30,8 +29,8 @@ func main() {
 		log.Fatalf("Failed to write presentation: %v", err)
 	}
 
-	fmt.Printf("Successfully generated protected presentation at: %s\n", outputPath)
-	fmt.Println("Please verify manually in PowerPoint:")
-	fmt.Println("1. It should prompt for password 'test' to modify.")
-	fmt.Println("2. It should show a 'Marked as Final' banner.")
+	log.Printf("Successfully generated protected presentation at: %s", outputPath)
+	log.Println("Please verify manually in PowerPoint:")
+	log.Println("1. It should prompt for password 'test' to modify.")
+	log.Println("2. It should show a 'Marked as Final' banner.")
 }

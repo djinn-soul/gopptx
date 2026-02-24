@@ -86,7 +86,9 @@ func TestListMasterLayoutsUsesMasterRelationships(t *testing.T) {
 	editor := newLayoutFixtureEditor(t)
 	editor.parts.Set(
 		"ppt/slideLayouts/slideLayout99.xml",
-		[]byte(`<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld name="Orphan"/></p:sldLayout>`),
+		[]byte(
+			`<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld name="Orphan"/></p:sldLayout>`,
+		),
 	)
 	editor.parts.Set(
 		"ppt/slideLayouts/_rels/slideLayout99.xml.rels",

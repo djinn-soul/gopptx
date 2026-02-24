@@ -82,7 +82,7 @@ func TestSplitTableCellSupportsLargeSpans(t *testing.T) {
 	}
 	meta := tbl["table"].(map[string]any)
 	cells := meta["cells"].([]map[string]any)
-	for col := 0; col < 6; col++ {
+	for col := range 6 {
 		c := findTableCell(cells, 0, col)
 		if c == nil {
 			t.Fatalf("missing cell [0,%d]", col)
@@ -100,7 +100,9 @@ func newTableEditorFixture() *PresentationEditor {
 	ps := NewPartStore()
 	ps.Set(
 		"ppt/slides/slide1.xml",
-		[]byte(`<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`),
+		[]byte(
+			`<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld></p:sld>`,
+		),
 	)
 	return &PresentationEditor{
 		parts: ps,

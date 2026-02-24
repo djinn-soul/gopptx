@@ -7,6 +7,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
+const baseTrainingSlideCount = 3 // Title + Agenda + Summary
+
 // Template defines the interface for high-level presentation builders.
 type Template interface {
 	// Build generates the slides for the template.
@@ -120,8 +122,7 @@ func (t TrainingTemplate) Build() ([]elements.SlideContent, error) {
 		return nil, errors.New("training template title cannot be empty")
 	}
 
-	//nolint:mnd // Initial capacity for standard training slides (Title, Agenda, Summary)
-	funcs := make([]func() elements.SlideContent, 0, 3+len(t.Concepts))
+	funcs := make([]func() elements.SlideContent, 0, baseTrainingSlideCount+len(t.Concepts))
 	funcs = append(funcs, func() elements.SlideContent {
 		return elements.NewSlide(t.Title).WithCenteredTitleLayout()
 	})

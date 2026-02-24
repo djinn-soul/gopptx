@@ -48,44 +48,20 @@ func parseSequence(code string) *SequenceDiagram {
 
 	// Skip header
 	for i := 1; i < len(lines); i++ {
-		line := lines[i]
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
+			continue
+		}
 
-		if strings.HasPrefix(line, "participant") {
-			rest := strings.TrimSpace(strings.TrimPrefix(line, "participant"))
-			if idx := strings.Index(rest, " as "); idx != -1 {
-				id := strings.TrimSpace(rest[:idx])
-				displayName := strings.TrimSpace(rest[idx+4:])
-				addParticipant(id, displayName)
-			} else {
-				id := strings.Fields(rest)[0]
-				addParticipant(id, id)
-			}
-		} else if strings.Contains(line, "->>") || strings.Contains(line, "-->>") {
-			arrow := "->>"
-			if strings.Contains(line, "-->>") {
-				arrow = "-->>"
-			}
+		if id, displayName, ok := parseParticipantLine(line); ok {
+			addParticipant(id, displayName)
+			continue
+		}
 
-			parts := strings.SplitN(line, arrow, 2)
-			if len(parts) == 2 {
-				from := strings.TrimSpace(parts[0])
-				rest := parts[1]
-				msgParts := strings.SplitN(rest, ":", 2)
-				if len(msgParts) == 2 {
-					to := strings.TrimSpace(msgParts[0])
-					text := strings.TrimSpace(msgParts[1])
-
-					addParticipant(from, from)
-					addParticipant(to, to)
-
-					messages = append(messages, Message{
-						From:  from,
-						To:    to,
-						Text:  text,
-						Arrow: arrow,
-					})
-				}
-			}
+		if msg, ok := parseMessageLine(line); ok {
+			addParticipant(msg.From, msg.From)
+			addParticipant(msg.To, msg.To)
+			messages = append(messages, msg)
 		}
 	}
 
@@ -93,6 +69,55 @@ func parseSequence(code string) *SequenceDiagram {
 		Participants: participants,
 		Messages:     messages,
 	}
+}
+
+func parseParticipantLine(line string) (string, string, bool) {
+	after, ok := strings.CutPrefix(line, "participant")
+	if !ok {
+		return "", "", false
+	}
+	rest := strings.TrimSpace(after)
+	if before, after, ok := strings.Cut(rest, " as "); ok {
+		id := strings.TrimSpace(before)
+		displayName := strings.TrimSpace(after)
+		return id, displayName, true
+	}
+	fields := strings.Fields(rest)
+	if len(fields) == 0 {
+		return "", "", false
+	}
+	return fields[0], fields[0], true
+}
+
+func parseMessageLine(line string) (Message, bool) {
+	arrow, ok := detectSequenceArrow(line)
+	if !ok {
+		return Message{}, false
+	}
+	fromPart, rest, ok := strings.Cut(line, arrow)
+	if !ok {
+		return Message{}, false
+	}
+	toPart, textPart, ok := strings.Cut(rest, ":")
+	if !ok {
+		return Message{}, false
+	}
+	return Message{
+		From:  strings.TrimSpace(fromPart),
+		To:    strings.TrimSpace(toPart),
+		Text:  strings.TrimSpace(textPart),
+		Arrow: arrow,
+	}, true
+}
+
+func detectSequenceArrow(line string) (string, bool) {
+	if strings.Contains(line, "-->>") {
+		return "-->>", true
+	}
+	if strings.Contains(line, "->>") {
+		return "->>", true
+	}
+	return "", false
 }
 
 func generateSequenceElements(diagram *SequenceDiagram, theme Theme) DiagramElements {
@@ -103,122 +128,174 @@ func generateSequenceElements(diagram *SequenceDiagram, theme Theme) DiagramElem
 		return DiagramElements{Grouped: true}
 	}
 
-	// Layout parameters
-	startX := styling.Inches(0.5)
-	startY := styling.Inches(1.5)
-	participantWidth := styling.Inches(1.6)
-	participantHeight := styling.Inches(0.6)
-	hSpacing := styling.Inches(2.2)
-	lifelineHeight := styling.Inches(4.0)
-	messageSpacing := styling.Inches(0.6)
+	layout := sequenceLayout{
+		startX:            styling.Inches(0.5),
+		startY:            styling.Inches(1.5),
+		participantWidth:  styling.Inches(1.6),
+		participantHeight: styling.Inches(0.6),
+		hSpacing:          styling.Inches(2.2),
+		lifelineHeight:    styling.Inches(4.0),
+		messageSpacing:    styling.Inches(0.6),
+	}
 
 	participantX := make(map[string]styling.Length)
-
-	var minX, minY, maxX, maxY styling.Length
-	firstElement := true
-
-	updateBounds := func(x, y, cx, cy styling.Length) {
-		if firstElement {
-			minX, minY = x, y
-			maxX, maxY = x+cx, y+cy
-			firstElement = false
-		} else {
-			if x < minX {
-				minX = x
-			}
-			if y < minY {
-				minY = y
-			}
-			if x+cx > maxX {
-				maxX = x + cx
-			}
-			if y+cy > maxY {
-				maxY = y + cy
-			}
-		}
-	}
+	bounds := newSequenceBounds()
 
 	for i, p := range diagram.Participants {
-		x := startX + styling.Length(i)*hSpacing
+		x := layout.startX + styling.Length(i)*layout.hSpacing
 		participantX[p.ID] = x
 
-		// Participant box at top
-		boxTop := shapes.NewShape(shapes.ShapeTypeRectangle, x, startY, participantWidth, participantHeight).
-			WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
-			WithText(p.DisplayName).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, boxTop)
-		updateBounds(x, startY, participantWidth, participantHeight)
-
-		// Lifeline
-		lifelineX := x + participantWidth/2 - styling.Emu(10000)
-		lifelineY := startY + participantHeight
-		lifeline := shapes.NewShape(shapes.ShapeTypeRectangle, lifelineX, lifelineY, styling.Emu(20000), lifelineHeight).
-			WithFill(shapes.NewShapeFill(theme.SecondaryStroke))
-		shapesList = append(shapesList, lifeline)
-		updateBounds(lifelineX, lifelineY, styling.Emu(20000), lifelineHeight)
-
-		// Participant box at bottom
-		boxBottom := shapes.NewShape(shapes.ShapeTypeRectangle, x, startY+participantHeight+lifelineHeight, participantWidth, participantHeight).
-			WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
-			WithText(p.DisplayName).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, boxBottom)
-		updateBounds(x, startY+participantHeight+lifelineHeight, participantWidth, participantHeight)
+		for _, s := range sequenceParticipantShapes(p.DisplayName, x, layout, theme) {
+			shapesList = append(shapesList, s)
+			bounds.includeShape(s)
+		}
 	}
 
-	// Message arrows
-	messageYStart := startY + participantHeight + styling.Inches(0.3)
+	messageYStart := layout.startY + layout.participantHeight + styling.Inches(0.3)
 
 	for i, msg := range diagram.Messages {
-		fromX, fromExists := participantX[msg.From]
-		toX, toExists := participantX[msg.To]
-
-		if fromExists && toExists {
-			y := messageYStart + styling.Length(i)*messageSpacing
-			fromCenter := fromX + participantWidth/2
-			toCenter := toX + participantWidth/2
-
-			var arrowX, arrowWidth styling.Length
-			var arrowType string
-			if fromCenter < toCenter {
-				arrowX = fromCenter
-				arrowWidth = toCenter - fromCenter
-				arrowType = shapes.ShapeTypeRightArrow
-			} else {
-				arrowX = toCenter
-				arrowWidth = fromCenter - toCenter
-				arrowType = shapes.ShapeTypeLeftArrow
-			}
-
-			arrow := shapes.NewShape(arrowType, arrowX, y, arrowWidth, styling.Inches(0.15)).
-				WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
-			shapesList = append(shapesList, arrow)
-			updateBounds(arrowX, y, arrowWidth, styling.Inches(0.15))
-
-			textShape := shapes.NewShape(shapes.ShapeTypeRectangle, arrowX, y-styling.Inches(0.25), arrowWidth, styling.Inches(0.2)).
-				WithText(msg.Text).
-				WithAutoFit(shapes.TextAutoFitNormal).
-				WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
-			// Make text background transparent or no line
-			textShape.Line = nil
-			textShape.Fill = nil
-			shapesList = append(shapesList, textShape)
+		y := messageYStart + styling.Length(i)*layout.messageSpacing
+		rendered, ok := sequenceMessageShapes(msg, participantX, y, layout, theme)
+		if !ok {
+			continue
 		}
+		shapesList = append(shapesList, rendered.arrow, rendered.text)
+		bounds.includeShape(rendered.arrow)
 	}
 
 	return DiagramElements{
 		Shapes:  shapesList,
 		Grouped: true,
 		Bounds: &DiagramBounds{
-			X:  minX,
-			Y:  minY,
-			CX: maxX - minX,
-			CY: maxY - minY,
+			X:  bounds.minX,
+			Y:  bounds.minY,
+			CX: bounds.maxX - bounds.minX,
+			CY: bounds.maxY - bounds.minY,
 		},
 	}
+}
+
+type sequenceLayout struct {
+	startX            styling.Length
+	startY            styling.Length
+	participantWidth  styling.Length
+	participantHeight styling.Length
+	hSpacing          styling.Length
+	lifelineHeight    styling.Length
+	messageSpacing    styling.Length
+}
+
+type sequenceBounds struct {
+	minX  styling.Length
+	minY  styling.Length
+	maxX  styling.Length
+	maxY  styling.Length
+	first bool
+}
+
+func newSequenceBounds() *sequenceBounds {
+	return &sequenceBounds{first: true}
+}
+
+func (b *sequenceBounds) includeShape(s shapes.Shape) {
+	b.include(s.X, s.Y, s.CX, s.CY)
+}
+
+func (b *sequenceBounds) include(x, y, cx, cy styling.Length) {
+	if b.first {
+		b.minX, b.minY = x, y
+		b.maxX, b.maxY = x+cx, y+cy
+		b.first = false
+		return
+	}
+	if x < b.minX {
+		b.minX = x
+	}
+	if y < b.minY {
+		b.minY = y
+	}
+	if x+cx > b.maxX {
+		b.maxX = x + cx
+	}
+	if y+cy > b.maxY {
+		b.maxY = y + cy
+	}
+}
+
+func sequenceParticipantShapes(name string, x styling.Length, layout sequenceLayout, theme Theme) []shapes.Shape {
+	top := sequenceParticipantBox(name, x, layout.startY, layout, theme)
+	lifeline := sequenceLifeline(x, layout, theme)
+	bottomY := layout.startY + layout.participantHeight + layout.lifelineHeight
+	bottom := sequenceParticipantBox(name, x, bottomY, layout, theme)
+	return []shapes.Shape{top, lifeline, bottom}
+}
+
+func sequenceParticipantBox(
+	name string,
+	x styling.Length,
+	y styling.Length,
+	layout sequenceLayout,
+	theme Theme,
+) shapes.Shape {
+	return shapes.NewShape(shapes.ShapeTypeRectangle, x, y, layout.participantWidth, layout.participantHeight).
+		WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+		WithText(name).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+}
+
+func sequenceLifeline(x styling.Length, layout sequenceLayout, theme Theme) shapes.Shape {
+	lifelineX := x + layout.participantWidth/2 - styling.Emu(10000)
+	lifelineY := layout.startY + layout.participantHeight
+	return shapes.NewShape(shapes.ShapeTypeRectangle, lifelineX, lifelineY, styling.Emu(20000), layout.lifelineHeight).
+		WithFill(shapes.NewShapeFill(theme.SecondaryStroke))
+}
+
+type sequenceRenderedMessage struct {
+	arrow shapes.Shape
+	text  shapes.Shape
+}
+
+func sequenceMessageShapes(
+	msg Message,
+	participantX map[string]styling.Length,
+	y styling.Length,
+	layout sequenceLayout,
+	theme Theme,
+) (sequenceRenderedMessage, bool) {
+	fromX, fromExists := participantX[msg.From]
+	toX, toExists := participantX[msg.To]
+	if !fromExists || !toExists {
+		return sequenceRenderedMessage{}, false
+	}
+
+	arrowX, arrowWidth, arrowType := sequenceArrowGeometry(fromX, toX, layout.participantWidth)
+	arrow := shapes.NewShape(arrowType, arrowX, y, arrowWidth, styling.Inches(0.15)).
+		WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
+	textShape := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		arrowX,
+		y-styling.Inches(0.25),
+		arrowWidth,
+		styling.Inches(0.2),
+	).WithText(msg.Text).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
+	textShape.Line = nil
+	textShape.Fill = nil
+	return sequenceRenderedMessage{arrow: arrow, text: textShape}, true
+}
+
+func sequenceArrowGeometry(
+	fromX styling.Length,
+	toX styling.Length,
+	participantWidth styling.Length,
+) (styling.Length, styling.Length, string) {
+	fromCenter := fromX + participantWidth/2
+	toCenter := toX + participantWidth/2
+	if fromCenter < toCenter {
+		return fromCenter, toCenter - fromCenter, shapes.ShapeTypeRightArrow
+	}
+	return toCenter, fromCenter - toCenter, shapes.ShapeTypeLeftArrow
 }

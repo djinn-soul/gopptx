@@ -66,7 +66,7 @@ func TestMoveShape(t *testing.T) {
 		idx3 := strings.Index(str, `id="3"`)
 		idx4 := strings.Index(str, `id="4"`)
 
-		if !(idx2 < idx4 && idx4 < idx3) {
+		if idx2 >= idx4 || idx4 >= idx3 {
 			t.Errorf("expected order: A, C, B. Got indices: A=%d, C=%d, B=%d", idx2, idx4, idx3)
 		}
 	})
@@ -85,7 +85,7 @@ func TestMoveShape(t *testing.T) {
 		idx3 := strings.Index(str, `id="3"`)
 		idx4 := strings.Index(str, `id="4"`)
 
-		if !(idx3 < idx2 && idx2 < idx4) {
+		if idx3 >= idx2 || idx2 >= idx4 {
 			t.Errorf("expected order: B, A, C. Got indices: B=%d, A=%d, C=%d", idx3, idx2, idx4)
 		}
 	})
@@ -104,7 +104,7 @@ func TestMoveShape(t *testing.T) {
 		idx3 := strings.Index(str, `id="3"`)
 		idx4 := strings.Index(str, `id="4"`)
 
-		if !(idx2 < idx3 && idx3 < idx4) {
+		if idx2 >= idx3 || idx3 >= idx4 {
 			t.Errorf("expected order: A, B, C. Got indices A=%d, B=%d, C=%d", idx2, idx3, idx4)
 		}
 	})
@@ -123,7 +123,7 @@ func TestMoveShape(t *testing.T) {
 		idx3 := strings.Index(str, `id="3"`)
 		idx4 := strings.Index(str, `id="4"`)
 
-		if !(idx2 < idx3 && idx3 < idx4) {
+		if idx2 >= idx3 || idx3 >= idx4 {
 			t.Errorf("expected order: A, B, C. Got indices A=%d, B=%d, C=%d", idx2, idx3, idx4)
 		}
 	})

@@ -17,6 +17,8 @@ import (
 const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
 
 // Save writes the edited presentation back to a PPTX file.
+//
+//nolint:gocognit // Save flow intentionally sequences materialize/validate/write/cleanup steps with explicit guards.
 func (e *PresentationEditor) Save(filePath string) error {
 	if e == nil {
 		return errors.New("nil editor")

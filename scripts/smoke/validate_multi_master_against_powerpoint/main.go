@@ -28,6 +28,9 @@ var (
 const (
 	relTypeSlideMaster = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster"
 	relTypeSlideLayout = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
+	regexSubmatchLen   = 2
+	minMasterCount     = 2
+	validationErrCap   = 2
 )
 
 type pkgInfo struct {
@@ -105,24 +108,57 @@ func inspectPackage(path string) (*pkgInfo, error) {
 		layoutToMaster:       map[string]string{},
 	}
 
-	for _, f := range zr.File {
+	collectPackageEntries(zr.File, info)
+	sort.Ints(info.masters)
+	sort.Ints(info.layouts)
+
+	if err := parseContentTypes(zr.File, info); err != nil {
+		return nil, err
+	}
+	if err := parsePresentationMasterRIDs(zr.File, info); err != nil {
+		return nil, err
+	}
+	if err := parsePresentationRels(zr.File, info); err != nil {
+		return nil, err
+	}
+	if err := parseSlideLayoutTargets(zr.File, info); err != nil {
+		return nil, err
+	}
+	if err := parseLayoutToMasterTargets(zr.File, info); err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+
+func validateAgainstBaseline(base, cand *pkgInfo) []string {
+	errs := make([]string, 0)
+	errs = append(errs, validateMasterCounts(base, cand)...)
+	errs = append(errs, validateContentTypeOverrides(cand)...)
+	errs = append(errs, validatePresentationMasterRelations(cand)...)
+	errs = append(errs, validateSlideMasterDistribution(cand)...)
+	return dedupe(errs)
+}
+
+func collectPackageEntries(files []*zip.File, info *pkgInfo) {
+	for _, f := range files {
 		name := f.Name
 		info.entrySet[name] = struct{}{}
-		if m := reSlideMasterPath.FindStringSubmatch(name); len(m) == 2 {
+		if m := reSlideMasterPath.FindStringSubmatch(name); len(m) == regexSubmatchLen {
 			idx, _ := strconv.Atoi(m[1])
 			info.masters = append(info.masters, idx)
 		}
-		if m := reSlideLayoutPath.FindStringSubmatch(name); len(m) == 2 {
+		if m := reSlideLayoutPath.FindStringSubmatch(name); len(m) == regexSubmatchLen {
 			idx, _ := strconv.Atoi(m[1])
 			info.layouts = append(info.layouts, idx)
 		}
 	}
-	sort.Ints(info.masters)
-	sort.Ints(info.layouts)
+}
 
-	ct, err := readZipEntry(zr.File, "[Content_Types].xml")
+func parseContentTypes(files []*zip.File, info *pkgInfo) error {
+	ct, err := readZipEntry(files, "[Content_Types].xml")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, m := range reCTMaster.FindAllStringSubmatch(ct, -1) {
 		idx, _ := strconv.Atoi(m[1])
@@ -132,72 +168,99 @@ func inspectPackage(path string) (*pkgInfo, error) {
 		idx, _ := strconv.Atoi(m[1])
 		info.ctLayoutOverrides[idx] = struct{}{}
 	}
+	return nil
+}
 
-	presXML, err := readZipEntry(zr.File, "ppt/presentation.xml")
+func parsePresentationMasterRIDs(files []*zip.File, info *pkgInfo) error {
+	presXML, err := readZipEntry(files, "ppt/presentation.xml")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, m := range reMasterRID.FindAllStringSubmatch(presXML, -1) {
 		info.presentationMasterRIDs = append(info.presentationMasterRIDs, m[1])
 	}
+	return nil
+}
 
-	presRels, err := readZipEntry(zr.File, "ppt/_rels/presentation.xml.rels")
+func parsePresentationRels(files []*zip.File, info *pkgInfo) error {
+	presRels, err := readZipEntry(files, "ppt/_rels/presentation.xml.rels")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, m := range reRel.FindAllStringSubmatch(presRels, -1) {
 		info.presentationRelsByID[m[1]] = relationship{typeURI: m[2], target: m[3]}
 	}
-
-	for entry := range info.entrySet {
-		if !strings.HasPrefix(entry, "ppt/slides/_rels/slide") || !strings.HasSuffix(entry, ".xml.rels") {
-			continue
-		}
-		txt, readErr := readZipEntry(zr.File, entry)
-		if readErr != nil {
-			return nil, readErr
-		}
-		for _, m := range reRel.FindAllStringSubmatch(txt, -1) {
-			if m[2] == relTypeSlideLayout {
-				info.slideLayoutTargets[entry] = m[3]
-				break
-			}
-		}
-	}
-
-	for entry := range info.entrySet {
-		if !strings.HasPrefix(entry, "ppt/slideLayouts/_rels/slideLayout") || !strings.HasSuffix(entry, ".xml.rels") {
-			continue
-		}
-		txt, readErr := readZipEntry(zr.File, entry)
-		if readErr != nil {
-			return nil, readErr
-		}
-		for _, m := range reRel.FindAllStringSubmatch(txt, -1) {
-			if m[2] == relTypeSlideMaster {
-				layoutName := strings.TrimSuffix(filepath.Base(entry), ".rels")
-				info.layoutToMaster[layoutName] = m[3]
-				break
-			}
-		}
-	}
-
-	return info, nil
+	return nil
 }
 
-func validateAgainstBaseline(base, cand *pkgInfo) []string {
-	errs := make([]string, 0)
+func parseSlideLayoutTargets(files []*zip.File, info *pkgInfo) error {
+	for entry := range info.entrySet {
+		if !isSlideRelEntry(entry) {
+			continue
+		}
+		txt, err := readZipEntry(files, entry)
+		if err != nil {
+			return err
+		}
+		if target, ok := findRelationshipTarget(txt, relTypeSlideLayout); ok {
+			info.slideLayoutTargets[entry] = target
+		}
+	}
+	return nil
+}
 
-	if len(base.masters) < 2 {
+func parseLayoutToMasterTargets(files []*zip.File, info *pkgInfo) error {
+	for entry := range info.entrySet {
+		if !isLayoutRelEntry(entry) {
+			continue
+		}
+		txt, err := readZipEntry(files, entry)
+		if err != nil {
+			return err
+		}
+		target, ok := findRelationshipTarget(txt, relTypeSlideMaster)
+		if !ok {
+			continue
+		}
+		layoutName := strings.TrimSuffix(filepath.Base(entry), ".rels")
+		info.layoutToMaster[layoutName] = target
+	}
+	return nil
+}
+
+func isSlideRelEntry(entry string) bool {
+	return strings.HasPrefix(entry, "ppt/slides/_rels/slide") && strings.HasSuffix(entry, ".xml.rels")
+}
+
+func isLayoutRelEntry(entry string) bool {
+	return strings.HasPrefix(entry, "ppt/slideLayouts/_rels/slideLayout") && strings.HasSuffix(entry, ".xml.rels")
+}
+
+func findRelationshipTarget(relsXML string, relType string) (string, bool) {
+	for _, m := range reRel.FindAllStringSubmatch(relsXML, -1) {
+		if m[2] == relType {
+			return m[3], true
+		}
+	}
+	return "", false
+}
+
+func validateMasterCounts(base, cand *pkgInfo) []string {
+	errs := make([]string, 0, validationErrCap)
+	if len(base.masters) < minMasterCount {
 		errs = append(errs, "baseline does not look multi-master (expected >=2 masters)")
 	}
-	if len(cand.masters) < 2 {
+	if len(cand.masters) < minMasterCount {
 		errs = append(
 			errs,
 			fmt.Sprintf("candidate has only %d master(s); expected multi-master (>=2)", len(cand.masters)),
 		)
 	}
+	return errs
+}
 
+func validateContentTypeOverrides(cand *pkgInfo) []string {
+	errs := make([]string, 0)
 	for _, idx := range cand.masters {
 		if _, ok := cand.ctMasterOverrides[idx]; !ok {
 			errs = append(
@@ -214,7 +277,11 @@ func validateAgainstBaseline(base, cand *pkgInfo) []string {
 			)
 		}
 	}
+	return errs
+}
 
+func validatePresentationMasterRelations(cand *pkgInfo) []string {
+	errs := make([]string, 0)
 	for _, rid := range cand.presentationMasterRIDs {
 		rel, ok := cand.presentationRelsByID[rid]
 		if !ok {
@@ -232,7 +299,11 @@ func validateAgainstBaseline(base, cand *pkgInfo) []string {
 			errs = append(errs, fmt.Sprintf("presentation master rel target missing part: %s", part))
 		}
 	}
+	return errs
+}
 
+func validateSlideMasterDistribution(cand *pkgInfo) []string {
+	errs := make([]string, 0)
 	masterUsage := map[string]int{}
 	for slideRel, target := range cand.slideLayoutTargets {
 		layoutPart := cleanPartTarget("ppt/slides", target)
@@ -253,12 +324,10 @@ func validateAgainstBaseline(base, cand *pkgInfo) []string {
 		}
 		masterUsage[filepath.Base(masterPart)]++
 	}
-
-	if len(cand.masters) > 1 && len(masterUsage) < 2 {
+	if len(cand.masters) > 1 && len(masterUsage) < minMasterCount {
 		errs = append(errs, "slides are not distributed across multiple master families")
 	}
-
-	return dedupe(errs)
+	return errs
 }
 
 func cleanPartTarget(baseDir, target string) string {

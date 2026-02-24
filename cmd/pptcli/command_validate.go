@@ -15,11 +15,13 @@ import (
 
 const initialIssueCapacity = 8
 
-var requiredParts = []string{
-	"[Content_Types].xml",
-	"_rels/.rels",
-	"ppt/presentation.xml",
-	"docProps/core.xml",
+func requiredPPTXParts() []string {
+	return []string{
+		"[Content_Types].xml",
+		"_rels/.rels",
+		"ppt/presentation.xml",
+		"docProps/core.xml",
+	}
 }
 
 // runValidateCommand validates a PPTX file structure.
@@ -105,7 +107,7 @@ func validatePPTXFile(path string) ([]string, error) {
 		}
 	}
 
-	for _, required := range requiredParts {
+	for _, required := range requiredPPTXParts() {
 		if _, ok := names[required]; !ok {
 			issues = append(issues, fmt.Sprintf("missing required part %q", required))
 		}

@@ -40,56 +40,7 @@ func parseGantt(code string) *GanttDiagram {
 	var currentSection *GanttSection
 
 	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		lower := strings.ToLower(trimmed)
-
-		if strings.HasPrefix(lower, "gantt") {
-			continue
-		}
-
-		if strings.HasPrefix(lower, "title") {
-			gantt.Title = strings.TrimSpace(trimmed[5:])
-			continue
-		}
-
-		if strings.HasPrefix(lower, "section") {
-			if currentSection != nil {
-				gantt.Sections = append(gantt.Sections, *currentSection)
-			}
-			currentSection = &GanttSection{
-				Name:  strings.TrimSpace(trimmed[7:]),
-				Tasks: []GanttTask{},
-			}
-			continue
-		}
-
-		if strings.Contains(trimmed, ":") {
-			parts := strings.Split(trimmed, ":")
-			taskName := strings.TrimSpace(parts[0])
-			taskDetails := strings.TrimSpace(parts[1])
-
-			details := strings.Split(taskDetails, ",")
-			task := GanttTask{Name: taskName}
-
-			// Very basic parsing of task details
-			// Format: [status,] [id,] [start,] duration
-			for i, detail := range details {
-				detail = strings.TrimSpace(detail)
-				if i == len(details)-1 {
-					task.Duration = detail
-				} else if i == 0 {
-					// Could be status, id, or start
-					task.ID = detail
-				} else if i == 1 {
-					task.Start = detail
-				}
-			}
-
-			if currentSection == nil {
-				currentSection = &GanttSection{Name: "Default", Tasks: []GanttTask{}}
-			}
-			currentSection.Tasks = append(currentSection.Tasks, task)
-		}
+		currentSection = consumeGanttLine(gantt, currentSection, strings.TrimSpace(line))
 	}
 
 	if currentSection != nil {
@@ -97,6 +48,75 @@ func parseGantt(code string) *GanttDiagram {
 	}
 
 	return gantt
+}
+
+func consumeGanttLine(gantt *GanttDiagram, currentSection *GanttSection, trimmed string) *GanttSection {
+	if trimmed == "" {
+		return currentSection
+	}
+	lower := strings.ToLower(trimmed)
+	if strings.HasPrefix(lower, "gantt") {
+		return currentSection
+	}
+	if title, ok := parseGanttTitle(trimmed, lower); ok {
+		gantt.Title = title
+		return currentSection
+	}
+	if sectionName, ok := parseGanttSectionName(trimmed, lower); ok {
+		if currentSection != nil {
+			gantt.Sections = append(gantt.Sections, *currentSection)
+		}
+		return &GanttSection{Name: sectionName, Tasks: []GanttTask{}}
+	}
+	task, ok := parseGanttTask(trimmed)
+	if !ok {
+		return currentSection
+	}
+	currentSection = ensureGanttSection(currentSection)
+	currentSection.Tasks = append(currentSection.Tasks, task)
+	return currentSection
+}
+
+func parseGanttTitle(trimmed string, lower string) (string, bool) {
+	if !strings.HasPrefix(lower, "title") {
+		return "", false
+	}
+	return strings.TrimSpace(trimmed[5:]), true
+}
+
+func parseGanttSectionName(trimmed string, lower string) (string, bool) {
+	if !strings.HasPrefix(lower, "section") {
+		return "", false
+	}
+	return strings.TrimSpace(trimmed[7:]), true
+}
+
+func parseGanttTask(trimmed string) (GanttTask, bool) {
+	taskName, taskDetails, ok := strings.Cut(trimmed, ":")
+	if !ok {
+		return GanttTask{}, false
+	}
+	task := GanttTask{Name: strings.TrimSpace(taskName)}
+	details := strings.Split(taskDetails, ",")
+	for i, detail := range details {
+		detail = strings.TrimSpace(detail)
+		switch {
+		case i == len(details)-1:
+			task.Duration = detail
+		case i == 0:
+			task.ID = detail
+		case i == 1:
+			task.Start = detail
+		}
+	}
+	return task, true
+}
+
+func ensureGanttSection(currentSection *GanttSection) *GanttSection {
+	if currentSection != nil {
+		return currentSection
+	}
+	return &GanttSection{Name: "Default", Tasks: []GanttTask{}}
 }
 
 func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {

@@ -13,6 +13,8 @@ const (
 	emusPerDegree       = 60000
 	transparencyBase    = 100000
 	defaultMargin       = 457200
+	customShapeGrowCap  = 2048
+	midpointDivisor     = 2
 )
 
 // ShapeFillSpec describes solid fill properties for a custom shape.
@@ -123,7 +125,7 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	}
 
 	var b strings.Builder
-	b.Grow(2048)
+	b.Grow(customShapeGrowCap)
 	b.WriteString(`
 <p:sp>
 <p:nvSpPr>
@@ -235,11 +237,35 @@ func customShapeTextBody(shape ShapeSpec) string {
 	}
 
 	autoFitXML := `<a:spAutoFit/>`
-	bodyPrChildren := autoFitXML
-	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(defaultMargin) + `" tIns="` + strconv.Itoa(defaultMargin) + `" rIns="` + strconv.Itoa(defaultMargin) + `" bIns="` + strconv.Itoa(defaultMargin) + `"`
+	var bodyPrChildren string
+	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `" tIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `" rIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `" bIns="` + strconv.Itoa(
+		defaultMargin,
+	) + `"`
 
 	if shape.TextFrame != nil {
-		bodyPrAttr = ` wrap="` + Escape(shape.TextFrame.Wrap) + `" rtlCol="0" anchor="` + Escape(shape.TextFrame.Anchor) + `" lIns="` + strconv.FormatInt(shape.TextFrame.MarginLeft, 10) + `" tIns="` + strconv.FormatInt(shape.TextFrame.MarginTop, 10) + `" rIns="` + strconv.FormatInt(shape.TextFrame.MarginRight, 10) + `" bIns="` + strconv.FormatInt(shape.TextFrame.MarginBottom, 10) + `"`
+		bodyPrAttr = ` wrap="` + Escape(
+			shape.TextFrame.Wrap,
+		) + `" rtlCol="0" anchor="` + Escape(
+			shape.TextFrame.Anchor,
+		) + `" lIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginLeft,
+			10,
+		) + `" tIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginTop,
+			10,
+		) + `" rIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginRight,
+			10,
+		) + `" bIns="` + strconv.FormatInt(
+			shape.TextFrame.MarginBottom,
+			10,
+		) + `"`
 		switch shape.TextFrame.AutoFit {
 		case "spAutoFit":
 			autoFitXML = `<a:spAutoFit/>`
@@ -343,8 +369,8 @@ func connectorLabelShape(connector ConnectorSpec, shapeID int) string {
 	if label == "" {
 		return ""
 	}
-	x := (connector.StartX + connector.EndX) / 2
-	y := (connector.StartY + connector.EndY) / 2
+	x := (connector.StartX + connector.EndX) / midpointDivisor
+	y := (connector.StartY + connector.EndY) / midpointDivisor
 	const (
 		labelWidth  = 914400
 		labelHeight = 228600

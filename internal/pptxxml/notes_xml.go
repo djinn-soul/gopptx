@@ -7,6 +7,9 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
+const notesMasterImageRelIDOffset = 2
+const defaultNotesFontSizePt = 12
+
 // NotesSlide renders one notes slide XML part.
 func NotesSlide(paragraphs []text.Paragraph) string {
 	paragraphsXML := notesParagraphsXML(paragraphs)
@@ -269,7 +272,7 @@ func NotesMasterRelationships(themeIndex int, imageTargets []string) string {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(themeIndex) + `.xml"/>`)
 
 	for i, target := range imageTargets {
-		rid := i + 2
+		rid := i + notesMasterImageRelIDOffset
 		b.WriteString(`
 <Relationship Id="rId` + strconv.Itoa(rid) + `" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="` + Escape(target) + `"/>`)
 	}
@@ -284,8 +287,7 @@ func notesParagraphsXML(paragraphs []text.Paragraph) string {
 <a:p><a:endParaRPr lang="en-US"/></a:p>`
 	}
 	var b strings.Builder
-	//nolint:mnd // Default notes font size (12pt)
-	defaultStyle := ContentStyleSpec{SizePt: 12}
+	defaultStyle := ContentStyleSpec{SizePt: defaultNotesFontSizePt}
 
 	for _, p := range paragraphs {
 		styleSpec := convertNotesStyle(p.Style)

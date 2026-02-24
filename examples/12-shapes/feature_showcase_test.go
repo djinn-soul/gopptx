@@ -44,13 +44,16 @@ func TestBuildShowcaseSlidesTableBordersConfigured(t *testing.T) {
 	if cell.BorderLeft == nil || cell.BorderLeft.Color != "AA0000" || cell.BorderLeft.Dash != pptx.TableBorderDashDash {
 		t.Fatalf("left border = %#v, want color AA0000 dash %q", cell.BorderLeft, pptx.TableBorderDashDash)
 	}
-	if cell.BorderRight == nil || cell.BorderRight.Color != "00AA00" || cell.BorderRight.Dash != pptx.TableBorderDashDot {
+	if cell.BorderRight == nil || cell.BorderRight.Color != "00AA00" ||
+		cell.BorderRight.Dash != pptx.TableBorderDashDot {
 		t.Fatalf("right border = %#v, want color 00AA00 dash %q", cell.BorderRight, pptx.TableBorderDashDot)
 	}
-	if cell.BorderTop == nil || cell.BorderTop.Color != "0000AA" || cell.BorderTop.Dash != pptx.TableBorderDashLongDash {
+	if cell.BorderTop == nil || cell.BorderTop.Color != "0000AA" ||
+		cell.BorderTop.Dash != pptx.TableBorderDashLongDash {
 		t.Fatalf("top border = %#v, want color 0000AA dash %q", cell.BorderTop, pptx.TableBorderDashLongDash)
 	}
-	if cell.BorderBottom == nil || cell.BorderBottom.Color != "777777" || cell.BorderBottom.Dash != pptx.TableBorderDashSolid {
+	if cell.BorderBottom == nil || cell.BorderBottom.Color != "777777" ||
+		cell.BorderBottom.Dash != pptx.TableBorderDashSolid {
 		t.Fatalf("bottom border = %#v, want color 777777 dash %q", cell.BorderBottom, pptx.TableBorderDashSolid)
 	}
 }

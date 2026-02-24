@@ -1,6 +1,10 @@
 package editor
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+	"maps"
+)
 
 type batchCommand struct {
 	Op        string          `json:"op"`
@@ -107,9 +111,7 @@ func withBatchIndex(index int, details any) map[string]any {
 		return out
 	}
 	if m, ok := details.(map[string]any); ok {
-		for k, v := range m {
-			out[k] = v
-		}
+		maps.Copy(out, m)
 		return out
 	}
 	out["cause"] = details
@@ -118,7 +120,8 @@ func withBatchIndex(index int, details any) map[string]any {
 
 // AsBridgeError checks if an error is a BridgeError and extracts it.
 func AsBridgeError(err error, target **BridgeError) bool {
-	if be, ok := err.(*BridgeError); ok {
+	be := &BridgeError{}
+	if errors.As(err, &be) {
 		*target = be
 		return true
 	}

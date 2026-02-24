@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -15,7 +16,7 @@ const (
 )
 
 func main() {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		fail("create output directory", err)
 	}
 
@@ -30,7 +31,7 @@ func main() {
 	}
 
 	path := filepath.Join(outputDir, outputFile)
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		fail("write output", err)
 	}
 
@@ -81,50 +82,8 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 				}),
 		),
 
-		func() pptx.SlideContent {
-			slide := pptx.NewSlide("Layout Helpers (2x3 Grid)")
-			boxes, _ := pptx.Grid(2, 3, pptx.Inches(0.5))
-			for i, box := range boxes {
-				slide = slide.AddShape(
-					pptx.NewShape(pptx.ShapeTypeRoundedRectangle, box.X, box.Y, box.CX, box.CY).
-						WithText(fmt.Sprintf("Item %d", i+1)).
-						WithFill(pptx.NewShapeFill("ED7D31")).
-						WithLine(pptx.NewShapeLine("C65911", pptx.Points(1))),
-				)
-			}
-			return slide
-		}(),
-
-		pptx.NewSlide("").WithBlankLayout().
-			AddShape(
-				pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(0.9), pptx.Inches(1.8), pptx.Inches(2.6), pptx.Inches(1.1)).
-					WithText("Input").
-					WithFill(pptx.NewShapeFill("D9E1F2")).
-					WithLine(pptx.NewShapeLine("5B9BD5", pptx.Points(1.5))),
-			).
-			AddShape(
-				pptx.NewShape(pptx.ShapeTypeFlowChartDecision, pptx.Inches(4.1), pptx.Inches(1.6), pptx.Inches(2.8), pptx.Inches(1.6)).
-					WithText("Validate").
-					WithGradientFill(
-						pptx.NewShapeGradientFill(
-							pptx.ShapeGradientTypeLinear,
-							[]pptx.ShapeGradientStop{
-								pptx.NewShapeGradientStop(0, "4472C4"),
-								pptx.NewShapeGradientStop(100, "8FB9E0").WithTransparency(0.2),
-							},
-						).WithLinearAngle(35),
-					).
-					WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.5))),
-			).
-			AddConnector(
-				pptx.NewElbowConnector(pptx.Inches(3.5), pptx.Inches(2.35), pptx.Inches(4.1), pptx.Inches(2.35)).
-					WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.1)).WithDash(pptx.LineDashDashDot)).
-					WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle).
-					WithArrowSize(pptx.ArrowSizeLarge).
-					ConnectStartAuto(1).
-					ConnectEndAuto(2).
-					WithLabel("next"),
-			),
+		layoutHelpersGridSlide(),
+		flowDiagramSlide(),
 
 		pptx.NewSlide("Chart Sample (Combo)").WithComboChart(
 			pptx.NewComboChart(
@@ -153,6 +112,53 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 	}
 
 	return append(slides, mdSlides...), nil
+}
+
+func layoutHelpersGridSlide() pptx.SlideContent {
+	slide := pptx.NewSlide("Layout Helpers (2x3 Grid)")
+	boxes, _ := pptx.Grid(2, 3, pptx.Inches(0.5))
+	for i, box := range boxes {
+		slide = slide.AddShape(
+			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, box.X, box.Y, box.CX, box.CY).
+				WithText(fmt.Sprintf("Item %d", i+1)).
+				WithFill(pptx.NewShapeFill("ED7D31")).
+				WithLine(pptx.NewShapeLine("C65911", pptx.Points(1))),
+		)
+	}
+	return slide
+}
+
+func flowDiagramSlide() pptx.SlideContent {
+	return pptx.NewSlide("").WithBlankLayout().
+		AddShape(
+			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(0.9), pptx.Inches(1.8), pptx.Inches(2.6), pptx.Inches(1.1)).
+				WithText("Input").
+				WithFill(pptx.NewShapeFill("D9E1F2")).
+				WithLine(pptx.NewShapeLine("5B9BD5", pptx.Points(1.5))),
+		).
+		AddShape(
+			pptx.NewShape(pptx.ShapeTypeFlowChartDecision, pptx.Inches(4.1), pptx.Inches(1.6), pptx.Inches(2.8), pptx.Inches(1.6)).
+				WithText("Validate").
+				WithGradientFill(
+					pptx.NewShapeGradientFill(
+						pptx.ShapeGradientTypeLinear,
+						[]pptx.ShapeGradientStop{
+							pptx.NewShapeGradientStop(0, "4472C4"),
+							pptx.NewShapeGradientStop(100, "8FB9E0").WithTransparency(0.2),
+						},
+					).WithLinearAngle(35),
+				).
+				WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.5))),
+		).
+		AddConnector(
+			pptx.NewElbowConnector(pptx.Inches(3.5), pptx.Inches(2.35), pptx.Inches(4.1), pptx.Inches(2.35)).
+				WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.1)).WithDash(pptx.LineDashDashDot)).
+				WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle).
+				WithArrowSize(pptx.ArrowSizeLarge).
+				ConnectStartAuto(1).
+				ConnectEndAuto(2).
+				WithLabel("next"),
+		)
 }
 
 func fail(step string, err error) {

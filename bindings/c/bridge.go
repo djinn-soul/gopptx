@@ -16,7 +16,6 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 //nolint:gochecknoglobals // global bridge state
@@ -24,17 +23,6 @@ var (
 	globalErrorMu sync.RWMutex
 	globalError   string
 	deckRegistry  = editor.NewEditorRegistry()
-)
-
-//nolint:gochecknoglobals // theme presets
-var (
-	ThemeCorporate = styling.ThemeCorporate
-	ThemeModern    = styling.ThemeModern
-	ThemeVibrant   = styling.ThemeVibrant
-	ThemeDark      = styling.ThemeDark
-	ThemeNature    = styling.ThemeNature
-	ThemeTech      = styling.ThemeTech
-	ThemeCarbon    = styling.ThemeCarbon
 )
 
 // setGlobalError safely sets the global error message.
@@ -58,7 +46,7 @@ func deck_global_error() *C.char {
 	return C.CString(globalError)
 }
 
-// main is required for cgo build but not used for library
+// main is required for cgo build but not used for library.
 func main() {}
 
 // recoverPanic prevents Go panics from crashing the C host.

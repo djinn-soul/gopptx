@@ -1,11 +1,12 @@
-from __future__ import annotations
+"""Exception classes for gopptx library."""
 
-from typing import Optional
+from __future__ import annotations
 
 
 class GopptxError(Exception):
     """Base exception for gopptx library errors."""
 
-    def __init__(self, message: str, code: Optional[str] = None):
+    def __init__(self, message: str, code: str | None = None) -> None:
+        """Initialize the error with message and optional error code."""
         super().__init__(message)
         self.code = code

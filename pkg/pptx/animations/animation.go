@@ -98,6 +98,48 @@ type Animation struct {
 
 const defaultAnimationDurationMS = 500
 
+const (
+	presetIDAppear               uint32 = 1
+	presetIDFly                  uint32 = 2
+	presetIDFade                 uint32 = 10
+	presetIDFloat                uint32 = 14
+	presetIDRandomBars           uint32 = 15
+	presetIDSplit                uint32 = 16
+	presetIDShape                uint32 = 17
+	presetIDSwivel               uint32 = 19
+	presetIDWheel                uint32 = 21
+	presetIDWipe                 uint32 = 22
+	presetIDZoom                 uint32 = 23
+	presetIDBounce               uint32 = 25
+	presetIDGrowAndTurn          uint32 = 26
+	presetIDEmphasisPulse        uint32 = 31
+	presetIDColorPulse           uint32 = 32
+	presetIDTeeter               uint32 = 33
+	presetIDSpin                 uint32 = 34
+	presetIDGrowShrink           uint32 = 35
+	presetIDDesaturate           uint32 = 36
+	presetIDDarken               uint32 = 37
+	presetIDLighten              uint32 = 38
+	presetIDTransparency         uint32 = 39
+	presetIDObjectColor          uint32 = 40
+	presetIDPathLines            uint32 = 42
+	presetIDPathArcs             uint32 = 43
+	presetIDPathTurns            uint32 = 44
+	presetIDPathShapes           uint32 = 45
+	presetIDPathLoops            uint32 = 46
+	presetIDPathCustom           uint32 = 47
+	presetSubtypeFromTop                = 1
+	presetSubtypeFromRight              = 2
+	presetSubtypeFromTopRight           = 3
+	presetSubtypeFromLeft               = 4
+	presetSubtypeFromTopLeft            = 5
+	presetSubtypeFromBottomRight        = 6
+	presetSubtypeFromBottomLeft         = 7
+	presetSubtypeFromBottom             = 8
+	presetSubtypeSplitIn                = 1
+	presetSubtypeSplitOut               = 2
+)
+
 // NewAnimation creates a new animation with default settings (500ms duration, OnClick).
 func NewAnimation(shapeIndex int, effect AnimationEffect) Animation {
 	return Animation{
@@ -189,83 +231,80 @@ func (a Animation) PresetID() uint32 {
 	return 0
 }
 
-//nolint:mnd // Preset IDs are from OOXML spec
 func (a Animation) presetIDEntranceExit() uint32 {
 	switch a.Effect {
 	case AnimationEntranceAppear, AnimationExitDisappear:
-		return 1
+		return presetIDAppear
 	case AnimationEntranceFade, AnimationExitFadeOut:
-		return 10
+		return presetIDFade
 	case AnimationEntranceFlyIn, AnimationExitFlyOut:
-		return 2
+		return presetIDFly
 	case AnimationEntranceFloat, AnimationExitFloatOut:
-		return 14
+		return presetIDFloat
 	case AnimationEntranceSplit:
-		return 16
+		return presetIDSplit
 	case AnimationEntranceWipe:
-		return 22
+		return presetIDWipe
 	case AnimationEntranceShape:
-		return 17
+		return presetIDShape
 	case AnimationEntranceWheel:
-		return 21
+		return presetIDWheel
 	case AnimationEntranceRandomBars:
-		return 15
+		return presetIDRandomBars
 	case AnimationEntranceGrowAndTurn:
-		return 26
+		return presetIDGrowAndTurn
 	case AnimationEntranceZoom:
-		return 23
+		return presetIDZoom
 	case AnimationEntranceSwivel:
-		return 19
+		return presetIDSwivel
 	case AnimationEntranceBounce:
-		return 25
+		return presetIDBounce
 	default:
 		return 0
 	}
 }
 
-//nolint:mnd // Preset IDs are from OOXML spec
 func (a Animation) presetIDEmphasis() uint32 {
 	switch a.Effect {
 	case AnimationEmphasisPulse:
-		return 31
+		return presetIDEmphasisPulse
 	case AnimationEmphasisColorPulse:
-		return 32
+		return presetIDColorPulse
 	case AnimationEmphasisTeeter:
-		return 33
+		return presetIDTeeter
 	case AnimationEmphasisSpin:
-		return 34
+		return presetIDSpin
 	case AnimationEmphasisGrowShrink:
-		return 35
+		return presetIDGrowShrink
 	case AnimationEmphasisDesaturate:
-		return 36
+		return presetIDDesaturate
 	case AnimationEmphasisDarken:
-		return 37
+		return presetIDDarken
 	case AnimationEmphasisLighten:
-		return 38
+		return presetIDLighten
 	case AnimationEmphasisTransparency:
-		return 39
+		return presetIDTransparency
 	case AnimationEmphasisObjectColor:
-		return 40
+		return presetIDObjectColor
 	default:
 		return 0
 	}
 }
 
-//nolint:mnd // Preset IDs are from OOXML spec
 func (a Animation) presetIDPath() uint32 {
 	switch a.Effect {
 	case AnimationPathLines:
-		return 42
+		return presetIDPathLines
 	case AnimationPathArcs:
-		return 43
+		return presetIDPathArcs
 	case AnimationPathTurns:
-		return 44
+		return presetIDPathTurns
 	case AnimationPathShapes:
-		return 45
+		return presetIDPathShapes
 	case AnimationPathLoops:
-		return 46
+		return presetIDPathLoops
 	case AnimationPathCustom:
-		return 47
+		return presetIDPathCustom
 	default:
 		return 0
 	}
@@ -331,52 +370,51 @@ func (a Animation) XML(seqID int, actualShapeID int) string {
 	)
 }
 
-//nolint:mnd // Preset subtypes are from OOXML spec
 func (a Animation) PresetSubtype() int {
 	// Mapping based on MS-PPTX / OOXML standards for common effects.
 	switch a.Effect {
 	case AnimationEntranceFlyIn, AnimationExitFlyOut:
 		switch a.Direction {
 		case AnimationDirDown:
-			return 1 // From Top
+			return presetSubtypeFromTop
 		case AnimationDirLeft:
-			return 2 // From Right
+			return presetSubtypeFromRight
 		case AnimationDirRight:
-			return 4 // From Left
+			return presetSubtypeFromLeft
 		case AnimationDirUp:
-			return 8 // From Bottom
+			return presetSubtypeFromBottom
 		case AnimationDirDownLeft:
-			return 3 // From Top-Right
+			return presetSubtypeFromTopRight
 		case AnimationDirDownRight:
-			return 5 // From Top-Left
+			return presetSubtypeFromTopLeft
 		case AnimationDirUpLeft:
-			return 6 // From Bottom-Right
+			return presetSubtypeFromBottomRight
 		case AnimationDirUpRight:
-			return 7 // From Bottom-Left
+			return presetSubtypeFromBottomLeft
 		default:
-			return 8 // Default "From Bottom"
+			return presetSubtypeFromBottom
 		}
 	case AnimationEntranceWipe, AnimationEntranceFloat:
 		switch a.Direction {
 		case AnimationDirUp:
-			return 4
+			return presetSubtypeFromLeft
 		case AnimationDirDown:
-			return 8
+			return presetSubtypeFromBottom
 		case AnimationDirLeft:
-			return 1
+			return presetSubtypeFromTop
 		case AnimationDirRight:
-			return 2
+			return presetSubtypeFromRight
 		default:
-			return 4
+			return presetSubtypeFromLeft
 		}
 	case AnimationEntranceSplit:
 		switch a.Direction {
 		case AnimationDirIn:
-			return 1
+			return presetSubtypeSplitIn
 		case AnimationDirOut:
-			return 2
+			return presetSubtypeSplitOut
 		default:
-			return 2
+			return presetSubtypeSplitOut
 		}
 	default:
 		return 0

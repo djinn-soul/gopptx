@@ -14,8 +14,8 @@ type Theme struct {
 	LineWeight      styling.Length
 }
 
-var themes = map[string]Theme{
-	"default": {
+func defaultTheme() Theme {
+	return Theme{
 		Name:            "default",
 		Background:      "FFFFFF",
 		PrimaryFill:     "ECECFF",
@@ -24,8 +24,11 @@ var themes = map[string]Theme{
 		SecondaryStroke: "757575",
 		TextColor:       "333333",
 		LineWeight:      styling.Points(1),
-	},
-	"forest": {
+	}
+}
+
+func forestTheme() Theme {
+	return Theme{
 		Name:            "forest",
 		Background:      "FFFFFF",
 		PrimaryFill:     "DDFFDD",
@@ -34,8 +37,11 @@ var themes = map[string]Theme{
 		SecondaryStroke: "2E8B57",
 		TextColor:       "004400",
 		LineWeight:      styling.Points(1),
-	},
-	"dark": {
+	}
+}
+
+func darkTheme() Theme {
+	return Theme{
 		Name:            "dark",
 		Background:      "333333",
 		PrimaryFill:     "1F2020",
@@ -44,8 +50,11 @@ var themes = map[string]Theme{
 		SecondaryStroke: "CCCCCC",
 		TextColor:       "F0F0F0",
 		LineWeight:      styling.Points(1),
-	},
-	"neutral": {
+	}
+}
+
+func neutralTheme() Theme {
+	return Theme{
 		Name:            "neutral",
 		Background:      "FFFFFF",
 		PrimaryFill:     "EEEEEE",
@@ -54,13 +63,19 @@ var themes = map[string]Theme{
 		SecondaryStroke: "666666",
 		TextColor:       "000000",
 		LineWeight:      styling.Points(1),
-	},
+	}
 }
 
 // GetTheme returns a Theme by name. If not found, returns the default theme.
 func GetTheme(name string) Theme {
-	if theme, ok := themes[name]; ok {
-		return theme
+	switch name {
+	case "forest":
+		return forestTheme()
+	case "dark":
+		return darkTheme()
+	case "neutral":
+		return neutralTheme()
+	default:
+		return defaultTheme()
 	}
-	return themes["default"]
 }

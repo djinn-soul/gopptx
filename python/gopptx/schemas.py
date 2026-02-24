@@ -1,6 +1,6 @@
-from __future__ import annotations
+"""Type definitions for gopptx library."""
 
-from typing import List
+from __future__ import annotations
 
 try:
     from typing import TypedDict
@@ -9,17 +9,23 @@ except ImportError:  # pragma: no cover
 
 
 class SlideSize(TypedDict):
+    """Slide dimensions in EMUs."""
+
     width: int
     height: int
 
 
 class PresentationMetadata(TypedDict):
+    """Presentation metadata."""
+
     title: str
     slide_count: int
     size: SlideSize
 
 
 class CoreProperties(TypedDict, total=False):
+    """Core document properties."""
+
     title: str
     subject: str
     creator: str
@@ -34,10 +40,14 @@ class CoreProperties(TypedDict, total=False):
 
 
 class ShapeProps(TypedDict, total=False):
+    """Shape properties."""
+
     name: str
 
 
 class ShapeUpdate(TypedDict, total=False):
+    """Shape update parameters."""
+
     text: str
     x: int
     y: int
@@ -46,6 +56,8 @@ class ShapeUpdate(TypedDict, total=False):
 
 
 class Shape(TypedDict):
+    """Shape information."""
+
     ID: int
     Name: str
     Type: str
@@ -57,43 +69,57 @@ class Shape(TypedDict):
 
 
 class ChartSelector(TypedDict, total=False):
+    """Chart selector for identifying charts."""
+
     index: int
     rel_id: str
 
 
 class ChartSeriesData(TypedDict, total=False):
+    """Chart series data for updates."""
+
     name: str
-    categories: List[str]
-    values: List[float]
-    x_values: List[float]
-    y_values: List[float]
-    sizes: List[float]
+    categories: list[str]
+    values: list[float]
+    x_values: list[float]
+    y_values: list[float]
+    sizes: list[float]
 
 
 class ChartDataUpdate(TypedDict, total=False):
-    categories: List[str]
-    series: List[ChartSeriesData]
+    """Chart data update payload."""
+
+    categories: list[str]
+    series: list[ChartSeriesData]
 
 
 class SlideChartRef(TypedDict):
+    """Reference to a chart on a slide."""
+
     Index: int
     RelID: str
     ChartPart: str
 
 
 class SlideLayoutInfo(TypedDict):
+    """Information about a slide layout."""
+
     Part: str
     Name: str
     MasterPart: str
 
 
 class SlideMasterCloneResult(TypedDict):
+    """Result of cloning a slide master."""
+
     MasterPart: str
     ThemePart: str
     LayoutMap: dict[str, str]
 
 
 class SlideMetadata(TypedDict):
+    """Metadata for a slide."""
+
     Index: int
     SlideID: int
     RelationshipID: str
@@ -102,12 +128,16 @@ class SlideMetadata(TypedDict):
 
 
 class Section(TypedDict):
+    """Section in a presentation."""
+
     Name: str
     GUID: str
-    SlideIDs: List[int]
+    SlideIDs: list[int]
 
 
 class ShapeSearchQuery(TypedDict, total=False):
+    """Query parameters for searching shapes."""
+
     name_contains: str
     type_equals: str
     text_contains: str
@@ -115,11 +145,15 @@ class ShapeSearchQuery(TypedDict, total=False):
 
 
 class ShapeSearchResult(TypedDict):
+    """Result of a shape search."""
+
     SlideIndex: int
     Shape: Shape
 
 
 class Author(TypedDict):
+    """Author information for comments."""
+
     ID: int
     Name: str
     Initials: str
@@ -127,6 +161,8 @@ class Author(TypedDict):
 
 
 class Comment(TypedDict):
+    """Comment on a slide."""
+
     AuthorID: int
     Text: str
     Created: str
@@ -136,26 +172,34 @@ class Comment(TypedDict):
 
 
 class BatchCommand(TypedDict, total=False):
+    """Command for batch operations."""
+
     op: str
-    payload: dict
+    payload: dict[str, object]
     request_id: str
 
 
 class BatchErrorDetail(TypedDict, total=False):
+    """Error details for a failed batch item."""
+
     code: str
     message: str
-    details: dict
+    details: dict[str, object]
 
 
 class BatchItemResult(TypedDict, total=False):
+    """Result of a single batch item."""
+
     ok: bool
     op: str
     request_id: str
-    result: dict
+    result: dict[str, object]
     error: BatchErrorDetail
 
 
 class TableCellInfo(TypedDict):
+    """Information about a table cell."""
+
     row: int
     col: int
     row_span: int
@@ -168,6 +212,8 @@ class TableCellInfo(TypedDict):
 
 
 class TableInfo(TypedDict):
+    """Information about a table."""
+
     row_count: int
     col_count: int
     first_row: bool
@@ -176,4 +222,4 @@ class TableInfo(TypedDict):
     last_col: bool
     band_row: bool
     band_col: bool
-    cells: List[TableCellInfo]
+    cells: list[TableCellInfo]

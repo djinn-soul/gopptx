@@ -1,6 +1,7 @@
 package urlfetch
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,10 +9,12 @@ import (
 	"time"
 )
 
+const maxRedirects = 10
+
 // WebFetcher fetches HTML from URLs using net/http.
 type WebFetcher struct {
 	client http.Client
-	cfg    URLFetchConfig
+	cfg    Config
 }
 
 // NewWebFetcher creates a WebFetcher with default config.
@@ -20,12 +23,12 @@ func NewWebFetcher() *WebFetcher {
 }
 
 // NewWebFetcherWithConfig creates a WebFetcher with custom config.
-func NewWebFetcherWithConfig(cfg URLFetchConfig) *WebFetcher {
+func NewWebFetcherWithConfig(cfg Config) *WebFetcher {
 	return &WebFetcher{
 		client: http.Client{
 			Timeout: time.Duration(cfg.TimeoutSecs) * time.Second,
 			CheckRedirect: func(_ *http.Request, via []*http.Request) error {
-				if len(via) >= 10 {
+				if len(via) >= maxRedirects {
 					return fmt.Errorf("stopped after %d redirects", len(via))
 				}
 				return nil
@@ -57,7 +60,7 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid MaxBodyBytes: %d", f.cfg.MaxBodyBytes)
 	}
 
-	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, rawURL, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("build request: %w", err)
 	}

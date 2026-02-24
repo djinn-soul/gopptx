@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,14 +13,20 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	const outputDir = "examples/output"
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		log.Fatalf("Failed to create output directory: %v", err)
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	tmpDir, tempErr := os.MkdirTemp("", "gopptx-example-39-*")
 	if tempErr != nil {
-		log.Fatalf("Failed to create temp directory: %v", tempErr)
+		return fmt.Errorf("failed to create temp directory: %w", tempErr)
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -28,19 +36,19 @@ func main() {
 	// 1. Create a minimal valid PPTX file
 	log.Printf("Generating minimal PPTX: %s...\n", inputFile)
 	if err := createMinimalPPTX(inputFile); err != nil {
-		log.Fatalf("Failed to create minimal PPTX: %v", err)
+		return fmt.Errorf("failed to create minimal PPTX: %w", err)
 	}
 
 	// 2. Open it
 	log.Printf("Opening %s...\n", inputFile)
 	ppt, err := editor.OpenPresentationEditor(inputFile)
 	if err != nil {
-		log.Fatalf("Failed to open presentation: %v", err)
+		return fmt.Errorf("failed to open presentation: %w", err)
 	}
 	defer func() { _ = ppt.Close() }()
 
 	if ppt.SlideCount() == 0 {
-		log.Fatal("Input presentation has no slides")
+		return errors.New("input presentation has no slides")
 	}
 
 	// 3. Add a Bar Chart to Slide 1
@@ -51,7 +59,7 @@ func main() {
 	).WithTitle("Quarterly Sales")
 
 	if err := ppt.AddChart(0, barChart); err != nil {
-		log.Fatalf("Failed to add bar chart: %v", err)
+		return fmt.Errorf("failed to add bar chart: %w", err)
 	}
 
 	// 4. Add a Line Chart to Slide 1
@@ -65,16 +73,17 @@ func main() {
 	lineChart = lineChart.Position(914400*5, 1800000)
 
 	if err := ppt.AddChart(0, lineChart); err != nil {
-		log.Fatalf("Failed to add line chart: %v", err)
+		return fmt.Errorf("failed to add line chart: %w", err)
 	}
 
 	// 5. Save
 	log.Printf("Saving to %s...\n", outputFile)
 	if err := ppt.Save(outputFile); err != nil {
-		log.Fatalf("Failed to save: %v", err)
+		return fmt.Errorf("failed to save: %w", err)
 	}
 
 	log.Println("Done! Smoke test passed.")
+	return nil
 }
 
 func createMinimalPPTX(filename string) error {
@@ -84,5 +93,5 @@ func createMinimalPPTX(filename string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filename, data, 0o644)
+	return os.WriteFile(filename, data, 0o600)
 }

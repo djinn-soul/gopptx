@@ -15,7 +15,6 @@ def benchmark_single_calls() -> list[float]:
     with Presentation.new("Bridge Perf Single") as pres:
         for i in range(OPS_PER_ITERATION):
             pres.add_slide(f"Seed {i}")
-
         for it in range(ITERATIONS):
             start = time.perf_counter()
             for i in range(OPS_PER_ITERATION):
@@ -29,7 +28,6 @@ def benchmark_batched_calls() -> list[float]:
     with Presentation.new("Bridge Perf Batch") as pres:
         for i in range(OPS_PER_ITERATION):
             pres.add_slide(f"Seed {i}")
-
         for it in range(ITERATIONS):
             commands = [
                 {
@@ -52,29 +50,24 @@ def benchmark_json_codec() -> tuple[float, float]:
         "payload": {"slide_index": 0, "title": "bench"},
     }
     encoded = json.dumps(payload).encode("utf-8")
-
     encode_start = time.perf_counter()
     for _ in range(OPS_PER_ITERATION * 100):
         json.dumps(payload).encode("utf-8")
     encode_elapsed = time.perf_counter() - encode_start
-
     decode_start = time.perf_counter()
     for _ in range(OPS_PER_ITERATION * 100):
         json.loads(encoded.decode("utf-8"))
     decode_elapsed = time.perf_counter() - decode_start
-
-    return encode_elapsed, decode_elapsed
+    return (encode_elapsed, decode_elapsed)
 
 
 def main() -> None:
     single = benchmark_single_calls()
     batched = benchmark_batched_calls()
     json_encode, json_decode = benchmark_json_codec()
-
     single_avg = mean(single)
     batch_avg = mean(batched)
     speedup = single_avg / batch_avg if batch_avg > 0 else 0.0
-
     print("Bridge Performance Benchmark")
     print(f"ITERATIONS={ITERATIONS} OPS_PER_ITERATION={OPS_PER_ITERATION}")
     print(f"single_avg_seconds={single_avg:.6f}")

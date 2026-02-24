@@ -42,79 +42,9 @@ func parseClass(code string) *ClassDiagram {
 
 	var currentClass *ClassNode
 
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := lines[i]
-		if strings.HasPrefix(line, "classDiagram") || strings.HasPrefix(line, "class ") && !strings.Contains(line, "{") && !strings.Contains(line, ":") && i == 0 {
-			continue
-		}
-
-		// Handle class definition with braces
-		if strings.HasPrefix(line, "class ") && strings.HasSuffix(line, "{") {
-			name := strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(line, "{"), "class"))
-			if _, ok := classes[name]; !ok {
-				classes[name] = &ClassNode{ID: name, Name: name}
-			}
-			currentClass = classes[name]
-			continue
-		}
-
-		if line == "}" {
-			currentClass = nil
-			continue
-		}
-
-		if currentClass != nil {
-			trimmed := strings.TrimSpace(line)
-			if strings.Contains(trimmed, "(") {
-				currentClass.Methods = append(currentClass.Methods, trimmed)
-			} else {
-				currentClass.Attributes = append(currentClass.Attributes, trimmed)
-			}
-			continue
-		}
-
-		// Handle class members with colon: ClassName : member
-		if strings.Contains(line, ":") {
-			parts := strings.SplitN(line, ":", 2)
-			className := strings.TrimSpace(parts[0])
-			member := strings.TrimSpace(parts[1])
-
-			if _, ok := classes[className]; !ok {
-				classes[className] = &ClassNode{ID: className, Name: className}
-			}
-			c := classes[className]
-			if strings.Contains(member, "(") {
-				c.Methods = append(c.Methods, member)
-			} else {
-				c.Attributes = append(c.Attributes, member)
-			}
-			continue
-		}
-
-		// Handle relationships
-		if from, relType, to, found := splitClassRelationship(line); found {
-			relationships = append(relationships, ClassRelationship{
-				From: from,
-				To:   to,
-				Type: relType,
-			})
-			if _, ok := classes[from]; !ok {
-				classes[from] = &ClassNode{ID: from, Name: from}
-			}
-			if _, ok := classes[to]; !ok {
-				classes[to] = &ClassNode{ID: to, Name: to}
-			}
-			continue
-		}
-
-		// Handle simple class definition: class ClassName
-		if strings.HasPrefix(line, "class ") {
-			name := strings.TrimSpace(strings.TrimPrefix(line, "class"))
-			if _, ok := classes[name]; !ok {
-				classes[name] = &ClassNode{ID: name, Name: name}
-			}
-			continue
-		}
+		currentClass = parseClassLine(line, i, classes, currentClass, &relationships)
 	}
 
 	classList := make([]ClassNode, 0, len(classes))
@@ -128,16 +58,112 @@ func parseClass(code string) *ClassDiagram {
 	}
 }
 
+func parseClassLine(
+	line string,
+	lineIndex int,
+	classes map[string]*ClassNode,
+	currentClass *ClassNode,
+	relationships *[]ClassRelationship,
+) *ClassNode {
+	if shouldSkipClassLine(line, lineIndex) {
+		return currentClass
+	}
+	if className, ok := classBlockStart(line); ok {
+		return ensureClassNode(classes, className)
+	}
+	if line == "}" {
+		return nil
+	}
+	if currentClass != nil {
+		appendClassMember(currentClass, line)
+		return currentClass
+	}
+	if className, member, ok := parseClassInlineMember(line); ok {
+		appendClassMember(ensureClassNode(classes, className), member)
+		return currentClass
+	}
+	if rel, ok := parseClassRelationshipLine(line); ok {
+		*relationships = append(*relationships, rel)
+		ensureClassNode(classes, rel.From)
+		ensureClassNode(classes, rel.To)
+		return currentClass
+	}
+	if className, ok := parseSimpleClassDefinition(line); ok {
+		ensureClassNode(classes, className)
+	}
+	return currentClass
+}
+
+func shouldSkipClassLine(line string, lineIndex int) bool {
+	if strings.HasPrefix(line, "classDiagram") {
+		return true
+	}
+	return strings.HasPrefix(line, "class ") &&
+		!strings.Contains(line, "{") &&
+		!strings.Contains(line, ":") &&
+		lineIndex == 0
+}
+
+func classBlockStart(line string) (string, bool) {
+	if !strings.HasPrefix(line, "class ") || !strings.HasSuffix(line, "{") {
+		return "", false
+	}
+	name := strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(line, "{"), "class"))
+	return name, name != ""
+}
+
+func ensureClassNode(classes map[string]*ClassNode, name string) *ClassNode {
+	if _, ok := classes[name]; !ok {
+		classes[name] = &ClassNode{ID: name, Name: name}
+	}
+	return classes[name]
+}
+
+func appendClassMember(class *ClassNode, member string) {
+	trimmed := strings.TrimSpace(member)
+	if strings.Contains(trimmed, "(") {
+		class.Methods = append(class.Methods, trimmed)
+		return
+	}
+	class.Attributes = append(class.Attributes, trimmed)
+}
+
+func parseClassInlineMember(line string) (string, string, bool) {
+	if !strings.Contains(line, ":") {
+		return "", "", false
+	}
+	parts := strings.SplitN(line, ":", 2)
+	className := strings.TrimSpace(parts[0])
+	member := strings.TrimSpace(parts[1])
+	return className, member, className != "" && member != ""
+}
+
+func parseClassRelationshipLine(line string) (ClassRelationship, bool) {
+	from, relType, to, found := splitClassRelationship(line)
+	if !found {
+		return ClassRelationship{}, false
+	}
+	return ClassRelationship{From: from, To: to, Type: relType}, true
+}
+
+func parseSimpleClassDefinition(line string) (string, bool) {
+	if !strings.HasPrefix(line, "class ") {
+		return "", false
+	}
+	name := strings.TrimSpace(strings.TrimPrefix(line, "class"))
+	return name, name != ""
+}
+
 func splitClassRelationship(line string) (string, string, string, bool) {
 	relTypes := []string{"<|--", "*--", "o--", "-->", "--", "..>", "..", "<|..", "*..", "o.."}
 	for _, rt := range relTypes {
-		if idx := strings.Index(line, rt); idx != -1 {
-			from := strings.TrimSpace(line[:idx])
-			rest := strings.TrimSpace(line[idx+len(rt):])
+		if before, after, ok := strings.Cut(line, rt); ok {
+			from := strings.TrimSpace(before)
+			rest := strings.TrimSpace(after)
 			// Rest might contain a label: "To : label"
 			to := rest
-			if labelIdx := strings.Index(rest, ":"); labelIdx != -1 {
-				to = strings.TrimSpace(rest[:labelIdx])
+			if before, _, ok := strings.Cut(rest, ":"); ok {
+				to = strings.TrimSpace(before)
 			}
 			return from, rt, to, true
 		}
@@ -146,190 +172,291 @@ func splitClassRelationship(line string) (string, string, string, bool) {
 }
 
 func generateClassElements(diagram *ClassDiagram, theme Theme) DiagramElements {
-	var shapesList []shapes.Shape
-	var connectors []shapes.Connector
-
 	if len(diagram.Classes) == 0 {
 		return DiagramElements{Grouped: true}
 	}
 
-	// Layout parameters
-	classWidth := styling.Inches(2.2)
-	headerHeight := styling.Inches(0.5)
-	itemHeight := styling.Inches(0.35)
-	hSpacing := styling.Inches(3.0)
-	vSpacing := styling.Inches(2.5)
-
-	classPositions := make(map[string]struct{ x, y styling.Length })
-	classShapeIndices := make(map[string]int)
-
-	var minX, minY, maxX, maxY styling.Length
-	firstElement := true
-
-	updateBounds := func(x, y, cx, cy styling.Length) {
-		if firstElement {
-			minX, minY = x, y
-			maxX, maxY = x+cx, y+cy
-			firstElement = false
-		} else {
-			if x < minX {
-				minX = x
-			}
-			if y < minY {
-				minY = y
-			}
-			if x+cx > maxX {
-				maxX = x + cx
-			}
-			if y+cy > maxY {
-				maxY = y + cy
-			}
-		}
-	}
-
-	// Simple grid layout
-	startX := styling.Inches(1.0)
-	startY := styling.Inches(1.0)
-	cols := 3
-
+	layout := defaultClassLayout()
+	state := newClassRenderState(layout)
 	for i, class := range diagram.Classes {
-		col := i % cols
-		row := i / cols
-
-		x := startX + styling.Length(col)*hSpacing
-		y := startY + styling.Length(row)*vSpacing
-
-		classPositions[class.ID] = struct{ x, y styling.Length }{x, y}
-
-		// Calculate total height
-		attrCount := len(class.Attributes)
-		methodCount := len(class.Methods)
-		if attrCount == 0 {
-			attrCount = 1 // Empty slot
-		}
-		if methodCount == 0 {
-			methodCount = 1 // Empty slot
-		}
-		totalHeight := headerHeight + styling.Length(attrCount+methodCount)*itemHeight + styling.Inches(0.1)
-
-		// Header
-		header := shapes.NewShape(shapes.ShapeTypeRectangle, x, y, classWidth, headerHeight).
-			WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
-			WithText(class.Name).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, header)
-		classShapeIndices[class.ID] = len(shapesList)
-		updateBounds(x, y, classWidth, totalHeight)
-
-		// Attributes box
-		attrY := y + headerHeight
-		attrHeight := styling.Length(attrCount) * itemHeight
-		attrText := strings.Join(class.Attributes, "\n")
-		if attrText == "" {
-			attrText = " "
-		}
-		attrBox := shapes.NewShape(shapes.ShapeTypeRectangle, x, attrY, classWidth, attrHeight).
-			WithFill(shapes.NewShapeFill(theme.Background)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, styling.Emu(12700))).
-			WithText(attrText).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithVerticalAnchor(shapes.TextAnchorTop).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, attrBox)
-
-		// Methods box
-		methodY := attrY + attrHeight
-		methodHeight := styling.Length(methodCount) * itemHeight
-		methodText := strings.Join(class.Methods, "\n")
-		if methodText == "" {
-			methodText = " "
-		}
-		methodBox := shapes.NewShape(shapes.ShapeTypeRectangle, x, methodY, classWidth, methodHeight).
-			WithFill(shapes.NewShapeFill(theme.Background)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, styling.Emu(12700))).
-			WithText(methodText).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithVerticalAnchor(shapes.TextAnchorTop).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, methodBox)
+		classShapes := classShapesForNode(class, i, layout, theme)
+		state.addClass(class.ID, classShapes)
 	}
-
-	// Create connectors
 	for _, rel := range diagram.Relationships {
-		fromPos, fromExists := classPositions[rel.From]
-		toPos, toExists := classPositions[rel.To]
+		connector, ok := classRelationshipConnector(rel, state, layout, theme)
+		if !ok {
+			continue
+		}
+		state.connectors = append(state.connectors, connector)
+	}
+	return state.diagramElements()
+}
 
-		if fromExists && toExists {
-			// Determine best connection points (simple top/bottom for now)
-			var startX, startY, endX, endY styling.Length
-			var startSite, endSite string
+type classLayout struct {
+	classWidth   styling.Length
+	headerHeight styling.Length
+	itemHeight   styling.Length
+	hSpacing     styling.Length
+	vSpacing     styling.Length
+	startX       styling.Length
+	startY       styling.Length
+	cols         int
+}
 
-			if fromPos.y < toPos.y {
-				startX = fromPos.x + classWidth/2
-				startY = fromPos.y + headerHeight // Anchor to header bottom or just use the whole box?
-				// Actually, it's better to anchor to the whole class box, but we only have the header index.
-				// Let's just use the header for now as the anchor point.
-				startSite = shapes.ConnectionSiteBottom
-				endSite = shapes.ConnectionSiteTop
-				endX = toPos.x + classWidth/2
-				endY = toPos.y
-			} else {
-				startX = fromPos.x + classWidth/2
-				startY = fromPos.y
-				startSite = shapes.ConnectionSiteTop
-				endSite = shapes.ConnectionSiteBottom
-				endX = toPos.x + classWidth/2
-				endY = toPos.y + headerHeight
-			}
+type classRenderState struct {
+	layout       classLayout
+	shapes       []shapes.Shape
+	connectors   []shapes.Connector
+	positions    map[string]classPosition
+	shapeIndices map[string]int
+	bounds       classBounds
+}
 
-			connector := shapes.NewConnector(shapes.ConnectorTypeElbow, startX, startY, endX, endY).
-				WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight))
+type classPosition struct {
+	x styling.Length
+	y styling.Length
+}
 
-			// Set arrow types based on relationship type
-			startArrow := shapes.ArrowTypeNone
-			endArrow := shapes.ArrowTypeTriangle
+type classBounds struct {
+	minX  styling.Length
+	minY  styling.Length
+	maxX  styling.Length
+	maxY  styling.Length
+	empty bool
+}
 
-			switch rel.Type {
-			case "<|--", "<|..":
-				endArrow = shapes.ArrowTypeStealth // Inheritance
-			case "*--", "*..":
-				startArrow = shapes.ArrowTypeDiamond // Composition
-			case "o--", "o..":
-				startArrow = shapes.ArrowTypeOval // Aggregation (should be hollow diamond, but Oval is closest if not available)
-			case "-->", "..>":
-				endArrow = shapes.ArrowTypeTriangle // Association
-			case "--", "..":
-				endArrow = shapes.ArrowTypeNone // Link
-			}
+type classNodeShapes struct {
+	position    classPosition
+	totalHeight styling.Length
+	header      shapes.Shape
+	attrBox     shapes.Shape
+	methodBox   shapes.Shape
+}
 
-			if strings.Contains(rel.Type, "..") {
-				connector = connector.WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight).WithDash(shapes.LineDashDash))
-			}
+type classConnectorGeometry struct {
+	startX    styling.Length
+	startY    styling.Length
+	endX      styling.Length
+	endY      styling.Length
+	startSite string
+	endSite   string
+}
 
-			connector = connector.WithArrows(startArrow, endArrow)
+func defaultClassLayout() classLayout {
+	return classLayout{
+		classWidth:   styling.Inches(2.2),
+		headerHeight: styling.Inches(0.5),
+		itemHeight:   styling.Inches(0.35),
+		hSpacing:     styling.Inches(3.0),
+		vSpacing:     styling.Inches(2.5),
+		startX:       styling.Inches(1.0),
+		startY:       styling.Inches(1.0),
+		cols:         3,
+	}
+}
 
-			if idx, ok := classShapeIndices[rel.From]; ok {
-				connector = connector.ConnectStart(idx, startSite)
-			}
-			if idx, ok := classShapeIndices[rel.To]; ok {
-				connector = connector.ConnectEnd(idx, endSite)
-			}
+func newClassRenderState(layout classLayout) *classRenderState {
+	return &classRenderState{
+		layout:       layout,
+		positions:    make(map[string]classPosition),
+		shapeIndices: make(map[string]int),
+		bounds:       classBounds{empty: true},
+	}
+}
 
-			connectors = append(connectors, connector)
+func classPositionForIndex(index int, layout classLayout) classPosition {
+	col := index % layout.cols
+	row := index / layout.cols
+	return classPosition{
+		x: layout.startX + styling.Length(col)*layout.hSpacing,
+		y: layout.startY + styling.Length(row)*layout.vSpacing,
+	}
+}
+
+func classHeights(class ClassNode, layout classLayout) (styling.Length, styling.Length, styling.Length) {
+	attrCount := len(class.Attributes)
+	methodCount := len(class.Methods)
+	if attrCount == 0 {
+		attrCount = 1
+	}
+	if methodCount == 0 {
+		methodCount = 1
+	}
+	attrHeight := styling.Length(attrCount) * layout.itemHeight
+	methodHeight := styling.Length(methodCount) * layout.itemHeight
+	total := layout.headerHeight + attrHeight + methodHeight + styling.Inches(0.1)
+	return attrHeight, methodHeight, total
+}
+
+func classShapesForNode(class ClassNode, index int, layout classLayout, theme Theme) classNodeShapes {
+	position := classPositionForIndex(index, layout)
+	attrHeight, methodHeight, totalHeight := classHeights(class, layout)
+	header := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		position.x,
+		position.y,
+		layout.classWidth,
+		layout.headerHeight,
+	).WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+		WithText(class.Name).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+
+	attrText := strings.Join(class.Attributes, "\n")
+	if attrText == "" {
+		attrText = " "
+	}
+	attrY := position.y + layout.headerHeight
+	attrBox := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		position.x,
+		attrY,
+		layout.classWidth,
+		attrHeight,
+	).WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, styling.Emu(12700))).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithVerticalAnchor(shapes.TextAnchorTop).
+		WithText(attrText).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+
+	methodText := strings.Join(class.Methods, "\n")
+	if methodText == "" {
+		methodText = " "
+	}
+	methodY := attrY + attrHeight
+	methodBox := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		position.x,
+		methodY,
+		layout.classWidth,
+		methodHeight,
+	).WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, styling.Emu(12700))).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithVerticalAnchor(shapes.TextAnchorTop).
+		WithText(methodText).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+
+	return classNodeShapes{
+		position:    position,
+		totalHeight: totalHeight,
+		header:      header,
+		attrBox:     attrBox,
+		methodBox:   methodBox,
+	}
+}
+
+func (s *classRenderState) addClass(classID string, nodeShapes classNodeShapes) {
+	s.positions[classID] = nodeShapes.position
+	s.shapes = append(s.shapes, nodeShapes.header)
+	s.shapeIndices[classID] = len(s.shapes)
+	s.bounds.include(nodeShapes.position.x, nodeShapes.position.y, s.layout.classWidth, nodeShapes.totalHeight)
+	s.shapes = append(s.shapes, nodeShapes.attrBox, nodeShapes.methodBox)
+}
+
+func classRelationshipConnector(
+	rel ClassRelationship,
+	state *classRenderState,
+	layout classLayout,
+	theme Theme,
+) (shapes.Connector, bool) {
+	fromPos, fromExists := state.positions[rel.From]
+	toPos, toExists := state.positions[rel.To]
+	if !fromExists || !toExists {
+		return shapes.Connector{}, false
+	}
+	geometry := classConnectorPoints(fromPos, toPos, layout)
+	line := shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)
+	if strings.Contains(rel.Type, "..") {
+		line = line.WithDash(shapes.LineDashDash)
+	}
+	startArrow, endArrow := classArrowTypes(rel.Type)
+	connector := shapes.NewConnector(
+		shapes.ConnectorTypeElbow,
+		geometry.startX,
+		geometry.startY,
+		geometry.endX,
+		geometry.endY,
+	).WithLine(line).WithArrows(startArrow, endArrow)
+	if idx, ok := state.shapeIndices[rel.From]; ok {
+		connector = connector.ConnectStart(idx, geometry.startSite)
+	}
+	if idx, ok := state.shapeIndices[rel.To]; ok {
+		connector = connector.ConnectEnd(idx, geometry.endSite)
+	}
+	return connector, true
+}
+
+func classConnectorPoints(fromPos, toPos classPosition, layout classLayout) classConnectorGeometry {
+	if fromPos.y < toPos.y {
+		return classConnectorGeometry{
+			startX:    fromPos.x + layout.classWidth/2,
+			startY:    fromPos.y + layout.headerHeight,
+			endX:      toPos.x + layout.classWidth/2,
+			endY:      toPos.y,
+			startSite: shapes.ConnectionSiteBottom,
+			endSite:   shapes.ConnectionSiteTop,
 		}
 	}
+	return classConnectorGeometry{
+		startX:    fromPos.x + layout.classWidth/2,
+		startY:    fromPos.y,
+		endX:      toPos.x + layout.classWidth/2,
+		endY:      toPos.y + layout.headerHeight,
+		startSite: shapes.ConnectionSiteTop,
+		endSite:   shapes.ConnectionSiteBottom,
+	}
+}
 
+func classArrowTypes(relType string) (string, string) {
+	startArrow := shapes.ArrowTypeNone
+	endArrow := shapes.ArrowTypeTriangle
+	switch relType {
+	case "<|--", "<|..":
+		endArrow = shapes.ArrowTypeStealth
+	case "*--", "*..":
+		startArrow = shapes.ArrowTypeDiamond
+	case "o--", "o..":
+		startArrow = shapes.ArrowTypeOval
+	case "--", "..":
+		endArrow = shapes.ArrowTypeNone
+	}
+	return startArrow, endArrow
+}
+
+func (b *classBounds) include(x, y, cx, cy styling.Length) {
+	if b.empty {
+		b.minX, b.minY = x, y
+		b.maxX, b.maxY = x+cx, y+cy
+		b.empty = false
+		return
+	}
+	if x < b.minX {
+		b.minX = x
+	}
+	if y < b.minY {
+		b.minY = y
+	}
+	if x+cx > b.maxX {
+		b.maxX = x + cx
+	}
+	if y+cy > b.maxY {
+		b.maxY = y + cy
+	}
+}
+
+func (s *classRenderState) diagramElements() DiagramElements {
 	return DiagramElements{
-		Shapes:     shapesList,
-		Connectors: connectors,
+		Shapes:     s.shapes,
+		Connectors: s.connectors,
 		Grouped:    true,
 		Bounds: &DiagramBounds{
-			X:  minX,
-			Y:  minY,
-			CX: maxX - minX,
-			CY: maxY - minY,
+			X:  s.bounds.minX,
+			Y:  s.bounds.minY,
+			CX: s.bounds.maxX - s.bounds.minX,
+			CY: s.bounds.maxY - s.bounds.minY,
 		},
 	}
 }

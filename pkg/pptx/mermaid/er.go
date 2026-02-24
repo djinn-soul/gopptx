@@ -41,54 +41,7 @@ func parseER(code string) *ERDiagram {
 	var currentEntity *EREntity
 
 	for _, line := range lines {
-		if strings.HasPrefix(line, "erDiagram") {
-			continue
-		}
-
-		// Handle entity definition with braces
-		if strings.HasSuffix(line, "{") {
-			name := strings.TrimSpace(strings.TrimSuffix(line, "{"))
-			if _, ok := entities[name]; !ok {
-				entities[name] = &EREntity{Name: name}
-			}
-			currentEntity = entities[name]
-			continue
-		}
-
-		if line == "}" {
-			currentEntity = nil
-			continue
-		}
-
-		if currentEntity != nil {
-			currentEntity.Attributes = append(currentEntity.Attributes, strings.TrimSpace(line))
-			continue
-		}
-
-		// Handle relationships
-		if from, relType, to, label, found := splitERRelationship(line); found {
-			relationships = append(relationships, ERRelationship{
-				From:  from,
-				To:    to,
-				Type:  relType,
-				Label: label,
-			})
-			if _, ok := entities[from]; !ok {
-				entities[from] = &EREntity{Name: from}
-			}
-			if _, ok := entities[to]; !ok {
-				entities[to] = &EREntity{Name: to}
-			}
-			continue
-		}
-
-		// Simple entity definition
-		if !strings.Contains(line, " ") && !strings.Contains(line, "-") {
-			name := strings.TrimSpace(line)
-			if _, ok := entities[name]; !ok {
-				entities[name] = &EREntity{Name: name}
-			}
-		}
+		currentEntity = parseERLine(line, entities, currentEntity, &relationships)
 	}
 
 	entityList := make([]EREntity, 0, len(entities))
@@ -102,20 +55,102 @@ func parseER(code string) *ERDiagram {
 	}
 }
 
+func parseERLine(
+	line string,
+	entities map[string]*EREntity,
+	currentEntity *EREntity,
+	relationships *[]ERRelationship,
+) *EREntity {
+	if strings.HasPrefix(line, "erDiagram") {
+		return currentEntity
+	}
+	if entityName, ok := parseEREntityBlockStart(line); ok {
+		return ensureEREntity(entities, entityName)
+	}
+	if line == "}" {
+		return nil
+	}
+	if currentEntity != nil {
+		currentEntity.Attributes = append(currentEntity.Attributes, strings.TrimSpace(line))
+		return currentEntity
+	}
+	if rel, ok := parseERRelationshipLine(line); ok {
+		*relationships = append(*relationships, rel)
+		ensureEREntity(entities, rel.From)
+		ensureEREntity(entities, rel.To)
+		return currentEntity
+	}
+	if entityName, ok := parseERSimpleEntity(line); ok {
+		ensureEREntity(entities, entityName)
+	}
+	return currentEntity
+}
+
+func parseEREntityBlockStart(line string) (string, bool) {
+	before, ok := strings.CutSuffix(line, "{")
+	if !ok {
+		return "", false
+	}
+	name := strings.TrimSpace(before)
+	return name, name != ""
+}
+
+func ensureEREntity(entities map[string]*EREntity, name string) *EREntity {
+	if _, ok := entities[name]; !ok {
+		entities[name] = &EREntity{Name: name}
+	}
+	return entities[name]
+}
+
+func parseERRelationshipLine(line string) (ERRelationship, bool) {
+	from, relType, to, label, found := splitERRelationship(line)
+	if !found {
+		return ERRelationship{}, false
+	}
+	return ERRelationship{
+		From:  from,
+		To:    to,
+		Type:  relType,
+		Label: label,
+	}, true
+}
+
+func parseERSimpleEntity(line string) (string, bool) {
+	if strings.Contains(line, " ") || strings.Contains(line, "-") {
+		return "", false
+	}
+	name := strings.TrimSpace(line)
+	return name, name != ""
+}
+
 func splitERRelationship(line string) (string, string, string, string, bool) {
-	relTypes := []string{"||--o{", "||--|{", "}|--|{", "}|--o{", "|o--o{", "|o--|{", "o{--}o", "o{--|{", "o{--o{", "||--||", "||--|o", "|o--|o", "|o--||"}
+	relTypes := []string{
+		"||--o{",
+		"||--|{",
+		"}|--|{",
+		"}|--o{",
+		"|o--o{",
+		"|o--|{",
+		"o{--}o",
+		"o{--|{",
+		"o{--o{",
+		"||--||",
+		"||--|o",
+		"|o--|o",
+		"|o--||",
+	}
 	// Also simpler ones
 	relTypes = append(relTypes, "||--", "}|--", "o{--", "--o{", "--|{", "--}o", "--")
 
 	for _, rt := range relTypes {
-		if idx := strings.Index(line, rt); idx != -1 {
-			from := strings.TrimSpace(line[:idx])
-			rest := strings.TrimSpace(line[idx+len(rt):])
+		if before, after, ok := strings.Cut(line, rt); ok {
+			from := strings.TrimSpace(before)
+			rest := strings.TrimSpace(after)
 			to := rest
 			label := ""
-			if labelIdx := strings.Index(rest, ":"); labelIdx != -1 {
-				to = strings.TrimSpace(rest[:labelIdx])
-				label = strings.TrimSpace(rest[labelIdx+1:])
+			if before, after, ok := strings.Cut(rest, ":"); ok {
+				to = strings.TrimSpace(before)
+				label = strings.TrimSpace(after)
 			}
 			return from, rt, to, label, true
 		}
@@ -124,168 +159,281 @@ func splitERRelationship(line string) (string, string, string, string, bool) {
 }
 
 func generateERElements(diagram *ERDiagram, theme Theme) DiagramElements {
-	var shapesList []shapes.Shape
-	var connectors []shapes.Connector
-
 	if len(diagram.Entities) == 0 {
 		return DiagramElements{Grouped: true}
 	}
 
-	// Layout parameters
-	entityWidth := styling.Inches(2.2)
-	headerHeight := styling.Inches(0.5)
-	itemHeight := styling.Inches(0.35)
-	hSpacing := styling.Inches(3.0)
-	vSpacing := styling.Inches(2.5)
-
-	entityPositions := make(map[string]struct{ x, y styling.Length })
-	entityShapeIndices := make(map[string]int)
-
-	var minX, minY, maxX, maxY styling.Length
-	firstElement := true
-
-	updateBounds := func(x, y, cx, cy styling.Length) {
-		if firstElement {
-			minX, minY = x, y
-			maxX, maxY = x+cx, y+cy
-			firstElement = false
-		} else {
-			if x < minX {
-				minX = x
-			}
-			if y < minY {
-				minY = y
-			}
-			if x+cx > maxX {
-				maxX = x + cx
-			}
-			if y+cy > maxY {
-				maxY = y + cy
-			}
-		}
-	}
-
-	// Simple grid layout
-	startX := styling.Inches(1.0)
-	startY := styling.Inches(1.0)
-	cols := 3
-
+	layout := defaultERLayout()
+	state := newERRenderState(layout)
 	for i, entity := range diagram.Entities {
-		col := i % cols
-		row := i / cols
-
-		x := startX + styling.Length(col)*hSpacing
-		y := startY + styling.Length(row)*vSpacing
-
-		entityPositions[entity.Name] = struct{ x, y styling.Length }{x, y}
-
-		// Calculate total height
-		attrCount := len(entity.Attributes)
-		totalHeight := headerHeight + styling.Length(attrCount)*itemHeight
-
-		// Header
-		header := shapes.NewShape(shapes.ShapeTypeRectangle, x, y, entityWidth, headerHeight).
-			WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
-			WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
-			WithText(entity.Name).
-			WithAutoFit(shapes.TextAutoFitNormal).
-			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-		shapesList = append(shapesList, header)
-		entityShapeIndices[entity.Name] = len(shapesList)
-		updateBounds(x, y, entityWidth, totalHeight)
-
-		// Attributes box
-		if attrCount > 0 {
-			attrY := y + headerHeight
-			attrHeight := styling.Length(attrCount) * itemHeight
-			attrBox := shapes.NewShape(shapes.ShapeTypeRectangle, x, attrY, entityWidth, attrHeight).
-				WithFill(shapes.NewShapeFill(theme.Background)).
-				WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
-				WithText(strings.Join(entity.Attributes, "\n")).
-				WithAutoFit(shapes.TextAutoFitNormal).
-				WithVerticalAnchor(shapes.TextAnchorTop).
-				WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-			shapesList = append(shapesList, attrBox)
-		}
+		entityShapes := erShapesForEntity(entity, i, layout, theme)
+		state.addEntity(entity.Name, entityShapes)
 	}
-
-	// Create connectors
 	for _, rel := range diagram.Relationships {
-		fromPos, fromExists := entityPositions[rel.From]
-		toPos, toExists := entityPositions[rel.To]
-
-		if fromExists && toExists {
-			var startX, startY, endX, endY styling.Length
-			var startSite, endSite string
-
-			if fromPos.y < toPos.y {
-				startX = fromPos.x + entityWidth/2
-				startY = fromPos.y + headerHeight
-				startSite = shapes.ConnectionSiteBottom
-				endSite = shapes.ConnectionSiteTop
-				endX = toPos.x + entityWidth/2
-				endY = toPos.y
-			} else {
-				startX = fromPos.x + entityWidth/2
-				startY = fromPos.y
-				startSite = shapes.ConnectionSiteTop
-				endSite = shapes.ConnectionSiteBottom
-				endX = toPos.x + entityWidth/2
-				endY = toPos.y + headerHeight
-			}
-
-			connector := shapes.NewConnector(shapes.ConnectorTypeElbow, startX, startY, endX, endY).
-				WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
-
-			// Set arrow types based on relationship type
-			// ER notation is complex, we'll use simple arrows for now
-			startArrow := shapes.ArrowTypeNone
-			endArrow := shapes.ArrowTypeTriangle
-
-			if strings.Contains(rel.Type, "o") {
-				// Optional
-			}
-			if strings.Contains(rel.Type, "{") || strings.Contains(rel.Type, "}") {
-				// Many
-				endArrow = shapes.ArrowTypeStealth
-			}
-
-			connector = connector.WithArrows(startArrow, endArrow)
-
-			if idx, ok := entityShapeIndices[rel.From]; ok {
-				connector = connector.ConnectStart(idx, startSite)
-			}
-			if idx, ok := entityShapeIndices[rel.To]; ok {
-				connector = connector.ConnectEnd(idx, endSite)
-			}
-
-			connectors = append(connectors, connector)
-
-			if rel.Label != "" {
-				labelWidth := styling.Inches(1.0)
-				labelHeight := styling.Inches(0.4)
-				midX := (startX + endX) / 2
-				midY := (startY + endY) / 2
-
-				labelShape := shapes.NewShape(shapes.ShapeTypeRectangle, midX-labelWidth/2, midY-labelHeight/2, labelWidth, labelHeight).
-					WithFill(shapes.NewShapeFill(theme.Background)).
-					WithText(rel.Label).
-					WithAutoFit(shapes.TextAutoFitNormal).
-					WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
-				shapesList = append(shapesList, labelShape)
-			}
+		connector, labelShape, hasLabel, ok := erRelationshipConnector(rel, state, layout, theme)
+		if !ok {
+			continue
+		}
+		state.connectors = append(state.connectors, connector)
+		if hasLabel {
+			state.shapes = append(state.shapes, labelShape)
+			state.bounds.includeShape(labelShape)
 		}
 	}
+	return state.diagramElements()
+}
 
+type erLayout struct {
+	entityWidth   styling.Length
+	headerHeight  styling.Length
+	itemHeight    styling.Length
+	hSpacing      styling.Length
+	vSpacing      styling.Length
+	startX        styling.Length
+	startY        styling.Length
+	cols          int
+	labelWidth    styling.Length
+	labelHeight   styling.Length
+	labelMarginX  styling.Length
+	labelMarginY  styling.Length
+	entityLineWgt styling.Length
+}
+
+type erPosition struct {
+	x styling.Length
+	y styling.Length
+}
+
+type erBounds struct {
+	minX  styling.Length
+	minY  styling.Length
+	maxX  styling.Length
+	maxY  styling.Length
+	empty bool
+}
+
+type erRenderState struct {
+	layout       erLayout
+	shapes       []shapes.Shape
+	connectors   []shapes.Connector
+	positions    map[string]erPosition
+	shapeIndices map[string]int
+	bounds       erBounds
+}
+
+type erEntityShapes struct {
+	position    erPosition
+	totalHeight styling.Length
+	header      shapes.Shape
+	attrBox     shapes.Shape
+	hasAttrBox  bool
+}
+
+type erConnectorGeometry struct {
+	startX    styling.Length
+	startY    styling.Length
+	endX      styling.Length
+	endY      styling.Length
+	startSite string
+	endSite   string
+}
+
+func defaultERLayout() erLayout {
+	return erLayout{
+		entityWidth:   styling.Inches(2.2),
+		headerHeight:  styling.Inches(0.5),
+		itemHeight:    styling.Inches(0.35),
+		hSpacing:      styling.Inches(3.0),
+		vSpacing:      styling.Inches(2.5),
+		startX:        styling.Inches(1.0),
+		startY:        styling.Inches(1.0),
+		cols:          3,
+		labelWidth:    styling.Inches(1.0),
+		labelHeight:   styling.Inches(0.4),
+		labelMarginX:  styling.Inches(0.05),
+		labelMarginY:  styling.Inches(0.02),
+		entityLineWgt: styling.Emu(12700),
+	}
+}
+
+func newERRenderState(layout erLayout) *erRenderState {
+	return &erRenderState{
+		layout:       layout,
+		positions:    make(map[string]erPosition),
+		shapeIndices: make(map[string]int),
+		bounds:       erBounds{empty: true},
+	}
+}
+
+func erPositionForIndex(index int, layout erLayout) erPosition {
+	col := index % layout.cols
+	row := index / layout.cols
+	return erPosition{
+		x: layout.startX + styling.Length(col)*layout.hSpacing,
+		y: layout.startY + styling.Length(row)*layout.vSpacing,
+	}
+}
+
+func erShapesForEntity(entity EREntity, index int, layout erLayout, theme Theme) erEntityShapes {
+	position := erPositionForIndex(index, layout)
+	attrCount := len(entity.Attributes)
+	totalHeight := layout.headerHeight + styling.Length(attrCount)*layout.itemHeight
+	header := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		position.x,
+		position.y,
+		layout.entityWidth,
+		layout.headerHeight,
+	).WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+		WithText(entity.Name).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+	if attrCount == 0 {
+		return erEntityShapes{
+			position:    position,
+			totalHeight: totalHeight,
+			header:      header,
+			hasAttrBox:  false,
+		}
+	}
+	attrY := position.y + layout.headerHeight
+	attrHeight := styling.Length(attrCount) * layout.itemHeight
+	attrBox := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		position.x,
+		attrY,
+		layout.entityWidth,
+		attrHeight,
+	).WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, layout.entityLineWgt)).
+		WithText(strings.Join(entity.Attributes, "\n")).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithVerticalAnchor(shapes.TextAnchorTop).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+	return erEntityShapes{
+		position:    position,
+		totalHeight: totalHeight,
+		header:      header,
+		attrBox:     attrBox,
+		hasAttrBox:  true,
+	}
+}
+
+func (s *erRenderState) addEntity(entityName string, entityShapes erEntityShapes) {
+	s.positions[entityName] = entityShapes.position
+	s.shapes = append(s.shapes, entityShapes.header)
+	s.shapeIndices[entityName] = len(s.shapes)
+	s.bounds.include(entityShapes.position.x, entityShapes.position.y, s.layout.entityWidth, entityShapes.totalHeight)
+	if entityShapes.hasAttrBox {
+		s.shapes = append(s.shapes, entityShapes.attrBox)
+	}
+}
+
+func erRelationshipConnector(
+	rel ERRelationship,
+	state *erRenderState,
+	layout erLayout,
+	theme Theme,
+) (shapes.Connector, shapes.Shape, bool, bool) {
+	fromPos, fromExists := state.positions[rel.From]
+	toPos, toExists := state.positions[rel.To]
+	if !fromExists || !toExists {
+		return shapes.Connector{}, shapes.Shape{}, false, false
+	}
+	geometry := erConnectorPoints(fromPos, toPos, layout)
+	endArrow := shapes.ArrowTypeTriangle
+	if strings.Contains(rel.Type, "{") || strings.Contains(rel.Type, "}") {
+		endArrow = shapes.ArrowTypeStealth
+	}
+	connector := shapes.NewConnector(
+		shapes.ConnectorTypeElbow,
+		geometry.startX,
+		geometry.startY,
+		geometry.endX,
+		geometry.endY,
+	).WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithArrows(shapes.ArrowTypeNone, endArrow)
+	if idx, ok := state.shapeIndices[rel.From]; ok {
+		connector = connector.ConnectStart(idx, geometry.startSite)
+	}
+	if idx, ok := state.shapeIndices[rel.To]; ok {
+		connector = connector.ConnectEnd(idx, geometry.endSite)
+	}
+	if rel.Label == "" {
+		return connector, shapes.Shape{}, false, true
+	}
+	midX := (geometry.startX + geometry.endX) / 2
+	midY := (geometry.startY + geometry.endY) / 2
+	labelShape := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		midX-layout.labelWidth/2,
+		midY-layout.labelHeight/2,
+		layout.labelWidth,
+		layout.labelHeight,
+	).WithFill(shapes.NewShapeFill(theme.Background)).
+		WithText(rel.Label).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(layout.labelMarginX, layout.labelMarginY, layout.labelMarginX, layout.labelMarginY)
+	return connector, labelShape, true, true
+}
+
+func erConnectorPoints(fromPos, toPos erPosition, layout erLayout) erConnectorGeometry {
+	if fromPos.y < toPos.y {
+		return erConnectorGeometry{
+			startX:    fromPos.x + layout.entityWidth/2,
+			startY:    fromPos.y + layout.headerHeight,
+			endX:      toPos.x + layout.entityWidth/2,
+			endY:      toPos.y,
+			startSite: shapes.ConnectionSiteBottom,
+			endSite:   shapes.ConnectionSiteTop,
+		}
+	}
+	return erConnectorGeometry{
+		startX:    fromPos.x + layout.entityWidth/2,
+		startY:    fromPos.y,
+		endX:      toPos.x + layout.entityWidth/2,
+		endY:      toPos.y + layout.headerHeight,
+		startSite: shapes.ConnectionSiteTop,
+		endSite:   shapes.ConnectionSiteBottom,
+	}
+}
+
+func (b *erBounds) includeShape(s shapes.Shape) {
+	b.include(s.X, s.Y, s.CX, s.CY)
+}
+
+func (b *erBounds) include(x, y, cx, cy styling.Length) {
+	if b.empty {
+		b.minX, b.minY = x, y
+		b.maxX, b.maxY = x+cx, y+cy
+		b.empty = false
+		return
+	}
+	if x < b.minX {
+		b.minX = x
+	}
+	if y < b.minY {
+		b.minY = y
+	}
+	if x+cx > b.maxX {
+		b.maxX = x + cx
+	}
+	if y+cy > b.maxY {
+		b.maxY = y + cy
+	}
+}
+
+func (s *erRenderState) diagramElements() DiagramElements {
 	return DiagramElements{
-		Shapes:     shapesList,
-		Connectors: connectors,
+		Shapes:     s.shapes,
+		Connectors: s.connectors,
 		Grouped:    true,
 		Bounds: &DiagramBounds{
-			X:  minX,
-			Y:  minY,
-			CX: maxX - minX,
-			CY: maxY - minY,
+			X:  s.bounds.minX,
+			Y:  s.bounds.minY,
+			CX: s.bounds.maxX - s.bounds.minX,
+			CY: s.bounds.maxY - s.bounds.minY,
 		},
 	}
 }

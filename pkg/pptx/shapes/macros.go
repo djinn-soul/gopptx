@@ -4,6 +4,11 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const (
+	defaultBadgeWidthInches  = 1.5
+	defaultBadgeHeightInches = 0.4
+)
+
 // NewRectangle creates a rectangle shape with given inch dimensions.
 func NewRectangle(x, y, w, h float64) Shape {
 	return NewShape(ShapeTypeRectangle, styling.Inches(x), styling.Inches(y), styling.Inches(w), styling.Inches(h))
@@ -518,8 +523,6 @@ func NewFlowChartData(x, y, w, h float64) Shape {
 }
 
 // NewBadge creates a badge (rounded rectangle with text) at a default size (1.5x0.4 inches).
-//
-//nolint:mnd // Default badge sizes are from design spec
 func NewBadge(text string, x, y float64, color string) Shape {
 	if color == "" {
 		color = styling.ColorMaterialGreen
@@ -528,8 +531,8 @@ func NewBadge(text string, x, y float64, color string) Shape {
 		ShapeTypeRoundedRectangle,
 		styling.Inches(x),
 		styling.Inches(y),
-		styling.Inches(1.5),
-		styling.Inches(0.4),
+		styling.Inches(defaultBadgeWidthInches),
+		styling.Inches(defaultBadgeHeightInches),
 	).
 		WithFill(NewShapeFill(color)).
 		WithText(text)

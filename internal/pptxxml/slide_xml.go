@@ -13,6 +13,7 @@ const (
 	slideLayoutCenteredTitle   = "centeredTitle"
 	slideLayoutTitleBigContent = "titleAndBigContent"
 	slideLayoutTwoColumn       = "twoColumn"
+	slideBackgroundPicture     = "picture"
 )
 
 const (
@@ -79,7 +80,7 @@ func backgroundXML(bg *SlideBackgroundSpec) string {
 		if bg.GradientFill != nil {
 			xml += shapeGradientFillXML(*bg.GradientFill)
 		}
-	case "picture":
+	case slideBackgroundPicture:
 		if bg.PictureFill != nil {
 			xml += `
 <a:blipFill>
@@ -256,7 +257,7 @@ func SlideWithLayout(
 	}
 
 	nextID = slideRenderPlaceholders(&b, placeholders, nextID)
-	nextID = slideRenderOverlayShapes(
+	_ = slideRenderOverlayShapes(
 		&b,
 		showSlideNumber,
 		footerText,
@@ -453,10 +454,21 @@ func SlideRelationshipsWithHyperlinks(
 	notesTarget string,
 	hyperlinks []HyperlinkRel,
 ) string {
-	return SlideRelationshipsWithMultiCharts(layoutTarget, imageTargets, chartRel, nil, nil, notesTarget, hyperlinks, "")
+	return SlideRelationshipsWithMultiCharts(
+		layoutTarget,
+		imageTargets,
+		chartRel,
+		nil,
+		nil,
+		notesTarget,
+		hyperlinks,
+		"",
+	)
 }
 
 // SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts, SmartArt, and comments.
+//
+//nolint:funlen // Slide relationship XML must enumerate media/chart/notes/smartart links with stable ordering.
 func SlideRelationshipsWithMultiCharts(
 	layoutTarget string,
 	imageTargets []string,
@@ -532,7 +544,9 @@ func SlideRelationshipsWithMultiCharts(
 		b.WriteString(`
 <Relationship Id="rId`)
 		b.WriteString(strconv.Itoa(maxRID + 1))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="`)
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="`,
+		)
 		b.WriteString(Escape(notesTarget))
 		b.WriteString(`"/>`)
 		maxRID++

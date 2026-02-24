@@ -106,14 +106,14 @@ func ensureState(states map[string]*StateNode, id string) {
 }
 
 func splitStateTransition(line string) (string, string, string, bool) {
-	if idx := strings.Index(line, "-->"); idx != -1 {
-		from := strings.TrimSpace(line[:idx])
-		rest := strings.TrimSpace(line[idx+3:])
+	if before, after, ok := strings.Cut(line, "-->"); ok {
+		from := strings.TrimSpace(before)
+		rest := strings.TrimSpace(after)
 		to := rest
 		label := ""
-		if labelIdx := strings.Index(rest, ":"); labelIdx != -1 {
-			to = strings.TrimSpace(rest[:labelIdx])
-			label = strings.TrimSpace(rest[labelIdx+1:])
+		if before, after, ok := strings.Cut(rest, ":"); ok {
+			to = strings.TrimSpace(before)
+			label = strings.TrimSpace(after)
 		}
 		return from, to, label, true
 	}
@@ -128,140 +128,38 @@ func generateStateElements(diagram *StateDiagram, theme Theme) DiagramElements {
 		return DiagramElements{Grouped: true}
 	}
 
-	// Layout parameters
-	stateWidth := styling.Inches(1.8)
-	stateHeight := styling.Inches(0.8)
-	hSpacing := styling.Inches(2.8)
-	vSpacing := styling.Inches(1.8)
+	layout := stateLayout{
+		stateWidth:  styling.Inches(1.8),
+		stateHeight: styling.Inches(0.8),
+		hSpacing:    styling.Inches(2.8),
+		vSpacing:    styling.Inches(1.8),
+		startX:      styling.Inches(1.0),
+		startY:      styling.Inches(1.0),
+		cols:        3,
+	}
 
 	statePositions := make(map[string]struct{ x, y styling.Length })
 	stateShapeIndices := make(map[string]int)
-
-	var minX, minY, maxX, maxY styling.Length
-	firstElement := true
-
-	updateBounds := func(x, y, cx, cy styling.Length) {
-		if firstElement {
-			minX, minY = x, y
-			maxX, maxY = x+cx, y+cy
-			firstElement = false
-		} else {
-			if x < minX {
-				minX = x
-			}
-			if y < minY {
-				minY = y
-			}
-			if x+cx > maxX {
-				maxX = x + cx
-			}
-			if y+cy > maxY {
-				maxY = y + cy
-			}
-		}
-	}
-
-	// Simple grid layout
-	startX := styling.Inches(1.0)
-	startY := styling.Inches(1.0)
-	cols := 3
+	bounds := newStateBounds()
 
 	for i, state := range diagram.States {
-		col := i % cols
-		row := i / cols
-
-		x := startX + styling.Length(col)*hSpacing
-		y := startY + styling.Length(row)*vSpacing
-
+		x, y := stateGridPosition(i, layout)
 		statePositions[state.ID] = struct{ x, y styling.Length }{x, y}
 
-		var shape shapes.Shape
-		if state.ID == "[*]" {
-			// Start/End state is a small circle
-			circleSize := styling.Inches(0.3)
-			shape = shapes.NewShape(shapes.ShapeTypeEllipse, x+(stateWidth-circleSize)/2, y+(stateHeight-circleSize)/2, circleSize, circleSize).
-				WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
-			updateBounds(x+(stateWidth-circleSize)/2, y+(stateHeight-circleSize)/2, circleSize, circleSize)
-		} else {
-			shape = shapes.NewShape(shapes.ShapeTypeRoundedRectangle, x, y, stateWidth, stateHeight).
-				WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
-				WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
-				WithText(state.Label).
-				WithAutoFit(shapes.TextAutoFitNormal).
-				WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-			updateBounds(x, y, stateWidth, stateHeight)
-		}
-
+		shape := stateNodeShape(state, x, y, layout, theme)
 		shapesList = append(shapesList, shape)
+		bounds.includeShape(shape)
 		stateShapeIndices[state.ID] = len(shapesList)
 	}
 
-	// Create connectors
 	for _, trans := range diagram.Transitions {
-		fromPos, fromExists := statePositions[trans.From]
-		toPos, toExists := statePositions[trans.To]
-
-		if fromExists && toExists {
-			var startX, startY, endX, endY styling.Length
-			var startSite, endSite string
-
-			// Simple logic to decide connection points
-			if fromPos.x < toPos.x {
-				startX = fromPos.x + stateWidth
-				startY = fromPos.y + stateHeight/2
-				startSite = shapes.ConnectionSiteRight
-				endSite = shapes.ConnectionSiteLeft
-				endX = toPos.x
-				endY = toPos.y + stateHeight/2
-			} else if fromPos.x > toPos.x {
-				startX = fromPos.x
-				startY = fromPos.y + stateHeight/2
-				startSite = shapes.ConnectionSiteLeft
-				endSite = shapes.ConnectionSiteRight
-				endX = toPos.x + stateWidth
-				endY = toPos.y + stateHeight/2
-			} else if fromPos.y < toPos.y {
-				startX = fromPos.x + stateWidth/2
-				startY = fromPos.y + stateHeight
-				startSite = shapes.ConnectionSiteBottom
-				endSite = shapes.ConnectionSiteTop
-				endX = toPos.x + stateWidth/2
-				endY = toPos.y
-			} else {
-				startX = fromPos.x + stateWidth/2
-				startY = fromPos.y
-				startSite = shapes.ConnectionSiteTop
-				endSite = shapes.ConnectionSiteBottom
-				endX = toPos.x + stateWidth/2
-				endY = toPos.y + stateHeight
-			}
-
-			connector := shapes.NewConnector(shapes.ConnectorTypeElbow, startX, startY, endX, endY).
-				WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
-				WithArrows(shapes.ArrowTypeNone, shapes.ArrowTypeTriangle)
-
-			if idx, ok := stateShapeIndices[trans.From]; ok {
-				connector = connector.ConnectStart(idx, startSite)
-			}
-			if idx, ok := stateShapeIndices[trans.To]; ok {
-				connector = connector.ConnectEnd(idx, endSite)
-			}
-
-			connectors = append(connectors, connector)
-
-			if trans.Label != "" {
-				labelWidth := styling.Inches(1.0)
-				labelHeight := styling.Inches(0.4)
-				midX := (startX + endX) / 2
-				midY := (startY + endY) / 2
-
-				labelShape := shapes.NewShape(shapes.ShapeTypeRectangle, midX-labelWidth/2, midY-labelHeight/2, labelWidth, labelHeight).
-					WithFill(shapes.NewShapeFill(theme.Background)).
-					WithText(trans.Label).
-					WithAutoFit(shapes.TextAutoFitNormal).
-					WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
-				shapesList = append(shapesList, labelShape)
-			}
+		connector, label, ok := stateTransitionShapes(trans, statePositions, stateShapeIndices, layout, theme)
+		if !ok {
+			continue
+		}
+		connectors = append(connectors, connector)
+		if label != nil {
+			shapesList = append(shapesList, *label)
 		}
 	}
 
@@ -270,10 +168,200 @@ func generateStateElements(diagram *StateDiagram, theme Theme) DiagramElements {
 		Connectors: connectors,
 		Grouped:    true,
 		Bounds: &DiagramBounds{
-			X:  minX,
-			Y:  minY,
-			CX: maxX - minX,
-			CY: maxY - minY,
+			X:  bounds.minX,
+			Y:  bounds.minY,
+			CX: bounds.maxX - bounds.minX,
+			CY: bounds.maxY - bounds.minY,
 		},
 	}
+}
+
+type stateLayout struct {
+	stateWidth  styling.Length
+	stateHeight styling.Length
+	hSpacing    styling.Length
+	vSpacing    styling.Length
+	startX      styling.Length
+	startY      styling.Length
+	cols        int
+}
+
+type stateBounds struct {
+	minX  styling.Length
+	minY  styling.Length
+	maxX  styling.Length
+	maxY  styling.Length
+	first bool
+}
+
+func newStateBounds() *stateBounds {
+	return &stateBounds{first: true}
+}
+
+func (b *stateBounds) includeShape(s shapes.Shape) {
+	b.include(s.X, s.Y, s.CX, s.CY)
+}
+
+func (b *stateBounds) include(x, y, cx, cy styling.Length) {
+	if b.first {
+		b.minX, b.minY = x, y
+		b.maxX, b.maxY = x+cx, y+cy
+		b.first = false
+		return
+	}
+	if x < b.minX {
+		b.minX = x
+	}
+	if y < b.minY {
+		b.minY = y
+	}
+	if x+cx > b.maxX {
+		b.maxX = x + cx
+	}
+	if y+cy > b.maxY {
+		b.maxY = y + cy
+	}
+}
+
+func stateGridPosition(index int, layout stateLayout) (styling.Length, styling.Length) {
+	col := index % layout.cols
+	row := index / layout.cols
+	x := layout.startX + styling.Length(col)*layout.hSpacing
+	y := layout.startY + styling.Length(row)*layout.vSpacing
+	return x, y
+}
+
+func stateNodeShape(state StateNode, x styling.Length, y styling.Length, layout stateLayout, theme Theme) shapes.Shape {
+	if state.ID == "[*]" {
+		circleSize := styling.Inches(0.3)
+		return shapes.NewShape(
+			shapes.ShapeTypeEllipse,
+			x+(layout.stateWidth-circleSize)/2,
+			y+(layout.stateHeight-circleSize)/2,
+			circleSize,
+			circleSize,
+		).WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
+	}
+	return shapes.NewShape(
+		shapes.ShapeTypeRoundedRectangle,
+		x,
+		y,
+		layout.stateWidth,
+		layout.stateHeight,
+	).WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+		WithText(state.Label).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
+}
+
+type stateTransitionGeometry struct {
+	startX    styling.Length
+	startY    styling.Length
+	endX      styling.Length
+	endY      styling.Length
+	startSite string
+	endSite   string
+}
+
+func stateTransitionShapes(
+	trans StateTransition,
+	statePositions map[string]struct{ x, y styling.Length },
+	stateShapeIndices map[string]int,
+	layout stateLayout,
+	theme Theme,
+) (shapes.Connector, *shapes.Shape, bool) {
+	fromPos, fromExists := statePositions[trans.From]
+	toPos, toExists := statePositions[trans.To]
+	if !fromExists || !toExists {
+		return shapes.Connector{}, nil, false
+	}
+
+	geom := stateTransitionEndpoints(fromPos, toPos, layout.stateWidth, layout.stateHeight)
+	connector := shapes.NewConnector(shapes.ConnectorTypeElbow, geom.startX, geom.startY, geom.endX, geom.endY).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithArrows(shapes.ArrowTypeNone, shapes.ArrowTypeTriangle)
+
+	if idx, ok := stateShapeIndices[trans.From]; ok {
+		connector = connector.ConnectStart(idx, geom.startSite)
+	}
+	if idx, ok := stateShapeIndices[trans.To]; ok {
+		connector = connector.ConnectEnd(idx, geom.endSite)
+	}
+
+	if trans.Label == "" {
+		return connector, nil, true
+	}
+	label := stateTransitionLabelShape(trans.Label, geom.startX, geom.startY, geom.endX, geom.endY, theme)
+	return connector, &label, true
+}
+
+func stateTransitionEndpoints(
+	fromPos struct{ x, y styling.Length },
+	toPos struct{ x, y styling.Length },
+	stateWidth styling.Length,
+	stateHeight styling.Length,
+) stateTransitionGeometry {
+	switch {
+	case fromPos.x < toPos.x:
+		return stateTransitionGeometry{
+			startX:    fromPos.x + stateWidth,
+			startY:    fromPos.y + stateHeight/2,
+			endX:      toPos.x,
+			endY:      toPos.y + stateHeight/2,
+			startSite: shapes.ConnectionSiteRight,
+			endSite:   shapes.ConnectionSiteLeft,
+		}
+	case fromPos.x > toPos.x:
+		return stateTransitionGeometry{
+			startX:    fromPos.x,
+			startY:    fromPos.y + stateHeight/2,
+			endX:      toPos.x + stateWidth,
+			endY:      toPos.y + stateHeight/2,
+			startSite: shapes.ConnectionSiteLeft,
+			endSite:   shapes.ConnectionSiteRight,
+		}
+	case fromPos.y < toPos.y:
+		return stateTransitionGeometry{
+			startX:    fromPos.x + stateWidth/2,
+			startY:    fromPos.y + stateHeight,
+			endX:      toPos.x + stateWidth/2,
+			endY:      toPos.y,
+			startSite: shapes.ConnectionSiteBottom,
+			endSite:   shapes.ConnectionSiteTop,
+		}
+	default:
+		return stateTransitionGeometry{
+			startX:    fromPos.x + stateWidth/2,
+			startY:    fromPos.y,
+			endX:      toPos.x + stateWidth/2,
+			endY:      toPos.y + stateHeight,
+			startSite: shapes.ConnectionSiteTop,
+			endSite:   shapes.ConnectionSiteBottom,
+		}
+	}
+}
+
+func stateTransitionLabelShape(
+	label string,
+	startX styling.Length,
+	startY styling.Length,
+	endX styling.Length,
+	endY styling.Length,
+	theme Theme,
+) shapes.Shape {
+	labelWidth := styling.Inches(1.0)
+	labelHeight := styling.Inches(0.4)
+	midX := (startX + endX) / 2
+	midY := (startY + endY) / 2
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		midX-labelWidth/2,
+		midY-labelHeight/2,
+		labelWidth,
+		labelHeight,
+	).WithFill(shapes.NewShapeFill(theme.Background)).
+		WithText(label).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
 }

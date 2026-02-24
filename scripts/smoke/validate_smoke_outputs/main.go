@@ -58,65 +58,78 @@ func collectPPTXFiles(dirPath, singleFile string) ([]string, error) {
 	paths := make([]string, 0)
 	seen := make(map[string]struct{})
 
-	if strings.TrimSpace(singleFile) != "" {
-		info, err := os.Stat(singleFile)
-		if err != nil {
-			return nil, fmt.Errorf("stat file %q: %w", singleFile, err)
-		}
-		if info.IsDir() {
-			return nil, fmt.Errorf("file %q is a directory", singleFile)
-		}
-		if strings.ToLower(filepath.Ext(singleFile)) != ".pptx" {
-			return nil, fmt.Errorf("file %q is not a .pptx", singleFile)
-		}
-		abs, err := filepath.Abs(singleFile)
-		if err != nil {
-			return nil, err
-		}
-		seen[abs] = struct{}{}
-		paths = append(paths, abs)
+	if err := collectSingleFile(singleFile, seen, &paths); err != nil {
+		return nil, err
 	}
 
-	if strings.TrimSpace(dirPath) != "" {
-		info, err := os.Stat(dirPath)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				return nil, fmt.Errorf("directory %q does not exist", dirPath)
-			}
-			return nil, err
-		}
-		if !info.IsDir() {
-			return nil, fmt.Errorf("dir %q is not a directory", dirPath)
-		}
-
-		err = filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-			if d.IsDir() {
-				return nil
-			}
-			if strings.ToLower(filepath.Ext(path)) != ".pptx" {
-				return nil
-			}
-			abs, absErr := filepath.Abs(path)
-			if err != nil {
-				return absErr
-			}
-			if _, ok := seen[abs]; ok {
-				return nil
-			}
-			seen[abs] = struct{}{}
-			paths = append(paths, abs)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
+	if err := collectDirectoryFiles(dirPath, seen, &paths); err != nil {
+		return nil, err
 	}
 
 	sort.Strings(paths)
 	return paths, nil
+}
+
+func collectSingleFile(singleFile string, seen map[string]struct{}, paths *[]string) error {
+	if strings.TrimSpace(singleFile) == "" {
+		return nil
+	}
+	info, err := os.Stat(singleFile)
+	if err != nil {
+		return fmt.Errorf("stat file %q: %w", singleFile, err)
+	}
+	if info.IsDir() {
+		return fmt.Errorf("file %q is a directory", singleFile)
+	}
+	if strings.ToLower(filepath.Ext(singleFile)) != ".pptx" {
+		return fmt.Errorf("file %q is not a .pptx", singleFile)
+	}
+	abs, err := filepath.Abs(singleFile)
+	if err != nil {
+		return err
+	}
+	seen[abs] = struct{}{}
+	*paths = append(*paths, abs)
+	return nil
+}
+
+func collectDirectoryFiles(dirPath string, seen map[string]struct{}, paths *[]string) error {
+	if strings.TrimSpace(dirPath) == "" {
+		return nil
+	}
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("directory %q does not exist", dirPath)
+		}
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("dir %q is not a directory", dirPath)
+	}
+
+	err = filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() || strings.ToLower(filepath.Ext(path)) != ".pptx" {
+			return nil
+		}
+		abs, absErr := filepath.Abs(path)
+		if absErr != nil {
+			return absErr
+		}
+		if _, ok := seen[abs]; ok {
+			return nil
+		}
+		seen[abs] = struct{}{}
+		*paths = append(*paths, abs)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func validatePPTXPath(path string) validationResult {

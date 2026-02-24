@@ -1,6 +1,6 @@
+"""gopptx - High-performance PPTX engine powered by Go."""
+
 from .api import GopptxError, Presentation, Slide
-from .api_master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
-from .api_table import Cell, Table
 from .constants import (
     ALIGN_CENTER,
     ALIGN_JUSTIFY,
@@ -35,7 +35,8 @@ from .ops import (
     OP_SLIDE_COUNT,
     SUPPORTED_OPS,
 )
-from .types import (
+from .presentation.master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
+from .schemas import (
     Author,
     BatchCommand,
     BatchItemResult,
@@ -57,8 +58,9 @@ from .types import (
     TableCellInfo,
     TableInfo,
 )
+from .slide.table import Cell, Table
 
-__all__ = [
+__all__ = (
     "ALIGN_CENTER",
     "ALIGN_JUSTIFY",
     "ALIGN_LEFT",
@@ -118,4 +120,4 @@ __all__ = [
     "Table",
     "TableCellInfo",
     "TableInfo",
-]
+)

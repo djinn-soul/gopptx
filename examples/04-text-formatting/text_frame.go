@@ -10,10 +10,9 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func main() { //nolint:unused
-	//nolint:unused
+func main() {
 	outDir := "examples/output"
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 
@@ -66,7 +65,7 @@ func main() { //nolint:unused
 	}
 
 	path := filepath.Join(outDir, "04_text_frame_smoke.pptx")
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		log.Fatalf("Failed to write file: %v", err)
 	}
 

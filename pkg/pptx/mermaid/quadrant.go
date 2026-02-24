@@ -35,204 +35,285 @@ func parseQuadrant(code string) *QuadrantDiagram {
 	quadrant := &QuadrantDiagram{}
 
 	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		lower := strings.ToLower(trimmed)
-
-		if strings.HasPrefix(lower, "quadrantchart") {
-			continue
-		}
-
-		if strings.HasPrefix(lower, "title") {
-			quadrant.Title = strings.TrimSpace(trimmed[5:])
-			continue
-		}
-
-		if strings.HasPrefix(lower, "x-axis") {
-			quadrant.XAxis = strings.TrimSpace(trimmed[6:])
-			continue
-		}
-
-		if strings.HasPrefix(lower, "y-axis") {
-			quadrant.YAxis = strings.TrimSpace(trimmed[6:])
-			continue
-		}
-
-		if strings.HasPrefix(lower, "quadrant-") {
-			idxStr := trimmed[9:10]
-			idx, err := strconv.Atoi(idxStr)
-			if err == nil && idx >= 1 && idx <= 4 {
-				quadrant.Quadrants[idx-1] = strings.TrimSpace(trimmed[10:])
-			}
-			continue
-		}
-
-		if strings.Contains(trimmed, ":") && strings.Contains(trimmed, "[") && strings.Contains(trimmed, "]") {
-			parts := strings.Split(trimmed, ":")
-			label := strings.TrimSpace(parts[0])
-			coords := strings.TrimSpace(parts[1])
-			coords = strings.Trim(coords, "[]")
-			coordParts := strings.Split(coords, ",")
-			if len(coordParts) == 2 {
-				x, errX := strconv.ParseFloat(strings.TrimSpace(coordParts[0]), 64)
-				y, errY := strconv.ParseFloat(strings.TrimSpace(coordParts[1]), 64)
-				if errX == nil && errY == nil {
-					quadrant.Points = append(quadrant.Points, QuadrantPoint{
-						Label: label,
-						X:     x,
-						Y:     y,
-					})
-				}
-			}
-		}
+		consumeQuadrantLine(quadrant, strings.TrimSpace(line))
 	}
 
 	return quadrant
 }
 
+func consumeQuadrantLine(quadrant *QuadrantDiagram, trimmed string) {
+	if trimmed == "" {
+		return
+	}
+
+	lower := strings.ToLower(trimmed)
+	if strings.HasPrefix(lower, "quadrantchart") {
+		return
+	}
+	if value, ok := parseQuadrantTitle(trimmed, lower); ok {
+		quadrant.Title = value
+		return
+	}
+	if value, ok := parseQuadrantAxis(trimmed, lower, "x-axis"); ok {
+		quadrant.XAxis = value
+		return
+	}
+	if value, ok := parseQuadrantAxis(trimmed, lower, "y-axis"); ok {
+		quadrant.YAxis = value
+		return
+	}
+	if idx, text, ok := parseQuadrantLabel(trimmed, lower); ok {
+		quadrant.Quadrants[idx] = text
+		return
+	}
+	if point, ok := parseQuadrantPoint(trimmed); ok {
+		quadrant.Points = append(quadrant.Points, point)
+	}
+}
+
+func parseQuadrantTitle(trimmed string, lower string) (string, bool) {
+	if !strings.HasPrefix(lower, "title") {
+		return "", false
+	}
+	return strings.TrimSpace(trimmed[5:]), true
+}
+
+func parseQuadrantAxis(trimmed string, lower string, key string) (string, bool) {
+	if !strings.HasPrefix(lower, key) {
+		return "", false
+	}
+	return strings.TrimSpace(trimmed[6:]), true
+}
+
+func parseQuadrantLabel(trimmed string, lower string) (int, string, bool) {
+	if !strings.HasPrefix(lower, "quadrant-") || len(trimmed) < 10 {
+		return 0, "", false
+	}
+	idx, err := strconv.Atoi(trimmed[9:10])
+	if err != nil || idx < 1 || idx > 4 {
+		return 0, "", false
+	}
+	return idx - 1, strings.TrimSpace(trimmed[10:]), true
+}
+
+func parseQuadrantPoint(trimmed string) (QuadrantPoint, bool) {
+	if !strings.Contains(trimmed, ":") || !strings.Contains(trimmed, "[") || !strings.Contains(trimmed, "]") {
+		return QuadrantPoint{}, false
+	}
+	labelPart, coordPart, ok := strings.Cut(trimmed, ":")
+	if !ok {
+		return QuadrantPoint{}, false
+	}
+	x, y, ok := parseQuadrantCoords(coordPart)
+	if !ok {
+		return QuadrantPoint{}, false
+	}
+	return QuadrantPoint{
+		Label: strings.TrimSpace(labelPart),
+		X:     x,
+		Y:     y,
+	}, true
+}
+
+func parseQuadrantCoords(coordPart string) (float64, float64, bool) {
+	coords := strings.Trim(strings.TrimSpace(coordPart), "[]")
+	xPart, yPart, ok := strings.Cut(coords, ",")
+	if !ok {
+		return 0, 0, false
+	}
+	x, errX := strconv.ParseFloat(strings.TrimSpace(xPart), 64)
+	y, errY := strconv.ParseFloat(strings.TrimSpace(yPart), 64)
+	if errX != nil || errY != nil {
+		return 0, 0, false
+	}
+	return x, y, true
+}
+
 func generateQuadrantElements(quadrant *QuadrantDiagram, theme Theme) DiagramElements {
 	var shapesList []shapes.Shape
 
-	// Layout parameters
-	startX := styling.Inches(1)
-	startY := styling.Inches(1.5)
-	chartSize := styling.Inches(5)
-	quadSize := chartSize / 2
+	layout := quadrantLayout{
+		startX:    styling.Inches(1),
+		startY:    styling.Inches(1.5),
+		chartSize: styling.Inches(5),
+	}
+	quadSize := layout.chartSize / 2
 
-	// Title
 	if quadrant.Title != "" {
-		titleShape := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			startX,
-			startY-styling.Inches(0.7),
-			chartSize,
-			styling.Inches(0.5),
-		).WithText(quadrant.Title).
-			WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
-			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
-		shapesList = append(shapesList, titleShape)
+		shapesList = append(shapesList, quadrantTitleShape(quadrant.Title, layout, theme))
 	}
 
-	// Quadrants
-	// Use theme colors for quadrants
-	quadColors := []string{theme.PrimaryFill, theme.SecondaryFill, theme.Background, theme.PrimaryFill}
+	shapesList = append(shapesList, quadrantAreaShapes(quadrant, layout, quadSize, theme)...)
+	shapesList = append(shapesList, quadrantAxisShapes(quadrant, layout, quadSize, theme)...)
+	shapesList = append(shapesList, quadrantPointShapes(quadrant, layout, theme)...)
 
+	return DiagramElements{
+		Shapes:  shapesList,
+		Grouped: true,
+		Bounds: &DiagramBounds{
+			X:  layout.startX - styling.Inches(0.5),
+			Y:  layout.startY - styling.Inches(0.7),
+			CX: layout.chartSize + styling.Inches(2),
+			CY: layout.chartSize + styling.Inches(1.5),
+		},
+	}
+}
+
+type quadrantLayout struct {
+	startX    styling.Length
+	startY    styling.Length
+	chartSize styling.Length
+}
+
+func quadrantTitleShape(title string, layout quadrantLayout, theme Theme) shapes.Shape {
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		layout.startX,
+		layout.startY-styling.Inches(0.7),
+		layout.chartSize,
+		styling.Inches(0.5),
+	).WithText(title).
+		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
+}
+
+func quadrantAreaShapes(
+	quadrant *QuadrantDiagram,
+	layout quadrantLayout,
+	quadSize styling.Length,
+	theme Theme,
+) []shapes.Shape {
+	out := make([]shapes.Shape, 0, 8)
+	quadColors := []string{theme.PrimaryFill, theme.SecondaryFill, theme.Background, theme.PrimaryFill}
 	quadPositions := []struct{ x, y styling.Length }{
-		{startX + quadSize, startY},            // Q1: Top-Right
-		{startX, startY},                       // Q2: Top-Left
-		{startX, startY + quadSize},            // Q3: Bottom-Left
-		{startX + quadSize, startY + quadSize}, // Q4: Bottom-Right
+		{layout.startX + quadSize, layout.startY},
+		{layout.startX, layout.startY},
+		{layout.startX, layout.startY + quadSize},
+		{layout.startX + quadSize, layout.startY + quadSize},
 	}
 
 	for i, pos := range quadPositions {
-		quadShape := shapes.NewShape(
+		out = append(out, shapes.NewShape(
 			shapes.ShapeTypeRectangle,
 			pos.x,
 			pos.y,
 			quadSize,
 			quadSize,
 		).WithFill(shapes.NewShapeFill(quadColors[i])).
-			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
-		shapesList = append(shapesList, quadShape)
-
+			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)))
 		if quadrant.Quadrants[i] != "" {
-			labelShape := shapes.NewShape(
-				shapes.ShapeTypeRectangle,
-				pos.x,
-				pos.y+quadSize-styling.Inches(0.4),
-				quadSize,
-				styling.Inches(0.3),
-			).WithText(quadrant.Quadrants[i]).
-				WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
-				WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
-			shapesList = append(shapesList, labelShape)
+			out = append(out, quadrantLabelShape(pos.x, pos.y, quadSize, quadrant.Quadrants[i], theme))
 		}
 	}
+	return out
+}
 
-	// Axes
-	xAxisLine := shapes.NewShape(
+func quadrantLabelShape(
+	x styling.Length,
+	y styling.Length,
+	quadSize styling.Length,
+	label string,
+	theme Theme,
+) shapes.Shape {
+	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		startX,
-		startY+quadSize,
-		chartSize,
-		styling.Emu(25400),
-	).WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
-	shapesList = append(shapesList, xAxisLine)
+		x,
+		y+quadSize-styling.Inches(0.4),
+		quadSize,
+		styling.Inches(0.3),
+	).WithText(label).
+		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
+}
 
-	yAxisLine := shapes.NewShape(
+func quadrantAxisShapes(
+	quadrant *QuadrantDiagram,
+	layout quadrantLayout,
+	quadSize styling.Length,
+	theme Theme,
+) []shapes.Shape {
+	out := make([]shapes.Shape, 0, 4)
+	out = append(out, shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		startX+quadSize,
-		startY,
+		layout.startX,
+		layout.startY+quadSize,
+		layout.chartSize,
 		styling.Emu(25400),
-		chartSize,
-	).WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
-	shapesList = append(shapesList, yAxisLine)
+	).WithFill(shapes.NewShapeFill(theme.PrimaryStroke)))
 
-	// Axis labels
+	out = append(out, shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		layout.startX+quadSize,
+		layout.startY,
+		styling.Emu(25400),
+		layout.chartSize,
+	).WithFill(shapes.NewShapeFill(theme.PrimaryStroke)))
+
 	if quadrant.XAxis != "" {
-		xLabel := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			startX,
-			startY+chartSize+styling.Inches(0.1),
-			chartSize,
-			styling.Inches(0.3),
-		).WithText(quadrant.XAxis).
-			WithFill(shapes.NewShapeFill(theme.Background)).
-			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
-		shapesList = append(shapesList, xLabel)
+		out = append(out, quadrantXAxisLabelShape(quadrant.XAxis, layout, theme))
 	}
-
 	if quadrant.YAxis != "" {
-		yLabel := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			startX-styling.Inches(1.4),
-			startY-styling.Inches(0.4),
-			styling.Inches(1.3),
-			styling.Inches(0.3),
-		).WithText(quadrant.YAxis).
-			WithFill(shapes.NewShapeFill(theme.Background)).
-			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
-			WithAutoFit(shapes.TextAutoFitNormal)
-		shapesList = append(shapesList, yLabel)
+		out = append(out, quadrantYAxisLabelShape(quadrant.YAxis, layout, theme))
 	}
+	return out
+}
 
-	// Points
+func quadrantXAxisLabelShape(label string, layout quadrantLayout, theme Theme) shapes.Shape {
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		layout.startX,
+		layout.startY+layout.chartSize+styling.Inches(0.1),
+		layout.chartSize,
+		styling.Inches(0.3),
+	).WithText(label).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
+}
+
+func quadrantYAxisLabelShape(label string, layout quadrantLayout, theme Theme) shapes.Shape {
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		layout.startX-styling.Inches(1.4),
+		layout.startY-styling.Inches(0.4),
+		styling.Inches(1.3),
+		styling.Inches(0.3),
+	).WithText(label).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithAutoFit(shapes.TextAutoFitNormal)
+}
+
+func quadrantPointShapes(quadrant *QuadrantDiagram, layout quadrantLayout, theme Theme) []shapes.Shape {
+	out := make([]shapes.Shape, 0, len(quadrant.Points)*2)
 	for _, p := range quadrant.Points {
-		// Map 0-1 coordinates to chart area
-		// Mermaid coordinates: 0,0 is bottom-left, 1,1 is top-right
-		px := startX + styling.Length(p.X*float64(chartSize))
-		py := startY + styling.Length((1.0-p.Y)*float64(chartSize))
-
-		pointSize := styling.Inches(0.1)
-		point := shapes.NewShape(
-			shapes.ShapeTypeEllipse,
-			px-pointSize/2,
-			py-pointSize/2,
-			pointSize,
-			pointSize,
-		).WithFill(shapes.NewShapeFill(theme.PrimaryStroke)).
-			WithLine(shapes.NewShapeLine(theme.Background, theme.LineWeight))
-		shapesList = append(shapesList, point)
-
-		label := shapes.NewShape(
-			shapes.ShapeTypeRectangle,
-			px+pointSize,
-			py-styling.Inches(0.15),
-			styling.Inches(1.5),
-			styling.Inches(0.3),
-		).WithText(p.Label).
-			WithFill(shapes.NewShapeFill(theme.Background)).
-			WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
-		shapesList = append(shapesList, label)
+		px := layout.startX + styling.Length(p.X*float64(layout.chartSize))
+		py := layout.startY + styling.Length((1.0-p.Y)*float64(layout.chartSize))
+		out = append(out, quadrantPointShape(px, py, theme))
+		out = append(out, quadrantPointLabelShape(px, py, p.Label, theme))
 	}
+	return out
+}
 
-	return DiagramElements{
-		Shapes:  shapesList,
-		Grouped: true,
-		Bounds: &DiagramBounds{
-			X:  startX - styling.Inches(0.5),
-			Y:  startY - styling.Inches(0.7),
-			CX: chartSize + styling.Inches(2),
-			CY: chartSize + styling.Inches(1.5),
-		},
-	}
+func quadrantPointShape(px styling.Length, py styling.Length, theme Theme) shapes.Shape {
+	pointSize := styling.Inches(0.1)
+	return shapes.NewShape(
+		shapes.ShapeTypeEllipse,
+		px-pointSize/2,
+		py-pointSize/2,
+		pointSize,
+		pointSize,
+	).WithFill(shapes.NewShapeFill(theme.PrimaryStroke)).
+		WithLine(shapes.NewShapeLine(theme.Background, theme.LineWeight))
+}
+
+func quadrantPointLabelShape(px styling.Length, py styling.Length, label string, theme Theme) shapes.Shape {
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		px+styling.Inches(0.1),
+		py-styling.Inches(0.15),
+		styling.Inches(1.5),
+		styling.Inches(0.3),
+	).WithText(label).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
 }

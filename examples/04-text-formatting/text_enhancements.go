@@ -43,7 +43,7 @@ func main() {
 
 	// Save
 	outDir := "examples/output"
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 	outPath := filepath.Join(outDir, "04_text_enhancements.pptx")

@@ -89,10 +89,6 @@ func WriteFile(w io.Writer, content string) error {
 	return err
 }
 
-func binaryZipMethod(path string) uint16 {
-	return packageZipMethod(path)
-}
-
 func packageZipMethod(path string) uint16 {
 	if strings.HasPrefix(strings.ToLower(path), "ppt/notes") {
 		return zip.Store

@@ -15,8 +15,8 @@ func BenchmarkBridgeExecuteSingleSetSlideTitle(b *testing.B) {
 	defer func() { _ = editor.Close() }()
 
 	req := `{"api_version":1,"request_id":"bench-single","op":"set_slide_title","payload":{"slide_index":0,"title":"Bench"}}`
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_ = ExecuteCommand(editor, req)
 	}
 }
@@ -26,17 +26,19 @@ func BenchmarkBridgeExecuteBatchSetSlideTitle(b *testing.B) {
 	defer func() { _ = editor.Close() }()
 
 	req := buildBatchSetTitleRequest(benchBatchSize)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_ = ExecuteCommand(editor, req)
 	}
 }
 
 func BenchmarkBridgeJSONEnvelopeDecode(b *testing.B) {
-	req := []byte(`{"api_version":1,"request_id":"bench-json","op":"set_slide_title","payload":{"slide_index":0,"title":"Bench"}}`)
+	req := []byte(
+		`{"api_version":1,"request_id":"bench-json","op":"set_slide_title","payload":{"slide_index":0,"title":"Bench"}}`,
+	)
 	var envelope RequestEnvelope
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		if err := json.Unmarshal(req, &envelope); err != nil {
 			b.Fatalf("unmarshal: %v", err)
 		}
@@ -52,8 +54,8 @@ func BenchmarkBridgeJSONEnvelopeEncode(b *testing.B) {
 			"title":       "Bench",
 		},
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		if _, err := json.Marshal(resp); err != nil {
 			b.Fatalf("marshal: %v", err)
 		}
@@ -89,8 +91,14 @@ func writeBenchDeck(b *testing.B) string {
 
 func buildBatchSetTitleRequest(size int) string {
 	commands := make([]string, 0, size)
-	for i := 0; i < size; i++ {
-		commands = append(commands, fmt.Sprintf(`{"op":"set_slide_title","payload":{"slide_index":0,"title":"Bench %d"}}`, i))
+	for i := range size {
+		commands = append(
+			commands,
+			fmt.Sprintf(`{"op":"set_slide_title","payload":{"slide_index":0,"title":"Bench %d"}}`, i),
+		)
 	}
-	return `{"api_version":1,"request_id":"bench-batch","op":"batch_execute","payload":{"commands":[` + strings.Join(commands, ",") + `]}}`
+	return `{"api_version":1,"request_id":"bench-batch","op":"batch_execute","payload":{"commands":[` + strings.Join(
+		commands,
+		",",
+	) + `]}}`
 }

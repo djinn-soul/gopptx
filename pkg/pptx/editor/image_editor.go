@@ -46,20 +46,13 @@ func (e *PresentationEditor) AddImage(slideIndex int, imagePath string, x, y, w,
 	// 3. Generate image XML
 	content, ok := e.parts.Get(slideRef.Part)
 	if !ok {
-		return 0, fmt.Errorf("read slide part: not found")
+		return 0, errors.New("read slide part: not found")
 	}
 
 	maxID := maxObjectID(content)
 	newID := maxID + 1
 
-	imageRef := pptxxml.ImageRef{
-		RelID: relID,
-		Name:  fmt.Sprintf("Picture %d", newID),
-		X:     int64(x),
-		Y:     int64(y),
-		CX:    int64(w),
-		CY:    int64(h),
-	}
+	imageRef := pptxxml.ImageRef{Name: fmt.Sprintf("Picture %d", newID)}
 
 	// Internal helper from slide_image_xml.go (we need to make it accessible or replicate)
 	// For now, let's use a simplified version here

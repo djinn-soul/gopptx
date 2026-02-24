@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	NSP = "http://schemas.openxmlformats.org/presentationml/2006/main"
+	NSP             = "http://schemas.openxmlformats.org/presentationml/2006/main"
+	defaultFilePerm = 0o600
 )
 
 // Presentation represents the main presentation XML component.
@@ -30,7 +31,7 @@ func (p *Presentation) AddSlide() *Slide {
 //
 // TODO: This is currently a placeholder implementation that generates a generic presentation
 // with fixed slide content. It does not yet serialize the actual data within the Presentation
-// and Slide structs. Future work should refactor this to use xml.Marshal for true data-to-XML
+// and Slide structs. Future work should refactor this to use [xml.Marshal] for true data-to-XML
 // serialization, ensuring all struct fields are respected in the output.
 func (p *Presentation) Save(path string) error {
 	slideCount := len(p.Slides)
@@ -42,7 +43,7 @@ func (p *Presentation) Save(path string) error {
 	if err != nil {
 		return err
 	}
-	return writeFileAtomically(path, data, 0o600)
+	return writeFileAtomically(path, data, defaultFilePerm)
 }
 
 // Slide represents a single slide XML component.

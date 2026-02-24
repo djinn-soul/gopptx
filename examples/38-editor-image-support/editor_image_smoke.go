@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -63,11 +62,11 @@ func main() {
 
 	pres.AddSlide(pptx.NewSlide("Basic Cycle").AddSmartArt(saCycle))
 
-	if err := os.MkdirAll("examples/output", 0o755); err != nil {
+	if err := os.MkdirAll("examples/output", 0o750); err != nil {
 		log.Fatal(err)
 	}
 	if err := pres.WriteToFile(outputPath); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Saved", outputPath)
+	log.Println("Saved", outputPath)
 }

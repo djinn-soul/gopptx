@@ -18,8 +18,8 @@ func DetectTheme(code string) string {
 	}
 
 	// Check line by line for theme directive
-	lines := strings.Split(code, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(code, "\n")
+	for line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if matches := themeDirectiveRegex.FindStringSubmatch(trimmed); len(matches) > 1 {
 			return strings.ToLower(matches[1])
@@ -68,9 +68,9 @@ func ExtractDirection(header string) FlowDirection {
 func SplitConnection(line string) (string, string, string, bool) {
 	arrows := []string{"==>", "-.->", "-->", "---", "->"}
 	for _, arrow := range arrows {
-		if idx := strings.Index(line, arrow); idx != -1 {
-			from := strings.TrimSpace(line[:idx])
-			rest := strings.TrimSpace(line[idx+len(arrow):])
+		if before, after, ok := strings.Cut(line, arrow); ok {
+			from := strings.TrimSpace(before)
+			rest := strings.TrimSpace(after)
 			return from, arrow, rest, true
 		}
 	}

@@ -54,15 +54,22 @@ func fitDiagramToSlide(diagram DiagramElements) DiagramElements {
 	offsetX := targetX + (targetW-scaledW)/2
 	offsetY := targetY + (targetH-scaledH)/2
 
-	transformPoint := func(v, min, offset styling.Length) styling.Length {
-		return scaleLength(v-min, scale) + offset
+	transformPoint := func(v, minValue, offset styling.Length) styling.Length {
+		return scaleLength(v-minValue, scale) + offset
 	}
 
 	for i := range diagram.Shapes {
 		diagram.Shapes[i] = transformShape(diagram.Shapes[i], bounds.minX, bounds.minY, offsetX, offsetY, scale)
 	}
 	for i := range diagram.Connectors {
-		diagram.Connectors[i] = transformConnector(diagram.Connectors[i], bounds.minX, bounds.minY, offsetX, offsetY, scale)
+		diagram.Connectors[i] = transformConnector(
+			diagram.Connectors[i],
+			bounds.minX,
+			bounds.minY,
+			offsetX,
+			offsetY,
+			scale,
+		)
 	}
 
 	diagram.Bounds = &DiagramBounds{

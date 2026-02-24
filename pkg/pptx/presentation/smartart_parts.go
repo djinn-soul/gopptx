@@ -72,19 +72,20 @@ func writeSmartArtFiles(pw *pptxxml.PackageWriter, parts []SmartArtPart) error {
 func categoryFromURI(uri string) string {
 	// Simple heuristic based on URI keywords.
 	// URI format: urn:microsoft.com/office/officeart/2005/8/layout/<name>
-	if strings.Contains(uri, "process") {
+	switch {
+	case strings.Contains(uri, "process"):
 		return "process"
-	} else if strings.Contains(uri, "cycle") {
+	case strings.Contains(uri, "cycle"):
 		return "cycle"
-	} else if strings.Contains(uri, "hierarchy") || strings.Contains(uri, "orgChart") {
+	case strings.Contains(uri, "hierarchy"), strings.Contains(uri, "orgChart"):
 		return "hierarchy"
-	} else if strings.Contains(uri, "venn") || strings.Contains(uri, "radial") || strings.Contains(uri, "target") {
+	case strings.Contains(uri, "venn"), strings.Contains(uri, "radial"), strings.Contains(uri, "target"):
 		return "relationship"
-	} else if strings.Contains(uri, "matrix") {
+	case strings.Contains(uri, "matrix"):
 		return "matrix"
-	} else if strings.Contains(uri, "pyramid") {
+	case strings.Contains(uri, "pyramid"):
 		return "pyramid"
-	} else if strings.Contains(uri, "picture") {
+	case strings.Contains(uri, "picture"):
 		return "picture"
 	}
 	return "list" // Default fallback

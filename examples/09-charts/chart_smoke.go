@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+
+	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
@@ -12,7 +13,7 @@ import (
 const outputDir = "examples/output"
 
 func main() {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		fail("create output directory", err)
 	}
 
@@ -31,7 +32,7 @@ func main() {
 		}
 
 		path := filepath.Join(outputDir, name)
-		if err := os.WriteFile(path, data, 0o644); err != nil {
+		if err := os.WriteFile(path, data, 0o600); err != nil {
 			fail("write "+path, err)
 		}
 		log.Printf("  wrote %s\n", path)

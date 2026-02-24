@@ -7,7 +7,7 @@ func HTMLToPPTX(html, url string) ([]byte, error) {
 }
 
 // HTMLToPPTXWithOptions converts a raw HTML string to PPTX with custom config and options.
-func HTMLToPPTXWithOptions(html, url string, cfg URLFetchConfig, opts ConversionOptions) ([]byte, error) {
+func HTMLToPPTXWithOptions(html, url string, cfg Config, opts ConversionOptions) ([]byte, error) {
 	parser := NewWebParserWithConfig(cfg)
 	content, err := parser.Parse(html, url)
 	if err != nil {
@@ -24,7 +24,7 @@ func URLToPPTX(url string) ([]byte, error) {
 }
 
 // URLToPPTXWithOptions fetches the page at url and converts it with custom config and options.
-func URLToPPTXWithOptions(url string, cfg URLFetchConfig, opts ConversionOptions) ([]byte, error) {
+func URLToPPTXWithOptions(url string, cfg Config, opts ConversionOptions) ([]byte, error) {
 	fetcher := NewWebFetcherWithConfig(cfg)
 	finalURL, html, err := fetcher.FetchWithURL(url)
 	if err != nil {

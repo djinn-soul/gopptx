@@ -21,6 +21,15 @@ import (
 
 const (
 	minMasterCountWithNativeNotesTheme = 2
+	protectionSaltBytes                = 16
+	protectionHashAlgSIDSHA512         = 14
+	guidRandomBytes                    = 16
+	guidVersionMask                    = 0x0f
+	guidVersionNibble                  = 0x40
+	guidVariantMask                    = 0x3f
+	guidVariantNibble                  = 0x80
+	maxAuthorInitialRunes              = 2
+	authorColorPaletteSize             = 10
 )
 
 // Metadata defines non-content properties of a PPTX.
@@ -101,11 +110,20 @@ func WritePresentationPackage(
 		return err
 	}
 
-	
 	chartBySlide := chartPartBySlide(chartParts)
 	smartArtBySlide := smartArtPartBySlide(smartArtParts)
 	notesTargets := notes.TargetBySlide(notesParts)
-	if err := renderSlides(pw, meta, slides, mediaCatalog, chartBySlide, smartArtBySlide, notesTargets, masterCount, commentsBySlide); err != nil {
+	if err := renderSlides(
+		pw,
+		meta,
+		slides,
+		mediaCatalog,
+		chartBySlide,
+		smartArtBySlide,
+		notesTargets,
+		masterCount,
+		commentsBySlide,
+	); err != nil {
 		return err
 	}
 
@@ -160,7 +178,7 @@ func addBasicPropertyFiles(
 ) error {
 	hasNotes := notesPartCount > 0
 
-	xSections, err := convertSections(meta.Sections)
+	xSections, err := convertSections(meta.Sections, slideCount)
 	if err != nil {
 		return err
 	}
@@ -171,24 +189,32 @@ func addBasicPropertyFiles(
 		slideCount, mediaExtensions, chartPartCount, smartArtPartCount,
 		notes.SlideNumbers(notesParts), hasNotes,
 		len(meta.CustomXML), masterCount, notesThemeIndex, hasSections, commentSlideIndices,
+		meta.Protection.MarkAsFinal,
 		meta.Protection.SignaturesEnabled,
 	))
 	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
 	pw.AddPart(
 		"ppt/_rels/presentation.xml.rels",
-		pptxxml.PresentationRelationships(slideCount, hasNotes, len(meta.CustomXML), masterCount, hasSections, hasCommentAuthors),
+		pptxxml.PresentationRelationships(
+			slideCount,
+			hasNotes,
+			len(meta.CustomXML),
+			masterCount,
+			hasSections,
+			hasCommentAuthors,
+		),
 	)
 	var protInfo *pptxxml.ProtectionInfo
 	if meta.Protection.ModifyPassword != "" {
 		// PPT uses 16 bytes of salt by default.
-		salt := make([]byte, 16)
+		salt := make([]byte, protectionSaltBytes)
 		if _, err := rand.Read(salt); err != nil {
 			return fmt.Errorf("generate protection salt: %w", err)
 		}
 		spinCount := 100000
 		hash := protection.HashModifyPassword(meta.Protection.ModifyPassword, salt, spinCount)
 		protInfo = &pptxxml.ProtectionInfo{
-			HashAlgSID: 14,
+			HashAlgSID: protectionHashAlgSIDSHA512,
 			HashData:   hash,
 			SaltData:   base64.StdEncoding.EncodeToString(salt),
 			SpinCount:  spinCount,
@@ -226,7 +252,7 @@ func addBasicPropertyFiles(
 	return nil
 }
 
-func convertSections(sections []Section) ([]pptxxml.Section, error) {
+func convertSections(sections []Section, slideCount int) ([]pptxxml.Section, error) {
 	if len(sections) == 0 {
 		return nil, nil
 	}
@@ -234,6 +260,9 @@ func convertSections(sections []Section) ([]pptxxml.Section, error) {
 	for i, s := range sections {
 		ids := make([]int64, len(s.SlideIndices))
 		for j, idx := range s.SlideIndices {
+			if idx < 0 || idx >= slideCount {
+				return nil, fmt.Errorf("section %q references slide index %d outside [0,%d)", s.Name, idx, slideCount)
+			}
 			ids[j] = int64(256 + 1 + idx)
 		}
 		guid, err := generateGUID()
@@ -250,16 +279,20 @@ func convertSections(sections []Section) ([]pptxxml.Section, error) {
 }
 
 func generateGUID() (string, error) {
-	b := make([]byte, 16)
+	b := make([]byte, guidRandomBytes)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("generate random bytes for GUID: %w", err)
 	}
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
+	b[6] = (b[6] & guidVersionMask) | guidVersionNibble
+	b[8] = (b[8] & guidVariantMask) | guidVariantNibble
 	return fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
-func prepareComments(meta Metadata, slides []elements.SlideContent) ([]comments.Author, map[int][]comments.Comment, []int) {
+//nolint:gocognit // Comment-author normalization and per-slide indexing is intentionally explicit for deterministic IDs.
+func prepareComments(
+	meta Metadata,
+	slides []elements.SlideContent,
+) ([]comments.Author, map[int][]comments.Comment, []int) {
 	var authors []comments.Author
 	authorMap := make(map[string]int)
 
@@ -283,14 +316,16 @@ func prepareComments(meta Metadata, slides []elements.SlideContent) ([]comments.
 				authorMap[c.AuthorName] = idx
 
 				initials := ""
-				parts := strings.Fields(c.AuthorName)
-				for _, p := range parts {
+				parts := strings.FieldsSeq(c.AuthorName)
+				var initialsSb290 strings.Builder
+				for p := range parts {
 					if r, _ := utf8.DecodeRuneInString(p); r != utf8.RuneError {
-						initials += string(r)
+						initialsSb290.WriteRune(r)
 					}
 				}
-				if len([]rune(initials)) > 2 {
-					initials = string([]rune(initials)[:2])
+				initials += initialsSb290.String()
+				if len([]rune(initials)) > maxAuthorInitialRunes {
+					initials = string([]rune(initials)[:maxAuthorInitialRunes])
 				}
 				if initials == "" {
 					initials = "A"
@@ -300,7 +335,7 @@ func prepareComments(meta Metadata, slides []elements.SlideContent) ([]comments.
 					ID:         int64(idx + 1),
 					Name:       c.AuthorName,
 					Initials:   initials,
-					ColorIndex: idx % 10,
+					ColorIndex: idx % authorColorPaletteSize,
 					LastIndex:  0,
 				})
 			}
@@ -372,7 +407,12 @@ func addThemeFiles(pw *pptxxml.PackageWriter, theme *styling.Theme, masterCount 
 	}
 }
 
-func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, notesThemeIndex int, mc *media.Catalog) {
+func addNotesMasterFiles(
+	pw *pptxxml.PackageWriter,
+	meta Metadata,
+	masterCount, notesThemeIndex int,
+	mc *media.Catalog,
+) {
 	if notesThemeIndex == 0 {
 		return
 	}
@@ -383,7 +423,6 @@ func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, 
 	if meta.NotesMaster != nil && meta.NotesMaster.Background != nil &&
 		meta.NotesMaster.Background.Type == elements.SlideBackgroundPicture &&
 		meta.NotesMaster.Background.PictureFill != nil {
-
 		if name, ok := mc.MediaNameForImage(*meta.NotesMaster.Background.PictureFill); ok {
 			backgroundRID = "rId2"
 			mediaName = []string{"../media/" + name}
@@ -391,7 +430,10 @@ func addNotesMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount, 
 	}
 	spec := elements.MapNotesMasterToSpec(meta.NotesMaster, backgroundRID)
 	pw.AddPart("ppt/notesMasters/notesMaster1.xml", pptxxml.NotesMaster(spec))
-	pw.AddPart("ppt/notesMasters/_rels/notesMaster1.xml.rels", pptxxml.NotesMasterRelationships(notesThemeIndex, mediaName))
+	pw.AddPart(
+		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
+		pptxxml.NotesMasterRelationships(notesThemeIndex, mediaName),
+	)
 
 	if notesThemeIndex > masterCount {
 		pw.AddPart(fmt.Sprintf("ppt/theme/theme%d.xml", notesThemeIndex), pptxxml.Theme(mapThemeToSpec(meta.Theme)))

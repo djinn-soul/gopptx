@@ -15,6 +15,7 @@ import (
 
 const outDir = "examples/output"
 
+//nolint:gosec // Fixture generator intentionally writes repo-readable sample artifacts.
 func main() {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
@@ -174,6 +175,7 @@ func generateTableMerge() ([]byte, error) {
 	return pptx.CreateWithSlides("Task 08: Table Merge", []pptx.SlideContent{slide})
 }
 
+//nolint:funlen // Fixture generator keeps explicit chart-case examples in one function for readability.
 func generateCharts() ([]byte, error) {
 	var slides []pptx.SlideContent
 
@@ -411,6 +413,7 @@ func generateConnectors() ([]byte, error) {
 	return pptx.CreateWithSlides("Task 13: Connectors", []pptx.SlideContent{slide})
 }
 
+//nolint:gosec // Fixture generator writes a local WAV sample artifact with non-secret content.
 func generateTransitions() ([]byte, error) {
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Fade Transition").
@@ -460,6 +463,7 @@ func generateTransitions() ([]byte, error) {
 	return pptx.CreateWithSlides("Task 14: Transitions", slides)
 }
 
+//nolint:gosec // PCM sample generation requires explicit integer casts to preserve raw sample bit patterns.
 func generateSineWaveWAV() []byte {
 	// Simple WAV header and 1 second of sine wave
 	const (
@@ -514,6 +518,7 @@ func putUint16(b []byte, v uint16) {
 	b[1] = byte(v >> 8)
 }
 
+//nolint:gosec // Merge fixture flow writes temporary local files; content is non-sensitive test data.
 func generateMerge() ([]byte, error) {
 	// Create first presentation
 	s1 := pptx.NewSlide("Presentation One").
