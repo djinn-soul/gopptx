@@ -123,6 +123,12 @@ func commandHandlerForContent(op string) (commandHandler, bool) {
 		return handleSetModifyPassword, true
 	case OpSetMarkAsFinal:
 		return handleSetMarkAsFinal, true
+	case OpAddCustomXML:
+		return handleAddCustomXML, true
+	case OpListCustomXML:
+		return handleListCustomXML, true
+	case OpRemoveCustomXML:
+		return handleRemoveCustomXML, true
 	default:
 		return nil, false
 	}

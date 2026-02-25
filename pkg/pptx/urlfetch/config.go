@@ -40,6 +40,11 @@ type Config struct {
 // Web2PptConfig is a compatibility alias for Config.
 type Web2PptConfig = Config
 
+// URLFetchConfig is a compatibility alias for Config.
+//
+//nolint:revive // Required compatibility alias for existing public API consumers.
+type URLFetchConfig = Config
+
 // DefaultConfig returns a Config with sensible defaults.
 func DefaultConfig() Config {
 	return Config{

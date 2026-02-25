@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -13,10 +14,13 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/fonts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/handout"
 	"github.com/djinn-soul/gopptx/pkg/pptx/media"
 	"github.com/djinn-soul/gopptx/pkg/pptx/notes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/presentation/protection"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
 const (
@@ -30,18 +34,22 @@ const (
 	guidVariantNibble                  = 0x80
 	maxAuthorInitialRunes              = 2
 	authorColorPaletteSize             = 10
+	customXMLRelationshipPairCount     = 2
 )
 
 // Metadata defines non-content properties of a PPTX.
 type Metadata struct {
 	common.Metadata
 
-	Theme       *styling.Theme
-	Master      *elements.SlideMaster
-	Masters     []*elements.SlideMaster
-	NotesMaster *elements.NotesMaster
-	Sections    []Section
-	RTL         bool
+	Theme         *styling.Theme
+	Master        *elements.SlideMaster
+	Masters       []*elements.SlideMaster
+	NotesMaster   *elements.NotesMaster
+	HandoutMaster *handout.HandoutMaster
+	Sections      []Section
+	RTL           bool
+	VBA           *vba.VBAProject
+	EmbeddedFonts []fonts.EmbeddedFont
 }
 
 // Section describes a PowerPoint section for newly created presentations.
@@ -85,10 +93,12 @@ func WritePresentationPackage(
 
 	authors, commentsBySlide, commentSlideIndices := prepareComments(meta, slides)
 
+	hasVBA := meta.VBA.IsMacroEnabled()
+
 	if err := addBasicPropertyFiles(
 		pw, meta, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
-		authors, commentSlideIndices,
+		authors, commentSlideIndices, hasVBA,
 	); err != nil {
 		return err
 	}
@@ -96,6 +106,7 @@ func WritePresentationPackage(
 	addMasterFiles(pw, effectiveMasters, mediaCatalog)
 	addThemeFiles(pw, meta.Theme, masterCount)
 	addNotesMasterFiles(pw, meta, masterCount, notesThemeIndex, mediaCatalog)
+	addHandoutMasterFiles(pw, meta, masterCount)
 
 	if err := writeMediaFiles(pw, mediaCatalog); err != nil {
 		return err
@@ -134,6 +145,14 @@ func WritePresentationPackage(
 	if err := writeCustomXMLParts(pw, meta.CustomXML); err != nil {
 		return err
 	}
+	if err := writeVBAParts(pw, meta.VBA); err != nil {
+		return err
+	}
+
+	for i, f := range meta.EmbeddedFonts {
+		path := fmt.Sprintf("ppt/fonts/font%d.fntdata", i+1)
+		pw.AddBinaryPart(path, f.Data)
+	}
 
 	return pw.WriteTo(zw)
 }
@@ -166,6 +185,7 @@ func getNotesThemeIndex(hasNotes bool, masterCount int) int {
 	return minMasterCountWithNativeNotesTheme
 }
 
+//nolint:funlen // OPC manifest assembly is intentionally centralized to keep package shape explicit.
 func addBasicPropertyFiles(
 	pw *pptxxml.PackageWriter,
 	meta Metadata,
@@ -175,6 +195,7 @@ func addBasicPropertyFiles(
 	mediaExtensions []string,
 	authors []comments.Author,
 	commentSlideIndices []int,
+	hasVBA bool,
 ) error {
 	hasNotes := notesPartCount > 0
 
@@ -191,6 +212,9 @@ func addBasicPropertyFiles(
 		len(meta.CustomXML), masterCount, notesThemeIndex, hasSections, commentSlideIndices,
 		meta.Protection.MarkAsFinal,
 		meta.Protection.SignaturesEnabled,
+		hasVBA,
+		meta.HandoutMaster != nil,
+		len(meta.EmbeddedFonts) > 0,
 	))
 	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
 	pw.AddPart(
@@ -202,6 +226,9 @@ func addBasicPropertyFiles(
 			masterCount,
 			hasSections,
 			hasCommentAuthors,
+			hasVBA,
+			meta.HandoutMaster != nil,
+			len(meta.EmbeddedFonts),
 		),
 	)
 	var protInfo *pptxxml.ProtectionInfo
@@ -221,12 +248,45 @@ func addBasicPropertyFiles(
 		}
 	}
 
+	includeNotesMaster := hasNotes
+
+	nextRid := 1 + masterCount + 1 + slideCount
+	if includeNotesMaster {
+		nextRid++
+	}
+	nextRid += len(meta.CustomXML) * customXMLRelationshipPairCount
+	if hasSections {
+		nextRid++
+	}
+	if hasCommentAuthors {
+		nextRid++
+	}
+	if hasVBA {
+		nextRid++
+	}
+	if meta.HandoutMaster != nil {
+		nextRid++
+	}
+
+	xmlFonts := make([]pptxxml.EmbeddedFontRef, len(meta.EmbeddedFonts))
+	for i, f := range meta.EmbeddedFonts {
+		xmlFonts[i] = pptxxml.EmbeddedFontRef{
+			Typeface:    f.Typeface,
+			Style:       f.Style.XMLElement(),
+			Charset:     uint8(f.Charset),
+			Panose:      f.Panose,
+			PitchFamily: f.PitchFamily,
+			RelID:       "rId" + strconv.Itoa(nextRid),
+		}
+		nextRid++
+	}
+
 	pw.AddPart(
 		"ppt/presentation.xml",
 		pptxxml.Presentation(
 			meta.Title, slideCount, hasNotes,
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
-			protInfo, xSections, meta.RTL,
+			protInfo, xSections, meta.RTL, xmlFonts,
 		),
 	)
 
@@ -438,4 +498,17 @@ func addNotesMasterFiles(
 	if notesThemeIndex > masterCount {
 		pw.AddPart(fmt.Sprintf("ppt/theme/theme%d.xml", notesThemeIndex), pptxxml.Theme(mapThemeToSpec(meta.Theme)))
 	}
+}
+
+// addHandoutMasterFiles writes ppt/handoutMasters/handoutMaster1.xml and its
+// relationships file when the presentation metadata includes a HandoutMaster.
+func addHandoutMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount int) {
+	if meta.HandoutMaster == nil {
+		return
+	}
+	pw.AddPart("ppt/handoutMasters/handoutMaster1.xml", meta.HandoutMaster.GenerateXML())
+	pw.AddPart(
+		"ppt/handoutMasters/_rels/handoutMaster1.xml.rels",
+		handout.RelationshipsXML(masterCount),
+	)
 }

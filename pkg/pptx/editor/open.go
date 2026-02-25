@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
 type parsedSlideIDRef struct {
@@ -72,6 +73,7 @@ func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 		slides:          slideRefs,
 		nonSlideRels:    nonSlideRels,
 		presentationXML: string(presentationXMLBytes),
+		embeddedFontLst: extractEmbeddedFontLst(presentationXMLBytes),
 		imagePathCache:  make(map[string]imagePathCacheEntry),
 	}
 	slideSize, err := parsePresentationSlideSize(presentationXMLBytes)
@@ -80,12 +82,16 @@ func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 	}
 	coreData, _ := ps.Get(common.CorePropsPath)
 	coreProps, _ := parseCoreProperties(coreData)
-	editor.metadata = common.Metadata{
-		Title:          coreProps.Title,
-		SlideCount:     len(slideRefs),
-		SlideSize:      slideSize,
-		CoreProperties: coreProps,
+	editor.metadata = common.Metadata{}
+	editor.metadata.Title = coreProps.Title
+	editor.metadata.SlideCount = len(slideRefs)
+	editor.metadata.SlideSize = slideSize
+	editor.metadata.CoreProperties = coreProps
+
+	if vbaData, hasVBA := ps.Get(vba.PackagePath); hasVBA {
+		editor.metadata.VBA = vba.FromData(vbaData)
 	}
+
 	editor.nextSlideID = nextSlideID(slideRefs)
 	editor.nextRelIDNum = nextRelationshipNumber(rels)
 	editor.nextSlideNum = nextSlidePartNumber(slideRefs)
@@ -99,6 +105,8 @@ func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 
 	editor.chartEmbeddings, editor.nextChartNum, editor.nextExcelNum = parseChartInventory(ps, partKeys)
 	editor.notesInventory, editor.nextNotesNum = parseNotesInventory(ps, partKeys)
+
+	editor.metadata.CustomXML = parseCustomXMLInventory(ps, partKeys)
 
 	editor.populateSlideTitlesConcurrently()
 	return editor, nil
@@ -170,6 +178,14 @@ func resolveSlideReferences(
 		})
 	}
 	return out, nonSlide, nil
+}
+
+func extractEmbeddedFontLst(xml []byte) string {
+	match := embeddedFontLstPattern.Find(xml)
+	if match == nil {
+		return ""
+	}
+	return string(match)
 }
 
 func normalizePresentationTarget(target string) string {
@@ -456,4 +472,122 @@ func parseNotesInventory(ps *PartStore, partKeys []string) (map[string]string, i
 		}
 	}
 	return inventory, maxNotes + 1
+}
+
+func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXMLPart {
+	var parts []common.CustomXMLPart
+
+	// We sort the keys or just find max to append in order, but the order of item* doesn't strictly matter
+	// Let's iterate up to the max item found or just collect all matching paths and sort them
+	var itemPaths []string
+	for _, p := range partKeys {
+		if strings.HasPrefix(p, "customXml/item") && strings.HasSuffix(p, ".xml") &&
+			!strings.HasPrefix(p, "customXml/itemProps") {
+			itemPaths = append(itemPaths, p)
+		}
+	}
+
+	for _, p := range itemPaths {
+		itemData, _ := ps.Get(p)
+		propsPath := strings.Replace(p, "item", "itemProps", 1)
+
+		part := common.CustomXMLPart{Content: string(itemData)}
+
+		if propsData, hasProps := ps.Get(propsPath); hasProps {
+			part.Namespace = parseCustomXMLNamespace(propsData)
+		}
+
+		// Only attempt to parse as structured XML when a namespace was found in itemProps.
+		// Raw parts with no namespace are preserved verbatim in Content (ppt-rs behaviour).
+		if part.Namespace != "" {
+			structuredPart, ok := parseStructuredCustomXML(itemData, part.Namespace)
+			if ok {
+				parts = append(parts, structuredPart)
+				continue
+			}
+		}
+		parts = append(parts, part)
+	}
+
+	return parts
+}
+
+func parseCustomXMLNamespace(propsData []byte) string {
+	decoder := xml.NewDecoder(bytes.NewReader(propsData))
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if start.Name.Local == "schemaRef" {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "uri" {
+					return attr.Value
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func parseStructuredCustomXML(itemData []byte, ns string) (common.CustomXMLPart, bool) {
+	decoder := xml.NewDecoder(bytes.NewReader(itemData))
+
+	// First element is root
+	var rootName string
+	var props []common.CustomXMLKV
+
+	for {
+		t, err := decoder.Token()
+		if err != nil {
+			return common.CustomXMLPart{}, false
+		}
+		if start, ok := t.(xml.StartElement); ok {
+			rootName = start.Name.Local
+			break
+		}
+	}
+
+	// Now parse children as properties
+	var currentKey string
+	var currentValue strings.Builder
+
+	for {
+		t, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		switch t := t.(type) {
+		case xml.StartElement:
+			currentKey = t.Name.Local
+			currentValue.Reset()
+		case xml.CharData:
+			if currentKey != "" {
+				currentValue.Write(t)
+			}
+		case xml.EndElement:
+			if t.Name.Local == rootName {
+				return common.CustomXMLPart{
+					RootElement: rootName,
+					Namespace:   ns,
+					Properties:  props,
+				}, true
+			}
+			if currentKey == t.Name.Local {
+				props = append(props, common.CustomXMLKV{Key: currentKey, Value: currentValue.String()})
+				currentKey = ""
+			}
+		}
+	}
+
+	// If we successfully parsed children and properties
+	return common.CustomXMLPart{
+		RootElement: rootName,
+		Namespace:   ns,
+		Properties:  props,
+	}, true
 }

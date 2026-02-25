@@ -50,13 +50,21 @@ func main() {
 
 	pyiFile, err := os.Create(outputPyi)
 	if err != nil {
-		_ = pyFile.Close()
+		if closeErr := pyFile.Close(); closeErr != nil {
+			fmt.Fprintf(os.Stderr, "Error closing file: %v\n", closeErr)
+		}
 		fmt.Fprintf(os.Stderr, "Error creating file: %v\n", err)
 		os.Exit(1)
 	}
 
-	writeOpsPy(pyFile, ops)
-	writeOpsPyi(pyiFile, ops)
+	if err := writeOpsPy(pyFile, ops); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing py file: %v\n", err)
+		os.Exit(1)
+	}
+	if err := writeOpsPyi(pyiFile, ops); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing pyi file: %v\n", err)
+		os.Exit(1)
+	}
 	if err := pyFile.Close(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error closing file: %v\n", err)
 		os.Exit(1)
@@ -120,32 +128,32 @@ func parseOpSpec(vspec *ast.ValueSpec) (opSpec, bool, error) {
 	}, true, nil
 }
 
-func writeOpsPy(f *os.File, ops []opSpec) {
-	fmt.Fprintln(f, "from __future__ import annotations")
-	fmt.Fprintln(f)
+func writeOpsPy(f *os.File, ops []opSpec) error {
+	var out strings.Builder
+	out.WriteString(`"""Operation constants shared by gopptx Python runtime."""` + "\n\n")
+	out.WriteString("from __future__ import annotations\n\n")
 	for _, op := range ops {
-		fmt.Fprintf(f, "%s = %q\n", op.PyName, op.Value)
+		out.WriteString(fmt.Sprintf("%s = %q\n", op.PyName, op.Value))
 	}
-	fmt.Fprintln(f)
-	fmt.Fprintln(f, "SUPPORTED_OPS = (")
+	out.WriteString("\nSUPPORTED_OPS = (\n")
 	for _, op := range ops {
-		fmt.Fprintf(f, "    %s,\n", op.PyName)
+		out.WriteString(fmt.Sprintf("    %s,\n", op.PyName))
 	}
-	fmt.Fprintln(f, ")")
-	fmt.Fprintln(f)
-	fmt.Fprintln(f, "SUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)")
+	out.WriteString(")\n\nSUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)\n")
+	_, err := f.WriteString(out.String())
+	return err
 }
 
-func writeOpsPyi(f *os.File, ops []opSpec) {
-	fmt.Fprintln(f, "from __future__ import annotations")
-	fmt.Fprintln(f)
-	fmt.Fprintln(f, "from typing import FrozenSet, Tuple")
-	fmt.Fprintln(f)
+func writeOpsPyi(f *os.File, ops []opSpec) error {
+	var out strings.Builder
+	out.WriteString("from __future__ import annotations\n\n")
 	for _, op := range ops {
-		fmt.Fprintf(f, "%s: str\n", op.PyName)
+		out.WriteString(fmt.Sprintf("%s: str\n", op.PyName))
 	}
-	fmt.Fprintln(f, "SUPPORTED_OPS: Tuple[str, ...]")
-	fmt.Fprintln(f, "SUPPORTED_OPS_SET: FrozenSet[str]")
+	out.WriteString("SUPPORTED_OPS: tuple[str, ...]\n")
+	out.WriteString("SUPPORTED_OPS_SET: frozenset[str]\n")
+	_, err := f.WriteString(out.String())
+	return err
 }
 
 func unquote(s string) (string, error) { return strconv.Unquote(s) }

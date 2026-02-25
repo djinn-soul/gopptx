@@ -101,6 +101,7 @@ func deck_new(title *C.char) C.DeckHandle {
 	_ = tmpFile.Close()
 
 	if err := os.WriteFile(tmpPath, data, 0o600); err != nil {
+		_ = os.Remove(tmpPath)
 		setGlobalError(err)
 		return 0
 	}

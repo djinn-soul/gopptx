@@ -153,6 +153,7 @@ func renderPresentationRelsXML(
 	nonSlide []common.EditorRelationship,
 	slides []common.EditorSlideRef,
 	hasSections bool,
+	hasVBA bool,
 ) (string, error) {
 	rels, used, hasSectionRel, err := collectNonSlideRelationships(nonSlide, len(slides))
 	if err != nil {
@@ -160,6 +161,18 @@ func renderPresentationRelsXML(
 	}
 	if hasSections && !hasSectionRel {
 		rels = append(rels, makeSectionListRelationship(rels, slides))
+	}
+	if hasVBA {
+		hasVBARel := false
+		for _, r := range rels {
+			if r.Type == vbaProjectRelType {
+				hasVBARel = true
+				break
+			}
+		}
+		if !hasVBARel {
+			rels = append(rels, makeVBARelationship(rels, slides))
+		}
 	}
 	rels = appendMissingSlideRelationships(rels, used, slides)
 	return renderRelationshipsXML(rels), nil
@@ -183,12 +196,14 @@ func rewriteContentTypes(
 	hasNotesMaster bool,
 	hasCommentAuthors bool,
 	commentPaths []string,
+	hasVBA bool,
+	hasHandoutMaster bool,
 ) (string, error) {
 	doc, err := parseContentTypesDocument(current)
 	if err != nil {
 		return "", err
 	}
-	ensureContentTypeDefaults(&doc, mediaPaths)
+	ensureContentTypeDefaults(&doc, mediaPaths, hasVBA)
 
 	overrides := filterDynamicOverrides(doc.Overrides, len(slides))
 	overrides = appendSlideOverrides(overrides, slides)
@@ -206,8 +221,12 @@ func rewriteContentTypes(
 		"application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml")
 	overrides = appendOptionalContentTypeOverride(overrides, hasNotesMaster, "/ppt/notesMasters/notesMaster1.xml",
 		"application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml")
+	overrides = appendOptionalContentTypeOverride(overrides, hasHandoutMaster, "/ppt/handoutMasters/handoutMaster1.xml",
+		"application/vnd.openxmlformats-officedocument.presentationml.handoutMaster+xml")
 	overrides = appendOptionalContentTypeOverride(overrides, hasCommentAuthors, "/ppt/commentAuthors.xml",
 		"application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml")
+	overrides = appendOptionalContentTypeOverride(overrides, hasVBA, "/ppt/vbaProject.bin",
+		"application/vnd.ms-office.vbaProject")
 	overrides = appendPathOverrides(overrides, commentPaths, commentsPartType)
 
 	sort.Slice(overrides, func(i, j int) bool { return overrides[i].PartName < overrides[j].PartName })
@@ -248,6 +267,20 @@ func makeSectionListRelationship(
 		ID:     fmt.Sprintf("rId%d", maxNum+1),
 		Type:   common.RelTypeSectionList,
 		Target: "sectionList.xml",
+	}
+}
+
+const vbaProjectRelType = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
+
+func makeVBARelationship(
+	rels []common.EditorRelationship,
+	slides []common.EditorSlideRef,
+) common.EditorRelationship {
+	maxNum := maxRelationshipNumber(rels, slides)
+	return common.EditorRelationship{
+		ID:     fmt.Sprintf("rId%d", maxNum+1),
+		Type:   vbaProjectRelType,
+		Target: "vbaProject.bin",
 	}
 }
 
@@ -336,7 +369,7 @@ func parseContentTypesDocument(current []byte) (contentTypesDocument, error) {
 	return doc, nil
 }
 
-func ensureContentTypeDefaults(doc *contentTypesDocument, mediaPaths []string) {
+func ensureContentTypeDefaults(doc *contentTypesDocument, mediaPaths []string, hasVBA bool) {
 	exts := make(map[string]struct{}, len(doc.Defaults))
 	for _, d := range doc.Defaults {
 		exts[strings.ToLower(d.Extension)] = struct{}{}
@@ -355,6 +388,16 @@ func ensureContentTypeDefaults(doc *contentTypesDocument, mediaPaths []string) {
 			ContentType: contentType,
 		})
 		exts[ext] = struct{}{}
+	}
+
+	if hasVBA {
+		if _, ok := exts["bin"]; !ok {
+			doc.Defaults = append(doc.Defaults, contentTypeDefault{
+				Extension:   "bin",
+				ContentType: "application/vnd.ms-office.vbaProject",
+			})
+			exts["bin"] = struct{}{}
+		}
 	}
 }
 
@@ -596,4 +639,30 @@ func buildPresentationSectionExtensionXML(sections []Section) string {
 	}
 	b.WriteString("\n</p14:sectionLst>")
 	return b.String()
+}
+
+var embeddedFontLstPattern = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
+
+func rewritePresentationEmbeddedFonts(current []byte, fontLst string) (string, error) {
+	if fontLst == "" {
+		return string(current), nil
+	}
+	source := string(current)
+
+	// If it already has an embeddedFontLst, replace it.
+	if embeddedFontLstPattern.MatchString(source) {
+		return embeddedFontLstPattern.ReplaceAllString(source, fontLst), nil
+	}
+
+	// Otherwise, insert it. A safe place is before <p:extLst> or </p:presentation>.
+	if strings.Contains(source, "<p:extLst>") {
+		return strings.Replace(source, "<p:extLst>", fontLst+"\n<p:extLst>", 1), nil
+	}
+
+	idx := strings.LastIndex(source, "</p:presentation>")
+	if idx >= 0 {
+		return source[:idx] + fontLst + "\n" + source[idx:], nil
+	}
+
+	return "", errors.New("presentation XML malformed (missing </p:presentation>)")
 }

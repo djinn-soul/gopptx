@@ -7,14 +7,26 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
 const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
+
+var editorCustomXMLNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9._-]*$`)
+
+var editorCustomXMLEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+	"'", "&apos;",
+)
 
 // Save writes the edited presentation back to a PPTX file.
 //
@@ -102,6 +114,7 @@ func (e *PresentationEditor) Save(filePath string) error {
 	return nil
 }
 
+//nolint:gocognit,funlen // Part collection intentionally aggregates many conditional package part rewrites.
 func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	out := make(map[string][]byte)
 
@@ -123,7 +136,9 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 
 	hasSections := len(e.sections) > 0
 	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
-	presentationRelsXML, err := renderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections)
+	vbaProject, hasVBA := vbaProjectFromMetadata(e.metadata.VBA)
+
+	presentationRelsXML, err := renderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +162,7 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	filteredCommentPaths := filterXMLPartPaths(e.parts.KeysWithPrefix("ppt/comments/comment"))
 
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
+	hasHandoutMaster := e.parts.Has("ppt/handoutMasters/handoutMaster1.xml")
 	contentTypesXML, err := rewriteContentTypes(
 		contentTypesData,
 		e.slides,
@@ -160,6 +176,8 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		hasNotesMaster,
 		hasCommentAuthors,
 		filteredCommentPaths,
+		hasVBA,
+		hasHandoutMaster,
 	)
 	if err != nil {
 		return nil, err
@@ -176,8 +194,98 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 			out["ppt/notesMasters/_rels/notesMaster1.xml.rels"] = masterRels
 		}
 	}
+	if hasHandoutMaster {
+		if masterXML, ok := e.parts.Get("ppt/handoutMasters/handoutMaster1.xml"); ok {
+			out["ppt/handoutMasters/handoutMaster1.xml"] = masterXML
+		}
+		if masterRels, ok := e.parts.Get("ppt/handoutMasters/_rels/handoutMaster1.xml.rels"); ok {
+			out["ppt/handoutMasters/_rels/handoutMaster1.xml.rels"] = masterRels
+		}
+	}
+
+	if hasVBA {
+		out["ppt/vbaProject.bin"] = vbaProject.Data
+	}
+
+	for i, cXML := range e.metadata.CustomXML {
+		var itemStr string
+		if cXML.RootElement != "" {
+			itemStr, err = generateCustomXMLItem(cXML)
+			if err != nil {
+				return nil, fmt.Errorf("custom XML part %d: %w", i+1, err)
+			}
+		} else {
+			itemStr = cXML.Content
+		}
+		out[fmt.Sprintf("customXml/item%d.xml", i+1)] = []byte(itemStr)
+
+		schemaRefs := "<ds:schemaRefs></ds:schemaRefs>"
+		if cXML.Namespace != "" {
+			schemaRefs = fmt.Sprintf(
+				`<ds:schemaRefs><ds:schemaRef ds:uri="%s"/></ds:schemaRefs>`,
+				escapeEditorCustomXML(cXML.Namespace),
+			)
+		}
+
+		// For round-tripping properly we should ideally preserve original ds:itemID,
+		// but since we might add new ones, generating a new GUID is safest, or we could parse original.
+		// For now we generate new GUIDs on save just like creation.
+		itemID, err := common.NewGUID()
+		if err != nil {
+			return nil, err
+		}
+
+		propsContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
+%s
+</ds:datastoreItem>`, itemID, schemaRefs)
+		out[fmt.Sprintf("customXml/itemProps%d.xml", i+1)] = []byte(propsContent)
+	}
 
 	return out, nil
+}
+
+func generateCustomXMLItem(part common.CustomXMLPart) (string, error) {
+	if !editorCustomXMLNamePattern.MatchString(part.RootElement) {
+		return "", fmt.Errorf("invalid root element name %q", part.RootElement)
+	}
+
+	nsAttr := ""
+	if part.Namespace != "" {
+		nsAttr = fmt.Sprintf(` xmlns="%s"`, escapeEditorCustomXML(part.Namespace))
+	}
+
+	inner := part.Content
+	if inner == "" && len(part.Properties) > 0 {
+		var propsSb strings.Builder
+		for j, kv := range part.Properties {
+			if !editorCustomXMLNamePattern.MatchString(kv.Key) {
+				return "", fmt.Errorf("invalid property element name %q", kv.Key)
+			}
+			if j > 0 {
+				propsSb.WriteString("\n  ")
+			}
+			propsSb.WriteString(fmt.Sprintf("<%s>%s</%s>", kv.Key, escapeEditorCustomXML(kv.Value), kv.Key))
+		}
+		inner = propsSb.String()
+	}
+
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<%s%s>
+  %s
+</%s>`, part.RootElement, nsAttr, inner, part.RootElement), nil
+}
+
+func escapeEditorCustomXML(value string) string {
+	return editorCustomXMLEscaper.Replace(value)
+}
+
+func vbaProjectFromMetadata(raw any) (*vba.VBAProject, bool) {
+	project, ok := raw.(*vba.VBAProject)
+	if !ok || project == nil {
+		return nil, false
+	}
+	return project, project.IsMacroEnabled()
 }
 
 func (e *PresentationEditor) serializeAuthorCacheIfPopulated() error {
@@ -246,6 +354,12 @@ func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error)
 	if err != nil {
 		return "", fmt.Errorf("rewrite sections: %w", err)
 	}
+
+	presentationXML, err = rewritePresentationEmbeddedFonts([]byte(presentationXML), e.embeddedFontLst)
+	if err != nil {
+		return "", fmt.Errorf("rewrite embedded fonts: %w", err)
+	}
+
 	return presentationXML, nil
 }
 

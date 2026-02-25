@@ -37,6 +37,7 @@ type PresentationEditor struct {
 	metadata        common.Metadata
 	nonSlideRels    []common.EditorRelationship
 	presentationXML string
+	embeddedFontLst string
 
 	// Media inventory for deduplication (SHA1 -> PartPath)
 	mediaInventory map[string]string

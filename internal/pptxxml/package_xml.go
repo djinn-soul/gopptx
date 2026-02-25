@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-const sectionListRelationshipType = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
+const (
+	sectionListRelationshipType = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
+	xmlHeader                   = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+)
 
 // Escape replaces XML-sensitive characters with entity references.
 func Escape(value string) string {
@@ -40,6 +43,9 @@ func ContentTypes(
 	commentSlides []int,
 	hasCustomProps bool,
 	hasSignatures bool,
+	hasVBA bool,
+	hasHandoutMaster bool,
+	hasEmbeddedFonts bool,
 ) string {
 	if masterCount < 1 {
 		masterCount = 1
@@ -47,12 +53,26 @@ func ContentTypes(
 	var b strings.Builder
 	b.Grow(4096 + slideCount*160 + chartCount*120 + smartArtCount*560 + len(notesSlides)*140 +
 		customXMLCount*220 + masterCount*560 + len(imageExtensions)*96)
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	b.WriteString(xmlHeader)
+	b.WriteString(`
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
 <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/ppt/presentation.xml" ` +
-		`ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
+<Default Extension="xml" ContentType="application/xml"/>`)
+	if hasVBA {
+		b.WriteString(`
+<Default Extension="bin" ContentType="application/vnd.ms-office.vbaProject"/>`)
+	}
+	if hasEmbeddedFonts {
+		b.WriteString(`
+<Default Extension="fntdata" ContentType="application/x-fontdata"/>`)
+	}
+	if hasVBA {
+		b.WriteString(`
+<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.ms-powerpoint.presentation.macroEnabled.main+xml"/>`)
+	} else {
+		b.WriteString(`
+<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>`)
+	}
 
 	if hasSections {
 		b.WriteString(`
@@ -120,6 +140,10 @@ func ContentTypes(
 		b.WriteString(`
 <Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>`)
 	}
+	if hasHandoutMaster {
+		b.WriteString(`
+<Override PartName="/ppt/handoutMasters/handoutMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.handoutMaster+xml"/>`)
+	}
 
 	for _, slideNumber := range commentSlides {
 		b.WriteString(`
@@ -140,6 +164,11 @@ func ContentTypes(
 <Override PartName="/customXml/itemProps`)
 		writeInt(i)
 		b.WriteString(`.xml" ContentType="application/vnd.openxmlformats-officedocument.customXmlProperties+xml"/>`)
+	}
+
+	if hasVBA {
+		b.WriteString(`
+<Override PartName="/ppt/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/>`)
 	}
 
 	for i := 1; i <= masterCount*6; i++ {
@@ -199,7 +228,7 @@ func ContentTypes(
 
 // SignatureOrigin renders _xmlsignatures/origin.sigs.
 func SignatureOrigin() string {
-	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	return xmlHeader + `
 <SignatureOrigin xmlns="http://schemas.openxmlformats.org/package/2006/digital-signature"/>`
 }
 
@@ -241,7 +270,8 @@ func imageContentType(ext string) (string, bool) {
 // RootRelationships renders _rels/.rels.
 func RootRelationships(hasCustomProps, hasSignatures bool) string {
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	b.WriteString(xmlHeader)
+	b.WriteString(`
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
@@ -276,12 +306,16 @@ func PresentationRelationships(
 	masterCount int,
 	hasSections bool,
 	hasCommentAuthors bool,
+	hasVBA bool,
+	hasHandoutMaster bool,
+	embeddedFontsCount int,
 ) string {
 	if masterCount < 1 {
 		masterCount = 1
 	}
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	b.WriteString(xmlHeader)
+	b.WriteString(`
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
 
 	nextRid := 1
@@ -366,6 +400,39 @@ func PresentationRelationships(
 		b.WriteString(
 			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors" Target="commentAuthors.xml"/>`,
 		)
+		nextRid++
+	}
+
+	if hasVBA {
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(nextRid))
+		b.WriteString(
+			`" Type="http://schemas.microsoft.com/office/2006/relationships/vbaProject" Target="vbaProject.bin"/>`,
+		)
+		nextRid++
+	}
+
+	if hasHandoutMaster {
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(nextRid))
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/handoutMaster" Target="handoutMasters/handoutMaster1.xml"/>`,
+		)
+		nextRid++
+	}
+
+	for i := 1; i <= embeddedFontsCount; i++ {
+		b.WriteString(`
+<Relationship Id="rId`)
+		b.WriteString(strconv.Itoa(nextRid))
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="fonts/font`,
+		)
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`.fntdata"/>`)
+		nextRid++
 	}
 
 	b.WriteString(`
@@ -386,7 +453,7 @@ func SectionListXML(sections []Section) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
+	b.WriteString(xmlHeader)
 	b.WriteString(sectionListBody("s", "http://schemas.microsoft.com/office/powerpoint/2010/main", sections))
 	return b.String()
 }
@@ -455,13 +522,15 @@ func Presentation(
 	protection *ProtectionInfo,
 	sections []Section,
 	rtl bool, // Note: rtl="1" only enables UI direction; content elements (text, etc.) may need individual alignment.
+	embeddedFonts []EmbeddedFontRef,
 ) string {
 	_ = title
 	if masterCount < 1 {
 		masterCount = 1
 	}
 	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	b.WriteString(xmlHeader)
+	b.WriteString(`
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
 		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1"`)
@@ -544,6 +613,10 @@ func Presentation(
 		b.WriteString(`"/>`)
 	}
 
+	if len(embeddedFonts) > 0 {
+		b.WriteString(EmbeddedFontsXML(embeddedFonts))
+	}
+
 	if len(sections) > 0 {
 		b.WriteString(`
 <p:extLst>
@@ -571,4 +644,70 @@ func CustomProperties(markAsFinal bool) string {
 <vt:bool>true</vt:bool>
 </property>
 </Properties>`
+}
+
+// EmbeddedFontRef describes a font for packing into the presentation XML.
+type EmbeddedFontRef struct {
+	Typeface    string
+	Style       string // e.g. "regular", "bold", "italic", "boldItalic"
+	Charset     uint8
+	Panose      string
+	PitchFamily uint8
+	RelID       string
+}
+
+// EmbeddedFontsXML renders the <p:embeddedFontLst> block.
+func EmbeddedFontsXML(fonts []EmbeddedFontRef) string {
+	if len(fonts) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("\n<p:embeddedFontLst>")
+
+	// Group fonts by typeface to emit one <p:embeddedFont> per typeface family
+	grouped := make(map[string][]EmbeddedFontRef)
+	var order []string
+	for _, f := range fonts {
+		if _, exists := grouped[f.Typeface]; !exists {
+			order = append(order, f.Typeface)
+		}
+		grouped[f.Typeface] = append(grouped[f.Typeface], f)
+	}
+
+	for _, typeface := range order {
+		variants := grouped[typeface]
+		if len(variants) == 0 {
+			continue
+		}
+
+		first := variants[0]
+		b.WriteString("\n<p:embeddedFont>")
+		b.WriteString("\n  <p:font typeface=\"")
+		b.WriteString(Escape(first.Typeface))
+		b.WriteString("\" pitchFamily=\"")
+		b.WriteString(strconv.Itoa(int(first.PitchFamily)))
+		b.WriteString("\" charset=\"")
+		b.WriteString(strconv.Itoa(int(first.Charset)))
+		b.WriteString("\"")
+		if first.Panose != "" {
+			b.WriteString(" panose=\"")
+			b.WriteString(Escape(first.Panose))
+			b.WriteString("\"")
+		}
+		b.WriteString("/>")
+
+		for _, v := range variants {
+			b.WriteString("\n  <p:")
+			b.WriteString(v.Style)
+			b.WriteString(" r:id=\"")
+			b.WriteString(v.RelID)
+			b.WriteString("\"/>")
+		}
+
+		b.WriteString("\n</p:embeddedFont>")
+	}
+
+	b.WriteString("\n</p:embeddedFontLst>")
+	return b.String()
 }
