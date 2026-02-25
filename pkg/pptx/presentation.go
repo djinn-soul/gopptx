@@ -8,7 +8,10 @@ import (
 	"os"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/presentation"
+	"github.com/djinn-soul/gopptx/pkg/pptx/validation/logical"
+	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
 
 type (
@@ -113,4 +116,78 @@ func WriteFile(path string, title string, slides []SlideContent) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o600)
+}
+
+// Validate checks a PPTX byte slice for structural issues.
+func Validate(pptxData []byte) ([]structural.Issue, error) {
+	// Try full editor open first for deep validation (relationships, etc.)
+	ed, err := editor.OpenPresentationEditorFromBytes(pptxData)
+	if err == nil {
+		defer func() { _ = ed.Close() }()
+		return ed.Validate(), nil
+	}
+
+	// If full open fails, it might be due to invalid XML or missing parts.
+	// Fallback to structural validation on raw parts.
+	ps, psErr := editor.OpenPartStoreFromBytes(pptxData)
+	if psErr != nil {
+		return nil, psErr
+	}
+	defer func() { _ = ps.Close() }()
+
+	v := structural.NewValidator(ps)
+	v.AddChecker(&logical.Checker{})
+	return v.Validate(), nil
+}
+
+// Repair attempts to fix structural issues in a PPTX byte slice and returns the fixed bytes.
+func Repair(pptxData []byte) ([]byte, structural.RepairResult, error) {
+	ps, err := editor.OpenPartStoreFromBytes(pptxData)
+	if err != nil {
+		return nil, structural.RepairResult{}, err
+	}
+	defer func() { _ = ps.Close() }()
+
+	v := structural.NewValidator(ps)
+	v.AddChecker(&logical.Checker{})
+	issues := v.Validate()
+	if len(issues) == 0 {
+		return pptxData, structural.RepairResult{}, nil
+	}
+
+	r := structural.NewRepairer(ps)
+	result := r.Repair(issues)
+
+	// Save the repaired parts
+	// We need a temporary editor to save, or we can use a simpler save mechanism.
+	// Since we already have the parts, we can try to re-open the editor from these parts.
+	// If it still fails, it's a critical error.
+
+	// Create a new editor from the repaired part store
+	ed, err := editor.NewPresentationEditorFromParts(ps)
+	if err != nil {
+		// If it still fails to open as a full editor, we might have repaired some things but not enough.
+		// For now, we'll try a raw save if possible, or return the error.
+		return nil, result, fmt.Errorf("repair produced unusable package: %w", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	// Use a secure temporary file with proper cleanup
+	tmpFile, err := os.CreateTemp("", "repair-*.pptx")
+	if err != nil {
+		return nil, result, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	tmpFile.Close()
+	defer os.Remove(tmpPath)
+
+	if err := ed.Save(tmpPath); err != nil {
+		return nil, result, err
+	}
+	repairedData, err := os.ReadFile(tmpPath)
+	if err != nil {
+		return nil, result, err
+	}
+
+	return repairedData, result, nil
 }

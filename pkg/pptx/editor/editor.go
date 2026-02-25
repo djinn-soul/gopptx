@@ -14,6 +14,8 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/validation/logical"
+	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
 
 const shapeTypePicture = "pic"
@@ -116,6 +118,29 @@ func (e *PresentationEditor) Slides() []common.SlideMetadata {
 		})
 	}
 	return out
+}
+
+// Validate performs a structural validation check on the underlying parts.
+func (e *PresentationEditor) Validate() []structural.Issue {
+	if e == nil || e.parts == nil {
+		return nil
+	}
+	v := structural.NewValidator(e.parts)
+	v.AddChecker(&logical.Checker{})
+	return v.Validate()
+}
+
+// Repair attempts to automatically fix structural issues in the presentation.
+func (e *PresentationEditor) Repair() (structural.RepairResult, error) {
+	if e == nil || e.parts == nil {
+		return structural.RepairResult{}, errors.New("nil editor or parts")
+	}
+	issues := e.Validate()
+	if len(issues) == 0 {
+		return structural.RepairResult{}, nil
+	}
+	r := structural.NewRepairer(e.parts)
+	return r.Repair(issues), nil
 }
 
 func nextSlideID(slides []common.EditorSlideRef) int64 {

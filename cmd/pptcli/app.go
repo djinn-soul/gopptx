@@ -23,6 +23,8 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runInfoCommand(args[1:], stdout, stderr)
 	case "validate":
 		return runValidateCommand(args[1:], stdout, stderr)
+	case "repair":
+		return runRepairCommand(args[1:], stdout, stderr)
 	case "merge":
 		return runMergeCommand(args[1:], stdout, stderr)
 	case "completion":
@@ -47,6 +49,7 @@ func printRootUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  pptcli md2ppt   -in deck.md [-out file.pptx] [-title TITLE]")
 	_, _ = fmt.Fprintln(w, "  pptcli info     -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
+	_, _ = fmt.Fprintln(w, "  pptcli repair   -file file.pptx [-out fixed.pptx]")
 	_, _ = fmt.Fprintln(w, "  pptcli merge    -out merged.pptx file1.pptx file2.pptx ...")
 	_, _ = fmt.Fprintln(w, "  pptcli completion -shell bash|zsh")
 	_, _ = fmt.Fprintln(w, "  pptcli version")

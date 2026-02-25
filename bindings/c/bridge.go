@@ -117,6 +117,10 @@ func deck_new(title *C.char) C.DeckHandle {
 	})
 
 	h := editor.RegisterEditor(deckRegistry, e)
+	if h == 0 {
+		_ = os.Remove(tmpPath)
+		return 0
+	}
 	return C.DeckHandle(h)
 }
 

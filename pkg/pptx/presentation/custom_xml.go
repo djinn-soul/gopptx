@@ -85,6 +85,9 @@ func generateCustomXMLItem(part common.CustomXMLPart) (string, error) {
 			propsSb55.WriteString(fmt.Sprintf("<%s>%s</%s>", kv.Key, escapeCustomXML(kv.Value), kv.Key))
 		}
 		inner = propsSb55.String()
+	} else if inner != "" {
+		// If providing raw content for a structural part, ensure it is escaped.
+		inner = escapeCustomXML(inner)
 	}
 
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

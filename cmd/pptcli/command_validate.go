@@ -1,16 +1,13 @@
 package main
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/xml"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
 const initialIssueCapacity = 8
@@ -49,101 +46,27 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitUsage
 	}
 
-	issues, err := validatePPTXFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		printErrorf(stderr, "validation failed to run: %v", err)
+		printErrorf(stderr, "failed to read file: %v", err)
 		return exitIO
 	}
+
+	issues, err := pptx.Validate(data)
+	if err != nil {
+		printErrorf(stderr, "validation failed: %v", err)
+		return exitIO
+	}
+
 	if len(issues) > 0 {
-		sort.Strings(issues)
 		for _, issue := range issues {
-			_, _ = fmt.Fprintf(stderr, "ERROR: %s\n", issue)
+			_, _ = fmt.Fprintln(stderr, issue.String())
 		}
 		return exitValidate
 	}
 
 	_, _ = fmt.Fprintln(stdout, "OK: validation passed")
 	return exitOK
-}
-
-func validatePPTXFile(path string) ([]string, error) {
-	meta, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if !meta.Mode().IsRegular() {
-		return nil, errors.New("path is not a regular file")
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = file.Close() }()
-
-	zr, err := zip.NewReader(file, meta.Size())
-	if err != nil {
-		return []string{"file is not a valid ZIP archive"}, nil
-	}
-
-	issues := make([]string, 0, initialIssueCapacity)
-	names := make(map[string]struct{}, len(zr.File))
-	slideCount := 0
-	for _, entry := range zr.File {
-		name := strings.TrimSpace(entry.Name)
-		if entry.FileInfo().IsDir() {
-			continue
-		}
-		names[name] = struct{}{}
-		lower := strings.ToLower(name)
-		if strings.HasPrefix(lower, "ppt/slides/slide") && strings.HasSuffix(lower, ".xml") &&
-			!strings.Contains(lower, "/_rels/") {
-			slideCount++
-		}
-		if strings.HasSuffix(lower, ".xml") || strings.HasSuffix(lower, ".rels") {
-			if xmlErr := validateEntryXML(entry); xmlErr != nil {
-				issues = append(issues, fmt.Sprintf("%s: %v", name, xmlErr))
-			}
-		}
-	}
-
-	for _, required := range requiredPPTXParts() {
-		if _, ok := names[required]; !ok {
-			issues = append(issues, fmt.Sprintf("missing required part %q", required))
-		}
-	}
-	if slideCount == 0 {
-		issues = append(issues, "no slide parts found under ppt/slides")
-	}
-
-	return issues, nil
-}
-
-func validateEntryXML(entry *zip.File) error {
-	reader, err := entry.Open()
-	if err != nil {
-		return err
-	}
-	defer func() { _ = reader.Close() }()
-
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	if len(bytes.TrimSpace(data)) == 0 {
-		return errors.New("empty XML content")
-	}
-
-	decoder := xml.NewDecoder(bytes.NewReader(data))
-	for {
-		if _, tokenErr := decoder.Token(); tokenErr != nil {
-			if errors.Is(tokenErr, io.EOF) {
-				break
-			}
-			return fmt.Errorf("invalid XML: %w", tokenErr)
-		}
-	}
-	return nil
 }
 
 func printValidateUsage(w io.Writer) {

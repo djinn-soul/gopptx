@@ -34,7 +34,7 @@ func OpenPresentationEditor(filePath string) (*PresentationEditor, error) {
 	if err != nil {
 		return nil, err
 	}
-	editor, err := newPresentationEditorFromParts(ps)
+	editor, err := NewPresentationEditorFromParts(ps)
 	if err != nil {
 		_ = ps.Close()
 		return nil, err
@@ -42,7 +42,32 @@ func OpenPresentationEditor(filePath string) (*PresentationEditor, error) {
 	return editor, nil
 }
 
-func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) {
+// OpenPresentationEditorFromBytes opens a PPTX package from a byte slice for in-place slide editing.
+func OpenPresentationEditorFromBytes(data []byte) (*PresentationEditor, error) {
+	ps, err := OpenPartStoreFromBytes(data)
+	if err != nil {
+		return nil, err
+	}
+	editor, err := NewPresentationEditorFromParts(ps)
+	if err != nil {
+		_ = ps.Close()
+		return nil, err
+	}
+	return editor, nil
+}
+
+// OpenPartStoreFromBytes opens a part store from a byte slice.
+func OpenPartStoreFromBytes(data []byte) (*PartStore, error) {
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return nil, fmt.Errorf("invalid PPTX zip archive: %w", err)
+	}
+	// Note: nil os.File is fine for in-memory or byte-backed PartStore as long as zip.Reader is used for lazy reads.
+	return newPartStoreFromZip(nil, zr), nil
+}
+
+// NewPresentationEditorFromParts creates a new presentation editor from an existing part store.
+func NewPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) {
 	if !ps.Has(common.ContentTypesPath) {
 		return nil, fmt.Errorf("missing required package part %q", common.ContentTypesPath)
 	}
@@ -110,6 +135,12 @@ func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 
 	editor.populateSlideTitlesConcurrently()
 	return editor, nil
+}
+
+// newPresentationEditorFromParts is kept as a package-local compatibility shim
+// for existing internal tests and call sites.
+func newPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) {
+	return NewPresentationEditorFromParts(ps)
 }
 
 func openPartStore(filePath string) (*PartStore, error) {
