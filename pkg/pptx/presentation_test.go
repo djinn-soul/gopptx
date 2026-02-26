@@ -172,6 +172,40 @@ func TestCreateWithSlidesEmbedsTable(t *testing.T) {
 	}
 }
 
+func TestCreateWithSlidesEmbedsTableAndBullets(t *testing.T) {
+	table := pptx.NewTable([]pptx.Length{pptx.Emu(2743400), pptx.Emu(2743400)}).
+		AddRow([]string{"Step", "Status"}).
+		AddRow([]string{"Markdown parsed", "PASS"})
+
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Mixed Slide").
+			AddBullet("[GO]").
+			AddBullet("slides, err := pptx.SlidesFromMarkdown(markdown)").
+			WithTable(table),
+	}
+
+	data, err := pptx.CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	if !strings.Contains(slideXML, "<a:tbl>") {
+		t.Fatalf("expected table XML in slide")
+	}
+	if !strings.Contains(slideXML, "<a:t>[GO]</a:t>") {
+		t.Fatalf("expected bullet text in slide")
+	}
+	if !strings.Contains(slideXML, `name="Content"`) {
+		t.Fatalf("expected content shape when bullets are present")
+	}
+}
+
 func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
 	table := pptx.NewTable([]pptx.Length{pptx.Emu(2000000), pptx.Emu(2000000)}).
 		AddRow([]string{"A"})

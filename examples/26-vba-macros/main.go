@@ -12,12 +12,14 @@ import (
 )
 
 func main() {
-	// 1. Load the pre-built vbaProject.bin blob.
-	// In a real scenario, this would be produced by Office or a compatible tool.
-	vbaData, err := os.ReadFile("examples/assets/vbaProject.bin")
+	// 1. Load pre-built VBA blob, or generate a temporary runtime blob and clean it up.
+	vbaData, cleanup, err := loadVBABlob()
+	if cleanup != nil {
+		defer cleanup()
+	}
 	if err != nil {
-		log.Printf("Warning: Failed to load vbaProject.bin assets: %v. Using dummy data.", err)
-		vbaData = []byte("dummy vba data")
+		log.Printf("Failed to prepare vbaProject.bin data: %v", err)
+		os.Exit(1)
 	}
 
 	// 2. Define the VBA project.
@@ -56,4 +58,34 @@ func main() {
 	}
 
 	log.Printf("Successfully generated %s", filename)
+}
+
+func loadVBABlob() ([]byte, func(), error) {
+	const assetPath = "examples/assets/vbaProject.bin"
+
+	if data, err := os.ReadFile(assetPath); err == nil {
+		return data, nil, nil
+	}
+
+	tmpFile, err := os.CreateTemp("", "gopptx_vbaProject_*.bin")
+	if err != nil {
+		return nil, nil, err
+	}
+	tmpPath := tmpFile.Name()
+	cleanup := func() { _ = os.Remove(tmpPath) }
+	defer tmpFile.Close()
+
+	// Runtime fallback for demo-only generation when no real VBA asset exists.
+	if _, err := tmpFile.Write([]byte("dummy vba data")); err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+
+	data, err := os.ReadFile(tmpPath)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	log.Printf("examples/assets/vbaProject.bin not found; using runtime-generated temporary VBA blob.")
+	return data, cleanup, nil
 }

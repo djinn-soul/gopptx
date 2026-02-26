@@ -60,7 +60,7 @@ func OpenPresentationEditorFromBytes(data []byte) (*PresentationEditor, error) {
 func OpenPartStoreFromBytes(data []byte) (*PartStore, error) {
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return nil, fmt.Errorf("invalid PPTX zip archive: %w", err)
+		return nil, fmt.Errorf("not a valid ZIP archive: %w", err)
 	}
 	// Note: nil os.File is fine for in-memory or byte-backed PartStore as long as zip.Reader is used for lazy reads.
 	return newPartStoreFromZip(nil, zr), nil
@@ -160,7 +160,7 @@ func openPartStore(filePath string) (*PartStore, error) {
 	zr, err := zip.NewReader(file, meta.Size())
 	if err != nil {
 		_ = file.Close()
-		return nil, fmt.Errorf("invalid PPTX zip archive: %w", err)
+		return nil, fmt.Errorf("not a valid ZIP archive: %w", err)
 	}
 
 	return newPartStoreFromZip(file, zr), nil

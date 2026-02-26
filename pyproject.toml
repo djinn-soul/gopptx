@@ -346,3 +346,10 @@ setup = { sequence = [
     "install",
     { cmd = "prek install" },
 ], help = "Full project setup" }
+
+[dependency-groups]
+dev = [
+    "numpy>=2.2.6",
+    "pillow>=12.1.1",
+    "pypdfium2>=5.5.0",
+]

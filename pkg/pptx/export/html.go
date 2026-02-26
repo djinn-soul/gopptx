@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"fmt"
+	"html"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,101 +13,270 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 //go:embed html_style.css
 var htmlStyle string
 
-// HTML exports the presentation slides to a single HTML document.
+// HTML exports the presentation slides to a single HTML document using default options.
 func HTML(title string, slides []elements.SlideContent) string {
+	return HTMLWithOptions(title, slides, DefaultHTMLOptions())
+}
+
+// HTMLWithOptions exports the presentation slides to a single HTML document.
+func HTMLWithOptions(title string, slides []elements.SlideContent, opts HTMLOptions) string {
 	var b strings.Builder
-
-	// Header
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n")
-	b.WriteString("<meta charset=\"UTF-8\">\n")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
-	b.WriteString(fmt.Sprintf("<title>%s</title>\n", escapeHTML(title)))
-
-	// CSS
-	b.WriteString("<style>\n")
-	b.WriteString(htmlStyle)
-	b.WriteString("</style>\n")
-
-	b.WriteString("</head>\n<body>\n")
-
-	// Title Slide (Presentation Title)
-	b.WriteString("<div class=\"slide title-slide\">\n")
-	b.WriteString(fmt.Sprintf("<h1>%s</h1>\n", escapeHTML(title)))
-	b.WriteString("</div>\n")
-
-	// Slides
-	for i, slide := range slides {
-		renderSlide(&b, slide, i+1)
-	}
-
-	b.WriteString("</body>\n</html>")
+	_ = HTMLToWriter(&b, title, slides, opts)
 	return b.String()
 }
 
-func renderSlide(b *strings.Builder, slide elements.SlideContent, index int) {
-	fmt.Fprintf(b, "<div class=\"slide\" id=\"slide-%d\">\n", index)
+// HTMLToWriter exports the presentation slides to an [io.Writer].
+//
+//nolint:funlen,gocognit,nestif // HTML writer stitches optional theme/navigation sections and intentionally keeps output assembly centralized.
+func HTMLToWriter(w io.Writer, title string, slides []elements.SlideContent, opts HTMLOptions) error {
+	// Header
+	if err := writeString(w, "<!DOCTYPE html>\n<html>\n<head>\n"); err != nil {
+		return err
+	}
+	if err := writeString(w, "<meta charset=\"UTF-8\">\n"); err != nil {
+		return err
+	}
+	if err := writeString(
+		w,
+		"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n",
+	); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, "<title>%s</title>\n", html.EscapeString(title)); err != nil {
+		return err
+	}
+
+	// CSS
+	if err := writeString(w, "<style>\n"); err != nil {
+		return err
+	}
+	if err := writeString(w, htmlStyle); err != nil {
+		return err
+	}
+
+	if opts.Theme != nil {
+		if err := writeString(w, "\n:root {\n"); err != nil {
+			return err
+		}
+		if opts.Theme.TitleColor != "" {
+			if _, err := fmt.Fprintf(w, "  --title-color: %s;\n", opts.Theme.TitleColor); err != nil {
+				return err
+			}
+		}
+		if opts.Theme.BodyColor != "" {
+			if _, err := fmt.Fprintf(w, "  --body-color: %s;\n", opts.Theme.BodyColor); err != nil {
+				return err
+			}
+		}
+		if opts.Theme.AccentColor != "" {
+			if _, err := fmt.Fprintf(w, "  --accent-color: %s;\n", opts.Theme.AccentColor); err != nil {
+				return err
+			}
+		}
+		if opts.Theme.BackgroundColor != "" {
+			if _, err := fmt.Fprintf(w, "  --bg-color: %s;\n", opts.Theme.BackgroundColor); err != nil {
+				return err
+			}
+		}
+		if opts.Theme.SlideBackground != "" {
+			if _, err := fmt.Fprintf(w, "  --slide-bg: %s;\n", opts.Theme.SlideBackground); err != nil {
+				return err
+			}
+		}
+		if err := writeString(w, "}\n"); err != nil {
+			return err
+		}
+	}
+
+	if err := writeString(w, "</style>\n"); err != nil {
+		return err
+	}
+
+	if err := writeString(w, "</head>\n<body>\n"); err != nil {
+		return err
+	}
+
+	// Title Slide (Presentation Title)
+	if err := writeString(w, "<div class=\"slide title-slide\">\n"); err != nil {
+		return err
+	}
+	if _, err := fmt.Fprintf(w, "<h1>%s</h1>\n", html.EscapeString(title)); err != nil {
+		return err
+	}
+	if err := writeString(w, "</div>\n"); err != nil {
+		return err
+	}
+
+	// Slides
+	for i, slide := range slides {
+		if err := renderSlideToWriter(w, slide, i+1, opts); err != nil {
+			return err
+		}
+	}
+
+	if opts.IncludeNavigation {
+		if err := writeString(w, `<div class="nav-controls">
+  <button id="btn-prev" onclick="prevSlide()">Prev</button>
+  <span id="slide-indicator">1 / `+strconv.Itoa(len(slides))+`</span>
+  <button id="btn-next" onclick="nextSlide()">Next</button>
+</div>
+<script>
+let currentSlide = 0;
+const totalSlides = `+strconv.Itoa(len(slides))+`;
+const slides = document.querySelectorAll('.slide:not(.title-slide)');
+function updateVisibility() {
+	slides.forEach((s, idx) => s.style.display = (idx === currentSlide) ? 'block' : 'none');
+	document.getElementById('slide-indicator').innerText = (currentSlide + 1) + ' / ' + totalSlides;
+}
+function nextSlide() { if(currentSlide < totalSlides - 1) { currentSlide++; updateVisibility(); } }
+function prevSlide() { if(currentSlide > 0) { currentSlide--; updateVisibility(); } }
+updateVisibility();
+</script>
+`); err != nil {
+			return err
+		}
+	}
+
+	return writeString(w, "</body>\n</html>")
+}
+
+//nolint:gocognit // Slide rendering coordinates many optional blocks (bullets/images/shapes/table) for deterministic ordering.
+func renderSlideToWriter(w io.Writer, slide elements.SlideContent, index int, opts HTMLOptions) error {
+	if _, err := fmt.Fprintf(w, "<div class=\"slide\" id=\"slide-%d\">\n", index); err != nil {
+		return err
+	}
 
 	// Slide Number
-	fmt.Fprintf(b, "<div class=\"slide-number\">%d</div>\n", index)
+	if opts.IncludeSlideNumbers {
+		if _, err := fmt.Fprintf(w, "<div class=\"slide-number\">%d</div>\n", index); err != nil {
+			return err
+		}
+	}
 
 	// Title
 	slideTitle := slide.Title
 	if slideTitle == "" {
-		// Try to find title in shapes? ppt-rs relies on 'slide.title' field.
-		// gopptx elements.SlideContent has explicit Title field.
 		slideTitle = "Slide " + strconv.Itoa(index)
 	}
-	fmt.Fprintf(b, "<h2>%s</h2>\n", escapeHTML(slideTitle))
+	if _, err := fmt.Fprintf(w, "<h2>%s</h2>\n", html.EscapeString(slideTitle)); err != nil {
+		return err
+	}
 
 	// Content Container
-	b.WriteString("<div class=\"content\">\n")
+	if err := writeString(w, "<div class=\"content\">\n"); err != nil {
+		return err
+	}
 
 	// Bullets / Content
 	if len(slide.Bullets) > 0 {
-		b.WriteString("<ul>\n")
-		for _, bullet := range slide.Bullets {
-			fmt.Fprintf(b, "<li>%s</li>\n", escapeHTML(bullet))
+		if err := writeString(w, "<ul>\n"); err != nil {
+			return err
 		}
-		b.WriteString("</ul>\n")
+		for _, bullet := range slide.Bullets {
+			if _, err := fmt.Fprintf(w, "<li>%s</li>\n", html.EscapeString(bullet)); err != nil {
+				return err
+			}
+		}
+		if err := writeString(w, "</ul>\n"); err != nil {
+			return err
+		}
 	}
 
 	// Images
 	for _, img := range slide.Images {
-		if imgHTML := renderImage(img); imgHTML != "" {
-			b.WriteString(imgHTML)
+		if err := renderImageToWriter(w, img, opts); err != nil {
+			return err
 		}
 	}
 
-	// Extra content from shapes (if not bullets)
-	// Iterate through shapes to find text that isn't the title.
-	for _, shape := range slide.Shapes {
-		if shape.Text != "" {
-			fmt.Fprintf(b, "<p>%s</p>\n", escapeHTML(shape.Text))
+	// Vector Shapes & Text
+	if len(slide.Shapes) > 0 {
+		if err := writeString(w, renderShapesSVG(slide.Shapes)); err != nil {
+			return err
 		}
 	}
 
-	b.WriteString("</div>\n") // content
-	b.WriteString("</div>\n") // slide
+	// Table Support
+	if slide.Table != nil {
+		if err := renderTableToWriter(w, slide.Table); err != nil {
+			return err
+		}
+	}
+
+	if err := writeString(w, "</div>\n"); err != nil { // content
+		return err
+	}
+	return writeString(w, "</div>\n") // slide
 }
 
-func renderImage(img shapes.Image) string {
-	if img.Path == "" {
-		return ""
+func renderTableToWriter(w io.Writer, table *tables.Table) error {
+	if err := writeString(w, "<table class=\"slide-table\">\n"); err != nil {
+		return err
+	}
+	hasStyled := len(table.StyledRows) > 0
+
+	rowCount := len(table.Rows)
+	if hasStyled {
+		rowCount = len(table.StyledRows)
 	}
 
-	data, err := os.ReadFile(img.Path)
-	if err != nil {
-		// Fallback for missing images
-		return fmt.Sprintf("<div class=\"image-container\">[Missing Image: %s]</div>\n", escapeHTML(img.Path))
+	for r := range rowCount {
+		if err := writeString(w, "  <tr>\n"); err != nil {
+			return err
+		}
+		var row []string
+		if hasStyled {
+			row = make([]string, len(table.StyledRows[r]))
+			for c, cell := range table.StyledRows[r] {
+				row[c] = cell.Text
+			}
+		} else {
+			row = table.Rows[r]
+		}
+		for _, text := range row {
+			if _, err := fmt.Fprintf(w, "    <td>%s</td>\n", html.EscapeString(text)); err != nil {
+				return err
+			}
+		}
+		if err := writeString(w, "  </tr>\n"); err != nil {
+			return err
+		}
+	}
+	return writeString(w, "</table>\n")
+}
+
+//nolint:gocognit,nestif // Image export must branch by source mode/path embedding and preserve explicit error handling.
+func renderImageToWriter(w io.Writer, img shapes.Image, opts HTMLOptions) error {
+	if img.Path == "" && len(img.Data) == 0 {
+		return nil
 	}
 
-	mimeType := "application/octet-stream"
+	if !opts.EmbedImages && img.Path != "" {
+		src := filepath.Base(img.Path)
+		if strings.TrimSpace(opts.BaseURL) != "" {
+			src = strings.TrimRight(opts.BaseURL, "/") + "/" + src
+		}
+		if _, err := fmt.Fprintf(w,
+			"<div class=\"image-container\"><img src=\"%s\" alt=\"%s\" /></div>\n",
+			html.EscapeString(src),
+			html.EscapeString(filepath.Base(img.Path)),
+		); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	mimeType := "image/png" // default
 	ext := strings.ToLower(filepath.Ext(img.Path))
+	if ext == "" {
+		ext = "." + strings.ToLower(img.Format)
+	}
 	switch ext {
 	case ".jpg", ".jpeg":
 		mimeType = "image/jpeg"
@@ -117,35 +288,41 @@ func renderImage(img shapes.Image) string {
 		mimeType = "image/svg+xml"
 	}
 
-	b64 := base64.StdEncoding.EncodeToString(data)
-	return fmt.Sprintf(
-		"<div class=\"image-container\"><img src=\"data:%s;base64,%s\" alt=\"%s\" /></div>\n",
-		mimeType, b64, escapeHTML(filepath.Base(img.Path)),
-	)
-}
-
-func escapeHTML(s string) string {
-	if !strings.ContainsAny(s, `&<>"'`) {
-		return s
+	if _, err := fmt.Fprintf(w, "<div class=\"image-container\"><img src=\"data:%s;base64,", mimeType); err != nil {
+		return err
 	}
 
-	var b strings.Builder
-	b.Grow(len(s))
-	for _, r := range s {
-		switch r {
-		case '&':
-			b.WriteString("&amp;")
-		case '<':
-			b.WriteString("&lt;")
-		case '>':
-			b.WriteString("&gt;")
-		case '"':
-			b.WriteString("&quot;")
-		case '\'':
-			b.WriteString("&#39;")
-		default:
-			b.WriteRune(r)
+	// Stream base64 to writer to reduce memory peak
+	encoder := base64.NewEncoder(base64.StdEncoding, w)
+	if len(img.Data) > 0 {
+		if _, err := encoder.Write(img.Data); err != nil {
+			_ = encoder.Close()
+			return err
+		}
+	} else if img.Path != "" {
+		f, err := os.Open(img.Path)
+		if err == nil {
+			_, copyErr := io.Copy(encoder, f)
+			closeErr := f.Close()
+			if copyErr != nil {
+				_ = encoder.Close()
+				return copyErr
+			}
+			if closeErr != nil {
+				_ = encoder.Close()
+				return closeErr
+			}
 		}
 	}
-	return b.String()
+	if err := encoder.Close(); err != nil {
+		return err
+	}
+
+	_, err := fmt.Fprintf(w, "\" alt=\"%s\" /></div>\n", html.EscapeString(filepath.Base(img.Path)))
+	return err
+}
+
+func writeString(w io.Writer, s string) error {
+	_, err := io.WriteString(w, s)
+	return err
 }

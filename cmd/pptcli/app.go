@@ -27,6 +27,10 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runRepairCommand(args[1:], stdout, stderr)
 	case "merge":
 		return runMergeCommand(args[1:], stdout, stderr)
+	case "html":
+		return runHTMLCommand(args[1:], stdout, stderr)
+	case "pdf":
+		return runPDFCommand(args[1:], stdout, stderr)
 	case "completion":
 		return runCompletionCommand(args[1:], stdout, stderr)
 	case "version", "-version", "--version":
@@ -47,6 +51,8 @@ func printRootUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage:")
 	_, _ = fmt.Fprintln(w, "  pptcli create   -out file.pptx [-title TITLE] [-slides N]")
 	_, _ = fmt.Fprintln(w, "  pptcli md2ppt   -in deck.md [-out file.pptx] [-title TITLE]")
+	_, _ = fmt.Fprintln(w, "  pptcli html     -in deck.md [-out deck.html] [-title TITLE] [-embed=true] [-nav=true]")
+	_, _ = fmt.Fprintln(w, "  pptcli pdf      -in deck.md [-out deck.pdf] [-title TITLE]")
 	_, _ = fmt.Fprintln(w, "  pptcli info     -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli repair   -file file.pptx [-out fixed.pptx]")

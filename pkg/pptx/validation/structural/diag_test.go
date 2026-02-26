@@ -46,8 +46,8 @@ func TestValidator_MissingParts(t *testing.T) {
 			missingCount++
 		}
 	}
-	if missingCount != len(RequiredParts) {
-		t.Errorf("expected %d missing part issues, got %d", len(RequiredParts), missingCount)
+	if missingCount != len(requiredParts) {
+		t.Errorf("expected %d missing part issues, got %d", len(requiredParts), missingCount)
 	}
 }
 
@@ -60,7 +60,7 @@ func TestValidator_InvalidXml(t *testing.T) {
 
 	found := false
 	for _, issue := range issues {
-		if issue.Code == CodeInvalidXml && issue.Path == "[Content_Types].xml" {
+		if issue.Code == CodeInvalidXML && issue.Path == "[Content_Types].xml" {
 			found = true
 			break
 		}
@@ -123,5 +123,43 @@ func TestValidator_BrokenRelationships(t *testing.T) {
 	}
 	if !found {
 		t.Error("expected broken relationship issue for missing.xml")
+	}
+}
+
+func TestRepairer_BrokenRelationshipPreservesOOXMLRelationshipsRoot(t *testing.T) {
+	rels := `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://.../slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId2" Type="http://.../slide" Target="slides/missing.xml"/>
+</Relationships>`
+
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/_rels/presentation.xml.rels": []byte(rels),
+		"ppt/slides/slide1.xml":           []byte("<root/>"),
+	}}
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeBrokenRelationship,
+		Path:        "ppt/_rels/presentation.xml.rels",
+		Description: "Broken relationship: ppt/_rels/presentation.xml.rels -> slides/missing.xml (ID: rId2)",
+		Repairable:  true,
+	}})
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Fatalf("expected issue to be repaired, got unrepaired: %+v", result.IssuesUnrepaired)
+	}
+
+	data, ok := m.Get("ppt/_rels/presentation.xml.rels")
+	if !ok {
+		t.Fatal("expected repaired relationships part to exist")
+	}
+	content := string(data)
+	if strings.Contains(content, "<relationshipsXML>") {
+		t.Fatalf("unexpected Go struct root found in relationships XML: %s", content)
+	}
+	if !strings.Contains(content, "<Relationships") {
+		t.Fatalf("expected OOXML Relationships root, got: %s", content)
+	}
+	if !strings.Contains(content, `xmlns="`+packageRelationshipsXMLNS+`"`) {
+		t.Fatalf("expected OOXML relationships namespace, got: %s", content)
 	}
 }

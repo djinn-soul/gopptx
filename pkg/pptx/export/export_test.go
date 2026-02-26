@@ -63,8 +63,8 @@ func TestExportHTML(t *testing.T) {
 	if !strings.Contains(html, "<h2>Slide 2</h2>") {
 		t.Error("HTML missing Slide 2 title")
 	}
-	if !strings.Contains(html, "<p>Shape Text</p>") {
-		t.Error("HTML missing shape text")
+	if !strings.Contains(html, "Shape Text</text>") {
+		t.Error("HTML missing shape text in SVG")
 	}
 
 	// Slide 3

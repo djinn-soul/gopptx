@@ -140,6 +140,19 @@ func TestCLI_ValidateSubcommand_InvalidZip(t *testing.T) {
 	}
 }
 
+func TestCLI_PDFSubcommand_InvalidDriver(t *testing.T) {
+	stdout, stderr, code := runCLI(t, "pdf", "-in", "deck.md", "-driver", "chromedp")
+	if code != exitUsage {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitUsage, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "invalid PDF driver") {
+		t.Fatalf("expected invalid driver error, got %q", stderr)
+	}
+}
+
 func runCLI(t *testing.T, args ...string) (string, string, int) {
 	t.Helper()
 

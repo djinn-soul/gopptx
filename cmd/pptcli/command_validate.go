@@ -10,17 +10,6 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-const initialIssueCapacity = 8
-
-func requiredPPTXParts() []string {
-	return []string{
-		"[Content_Types].xml",
-		"_rels/.rels",
-		"ppt/presentation.xml",
-		"docProps/core.xml",
-	}
-}
-
 // runValidateCommand validates a PPTX file structure.
 func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
@@ -55,7 +44,7 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	issues, err := pptx.Validate(data)
 	if err != nil {
 		printErrorf(stderr, "validation failed: %v", err)
-		return exitIO
+		return exitValidate
 	}
 
 	if len(issues) > 0 {

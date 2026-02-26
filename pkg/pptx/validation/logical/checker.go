@@ -112,6 +112,9 @@ type shapeNode struct {
 		} `xml:"cNvPr"`
 	} `xml:"nvPicPr"`
 	SpPr struct {
+		PrstGeom struct {
+			Prst string `xml:"prst,attr"`
+		} `xml:"prstGeom"`
 		Xfrm struct {
 			Off struct {
 				X int64 `xml:"x,attr"`
@@ -155,8 +158,13 @@ func parseSlideShapes(content []byte) []shapes.Shape {
 			continue
 		}
 
+		shapeType := start.Name.Local
+		if shapeType == "sp" {
+			shapeType = node.SpPr.PrstGeom.Prst
+		}
+
 		shape := shapes.Shape{
-			Type: start.Name.Local,
+			Type: shapeType,
 			X:    styling.Emu(node.SpPr.Xfrm.Off.X),
 			Y:    styling.Emu(node.SpPr.Xfrm.Off.Y),
 			CX:   styling.Emu(node.SpPr.Xfrm.Ext.Cx),

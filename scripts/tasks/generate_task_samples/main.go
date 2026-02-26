@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -17,6 +18,10 @@ const outDir = "examples/output"
 
 //nolint:gosec // Fixture generator intentionally writes repo-readable sample artifacts.
 func main() {
+	runExamples := flag.Bool("run_examples", true, "run runnable task examples under examples/<nn-*>/main.go")
+	strictExamples := flag.Bool("strict_examples", false, "fail if any runnable example execution fails")
+	flag.Parse()
+
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
@@ -47,15 +52,30 @@ func main() {
 		{"16_prelude_helpers", generatePreludeHelpers},
 		{"03_markdown", generateMarkdown},
 		{"18_layout_helpers", generateLayoutHelpers},
+		{"17_themes", generateTask17Themes},
+		{"20_validation_repair", generateTask20ValidationRepair},
+		{"23_media_embed", generateTask23MediaEmbed},
+		{"32_mermaid", generateTask32Mermaid},
+		{"33_notes_master", generateTask33NotesMaster},
+		{"35_prelude_helpers", generateTask35PreludeHelpers},
+		{"36_slide_master", generateTask36SlideMaster},
+		{"37_slide_duplication", generateTask37SlideDuplication},
+		{"38_editor_image_support", generateTask38EditorImageSupport},
+		{"45_commenting_api", generateTask45CommentingAPI},
 		{"48_accessibility", generateAccessibility},
+		{"50_interactive_elements", generateTask50InteractiveElements},
+		{"51_localization", generateTask51Localization},
+		{"52_legacy_ppt_interop", generateTask52LegacyInterop},
 		{"53_slide_properties", generateSlideProperties},
 		{"54_theme_master", generateThemeMaster},
 		{"55_background_fills", generateSlideBackgrounds},
-		{"55_background_fills", generateSlideBackgrounds},
 		{"56_action_api", generateActionAPI},
+		{"57_bridge_command_api", generateTask57BridgeCommandAPI},
+		{"58_bridge_performance", generateTask58BridgePerformance},
 		{"24_smartart", generateSmartArt},
 	}
 
+	coveredTaskIDs := make(map[string]struct{})
 	for _, g := range generators {
 		data, genErr := g.fn()
 		if genErr != nil {
@@ -68,7 +88,22 @@ func main() {
 			continue
 		}
 		log.Printf("Generated %s\n", path)
+		if taskID := taskIDFromName(g.name); taskID != "" {
+			coveredTaskIDs[taskID] = struct{}{}
+		}
 	}
+
+	if *runExamples {
+		exampleSummary, err := runTaskExamples(*strictExamples)
+		for taskID := range exampleSummary.CoveredTaskIDs {
+			coveredTaskIDs[taskID] = struct{}{}
+		}
+		if err != nil {
+			log.Fatalf("Task example execution failed: %v", err)
+		}
+	}
+
+	logTaskCoverageSummary(coveredTaskIDs)
 }
 
 func generateBasicPPTX() ([]byte, error) {

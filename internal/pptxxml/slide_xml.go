@@ -296,14 +296,15 @@ func slideRenderBaseElements(
 		nextID = 3
 	}
 
-	if table != nil {
-		b.WriteString(RenderTable(table, nextID))
-		nextID++
-	} else if len(bullets) > 0 {
+	if len(bullets) > 0 {
 		nextID = slideRenderBullets(
 			b, layoutMode, bullets, bulletStyles,
 			bulletRuns, contentStyle, nextID, width, height,
 		)
+	}
+	if table != nil {
+		b.WriteString(RenderTable(table, nextID))
+		nextID++
 	}
 	return nextID
 }

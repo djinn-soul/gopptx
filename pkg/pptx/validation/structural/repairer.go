@@ -2,6 +2,7 @@ package structural
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -56,10 +57,10 @@ func (r *Repairer) repairIssue(issue Issue) error {
 	switch issue.Code {
 	case CodeMissingPart:
 		return r.repairMissingPart(issue.Path)
-	case CodeInvalidXml:
-		return r.repairInvalidXml(issue.Path)
+	case CodeInvalidXML:
+		return r.repairInvalidXML(issue.Path)
 	case CodeBrokenRelationship:
-		return r.repairBrokenRelationship(issue.Path, issue.Description)
+		return r.repairBrokenRelationship(issue)
 	case CodeOrphanSlide:
 		return r.repairOrphanSlide(issue.Path)
 	case CodeInvalidContentType:
@@ -101,45 +102,28 @@ func (r *Repairer) repairMissingPart(p string) error {
 	return nil
 }
 
-func (r *Repairer) repairInvalidXml(p string) error {
+func (r *Repairer) repairInvalidXML(p string) error {
 	data, ok := r.modifier.Get(p)
 	if !ok {
 		return fmt.Errorf("part not found: %s", p)
 	}
 
-	// Simple heuristic repair: ensure XML declaration and try to escape bare ampersands
 	content := string(data)
 	if !strings.HasPrefix(strings.TrimSpace(content), "<?xml") {
 		content = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + content
 	}
 
-	// Escape bare ampersands - Go's regexp doesn't support negative lookahead,
-	// so we use a multi-pass approach:
-	// 1. Replace all existing valid entities with placeholders
-	// 2. Escape remaining bare ampersands
-	// 3. Restore the placeholders back to entities
-	entityPattern := regexp.MustCompile(`&(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);`)
-	placeholder := "\x00ENTITY\x00"
-	// Find all entities and replace with placeholders
-	entities := entityPattern.FindAllString(content, -1)
-	temp := entityPattern.ReplaceAllString(content, placeholder)
-	// Replace bare ampersands
-	temp = strings.ReplaceAll(temp, "&", "&amp;")
-	// Restore entities
-	for _, entity := range entities {
-		temp = strings.Replace(temp, placeholder, entity, 1)
-	}
-	repaired := temp
+	repaired := escapeBareAmpersands(content)
 
 	// Validate before setting
 	decoder := xml.NewDecoder(strings.NewReader(repaired))
 	for {
 		_, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("XML repair failed to produce valid XML: %v", err)
+			return fmt.Errorf("XML repair failed to produce valid XML: %w", err)
 		}
 	}
 
@@ -147,26 +131,62 @@ func (r *Repairer) repairInvalidXml(p string) error {
 	return nil
 }
 
-func (r *Repairer) repairBrokenRelationship(p, desc string) error {
-	data, ok := r.modifier.Get(p)
+func escapeBareAmpersands(s string) string {
+	entityPattern := regexp.MustCompile(`&(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);`)
+	var result strings.Builder
+	last := 0
+	for _, match := range entityPattern.FindAllStringIndex(s, -1) {
+		// Escape ampersands in the text before this entity
+		result.WriteString(strings.ReplaceAll(s[last:match[0]], "&", "&amp;"))
+		// Write the entity itself
+		result.WriteString(s[match[0]:match[1]])
+		last = match[1]
+	}
+	result.WriteString(strings.ReplaceAll(s[last:], "&", "&amp;"))
+	return result.String()
+}
+
+func (r *Repairer) repairBrokenRelationship(issue Issue) error {
+	data, ok := r.modifier.Get(issue.Path)
 	if !ok {
 		return nil
 	}
 
-	// Extract target from description
-	parts := strings.Split(desc, " -> ")
-	if len(parts) < 2 {
+	targetPart := issue.Context["target"]
+	if targetPart == "" {
 		return nil
 	}
-	targetPart := strings.Split(parts[1], " (ID:")[0]
 
-	// Proper fix would be to use encoding/xml to decode, filter, and re-encode.
-	// For now, we use a more robust regex-based removal that isn't dependent on line breaks.
-	content := string(data)
-	relPattern := regexp.MustCompile(`(?s)<Relationship\s+[^>]*?Target="` + regexp.QuoteMeta(targetPart) + `"[^>]*?/>`)
-	repaired := relPattern.ReplaceAllString(content, "")
+	// Use XML parsing for robust handling of different attribute orderings and whitespace.
+	var rels relationshipsXML
+	if err := xml.Unmarshal(data, &rels); err != nil {
+		// If XML parsing fails, fall back to regex-based removal.
+		content := string(data)
+		relPattern := regexp.MustCompile(`(?s)<Relationship\s+[^>]*?Target="` + regexp.QuoteMeta(targetPart) + `"[^>]*?/>`)
+		repaired := relPattern.ReplaceAllString(content, "")
+		r.modifier.Set(issue.Path, []byte(repaired))
+		return nil
+	}
 
-	r.modifier.Set(p, []byte(repaired))
+	// Filter out relationships with the broken target
+	filtered := make([]relationshipXML, 0, len(rels.Relationships))
+	for _, rel := range rels.Relationships {
+		if rel.Target != targetPart {
+			filtered = append(filtered, rel)
+		}
+	}
+	rels.Relationships = filtered
+	rels.XMLNS = packageRelationshipsXMLNS
+
+	// Re-encode the relationships
+	repaired, err := xml.Marshal(&rels)
+	if err != nil {
+		return fmt.Errorf("failed to re-encode relationships: %w", err)
+	}
+
+	// Add XML header and fix namespace
+	repairedStr := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + string(repaired)
+	r.modifier.Set(issue.Path, []byte(repairedStr))
 	return nil
 }
 
@@ -200,8 +220,15 @@ func (r *Repairer) repairInvalidContentType(p string) error {
 		newEntry = fmt.Sprintf("\n  <Override PartName=\"/%s\" ContentType=\"%s\"/>", p, ct)
 	}
 
-	content := strings.Replace(string(data), "</Types>", newEntry+"\n</Types>", 1)
-	r.modifier.Set(ctPath, []byte(content))
+	// Use a slightly more robust replacement that handles potential whitespace
+	content := string(data)
+	closingTagIdx := strings.LastIndex(strings.ToLower(content), "</types>")
+	if closingTagIdx == -1 {
+		return errors.New("invalid [Content_Types].xml: missing closing tag")
+	}
+
+	repaired := content[:closingTagIdx] + newEntry + "\n" + content[closingTagIdx:]
+	r.modifier.Set(ctPath, []byte(repaired))
 	return nil
 }
 

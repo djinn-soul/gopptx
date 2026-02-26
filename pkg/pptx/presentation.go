@@ -170,6 +170,9 @@ func Repair(pptxData []byte) ([]byte, structural.RepairResult, error) {
 		// For now, we'll try a raw save if possible, or return the error.
 		return nil, result, fmt.Errorf("repair produced unusable package: %w", err)
 	}
+	// Transfer ownership of ps to ed; ed.Close() will close ps.
+	// Set ps to nil to prevent double-close from the deferred close above.
+	ps = nil
 	defer func() { _ = ed.Close() }()
 
 	// Use a secure temporary file with proper cleanup

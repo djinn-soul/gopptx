@@ -32,7 +32,7 @@ type IssueCode string
 
 const (
 	CodeMissingPart          IssueCode = "MISSING_PART"
-	CodeInvalidXml           IssueCode = "INVALID_XML"
+	CodeInvalidXML           IssueCode = "INVALID_XML"
 	CodeBrokenRelationship   IssueCode = "BROKEN_RELATIONSHIP"
 	CodeMissingSlideRef      IssueCode = "MISSING_SLIDE_REF"
 	CodeOrphanSlide          IssueCode = "ORPHAN_SLIDE"
@@ -50,6 +50,7 @@ type Issue struct {
 	Path        string // The file path within the PPTX package
 	Description string
 	Repairable  bool
+	Context     map[string]string // Optional context for repairs
 }
 
 func (i Issue) String() string {

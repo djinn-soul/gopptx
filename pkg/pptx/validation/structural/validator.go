@@ -4,11 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"path"
 	"strings"
 )
+
+const packageRelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
 // PartProvider defines the interface for accessing package parts.
 type PartProvider interface {
@@ -41,8 +44,8 @@ func (v *Validator) AddChecker(c Checker) {
 	v.checkers = append(v.checkers, c)
 }
 
-// RequiredParts identifies the minimum set of parts for a valid PPTX.
-var RequiredParts = map[string]string{
+// requiredParts identifies the minimum set of parts for a valid PPTX.
+var requiredParts = map[string]string{
 	"[Content_Types].xml":             "Content types definition",
 	"_rels/.rels":                     "Package relationships",
 	"ppt/presentation.xml":            "Presentation document",
@@ -53,7 +56,7 @@ var RequiredParts = map[string]string{
 func (v *Validator) Validate() []Issue {
 	v.issues = nil
 	v.checkRequiredParts()
-	v.checkXmlValidity()
+	v.checkXMLValidity()
 	v.checkRelationships()
 	v.checkSlideReferences()
 	v.checkContentTypes()
@@ -66,7 +69,7 @@ func (v *Validator) Validate() []Issue {
 }
 
 func (v *Validator) checkRequiredParts() {
-	for p, desc := range RequiredParts {
+	for p, desc := range requiredParts {
 		if !v.provider.Has(p) {
 			v.issues = append(v.issues, Issue{
 				Code:        CodeMissingPart,
@@ -79,7 +82,7 @@ func (v *Validator) checkRequiredParts() {
 	}
 }
 
-func (v *Validator) checkXmlValidity() {
+func (v *Validator) checkXMLValidity() {
 	for _, p := range v.provider.Keys() {
 		if !strings.HasSuffix(p, ".xml") && !strings.HasSuffix(p, ".rels") {
 			continue
@@ -89,9 +92,9 @@ func (v *Validator) checkXmlValidity() {
 			continue
 		}
 
-		if err := v.validateXml(data); err != nil {
+		if err := v.validateXML(data); err != nil {
 			v.issues = append(v.issues, Issue{
-				Code:        CodeInvalidXml,
+				Code:        CodeInvalidXML,
 				Severity:    SeverityError,
 				Path:        p,
 				Description: fmt.Sprintf("Invalid XML: %v", err),
@@ -101,14 +104,14 @@ func (v *Validator) checkXmlValidity() {
 	}
 }
 
-func (v *Validator) validateXml(data []byte) error {
+func (v *Validator) validateXML(data []byte) error {
 	if len(data) == 0 {
-		return fmt.Errorf("empty part")
+		return errors.New("empty part")
 	}
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	for {
 		_, err := decoder.Token()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -136,7 +139,28 @@ type relationshipXML struct {
 
 // relationshipsXML represents the root Relationships element
 type relationshipsXML struct {
+	XMLName       xml.Name          `xml:"Relationships"`
+	XMLNS         string            `xml:"xmlns,attr,omitempty"`
 	Relationships []relationshipXML `xml:"Relationship"`
+}
+
+// contentTypeDefault represents a Default element in [Content_Types].xml
+type contentTypeDefault struct {
+	Extension   string `xml:"Extension,attr"`
+	ContentType string `xml:"ContentType,attr"`
+}
+
+// contentTypeOverride represents an Override element in [Content_Types].xml
+type contentTypeOverride struct {
+	PartName    string `xml:"PartName,attr"`
+	ContentType string `xml:"ContentType,attr"`
+}
+
+// contentTypesXML represents the root Types element in [Content_Types].xml
+type contentTypesXML struct {
+	XMLName   xml.Name              `xml:"Types"`
+	Defaults  []contentTypeDefault  `xml:"Default"`
+	Overrides []contentTypeOverride `xml:"Override"`
 }
 
 func (v *Validator) checkRelsFile(relsPath string) {
@@ -172,6 +196,7 @@ func (v *Validator) checkRelsFile(relsPath string) {
 				Path:        relsPath,
 				Description: fmt.Sprintf("Broken relationship: %s -> %s (ID: %s)", relsPath, target, rel.ID),
 				Repairable:  true,
+				Context:     map[string]string{"target": target},
 			})
 		}
 	}
@@ -251,35 +276,43 @@ func (v *Validator) checkContentTypes() {
 		return
 	}
 
-	ctStr := string(data)
+	var ct contentTypesXML
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	if err := decoder.Decode(&ct); err != nil {
+		return
+	}
+
+	overrides := make(map[string]bool)
+	for _, o := range ct.Overrides {
+		overrides[strings.TrimPrefix(o.PartName, "/")] = true
+	}
+
+	defaults := make(map[string]bool)
+	for _, d := range ct.Defaults {
+		defaults[strings.ToLower(d.Extension)] = true
+	}
+
 	for _, p := range v.provider.Keys() {
 		if p == ctPath || strings.HasSuffix(p, ".rels") {
 			continue
 		}
 
-		partName := "/" + p
-		// Search for exactly PartName="/path" with either single or double quotes
-		hasOverride := strings.Contains(ctStr, `PartName="`+partName+`"`) ||
-			strings.Contains(ctStr, `PartName='`+partName+`'`)
-
-		if !hasOverride {
-			// Check if extension has a default
-			ext := path.Ext(p)
-			if ext != "" {
-				ext = strings.TrimPrefix(ext, ".")
-				if strings.Contains(ctStr, `Extension="`+ext+`"`) {
-					continue
-				}
-			}
-
-			v.issues = append(v.issues, Issue{
-				Code:        CodeInvalidContentType,
-				Severity:    SeverityError,
-				Path:        p,
-				Description: fmt.Sprintf("Part %s has no content type registration", p),
-				Repairable:  true,
-			})
+		if overrides[p] {
+			continue
 		}
+
+		ext := strings.TrimPrefix(path.Ext(p), ".")
+		if ext != "" && defaults[strings.ToLower(ext)] {
+			continue
+		}
+
+		v.issues = append(v.issues, Issue{
+			Code:        CodeInvalidContentType,
+			Severity:    SeverityError,
+			Path:        p,
+			Description: fmt.Sprintf("Part %s has no content type registration", p),
+			Repairable:  true,
+		})
 	}
 }
 
