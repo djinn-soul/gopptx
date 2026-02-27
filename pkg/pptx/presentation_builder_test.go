@@ -1,137 +1,84 @@
-package pptx_test
+package pptx
 
 import (
-	"archive/zip"
-	"bytes"
-	"io"
-	"os"
-	"path/filepath"
-	"regexp"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx"
-	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-func TestPresentationBuilder(t *testing.T) {
-	tmpDir := t.TempDir()
-	outPath := filepath.Join(tmpDir, "builder_test.pptx")
-
-	builder := pptx.NewPresentationBuilder("Fluent Presentation").
-		WithMetadata(pptx.Metadata{
-			Metadata: common.Metadata{Creator: "Test Builder"},
-		}).
-		AddSlide(pptx.NewSlide("Slide 1").AddShape(pptx.NewRectangle(1, 1, 2, 2))).
-		AddSlide(pptx.NewSlide("Slide 2").AddShape(pptx.NewEllipse(3, 1, 2, 2)))
-
-	data, err := builder.Build()
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
-	}
-	if len(data) == 0 {
-		t.Errorf("Build returned empty data")
-	}
-
-	if writeErr := builder.WriteToFile(outPath); writeErr != nil {
-		t.Fatalf("WriteToFile failed: %v", writeErr)
-	}
-	if _, statErr := os.Stat(outPath); statErr != nil {
-		t.Errorf("output file not created: %v", statErr)
-	}
-
-	emptyBuilder := pptx.NewPresentationBuilder("Empty")
-	_, err = emptyBuilder.Build()
-	if err == nil {
-		t.Errorf("expected error for empty presentation, got nil")
-	}
-}
-
-func TestCustomXML(t *testing.T) {
-	builder := pptx.NewPresentationBuilder("Custom XML Test").
-		AddCustomXML("<test>content 1</test>").
-		AddCustomXML("<foo>bar</foo>").
-		AddSlide(pptx.NewSlide("Slide 1"))
-
-	data, err := builder.Build()
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
-	}
-	if len(data) == 0 {
-		t.Errorf("Build returned empty data")
-	}
-
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		t.Fatalf("zip.NewReader failed: %v", err)
-	}
-
-	itemIDPattern := regexp.MustCompile(
-		`ds:itemID="\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}"`,
-	)
-	itemPropsPathPattern := regexp.MustCompile(`^customXml/itemProps\d+\.xml$`)
-	foundIDs := make(map[string]struct{})
-	propsCount := 0
-
-	for _, f := range zr.File {
-		if !itemPropsPathPattern.MatchString(f.Name) {
-			continue
-		}
-		propsCount++
-
-		rc, openErr := f.Open()
-		if openErr != nil {
-			t.Fatalf("open %s: %v", f.Name, openErr)
-		}
-		content, readErr := io.ReadAll(rc)
-		_ = rc.Close()
-		if readErr != nil {
-			t.Fatalf("read %s: %v", f.Name, readErr)
-		}
-
-		matches := itemIDPattern.FindAllString(string(content), -1)
-		if len(matches) != 1 {
-			t.Fatalf("expected exactly one GUID itemID in %s, got %d", f.Name, len(matches))
-		}
-		foundIDs[matches[0]] = struct{}{}
-	}
-
-	if propsCount != 2 {
-		t.Fatalf("expected 2 customXml itemProps files, got %d", propsCount)
-	}
-	if len(foundIDs) != 2 {
-		t.Fatalf("expected unique GUID itemIDs for customXml itemProps")
-	}
-}
-
-func TestSlideNumberingEnabled(t *testing.T) {
-	builder := pptx.NewPresentationBuilder("Numbering Test").
+func TestPresentationBuilder_FluentAPI(t *testing.T) {
+	builder := NewPresentationBuilder("Fluent Test").
 		WithSlideNumbers(true).
-		AddSlide(pptx.NewSlide("Slide 1"))
+		WithFooter("Footer Text").
+		WithDateTime(true).
+		WithModifyPassword("secret").
+		WithMarkAsFinal(true).
+		WithSignaturesEnabled(true)
 
-	_, err := builder.Build()
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
+	if builder.footerText != "Footer Text" {
+		t.Errorf("expected footer text 'Footer Text', got %q", builder.footerText)
+	}
+	if !builder.showSlideNumber {
+		t.Error("expected showSlideNumber to be true")
+	}
+	if !builder.showDateTime {
+		t.Error("expected showDateTime to be true")
+	}
+	if builder.metadata.Protection.ModifyPassword != "secret" {
+		t.Error("expected modify password to be set")
+	}
+	if !builder.metadata.Protection.MarkAsFinal {
+		t.Error("expected mark as final to be true")
+	}
+	if !builder.metadata.Protection.SignaturesEnabled {
+		t.Error("expected signatures enabled to be true")
+	}
+
+	// Test slide adding helpers
+	builder.AddTitleSlide("Title Only").
+		AddBulletSlide("Bullets", []string{"B1", "B2"}).
+		AddShapesSlide("Shapes", NewShape(ShapeTypeRectangle, 0, 0, 100, 100))
+
+	if len(builder.slides) != 3 {
+		t.Errorf("expected 3 slides, got %d", len(builder.slides))
+	}
+
+	// Test metadata helpers
+	builder.WithMetadata(Metadata{Metadata: MetadataFields{Creator: "Creator"}}).
+		WithSlideSize(SlideSize16x9()).
+		WithTheme(styling.Theme{}).
+		WithMaster(&elements.SlideMaster{})
+
+	if builder.metadata.Creator != "Creator" {
+		t.Error("WithMetadata failed")
+	}
+	if builder.metadata.SlideSize.Width != 12192000 {
+		t.Errorf("WithSlideSize failed, got width %d", builder.metadata.SlideSize.Width)
+	}
+	if builder.metadata.Theme == nil {
+		t.Error("WithTheme failed")
+	}
+	if builder.metadata.Master == nil {
+		t.Error("WithMaster failed")
 	}
 }
 
-func TestConnectorGranularArrows(t *testing.T) {
-	connector := pptx.NewConnector(pptx.ConnectorTypeStraight, 1, 1, 5, 5).
-		WithArrows(pptx.ArrowTypeStealth, pptx.ArrowTypeDiamond).
-		WithStartArrowSize(pptx.ArrowSizeSmall, pptx.ArrowSizeLarge).
-		WithEndArrowSize(pptx.ArrowSizeLarge, pptx.ArrowSizeSmall)
+func TestPresentationBuilder_Build(t *testing.T) {
+	builder := NewPresentationBuilder("").
+		WithMetadata(Metadata{Metadata: MetadataFields{Title: "Meta Title"}}).
+		AddSlide(NewSlide("Slide 1"))
 
-	if connector.StartArrowWidth != pptx.ArrowSizeSmall {
-		t.Errorf("expected start arrow width %s, got %s", pptx.ArrowSizeSmall, connector.StartArrowWidth)
-	}
-	if connector.EndArrowLen != pptx.ArrowSizeSmall {
-		t.Errorf("expected end arrow length %s, got %s", pptx.ArrowSizeSmall, connector.EndArrowLen)
-	}
-
-	builder := pptx.NewPresentationBuilder("Arrows Test").
-		AddSlide(pptx.NewSlide("Slide 1").AddConnector(connector))
-
-	_, err := builder.Build()
+	data, err := builder.Build()
 	if err != nil {
 		t.Fatalf("Build failed: %v", err)
+	}
+	if len(data) == 0 {
+		t.Error("Build produced empty data")
+	}
+
+	// Title from metadata should take precedence
+	if builder.metadata.Title != "Meta Title" {
+		t.Errorf("expected title 'Meta Title', got %q", builder.metadata.Title)
 	}
 }

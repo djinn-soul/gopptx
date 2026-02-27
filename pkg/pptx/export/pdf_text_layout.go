@@ -141,46 +141,93 @@ func measuredWidthWithMetrics(pdf *gopdf.GoPdf, text string, fontHint string) fl
 	if base == math.MaxFloat64 || text == "" {
 		return base
 	}
-	factor := fontWidthFactor(fontHint)
-	kerning := kerningAdjustment(text, fontHint)
-	return (base * factor) + kerning
+	profile := fontMetricProfile(fontHint)
+	kerning := kerningAdjustment(text, profile, base)
+	return (base * profile.WidthFactor) + kerning
 }
 
-func fontWidthFactor(fontHint string) float64 {
+type fontMetricsProfile struct {
+	WidthFactor      float64
+	SpaceFactor      float64
+	NarrowRuneFactor float64
+	WideRuneFactor   float64
+	KernPairFactor   float64
+}
+
+func fontMetricProfile(fontHint string) fontMetricsProfile {
 	name := strings.ToLower(strings.TrimSpace(fontHint))
 	switch {
 	case strings.Contains(name, "calibri"):
-		return 0.97
+		return fontMetricsProfile{
+			WidthFactor:      0.972,
+			SpaceFactor:      0.88,
+			NarrowRuneFactor: 0.78,
+			WideRuneFactor:   1.12,
+			KernPairFactor:   0.16,
+		}
 	case strings.Contains(name, "times"):
-		return 0.95
+		return fontMetricsProfile{
+			WidthFactor:      0.955,
+			SpaceFactor:      0.84,
+			NarrowRuneFactor: 0.74,
+			WideRuneFactor:   1.15,
+			KernPairFactor:   0.20,
+		}
 	case strings.Contains(name, "courier"), strings.Contains(name, "mono"), strings.Contains(name, "consolas"):
-		return 1.02
+		return fontMetricsProfile{
+			WidthFactor:      1.00,
+			SpaceFactor:      1.00,
+			NarrowRuneFactor: 1.00,
+			WideRuneFactor:   1.00,
+			KernPairFactor:   0,
+		}
 	default:
-		return 1.0
+		return fontMetricsProfile{
+			WidthFactor:      1.00,
+			SpaceFactor:      0.92,
+			NarrowRuneFactor: 0.82,
+			WideRuneFactor:   1.10,
+			KernPairFactor:   0.14,
+		}
 	}
 }
 
-func kerningAdjustment(text string, fontHint string) float64 {
-	name := strings.ToLower(strings.TrimSpace(fontHint))
-	if strings.Contains(name, "mono") || strings.Contains(name, "courier") || strings.Contains(name, "consolas") {
+func kerningAdjustment(text string, profile fontMetricsProfile, measured float64) float64 {
+	runes := []rune(text)
+	if len(runes) < 2 {
 		return 0
 	}
+	perRune := measured / math.Max(float64(len(runes)), 1)
 	adj := 0.0
-	prev := rune(0)
-	for _, cur := range text {
-		if prev == 0 {
-			prev = cur
+	for i, cur := range runes {
+		switch {
+		case cur == ' ':
+			adj += (profile.SpaceFactor - 1.0) * perRune
+		case isNarrowRune(cur):
+			adj += (profile.NarrowRuneFactor - 1.0) * perRune * 0.5
+		case isWideRune(cur):
+			adj += (profile.WideRuneFactor - 1.0) * perRune * 0.5
+		}
+		if i == 0 || profile.KernPairFactor == 0 {
 			continue
 		}
-		switch string([]rune{prev, cur}) {
-		case "To", "Ta", "Te", "Yo", "VA", "WA", "LT", "Ty", "AV":
-			adj -= 0.22
-		case "ll", "ii", "rr":
-			adj -= 0.08
+		if isTightPair(runes[i-1], cur) {
+			adj -= perRune * profile.KernPairFactor
 		}
-		prev = cur
 	}
 	return adj
+}
+
+func isNarrowRune(r rune) bool {
+	return strings.ContainsRune("iljftI1|!:;.,'`", r)
+}
+
+func isWideRune(r rune) bool {
+	return strings.ContainsRune("MWQ@#%&8", r)
+}
+
+func isTightPair(prev, cur rune) bool {
+	return strings.ContainsRune("TAVWLYF", prev) && strings.ContainsRune("aoeu.,", cur)
 }
 
 func pdfLineHeight(fontSize int) float64 {

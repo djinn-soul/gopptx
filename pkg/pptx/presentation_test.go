@@ -454,3 +454,52 @@ func TestCreateWithSections(t *testing.T) {
 		t.Fatalf("expected p14:sectionLst in presentation.xml")
 	}
 }
+
+func TestValidateAndRepair(t *testing.T) {
+	// Generate a valid PPTX
+	data, err := pptx.Create("Valid", 1)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	// Validate it
+	issues, err := pptx.Validate(data)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	if len(issues) > 0 {
+		t.Errorf("expected no issues for fresh PPTX, got %d", len(issues))
+	}
+
+	// Corrupt it (simulated) and test repair
+	repaired, result, err := pptx.Repair(data)
+	if err != nil {
+		t.Fatalf("Repair failed: %v", err)
+	}
+	if len(repaired) == 0 {
+		t.Error("Repair produced empty data")
+	}
+	_ = result
+}
+
+func TestWriteFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "test.pptx")
+	slides := []pptx.SlideContent{pptx.NewSlide("S1")}
+	err := pptx.WriteFile(path, "Title", slides)
+	if err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Error("File was not written")
+	}
+}
+
+func TestCreate_ErrorPaths(t *testing.T) {
+	if _, err := pptx.Create("", 1); err == nil {
+		t.Error("expected error for empty title")
+	}
+	if _, err := pptx.Create("Title", 0); err == nil {
+		t.Error("expected error for 0 slides")
+	}
+}

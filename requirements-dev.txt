@@ -11,9 +11,9 @@ anyio==4.12.1 \
     # via
     #   httpx
     #   starlette
-bandit==1.9.3 \
-    --hash=sha256:4745917c88d2246def79748bde5e08b9d5e9b92f877863d43fab70cd8814ce6a \
-    --hash=sha256:ade4b9b7786f89ef6fc7344a52b34558caec5da74cb90373aed01de88472f774
+bandit==1.9.4 \
+    --hash=sha256:b589e5de2afe70bd4d53fa0c1da6199f4085af666fde00e8a034f152a52cd628 \
+    --hash=sha256:f89ffa663767f5a0585ea075f01020207e966a9c0f2b9ef56a57c7963a3f6f8e
     # via gopptx
 basedpyright==1.38.1 \
     --hash=sha256:24f21661d2754687b64f3bc35efcc78781e11b08c8b2310312ed92bf178ea627 \
@@ -431,6 +431,7 @@ numpy==2.2.6 ; python_full_version < '3.11' \
     --hash=sha256:fd83c01228a688733f1ded5201c678f0c53ecc1006ffbc404db9f7a899ac6249 \
     --hash=sha256:fe27749d33bb772c80dcd84ae7e8df2adc920ae8297400dabec45f0dedb3f6de \
     --hash=sha256:fee4236c876c4e8369388054d02d0e9bb84821feb1a64dd59e137e6511a551f8
+    # via gopptx
 numpy==2.4.2 ; python_full_version >= '3.11' \
     --hash=sha256:00ab83c56211a1d7c07c25e3217ea6695e50a3e2f255053686b081dc0b091a82 \
     --hash=sha256:068cdb2d0d644cdb45670810894f6a0600797a69c05f1ac478e8d31670b8ee75 \
@@ -504,6 +505,7 @@ numpy==2.4.2 ; python_full_version >= '3.11' \
     --hash=sha256:fbde1b0c6e81d56f5dccd95dd4a711d9b95df1ae4009a60887e56b27e8d903fa \
     --hash=sha256:fcf92bee92742edd401ba41135185866f7026c502617f422eb432cfeca4fe236 \
     --hash=sha256:fd49860271d52127d61197bb50b64f58454e9f578cb4b2c001a6de8b1f50b0b1
+    # via gopptx
 orjson==3.11.7 \
     --hash=sha256:043d3006b7d32c7e233b8cfb1f01c651013ea079e08dcef7189a29abd8befe11 \
     --hash=sha256:0527a4510c300e3b406591b0ba69b5dc50031895b0a93743526a3fc45f59d26e \
@@ -691,6 +693,7 @@ pillow==12.1.1 \
     --hash=sha256:fbfa2a7c10cc2623f412753cddf391c7f971c52ca40a3f65dc5039b2939e8563 \
     --hash=sha256:fc354a04072b765eccf2204f588a7a532c9511e8b9c7f900e1b64e3e33487090 \
     --hash=sha256:fc44ef1f3de4f45b50ccf9136999d71abb99dca7706bc75d222ed350b9fd2289
+    # via gopptx
 pip==26.0.1 \
     --hash=sha256:bdb1b08f4274833d62c1aa29e20907365a2ceb950410df15fc9521bad440122b \
     --hash=sha256:c4037d8a277c89b320abe636d59f91e6d0922d08a05b60e85e53b296613346d8
@@ -891,6 +894,7 @@ pypdfium2==5.5.0 \
     --hash=sha256:ee22df3376d350eeb64d2002a1071e3a02c0d874c557a3cd8229a8fc572cdaac \
     --hash=sha256:f618af0884c16c768539c44933a255039131dbbf39d68eded020da4f14958d73 \
     --hash=sha256:faea3246591ce2ea6218cd06679071275e3c65f11c3f5c9091eb7fb07610af6a
+    # via gopptx
 pytest==9.0.2 \
     --hash=sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b \
     --hash=sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11

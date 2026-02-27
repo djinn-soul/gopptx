@@ -2,3 +2,4 @@
 #    uv export --output-file requirements.txt --no-hashes
 -e .
 orjson==3.11.7
+    # via gopptx

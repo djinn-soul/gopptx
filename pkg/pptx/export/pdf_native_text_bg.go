@@ -81,6 +81,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	}
 	baseX := 54.0
 	maxWidth := slideWidthPt - 108
+	prevSpaceAfter := 0.0
 	for i, bullet := range slide.Bullets {
 		style := bulletStyleForIndex(slide, i)
 		runs := bulletRunsForIndex(slide, i, bullet)
@@ -96,7 +97,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		fontHint := firstRunFont(runs)
 		prefix := bulletPrefix(style, i)
 		renderedText := renderRunsPlain(runs)
-		yPos += float64(max(style.SpaceBeforePt, 0))
+		yPos += paragraphStartGap(i, prevSpaceAfter, style)
 		availableWidth := maxWidth - levelIndent - leftIndent - rightIndent
 		if availableWidth < 80 {
 			availableWidth = 80
@@ -117,7 +118,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
 		allRuns := append(append([]pdfStyledRun{}, prefixRuns...), styledRuns...)
 		lines := wrapStyledRuns(pdf, allRuns, availableWidth)
-		lineHeight := math.Max(pdfLineHeight(fontSize)*paragraphLineSpacingFactor(style), 14)
+		lineHeight := math.Max(pdfLineHeight(fontSize)*paragraphLineSpacingFactor(style), 12)
 		continuationIndent := continuationLineIndent(pdf, prefixRuns, style)
 		for li, line := range lines {
 			if yPos+lineHeight > maxY {
@@ -138,7 +139,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 			renderStyledLine(pdf, line, lineX, yPos)
 			yPos += lineHeight
 		}
-		yPos += float64(max(style.SpaceAfterPt, 0)) + 2
+		prevSpaceAfter = paragraphAfterGap(style)
 	}
 	setPDFTextFont(pdf, defaultFontSize, false, false)
 }
@@ -183,13 +184,6 @@ func runTextStyle(runs []elements.Run, slide elements.SlideContent) (bool, bool)
 		return runs[0].Bold || slide.ContentBold, runs[0].Italic || slide.ContentItalic
 	}
 	return slide.ContentBold, slide.ContentItalic
-}
-
-func paragraphLineSpacingFactor(style text.ParagraphStyle) float64 {
-	if style.LineSpacingPct <= 0 {
-		return 1.0
-	}
-	return float64(style.LineSpacingPct) / 100.0
 }
 
 func renderRunsPlain(runs []elements.Run) string {
@@ -267,56 +261,13 @@ func buildBulletPrefixRuns(
 }
 
 func continuationLineIndent(pdf *gopdf.GoPdf, prefixRuns []pdfStyledRun, style text.ParagraphStyle) float64 {
-	if style.HangingIndent != 0 {
+	prefixWidth := measureStyledLineWidth(pdf, prefixRuns)
+	hanging := emuToPt(style.HangingIndent.Emu())
+	indent := prefixWidth + hanging
+	if indent < 0 {
 		return 0
 	}
-	return measureStyledLineWidth(pdf, prefixRuns)
-}
-
-func bulletPrefix(style text.ParagraphStyle, idx int) string {
-	switch text.NormalizeBulletStyle(style.BulletStyle) {
-	case text.BulletStyleNone:
-		return ""
-	case text.BulletStyleNumber:
-		return fmt.Sprintf("%d.", idx+1)
-	case text.BulletStyleLetterLower:
-		return fmt.Sprintf("%c.", 'a'+(idx%26))
-	case text.BulletStyleLetterUpper:
-		return fmt.Sprintf("%c.", 'A'+(idx%26))
-	case text.BulletStyleRomanLower:
-		return strings.ToLower(romanNumeral(idx + 1))
-	case text.BulletStyleRomanUpper:
-		return romanNumeral(idx + 1)
-	case text.BulletStyleCustom:
-		if style.BulletChar != "" {
-			return style.BulletChar
-		}
-		return "•"
-	default:
-		return "•"
-	}
-}
-
-func romanNumeral(n int) string {
-	if n <= 0 {
-		return ""
-	}
-	table := []struct {
-		value int
-		sym   string
-	}{
-		{1000, "M"}, {900, "CM"}, {500, "D"}, {400, "CD"},
-		{100, "C"}, {90, "XC"}, {50, "L"}, {40, "XL"},
-		{10, "X"}, {9, "IX"}, {5, "V"}, {4, "IV"}, {1, "I"},
-	}
-	var out strings.Builder
-	for _, entry := range table {
-		for n >= entry.value {
-			out.WriteString(entry.sym)
-			n -= entry.value
-		}
-	}
-	return out.String()
+	return indent
 }
 
 func setPDFTextFont(pdf *gopdf.GoPdf, size int, bold bool, italic bool) {
