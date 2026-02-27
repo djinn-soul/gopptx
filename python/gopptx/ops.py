@@ -11,6 +11,7 @@ OP_ADD_SECTION = "add_section"
 OP_ADD_SHAPE = "add_shape"
 OP_ADD_SLIDE = "add_slide"
 OP_ADD_TABLE = "add_table"
+OP_ADD_VBA = "add_vba"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
@@ -67,6 +68,7 @@ SUPPORTED_OPS = (
     OP_ADD_SHAPE,
     OP_ADD_SLIDE,
     OP_ADD_TABLE,
+    OP_ADD_VBA,
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
     OP_CLONE_LAYOUT_MASTER_FAMILY,

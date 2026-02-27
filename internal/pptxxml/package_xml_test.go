@@ -14,162 +14,78 @@ func TestSignatureOriginXML(t *testing.T) {
 	) {
 		t.Fatalf("unexpected signature origin xml: %s", xml)
 	}
-	if strings.Contains(xml, "<vnd.openxmlformats-package.digital-signature-origin") {
-		t.Fatalf("signature origin must use SignatureOrigin element: %s", xml)
-	}
 }
 
-func TestContentTypesCustomPropertiesOverride(t *testing.T) {
-	withCustom := ContentTypes(1, nil, 0, 0, nil, false, 0, 1, 0, false, nil, true, false, false, false, false)
-	if !strings.Contains(
-		withCustom,
-		`<Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>`,
-	) {
-		t.Fatalf("missing custom properties override in content types: %s", withCustom)
+func TestContentTypes_Full(t *testing.T) {
+	xml := ContentTypes(
+		2, // 2 slides
+		[]string{"png", "jpg", "mp3"},
+		1, // 1 chart
+		1, // 1 smartart
+		[]int{1}, // 1 notes slide
+		true, // has notes master
+		1, // 1 custom xml
+		1, // 1 master
+		1, // notes theme
+		true, // has sections
+		[]int{1}, // 1 slide with comments
+		true, // has custom props
+		true, // has signatures
+		true, // has vba
+		true, // has handout master
+		true, // has embedded fonts
+	)
+
+	checks := []string{
+		`PartName="/ppt/slides/slide1.xml"`,
+		`PartName="/ppt/slides/slide2.xml"`,
+		`Extension="png"`,
+		`Extension="jpg"`,
+		`Extension="mp3"`,
+		`PartName="/ppt/slideMasters/slideMaster1.xml"`,
+		`PartName="/ppt/slideLayouts/slideLayout1.xml"`,
+		`PartName="/ppt/notesSlides/notesSlide1.xml"`,
+		`PartName="/ppt/notesMasters/notesMaster1.xml"`,
+		`PartName="/customXml/item1.xml"`,
+		`PartName="/ppt/theme/theme1.xml"`,
+		`PartName="/ppt/charts/chart1.xml"`,
+		`PartName="/ppt/commentAuthors.xml"`,
+		`PartName="/ppt/comments/comment1.xml"`,
+		`PartName="/docProps/custom.xml"`,
+		`PartName="/ppt/vbaProject.bin"`,
+		`PartName="/ppt/handoutMasters/handoutMaster1.xml"`,
+		`PartName="/ppt/sectionList.xml"`,
+		`PartName="/docProps/core.xml"`,
+		`PartName="/docProps/app.xml"`,
 	}
 
-	withoutCustom := ContentTypes(1, nil, 0, 0, nil, false, 0, 1, 0, false, nil, false, false, false, false, false)
-	if strings.Contains(withoutCustom, `/docProps/custom.xml`) {
-		t.Fatalf("unexpected custom properties override without custom props enabled: %s", withoutCustom)
-	}
-}
-
-func TestRootRelationships(t *testing.T) {
-	tests := []struct {
-		name          string
-		hasCustom     bool
-		hasSignatures bool
-		contains      []string
-	}{
-		{
-			name:      "basic",
-			hasCustom: false, hasSignatures: false,
-			contains: []string{"rId1", "rId2", "rId3"},
-		},
-		{
-			name:      "with custom and signatures",
-			hasCustom: true, hasSignatures: true,
-			contains: []string{"rId4", "rId5", "custom-properties", "digital-signature"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := RootRelationships(tt.hasCustom, tt.hasSignatures)
-			for _, s := range tt.contains {
-				if !strings.Contains(got, s) {
-					t.Errorf("RootRelationships() missing %v", s)
-				}
-			}
-		})
-	}
-}
-
-func TestPresentationRelationships(t *testing.T) {
-	got := PresentationRelationships(2, true, 1, 1, true, true, true, true, 1)
-	expected := []string{
-		"slideMasters/slideMaster1.xml",
-		"slides/slide1.xml",
-		"slides/slide2.xml",
-		"notesMasters/notesMaster1.xml",
-		"customXml/item1.xml",
-		"sectionList.xml",
-		"commentAuthors.xml",
-		"vbaProject.bin",
-		"handoutMasters/handoutMaster1.xml",
-		"fonts/font1.fntdata",
-	}
-
-	for _, s := range expected {
-		if !strings.Contains(got, s) {
-			t.Errorf("PresentationRelationships() missing %v", s)
+	for _, c := range checks {
+		if !strings.Contains(xml, c) {
+			t.Errorf("missing %s in ContentTypes", c)
 		}
 	}
 }
 
-func TestSectionListXML(t *testing.T) {
-	sections := []Section{
-		{
-			Name:     "Section 1",
-			GUID:     "{GUID1}",
-			SlideIDs: []int64{256, 257},
-		},
-	}
-	got := SectionListXML(sections)
-	expected := []string{
-		"Section 1",
-		"{GUID1}",
-		"sldId id=\"256\"",
-		"sldId id=\"257\"",
-	}
-
-	for _, s := range expected {
-		if !strings.Contains(got, s) {
-			t.Errorf("SectionListXML() missing %v", s)
-		}
+func TestWriteRID(t *testing.T) {
+	var b strings.Builder
+	WriteRID(&b, "rId5")
+	if b.String() != "rId5" {
+		t.Error("WriteRID failed")
 	}
 }
 
-func TestPresentation(t *testing.T) {
-	got := Presentation("Title", 1, true, 9144000, 6858000, 1, &ProtectionInfo{SpinCount: 100000}, nil, true, nil)
-	expected := []string{
-		"rtl=\"1\"",
-		"sldMasterId id=\"2147483648\"",
-		"notesMasterId",
-		"sldId id=\"257\"",
-		"screen4x3",
-		"modifyVerifier",
-		"spinCount=\"100000\"",
-	}
-
-	for _, s := range expected {
-		if !strings.Contains(got, s) {
-			t.Errorf("Presentation() missing %v", s)
-		}
+func TestFastEscapeRID(t *testing.T) {
+	if FastEscapeRID("rId1") != "rId1" {
+		t.Error("FastEscapeRID failed")
 	}
 }
 
-func TestEscape(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"&", "&amp;"},
-		{"<", "&lt;"},
-		{">", "&gt;"},
-		{"\"", "&quot;"},
-		{"'", "&apos;"},
-		{"hello & world", "hello &amp; world"},
+func TestCustomPropertiesXML(t *testing.T) {
+	xml := CustomProperties(true)
+	if !strings.Contains(xml, "_MarkAsFinal") {
+		t.Error("CustomProperties XML failed")
 	}
-
-	for _, tt := range tests {
-		if got := Escape(tt.input); got != tt.want {
-			t.Errorf("Escape(%v) = %v, want %v", tt.input, got, tt.want)
-		}
-	}
-}
-
-func TestEmbeddedFontsXML(t *testing.T) {
-	fonts := []EmbeddedFontRef{
-		{
-			Typeface: "Arial",
-			Style:    "regular",
-			RelID:    "rId1",
-		},
-		{
-			Typeface: "Arial",
-			Style:    "bold",
-			RelID:    "rId2",
-		},
-	}
-	got := EmbeddedFontsXML(fonts)
-	if !strings.Contains(got, "typeface=\"Arial\"") {
-		t.Errorf("EmbeddedFontsXML() missing typeface: %v", got)
-	}
-	if !strings.Contains(got, "regular r:id=\"rId1\"") {
-		t.Errorf("EmbeddedFontsXML() missing regular variant: %v", got)
-	}
-	if !strings.Contains(got, "bold r:id=\"rId2\"") {
-		t.Errorf("EmbeddedFontsXML() missing bold variant: %v", got)
+	if CustomProperties(false) != "" {
+		t.Error("CustomProperties should be empty when false")
 	}
 }

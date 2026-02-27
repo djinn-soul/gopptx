@@ -1,6 +1,7 @@
 package pptxxml
 
 import (
+	"log"
 	"strconv"
 	"strings"
 )
@@ -83,10 +84,12 @@ func ContentTypes(
 		b.WriteString(strconv.Itoa(v))
 	}
 
-	for _, ext := range imageExtensions {
+	for _, rawExt := range imageExtensions {
+		ext := strings.TrimPrefix(strings.ToLower(rawExt), ".")
 		contentType, ok := imageContentType(ext)
 		if !ok {
-			panic("unsupported image extension in content types: " + ext)
+			log.Printf("WARNING: unknown image extension %q, using application/octet-stream", rawExt)
+			contentType = "application/octet-stream"
 		}
 		b.WriteString(`
 <Default Extension="`)
@@ -245,6 +248,7 @@ var xmlEscapeReplacer = strings.NewReplacer(
 )
 
 func imageContentType(ext string) (string, bool) {
+	ext = strings.TrimPrefix(strings.ToLower(ext), ".")
 	switch ext {
 	case "png":
 		return "image/png", true

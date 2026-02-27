@@ -223,3 +223,4 @@ class TableInfo(TypedDict):
     band_row: bool
     band_col: bool
     cells: list[TableCellInfo]
+

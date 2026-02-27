@@ -99,6 +99,15 @@ func TestSlidesFromPPTX_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestCanonicalZipPath(t *testing.T) {
+	if canonicalZipPath("\\ppt\\media\\img.png") != "ppt/media/img.png" {
+		t.Error("canonicalZipPath failed")
+	}
+	if canonicalZipPath("/ppt/media/img.png") != "ppt/media/img.png" {
+		t.Error("canonicalZipPath failed")
+	}
+}
+
 func TestImageFormat(t *testing.T) {
 	tests := []struct {
 		path     string

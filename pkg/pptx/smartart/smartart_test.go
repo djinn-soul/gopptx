@@ -98,3 +98,36 @@ func TestSmartArt_ToSpec(t *testing.T) {
 		t.Errorf("expected 1 child spec, got %d", len(spec.Nodes[0].Children))
 	}
 }
+
+func TestSmartArt_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		sa      SmartArt
+		wantErr bool
+	}{
+		{"Valid", NewSmartArt(BasicBlockList).AddNode(NewNode("A")), false},
+		{"Empty Layout", SmartArt{Nodes: []Node{{Text: "A"}}}, true},
+		{"No Nodes", NewSmartArt(BasicBlockList), true},
+		{"Invalid Node", NewSmartArt(BasicBlockList).AddNode(Node{}), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.sa.Validate(1)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestSmartArt_LayoutNameHelpers(t *testing.T) {
+	name, ok := processLayoutName(BasicProcess)
+	if !ok || name != "Basic Process" { t.Error("process failed") }
+
+	name, ok = relationshipLayoutName(BasicRadial)
+	if !ok || name != "Basic Radial" { t.Error("rel failed") }
+
+	name, ok = matrixPictureLayoutName(PictureStrips)
+	if !ok || name != "Picture Strips" { t.Error("matrix failed") }
+}

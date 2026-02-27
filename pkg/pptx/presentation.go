@@ -146,7 +146,11 @@ func Repair(pptxData []byte) ([]byte, structural.RepairResult, error) {
 	if err != nil {
 		return nil, structural.RepairResult{}, err
 	}
-	defer func() { _ = ps.Close() }()
+	defer func() {
+		if ps != nil {
+			_ = ps.Close()
+		}
+	}()
 
 	v := structural.NewValidator(ps)
 	v.AddChecker(&logical.Checker{})

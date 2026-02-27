@@ -129,6 +129,8 @@ func commandHandlerForContent(op string) (commandHandler, bool) {
 		return handleListCustomXML, true
 	case OpRemoveCustomXML:
 		return handleRemoveCustomXML, true
+	case OpAddVba:
+		return handleAddVba, true
 	default:
 		return nil, false
 	}

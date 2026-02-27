@@ -15,6 +15,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
+	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
@@ -337,5 +338,109 @@ func validatePPTX(t *testing.T, blob []byte) {
 		if issue.Severity == structural.SeverityError {
 			t.Errorf("validation error: %v", issue)
 		}
+	}
+}
+
+func TestSlideContent_ExtraMethods(t *testing.T) {
+	s := elements.NewSlide("Extra")
+	s = s.WithBarHorizontalChart(charts.BarHorizontalChart{}).
+		WithBarStackedChart(charts.BarStackedChart{}).
+		WithBarStacked100Chart(charts.BarStacked100Chart{}).
+		WithLineMarkersChart(charts.LineMarkersChart{}).
+		WithLineStackedChart(charts.LineStackedChart{}).
+		WithAreaStackedChart(charts.AreaStackedChart{}).
+		WithAreaStacked100Chart(charts.AreaStacked100Chart{}).
+		WithRadarFilledChart(charts.RadarFilledChart{}).
+		WithStockOHLCChart(charts.StockOHLCChart{}).
+		WithRichNotes([]text.Paragraph{text.NewParagraph()}).
+		WithDefaultBulletStyle(text.ParagraphStyle{BulletChar: "*"}).
+		AddBulletRuns([]text.Run{text.NewRun("R")}).
+		AddBulletRunsWithStyle([]text.Run{text.NewRun("RS")}, text.ParagraphStyle{BulletColor: "FF0000"}).
+		WithPlaceholderOverride(shapes.PlaceholderTarget{Index: 1}, shapes.PlaceholderOverrideOptions{})
+
+	if len(s.Bullets) < 2 {
+		t.Error("AddBulletRuns failed")
+	}
+	if len(s.PlaceholderOverrides) != 1 {
+		t.Error("WithPlaceholderOverride failed")
+	}
+}
+
+func TestSlideContent_AutoReroute(t *testing.T) {
+	s := elements.NewSlide("Reroute")
+	s = s.AddShape(shapes.NewRectangle(0, 0, 1, 1)).
+		AddConnector(shapes.NewStraightConnector(0, 0, 1, 1))
+	s = s.AutoRerouteConnectors()
+}
+
+func TestSlideContent_AnimationValidation(t *testing.T) {
+	t.Run("InvalidIndex", func(t *testing.T) {
+		s := elements.NewSlide("X").AddAnimation(animations.NewAnimation(10, animations.AnimationEntranceAppear))
+		if err := s.Validate(1); err == nil {
+			t.Error("expected error for out of range shape index")
+		}
+	})
+
+	t.Run("InvalidTrigger", func(t *testing.T) {
+		s := elements.NewSlide("X").AddShape(shapes.NewRectangle(0, 0, 1, 1))
+		a := animations.NewAnimation(1, animations.AnimationEntranceAppear)
+		a.Trigger = "invalid"
+		s = s.AddAnimation(a)
+		if err := s.Validate(1); err == nil {
+			t.Error("expected error for invalid trigger")
+		}
+	})
+}
+
+func TestSlideContent_AllTransitions(t *testing.T) {
+	types := []transitions.TransitionType{
+		transitions.TransitionFade,
+		transitions.TransitionWipe,
+		transitions.TransitionPush,
+		transitions.TransitionMorph,
+		transitions.TransitionCut,
+		transitions.TransitionCover,
+		transitions.TransitionUncover,
+		transitions.TransitionRandomBars,
+		transitions.TransitionSplit,
+		transitions.TransitionZoom,
+		transitions.TransitionFlash,
+		transitions.TransitionBlinds,
+		transitions.TransitionClock,
+		transitions.TransitionRipple,
+		transitions.TransitionHoneycomb,
+		transitions.TransitionGlitter,
+		transitions.TransitionVortex,
+		transitions.TransitionShred,
+		transitions.TransitionSwitch,
+		transitions.TransitionFlip,
+		transitions.TransitionGallery,
+		transitions.TransitionCube,
+		transitions.TransitionDoors,
+		transitions.TransitionBox,
+		transitions.TransitionRandom,
+	}
+
+	for _, typ := range types {
+		s := elements.NewSlide("T").WithTransition(transitions.TransitionOptions{Type: typ})
+		if err := s.Validate(1); err != nil {
+			t.Errorf("Validate failed for transition %q: %v", typ, err)
+		}
+	}
+
+	// Test options
+	s := elements.NewSlide("T").WithTransition(transitions.TransitionOptions{
+		Type: transitions.TransitionWipe,
+		Direction: transitions.TransitionDirRight,
+		DurationMS: 1000,
+		AdvanceAfterMS: 2000,
+		DisableAdvanceOnClick: true,
+	})
+	if err := s.Validate(1); err != nil { t.Errorf("Options validate failed: %v", err) }
+}
+
+func TestSlideBackground_Normalization(t *testing.T) {
+	if elements.NormalizeSlideBackgroundType("SOLID") != elements.SlideBackgroundSolid {
+		t.Error("NormalizeSolid failed")
 	}
 }

@@ -127,3 +127,14 @@ func TestStripHash(t *testing.T) {
 	if got := stripHash("#ABC"); got != "ABC" { t.Errorf("expected ABC, got %q", got) }
 	if got := stripHash("ABC"); got != "ABC" { t.Errorf("expected ABC, got %q", got) }
 }
+
+func TestNormalizePDFDriver(t *testing.T) {
+	d, err := normalizePDFDriver(PDFOptions{Driver: ""})
+	if err != nil || d != PDFDriverAuto { t.Error("Auto failed") }
+
+	d, err = normalizePDFDriver(PDFOptions{Driver: "native"})
+	if err != nil || d != PDFDriverNative { t.Error("Native failed") }
+
+	_, err = normalizePDFDriver(PDFOptions{Driver: "invalid"})
+	if err == nil { t.Error("expected error for invalid driver") }
+}

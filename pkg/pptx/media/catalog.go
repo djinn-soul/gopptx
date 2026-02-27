@@ -88,7 +88,10 @@ func addSlideMedia(catalog *Catalog, client *http.Client, slide elements.SlideCo
 	if err := addBackgroundImageToCatalog(catalog, client, slide, slideIndex); err != nil {
 		return err
 	}
-	return addTransitionSoundToCatalog(catalog, client, slide, slideIndex)
+	if err := addTransitionSoundToCatalog(catalog, client, slide, slideIndex); err != nil {
+		return err
+	}
+	return nil
 }
 
 func addBackgroundImageToCatalog(

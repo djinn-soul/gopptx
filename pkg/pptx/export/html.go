@@ -300,7 +300,15 @@ func renderImageToWriter(w io.Writer, img shapes.Image, opts HTMLOptions) error 
 			return err
 		}
 	} else if img.Path != "" {
-		f, err := os.Open(img.Path)
+		// Security: Validate path is not absolute and doesn't escape via parent references
+		cleanPath := filepath.Clean(img.Path)
+		// On Windows, IsAbs doesn't catch drive-relative paths like \windows
+		if filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "..") || strings.HasPrefix(cleanPath, `\`) {
+			_ = encoder.Close()
+			return fmt.Errorf("invalid image path: %s", img.Path)
+		}
+
+		f, err := os.Open(cleanPath)
 		if err == nil {
 			_, copyErr := io.Copy(encoder, f)
 			closeErr := f.Close()

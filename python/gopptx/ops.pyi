@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 OP_ADD_AUTHOR: str
 OP_ADD_CHART: str
 OP_ADD_COMMENT: str
@@ -7,6 +9,7 @@ OP_ADD_SECTION: str
 OP_ADD_SHAPE: str
 OP_ADD_SLIDE: str
 OP_ADD_TABLE: str
+OP_ADD_VBA: str
 OP_APPLY_THEME: str
 OP_BATCH_EXECUTE: str
 OP_CLONE_LAYOUT_MASTER_FAMILY: str

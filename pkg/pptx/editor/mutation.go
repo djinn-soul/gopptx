@@ -402,6 +402,7 @@ func ensureContentTypeDefaults(doc *contentTypesDocument, mediaPaths []string, h
 }
 
 func contentTypeForExtension(ext string) string {
+	ext = strings.TrimPrefix(strings.ToLower(ext), ".")
 	switch ext {
 	case "png":
 		return "image/png"
@@ -409,6 +410,16 @@ func contentTypeForExtension(ext string) string {
 		return "image/jpeg"
 	case "gif":
 		return "image/gif"
+	case "bmp":
+		return "image/bmp"
+	case "tif", "tiff":
+		return "image/tiff"
+	case "wav":
+		return "audio/wav"
+	case "mp3":
+		return "audio/mpeg"
+	case "m4a":
+		return "audio/mp4"
 	case "xlsx":
 		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	default:
@@ -641,7 +652,9 @@ func buildPresentationSectionExtensionXML(sections []Section) string {
 	return b.String()
 }
 
-var embeddedFontLstPattern = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
+var (
+	embeddedFontLstPattern = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
+)
 
 func rewritePresentationEmbeddedFonts(current []byte, fontLst string) (string, error) {
 	if fontLst == "" {

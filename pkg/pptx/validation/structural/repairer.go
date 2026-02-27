@@ -131,8 +131,11 @@ func (r *Repairer) repairInvalidXML(p string) error {
 	return nil
 }
 
+var (
+	entityPattern = regexp.MustCompile(`&(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);`)
+)
+
 func escapeBareAmpersands(s string) string {
-	entityPattern := regexp.MustCompile(`&(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);`)
 	var result strings.Builder
 	last := 0
 	for _, match := range entityPattern.FindAllStringIndex(s, -1) {

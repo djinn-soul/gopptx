@@ -45,12 +45,12 @@ const (
 
 // Issue represents a single diagnostic finding.
 type Issue struct {
-	Code        IssueCode
-	Severity    Severity
-	Path        string // The file path within the PPTX package
-	Description string
-	Repairable  bool
-	Context     map[string]string // Optional context for repairs
+	Code        IssueCode         `json:"code"`
+	Severity    Severity          `json:"severity"`
+	Path        string            `json:"path"` // The file path within the PPTX package
+	Description string            `json:"description"`
+	Repairable  bool              `json:"repairable"`
+	Context     map[string]string `json:"context,omitempty"` // Optional context for repairs
 }
 
 func (i Issue) String() string {

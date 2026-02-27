@@ -206,9 +206,14 @@ func joinAllowed(values []string) string {
 }
 
 func validateSlideAnimations(s SlideContent) error {
+	totalElements := len(s.Shapes) + len(s.Connectors) + len(s.Images) + len(s.PlaceholderOverrides)
 	for i, anim := range s.Animations {
 		if err := anim.Validate(); err != nil {
 			return err
+		}
+		if anim.ShapeIndex < 0 || anim.ShapeIndex > totalElements {
+			return fmt.Errorf("animation %d targets shape index %d, but slide only has %d animatable elements",
+				i+1, anim.ShapeIndex, totalElements)
 		}
 		if i == 0 && isPrevBasedAnimation(anim.Trigger) {
 			return errors.New("first animation trigger cannot be with/after previous")
