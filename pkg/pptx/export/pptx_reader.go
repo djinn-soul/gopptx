@@ -64,6 +64,7 @@ func extractSlideContent(
 
 	for _, es := range editorShapes {
 		lowerType := strings.ToLower(es.Type)
+		lowerName := strings.ToLower(strings.TrimSpace(es.Name))
 
 		switch lowerType {
 		case "title", "ctrtitle":
@@ -79,7 +80,20 @@ func extractSlideContent(
 				}
 			}
 		default:
-			sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+			switch {
+			case isTitlePlaceholder(lowerType, lowerName):
+				if sc.Title == "" && es.Text != "" {
+					sc.Title = es.Text
+				}
+			case isBodyPlaceholder(lowerType, lowerName):
+				for line := range strings.SplitSeq(es.Text, "\n") {
+					if line = strings.TrimSpace(line); line != "" {
+						sc.Bullets = append(sc.Bullets, line)
+					}
+				}
+			default:
+				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+			}
 		}
 	}
 
@@ -110,7 +124,25 @@ func editorShapeToShape(es editorcommon.Shape) shapes.Shape {
 		CX:   styling.Emu(int64(es.W)),
 		CY:   styling.Emu(int64(es.H)),
 		Text: es.Text,
+		Name: es.Name,
 	}
+}
+
+func isTitlePlaceholder(shapeType, shapeName string) bool {
+	return shapeType == "title" ||
+		shapeType == "ctrtitle" ||
+		shapeName == "title" ||
+		strings.Contains(shapeName, "title placeholder")
+}
+
+func isBodyPlaceholder(shapeType, shapeName string) bool {
+	if shapeType == "body" || shapeType == "subtitle" || shapeType == "obj" {
+		return true
+	}
+	return shapeName == "content" ||
+		shapeName == "body" ||
+		strings.Contains(shapeName, "content placeholder") ||
+		strings.Contains(shapeName, "body placeholder")
 }
 
 // editorTypeToPreset normalizes the editor shape type string to the OOXML

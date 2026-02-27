@@ -30,33 +30,11 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 	}
 
 	hasStyledHeader := len(tab.StyledRows) > 0
-	defaultRowH := 20.0
-	if len(tab.Rows) > 0 {
-		totalH := emuToPt(tab.CY.Emu())
-		if totalH > 0 {
-			defaultRowH = totalH / float64(len(tab.Rows))
-		}
-	}
+	rowHeights := computePDFTableRowHeights(pdf, tab, colPts, hasStyledHeader)
+	rowOffsets := cumulativeRowOffsets(rowHeights)
 	for ri, row := range tab.Rows {
-		rowH := defaultRowH
-		if ri < len(tab.RowHeights) {
-			h := emuToPt(tab.RowHeights[ri].Emu())
-			if h > 0 {
-				rowH = h
-			}
-		}
-		cellYOffset := 0.0
-		for pi := range ri {
-			if pi < len(tab.RowHeights) {
-				h := emuToPt(tab.RowHeights[pi].Emu())
-				if h > 0 {
-					cellYOffset += h
-					continue
-				}
-			}
-			cellYOffset += defaultRowH
-		}
-		cellY := startY + cellYOffset
+		rowH := rowHeights[ri]
+		cellY := startY + rowOffsets[ri]
 		cellX := startX
 		for ci, text := range row {
 			cw := colPts[0]
@@ -105,15 +83,25 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			if usableW < 24 {
 				usableW = 24
 			}
-			fontSize := fitPDFTextSize(pdf, text, defaultFontSize, minTextAutoFitSize, cell.Bold, false, usableW)
+			fontSize := fitPDFTextToBoxWithMetrics(
+				pdf,
+				text,
+				defaultFontSize,
+				minTextAutoFitSize,
+				cell.Bold,
+				false,
+				usableW,
+				max(rowH-4, 8),
+				"",
+			)
 			setPDFTextFont(pdf, fontSize, cell.Bold, false)
-			lines := wrapPDFText(pdf, text, usableW)
-			lineHeight := math.Max(float64(fontSize)+2, 12)
+			lines := wrapPDFTextWithMetrics(pdf, text, usableW, "")
+			lineHeight := math.Max(pdfLineHeight(fontSize), 12)
 			totalTextH := lineHeight * float64(len(lines))
-			textY := cellY + math.Max((rowH-totalTextH)/2, 2)
+			textY := tableCellStartY(cell, cellY, rowH, totalTextH)
 			for _, line := range lines {
 				pdf.SetX(cellX + 4)
-				pdf.SetY(textY)
+				pdf.SetY(textY + fontBaselineShift("", fontSize))
 				_ = pdf.Cell(nil, line)
 				textY += lineHeight
 				if textY > cellY+rowH-2 {
@@ -124,6 +112,80 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			cellX += cw
 		}
 	}
+}
+
+func tableCellStartY(cell tables.TableCell, cellY, rowH, totalTextH float64) float64 {
+	switch strings.TrimSpace(cell.VAlign) {
+	case tables.TableVAlignTop:
+		return cellY + 2
+	case tables.TableVAlignBottom:
+		return cellY + math.Max(rowH-totalTextH-2, 2)
+	default:
+		return cellY + math.Max((rowH-totalTextH)/2, 2)
+	}
+}
+
+//nolint:gocognit // Row-height synthesis intentionally accounts for style, wrap, and auto-fit in one pass.
+func computePDFTableRowHeights(
+	pdf *gopdf.GoPdf,
+	tab tables.Table,
+	colPts []float64,
+	hasStyledHeader bool,
+) []float64 {
+	defaultRowH := 20.0
+	if len(tab.Rows) > 0 {
+		totalH := emuToPt(tab.CY.Emu())
+		if totalH > 0 {
+			defaultRowH = totalH / float64(len(tab.Rows))
+		}
+	}
+	out := make([]float64, len(tab.Rows))
+	for ri, row := range tab.Rows {
+		rowH := defaultRowH
+		if ri < len(tab.RowHeights) {
+			h := emuToPt(tab.RowHeights[ri].Emu())
+			if h > 0 {
+				out[ri] = h
+				continue
+			}
+		}
+		needed := rowH
+		for ci, text := range row {
+			cw := colPts[min(ci, len(colPts)-1)]
+			cell := tables.NewTableCell(text)
+			if ri < len(tab.StyledRows) && ci < len(tab.StyledRows[ri]) {
+				cell = tab.StyledRows[ri][ci]
+				text = cell.Text
+			}
+			usableW := max(cw-8, 24)
+			fontSize := fitPDFTextToBoxWithMetrics(
+				pdf, text, defaultFontSize, minTextAutoFitSize, cell.Bold, false, usableW, rowH*2, "",
+			)
+			setPDFTextFont(pdf, fontSize, cell.Bold, false)
+			lineCount := float64(len(wrapPDFTextWithMetrics(pdf, text, usableW, "")))
+			needH := max(lineCount*math.Max(pdfLineHeight(fontSize), 12)+4, rowH)
+			if needH > needed {
+				needed = needH
+			}
+		}
+		// Preserve header visual density when table style is active.
+		if hasStyledHeader && ri == 0 {
+			needed = max(needed, rowH)
+		}
+		out[ri] = needed
+	}
+	setPDFTextFont(pdf, defaultFontSize, false, false)
+	return out
+}
+
+func cumulativeRowOffsets(rowHeights []float64) []float64 {
+	offsets := make([]float64, len(rowHeights))
+	sum := 0.0
+	for i, h := range rowHeights {
+		offsets[i] = sum
+		sum += h
+	}
+	return offsets
 }
 
 func drawStyle(hasFill, hasStroke bool) string {

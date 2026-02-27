@@ -27,6 +27,8 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return runRepairCommand(args[1:], stdout, stderr)
 	case "merge":
 		return runMergeCommand(args[1:], stdout, stderr)
+	case "tpl":
+		return runTplCommand(args[1:], stdout, stderr)
 	case "html":
 		return runHTMLCommand(args[1:], stdout, stderr)
 	case "pdf":
@@ -57,6 +59,7 @@ func printRootUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli repair   -file file.pptx [-out fixed.pptx]")
 	_, _ = fmt.Fprintln(w, "  pptcli merge    -out merged.pptx file1.pptx file2.pptx ...")
+	_, _ = fmt.Fprintln(w, "  pptcli tpl      -template tpl.pptx -data data.json -out out.pptx [-strict]")
 	_, _ = fmt.Fprintln(w, "  pptcli completion -shell bash|zsh")
 	_, _ = fmt.Fprintln(w, "  pptcli version")
 	_, _ = fmt.Fprintln(w, "")

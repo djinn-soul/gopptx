@@ -25,7 +25,7 @@ dev = [
     "pytest-cov>=7.0.0",
     "hypothesis>=6.150.0",
     # Security
-    "bandit>=1.9.2",
+    "bandit>=1.9.4",
     "pip-audit>=2.10.0",
     "detect-secrets>=1.5.0",
     # CI/Automation
@@ -35,6 +35,10 @@ dev = [
     "basedpyright>=1.38.1",
     "vulture>=2.14",
     "gitingest",
+    "pillow==12.1.1",
+    "pypdfium2==5.5.0",
+    "numpy>=2.2.6",
+
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -125,7 +129,6 @@ convention = "google"
 "tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
 
 "examples/**/*.py" = ["T201", "INP001", "D"]
-
 
 
 [tool.ruff.format]
@@ -346,10 +349,3 @@ setup = { sequence = [
     "install",
     { cmd = "prek install" },
 ], help = "Full project setup" }
-
-[dependency-groups]
-dev = [
-    "numpy>=2.2.6",
-    "pillow>=12.1.1",
-    "pypdfium2>=5.5.0",
-]

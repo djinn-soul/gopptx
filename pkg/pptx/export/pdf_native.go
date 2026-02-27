@@ -23,8 +23,6 @@ const (
 
 	// Layout constants.
 	defaultRadiusFactor = 0.1
-	textCenteringFactor = 3.0
-	textYOffset         = 5.0
 	minStrokeWidth      = 0.5
 )
 
@@ -112,16 +110,38 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	if titleSize > titleMax {
 		titleSize = titleMax
 	}
-	titleSize = fitPDFTitleSize(pdf, slide.Title, titleSize, slide.TitleBold, slide.TitleItalic, slideWidthPt-108)
+	titleBoxX := 54.0
+	titleBoxY := 44.0
+	titleBoxW := slideWidthPt - 108
+	titleBoxH := 72.0
+	titleSize = fitPDFTitleSize(
+		pdf,
+		slide.Title,
+		titleSize,
+		slide.TitleBold,
+		slide.TitleItalic,
+		titleBoxW,
+		titleBoxH,
+		slide.TitleFont,
+	)
 	setPDFTextFont(pdf, titleSize, slide.TitleBold, slide.TitleItalic)
 	if slide.TitleColor != "" {
 		pdf.SetTextColor(hexToRGB(slide.TitleColor))
 	} else {
 		pdf.SetTextColor(0, 0, 0)
 	}
-	pdf.SetX(54)
-	pdf.SetY(44)
-	_ = pdf.Cell(nil, slide.Title)
+	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW, slide.TitleFont)
+	lineH := pdfLineHeight(titleSize)
+	yPos := titleBoxY
+	for _, line := range lines {
+		if yPos+lineH > titleBoxY+titleBoxH {
+			break
+		}
+		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign, slide.TitleFont))
+		pdf.SetY(yPos + fontBaselineShift(slide.TitleFont, titleSize))
+		_ = pdf.Cell(nil, line)
+		yPos += lineH
+	}
 	setPDFTextFont(pdf, defaultFontSize, false, false)
 }
 
@@ -132,20 +152,39 @@ func fitPDFTitleSize(
 	bold bool,
 	italic bool,
 	maxWidth float64,
+	maxHeight float64,
+	fontHint string,
 ) int {
 	size := max(14, min(initialSize, 44))
 	for size > 14 {
 		setPDFTextFont(pdf, size, bold, italic)
-		width, err := pdf.MeasureTextWidth(text)
-		if err != nil {
-			break
-		}
-		if width <= maxWidth {
+		if fitPDFTextToBoxWithMetrics(
+			pdf, text, size, 14, bold, italic, maxWidth, maxHeight, fontHint,
+		) == size {
 			return size
 		}
 		size--
 	}
 	return size
+}
+
+func alignedTextX(
+	pdf *gopdf.GoPdf,
+	text string,
+	boxX float64,
+	boxW float64,
+	align string,
+	fontHint string,
+) float64 {
+	textW := measuredWidthWithMetrics(pdf, text, fontHint)
+	switch elements.NormalizeTextAlign(align) {
+	case elements.TextAlignCenter:
+		return boxX + max((boxW-textW)/2, 0)
+	case elements.TextAlignRight:
+		return boxX + max(boxW-textW, 0)
+	default:
+		return boxX
+	}
 }
 
 func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
@@ -230,18 +269,6 @@ func drawPDFGeometry(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64, style
 	default:
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
 	}
-}
-
-func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
-	pdf.SetTextColor(0, 0, 0)
-	textX := x + w/2 - float64(len(s.Text))*textCenteringFactor
-	textY := y + h/2 - textYOffset
-	if textX < x {
-		textX = x + 2
-	}
-	pdf.SetX(textX)
-	pdf.SetY(textY)
-	_ = pdf.Cell(nil, s.Text)
 }
 
 // renderPDFImage embeds a raster image into the PDF at the given EMU position.

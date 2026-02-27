@@ -193,7 +193,7 @@ func tableColumnWidthsForRender(table *TableSpec) []int64 {
 }
 
 func tableStyledRows(table *TableSpec) [][]TableCellSpec {
-	if len(table.StyledRows) == len(table.Rows) && len(table.StyledRows) > 0 {
+	if len(table.StyledRows) > 0 {
 		rows := make([][]TableCellSpec, len(table.StyledRows))
 		for i := range table.StyledRows {
 			row := make([]TableCellSpec, len(table.StyledRows[i]))

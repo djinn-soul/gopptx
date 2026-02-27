@@ -42,3 +42,73 @@ func TestResolveOOXMLColorToken_Invalid(t *testing.T) {
 		t.Fatal("expected invalid color token to fail resolution")
 	}
 }
+
+func TestApplyColorTransforms_Shade(t *testing.T) {
+	// Shade 50% of white should be middle gray (127, 127, 127 -> 7F, 7F, 7F)
+	white := rgbColor{r: 255, g: 255, b: 255}
+	res := shadeColor(white, 50000)
+	if res.r != 127 || res.g != 127 || res.b != 127 {
+		t.Errorf("expected 127,127,127 for 50%% shade of white, got %d,%d,%d", res.r, res.g, res.b)
+	}
+}
+
+func TestApplyColorTransforms_Scale(t *testing.T) {
+	// Scale 50% of 255
+	res := scaleColor(255, 50000)
+	if res != 127 {
+		t.Errorf("expected 127 for 50%% scale of 255, got %d", res)
+	}
+}
+
+func TestResolveColorAlias(t *testing.T) {
+	tests := []struct {
+		alias    string
+		expected string
+	}{
+		{"tx1", "dk1"},
+		{"bg1", "lt1"},
+		{"tx2", "dk2"},
+		{"bg2", "lt2"},
+		{"unknown", "unknown"},
+	}
+	for _, tt := range tests {
+		if got := resolveColorAlias(tt.alias); got != tt.expected {
+			t.Errorf("resolveColorAlias(%q) = %q, want %q", tt.alias, got, tt.expected)
+		}
+	}
+}
+
+func TestResolveThemeBaseColor(t *testing.T) {
+	res, ok := resolveThemeBaseColor("accent1")
+	if !ok || res.r != 0x4F || res.g != 0x81 || res.b != 0xBD {
+		t.Errorf("expected accent1 default, got %v, %v", res, ok)
+	}
+	_, ok = resolveThemeBaseColor("unknown")
+	if ok {
+		t.Error("expected unknown color to fail")
+	}
+}
+
+func TestNormalizeColorName(t *testing.T) {
+	if got := normalizeColorName("  scheme:accent1  "); got != "accent1" {
+		t.Errorf("expected accent1, got %q", got)
+	}
+	if got := normalizeColorName("ACCENT1"); got != "accent1" {
+		t.Errorf("expected accent1, got %q", got)
+	}
+}
+
+func TestLumModOffColor(t *testing.T) {
+	c := rgbColor{r: 100, g: 100, b: 100}
+	// lumMod=100000 (no change), lumOff=0 (no change)
+	res := lumModOffColor(c, 100000, 0)
+	if res.r != 100 {
+		t.Errorf("expected 100, got %d", res.r)
+	}
+	
+	// lumMod=0 should default to 100000
+	res = lumModOffColor(c, 0, 0)
+	if res.r != 100 {
+		t.Errorf("expected 100 for 0 lumMod, got %d", res.r)
+	}
+}
