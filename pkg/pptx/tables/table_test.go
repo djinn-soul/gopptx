@@ -94,7 +94,7 @@ func TestTable_WithRowHeights(t *testing.T) {
 func TestTable_ToTableSpec(t *testing.T) {
 	table := NewTable([]styling.Length{styling.Inches(1)})
 	table = table.AddRow([]string{"test"})
-	
+
 	spec, err := table.ToTableSpec(1)
 	if err != nil {
 		t.Fatalf("ToTableSpec failed: %v", err)
@@ -111,7 +111,7 @@ func TestTable_ToTableSpec(t *testing.T) {
 func TestTable_Validate(t *testing.T) {
 	table := NewTable([]styling.Length{styling.Inches(1)})
 	table = table.AddRow([]string{"test"})
-	
+
 	err := table.Validate(1)
 	if err != nil {
 		t.Errorf("Validate failed: %v", err)

@@ -71,7 +71,7 @@ func TestInterpolateGradient(t *testing.T) {
 		{pos: 0, color: rgbColor{r: 0, g: 0, b: 0}, alpha: 1},
 		{pos: 1, color: rgbColor{r: 255, g: 255, b: 255}, alpha: 1},
 	}
-	
+
 	// At 0.5, should be middle gray (127.5 rounded to 128)
 	res := interpolateGradient(stops, 0.5)
 	if res.color.r != 128 || res.color.g != 128 || res.color.b != 128 {

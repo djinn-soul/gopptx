@@ -105,7 +105,7 @@ func TestLumModOffColor(t *testing.T) {
 	if res.r != 100 {
 		t.Errorf("expected 100, got %d", res.r)
 	}
-	
+
 	// lumMod=0 should default to 100000
 	res = lumModOffColor(c, 0, 0)
 	if res.r != 100 {

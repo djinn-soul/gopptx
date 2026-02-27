@@ -86,7 +86,7 @@ func TestSmartArt(t *testing.T) {
 func TestSmartArt_ToSpec(t *testing.T) {
 	sa := NewSmartArt(BasicBlockList).
 		AddNode(NewNode("node1").WithChild(NewNode("child1")))
-	
+
 	spec := sa.ToSpec()
 	if spec.LayoutURI != string(BasicBlockList) {
 		t.Errorf("expected layout URI %s, got %s", BasicBlockList, spec.LayoutURI)

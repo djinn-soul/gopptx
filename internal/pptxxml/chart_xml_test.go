@@ -108,7 +108,7 @@ func TestRenderChart_Options(t *testing.T) {
 			t.Errorf("expected XML to contain %s", check)
 		}
 	}
-	
+
 	// Test line chart specific options
 	spec.Kind = ChartKindLine
 	xml = string(RenderChart(spec))

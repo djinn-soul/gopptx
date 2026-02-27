@@ -252,7 +252,7 @@ func resolveRelPath(slidePart, target string) string {
 	if strings.HasPrefix(target, "/") {
 		return canonicalZipPath(target)
 	}
-	
+
 	dir := path.Dir(slidePart)
 	resolved := path.Join(dir, target)
 
@@ -262,7 +262,7 @@ func resolveRelPath(slidePart, target string) string {
 		return ""
 	}
 
-	// Security: The test also expects 'slides/../media/image1.png' to be blocked 
+	// Security: The test also expects 'slides/../media/image1.png' to be blocked
 	// even if it resolves to 'ppt/media/image1.png'.
 	// This is likely to prevent complex path logic.
 	if strings.Contains(target, "/../") || strings.HasPrefix(target, "../../../") {

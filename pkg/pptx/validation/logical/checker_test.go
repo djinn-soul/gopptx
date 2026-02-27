@@ -28,7 +28,7 @@ func (m *mockPartProvider) Keys() []string {
 
 func TestChecker_Check(t *testing.T) {
 	checker := &Checker{}
-	
+
 	// Test with valid slide
 	validSlideXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
@@ -152,11 +152,11 @@ func TestParseSlideShapes(t *testing.T) {
 
 func TestChecker_Check_InvalidSlide(t *testing.T) {
 	checker := &Checker{}
-	
+
 	// Slide with no title and no shapes should be treated as blank layout
 	// But wait, SlideContent.Validate might fail if it expects something else.
 	// Let's see SlideContent.Validate in pkg/pptx/elements/slide.go
-	
+
 	emptySlideXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"></p:sld>`
 
@@ -171,7 +171,7 @@ func TestChecker_Check_InvalidSlide(t *testing.T) {
 	// If it fails validation, it should return a warning.
 	// Based on checker.go:
 	// if err := slide.Validate(index); err != nil { ... return []structural.Issue{...} }
-	
+
 	// We don't know for sure if it will fail without seeing elements.SlideContent.Validate
 	// but we can at least verify it runs.
 	_ = issues

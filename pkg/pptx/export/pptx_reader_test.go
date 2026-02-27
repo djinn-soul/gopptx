@@ -78,8 +78,8 @@ func TestSlidesFromPPTX_RoundTrip(t *testing.T) {
 		t.Errorf("expected slide title 'Slide 1', got %q", s.Title)
 	}
 
-	// The reader might map placeholders as shapes or bullets depending on 
-	// specific OOXML tags that are currently being refined. 
+	// The reader might map placeholders as shapes or bullets depending on
+	// specific OOXML tags that are currently being refined.
 	// Ensure we get at least some content.
 	totalTextElements := len(s.Bullets) + len(s.Shapes)
 	if totalTextElements < 1 {

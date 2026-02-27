@@ -339,4 +339,3 @@ func validatePPTX(t *testing.T, blob []byte) {
 		}
 	}
 }
-
