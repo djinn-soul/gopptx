@@ -34,6 +34,8 @@ const (
 	RelTypeTheme       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
 	RelTypeSectionList = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
 	RelTypePackage     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
+	RelTypeCustomXML   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml"
+	RelTypeCustomXMLProps = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps"
 
 	RelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 	ContentTypesXMLNS  = "http://schemas.openxmlformats.org/package/2006/content-types"

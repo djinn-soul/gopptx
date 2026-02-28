@@ -1,4 +1,3 @@
-
 OP_ADD_AUTHOR: str
 OP_ADD_CHART: str
 OP_ADD_COMMENT: str

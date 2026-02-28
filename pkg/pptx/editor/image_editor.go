@@ -17,33 +17,13 @@ func (e *PresentationEditor) AddImage(slideIndex int, imagePath string, x, y, w,
 	}
 
 	// 1. Register image in media inventory and part store
-	partPath, err := e.registerEditorImage(imagePath, nil, "")
+	relID, err := e.getOrCreateImageRelID(slideIndex, imagePath)
 	if err != nil {
 		return 0, fmt.Errorf("register image: %w", err)
 	}
 
-	// 2. Add relationship to slide
+	// 2. Generate image XML
 	slideRef := e.slides[slideIndex]
-	rels, err := e.slideRelationships(slideRef.Part)
-	if err != nil {
-		return 0, fmt.Errorf("get slide rels: %w", err)
-	}
-
-	nextNum := 1
-	for _, r := range rels {
-		if n, ok := common.ParseRelationshipNumber(r.ID); ok && n >= nextNum {
-			nextNum = n + 1
-		}
-	}
-	relID := fmt.Sprintf("rId%d", nextNum)
-
-	rels = append(rels, common.EditorRelationship{
-		ID:     relID,
-		Type:   common.RelTypeImage,
-		Target: "../media/" + path.Base(partPath),
-	})
-
-	// 3. Generate image XML
 	content, ok := e.parts.Get(slideRef.Part)
 	if !ok {
 		return 0, errors.New("read slide part: not found")
@@ -76,7 +56,7 @@ func (e *PresentationEditor) AddImage(slideIndex int, imagePath string, x, y, w,
   </p:spPr>
 </p:pic>`, newID, imageRef.Name, relID, int64(x), int64(y), int64(w), int64(h))
 
-	// 4. Update slide XML
+	// 3. Update slide XML
 	endTree := []byte("</p:spTree>")
 	idx := bytes.LastIndex(content, endTree)
 	if idx == -1 {
@@ -89,7 +69,46 @@ func (e *PresentationEditor) AddImage(slideIndex int, imagePath string, x, y, w,
 	buf.Write(content[idx:])
 
 	e.parts.Set(slideRef.Part, buf.Bytes())
-	e.parts.Set(common.SlideRelsPartName(slideRef.Part), []byte(renderRelationshipsXML(rels)))
 
 	return newID, nil
+}
+
+// getOrCreateImageRelID registers an image in the media inventory and creates a slide relationship.
+func (e *PresentationEditor) getOrCreateImageRelID(slideIndex int, imagePath string) (string, error) {
+	// 1. Register image in media inventory and part store
+	partPath, err := e.registerEditorImage(imagePath, nil, "")
+	if err != nil {
+		return "", err
+	}
+
+	// 2. Add relationship to slide if not already present
+	slideRef := e.slides[slideIndex]
+	rels, err := e.slideRelationships(slideRef.Part)
+	if err != nil {
+		return "", err
+	}
+
+	target := "../media/" + path.Base(partPath)
+	for _, r := range rels {
+		if r.Type == common.RelTypeImage && r.Target == target {
+			return r.ID, nil
+		}
+	}
+
+	nextNum := 1
+	for _, r := range rels {
+		if n, ok := common.ParseRelationshipNumber(r.ID); ok && n >= nextNum {
+			nextNum = n + 1
+		}
+	}
+	relID := fmt.Sprintf("rId%d", nextNum)
+
+	rels = append(rels, common.EditorRelationship{
+		ID:     relID,
+		Type:   common.RelTypeImage,
+		Target: target,
+	})
+
+	e.parts.Set(common.SlideRelsPartName(slideRef.Part), []byte(renderRelationshipsXML(rels)))
+	return relID, nil
 }

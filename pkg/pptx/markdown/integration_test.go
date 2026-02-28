@@ -40,7 +40,7 @@ func TestSlidesFromMarkdown_Integration_GFMTable(t *testing.T) {
 }
 
 func TestSlidesFromMarkdown_Integration_Md2PptDemoFixture(t *testing.T) {
-	content, err := os.ReadFile(testutil.RootTestdataPath("ppt_rs", "md2ppt_demo.md"))
+	content, err := os.ReadFile(testutil.RootTestdataPath("md2ppt_demo.md"))
 	if err != nil {
 		t.Fatalf("read fixture error: %v", err)
 	}

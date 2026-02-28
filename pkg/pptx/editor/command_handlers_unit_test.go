@@ -8,7 +8,7 @@ import (
 )
 
 func TestCommandHandlers_Content(t *testing.T) {
-	fixturePath := filepath.Join(testutil.RootTestdataDir(), "ppt_rs", "simple.pptx")
+	fixturePath := filepath.Join(testutil.RootTestdataDir(), "simple.pptx")
 	e, err := OpenPresentationEditor(fixturePath)
 	if err != nil {
 		t.Fatalf("failed to open editor: %v", err)

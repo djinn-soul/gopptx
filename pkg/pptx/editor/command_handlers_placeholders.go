@@ -2,8 +2,9 @@ package editor
 
 import (
 	"encoding/json"
+	"fmt"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -115,57 +116,116 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	}
 	override.Override = styleOpts
 
-	if hasImagePath && imagePath != "" {
+	if hasImagePath {
 		img := shapes.Image{Path: imagePath}
 
 		// Optional bounds for crop/positioning within placeholder
-		if boundsRaw, ok := p["bounds"].([]any); ok && len(boundsRaw) == 4 {
-			if x, ok := parseFloat(boundsRaw[0]); ok {
-				pt := styling.Points(x)
-				img.X = pt
+		if boundsRaw, ok := p["bounds"].([]any); ok {
+			if len(boundsRaw) != 4 {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, "bounds must be an array of 4 numbers [x, y, cx, cy]")
 			}
-			if y, ok := parseFloat(boundsRaw[1]); ok {
-				pt := styling.Points(y)
-				img.Y = pt
+			vals := make([]float64, 4)
+			for i, b := range boundsRaw {
+				v, ok := parseFloat(b)
+				if !ok {
+					return nil, NewBridgeError(ErrCodeInvalidPayload, fmt.Sprintf("bounds[%d] must be a number", i))
+				}
+				vals[i] = v
 			}
-			if cx, ok := parseFloat(boundsRaw[2]); ok {
-				pt := styling.Points(cx)
-				img.CX = pt
-			}
-			if cy, ok := parseFloat(boundsRaw[3]); ok {
-				pt := styling.Points(cy)
-				img.CY = pt
-			}
+			img.X, img.Y, img.CX, img.CY = styling.Points(vals[0]), styling.Points(vals[1]), styling.Points(vals[2]), styling.Points(vals[3])
 		}
+
+		// Since we're inserting an image, we need to register it and get a relationship ID
+		relID, err := e.getOrCreateImageRelID(slideIndex, img.Path)
+		if err != nil {
+			return nil, err
+		}
+		img.RelID = relID
 		override.Image = &img
 	}
 
-	slideTitle := e.slides[slideIndex].Title
-	if slideTitle == "" {
-		slideTitle = " "
-	}
-	spec := elements.SlideContent{
-		Title:                slideTitle,
-		PlaceholderOverrides: []shapes.PlaceholderContent{override},
+	// Surgical update: parse slide XML, find the shape, replace it
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return nil, fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
-	if err := e.UpdateSlide(slideIndex, spec); err != nil {
-		return nil, err
+	shapesList, err := parseSlideShapes(content)
+	if err != nil {
+		return nil, fmt.Errorf("parse shapes: %w", err)
 	}
 
+	shapeIndex := -1
+	matches := 0
+	for i, s := range shapesList {
+		if s.PhIndex == phIndex {
+			// If phType was provided, we must match it to disambiguate collisions.
+			// Both are normalized to handle defaults (like empty -> "obj").
+			if phType != "" {
+				targetType := pptxxml.NormalizePlaceholderType(phType)
+				actualType := pptxxml.NormalizePlaceholderType(s.PhType)
+				if targetType != actualType {
+					continue
+				}
+			}
+			shapeIndex = i
+			matches++
+		}
+	}
+
+	if matches > 1 && phType == "" {
+		return nil, NewBridgeError(ErrCodeInvalidValue, fmt.Sprintf("multiple placeholders with index %d found; provide 'ph_type' to disambiguate", phIndex))
+	}
+
+	if shapeIndex == -1 {
+		msg := fmt.Sprintf("placeholder with index %d not found on slide", phIndex)
+		if phType != "" {
+			msg = fmt.Sprintf("placeholder with index %d and type %q not found on slide", phIndex, phType)
+		}
+		return nil, NewBridgeError(ErrCodeInvalidValue, msg)
+	}
+
+	// Prepare the override spec for internal renderer
+	resolvedType := phType
+	if resolvedType == "" {
+		resolvedType = shapesList[shapeIndex].PhType
+	}
+	phSpec := pptxxml.PlaceholderOverrideSpec{
+		Index: phIndex,
+		Type:  resolvedType,
+		Text:  override.Text,
+	}
+	if override.Image != nil {
+		phSpec.Image = &pptxxml.ImageRef{
+			RelID: override.Image.RelID,
+			Name:  override.Image.Path,
+			X:     int64(override.Image.X),
+			Y:     int64(override.Image.Y),
+			CX:    int64(override.Image.CX),
+			CY:    int64(override.Image.CY),
+		}
+	}
+	if override.Override != nil && override.Override.TextStyle != nil {
+		ts := override.Override.TextStyle
+		phSpec.TextStyle = &pptxxml.PlaceholderTextStyleSpec{
+			SizePt: ts.SizePt,
+			Color:  ts.Color,
+			Bold:   ts.Bold,
+			Italic: ts.Italic,
+			Font:   ts.Font,
+		}
+	}
+
+	newShapeXML := pptxxml.PlaceholderShape(phSpec, shapesList[shapeIndex].ID)
+
+	newContent := replaceShapeNodes(content, shapesList, func(i int, p *parsedShape) ([]byte, bool) {
+		if i == shapeIndex {
+			return []byte(newShapeXML), true
+		}
+		return nil, false
+	})
+
+	e.parts.Set(partPath, newContent)
 	return map[string]bool{"updated": true}, nil
-}
-
-func parseFloat(v any) (float64, bool) {
-	switch val := v.(type) {
-	case float64:
-		return val, true
-	case int:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case float32:
-		return float64(val), true
-	}
-	return 0, false
 }

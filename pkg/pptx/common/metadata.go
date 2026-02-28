@@ -39,6 +39,7 @@ type CustomXMLKV struct {
 // If RootElement is populated, the XML is generated structurally.
 // Otherwise, Content must be a valid XML string for legacy passthrough.
 type CustomXMLPart struct {
+	ItemID      string        `json:"itemID,omitempty"`
 	Content     string        `json:"content,omitempty"     xml:",innerxml"`
 	RootElement string        `json:"rootElement,omitempty"`
 	Namespace   string        `json:"namespace,omitempty"`

@@ -526,6 +526,7 @@ func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXM
 
 		if propsData, hasProps := ps.Get(propsPath); hasProps {
 			part.Namespace = parseCustomXMLNamespace(propsData)
+			part.ItemID = parseCustomXMLItemID(propsData)
 		}
 
 		// Only attempt to parse as structured XML when a namespace was found in itemProps.
@@ -533,6 +534,7 @@ func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXM
 		if part.Namespace != "" {
 			structuredPart, ok := parseStructuredCustomXML(itemData, part.Namespace)
 			if ok {
+				structuredPart.ItemID = part.ItemID
 				parts = append(parts, structuredPart)
 				continue
 			}
@@ -541,6 +543,28 @@ func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXM
 	}
 
 	return parts
+}
+
+func parseCustomXMLItemID(propsData []byte) string {
+	decoder := xml.NewDecoder(bytes.NewReader(propsData))
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if start.Name.Local == "datastoreItem" {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "itemID" {
+					return attr.Value
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func parseCustomXMLNamespace(propsData []byte) string {

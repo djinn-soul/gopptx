@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
+func PlaceholderShape(ph PlaceholderOverrideSpec, id int) string {
 	phAttr := fmt.Sprintf(` idx="%d"`, ph.Index)
-	phType := normalizePlaceholderType(ph.Type)
-	if phType != "" {
+	phType := NormalizePlaceholderType(ph.Type)
+	if phType != "" && phType != "obj" {
 		phAttr += fmt.Sprintf(` type="%s"`, phType)
 	}
 
@@ -236,8 +236,12 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 	return b.String()
 }
 
-func normalizePlaceholderType(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
+func NormalizePlaceholderType(raw string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if raw == "" {
+		return "obj"
+	}
+	switch raw {
 	case "picture", "pic":
 		return "pic"
 	case "title":
@@ -247,6 +251,6 @@ func normalizePlaceholderType(raw string) string {
 	case "ctrtitle", "centeredtitle", "centered_title":
 		return "ctrTitle"
 	default:
-		return strings.TrimSpace(raw)
+		return raw
 	}
 }

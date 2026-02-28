@@ -17,14 +17,16 @@ import (
 // parsedShape represents a shape found in the slide XML.
 // It contains the parsed properties and the byte range of the shape node.
 type parsedShape struct {
-	ID    int
-	Name  string
-	Type  string // "sp" or "pic"
-	Text  string
-	X, Y  int
-	W, H  int
-	Start int64 // Byte offset of the start of the node
-	End   int64 // Byte offset of the end of the node
+	ID      int
+	Name    string
+	Type    string // "sp" or "pic"
+	Text    string
+	X, Y    int
+	W, H    int
+	PhIndex int    // Placeholder index, -1 if not a placeholder
+	PhType  string // Placeholder type (e.g. "title", "body")
+	Start   int64  // Byte offset of the start of the node
+	End     int64  // Byte offset of the end of the node
 }
 
 func (p parsedShape) ToShape() shapes.Shape {
@@ -195,12 +197,24 @@ type shapeXML struct {
 			ID   int    `xml:"id,attr"`
 			Name string `xml:"name,attr"`
 		} `xml:"cNvPr"`
+		NvPr struct {
+			Ph *struct {
+				Idx  *int   `xml:"idx,attr"`
+				Type string `xml:"type,attr"`
+			} `xml:"ph"`
+		} `xml:"nvPr"`
 	} `xml:"nvSpPr"`
 	NvPicPr struct {
 		CNvPr struct {
 			ID   int    `xml:"id,attr"`
 			Name string `xml:"name,attr"`
 		} `xml:"cNvPr"`
+		NvPr struct {
+			Ph *struct {
+				Idx  *int   `xml:"idx,attr"`
+				Type string `xml:"type,attr"`
+			} `xml:"ph"`
+		} `xml:"nvPr"`
 	} `xml:"nvPicPr"`
 	SpPr struct {
 		Xfrm struct {
@@ -229,14 +243,34 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		return parsedShape{}, err
 	}
 
-	ps := parsedShape{}
+	ps := parsedShape{
+		PhIndex: -1,
+	}
 	// Extract ID/Name (handle both sp and pic variants)
 	if s.NvSpPr.CNvPr.ID != 0 {
 		ps.ID = s.NvSpPr.CNvPr.ID
 		ps.Name = s.NvSpPr.CNvPr.Name
+		if s.NvSpPr.NvPr.Ph != nil {
+			ps.PhType = s.NvSpPr.NvPr.Ph.Type
+			if s.NvSpPr.NvPr.Ph.Idx != nil {
+				ps.PhIndex = *s.NvSpPr.NvPr.Ph.Idx
+			} else {
+				// idx is optional and defaults to 0 in OOXML for <p:ph/>
+				ps.PhIndex = 0
+			}
+		}
 	} else if s.NvPicPr.CNvPr.ID != 0 {
 		ps.ID = s.NvPicPr.CNvPr.ID
 		ps.Name = s.NvPicPr.CNvPr.Name
+		if s.NvPicPr.NvPr.Ph != nil {
+			ps.PhType = s.NvPicPr.NvPr.Ph.Type
+			if s.NvPicPr.NvPr.Ph.Idx != nil {
+				ps.PhIndex = *s.NvPicPr.NvPr.Ph.Idx
+			} else {
+				// idx is optional and defaults to 0 in OOXML for <p:ph/>
+				ps.PhIndex = 0
+			}
+		}
 	}
 
 	// Transform

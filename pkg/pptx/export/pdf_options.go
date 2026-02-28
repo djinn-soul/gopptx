@@ -17,7 +17,8 @@ const (
 
 // PDFOptions configures PDF export behavior.
 type PDFOptions struct {
-	Driver PDFDriver
+	Driver          PDFDriver
+	NativeFontPaths []string
 }
 
 func defaultPDFOptions() PDFOptions {

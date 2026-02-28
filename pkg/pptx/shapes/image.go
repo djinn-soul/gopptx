@@ -22,6 +22,7 @@ type Image struct {
 	SourceURL string
 	Data      []byte
 	Format    string
+	RelID     string
 	X         styling.Length
 	Y         styling.Length
 	CX        styling.Length

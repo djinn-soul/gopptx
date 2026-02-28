@@ -6,14 +6,12 @@ from gopptx.presentation.presentation import Presentation
 
 # Add project root to sys.path
 project_root = pathlib.Path(__file__).parent.parent.parent.resolve()
-TEST_DATA_DIR = project_root / "testdata" / "ppt_rs"
-
 
 
 @pytest.fixture
 def presentation() -> Presentation:
     p = Presentation()
-    p.open(str(TEST_DATA_DIR / "placeholders.pptx"))
+    p.open(str(project_root / "testdata" / "placeholders.pptx"))
     return p
 
 

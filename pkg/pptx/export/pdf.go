@@ -33,9 +33,9 @@ func PDFWithOptions(title string, slides []elements.SlideContent, outputPath str
 
 	switch driver {
 	case PDFDriverAuto:
-		return pdfWithAutoDriver(title, slides, outputPath)
+		return pdfWithAutoDriver(title, slides, outputPath, opts)
 	case PDFDriverNative:
-		return pdfViaNative(title, slides, outputPath)
+		return pdfViaNative(title, slides, outputPath, opts)
 	case PDFDriverLibreOffice:
 		return pdfViaLibreOffice(title, slides, outputPath)
 	case PDFDriverPowerPoint:
@@ -68,13 +68,13 @@ func PDFFromFileWithOptions(pptxPath, pdfPath string, opts PDFOptions) error {
 
 	switch driver {
 	case PDFDriverAuto:
-		return pdfFromFileWithAutoDriver(absPPTX, absPDF)
+		return pdfFromFileWithAutoDriver(absPPTX, absPDF, opts)
 	case PDFDriverNative:
 		presTitle, slides, readErr := SlidesFromPPTX(absPPTX)
 		if readErr != nil {
 			return fmt.Errorf("native (PPTX reader): %w", readErr)
 		}
-		return pdfViaNative(presTitle, slides, absPDF)
+		return pdfViaNative(presTitle, slides, absPDF, opts)
 	case PDFDriverLibreOffice:
 		return pdfFromFileViaLibreOffice(absPPTX, absPDF)
 	case PDFDriverPowerPoint:
@@ -87,9 +87,9 @@ func PDFFromFileWithOptions(pptxPath, pdfPath string, opts PDFOptions) error {
 	}
 }
 
-func pdfWithAutoDriver(title string, slides []elements.SlideContent, outputPath string) error {
+func pdfWithAutoDriver(title string, slides []elements.SlideContent, outputPath string, opts PDFOptions) error {
 	// Attempt 1: Native gopdf engine
-	nativeErr := pdfViaNative(title, slides, outputPath)
+	nativeErr := pdfViaNative(title, slides, outputPath, opts)
 	if nativeErr == nil {
 		return nil
 	}
@@ -115,12 +115,12 @@ func pdfWithAutoDriver(title string, slides []elements.SlideContent, outputPath 
 	return compositeErr
 }
 
-func pdfFromFileWithAutoDriver(absPPTX, absPDF string) error {
+func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
 	// Attempt 1: Native gopdf via PPTX reader
 	presTitle, slides, readErr := SlidesFromPPTX(absPPTX)
 	var nativeErr error
 	if readErr == nil {
-		nativeErr = pdfViaNative(presTitle, slides, absPDF)
+		nativeErr = pdfViaNative(presTitle, slides, absPDF, opts)
 	}
 	if readErr == nil && nativeErr == nil {
 		return nil

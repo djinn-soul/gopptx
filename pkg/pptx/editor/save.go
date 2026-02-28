@@ -122,6 +122,93 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		return nil, err
 	}
 
+	// 1. Process Custom XML and inject relationships Early.
+	var customXMLPropsPaths []string
+
+	for i, cXML := range e.metadata.CustomXML {
+		var itemStr string
+		var err error
+		if cXML.RootElement != "" {
+			itemStr, err = generateCustomXMLItem(cXML)
+			if err != nil {
+				return nil, fmt.Errorf("custom XML part %d: %w", i+1, err)
+			}
+		} else {
+			itemStr = cXML.Content
+		}
+		itemPath := fmt.Sprintf("customXml/item%d.xml", i+1)
+		out[itemPath] = []byte(itemStr)
+
+		schemaRefs := "<ds:schemaRefs></ds:schemaRefs>"
+		if cXML.Namespace != "" {
+			schemaRefs = fmt.Sprintf(
+				`<ds:schemaRefs><ds:schemaRef ds:uri="%s"/></ds:schemaRefs>`,
+				escapeEditorCustomXML(cXML.Namespace),
+			)
+		}
+
+		itemID := cXML.ItemID
+		if itemID == "" {
+			guid, err := common.NewGUID()
+			if err != nil {
+				return nil, err
+			}
+			itemID = guid
+		}
+
+		propsContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
+%s
+</ds:datastoreItem>`, itemID, schemaRefs)
+		propsPath := fmt.Sprintf("customXml/itemProps%d.xml", i+1)
+		out[propsPath] = []byte(propsContent)
+		customXMLPropsPaths = append(customXMLPropsPaths, propsPath)
+
+		// Injection into presentation.xml.rels
+		itemTarget := "../" + itemPath
+		foundItemRel := false
+		for _, r := range e.nonSlideRels {
+			if r.Type == common.RelTypeCustomXML && r.Target == itemTarget {
+				foundItemRel = true
+				break
+			}
+		}
+		if !foundItemRel {
+			e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
+				ID:     fmt.Sprintf("rId%d", e.nextRelIDNum),
+				Type:   common.RelTypeCustomXML,
+				Target: itemTarget,
+			})
+			e.nextRelIDNum++
+		}
+
+		// Create itemN.xml.rels
+		itemRelContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="itemProps%d.xml"/>
+</Relationships>`, i+1)
+		out[fmt.Sprintf("customXml/_rels/item%d.xml.rels", i+1)] = []byte(itemRelContent)
+	}
+
+	// 2. Filter root package relationships (_rels/.rels) to remove any misplaced CustomXML rels.
+	if packageRelsData, ok := e.parts.Get("_rels/.rels"); ok {
+		if rels, err := parseRelationshipsXML(packageRelsData); err == nil {
+			filtered := make([]common.EditorRelationship, 0, len(rels))
+			changed := false
+			for _, r := range rels {
+				// CustomXML rels belong in presentation.xml.rels in PowerPoint, not at the root.
+				if r.Type == common.RelTypeCustomXML || r.Type == common.RelTypeCustomXMLProps {
+					changed = true
+					continue
+				}
+				filtered = append(filtered, r)
+			}
+			if changed {
+				out["_rels/.rels"] = []byte(renderRelationshipsXML(filtered))
+			}
+		}
+	}
+
 	// Check for commentAuthors existence and relationship injection
 	hasCommentAuthors := e.parts.Has("ppt/commentAuthors.xml")
 	if hasCommentAuthors {
@@ -178,6 +265,7 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		filteredCommentPaths,
 		hasVBA,
 		hasHandoutMaster,
+		customXMLPropsPaths,
 	)
 	if err != nil {
 		return nil, err
@@ -205,41 +293,6 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 
 	if hasVBA {
 		out["ppt/vbaProject.bin"] = vbaProject.Data
-	}
-
-	for i, cXML := range e.metadata.CustomXML {
-		var itemStr string
-		if cXML.RootElement != "" {
-			itemStr, err = generateCustomXMLItem(cXML)
-			if err != nil {
-				return nil, fmt.Errorf("custom XML part %d: %w", i+1, err)
-			}
-		} else {
-			itemStr = cXML.Content
-		}
-		out[fmt.Sprintf("customXml/item%d.xml", i+1)] = []byte(itemStr)
-
-		schemaRefs := "<ds:schemaRefs></ds:schemaRefs>"
-		if cXML.Namespace != "" {
-			schemaRefs = fmt.Sprintf(
-				`<ds:schemaRefs><ds:schemaRef ds:uri="%s"/></ds:schemaRefs>`,
-				escapeEditorCustomXML(cXML.Namespace),
-			)
-		}
-
-		// For round-tripping properly we should ideally preserve original ds:itemID,
-		// but since we might add new ones, generating a new GUID is safest, or we could parse original.
-		// For now we generate new GUIDs on save just like creation.
-		itemID, err := common.NewGUID()
-		if err != nil {
-			return nil, err
-		}
-
-		propsContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
-%s
-</ds:datastoreItem>`, itemID, schemaRefs)
-		out[fmt.Sprintf("customXml/itemProps%d.xml", i+1)] = []byte(propsContent)
 	}
 
 	return out, nil

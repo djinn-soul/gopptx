@@ -47,8 +47,20 @@ class Placeholder:
             text: The text to insert.
             **style_kwargs: Optional text style properties (size_pt, bold, italic, color, font).
         """
+        # Normalize style keys (e.g. size -> size_pt, colour -> color)
+        text_style = {}
+        for k, v in style_kwargs.items():
+            key = k
+            if k == "size" or k == "font_size":
+                key = "size_pt"
+            elif k == "font_name":
+                key = "font"
+            elif k == "colour":  # Handle British spelling
+                key = "color"
+            text_style[key] = v
+
         self._slide.set_placeholder_content(
-            self.idx, self._type, text=text, text_style=style_kwargs
+            self.idx, self._type, text=text, text_style=text_style
         )
 
     def insert_picture(
