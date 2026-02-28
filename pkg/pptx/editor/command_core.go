@@ -100,6 +100,10 @@ func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 		return handleGetCoreProperties, true
 	case OpSetCoreProperties:
 		return handleSetCoreProperties, true
+	case OpListPlaceholders:
+		return handleListPlaceholders, true
+	case OpSetPlaceholderContent:
+		return handleSetPlaceholderContent, true
 	default:
 		return nil, false
 	}

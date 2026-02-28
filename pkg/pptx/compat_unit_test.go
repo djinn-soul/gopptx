@@ -61,7 +61,7 @@ func TestCompat_Shapes(t *testing.T) {
 	_ = NewStar7(0, 0, 1)
 	_ = NewStar10(0, 0, 1)
 	_ = NewBadge("text", 0, 0, "FF0000")
-	
+
 	_ = NewRectangle(0, 0, 1, 1)
 	_ = NewEllipse(0, 0, 1, 1)
 }

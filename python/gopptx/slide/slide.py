@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .placeholder_mixin import SlidePlaceholderMixin
 from .table import Table
 
 if TYPE_CHECKING:
@@ -180,6 +181,7 @@ class SlideTableMixin:
 class Slide(
     SlideTableMixin,
     SlideChartMixin,
+    SlidePlaceholderMixin,
     SlideBase,
     SlideShapeMixin,
 ):

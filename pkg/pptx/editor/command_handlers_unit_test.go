@@ -21,17 +21,17 @@ func TestCommandHandlers_Content(t *testing.T) {
 		if err != nil {
 			t.Fatalf("handleAddAuthor failed: %v", err)
 		}
-		
+
 		authorsResp, err := handleGetAuthors(e, nil)
 		if err != nil {
 			t.Fatalf("handleGetAuthors failed: %v", err)
 		}
-		
+
 		resMap := res.(map[string]int64)
 		if resMap["author_id"] == 0 {
 			t.Error("expected valid author_id")
 		}
-		
+
 		if authorsResp == nil {
 			t.Error("expected authors list")
 		}
@@ -43,28 +43,28 @@ func TestCommandHandlers_Content(t *testing.T) {
 		if err != nil {
 			t.Fatalf("handleAddCustomXML failed: %v", err)
 		}
-		
+
 		listResp, err := handleListCustomXML(e, nil)
 		if err != nil {
 			t.Fatalf("handleListCustomXML failed: %v", err)
 		}
 		if listResp == nil { t.Error("expected custom xml list") }
-		
+
 		resMap := res.(map[string]int)
 		idx := resMap["index"]
-		
+
 		remPayload := []byte(`{"index": ` + string(rune('0'+idx)) + `}`)
 		_, err = handleRemoveCustomXML(e, remPayload)
 		if err != nil {
 			t.Fatalf("handleRemoveCustomXML failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Protection", func(t *testing.T) {
 		p1 := []byte(`{"password": "secret"}`)
 		_, err := handleSetModifyPassword(e, p1)
 		if err != nil { t.Error(err) }
-		
+
 		p2 := []byte(`{"final": true}`)
 		_, err = handleSetMarkAsFinal(e, p2)
 		if err != nil { t.Error(err) }
@@ -76,7 +76,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 		if err != nil {
 			t.Fatalf("handleAddSlide failed: %v", err)
 		}
-		
+
 		listResp, err := handleListSlides(e, nil)
 		if err != nil { t.Fatalf("handleListSlides failed: %v", err) }
 		if listResp == nil { t.Error("expected slide list") }
@@ -89,21 +89,21 @@ func TestCommandHandlers_Content(t *testing.T) {
 		if err != nil {
 			t.Fatalf("handleAddShape failed: %v", err)
 		}
-		
+
 		resMap := res.(map[string]int)
 		shapeID := resMap["shape_id"]
 		if shapeID == 0 { t.Error("expected valid shape_id") }
-		
+
 		listPayload := []byte(`{"slide_index": 1}`)
 		listResp, err := handleListShapes(e, listPayload)
 		if err != nil { t.Fatalf("handleListShapes failed: %v", err) }
 		if listResp == nil { t.Error("expected shape list") }
-		
+
 		// Update Shape
 		upPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+shapeID)) + `, "updates": {"text": "New Text"}}`)
 		_, err = handleUpdateShape(e, upPayload)
 		if err != nil { t.Fatalf("handleUpdateShape failed: %v", err) }
-		
+
 		// Search Shapes
 		searchPayload := []byte(`{"text_contains": "New Text"}`)
 		_, err = handleSearchShapes(e, searchPayload)
@@ -113,7 +113,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 		movePayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+shapeID)) + `}`)
 		_, _ = handleMoveShapeToFront(e, movePayload)
 		_, _ = handleMoveShapeToBack(e, movePayload)
-		
+
 		// Remove Shape
 		_, err = handleRemoveShape(e, movePayload)
 		if err != nil { t.Fatalf("handleRemoveShape failed: %v", err) }
@@ -123,7 +123,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 		tmpDir := t.TempDir()
 		dummyImg := filepath.Join(tmpDir, "dummy.png")
 		_ = os.WriteFile(dummyImg, []byte("fake-png-data"), 0600)
-		
+
 		imgPayload := []byte(`{"slide_index": 1, "path": "` + filepath.ToSlash(dummyImg) + `", "x": 0.0, "y": 0.0, "w": 50.0, "h": 50.0}`)
 		_, _ = handleAddImage(e, imgPayload) // ignore error as fake-png-data might fail decoding, but it hits the path
 	})
@@ -132,22 +132,22 @@ func TestCommandHandlers_Content(t *testing.T) {
 		// Needs an author first
 		authPayload := []byte(`{"name": "Commenter", "initials": "C"}`)
 		_, _ = handleAddAuthor(e, authPayload)
-		
-		// Note: Using string(rune('0'+authorID)) only works for single digits, 
+
+		// Note: Using string(rune('0'+authorID)) only works for single digits,
 		// but since it's the second author, it will be 2 or 3, so it's fine for this mock.
-		
+
 		// Add comment
 		addComPayload := []byte(`{"slide_index": 1, "author_id": 2, "text": "Comment", "x": 10, "y": 10}`)
 		_, _ = handleAddComment(e, addComPayload)
-		
+
 		// Get comments
 		getComPayload := []byte(`{"slide_index": 1}`)
 		_, _ = handleGetComments(e, getComPayload)
-		
+
 		// Notes
 		setNotesPayload := []byte(`{"slide_index": 1, "text": "Notes text"}`)
 		_, _ = handleSetNotes(e, setNotesPayload)
-		
+
 		getNotesPayload := []byte(`{"slide_index": 1}`)
 		_, _ = handleGetNotes(e, getNotesPayload)
 	})
@@ -157,30 +157,30 @@ func TestCommandHandlers_Content(t *testing.T) {
 		payload := []byte(`{"slide_index": 1, "x": 100, "y": 100, "rows": 2, "cols": 2}`)
 		res, err := handleAddTable(e, payload)
 		if err != nil { t.Fatalf("handleAddTable failed: %v", err) }
-		
+
 		resMap := res.(map[string]int)
 		tableID := resMap["shape_id"]
-		
+
 		// Get Table
 		getPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `}`)
 		_, err = handleGetTable(e, getPayload)
 		if err != nil { t.Fatalf("handleGetTable failed: %v", err) }
-		
+
 		// Update Table Cell
 		updPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "row": 0, "col": 0, "updates": {"text": "Cell 0,0"}}`)
 		_, err = handleUpdateTableCell(e, updPayload)
 		if err != nil { t.Fatalf("handleUpdateTableCell failed: %v", err) }
-		
+
 		// Update Table Flags
 		flagsPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "flags": {"first_row": true}}`)
 		_, err = handleUpdateTableFlags(e, flagsPayload)
 		if err != nil { t.Fatalf("handleUpdateTableFlags failed: %v", err) }
-		
+
 		// Merge Cells
 		mergePayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "row1": 0, "col1": 0, "row2": 1, "col2": 1}`)
 		_, err = handleMergeTableCells(e, mergePayload)
 		if err != nil { t.Fatalf("handleMergeTableCells failed: %v", err) }
-		
+
 		// Split Cell
 		splitPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "row": 0, "col": 0}`)
 		_, err = handleSplitTableCell(e, splitPayload)

@@ -152,6 +152,42 @@ class PresentationSlidesMixin(
         @property
         def slide_count(self) -> int: ...
 
+    def list_placeholders(self, slide_index: int) -> list[dict[str, object]]:
+        """Bridge op: list all placeholders on a slide."""
+        result = self.execute(
+            ops.OP_LIST_PLACEHOLDERS,
+            {"slide_index": slide_index},
+        )
+        return cast("list[dict[str, object]]", result.get("placeholders", []))
+
+    def set_placeholder_content(
+        self,
+        slide_index: int,
+        ph_index: int,
+        ph_type: str = "",
+        text: str | None = None,
+        image_path: str | None = None,
+        bounds: tuple[float, float, float, float] | None = None,
+        text_style: dict[str, object] | None = None,
+    ) -> None:
+        """Bridge op: insert rich content into a placeholder."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "ph_index": ph_index,
+            "ph_type": ph_type,
+        }
+        if text is not None:
+            payload["text"] = text
+        if image_path is not None:
+            payload["image_path"] = image_path
+        if bounds is not None:
+            payload["bounds"] = list(bounds)
+        if text_style is not None:
+            payload["text_style"] = text_style
+
+        self.execute(ops.OP_SET_PLACEHOLDER_CONTENT, payload)
+        self.invalidate_cache()
+
     _slide_masters_obj: SlideMasters | None = None
 
     @property

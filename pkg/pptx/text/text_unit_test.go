@@ -33,7 +33,7 @@ func TestText_RunCreation(t *testing.T) {
 	if r.Font != "Arial" || !r.Code || !r.AllCaps {
 		t.Error("Run creation extra properties failed")
 	}
-	
+
 	// Test mutually exclusive
 	r = r.WithSuperscript(true)
 	if !r.Superscript || r.Subscript {
@@ -43,7 +43,7 @@ func TestText_RunCreation(t *testing.T) {
 	if !r.SmallCaps || r.AllCaps {
 		t.Error("SmallCaps override failed")
 	}
-	
+
 	r = r.WithUnderlineStyle(UnderlineStyleDouble)
 	if r.Underline != UnderlineStyleDouble { t.Error("UnderlineStyle failed") }
 	r = r.WithStrikethroughStyle(StrikethroughStyleDouble)
@@ -69,11 +69,11 @@ func TestText_ParagraphCreation(t *testing.T) {
 	if p.Style.Align != TextAlignCenter || p.Style.BulletStyle != BulletStyleNumber || len(p.Runs) != 1 {
 		t.Error("Paragraph creation failed")
 	}
-	
+
 	// Test other alignments
 	s2 := NewParagraphStyle().WithAlignLeft().WithAlignRight().WithAlignJustify()
 	if s2.Align != TextAlignJustify { t.Error("Align chaining failed") }
-	
+
 	s3 := NewParagraphStyle().WithLetteredLower().WithRomanUpper().WithNoBullet().WithCustomBullet("*")
 	if s3.BulletStyle != BulletStyleCustom || s3.BulletChar != "*" { t.Error("Bullet style failed") }
 }
@@ -87,7 +87,7 @@ func TestText_Validate(t *testing.T) {
 			t.Error("expected error for invalid color")
 		}
 	})
-	
+
 	t.Run("ParagraphStyle", func(t *testing.T) {
 		s := NewParagraphStyle()
 		if err := s.WithBulletColor("invalid").Validate(); err == nil {

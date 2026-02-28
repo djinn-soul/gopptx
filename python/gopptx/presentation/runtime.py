@@ -288,4 +288,3 @@ class PresentationRuntimeMixin:
             except GopptxError:
                 pass
         return f"<Presentation title='{title}' slides={slide_count}>"
-

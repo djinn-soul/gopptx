@@ -36,7 +36,7 @@ func TestPathHelpers(t *testing.T) {
 			t.Error("SlideRelsPartName failed for root")
 		}
 	})
-	
+
 	t.Run("RelsPathFor", func(t *testing.T) {
 		if RelsPathFor("ppt/slides/slide1.xml") != "ppt/slides/_rels/slide1.xml.rels" {
 			t.Error("RelsPathFor failed")

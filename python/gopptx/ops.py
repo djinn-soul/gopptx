@@ -26,6 +26,7 @@ OP_GET_SECTIONS = "get_sections"
 OP_GET_TABLE = "get_table"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
+OP_LIST_PLACEHOLDERS = "list_placeholders"
 OP_LIST_SHAPES = "list_shapes"
 OP_LIST_SLIDES = "list_slides"
 OP_LIST_SLIDE_CHARTS = "list_slide_charts"
@@ -48,6 +49,7 @@ OP_SET_CORE_PROPERTIES = "set_core_properties"
 OP_SET_MARK_AS_FINAL = "set_mark_as_final"
 OP_SET_MODIFY_PASSWORD = "set_modify_password"
 OP_SET_NOTES = "set_notes"
+OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SLIDE_COUNT = "slide_count"
@@ -83,6 +85,7 @@ SUPPORTED_OPS = (
     OP_GET_TABLE,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
+    OP_LIST_PLACEHOLDERS,
     OP_LIST_SHAPES,
     OP_LIST_SLIDES,
     OP_LIST_SLIDE_CHARTS,
@@ -105,6 +108,7 @@ SUPPORTED_OPS = (
     OP_SET_MARK_AS_FINAL,
     OP_SET_MODIFY_PASSWORD,
     OP_SET_NOTES,
+    OP_SET_PLACEHOLDER_CONTENT,
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
     OP_SLIDE_COUNT,

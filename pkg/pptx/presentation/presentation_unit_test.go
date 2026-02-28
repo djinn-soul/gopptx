@@ -21,13 +21,13 @@ func TestPresentation_EffectiveMasters(t *testing.T) {
 		res := getEffectiveMasters(m)
 		if len(res) != 1 { t.Error("expected 1 default master") }
 	})
-	
+
 	t.Run("Single", func(t *testing.T) {
 		m := Metadata{Master: elements.NewMaster()}
 		res := getEffectiveMasters(m)
 		if len(res) != 1 { t.Error("expected 1 master") }
 	})
-	
+
 	t.Run("Multi", func(t *testing.T) {
 		m := Metadata{Masters: []*elements.SlideMaster{elements.NewMaster(), elements.NewMaster()}}
 		res := getEffectiveMasters(m)
@@ -44,13 +44,13 @@ func TestPresentation_ConvertSections(t *testing.T) {
 	secs := []Section{
 		{Name: "S1", SlideIndices: []int{0}},
 	}
-	
+
 	t.Run("Valid", func(t *testing.T) {
 		res, err := convertSections(secs, 1)
 		if err != nil { t.Fatalf("failed: %v", err) }
 		if len(res) != 1 || res[0].Name != "S1" { t.Error("conversion failed") }
 	})
-	
+
 	t.Run("InvalidIndex", func(t *testing.T) {
 		_, err := convertSections(secs, 0)
 		if err == nil { t.Error("expected error for invalid index") }
@@ -63,7 +63,7 @@ func TestPresentation_PrepareComments(t *testing.T) {
 		elements.NewSlide("S1").AddComment("Author 1", "Text 1"),
 		elements.NewSlide("S2").AddComment("Author 1", "Text 2").AddComment("Author 2", "Text 3"),
 	}
-	
+
 	authors, cms, indices := prepareComments(meta, slides)
 	if len(authors) != 2 { t.Errorf("expected 2 authors, got %d", len(authors)) }
 	if len(indices) != 2 { t.Error("expected 2 slides with comments") }
@@ -73,7 +73,7 @@ func TestPresentation_PrepareComments(t *testing.T) {
 func TestWritePresentationPackage_Full(t *testing.T) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	
+
 	meta := Metadata{
 		Metadata: common.Metadata{
 			Title: "Full Test",
@@ -87,7 +87,7 @@ func TestWritePresentationPackage_Full(t *testing.T) {
 		RTL: true,
 		VBA: &vba.VBAProject{},
 	}
-	
+
 	slides := []elements.SlideContent{
 		elements.NewSlide("S1").
 			AddImage(shapes.Image{Data: []byte("fake"), Format: "png"}).
@@ -95,7 +95,7 @@ func TestWritePresentationPackage_Full(t *testing.T) {
 			AddSmartArt(smartart.NewSmartArt(smartart.BasicBlockList)).
 			WithTransitionSound("sound.wav"),
 	}
-	
+
 	// Create dummy sound file
 	_ = os.WriteFile("sound.wav", []byte("dummy"), 0600)
 	defer os.Remove("sound.wav")

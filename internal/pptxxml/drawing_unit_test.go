@@ -46,7 +46,7 @@ func TestCustomShapeTextBody_Internal(t *testing.T) {
 	xml := customShapeTextBody(spec)
 	if !strings.Contains(xml, "Hello World") { t.Error("Text missing") }
 	if !strings.Contains(xml, "spAutoFit") { t.Error("AutoFit missing") }
-	
+
 	// Test normAutoFit
 	spec.TextFrame.AutoFit = "normAutoFit"
 	xml = customShapeTextBody(spec)
@@ -64,7 +64,7 @@ func TestSlideRelationships_Internal(t *testing.T) {
 		[]HyperlinkRel{{RID: "rId5", Target: "http://x.com", External: true}},
 		"comments/comment1.xml",
 	)
-	
+
 	checks := []string{"img1.png", "chart1.xml", "chart2.xml", "sa1.xml", "note1.xml", "http://x.com", "comment1.xml"}
 	for _, c := range checks {
 		if !strings.Contains(xml, c) {
