@@ -96,7 +96,7 @@ func renderEditorSlideParts(
 		elements.ToXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
 		contentStyle,
 		tableSpec,
-		nil,
+		nil, // chartFrame
 		imageRefs,
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),

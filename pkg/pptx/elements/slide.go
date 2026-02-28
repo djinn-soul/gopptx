@@ -499,27 +499,29 @@ func (s SlideContent) WithTitleAndContentLayout() SlideContent {
 func NormalizeSlideLayout(layout string) string {
 	normalized := strings.ToLower(strings.TrimSpace(layout))
 	switch normalized {
-	case "", SlideLayoutTitleAndContent:
+	case "", strings.ToLower(SlideLayoutTitleAndContent), "titleandcontent", "title-and-content":
 		return SlideLayoutTitleAndContent
-	case "titleandcontent", "title-and-content":
-		return SlideLayoutTitleAndContent
-	case SlideLayoutTitleOnly:
+	case strings.ToLower(SlideLayoutTitle), "title slide":
+		return SlideLayoutTitle
+	case strings.ToLower(SlideLayoutSectionHeader), "section header":
+		return SlideLayoutSectionHeader
+	case strings.ToLower(SlideLayoutTwoContent), "two content":
+		return SlideLayoutTwoContent
+	case strings.ToLower(SlideLayoutComparison), "comparison":
+		return SlideLayoutComparison
+	case strings.ToLower(SlideLayoutContentCaption), "content with caption":
+		return SlideLayoutContentCaption
+	case strings.ToLower(SlideLayoutPictureCaption), "picture with caption":
+		return SlideLayoutPictureCaption
+	case strings.ToLower(SlideLayoutTitleOnly), "titleonly", "title-only":
 		return SlideLayoutTitleOnly
-	case "titleonly", "title-only":
-		return SlideLayoutTitleOnly
-	case SlideLayoutBlank:
+	case strings.ToLower(SlideLayoutBlank), "blank":
 		return SlideLayoutBlank
-	case SlideLayoutCenteredTitle:
+	case strings.ToLower(SlideLayoutCenteredTitle), "centeredtitle", "centered-title":
 		return SlideLayoutCenteredTitle
-	case "centeredtitle", "centered-title":
-		return SlideLayoutCenteredTitle
-	case SlideLayoutTitleAndBigContent:
+	case strings.ToLower(SlideLayoutTitleAndBigContent), "titleandbigcontent", "title-and-big-content", "big_content":
 		return SlideLayoutTitleAndBigContent
-	case "titleandbigcontent", "title-and-big-content", "big_content":
-		return SlideLayoutTitleAndBigContent
-	case SlideLayoutTwoColumn:
-		return SlideLayoutTwoColumn
-	case "twocolumn", "two-column":
+	case strings.ToLower(SlideLayoutTwoColumn), "twocolumn", "two-column", "two column":
 		return SlideLayoutTwoColumn
 	default:
 		return normalized

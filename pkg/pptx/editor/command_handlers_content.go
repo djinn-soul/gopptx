@@ -2,6 +2,8 @@ package editor
 
 import (
 	"encoding/json"
+	"fmt"
+	"sort"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
@@ -209,4 +211,124 @@ func handleSetMarkAsFinal(e *PresentationEditor, payload json.RawMessage) (any, 
 
 	e.Metadata().Protection.MarkAsFinal = final
 	return map[string]bool{"updated": true}, nil
+}
+
+func handleAddCustomXML(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	content := v.OptionalString(p, "content")
+	rootElement := v.OptionalString(p, "root_element")
+	namespace := v.OptionalString(p, "namespace")
+
+	props := parseCustomXMLProperties(p, v)
+
+	if content == "" && rootElement == "" {
+		v.setCode(ErrCodeMissingField)
+		v.errors = append(v.errors, "either content or root_element must be provided")
+	}
+
+	if v.HasErrors() {
+		return nil, v.Error()
+	}
+
+	part := common.CustomXMLPart{
+		Content:     content,
+		RootElement: rootElement,
+		Namespace:   namespace,
+	}
+
+	keys := make([]string, 0, len(props))
+	for k := range props {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		part.Properties = append(part.Properties, common.CustomXMLKV{Key: k, Value: props[k]})
+	}
+
+	e.metadata.CustomXML = append(e.metadata.CustomXML, part)
+
+	return map[string]int{"index": len(e.metadata.CustomXML) - 1}, nil
+}
+
+func handleListCustomXML(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	type CustomXMLResp struct {
+		Content     string            `json:"content,omitempty"`
+		RootElement string            `json:"root_element,omitempty"`
+		Namespace   string            `json:"namespace,omitempty"`
+		Properties  map[string]string `json:"properties,omitempty"`
+	}
+
+	out := make([]CustomXMLResp, len(e.metadata.CustomXML))
+	for i, part := range e.metadata.CustomXML {
+		var props map[string]string
+		if len(part.Properties) > 0 {
+			props = make(map[string]string, len(part.Properties))
+			for _, kv := range part.Properties {
+				props[kv.Key] = kv.Value
+			}
+		}
+
+		out[i] = CustomXMLResp{
+			Content:     part.Content,
+			RootElement: part.RootElement,
+			Namespace:   part.Namespace,
+			Properties:  props,
+		}
+	}
+	return map[string]any{"custom_xml": out}, nil
+}
+
+func handleRemoveCustomXML(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	index, ok := v.RequireInt(p, "index")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if index < 0 || index >= len(e.metadata.CustomXML) {
+		v.setCode(ErrCodeInvalidIndex)
+		v.errors = append(
+			v.errors,
+			fmt.Sprintf("custom xml index %d out of range [0,%d)", index, len(e.metadata.CustomXML)),
+		)
+		return nil, v.Error()
+	}
+
+	e.metadata.CustomXML = append(e.metadata.CustomXML[:index], e.metadata.CustomXML[index+1:]...)
+
+	return map[string]bool{"removed": true}, nil
+}
+
+func parseCustomXMLProperties(payload map[string]any, v *PayloadValidator) map[string]string {
+	rawProps, ok := payload["properties"]
+	if !ok || rawProps == nil {
+		return nil
+	}
+	propMap, ok := rawProps.(map[string]any)
+	if !ok {
+		v.setCode(ErrCodeInvalidType)
+		v.errors = append(v.errors, "properties must be an object with string values")
+		return nil
+	}
+	props := make(map[string]string, len(propMap))
+	for k, val := range propMap {
+		s, ok := val.(string)
+		if !ok {
+			v.setCode(ErrCodeInvalidType)
+			v.errors = append(v.errors, fmt.Sprintf("property %q must be a string", k))
+			continue
+		}
+		props[k] = s
+	}
+	return props
 }

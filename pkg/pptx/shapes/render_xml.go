@@ -34,6 +34,14 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		Name:         shape.Name,
 		Adjustments:  toXMLShapeAdjustments(shape.Adjustments),
 	}
+	if shape.Effects != nil {
+		spec.Effects = &pptxxml.ShapeEffectsSpec{
+			Shadow:     shape.Effects.Shadow,
+			Glow:       shape.Effects.Glow,
+			SoftEdges:  shape.Effects.SoftEdges,
+			Reflection: shape.Effects.Reflection,
+		}
+	}
 
 	if shape.Fill != nil {
 		spec.Fill = &pptxxml.ShapeFillSpec{

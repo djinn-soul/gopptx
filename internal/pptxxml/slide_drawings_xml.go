@@ -66,6 +66,15 @@ type ShapeSpec struct {
 	TextFrame    *TextFrameSpec
 	Name         string
 	Adjustments  []ConnectorAdjustmentSpec
+	Effects      *ShapeEffectsSpec
+}
+
+// ShapeEffectsSpec describes effects for one custom shape.
+type ShapeEffectsSpec struct {
+	Shadow     bool
+	Glow       bool
+	SoftEdges  bool
+	Reflection bool
 }
 
 // TextFrameSpec describes the text layout within a shape.
@@ -151,12 +160,40 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	b.WriteString(`</a:prstGeom>`)
 	b.WriteString(fillXML)
 	b.WriteString(lineXML)
+	b.WriteString(shapeEffectsXML(shape.Effects))
 	b.WriteString(`
 </p:spPr>`)
 
 	b.WriteString(customShapeTextBody(shape))
 	b.WriteString(`
 </p:sp>`)
+	return b.String()
+}
+
+func shapeEffectsXML(effects *ShapeEffectsSpec) string {
+	if effects == nil || (!effects.Shadow && !effects.Glow && !effects.SoftEdges && !effects.Reflection) {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<a:effectLst>")
+	if effects.Shadow {
+		b.WriteString(`<a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0">`)
+		b.WriteString(`<a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr>`)
+		b.WriteString(`</a:outerShdw>`)
+	}
+	if effects.Glow {
+		b.WriteString(`<a:glow rad="6350">`)
+		b.WriteString(`<a:srgbClr val="4472C4"><a:alpha val="35000"/></a:srgbClr>`)
+		b.WriteString(`</a:glow>`)
+	}
+	if effects.SoftEdges {
+		b.WriteString(`<a:softEdge rad="38100"/>`)
+	}
+	if effects.Reflection {
+		b.WriteString(`<a:ref blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
+		b.WriteString(` dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`)
+	}
+	b.WriteString("</a:effectLst>")
 	return b.String()
 }
 

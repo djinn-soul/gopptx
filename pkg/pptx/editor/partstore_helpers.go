@@ -14,13 +14,12 @@ const (
 	zipReadChunkBytes       = 32 * 1024
 )
 
-func newZipReadChunkPool() sync.Pool {
-	return sync.Pool{
-		New: func() any {
-			b := make([]byte, zipReadChunkBytes)
-			return &b
-		},
-	}
+//nolint:gochecknoglobals // Shared reusable buffers reduce allocations in zip reads.
+var zipReadChunkPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, zipReadChunkBytes)
+		return &b
+	},
 }
 
 type inflightRead struct {
@@ -107,12 +106,11 @@ func readZipEntry(entry *zip.File) ([]byte, error) {
 	}
 
 	// Fallback for unknown sizes: use a pooled read buffer to reduce temporary allocations.
-	pool := newZipReadChunkPool()
-	chunkPtr, ok := pool.Get().(*[]byte)
+	chunkPtr, ok := zipReadChunkPool.Get().(*[]byte)
 	if !ok || chunkPtr == nil {
 		return nil, errors.New("zip read pool returned invalid buffer")
 	}
-	defer pool.Put(chunkPtr)
+	defer zipReadChunkPool.Put(chunkPtr)
 	chunk := *chunkPtr
 	var out bytes.Buffer
 	limitedReader := io.LimitReader(rc, maxUnknownZipEntryBytes+1)

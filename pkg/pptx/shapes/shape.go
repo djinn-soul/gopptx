@@ -263,6 +263,7 @@ type Shape struct {
 	TextFrame    *TextFrame
 	Name         string
 	Adjustments  []ShapeAdjustment
+	Effects      *ShapeEffects
 }
 
 // NewShape creates one shape.

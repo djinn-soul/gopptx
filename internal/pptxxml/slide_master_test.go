@@ -88,7 +88,7 @@ func TestSlideMasterWithoutTxStyles(t *testing.T) {
 }
 
 func TestPresentationMultiMaster(t *testing.T) {
-	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false)
+	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil)
 
 	// Should have 3 master IDs
 	if count := strings.Count(xml, "sldMasterId"); count != 2+3 {
@@ -116,7 +116,7 @@ func TestPresentationMultiMaster(t *testing.T) {
 }
 
 func TestPresentationRelationshipsMultiMaster(t *testing.T) {
-	xml := pptxxml.PresentationRelationships(2, false, 0, 2, false, false)
+	xml := pptxxml.PresentationRelationships(2, false, 0, 2, false, false, false, false, 0)
 
 	// Should have 2 master relationships (checked by target presence)
 	if !strings.Contains(xml, `Target="slideMasters/slideMaster1.xml"`) {
@@ -151,6 +151,7 @@ func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
 		},
 		nil,
 		false,
+		nil,
 	)
 
 	if !strings.Contains(xml, `cryptProviderType="rsaAES"`) {
@@ -174,7 +175,7 @@ func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
 }
 
 func TestContentTypesMultiMaster(t *testing.T) {
-	xml := pptxxml.ContentTypes(1, nil, 0, 0, nil, false, 0, 2, 0, false, nil, false, false)
+	xml := pptxxml.ContentTypes(1, nil, 0, 0, nil, false, 0, 2, 0, false, nil, false, false, false, false, false)
 	if !strings.Contains(xml, `/ppt/slideMasters/slideMaster1.xml`) {
 		t.Error("missing slideMaster1 content-type override")
 	}

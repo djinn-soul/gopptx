@@ -131,6 +131,10 @@ func (p *markdownParser) flushCurrent() {
 	if p.current == nil {
 		return
 	}
+	if p.current.Table != nil {
+		table := positionMarkdownTable(*p.current.Table, *p.current)
+		p.current.Table = &table
+	}
 	p.slides = append(p.slides, *p.current)
 	p.current = nil
 }

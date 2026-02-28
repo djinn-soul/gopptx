@@ -166,7 +166,7 @@ root((mindmap))
     Origins
         Long history
     Research
-        On effectivness`,
+        On effectiveness`,
 			exactShapes:     5,
 			exactConnectors: 4,
 			checkConnectors: true,

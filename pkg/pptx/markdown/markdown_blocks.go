@@ -17,6 +17,10 @@ const (
 	fencedCodeLinesCapacity   = 16
 	markdownTableRowsCapacity = 4
 	defaultTableWidthEMU      = 8230200
+	markdownTableBaseYEMU     = 1600200
+	markdownTableBulletLineEMU = 228600
+	markdownTableGapEMU        = 152400
+	markdownTableMaxYEMU       = 2743200
 )
 
 func isMarkdownFenceStart(trimmedLine string) bool {
@@ -161,6 +165,20 @@ func (p *markdownParser) consumeTable(startLine int) error {
 	}
 	*p.current = p.current.WithTable(table)
 	return nil
+}
+
+func positionMarkdownTable(table tables.Table, slide elements.SlideContent) tables.Table {
+	if table.Y.Emu() != markdownTableBaseYEMU {
+		return table
+	}
+	if len(slide.Bullets) == 0 {
+		return table
+	}
+	newY := markdownTableBaseYEMU + int64(len(slide.Bullets))*markdownTableBulletLineEMU + markdownTableGapEMU
+	if newY > markdownTableMaxYEMU {
+		newY = markdownTableMaxYEMU
+	}
+	return table.Position(table.X, styling.Emu(newY))
 }
 
 func looksLikeMarkdownTableRow(line string) bool {

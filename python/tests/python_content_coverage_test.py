@@ -87,11 +87,10 @@ def test_charts_basic() -> None:  # noqa: D103
         charts = slide.list_charts()
         assert len(charts) > 0  # noqa: S101
 
-        # Update chart data - may emit a warning for charts without formula nodes
-        with pytest.warns(UserWarning, match="Chart data update failed"):
-            prs.update_chart_data(
-                slide.index, ["A", "B"], [{"name": "S1", "values": [15, 25]}]
-            )
+        # Update chart data - now succeeds for charts without formula nodes
+        prs.update_chart_data(
+            slide.index, ["A", "B"], [{"name": "S1", "values": [15, 25]}]
+        )
 
 
 def test_notes() -> None:  # noqa: D103
