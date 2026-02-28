@@ -252,9 +252,9 @@ func timelineEventBaseY(lineY styling.Length, isAbove bool) styling.Length {
 func timelineEventRowY(baseY styling.Length, rowIndex int, isAbove bool) styling.Length {
 	offset := styling.Length(rowIndex) * styling.Inches(0.45)
 	if isAbove {
-		return maxLength(0, baseY-offset)
+		return max(0, baseY-offset)
 	}
-	return maxLength(0, baseY+offset)
+	return max(0, baseY+offset)
 }
 
 func timelineEventBoxShape(
@@ -275,11 +275,4 @@ func timelineEventBoxShape(
 		WithText(text).
 		WithAutoFit(shapes.TextAutoFitNormal).
 		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
-}
-
-func maxLength(minValue styling.Length, value styling.Length) styling.Length {
-	if value < minValue {
-		return minValue
-	}
-	return value
 }

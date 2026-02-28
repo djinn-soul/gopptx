@@ -1,28 +1,15 @@
 package main
 
 import (
-	"archive/zip"
-	"bytes"
-	"encoding/xml"
-	"errors"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
-
-const initialIssueCapacity = 8
-
-func requiredPPTXParts() []string {
-	return []string{
-		"[Content_Types].xml",
-		"_rels/.rels",
-		"ppt/presentation.xml",
-		"docProps/core.xml",
-	}
-}
 
 // runValidateCommand validates a PPTX file structure.
 func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
@@ -30,7 +17,9 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs.SetOutput(io.Discard)
 
 	var filePath string
+	var format string
 	fs.StringVar(&filePath, "file", "", "PPTX file path")
+	fs.StringVar(&format, "format", "text", "Output format: text or json")
 
 	if err := fs.Parse(args); err != nil {
 		printErrorf(stderr, "invalid validate arguments: %v", err)
@@ -49,15 +38,42 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitUsage
 	}
 
-	issues, err := validatePPTXFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		printErrorf(stderr, "validation failed to run: %v", err)
+		if format == "json" {
+			outputJSONError(stdout, fmt.Sprintf("failed to read file: %v", err))
+			return exitIO
+		}
+		printErrorf(stderr, "failed to read file: %v", err)
 		return exitIO
 	}
+
+	issues, err := pptx.Validate(data)
+	if err != nil {
+		if format == "json" {
+			outputJSONError(stdout, fmt.Sprintf("validation failed: %v", err))
+			return exitValidate
+		}
+		printErrorf(stderr, "validation failed: %v", err)
+		return exitValidate
+	}
+
+	if format == "json" {
+		out, err := json.MarshalIndent(issues, "", "  ")
+		if err != nil {
+			outputJSONError(stdout, fmt.Sprintf("failed to marshal JSON: %v", err))
+			return exitValidate
+		}
+		_, _ = fmt.Fprintln(stdout, string(out))
+		if len(issues) > 0 {
+			return exitValidate
+		}
+		return exitOK
+	}
+
 	if len(issues) > 0 {
-		sort.Strings(issues)
 		for _, issue := range issues {
-			_, _ = fmt.Fprintf(stderr, "ERROR: %s\n", issue)
+			_, _ = fmt.Fprintln(stderr, issue.String())
 		}
 		return exitValidate
 	}
@@ -66,86 +82,12 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	return exitOK
 }
 
-func validatePPTXFile(path string) ([]string, error) {
-	meta, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if !meta.Mode().IsRegular() {
-		return nil, errors.New("path is not a regular file")
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = file.Close() }()
-
-	zr, err := zip.NewReader(file, meta.Size())
-	if err != nil {
-		return []string{"file is not a valid ZIP archive"}, nil
-	}
-
-	issues := make([]string, 0, initialIssueCapacity)
-	names := make(map[string]struct{}, len(zr.File))
-	slideCount := 0
-	for _, entry := range zr.File {
-		name := strings.TrimSpace(entry.Name)
-		if entry.FileInfo().IsDir() {
-			continue
-		}
-		names[name] = struct{}{}
-		lower := strings.ToLower(name)
-		if strings.HasPrefix(lower, "ppt/slides/slide") && strings.HasSuffix(lower, ".xml") &&
-			!strings.Contains(lower, "/_rels/") {
-			slideCount++
-		}
-		if strings.HasSuffix(lower, ".xml") || strings.HasSuffix(lower, ".rels") {
-			if xmlErr := validateEntryXML(entry); xmlErr != nil {
-				issues = append(issues, fmt.Sprintf("%s: %v", name, xmlErr))
-			}
-		}
-	}
-
-	for _, required := range requiredPPTXParts() {
-		if _, ok := names[required]; !ok {
-			issues = append(issues, fmt.Sprintf("missing required part %q", required))
-		}
-	}
-	if slideCount == 0 {
-		issues = append(issues, "no slide parts found under ppt/slides")
-	}
-
-	return issues, nil
-}
-
-func validateEntryXML(entry *zip.File) error {
-	reader, err := entry.Open()
-	if err != nil {
-		return err
-	}
-	defer func() { _ = reader.Close() }()
-
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	if len(bytes.TrimSpace(data)) == 0 {
-		return errors.New("empty XML content")
-	}
-
-	decoder := xml.NewDecoder(bytes.NewReader(data))
-	for {
-		if _, tokenErr := decoder.Token(); tokenErr != nil {
-			if errors.Is(tokenErr, io.EOF) {
-				break
-			}
-			return fmt.Errorf("invalid XML: %w", tokenErr)
-		}
-	}
-	return nil
+func outputJSONError(w io.Writer, msg string) {
+	errObj := map[string]string{"error": msg}
+	out, _ := json.MarshalIndent(errObj, "", "  ")
+	_, _ = fmt.Fprintln(w, string(out))
 }
 
 func printValidateUsage(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "Usage: pptcli validate -file file.pptx")
+	_, _ = fmt.Fprintln(w, "Usage: pptcli validate -file file.pptx [-format text|json]")
 }

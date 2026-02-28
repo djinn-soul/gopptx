@@ -16,7 +16,11 @@ func SlideSize16x9() SlideSize {
 }
 
 // Metadata describes summary information for a PPTX package.
-type Metadata = common.Metadata
+type Metadata struct {
+	common.Metadata
+
+	VBA any // *vba.VBAProject at runtime, loosely typed to avoid import cycles in common
+}
 
 // SlideMetadata describes one slide entry inside an editable presentation.
 type SlideMetadata struct {
@@ -29,3 +33,9 @@ type SlideMetadata struct {
 
 // CoreProperties describes the docProps/core.xml metadata.
 type CoreProperties = common.CoreProperties
+
+// CustomXMLPart describes a Custom XML part exposed to the editor.
+type CustomXMLPart = common.CustomXMLPart
+
+// CustomXMLKV describes a key-value property for a CustomXMLPart.
+type CustomXMLKV = common.CustomXMLKV

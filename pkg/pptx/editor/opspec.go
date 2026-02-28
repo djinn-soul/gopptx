@@ -55,6 +55,10 @@ const (
 	OpSplitTableCell          = "split_table_cell"
 	OpUpdateTableFlags        = "update_table_flags"
 	OpUpdateTableCell         = "update_table_cell"
+	OpAddCustomXML            = "add_custom_xml"
+	OpListCustomXML           = "list_custom_xml"
+	OpRemoveCustomXML         = "remove_custom_xml"
+	OpAddVba                  = "add_vba"
 )
 
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
@@ -111,5 +115,9 @@ func SupportedOps() []string {
 		OpSplitTableCell,
 		OpUpdateTableFlags,
 		OpUpdateTableCell,
+		OpAddCustomXML,
+		OpListCustomXML,
+		OpRemoveCustomXML,
+		OpAddVba,
 	}
 }

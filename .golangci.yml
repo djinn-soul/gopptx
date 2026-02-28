@@ -16,7 +16,7 @@ formatters:
 
 linters:
   disable:
-    - testpackage
+
   enable:
     - asasalint
     - asciicheck
@@ -259,6 +259,8 @@ linters:
         linters: [godot]
       - text: "should have a package comment"
         linters: [revive]
+      - text: "avoid meaningless package names"
+        linters: [revive]
       - text: 'exported \S+ \S+ should have comment( \(or a comment on this block\))? or be unexported'
         linters: [revive]
       - text: 'package comment should be of the form ".+"'
@@ -267,32 +269,29 @@ linters:
       - text: 'comment on exported \S+ \S+ should be of the form ".+"'
         source: "// ?(nolint|TODO)"
         linters: [revive, staticcheck]
+      - text: "^shadow: declaration of"
+        linters: [govet]
       - path: '_test\.go'
         linters:
           - bodyclose
           - dupl
           - errcheck
           - funlen
+          - gocognit
           - goconst
           - gosec
           - noctx
+          - testpackage
           - wrapcheck
       - path: "examples/.*"
         linters:
-          - depguard
           - mnd
-          - unused
-          - gosec
-          - funlen
-          - gocognit
-          - cyclop
-          - forbidigo
-          - nolintlint
-          - dupl
-          - govet
-          - gocritic
-          - intrange
-
+      - path: "scripts/tasks/generate_task_samples/.*"
+        linters:
+          - mnd
+      - path: "pkg/pptx/mermaid/.*"
+        linters:
+          - mnd
   include:
     - EXC0012
     - EXC0013

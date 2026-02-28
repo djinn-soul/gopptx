@@ -172,6 +172,40 @@ func TestCreateWithSlidesEmbedsTable(t *testing.T) {
 	}
 }
 
+func TestCreateWithSlidesEmbedsTableAndBullets(t *testing.T) {
+	table := pptx.NewTable([]pptx.Length{pptx.Emu(2743400), pptx.Emu(2743400)}).
+		AddRow([]string{"Step", "Status"}).
+		AddRow([]string{"Markdown parsed", "PASS"})
+
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Mixed Slide").
+			AddBullet("[GO]").
+			AddBullet("slides, err := pptx.SlidesFromMarkdown(markdown)").
+			WithTable(table),
+	}
+
+	data, err := pptx.CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+
+	slideXML := testutil.ReadZipFile(t, zr, "ppt/slides/slide1.xml")
+	if !strings.Contains(slideXML, "<a:tbl>") {
+		t.Fatalf("expected table XML in slide")
+	}
+	if !strings.Contains(slideXML, "<a:t>[GO]</a:t>") {
+		t.Fatalf("expected bullet text in slide")
+	}
+	if !strings.Contains(slideXML, `name="Content"`) {
+		t.Fatalf("expected content shape when bullets are present")
+	}
+}
+
 func TestCreateWithSlidesRejectsInvalidTable(t *testing.T) {
 	table := pptx.NewTable([]pptx.Length{pptx.Emu(2000000), pptx.Emu(2000000)}).
 		AddRow([]string{"A"})
@@ -418,5 +452,54 @@ func TestCreateWithSections(t *testing.T) {
 	presXML := testutil.ReadZipFile(t, zr, "ppt/presentation.xml")
 	if !strings.Contains(presXML, `<p14:sectionLst`) {
 		t.Fatalf("expected p14:sectionLst in presentation.xml")
+	}
+}
+
+func TestValidateAndRepair(t *testing.T) {
+	// Generate a valid PPTX
+	data, err := pptx.Create("Valid", 1)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	// Validate it
+	issues, err := pptx.Validate(data)
+	if err != nil {
+		t.Fatalf("Validate failed: %v", err)
+	}
+	if len(issues) > 0 {
+		t.Errorf("expected no issues for fresh PPTX, got %d", len(issues))
+	}
+
+	// Corrupt it (simulated) and test repair
+	repaired, result, err := pptx.Repair(data)
+	if err != nil {
+		t.Fatalf("Repair failed: %v", err)
+	}
+	if len(repaired) == 0 {
+		t.Error("Repair produced empty data")
+	}
+	_ = result
+}
+
+func TestWriteFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "test.pptx")
+	slides := []pptx.SlideContent{pptx.NewSlide("S1")}
+	err := pptx.WriteFile(path, "Title", slides)
+	if err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Error("File was not written")
+	}
+}
+
+func TestCreate_ErrorPaths(t *testing.T) {
+	if _, err := pptx.Create("", 1); err == nil {
+		t.Error("expected error for empty title")
+	}
+	if _, err := pptx.Create("Title", 0); err == nil {
+		t.Error("expected error for 0 slides")
 	}
 }

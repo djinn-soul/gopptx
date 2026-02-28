@@ -177,7 +177,12 @@ class SlideTableMixin:
         self._presentation.split_table_cell(self.index, shape_id, row, col)
 
 
-class Slide(SlideTableMixin, SlideChartMixin, SlideBase, SlideShapeMixin):
+class Slide(
+    SlideTableMixin,
+    SlideChartMixin,
+    SlideBase,
+    SlideShapeMixin,
+):
     """Proxy object for a slide within a presentation."""
 
     def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:

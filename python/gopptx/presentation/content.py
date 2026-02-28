@@ -12,6 +12,7 @@ from .shapes_tables import (
     PresentationTableMixin,
     PresentationTextMixin,
 )
+from .vba import PresentationVBAMixin
 
 
 class PresentationContentMixin(
@@ -21,5 +22,6 @@ class PresentationContentMixin(
     PresentationNotesMixin,
     PresentationChartMixin,
     PresentationCommentMixin,
+    PresentationVBAMixin,
 ):
     """Mixin providing content manipulation methods for Presentation."""

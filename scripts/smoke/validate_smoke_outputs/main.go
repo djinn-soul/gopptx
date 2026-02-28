@@ -20,7 +20,7 @@ type validationResult struct {
 }
 
 func main() {
-	dirFlag := flag.String("dir", "smoke_samples", "directory to scan for .pptx files")
+	dirFlag := flag.String("dir", "examples/output", "directory to scan for .pptx files")
 	fileFlag := flag.String("file", "", "optional single .pptx file to validate")
 	flag.Parse()
 

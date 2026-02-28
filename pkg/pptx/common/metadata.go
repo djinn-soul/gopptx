@@ -29,10 +29,20 @@ func GetSlideSize16x9() SlideSize {
 	return SlideSize{Width: width16x9, Height: height4x3}
 }
 
+// CustomXMLKV is a key-value property for a CustomXMLPart.
+type CustomXMLKV struct {
+	Key   string
+	Value string
+}
+
 // CustomXMLPart represents an embedded custom XML document in the PPTX package.
-// The Content field must be a valid XML string.
+// If RootElement is populated, the XML is generated structurally.
+// Otherwise, Content must be a valid XML string for legacy passthrough.
 type CustomXMLPart struct {
-	Content string `json:"content" xml:",innerxml"`
+	Content     string        `json:"content,omitempty"     xml:",innerxml"`
+	RootElement string        `json:"rootElement,omitempty"`
+	Namespace   string        `json:"namespace,omitempty"`
+	Properties  []CustomXMLKV `json:"properties,omitempty"`
 }
 
 // Metadata describes summary information for a PPTX package.

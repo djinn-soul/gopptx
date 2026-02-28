@@ -4,6 +4,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/binary"
+	"math"
 	"unicode/utf16"
 )
 
@@ -40,12 +41,16 @@ func HashModifyPassword(password string, salt []byte, spinCount int) string {
 	if spinCount < 0 {
 		spinCount = 0
 	}
+	if spinCount > math.MaxUint32 {
+		spinCount = math.MaxUint32
+	}
 	iter := uint32(0)
-	for range spinCount {
+	for spinCount > 0 {
 		copy(spinInput[:sha512.Size], hash[:])
 		binary.LittleEndian.PutUint32(spinInput[sha512.Size:], iter)
 		hash = sha512.Sum512(spinInput[:])
 		iter++
+		spinCount--
 	}
 
 	return base64.StdEncoding.EncodeToString(hash[:])

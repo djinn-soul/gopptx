@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 func TestSlidesFromMarkdown_GFMTable(t *testing.T) {
@@ -29,6 +31,63 @@ func TestSlidesFromMarkdown_GFMTable(t *testing.T) {
 	}
 	if len(slides[0].Table.StyledRows) != 1 || !slides[0].Table.StyledRows[0][0].Bold {
 		t.Fatalf("expected styled header row, got %#v", slides[0].Table.StyledRows)
+	}
+}
+
+func TestSlidesFromMarkdown_GFMTablePositionsBelowBullets(t *testing.T) {
+	input := `# Data
+- first
+- second
+- third
+
+| Step | Status |
+|------|--------|
+| Parse | Done |
+`
+	slides, err := SlidesFromMarkdown(input)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
+	}
+	if len(slides) != 1 {
+		t.Fatalf("expected 1 slide, got %d", len(slides))
+	}
+	if slides[0].Table == nil {
+		t.Fatalf("expected table on slide")
+	}
+
+	defaultY := tables.NewTable([]styling.Length{styling.Emu(1)}).Y.Emu()
+	if got := slides[0].Table.Y.Emu(); got <= defaultY {
+		t.Fatalf("expected table Y > default Y (%d), got %d", defaultY, got)
+	}
+}
+
+func TestSlidesFromMarkdown_GFMTablePositionsBelowBulletsAfterTable(t *testing.T) {
+	input := `# Verification Checklist
+| Step | Status |
+|---|---|
+| Markdown parsed | PASS |
+
+` + "```go" + `
+slides, err := pptx.SlidesFromMarkdown(markdown)
+if err != nil { return err }
+` + "```"
+	slides, err := SlidesFromMarkdown(input)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
+	}
+	if len(slides) != 1 {
+		t.Fatalf("expected 1 slide, got %d", len(slides))
+	}
+	if slides[0].Table == nil {
+		t.Fatalf("expected table on slide")
+	}
+	if len(slides[0].Bullets) == 0 {
+		t.Fatalf("expected fenced code bullets")
+	}
+
+	defaultY := tables.NewTable([]styling.Length{styling.Emu(1)}).Y.Emu()
+	if got := slides[0].Table.Y.Emu(); got <= defaultY {
+		t.Fatalf("expected table Y > default Y (%d), got %d", defaultY, got)
 	}
 }
 

@@ -157,8 +157,24 @@ class PresentationRuntimeMixin:
             )
             return self._metadata_cache
 
+    @property
+    def slides(self) -> list[Slide]:
+        """List of slide proxies for all slides in the presentation."""
+        return [Slide(cast("Presentation", self), m) for m in self.slides_metadata]
+
     def __getitem__(self, index: int | slice) -> Slide | list[Slide]:
-        """Return a slide or list of slides by index or slice."""
+        """Return a slide or list of slides by index or slice.
+
+        Args:
+            index: Integer index or slice object.
+
+        Returns:
+            Slide object if index is int, list of Slides if slice.
+
+        Raises:
+            TypeError: If index is not an integer or slice.
+            IndexError: If index is out of range.
+        """
         count = self.slide_count
         if isinstance(index, int):
             if index < 0:
@@ -175,11 +191,6 @@ class PresentationRuntimeMixin:
             ]
 
         raise TypeError("Slide index must be an integer or a slice")
-
-    @property
-    def slides(self) -> list[Slide]:
-        """List of slide proxies for all slides in the presentation."""
-        return [Slide(cast("Presentation", self), m) for m in self.slides_metadata]
 
     @property
     def slides_metadata(self) -> list[SlideMetadata]:
@@ -268,5 +279,13 @@ class PresentationRuntimeMixin:
 
     def __repr__(self) -> str:  # type: ignore[override]
         """Return string representation of the presentation."""
-        title = self.metadata.get("title", "") if self._handle else ""
-        return f"<Presentation title='{title}' slides={self.slide_count}>"
+        title = ""
+        slide_count = 0
+        if self._handle:
+            try:
+                title = self.metadata.get("title", "")
+                slide_count = self.slide_count
+            except GopptxError:
+                pass
+        return f"<Presentation title='{title}' slides={slide_count}>"
+

@@ -78,8 +78,12 @@ func TestWriteOpsOutputs(t *testing.T) {
 		{PyName: "OP_BATCH_EXECUTE", Value: "batch_execute"},
 		{PyName: "OP_SLIDE_COUNT", Value: "slide_count"},
 	}
-	writeOpsPy(py, ops)
-	writeOpsPyi(pyi, ops)
+	if err := writeOpsPy(py, ops); err != nil {
+		t.Fatalf("writeOpsPy: %v", err)
+	}
+	if err := writeOpsPyi(pyi, ops); err != nil {
+		t.Fatalf("writeOpsPyi: %v", err)
+	}
 	_ = py.Close()
 	_ = pyi.Close()
 
@@ -103,7 +107,7 @@ func TestWriteOpsOutputs(t *testing.T) {
 	if !strings.Contains(pyiText, "OP_BATCH_EXECUTE: str") {
 		t.Fatalf("missing constant annotation in pyi output: %s", pyiText)
 	}
-	if !strings.Contains(pyiText, "SUPPORTED_OPS_SET: FrozenSet[str]") {
+	if !strings.Contains(pyiText, "SUPPORTED_OPS_SET: frozenset[str]") {
 		t.Fatalf("missing supported ops set annotation in pyi output")
 	}
 }

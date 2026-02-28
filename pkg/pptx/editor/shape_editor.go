@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // parsedShape represents a shape found in the slide XML.
@@ -22,6 +25,18 @@ type parsedShape struct {
 	W, H  int
 	Start int64 // Byte offset of the start of the node
 	End   int64 // Byte offset of the end of the node
+}
+
+func (p parsedShape) ToShape() shapes.Shape {
+	return shapes.Shape{
+		Type: p.Type,
+		X:    styling.Emu(int64(p.X)),
+		Y:    styling.Emu(int64(p.Y)),
+		CX:   styling.Emu(int64(p.W)),
+		CY:   styling.Emu(int64(p.H)),
+		Text: p.Text,
+		Name: p.Name,
+	}
 }
 
 // parseSlideShapes scans the slide XML for shape nodes and extracts their properties and byte ranges.
