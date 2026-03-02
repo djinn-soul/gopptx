@@ -20,6 +20,7 @@ const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/
 
 var editorCustomXMLNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9._-]*$`)
 
+//nolint:gochecknoglobals // Reused escaper table avoids repeated allocations while serializing custom XML values.
 var editorCustomXMLEscaper = strings.NewReplacer(
 	"&", "&amp;",
 	"<", "&lt;",
@@ -191,8 +192,11 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	}
 
 	// 2. Filter root package relationships (_rels/.rels) to remove any misplaced CustomXML rels.
-	if packageRelsData, ok := e.parts.Get("_rels/.rels"); ok {
-		if rels, err := parseRelationshipsXML(packageRelsData); err == nil {
+	packageRelsData, ok := e.parts.Get("_rels/.rels")
+	//nolint:nestif // Relationship parsing + filtering keeps error/condition handling local to this mutation block.
+	if ok {
+		rels, err := parseRelationshipsXML(packageRelsData)
+		if err == nil {
 			filtered := make([]common.EditorRelationship, 0, len(rels))
 			changed := false
 			for _, r := range rels {

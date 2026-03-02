@@ -26,6 +26,7 @@ type parsedSlideIDRef struct {
 const (
 	defaultRelsCapacity     = 8
 	defaultSlideIDsCapacity = 8
+	legacyPPTHeaderLength   = 8
 )
 
 // OpenPresentationEditor opens a PPTX package for in-place slide editing.
@@ -59,7 +60,9 @@ func OpenPresentationEditorFromBytes(data []byte) (*PresentationEditor, error) {
 // OpenPartStoreFromBytes opens a part store from a byte slice.
 func OpenPartStoreFromBytes(data []byte) (*PartStore, error) {
 	if len(data) >= 8 && bytes.Equal(data[:8], []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}) {
-		return nil, errors.New("legacy proprietary .ppt (OLE2) files are not supported. please use the interop package to convert to .pptx first")
+		return nil, errors.New(
+			"legacy proprietary .ppt (OLE2) files are not supported. please use the interop package to convert to .pptx first",
+		)
 	}
 
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
@@ -162,11 +165,13 @@ func openPartStore(filePath string) (*PartStore, error) {
 	}
 
 	// Check for legacy .ppt OLE2 magic number
-	header := make([]byte, 8)
-	if n, err := file.Read(header); err == nil && n == 8 {
+	header := make([]byte, legacyPPTHeaderLength)
+	if n, err := file.Read(header); err == nil && n == legacyPPTHeaderLength {
 		if bytes.Equal(header, []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}) {
 			_ = file.Close()
-			return nil, errors.New("legacy proprietary .ppt (OLE2) files are not supported. please use the interop package to convert to .pptx first")
+			return nil, errors.New(
+				"legacy proprietary .ppt (OLE2) files are not supported. please use the interop package to convert to .pptx first",
+			)
 		}
 	}
 	// Reset file pointer after reading header

@@ -11,13 +11,9 @@ project_root = pathlib.Path(
 sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
 
 
-# Create output directory
-output_dir = os.path.join(project_root, "examples/output")  # noqa: PTH118
-pathlib.Path(output_dir).mkdir(exist_ok=True, parents=True)
+def test_python_sections(tmp_path: pathlib.Path) -> None:
+    output_path = tmp_path / "python_sections_test.pptx"
 
-output_path = os.path.join(output_dir, "python_sections_test.pptx")  # noqa: PTH118
-
-try:
     with Presentation.new("Sections Test") as pres:
         # 1. Create a few slides
         s1 = pres.add_slide("Slide 1")
@@ -41,8 +37,7 @@ try:
 
         pres.save(output_path)
 
+        assert len(pres.sections) >= 1
+        assert pres.slide_count == 3
 
-except Exception:  # noqa: BLE001
-    import traceback
-
-    traceback.print_exc()
+    assert output_path.exists()

@@ -15,6 +15,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const textRunFontSizeScale = 100
+
 // parsedShape represents a shape found in the slide XML.
 // It contains the parsed properties and the byte range of the shape node.
 type parsedShape struct {
@@ -74,7 +76,8 @@ func scanShapesWithOffsets(content []byte, skipProperties bool) ([]parsedShape, 
 			continue
 		}
 
-		if se.Name.Local == "sp" || se.Name.Local == shapeTypePicture || se.Name.Local == "graphicFrame" || se.Name.Local == "cxnSp" {
+		if se.Name.Local == "sp" || se.Name.Local == shapeTypePicture || se.Name.Local == "graphicFrame" ||
+			se.Name.Local == "cxnSp" {
 			// Found a shape start.
 			// We need to capture the exact bytes from `startOffset` until the end element.
 			// The `decoder.InputOffset()` gives the start of the token *buffer* usually, but for Bytes.Reader it's precise enough usually
@@ -260,6 +263,7 @@ type shapeXML struct {
 	} `xml:"txBody"`
 }
 
+//nolint:gocognit,funlen,nestif // XML shape parsing must handle many optional OOXML branches in one pass.
 func parseShapeProperties(content []byte) (parsedShape, error) {
 	var s shapeXML
 	if err := xml.Unmarshal(content, &s); err != nil {
@@ -411,6 +415,8 @@ func replaceShapeNodes(
 
 // renderTextBodyXML constructs the <p:txBody> node based on Text or Runs.
 // If a PresentationEditor is provided, it will register any hyperlink relationships.
+//
+//nolint:gocognit,gocyclo,cyclop,funlen,nestif // Text-body emission covers run/paragraph/hyperlink variants required for PPTX fidelity.
 func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) ([]byte, error) {
 	escape := func(str string) string {
 		var buf bytes.Buffer
@@ -488,9 +494,10 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 			}
 			if r.Strikethrough != nil && *r.Strikethrough != "" {
 				val := *r.Strikethrough
-				if val == "sng" {
+				switch val {
+				case "sng":
 					val = "sngStrike"
-				} else if val == "dbl" {
+				case "dbl":
 					val = "dblStrike"
 				}
 				rPr += fmt.Sprintf(` strike="%s"`, escape(val))
@@ -502,7 +509,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				rPr += ` baseline="30000"`
 			}
 			if r.SizePt != nil && *r.SizePt > 0 {
-				rPr += fmt.Sprintf(` sz="%d"`, *r.SizePt*100)
+				rPr += fmt.Sprintf(` sz="%d"`, *r.SizePt*textRunFontSizeScale)
 			}
 			if r.AllCaps != nil && *r.AllCaps {
 				rPr += ` caps="all"`
@@ -578,7 +585,8 @@ func (e *PresentationEditor) renderShapeXML(partPath string, s *parsedShape) ([]
 		return nil, err
 	}
 
-	return fmt.Appendf(nil,
+	return fmt.Appendf(
+		nil,
 		`<p:sp xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`+
 			`<p:nvSpPr><p:cNvPr id="%d" name="%s">%s</p:cNvPr><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`+
 			`<p:spPr>`+
@@ -587,8 +595,13 @@ func (e *PresentationEditor) renderShapeXML(partPath string, s *parsedShape) ([]
 			`</p:spPr>`+
 			`%s`+
 			`</p:sp>`,
-		s.ID, escape(s.Name), clickXML,
-		s.X, s.Y, s.W, s.H,
+		s.ID,
+		escape(s.Name),
+		clickXML,
+		s.X,
+		s.Y,
+		s.W,
+		s.H,
 		prst,
 		string(txBody),
 	), nil
@@ -664,6 +677,8 @@ var cNvPrIDPattern = regexp.MustCompile(`\bcNvPr\b[^>]*\bid="(\d+)"`)
 const cNvPrSubmatchSize = 2
 
 // UpdateShape updates an existing shape's properties.
+//
+//nolint:gocognit,nestif // Update path intentionally coordinates parsing, targeted mutation, and XML rewrite atomically.
 func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
@@ -682,7 +697,7 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 
 	found := false
 	var updateErr error
-	newXML := replaceShapeNodes(content, shapes, func(i int, s *parsedShape) ([]byte, bool) {
+	newXML := replaceShapeNodes(content, shapes, func(_ int, s *parsedShape) ([]byte, bool) {
 		if updateErr != nil {
 			return nil, false
 		}
@@ -862,8 +877,8 @@ func updateShapeTransforms(xmlData []byte, x, y, w, h int) []byte {
 	offRe := regexp.MustCompile(`(<a:off\s+x=")[0-9]+("\s+y=")[0-9]+("\s*/>)`)
 	extRe := regexp.MustCompile(`(<a:ext\s+cx=")[0-9]+("\s+cy=")[0-9]+("\s*/>)`)
 
-	res := offRe.ReplaceAll(xmlData, []byte(fmt.Sprintf("${1}%d${2}%d${3}", x, y)))
-	res = extRe.ReplaceAll(res, []byte(fmt.Sprintf("${1}%d${2}%d${3}", w, h)))
+	res := offRe.ReplaceAll(xmlData, fmt.Appendf(nil, "${1}%d${2}%d${3}", x, y))
+	res = extRe.ReplaceAll(res, fmt.Appendf(nil, "${1}%d${2}%d${3}", w, h))
 	return res
 }
 

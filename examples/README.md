@@ -47,6 +47,7 @@ Use the following commands to run the examples:
 - `49-advanced-hyperlinks`: `go run ./examples/49-advanced-hyperlinks/main.go`
 - `56-action-api` (Smoke): `go run ./examples/56-action-api/action_smoke.go` -> `56_action_smoke.pptx`
 - `56-action-api` (API): `go run ./examples/56-action-api/action_api_smoke.go` -> `56_action_api_smoke.pptx`
+- `60-presentation-api-metadata`: `go run ./examples/60-presentation-api-metadata/main.go`
 
 ### Python Examples
 

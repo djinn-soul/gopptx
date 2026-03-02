@@ -98,11 +98,8 @@ func handleGetComments(e *PresentationEditor, payload json.RawMessage) (any, err
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -120,7 +117,7 @@ func handleAddComment(e *PresentationEditor, payload json.RawMessage) (any, erro
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
@@ -141,10 +138,6 @@ func handleAddComment(e *PresentationEditor, payload json.RawMessage) (any, erro
 		return nil, v.Error()
 	}
 
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return nil, v.Error()
-	}
-
 	if err := e.AddComment(slideIndex, authorID, text, x, y); err != nil {
 		return nil, err
 	}
@@ -158,7 +151,7 @@ func handleRemoveComment(e *PresentationEditor, payload json.RawMessage) (any, e
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
@@ -168,10 +161,6 @@ func handleRemoveComment(e *PresentationEditor, payload json.RawMessage) (any, e
 	}
 	authorIndex, ok := v.RequireInt(p, "author_index")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 

@@ -3,6 +3,7 @@ package editor
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -22,11 +23,8 @@ func handleListShapes(e *PresentationEditor, payload json.RawMessage) (any, erro
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -44,78 +42,18 @@ func handleAddShape(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
-	if !ok {
-		return nil, v.Error()
-	}
-	shapeType, ok := v.RequireString(p, "type")
-	if !ok {
-		return nil, v.Error()
-	}
-	x, ok := v.RequireFloat64(p, "x")
-	if !ok {
-		return nil, v.Error()
-	}
-	y, ok := v.RequireFloat64(p, "y")
-	if !ok {
-		return nil, v.Error()
-	}
-	w, ok := v.RequireFloat64(p, "w")
-	if !ok {
-		return nil, v.Error()
-	}
-	h, ok := v.RequireFloat64(p, "h")
-	if !ok {
-		return nil, v.Error()
-	}
-	text := v.OptionalString(p, "text")
-	var textFrame *common.TextFrame
-	if err := decodeOptionalPayloadValue(p, "text_frame", &textFrame); err != nil {
-		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
-	}
-	var clickAction *common.Hyperlink
-	if err := decodeOptionalPayloadValue(p, "click_action", &clickAction); err != nil {
-		return nil, fmt.Errorf("invalid click_action: %w", err)
-	}
-
-	var hoverAction *common.Hyperlink
-	if err := decodeOptionalPayloadValue(p, "hover_action", &hoverAction); err != nil {
-		return nil, fmt.Errorf("invalid hover_action: %w", err)
-	}
-
-	var runs []common.TextRun
-	if err := decodeOptionalPayloadValue(p, "runs", &runs); err != nil {
-		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return nil, v.Error()
-	}
-
-	id, err := e.AddShape(slideIndex, shapeType, x, y, w, h)
+	request, err := parseAddShapeRequest(e, p, v)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create properties update if provided
-	if text != "" || len(runs) > 0 || textFrame != nil || clickAction != nil || hoverAction != nil {
-		updates := common.ShapeUpdate{}
-		if text != "" {
-			updates.Text = &text
-		}
-		if len(runs) > 0 {
-			updates.Runs = &runs
-		}
-		if textFrame != nil {
-			updates.TextFrame = textFrame
-		}
-		if clickAction != nil {
-			updates.ClickAction = clickAction
-		}
-		if hoverAction != nil {
-			updates.HoverAction = hoverAction
-		}
-		if updateErr := e.UpdateShape(slideIndex, id, updates); updateErr != nil {
+	id, err := e.AddShape(request.slideIndex, request.shapeType, request.x, request.y, request.w, request.h)
+	if err != nil {
+		return nil, err
+	}
+
+	if updates, hasUpdates := buildShapeUpdateForAdd(request); hasUpdates {
+		if updateErr := e.UpdateShape(request.slideIndex, id, updates); updateErr != nil {
 			return nil, updateErr
 		}
 	}
@@ -129,16 +67,12 @@ func handleGetImageMetadata(e *PresentationEditor, payload json.RawMessage) (any
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	shapeID, ok := v.RequireInt(p, "shape_id")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -156,7 +90,7 @@ func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
@@ -178,10 +112,6 @@ func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error)
 		return nil, v.Error()
 	}
 
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return nil, v.Error()
-	}
-
 	imagePath := v.OptionalString(p, "path")
 	base64Data := v.OptionalString(p, "data")
 	format := v.OptionalString(p, "format")
@@ -194,16 +124,16 @@ func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error)
 	var newID int
 	if base64Data != "" {
 		if strings.TrimSpace(format) == "" {
-			return nil, fmt.Errorf("image format is required when image data is provided")
+			return nil, errors.New("image format is required when image data is provided")
 		}
 		if len(base64Data) > maxImageBase64 {
-			return nil, fmt.Errorf("image data too large")
+			return nil, errors.New("image data too large")
 		}
-		data, err := base64.StdEncoding.DecodeString(base64Data)
-		if err != nil {
-			return nil, fmt.Errorf("invalid base64: %w", err)
+		decodedData, decodeErr := base64.StdEncoding.DecodeString(base64Data)
+		if decodeErr != nil {
+			return nil, fmt.Errorf("invalid base64: %w", decodeErr)
 		}
-		newID, err = e.AddImageFromBytes(slideIndex, data, format, x, y, w, h, opts)
+		newID, err = e.AddImageFromBytes(slideIndex, decodedData, format, x, y, w, h, opts)
 	} else {
 		newID, err = e.AddImage(slideIndex, imagePath, x, y, w, h, opts)
 	}
@@ -221,16 +151,12 @@ func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, err
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	shapeID, ok := v.RequireInt(p, "shape_id")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -247,16 +173,12 @@ func handleMoveShapeToFront(e *PresentationEditor, payload json.RawMessage) (any
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	shapeID, ok := v.RequireInt(p, "shape_id")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -273,16 +195,12 @@ func handleMoveShapeToBack(e *PresentationEditor, payload json.RawMessage) (any,
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	shapeID, ok := v.RequireInt(p, "shape_id")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -299,16 +217,12 @@ func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, err
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	shapeID, ok := v.RequireInt(p, "shape_id")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -330,11 +244,8 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -352,7 +263,7 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
@@ -360,10 +271,6 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	if !ok {
 		return nil, v.Error()
 	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return nil, v.Error()
-	}
-
 	if err := e.SetNotes(slideIndex, text); err != nil {
 		return nil, err
 	}
@@ -371,147 +278,99 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 }
 
 func handleAddVideo(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
-	if !ok {
-		return nil, v.Error()
-	}
-	x, ok := v.RequireFloat64(p, "x")
-	if !ok {
-		return nil, v.Error()
-	}
-	y, ok := v.RequireFloat64(p, "y")
-	if !ok {
-		return nil, v.Error()
-	}
-	w, ok := v.RequireFloat64(p, "w")
-	if !ok {
-		return nil, v.Error()
-	}
-	h, ok := v.RequireFloat64(p, "h")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return nil, v.Error()
-	}
-
-	mimeType := v.OptionalString(p, "mime_type")
-
-	videoPath := v.OptionalString(p, "path")
-	videoBase64 := v.OptionalString(p, "data")
-	posterPath := v.OptionalString(p, "poster_path")
-	posterBase64 := v.OptionalString(p, "poster_data")
-
-	var videoData, posterData []byte
-	if videoBase64 != "" {
-		if len(videoBase64) > maxMediaBase64 {
-			return nil, fmt.Errorf("video data too large")
-		}
-		videoData, err = base64.StdEncoding.DecodeString(videoBase64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid video base64: %w", err)
-		}
-	}
-	if posterBase64 != "" {
-		if len(posterBase64) > maxMediaBase64 {
-			return nil, fmt.Errorf("poster data too large")
-		}
-		posterData, err = base64.StdEncoding.DecodeString(posterBase64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid poster base64: %w", err)
-		}
-	}
-
-	var newID int
-	if len(videoData) > 0 || len(posterData) > 0 {
-		newID, err = e.AddVideo(slideIndex, videoData, posterData, mimeType, x, y, w, h)
-	} else {
-		newID, err = e.AddVideoFromFile(slideIndex, videoPath, posterPath, mimeType, x, y, w, h)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	return map[string]int{"shape_id": newID}, nil
+	return handleMediaInsertCommand(e, payload, mediaInsertSpec{
+		metaKey:          "mime_type",
+		primaryPathKey:   "path",
+		primaryDataKey:   "data",
+		secondaryPathKey: "poster_path",
+		secondaryDataKey: "poster_data",
+		primaryMaxLen:    maxMediaBase64,
+		secondaryMaxLen:  maxMediaBase64,
+		primaryLabel:     "video",
+		secondaryLabel:   "poster",
+		insertBinary: func(
+			placement mediaPlacement,
+			mimeType string,
+			videoData []byte,
+			posterData []byte,
+		) (int, error) {
+			return e.AddVideo(
+				placement.slideIndex,
+				videoData,
+				posterData,
+				mimeType,
+				placement.x,
+				placement.y,
+				placement.w,
+				placement.h,
+			)
+		},
+		insertPath: func(
+			placement mediaPlacement,
+			mimeType string,
+			videoPath string,
+			posterPath string,
+		) (int, error) {
+			return e.AddVideoFromFile(
+				placement.slideIndex,
+				videoPath,
+				posterPath,
+				mimeType,
+				placement.x,
+				placement.y,
+				placement.w,
+				placement.h,
+			)
+		},
+	})
 }
 
 func handleAddOLEObject(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
-	if !ok {
-		return nil, v.Error()
-	}
-	x, ok := v.RequireFloat64(p, "x")
-	if !ok {
-		return nil, v.Error()
-	}
-	y, ok := v.RequireFloat64(p, "y")
-	if !ok {
-		return nil, v.Error()
-	}
-	w, ok := v.RequireFloat64(p, "w")
-	if !ok {
-		return nil, v.Error()
-	}
-	h, ok := v.RequireFloat64(p, "h")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return nil, v.Error()
-	}
-
-	progID := v.OptionalString(p, "prog_id")
-
-	objectPath := v.OptionalString(p, "path")
-	objectBase64 := v.OptionalString(p, "data")
-	iconPath := v.OptionalString(p, "icon_path")
-	iconBase64 := v.OptionalString(p, "icon_data")
-
-	var objectData, iconData []byte
-	if objectBase64 != "" {
-		if len(objectBase64) > maxEmbeddingBase64 {
-			return nil, fmt.Errorf("object data too large")
-		}
-		objectData, err = base64.StdEncoding.DecodeString(objectBase64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid object base64: %w", err)
-		}
-	}
-	if iconBase64 != "" {
-		if len(iconBase64) > maxEmbeddingBase64 {
-			return nil, fmt.Errorf("icon data too large")
-		}
-		iconData, err = base64.StdEncoding.DecodeString(iconBase64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid icon base64: %w", err)
-		}
-	}
-
-	var newID int
-	if len(objectData) > 0 || len(iconData) > 0 {
-		newID, err = e.AddOLEObject(slideIndex, objectData, iconData, progID, x, y, w, h)
-	} else {
-		newID, err = e.AddOLEObjectFromFile(slideIndex, objectPath, iconPath, progID, x, y, w, h)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	return map[string]int{"shape_id": newID}, nil
+	return handleMediaInsertCommand(e, payload, mediaInsertSpec{
+		metaKey:          "prog_id",
+		primaryPathKey:   "path",
+		primaryDataKey:   "data",
+		secondaryPathKey: "icon_path",
+		secondaryDataKey: "icon_data",
+		primaryMaxLen:    maxEmbeddingBase64,
+		secondaryMaxLen:  maxEmbeddingBase64,
+		primaryLabel:     "object",
+		secondaryLabel:   "icon",
+		insertBinary: func(
+			placement mediaPlacement,
+			progID string,
+			objectData []byte,
+			iconData []byte,
+		) (int, error) {
+			return e.AddOLEObject(
+				placement.slideIndex,
+				objectData,
+				iconData,
+				progID,
+				placement.x,
+				placement.y,
+				placement.w,
+				placement.h,
+			)
+		},
+		insertPath: func(
+			placement mediaPlacement,
+			progID string,
+			objectPath string,
+			iconPath string,
+		) (int, error) {
+			return e.AddOLEObjectFromFile(
+				placement.slideIndex,
+				objectPath,
+				iconPath,
+				progID,
+				placement.x,
+				placement.y,
+				placement.w,
+				placement.h,
+			)
+		},
+	})
 }
 
 func decodeOptionalPayloadValue(payload map[string]any, key string, target any) error {

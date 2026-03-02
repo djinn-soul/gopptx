@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
+	_ "image/gif"  // register GIF decoder for DecodeConfig metadata reads
+	_ "image/jpeg" // register JPEG decoder for DecodeConfig metadata reads
+	_ "image/png"  // register PNG decoder for DecodeConfig metadata reads
 	"path"
 	"regexp"
 	"strings"
@@ -16,40 +16,46 @@ import (
 )
 
 // AddImage adds a new image to the slide from a local file path with optional parameters.
-func (e *PresentationEditor) AddImage(slideIndex int, imagePath string, x, y, w, h float64, opts *common.ShapeUpdate) (int, error) {
+func (e *PresentationEditor) AddImage(
+	slideIndex int,
+	imagePath string,
+	x, y, w, h float64,
+	opts *common.ShapeUpdate,
+) (int, error) {
 	return e.addImageGeneric(slideIndex, imagePath, nil, "", x, y, w, h, opts)
 }
 
 // AddImageFromBytes adds a new image to the slide from raw data.
-func (e *PresentationEditor) AddImageFromBytes(slideIndex int, data []byte, format string, x, y, w, h float64, opts *common.ShapeUpdate) (int, error) {
+func (e *PresentationEditor) AddImageFromBytes(
+	slideIndex int,
+	data []byte,
+	format string,
+	x, y, w, h float64,
+	opts *common.ShapeUpdate,
+) (int, error) {
 	return e.addImageGeneric(slideIndex, "", data, format, x, y, w, h, opts)
 }
 
-func (e *PresentationEditor) addImageGeneric(slideIndex int, imagePath string, data []byte, format string, x, y, w, h float64, opts *common.ShapeUpdate) (int, error) {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return 0, errors.New("slide index out of range")
+func (e *PresentationEditor) addImageGeneric(
+	slideIndex int,
+	imagePath string,
+	data []byte,
+	format string,
+	x, y, w, h float64,
+	opts *common.ShapeUpdate,
+) (int, error) {
+	if err := validateMediaSlideIndex(e, slideIndex); err != nil {
+		return 0, err
 	}
 	if len(data) > 0 && strings.TrimSpace(format) == "" {
 		return 0, errors.New("image format is required when adding image bytes")
 	}
 
-	// 1. Register image in media inventory and part store
-	var relID string
-	var err error
-	if len(data) > 0 {
-		partPath, err2 := e.RegisterImage(data, format)
-		if err2 != nil {
-			return 0, err2
-		}
-		relID, err = e.getOrCreateSlideRel(slideIndex, partPath)
-	} else {
-		relID, err = e.getOrCreateImageRelID(slideIndex, imagePath)
-	}
+	relID, err := resolveAddImageRelID(e, slideIndex, imagePath, data, format)
 	if err != nil {
 		return 0, fmt.Errorf("register image: %w", err)
 	}
 
-	// 2. Generate image XML
 	slideRef := e.slides[slideIndex]
 	content, ok := e.parts.Get(slideRef.Part)
 	if !ok {
@@ -59,65 +65,12 @@ func (e *PresentationEditor) addImageGeneric(slideIndex int, imagePath string, d
 	maxID := maxObjectID(content)
 	newID := maxID + 1
 
-	name := fmt.Sprintf("Picture %d", newID)
-
-	// Build blip XML
-	blipXML := fmt.Sprintf(`<a:blip r:embed="%s"/>`, relID)
-	srcRectXML := ""
-	if opts != nil && opts.Crop != nil {
-		c := opts.Crop
-		srcRectXML = fmt.Sprintf(`<a:srcRect l="%d" r="%d" t="%d" b="%d"/>`,
-			int(c.Left*100000), int(c.Right*100000), int(c.Top*100000), int(c.Bottom*100000))
+	imageXML := buildImageShapeXML(newID, relID, x, y, w, h, opts)
+	updatedContent, err := appendShapeXMLToSlide(content, imageXML)
+	if err != nil {
+		return 0, err
 	}
-
-	// Build xfrm XML with rotation/flip
-	xfrmAttr := ""
-	if opts != nil {
-		if opts.Rotation != nil {
-			xfrmAttr += fmt.Sprintf(` rot="%d"`, int(*opts.Rotation*60000))
-		}
-		if opts.FlipH != nil && *opts.FlipH {
-			xfrmAttr += ` flipH="1"`
-		}
-		if opts.FlipV != nil && *opts.FlipV {
-			xfrmAttr += ` flipV="1"`
-		}
-	}
-
-	imageXML := fmt.Sprintf(`
-<p:pic>
-  <p:nvPicPr>
-    <p:cNvPr id="%d" name="%s"/>
-    <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
-    <p:nvPr/>
-  </p:nvPicPr>
-  <p:blipFill>
-    %s
-    %s
-    <a:stretch><a:fillRect/></a:stretch>
-  </p:blipFill>
-  <p:spPr>
-    <a:xfrm%s>
-      <a:off x="%d" y="%d"/>
-      <a:ext cx="%d" cy="%d"/>
-    </a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-  </p:spPr>
-</p:pic>`, newID, name, blipXML, srcRectXML, xfrmAttr, int64(x), int64(y), int64(w), int64(h))
-
-	// 3. Update slide XML
-	endTree := []byte("</p:spTree>")
-	idx := bytes.LastIndex(content, endTree)
-	if idx == -1 {
-		return 0, errors.New("invalid slide xml: missing spTree end")
-	}
-
-	var buf bytes.Buffer
-	buf.Write(content[:idx])
-	buf.WriteString(imageXML)
-	buf.Write(content[idx:])
-
-	e.parts.Set(slideRef.Part, buf.Bytes())
+	e.parts.Set(slideRef.Part, updatedContent)
 
 	return newID, nil
 }

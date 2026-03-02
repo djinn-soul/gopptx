@@ -47,16 +47,24 @@ func TestPathHelpers(t *testing.T) {
 func TestParsingHelpers(t *testing.T) {
 	t.Run("ParseRelationshipNumber", func(t *testing.T) {
 		n, ok := ParseRelationshipNumber("rId5")
-		if !ok || n != 5 { t.Error("ParseRelationshipNumber failed") }
+		if !ok || n != 5 {
+			t.Error("ParseRelationshipNumber failed")
+		}
 		_, ok = ParseRelationshipNumber("invalid")
-		if ok { t.Error("ParseRelationshipNumber should fail") }
+		if ok {
+			t.Error("ParseRelationshipNumber should fail")
+		}
 	})
 
 	t.Run("ParseSlidePartNumber", func(t *testing.T) {
 		n, ok := ParseSlidePartNumber("ppt/slides/slide12.xml")
-		if !ok || n != 12 { t.Error("ParseSlidePartNumber failed") }
+		if !ok || n != 12 {
+			t.Error("ParseSlidePartNumber failed")
+		}
 		_, ok = ParseSlidePartNumber("invalid.xml")
-		if ok { t.Error("ParseSlidePartNumber should fail") }
+		if ok {
+			t.Error("ParseSlidePartNumber should fail")
+		}
 	})
 }
 

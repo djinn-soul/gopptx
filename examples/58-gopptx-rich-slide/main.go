@@ -59,7 +59,7 @@ func main() {
 
 	slide.AddAnimation(
 		animations.NewAnimation(1, animations.AnimationEntranceFade).
-			WithTrigger(animations.AnimationWithPrevious).
+			WithTrigger(animations.AnimationOnClick).
 			WithDelay(250),
 	)
 	slide.AddAnimationDefinition(

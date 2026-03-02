@@ -3,7 +3,6 @@ package editor
 import (
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -129,61 +128,75 @@ func replaceFieldContent(seriesXML, fieldTag, formula string, strVals []string, 
 		return "", fmt.Errorf("missing %s node", fieldTag)
 	}
 
-	updatedField := field
-	formulaNode := xmlFormulaPattern.FindString(field)
-	if formula != "" && formulaNode == "" {
-		// Formula was provided but no formula node found - log warning but continue
-		// This may be intentional for charts without formulas
-		log.Printf("WARNING: replaceFieldContent: formula provided but no formula node found for field %s", fieldTag)
-	}
-	if formulaNode != "" {
-		updatedField = strings.Replace(field, formulaNode, "<c:f>"+common.XMLEscape(formula)+"</c:f>", 1)
-	}
-
+	updatedField := applyFieldFormula(field, formula)
+	var err error
 	switch {
 	case len(strVals) > 0:
-		switch {
-		case strCachePattern.MatchString(updatedField):
-			updatedField = strCachePattern.ReplaceAllString(updatedField, buildStringData("strCache", strVals))
-		case strLitPattern.MatchString(updatedField):
-			updatedField = strLitPattern.ReplaceAllString(updatedField, buildStringData("strLit", strVals))
-		case numCachePattern.MatchString(updatedField):
-			numValsFromCats := make([]float64, 0, len(strVals))
-			for _, s := range strVals {
-				f, err := strconv.ParseFloat(s, 64)
-				if err != nil {
-					return "", fmt.Errorf("category %q cannot be represented in numeric cache", s)
-				}
-				numValsFromCats = append(numValsFromCats, f)
-			}
-			updatedField = numCachePattern.ReplaceAllString(updatedField, buildNumberData("numCache", numValsFromCats))
-		case numLitPattern.MatchString(updatedField):
-			numValsFromCats := make([]float64, 0, len(strVals))
-			for _, s := range strVals {
-				f, err := strconv.ParseFloat(s, 64)
-				if err != nil {
-					return "", fmt.Errorf("category %q cannot be represented in numeric literal", s)
-				}
-				numValsFromCats = append(numValsFromCats, f)
-			}
-			updatedField = numLitPattern.ReplaceAllString(updatedField, buildNumberData("numLit", numValsFromCats))
-		default:
-			return "", fmt.Errorf("missing data node for %s", fieldTag)
-		}
+		updatedField, err = applyStringValues(fieldTag, updatedField, strVals)
 	case len(numVals) > 0:
-		switch {
-		case numCachePattern.MatchString(updatedField):
-			updatedField = numCachePattern.ReplaceAllString(updatedField, buildNumberData("numCache", numVals))
-		case numLitPattern.MatchString(updatedField):
-			updatedField = numLitPattern.ReplaceAllString(updatedField, buildNumberData("numLit", numVals))
-		default:
-			return "", fmt.Errorf("missing numeric data node for %s", fieldTag)
-		}
+		updatedField, err = applyNumericValues(fieldTag, updatedField, numVals)
 	default:
-		return "", fmt.Errorf("no values provided for %s", fieldTag)
+		err = fmt.Errorf("no values provided for %s", fieldTag)
+	}
+	if err != nil {
+		return "", err
 	}
 
 	return strings.Replace(seriesXML, field, updatedField, 1), nil
+}
+
+func applyFieldFormula(field string, formula string) string {
+	formulaNode := xmlFormulaPattern.FindString(field)
+	if formulaNode == "" {
+		return field
+	}
+	return strings.Replace(field, formulaNode, "<c:f>"+common.XMLEscape(formula)+"</c:f>", 1)
+}
+
+func applyStringValues(fieldTag string, field string, strVals []string) (string, error) {
+	switch {
+	case strCachePattern.MatchString(field):
+		return strCachePattern.ReplaceAllString(field, buildStringData("strCache", strVals)), nil
+	case strLitPattern.MatchString(field):
+		return strLitPattern.ReplaceAllString(field, buildStringData("strLit", strVals)), nil
+	case numCachePattern.MatchString(field):
+		numeric, err := convertStringsToFloats(strVals, "numeric cache")
+		if err != nil {
+			return "", err
+		}
+		return numCachePattern.ReplaceAllString(field, buildNumberData("numCache", numeric)), nil
+	case numLitPattern.MatchString(field):
+		numeric, err := convertStringsToFloats(strVals, "numeric literal")
+		if err != nil {
+			return "", err
+		}
+		return numLitPattern.ReplaceAllString(field, buildNumberData("numLit", numeric)), nil
+	default:
+		return "", fmt.Errorf("missing data node for %s", fieldTag)
+	}
+}
+
+func applyNumericValues(fieldTag string, field string, numVals []float64) (string, error) {
+	switch {
+	case numCachePattern.MatchString(field):
+		return numCachePattern.ReplaceAllString(field, buildNumberData("numCache", numVals)), nil
+	case numLitPattern.MatchString(field):
+		return numLitPattern.ReplaceAllString(field, buildNumberData("numLit", numVals)), nil
+	default:
+		return "", fmt.Errorf("missing numeric data node for %s", fieldTag)
+	}
+}
+
+func convertStringsToFloats(strVals []string, dest string) ([]float64, error) {
+	values := make([]float64, 0, len(strVals))
+	for _, s := range strVals {
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return nil, fmt.Errorf("category %q cannot be represented in %s", s, dest)
+		}
+		values = append(values, f)
+	}
+	return values, nil
 }
 
 func buildStringData(tag string, vals []string) string {

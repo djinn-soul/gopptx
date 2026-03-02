@@ -261,8 +261,6 @@ type ShapeProps struct {
 	// Add other properties as needed for Phase 1
 }
 
-// ShapeUpdate defines fields that can be updated on a shape.
-// Pointers are used to indicate which fields are being updated (non-nil).
 // TextFrame defines formatting properties for the text body container within a shape.
 type TextFrame struct {
 	MarginTop     *int    `json:"margin_top,omitempty"`

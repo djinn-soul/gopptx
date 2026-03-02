@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -87,18 +88,20 @@ func TestWritePresentationPackage_Full(t *testing.T) {
 		RTL: true,
 		VBA: &vba.VBAProject{},
 	}
+	soundPath := filepath.Join(t.TempDir(), "sound.wav")
 
 	slides := []elements.SlideContent{
 		elements.NewSlide("S1").
 			AddImage(shapes.Image{Data: []byte("fake"), Format: "png"}).
 			WithBarChart(charts.BarChart{Categories: []string{"A"}, Values: []float64{1}}).
 			AddSmartArt(smartart.NewSmartArt(smartart.BasicBlockList)).
-			WithTransitionSound("sound.wav"),
+			WithTransitionSound(soundPath),
 	}
 
-	// Create dummy sound file
-	_ = os.WriteFile("sound.wav", []byte("dummy"), 0600)
-	defer os.Remove("sound.wav")
+	// Create dummy sound file in temp test workspace.
+	if err := os.WriteFile(soundPath, []byte("dummy"), 0o600); err != nil {
+		t.Fatalf("write transition sound fixture: %v", err)
+	}
 
 	err := WritePresentationPackage(zw, meta, slides, 1)
 	if err != nil {

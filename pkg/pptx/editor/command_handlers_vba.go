@@ -3,7 +3,7 @@ package editor
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
@@ -34,7 +34,7 @@ func handleAddVba(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	} else {
 		project, ok = e.metadata.VBA.(*vba.VBAProject)
 		if !ok {
-			return nil, fmt.Errorf("invalid VBA metadata type")
+			return nil, errors.New("invalid VBA metadata type")
 		}
 	}
 	project.SetData(data)
