@@ -61,9 +61,13 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 		return nil, v.Error()
 	}
 
-	phIndex, ok := v.RequireInt(p, "ph_index")
-	if !ok {
-		return nil, v.Error()
+	var phIndex int
+	if val, ok := v.OptionalInt(p, "index"); ok {
+		phIndex = val
+	} else if val, ok := v.OptionalInt(p, "ph_index"); ok {
+		phIndex = val
+	} else {
+		return nil, NewBridgeError(ErrCodeMissingField, "missing index or ph_index")
 	}
 
 	// We support "text", "image_path", "text_style" inside the payload

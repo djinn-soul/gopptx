@@ -3,6 +3,8 @@ package editor
 import (
 	"strings"
 	"testing"
+
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 func TestParseSlideShapes(t *testing.T) {
@@ -74,10 +76,17 @@ func TestRenderShapeXML(t *testing.T) {
 		H:    100,
 	}
 
-	xmlBytes := renderShapeXML(s)
+	// Create a minimal editor instance to call the method
+	e := &PresentationEditor{
+		nextRelIDNum: 1,
+	}
+	xmlBytes, err := e.renderShapeXML("ppt/slides/slide1.xml", s)
+	if err != nil {
+		t.Fatalf("renderShapeXML failed: %v", err)
+	}
 	xmlStr := string(xmlBytes)
 
-	if !strings.Contains(xmlStr, `<p:cNvPr id="10" name="Test Shape"/>`) {
+	if !strings.Contains(xmlStr, `<p:cNvPr id="10" name="Test Shape">`) {
 		t.Errorf("rendered XML missing ID/Name: %s", xmlStr)
 	}
 	if !strings.Contains(xmlStr, `<a:t>Updated Text</a:t>`) {
@@ -85,6 +94,65 @@ func TestRenderShapeXML(t *testing.T) {
 	}
 	if !strings.Contains(xmlStr, `x="50" y="60"`) {
 		t.Errorf("rendered XML missing pos: %s", xmlStr)
+	}
+}
+
+func TestReplaceShapeClickActionPreservesExistingCNvPrChildren(t *testing.T) {
+	xmlIn := []byte(
+		`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Shape 1"><a:extLst><a:ext uri="{A}"/></a:extLst><a:hlinkClick action="ppaction://old"/></p:cNvPr></p:nvSpPr></p:sp>`,
+	)
+	action := "ppaction://hlinksldjump"
+	clickAction := &common.Hyperlink{Action: &action}
+
+	got, err := replaceShapeClickAction(&PresentationEditor{}, "ppt/slides/slide1.xml", xmlIn, clickAction)
+	if err != nil {
+		t.Fatalf("replaceShapeClickAction failed: %v", err)
+	}
+	out := string(got)
+
+	if !strings.Contains(out, `<a:extLst><a:ext uri="{A}"/></a:extLst>`) {
+		t.Fatalf("existing cNvPr child extension list was not preserved: %s", out)
+	}
+	if strings.Contains(out, `action="ppaction://old"`) {
+		t.Fatalf("stale hyperlink click action was not removed: %s", out)
+	}
+	if !strings.Contains(out, `action="ppaction://hlinksldjump"`) {
+		t.Fatalf("new hyperlink click action missing: %s", out)
+	}
+}
+
+func TestBuildClickActionXMLCreatesSlideRelsWhenMissing(t *testing.T) {
+	parts := NewPartStore()
+	e := &PresentationEditor{parts: parts}
+	addr := "https://example.com"
+
+	xml, err := e.buildClickActionXML("ppt/slides/slide1.xml", &common.Hyperlink{Address: &addr})
+	if err != nil {
+		t.Fatalf("buildClickActionXML failed: %v", err)
+	}
+	if !strings.Contains(xml, `r:id="rId1"`) {
+		t.Fatalf("expected hyperlink xml to reference rId1, got: %s", xml)
+	}
+	rels, ok := parts.Get(common.SlideRelsPartName("ppt/slides/slide1.xml"))
+	if !ok {
+		t.Fatal("expected slide rels part to be created")
+	}
+	if !strings.Contains(string(rels), "/relationships/hyperlink") {
+		t.Fatalf("expected hyperlink relationship in rels part, got: %s", string(rels))
+	}
+}
+
+func TestReplaceShapeClickActionErrorsWithoutCNvPr(t *testing.T) {
+	xmlIn := []byte(`<p:sp><p:spPr/></p:sp>`)
+	action := "ppaction://hlinksldjump"
+	clickAction := &common.Hyperlink{Action: &action}
+
+	_, err := replaceShapeClickAction(&PresentationEditor{}, "ppt/slides/slide1.xml", xmlIn, clickAction)
+	if err == nil {
+		t.Fatal("expected error when cNvPr is missing for click action update")
+	}
+	if !strings.Contains(err.Error(), "no cNvPr") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

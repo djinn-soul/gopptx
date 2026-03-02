@@ -3,9 +3,27 @@
 from __future__ import annotations
 
 try:
-    from typing import TypedDict
+    from typing import NotRequired, TypedDict
 except ImportError:  # pragma: no cover
-    from typing_extensions import TypedDict
+    from typing_extensions import NotRequired, TypedDict
+
+
+def Emu(value: int) -> int:
+    """English Metric Unit."""
+    return int(value)
+
+
+def Inches(value: float) -> int:
+    """Inches to EMUs."""
+    return int(value * 914400)
+
+
+def Point(value: float) -> int:
+    """Points to EMUs."""
+    return int(value * 12700)
+
+
+RGBColor = str  # Hex string like 'FF0000'
 
 
 class SlideSize(TypedDict):
@@ -39,16 +57,95 @@ class CoreProperties(TypedDict, total=False):
     contentStatus: str
 
 
+class TextFrame(TypedDict, total=False):
+    """Text frame settings."""
+
+    margin_top: int
+    margin_bottom: int
+    margin_left: int
+    margin_right: int
+    word_wrap: bool
+    auto_fit: bool
+    auto_fit_type: str
+    vertical_align: str
+
+
 class ShapeProps(TypedDict, total=False):
     """Shape properties."""
 
     name: str
+    text_frame: TextFrame
+    click_action: Hyperlink
+    crop: ImageCrop
+    rotation: float
+    flip_h: bool
+    flip_v: bool
+
+
+class ImageMetadata(TypedDict):
+    """Basic image properties returned by the bridge."""
+
+    width: int
+    height: int
+    format: str
+    hash: NotRequired[str]
+
+
+class ImageCrop(TypedDict, total=False):
+    """Cropping offsets (0.0 to 1.0)."""
+
+    left: float
+    right: float
+    top: float
+    bottom: float
+
+
+class Hyperlink(TypedDict, total=False):
+    """Hyperlink properties."""
+
+    address: str
+    action: str
+    tooltip: str
+    target_slide: int
+    jump: str
+    macro: str
+    history: bool
+    highlight_click: bool
+    end_sound: bool
+
+
+class TextRun(TypedDict, total=False):
+    """Text run properties."""
+
+    text: str
+    bold: bool
+    italic: bool
+    underline: str
+    strikethrough: str
+    subscript: bool
+    superscript: bool
+    color: str
+    highlight: str
+    font: str
+    size_pt: int
+    code: bool
+    all_caps: bool
+    small_caps: bool
+    hyperlink: Hyperlink
+    hover_action: Hyperlink
 
 
 class ShapeUpdate(TypedDict, total=False):
     """Shape update parameters."""
 
     text: str
+    runs: list[TextRun]
+    text_frame: TextFrame
+    click_action: Hyperlink
+    crop: ImageCrop
+    rotation: float
+    flip_h: bool
+    flip_v: bool
     x: int
     y: int
     w: int

@@ -228,7 +228,7 @@ class PresentationRuntimeMixin:
         with self._lock:
             if self._handle:
                 self.close()
-            handle = cast("int", self._lib.deck_open(path.encode("utf-8")))  # type: ignore[attr-defined]
+            handle = cast("int", self._lib.deck_open(str(path).encode("utf-8")))  # type: ignore[attr-defined]
             if not handle:
                 err_ptr = self._lib.deck_global_error()  # type: ignore[attr-defined]
                 msg = (
@@ -247,7 +247,7 @@ class PresentationRuntimeMixin:
         with self._lock:
             if not self._handle:
                 raise GopptxError("Presentation is not open.")
-            status = self._lib.deck_save(self._handle, path.encode("utf-8"))  # type: ignore[attr-defined]
+            status = self._lib.deck_save(self._handle, str(path).encode("utf-8"))  # type: ignore[attr-defined]
             if status != 0:
                 raise GopptxError(f"Failed to save deck: {self._get_last_error()}")
 

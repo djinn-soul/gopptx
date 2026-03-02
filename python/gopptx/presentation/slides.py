@@ -173,7 +173,7 @@ class PresentationSlidesMixin(
         """Bridge op: insert rich content into a placeholder."""
         payload: dict[str, object] = {
             "slide_index": slide_index,
-            "ph_index": ph_index,
+            "index": ph_index,
             "ph_type": ph_type,
         }
         if text is not None:

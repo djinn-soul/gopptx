@@ -405,6 +405,8 @@ func parseFloat(v any) (float64, bool) {
 		return float64(val), true
 	case int64:
 		return float64(val), true
+	case int32:
+		return float64(val), true
 	case float32:
 		return float64(val), true
 	}

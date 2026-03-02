@@ -3,6 +3,7 @@ package editor
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
@@ -53,7 +54,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 		resMap := res.(map[string]int)
 		idx := resMap["index"]
 
-		remPayload := []byte(`{"index": ` + string(rune('0'+idx)) + `}`)
+		remPayload := []byte(`{"index": ` + strconv.Itoa(idx) + `}`)
 		_, err = handleRemoveCustomXML(e, remPayload)
 		if err != nil {
 			t.Fatalf("handleRemoveCustomXML failed: %v", err)
@@ -100,7 +101,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 		if listResp == nil { t.Error("expected shape list") }
 
 		// Update Shape
-		upPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+shapeID)) + `, "updates": {"text": "New Text"}}`)
+		upPayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(shapeID) + `, "updates": {"text": "New Text"}}`)
 		_, err = handleUpdateShape(e, upPayload)
 		if err != nil { t.Fatalf("handleUpdateShape failed: %v", err) }
 
@@ -110,7 +111,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 		if err != nil { t.Fatalf("handleSearchShapes failed: %v", err) }
 
 		// Move Shapes
-		movePayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+shapeID)) + `}`)
+		movePayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(shapeID) + `}`)
 		_, _ = handleMoveShapeToFront(e, movePayload)
 		_, _ = handleMoveShapeToBack(e, movePayload)
 
@@ -126,15 +127,18 @@ func TestCommandHandlers_Content(t *testing.T) {
 
 		imgPayload := []byte(`{"slide_index": 1, "path": "` + filepath.ToSlash(dummyImg) + `", "x": 0.0, "y": 0.0, "w": 50.0, "h": 50.0}`)
 		_, _ = handleAddImage(e, imgPayload) // ignore error as fake-png-data might fail decoding, but it hits the path
+
+		imgBytesNoFormatPayload := []byte(`{"slide_index": 1, "data": "AQID", "x": 0.0, "y": 0.0, "w": 50.0, "h": 50.0}`)
+		_, err = handleAddImage(e, imgBytesNoFormatPayload)
+		if err == nil {
+			t.Fatal("expected handleAddImage to reject byte payload without format")
+		}
 	})
 
 	t.Run("CommentsAndNotes", func(t *testing.T) {
 		// Needs an author first
 		authPayload := []byte(`{"name": "Commenter", "initials": "C"}`)
 		_, _ = handleAddAuthor(e, authPayload)
-
-		// Note: Using string(rune('0'+authorID)) only works for single digits,
-		// but since it's the second author, it will be 2 or 3, so it's fine for this mock.
 
 		// Add comment
 		addComPayload := []byte(`{"slide_index": 1, "author_id": 2, "text": "Comment", "x": 10, "y": 10}`)
@@ -162,27 +166,27 @@ func TestCommandHandlers_Content(t *testing.T) {
 		tableID := resMap["shape_id"]
 
 		// Get Table
-		getPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `}`)
+		getPayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(tableID) + `}`)
 		_, err = handleGetTable(e, getPayload)
 		if err != nil { t.Fatalf("handleGetTable failed: %v", err) }
 
 		// Update Table Cell
-		updPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "row": 0, "col": 0, "updates": {"text": "Cell 0,0"}}`)
+		updPayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(tableID) + `, "row": 0, "col": 0, "updates": {"text": "Cell 0,0"}}`)
 		_, err = handleUpdateTableCell(e, updPayload)
 		if err != nil { t.Fatalf("handleUpdateTableCell failed: %v", err) }
 
 		// Update Table Flags
-		flagsPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "flags": {"first_row": true}}`)
+		flagsPayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(tableID) + `, "flags": {"first_row": true}}`)
 		_, err = handleUpdateTableFlags(e, flagsPayload)
 		if err != nil { t.Fatalf("handleUpdateTableFlags failed: %v", err) }
 
 		// Merge Cells
-		mergePayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "row1": 0, "col1": 0, "row2": 1, "col2": 1}`)
+		mergePayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(tableID) + `, "row1": 0, "col1": 0, "row2": 1, "col2": 1}`)
 		_, err = handleMergeTableCells(e, mergePayload)
 		if err != nil { t.Fatalf("handleMergeTableCells failed: %v", err) }
 
 		// Split Cell
-		splitPayload := []byte(`{"slide_index": 1, "shape_id": ` + string(rune('0'+tableID)) + `, "row": 0, "col": 0}`)
+		splitPayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(tableID) + `, "row": 0, "col": 0}`)
 		_, err = handleSplitTableCell(e, splitPayload)
 		if err != nil { t.Fatalf("handleSplitTableCell failed: %v", err) }
 	})
