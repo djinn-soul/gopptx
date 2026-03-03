@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .notes_slide import NotesSlide
 from .placeholder_mixin import SlidePlaceholderMixin
 from .table import Table
 
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
         TableCellInfo,
         TableInfo,
     )
+    from .freeform_builder import FreeformBuilder
 
 
 class SlideShapeMixin:
@@ -40,6 +42,56 @@ class SlideShapeMixin:
     ) -> int:
         """Add a shape to this slide."""
         return self._presentation.add_shape(self.index, shape_type, bounds, **kwargs)
+
+    def add_textbox(
+        self,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a textbox-like shape to this slide."""
+        return self._presentation.add_textbox(
+            self.index, left, top, width, height, text=text, **kwargs
+        )
+
+    def add_connector(
+        self,
+        connector_type: str,
+        begin_x: float,
+        begin_y: float,
+        end_x: float,
+        end_y: float,
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a connector-like shape to this slide."""
+        return self._presentation.add_connector(
+            self.index,
+            connector_type,
+            begin_x,
+            begin_y,
+            end_x,
+            end_y,
+            **kwargs,
+        )
+
+    def add_group_shape(self, shapes: list[int] | None = None) -> int:
+        """Placeholder for python-pptx parity; not currently supported."""
+        return self._presentation.add_group_shape(self.index, shapes=shapes)
+
+    def build_freeform(
+        self,
+        start_x: float = 0,
+        start_y: float = 0,
+        scale: tuple[float, float] | float = 1.0,
+    ) -> FreeformBuilder:
+        """Create a freeform builder for this slide."""
+        return self._presentation.build_freeform(
+            self.index, start_x=start_x, start_y=start_y, scale=scale
+        )
 
     def add_image(
         self,
@@ -163,6 +215,16 @@ class SlideBase:
     def notes(self, value: str) -> None:
         self._presentation.set_notes(self.index, value)
 
+    @property
+    def notes_slide(self) -> NotesSlide | None:
+        """Return a notes-slide proxy, or None when notes slide is absent."""
+        if self._presentation is None or self.index < 0:
+            return None
+        notes_payload = self._presentation._get_notes_payload(self.index)
+        if notes_payload.get("notes_slide") is None:
+            return None
+        return NotesSlide(self)
+
 
 class SlideChartMixin:
     """Mixin providing chart-related methods for Slide objects."""
@@ -212,7 +274,7 @@ class SlideTableMixin:
         return self._presentation.get_table(self.index, shape_id)
 
     def table(self, shape_id: int) -> Table:
-        """Returns a Table object for the given shape_id, providing a Pythonic grid API."""
+        """Return a Table object for shape_id with a Pythonic grid API."""
         return Table(self._presentation, self.index, shape_id)
 
     def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
@@ -236,6 +298,16 @@ class SlideTableMixin:
     def split_table_cell(self, shape_id: int, row: int, col: int) -> None:
         """Split a merged table cell."""
         self._presentation.split_table_cell(self.index, shape_id, row, col)
+
+    def set_table_style(self, shape_id: int, style_guid: str) -> None:
+        """Apply a table style to a table.
+
+        The style_guid must be a valid PowerPoint table style GUID, e.g.:
+            "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+            "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+            "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+        """
+        self._presentation.set_table_style(self.index, shape_id, style_guid)
 
 
 class Slide(

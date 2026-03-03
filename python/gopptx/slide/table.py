@@ -206,3 +206,27 @@ class Table:
     @has_banded_rows.setter
     def has_banded_rows(self, value: bool) -> None:
         self._update_flags({"band_row": value})
+
+    # Table Style
+    def apply_style(self, style_guid: str) -> None:
+        """Apply a table style to the table.
+
+        Args:
+            style_guid: A valid PowerPoint table style GUID, e.g.:
+                "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+                "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+                "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+                "{3C2FF68D-0BFD-4DAC-8644-511001392665}" - Light Style 2 - Accent 1
+                "{F370B699-2CC9-41A6-8B99-48FF35B8A595}" - Light Shading
+                "{4EC70C17-9B8C-4085-A1A2-671F7FA0C7DD}" - Medium Shading 2 - Accent 1
+        """
+        self.prs.execute(
+            ops.OP_SET_TABLE_STYLE,
+            {
+                "slide_index": self.slide_index,
+                "shape_id": self.shape_id,
+                "style_guid": style_guid,
+            },
+        )
+        if not getattr(self.prs, "_batch_active", False):
+            self.invalidate_cache()

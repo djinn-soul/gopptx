@@ -45,6 +45,26 @@ func (e *PresentationEditor) GetNotes(slideIndex int) (string, error) {
 	return extractAllText(data), nil
 }
 
+// HasNotesSlide reports whether a slide currently has a notes-slide relationship.
+func (e *PresentationEditor) HasNotesSlide(slideIndex int) (bool, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return false, errors.New("slide index out of range")
+	}
+
+	ref := e.slides[slideIndex]
+	rels, err := e.slideRelationships(ref.Part)
+	if err != nil {
+		return false, err
+	}
+
+	for _, rel := range rels {
+		if rel.Type == common.RelTypeNotesSlide {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // SetNotes updates or creates the speaker notes for a specific slide.
 func (e *PresentationEditor) SetNotes(slideIndex int, textContent string) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {

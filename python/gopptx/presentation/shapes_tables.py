@@ -8,6 +8,10 @@ from typing import TYPE_CHECKING, cast
 
 from .. import ops
 from ..api_errors import GopptxError
+from ..slide.freeform_builder import FreeformBuilder
+from ..slide.text_frame import serialize_text_frame_for_payload
+from ..slide.text_paragraph import serialize_paragraph_for_payload
+from ..slide.text_run import serialize_runs_for_payload
 from ..utils import normalize_table_index
 from .helpers import PresentationProtocol
 
@@ -32,9 +36,16 @@ else:
 class PresentationNotesMixin(PresentationProtocol):
     """Mixin providing speaker notes methods."""
 
+    def _get_notes_payload(self, slide_index: int) -> dict[str, object]:
+        """Fetch raw notes payload from bridge with null-safe fallback."""
+        result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
+        if not isinstance(result, dict):
+            return {"text": "", "notes_slide": None}
+        return result
+
     def get_notes(self, slide_index: int) -> str:
         """Get speaker notes for a slide."""
-        result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
+        result = self._get_notes_payload(slide_index)
         return str(cast("str", result.get("text", "")))
 
     def set_notes(self, slide_index: int, text: str) -> None:
@@ -94,7 +105,9 @@ class PresentationShapeMixin(PresentationProtocol):
         text = kwargs.get("text")
         runs = kwargs.get("runs")
         text_frame = kwargs.get("text_frame")
+        paragraph = kwargs.get("paragraph")
         click_action = kwargs.get("click_action")
+        hover_action = kwargs.get("hover_action")
         properties = kwargs.get("properties")
         payload: dict[str, object] = {
             "slide_index": slide_index,
@@ -107,14 +120,176 @@ class PresentationShapeMixin(PresentationProtocol):
         if text is not None:
             payload["text"] = text
         if runs is not None:
-            payload["runs"] = runs
+            payload["runs"] = serialize_runs_for_payload(runs)
         if text_frame is not None:
-            payload["text_frame"] = cast("dict[str, object]", text_frame)
+            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
+        if paragraph is not None:
+            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
         if click_action is not None:
             payload["click_action"] = cast("dict[str, object]", click_action)
+        if hover_action is not None:
+            payload["hover_action"] = cast("dict[str, object]", hover_action)
         if properties is not None:
             payload["properties"] = properties
         result = self.execute(ops.OP_ADD_SHAPE, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_textbox(
+        self,
+        slide_index: int,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a textbox-like shape to a slide."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "left": left,
+            "top": top,
+            "width": width,
+            "height": height,
+        }
+        if text:
+            payload["text"] = text
+        for key in (
+            "runs",
+            "text_frame",
+            "paragraph",
+            "click_action",
+            "hover_action",
+            "properties",
+        ):
+            if key in kwargs and kwargs[key] is not None:
+                value = cast("object", kwargs[key])
+                payload[key] = (
+                    serialize_runs_for_payload(value)
+                    if key == "runs"
+                    else (
+                        serialize_text_frame_for_payload(value)
+                        if key == "text_frame"
+                        else (
+                            serialize_paragraph_for_payload(value)
+                            if key == "paragraph"
+                            else value
+                        )
+                    )
+                )
+        result = self.execute(ops.OP_ADD_TEXTBOX, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_connector(
+        self,
+        slide_index: int,
+        connector_type: str,
+        begin_x: float,
+        begin_y: float,
+        end_x: float,
+        end_y: float,
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a connector-like shape to a slide."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "connector_type": connector_type,
+            "begin_x": begin_x,
+            "begin_y": begin_y,
+            "end_x": end_x,
+            "end_y": end_y,
+        }
+        for key in (
+            "text",
+            "runs",
+            "text_frame",
+            "paragraph",
+            "click_action",
+            "hover_action",
+            "properties",
+        ):
+            if key in kwargs and kwargs[key] is not None:
+                value = cast("object", kwargs[key])
+                payload[key] = (
+                    serialize_runs_for_payload(value)
+                    if key == "runs"
+                    else (
+                        serialize_text_frame_for_payload(value)
+                        if key == "text_frame"
+                        else (
+                            serialize_paragraph_for_payload(value)
+                            if key == "paragraph"
+                            else value
+                        )
+                    )
+                )
+        result = self.execute(ops.OP_ADD_CONNECTOR, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_group_shape(
+        self,
+        slide_index: int,
+        shapes: list[int] | None = None,
+    ) -> int:
+        """Add a group shape to a slide."""
+        payload: dict[str, object] = {"slide_index": slide_index}
+        if shapes is not None:
+            payload["shapes"] = shapes
+        result = self.execute(ops.OP_ADD_GROUP_SHAPE, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def build_freeform(
+        self,
+        slide_index: int,
+        start_x: float = 0,
+        start_y: float = 0,
+        scale: tuple[float, float] | float = 1.0,
+    ) -> FreeformBuilder:
+        """Create a freeform builder for this slide."""
+        return FreeformBuilder(
+            self,
+            slide_index,
+            start_x=start_x,
+            start_y=start_y,
+            scale=scale,
+        )
+
+    def _commit_freeform(
+        self,
+        slide_index: int,
+        points: list[tuple[float, float]],
+        *,
+        close: bool,
+        text: str | None = None,
+        runs: object | None = None,
+        text_frame: object | None = None,
+        paragraph: object | None = None,
+        click_action: object | None = None,
+        hover_action: object | None = None,
+        properties: object | None = None,
+    ) -> int:
+        """Create a freeform shape from prepared points."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "points": [[x, y] for x, y in points],
+            "close": close,
+        }
+        if text is not None:
+            payload["text"] = text
+        if runs is not None:
+            payload["runs"] = serialize_runs_for_payload(runs)
+        if text_frame is not None:
+            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
+        if paragraph is not None:
+            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
+        if click_action is not None:
+            payload["click_action"] = click_action
+        if hover_action is not None:
+            payload["hover_action"] = hover_action
+        if properties is not None:
+            payload["properties"] = properties
+        result = self.execute(ops.OP_BUILD_FREEFORM, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
     def add_image(
@@ -264,9 +439,25 @@ class PresentationShapeMixin(PresentationProtocol):
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None:
         """Update shape properties."""
+        normalized_updates = dict(cast("dict[str, object]", updates))
+        runs = normalized_updates.get("runs")
+        if runs is not None:
+            normalized_updates["runs"] = serialize_runs_for_payload(runs)
+        text_frame = normalized_updates.get("text_frame")
+        if text_frame is not None:
+            normalized_updates["text_frame"] = serialize_text_frame_for_payload(
+                text_frame
+            )
+        paragraph = normalized_updates.get("paragraph")
+        if paragraph is not None:
+            normalized_updates["paragraph"] = serialize_paragraph_for_payload(paragraph)
         self.execute(
             ops.OP_UPDATE_SHAPE,
-            {"slide_index": slide_index, "shape_id": shape_id, "updates": updates},
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "updates": normalized_updates,
+            },
         )
 
 
@@ -313,6 +504,25 @@ class PresentationTableMixin(PresentationProtocol):
             ops.OP_GET_TABLE, {"slide_index": slide_index, "shape_id": shape_id}
         )
         return cast("TableInfo", cast("dict[str, object]", result.get("table", {})))
+
+    def set_table_style(
+        self, slide_index: int, shape_id: int, style_guid: str
+    ) -> None:
+        """Apply a table style to a table.
+
+        The style_guid must be a valid PowerPoint table style GUID, e.g.:
+            "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+            "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+            "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+        """
+        self.execute(
+            ops.OP_SET_TABLE_STYLE,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "style_guid": style_guid,
+            },
+        )
 
     def set_table_flags(
         self, slide_index: int, shape_id: int, flags: dict[str, bool]

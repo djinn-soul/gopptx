@@ -5,17 +5,21 @@ from __future__ import annotations
 OP_ADD_AUTHOR = "add_author"
 OP_ADD_CHART = "add_chart"
 OP_ADD_COMMENT = "add_comment"
+OP_ADD_CONNECTOR = "add_connector"
 OP_ADD_CUSTOM_XML = "add_custom_xml"
+OP_ADD_GROUP_SHAPE = "add_group_shape"
 OP_ADD_IMAGE = "add_image"
 OP_ADD_OLE_OBJECT = "add_ole_object"
 OP_ADD_SECTION = "add_section"
 OP_ADD_SHAPE = "add_shape"
 OP_ADD_SLIDE = "add_slide"
 OP_ADD_TABLE = "add_table"
+OP_ADD_TEXTBOX = "add_textbox"
 OP_ADD_VBA = "add_vba"
 OP_ADD_VIDEO = "add_video"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
+OP_BUILD_FREEFORM = "build_freeform"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
 OP_DUPLICATE_SLIDE = "duplicate_slide"
 OP_FIND_AND_REPLACE = "find_and_replace"
@@ -27,6 +31,7 @@ OP_GET_METADATA = "get_metadata"
 OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
 OP_GET_TABLE = "get_table"
+OP_HAS_NOTES_SLIDE = "has_notes_slide"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
 OP_LIST_PLACEHOLDERS = "list_placeholders"
@@ -55,6 +60,7 @@ OP_SET_NOTES = "set_notes"
 OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
+OP_SET_TABLE_STYLE = "set_table_style"
 OP_SLIDE_COUNT = "slide_count"
 OP_SPLIT_TABLE_CELL = "split_table_cell"
 OP_UPDATE_CHART_DATA = "update_chart_data"
@@ -67,17 +73,21 @@ SUPPORTED_OPS = (
     OP_ADD_AUTHOR,
     OP_ADD_CHART,
     OP_ADD_COMMENT,
+    OP_ADD_CONNECTOR,
     OP_ADD_CUSTOM_XML,
+    OP_ADD_GROUP_SHAPE,
     OP_ADD_IMAGE,
     OP_ADD_OLE_OBJECT,
     OP_ADD_SECTION,
     OP_ADD_SHAPE,
     OP_ADD_SLIDE,
     OP_ADD_TABLE,
+    OP_ADD_TEXTBOX,
     OP_ADD_VBA,
     OP_ADD_VIDEO,
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
+    OP_BUILD_FREEFORM,
     OP_CLONE_LAYOUT_MASTER_FAMILY,
     OP_DUPLICATE_SLIDE,
     OP_FIND_AND_REPLACE,
@@ -89,6 +99,7 @@ SUPPORTED_OPS = (
     OP_GET_NOTES,
     OP_GET_SECTIONS,
     OP_GET_TABLE,
+    OP_HAS_NOTES_SLIDE,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
     OP_LIST_PLACEHOLDERS,
@@ -117,6 +128,7 @@ SUPPORTED_OPS = (
     OP_SET_PLACEHOLDER_CONTENT,
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
+    OP_SET_TABLE_STYLE,
     OP_SLIDE_COUNT,
     OP_SPLIT_TABLE_CELL,
     OP_UPDATE_CHART_DATA,

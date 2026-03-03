@@ -71,6 +71,132 @@ class Table:
     def has_banded_rows(self) -> bool: ...
     @has_banded_rows.setter
     def has_banded_rows(self, value: bool) -> None: ...
+    def apply_style(self, style_guid: str) -> None: ...
+
+class FreeformBuilder:
+    def move_to(self, x: float, y: float) -> FreeformBuilder: ...
+    def add_line_to(self, x: float, y: float) -> FreeformBuilder: ...
+    def add_line_segments(
+        self, points: list[tuple[float, float]]
+    ) -> FreeformBuilder: ...
+    def convert_to_shape(self, *, close: bool = False, **kwargs: object) -> int: ...
+
+class RunHyperlink:
+    address: str | None
+    action: str | None
+    tooltip: str | None
+    target_slide: int | None
+    jump: str | None
+    macro: str | None
+    history: bool | None
+    highlight_click: bool | None
+    end_sound: bool | None
+    def __init__(
+        self,
+        *,
+        address: str | None = None,
+        action: str | None = None,
+        tooltip: str | None = None,
+        target_slide: int | None = None,
+        jump: str | None = None,
+        macro: str | None = None,
+        history: bool | None = None,
+        highlight_click: bool | None = None,
+        end_sound: bool | None = None,
+    ) -> None: ...
+    def to_payload(self) -> dict[str, object]: ...
+
+class Run:
+    text: str
+    bold: bool | None
+    italic: bool | None
+    underline: str | None
+    strikethrough: bool | None
+    subscript: bool | None
+    superscript: bool | None
+    color: str | None
+    highlight: str | None
+    font: str | None
+    size_pt: int | None
+    code: bool | None
+    all_caps: bool | None
+    small_caps: bool | None
+    @property
+    def hyperlink(self) -> RunHyperlink: ...
+    @hyperlink.setter
+    def hyperlink(self, value: RunHyperlink | Hyperlink | None) -> None: ...
+    @property
+    def hover_action(self) -> RunHyperlink | None: ...
+    @hover_action.setter
+    def hover_action(self, value: RunHyperlink | Hyperlink | None) -> None: ...
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        bold: bool | None = None,
+        italic: bool | None = None,
+        underline: str | None = None,
+        strikethrough: bool | None = None,
+        subscript: bool | None = None,
+        superscript: bool | None = None,
+        color: str | None = None,
+        highlight: str | None = None,
+        font: str | None = None,
+        size_pt: int | None = None,
+        code: bool | None = None,
+        all_caps: bool | None = None,
+        small_caps: bool | None = None,
+        hyperlink: Hyperlink | RunHyperlink | None = None,
+        hover_action: Hyperlink | RunHyperlink | None = None,
+    ) -> None: ...
+    def to_payload(self) -> dict[str, object]: ...
+
+class TextFrameProps:
+    margin_top: int | None
+    margin_bottom: int | None
+    margin_left: int | None
+    margin_right: int | None
+    word_wrap: bool | None
+    auto_fit: bool | None
+    auto_fit_type: str | None
+    vertical_align: str | None
+    orientation: str | None
+    columns: int | None
+    rotation: float | None
+    def __init__(
+        self,
+        *,
+        margin_top: int | None = None,
+        margin_bottom: int | None = None,
+        margin_left: int | None = None,
+        margin_right: int | None = None,
+        word_wrap: bool | None = None,
+        auto_fit: bool | None = None,
+        auto_fit_type: str | None = None,
+        vertical_align: str | None = None,
+        orientation: str | None = None,
+        columns: int | None = None,
+        rotation: float | None = None,
+        vertical_anchor: str | None = None,
+        auto_size: str | None = None,
+        text_direction: str | None = None,
+        column_count: int | None = None,
+        text_rotation: float | None = None,
+    ) -> None: ...
+    def to_payload(self) -> dict[str, object]: ...
+
+class ParagraphProps:
+    indent: int | None
+    hanging: int | None
+    def __init__(
+        self,
+        *,
+        indent: int | None = None,
+        hanging: int | None = None,
+        left_margin: int | None = None,
+        hanging_indent: int | None = None,
+    ) -> None: ...
+    def to_payload(self) -> dict[str, object]: ...
 
 class Slide:
     def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None: ...
@@ -86,17 +212,48 @@ class Slide:
     def notes(self) -> str: ...
     @notes.setter
     def notes(self, value: str) -> None: ...
+    @property
+    def notes_slide(self) -> NotesSlide | None: ...
+    @property
+    def placeholders(self) -> PlaceholderCollection: ...
+    def get_placeholder(self, idx: int) -> Placeholder | None: ...
     def add_shape(
         self,
         shape_type: str,
         bounds: tuple[float, float, float, float],
         *,
         text: str = "",
-        runs: list[TextRun] | None = None,
-        text_frame: TextFrame | None = None,
+        runs: list[TextRun | Run] | None = None,
+        text_frame: TextFrame | TextFrameProps | None = None,
         click_action: Hyperlink | None = None,
         **kwargs: str | ShapeProps,
     ) -> int: ...
+    def add_textbox(
+        self,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int: ...
+    def add_connector(
+        self,
+        connector_type: str,
+        begin_x: float,
+        begin_y: float,
+        end_x: float,
+        end_y: float,
+        **kwargs: str | ShapeProps,
+    ) -> int: ...
+    def add_group_shape(self, shapes: list[int] | None = None) -> int: ...
+    def build_freeform(
+        self,
+        start_x: float = 0,
+        start_y: float = 0,
+        scale: tuple[float, float] | float = 1.0,
+    ) -> FreeformBuilder: ...
     def add_table(
         self, rows: int, cols: int, bounds: tuple[int, int, int, int]
     ) -> int: ...
@@ -111,6 +268,7 @@ class Slide:
         self, shape_id: int, cell_range: tuple[int, int, int, int]
     ) -> None: ...
     def split_table_cell(self, shape_id: int, row: int, col: int) -> None: ...
+    def set_table_style(self, shape_id: int, style_guid: str) -> None: ...
     def add_image(
         self, path: str, bounds: tuple[float, float, float, float]
     ) -> int: ...
@@ -158,6 +316,47 @@ class SlideMasters:
     def __len__(self) -> int: ...
     def __getitem__(self, idx: int) -> SlideMaster: ...
     def __iter__(self) -> Iterator[SlideMaster]: ...
+
+class NotesSlide:
+    @property
+    def text(self) -> str: ...
+    @text.setter
+    def text(self, value: str) -> None: ...
+
+class PlaceholderFormat(str):
+    @property
+    def type(self) -> str: ...
+    @property
+    def idx(self) -> int: ...
+
+class Placeholder:
+    @property
+    def idx(self) -> int: ...
+    @property
+    def placeholder_format(self) -> PlaceholderFormat: ...
+    @property
+    def name(self) -> str: ...
+    def insert_text(self, text: str, **style_kwargs: object) -> None: ...
+    def insert_picture(
+        self,
+        image_path: str,
+        bounds: tuple[float, float, float, float] | None = None,
+    ) -> None: ...
+
+class TitlePlaceholder(Placeholder): ...
+class BodyPlaceholder(Placeholder): ...
+class PicturePlaceholder(Placeholder): ...
+class ChartPlaceholder(Placeholder): ...
+class TablePlaceholder(Placeholder): ...
+
+class PlaceholderCollection:
+    def __iter__(self) -> Iterator[Placeholder]: ...
+    def __len__(self) -> int: ...
+    def __getitem__(self, idx: int) -> Placeholder: ...
+    def get(
+        self, idx: int, default: Placeholder | None = None
+    ) -> Placeholder | None: ...
+    def __call__(self) -> list[Placeholder]: ...
 
 class Presentation:
     _lib: object
@@ -231,6 +430,9 @@ class Presentation:
     def split_table_cell(
         self, slide_index: int, shape_id: int, row: int, col: int
     ) -> None: ...
+    def set_table_style(
+        self, slide_index: int, shape_id: int, style_guid: str
+    ) -> None: ...
     def set_slide_title(self, index: int, title: str) -> None: ...
     def merge_from_file(self, path: str) -> None: ...
     def find_and_replace(self, find_text: str, replace_text: str) -> int: ...
@@ -280,6 +482,37 @@ class Presentation:
         bounds: tuple[float, float, float, float],
         **kwargs: str | ShapeProps,
     ) -> int: ...
+    def add_textbox(
+        self,
+        slide_index: int,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int: ...
+    def add_connector(
+        self,
+        slide_index: int,
+        connector_type: str,
+        begin_x: float,
+        begin_y: float,
+        end_x: float,
+        end_y: float,
+        **kwargs: str | ShapeProps,
+    ) -> int: ...
+    def add_group_shape(
+        self, slide_index: int, shapes: list[int] | None = None
+    ) -> int: ...
+    def build_freeform(
+        self,
+        slide_index: int,
+        start_x: float = 0,
+        start_y: float = 0,
+        scale: tuple[float, float] | float = 1.0,
+    ) -> FreeformBuilder: ...
     def add_image(
         self,
         slide_index: int,

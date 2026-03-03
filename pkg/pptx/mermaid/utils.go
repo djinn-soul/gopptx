@@ -65,6 +65,7 @@ func ExtractDirection(header string) FlowDirection {
 }
 
 // SplitConnection splits a line at a connection arrow and returns (from, arrow, rest, found).
+// Handles patterns like: "A --> B", "A -->|label| B", "A -- label --> B"
 func SplitConnection(line string) (string, string, string, bool) {
 	arrows := []string{"==>", "-.->", "-->", "---", "->"}
 	for _, arrow := range arrows {
@@ -77,8 +78,10 @@ func SplitConnection(line string) (string, string, string, bool) {
 	return "", "", "", false
 }
 
-// ExtractArrowLabel extracts a label from an arrow part like "|label| rest".
+// ExtractArrowLabel extracts a label from an arrow part like "|label| rest" or "label --> rest".
+// Returns (label, rest) where label is empty if no label found.
 func ExtractArrowLabel(s string) (string, string) {
+	// First check for the standard Mermaid syntax: |label|
 	if strings.HasPrefix(s, "|") {
 		if endIdx := strings.Index(s[1:], "|"); endIdx != -1 {
 			label := s[1 : endIdx+1]
@@ -86,6 +89,20 @@ func ExtractArrowLabel(s string) (string, string) {
 			return label, rest
 		}
 	}
+
+	// Handle the alternative syntax: label --> target
+	// Split by the next arrow to extract label and remaining node
+	arrows := []string{"==>", "-.->", "-->", "---", "->"}
+	for _, arrow := range arrows {
+		if before, after, ok := strings.Cut(s, arrow); ok {
+			label := strings.TrimSpace(before)
+			rest := strings.TrimSpace(after)
+			if label != "" {
+				return label, rest
+			}
+		}
+	}
+
 	return "", s
 }
 

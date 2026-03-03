@@ -15,9 +15,11 @@ type addShapeRequest struct {
 	h           float64
 	text        string
 	textFrame   *common.TextFrame
+	paragraph   *common.Paragraph
 	clickAction *common.Hyperlink
 	hoverAction *common.Hyperlink
 	runs        []common.TextRun
+	properties  common.ShapeUpdate
 }
 
 func parseAddShapeRequest(
@@ -63,6 +65,9 @@ func parseAddShapeRequest(
 	if err := decodeOptionalPayloadValue(payload, "text_frame", &request.textFrame); err != nil {
 		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
+	if err := decodeOptionalPayloadValue(payload, "paragraph", &request.paragraph); err != nil {
+		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
 	if err := decodeOptionalPayloadValue(payload, "click_action", &request.clickAction); err != nil {
 		return addShapeRequest{}, fmt.Errorf("invalid click_action: %w", err)
 	}
@@ -72,20 +77,26 @@ func parseAddShapeRequest(
 	if err := decodeOptionalPayloadValue(payload, "runs", &request.runs); err != nil {
 		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
+	if err := decodeOptionalPayloadValue(payload, "properties", &request.properties); err != nil {
+		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
 	return request, nil
 }
 
 func buildShapeUpdateForAdd(request addShapeRequest) (common.ShapeUpdate, bool) {
-	hasUpdates := request.text != "" ||
+	hasExplicitUpdates := request.text != "" ||
 		len(request.runs) > 0 ||
 		request.textFrame != nil ||
+		request.paragraph != nil ||
 		request.clickAction != nil ||
 		request.hoverAction != nil
-	if !hasUpdates {
+	hasProperties := hasAnyUpdate(request.properties)
+
+	if !hasExplicitUpdates && !hasProperties {
 		return common.ShapeUpdate{}, false
 	}
 
-	updates := common.ShapeUpdate{}
+	updates := request.properties
 	if request.text != "" {
 		updates.Text = &request.text
 	}
@@ -95,6 +106,9 @@ func buildShapeUpdateForAdd(request addShapeRequest) (common.ShapeUpdate, bool) 
 	if request.textFrame != nil {
 		updates.TextFrame = request.textFrame
 	}
+	if request.paragraph != nil {
+		updates.Paragraph = request.paragraph
+	}
 	if request.clickAction != nil {
 		updates.ClickAction = request.clickAction
 	}
@@ -102,4 +116,12 @@ func buildShapeUpdateForAdd(request addShapeRequest) (common.ShapeUpdate, bool) 
 		updates.HoverAction = request.hoverAction
 	}
 	return updates, true
+}
+
+func hasAnyUpdate(u common.ShapeUpdate) bool {
+	return u.Text != nil || u.Runs != nil || u.TextFrame != nil ||
+		u.Paragraph != nil || u.Fill != nil || u.Line != nil || u.Shadow != nil || u.Glow != nil || u.Blur != nil || u.SoftEdge != nil || u.Reflection != nil ||
+		u.ClickAction != nil || u.HoverAction != nil || u.X != nil ||
+		u.Y != nil || u.W != nil || u.H != nil || u.Rotation != nil ||
+		u.FlipH != nil || u.FlipV != nil || u.Crop != nil
 }
