@@ -156,6 +156,14 @@ func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
 		return handleListShapes, true
 	case OpAddShape:
 		return handleAddShape, true
+	case OpAddTextbox:
+		return handleAddTextbox, true
+	case OpAddConnector:
+		return handleAddConnector, true
+	case OpAddGroupShape:
+		return handleAddGroupShape, true
+	case OpBuildFreeform:
+		return handleBuildFreeform, true
 	case OpAddImage:
 		return handleAddImage, true
 	case OpRemoveShape:
@@ -181,6 +189,8 @@ func commandHandlerForNotesTables(op string) (commandHandler, bool) {
 	switch op {
 	case OpGetNotes:
 		return handleGetNotes, true
+	case OpHasNotesSlide:
+		return handleHasNotesSlide, true
 	case OpSetNotes:
 		return handleSetNotes, true
 	case OpAddTable:

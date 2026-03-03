@@ -40,12 +40,17 @@ const (
 	OpRemoveComment           = "remove_comment"
 	OpListShapes              = "list_shapes"
 	OpAddShape                = "add_shape"
+	OpAddTextbox              = "add_textbox"
+	OpAddConnector            = "add_connector"
+	OpAddGroupShape           = "add_group_shape"
+	OpBuildFreeform           = "build_freeform"
 	OpAddImage                = "add_image"
 	OpRemoveShape             = "remove_shape"
 	OpUpdateShape             = "update_shape"
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
+	OpHasNotesSlide           = "has_notes_slide"
 	OpSetNotes                = "set_notes"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
@@ -105,12 +110,17 @@ func SupportedOps() []string {
 		OpRemoveComment,
 		OpListShapes,
 		OpAddShape,
+		OpAddTextbox,
+		OpAddConnector,
+		OpAddGroupShape,
+		OpBuildFreeform,
 		OpAddImage,
 		OpRemoveShape,
 		OpUpdateShape,
 		OpMoveShapeToFront,
 		OpMoveShapeToBack,
 		OpGetNotes,
+		OpHasNotesSlide,
 		OpSetNotes,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,

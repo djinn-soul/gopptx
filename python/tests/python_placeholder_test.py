@@ -3,6 +3,7 @@ import pathlib
 
 import pytest
 from gopptx.presentation.presentation import Presentation
+from gopptx.slide.placeholder import BodyPlaceholder, Placeholder, TitlePlaceholder
 
 # Add project root to sys.path
 project_root = pathlib.Path(__file__).parent.parent.parent.resolve()
@@ -18,7 +19,7 @@ def presentation() -> Presentation:
 def test_list_placeholders(presentation: Presentation) -> None:
     # placeholders.pptx slide 0 is a title/body slide
     slide = presentation.slides[0]
-    placeholders = slide.placeholders()
+    placeholders = slide.placeholders
 
     assert len(placeholders) > 0
 
@@ -34,10 +35,10 @@ def test_list_placeholders(presentation: Presentation) -> None:
 
 def test_insert_placeholder_text(presentation: Presentation) -> None:
     slide = presentation.slides[0]
-    placeholders = slide.placeholders()
+    placeholders = slide.placeholders
 
     # Find any placeholder we can type into
-    ph = placeholders[0]
+    ph = placeholders()[0]
 
     # Insert text
     ph.insert_text("Injected Title Text")
@@ -81,3 +82,21 @@ def test_placeholder_repr(presentation: Presentation) -> None:
     r = repr(ph)
     assert "Placeholder" in r
     assert f"idx={ph.idx}" in r
+
+
+def test_placeholder_collection_idx_lookup(presentation: Presentation) -> None:
+    slide = presentation.slides[0]
+    collection = slide.placeholders
+    first = collection()[0]
+    by_idx = collection[first.idx]
+    assert by_idx.idx == first.idx
+    assert by_idx.placeholder_format.type == first.placeholder_format.type
+
+
+def test_placeholder_type_specific_classes(presentation: Presentation) -> None:
+    slide = presentation.slides[0]
+    placeholders = slide.placeholders()
+
+    assert any(isinstance(ph, TitlePlaceholder) for ph in placeholders)
+    assert any(isinstance(ph, BodyPlaceholder) for ph in placeholders)
+    assert all(isinstance(ph, Placeholder) for ph in placeholders)

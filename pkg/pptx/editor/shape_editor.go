@@ -77,6 +77,7 @@ func scanShapesWithOffsets(content []byte, skipProperties bool) ([]parsedShape, 
 		}
 
 		if se.Name.Local == "sp" || se.Name.Local == shapeTypePicture || se.Name.Local == "graphicFrame" ||
+			se.Name.Local == "grpSp" ||
 			se.Name.Local == "cxnSp" {
 			// Found a shape start.
 			// We need to capture the exact bytes from `startOffset` until the end element.
@@ -241,6 +242,12 @@ type shapeXML struct {
 			} `xml:"ph"`
 		} `xml:"nvPr"`
 	} `xml:"nvPicPr"`
+	NvGrpSpPr struct {
+		CNvPr struct {
+			ID   int    `xml:"id,attr"`
+			Name string `xml:"name,attr"`
+		} `xml:"cNvPr"`
+	} `xml:"nvGrpSpPr"`
 	SpPr struct {
 		Xfrm struct {
 			Off struct {
@@ -253,6 +260,18 @@ type shapeXML struct {
 			} `xml:"ext"`
 		} `xml:"xfrm"`
 	} `xml:"spPr"`
+	GrpSpPr struct {
+		Xfrm struct {
+			Off struct {
+				X int `xml:"x,attr"`
+				Y int `xml:"y,attr"`
+			} `xml:"off"`
+			Ext struct {
+				Cx int `xml:"cx,attr"`
+				Cy int `xml:"cy,attr"`
+			} `xml:"ext"`
+		} `xml:"xfrm"`
+	} `xml:"grpSpPr"`
 	TxBody struct {
 		P []struct {
 			R []struct {
@@ -298,13 +317,23 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 				ps.PhIndex = 0
 			}
 		}
+	} else if s.NvGrpSpPr.CNvPr.ID != 0 {
+		ps.ID = s.NvGrpSpPr.CNvPr.ID
+		ps.Name = s.NvGrpSpPr.CNvPr.Name
 	}
 
 	// Transform
-	ps.X = s.SpPr.Xfrm.Off.X
-	ps.Y = s.SpPr.Xfrm.Off.Y
-	ps.W = s.SpPr.Xfrm.Ext.Cx
-	ps.H = s.SpPr.Xfrm.Ext.Cy
+	if s.SpPr.Xfrm.Ext.Cx != 0 || s.SpPr.Xfrm.Ext.Cy != 0 || s.SpPr.Xfrm.Off.X != 0 || s.SpPr.Xfrm.Off.Y != 0 {
+		ps.X = s.SpPr.Xfrm.Off.X
+		ps.Y = s.SpPr.Xfrm.Off.Y
+		ps.W = s.SpPr.Xfrm.Ext.Cx
+		ps.H = s.SpPr.Xfrm.Ext.Cy
+	} else {
+		ps.X = s.GrpSpPr.Xfrm.Off.X
+		ps.Y = s.GrpSpPr.Xfrm.Off.Y
+		ps.W = s.GrpSpPr.Xfrm.Ext.Cx
+		ps.H = s.GrpSpPr.Xfrm.Ext.Cy
+	}
 
 	// Text (simple accumulation) and Runs parsing
 	var txt strings.Builder
@@ -425,7 +454,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 	}
 
 	var txBody bytes.Buffer
-	txBody.WriteString(`<p:txBody>`)
+	txBody.WriteString(`<p:txBody xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`)
 
 	// Emit custom bodyPr attributes if TextFrame is provided
 	bodyPr := `<a:bodyPr`
@@ -874,11 +903,16 @@ func (e *PresentationEditor) buildClickActionXML(partPath string, hl *common.Hyp
 
 // updateShapeTransforms performs a surgical regular expression replacement of shape transforms.
 func updateShapeTransforms(xmlData []byte, x, y, w, h int) []byte {
-	offRe := regexp.MustCompile(`(<a:off\s+x=")[0-9]+("\s+y=")[0-9]+("\s*/>)`)
-	extRe := regexp.MustCompile(`(<a:ext\s+cx=")[0-9]+("\s+cy=")[0-9]+("\s*/>)`)
+	// Robustly match <a:off> and <a:ext> tags regardless of attribute order or spacing
+	offRe := regexp.MustCompile(`(?s)<a:off\b[^>]*/>`)
+	extRe := regexp.MustCompile(`(?s)<a:ext\b[^>]*/>`)
 
-	res := offRe.ReplaceAll(xmlData, fmt.Appendf(nil, "${1}%d${2}%d${3}", x, y))
-	res = extRe.ReplaceAll(res, fmt.Appendf(nil, "${1}%d${2}%d${3}", w, h))
+	res := offRe.ReplaceAllFunc(xmlData, func(b []byte) []byte {
+		return []byte(fmt.Sprintf(`<a:off x="%d" y="%d"/>`, x, y))
+	})
+	res = extRe.ReplaceAllFunc(res, func(b []byte) []byte {
+		return []byte(fmt.Sprintf(`<a:ext cx="%d" cy="%d"/>`, w, h))
+	})
 	return res
 }
 

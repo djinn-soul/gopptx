@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from .. import ops
 from ..api_errors import GopptxError
+from ..slide.freeform_builder import FreeformBuilder
 from ..utils import normalize_table_index
 from .helpers import PresentationProtocol
 
@@ -31,6 +32,11 @@ else:
 
 class PresentationNotesMixin(PresentationProtocol):
     """Mixin providing speaker notes methods."""
+
+    def _has_notes_slide(self, slide_index: int) -> bool:
+        """Return whether a notes slide currently exists for a slide."""
+        result = self.execute(ops.OP_HAS_NOTES_SLIDE, {"slide_index": slide_index})
+        return bool(result.get("has_notes_slide", False))
 
     def get_notes(self, slide_index: int) -> str:
         """Get speaker notes for a slide."""
@@ -115,6 +121,133 @@ class PresentationShapeMixin(PresentationProtocol):
         if properties is not None:
             payload["properties"] = properties
         result = self.execute(ops.OP_ADD_SHAPE, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_textbox(
+        self,
+        slide_index: int,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a textbox-like shape to a slide."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "left": left,
+            "top": top,
+            "width": width,
+            "height": height,
+        }
+        if text:
+            payload["text"] = text
+        for key in (
+            "runs",
+            "text_frame",
+            "click_action",
+            "hover_action",
+            "properties",
+        ):
+            if key in kwargs and kwargs[key] is not None:
+                payload[key] = cast("object", kwargs[key])
+        result = self.execute(ops.OP_ADD_TEXTBOX, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_connector(
+        self,
+        slide_index: int,
+        connector_type: str,
+        begin_x: float,
+        begin_y: float,
+        end_x: float,
+        end_y: float,
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a connector-like shape to a slide."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "connector_type": connector_type,
+            "begin_x": begin_x,
+            "begin_y": begin_y,
+            "end_x": end_x,
+            "end_y": end_y,
+        }
+        for key in (
+            "text",
+            "runs",
+            "text_frame",
+            "click_action",
+            "hover_action",
+            "properties",
+        ):
+            if key in kwargs and kwargs[key] is not None:
+                payload[key] = cast("object", kwargs[key])
+        result = self.execute(ops.OP_ADD_CONNECTOR, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_group_shape(
+        self,
+        slide_index: int,
+        shapes: list[int] | None = None,
+    ) -> int:
+        """Add a group shape to a slide."""
+        payload: dict[str, object] = {"slide_index": slide_index}
+        if shapes is not None:
+            payload["shapes"] = shapes
+        result = self.execute(ops.OP_ADD_GROUP_SHAPE, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def build_freeform(
+        self,
+        slide_index: int,
+        start_x: float = 0,
+        start_y: float = 0,
+        scale: tuple[float, float] | float = 1.0,
+    ) -> FreeformBuilder:
+        """Create a freeform builder for this slide."""
+        return FreeformBuilder(
+            self,
+            slide_index,
+            start_x=start_x,
+            start_y=start_y,
+            scale=scale,
+        )
+
+    def _commit_freeform(
+        self,
+        slide_index: int,
+        points: list[tuple[float, float]],
+        *,
+        close: bool,
+        text: str | None = None,
+        runs: object | None = None,
+        text_frame: object | None = None,
+        click_action: object | None = None,
+        hover_action: object | None = None,
+        properties: object | None = None,
+    ) -> int:
+        """Create a freeform shape from prepared points."""
+        payload: dict[str, object] = {
+            "slide_index": slide_index,
+            "points": [[x, y] for x, y in points],
+            "close": close,
+        }
+        if text is not None:
+            payload["text"] = text
+        if runs is not None:
+            payload["runs"] = runs
+        if text_frame is not None:
+            payload["text_frame"] = text_frame
+        if click_action is not None:
+            payload["click_action"] = click_action
+        if hover_action is not None:
+            payload["hover_action"] = hover_action
+        if properties is not None:
+            payload["properties"] = properties
+        result = self.execute(ops.OP_BUILD_FREEFORM, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
     def add_image(

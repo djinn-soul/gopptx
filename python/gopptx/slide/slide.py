@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .notes_slide import NotesSlide
 from .placeholder_mixin import SlidePlaceholderMixin
 from .table import Table
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
+    from .freeform_builder import FreeformBuilder
     from ..schemas import (
         ImageCrop,
         ImageMetadata,
@@ -40,6 +42,56 @@ class SlideShapeMixin:
     ) -> int:
         """Add a shape to this slide."""
         return self._presentation.add_shape(self.index, shape_type, bounds, **kwargs)
+
+    def add_textbox(
+        self,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a textbox-like shape to this slide."""
+        return self._presentation.add_textbox(
+            self.index, left, top, width, height, text=text, **kwargs
+        )
+
+    def add_connector(
+        self,
+        connector_type: str,
+        begin_x: float,
+        begin_y: float,
+        end_x: float,
+        end_y: float,
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Add a connector-like shape to this slide."""
+        return self._presentation.add_connector(
+            self.index,
+            connector_type,
+            begin_x,
+            begin_y,
+            end_x,
+            end_y,
+            **kwargs,
+        )
+
+    def add_group_shape(self, shapes: list[int] | None = None) -> int:
+        """Placeholder for python-pptx parity; not currently supported."""
+        return self._presentation.add_group_shape(self.index, shapes=shapes)
+
+    def build_freeform(
+        self,
+        start_x: float = 0,
+        start_y: float = 0,
+        scale: tuple[float, float] | float = 1.0,
+    ) -> FreeformBuilder:
+        """Create a freeform builder for this slide."""
+        return self._presentation.build_freeform(
+            self.index, start_x=start_x, start_y=start_y, scale=scale
+        )
 
     def add_image(
         self,
@@ -162,6 +214,13 @@ class SlideBase:
     @notes.setter
     def notes(self, value: str) -> None:
         self._presentation.set_notes(self.index, value)
+
+    @property
+    def notes_slide(self) -> NotesSlide | None:
+        """Return a notes-slide proxy, or None when notes slide is absent."""
+        if not self._presentation._has_notes_slide(self.index):
+            return None
+        return NotesSlide(self)
 
 
 class SlideChartMixin:

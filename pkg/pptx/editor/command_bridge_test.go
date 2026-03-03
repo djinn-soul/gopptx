@@ -27,6 +27,20 @@ func TestCommandShapeOps(t *testing.T) {
 		t.Fatalf("add_shape failed: %s", resp)
 	}
 
+	// 1b. Add Textbox (python-pptx compatibility op)
+	addTextboxReq := `{"api_version":1,"request_id":"r1b","op":"add_textbox","payload":{"slide_index":0,"left":120,"top":160,"width":800,"height":300,"text":"textbox"}}`
+	resp = ExecuteCommand(e, addTextboxReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("add_textbox failed: %s", resp)
+	}
+
+	// 1c. Add Connector (python-pptx compatibility op)
+	addConnectorReq := `{"api_version":1,"request_id":"r1c","op":"add_connector","payload":{"slide_index":0,"connector_type":"line","begin_x":200,"begin_y":200,"end_x":900,"end_y":650}}`
+	resp = ExecuteCommand(e, addConnectorReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("add_connector failed: %s", resp)
+	}
+
 	var addOut struct {
 		Result struct {
 			ShapeID int `json:"shape_id"`
@@ -40,11 +54,28 @@ func TestCommandShapeOps(t *testing.T) {
 		t.Fatalf("expected valid shape_id, got 0")
 	}
 
+	// 1d. Group shape op supports empty group creation.
+	addGroupReq := `{"api_version":1,"request_id":"r1d","op":"add_group_shape","payload":{"slide_index":0}}`
+	resp = ExecuteCommand(e, addGroupReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("add_group_shape failed: %s", resp)
+	}
+
+	// 1e. Freeform op creates a custom-geometry shape.
+	buildFreeformReq := `{"api_version":1,"request_id":"r1e","op":"build_freeform","payload":{"slide_index":0,"points":[[100,100],[500,100],[500,400]],"close":true,"text":"freeform text"}}`
+	resp = ExecuteCommand(e, buildFreeformReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("build_freeform failed: %s", resp)
+	}
+
 	// 2. List Shapes — should contain the new shape
 	listReq := `{"api_version":1,"request_id":"r2","op":"list_shapes","payload":{"slide_index":0}}`
 	resp = ExecuteCommand(e, listReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("list_shapes failed: %s", resp)
+	}
+	if !strings.Contains(resp, "freeform text") {
+		t.Fatalf("list_shapes missing freeform text: %s", resp)
 	}
 
 	// 3. Update Shape
@@ -78,12 +109,25 @@ func TestCommandNotesOps(t *testing.T) {
 	}
 	defer func() { _ = e.Close() }()
 
+	// 0. Slide starts without a notes slide
+	hasReq := `{"api_version":1,"request_id":"n0","op":"has_notes_slide","payload":{"slide_index":0}}`
+	resp := ExecuteCommand(e, hasReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"has_notes_slide":false`) {
+		t.Fatalf("expected has_notes_slide false before notes creation: %s", resp)
+	}
+
 	// 1. Set Notes
 	setReq := `{"api_version":1,"request_id":"n1","op":"set_notes",` +
 		`"payload":{"slide_index":0,"text":"Speaker notes here"}}`
-	resp := ExecuteCommand(e, setReq)
+	resp = ExecuteCommand(e, setReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("set_notes failed: %s", resp)
+	}
+
+	// 1b. Notes slide now exists
+	resp = ExecuteCommand(e, hasReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"has_notes_slide":true`) {
+		t.Fatalf("expected has_notes_slide true after notes creation: %s", resp)
 	}
 
 	// 2. Get Notes

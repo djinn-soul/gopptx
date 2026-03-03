@@ -8,6 +8,23 @@ if TYPE_CHECKING:
     from .slide import Slide
 
 
+class PlaceholderFormat(str):
+    """String-compatible placeholder format with python-pptx-like attributes."""
+
+    def __new__(cls, value: str, idx: int) -> PlaceholderFormat:
+        obj = str.__new__(cls, value)
+        obj._idx = idx
+        return obj
+
+    @property
+    def type(self) -> str:
+        return str(self)
+
+    @property
+    def idx(self) -> int:
+        return self._idx
+
+
 class Placeholder:
     """Proxy object for a placeholder within a slide."""
 
@@ -31,9 +48,9 @@ class Placeholder:
         return self._index
 
     @property
-    def placeholder_format(self) -> str:
-        """The type of this placeholder."""
-        return self._type
+    def placeholder_format(self) -> PlaceholderFormat:
+        """The placeholder format object (string-compatible)."""
+        return PlaceholderFormat(self._type, self._index)
 
     @property
     def name(self) -> str:
@@ -81,3 +98,40 @@ class Placeholder:
     def __repr__(self) -> str:
         """Return a string representation of this placeholder."""
         return f"<Placeholder idx={self.idx} type='{self.placeholder_format}' name='{self.name}'>"
+
+
+class TitlePlaceholder(Placeholder):
+    """Placeholder subtype for title-like placeholders."""
+
+
+class BodyPlaceholder(Placeholder):
+    """Placeholder subtype for body/content placeholders."""
+
+
+class PicturePlaceholder(Placeholder):
+    """Placeholder subtype for picture placeholders."""
+
+
+class ChartPlaceholder(Placeholder):
+    """Placeholder subtype for chart placeholders."""
+
+
+class TablePlaceholder(Placeholder):
+    """Placeholder subtype for table placeholders."""
+
+
+_PLACEHOLDER_TYPE_TO_CLASS: dict[str, type[Placeholder]] = {
+    "title": TitlePlaceholder,
+    "ctrTitle": TitlePlaceholder,
+    "body": BodyPlaceholder,
+    "obj": BodyPlaceholder,
+    "pic": PicturePlaceholder,
+    "chart": ChartPlaceholder,
+    "tbl": TablePlaceholder,
+}
+
+
+def create_placeholder(slide: Slide, index: int, ph_type: str, name: str) -> Placeholder:
+    """Create a placeholder proxy using the most-specific subtype mapping."""
+    cls = _PLACEHOLDER_TYPE_TO_CLASS.get(ph_type, Placeholder)
+    return cls(slide, index, ph_type, name)
