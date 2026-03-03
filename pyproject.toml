@@ -141,7 +141,7 @@ line-ending = "auto"
 # PYTEST - Testing configuration
 # ============================================================================
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["python/tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_functions = ["test_*"]
 addopts = [

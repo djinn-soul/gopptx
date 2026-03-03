@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from gopptx import ParagraphProps, Presentation, Run, TextFrameProps
 
 
 def test_complex_text_layout_fixture_emits_expected_tokens(tmp_path: Path) -> None:
+    """Test complex text layout fixture emits expected tokens."""
     out_path = tmp_path / "text_layout_edge_case.pptx"
 
     with Presentation.new("Text Layout Fixtures") as prs:
@@ -47,6 +51,7 @@ def test_complex_text_layout_fixture_emits_expected_tokens(tmp_path: Path) -> No
 
 
 def test_update_shape_paragraph_fixture_rewrites_text_body(tmp_path: Path) -> None:
+    """Test update shape paragraph fixture rewrites text body."""
     out_path = tmp_path / "text_layout_update_edge_case.pptx"
 
     with Presentation.new("Text Layout Update") as prs:

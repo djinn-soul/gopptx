@@ -1,17 +1,19 @@
-import os
+"""Text API fixture coverage for text-frame and run hyperlinks."""
+
+from pathlib import Path
 
 from gopptx import Presentation
-from gopptx.schemas import TextFrame, TextRun
 
 
-def test_add_shape_text_frame_controls(tmp_path):
-    output_path = os.path.join(tmp_path, "text_frame.pptx")
+def test_add_shape_text_frame_controls(tmp_path: Path) -> None:
+    """Shape creation accepts text-frame options and run hyperlinks."""
+    output_path = tmp_path / "text_frame.pptx"
 
     with Presentation.new(title="Text APIs") as prs:
         slide = prs.slides[0]
 
         # Test word_wrap, auto_fit_type and margins
-        text_frame_opts: TextFrame = {
+        text_frame_opts: dict[str, object] = {
             "margin_top": 100000,
             "margin_bottom": 100000,
             "margin_left": 200000,
@@ -20,7 +22,7 @@ def test_add_shape_text_frame_controls(tmp_path):
             "auto_fit_type": "shape",
         }
 
-        runs: list[TextRun] = [
+        runs: list[dict[str, object]] = [
             {"text": "Hello "},
             {
                 "text": "Hyperlink",
@@ -38,15 +40,14 @@ def test_add_shape_text_frame_controls(tmp_path):
             runs=runs,
             text_frame=text_frame_opts,
         )
-        assert shape_id > 0
+        if shape_id <= 0:
+            raise AssertionError("expected positive shape id")
 
         prs.save(output_path)
 
     # Reload to verify
     with Presentation(output_path) as prs:
         shapes = prs.slides[0].list_shapes()
-        found = False
-        for shape in shapes:
-            if shape["Text"].startswith("Hello"):
-                found = True
-        assert found
+        has_hello_text = any(shape["Text"].startswith("Hello") for shape in shapes)
+        if not has_hello_text:
+            raise AssertionError("expected to find shape text starting with 'Hello'")

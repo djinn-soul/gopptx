@@ -1,16 +1,21 @@
-import os
 import pathlib
 import sys
+
+try:
+    from PIL import Image, ImageDraw
+except ImportError:  # pragma: no cover
+    Image = None
+    ImageDraw = None
 
 from gopptx import Presentation
 from gopptx.schemas import Inches
 
 # Add project root to sys.path to find 'gopptx' package
 project_root = pathlib.Path(__file__).parent.parent.parent.parent.resolve()
-sys.path.append(os.path.join(project_root, "python"))
+sys.path.append(str(project_root / "python"))
 
 
-def generate_example():
+def generate_example() -> str:
     output_dir = project_root / "examples" / "output"
     output_dir.mkdir(exist_ok=True)
     out_file = output_dir / "59_rich_text_advanced_images.pptx"
@@ -19,16 +24,13 @@ def generate_example():
     img_path = project_root / "examples" / "assets" / "test_image.png"
     if not img_path.exists():
         # Create a dummy image if not exists
-        try:
-            import PIL.Image
-            import PIL.ImageDraw
-
-            img = PIL.Image.new("RGB", (200, 200), color=(73, 109, 137))
-            d = PIL.ImageDraw.Draw(img)
+        if Image is not None and ImageDraw is not None:
+            img = Image.new("RGB", (200, 200), color=(73, 109, 137))
+            d = ImageDraw.Draw(img)
             d.text((10, 10), "Sample Image", fill=(255, 255, 0))
             img.save(img_path)
-        except ImportError:
-            # Fallback if PIL not available (though it usually is in this dev env)
+        else:
+            # Fallback if PIL is not available.
             pathlib.Path(img_path).write_bytes(b"dummy data")
 
     print(f"Generating example: {out_file}")

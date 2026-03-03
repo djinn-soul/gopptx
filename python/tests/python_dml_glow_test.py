@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
 from gopptx import Presentation
 
 
 def test_shape_glow_round_trip_fixture(tmp_path: Path) -> None:
+    """Test shape glow round trip fixture."""
     out_path = tmp_path / "dml_shape_glow.pptx"
 
     with Presentation.new("DML Glow") as prs:
@@ -28,9 +32,10 @@ def test_shape_glow_round_trip_fixture(tmp_path: Path) -> None:
 
 
 def test_shape_glow_rejects_shadow_inherit_true_combo() -> None:
+    """Test shape glow rejects shadow inherit true combo."""
     with Presentation.new("DML Glow Invalid") as prs:
         slide = prs.slides[0]
-        with pytest.raises(Exception, match="shadow.inherit"):
+        with pytest.raises(Exception, match=r"shadow.inherit"):
             slide.add_shape(
                 "rect",
                 (1000000, 1000000, 5000000, 1500000),

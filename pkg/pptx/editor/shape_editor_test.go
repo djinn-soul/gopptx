@@ -350,7 +350,10 @@ func TestRenderShapeXMLWithFillAndLine(t *testing.T) {
 	if !strings.Contains(xmlStr, `<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>`) {
 		t.Fatalf("expected solid fill in shape XML, got: %s", xmlStr)
 	}
-	if !strings.Contains(xmlStr, `<a:ln w="25400"><a:prstDash val="dashDot"/><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:ln>`) {
+	if !strings.Contains(
+		xmlStr,
+		`<a:ln w="25400"><a:prstDash val="dashDot"/><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:ln>`,
+	) {
 		t.Fatalf("expected line style in shape XML, got: %s", xmlStr)
 	}
 }
@@ -390,13 +393,16 @@ func TestRenderShapeXMLStyleOrderingBeforePresetGeometry(t *testing.T) {
 	}
 	xmlStr := string(xmlBytes)
 	idxFill := strings.Index(xmlStr, `<a:solidFill><a:srgbClr val="112233"/></a:solidFill>`)
-	idxLine := strings.Index(xmlStr, `<a:ln w="25400"><a:prstDash val="dash"/><a:solidFill><a:srgbClr val="445566"/></a:solidFill></a:ln>`)
+	idxLine := strings.Index(
+		xmlStr,
+		`<a:ln w="25400"><a:prstDash val="dash"/><a:solidFill><a:srgbClr val="445566"/></a:solidFill></a:ln>`,
+	)
 	idxEffect := strings.Index(xmlStr, `<a:effectLst><a:outerShdw`)
 	idxGeom := strings.Index(xmlStr, `<a:prstGeom`)
 	if idxFill == -1 || idxLine == -1 || idxEffect == -1 || idxGeom == -1 {
 		t.Fatalf("missing expected style/geom tokens: %s", xmlStr)
 	}
-	if !(idxFill < idxLine && idxLine < idxEffect && idxEffect < idxGeom) {
+	if idxFill >= idxLine || idxLine >= idxEffect || idxEffect >= idxGeom {
 		t.Fatalf("unexpected style ordering fill/line/effect/geom: %s", xmlStr)
 	}
 }
@@ -636,7 +642,7 @@ func TestReplaceShapeStyleRemovesOldStyleNodesAndKeepsOrdering(t *testing.T) {
 	if idxFill == -1 || idxLine == -1 || idxGeom == -1 {
 		t.Fatalf("expected fill+line+geom after replace, got: %s", out)
 	}
-	if !(idxFill < idxLine && idxLine < idxGeom) {
+	if idxFill >= idxLine || idxLine >= idxGeom {
 		t.Fatalf("unexpected ordering after replace: %s", out)
 	}
 }

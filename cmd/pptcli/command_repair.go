@@ -21,7 +21,6 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	var outPath string
 	var dryRun bool
 	var format string
-	jsonMode := false
 	fs.StringVar(&filePath, "file", "", "Input PPTX file path")
 	fs.StringVar(&outPath, "out", "", "Output (repaired) PPTX file path (optional, overwrites input if empty)")
 	fs.BoolVar(&dryRun, "dry-run", false, "Simulate repair without writing to disk")
@@ -48,16 +47,16 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	if outPath == "" {
 		outPath = filePath
 	}
-	jsonMode = strings.EqualFold(strings.TrimSpace(format), "json")
+	jsonMode := strings.EqualFold(strings.TrimSpace(format), "json")
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to read file: %v", err)
+		return handleRepairError(stdout, stderr, jsonMode, "failed to read file: %v", err)
 	}
 
 	repairedData, result, err := pptx.Repair(data)
 	if err != nil {
-		return handleRepairError(stdout, stderr, jsonMode, exitIO, "repair failed: %v", err)
+		return handleRepairError(stdout, stderr, jsonMode, "repair failed: %v", err)
 	}
 
 	var jsonOut []byte
@@ -69,7 +68,7 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		jsonOut, err = json.MarshalIndent(outObj, "", "  ")
 		if err != nil {
-			return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to marshal JSON: %v", err)
+			return handleRepairError(stdout, stderr, jsonMode, "failed to marshal JSON: %v", err)
 		}
 	}
 
@@ -104,7 +103,7 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	outDir := filepath.Dir(outPath)
 	tmpFile, err := os.CreateTemp(outDir, ".repair-*.pptx")
 	if err != nil {
-		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to create temp file: %v", err)
+		return handleRepairError(stdout, stderr, jsonMode, "failed to create temp file: %v", err)
 	}
 	tmpPath := tmpFile.Name()
 
@@ -112,18 +111,24 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	_, writeErr := tmpFile.Write(repairedData)
 	closeErr := tmpFile.Close()
 	if writeErr != nil {
-		os.Remove(tmpPath)
-		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to write repaired file: %v", writeErr)
+		if removeErr := os.Remove(tmpPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			printErrorf(stderr, "failed to cleanup temp file: %v", removeErr)
+		}
+		return handleRepairError(stdout, stderr, jsonMode, "failed to write repaired file: %v", writeErr)
 	}
 	if closeErr != nil {
-		os.Remove(tmpPath)
-		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to close temp file: %v", closeErr)
+		if removeErr := os.Remove(tmpPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			printErrorf(stderr, "failed to cleanup temp file: %v", removeErr)
+		}
+		return handleRepairError(stdout, stderr, jsonMode, "failed to close temp file: %v", closeErr)
 	}
 
 	// Rename temp file to target (atomic on most filesystems)
 	if err := os.Rename(tmpPath, outPath); err != nil {
-		os.Remove(tmpPath)
-		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to save repaired file: %v", err)
+		if removeErr := os.Remove(tmpPath); removeErr != nil && !os.IsNotExist(removeErr) {
+			printErrorf(stderr, "failed to cleanup temp file: %v", removeErr)
+		}
+		return handleRepairError(stdout, stderr, jsonMode, "failed to save repaired file: %v", err)
 	}
 
 	if jsonMode {
@@ -141,12 +146,12 @@ func printRepairUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage: pptcli repair -file file.pptx [-out fixed.pptx] [-dry-run] [-format text|json]")
 }
 
-func handleRepairError(stdout io.Writer, stderr io.Writer, jsonMode bool, exitCode int, format string, a ...any) int {
+func handleRepairError(stdout io.Writer, stderr io.Writer, jsonMode bool, format string, a ...any) int {
 	msg := fmt.Sprintf(format, a...)
 	if jsonMode {
 		outputJSONError(stdout, msg)
 	} else {
 		printErrorf(stderr, msg)
 	}
-	return exitCode
+	return exitIO
 }

@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from gopptx import Presentation
 
 
 def test_shape_fill_and_line_round_trip_fixture(tmp_path: Path) -> None:
+    """Test shape fill and line round trip fixture."""
     out_path = tmp_path / "dml_shape_style.pptx"
 
     with Presentation.new("DML Style") as prs:

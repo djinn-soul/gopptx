@@ -144,9 +144,9 @@ func TestChartFrameShape(t *testing.T) {
 
 func TestChartPartXML(t *testing.T) {
 	spec := &ChartSpec{
-		Kind: ChartKindPie,
+		Kind:       ChartKindPie,
 		Categories: []string{"A"},
-		Values: []float64{1.0},
+		Values:     []float64{1.0},
 	}
 	xml := ChartPartXML(spec)
 	if !strings.Contains(xml, "<c:pieChart>") {

@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -23,23 +24,23 @@ func main() {
 	}
 	defer os.Remove(examplePath)
 
-	fmt.Println("=== Example 1: Opening a presentation ===")
+	printLine("=== Example 1: Opening a presentation ===")
 	prs, err := pptx.Open(examplePath)
 	if err != nil {
 		log.Fatalf("failed to open presentation: %v", err)
 	}
 	defer prs.Close()
 
-	fmt.Printf("Opened presentation with %d slides\n", prs.SlideCount())
-	fmt.Printf("Current title: %s\n", prs.Title())
-	fmt.Printf("Current author: %s\n", prs.Creator())
+	printFmtf("Opened presentation with %d slides\n", prs.SlideCount())
+	printFmtf("Current title: %s\n", prs.Title())
+	printFmtf("Current author: %s\n", prs.Creator())
 
 	// Example 2: Reading metadata
-	fmt.Println("\n=== Example 2: Reading all metadata ===")
+	printLine("\n=== Example 2: Reading all metadata ===")
 	readAllMetadata(prs)
 
 	// Example 3: Modifying metadata
-	fmt.Println("\n=== Example 3: Modifying metadata ===")
+	printLine("\n=== Example 3: Modifying metadata ===")
 	prs.SetTitle("Updated Presentation Title")
 	prs.SetAuthor("Jane Doe")
 	prs.SetCreator("Jane Doe") // Author is an alias for Creator
@@ -54,23 +55,23 @@ func main() {
 	if err := prs.Save(); err != nil {
 		log.Fatalf("failed to save presentation: %v", err)
 	}
-	fmt.Println("Changes saved!")
+	printLine("Changes saved!")
 
 	// Example 4: Reopen and verify persistence
-	fmt.Println("\n=== Example 4: Reopening to verify persistence ===")
+	printLine("\n=== Example 4: Reopening to verify persistence ===")
 	prs2, err := pptx.Open(examplePath)
 	if err != nil {
 		log.Fatalf("failed to reopen presentation: %v", err)
 	}
 	defer prs2.Close()
 
-	fmt.Printf("Title: %s\n", prs2.Title())
-	fmt.Printf("Author: %s\n", prs2.Author())
-	fmt.Printf("Keywords: %s\n", prs2.Keywords())
-	fmt.Printf("Category: %s\n", prs2.Category())
+	printFmtf("Title: %s\n", prs2.Title())
+	printFmtf("Author: %s\n", prs2.Author())
+	printFmtf("Keywords: %s\n", prs2.Keywords())
+	printFmtf("Category: %s\n", prs2.Category())
 
 	// Example 5: SaveAs to create a copy
-	fmt.Println("\n=== Example 5: SaveAs to create a copy ===")
+	printLine("\n=== Example 5: SaveAs to create a copy ===")
 	copyPath := "example_copy.pptx"
 	defer os.Remove(copyPath)
 
@@ -78,7 +79,7 @@ func main() {
 	if err := prs2.SaveAs(copyPath); err != nil {
 		log.Fatalf("failed to save copy: %v", err)
 	}
-	fmt.Printf("Saved copy to %s\n", copyPath)
+	printFmtf("Saved copy to %s\n", copyPath)
 
 	// Verify original wasn't modified
 	prs3, err := pptx.Open(examplePath)
@@ -88,12 +89,12 @@ func main() {
 	defer prs3.Close()
 
 	if prs3.Title() != "Updated Presentation Title" {
-		fmt.Printf("Warning: Original presentation was modified\n")
+		printFmtf("Warning: Original presentation was modified\n")
 	}
-	fmt.Printf("Original title unchanged: %s\n", prs3.Title())
+	printFmtf("Original title unchanged: %s\n", prs3.Title())
 
 	// Example 6: Using CoreProperties directly
-	fmt.Println("\n=== Example 6: Using CoreProperties directly ===")
+	printLine("\n=== Example 6: Using CoreProperties directly ===")
 	prs4, err := pptx.Open(examplePath)
 	if err != nil {
 		log.Fatalf("failed to open presentation: %v", err)
@@ -101,9 +102,9 @@ func main() {
 	defer prs4.Close()
 
 	props := prs4.CoreProperties()
-	fmt.Printf("CoreProperties.Title: %s\n", props.Title)
-	fmt.Printf("CoreProperties.Creator: %s\n", props.Creator)
-	fmt.Printf("CoreProperties.Revision: %s\n", props.Revision)
+	printFmtf("CoreProperties.Title: %s\n", props.Title)
+	printFmtf("CoreProperties.Creator: %s\n", props.Creator)
+	printFmtf("CoreProperties.Revision: %s\n", props.Revision)
 
 	// Modify using SetCoreProperties
 	props.Title = "Final Title"
@@ -121,22 +122,22 @@ func main() {
 	}
 	defer prs5.Close()
 
-	fmt.Printf("After core props update - Title: %s, Revision: %s\n",
+	printFmtf("After core props update - Title: %s, Revision: %s\n",
 		prs5.Title(), prs5.Revision())
 
 	// Example 7: Validate presentation
-	fmt.Println("\n=== Example 7: Validate presentation ===")
+	printLine("\n=== Example 7: Validate presentation ===")
 	issues := prs5.Validate()
-	if issues == nil || len(issues) == 0 {
-		fmt.Println("Presentation is valid!")
+	if len(issues) == 0 {
+		printLine("Presentation is valid!")
 	} else {
-		fmt.Printf("Found %d validation issues:\n", len(issues))
+		printFmtf("Found %d validation issues:\n", len(issues))
 		for _, issue := range issues {
-			fmt.Printf("  - %s\n", issue.Description)
+			printFmtf("  - %s\n", issue.Description)
 		}
 	}
 
-	fmt.Println("\nAll examples completed successfully!")
+	printLine("\nAll examples completed successfully!")
 }
 
 func createSamplePresentation(path string) error {
@@ -151,16 +152,24 @@ func createSamplePresentation(path string) error {
 }
 
 func readAllMetadata(prs *pptx.Presentation) {
-	fmt.Printf("Title: %s\n", prs.Title())
-	fmt.Printf("Subject: %s\n", prs.Subject())
-	fmt.Printf("Creator: %s\n", prs.Creator())
-	fmt.Printf("Author: %s\n", prs.Author()) // Alias for Creator
-	fmt.Printf("Keywords: %s\n", prs.Keywords())
-	fmt.Printf("Description: %s\n", prs.Description())
-	fmt.Printf("Last Modified By: %s\n", prs.LastModifiedBy())
-	fmt.Printf("Revision: %s\n", prs.Revision())
-	fmt.Printf("Created: %s\n", prs.Created())
-	fmt.Printf("Modified: %s\n", prs.Modified())
-	fmt.Printf("Category: %s\n", prs.Category())
-	fmt.Printf("Content Status: %s\n", prs.ContentStatus())
+	printFmtf("Title: %s\n", prs.Title())
+	printFmtf("Subject: %s\n", prs.Subject())
+	printFmtf("Creator: %s\n", prs.Creator())
+	printFmtf("Author: %s\n", prs.Author()) // Alias for Creator
+	printFmtf("Keywords: %s\n", prs.Keywords())
+	printFmtf("Description: %s\n", prs.Description())
+	printFmtf("Last Modified By: %s\n", prs.LastModifiedBy())
+	printFmtf("Revision: %s\n", prs.Revision())
+	printFmtf("Created: %s\n", prs.Created())
+	printFmtf("Modified: %s\n", prs.Modified())
+	printFmtf("Category: %s\n", prs.Category())
+	printFmtf("Content Status: %s\n", prs.ContentStatus())
+}
+
+func printLine(args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintln(args...))
+}
+
+func printFmtf(format string, args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintf(format, args...))
 }

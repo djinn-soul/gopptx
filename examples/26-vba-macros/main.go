@@ -76,7 +76,7 @@ func loadVBABlob() ([]byte, func(), error) {
 	defer tmpFile.Close()
 
 	// Runtime fallback for demo-only generation when no real VBA asset exists.
-	if _, err := tmpFile.Write([]byte("dummy vba data")); err != nil {
+	if _, err := tmpFile.WriteString("dummy vba data"); err != nil {
 		cleanup()
 		return nil, nil, err
 	}

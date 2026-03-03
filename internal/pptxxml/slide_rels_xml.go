@@ -57,8 +57,6 @@ func SlideRelationshipsWithHyperlinks(
 }
 
 // SlideRelationshipsWithMultiCharts extends slide relationships to include multiple charts, SmartArt, 3D models, and comments.
-//
-//nolint:funlen // Slide relationship XML must enumerate media/chart/notes/smartart links with stable ordering.
 func SlideRelationshipsWithMultiCharts(
 	layoutTarget string,
 	imageTargets []string,
@@ -82,8 +80,6 @@ func SlideRelationshipsWithMultiCharts(
 }
 
 // SlideRelationshipsWithAll is the comprehensive relationship generator.
-//
-//nolint:funlen,gocognit // Large switch for XML generation is standard in this project.
 func SlideRelationshipsWithAll(
 	layoutTarget string,
 	imageTargets []string,
@@ -157,7 +153,9 @@ func SlideRelationshipsWithAll(
 	if strings.TrimSpace(notesTarget) != "" {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(maxRID + 1))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"")
+		b.WriteString(
+			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"",
+		)
 		b.WriteString(Escape(notesTarget))
 		b.WriteString("\"/>")
 		maxRID++
@@ -165,7 +163,9 @@ func SlideRelationshipsWithAll(
 	if strings.TrimSpace(commentsTarget) != "" {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(maxRID + 1))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments\" Target=\"")
+		b.WriteString(
+			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments\" Target=\"",
+		)
 		b.WriteString(Escape(commentsTarget))
 		b.WriteString("\"/>")
 	}

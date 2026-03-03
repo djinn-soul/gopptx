@@ -8,19 +8,24 @@ except ImportError:  # pragma: no cover
     from typing_extensions import NotRequired, TypedDict
 
 
-def Emu(value: int) -> int:
+def emu(value: int) -> int:
     """English Metric Unit."""
     return int(value)
 
 
-def Inches(value: float) -> int:
+def inches(value: float) -> int:
     """Inches to EMUs."""
     return int(value * 914400)
 
 
-def Point(value: float) -> int:
+def point(value: float) -> int:
     """Points to EMUs."""
     return int(value * 12700)
+
+
+Emu = emu
+Inches = inches
+Point = point
 
 
 RGBColor = str  # Hex string like 'FF0000'
@@ -42,19 +47,23 @@ class PresentationMetadata(TypedDict):
 
 
 class CoreProperties(TypedDict, total=False):
-    """Core document properties."""
+    """Core document properties (matching python-pptx CoreProperties)."""
 
     title: str
     subject: str
-    creator: str
+    creator: str  # python-pptx: author
     keywords: str
-    description: str
+    description: str  # python-pptx: comments
     lastModifiedBy: str
     revision: str
     created: str
     modified: str
     category: str
     contentStatus: str
+    identifier: str
+    language: str
+    lastPrinted: str
+    version: str
 
 
 class TextFrame(TypedDict, total=False):

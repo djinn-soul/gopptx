@@ -72,7 +72,11 @@ func ConvertFromPpt(inputPath string, outDir string) (string, error) {
 
 	// Verify the file was actually created
 	if _, err := os.Stat(expectedOutPath); err != nil {
-		return "", fmt.Errorf("conversion appeared successful but output file not found at %s: %w", expectedOutPath, err)
+		return "", fmt.Errorf(
+			"conversion appeared successful but output file not found at %s: %w",
+			expectedOutPath,
+			err,
+		)
 	}
 
 	return expectedOutPath, nil

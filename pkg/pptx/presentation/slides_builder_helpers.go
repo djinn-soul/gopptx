@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
-	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 func (b *slidePartBuilder) allocatePlaceholderChartRels(overrides []shapes.PlaceholderContent) []pptxxml.ChartRel {

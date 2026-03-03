@@ -194,7 +194,10 @@ func (b *slidePartBuilder) mapImages(images []shapes.Image) ([]pptxxml.ImageRef,
 	return refs, nil
 }
 
-func (b *slidePartBuilder) mapPlaceholders(overrides []shapes.PlaceholderContent, placeholderChartRels []pptxxml.ChartRel) ([]pptxxml.PlaceholderOverrideSpec, error) {
+func (b *slidePartBuilder) mapPlaceholders(
+	overrides []shapes.PlaceholderContent,
+	placeholderChartRels []pptxxml.ChartRel,
+) ([]pptxxml.PlaceholderOverrideSpec, error) {
 	specs := make([]pptxxml.PlaceholderOverrideSpec, 0, len(overrides))
 	chartIdx := 0
 	for _, o := range overrides {

@@ -14,7 +14,7 @@ _PARAGRAPH_FIELD_ALIASES = {
 class ParagraphProps:
     """Paragraph-level controls mapped to the bridge `paragraph` payload."""
 
-    __slots__ = ("indent", "hanging")
+    __slots__ = ("hanging", "indent")
 
     def __init__(
         self,
@@ -24,6 +24,7 @@ class ParagraphProps:
         left_margin: int | None = None,
         hanging_indent: int | None = None,
     ) -> None:
+        """Initialize paragraph controls with alias support."""
         self.indent = indent
         self.hanging = hanging
         if left_margin is not None:

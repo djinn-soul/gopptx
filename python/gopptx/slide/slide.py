@@ -12,7 +12,6 @@ from .table import Table
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
     from ..schemas import (
-        ImageCrop,
         ImageMetadata,
         Shape,
         ShapeProps,
@@ -97,25 +96,14 @@ class SlideShapeMixin:
         self,
         path: str | None,
         bounds: tuple[float, float, float, float],
-        *,
-        data: bytes | None = None,
-        format: str | None = None,
-        crop: ImageCrop | None = None,
-        rotation: float | None = None,
-        flip_h: bool | None = None,
-        flip_v: bool | None = None,
+        **kwargs: object,
     ) -> int:
         """Add an image to this slide."""
         return self._presentation.add_image(
             self.index,
             path,
             bounds,
-            data=data,
-            format=format,
-            crop=crop,
-            rotation=rotation,
-            flip_h=flip_h,
-            flip_v=flip_v,
+            **kwargs,
         )
 
     def get_image_metadata(self, shape_id: int) -> ImageMetadata:
@@ -220,7 +208,7 @@ class SlideBase:
         """Return a notes-slide proxy, or None when notes slide is absent."""
         if self._presentation is None or self.index < 0:
             return None
-        notes_payload = self._presentation._get_notes_payload(self.index)
+        notes_payload = self._presentation.get_notes_payload(self.index)
         if notes_payload.get("notes_slide") is None:
             return None
         return NotesSlide(self)

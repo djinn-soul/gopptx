@@ -13,11 +13,11 @@ import (
 var markdownTableSeparatorPattern = regexp.MustCompile(`^:?-{3,}:?$`)
 
 const (
-	blockquotePartsCapacity   = 2
-	fencedCodeLinesCapacity   = 16
-	markdownTableRowsCapacity = 4
-	defaultTableWidthEMU      = 8230200
-	markdownTableBaseYEMU     = 1600200
+	blockquotePartsCapacity    = 2
+	fencedCodeLinesCapacity    = 16
+	markdownTableRowsCapacity  = 4
+	defaultTableWidthEMU       = 8230200
+	markdownTableBaseYEMU      = 1600200
 	markdownTableBulletLineEMU = 228600
 	markdownTableGapEMU        = 152400
 	markdownTableMaxYEMU       = 2743200

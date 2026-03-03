@@ -165,7 +165,9 @@ func (r *Repairer) repairBrokenRelationship(issue Issue) error {
 	if err := xml.Unmarshal(data, &rels); err != nil {
 		// If XML parsing fails, fall back to regex-based removal.
 		content := string(data)
-		relPattern := regexp.MustCompile(`(?s)<Relationship\s+[^>]*?Target="` + regexp.QuoteMeta(targetPart) + `"[^>]*?/>`)
+		relPattern := regexp.MustCompile(
+			`(?s)<Relationship\s+[^>]*?Target="` + regexp.QuoteMeta(targetPart) + `"[^>]*?/>`,
+		)
 		repaired := relPattern.ReplaceAllString(content, "")
 		r.modifier.Set(issue.Path, []byte(repaired))
 		return nil
@@ -260,7 +262,9 @@ func (r *Repairer) generateContentTypes() string {
 	sb.WriteString("\n")
 	sb.WriteString(`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`)
 	sb.WriteString("\n")
-	sb.WriteString(`  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`)
+	sb.WriteString(
+		`  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`,
+	)
 	sb.WriteString("\n")
 	sb.WriteString(`  <Default Extension="xml" ContentType="application/xml"/>`)
 	sb.WriteString("\n")

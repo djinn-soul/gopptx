@@ -17,7 +17,6 @@ from .helpers import PresentationProtocol
 
 if TYPE_CHECKING:
     from ..schemas import (
-        ImageCrop,
         ImageMetadata,
         Shape,
         ShapeProps,
@@ -36,7 +35,7 @@ else:
 class PresentationNotesMixin(PresentationProtocol):
     """Mixin providing speaker notes methods."""
 
-    def _get_notes_payload(self, slide_index: int) -> dict[str, object]:
+    def get_notes_payload(self, slide_index: int) -> dict[str, object]:
         """Fetch raw notes payload from bridge with null-safe fallback."""
         result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
         if not isinstance(result, dict):
@@ -45,7 +44,7 @@ class PresentationNotesMixin(PresentationProtocol):
 
     def get_notes(self, slide_index: int) -> str:
         """Get speaker notes for a slide."""
-        result = self._get_notes_payload(slide_index)
+        result = self.get_notes_payload(slide_index)
         return str(cast("str", result.get("text", "")))
 
     def set_notes(self, slide_index: int, text: str) -> None:
@@ -55,6 +54,8 @@ class PresentationNotesMixin(PresentationProtocol):
 
 class PresentationShapeMixin(PresentationProtocol):
     """Mixin providing shape manipulation methods."""
+
+    _RECT_BOUNDS_COMPONENTS = 4
 
     @staticmethod
     def _init_bounds_payload(
@@ -137,15 +138,15 @@ class PresentationShapeMixin(PresentationProtocol):
     def add_textbox(
         self,
         slide_index: int,
-        left: float,
-        top: float,
-        width: float,
-        height: float,
-        *,
+        *bounds: float,
         text: str = "",
         **kwargs: str | ShapeProps,
     ) -> int:
         """Add a textbox-like shape to a slide."""
+        if len(bounds) != self._RECT_BOUNDS_COMPONENTS:
+            msg = "add_textbox expects bounds as left, top, width, height"
+            raise ValueError(msg)
+        left, top, width, height = bounds
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "left": left,
@@ -185,13 +186,14 @@ class PresentationShapeMixin(PresentationProtocol):
         self,
         slide_index: int,
         connector_type: str,
-        begin_x: float,
-        begin_y: float,
-        end_x: float,
-        end_y: float,
+        *points: float,
         **kwargs: str | ShapeProps,
     ) -> int:
         """Add a connector-like shape to a slide."""
+        if len(points) != self._RECT_BOUNDS_COMPONENTS:
+            msg = "add_connector expects points as begin_x, begin_y, end_x, end_y"
+            raise ValueError(msg)
+        begin_x, begin_y, end_x, end_y = points
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "connector_type": connector_type,
@@ -255,19 +257,13 @@ class PresentationShapeMixin(PresentationProtocol):
             scale=scale,
         )
 
-    def _commit_freeform(
+    def commit_freeform(
         self,
         slide_index: int,
         points: list[tuple[float, float]],
         *,
         close: bool,
-        text: str | None = None,
-        runs: object | None = None,
-        text_frame: object | None = None,
-        paragraph: object | None = None,
-        click_action: object | None = None,
-        hover_action: object | None = None,
-        properties: object | None = None,
+        options: dict[str, object] | None = None,
     ) -> int:
         """Create a freeform shape from prepared points."""
         payload: dict[str, object] = {
@@ -275,7 +271,15 @@ class PresentationShapeMixin(PresentationProtocol):
             "points": [[x, y] for x, y in points],
             "close": close,
         }
-        if text is not None:
+        opt = options or {}
+        text = opt.get("text")
+        runs = opt.get("runs")
+        text_frame = opt.get("text_frame")
+        paragraph = opt.get("paragraph")
+        click_action = opt.get("click_action")
+        hover_action = opt.get("hover_action")
+        properties = opt.get("properties")
+        if isinstance(text, str):
             payload["text"] = text
         if runs is not None:
             payload["runs"] = serialize_runs_for_payload(runs)
@@ -297,15 +301,7 @@ class PresentationShapeMixin(PresentationProtocol):
         slide_index: int,
         source: str | bytes | None = None,
         bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
-        *,
-        path: str | None = None,
-        data: bytes | None = None,
-        format: str | None = None,
-        img_format: str | None = None,
-        crop: ImageCrop | None = None,
-        rotation: float | None = None,
-        flip_h: bool | None = None,
-        flip_v: bool | None = None,
+        **kwargs: object,
     ) -> int:
         """Add an image to a slide.
 
@@ -314,31 +310,48 @@ class PresentationShapeMixin(PresentationProtocol):
             path: Path to the image file, or None if data is provided.
             bounds: (x, y, w, h) in EMU.
             data: Raw image bytes.
-            format: Image format (e.g., 'png', 'jpeg') required if data is bytes.
+            source: Direct path/bytes source when not using path/data args.
+            image_format: Image format (e.g., 'png', 'jpeg') when source/data is bytes.
+            img_format: Backward-compatible alias for image_format.
             crop: ImageCrop dictionary.
             rotation: Rotation in degrees.
             flip_h: Flip horizontally.
             flip_v: Flip vertically.
+            **kwargs: Optional source/path/data/options payload members.
         """
+        path = kwargs.get("path")
+        data = kwargs.get("data")
+        image_format = kwargs.get("image_format")
+        img_format = kwargs.get("img_format")
+        crop = kwargs.get("crop")
+        rotation = kwargs.get("rotation")
+        flip_h = kwargs.get("flip_h")
+        flip_v = kwargs.get("flip_v")
         payload = self._init_bounds_payload(slide_index, bounds)
         if source:
             self._set_source_payload(payload, source)
-        elif path:
+        elif isinstance(path, str):
             self._set_source_payload(payload, path)
-        elif data:
+        elif isinstance(data, bytes):
             self._set_source_payload(payload, data)
-            resolved_format = format or img_format
+            resolved_format = (
+                image_format
+                if isinstance(image_format, str)
+                else img_format
+                if isinstance(img_format, str)
+                else None
+            )
             if resolved_format:
                 payload["format"] = resolved_format
 
         options: dict[str, object] = {}
-        if crop:
+        if isinstance(crop, dict):
             options["crop"] = cast("dict[str, object]", crop)
-        if rotation is not None:
+        if isinstance(rotation, int | float):
             options["rotation"] = rotation
-        if flip_h is not None:
+        if isinstance(flip_h, bool):
             options["flip_h"] = flip_h
-        if flip_v is not None:
+        if isinstance(flip_v, bool):
             options["flip_v"] = flip_v
 
         if options:
@@ -360,18 +373,18 @@ class PresentationShapeMixin(PresentationProtocol):
         slide_index: int,
         source: str | bytes,
         bounds: tuple[float, float, float, float],
-        *,
-        name: str | None = None,
-        poster_frame: str | bytes | None = None,
-        mime_type: str | None = None,
+        **kwargs: object,
     ) -> int:
         """Add a video to a slide."""
+        name = kwargs.get("name")
+        poster_frame = kwargs.get("poster_frame")
+        mime_type = kwargs.get("mime_type")
         payload = self._init_bounds_payload(slide_index, bounds)
         self._set_source_payload(payload, source)
 
-        if name:
+        if isinstance(name, str) and name:
             payload["name"] = name
-        if mime_type:
+        if isinstance(mime_type, str) and mime_type:
             payload["mime_type"] = mime_type
 
         if poster_frame:
@@ -390,18 +403,18 @@ class PresentationShapeMixin(PresentationProtocol):
         slide_index: int,
         source: str | bytes,
         bounds: tuple[float, float, float, float],
-        *,
-        name: str | None = None,
-        prog_id: str | None = None,
-        icon: str | bytes | None = None,
+        **kwargs: object,
     ) -> int:
         """Add an OLE object to a slide."""
+        name = kwargs.get("name")
+        prog_id = kwargs.get("prog_id")
+        icon = kwargs.get("icon")
         payload = self._init_bounds_payload(slide_index, bounds)
         self._set_source_payload(payload, source)
 
-        if name:
+        if isinstance(name, str) and name:
             payload["name"] = name
-        if prog_id:
+        if isinstance(prog_id, str) and prog_id:
             payload["prog_id"] = prog_id
 
         if icon:
@@ -505,9 +518,7 @@ class PresentationTableMixin(PresentationProtocol):
         )
         return cast("TableInfo", cast("dict[str, object]", result.get("table", {})))
 
-    def set_table_style(
-        self, slide_index: int, shape_id: int, style_guid: str
-    ) -> None:
+    def set_table_style(self, slide_index: int, shape_id: int, style_guid: str) -> None:
         """Apply a table style to a table.
 
         The style_guid must be a valid PowerPoint table style GUID, e.g.:

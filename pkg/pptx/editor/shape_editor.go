@@ -433,7 +433,9 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		}
 	}
 	if s.SpPr.EffectLst != nil {
-		if s.SpPr.EffectLst.OuterShdw == nil && s.SpPr.EffectLst.Glow == nil && s.SpPr.EffectLst.Blur == nil && s.SpPr.EffectLst.SoftEdge == nil && s.SpPr.EffectLst.Reflection == nil {
+		if s.SpPr.EffectLst.OuterShdw == nil && s.SpPr.EffectLst.Glow == nil && s.SpPr.EffectLst.Blur == nil &&
+			s.SpPr.EffectLst.SoftEdge == nil &&
+			s.SpPr.EffectLst.Reflection == nil {
 			inherit := false
 			ps.Shadow = &common.ShapeShadow{Inherit: &inherit}
 		} else if s.SpPr.EffectLst.OuterShdw != nil {
@@ -666,7 +668,9 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 	}
 
 	var txBody bytes.Buffer
-	txBody.WriteString(`<p:txBody xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`)
+	txBody.WriteString(
+		`<p:txBody xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`,
+	)
 
 	// Emit custom bodyPr attributes if TextFrame is provided
 	bodyPr := `<a:bodyPr`
@@ -833,7 +837,9 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				txBody.WriteString(paragraphXML)
 				txBody.WriteString(fmt.Sprintf(`<a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)))
 			} else {
-				txBody.WriteString(fmt.Sprintf(`<a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)))
+				txBody.WriteString(
+					fmt.Sprintf(`<a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)),
+				)
 			}
 		} else {
 			txBody.WriteString(fmt.Sprintf(`<a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)))
@@ -1462,7 +1468,10 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 					return nil, false
 				}
 			}
-			if updates.Fill != nil || updates.Line != nil || updates.Shadow != nil || updates.Glow != nil || updates.Blur != nil || updates.SoftEdge != nil || updates.Reflection != nil {
+			if updates.Fill != nil || updates.Line != nil || updates.Shadow != nil || updates.Glow != nil ||
+				updates.Blur != nil ||
+				updates.SoftEdge != nil ||
+				updates.Reflection != nil {
 				replace = true
 				if updates.Fill != nil {
 					s.Fill = updates.Fill
@@ -1507,7 +1516,13 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 				if updates.HoverAction != nil {
 					s.HoverAction = updates.HoverAction
 				}
-				updatedXML, updateErr = replaceShapeActions(e, partPath, updatedXML, updates.ClickAction, updates.HoverAction)
+				updatedXML, updateErr = replaceShapeActions(
+					e,
+					partPath,
+					updatedXML,
+					updates.ClickAction,
+					updates.HoverAction,
+				)
 				if updateErr != nil {
 					return nil, false
 				}
@@ -1593,7 +1608,7 @@ func normalizeHexColor(raw string) (string, error) {
 		return "", fmt.Errorf("expected 6 hex digits, got %q", raw)
 	}
 	for _, ch := range color {
-		if !((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
+		if (ch < '0' || ch > '9') && (ch < 'a' || ch > 'f') && (ch < 'A' || ch > 'F') {
 			return "", fmt.Errorf("expected hex color, got %q", raw)
 		}
 	}
@@ -1752,7 +1767,9 @@ func validateHyperlinkAction(hl *common.Hyperlink) error {
 		selectorCount++
 	}
 	if selectorCount > 1 {
-		return errors.New("hyperlink selectors are mutually exclusive: use only one of address, target_slide, jump, or macro")
+		return errors.New(
+			"hyperlink selectors are mutually exclusive: use only one of address, target_slide, jump, or macro",
+		)
 	}
 	if hasJump {
 		jump := strings.ToLower(strings.TrimSpace(*hl.TargetJump))
@@ -1807,10 +1824,10 @@ func updateShapeTransforms(xmlData []byte, x, y, w, h int) []byte {
 	offRe := regexp.MustCompile(`(?s)<a:off\b[^>]*/>`)
 	extRe := regexp.MustCompile(`(?s)<a:ext\b[^>]*/>`)
 
-	res := offRe.ReplaceAllFunc(xmlData, func(b []byte) []byte {
+	res := offRe.ReplaceAllFunc(xmlData, func(_ []byte) []byte {
 		return []byte(fmt.Sprintf(`<a:off x="%d" y="%d"/>`, x, y))
 	})
-	res = extRe.ReplaceAllFunc(res, func(b []byte) []byte {
+	res = extRe.ReplaceAllFunc(res, func(_ []byte) []byte {
 		return []byte(fmt.Sprintf(`<a:ext cx="%d" cy="%d"/>`, w, h))
 	})
 	return res
@@ -1941,7 +1958,9 @@ func replaceShapeActions(
 
 	xmlStr := string(xmlData)
 	hlinkClickPattern := regexp.MustCompile(`(?s)<a:hlinkClick\b[^>]*/>|<a:hlinkClick\b[^>]*>.*?</a:hlinkClick>`)
-	hlinkHoverPattern := regexp.MustCompile(`(?s)<a:hlinkMouseOver\b[^>]*/>|<a:hlinkMouseOver\b[^>]*>.*?</a:hlinkMouseOver>`)
+	hlinkHoverPattern := regexp.MustCompile(
+		`(?s)<a:hlinkMouseOver\b[^>]*/>|<a:hlinkMouseOver\b[^>]*>.*?</a:hlinkMouseOver>`,
+	)
 	cNvPrOpenClose := regexp.MustCompile(`(?s)<p:cNvPr\b([^>]*)>(.*?)</p:cNvPr>`)
 	if match := cNvPrOpenClose.FindStringSubmatchIndex(xmlStr); match != nil {
 		inner := xmlStr[match[4]:match[5]]

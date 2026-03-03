@@ -2,27 +2,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from collections import UserString
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .slide import Slide
 
 
-class PlaceholderFormat(str):
+class PlaceholderFormat(UserString):
     """String-compatible placeholder format with python-pptx-like attributes."""
 
-    def __new__(cls, value: str, idx: int) -> PlaceholderFormat:
-        obj = str.__new__(cls, value)
-        obj._idx = idx
-        return obj
+    def __init__(self, value: str, idx: int) -> None:
+        """Initialize the placeholder format payload."""
+        super().__init__(value)
+        self.idx_value = idx
 
     @property
     def type(self) -> str:
-        return str(self)
+        """Return the placeholder type token."""
+        return str(self.data)
 
     @property
     def idx(self) -> int:
-        return self._idx
+        """Return the placeholder index."""
+        return self.idx_value
 
 
 class Placeholder:
@@ -57,7 +60,7 @@ class Placeholder:
         """The name of this placeholder."""
         return self._name
 
-    def insert_text(self, text: str, **style_kwargs: Any) -> None:
+    def insert_text(self, text: str, **style_kwargs: object) -> None:
         """Replace the placeholder with text.
 
         Args:
@@ -68,7 +71,7 @@ class Placeholder:
         text_style = {}
         for k, v in style_kwargs.items():
             key = k
-            if k == "size" or k == "font_size":
+            if k in {"size", "font_size"}:
                 key = "size_pt"
             elif k == "font_name":
                 key = "font"

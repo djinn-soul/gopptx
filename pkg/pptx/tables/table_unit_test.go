@@ -2,6 +2,7 @@ package tables
 
 import (
 	"testing"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -47,10 +48,16 @@ func TestTable_MergeLogic(t *testing.T) {
 	table = table.AddRow([]string{"", "B2"})
 
 	spec, err := table.ToTableSpec(1)
-	if err != nil { t.Fatalf("ToTableSpec failed: %v", err) }
-	if len(spec.StyledRows) != 2 { t.Error("Merge rows failed") }
+	if err != nil {
+		t.Fatalf("ToTableSpec failed: %v", err)
+	}
+	if len(spec.StyledRows) != 2 {
+		t.Error("Merge rows failed")
+	}
 	// Row 1, Col 0 should be a vertical merge placeholder
-	if !spec.StyledRows[1][0].VMerge { t.Error("VMerge flag failed") }
+	if !spec.StyledRows[1][0].VMerge {
+		t.Error("VMerge flag failed")
+	}
 }
 
 func TestTable_Validate_Extended(t *testing.T) {
@@ -63,8 +70,18 @@ func TestTable_Validate_Extended(t *testing.T) {
 		{"No Rows", NewTable([]styling.Length{styling.Inches(1)}), true},
 		{"No Cols", NewTable([]styling.Length{}), true},
 		{"Mismatch Row", NewTable([]styling.Length{styling.Inches(1)}).AddRow([]string{"A", "B"}), true},
-		{"Invalid Color", NewTable([]styling.Length{styling.Inches(1)}).AddStyledRow([]TableCell{NewTableCell("X").WithBackgroundColor("invalid")}), true},
-		{"ColSpan Overflow", NewTable([]styling.Length{styling.Inches(1)}).AddStyledRow([]TableCell{NewTableCell("A").WithColSpan(2)}), true},
+		{
+			"Invalid Color",
+			NewTable(
+				[]styling.Length{styling.Inches(1)},
+			).AddStyledRow([]TableCell{NewTableCell("X").WithBackgroundColor("invalid")}),
+			true,
+		},
+		{
+			"ColSpan Overflow",
+			NewTable([]styling.Length{styling.Inches(1)}).AddStyledRow([]TableCell{NewTableCell("A").WithColSpan(2)}),
+			true,
+		},
 	}
 
 	for _, tt := range tests {

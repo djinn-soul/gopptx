@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ func main() {
 
 func run() error {
 	outDir := "examples/output"
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		return err
 	}
 
@@ -37,7 +38,7 @@ func run() error {
 	if err := prs1.AddSlide(s1).WriteToFile(filepath.Join(outDir, "04_large_title.pptx")); err != nil {
 		return err
 	}
-	fmt.Println("Wrote 04_large_title.pptx")
+	printLine("Wrote 04_large_title.pptx")
 
 	// 2. bold_content.pptx
 	prs2 := pptx.NewPresentationBuilder("Bold Content Test")
@@ -49,7 +50,7 @@ func run() error {
 	if err := prs2.AddSlide(s2).WriteToFile(filepath.Join(outDir, "04_bold_content.pptx")); err != nil {
 		return err
 	}
-	fmt.Println("Wrote 04_bold_content.pptx")
+	printLine("Wrote 04_bold_content.pptx")
 
 	// 3. combined_styling.pptx
 	prs3 := pptx.NewPresentationBuilder("Combined Styling Test")
@@ -62,7 +63,11 @@ func run() error {
 	if err := prs3.AddSlide(s3).WriteToFile(filepath.Join(outDir, "04_combined_styling.pptx")); err != nil {
 		return err
 	}
-	fmt.Println("Wrote 04_combined_styling.pptx")
+	printLine("Wrote 04_combined_styling.pptx")
 
 	return nil
+}
+
+func printLine(args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintln(args...))
 }

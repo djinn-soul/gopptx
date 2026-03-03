@@ -122,8 +122,14 @@ func renderFreeformShapeXML(
 			`</a:custGeom>`+
 			`</p:spPr>`+
 			`</p:sp>`,
-		id, id,
-		x, y, w, h,
-		w, h, path.String(),
+		id,
+		id,
+		x,
+		y,
+		w,
+		h,
+		w,
+		h,
+		path.String(),
 	)
 }

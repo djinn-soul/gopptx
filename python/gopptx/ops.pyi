@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 OP_ADD_AUTHOR: str
 OP_ADD_CHART: str
 OP_ADD_COMMENT: str

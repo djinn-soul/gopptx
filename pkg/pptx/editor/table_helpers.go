@@ -134,9 +134,10 @@ func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
 
 // SetTableStyle sets the table style for the specified table on a slide.
 // The styleGuid must be a valid PowerPoint table style GUID, e.g.:
-//   "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
-//   "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
-//   "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+//
+//	"{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+//	"{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+//	"{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
 func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGuid string) error {
 	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
 	if err != nil {

@@ -257,7 +257,7 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	if err != nil {
 		return nil, err
 	}
-	var notesSlide any = nil
+	var notesSlide any
 	if hasNotesSlide {
 		notesSlide = map[string]string{"text": notes}
 	}

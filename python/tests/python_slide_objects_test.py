@@ -1,17 +1,19 @@
-import os
+"""Object-proxy smoke tests for Python slide API."""
+
 import pathlib
 import sys
 
 from gopptx import SHAPE_ROUNDED_RECTANGLE, Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+sys.path.append(str(project_root / "python"))
+
+MIN_SLIDE_COUNT = 2
 
 
 def test_python_slide_objects(tmp_path: pathlib.Path) -> None:
+    """Slide proxy helpers can update, duplicate, and save decks."""
     output_path = tmp_path / "python_slide_objects.pptx"
 
     with Presentation.new("Object Oriented Test") as pres:
@@ -27,7 +29,8 @@ def test_python_slide_objects(tmp_path: pathlib.Path) -> None:
             (1000000, 1000000, 3000000, 1500000),
             text="I am a proxy",
         )
-        assert shape_id > 0
+        if shape_id <= 0:
+            raise AssertionError("expected positive shape id")
 
         # 4. Set notes via property
         slide.notes = "Proxy objects make API much cleaner."
@@ -46,6 +49,8 @@ def test_python_slide_objects(tmp_path: pathlib.Path) -> None:
 
         # 7. Save
         pres.save(output_path)
-        assert pres.slide_count >= 2
+        if pres.slide_count < MIN_SLIDE_COUNT:
+            raise AssertionError("expected at least two slides after duplication")
 
-    assert output_path.exists()
+    if not output_path.exists():
+        raise AssertionError("expected object-proxy output deck to exist")

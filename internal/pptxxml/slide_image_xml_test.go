@@ -24,10 +24,18 @@ func TestImageShapeXML(t *testing.T) {
 		FlipV:      true,
 	}
 	xml := imageShape(spec, 5)
-	if !strings.Contains(xml, `r:embed="rId1"`) { t.Error("RelID missing") }
-	if !strings.Contains(xml, `<a:srcRect l="10000" t="20000"/>`) { t.Error("Crop missing") }
-	if !strings.Contains(xml, `<a:outerShdw`) { t.Error("Shadow missing") }
-	if !strings.Contains(xml, `<a:ref`) { t.Error("Reflection missing") }
+	if !strings.Contains(xml, `r:embed="rId1"`) {
+		t.Error("RelID missing")
+	}
+	if !strings.Contains(xml, `<a:srcRect l="10000" t="20000"/>`) {
+		t.Error("Crop missing")
+	}
+	if !strings.Contains(xml, `<a:outerShdw`) {
+		t.Error("Shadow missing")
+	}
+	if !strings.Contains(xml, `<a:ref`) {
+		t.Error("Reflection missing")
+	}
 	if !strings.Contains(xml, `rot="5400000"`) || !strings.Contains(xml, `flipH="1"`) {
 		t.Error("Transforms missing")
 	}
