@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"log"
 	"strconv"
 	"strings"
 )
@@ -88,7 +87,6 @@ func ContentTypes(
 		ext := strings.TrimPrefix(strings.ToLower(rawExt), ".")
 		contentType, ok := imageContentType(ext)
 		if !ok {
-			log.Printf("WARNING: unknown image extension %q, using application/octet-stream", rawExt)
 			contentType = "application/octet-stream"
 		}
 		b.WriteString(`

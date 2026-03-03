@@ -12,6 +12,7 @@ class NotesSlide:
     """Proxy for slide notes content."""
 
     def __init__(self, slide: Slide) -> None:
+        """Initialize notes proxy bound to a slide."""
         self._slide = slide
 
     @property
@@ -25,4 +26,5 @@ class NotesSlide:
         self._slide.notes = value
 
     def __repr__(self) -> str:
+        """Return debug representation for notes proxy."""
         return f"<NotesSlide slide_index={self._slide.index}>"

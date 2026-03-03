@@ -96,5 +96,8 @@ func pdfFromMarkdown(inPath, outPath, title string, opts export.PDFOptions, stdo
 }
 
 func printPDFUsage(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "Usage: pptcli pdf -in <file.pptx|file.md> [-out file.pdf] [-title TITLE] [-driver auto|native|libreoffice|powerpoint]")
+	_, _ = fmt.Fprintln(
+		w,
+		"Usage: pptcli pdf -in <file.pptx|file.md> [-out file.pdf] [-title TITLE] [-driver auto|native|libreoffice|powerpoint]",
+	)
 }

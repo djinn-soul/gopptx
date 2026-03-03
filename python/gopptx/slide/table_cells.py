@@ -56,6 +56,16 @@ class Cell:
         )
 
     @property
+    def span_height(self) -> int:
+        """python-pptx alias for row_span (number of rows spanned by this cell)."""
+        return self.row_span
+
+    @property
+    def span_width(self) -> int:
+        """python-pptx alias for col_span (number of columns spanned by this cell)."""
+        return self.col_span
+
+    @property
     def text(self) -> str:
         """Get the text content of this cell."""
         return str(self._table.get_cell_info(self.row, self.col).get("text", ""))

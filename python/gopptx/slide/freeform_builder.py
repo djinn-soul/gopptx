@@ -4,21 +4,17 @@ from __future__ import annotations
 
 from typing import Protocol
 
+MIN_POINTS_FOR_FREEFORM = 2
+
 
 class _FreeformCommitter(Protocol):
-    def _commit_freeform(
+    def commit_freeform(
         self,
         slide_index: int,
         points: list[tuple[float, float]],
         *,
         close: bool,
-        text: str | None = None,
-        runs: object | None = None,
-        text_frame: object | None = None,
-        paragraph: object | None = None,
-        click_action: object | None = None,
-        hover_action: object | None = None,
-        properties: object | None = None,
+        options: dict[str, object] | None = None,
     ) -> int: ...
 
 
@@ -34,6 +30,7 @@ class FreeformBuilder:
         start_y: float = 0,
         scale: tuple[float, float] | float = 1.0,
     ) -> None:
+        """Initialize builder state for one slide."""
         self._committer = committer
         self._slide_index = slide_index
         if isinstance(scale, tuple):
@@ -62,13 +59,16 @@ class FreeformBuilder:
 
     def convert_to_shape(self, *, close: bool = False, **kwargs: object) -> int:
         """Create the freeform shape and return its shape ID."""
-        if len(self._points) < 2:
+        if len(self._points) < MIN_POINTS_FOR_FREEFORM:
             raise ValueError(
                 "freeform requires at least one line segment before convert_to_shape()"
             )
         scaled_points = [
             (x * self._scale_x, y * self._scale_y) for x, y in self._points
         ]
-        return self._committer._commit_freeform(
-            self._slide_index, scaled_points, close=close, **kwargs
+        return self._committer.commit_freeform(
+            self._slide_index,
+            scaled_points,
+            close=close,
+            options=kwargs or None,
         )

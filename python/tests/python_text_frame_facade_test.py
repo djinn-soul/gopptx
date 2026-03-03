@@ -37,7 +37,7 @@ def test_text_frame_props_aliases_round_trip(tmp_path: Path) -> None:
         assert "frame" in texts  # noqa: S101
 
 
-def test_text_frame_props_rejects_out_of_range_rotation(tmp_path: Path) -> None:
+def test_text_frame_props_rejects_out_of_range_rotation() -> None:
     """Ensure invalid text-frame rotation values fail fast."""
     with Presentation.new("TextFrame Unsupported") as prs:
         slide = prs.slides[0]

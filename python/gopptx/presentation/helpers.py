@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import pathlib
 import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
@@ -44,7 +45,6 @@ class PresentationProtocol(ABC):
 
 def json_dumps(payload: dict[str, object]) -> bytes:
     """Serialize a dictionary to JSON bytes."""
-    import pathlib
 
     def default(obj: object) -> str:
         if isinstance(obj, pathlib.Path):

@@ -1,7 +1,35 @@
+"""Advanced text API integration tests."""
+
+import pathlib
+
 from gopptx import Presentation
 
+EXPECTED_SLIDE_COUNT = 2
+MIN_EXPECTED_SHAPES = 2
 
-def test_shape_rich_text(tmp_path):
+
+def _assert_positive_shape_id(value: object, label: str) -> None:
+    if not isinstance(value, int):
+        raise AssertionError(f"{label} must be int")
+    if value <= 0:
+        raise AssertionError(f"{label} must be positive")
+
+
+def _assert_expected_texts(texts: list[str]) -> None:
+    expected_text = (
+        "Normal text, Bold text, Italic text, Underlined text, Colored and Highlighted."
+    )
+    if expected_text not in texts:
+        raise AssertionError("expected rich text not found")
+    if "Updated link" not in texts:
+        raise AssertionError("expected updated link text not found")
+    if "Frame Test" not in texts:
+        raise AssertionError("expected frame text not found")
+    if "Click me (shape layer)" not in texts:
+        raise AssertionError("expected action shape text not found")
+
+
+def test_shape_rich_text(tmp_path: pathlib.Path) -> None:
     """Test adding text runs with formatting and hyperlinks."""
     out_file = tmp_path / "rich_text.pptx"
 
@@ -23,8 +51,7 @@ def test_shape_rich_text(tmp_path):
             ],
         )
 
-        assert isinstance(shape_id, int)
-        assert shape_id > 0
+        _assert_positive_shape_id(shape_id, "shape_id")
 
         # Add another shape with a hyperlink
         link_shape_id = slide.add_shape(
@@ -67,8 +94,7 @@ def test_shape_rich_text(tmp_path):
                 "tooltip": "Go to Github",
             },
         )
-        assert isinstance(action_shape, int)
-        assert action_shape > 0
+        _assert_positive_shape_id(action_shape, "action_shape")
 
         # Test Text Frame integration (margins, autofit, word wrap)
         frame_shape_id = slide.add_shape(
@@ -85,25 +111,19 @@ def test_shape_rich_text(tmp_path):
                 "vertical_align": "ctr",
             },
         )
-        assert isinstance(frame_shape_id, int)
-        assert frame_shape_id > 0
+        _assert_positive_shape_id(frame_shape_id, "frame_shape_id")
 
         deck.save(str(out_file))
 
     # Re-open and see if it loads successfully
     with Presentation(str(out_file)) as deck_in:
         slides = deck_in.slides
-        assert len(slides) == 2
+        if len(slides) != EXPECTED_SLIDE_COUNT:
+            raise AssertionError("expected 2 slides")
         shapes = slides[1].list_shapes()
-        print("DUMP SHAPES:", shapes)
-        assert len(shapes) >= 2
+        if len(shapes) < MIN_EXPECTED_SHAPES:
+            raise AssertionError("expected at least 2 shapes")
 
         # Our simple get text API will just concat the raw text inside
         texts = [s.get("Text", "") for s in shapes]
-        assert (
-            "Normal text, Bold text, Italic text, Underlined text, Colored and Highlighted."
-            in texts
-        )
-        assert "Updated link" in texts
-        assert "Frame Test" in texts
-        assert "Click me (shape layer)" in texts
+        _assert_expected_texts(texts)

@@ -2,10 +2,11 @@ package pptx
 
 import (
 	"testing"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-func TestCompat_Charts(t *testing.T) {
+func TestCompat_Charts(_ *testing.T) {
 	cats := []string{"A"}
 	vals := []float64{1}
 	_ = NewBarChart(cats, vals)
@@ -29,7 +30,7 @@ func TestCompat_Charts(t *testing.T) {
 	_ = NewComboChart(cats, nil, nil)
 }
 
-func TestCompat_Styling(t *testing.T) {
+func TestCompat_Styling(_ *testing.T) {
 	_ = Inches(1)
 	_ = InchesToEMU(1)
 	_ = Centimeters(1)
@@ -40,7 +41,7 @@ func TestCompat_Styling(t *testing.T) {
 	_ = AllThemes()
 }
 
-func TestCompat_Text(t *testing.T) {
+func TestCompat_Text(_ *testing.T) {
 	_ = NewParagraph()
 	_ = NewTextParagraph()
 	_ = NewTextParagraphStyle()
@@ -51,7 +52,7 @@ func TestCompat_Text(t *testing.T) {
 	_ = NormalizeTextRuns(nil)
 }
 
-func TestCompat_Shapes(t *testing.T) {
+func TestCompat_Shapes(_ *testing.T) {
 	_ = NewShapeLine("FF0000", Inches(1))
 	_ = NewShapeGradientStop(0, "FF0000")
 	_ = NewShapeGradientFill("linear", nil)
@@ -66,7 +67,7 @@ func TestCompat_Shapes(t *testing.T) {
 	_ = NewEllipse(0, 0, 1, 1)
 }
 
-func TestCompat_Connectors(t *testing.T) {
+func TestCompat_Connectors(_ *testing.T) {
 	_ = NewConnector("rect", Inches(0), Inches(0), Inches(1), Inches(1))
 	_ = NewStraightConnector(Inches(0), Inches(0), Inches(1), Inches(1))
 	_ = NewElbowConnector(Inches(0), Inches(0), Inches(1), Inches(1))
@@ -77,7 +78,7 @@ func TestCompat_Connectors(t *testing.T) {
 	_ = AutoReroute(c, nil)
 }
 
-func TestCompat_Slide(t *testing.T) {
+func TestCompat_Slide(_ *testing.T) {
 	_ = NewNotesMaster()
 	_ = NewMaster()
 	_ = NewSolidBackground("FF0000")

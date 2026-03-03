@@ -288,6 +288,21 @@ func (v *PayloadValidator) OptionalInt64(payload map[string]any, field string) (
 	}
 }
 
+// OptionalFloat64 returns a float64 if present, or 0 with false.
+func (v *PayloadValidator) OptionalFloat64(payload map[string]any, field string) (float64, bool) {
+	val, ok := payload[field]
+	if !ok {
+		return 0, false
+	}
+	num, ok := parseFloat(val)
+	if !ok {
+		v.setCode(ErrCodeInvalidType)
+		v.errors = append(v.errors, fmt.Sprintf("field %s must be a number, got %T", field, val))
+		return 0, false
+	}
+	return num, true
+}
+
 // OptionalBool returns a bool if present, or false with false.
 func (v *PayloadValidator) OptionalBool(payload map[string]any, field string) (bool, bool) {
 	val, ok := payload[field]

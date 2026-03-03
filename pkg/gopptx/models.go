@@ -4,6 +4,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"math"
+	"math/bits"
 	"os"
 	"path/filepath"
 	"strings"
@@ -183,20 +185,32 @@ func (s *Slide) AddAnimationSequence(spacingMS uint32, defs ...animations.Animat
 	if len(defs) == 0 {
 		return
 	}
-	for i, def := range defs {
+	step := uint32(0)
+	for _, def := range defs {
 		if def == nil {
+			if step < math.MaxUint32 {
+				step++
+			}
 			continue
 		}
 		anim := def.ToAnimation()
-		if i == 0 {
+		if step == 0 {
 			anim.Trigger = animations.AnimationOnClick
 		} else if anim.Trigger == animations.AnimationOnClick {
 			anim.Trigger = animations.AnimationAfterPrevious
 		}
 		if spacingMS > 0 {
-			anim.DelayMS = spacingMS * uint32(i)
+			hi, lo := bits.Mul32(spacingMS, step)
+			if hi > 0 {
+				anim.DelayMS = math.MaxUint32
+			} else {
+				anim.DelayMS = lo
+			}
 		}
 		s.Animations = append(s.Animations, anim)
+		if step < math.MaxUint32 {
+			step++
+		}
 	}
 }
 

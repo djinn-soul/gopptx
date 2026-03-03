@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+const (
+	minSubmatchLen      = 2
+	intToStrBufferSize  = 20
+	numericBaseTen      = 10
+	textElementOpenTag  = "<a:t>"
+	textElementCloseTag = "</a:t>"
+)
+
 // scalarPattern matches {{ key }} with optional whitespace.
 var scalarPattern = regexp.MustCompile(`\{\{\s*([a-zA-Z0-9_.\-]+)\s*\}\}`)
 
@@ -13,14 +21,14 @@ var dotPattern = regexp.MustCompile(`\{\{\s*\.([a-zA-Z0-9_.\-]+)\s*\}\}`)
 
 // interpolateText replaces all {{key}} scalars in text using ctx.
 // Unresolved keys are left as-is when strict=false, or returned as an error sentinel.
-func interpolateText(text string, ctx Context, item Row, strict bool) (string, bool) {
+func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) {
 	changed := false
 
 	// First resolve item-scoped {{.field}} tokens.
 	if item != nil {
 		text = dotPattern.ReplaceAllStringFunc(text, func(m string) string {
 			matches := dotPattern.FindStringSubmatch(m)
-			if len(matches) < 2 {
+			if len(matches) < minSubmatchLen {
 				return m
 			}
 			key := matches[1]
@@ -35,7 +43,7 @@ func interpolateText(text string, ctx Context, item Row, strict bool) (string, b
 	// Then resolve {{key}} scalars from the main context.
 	text = scalarPattern.ReplaceAllStringFunc(text, func(m string) string {
 		matches := scalarPattern.FindStringSubmatch(m)
-		if len(matches) < 2 {
+		if len(matches) < minSubmatchLen {
 			return m
 		}
 		key := matches[1]
@@ -47,24 +55,24 @@ func interpolateText(text string, ctx Context, item Row, strict bool) (string, b
 		switch v := val.(type) {
 		case string:
 			return v
-		case fmt_stringer:
+		case fmtStringer:
 			return v.String()
 		default:
-			return strings.TrimSpace(fmt_sprint(v))
+			return strings.TrimSpace(fmtSprint(v))
 		}
 	})
 	return text, changed
 }
 
-// fmt_stringer is a copy-free equivalent of fmt.Stringer to avoid importing fmt.
-type fmt_stringer interface{ String() string }
+// fmtStringer is a copy-free equivalent of [fmt.Stringer] to avoid importing fmt.
+type fmtStringer interface{ String() string }
 
-// fmt_sprint converts any value to string without importing fmt directly.
-func fmt_sprint(v any) string {
+// fmtSprint converts any value to string without importing fmt directly.
+func fmtSprint(v any) string {
 	if v == nil {
 		return ""
 	}
-	if s, ok := v.(fmt_stringer); ok {
+	if s, ok := v.(fmtStringer); ok {
 		return s.String()
 	}
 	// Fall back to type assertion for common primitives.
@@ -92,7 +100,7 @@ func intToStr(n int64) string {
 	if neg {
 		n = -n
 	}
-	buf := make([]byte, 20)
+	buf := make([]byte, intToStrBufferSize)
 	pos := len(buf)
 	for n > 0 {
 		pos--
@@ -122,52 +130,45 @@ func strconvFmtFloat(f float64) string {
 
 // interpolateXMLPart replaces {{key}} tokens in all text runs within an XML part.
 // It first runs the run-merger pass, then does string substitution.
-func interpolateXMLPart(xmlBytes []byte, ctx Context, item Row, strict bool) ([]byte, error) {
+func interpolateXMLPart(xmlBytes []byte, ctx Context, item Row, strict bool) []byte {
 	// Step 1: merge fragmented runs.
-	merged, err := mergeAdjacentRuns(xmlBytes)
-	if err != nil {
-		merged = xmlBytes
-	}
-
+	merged := mergeAdjacentRuns(xmlBytes)
 	// Step 2: simple text substitution inside <a:t> elements.
 	result := replaceInTextElements(merged, ctx, item, strict)
-	return result, nil
+	return result
 }
 
 // replaceInTextElements walks the raw XML bytes finding <a:t>…</a:t> text and replaces tokens.
 // We do this with simple string scanning (not full re-parse) so we preserve all other bytes exactly.
 func replaceInTextElements(src []byte, ctx Context, item Row, strict bool) []byte {
-	const open = "<a:t>"
-	const close = "</a:t>"
-
 	result := make([]byte, 0, len(src))
 	s := string(src)
 	pos := 0
 	for {
-		start := strings.Index(s[pos:], open)
+		start := strings.Index(s[pos:], textElementOpenTag)
 		if start < 0 {
 			result = append(result, s[pos:]...)
 			break
 		}
 		start += pos
-		end := strings.Index(s[start+len(open):], close)
+		end := strings.Index(s[start+len(textElementOpenTag):], textElementCloseTag)
 		if end < 0 {
 			result = append(result, s[pos:]...)
 			break
 		}
-		end = start + len(open) + end
+		end = start + len(textElementOpenTag) + end
 
 		// Append everything up to (and including) the opening <a:t>.
-		result = append(result, s[pos:start+len(open)]...)
+		result = append(result, s[pos:start+len(textElementOpenTag)]...)
 
 		// The text content.
-		text := s[start+len(open) : end]
+		text := s[start+len(textElementOpenTag) : end]
 		replaced, _ := interpolateText(text, ctx, item, strict)
 		result = append(result, replaced...)
 
 		// Append </a:t>.
-		result = append(result, close...)
-		pos = end + len(close)
+		result = append(result, textElementCloseTag...)
+		pos = end + len(textElementCloseTag)
 	}
 	return result
 }

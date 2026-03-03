@@ -20,25 +20,35 @@ func TestPresentation_EffectiveMasters(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		m := Metadata{}
 		res := getEffectiveMasters(m)
-		if len(res) != 1 { t.Error("expected 1 default master") }
+		if len(res) != 1 {
+			t.Error("expected 1 default master")
+		}
 	})
 
 	t.Run("Single", func(t *testing.T) {
 		m := Metadata{Master: elements.NewMaster()}
 		res := getEffectiveMasters(m)
-		if len(res) != 1 { t.Error("expected 1 master") }
+		if len(res) != 1 {
+			t.Error("expected 1 master")
+		}
 	})
 
 	t.Run("Multi", func(t *testing.T) {
 		m := Metadata{Masters: []*elements.SlideMaster{elements.NewMaster(), elements.NewMaster()}}
 		res := getEffectiveMasters(m)
-		if len(res) != 2 { t.Error("expected 2 masters") }
+		if len(res) != 2 {
+			t.Error("expected 2 masters")
+		}
 	})
 }
 
 func TestPresentation_NotesThemeIndex(t *testing.T) {
-	if getNotesThemeIndex(false, 1) != 0 { t.Error("expected 0") }
-	if getNotesThemeIndex(true, 1) != 2 { t.Error("expected 2") }
+	if getNotesThemeIndex(false, 1) != 0 {
+		t.Error("expected 0")
+	}
+	if getNotesThemeIndex(true, 1) != 2 {
+		t.Error("expected 2")
+	}
 }
 
 func TestPresentation_ConvertSections(t *testing.T) {
@@ -48,13 +58,19 @@ func TestPresentation_ConvertSections(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		res, err := convertSections(secs, 1)
-		if err != nil { t.Fatalf("failed: %v", err) }
-		if len(res) != 1 || res[0].Name != "S1" { t.Error("conversion failed") }
+		if err != nil {
+			t.Fatalf("failed: %v", err)
+		}
+		if len(res) != 1 || res[0].Name != "S1" {
+			t.Error("conversion failed")
+		}
 	})
 
 	t.Run("InvalidIndex", func(t *testing.T) {
 		_, err := convertSections(secs, 0)
-		if err == nil { t.Error("expected error for invalid index") }
+		if err == nil {
+			t.Error("expected error for invalid index")
+		}
 	})
 }
 
@@ -66,9 +82,15 @@ func TestPresentation_PrepareComments(t *testing.T) {
 	}
 
 	authors, cms, indices := prepareComments(meta, slides)
-	if len(authors) != 2 { t.Errorf("expected 2 authors, got %d", len(authors)) }
-	if len(indices) != 2 { t.Error("expected 2 slides with comments") }
-	if len(cms[0]) != 1 || len(cms[1]) != 2 { t.Error("comment counts failed") }
+	if len(authors) != 2 {
+		t.Errorf("expected 2 authors, got %d", len(authors))
+	}
+	if len(indices) != 2 {
+		t.Error("expected 2 slides with comments")
+	}
+	if len(cms[0]) != 1 || len(cms[1]) != 2 {
+		t.Error("comment counts failed")
+	}
 }
 
 func TestWritePresentationPackage_Full(t *testing.T) {
@@ -111,6 +133,10 @@ func TestWritePresentationPackage_Full(t *testing.T) {
 }
 
 func TestPresentation_SlideSize_Helpers(t *testing.T) {
-	if GetSlideSize4x3().Width != 9144000 { t.Error("4x3 failed") }
-	if GetSlideSize16x9().Width != 12192000 { t.Error("16x9 failed") }
+	if GetSlideSize4x3().Width != 9144000 {
+		t.Error("4x3 failed")
+	}
+	if GetSlideSize16x9().Width != 12192000 {
+		t.Error("16x9 failed")
+	}
 }

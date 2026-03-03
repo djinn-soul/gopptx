@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -35,11 +36,6 @@ type Options struct {
 	Strict bool
 }
 
-var (
-	escapedTokenOpen  = []byte("@@TPLX_ESC_OPEN@@")
-	escapedTokenClose = []byte("@@TPLX_ESC_CLOSE@@")
-)
-
 // Render opens a PPTX template file and renders it with the given context.
 func Render(path string, ctx Context) (*Result, error) {
 	return RenderWithOptions(path, ctx, Options{})
@@ -66,20 +62,9 @@ func RenderBytesWithOptions(pptxBytes []byte, ctx Context, opts Options) (*Resul
 		return nil, fmt.Errorf("tplx: not a valid PPTX/ZIP: %w", err)
 	}
 
-	// Build a mutable map of part-name → bytes.
-	parts := make(map[string][]byte, len(zr.File))
-	for _, f := range zr.File {
-		if f.FileInfo().IsDir() {
-			continue
-		}
-		rc, err2 := f.Open()
-		if err2 != nil {
-			return nil, fmt.Errorf("tplx: open %s: %w", f.Name, err2)
-		}
-		var buf bytes.Buffer
-		_, _ = buf.ReadFrom(rc)
-		_ = rc.Close()
-		parts[f.Name] = buf.Bytes()
+	parts, err := readZipParts(zr)
+	if err != nil {
+		return nil, err
 	}
 
 	// Identify slide parts.
@@ -89,40 +74,12 @@ func RenderBytesWithOptions(pptxBytes []byte, ctx Context, opts Options) (*Resul
 	// Pass 1: expand slide-level {{#each}} loops (may add/remove parts).
 	slideParts, parts = expandSlideLoops(slideParts, parts, ctx)
 
-	// Pass 2: process each slide — conditionals → table-row loops → scalar replace.
-	for _, name := range slideParts {
-		data, ok := parts[name]
-		if !ok {
-			continue
-		}
-		data = applyConditionals(data, ctx)
-		data = expandTableRows(data, ctx)
-		data, err = interpolateXMLPart(data, ctx, nil, opts.Strict)
-		if err != nil {
-			return nil, fmt.Errorf("tplx: interpolate %s: %w", name, err)
-		}
-		if opts.Strict {
-			if tok := firstTemplateToken(data); tok != "" {
-				return nil, fmt.Errorf("tplx: unresolved token %q in %s", tok, name)
-			}
-		}
-		parts[name] = data
+	if err = renderSlideParts(parts, slideParts, ctx, opts.Strict); err != nil {
+		return nil, err
 	}
 
-	// Pass 3: interpolate non-slide text parts (notes, masters, layouts).
-	for name, data := range parts {
-		if isNonSlideTextPart(name) {
-			data, err = interpolateXMLPart(data, ctx, nil, opts.Strict)
-			if err != nil {
-				return nil, fmt.Errorf("tplx: interpolate %s: %w", name, err)
-			}
-			if opts.Strict {
-				if tok := firstTemplateToken(data); tok != "" {
-					return nil, fmt.Errorf("tplx: unresolved token %q in %s", tok, name)
-				}
-			}
-			parts[name] = data
-		}
+	if err = renderNonSlideParts(parts, ctx, opts.Strict); err != nil {
+		return nil, err
 	}
 
 	// Restore escaped literal delimiters on final text parts.
@@ -134,6 +91,84 @@ func RenderBytesWithOptions(pptxBytes []byte, ctx Context, opts Options) (*Resul
 		return nil, fmt.Errorf("tplx: repack: %w", err)
 	}
 	return &Result{data: out}, nil
+}
+
+func readZipParts(zr *zip.Reader) (map[string][]byte, error) {
+	parts := make(map[string][]byte, len(zr.File))
+	for _, f := range zr.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		partData, err := readZipFileBytes(f)
+		if err != nil {
+			return nil, fmt.Errorf("tplx: open %s: %w", f.Name, err)
+		}
+		parts[f.Name] = partData
+	}
+	return parts, nil
+}
+
+func readZipFileBytes(f *zip.File) ([]byte, error) {
+	rc, err := f.Open()
+	if err != nil {
+		return nil, err //nolint:wrapcheck // Caller wraps with part-name context.
+	}
+	defer func() {
+		_ = rc.Close()
+	}()
+
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(rc)
+	return buf.Bytes(), nil
+}
+
+func renderSlideParts(parts map[string][]byte, slideParts []string, ctx Context, strict bool) error {
+	for _, name := range slideParts {
+		data, ok := parts[name]
+		if !ok {
+			continue
+		}
+		updated, err := renderSlidePart(data, ctx, strict, name)
+		if err != nil {
+			return err
+		}
+		parts[name] = updated
+	}
+	return nil
+}
+
+func renderSlidePart(data []byte, ctx Context, strict bool, name string) ([]byte, error) {
+	data = applyConditionals(data, ctx)
+	data = expandTableRows(data, ctx)
+	data = interpolateXMLPart(data, ctx, nil, strict)
+	if err := validateStrictTokens(data, strict, name); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func renderNonSlideParts(parts map[string][]byte, ctx Context, strict bool) error {
+	for name, data := range parts {
+		if !isNonSlideTextPart(name) {
+			continue
+		}
+		data = interpolateXMLPart(data, ctx, nil, strict)
+		if err := validateStrictTokens(data, strict, name); err != nil {
+			return err
+		}
+		parts[name] = data
+	}
+	return nil
+}
+
+func validateStrictTokens(data []byte, strict bool, partName string) error {
+	if !strict {
+		return nil
+	}
+	if tok := firstTemplateToken(data); tok != "" {
+		return fmt.Errorf("tplx: unresolved token %q in %s", tok, partName)
+	}
+	return nil
 }
 
 func firstTemplateToken(data []byte) string {
@@ -171,15 +206,23 @@ func restoreEscapedTemplateDelimiters(parts map[string][]byte, slideParts []stri
 }
 
 func protectEscapedTokenText(data []byte) []byte {
-	out := bytes.ReplaceAll(data, []byte(`\{{`), escapedTokenOpen)
-	out = bytes.ReplaceAll(out, []byte(`\}}`), escapedTokenClose)
+	out := bytes.ReplaceAll(data, []byte(`\{{`), escapedTokenOpenBytes())
+	out = bytes.ReplaceAll(out, []byte(`\}}`), escapedTokenCloseBytes())
 	return out
 }
 
 func restoreEscapedTokenText(data []byte) []byte {
-	out := bytes.ReplaceAll(data, escapedTokenOpen, []byte("{{"))
-	out = bytes.ReplaceAll(out, escapedTokenClose, []byte("}}"))
+	out := bytes.ReplaceAll(data, escapedTokenOpenBytes(), []byte("{{"))
+	out = bytes.ReplaceAll(out, escapedTokenCloseBytes(), []byte("}}"))
 	return out
+}
+
+func escapedTokenOpenBytes() []byte {
+	return []byte("@@TPLX_ESC_OPEN@@")
+}
+
+func escapedTokenCloseBytes() []byte {
+	return []byte("@@TPLX_ESC_CLOSE@@")
 }
 
 // ── internal helpers ──────────────────────────────────────────────────────────
@@ -250,14 +293,14 @@ func expandSlideLoops(
 }
 
 func maxSlideNumber(slides []string) int {
-	max := 0
+	maxSlideNum := 0
 	for _, s := range slides {
 		n := parseSlideNumber(s)
-		if n > max {
-			max = n
+		if n > maxSlideNum {
+			maxSlideNum = n
 		}
 	}
-	return max
+	return maxSlideNum
 }
 
 func parseSlideNumber(name string) int {
@@ -269,7 +312,7 @@ func parseSlideNumber(name string) int {
 		if c < '0' || c > '9' {
 			return 0
 		}
-		n = n*10 + int(c-'0')
+		n = n*numericBaseTen + int(c-'0')
 	}
 	return n
 }
@@ -322,49 +365,60 @@ func repackZip(original *zip.Reader, parts map[string][]byte) ([]byte, error) {
 		if f.FileInfo().IsDir() {
 			continue
 		}
-		hdr := f.FileHeader
-		w, err := zw.CreateHeader(&hdr)
+		err := writeArchiveEntry(zw, f, parts)
 		if err != nil {
-			return nil, err //nolint:wrapcheck
-		}
-
-		if data, ok := parts[f.Name]; ok {
-			if _, err2 := w.Write(data); err2 != nil {
-				return nil, err2 //nolint:wrapcheck
-			}
-		} else {
-			rc, err2 := f.Open()
-			if err2 != nil {
-				return nil, err2 //nolint:wrapcheck
-			}
-			var tmp bytes.Buffer
-			_, _ = tmp.ReadFrom(rc)
-			_ = rc.Close()
-			if _, err2 = w.Write(tmp.Bytes()); err2 != nil {
-				return nil, err2 //nolint:wrapcheck
-			}
+			return nil, err
 		}
 		written[f.Name] = true
 	}
 
-	// Write any new parts not in the original archive (expanded slides).
+	if err := writeNewArchiveParts(zw, parts, written); err != nil {
+		return nil, err
+	}
+
+	if err := zw.Close(); err != nil {
+		return nil, err //nolint:wrapcheck // Preserve ZIP finalization errors.
+	}
+	return buf.Bytes(), nil
+}
+
+func writeArchiveEntry(zw *zip.Writer, f *zip.File, parts map[string][]byte) error {
+	hdr := f.FileHeader
+	w, err := zw.CreateHeader(&hdr)
+	if err != nil {
+		return err //nolint:wrapcheck // ZIP writer header failures are surfaced directly.
+	}
+	if data, ok := parts[f.Name]; ok {
+		return writeArchiveBytes(w, data)
+	}
+	data, err := readZipFileBytes(f)
+	if err != nil {
+		return err //nolint:wrapcheck // Preserve ZIP entry open failures for passthrough files.
+	}
+	return writeArchiveBytes(w, data)
+}
+
+func writeArchiveBytes(w io.Writer, data []byte) error {
+	if _, err := w.Write(data); err != nil {
+		return err //nolint:wrapcheck // Preserve write failures for generated and passthrough payloads.
+	}
+	return nil
+}
+
+func writeNewArchiveParts(zw *zip.Writer, parts map[string][]byte, written map[string]bool) error {
 	for name, data := range parts {
 		if written[name] {
 			continue
 		}
 		w, err := zw.Create(name)
 		if err != nil {
-			return nil, err //nolint:wrapcheck
+			return err //nolint:wrapcheck // ZIP writer create failures are surfaced directly.
 		}
-		if _, err2 := w.Write(data); err2 != nil {
-			return nil, err2 //nolint:wrapcheck
+		if _, err = w.Write(data); err != nil {
+			return err //nolint:wrapcheck // Preserve write failures for newly added parts.
 		}
 	}
-
-	if err := zw.Close(); err != nil {
-		return nil, err //nolint:wrapcheck
-	}
-	return buf.Bytes(), nil
+	return nil
 }
 
 // ── tiny stdlib-free sort and string helpers ──────────────────────────────────

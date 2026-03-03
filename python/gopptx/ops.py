@@ -31,6 +31,7 @@ OP_GET_METADATA = "get_metadata"
 OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
 OP_GET_TABLE = "get_table"
+OP_GROUP_SHAPES = "group_shapes"
 OP_HAS_NOTES_SLIDE = "has_notes_slide"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
@@ -63,6 +64,7 @@ OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SET_TABLE_STYLE = "set_table_style"
 OP_SLIDE_COUNT = "slide_count"
 OP_SPLIT_TABLE_CELL = "split_table_cell"
+OP_UNGROUP_SHAPES = "ungroup_shapes"
 OP_UPDATE_CHART_DATA = "update_chart_data"
 OP_UPDATE_SHAPE = "update_shape"
 OP_UPDATE_SLIDE = "update_slide"
@@ -99,6 +101,7 @@ SUPPORTED_OPS = (
     OP_GET_NOTES,
     OP_GET_SECTIONS,
     OP_GET_TABLE,
+    OP_GROUP_SHAPES,
     OP_HAS_NOTES_SLIDE,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
@@ -131,6 +134,7 @@ SUPPORTED_OPS = (
     OP_SET_TABLE_STYLE,
     OP_SLIDE_COUNT,
     OP_SPLIT_TABLE_CELL,
+    OP_UNGROUP_SHAPES,
     OP_UPDATE_CHART_DATA,
     OP_UPDATE_SHAPE,
     OP_UPDATE_SLIDE,

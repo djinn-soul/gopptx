@@ -1,4 +1,5 @@
-import os  # noqa: D100
+"""Smoke test for adding an image through Python bindings."""
+
 import pathlib
 import sys
 
@@ -6,13 +7,12 @@ import pytest
 from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+sys.path.append(str(project_root / "python"))
 
 
 def test_python_image(tmp_path: pathlib.Path) -> None:
+    """Image insertion writes a valid output deck."""
     image_path = (
         project_root
         / "examples"
@@ -33,8 +33,10 @@ def test_python_image(tmp_path: pathlib.Path) -> None:
             image_path,
             (1000000, 2000000, 4000000, 2000000),
         )
-        assert shape_id > 0
+        if shape_id <= 0:
+            raise AssertionError("expected positive shape id for inserted image")
 
         pres.save(output_path)
 
-    assert output_path.exists()
+    if not output_path.exists():
+        raise AssertionError("expected output deck to exist")

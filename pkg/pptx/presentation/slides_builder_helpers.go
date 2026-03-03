@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
-	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
 
 func (b *slidePartBuilder) allocatePlaceholderChartRels(overrides []shapes.PlaceholderContent) []pptxxml.ChartRel {
@@ -71,8 +71,8 @@ func (b *slidePartBuilder) mapTransition(slide elements.SlideContent) string {
 	}
 
 	path := opt.Sound.RelID
-	if strings.HasPrefix(path, "file:") {
-		path = strings.TrimPrefix(path, "file:")
+	if trimmed, ok := strings.CutPrefix(path, "file:"); ok {
+		path = trimmed
 	}
 
 	mediaName, ok := b.catalog.MediaNameForImage(shapes.Image{Path: path})

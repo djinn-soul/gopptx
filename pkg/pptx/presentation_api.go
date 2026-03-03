@@ -1,7 +1,7 @@
 package pptx
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
@@ -62,10 +62,10 @@ func (p *Presentation) Close() error {
 // Returns an error if the file cannot be written.
 func (p *Presentation) Save() error {
 	if p == nil {
-		return fmt.Errorf("presentation is nil")
+		return errors.New("presentation is nil")
 	}
 	if p.editor == nil {
-		return fmt.Errorf("presentation editor is not initialized")
+		return errors.New("presentation editor is not initialized")
 	}
 	return p.editor.Save(p.path)
 }
@@ -77,10 +77,10 @@ func (p *Presentation) Save() error {
 // Returns an error if the file cannot be written.
 func (p *Presentation) SaveAs(path string) error {
 	if p == nil {
-		return fmt.Errorf("presentation is nil")
+		return errors.New("presentation is nil")
 	}
 	if p.editor == nil {
-		return fmt.Errorf("presentation editor is not initialized")
+		return errors.New("presentation editor is not initialized")
 	}
 	return p.editor.Save(path)
 }

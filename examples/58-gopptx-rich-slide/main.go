@@ -30,7 +30,8 @@ func main() {
 	slide.AddBullet("gopptx now exposes helpers for notes, placeholders, and animations.")
 	slide.AddBullet("Reuse the same slide object to keep your API surface stable.")
 	slide.SetRichNotes([]elements.Paragraph{
-		elements.NewParagraph().AddRun(elements.NewRun("Use these speaker notes to describe how the slide should feel.")),
+		elements.NewParagraph().
+			AddRun(elements.NewRun("Use these speaker notes to describe how the slide should feel.")),
 	})
 
 	slide.AddPlaceholderText(0, "Title placeholder override")

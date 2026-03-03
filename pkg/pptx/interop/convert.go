@@ -1,6 +1,7 @@
 package interop
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -36,7 +37,7 @@ func ConvertFromPpt(inputPath string, outDir string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to get absolute path for outDir: %w", err)
 		}
-		if err := os.MkdirAll(outDir, 0o755); err != nil {
+		if err := os.MkdirAll(outDir, 0o750); err != nil {
 			return "", fmt.Errorf("failed to create outDir: %w", err)
 		}
 	}
@@ -64,7 +65,7 @@ func ConvertFromPpt(inputPath string, outDir string) (string, error) {
 		absInput,
 	}
 
-	cmd := exec.Command(soffice, args...)
+	cmd := exec.CommandContext(context.Background(), soffice, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("conversion failed: %w\nOutput: %s", err, string(out))
@@ -72,7 +73,11 @@ func ConvertFromPpt(inputPath string, outDir string) (string, error) {
 
 	// Verify the file was actually created
 	if _, err := os.Stat(expectedOutPath); err != nil {
-		return "", fmt.Errorf("conversion appeared successful but output file not found at %s: %w", expectedOutPath, err)
+		return "", fmt.Errorf(
+			"conversion appeared successful but output file not found at %s: %w",
+			expectedOutPath,
+			err,
+		)
 	}
 
 	return expectedOutPath, nil
@@ -93,16 +98,17 @@ func findSoffice() (string, error) {
 
 	// 2. Try common default installation directories
 	var commonPaths []string
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		commonPaths = []string{
 			`C:\Program Files\LibreOffice\program\soffice.exe`,
 			`C:\Program Files (x86)\LibreOffice\program\soffice.exe`,
 		}
-	} else if runtime.GOOS == "darwin" {
+	case "darwin":
 		commonPaths = []string{
 			`/Applications/LibreOffice.app/Contents/MacOS/soffice`,
 		}
-	} else {
+	default:
 		commonPaths = []string{
 			`/usr/bin/soffice`,
 			`/usr/local/bin/soffice`,

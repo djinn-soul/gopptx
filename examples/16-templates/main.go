@@ -27,7 +27,7 @@ func main() {
 }
 
 func run() error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		return err
 	}
 
@@ -43,7 +43,12 @@ func run() error {
 
 	// A table slide.  The second row is the loop template.
 	// Because NewTable requires column widths we use the styling helpers.
-	colWidths := []styling.Length{styling.Centimeters(1), styling.Centimeters(6), styling.Centimeters(2), styling.Centimeters(3)}
+	colWidths := []styling.Length{
+		styling.Centimeters(1),
+		styling.Centimeters(6),
+		styling.Centimeters(2),
+		styling.Centimeters(3),
+	}
 	tbl := pptx.NewTable(colWidths).AddStyledRow([]pptx.TableCell{
 		pptx.NewTableCell("#"),
 		pptx.NewTableCell("Item"),

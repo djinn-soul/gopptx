@@ -43,6 +43,8 @@ const (
 	OpAddTextbox              = "add_textbox"
 	OpAddConnector            = "add_connector"
 	OpAddGroupShape           = "add_group_shape"
+	OpGroupShapes             = "group_shapes"
+	OpUngroupShapes           = "ungroup_shapes"
 	OpBuildFreeform           = "build_freeform"
 	OpAddImage                = "add_image"
 	OpRemoveShape             = "remove_shape"
@@ -114,6 +116,8 @@ func SupportedOps() []string {
 		OpAddTextbox,
 		OpAddConnector,
 		OpAddGroupShape,
+		OpGroupShapes,
+		OpUngroupShapes,
 		OpBuildFreeform,
 		OpAddImage,
 		OpRemoveShape,

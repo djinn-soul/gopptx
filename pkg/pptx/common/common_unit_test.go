@@ -24,17 +24,27 @@ func TestColor_Normalize(t *testing.T) {
 }
 
 func TestColor_IsValid(t *testing.T) {
-	if !IsHexColor("#FF0000") { t.Error("Valid hex failed") }
-	if !IsHexColor("abc") { t.Error("Valid 3-digit failed") }
-	if IsHexColor("red") { t.Error("Invalid color passed") }
+	if !IsHexColor("#FF0000") {
+		t.Error("Valid hex failed")
+	}
+	if !IsHexColor("abc") {
+		t.Error("Valid 3-digit failed")
+	}
+	if IsHexColor("red") {
+		t.Error("Invalid color passed")
+	}
 }
 
 func TestGeometry_SlideSize(t *testing.T) {
 	s43 := GetSlideSize4x3()
-	if s43.Width != 9144000 { t.Error("4x3 width mismatch") }
+	if s43.Width != 9144000 {
+		t.Error("4x3 width mismatch")
+	}
 
 	s169 := GetSlideSize16x9()
-	if s169.Width != 12192000 { t.Error("16x9 width mismatch") }
+	if s169.Width != 12192000 {
+		t.Error("16x9 width mismatch")
+	}
 }
 
 func TestGUID(t *testing.T) {

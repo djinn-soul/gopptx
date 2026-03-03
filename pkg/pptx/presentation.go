@@ -185,7 +185,9 @@ func Repair(pptxData []byte) ([]byte, structural.RepairResult, error) {
 		return nil, result, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	tmpPath := tmpFile.Name()
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		return nil, result, err
+	}
 	defer os.Remove(tmpPath)
 
 	if err := ed.Save(tmpPath); err != nil {

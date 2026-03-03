@@ -23,10 +23,7 @@ func TestMergeAdjacentRunsPreservesNamespacePrefixes(t *testing.T) {
   </p:cSld>
 </p:sld>`
 
-	out, err := mergeAdjacentRuns([]byte(xmlIn))
-	if err != nil {
-		t.Fatalf("mergeAdjacentRuns returned error: %v", err)
-	}
+	out := mergeAdjacentRuns([]byte(xmlIn))
 	s := string(out)
 	if strings.Contains(s, "<http://") {
 		t.Fatalf("invalid namespace URI-as-prefix detected: %s", s)

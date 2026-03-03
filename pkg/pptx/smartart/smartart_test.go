@@ -123,11 +123,17 @@ func TestSmartArt_Validate(t *testing.T) {
 
 func TestSmartArt_LayoutNameHelpers(t *testing.T) {
 	name, ok := processLayoutName(BasicProcess)
-	if !ok || name != "Basic Process" { t.Error("process failed") }
+	if !ok || name != "Basic Process" {
+		t.Error("process failed")
+	}
 
 	name, ok = relationshipLayoutName(BasicRadial)
-	if !ok || name != "Basic Radial" { t.Error("rel failed") }
+	if !ok || name != "Basic Radial" {
+		t.Error("rel failed")
+	}
 
 	name, ok = matrixPictureLayoutName(PictureStrips)
-	if !ok || name != "Picture Strips" { t.Error("matrix failed") }
+	if !ok || name != "Picture Strips" {
+		t.Error("matrix failed")
+	}
 }

@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from gopptx import Presentation
 
 
 def test_shape_dml_style_xml_ordering_fixture(tmp_path: Path) -> None:
+    """Test shape dml style xml ordering fixture."""
     out_path = tmp_path / "dml_style_ordering.pptx"
 
     with Presentation.new("DML Ordering") as prs:
@@ -42,6 +46,7 @@ def test_shape_dml_style_xml_ordering_fixture(tmp_path: Path) -> None:
 
 
 def test_shape_line_defaults_emit_without_solid_fill_fixture(tmp_path: Path) -> None:
+    """Test shape line defaults emit without solid fill fixture."""
     out_path = tmp_path / "dml_line_defaults.pptx"
 
     with Presentation.new("DML Defaults") as prs:

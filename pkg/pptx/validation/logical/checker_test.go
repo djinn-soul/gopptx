@@ -150,7 +150,7 @@ func TestParseSlideShapes(t *testing.T) {
 	}
 }
 
-func TestChecker_Check_InvalidSlide(t *testing.T) {
+func TestChecker_Check_InvalidSlide(_ *testing.T) {
 	checker := &Checker{}
 
 	// Slide with no title and no shapes should be treated as blank layout

@@ -151,7 +151,10 @@ func TestWritePresentationPackage_TransitionSoundRIDMatchesRelationships(t *test
 	soundRID := matches[1]
 	if !strings.Contains(
 		relsXML,
-		fmt.Sprintf(`Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"`, soundRID),
+		fmt.Sprintf(
+			`Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"`,
+			soundRID,
+		),
 	) {
 		t.Fatalf("expected %s to map to audio relationship, got rels: %s", soundRID, relsXML)
 	}

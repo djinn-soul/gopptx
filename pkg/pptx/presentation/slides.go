@@ -11,6 +11,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const layoutsPerMaster = 6
+
 type slideParts struct {
 	title                pptxxml.TitleSpec
 	contentStyle         pptxxml.ContentStyleSpec
@@ -117,7 +119,7 @@ func layoutTargetForMaster(target string, masterNum int) string {
 	if n, _ := fmt.Sscanf(target, "../slideLayouts/slideLayout%d.xml", &num); n != 1 {
 		return target
 	}
-	newNum := (masterNum-1)*6 + num
+	newNum := (masterNum-1)*layoutsPerMaster + num
 	return fmt.Sprintf("../slideLayouts/slideLayout%d.xml", newNum)
 }
 

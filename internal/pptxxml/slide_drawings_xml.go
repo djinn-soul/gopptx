@@ -15,6 +15,7 @@ const (
 	defaultMargin       = 457200
 	customShapeGrowCap  = 2048
 	midpointDivisor     = 2
+	normAutoFitToken    = "normAutoFit"
 )
 
 // ShapeFillSpec describes solid fill properties for a custom shape.
@@ -306,13 +307,13 @@ func customShapeTextBody(shape ShapeSpec) string {
 		switch shape.TextFrame.AutoFit {
 		case "spAutoFit":
 			autoFitXML = `<a:spAutoFit/>`
-		case "normAutoFit":
+		case normAutoFitToken:
 			autoFitXML = `<a:normAutofit/>`
 		default:
 			autoFitXML = ""
 		}
 	}
-	if shape.TextFrame != nil && shape.TextFrame.AutoFit == "normAutoFit" {
+	if shape.TextFrame != nil && shape.TextFrame.AutoFit == normAutoFitToken {
 		bodyPrChildren = `<a:prstTxWarp prst="textNoShape"><a:avLst/></a:prstTxWarp>` + "\n" + autoFitXML
 	} else {
 		bodyPrChildren = autoFitXML

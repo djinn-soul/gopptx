@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
 from gopptx import Presentation
 
 
 def test_shape_shadow_round_trip_fixture(tmp_path: Path) -> None:
+    """Test shape shadow round trip fixture."""
     out_path = tmp_path / "dml_shape_shadow.pptx"
 
     with Presentation.new("DML Shadow") as prs:
@@ -37,9 +41,10 @@ def test_shape_shadow_round_trip_fixture(tmp_path: Path) -> None:
 
 
 def test_shape_shadow_rejects_inherit_with_explicit_fields() -> None:
+    """Test shape shadow rejects inherit with explicit fields."""
     with Presentation.new("DML Shadow Invalid") as prs:
         slide = prs.slides[0]
-        with pytest.raises(Exception, match="shadow.inherit"):
+        with pytest.raises(Exception, match=r"shadow.inherit"):
             slide.add_shape(
                 "rect",
                 (1000000, 1000000, 5000000, 1500000),
@@ -48,6 +53,7 @@ def test_shape_shadow_rejects_inherit_with_explicit_fields() -> None:
 
 
 def test_shape_shadow_inherit_false_emits_empty_effect_list(tmp_path: Path) -> None:
+    """Test shape shadow inherit false emits empty effect list."""
     out_path = tmp_path / "dml_shape_shadow_inherit_false.pptx"
     with Presentation.new("DML Shadow inherit false") as prs:
         slide = prs.slides[0]

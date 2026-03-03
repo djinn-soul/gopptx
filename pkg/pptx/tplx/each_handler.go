@@ -11,9 +11,6 @@ var (
 	eachEndPattern   = regexp.MustCompile(`\{\{/each\s*\}\}`)
 )
 
-// tableRowPattern is an alias for eachSlidePattern used in table-row detection.
-var tableRowPattern = eachSlidePattern
-
 // eachCondition holds parsed each-block metadata.
 type eachCondition struct {
 	key     string // context key for the slice
@@ -56,10 +53,7 @@ func expandSlide(slideXML []byte, rows []Row, ctx Context) [][]byte {
 
 	result := make([][]byte, 0, len(rows))
 	for _, row := range rows {
-		expanded, err := interpolateXMLPart(clean, ctx, row, false)
-		if err != nil {
-			expanded = clean
-		}
+		expanded := interpolateXMLPart(clean, ctx, row, false)
 		result = append(result, expanded)
 	}
 	return result
@@ -77,7 +71,7 @@ func expandTableRows(tableXML []byte, ctx Context) []byte {
 	content := string(tableXML)
 
 	// Find the {{#each KEY}} token.
-	m := tableRowPattern.FindStringSubmatchIndex(content)
+	m := eachSlidePattern.FindStringSubmatchIndex(content)
 	if m == nil {
 		return tableXML
 	}
@@ -99,7 +93,7 @@ func expandTableRows(tableXML []byte, ctx Context) []byte {
 	rowContent := content[trOpen:trClose]
 
 	// Remove each/end markers from the row template to get the clean row XML.
-	cleanRow := tableRowPattern.ReplaceAllString(rowContent, "")
+	cleanRow := eachSlidePattern.ReplaceAllString(rowContent, "")
 	cleanRow = eachEndPattern.ReplaceAllString(cleanRow, "")
 
 	// Fetch the rows from context.
@@ -115,12 +109,8 @@ func expandTableRows(tableXML []byte, ctx Context) []byte {
 	// Build expanded rows.
 	var expanded strings.Builder
 	for _, row := range rows {
-		rowXML, err := interpolateXMLPart([]byte(cleanRow), ctx, row, false)
-		if err != nil {
-			expanded.WriteString(cleanRow)
-		} else {
-			expanded.Write(rowXML)
-		}
+		rowXML := interpolateXMLPart([]byte(cleanRow), ctx, row, false)
+		expanded.Write(rowXML)
 	}
 
 	return []byte(content[:trOpen] + expanded.String() + content[trClose:])

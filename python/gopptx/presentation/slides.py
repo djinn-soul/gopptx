@@ -135,6 +135,74 @@ class PresentationPropertiesMixin(PresentationProtocol):
         """
         self.execute(ops.OP_SET_MARK_AS_FINAL, {"final": final})
 
+    # Additional python-pptx compatible core properties
+
+    @property
+    def author(self) -> str:
+        """The author/creator of the presentation (python-pptx: author)."""
+        return self.core_properties.get("creator", "")
+
+    @author.setter
+    def author(self, value: str) -> None:
+        props = self.core_properties
+        props["creator"] = value
+        self.core_properties = props
+
+    @property
+    def comments(self) -> str:
+        """The comments/description of the presentation (python-pptx: comments)."""
+        return self.core_properties.get("description", "")
+
+    @comments.setter
+    def comments(self, value: str) -> None:
+        props = self.core_properties
+        props["description"] = value
+        self.core_properties = props
+
+    @property
+    def identifier(self) -> str:
+        """The identifier of the presentation."""
+        return self.core_properties.get("identifier", "")
+
+    @identifier.setter
+    def identifier(self, value: str) -> None:
+        props = self.core_properties
+        props["identifier"] = value
+        self.core_properties = props
+
+    @property
+    def language(self) -> str:
+        """The language of the presentation."""
+        return self.core_properties.get("language", "")
+
+    @language.setter
+    def language(self, value: str) -> None:
+        props = self.core_properties
+        props["language"] = value
+        self.core_properties = props
+
+    @property
+    def last_printed(self) -> str:
+        """The last printed date of the presentation."""
+        return self.core_properties.get("lastPrinted", "")
+
+    @last_printed.setter
+    def last_printed(self, value: str) -> None:
+        props = self.core_properties
+        props["lastPrinted"] = value
+        self.core_properties = props
+
+    @property
+    def version(self) -> str:
+        """The version of the presentation."""
+        return self.core_properties.get("version", "")
+
+    @version.setter
+    def version(self, value: str) -> None:
+        props = self.core_properties
+        props["version"] = value
+        self.core_properties = props
+
 
 class PresentationSlidesMixin(
     PresentationPropertiesMixin,
@@ -143,6 +211,8 @@ class PresentationSlidesMixin(
     PresentationLayoutMixin,
 ):
     """Mixin providing slide-related methods for Presentation."""
+
+    _BOUNDS_COMPONENTS = 4
 
     if TYPE_CHECKING:
 
@@ -165,24 +235,25 @@ class PresentationSlidesMixin(
         slide_index: int,
         ph_index: int,
         ph_type: str = "",
-        text: str | None = None,
-        image_path: str | None = None,
-        bounds: tuple[float, float, float, float] | None = None,
-        text_style: dict[str, object] | None = None,
+        **kwargs: object,
     ) -> None:
         """Bridge op: insert rich content into a placeholder."""
+        text = kwargs.get("text")
+        image_path = kwargs.get("image_path")
+        bounds = kwargs.get("bounds")
+        text_style = kwargs.get("text_style")
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "index": ph_index,
             "ph_type": ph_type,
         }
-        if text is not None:
+        if isinstance(text, str):
             payload["text"] = text
-        if image_path is not None:
+        if isinstance(image_path, str):
             payload["image_path"] = image_path
-        if bounds is not None:
+        if isinstance(bounds, tuple) and len(bounds) == self._BOUNDS_COMPONENTS:
             payload["bounds"] = list(bounds)
-        if text_style is not None:
+        if isinstance(text_style, dict):
             payload["text_style"] = text_style
 
         self.execute(ops.OP_SET_PLACEHOLDER_CONTENT, payload)

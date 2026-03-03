@@ -73,6 +73,8 @@ _ORIENTATION_ALIASES = {
     "word_art_vert_rtl": "wordArtVertRtl",
 }
 
+_FULL_ROTATION_DEGREES = 360.0
+
 
 class TextFrameProps:
     """Mutable text-frame object with normalized payload conversion."""
@@ -158,34 +160,46 @@ class TextFrameProps:
 
     def to_payload(self) -> dict[str, object]:
         """Convert this text-frame object to bridge payload format."""
-        payload: dict[str, object] = {}
-        if self.margin_top is not None:
-            payload["margin_top"] = self.margin_top
-        if self.margin_bottom is not None:
-            payload["margin_bottom"] = self.margin_bottom
-        if self.margin_left is not None:
-            payload["margin_left"] = self.margin_left
-        if self.margin_right is not None:
-            payload["margin_right"] = self.margin_right
-        if self.word_wrap is not None:
-            payload["word_wrap"] = self.word_wrap
-        if self.auto_fit is not None:
-            payload["auto_fit"] = self.auto_fit
-        if self.auto_fit_type is not None:
-            payload["auto_fit_type"] = _normalize_auto_fit_type(self.auto_fit_type)
-        if self.vertical_align is not None:
-            payload["vertical_align"] = _normalize_vertical_align(self.vertical_align)
-        if self.orientation is not None:
-            payload["orientation"] = _normalize_orientation(self.orientation)
-        if self.columns is not None:
-            if self.columns < 1:
-                raise ValueError("text_frame.columns must be >= 1")
-            payload["columns"] = self.columns
-        if self.rotation is not None:
-            if self.rotation < -360.0 or self.rotation > 360.0:
-                raise ValueError("text_frame.rotation must be between -360 and 360")
-            payload["rotation"] = float(self.rotation)
+        payload: dict[str, object] = _collect_base_payload(self)
+        _append_layout_payload(payload, self)
         return payload
+
+
+def _collect_base_payload(props: TextFrameProps) -> dict[str, object]:
+    payload: dict[str, object] = {}
+    if props.margin_top is not None:
+        payload["margin_top"] = props.margin_top
+    if props.margin_bottom is not None:
+        payload["margin_bottom"] = props.margin_bottom
+    if props.margin_left is not None:
+        payload["margin_left"] = props.margin_left
+    if props.margin_right is not None:
+        payload["margin_right"] = props.margin_right
+    if props.word_wrap is not None:
+        payload["word_wrap"] = props.word_wrap
+    if props.auto_fit is not None:
+        payload["auto_fit"] = props.auto_fit
+    if props.auto_fit_type is not None:
+        payload["auto_fit_type"] = _normalize_auto_fit_type(props.auto_fit_type)
+    if props.vertical_align is not None:
+        payload["vertical_align"] = _normalize_vertical_align(props.vertical_align)
+    if props.orientation is not None:
+        payload["orientation"] = _normalize_orientation(props.orientation)
+    return payload
+
+
+def _append_layout_payload(payload: dict[str, object], props: TextFrameProps) -> None:
+    if props.columns is not None:
+        if props.columns < 1:
+            raise ValueError("text_frame.columns must be >= 1")
+        payload["columns"] = props.columns
+    if props.rotation is not None:
+        if (
+            props.rotation < -_FULL_ROTATION_DEGREES
+            or props.rotation > _FULL_ROTATION_DEGREES
+        ):
+            raise ValueError("text_frame.rotation must be between -360 and 360")
+        payload["rotation"] = float(props.rotation)
 
 
 def serialize_text_frame_for_payload(text_frame: object) -> object:

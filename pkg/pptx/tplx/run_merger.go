@@ -49,7 +49,7 @@ type paraChild struct {
 // PowerPoint routinely fragments "{{name}}" into 3-4 separate <a:r> elements due to
 // spell-check and autocorrect boundaries. Template substitution requires the full
 // token to be in a single run's <a:t> text.
-func mergeAdjacentRuns(xmlBytes []byte) ([]byte, error) {
+func mergeAdjacentRuns(xmlBytes []byte) []byte {
 	dec := xml.NewDecoder(bytes.NewReader(xmlBytes))
 	dec.Strict = false
 
@@ -57,9 +57,9 @@ func mergeAdjacentRuns(xmlBytes []byte) ([]byte, error) {
 	out.Grow(len(xmlBytes))
 
 	if err := streamRewrite(dec, &out, ""); err != nil {
-		return xmlBytes, nil //nolint:nilerr // fall back to original on parse error
+		return xmlBytes
 	}
-	return out.Bytes(), nil
+	return out.Bytes()
 }
 
 // ── streaming rewriter ────────────────────────────────────────────────────────
@@ -69,41 +69,58 @@ func streamRewrite(dec *xml.Decoder, out *bytes.Buffer, parentLocal string) erro
 	for {
 		tok, err := dec.Token()
 		if err != nil {
-			if parentLocal == "" {
-				return nil // EOF at top level = done
-			}
-			return err //nolint:wrapcheck
+			return handleStreamReadError(parentLocal, err)
 		}
 		switch t := tok.(type) {
 		case xml.ProcInst:
-			// Skip the XML declaration — callers already handle the header.
+			continue
 		case xml.StartElement:
-			if isDrawingMLLocal(t, "p") {
-				if err2 := writeParagraph(dec, out, t); err2 != nil {
-					return err2
-				}
-			} else {
-				out.Write(reencStart(t))
-				if err2 := streamRewrite(dec, out, t.Name.Local); err2 != nil {
-					return err2
-				}
+			if err = handleStreamStartElement(dec, out, t); err != nil {
+				return err
 			}
 		case xml.EndElement:
-			out.Write(reencEnd(t))
-			if t.Name.Local == parentLocal {
+			if shouldStop := handleStreamEndElement(out, parentLocal, t); shouldStop {
 				return nil
 			}
 		case xml.CharData:
-			if parentLocal == "" {
-				continue
-			}
-			writeEscaped(out, string(t))
+			handleStreamCharData(out, parentLocal, t)
 		case xml.Comment:
-			out.WriteString("<!--")
-			out.Write(t)
-			out.WriteString("-->")
+			writeXMLComment(out, t)
 		}
 	}
+}
+
+func handleStreamReadError(parentLocal string, err error) error {
+	if parentLocal == "" {
+		return nil // EOF at top level = done.
+	}
+	return err //nolint:wrapcheck // Streaming decoder errors are returned unchanged for callers.
+}
+
+func handleStreamStartElement(dec *xml.Decoder, out *bytes.Buffer, start xml.StartElement) error {
+	if isDrawingMLLocal(start, "p") {
+		return writeParagraph(dec, out, start)
+	}
+	out.Write(reencStart(start))
+	return streamRewrite(dec, out, start.Name.Local)
+}
+
+func handleStreamEndElement(out *bytes.Buffer, parentLocal string, end xml.EndElement) bool {
+	out.Write(reencEnd(end))
+	return end.Name.Local == parentLocal
+}
+
+func handleStreamCharData(out *bytes.Buffer, parentLocal string, charData xml.CharData) {
+	if parentLocal == "" {
+		return
+	}
+	writeEscaped(out, string(charData))
+}
+
+func writeXMLComment(out *bytes.Buffer, comment xml.Comment) {
+	out.WriteString("<!--")
+	out.Write(comment)
+	out.WriteString("-->")
 }
 
 // ── paragraph rewriter ────────────────────────────────────────────────────────
@@ -135,7 +152,7 @@ func collectParaChildren(dec *xml.Decoder) ([]paraChild, error) {
 	for depth > 0 {
 		tok, err := dec.Token()
 		if err != nil {
-			return nil, err //nolint:wrapcheck
+			return nil, err //nolint:wrapcheck // Preserve decoder errors from malformed paragraph XML.
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:
@@ -178,7 +195,7 @@ func mergeTokenRuns(children []paraChild) []paraChild {
 			runIdxs = append(runIdxs, i)
 		}
 	}
-	if len(runIdxs) < 2 {
+	if len(runIdxs) < minSubmatchLen {
 		return children
 	}
 
@@ -262,7 +279,7 @@ func readRun(dec *xml.Decoder) (runData, error) {
 	for depth > 0 {
 		tok, err := dec.Token()
 		if err != nil {
-			return rd, err //nolint:wrapcheck
+			return rd, err //nolint:wrapcheck // Preserve tokenization errors while reading run content.
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:
@@ -306,7 +323,7 @@ func readCharData(dec *xml.Decoder) (string, error) {
 	for {
 		tok, err := dec.Token()
 		if err != nil {
-			return sb.String(), err //nolint:wrapcheck
+			return sb.String(), err //nolint:wrapcheck // Preserve decoder errors while reading character data.
 		}
 		switch t := tok.(type) {
 		case xml.CharData:
@@ -323,7 +340,7 @@ func collectRawDepth(dec *xml.Decoder, buf *bytes.Buffer) error {
 	for depth > 0 {
 		tok, err := dec.Token()
 		if err != nil {
-			return err //nolint:wrapcheck
+			return err //nolint:wrapcheck // Preserve raw depth parsing failures for caller handling.
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:

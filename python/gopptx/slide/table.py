@@ -207,6 +207,65 @@ class Table:
     def has_banded_rows(self, value: bool) -> None:
         self._update_flags({"band_row": value})
 
+    # python-pptx compatible aliases
+    @property
+    def first_row(self) -> bool:
+        """python-pptx alias for has_header_row."""
+        return self.has_header_row
+
+    @first_row.setter
+    def first_row(self, value: bool) -> None:
+        self.has_header_row = value
+
+    @property
+    def horz_banding(self) -> bool:
+        """python-pptx alias for has_banded_rows."""
+        return self.has_banded_rows
+
+    @horz_banding.setter
+    def horz_banding(self, value: bool) -> None:
+        self.has_banded_rows = value
+
+    @property
+    def first_col(self) -> bool:
+        """When True, first column should have distinct formatting (side-heading column)."""
+        self._ensure_cache()
+        return self._cache.get("first_col", False) is True if self._cache else False
+
+    @first_col.setter
+    def first_col(self, value: bool) -> None:
+        self._update_flags({"first_col": value})
+
+    @property
+    def last_col(self) -> bool:
+        """When True, last column should have distinct formatting (totals column)."""
+        self._ensure_cache()
+        return self._cache.get("last_col", False) is True if self._cache else False
+
+    @last_col.setter
+    def last_col(self, value: bool) -> None:
+        self._update_flags({"last_col": value})
+
+    @property
+    def last_row(self) -> bool:
+        """When True, last row should have distinct formatting (totals row)."""
+        self._ensure_cache()
+        return self._cache.get("last_row", False) is True if self._cache else False
+
+    @last_row.setter
+    def last_row(self, value: bool) -> None:
+        self._update_flags({"last_row": value})
+
+    @property
+    def vert_banding(self) -> bool:
+        """When True, columns should have alternating shading."""
+        self._ensure_cache()
+        return self._cache.get("band_col", False) is True if self._cache else False
+
+    @vert_banding.setter
+    def vert_banding(self, value: bool) -> None:
+        self._update_flags({"band_col": value})
+
     # Table Style
     def apply_style(self, style_guid: str) -> None:
         """Apply a table style to the table.
