@@ -91,10 +91,26 @@ func SlideRelationshipsWithAll(
 	commentsTarget string,
 ) string {
 	var b strings.Builder
+	writeSlideRelsHeader(&b, layoutTarget)
+	maxRID := appendImageRelationships(&b, imageTargets)
+	maxRID = appendPrimaryChartRelationship(&b, chartRel, maxRID)
+	maxRID = appendPlaceholderChartRelationships(&b, placeholderCharts, maxRID)
+	maxRID = appendSmartArtRelationships(&b, smartArtRels, maxRID)
+	maxRID = appendHyperlinkRelationships(&b, hyperlinks, maxRID)
+	maxRID = appendNotesRelationship(&b, notesTarget, maxRID)
+	appendCommentsRelationship(&b, commentsTarget, maxRID)
+	b.WriteString("\n</Relationships>")
+	return b.String()
+}
+
+func writeSlideRelsHeader(b *strings.Builder, layoutTarget string) {
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" ` +
 		`Target="` + Escape(layoutTarget) + `"/>`)
+}
+
+func appendImageRelationships(b *strings.Builder, imageTargets []string) int {
 	maxRID := 1
 	for i, target := range imageTargets {
 		rid := i + startImageRID
@@ -110,28 +126,34 @@ func SlideRelationshipsWithAll(
 			maxRID = rid
 		}
 	}
-	if chartRel != nil {
-		b.WriteString("\n<Relationship Id=\"")
-		b.WriteString(FastEscapeRID(chartRel.RID))
-		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
-		b.WriteString(Escape(chartRel.Target))
-		b.WriteString("\"/>")
+	return maxRID
+}
 
-		if rid := ridNumber(chartRel.RID); rid > maxRID {
-			maxRID = rid
-		}
+func appendPrimaryChartRelationship(b *strings.Builder, chartRel *ChartRel, maxRID int) int {
+	if chartRel == nil {
+		return maxRID
 	}
+	b.WriteString("\n<Relationship Id=\"")
+	b.WriteString(FastEscapeRID(chartRel.RID))
+	b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
+	b.WriteString(Escape(chartRel.Target))
+	b.WriteString("\"/>")
+	return max(maxRID, ridNumber(chartRel.RID))
+}
+
+func appendPlaceholderChartRelationships(b *strings.Builder, placeholderCharts []ChartRel, maxRID int) int {
 	for _, phChart := range placeholderCharts {
 		b.WriteString("\n<Relationship Id=\"")
 		b.WriteString(FastEscapeRID(phChart.RID))
 		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
 		b.WriteString(Escape(phChart.Target))
 		b.WriteString("\"/>")
-
-		if rid := ridNumber(phChart.RID); rid > maxRID {
-			maxRID = rid
-		}
+		maxRID = max(maxRID, ridNumber(phChart.RID))
 	}
+	return maxRID
+}
+
+func appendSmartArtRelationships(b *strings.Builder, smartArtRels []SmartArtRel, maxRID int) int {
 	for _, saRel := range smartArtRels {
 		b.WriteString("\n<Relationship Id=\"")
 		b.WriteString(FastEscapeRID(saRel.RID))
@@ -140,35 +162,42 @@ func SlideRelationshipsWithAll(
 		b.WriteString("\" Target=\"")
 		b.WriteString(Escape(saRel.Target))
 		b.WriteString("\"/>")
-		if rid := ridNumber(saRel.RID); rid > maxRID {
-			maxRID = rid
-		}
+		maxRID = max(maxRID, ridNumber(saRel.RID))
 	}
+	return maxRID
+}
+
+func appendHyperlinkRelationships(b *strings.Builder, hyperlinks []HyperlinkRel, maxRID int) int {
 	for _, hl := range hyperlinks {
 		b.WriteString(HyperlinkRelationshipXML(hl.RID, hl.Target, hl.External, hl.Type))
-		if rid := ridNumber(hl.RID); rid > maxRID {
-			maxRID = rid
-		}
+		maxRID = max(maxRID, ridNumber(hl.RID))
 	}
-	if strings.TrimSpace(notesTarget) != "" {
-		b.WriteString("\n<Relationship Id=\"rId")
-		b.WriteString(strconv.Itoa(maxRID + 1))
-		b.WriteString(
-			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"",
-		)
-		b.WriteString(Escape(notesTarget))
-		b.WriteString("\"/>")
-		maxRID++
+	return maxRID
+}
+
+func appendNotesRelationship(b *strings.Builder, notesTarget string, maxRID int) int {
+	if strings.TrimSpace(notesTarget) == "" {
+		return maxRID
 	}
-	if strings.TrimSpace(commentsTarget) != "" {
-		b.WriteString("\n<Relationship Id=\"rId")
-		b.WriteString(strconv.Itoa(maxRID + 1))
-		b.WriteString(
-			"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments\" Target=\"",
-		)
-		b.WriteString(Escape(commentsTarget))
-		b.WriteString("\"/>")
+	b.WriteString("\n<Relationship Id=\"rId")
+	b.WriteString(strconv.Itoa(maxRID + 1))
+	b.WriteString(
+		"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide\" Target=\"",
+	)
+	b.WriteString(Escape(notesTarget))
+	b.WriteString("\"/>")
+	return maxRID + 1
+}
+
+func appendCommentsRelationship(b *strings.Builder, commentsTarget string, maxRID int) {
+	if strings.TrimSpace(commentsTarget) == "" {
+		return
 	}
-	b.WriteString("\n</Relationships>")
-	return b.String()
+	b.WriteString("\n<Relationship Id=\"rId")
+	b.WriteString(strconv.Itoa(maxRID + 1))
+	b.WriteString(
+		"\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments\" Target=\"",
+	)
+	b.WriteString(Escape(commentsTarget))
+	b.WriteString("\"/>")
 }

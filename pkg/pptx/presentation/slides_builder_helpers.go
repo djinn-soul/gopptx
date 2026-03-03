@@ -71,8 +71,8 @@ func (b *slidePartBuilder) mapTransition(slide elements.SlideContent) string {
 	}
 
 	path := opt.Sound.RelID
-	if strings.HasPrefix(path, "file:") {
-		path = strings.TrimPrefix(path, "file:")
+	if trimmed, ok := strings.CutPrefix(path, "file:"); ok {
+		path = trimmed
 	}
 
 	mediaName, ok := b.catalog.MediaNameForImage(shapes.Image{Path: path})

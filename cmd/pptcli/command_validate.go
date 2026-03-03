@@ -11,6 +11,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
+const validateOutputFormatJSON = "json"
+
 // runValidateCommand validates a PPTX file structure.
 func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
@@ -40,7 +42,7 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		if format == "json" {
+		if format == validateOutputFormatJSON {
 			outputJSONError(stdout, fmt.Sprintf("failed to read file: %v", err))
 			return exitIO
 		}
@@ -50,7 +52,7 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	issues, err := pptx.Validate(data)
 	if err != nil {
-		if format == "json" {
+		if format == validateOutputFormatJSON {
 			outputJSONError(stdout, fmt.Sprintf("validation failed: %v", err))
 			return exitValidate
 		}
@@ -58,7 +60,7 @@ func runValidateCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitValidate
 	}
 
-	if format == "json" {
+	if format == validateOutputFormatJSON {
 		out, err := json.MarshalIndent(issues, "", "  ")
 		if err != nil {
 			outputJSONError(stdout, fmt.Sprintf("failed to marshal JSON: %v", err))

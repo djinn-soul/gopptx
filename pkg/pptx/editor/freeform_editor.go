@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const minFreeformPoints = 2
+
 type freeformPoint struct {
 	X int
 	Y int
@@ -21,7 +23,7 @@ func (e *PresentationEditor) AddFreeformShape(
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return 0, errors.New("slide index out of range")
 	}
-	if len(points) < 2 {
+	if len(points) < minFreeformPoints {
 		return 0, errors.New("freeform requires at least two points")
 	}
 
@@ -45,6 +47,18 @@ func (e *PresentationEditor) AddFreeformShape(
 	}
 	newID := maxID + 1
 
+	minX, minY, width, height, localPts := computeFreeformBounds(points)
+
+	shapeXML := renderFreeformShapeXML(newID, minX, minY, width, height, localPts, closePath)
+	updatedContent, err := insertShapeIntoSlideTree(content, lastShapeEnd, shapeXML)
+	if err != nil {
+		return 0, err
+	}
+	e.parts.Set(partPath, updatedContent)
+	return newID, nil
+}
+
+func computeFreeformBounds(points []freeformPoint) (int, int, int, int, []freeformPoint) {
 	minX, minY := points[0].X, points[0].Y
 	maxX, maxY := points[0].X, points[0].Y
 	for _, pt := range points[1:] {
@@ -61,22 +75,17 @@ func (e *PresentationEditor) AddFreeformShape(
 			maxY = pt.Y
 		}
 	}
-	width := maxX - minX
-	height := maxY - minY
-	if width <= 0 {
-		width = 1
-	}
-	if height <= 0 {
-		height = 1
-	}
+	width := max(maxX-minX, 1)
+	height := max(maxY-minY, 1)
 
 	localPts := make([]freeformPoint, len(points))
 	for i, pt := range points {
 		localPts[i] = freeformPoint{X: pt.X - minX, Y: pt.Y - minY}
 	}
+	return minX, minY, width, height, localPts
+}
 
-	shapeXML := renderFreeformShapeXML(newID, minX, minY, width, height, localPts, closePath)
-
+func insertShapeIntoSlideTree(content []byte, lastShapeEnd int64, shapeXML string) ([]byte, error) {
 	var out bytes.Buffer
 	if lastShapeEnd != -1 {
 		out.Write(content[:lastShapeEnd])
@@ -86,15 +95,13 @@ func (e *PresentationEditor) AddFreeformShape(
 		endTree := []byte("</p:spTree>")
 		idx := bytes.LastIndex(content, endTree)
 		if idx == -1 {
-			return 0, errors.New("invalid slide xml: missing spTree end")
+			return nil, errors.New("invalid slide xml: missing spTree end")
 		}
 		out.Write(content[:idx])
 		out.WriteString(shapeXML)
 		out.Write(content[idx:])
 	}
-
-	e.parts.Set(partPath, out.Bytes())
-	return newID, nil
+	return out.Bytes(), nil
 }
 
 func renderFreeformShapeXML(

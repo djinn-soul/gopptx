@@ -434,6 +434,25 @@ class PresentationShapeMixin(PresentationProtocol):
             ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id}
         )
 
+    def group_shapes(self, slide_index: int, shape_ids: list[int]) -> int:
+        """Group multiple shapes on a slide into a group shape.
+
+        Returns the ID of the created group shape.
+        """
+        result = self.execute(
+            ops.OP_GROUP_SHAPES,
+            {"slide_index": slide_index, "shape_ids": shape_ids},
+        )
+        return int(cast("int", result.get("group_id", -1)))
+
+    def ungroup_shapes(self, slide_index: int, shape_id: int) -> int:
+        """Ungroup a group shape, returning the ID of the first member shape."""
+        result = self.execute(
+            ops.OP_UNGROUP_SHAPES,
+            {"slide_index": slide_index, "shape_id": shape_id},
+        )
+        return int(cast("int", result.get("group_id", -1)))
+
     def move_shape_to_front(self, slide_index: int, shape_id: int) -> None:
         """Move a shape to the front of the z-order."""
         self.execute(

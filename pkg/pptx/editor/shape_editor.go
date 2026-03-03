@@ -17,8 +17,20 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-const textRunFontSizeScale = 100
-const minTextFrameColumns = 1
+const (
+	textRunFontSizeScale = 100
+	minTextFrameColumns  = 1
+
+	actionSlideJump      = "ppaction://hlinksldjump"
+	actionShowJumpPrefix = "ppaction://hlinkshowjump?jump="
+	actionMacroPrefix    = "ppaction://macro?name="
+
+	gradientPositionScale = 1000.0
+	gradientPercentScale  = 100.0
+	maxGradientPercent    = 100.0
+	colorHexLength        = 6
+	actionAttrCapHint     = 3
+)
 
 // parsedShape represents a shape found in the slide XML.
 // It contains the parsed properties and the byte range of the shape node.
@@ -45,6 +57,7 @@ type parsedShape struct {
 	PhType      string // Placeholder type (e.g. "title", "body")
 	Start       int64  // Byte offset of the start of the node
 	End         int64  // Byte offset of the end of the node
+	IsGroup     bool
 }
 
 func (p parsedShape) ToShape() shapes.Shape {
@@ -207,6 +220,7 @@ func buildParsedShapeFromRange(
 	pShape.Start = startOffset
 	pShape.End = endOffset
 	pShape.Type = stopTag
+	pShape.IsGroup = stopTag == "grpSp"
 	return pShape, nil
 }
 
@@ -359,16 +373,23 @@ type shapeXML struct {
 	} `xml:"txBody"`
 }
 
-//nolint:gocognit,funlen,nestif // XML shape parsing must handle many optional OOXML branches in one pass.
 func parseShapeProperties(content []byte) (parsedShape, error) {
 	var s shapeXML
 	if err := xml.Unmarshal(content, &s); err != nil {
 		return parsedShape{}, err
 	}
 
-	ps := parsedShape{
-		PhIndex: -1,
-	}
+	ps := parsedShape{PhIndex: -1}
+	applyParsedShapeFill(&ps, &s)
+	applyParsedShapeLine(&ps, &s)
+	applyParsedShapeEffects(&ps, &s)
+	applyParsedShapeIdentity(&ps, &s)
+	applyParsedShapeTransform(&ps, &s)
+	applyParsedShapeText(&ps, &s)
+	return ps, nil
+}
+
+func applyParsedShapeFill(ps *parsedShape, s *shapeXML) {
 	if s.SpPr.NoFill != nil {
 		background := true
 		ps.Fill = &common.ShapeFill{Background: &background}
@@ -378,240 +399,362 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		ps.Fill = &common.ShapeFill{Solid: &fillColor}
 	}
 	if s.SpPr.GradFill != nil {
-		grad := &common.GradientFill{}
-		if s.SpPr.GradFill.Lin != nil && s.SpPr.GradFill.Lin.Ang != nil {
-			angle := float64(*s.SpPr.GradFill.Lin.Ang) / rotationDegreeToOOXML
-			grad.AngleDeg = &angle
-		}
-		for _, gs := range s.SpPr.GradFill.GsLst.Gs {
-			if gs.SrgbClr == nil || gs.SrgbClr.Val == "" {
-				continue
-			}
-			stop := common.GradientStop{Color: gs.SrgbClr.Val}
-			if gs.Pos != nil {
-				pos := float64(*gs.Pos) / 1000.0
-				stop.PositionPct = &pos
-			}
-			grad.Stops = append(grad.Stops, stop)
-		}
-		ps.Fill = &common.ShapeFill{Gradient: grad}
+		ps.Fill = &common.ShapeFill{Gradient: parseGradientFill(s.SpPr.GradFill)}
 	}
 	if s.SpPr.PattFill != nil {
-		pattern := &common.PatternedFill{}
-		if s.SpPr.PattFill.Prst != nil {
-			pattern.Preset = s.SpPr.PattFill.Prst
-		}
-		if s.SpPr.PattFill.FgClr != nil &&
-			s.SpPr.PattFill.FgClr.SrgbClr != nil &&
-			s.SpPr.PattFill.FgClr.SrgbClr.Val != "" {
-			fg := s.SpPr.PattFill.FgClr.SrgbClr.Val
-			pattern.FgColor = &fg
-		}
-		if s.SpPr.PattFill.BgClr != nil &&
-			s.SpPr.PattFill.BgClr.SrgbClr != nil &&
-			s.SpPr.PattFill.BgClr.SrgbClr.Val != "" {
-			bg := s.SpPr.PattFill.BgClr.SrgbClr.Val
-			pattern.BgColor = &bg
-		}
-		ps.Fill = &common.ShapeFill{Pattern: pattern}
+		ps.Fill = &common.ShapeFill{Pattern: parsePatternFill(s.SpPr.PattFill)}
 	}
-	if s.SpPr.Ln != nil {
-		line := &common.ShapeLine{}
-		if s.SpPr.Ln.SolidFill != nil && s.SpPr.Ln.SolidFill.SrgbClr.Val != "" {
-			lineColor := s.SpPr.Ln.SolidFill.SrgbClr.Val
-			line.Color = &lineColor
-		}
-		if s.SpPr.Ln.W != nil {
-			line.WidthEmu = s.SpPr.Ln.W
-		}
-		if s.SpPr.Ln.PrstDash != nil && s.SpPr.Ln.PrstDash.Val != "" {
-			dash := s.SpPr.Ln.PrstDash.Val
-			line.DashStyle = &dash
-		}
-		if line.Color != nil || line.WidthEmu != nil || line.DashStyle != nil {
-			ps.Line = line
-		}
+}
+
+func parseGradientFill(src *struct {
+	Lin *struct {
+		Ang *int `xml:"ang,attr"`
+	} `xml:"lin"`
+	GsLst struct {
+		Gs []struct {
+			Pos     *int `xml:"pos,attr"`
+			SrgbClr *struct {
+				Val string `xml:"val,attr"`
+			} `xml:"srgbClr"`
+		} `xml:"gs"`
+	} `xml:"gsLst"`
+}) *common.GradientFill {
+	grad := &common.GradientFill{}
+	if src.Lin != nil && src.Lin.Ang != nil {
+		angle := float64(*src.Lin.Ang) / rotationDegreeToOOXML
+		grad.AngleDeg = &angle
 	}
-	if s.SpPr.EffectLst != nil {
-		if s.SpPr.EffectLst.OuterShdw == nil && s.SpPr.EffectLst.Glow == nil && s.SpPr.EffectLst.Blur == nil &&
-			s.SpPr.EffectLst.SoftEdge == nil &&
-			s.SpPr.EffectLst.Reflection == nil {
-			inherit := false
-			ps.Shadow = &common.ShapeShadow{Inherit: &inherit}
-		} else if s.SpPr.EffectLst.OuterShdw != nil {
-			outer := s.SpPr.EffectLst.OuterShdw
-			shadow := &common.ShapeShadow{}
-			if outer.SrgbClr != nil && outer.SrgbClr.Val != "" {
-				color := outer.SrgbClr.Val
-				shadow.Color = &color
-			}
-			if outer.BlurRad != nil {
-				shadow.BlurEmu = outer.BlurRad
-			}
-			if outer.Dist != nil {
-				shadow.DistanceEmu = outer.Dist
-			}
-			if outer.Dir != nil {
-				angle := float64(*outer.Dir) / rotationDegreeToOOXML
-				shadow.AngleDeg = &angle
-			}
-			ps.Shadow = shadow
+	for _, gs := range src.GsLst.Gs {
+		if gs.SrgbClr == nil || gs.SrgbClr.Val == "" {
+			continue
 		}
-		if s.SpPr.EffectLst.Glow != nil {
-			glow := &common.ShapeGlow{}
-			if s.SpPr.EffectLst.Glow.SrgbClr != nil && s.SpPr.EffectLst.Glow.SrgbClr.Val != "" {
-				color := s.SpPr.EffectLst.Glow.SrgbClr.Val
-				glow.Color = &color
-			}
-			if s.SpPr.EffectLst.Glow.Rad != nil {
-				glow.RadiusEmu = s.SpPr.EffectLst.Glow.Rad
-			}
-			ps.Glow = glow
+		stop := common.GradientStop{Color: gs.SrgbClr.Val}
+		if gs.Pos != nil {
+			pos := float64(*gs.Pos) / gradientPositionScale
+			stop.PositionPct = &pos
 		}
-		if s.SpPr.EffectLst.Blur != nil {
-			blur := &common.ShapeBlur{}
-			if s.SpPr.EffectLst.Blur.Rad != nil {
-				blur.RadiusEmu = s.SpPr.EffectLst.Blur.Rad
-			}
-			ps.Blur = blur
-		}
-		if s.SpPr.EffectLst.SoftEdge != nil {
-			softEdge := &common.ShapeSoftEdge{}
-			if s.SpPr.EffectLst.SoftEdge.Rad != nil {
-				softEdge.RadiusEmu = s.SpPr.EffectLst.SoftEdge.Rad
-			}
-			ps.SoftEdge = softEdge
-		}
-		if s.SpPr.EffectLst.Reflection != nil {
-			reflection := &common.ShapeReflection{}
-			if s.SpPr.EffectLst.Reflection.BlurRad != nil {
-				reflection.BlurEmu = s.SpPr.EffectLst.Reflection.BlurRad
-			}
-			if s.SpPr.EffectLst.Reflection.Dist != nil {
-				reflection.DistanceEmu = s.SpPr.EffectLst.Reflection.Dist
-			}
-			ps.Reflection = reflection
-		}
+		grad.Stops = append(grad.Stops, stop)
 	}
-	// Extract ID/Name (handle both sp and pic variants)
-	if s.NvSpPr.CNvPr.ID != 0 {
+	return grad
+}
+
+func parsePatternFill(src *struct {
+	Prst  *string `xml:"prst,attr"`
+	FgClr *struct {
+		SrgbClr *struct {
+			Val string `xml:"val,attr"`
+		} `xml:"srgbClr"`
+	} `xml:"fgClr"`
+	BgClr *struct {
+		SrgbClr *struct {
+			Val string `xml:"val,attr"`
+		} `xml:"srgbClr"`
+	} `xml:"bgClr"`
+}) *common.PatternedFill {
+	pattern := &common.PatternedFill{}
+	if src.Prst != nil {
+		pattern.Preset = src.Prst
+	}
+	if color, ok := parseColorRef(src.FgClr); ok {
+		pattern.FgColor = &color
+	}
+	if color, ok := parseColorRef(src.BgClr); ok {
+		pattern.BgColor = &color
+	}
+	return pattern
+}
+
+func parseColorRef(src *struct {
+	SrgbClr *struct {
+		Val string `xml:"val,attr"`
+	} `xml:"srgbClr"`
+}) (string, bool) {
+	if src == nil || src.SrgbClr == nil || src.SrgbClr.Val == "" {
+		return "", false
+	}
+	return src.SrgbClr.Val, true
+}
+
+func applyParsedShapeLine(ps *parsedShape, s *shapeXML) {
+	if s.SpPr.Ln == nil {
+		return
+	}
+	line := &common.ShapeLine{}
+	if s.SpPr.Ln.SolidFill != nil && s.SpPr.Ln.SolidFill.SrgbClr.Val != "" {
+		lineColor := s.SpPr.Ln.SolidFill.SrgbClr.Val
+		line.Color = &lineColor
+	}
+	if s.SpPr.Ln.W != nil {
+		line.WidthEmu = s.SpPr.Ln.W
+	}
+	if s.SpPr.Ln.PrstDash != nil && s.SpPr.Ln.PrstDash.Val != "" {
+		dash := s.SpPr.Ln.PrstDash.Val
+		line.DashStyle = &dash
+	}
+	if line.Color != nil || line.WidthEmu != nil || line.DashStyle != nil {
+		ps.Line = line
+	}
+}
+
+func applyParsedShapeEffects(ps *parsedShape, s *shapeXML) {
+	if s.SpPr.EffectLst == nil {
+		return
+	}
+	applyParsedShadow(ps, s)
+	if s.SpPr.EffectLst.Glow != nil {
+		ps.Glow = parseGlowEffect(s)
+	}
+	if s.SpPr.EffectLst.Blur != nil {
+		ps.Blur = parseBlurEffect(s)
+	}
+	if s.SpPr.EffectLst.SoftEdge != nil {
+		ps.SoftEdge = parseSoftEdgeEffect(s)
+	}
+	if s.SpPr.EffectLst.Reflection != nil {
+		ps.Reflection = parseReflectionEffect(s)
+	}
+}
+
+func applyParsedShadow(ps *parsedShape, s *shapeXML) {
+	if s.SpPr.EffectLst.OuterShdw == nil &&
+		s.SpPr.EffectLst.Glow == nil &&
+		s.SpPr.EffectLst.Blur == nil &&
+		s.SpPr.EffectLst.SoftEdge == nil &&
+		s.SpPr.EffectLst.Reflection == nil {
+		inherit := false
+		ps.Shadow = &common.ShapeShadow{Inherit: &inherit}
+		return
+	}
+	if s.SpPr.EffectLst.OuterShdw == nil {
+		return
+	}
+	outer := s.SpPr.EffectLst.OuterShdw
+	shadow := &common.ShapeShadow{}
+	if outer.SrgbClr != nil && outer.SrgbClr.Val != "" {
+		color := outer.SrgbClr.Val
+		shadow.Color = &color
+	}
+	if outer.BlurRad != nil {
+		shadow.BlurEmu = outer.BlurRad
+	}
+	if outer.Dist != nil {
+		shadow.DistanceEmu = outer.Dist
+	}
+	if outer.Dir != nil {
+		angle := float64(*outer.Dir) / rotationDegreeToOOXML
+		shadow.AngleDeg = &angle
+	}
+	ps.Shadow = shadow
+}
+
+func parseGlowEffect(s *shapeXML) *common.ShapeGlow {
+	glow := &common.ShapeGlow{}
+	if s.SpPr.EffectLst.Glow.SrgbClr != nil && s.SpPr.EffectLst.Glow.SrgbClr.Val != "" {
+		color := s.SpPr.EffectLst.Glow.SrgbClr.Val
+		glow.Color = &color
+	}
+	if s.SpPr.EffectLst.Glow.Rad != nil {
+		glow.RadiusEmu = s.SpPr.EffectLst.Glow.Rad
+	}
+	return glow
+}
+
+func parseBlurEffect(s *shapeXML) *common.ShapeBlur {
+	blur := &common.ShapeBlur{}
+	if s.SpPr.EffectLst.Blur.Rad != nil {
+		blur.RadiusEmu = s.SpPr.EffectLst.Blur.Rad
+	}
+	return blur
+}
+
+func parseSoftEdgeEffect(s *shapeXML) *common.ShapeSoftEdge {
+	softEdge := &common.ShapeSoftEdge{}
+	if s.SpPr.EffectLst.SoftEdge.Rad != nil {
+		softEdge.RadiusEmu = s.SpPr.EffectLst.SoftEdge.Rad
+	}
+	return softEdge
+}
+
+func parseReflectionEffect(s *shapeXML) *common.ShapeReflection {
+	reflection := &common.ShapeReflection{}
+	if s.SpPr.EffectLst.Reflection.BlurRad != nil {
+		reflection.BlurEmu = s.SpPr.EffectLst.Reflection.BlurRad
+	}
+	if s.SpPr.EffectLst.Reflection.Dist != nil {
+		reflection.DistanceEmu = s.SpPr.EffectLst.Reflection.Dist
+	}
+	return reflection
+}
+
+func applyPlaceholderFromShape(ps *parsedShape, nvPr struct {
+	Ph *struct {
+		Idx  *int   `xml:"idx,attr"`
+		Type string `xml:"type,attr"`
+	} `xml:"ph"`
+}) {
+	if nvPr.Ph == nil {
+		return
+	}
+	applyPlaceholderInfo(ps, nvPr.Ph.Type, nvPr.Ph.Idx)
+}
+
+func applyPlaceholderFromPic(ps *parsedShape, nvPr struct {
+	Ph *struct {
+		Idx  *int   `xml:"idx,attr"`
+		Type string `xml:"type,attr"`
+	} `xml:"ph"`
+}) {
+	if nvPr.Ph == nil {
+		return
+	}
+	applyPlaceholderInfo(ps, nvPr.Ph.Type, nvPr.Ph.Idx)
+}
+
+func applyParsedShapeIdentity(ps *parsedShape, s *shapeXML) {
+	switch {
+	case s.NvSpPr.CNvPr.ID != 0:
 		ps.ID = s.NvSpPr.CNvPr.ID
 		ps.Name = s.NvSpPr.CNvPr.Name
-		if s.NvSpPr.NvPr.Ph != nil {
-			ps.PhType = s.NvSpPr.NvPr.Ph.Type
-			if s.NvSpPr.NvPr.Ph.Idx != nil {
-				ps.PhIndex = *s.NvSpPr.NvPr.Ph.Idx
-			} else {
-				// idx is optional and defaults to 0 in OOXML for <p:ph/>
-				ps.PhIndex = 0
-			}
-		}
-	} else if s.NvPicPr.CNvPr.ID != 0 {
+		applyPlaceholderFromShape(ps, s.NvSpPr.NvPr)
+	case s.NvPicPr.CNvPr.ID != 0:
 		ps.ID = s.NvPicPr.CNvPr.ID
 		ps.Name = s.NvPicPr.CNvPr.Name
-		if s.NvPicPr.NvPr.Ph != nil {
-			ps.PhType = s.NvPicPr.NvPr.Ph.Type
-			if s.NvPicPr.NvPr.Ph.Idx != nil {
-				ps.PhIndex = *s.NvPicPr.NvPr.Ph.Idx
-			} else {
-				// idx is optional and defaults to 0 in OOXML for <p:ph/>
-				ps.PhIndex = 0
-			}
-		}
-	} else if s.NvGrpSpPr.CNvPr.ID != 0 {
+		applyPlaceholderFromPic(ps, s.NvPicPr.NvPr)
+	case s.NvGrpSpPr.CNvPr.ID != 0:
 		ps.ID = s.NvGrpSpPr.CNvPr.ID
 		ps.Name = s.NvGrpSpPr.CNvPr.Name
 	}
+}
 
-	// Transform
+func applyPlaceholderInfo(ps *parsedShape, phType string, phIdx *int) {
+	ps.PhType = phType
+	if phIdx != nil {
+		ps.PhIndex = *phIdx
+		return
+	}
+	ps.PhIndex = 0
+}
+
+func applyParsedShapeTransform(ps *parsedShape, s *shapeXML) {
 	if s.SpPr.Xfrm.Ext.Cx != 0 || s.SpPr.Xfrm.Ext.Cy != 0 || s.SpPr.Xfrm.Off.X != 0 || s.SpPr.Xfrm.Off.Y != 0 {
 		ps.X = s.SpPr.Xfrm.Off.X
 		ps.Y = s.SpPr.Xfrm.Off.Y
 		ps.W = s.SpPr.Xfrm.Ext.Cx
 		ps.H = s.SpPr.Xfrm.Ext.Cy
-	} else {
-		ps.X = s.GrpSpPr.Xfrm.Off.X
-		ps.Y = s.GrpSpPr.Xfrm.Off.Y
-		ps.W = s.GrpSpPr.Xfrm.Ext.Cx
-		ps.H = s.GrpSpPr.Xfrm.Ext.Cy
+		return
 	}
+	ps.X = s.GrpSpPr.Xfrm.Off.X
+	ps.Y = s.GrpSpPr.Xfrm.Off.Y
+	ps.W = s.GrpSpPr.Xfrm.Ext.Cx
+	ps.H = s.GrpSpPr.Xfrm.Ext.Cy
+}
 
-	// Text (simple accumulation) and Runs parsing
+func applyParsedShapeText(ps *parsedShape, s *shapeXML) {
 	var txt strings.Builder
-	for pIdx, p := range s.TxBody.P {
-		if pIdx == 0 && p.PPr != nil {
-			paragraph := &common.Paragraph{}
-			if p.PPr.MarL != nil {
-				paragraph.Indent = p.PPr.MarL
-			}
-			if p.PPr.Indent != nil && *p.PPr.Indent < 0 {
-				hanging := -*p.PPr.Indent
-				paragraph.Hanging = &hanging
-			}
-			if paragraph.Indent != nil || paragraph.Hanging != nil {
-				ps.Paragraph = paragraph
-			}
-		}
-		for _, r := range p.R {
-			txt.WriteString(r.T)
-
-			// Build TextRun from parsed properties
-			if r.RPr != nil || r.T != "" {
-				run := common.TextRun{Text: r.T}
-				if r.RPr != nil {
-					if r.RPr.Bold != nil && *r.RPr.Bold {
-						run.Bold = r.RPr.Bold
-					}
-					if r.RPr.Italic != nil && *r.RPr.Italic {
-						run.Italic = r.RPr.Italic
-					}
-					if r.RPr.Underline != nil && *r.RPr.Underline != "" {
-						run.Underline = r.RPr.Underline
-					}
-					if r.RPr.Strikethrough != nil && *r.RPr.Strikethrough != "" {
-						run.Strikethrough = r.RPr.Strikethrough
-					}
-					switch {
-					case parseIntAttr(r.RPr.Baseline) < 0:
-						v := true
-						run.Subscript = &v
-					case parseIntAttr(r.RPr.Baseline) > 0:
-						v := true
-						run.Superscript = &v
-					}
-					if r.RPr.Caps != nil {
-						switch strings.ToLower(strings.TrimSpace(*r.RPr.Caps)) {
-						case "all":
-							v := true
-							run.AllCaps = &v
-						case "small":
-							v := true
-							run.SmallCaps = &v
-						}
-					}
-					if parseXMLBoolAttr(r.RPr.SmallCaps) {
-						v := true
-						run.SmallCaps = &v
-					}
-					if r.RPr.SolidFill.SrgbClr.Val != "" {
-						val := r.RPr.SolidFill.SrgbClr.Val
-						run.Color = &val
-					}
-					if r.RPr.Highlight.SrgbClr.Val != "" {
-						val := r.RPr.Highlight.SrgbClr.Val
-						run.Highlight = &val
-					}
-				}
+	for pIdx, paragraph := range s.TxBody.P {
+		applyParsedParagraph(ps, pIdx, paragraph.PPr)
+		for _, runXML := range paragraph.R {
+			txt.WriteString(runXML.T)
+			if run, ok := parseTextRun(runXML); ok {
 				ps.Runs = append(ps.Runs, run)
 			}
 		}
 		if pIdx < len(s.TxBody.P)-1 {
-			txt.WriteString("\n") // naive paragraph join
+			txt.WriteString("\n")
 		}
 	}
 	ps.Text = txt.String()
+}
 
-	return ps, nil
+func applyParsedParagraph(ps *parsedShape, index int, pPr *struct {
+	MarL   *int `xml:"marL,attr"`
+	Indent *int `xml:"indent,attr"`
+}) {
+	if index != 0 || pPr == nil {
+		return
+	}
+	paragraph := &common.Paragraph{}
+	if pPr.MarL != nil {
+		paragraph.Indent = pPr.MarL
+	}
+	if pPr.Indent != nil && *pPr.Indent < 0 {
+		hanging := -*pPr.Indent
+		paragraph.Hanging = &hanging
+	}
+	if paragraph.Indent != nil || paragraph.Hanging != nil {
+		ps.Paragraph = paragraph
+	}
+}
+
+func parseTextRun(runXML struct {
+	RPr *runPropsXML `xml:"rPr"`
+	T   string       `xml:"t"`
+}) (common.TextRun, bool) {
+	if runXML.RPr == nil && runXML.T == "" {
+		return common.TextRun{}, false
+	}
+	run := common.TextRun{Text: runXML.T}
+	if runXML.RPr != nil {
+		applyRunStyle(&run, runXML.RPr)
+	}
+	return run, true
+}
+
+func applyRunStyle(run *common.TextRun, rpr *runPropsXML) {
+	if rpr.Bold != nil && *rpr.Bold {
+		run.Bold = rpr.Bold
+	}
+	if rpr.Italic != nil && *rpr.Italic {
+		run.Italic = rpr.Italic
+	}
+	if rpr.Underline != nil && *rpr.Underline != "" {
+		run.Underline = rpr.Underline
+	}
+	if rpr.Strikethrough != nil && *rpr.Strikethrough != "" {
+		run.Strikethrough = rpr.Strikethrough
+	}
+	applyRunBaseline(run, rpr)
+	applyRunCaps(run, rpr)
+	applyRunColors(run, rpr)
+}
+
+func applyRunBaseline(run *common.TextRun, rpr *runPropsXML) {
+	switch {
+	case parseIntAttr(rpr.Baseline) < 0:
+		v := true
+		run.Subscript = &v
+	case parseIntAttr(rpr.Baseline) > 0:
+		v := true
+		run.Superscript = &v
+	}
+}
+
+func applyRunCaps(run *common.TextRun, rpr *runPropsXML) {
+	if rpr.Caps != nil {
+		switch strings.ToLower(strings.TrimSpace(*rpr.Caps)) {
+		case "all":
+			v := true
+			run.AllCaps = &v
+		case "small":
+			v := true
+			run.SmallCaps = &v
+		}
+	}
+	if parseXMLBoolAttr(rpr.SmallCaps) {
+		v := true
+		run.SmallCaps = &v
+	}
+}
+
+func applyRunColors(run *common.TextRun, rpr *runPropsXML) {
+	if rpr.SolidFill.SrgbClr.Val != "" {
+		val := rpr.SolidFill.SrgbClr.Val
+		run.Color = &val
+	}
+	if rpr.Highlight.SrgbClr.Val != "" {
+		val := rpr.Highlight.SrgbClr.Val
+		run.Highlight = &val
+	}
 }
 
 // replaceShapeNodes replaces the XML at the given indices.
@@ -876,7 +1019,7 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 		return 0, errors.New("text_frame.rotation must be finite")
 	}
 	if raw < -360.0 || raw > 360.0 {
-		return 0, fmt.Errorf("text_frame.rotation must be between -360 and 360 degrees")
+		return 0, errors.New("text_frame.rotation must be between -360 and 360 degrees")
 	}
 	return int64(math.Round(raw * rotationDegreeToOOXML)), nil
 }
@@ -979,64 +1122,97 @@ func renderShapeStyleXML(
 	reflection *common.ShapeReflection,
 ) (string, error) {
 	var style strings.Builder
-	if fill != nil {
-		fillXML, err := renderFillXML(fill)
-		if err != nil {
-			return "", err
-		}
-		style.WriteString(fillXML)
+	fillXML, err := renderFillXML(fill)
+	if err != nil {
+		return "", err
 	}
-	if line != nil {
-		lnAttrs := ""
-		if line.WidthEmu != nil {
-			if *line.WidthEmu <= 0 {
-				return "", errors.New("line.width_emu must be > 0")
-			}
-			lnAttrs = fmt.Sprintf(` w="%d"`, *line.WidthEmu)
-		}
-		lineColor := ""
-		if line.Color != nil {
-			color, err := normalizeHexColor(*line.Color)
-			if err != nil {
-				return "", fmt.Errorf("line.color: %w", err)
-			}
-			lineColor = color
-		}
-		lineDash := ""
-		if line.DashStyle != nil {
-			dash, err := normalizeLineDashStyle(*line.DashStyle)
-			if err != nil {
-				return "", fmt.Errorf("line.dash_style: %w", err)
-			}
-			lineDash = dash
-		}
-		style.WriteString(`<a:ln`)
-		style.WriteString(lnAttrs)
-		if lineColor == "" && lineDash == "" {
-			style.WriteString(`/>`)
-		} else {
-			style.WriteString(`>`)
-			if lineDash != "" {
-				style.WriteString(`<a:prstDash val="`)
-				style.WriteString(lineDash)
-				style.WriteString(`"/>`)
-			}
-			if lineColor != "" {
-				style.WriteString(`<a:solidFill><a:srgbClr val="`)
-				style.WriteString(lineColor)
-				style.WriteString(`"/></a:solidFill>`)
-			}
-			style.WriteString(`</a:ln>`)
-		}
+	style.WriteString(fillXML)
+
+	lineXML, err := renderLineXML(line)
+	if err != nil {
+		return "", err
 	}
+	style.WriteString(lineXML)
+
 	effectsXML, err := renderEffectsXML(shadow, glow, blur, softEdge, reflection)
 	if err != nil {
 		return "", err
 	}
-	if effectsXML != "" {
-		style.WriteString(effectsXML)
-	}
+	style.WriteString(effectsXML)
 	return style.String(), nil
+}
+
+func renderLineXML(line *common.ShapeLine) (string, error) {
+	if line == nil {
+		return "", nil
+	}
+	lnAttrs, err := renderLineAttrs(line)
+	if err != nil {
+		return "", err
+	}
+	lineColor, err := renderLineColor(line)
+	if err != nil {
+		return "", err
+	}
+	lineDash, err := renderLineDash(line)
+	if err != nil {
+		return "", err
+	}
+	if lineColor == "" && lineDash == "" {
+		return `<a:ln` + lnAttrs + `/>`, nil
+	}
+	return renderLineElement(lnAttrs, lineDash, lineColor), nil
+}
+
+func renderLineAttrs(line *common.ShapeLine) (string, error) {
+	if line.WidthEmu == nil {
+		return "", nil
+	}
+	if *line.WidthEmu <= 0 {
+		return "", errors.New("line.width_emu must be > 0")
+	}
+	return fmt.Sprintf(` w="%d"`, *line.WidthEmu), nil
+}
+
+func renderLineColor(line *common.ShapeLine) (string, error) {
+	if line.Color == nil {
+		return "", nil
+	}
+	color, err := normalizeHexColor(*line.Color)
+	if err != nil {
+		return "", fmt.Errorf("line.color: %w", err)
+	}
+	return color, nil
+}
+
+func renderLineDash(line *common.ShapeLine) (string, error) {
+	if line.DashStyle == nil {
+		return "", nil
+	}
+	dash, err := normalizeLineDashStyle(*line.DashStyle)
+	if err != nil {
+		return "", fmt.Errorf("line.dash_style: %w", err)
+	}
+	return dash, nil
+}
+
+func renderLineElement(lnAttrs, lineDash, lineColor string) string {
+	var style strings.Builder
+	style.WriteString(`<a:ln`)
+	style.WriteString(lnAttrs)
+	style.WriteString(`>`)
+	if lineDash != "" {
+		style.WriteString(`<a:prstDash val="`)
+		style.WriteString(lineDash)
+		style.WriteString(`"/>`)
+	}
+	if lineColor != "" {
+		style.WriteString(`<a:solidFill><a:srgbClr val="`)
+		style.WriteString(lineColor)
+		style.WriteString(`"/></a:solidFill>`)
+	}
+	style.WriteString(`</a:ln>`)
+	return style.String()
 }
 
 func renderEffectsXML(
@@ -1049,58 +1225,82 @@ func renderEffectsXML(
 	if shadow == nil && glow == nil && blur == nil && softEdge == nil && reflection == nil {
 		return "", nil
 	}
-	if shadow != nil && shadow.Inherit != nil {
-		if shadow.Color != nil || shadow.BlurEmu != nil || shadow.DistanceEmu != nil || shadow.AngleDeg != nil {
-			return "", errors.New("shadow.inherit cannot be combined with explicit shadow attributes")
-		}
-		if glow != nil || blur != nil || softEdge != nil || reflection != nil {
-			return "", errors.New("shadow.inherit cannot be combined with other explicit effects")
-		}
-		if *shadow.Inherit {
-			return "", nil
-		}
-		return `<a:effectLst/>`, nil
+	inheritHandled, inheritXML, err := renderInheritedShadowEffects(shadow, glow, blur, softEdge, reflection)
+	if err != nil {
+		return "", err
 	}
-	var items strings.Builder
-	if shadow != nil {
-		shadowXML, err := renderShadowXML(shadow)
-		if err != nil {
-			return "", err
-		}
-		items.WriteString(shadowXML)
+	if inheritHandled {
+		return inheritXML, nil
 	}
-	if glow != nil {
-		glowXML, err := renderGlowXML(glow)
-		if err != nil {
-			return "", err
-		}
-		items.WriteString(glowXML)
-	}
-	if blur != nil {
-		blurXML, err := renderBlurXML(blur)
-		if err != nil {
-			return "", err
-		}
-		items.WriteString(blurXML)
-	}
-	if softEdge != nil {
-		softEdgeXML, err := renderSoftEdgeXML(softEdge)
-		if err != nil {
-			return "", err
-		}
-		items.WriteString(softEdgeXML)
-	}
-	if reflection != nil {
-		reflectionXML, err := renderReflectionXML(reflection)
-		if err != nil {
-			return "", err
-		}
-		items.WriteString(reflectionXML)
+
+	items, err := renderEffectItems(shadow, glow, blur, softEdge, reflection)
+	if err != nil {
+		return "", err
 	}
 	if items.Len() == 0 {
 		return "", nil
 	}
 	return `<a:effectLst>` + items.String() + `</a:effectLst>`, nil
+}
+
+func renderInheritedShadowEffects(
+	shadow *common.ShapeShadow,
+	glow *common.ShapeGlow,
+	blur *common.ShapeBlur,
+	softEdge *common.ShapeSoftEdge,
+	reflection *common.ShapeReflection,
+) (bool, string, error) {
+	if shadow == nil || shadow.Inherit == nil {
+		return false, "", nil
+	}
+	if shadow.Color != nil || shadow.BlurEmu != nil || shadow.DistanceEmu != nil || shadow.AngleDeg != nil {
+		return false, "", errors.New("shadow.inherit cannot be combined with explicit shadow attributes")
+	}
+	if glow != nil || blur != nil || softEdge != nil || reflection != nil {
+		return false, "", errors.New("shadow.inherit cannot be combined with other explicit effects")
+	}
+	if *shadow.Inherit {
+		return true, "", nil
+	}
+	return true, `<a:effectLst/>`, nil
+}
+
+func renderEffectItems(
+	shadow *common.ShapeShadow,
+	glow *common.ShapeGlow,
+	blur *common.ShapeBlur,
+	softEdge *common.ShapeSoftEdge,
+	reflection *common.ShapeReflection,
+) (strings.Builder, error) {
+	var items strings.Builder
+	if err := appendEffectXML(&items, shadow, renderShadowXML); err != nil {
+		return items, err
+	}
+	if err := appendEffectXML(&items, glow, renderGlowXML); err != nil {
+		return items, err
+	}
+	if err := appendEffectXML(&items, blur, renderBlurXML); err != nil {
+		return items, err
+	}
+	if err := appendEffectXML(&items, softEdge, renderSoftEdgeXML); err != nil {
+		return items, err
+	}
+	if err := appendEffectXML(&items, reflection, renderReflectionXML); err != nil {
+		return items, err
+	}
+	return items, nil
+}
+
+func appendEffectXML[T any](builder *strings.Builder, value *T, render func(*T) (string, error)) error {
+	if value == nil {
+		return nil
+	}
+	effectXML, err := render(value)
+	if err != nil {
+		return err
+	}
+	builder.WriteString(effectXML)
+	return nil
 }
 
 func renderFillXML(fill *common.ShapeFill) (string, error) {
@@ -1165,12 +1365,18 @@ func renderGradientFillXML(gradient *common.GradientFill) (string, error) {
 		if stop.PositionPct != nil {
 			pos = *stop.PositionPct
 		} else if len(stops) > 1 {
-			pos = float64(i) * (100.0 / float64(len(stops)-1))
+			pos = float64(i) * (gradientPercentScale / float64(len(stops)-1))
 		}
-		if pos < 0.0 || pos > 100.0 {
+		if pos < 0.0 || pos > maxGradientPercent {
 			return "", fmt.Errorf("fill.gradient.stops[%d].position_pct must be between 0 and 100", i)
 		}
-		b.WriteString(fmt.Sprintf(`<a:gs pos="%d"><a:srgbClr val="%s"/></a:gs>`, int(math.Round(pos*1000.0)), color))
+		b.WriteString(
+			fmt.Sprintf(
+				`<a:gs pos="%d"><a:srgbClr val="%s"/></a:gs>`,
+				int(math.Round(pos*gradientPositionScale)),
+				color,
+			),
+		)
 	}
 	b.WriteString(`</a:gsLst>`)
 	if gradient.AngleDeg != nil {
@@ -1399,9 +1605,6 @@ var cNvPrIDPattern = regexp.MustCompile(`\bcNvPr\b[^>]*\bid="(\d+)"`)
 
 const cNvPrSubmatchSize = 2
 
-// UpdateShape updates an existing shape's properties.
-//
-//nolint:gocognit,nestif // Update path intentionally coordinates parsing, targeted mutation, and XML rewrite atomically.
 func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
@@ -1418,132 +1621,173 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 		return fmt.Errorf("parse shapes: %w", err)
 	}
 
-	found := false
-	var updateErr error
-	newXML := replaceShapeNodes(content, shapes, func(_ int, s *parsedShape) ([]byte, bool) {
-		if updateErr != nil {
-			return nil, false
-		}
-		if s.ID == shapeID || (s.PhType == "title" && shapeID == 0) { // Naive placeholder fallback
-			found = true
-			replace := false
-
-			originalXML := content[s.Start:s.End]
-			updatedXML := originalXML
-
-			if updates.X != nil || updates.Y != nil || updates.W != nil || updates.H != nil {
-				replace = true
-				if updates.X != nil {
-					s.X = *updates.X
-				}
-				if updates.Y != nil {
-					s.Y = *updates.Y
-				}
-				if updates.W != nil {
-					s.W = *updates.W
-				}
-				if updates.H != nil {
-					s.H = *updates.H
-				}
-				updatedXML = updateShapeTransforms(updatedXML, s.X, s.Y, s.W, s.H)
-			}
-
-			if updates.Text != nil || updates.Runs != nil || updates.TextFrame != nil || updates.Paragraph != nil {
-				replace = true
-				if updates.Text != nil {
-					s.Text = *updates.Text
-					s.Runs = nil // Override runs if raw text is provided
-				}
-				if updates.Runs != nil {
-					s.Runs = *updates.Runs
-				}
-				if updates.TextFrame != nil {
-					s.TextFrame = updates.TextFrame
-				}
-				if updates.Paragraph != nil {
-					s.Paragraph = updates.Paragraph
-				}
-				updatedXML, updateErr = replaceShapeTextBody(e, partPath, updatedXML, s)
-				if updateErr != nil {
-					return nil, false
-				}
-			}
-			if updates.Fill != nil || updates.Line != nil || updates.Shadow != nil || updates.Glow != nil ||
-				updates.Blur != nil ||
-				updates.SoftEdge != nil ||
-				updates.Reflection != nil {
-				replace = true
-				if updates.Fill != nil {
-					s.Fill = updates.Fill
-				}
-				if updates.Line != nil {
-					s.Line = updates.Line
-				}
-				if updates.Shadow != nil {
-					s.Shadow = updates.Shadow
-				}
-				if updates.Glow != nil {
-					s.Glow = updates.Glow
-				}
-				if updates.Blur != nil {
-					s.Blur = updates.Blur
-				}
-				if updates.SoftEdge != nil {
-					s.SoftEdge = updates.SoftEdge
-				}
-				if updates.Reflection != nil {
-					s.Reflection = updates.Reflection
-				}
-				updatedXML, updateErr = replaceShapeStyle(
-					updatedXML,
-					s.Fill,
-					s.Line,
-					s.Shadow,
-					s.Glow,
-					s.Blur,
-					s.SoftEdge,
-					s.Reflection,
-				)
-				if updateErr != nil {
-					return nil, false
-				}
-			}
-			if updates.ClickAction != nil || updates.HoverAction != nil {
-				replace = true
-				if updates.ClickAction != nil {
-					s.ClickAction = updates.ClickAction
-				}
-				if updates.HoverAction != nil {
-					s.HoverAction = updates.HoverAction
-				}
-				updatedXML, updateErr = replaceShapeActions(
-					e,
-					partPath,
-					updatedXML,
-					updates.ClickAction,
-					updates.HoverAction,
-				)
-				if updateErr != nil {
-					return nil, false
-				}
-			}
-
-			if replace {
-				return updatedXML, true
-			}
-		}
-		return nil, false
-	})
-	if updateErr != nil {
-		return updateErr
+	updater := shapeUpdater{
+		editor:    e,
+		partPath:  partPath,
+		shapeID:   shapeID,
+		updates:   updates,
+		origSlide: content,
 	}
-
-	if !found {
+	newXML := replaceShapeNodes(content, shapes, updater.apply)
+	if updater.err != nil {
+		return updater.err
+	}
+	if !updater.found {
 		return fmt.Errorf("shape id %d not found on slide %d", shapeID, slideIndex)
 	}
 
 	e.parts.Set(partPath, newXML)
 	return nil
+}
+
+type shapeUpdater struct {
+	editor    *PresentationEditor
+	partPath  string
+	shapeID   int
+	updates   common.ShapeUpdate
+	origSlide []byte
+	found     bool
+	err       error
+}
+
+func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
+	if u.err != nil || !u.matchesTarget(s) {
+		return nil, false
+	}
+	u.found = true
+
+	updatedXML := u.origSlide[s.Start:s.End]
+	replaced := false
+
+	updatedXML, replaced = u.applyTransforms(updatedXML, s, replaced)
+	updatedXML, replaced, u.err = u.applyText(updatedXML, s, replaced)
+	if u.err != nil {
+		return nil, false
+	}
+	updatedXML, replaced, u.err = u.applyStyle(updatedXML, s, replaced)
+	if u.err != nil {
+		return nil, false
+	}
+	updatedXML, replaced, u.err = u.applyActions(updatedXML, s, replaced)
+	if u.err != nil {
+		return nil, false
+	}
+	if replaced {
+		return updatedXML, true
+	}
+	return nil, false
+}
+
+func (u *shapeUpdater) matchesTarget(s *parsedShape) bool {
+	return s.ID == u.shapeID || (s.PhType == "title" && u.shapeID == 0)
+}
+
+func (u *shapeUpdater) applyTransforms(
+	xmlData []byte,
+	s *parsedShape,
+	replaced bool,
+) ([]byte, bool) {
+	if u.updates.X == nil && u.updates.Y == nil && u.updates.W == nil && u.updates.H == nil {
+		return xmlData, replaced
+	}
+	if u.updates.X != nil {
+		s.X = *u.updates.X
+	}
+	if u.updates.Y != nil {
+		s.Y = *u.updates.Y
+	}
+	if u.updates.W != nil {
+		s.W = *u.updates.W
+	}
+	if u.updates.H != nil {
+		s.H = *u.updates.H
+	}
+	return updateShapeTransforms(xmlData, s.X, s.Y, s.W, s.H), true
+}
+
+func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {
+	if u.updates.Text == nil && u.updates.Runs == nil && u.updates.TextFrame == nil && u.updates.Paragraph == nil {
+		return xmlData, replaced, nil
+	}
+	if u.updates.Text != nil {
+		s.Text = *u.updates.Text
+		s.Runs = nil
+	}
+	if u.updates.Runs != nil {
+		s.Runs = *u.updates.Runs
+	}
+	if u.updates.TextFrame != nil {
+		s.TextFrame = u.updates.TextFrame
+	}
+	if u.updates.Paragraph != nil {
+		s.Paragraph = u.updates.Paragraph
+	}
+	updatedXML, err := replaceShapeTextBody(u.editor, u.partPath, xmlData, s)
+	return updatedXML, true, err
+}
+
+func (u *shapeUpdater) applyStyle(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {
+	if u.updates.Fill == nil &&
+		u.updates.Line == nil &&
+		u.updates.Shadow == nil &&
+		u.updates.Glow == nil &&
+		u.updates.Blur == nil &&
+		u.updates.SoftEdge == nil &&
+		u.updates.Reflection == nil {
+		return xmlData, replaced, nil
+	}
+	if u.updates.Fill != nil {
+		s.Fill = u.updates.Fill
+	}
+	if u.updates.Line != nil {
+		s.Line = u.updates.Line
+	}
+	if u.updates.Shadow != nil {
+		s.Shadow = u.updates.Shadow
+	}
+	if u.updates.Glow != nil {
+		s.Glow = u.updates.Glow
+	}
+	if u.updates.Blur != nil {
+		s.Blur = u.updates.Blur
+	}
+	if u.updates.SoftEdge != nil {
+		s.SoftEdge = u.updates.SoftEdge
+	}
+	if u.updates.Reflection != nil {
+		s.Reflection = u.updates.Reflection
+	}
+	updatedXML, err := replaceShapeStyle(
+		xmlData,
+		s.Fill,
+		s.Line,
+		s.Shadow,
+		s.Glow,
+		s.Blur,
+		s.SoftEdge,
+		s.Reflection,
+	)
+	return updatedXML, true, err
+}
+
+func (u *shapeUpdater) applyActions(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {
+	if u.updates.ClickAction == nil && u.updates.HoverAction == nil {
+		return xmlData, replaced, nil
+	}
+	if u.updates.ClickAction != nil {
+		s.ClickAction = u.updates.ClickAction
+	}
+	if u.updates.HoverAction != nil {
+		s.HoverAction = u.updates.HoverAction
+	}
+	updatedXML, err := replaceShapeActions(
+		u.editor,
+		u.partPath,
+		xmlData,
+		u.updates.ClickAction,
+		u.updates.HoverAction,
+	)
+	return updatedXML, true, err
 }
 
 func maxObjectID(content []byte) int {
@@ -1604,7 +1848,7 @@ func xmlEscape(value string) string {
 
 func normalizeHexColor(raw string) (string, error) {
 	color := strings.TrimSpace(strings.TrimPrefix(raw, "#"))
-	if len(color) != 6 {
+	if len(color) != colorHexLength {
 		return "", fmt.Errorf("expected 6 hex digits, got %q", raw)
 	}
 	for _, ch := range color {
@@ -1703,7 +1947,7 @@ func (e *PresentationEditor) buildActionXML(partPath string, hl *common.Hyperlin
 		action = deriveActionURL(hl)
 	}
 
-	attrs := make([]string, 0, 3)
+	attrs := make([]string, 0, actionAttrCapHint)
 	if hl.Address != nil && *hl.Address != "" {
 		relID, err := e.getOrCreateHyperlinkRelID(partPath, *hl.Address)
 		if err != nil {
@@ -1734,13 +1978,13 @@ func deriveActionURL(hl *common.Hyperlink) string {
 		return ""
 	}
 	if hl.TargetSlide != nil {
-		return "ppaction://hlinksldjump"
+		return actionSlideJump
 	}
 	if hl.TargetJump != nil && *hl.TargetJump != "" {
-		return "ppaction://hlinkshowjump?jump=" + strings.TrimSpace(*hl.TargetJump)
+		return actionShowJumpPrefix + strings.TrimSpace(*hl.TargetJump)
 	}
 	if hl.Macro != nil && *hl.Macro != "" {
-		return "ppaction://macro?name=" + strings.TrimSpace(*hl.Macro)
+		return actionMacroPrefix + strings.TrimSpace(*hl.Macro)
 	}
 	return ""
 }
@@ -1825,10 +2069,10 @@ func updateShapeTransforms(xmlData []byte, x, y, w, h int) []byte {
 	extRe := regexp.MustCompile(`(?s)<a:ext\b[^>]*/>`)
 
 	res := offRe.ReplaceAllFunc(xmlData, func(_ []byte) []byte {
-		return []byte(fmt.Sprintf(`<a:off x="%d" y="%d"/>`, x, y))
+		return fmt.Appendf(nil, `<a:off x="%d" y="%d"/>`, x, y)
 	})
 	res = extRe.ReplaceAllFunc(res, func(_ []byte) []byte {
-		return []byte(fmt.Sprintf(`<a:ext cx="%d" cy="%d"/>`, w, h))
+		return fmt.Appendf(nil, `<a:ext cx="%d" cy="%d"/>`, w, h)
 	})
 	return res
 }
@@ -1962,50 +2206,22 @@ func replaceShapeActions(
 		`(?s)<a:hlinkMouseOver\b[^>]*/>|<a:hlinkMouseOver\b[^>]*>.*?</a:hlinkMouseOver>`,
 	)
 	cNvPrOpenClose := regexp.MustCompile(`(?s)<p:cNvPr\b([^>]*)>(.*?)</p:cNvPr>`)
-	if match := cNvPrOpenClose.FindStringSubmatchIndex(xmlStr); match != nil {
-		inner := xmlStr[match[4]:match[5]]
-		removeTag := func(input string, pattern *regexp.Regexp) string {
-			matches := pattern.FindAllStringIndex(input, -1)
-			if len(matches) == 0 {
-				return input
-			}
-			var builder strings.Builder
-			builder.Grow(len(input))
-			last := 0
-			for _, m := range matches {
-				builder.WriteString(input[last:m[0]])
-				last = m[1]
-			}
-			builder.WriteString(input[last:])
-			return builder.String()
-		}
-		cleanInner := inner
-		if clickAction != nil {
-			cleanInner = removeTag(cleanInner, hlinkClickPattern)
-		}
-		if hoverAction != nil {
-			cleanInner = removeTag(cleanInner, hlinkHoverPattern)
-		}
-		var replacement strings.Builder
-		replacement.WriteString(cleanInner)
-		if clickXML != "" {
-			replacement.WriteString(clickXML)
-		}
-		if hoverXML != "" {
-			replacement.WriteString(hoverXML)
-		}
-		updated := xmlStr[:match[4]] + replacement.String() + xmlStr[match[5]:]
+
+	if updated, ok := replaceOpenCloseCNvPrActions(
+		xmlStr,
+		cNvPrOpenClose,
+		hlinkClickPattern,
+		hlinkHoverPattern,
+		clickAction != nil,
+		hoverAction != nil,
+		clickXML,
+		hoverXML,
+	); ok {
 		return []byte(updated), nil
 	}
 
 	cNvPrSelfClosing := regexp.MustCompile(`<p:cNvPr\b([^>]*)/>`)
-	if match := cNvPrSelfClosing.FindStringSubmatchIndex(xmlStr); match != nil {
-		if clickXML == "" && hoverXML == "" {
-			return xmlData, nil
-		}
-		attrs := xmlStr[match[2]:match[3]]
-		replacement := fmt.Sprintf(`<p:cNvPr%s>%s%s</p:cNvPr>`, attrs, clickXML, hoverXML)
-		updated := xmlStr[:match[0]] + replacement + xmlStr[match[1]:]
+	if updated, ok := replaceSelfClosingCNvPrActions(xmlStr, cNvPrSelfClosing, clickXML, hoverXML); ok {
 		return []byte(updated), nil
 	}
 
@@ -2014,4 +2230,65 @@ func replaceShapeActions(
 	}
 
 	return xmlData, nil
+}
+
+func replaceOpenCloseCNvPrActions(
+	xmlStr string,
+	cNvPrOpenClose *regexp.Regexp,
+	hlinkClickPattern *regexp.Regexp,
+	hlinkHoverPattern *regexp.Regexp,
+	hasClickAction bool,
+	hasHoverAction bool,
+	clickXML string,
+	hoverXML string,
+) (string, bool) {
+	match := cNvPrOpenClose.FindStringSubmatchIndex(xmlStr)
+	if match == nil {
+		return "", false
+	}
+	inner := xmlStr[match[4]:match[5]]
+	cleanInner := inner
+	if hasClickAction {
+		cleanInner = removeMatchedTags(cleanInner, hlinkClickPattern)
+	}
+	if hasHoverAction {
+		cleanInner = removeMatchedTags(cleanInner, hlinkHoverPattern)
+	}
+	replacement := cleanInner + clickXML + hoverXML
+	updated := xmlStr[:match[4]] + replacement + xmlStr[match[5]:]
+	return updated, true
+}
+
+func replaceSelfClosingCNvPrActions(
+	xmlStr string,
+	cNvPrSelfClosing *regexp.Regexp,
+	clickXML string,
+	hoverXML string,
+) (string, bool) {
+	match := cNvPrSelfClosing.FindStringSubmatchIndex(xmlStr)
+	if match == nil {
+		return "", false
+	}
+	if clickXML == "" && hoverXML == "" {
+		return xmlStr, true
+	}
+	attrs := xmlStr[match[2]:match[3]]
+	replacement := fmt.Sprintf(`<p:cNvPr%s>%s%s</p:cNvPr>`, attrs, clickXML, hoverXML)
+	return xmlStr[:match[0]] + replacement + xmlStr[match[1]:], true
+}
+
+func removeMatchedTags(input string, pattern *regexp.Regexp) string {
+	matches := pattern.FindAllStringIndex(input, -1)
+	if len(matches) == 0 {
+		return input
+	}
+	var builder strings.Builder
+	builder.Grow(len(input))
+	last := 0
+	for _, match := range matches {
+		builder.WriteString(input[last:match[0]])
+		last = match[1]
+	}
+	builder.WriteString(input[last:])
+	return builder.String()
 }

@@ -36,82 +36,81 @@ func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, o
 	pdf.Start(gopdf.Config{
 		PageSize: gopdf.Rect{W: slideWidthPt, H: slideHeightPt},
 	})
-
-	// Load a system TTF font; gopdf requires AddTTFFont before SetFont.
-	fontLoaded := false
-
-	// Try user-configured fonts first
-	if len(opts.NativeFontPaths) > 0 {
-		for _, path := range opts.NativeFontPaths {
-			if err := pdf.AddTTFFont("sans", path); err == nil {
-				if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
-					fontLoaded = true
-					break
-				}
-			}
-		}
-	}
-
-	// Fallback to system fonts if needed
-	if !fontLoaded {
-		for _, path := range systemFontPaths() {
-			if err := pdf.AddTTFFont("sans", path); err == nil {
-				if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
-					fontLoaded = true
-					break
-				}
-			}
-		}
-	}
-	if !fontLoaded {
-		return errors.New("no system TTF font found; install Arial or DejaVu Sans, or specify NativeFontPaths")
+	if err := configureNativePDFFont(pdf, opts); err != nil {
+		return err
 	}
 
 	for i, slide := range slides {
-		pdf.AddPage()
-
-		// Slide background
-		_ = renderPDFBackground(pdf, slide.Background)
-
-		// Title
-		if slide.Title != "" {
-			renderPDFTitle(pdf, slide)
-		}
-
-		// Bullets
-		if len(slide.Bullets) > 0 {
-			renderPDFBullets(pdf, slide)
-		}
-
-		// Shapes
-		for _, shape := range slide.Shapes {
-			renderPDFShape(pdf, shape)
-		}
-
-		// Connectors
-		for _, connector := range slide.Connectors {
-			renderPDFConnector(pdf, connector)
-		}
-
-		// Images
-		for _, img := range slide.Images {
-			_ = renderPDFImage(pdf, img)
-		}
-
-		// Table
-		if slide.Table != nil {
-			renderPDFTable(pdf, *slide.Table)
-		}
-
-		// Slide number
-		pdf.SetTextColor(150, 150, 150)
-		slideNum := fmt.Sprintf("%d / %d", i+1, len(slides))
-		pdf.SetX(slideWidthPt - 60)
-		pdf.SetY(slideHeightPt - 15)
-		_ = pdf.Cell(nil, slideNum)
+		renderNativePDFSlide(pdf, slide, i+1, len(slides))
 	}
 
 	return pdf.WritePdf(outputPath)
+}
+
+func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
+	if tryNativePDFFonts(pdf, opts.NativeFontPaths) {
+		return nil
+	}
+	if tryNativePDFFonts(pdf, systemFontPaths()) {
+		return nil
+	}
+	return errors.New("no system TTF font found; install Arial or DejaVu Sans, or specify NativeFontPaths")
+}
+
+func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string) bool {
+	for _, path := range fontPaths {
+		if err := pdf.AddTTFFont("sans", path); err != nil {
+			continue
+		}
+		if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, total int) {
+	pdf.AddPage()
+	_ = renderPDFBackground(pdf, slide.Background)
+	renderNativePDFSlideText(pdf, slide)
+	renderNativePDFSlideShapes(pdf, slide)
+	renderNativePDFSlideAssets(pdf, slide)
+	renderNativePDFSlideNumber(pdf, index, total)
+}
+
+func renderNativePDFSlideText(pdf *gopdf.GoPdf, slide elements.SlideContent) {
+	if slide.Title != "" {
+		renderPDFTitle(pdf, slide)
+	}
+	if len(slide.Bullets) > 0 {
+		renderPDFBullets(pdf, slide)
+	}
+}
+
+func renderNativePDFSlideShapes(pdf *gopdf.GoPdf, slide elements.SlideContent) {
+	for _, shape := range slide.Shapes {
+		renderPDFShape(pdf, shape)
+	}
+	for _, connector := range slide.Connectors {
+		renderPDFConnector(pdf, connector)
+	}
+}
+
+func renderNativePDFSlideAssets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
+	for _, img := range slide.Images {
+		_ = renderPDFImage(pdf, img)
+	}
+	if slide.Table != nil {
+		renderPDFTable(pdf, *slide.Table)
+	}
+}
+
+func renderNativePDFSlideNumber(pdf *gopdf.GoPdf, index, total int) {
+	pdf.SetTextColor(150, 150, 150)
+	slideNum := fmt.Sprintf("%d / %d", index, total)
+	pdf.SetX(slideWidthPt - 60)
+	pdf.SetY(slideHeightPt - 15)
+	_ = pdf.Cell(nil, slideNum)
 }
 
 func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {

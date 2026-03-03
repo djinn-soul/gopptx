@@ -2,7 +2,6 @@ package pptx
 
 import (
 	"archive/zip"
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -764,7 +763,7 @@ func TestPresentation_PreservesZipStructure(t *testing.T) {
 
 	// Verify saved metadata is correct
 	corePropsContent := testutil.ReadZipFile(t, savedZr, corePropsPath)
-	if !bytes.Contains([]byte(corePropsContent), []byte("Structure Modified")) {
+	if !strings.Contains(corePropsContent, "Structure Modified") {
 		t.Error("modified title not found in saved core properties")
 	}
 

@@ -45,11 +45,13 @@ func (v *Validator) AddChecker(c Checker) {
 }
 
 // requiredParts identifies the minimum set of parts for a valid PPTX.
-var requiredParts = map[string]string{
-	"[Content_Types].xml":             "Content types definition",
-	"_rels/.rels":                     "Package relationships",
-	"ppt/presentation.xml":            "Presentation document",
-	"ppt/_rels/presentation.xml.rels": "Presentation relationships",
+func requiredParts() map[string]string {
+	return map[string]string{
+		"[Content_Types].xml":             "Content types definition",
+		"_rels/.rels":                     "Package relationships",
+		"ppt/presentation.xml":            "Presentation document",
+		"ppt/_rels/presentation.xml.rels": "Presentation relationships",
+	}
 }
 
 // Validate performs a comprehensive validation check on the package.
@@ -69,7 +71,7 @@ func (v *Validator) Validate() []Issue {
 }
 
 func (v *Validator) checkRequiredParts() {
-	for p, desc := range requiredParts {
+	for p, desc := range requiredParts() {
 		if !v.provider.Has(p) {
 			v.issues = append(v.issues, Issue{
 				Code:        CodeMissingPart,
@@ -130,33 +132,33 @@ func (v *Validator) checkRelationships() {
 	}
 }
 
-// relationshipXML represents a Relationship element in .rels files
+// relationshipXML represents a Relationship element in .rels files.
 type relationshipXML struct {
 	ID     string `xml:"Id,attr"`
 	Type   string `xml:"Type,attr"`
 	Target string `xml:"Target,attr"`
 }
 
-// relationshipsXML represents the root Relationships element
+// relationshipsXML represents the root Relationships element.
 type relationshipsXML struct {
 	XMLName       xml.Name          `xml:"Relationships"`
 	XMLNS         string            `xml:"xmlns,attr,omitempty"`
 	Relationships []relationshipXML `xml:"Relationship"`
 }
 
-// contentTypeDefault represents a Default element in [Content_Types].xml
+// contentTypeDefault represents a Default element in [Content_Types].xml.
 type contentTypeDefault struct {
 	Extension   string `xml:"Extension,attr"`
 	ContentType string `xml:"ContentType,attr"`
 }
 
-// contentTypeOverride represents an Override element in [Content_Types].xml
+// contentTypeOverride represents an Override element in [Content_Types].xml.
 type contentTypeOverride struct {
 	PartName    string `xml:"PartName,attr"`
 	ContentType string `xml:"ContentType,attr"`
 }
 
-// contentTypesXML represents the root Types element in [Content_Types].xml
+// contentTypesXML represents the root Types element in [Content_Types].xml.
 type contentTypesXML struct {
 	XMLName   xml.Name              `xml:"Types"`
 	Defaults  []contentTypeDefault  `xml:"Default"`
@@ -203,8 +205,8 @@ func (v *Validator) checkRelsFile(relsPath string) {
 }
 
 func (v *Validator) resolvePath(relsPath, target string) string {
-	if strings.HasPrefix(target, "/") {
-		return strings.TrimPrefix(target, "/")
+	if trimmed, ok := strings.CutPrefix(target, "/"); ok {
+		return trimmed
 	}
 
 	dir := path.Dir(relsPath)

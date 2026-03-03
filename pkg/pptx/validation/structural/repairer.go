@@ -162,7 +162,7 @@ func (r *Repairer) repairBrokenRelationship(issue Issue) error {
 
 	// Use XML parsing for robust handling of different attribute orderings and whitespace.
 	var rels relationshipsXML
-	if err := xml.Unmarshal(data, &rels); err != nil {
+	if !tryUnmarshalRelationships(data, &rels) {
 		// If XML parsing fails, fall back to regex-based removal.
 		content := string(data)
 		relPattern := regexp.MustCompile(
@@ -193,6 +193,10 @@ func (r *Repairer) repairBrokenRelationship(issue Issue) error {
 	repairedStr := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + string(repaired)
 	r.modifier.Set(issue.Path, []byte(repairedStr))
 	return nil
+}
+
+func tryUnmarshalRelationships(data []byte, rels *relationshipsXML) bool {
+	return xml.Unmarshal(data, rels) == nil
 }
 
 func (r *Repairer) repairOrphanSlide(p string) error {

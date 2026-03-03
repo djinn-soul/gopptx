@@ -15,19 +15,23 @@ import (
 )
 
 func main() {
-	// Example 1: Open an existing presentation
+	if err := run(); err != nil {
+		log.Fatalf("presentation metadata example failed: %v", err)
+	}
+}
+
+func run() error {
 	examplePath := "example.pptx"
 
-	// First create a sample presentation
 	if err := createSamplePresentation(examplePath); err != nil {
-		log.Fatalf("failed to create sample presentation: %v", err)
+		return fmt.Errorf("failed to create sample presentation: %w", err)
 	}
 	defer os.Remove(examplePath)
 
 	printLine("=== Example 1: Opening a presentation ===")
 	prs, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to open presentation: %v", err)
+		return fmt.Errorf("failed to open presentation: %w", err)
 	}
 	defer prs.Close()
 
@@ -39,7 +43,22 @@ func main() {
 	printLine("\n=== Example 2: Reading all metadata ===")
 	readAllMetadata(prs)
 
-	// Example 3: Modifying metadata
+	if err := updateMetadata(prs); err != nil {
+		return err
+	}
+	if err := reopenAndVerify(examplePath); err != nil {
+		return err
+	}
+	if err := saveCopyExample(examplePath); err != nil {
+		return err
+	}
+	if err := updateCoreProperties(examplePath); err != nil {
+		return err
+	}
+	return validatePresentation(examplePath)
+}
+
+func updateMetadata(prs *pptx.Presentation) error {
 	printLine("\n=== Example 3: Modifying metadata ===")
 	prs.SetTitle("Updated Presentation Title")
 	prs.SetAuthor("Jane Doe")
@@ -50,84 +69,99 @@ func main() {
 	prs.SetCategory("Technical Documentation")
 	prs.SetContentStatus("Draft")
 	prs.SetRevision("2")
-
-	// Save the changes
 	if err := prs.Save(); err != nil {
-		log.Fatalf("failed to save presentation: %v", err)
+		return fmt.Errorf("failed to save presentation: %w", err)
 	}
 	printLine("Changes saved!")
+	return nil
+}
 
-	// Example 4: Reopen and verify persistence
+func reopenAndVerify(examplePath string) error {
 	printLine("\n=== Example 4: Reopening to verify persistence ===")
-	prs2, err := pptx.Open(examplePath)
+	prs, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to reopen presentation: %v", err)
+		return fmt.Errorf("failed to reopen presentation: %w", err)
 	}
-	defer prs2.Close()
+	defer prs.Close()
 
-	printFmtf("Title: %s\n", prs2.Title())
-	printFmtf("Author: %s\n", prs2.Author())
-	printFmtf("Keywords: %s\n", prs2.Keywords())
-	printFmtf("Category: %s\n", prs2.Category())
+	printFmtf("Title: %s\n", prs.Title())
+	printFmtf("Author: %s\n", prs.Author())
+	printFmtf("Keywords: %s\n", prs.Keywords())
+	printFmtf("Category: %s\n", prs.Category())
+	return nil
+}
 
-	// Example 5: SaveAs to create a copy
+func saveCopyExample(examplePath string) error {
 	printLine("\n=== Example 5: SaveAs to create a copy ===")
 	copyPath := "example_copy.pptx"
 	defer os.Remove(copyPath)
 
-	prs2.SetTitle("Copy of the Presentation")
-	if err := prs2.SaveAs(copyPath); err != nil {
-		log.Fatalf("failed to save copy: %v", err)
+	prs, err := pptx.Open(examplePath)
+	if err != nil {
+		return fmt.Errorf("failed to open presentation for copy: %w", err)
+	}
+	defer prs.Close()
+
+	prs.SetTitle("Copy of the Presentation")
+	if err := prs.SaveAs(copyPath); err != nil {
+		return fmt.Errorf("failed to save copy: %w", err)
 	}
 	printFmtf("Saved copy to %s\n", copyPath)
 
-	// Verify original wasn't modified
-	prs3, err := pptx.Open(examplePath)
+	original, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to verify original presentation: %v", err)
+		return fmt.Errorf("failed to verify original presentation: %w", err)
 	}
-	defer prs3.Close()
+	defer original.Close()
 
-	if prs3.Title() != "Updated Presentation Title" {
+	if original.Title() != "Updated Presentation Title" {
 		printFmtf("Warning: Original presentation was modified\n")
 	}
-	printFmtf("Original title unchanged: %s\n", prs3.Title())
+	printFmtf("Original title unchanged: %s\n", original.Title())
+	return nil
+}
 
-	// Example 6: Using CoreProperties directly
+func updateCoreProperties(examplePath string) error {
 	printLine("\n=== Example 6: Using CoreProperties directly ===")
-	prs4, err := pptx.Open(examplePath)
+	prs, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to open presentation: %v", err)
+		return fmt.Errorf("failed to open presentation: %w", err)
 	}
-	defer prs4.Close()
+	defer prs.Close()
 
-	props := prs4.CoreProperties()
+	props := prs.CoreProperties()
 	printFmtf("CoreProperties.Title: %s\n", props.Title)
 	printFmtf("CoreProperties.Creator: %s\n", props.Creator)
 	printFmtf("CoreProperties.Revision: %s\n", props.Revision)
 
-	// Modify using SetCoreProperties
 	props.Title = "Final Title"
 	props.Revision = "3"
-	prs4.SetCoreProperties(props)
+	prs.SetCoreProperties(props)
 
-	if err := prs4.Save(); err != nil {
-		log.Fatalf("failed to save: %v", err)
+	if err := prs.Save(); err != nil {
+		return fmt.Errorf("failed to save: %w", err)
 	}
 
-	// Verify
-	prs5, err := pptx.Open(examplePath)
+	verified, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to verify: %v", err)
+		return fmt.Errorf("failed to verify: %w", err)
 	}
-	defer prs5.Close()
+	defer verified.Close()
 
 	printFmtf("After core props update - Title: %s, Revision: %s\n",
-		prs5.Title(), prs5.Revision())
+		verified.Title(), verified.Revision())
+	return nil
+}
 
-	// Example 7: Validate presentation
+func validatePresentation(examplePath string) error {
 	printLine("\n=== Example 7: Validate presentation ===")
-	issues := prs5.Validate()
+	prs, err := pptx.Open(examplePath)
+	if err != nil {
+		return fmt.Errorf("failed to open presentation for validation: %w", err)
+	}
+	defer prs.Close()
+
+	issues := prs.Validate()
 	if len(issues) == 0 {
 		printLine("Presentation is valid!")
 	} else {
@@ -138,6 +172,7 @@ func main() {
 	}
 
 	printLine("\nAll examples completed successfully!")
+	return nil
 }
 
 func createSamplePresentation(path string) error {

@@ -229,12 +229,12 @@ func handleSetTableStyle(e *PresentationEditor, payload json.RawMessage) (any, e
 	if !ok {
 		return nil, v.Error()
 	}
-	styleGuid, ok := v.RequireString(p, "style_guid")
+	styleGUID, ok := v.RequireString(p, "style_guid")
 	if !ok {
 		return nil, v.Error()
 	}
 
-	if err := e.SetTableStyle(slideIndex, shapeID, styleGuid); err != nil {
+	if err := e.SetTableStyle(slideIndex, shapeID, styleGUID); err != nil {
 		return nil, err
 	}
 

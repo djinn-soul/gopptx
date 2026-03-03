@@ -8,6 +8,8 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+const minFreeformPointCount = 2
+
 const minConnectorDimension = 1.0
 
 func handleAddTextbox(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -172,7 +174,7 @@ func parseFreeformPointsPayload(payload map[string]any) ([]freeformPoint, error)
 	if !ok {
 		return nil, NewBridgeError(ErrCodeInvalidType, "field points must be an array")
 	}
-	if len(pointItems) < 2 {
+	if len(pointItems) < minFreeformPointCount {
 		return nil, NewBridgeError(ErrCodeInvalidValue, "field points must contain at least 2 points")
 	}
 

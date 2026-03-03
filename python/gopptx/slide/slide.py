@@ -147,6 +147,17 @@ class SlideShapeMixin:
         """Remove a shape from this slide."""
         self._presentation.remove_shape(self.index, shape_id)
 
+    def group_shapes(self, shape_ids: list[int]) -> int:
+        """Group multiple shapes on this slide into a group shape.
+
+        Returns the ID of the created group shape.
+        """
+        return self._presentation.group_shapes(self.index, shape_ids)
+
+    def ungroup_shapes(self, shape_id: int) -> int:
+        """Ungroup a group shape, returning the ID of the first member shape."""
+        return self._presentation.ungroup_shapes(self.index, shape_id)
+
     def move_shape_to_front(self, shape_id: int) -> None:
         """Move a shape to the front of the z-order."""
         self._presentation.move_shape_to_front(self.index, shape_id)

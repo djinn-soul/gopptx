@@ -42,19 +42,7 @@ func TestConvertFromPpt_WithValidFakeFileSkipped(t *testing.T) {
 	// Call it
 	relPath, err := ConvertFromPpt(dummyPPT, outDir)
 
-	if err != nil {
-		if strings.Contains(err.Error(), "libreoffice required") ||
-			strings.Contains(err.Error(), "soffice binary not found") {
-			t.Skipf("Skipping integration test: LibreOffice not installed on host. Error: %v", err)
-		} else if strings.Contains(
-			err.Error(),
-			"conversion failed",
-		) {
-			t.Skipf("Skipping integration test: LibreOffice failed to digest the fake PPT. Error: %v", err)
-		} else {
-			t.Errorf("Unexpected error during conversion attempt: %v", err)
-		}
-	} else {
+	if err == nil {
 		// If it somehow worked (unlikely with fake data, but maybe LibreOffice just generates an empty one)
 		if filepath.Base(relPath) != "dummy.pptx" {
 			t.Errorf("Expected output file dummy.pptx, got %s", relPath)
@@ -62,5 +50,16 @@ func TestConvertFromPpt_WithValidFakeFileSkipped(t *testing.T) {
 		if _, statErr := os.Stat(relPath); statErr != nil {
 			t.Errorf("Expected output file to exist on success: %v", statErr)
 		}
+		return
+	}
+
+	switch {
+	case strings.Contains(err.Error(), "libreoffice required"),
+		strings.Contains(err.Error(), "soffice binary not found"):
+		t.Skipf("Skipping integration test: LibreOffice not installed on host. Error: %v", err)
+	case strings.Contains(err.Error(), "conversion failed"):
+		t.Skipf("Skipping integration test: LibreOffice failed to digest the fake PPT. Error: %v", err)
+	default:
+		t.Errorf("Unexpected error during conversion attempt: %v", err)
 	}
 }

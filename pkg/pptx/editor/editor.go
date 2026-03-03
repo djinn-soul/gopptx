@@ -18,7 +18,11 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
 
-const shapeTypePicture = "pic"
+const (
+	shapeTypePicture = "pic"
+	minGroupShapes   = 2
+	groupShapeTag    = "grpSp"
+)
 
 // Section describes a PowerPoint section entry.
 type Section struct {
@@ -382,4 +386,172 @@ func (e *PresentationEditor) applyShapeRemoval(
 
 	e.parts.Set(partPath, newContent)
 	return nil
+}
+
+// GroupShapes groups the specified shapes on a slide into a group shape.
+// Returns the ID of the created group shape.
+func (e *PresentationEditor) GroupShapes(slideIndex int, shapeIDs []int) (int, error) {
+	if len(shapeIDs) < minGroupShapes {
+		return 0, errors.New("at least 2 shapes are required to form a group")
+	}
+	return e.AddGroupShape(slideIndex, shapeIDs)
+}
+
+// UngroupShapes ungroups a group shape, returning the ID of the first member shape.
+func (e *PresentationEditor) UngroupShapes(slideIndex, shapeID int) (int, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return 0, errors.New("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return 0, errors.New("read slide part: not found")
+	}
+
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return 0, fmt.Errorf("parse shapes: %w", err)
+	}
+
+	// Find the group shape
+	var groupShapeIndex int
+	groupShapeIndex = -1
+	for i, s := range shapes {
+		if s.ID == shapeID && s.IsGroup {
+			groupShapeIndex = i
+			break
+		}
+	}
+
+	if groupShapeIndex == -1 {
+		return 0, fmt.Errorf("group shape with ID %d not found", shapeID)
+	}
+
+	groupShape := shapes[groupShapeIndex]
+	groupXML := content[groupShape.Start:groupShape.End]
+	children, err := extractGroupChildShapeNodes(groupXML)
+	if err != nil {
+		return 0, fmt.Errorf("extract grouped shapes: %w", err)
+	}
+	if len(children) == 0 {
+		return 0, fmt.Errorf("group shape with ID %d has no child shapes", shapeID)
+	}
+
+	replacement := bytes.Join(children, nil)
+	newContent := replaceShapeNodes(content, shapes, func(i int, _ *parsedShape) ([]byte, bool) {
+		if i == groupShapeIndex {
+			return replacement, true
+		}
+		return nil, false
+	})
+	e.parts.Set(partPath, newContent)
+
+	firstChildID := firstShapeIDInXML(children)
+	if firstChildID == 0 {
+		return shapeID, nil
+	}
+	return firstChildID, nil
+}
+
+func extractGroupChildShapeNodes(groupXML []byte) ([][]byte, error) {
+	decoder := xml.NewDecoder(bytes.NewReader(groupXML))
+	rootDepth := 0
+	rootSeen := false
+	children := make([][]byte, 0)
+
+	for {
+		startOffset := decoder.InputOffset()
+		token, err := decoder.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		switch t := token.(type) {
+		case xml.StartElement:
+			nextDepth, sawRoot, childNode, startErr := processGroupStartElement(
+				decoder,
+				groupXML,
+				startOffset,
+				rootDepth,
+				rootSeen,
+				t,
+			)
+			if startErr != nil {
+				return nil, startErr
+			}
+			rootDepth = nextDepth
+			rootSeen = sawRoot
+			if len(childNode) > 0 {
+				children = append(children, childNode)
+			}
+		case xml.EndElement:
+			var done bool
+			rootDepth, done = processGroupEndElement(rootDepth, rootSeen)
+			if done {
+				return children, nil
+			}
+		}
+	}
+
+	return children, nil
+}
+
+func processGroupStartElement(
+	decoder *xml.Decoder,
+	groupXML []byte,
+	startOffset int64,
+	rootDepth int,
+	rootSeen bool,
+	start xml.StartElement,
+) (int, bool, []byte, error) {
+	if !rootSeen {
+		if start.Name.Local == groupShapeTag {
+			return 1, true, nil, nil
+		}
+		return rootDepth, false, nil, nil
+	}
+	if rootDepth == 1 && isShapeElementLocal(start.Name.Local) {
+		_, endOffset, err := extractShapeNode(groupXML, startOffset, decoder, start.Name.Local, true)
+		if err != nil {
+			return rootDepth, rootSeen, nil, err
+		}
+		child := bytes.TrimSpace(groupXML[startOffset:endOffset])
+		return rootDepth, rootSeen, child, nil
+	}
+	return rootDepth + 1, rootSeen, nil, nil
+}
+
+func processGroupEndElement(rootDepth int, rootSeen bool) (int, bool) {
+	if !rootSeen {
+		return rootDepth, false
+	}
+	rootDepth--
+	return rootDepth, rootDepth == 0
+}
+
+func isShapeElementLocal(name string) bool {
+	switch name {
+	case "sp", shapeTypePicture, "graphicFrame", groupShapeTag, "cxnSp":
+		return true
+	default:
+		return false
+	}
+}
+
+func firstShapeIDInXML(shapesXML [][]byte) int {
+	for _, shapeXML := range shapesXML {
+		match := cNvPrIDPattern.FindSubmatch(shapeXML)
+		if len(match) < cNvPrSubmatchSize {
+			continue
+		}
+		id, err := strconv.Atoi(string(match[1]))
+		if err == nil {
+			return id
+		}
+	}
+	return 0
 }

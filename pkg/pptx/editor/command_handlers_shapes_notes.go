@@ -166,6 +166,52 @@ func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, err
 	return map[string]bool{"removed": true}, nil
 }
 
+func handleGroupShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeIDs, ok := v.RequireIntSlice(p, "shape_ids")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	groupID, err := e.GroupShapes(slideIndex, shapeIDs)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]int{"group_id": groupID}, nil
+}
+
+func handleUngroupShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	shapeID, err = e.UngroupShapes(slideIndex, shapeID)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]int{"group_id": shapeID}, nil
+}
+
 func handleMoveShapeToFront(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
 	if err != nil {

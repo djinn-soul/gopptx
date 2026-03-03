@@ -366,7 +366,7 @@ func TestSlideContent_ExtraMethods(t *testing.T) {
 	}
 }
 
-func TestSlideContent_AutoReroute(t *testing.T) {
+func TestSlideContent_AutoReroute(_ *testing.T) {
 	s := elements.NewSlide("Reroute")
 	s = s.AddShape(shapes.NewRectangle(0, 0, 1, 1)).
 		AddConnector(shapes.NewStraightConnector(0, 0, 1, 1))

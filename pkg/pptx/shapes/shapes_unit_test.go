@@ -32,7 +32,7 @@ func TestShapes_Creation(t *testing.T) {
 		}
 	})
 
-	t.Run("Convenience", func(t *testing.T) {
+	t.Run("Convenience", func(_ *testing.T) {
 		_ = NewRectangle(0, 0, 1, 1)
 		_ = NewEllipse(0, 0, 1, 1)
 		_ = NewTriangle(0, 0, 1, 1)

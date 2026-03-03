@@ -11,6 +11,15 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const (
+	placeholderTitle       = "title"
+	placeholderCtrTitle    = "ctrtitle"
+	placeholderBody        = "body"
+	placeholderSubtitle    = "subtitle"
+	placeholderObject      = "obj"
+	placeholderContentName = "content"
+)
+
 // SlidesFromPPTX reads an existing PPTX file and extracts slide content
 // (title, bullets, shapes, embedded images) for the native PDF/HTML export pipeline.
 func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
@@ -67,11 +76,11 @@ func extractSlideContent(
 		lowerName := strings.ToLower(strings.TrimSpace(es.Name))
 
 		switch lowerType {
-		case "title", "ctrtitle":
+		case placeholderTitle, placeholderCtrTitle:
 			if sc.Title == "" && es.Text != "" {
 				sc.Title = es.Text
 			}
-		case "body", "subtitle", "obj":
+		case placeholderBody, placeholderSubtitle, placeholderObject:
 			if es.Text != "" {
 				for line := range strings.SplitSeq(es.Text, "\n") {
 					if line = strings.TrimSpace(line); line != "" {
@@ -129,18 +138,18 @@ func editorShapeToShape(es editorcommon.Shape) shapes.Shape {
 }
 
 func isTitlePlaceholder(shapeType, shapeName string) bool {
-	return shapeType == "title" ||
-		shapeType == "ctrtitle" ||
-		shapeName == "title" ||
+	return shapeType == placeholderTitle ||
+		shapeType == placeholderCtrTitle ||
+		shapeName == placeholderTitle ||
 		strings.Contains(shapeName, "title placeholder")
 }
 
 func isBodyPlaceholder(shapeType, shapeName string) bool {
-	if shapeType == "body" || shapeType == "subtitle" || shapeType == "obj" {
+	if shapeType == placeholderBody || shapeType == placeholderSubtitle || shapeType == placeholderObject {
 		return true
 	}
 	return shapeName == "content" ||
-		shapeName == "body" ||
+		shapeName == placeholderBody ||
 		strings.Contains(shapeName, "content placeholder") ||
 		strings.Contains(shapeName, "body placeholder")
 }

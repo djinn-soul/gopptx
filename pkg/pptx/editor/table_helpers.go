@@ -133,12 +133,12 @@ func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
 }
 
 // SetTableStyle sets the table style for the specified table on a slide.
-// The styleGuid must be a valid PowerPoint table style GUID, e.g.:
+// The styleGUID must be a valid PowerPoint table style GUID, e.g.:
 //
 //	"{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
 //	"{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
 //	"{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
-func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGuid string) error {
+func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGUID string) error {
 	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
 	if err != nil {
 		return err
@@ -164,22 +164,22 @@ func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGuid st
 
 	// Check if tableStyleId already exists in tblPr
 	tblPrSection := frame[tblPrStart:tblPrEnd]
-	styleIdStart := bytes.Index(tblPrSection, []byte("<a:tableStyleId"))
+	styleIDStart := bytes.Index(tblPrSection, []byte("<a:tableStyleId"))
 	var updatedFrame []byte
 
-	if styleIdStart != -1 {
+	if styleIDStart != -1 {
 		// Update existing tableStyleId
-		styleIdStartInFrame := tblPrStart + styleIdStart
-		styleIdEnd := bytes.Index(frame[styleIdStartInFrame:], []byte("</a:tableStyleId>"))
-		if styleIdEnd == -1 {
+		styleIDStartInFrame := tblPrStart + styleIDStart
+		styleIDEnd := bytes.Index(frame[styleIDStartInFrame:], []byte("</a:tableStyleId>"))
+		if styleIDEnd == -1 {
 			return errors.New("invalid tableStyleId element")
 		}
-		styleIdEnd += styleIdStartInFrame + len("</a:tableStyleId>")
-		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGuid)
+		styleIDEnd += styleIDStartInFrame + len("</a:tableStyleId>")
+		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGUID)
 		updatedFrame = make([]byte, 0, len(frame))
-		updatedFrame = append(updatedFrame, frame[:styleIdStartInFrame]...)
+		updatedFrame = append(updatedFrame, frame[:styleIDStartInFrame]...)
 		updatedFrame = append(updatedFrame, []byte(newStyleTag)...)
-		updatedFrame = append(updatedFrame, frame[styleIdEnd:]...)
+		updatedFrame = append(updatedFrame, frame[styleIDEnd:]...)
 	} else {
 		// Insert new tableStyleId after firstRow or at start of tblPr
 		insertPos := bytes.Index(tblPrSection, []byte(">"))
@@ -187,7 +187,7 @@ func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGuid st
 			return errors.New("invalid tblPr element")
 		}
 		insertPos += tblPrStart + 1
-		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGuid)
+		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGUID)
 		updatedFrame = make([]byte, 0, len(frame)+len(newStyleTag))
 		updatedFrame = append(updatedFrame, frame[:insertPos]...)
 		updatedFrame = append(updatedFrame, []byte(newStyleTag)...)
