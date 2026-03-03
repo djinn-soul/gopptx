@@ -215,6 +215,7 @@ func parseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 	text := ""
 	runs := []common.TextRun(nil)
 	var textFrame *common.TextFrame
+	var paragraph *common.Paragraph
 	var clickAction *common.Hyperlink
 	var hoverAction *common.Hyperlink
 	properties := common.ShapeUpdate{}
@@ -235,6 +236,9 @@ func parseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 	if err := decodeOptionalPayloadValue(payload, "text_frame", &textFrame); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
+	if err := decodeOptionalPayloadValue(payload, "paragraph", &paragraph); err != nil {
+		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
 	if err := decodeOptionalPayloadValue(payload, "click_action", &clickAction); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
@@ -245,7 +249,7 @@ func parseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
 
-	hasExplicitUpdates := text != "" || len(runs) > 0 || textFrame != nil || clickAction != nil || hoverAction != nil
+	hasExplicitUpdates := text != "" || len(runs) > 0 || textFrame != nil || paragraph != nil || clickAction != nil || hoverAction != nil
 	hasProperties := hasAnyUpdate(properties)
 	if !hasExplicitUpdates && !hasProperties {
 		return common.ShapeUpdate{}, false, nil
@@ -260,6 +264,9 @@ func parseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 	}
 	if textFrame != nil {
 		updates.TextFrame = textFrame
+	}
+	if paragraph != nil {
+		updates.Paragraph = paragraph
 	}
 	if clickAction != nil {
 		updates.ClickAction = clickAction
@@ -283,6 +290,7 @@ func copyShapeUpdateFields(src, dst map[string]any) {
 		"text",
 		"runs",
 		"text_frame",
+		"paragraph",
 		"click_action",
 		"hover_action",
 		"properties",

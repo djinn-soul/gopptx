@@ -115,6 +115,11 @@ func TestCommandNotesOps(t *testing.T) {
 	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"has_notes_slide":false`) {
 		t.Fatalf("expected has_notes_slide false before notes creation: %s", resp)
 	}
+	getReq := `{"api_version":1,"request_id":"n2","op":"get_notes","payload":{"slide_index":0}}`
+	resp = ExecuteCommand(e, getReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"notes_slide":null`) {
+		t.Fatalf("expected nullable notes_slide before notes creation: %s", resp)
+	}
 
 	// 1. Set Notes
 	setReq := `{"api_version":1,"request_id":"n1","op":"set_notes",` +
@@ -131,13 +136,15 @@ func TestCommandNotesOps(t *testing.T) {
 	}
 
 	// 2. Get Notes
-	getReq := `{"api_version":1,"request_id":"n2","op":"get_notes","payload":{"slide_index":0}}`
 	resp = ExecuteCommand(e, getReq)
 	if !strings.Contains(resp, `"ok":true`) {
 		t.Fatalf("get_notes failed: %s", resp)
 	}
 	if !strings.Contains(resp, "Speaker notes here") {
 		t.Fatalf("get_notes missing expected text: %s", resp)
+	}
+	if !strings.Contains(resp, `"notes_slide":{"text":"Speaker notes here"}`) {
+		t.Fatalf("expected notes_slide object after notes creation: %s", resp)
 	}
 
 	// 3. Update Notes

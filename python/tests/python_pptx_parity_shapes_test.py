@@ -43,9 +43,12 @@ def test_group_and_freeform_creation() -> None:
         assert group_id > 0  # noqa: S101
 
         builder = slide.build_freeform(914400, 914400)
-        freeform_id = builder.add_line_to(1828800, 914400).add_line_to(
-            1828800, 1828800
-        ).convert_to_shape(close=True)
+        freeform_id = (
+            builder
+            .add_line_to(1828800, 914400)
+            .add_line_to(1828800, 1828800)
+            .convert_to_shape(close=True)
+        )
         assert freeform_id > 0  # noqa: S101
 
         shape_ids = {int(s["ID"]) for s in slide.list_shapes()}
@@ -77,10 +80,10 @@ def test_freeform_builder_scale_and_segments() -> None:
     with Presentation(input_deck) as prs:
         slide = prs.add_slide("python-pptx parity freeform scale")
         builder = slide.build_freeform(100, 100, scale=(2.0, 3.0))
-        freeform_id = (
-            builder.add_line_segments([(200, 100), (200, 200)])
-            .convert_to_shape(close=False, text="freeform text")
-        )
+        freeform_id = builder.add_line_segments([
+            (200, 100),
+            (200, 200),
+        ]).convert_to_shape(close=False, text="freeform text")
 
         assert freeform_id > 0  # noqa: S101
         shapes = slide.list_shapes()
@@ -89,7 +92,7 @@ def test_freeform_builder_scale_and_segments() -> None:
         assert any(
             int(shape["ID"]) == freeform_id and shape.get("Text") == "freeform text"
             for shape in shapes
-        )  # noqa: S101
+        )
 
 
 def test_freeform_builder_move_to_and_validation() -> None:

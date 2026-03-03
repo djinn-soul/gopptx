@@ -60,6 +60,7 @@ OP_SET_NOTES = "set_notes"
 OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
+OP_SET_TABLE_STYLE = "set_table_style"
 OP_SLIDE_COUNT = "slide_count"
 OP_SPLIT_TABLE_CELL = "split_table_cell"
 OP_UPDATE_CHART_DATA = "update_chart_data"
@@ -127,6 +128,7 @@ SUPPORTED_OPS = (
     OP_SET_PLACEHOLDER_CONTENT,
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
+    OP_SET_TABLE_STYLE,
     OP_SLIDE_COUNT,
     OP_SPLIT_TABLE_CELL,
     OP_UPDATE_CHART_DATA,

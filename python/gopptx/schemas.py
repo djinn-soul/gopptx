@@ -68,6 +68,91 @@ class TextFrame(TypedDict, total=False):
     auto_fit: bool
     auto_fit_type: str
     vertical_align: str
+    orientation: str
+    columns: int
+    rotation: float
+
+
+class Paragraph(TypedDict, total=False):
+    """Paragraph settings."""
+
+    indent: int
+    hanging: int
+
+
+class FillFormat(TypedDict, total=False):
+    """Shape fill settings."""
+
+    solid: str
+    background: bool
+    gradient: GradientFill
+    pattern: PatternFill
+
+
+class GradientStop(TypedDict, total=False):
+    """Gradient stop settings."""
+
+    position_pct: float
+    color: str
+
+
+class GradientFill(TypedDict, total=False):
+    """Linear gradient settings."""
+
+    angle_deg: float
+    stops: list[GradientStop]
+
+
+class PatternFill(TypedDict, total=False):
+    """Pattern fill settings."""
+
+    preset: str
+    fg_color: str
+    bg_color: str
+
+
+class LineFormat(TypedDict, total=False):
+    """Shape line settings."""
+
+    color: str
+    width_emu: int
+    dash_style: str
+
+
+class ShadowFormat(TypedDict, total=False):
+    """Shape shadow settings."""
+
+    inherit: bool
+    color: str
+    blur_emu: int
+    distance_emu: int
+    angle_deg: float
+
+
+class GlowFormat(TypedDict, total=False):
+    """Shape glow settings."""
+
+    color: str
+    radius_emu: int
+
+
+class BlurFormat(TypedDict, total=False):
+    """Shape blur settings."""
+
+    radius_emu: int
+
+
+class SoftEdgeFormat(TypedDict, total=False):
+    """Shape soft-edge settings."""
+
+    radius_emu: int
+
+
+class ReflectionFormat(TypedDict, total=False):
+    """Shape reflection settings."""
+
+    blur_emu: int
+    distance_emu: int
 
 
 class ShapeProps(TypedDict, total=False):
@@ -75,7 +160,16 @@ class ShapeProps(TypedDict, total=False):
 
     name: str
     text_frame: TextFrame
+    paragraph: Paragraph
+    fill: FillFormat
+    line: LineFormat
+    shadow: ShadowFormat
+    glow: GlowFormat
+    blur: BlurFormat
+    soft_edge: SoftEdgeFormat
+    reflection: ReflectionFormat
     click_action: Hyperlink
+    hover_action: Hyperlink
     crop: ImageCrop
     rotation: float
     flip_h: bool
@@ -141,6 +235,14 @@ class ShapeUpdate(TypedDict, total=False):
     text: str
     runs: list[TextRun]
     text_frame: TextFrame
+    paragraph: Paragraph
+    fill: FillFormat
+    line: LineFormat
+    shadow: ShadowFormat
+    glow: GlowFormat
+    blur: BlurFormat
+    soft_edge: SoftEdgeFormat
+    reflection: ReflectionFormat
     click_action: Hyperlink
     crop: ImageCrop
     rotation: float

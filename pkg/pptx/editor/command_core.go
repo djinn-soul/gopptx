@@ -205,6 +205,8 @@ func commandHandlerForNotesTables(op string) (commandHandler, bool) {
 		return handleUpdateTableFlags, true
 	case OpUpdateTableCell:
 		return handleUpdateTableCell, true
+	case OpSetTableStyle:
+		return handleSetTableStyle, true
 	default:
 		return nil, false
 	}

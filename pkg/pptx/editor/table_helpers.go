@@ -131,3 +131,70 @@ func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
 	}
 	return partPath, slideContent, frameStart, frameEnd, frame, nil
 }
+
+// SetTableStyle sets the table style for the specified table on a slide.
+// The styleGuid must be a valid PowerPoint table style GUID, e.g.:
+//   "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+//   "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+//   "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGuid string) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+
+	// Extract the table XML to locate the tableStyleId element
+	tblStart := bytes.Index(frame, []byte("<a:tbl"))
+	if tblStart == -1 {
+		return errors.New("graphicFrame does not contain a table")
+	}
+
+	// Look for existing tableStyleId element
+	tblPrStart := bytes.Index(frame[tblStart:], []byte("<a:tblPr"))
+	if tblPrStart == -1 {
+		return errors.New("table has no tblPr element")
+	}
+	tblPrStart += tblStart
+	tblPrEnd := bytes.Index(frame[tblPrStart:], []byte("</a:tblPr>"))
+	if tblPrEnd == -1 {
+		return errors.New("invalid table tblPr element")
+	}
+	tblPrEnd += tblPrStart + len("</a:tblPr>")
+
+	// Check if tableStyleId already exists in tblPr
+	tblPrSection := frame[tblPrStart:tblPrEnd]
+	styleIdStart := bytes.Index(tblPrSection, []byte("<a:tableStyleId"))
+	var updatedFrame []byte
+
+	if styleIdStart != -1 {
+		// Update existing tableStyleId
+		styleIdStartInFrame := tblPrStart + styleIdStart
+		styleIdEnd := bytes.Index(frame[styleIdStartInFrame:], []byte("</a:tableStyleId>"))
+		if styleIdEnd == -1 {
+			return errors.New("invalid tableStyleId element")
+		}
+		styleIdEnd += styleIdStartInFrame + len("</a:tableStyleId>")
+		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGuid)
+		updatedFrame = make([]byte, 0, len(frame))
+		updatedFrame = append(updatedFrame, frame[:styleIdStartInFrame]...)
+		updatedFrame = append(updatedFrame, []byte(newStyleTag)...)
+		updatedFrame = append(updatedFrame, frame[styleIdEnd:]...)
+	} else {
+		// Insert new tableStyleId after firstRow or at start of tblPr
+		insertPos := bytes.Index(tblPrSection, []byte(">"))
+		if insertPos == -1 {
+			return errors.New("invalid tblPr element")
+		}
+		insertPos += tblPrStart + 1
+		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGuid)
+		updatedFrame = make([]byte, 0, len(frame)+len(newStyleTag))
+		updatedFrame = append(updatedFrame, frame[:insertPos]...)
+		updatedFrame = append(updatedFrame, []byte(newStyleTag)...)
+		updatedFrame = append(updatedFrame, frame[insertPos:]...)
+	}
+
+	// Replace the entire frame in the slide content
+	updatedSlide := replaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame)
+	e.parts.Set(partPath, updatedSlide)
+	return nil
+}

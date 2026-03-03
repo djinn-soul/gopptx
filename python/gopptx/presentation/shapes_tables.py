@@ -9,6 +9,9 @@ from typing import TYPE_CHECKING, cast
 from .. import ops
 from ..api_errors import GopptxError
 from ..slide.freeform_builder import FreeformBuilder
+from ..slide.text_frame import serialize_text_frame_for_payload
+from ..slide.text_paragraph import serialize_paragraph_for_payload
+from ..slide.text_run import serialize_runs_for_payload
 from ..utils import normalize_table_index
 from .helpers import PresentationProtocol
 
@@ -33,14 +36,16 @@ else:
 class PresentationNotesMixin(PresentationProtocol):
     """Mixin providing speaker notes methods."""
 
-    def _has_notes_slide(self, slide_index: int) -> bool:
-        """Return whether a notes slide currently exists for a slide."""
-        result = self.execute(ops.OP_HAS_NOTES_SLIDE, {"slide_index": slide_index})
-        return bool(result.get("has_notes_slide", False))
+    def _get_notes_payload(self, slide_index: int) -> dict[str, object]:
+        """Fetch raw notes payload from bridge with null-safe fallback."""
+        result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
+        if not isinstance(result, dict):
+            return {"text": "", "notes_slide": None}
+        return result
 
     def get_notes(self, slide_index: int) -> str:
         """Get speaker notes for a slide."""
-        result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
+        result = self._get_notes_payload(slide_index)
         return str(cast("str", result.get("text", "")))
 
     def set_notes(self, slide_index: int, text: str) -> None:
@@ -100,7 +105,9 @@ class PresentationShapeMixin(PresentationProtocol):
         text = kwargs.get("text")
         runs = kwargs.get("runs")
         text_frame = kwargs.get("text_frame")
+        paragraph = kwargs.get("paragraph")
         click_action = kwargs.get("click_action")
+        hover_action = kwargs.get("hover_action")
         properties = kwargs.get("properties")
         payload: dict[str, object] = {
             "slide_index": slide_index,
@@ -113,11 +120,15 @@ class PresentationShapeMixin(PresentationProtocol):
         if text is not None:
             payload["text"] = text
         if runs is not None:
-            payload["runs"] = runs
+            payload["runs"] = serialize_runs_for_payload(runs)
         if text_frame is not None:
-            payload["text_frame"] = cast("dict[str, object]", text_frame)
+            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
+        if paragraph is not None:
+            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
         if click_action is not None:
             payload["click_action"] = cast("dict[str, object]", click_action)
+        if hover_action is not None:
+            payload["hover_action"] = cast("dict[str, object]", hover_action)
         if properties is not None:
             payload["properties"] = properties
         result = self.execute(ops.OP_ADD_SHAPE, payload)
@@ -147,12 +158,26 @@ class PresentationShapeMixin(PresentationProtocol):
         for key in (
             "runs",
             "text_frame",
+            "paragraph",
             "click_action",
             "hover_action",
             "properties",
         ):
             if key in kwargs and kwargs[key] is not None:
-                payload[key] = cast("object", kwargs[key])
+                value = cast("object", kwargs[key])
+                payload[key] = (
+                    serialize_runs_for_payload(value)
+                    if key == "runs"
+                    else (
+                        serialize_text_frame_for_payload(value)
+                        if key == "text_frame"
+                        else (
+                            serialize_paragraph_for_payload(value)
+                            if key == "paragraph"
+                            else value
+                        )
+                    )
+                )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -179,12 +204,26 @@ class PresentationShapeMixin(PresentationProtocol):
             "text",
             "runs",
             "text_frame",
+            "paragraph",
             "click_action",
             "hover_action",
             "properties",
         ):
             if key in kwargs and kwargs[key] is not None:
-                payload[key] = cast("object", kwargs[key])
+                value = cast("object", kwargs[key])
+                payload[key] = (
+                    serialize_runs_for_payload(value)
+                    if key == "runs"
+                    else (
+                        serialize_text_frame_for_payload(value)
+                        if key == "text_frame"
+                        else (
+                            serialize_paragraph_for_payload(value)
+                            if key == "paragraph"
+                            else value
+                        )
+                    )
+                )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -225,6 +264,7 @@ class PresentationShapeMixin(PresentationProtocol):
         text: str | None = None,
         runs: object | None = None,
         text_frame: object | None = None,
+        paragraph: object | None = None,
         click_action: object | None = None,
         hover_action: object | None = None,
         properties: object | None = None,
@@ -238,9 +278,11 @@ class PresentationShapeMixin(PresentationProtocol):
         if text is not None:
             payload["text"] = text
         if runs is not None:
-            payload["runs"] = runs
+            payload["runs"] = serialize_runs_for_payload(runs)
         if text_frame is not None:
-            payload["text_frame"] = text_frame
+            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
+        if paragraph is not None:
+            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
         if click_action is not None:
             payload["click_action"] = click_action
         if hover_action is not None:
@@ -397,9 +439,25 @@ class PresentationShapeMixin(PresentationProtocol):
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None:
         """Update shape properties."""
+        normalized_updates = dict(cast("dict[str, object]", updates))
+        runs = normalized_updates.get("runs")
+        if runs is not None:
+            normalized_updates["runs"] = serialize_runs_for_payload(runs)
+        text_frame = normalized_updates.get("text_frame")
+        if text_frame is not None:
+            normalized_updates["text_frame"] = serialize_text_frame_for_payload(
+                text_frame
+            )
+        paragraph = normalized_updates.get("paragraph")
+        if paragraph is not None:
+            normalized_updates["paragraph"] = serialize_paragraph_for_payload(paragraph)
         self.execute(
             ops.OP_UPDATE_SHAPE,
-            {"slide_index": slide_index, "shape_id": shape_id, "updates": updates},
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "updates": normalized_updates,
+            },
         )
 
 
@@ -446,6 +504,25 @@ class PresentationTableMixin(PresentationProtocol):
             ops.OP_GET_TABLE, {"slide_index": slide_index, "shape_id": shape_id}
         )
         return cast("TableInfo", cast("dict[str, object]", result.get("table", {})))
+
+    def set_table_style(
+        self, slide_index: int, shape_id: int, style_guid: str
+    ) -> None:
+        """Apply a table style to a table.
+
+        The style_guid must be a valid PowerPoint table style GUID, e.g.:
+            "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+            "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+            "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+        """
+        self.execute(
+            ops.OP_SET_TABLE_STYLE,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "style_guid": style_guid,
+            },
+        )
 
     def set_table_flags(
         self, slide_index: int, shape_id: int, flags: dict[str, bool]

@@ -58,6 +58,7 @@ from .schemas import (
     TableCellInfo,
     TableInfo,
 )
+from .slide import ParagraphProps, Run, RunHyperlink, TextFrameProps
 from .slide.table import Cell, Table
 
 __all__ = (
@@ -102,6 +103,9 @@ __all__ = (
     "GopptxError",
     "Presentation",
     "PresentationMetadata",
+    "ParagraphProps",
+    "Run",
+    "RunHyperlink",
     "Shape",
     "ShapeProps",
     "ShapeSearchQuery",
@@ -120,4 +124,5 @@ __all__ = (
     "Table",
     "TableCellInfo",
     "TableInfo",
+    "TextFrameProps",
 )

@@ -60,6 +60,7 @@ const (
 	OpSplitTableCell          = "split_table_cell"
 	OpUpdateTableFlags        = "update_table_flags"
 	OpUpdateTableCell         = "update_table_cell"
+	OpSetTableStyle           = "set_table_style"
 	OpAddCustomXML            = "add_custom_xml"
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
@@ -130,6 +131,7 @@ func SupportedOps() []string {
 		OpSplitTableCell,
 		OpUpdateTableFlags,
 		OpUpdateTableCell,
+		OpSetTableStyle,
 		OpAddCustomXML,
 		OpListCustomXML,
 		OpRemoveCustomXML,

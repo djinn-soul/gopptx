@@ -131,7 +131,9 @@ _PLACEHOLDER_TYPE_TO_CLASS: dict[str, type[Placeholder]] = {
 }
 
 
-def create_placeholder(slide: Slide, index: int, ph_type: str, name: str) -> Placeholder:
+def create_placeholder(
+    slide: Slide, index: int, ph_type: str, name: str
+) -> Placeholder:
     """Create a placeholder proxy using the most-specific subtype mapping."""
     cls = _PLACEHOLDER_TYPE_TO_CLASS.get(ph_type, Placeholder)
     return cls(slide, index, ph_type, name)

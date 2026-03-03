@@ -15,6 +15,7 @@ class _FreeformCommitter(Protocol):
         text: str | None = None,
         runs: object | None = None,
         text_frame: object | None = None,
+        paragraph: object | None = None,
         click_action: object | None = None,
         hover_action: object | None = None,
         properties: object | None = None,
@@ -47,9 +48,7 @@ class FreeformBuilder:
         self._points.append((x, y))
         return self
 
-    def add_line_segments(
-        self, points: list[tuple[float, float]]
-    ) -> FreeformBuilder:
+    def add_line_segments(self, points: list[tuple[float, float]]) -> FreeformBuilder:
         """Append multiple line segment endpoints."""
         self._points.extend(points)
         return self

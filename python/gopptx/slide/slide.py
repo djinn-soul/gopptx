@@ -11,7 +11,6 @@ from .table import Table
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
-    from .freeform_builder import FreeformBuilder
     from ..schemas import (
         ImageCrop,
         ImageMetadata,
@@ -23,6 +22,7 @@ if TYPE_CHECKING:
         TableCellInfo,
         TableInfo,
     )
+    from .freeform_builder import FreeformBuilder
 
 
 class SlideShapeMixin:
@@ -218,7 +218,10 @@ class SlideBase:
     @property
     def notes_slide(self) -> NotesSlide | None:
         """Return a notes-slide proxy, or None when notes slide is absent."""
-        if not self._presentation._has_notes_slide(self.index):
+        if self._presentation is None or self.index < 0:
+            return None
+        notes_payload = self._presentation._get_notes_payload(self.index)
+        if notes_payload.get("notes_slide") is None:
             return None
         return NotesSlide(self)
 
@@ -271,7 +274,7 @@ class SlideTableMixin:
         return self._presentation.get_table(self.index, shape_id)
 
     def table(self, shape_id: int) -> Table:
-        """Returns a Table object for the given shape_id, providing a Pythonic grid API."""
+        """Return a Table object for shape_id with a Pythonic grid API."""
         return Table(self._presentation, self.index, shape_id)
 
     def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
@@ -295,6 +298,16 @@ class SlideTableMixin:
     def split_table_cell(self, shape_id: int, row: int, col: int) -> None:
         """Split a merged table cell."""
         self._presentation.split_table_cell(self.index, shape_id, row, col)
+
+    def set_table_style(self, shape_id: int, style_guid: str) -> None:
+        """Apply a table style to a table.
+
+        The style_guid must be a valid PowerPoint table style GUID, e.g.:
+            "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
+            "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+            "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+        """
+        self._presentation.set_table_style(self.index, shape_id, style_guid)
 
 
 class Slide(
