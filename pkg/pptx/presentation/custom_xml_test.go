@@ -45,3 +45,20 @@ func TestGenerateCustomXMLItemRejectsInvalidNames(t *testing.T) {
 		t.Fatal("expected invalid property name to fail")
 	}
 }
+
+func TestGenerateCustomXMLItemPreservesRawInnerXML(t *testing.T) {
+	xmlContent, err := generateCustomXMLItem(common.CustomXMLPart{
+		RootElement: "meta",
+		Content:     `<child>v</child>`,
+	})
+	if err != nil {
+		t.Fatalf("generateCustomXMLItem: %v", err)
+	}
+
+	if !strings.Contains(xmlContent, `<child>v</child>`) {
+		t.Fatalf("expected raw inner XML to be preserved, got: %s", xmlContent)
+	}
+	if strings.Contains(xmlContent, `&lt;child&gt;`) {
+		t.Fatalf("expected inner XML not to be escaped, got: %s", xmlContent)
+	}
+}

@@ -31,7 +31,7 @@ func emuToPt(emu int64) float64 {
 }
 
 // pdfViaNative renders slides directly to PDF using gopdf drawing primitives.
-func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string) error {
+func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, opts PDFOptions) error {
 	pdf := &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{
 		PageSize: gopdf.Rect{W: slideWidthPt, H: slideHeightPt},
@@ -39,16 +39,32 @@ func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string) e
 
 	// Load a system TTF font; gopdf requires AddTTFFont before SetFont.
 	fontLoaded := false
-	for _, path := range systemFontPaths() {
-		if err := pdf.AddTTFFont("sans", path); err == nil {
-			if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
-				fontLoaded = true
-				break
+
+	// Try user-configured fonts first
+	if len(opts.NativeFontPaths) > 0 {
+		for _, path := range opts.NativeFontPaths {
+			if err := pdf.AddTTFFont("sans", path); err == nil {
+				if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
+					fontLoaded = true
+					break
+				}
+			}
+		}
+	}
+
+	// Fallback to system fonts if needed
+	if !fontLoaded {
+		for _, path := range systemFontPaths() {
+			if err := pdf.AddTTFFont("sans", path); err == nil {
+				if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
+					fontLoaded = true
+					break
+				}
 			}
 		}
 	}
 	if !fontLoaded {
-		return errors.New("no system TTF font found; install Arial or DejaVu Sans")
+		return errors.New("no system TTF font found; install Arial or DejaVu Sans, or specify NativeFontPaths")
 	}
 
 	for i, slide := range slides {

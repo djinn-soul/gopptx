@@ -32,7 +32,6 @@ func NewEditorRegistry() *Registry {
 	}
 }
 
-// RegisterEditor adds an editor to the registry and returns a handle.
 func (r *Registry) RegisterEditor(e *PresentationEditor) Handle {
 	if r == nil || e == nil {
 		return 0

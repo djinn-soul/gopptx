@@ -17,7 +17,7 @@ func TestRenderPlaceholderOverrideGeometry(t *testing.T) {
 		CY:    ptr(int64(400)),
 	}
 
-	xml := placeholderShape(spec, 10)
+	xml := PlaceholderShape(spec, 10)
 	if !strings.Contains(xml, "<a:xfrm>") {
 		t.Errorf("expected <a:xfrm>, got %s", xml)
 	}
@@ -41,7 +41,7 @@ func TestRenderPlaceholderOverrideTextStyle(t *testing.T) {
 		},
 	}
 
-	xml := placeholderShape(spec, 10)
+	xml := PlaceholderShape(spec, 10)
 	if !strings.Contains(xml, "<p:txBody>") {
 		t.Errorf("expected <p:txBody>, got %s", xml)
 	}

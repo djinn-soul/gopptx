@@ -11,6 +11,9 @@ from .schemas import (
     ChartSelector,
     Comment,
     CoreProperties,
+    Hyperlink,
+    ImageCrop,
+    ImageMetadata,
     PresentationMetadata,
     Section,
     Shape,
@@ -24,6 +27,8 @@ from .schemas import (
     SlideMetadata,
     TableCellInfo,
     TableInfo,
+    TextFrame,
+    TextRun,
 )
 
 class GopptxError(Exception):
@@ -85,6 +90,11 @@ class Slide:
         self,
         shape_type: str,
         bounds: tuple[float, float, float, float],
+        *,
+        text: str = "",
+        runs: list[TextRun] | None = None,
+        text_frame: TextFrame | None = None,
+        click_action: Hyperlink | None = None,
         **kwargs: str | ShapeProps,
     ) -> int: ...
     def add_table(
@@ -273,9 +283,42 @@ class Presentation:
     def add_image(
         self,
         slide_index: int,
-        path: str,
+        source: str | bytes,
         bounds: tuple[float, float, float, float],
+        *,
+        name: str = "",
+        crop: ImageCrop | None = None,
+        rotation: float | None = None,
+        flip_h: bool | None = None,
+        flip_v: bool | None = None,
+        **kwargs: object,
     ) -> int: ...
+    def add_video(
+        self,
+        slide_index: int,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        name: str = "",
+        poster_frame: str | bytes | None = None,
+        **kwargs: object,
+    ) -> int: ...
+    def add_ole_object(
+        self,
+        slide_index: int,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        name: str = "",
+        prog_id: str = "",
+        icon: str | bytes | None = None,
+        **kwargs: object,
+    ) -> int: ...
+    def get_image_metadata(
+        self,
+        slide_index: int,
+        shape_id: int,
+    ) -> ImageMetadata: ...
     def remove_shape(self, slide_index: int, shape_id: int) -> None: ...
     def update_shape(
         self, slide_index: int, shape_id: int, updates: ShapeUpdate

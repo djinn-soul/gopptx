@@ -143,6 +143,22 @@ func (e *PresentationEditor) Repair() (structural.RepairResult, error) {
 	return r.Repair(issues), nil
 }
 
+// nextSlideRelID returns the next available relationship ID for a specific slide part.
+func (e *PresentationEditor) nextSlideRelID(partPath string) (string, error) {
+	relsPath := common.SlideRelsPartName(partPath)
+	var rels []common.EditorRelationship
+	if data, ok := e.parts.Get(relsPath); ok {
+		parsed, err := parseRelationshipsXML(data)
+		if err != nil {
+			return "", fmt.Errorf("parse %s: %w", relsPath, err)
+		}
+		rels = parsed
+	}
+
+	nextNum := common.NextRelationshipNumber(rels)
+	return fmt.Sprintf("rId%d", nextNum), nil
+}
+
 func nextSlideID(slides []common.EditorSlideRef) int64 {
 	var maxID int64 = 255
 	for _, slide := range slides {
@@ -213,6 +229,8 @@ func (e *PresentationEditor) populateSlideTitlesConcurrently() {
 
 	for idx := range e.slides {
 		wg.Go(func() {
+			// Note: Ignoring Get errors is intentional - slide titles are optional metadata
+			// and we'll just skip titles for slides that can't be read
 			data, _ := e.parts.Get(e.slides[idx].Part)
 			title := extractFirstAText(data)
 			ch <- result{index: idx, title: title}
@@ -232,6 +250,9 @@ func (e *PresentationEditor) populateSlideTitlesConcurrently() {
 }
 
 func extractFirstAText(content []byte) string {
+	if len(content) == 0 {
+		return ""
+	}
 	decoder := xml.NewDecoder(bytes.NewReader(content))
 	for {
 		token, err := decoder.Token()
@@ -287,114 +308,6 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 		}
 	}
 	return shapes, nil
-}
-
-// UpdateShapeByIndex modifies the properties of a specific shape on a slide by its index in the parsed shape list.
-func (e *PresentationEditor) UpdateShapeByIndex(slideIndex, shapeIndex int, updates common.ShapeUpdate) error {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return errors.New("slide index out of range")
-	}
-
-	partPath := e.slides[slideIndex].Part
-	content, ok := e.parts.Get(partPath)
-	if !ok {
-		return fmt.Errorf("read slide part %s: not found", partPath)
-	}
-
-	shapes, err := parseSlideShapes(content)
-	if err != nil {
-		return fmt.Errorf("parse shapes: %w", err)
-	}
-
-	if shapeIndex < 0 || shapeIndex >= len(shapes) {
-		return errors.New("shape index out of range")
-	}
-
-	return e.applyShapeUpdate(partPath, content, shapes, shapeIndex, updates)
-}
-
-// UpdateShape modifies the properties of a specific shape on a slide by its ID.
-func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return errors.New("slide index out of range")
-	}
-
-	partPath := e.slides[slideIndex].Part
-	content, ok := e.parts.Get(partPath)
-	if !ok {
-		return fmt.Errorf("read slide part %s: not found", partPath)
-	}
-
-	shapes, err := parseSlideShapes(content)
-	if err != nil {
-		return fmt.Errorf("parse shapes: %w", err)
-	}
-
-	shapeIndex := -1
-	for i, s := range shapes {
-		if s.ID == shapeID {
-			shapeIndex = i
-			break
-		}
-	}
-
-	if shapeIndex == -1 {
-		return fmt.Errorf("shape with ID %d not found", shapeID)
-	}
-
-	return e.applyShapeUpdate(partPath, content, shapes, shapeIndex, updates)
-}
-
-func (e *PresentationEditor) applyShapeUpdate(
-	partPath string,
-	content []byte,
-	shapes []parsedShape,
-	shapeIndex int,
-	updates common.ShapeUpdate,
-) error {
-	target := &shapes[shapeIndex]
-	if updates.Text != nil {
-		target.Text = *updates.Text
-	}
-	if updates.X != nil {
-		target.X = *updates.X
-	}
-	if updates.Y != nil {
-		target.Y = *updates.Y
-	}
-	if updates.W != nil {
-		target.W = *updates.W
-	}
-	if updates.H != nil {
-		target.H = *updates.H
-	}
-
-	// Re-render only the modified shape
-	newContent := replaceShapeNodes(content, shapes, func(i int, p *parsedShape) ([]byte, bool) {
-		if i != shapeIndex {
-			return nil, false
-		}
-		xml := renderShapeXML(p)
-		if xml == nil {
-			// If render returns nil (e.g. for p:pic), we must NOT replace, otherwise we delete it.
-			// But for ID-based updates, we'll return an error in the caller context if we can.
-			return nil, false
-		}
-		return xml, true
-	})
-
-	// Check if the shape was actually updated
-	if bytes.Equal(content, newContent) && updates != (common.ShapeUpdate{}) {
-		// This is a bit of a heuristic, but if renderShapeXML returns nil for the target,
-		// newContent will equal content (replace=false).
-		updatedShape := &shapes[shapeIndex]
-		if updatedShape.Type == shapeTypePicture {
-			return errors.New("updating shape of type 'pic' is not supported")
-		}
-	}
-
-	e.parts.Set(partPath, newContent)
-	return nil
 }
 
 // RemoveShapeByIndex removes a shape from the slide by its index.

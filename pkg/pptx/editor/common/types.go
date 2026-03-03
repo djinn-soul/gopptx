@@ -21,19 +21,22 @@ const (
 	CPNamespace       = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
 	XSINamespace      = "http://www.w3.org/2001/XMLSchema-instance"
 
-	RelTypeSlide       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
-	RelTypeSlideMaster = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster"
-	RelTypeSlideLayout = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
-	RelTypeNotesSlide  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
-	RelTypeNotesMaster = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"
-	RelTypeHyperlink   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
-	RelTypeImage       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
-	RelTypeChart       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
-	RelTypeAudio       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"
-	RelTypeVideo       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video"
-	RelTypeTheme       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
-	RelTypeSectionList = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
-	RelTypePackage     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
+	RelTypeSlide          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
+	RelTypeSlideMaster    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster"
+	RelTypeSlideLayout    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
+	RelTypeNotesSlide     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide"
+	RelTypeNotesMaster    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"
+	RelTypeHyperlink      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
+	RelTypeImage          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+	RelTypeChart          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
+	RelTypeAudio          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio"
+	RelTypeVideo          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/video"
+	RelTypeMedia          = "http://schemas.microsoft.com/office/2007/relationships/media"
+	RelTypeTheme          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
+	RelTypeSectionList    = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
+	RelTypePackage        = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
+	RelTypeCustomXML      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml"
+	RelTypeCustomXMLProps = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps"
 
 	RelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 	ContentTypesXMLNS  = "http://schemas.openxmlformats.org/package/2006/content-types"
@@ -114,6 +117,18 @@ func ParseRelationshipNumber(id string) (int, bool) {
 		return 0, false
 	}
 	return num, true
+}
+
+// NextRelationshipNumber returns the next available relationship number
+// (starting from 1) that is not present in the existing relationships list.
+func NextRelationshipNumber(rels []EditorRelationship) int {
+	nextNum := 1
+	for _, r := range rels {
+		if num, ok := ParseRelationshipNumber(r.ID); ok && num >= nextNum {
+			nextNum = num + 1
+		}
+	}
+	return nextNum
 }
 
 // ParseSlidePartNumber extracts the numeric part of a slide part name (e.g., slide1.xml).
@@ -206,20 +221,91 @@ type SlideMasterCloneResult struct {
 	LayoutMap  map[string]string
 }
 
+// Hyperlink holds properties for click or hover actions.
+type Hyperlink struct {
+	Address        *string `json:"address,omitempty"`
+	Action         *string `json:"action,omitempty"`
+	Tooltip        *string `json:"tooltip,omitempty"`
+	TargetSlide    *int    `json:"target_slide,omitempty"`
+	TargetJump     *string `json:"jump,omitempty"`
+	Macro          *string `json:"macro,omitempty"`
+	History        *bool   `json:"history,omitempty"`
+	HighlightClick *bool   `json:"highlight_click,omitempty"`
+	EndSound       *bool   `json:"end_sound,omitempty"`
+}
+
+// TextRun represents a single formatted text segment.
+type TextRun struct {
+	Text          string     `json:"text"`
+	Bold          *bool      `json:"bold,omitempty"`
+	Italic        *bool      `json:"italic,omitempty"`
+	Underline     *string    `json:"underline,omitempty"`
+	Strikethrough *string    `json:"strikethrough,omitempty"`
+	Subscript     *bool      `json:"subscript,omitempty"`
+	Superscript   *bool      `json:"superscript,omitempty"`
+	Color         *string    `json:"color,omitempty"`
+	Highlight     *string    `json:"highlight,omitempty"`
+	Font          *string    `json:"font,omitempty"`
+	SizePt        *int       `json:"size_pt,omitempty"`
+	Code          *bool      `json:"code,omitempty"`
+	AllCaps       *bool      `json:"all_caps,omitempty"`
+	SmallCaps     *bool      `json:"small_caps,omitempty"`
+	Hyperlink     *Hyperlink `json:"hyperlink,omitempty"`
+	HoverAction   *Hyperlink `json:"hover_action,omitempty"`
+}
+
 // ShapeProps defines optional properties when creating a shape.
 type ShapeProps struct {
-	Name string `json:"name,omitempty"`
+	Name string    `json:"name,omitempty"`
+	Runs []TextRun `json:"runs,omitempty"`
 	// Add other properties as needed for Phase 1
 }
 
-// ShapeUpdate defines fields that can be updated on a shape.
-// Pointers are used to indicate which fields are being updated (non-nil).
+// TextFrame defines formatting properties for the text body container within a shape.
+type TextFrame struct {
+	MarginTop     *int    `json:"margin_top,omitempty"`
+	MarginBottom  *int    `json:"margin_bottom,omitempty"`
+	MarginLeft    *int    `json:"margin_left,omitempty"`
+	MarginRight   *int    `json:"margin_right,omitempty"`
+	WordWrap      *bool   `json:"word_wrap,omitempty"`
+	AutoFit       *bool   `json:"auto_fit,omitempty"`      // Deprecated: use auto_fit_type instead
+	AutoFitType   *string `json:"auto_fit_type,omitempty"` // "none", "normal", "shape"
+	VerticalAlign *string `json:"vertical_align,omitempty"`
+}
+
+// ImageMetadata describes basic image properties returned by the bridge.
+type ImageMetadata struct {
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Format string `json:"format"`
+	Hash   string `json:"hash,omitempty"`
+}
+
+// ImageCrop defines cropping offsets (0.0 to 1.0).
+type ImageCrop struct {
+	Left   float64 `json:"left,omitempty"`
+	Right  float64 `json:"right,omitempty"`
+	Top    float64 `json:"top,omitempty"`
+	Bottom float64 `json:"bottom,omitempty"`
+}
+
 type ShapeUpdate struct {
-	Text *string `json:"text,omitempty"`
-	X    *int    `json:"x,omitempty"`
-	Y    *int    `json:"y,omitempty"`
-	W    *int    `json:"w,omitempty"`
-	H    *int    `json:"h,omitempty"`
+	Text        *string    `json:"text,omitempty"`
+	Runs        *[]TextRun `json:"runs,omitempty"`
+	TextFrame   *TextFrame `json:"text_frame,omitempty"`
+	ClickAction *Hyperlink `json:"click_action,omitempty"`
+	HoverAction *Hyperlink `json:"hover_action,omitempty"`
+
+	// Image properties (valid if shape is a picture)
+	Crop     *ImageCrop `json:"crop,omitempty"`
+	Rotation *float64   `json:"rotation,omitempty"`
+	FlipH    *bool      `json:"flip_h,omitempty"`
+	FlipV    *bool      `json:"flip_v,omitempty"`
+
+	X *int `json:"x,omitempty"`
+	Y *int `json:"y,omitempty"`
+	W *int `json:"w,omitempty"`
+	H *int `json:"h,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.

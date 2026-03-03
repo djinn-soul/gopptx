@@ -1,4 +1,4 @@
-import os  # noqa: D100
+import os
 import pathlib
 import sys
 
@@ -11,13 +11,9 @@ project_root = pathlib.Path(
 sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
 
 
-# Create output directory
-output_dir = os.path.join(project_root, "examples/output")  # noqa: PTH118
-pathlib.Path(output_dir).mkdir(exist_ok=True, parents=True)
+def test_python_slide_objects(tmp_path: pathlib.Path) -> None:
+    output_path = tmp_path / "python_slide_objects.pptx"
 
-output_path = os.path.join(output_dir, "python_slide_objects.pptx")  # noqa: PTH118
-
-try:
     with Presentation.new("Object Oriented Test") as pres:
         # 1. Access first slide
         slide = pres.slides[0]
@@ -26,14 +22,12 @@ try:
         slide.title = "Enhanced via Python"
 
         # 3. Add shape via slide object
-        slide.add_shape(
+        shape_id = slide.add_shape(
             SHAPE_ROUNDED_RECTANGLE,
-            1000000,
-            1000000,
-            3000000,
-            1500000,
+            (1000000, 1000000, 3000000, 1500000),
             text="I am a proxy",
         )
+        assert shape_id > 0
 
         # 4. Set notes via property
         slide.notes = "Proxy objects make API much cleaner."
@@ -44,17 +38,14 @@ try:
 
         # 6. Verify newly exposed master/layout object proxies
         masters = pres.slide_masters
-        if len(masters) > 0:
+        if masters:
             first_master = masters[0]
             master_layouts = first_master.slide_layouts
-            if len(master_layouts) > 0:
-                first_layout = master_layouts[0]
+            if master_layouts:
+                _ = master_layouts[0]
 
         # 7. Save
         pres.save(output_path)
+        assert pres.slide_count >= 2
 
-
-except Exception:  # noqa: BLE001
-    import traceback
-
-    traceback.print_exc()
+    assert output_path.exists()

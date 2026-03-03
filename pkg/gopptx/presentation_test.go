@@ -2,6 +2,7 @@ package gopptx
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -9,7 +10,7 @@ func TestPresentation_Save(t *testing.T) {
 	pres := &Presentation{}
 	pres.AddSlide()
 
-	filename := "test_save.pptx"
+	filename := filepath.Join(t.TempDir(), "test_save.pptx")
 	defer os.Remove(filename)
 
 	err := pres.Save(filename)

@@ -319,7 +319,7 @@ func slideRenderConnectors(b *strings.Builder, connectors []ConnectorSpec, shape
 
 func slideRenderPlaceholders(b *strings.Builder, placeholders []PlaceholderOverrideSpec, nextID int) int {
 	for i, ph := range placeholders {
-		b.WriteString(placeholderShape(ph, nextID+i))
+		b.WriteString(PlaceholderShape(ph, nextID+i))
 	}
 	return nextID + len(placeholders)
 }

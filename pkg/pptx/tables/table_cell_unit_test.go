@@ -44,7 +44,7 @@ func TestTableCell_LayoutAPI(t *testing.T) {
 		WithMarginTopPt(7).
 		WithMarginBottomPt(8).
 		WithWrap(false)
-	
+
 	if *c.MarginLeftPt != 5 || *c.MarginBottomPt != 8 || *c.WrapText != false {
 		t.Error("Layout props failed")
 	}

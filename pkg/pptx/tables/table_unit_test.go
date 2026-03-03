@@ -29,7 +29,7 @@ func TestTable_Methods(t *testing.T) {
 	if !table.IsDecorative {
 		t.Error("WithDecorative failed")
 	}
-	
+
 	table = table.WithRowHeights([]styling.Length{styling.Inches(0.5), styling.Inches(0.5)})
 	if len(table.RowHeights) != 2 {
 		t.Error("WithRowHeights failed")
@@ -45,7 +45,7 @@ func TestTable_MergeLogic(t *testing.T) {
 	})
 	// Row 2: First cell is covered by A1, so we must provide an empty cell or placeholder
 	table = table.AddRow([]string{"", "B2"})
-	
+
 	spec, err := table.ToTableSpec(1)
 	if err != nil { t.Fatalf("ToTableSpec failed: %v", err) }
 	if len(spec.StyledRows) != 2 { t.Error("Merge rows failed") }

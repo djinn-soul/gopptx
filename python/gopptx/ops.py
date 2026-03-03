@@ -7,11 +7,13 @@ OP_ADD_CHART = "add_chart"
 OP_ADD_COMMENT = "add_comment"
 OP_ADD_CUSTOM_XML = "add_custom_xml"
 OP_ADD_IMAGE = "add_image"
+OP_ADD_OLE_OBJECT = "add_ole_object"
 OP_ADD_SECTION = "add_section"
 OP_ADD_SHAPE = "add_shape"
 OP_ADD_SLIDE = "add_slide"
 OP_ADD_TABLE = "add_table"
 OP_ADD_VBA = "add_vba"
+OP_ADD_VIDEO = "add_video"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
@@ -20,12 +22,14 @@ OP_FIND_AND_REPLACE = "find_and_replace"
 OP_GET_AUTHORS = "get_authors"
 OP_GET_COMMENTS = "get_comments"
 OP_GET_CORE_PROPERTIES = "get_core_properties"
+OP_GET_IMAGE_METADATA = "get_image_metadata"
 OP_GET_METADATA = "get_metadata"
 OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
 OP_GET_TABLE = "get_table"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
+OP_LIST_PLACEHOLDERS = "list_placeholders"
 OP_LIST_SHAPES = "list_shapes"
 OP_LIST_SLIDES = "list_slides"
 OP_LIST_SLIDE_CHARTS = "list_slide_charts"
@@ -48,6 +52,7 @@ OP_SET_CORE_PROPERTIES = "set_core_properties"
 OP_SET_MARK_AS_FINAL = "set_mark_as_final"
 OP_SET_MODIFY_PASSWORD = "set_modify_password"
 OP_SET_NOTES = "set_notes"
+OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SLIDE_COUNT = "slide_count"
@@ -64,11 +69,13 @@ SUPPORTED_OPS = (
     OP_ADD_COMMENT,
     OP_ADD_CUSTOM_XML,
     OP_ADD_IMAGE,
+    OP_ADD_OLE_OBJECT,
     OP_ADD_SECTION,
     OP_ADD_SHAPE,
     OP_ADD_SLIDE,
     OP_ADD_TABLE,
     OP_ADD_VBA,
+    OP_ADD_VIDEO,
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
     OP_CLONE_LAYOUT_MASTER_FAMILY,
@@ -77,12 +84,14 @@ SUPPORTED_OPS = (
     OP_GET_AUTHORS,
     OP_GET_COMMENTS,
     OP_GET_CORE_PROPERTIES,
+    OP_GET_IMAGE_METADATA,
     OP_GET_METADATA,
     OP_GET_NOTES,
     OP_GET_SECTIONS,
     OP_GET_TABLE,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
+    OP_LIST_PLACEHOLDERS,
     OP_LIST_SHAPES,
     OP_LIST_SLIDES,
     OP_LIST_SLIDE_CHARTS,
@@ -105,6 +114,7 @@ SUPPORTED_OPS = (
     OP_SET_MARK_AS_FINAL,
     OP_SET_MODIFY_PASSWORD,
     OP_SET_NOTES,
+    OP_SET_PLACEHOLDER_CONTENT,
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
     OP_SLIDE_COUNT,

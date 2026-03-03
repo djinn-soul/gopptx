@@ -53,6 +53,9 @@ func TestSupportedOpsMatchPythonConstants(t *testing.T) {
 	slices.Sort(goOps)
 	slices.Sort(pyOps)
 
+	t.Logf("Go ops (%d): %v", len(goOps), goOps)
+	t.Logf("Python ops (%d): %v", len(pyOps), pyOps)
+
 	if !slices.Equal(goOps, pyOps) {
 		// Provide detailed diff output
 		missingInGo := diffSlice(pyOps, goOps)

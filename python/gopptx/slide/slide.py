@@ -5,11 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .placeholder_mixin import SlidePlaceholderMixin
 from .table import Table
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
     from ..schemas import (
+        ImageCrop,
+        ImageMetadata,
         Shape,
         ShapeProps,
         ShapeUpdate,
@@ -38,9 +41,67 @@ class SlideShapeMixin:
         """Add a shape to this slide."""
         return self._presentation.add_shape(self.index, shape_type, bounds, **kwargs)
 
-    def add_image(self, path: str, bounds: tuple[float, float, float, float]) -> int:
+    def add_image(
+        self,
+        path: str | None,
+        bounds: tuple[float, float, float, float],
+        *,
+        data: bytes | None = None,
+        format: str | None = None,
+        crop: ImageCrop | None = None,
+        rotation: float | None = None,
+        flip_h: bool | None = None,
+        flip_v: bool | None = None,
+    ) -> int:
         """Add an image to this slide."""
-        return self._presentation.add_image(self.index, path, bounds)
+        return self._presentation.add_image(
+            self.index,
+            path,
+            bounds,
+            data=data,
+            format=format,
+            crop=crop,
+            rotation=rotation,
+            flip_h=flip_h,
+            flip_v=flip_v,
+        )
+
+    def get_image_metadata(self, shape_id: int) -> ImageMetadata:
+        """Get dimensions and format for an image shape on this slide."""
+        return self._presentation.get_image_metadata(self.index, shape_id)
+
+    def add_video(
+        self,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        name: str | None = None,
+        poster_frame: str | bytes | None = None,
+        mime_type: str | None = None,
+    ) -> int:
+        """Add a video to this slide."""
+        return self._presentation.add_video(
+            self.index,
+            source,
+            bounds,
+            name=name,
+            poster_frame=poster_frame,
+            mime_type=mime_type,
+        )
+
+    def add_ole_object(
+        self,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        name: str | None = None,
+        prog_id: str | None = None,
+        icon: str | bytes | None = None,
+    ) -> int:
+        """Add an OLE object to this slide."""
+        return self._presentation.add_ole_object(
+            self.index, source, bounds, name=name, prog_id=prog_id, icon=icon
+        )
 
     def remove_shape(self, shape_id: int) -> None:
         """Remove a shape from this slide."""
@@ -180,6 +241,7 @@ class SlideTableMixin:
 class Slide(
     SlideTableMixin,
     SlideChartMixin,
+    SlidePlaceholderMixin,
     SlideBase,
     SlideShapeMixin,
 ):

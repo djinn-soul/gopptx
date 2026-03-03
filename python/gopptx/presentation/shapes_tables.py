@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import os
 from typing import TYPE_CHECKING, cast
 
 from .. import ops
@@ -11,6 +13,8 @@ from .helpers import PresentationProtocol
 
 if TYPE_CHECKING:
     from ..schemas import (
+        ImageCrop,
+        ImageMetadata,
         Shape,
         ShapeProps,
         ShapeSearchQuery,
@@ -41,6 +45,31 @@ class PresentationNotesMixin(PresentationProtocol):
 class PresentationShapeMixin(PresentationProtocol):
     """Mixin providing shape manipulation methods."""
 
+    @staticmethod
+    def _init_bounds_payload(
+        slide_index: int, bounds: tuple[float, float, float, float]
+    ) -> dict[str, object]:
+        x, y, w, h = bounds
+        return {"slide_index": slide_index, "x": x, "y": y, "w": w, "h": h}
+
+    @staticmethod
+    def _set_source_payload(
+        payload: dict[str, object],
+        source: str | bytes | os.PathLike[str] | None,
+        *,
+        path_key: str = "path",
+        data_key: str = "data",
+    ) -> None:
+        if source is None:
+            return
+        if isinstance(source, str):
+            payload[path_key] = source
+            return
+        if isinstance(source, os.PathLike):
+            payload[path_key] = os.fspath(source)
+            return
+        payload[data_key] = base64.b64encode(source).decode("ascii")
+
     def search_shapes(self, query: ShapeSearchQuery | str) -> list[ShapeSearchResult]:
         """Search for shapes matching a query."""
         if isinstance(query, str):
@@ -63,6 +92,9 @@ class PresentationShapeMixin(PresentationProtocol):
         """Add a shape to a slide."""
         x, y, w, h = bounds
         text = kwargs.get("text")
+        runs = kwargs.get("runs")
+        text_frame = kwargs.get("text_frame")
+        click_action = kwargs.get("click_action")
         properties = kwargs.get("properties")
         payload: dict[str, object] = {
             "slide_index": slide_index,
@@ -74,6 +106,12 @@ class PresentationShapeMixin(PresentationProtocol):
         }
         if text is not None:
             payload["text"] = text
+        if runs is not None:
+            payload["runs"] = runs
+        if text_frame is not None:
+            payload["text_frame"] = cast("dict[str, object]", text_frame)
+        if click_action is not None:
+            payload["click_action"] = cast("dict[str, object]", click_action)
         if properties is not None:
             payload["properties"] = properties
         result = self.execute(ops.OP_ADD_SHAPE, payload)
@@ -82,15 +120,124 @@ class PresentationShapeMixin(PresentationProtocol):
     def add_image(
         self,
         slide_index: int,
-        path: str,
-        bounds: tuple[float, float, float, float],
+        source: str | bytes | None = None,
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
+        *,
+        path: str | None = None,
+        data: bytes | None = None,
+        format: str | None = None,
+        img_format: str | None = None,
+        crop: ImageCrop | None = None,
+        rotation: float | None = None,
+        flip_h: bool | None = None,
+        flip_v: bool | None = None,
     ) -> int:
-        """Add an image to a slide."""
-        x, y, w, h = bounds
+        """Add an image to a slide.
+
+        Args:
+            slide_index: Slide index (0-based).
+            path: Path to the image file, or None if data is provided.
+            bounds: (x, y, w, h) in EMU.
+            data: Raw image bytes.
+            format: Image format (e.g., 'png', 'jpeg') required if data is bytes.
+            crop: ImageCrop dictionary.
+            rotation: Rotation in degrees.
+            flip_h: Flip horizontally.
+            flip_v: Flip vertically.
+        """
+        payload = self._init_bounds_payload(slide_index, bounds)
+        if source:
+            self._set_source_payload(payload, source)
+        elif path:
+            self._set_source_payload(payload, path)
+        elif data:
+            self._set_source_payload(payload, data)
+            resolved_format = format or img_format
+            if resolved_format:
+                payload["format"] = resolved_format
+
+        options: dict[str, object] = {}
+        if crop:
+            options["crop"] = cast("dict[str, object]", crop)
+        if rotation is not None:
+            options["rotation"] = rotation
+        if flip_h is not None:
+            options["flip_h"] = flip_h
+        if flip_v is not None:
+            options["flip_v"] = flip_v
+
+        if options:
+            payload["options"] = options
+
+        result = self.execute(ops.OP_ADD_IMAGE, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def get_image_metadata(self, slide_index: int, shape_id: int) -> ImageMetadata:
+        """Get dimensions and format for an image shape."""
         result = self.execute(
-            ops.OP_ADD_IMAGE,
-            {"slide_index": slide_index, "path": path, "x": x, "y": y, "w": w, "h": h},
+            ops.OP_GET_IMAGE_METADATA,
+            {"slide_index": slide_index, "shape_id": shape_id},
         )
+        return cast("ImageMetadata", result)
+
+    def add_video(
+        self,
+        slide_index: int,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        name: str | None = None,
+        poster_frame: str | bytes | None = None,
+        mime_type: str | None = None,
+    ) -> int:
+        """Add a video to a slide."""
+        payload = self._init_bounds_payload(slide_index, bounds)
+        self._set_source_payload(payload, source)
+
+        if name:
+            payload["name"] = name
+        if mime_type:
+            payload["mime_type"] = mime_type
+
+        if poster_frame:
+            self._set_source_payload(
+                payload,
+                poster_frame,
+                path_key="poster_path",
+                data_key="poster_data",
+            )
+
+        result = self.execute(ops.OP_ADD_VIDEO, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
+    def add_ole_object(
+        self,
+        slide_index: int,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        name: str | None = None,
+        prog_id: str | None = None,
+        icon: str | bytes | None = None,
+    ) -> int:
+        """Add an OLE object to a slide."""
+        payload = self._init_bounds_payload(slide_index, bounds)
+        self._set_source_payload(payload, source)
+
+        if name:
+            payload["name"] = name
+        if prog_id:
+            payload["prog_id"] = prog_id
+
+        if icon:
+            self._set_source_payload(
+                payload,
+                icon,
+                path_key="icon_path",
+                data_key="icon_data",
+            )
+
+        result = self.execute(ops.OP_ADD_OLE_OBJECT, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
     def remove_shape(self, slide_index: int, shape_id: int) -> None:

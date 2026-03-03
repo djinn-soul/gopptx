@@ -376,15 +376,6 @@ func PresentationRelationships(
 		b.WriteString(strconv.Itoa(i))
 		b.WriteString(`.xml"/>`)
 		nextRid++
-
-		b.WriteString(`
-<Relationship Id="rId`)
-		b.WriteString(strconv.Itoa(nextRid))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" ` +
-			`Target="../customXml/itemProps`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`.xml"/>`)
-		nextRid++
 	}
 
 	if hasSections {

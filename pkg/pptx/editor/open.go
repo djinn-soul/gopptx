@@ -26,6 +26,7 @@ type parsedSlideIDRef struct {
 const (
 	defaultRelsCapacity     = 8
 	defaultSlideIDsCapacity = 8
+	legacyPPTHeaderLength   = 8
 )
 
 // OpenPresentationEditor opens a PPTX package for in-place slide editing.
@@ -58,6 +59,12 @@ func OpenPresentationEditorFromBytes(data []byte) (*PresentationEditor, error) {
 
 // OpenPartStoreFromBytes opens a part store from a byte slice.
 func OpenPartStoreFromBytes(data []byte) (*PartStore, error) {
+	if len(data) >= 8 && bytes.Equal(data[:8], []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}) {
+		return nil, errors.New(
+			"legacy proprietary .ppt (OLE2) files are not supported. please use the interop package to convert to .pptx first",
+		)
+	}
+
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return nil, fmt.Errorf("not a valid ZIP archive: %w", err)
@@ -155,6 +162,22 @@ func openPartStore(filePath string) (*PartStore, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check for legacy .ppt OLE2 magic number
+	header := make([]byte, legacyPPTHeaderLength)
+	if n, err := file.Read(header); err == nil && n == legacyPPTHeaderLength {
+		if bytes.Equal(header, []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}) {
+			_ = file.Close()
+			return nil, errors.New(
+				"legacy proprietary .ppt (OLE2) files are not supported. please use the interop package to convert to .pptx first",
+			)
+		}
+	}
+	// Reset file pointer after reading header
+	if _, err := file.Seek(0, 0); err != nil {
+		_ = file.Close()
+		return nil, fmt.Errorf("failed to seek file: %w", err)
 	}
 
 	zr, err := zip.NewReader(file, meta.Size())
@@ -526,6 +549,7 @@ func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXM
 
 		if propsData, hasProps := ps.Get(propsPath); hasProps {
 			part.Namespace = parseCustomXMLNamespace(propsData)
+			part.ItemID = parseCustomXMLItemID(propsData)
 		}
 
 		// Only attempt to parse as structured XML when a namespace was found in itemProps.
@@ -533,6 +557,7 @@ func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXM
 		if part.Namespace != "" {
 			structuredPart, ok := parseStructuredCustomXML(itemData, part.Namespace)
 			if ok {
+				structuredPart.ItemID = part.ItemID
 				parts = append(parts, structuredPart)
 				continue
 			}
@@ -541,6 +566,28 @@ func parseCustomXMLInventory(ps *PartStore, partKeys []string) []common.CustomXM
 	}
 
 	return parts
+}
+
+func parseCustomXMLItemID(propsData []byte) string {
+	decoder := xml.NewDecoder(bytes.NewReader(propsData))
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if start.Name.Local == "datastoreItem" {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "itemID" {
+					return attr.Value
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func parseCustomXMLNamespace(propsData []byte) string {

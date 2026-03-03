@@ -22,9 +22,9 @@ func TestAnimation_Triggers(t *testing.T) {
 	a := NewAnimation(1, AnimationEntranceAppear).
 		WithTrigger(AnimationWithPrevious)
 	if a.Trigger != AnimationWithPrevious { t.Error("WithPrevious failed") }
-	
+
 	if a.NodeType() != "withEffect" { t.Error("NodeType failed") }
-	
+
 	a.Trigger = AnimationAfterPrevious
 	if a.NodeType() != "afterEffect" { t.Error("NodeType failed") }
 }
@@ -33,19 +33,19 @@ func TestAnimation_Presets(t *testing.T) {
 	a := NewAnimation(1, AnimationEntranceFade)
 	if a.PresetID() != 10 { t.Errorf("Fade ID failed: %d", a.PresetID()) }
 	if a.PresetClass() != "entr" { t.Error("Fade Class failed") }
-	
+
 	a.Effect = AnimationExitFadeOut
 	if a.PresetID() != 10 { t.Error("Exit Fade ID failed") }
 	if a.PresetClass() != "exit" { t.Error("Exit Class failed") }
-	
+
 	a.Effect = AnimationEmphasisPulse
 	if a.PresetID() != 31 { t.Error("Pulse ID failed") }
 	if a.PresetClass() != "emph" { t.Error("Emph Class failed") }
-	
+
 	a.Effect = AnimationPathLines
 	if a.PresetID() != 42 { t.Error("Path ID failed") }
 	if a.PresetClass() != "path" { t.Error("Path Class failed") }
-	
+
 	a.Effect = "invalid"
 	if a.PresetID() != 0 { t.Error("Invalid ID failed") }
 }
@@ -73,7 +73,7 @@ func TestAnimation_Subtypes(t *testing.T) {
 		{AnimationEntranceSplit, AnimationDirIn, 1},
 		{AnimationEntranceAppear, "", 0},
 	}
-	
+
 	for _, tt := range tests {
 		a := NewAnimation(1, tt.effect)
 		a.Direction = tt.dir

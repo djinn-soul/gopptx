@@ -25,6 +25,9 @@ func main() {
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
+	if err := cleanupOutputDir(outDir); err != nil {
+		log.Fatalf("Failed to clean output directory: %v", err)
+	}
 
 	generators := []struct {
 		name string

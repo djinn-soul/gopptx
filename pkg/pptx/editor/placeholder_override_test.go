@@ -121,6 +121,36 @@ func TestUpdateSlidePlaceholderOverrideAmbiguousNameFails(t *testing.T) {
 	}
 }
 
+func TestHandleSetPlaceholderContentPreservesTypeWithoutPhType(t *testing.T) {
+	basePath := writeDeckFixture(t, "placeholder-bridge-preserve-type.pptx", []elements.SlideContent{
+		elements.NewSlide("Original"),
+	})
+
+	editor, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	installPlaceholderSlideXML(editor, editor.slides[0].Part, []placeholderDef{
+		{name: "Title 1", phType: "title", phIndex: 0},
+	})
+
+	payload := []byte(`{"slide_index":0,"ph_index":0,"text":"Updated title"}`)
+	if _, err := handleSetPlaceholderContent(editor, payload); err != nil {
+		t.Fatalf("handleSetPlaceholderContent: %v", err)
+	}
+
+	content, ok := editor.parts.Get(editor.slides[0].Part)
+	if !ok {
+		t.Fatal("expected updated slide part")
+	}
+	slideXML := string(content)
+	if !strings.Contains(slideXML, `<p:ph idx="0" type="title"/>`) {
+		t.Fatalf("expected placeholder type to remain title, got: %s", slideXML)
+	}
+}
+
 type placeholderDef struct {
 	name    string
 	phType  string

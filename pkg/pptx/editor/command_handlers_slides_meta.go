@@ -177,16 +177,12 @@ func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, e
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	title, ok := v.RequireString(p, "title")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -221,12 +217,8 @@ func handleUpdateSlide(e *PresentationEditor, payload json.RawMessage) (any, err
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -260,7 +252,7 @@ func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
@@ -275,10 +267,6 @@ func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 	values, ok := v.RequireFloat64Slice(p, "values")
 	if !ok {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 

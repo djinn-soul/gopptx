@@ -2,6 +2,7 @@ import os  # noqa: D100
 import pathlib
 import sys
 
+import pytest
 from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
@@ -10,36 +11,26 @@ project_root = pathlib.Path(
 ).resolve()
 sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
 
-# Ensure smoke sample exists
-input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
-if not pathlib.Path(input_deck).exists():
-    sys.exit(1)
 
-try:
-    with Presentation(input_deck) as pres:
-        # 1. Slide Count
+def test_python_command_api(tmp_path: pathlib.Path) -> None:
+    input_deck = project_root / "examples" / "assets" / "01" / "01_basic_pptx.pptx"
+    if not input_deck.exists():
+        pytest.skip("Smoke sample missing for python_command_api_test")
+
+    with Presentation(str(input_deck)) as pres:
         initial_count = pres.slide_count
+        assert initial_count > 0
 
-        # 2. Metadata
         meta = pres.metadata
+        assert meta is not None
 
-        # 3. Duplicate Slide
         new_idx = pres.duplicate_slide(0, 1)
+        assert new_idx >= 0
 
-        # 4. Move Slide
         pres.move_slide(0, pres.slide_count - 1)
-
-        # 5. Remove Slide
         pres.remove_slide(1)
 
-        # 6. Save
-        output_dir = os.path.join(project_root, "examples/output")  # noqa: PTH118
-        pathlib.Path(output_dir).mkdir(exist_ok=True, parents=True)
-        out_path = os.path.join(output_dir, "python_management_output.pptx")  # noqa: PTH118
-        pres.save(out_path)
+        output_path = tmp_path / "python_management_output.pptx"
+        pres.save(output_path)
 
-
-except Exception as e:  # noqa: BLE001
-    if hasattr(e, "code"):
-        pass
-    sys.exit(1)
+    assert output_path.exists()

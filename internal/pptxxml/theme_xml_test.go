@@ -29,14 +29,14 @@ func TestSlideLayoutXML(t *testing.T) {
 			t.Error("Title missing")
 		}
 	})
-	
+
 	t.Run("Blank", func(t *testing.T) {
 		xml := SlideLayoutBlank()
 		if !strings.Contains(xml, "Blank") {
 			t.Error("Name missing")
 		}
 	})
-	
+
 	t.Run("Relationships", func(t *testing.T) {
 		xml := SlideLayoutRelationships(1)
 		if !strings.Contains(xml, "slideMaster1.xml") {
