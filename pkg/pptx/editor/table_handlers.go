@@ -213,3 +213,30 @@ func handleUpdateTableCell(e *PresentationEditor, payload json.RawMessage) (any,
 
 	return map[string]bool{"success": true}, nil
 }
+
+func handleSetTableStyle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := v.RequireInt(p, "slide_index")
+	if !ok {
+		return nil, v.Error()
+	}
+	shapeID, ok := v.RequireInt(p, "shape_id")
+	if !ok {
+		return nil, v.Error()
+	}
+	styleGuid, ok := v.RequireString(p, "style_guid")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if err := e.SetTableStyle(slideIndex, shapeID, styleGuid); err != nil {
+		return nil, err
+	}
+
+	return map[string]bool{"success": true}, nil
+}

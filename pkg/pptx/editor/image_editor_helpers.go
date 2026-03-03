@@ -72,7 +72,7 @@ func buildImageShapeXML(
 	xfrmAttr := buildImageTransformAttrs(opts)
 
 	return fmt.Sprintf(`
-<p:pic>
+<p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
     <p:cNvPr id="%d" name="%s"/>
     <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>

@@ -393,3 +393,59 @@ func TestBridgeErrorCode_DetailsField(t *testing.T) {
 		t.Error("expected error details to be populated for validation failure")
 	}
 }
+
+func TestBridgeErrorCode_BuildFreeformInvalidPointsType(t *testing.T) {
+	basePath := writeDeckFixture(t, "error-freeform-points-type.pptx", []elements.SlideContent{
+		elements.NewSlide("Test"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer e.Close()
+
+	req := `{"api_version": 1, "request_id": "test", "op": "build_freeform", "payload": {"slide_index": 0, "points": "bad"}}`
+	response := ExecuteCommand(e, req)
+
+	var resp ResponseEnvelope
+	if err := json.Unmarshal([]byte(response), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.OK {
+		t.Fatal("expected ok=false for invalid points type")
+	}
+	if resp.Error == nil {
+		t.Fatal("expected error detail")
+	}
+	if resp.Error.Code != ErrCodeInvalidType {
+		t.Errorf("expected code %s, got %s", ErrCodeInvalidType, resp.Error.Code)
+	}
+}
+
+func TestBridgeErrorCode_BuildFreeformCloseInvalidType(t *testing.T) {
+	basePath := writeDeckFixture(t, "error-freeform-close-type.pptx", []elements.SlideContent{
+		elements.NewSlide("Test"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer e.Close()
+
+	req := `{"api_version": 1, "request_id": "test", "op": "build_freeform", "payload": {"slide_index": 0, "points": [[0,0],[10,10]], "close": "yes"}}`
+	response := ExecuteCommand(e, req)
+
+	var resp ResponseEnvelope
+	if err := json.Unmarshal([]byte(response), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.OK {
+		t.Fatal("expected ok=false for invalid close type")
+	}
+	if resp.Error == nil {
+		t.Fatal("expected error detail")
+	}
+	if resp.Error.Code != ErrCodeInvalidType {
+		t.Errorf("expected code %s, got %s", ErrCodeInvalidType, resp.Error.Code)
+	}
+}

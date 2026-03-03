@@ -101,15 +101,17 @@ The bridge exposes a stable JSON API for C/Python clients. All operations use a 
 }
 ```
 
-### Supported Operations (40 ops)
+### Supported Operations (41 ops)
 
 **Slide Operations**: `slide_count`, `add_slide`, `remove_slide`, `move_slide`, `duplicate_slide`, `update_slide`, `list_slides`, `set_slide_title`
 
 **Metadata**: `get_metadata`, `get_core_properties`, `set_core_properties`, `set_slide_size`, `apply_theme`, `set_modify_password`, `set_mark_as_final`
 
-**Shapes**: `list_shapes`, `add_shape`, `remove_shape`, `update_shape`, `search_shapes`, `find_and_replace`
+**Shapes**: `list_shapes`, `add_shape`, `remove_shape`, `update_shape`, `search_shapes`, `find_and_replace`, `move_shape_to_front`, `move_shape_to_back`
 
-**Images/Charts**: `add_image`, `add_chart`, `list_slide_charts`, `update_chart_data`
+**Images/Charts**: `add_image`, `add_chart`, `list_slide_charts`, `update_chart_data`, `get_image_metadata`
+
+**Tables**: `add_table`, `get_table`, `set_table_style`, `merge_table_cells`, `split_table_cell`, `update_table_flags`, `update_table_cell`
 
 **Sections**: `get_sections`, `add_section`, `remove_section`, `rename_section`
 
@@ -119,7 +121,9 @@ The bridge exposes a stable JSON API for C/Python clients. All operations use a 
 
 **Layout/Master**: `list_slide_layouts`, `rebind_slide_layout`, `clone_layout_master_family`
 
-**Other**: `merge_from_file`, `batch_execute`
+**Placeholders**: `list_placeholders`, `set_placeholder_content`
+
+**Other**: `merge_from_file`, `batch_execute`, `add_custom_xml`, `list_custom_xml`, `remove_custom_xml`, `add_vba`
 
 See [`docs/architecture/bridge-phase1-ops.md`](docs/architecture/bridge-phase1-ops.md) for complete specifications and [`bindings/c/README.md`](bindings/c/README.md) for C API details.
 

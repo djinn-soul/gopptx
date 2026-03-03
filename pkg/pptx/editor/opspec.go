@@ -40,12 +40,17 @@ const (
 	OpRemoveComment           = "remove_comment"
 	OpListShapes              = "list_shapes"
 	OpAddShape                = "add_shape"
+	OpAddTextbox              = "add_textbox"
+	OpAddConnector            = "add_connector"
+	OpAddGroupShape           = "add_group_shape"
+	OpBuildFreeform           = "build_freeform"
 	OpAddImage                = "add_image"
 	OpRemoveShape             = "remove_shape"
 	OpUpdateShape             = "update_shape"
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
+	OpHasNotesSlide           = "has_notes_slide"
 	OpSetNotes                = "set_notes"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
@@ -55,6 +60,7 @@ const (
 	OpSplitTableCell          = "split_table_cell"
 	OpUpdateTableFlags        = "update_table_flags"
 	OpUpdateTableCell         = "update_table_cell"
+	OpSetTableStyle           = "set_table_style"
 	OpAddCustomXML            = "add_custom_xml"
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
@@ -105,12 +111,17 @@ func SupportedOps() []string {
 		OpRemoveComment,
 		OpListShapes,
 		OpAddShape,
+		OpAddTextbox,
+		OpAddConnector,
+		OpAddGroupShape,
+		OpBuildFreeform,
 		OpAddImage,
 		OpRemoveShape,
 		OpUpdateShape,
 		OpMoveShapeToFront,
 		OpMoveShapeToBack,
 		OpGetNotes,
+		OpHasNotesSlide,
 		OpSetNotes,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,
@@ -120,6 +131,7 @@ func SupportedOps() []string {
 		OpSplitTableCell,
 		OpUpdateTableFlags,
 		OpUpdateTableCell,
+		OpSetTableStyle,
 		OpAddCustomXML,
 		OpListCustomXML,
 		OpRemoveCustomXML,

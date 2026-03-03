@@ -97,7 +97,7 @@ func buildVideoShapeXML(
 ) string {
 	name := fmt.Sprintf("Video %d", newID)
 	return fmt.Sprintf(`
-<p:pic>
+<p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
     <p:cNvPr id="%d" name="%s">
       <a:extLst>
@@ -146,7 +146,7 @@ func buildOLEObjectShapeXML(
 	name := fmt.Sprintf("Object %d", newID)
 	safeProgID := escapeXMLAttr(progID)
 	return fmt.Sprintf(`
-<p:graphicFrame>
+<p:graphicFrame xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvGraphicFramePr>
     <p:cNvPr id="%d" name="%s"/>
     <p:cNvGraphicFramePr>

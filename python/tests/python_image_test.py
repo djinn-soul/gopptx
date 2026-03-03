@@ -13,7 +13,13 @@ sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
 
 
 def test_python_image(tmp_path: pathlib.Path) -> None:
-    image_path = project_root / "examples" / "assets" / "55" / "repository-open-graph-template.png"
+    image_path = (
+        project_root
+        / "examples"
+        / "assets"
+        / "55"
+        / "repository-open-graph-template.png"
+    )
     if not image_path.exists():
         pytest.skip("Image asset not available for python_image_test")
 

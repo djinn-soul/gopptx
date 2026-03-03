@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .placeholder import Placeholder
+from .placeholder_collection import PlaceholderCollection
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
@@ -19,18 +20,10 @@ class SlidePlaceholderMixin:
         @property
         def index(self) -> int: ...
 
-    def placeholders(self) -> list[Placeholder]:
-        """List all placeholders on this slide."""
-        ph_data = self._presentation.list_placeholders(self.index)
-        return [
-            Placeholder(
-                self,  # type: ignore[arg-type]
-                ph["index"],  # type: ignore[dict-item]
-                ph.get("type", ""),  # type: ignore[dict-item]
-                ph.get("name", ""),  # type: ignore[dict-item]
-            )
-            for ph in ph_data
-        ]
+    @property
+    def placeholders(self) -> PlaceholderCollection:
+        """Collection of placeholders on this slide."""
+        return PlaceholderCollection(self)  # type: ignore[arg-type]
 
     def get_placeholder(self, idx: int) -> Placeholder | None:
         """Get a placeholder by its index.
@@ -41,11 +34,7 @@ class SlidePlaceholderMixin:
         Returns:
             The Placeholder object, or None if not found.
         """
-        phs = self.placeholders()
-        for ph in phs:
-            if ph.idx == idx:
-                return ph
-        return None
+        return self.placeholders.get(idx)
 
     def set_placeholder_content(
         self,

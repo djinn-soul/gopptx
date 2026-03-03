@@ -263,14 +263,88 @@ type ShapeProps struct {
 
 // TextFrame defines formatting properties for the text body container within a shape.
 type TextFrame struct {
-	MarginTop     *int    `json:"margin_top,omitempty"`
-	MarginBottom  *int    `json:"margin_bottom,omitempty"`
-	MarginLeft    *int    `json:"margin_left,omitempty"`
-	MarginRight   *int    `json:"margin_right,omitempty"`
-	WordWrap      *bool   `json:"word_wrap,omitempty"`
-	AutoFit       *bool   `json:"auto_fit,omitempty"`      // Deprecated: use auto_fit_type instead
-	AutoFitType   *string `json:"auto_fit_type,omitempty"` // "none", "normal", "shape"
-	VerticalAlign *string `json:"vertical_align,omitempty"`
+	MarginTop     *int     `json:"margin_top,omitempty"`
+	MarginBottom  *int     `json:"margin_bottom,omitempty"`
+	MarginLeft    *int     `json:"margin_left,omitempty"`
+	MarginRight   *int     `json:"margin_right,omitempty"`
+	WordWrap      *bool    `json:"word_wrap,omitempty"`
+	AutoFit       *bool    `json:"auto_fit,omitempty"`      // Deprecated: use auto_fit_type instead
+	AutoFitType   *string  `json:"auto_fit_type,omitempty"` // "none", "normal", "shape"
+	VerticalAlign *string  `json:"vertical_align,omitempty"`
+	Orientation   *string  `json:"orientation,omitempty"`
+	Columns       *int     `json:"columns,omitempty"`
+	Rotation      *float64 `json:"rotation,omitempty"` // Degrees, converted to OOXML 1/60000 degree units.
+}
+
+// Paragraph defines paragraph-level formatting controls.
+type Paragraph struct {
+	Indent  *int `json:"indent,omitempty"`  // Left paragraph margin (EMU, maps to a:pPr marL).
+	Hanging *int `json:"hanging,omitempty"` // Hanging indent amount (EMU, rendered as negative a:pPr indent).
+}
+
+// ShapeFill defines generic shape fill controls.
+type ShapeFill struct {
+	Solid      *string        `json:"solid,omitempty"`      // RGB hex (e.g., "FF0000")
+	Gradient   *GradientFill  `json:"gradient,omitempty"`   // Linear gradient fill controls.
+	Pattern    *PatternedFill `json:"pattern,omitempty"`    // Pattern fill controls.
+	Background *bool          `json:"background,omitempty"` // True emits <a:noFill/> (python-pptx fill.background()).
+}
+
+// ShapeLine defines generic shape line controls.
+type ShapeLine struct {
+	Color     *string `json:"color,omitempty"`      // RGB hex (e.g., "00FF00")
+	WidthEmu  *int    `json:"width_emu,omitempty"`  // Line width in EMU.
+	DashStyle *string `json:"dash_style,omitempty"` // Preset dash style (e.g., "dash", "dashDot", "lgDash").
+}
+
+// ShapeShadow defines generic shape shadow controls.
+type ShapeShadow struct {
+	Inherit     *bool    `json:"inherit,omitempty"`      // Remove explicit effects and inherit when true.
+	Color       *string  `json:"color,omitempty"`        // RGB hex.
+	BlurEmu     *int     `json:"blur_emu,omitempty"`     // Shadow blur radius in EMU.
+	DistanceEmu *int     `json:"distance_emu,omitempty"` // Shadow distance in EMU.
+	AngleDeg    *float64 `json:"angle_deg,omitempty"`    // Shadow direction angle in degrees.
+}
+
+// ShapeGlow defines generic shape glow controls.
+type ShapeGlow struct {
+	Color     *string `json:"color,omitempty"`      // RGB hex.
+	RadiusEmu *int    `json:"radius_emu,omitempty"` // Glow radius in EMU.
+}
+
+// ShapeBlur defines generic shape blur controls.
+type ShapeBlur struct {
+	RadiusEmu *int `json:"radius_emu,omitempty"` // Blur radius in EMU.
+}
+
+// ShapeSoftEdge defines generic shape soft-edge controls.
+type ShapeSoftEdge struct {
+	RadiusEmu *int `json:"radius_emu,omitempty"` // Soft-edge radius in EMU.
+}
+
+// ShapeReflection defines generic shape reflection controls.
+type ShapeReflection struct {
+	BlurEmu     *int `json:"blur_emu,omitempty"`     // Reflection blur radius in EMU.
+	DistanceEmu *int `json:"distance_emu,omitempty"` // Reflection distance in EMU.
+}
+
+// GradientStop defines one gradient stop in a linear gradient.
+type GradientStop struct {
+	PositionPct *float64 `json:"position_pct,omitempty"` // 0.0 to 100.0
+	Color       string   `json:"color"`
+}
+
+// GradientFill defines linear gradient controls.
+type GradientFill struct {
+	AngleDeg *float64       `json:"angle_deg,omitempty"`
+	Stops    []GradientStop `json:"stops,omitempty"`
+}
+
+// PatternedFill defines patterned fill controls.
+type PatternedFill struct {
+	Preset  *string `json:"preset,omitempty"`   // e.g. "pct5", "diagCross"
+	FgColor *string `json:"fg_color,omitempty"` // RGB hex
+	BgColor *string `json:"bg_color,omitempty"` // RGB hex
 }
 
 // ImageMetadata describes basic image properties returned by the bridge.
@@ -290,11 +364,19 @@ type ImageCrop struct {
 }
 
 type ShapeUpdate struct {
-	Text        *string    `json:"text,omitempty"`
-	Runs        *[]TextRun `json:"runs,omitempty"`
-	TextFrame   *TextFrame `json:"text_frame,omitempty"`
-	ClickAction *Hyperlink `json:"click_action,omitempty"`
-	HoverAction *Hyperlink `json:"hover_action,omitempty"`
+	Text        *string          `json:"text,omitempty"`
+	Runs        *[]TextRun       `json:"runs,omitempty"`
+	TextFrame   *TextFrame       `json:"text_frame,omitempty"`
+	Paragraph   *Paragraph       `json:"paragraph,omitempty"`
+	Fill        *ShapeFill       `json:"fill,omitempty"`
+	Line        *ShapeLine       `json:"line,omitempty"`
+	Shadow      *ShapeShadow     `json:"shadow,omitempty"`
+	Glow        *ShapeGlow       `json:"glow,omitempty"`
+	Blur        *ShapeBlur       `json:"blur,omitempty"`
+	SoftEdge    *ShapeSoftEdge   `json:"soft_edge,omitempty"`
+	Reflection  *ShapeReflection `json:"reflection,omitempty"`
+	ClickAction *Hyperlink       `json:"click_action,omitempty"`
+	HoverAction *Hyperlink       `json:"hover_action,omitempty"`
 
 	// Image properties (valid if shape is a picture)
 	Crop     *ImageCrop `json:"crop,omitempty"`
