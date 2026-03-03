@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 
 func main() {
 	outDir := filepath.Join("examples", "output")
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		log.Fatalf("failed to create output dir: %v", err)
 	}
 
@@ -84,21 +85,29 @@ func main() {
 
 	slides = append(slides, s3)
 
-	fmt.Println("Generating HTML export...")
+	printLine("Generating HTML export...")
 	opts := export.DefaultHTMLOptions()
 	opts.Theme = &export.ThemeColors{
 		TitleColor:  "#222",
 		AccentColor: "#0078D4",
 	}
 	htmlStr := export.HTMLWithOptions("Export Demo", slides, opts)
-	if err := os.WriteFile(htmlPath, []byte(htmlStr), 0o644); err != nil {
+	if err := os.WriteFile(htmlPath, []byte(htmlStr), 0o600); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Wrote %s\n", htmlPath)
+	printFmtf("Wrote %s\n", htmlPath)
 
-	fmt.Println("Generating PDF export (native gopdf engine)...")
+	printLine("Generating PDF export (native gopdf engine)...")
 	if err := export.PDF("Export Demo", slides, pdfPath); err != nil {
 		log.Fatalf("PDF export failed: %v", err)
 	}
-	fmt.Printf("Wrote %s\n", pdfPath)
+	printFmtf("Wrote %s\n", pdfPath)
+}
+
+func printLine(args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintln(args...))
+}
+
+func printFmtf(format string, args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintf(format, args...))
 }

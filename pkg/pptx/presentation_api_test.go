@@ -2,7 +2,6 @@ package pptx
 
 import (
 	"archive/zip"
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -550,7 +549,7 @@ func TestPresentation_Validate(t *testing.T) {
 	// A valid presentation should have no critical issues
 	// nil means no issues (editor returned no validation problems)
 	// empty slice also means no issues
-	if issues != nil && len(issues) > 0 {
+	if len(issues) > 0 {
 		t.Errorf("expected no validation issues, got %d", len(issues))
 	}
 
@@ -575,14 +574,14 @@ func TestPresentation_MetadataPersistenceRoundTrip(t *testing.T) {
 	meta.Creator = "Initial Author"
 	meta.Description = "Initial description"
 	meta.CoreProperties = common.CoreProperties{
-		Title:          "Round Trip Test",
-		Subject:        "Testing persistence",
-		Creator:        "Initial Author",
-		Keywords:       "initial, test",
-		Description:    "Initial description",
-		Revision:       "1",
-		Category:       "Testing",
-		ContentStatus:  "Draft",
+		Title:         "Round Trip Test",
+		Subject:       "Testing persistence",
+		Creator:       "Initial Author",
+		Keywords:      "initial, test",
+		Description:   "Initial description",
+		Revision:      "1",
+		Category:      "Testing",
+		ContentStatus: "Draft",
 	}
 
 	data, err := CreateWithMetadata(meta, []SlideContent{
@@ -627,15 +626,15 @@ func TestPresentation_MetadataPersistenceRoundTrip(t *testing.T) {
 	defer prs2.Close()
 
 	expected := map[string]string{
-		"Title":           "Updated Title",
-		"Subject":         "Updated Subject",
-		"Creator":         "Updated Creator",
-		"Keywords":        "updated, keywords, roundtrip",
-		"Description":     "Updated description with more details",
-		"LastModifiedBy":  "Modified By User",
-		"Revision":        "2",
-		"Category":        "Gopptx Testing",
-		"ContentStatus":   "Final",
+		"Title":          "Updated Title",
+		"Subject":        "Updated Subject",
+		"Creator":        "Updated Creator",
+		"Keywords":       "updated, keywords, roundtrip",
+		"Description":    "Updated description with more details",
+		"LastModifiedBy": "Modified By User",
+		"Revision":       "2",
+		"Category":       "Gopptx Testing",
+		"ContentStatus":  "Final",
 	}
 
 	for field, expectedValue := range expected {
@@ -764,7 +763,7 @@ func TestPresentation_PreservesZipStructure(t *testing.T) {
 
 	// Verify saved metadata is correct
 	corePropsContent := testutil.ReadZipFile(t, savedZr, corePropsPath)
-	if !bytes.Contains([]byte(corePropsContent), []byte("Structure Modified")) {
+	if !strings.Contains(corePropsContent, "Structure Modified") {
 		t.Error("modified title not found in saved core properties")
 	}
 

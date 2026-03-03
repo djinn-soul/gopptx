@@ -1,5 +1,7 @@
-import os
+"""Coverage-expansion tests for runtime, batch, and helper behaviors."""
+
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from gopptx import GopptxError, Presentation, ops
@@ -8,33 +10,42 @@ from gopptx.utils import normalize_table_index
 
 
 class TestCoverageExpansion(unittest.TestCase):
-    def setUp(self):
-        self.test_pptx = os.path.join("testdata", "ppt_rs", "simple.pptx")
+    """Exercise lower-traffic API paths for regression coverage."""
 
-    def test_runtime_unopened_errors(self):
+    def setUp(self) -> None:
+        """Prepare a stable sample deck path for all test cases."""
+        project_root = Path(__file__).resolve().parents[2]
+        self.test_pptx = str(project_root / "testdata" / "simple.pptx")
+
+    def test_runtime_unopened_errors(self) -> None:
+        """Unopened presentation raises consistently for runtime operations."""
         pres = Presentation()
         with self.assertRaisesRegex(GopptxError, "Presentation is not open."):
             pres.execute("any_op")
         with self.assertRaisesRegex(GopptxError, "Presentation is not open."):
             pres.save("any_path")
 
-        # Test repr on unopened - it currently raises GopptxError which we should handle or expect
-        with self.assertRaises(GopptxError):
-            repr(pres)
+        self.assertIsInstance(repr(pres), str)
 
-    def test_batch_read_op_not_allowed(self):
-        with Presentation(self.test_pptx) as pres, pres.batch():
-            with self.assertRaisesRegex(
+    def test_batch_read_op_not_allowed(self) -> None:
+        """Read operations are blocked while batch mode is active."""
+        with (
+            Presentation(self.test_pptx) as pres,
+            pres.batch(),
+            self.assertRaisesRegex(
                 GopptxError,
                 r"read operation 'slide_count' is not allowed inside batch",
-            ):
-                pres.execute(ops.OP_SLIDE_COUNT)
+            ),
+        ):
+            pres.execute(ops.OP_SLIDE_COUNT)
 
-    def test_execute_batch_empty(self):
+    def test_execute_batch_empty(self) -> None:
+        """Empty batch submission returns empty result list."""
         with Presentation(self.test_pptx) as pres:
             self.assertEqual(pres.execute_batch([]), [])
 
-    def test_nested_batch_not_allowed(self):
+    def test_nested_batch_not_allowed(self) -> None:
+        """Nested begin_batch calls are rejected."""
         with Presentation(self.test_pptx) as pres:
             pres.begin_batch()
             with self.assertRaisesRegex(
@@ -43,7 +54,8 @@ class TestCoverageExpansion(unittest.TestCase):
                 pres.begin_batch()
             pres.abort_batch()
 
-    def test_abort_batch(self):
+    def test_abort_batch(self) -> None:
+        """Aborting a batch restores pre-batch slide count."""
         with Presentation(self.test_pptx) as pres:
             # Get initial count
             initial_count = pres.slide_count
@@ -53,7 +65,8 @@ class TestCoverageExpansion(unittest.TestCase):
             # Count should remain the same
             self.assertEqual(pres.slide_count, initial_count)
 
-    def test_metadata_cache(self):
+    def test_metadata_cache(self) -> None:
+        """Metadata cache returns same object until explicit invalidation."""
         with Presentation(self.test_pptx) as pres:
             m1 = pres.metadata
             m2 = pres.metadata
@@ -62,7 +75,8 @@ class TestCoverageExpansion(unittest.TestCase):
             m3 = pres.metadata
             self.assertIsNot(m1, m3)
 
-    def test_presentation_getitem(self):
+    def test_presentation_getitem(self) -> None:
+        """Presentation indexing supports direct, negative, and slice access."""
         with Presentation(self.test_pptx) as pres:
             count = pres.slide_count
             # Simple indexing
@@ -74,21 +88,23 @@ class TestCoverageExpansion(unittest.TestCase):
             self.assertEqual(s_last.index, count - 1)
 
             with self.assertRaises(IndexError):
-                _ = pres[100]
+                pres[100]
 
             # Slicing
             slides = pres[0:1]
             self.assertEqual(len(slides), 1)
 
             with self.assertRaises(TypeError):
-                _ = pres["invalid"]
+                pres["invalid"]
 
-    def test_reopen_already_open(self):
+    def test_reopen_already_open(self) -> None:
+        """Opening an already-open presentation rebinds cleanly."""
         with Presentation(self.test_pptx) as pres:
             pres.open(self.test_pptx)  # Should close previous and open new
             self.assertGreater(pres.slide_count, 0)
 
-    def test_properties_and_protection(self):
+    def test_properties_and_protection(self) -> None:
+        """Property and protection operations dispatch through the bridge."""
         with Presentation(self.test_pptx) as pres:
             # Core properties
             props = pres.get_core_properties()
@@ -111,7 +127,8 @@ class TestCoverageExpansion(unittest.TestCase):
             pres.set_mark_as_final(final=False)
             pres.set_modify_password("secret")
 
-    def test_slide_management_expansion(self):
+    def test_slide_management_expansion(self) -> None:
+        """Slide add/update/move iteration paths remain stable."""
         with Presentation(self.test_pptx) as pres:
             initial_count = pres.slide_count
             # Add with layout
@@ -131,13 +148,15 @@ class TestCoverageExpansion(unittest.TestCase):
             slide_list = list(iter(pres))
             self.assertEqual(len(slide_list), initial_count + 3)
 
-    def test_batch_mode_placeholder_slide(self):
+    def test_batch_mode_placeholder_slide(self) -> None:
+        """Batch-mode slide creation returns placeholder-safe slide object."""
         with Presentation(self.test_pptx) as pres, pres.batch():
             s = pres.add_slide("Batch Slide")
             # Cannot check index in batch mode because it triggers a read op
             self.assertEqual(s.title, "Batch Slide")
 
-    def test_layout_theme_expansion(self):
+    def test_layout_theme_expansion(self) -> None:
+        """Layout rebinding and theme application smoke paths run."""
         with Presentation(self.test_pptx) as pres:
             layouts = pres.list_slide_layouts()
             if layouts:
@@ -149,7 +168,8 @@ class TestCoverageExpansion(unittest.TestCase):
             pres.apply_theme("Office")  # Tests the "office" -> "Corporate" mapping
             # "Default" might not be supported by engine, skip it or use another known one
 
-    def test_remove_comment_errors(self):
+    def test_remove_comment_errors(self) -> None:
+        """Comment removal validates index and selector arguments."""
         with Presentation(self.test_pptx) as pres:
             with self.assertRaises(ValueError):
                 pres.remove_comment(999)  # Unknown index in cache
@@ -157,7 +177,8 @@ class TestCoverageExpansion(unittest.TestCase):
             with self.assertRaises(TypeError):
                 pres.remove_comment(0, author_id=1)  # Missing author_index
 
-    def test_chart_expansion(self):
+    def test_chart_expansion(self) -> None:
+        """Chart add/update dispatch accepts series-style payloads."""
         with Presentation(self.test_pptx) as pres:
             # Invalid bounds
             with self.assertRaises(ValueError):
@@ -183,16 +204,18 @@ class TestCoverageExpansion(unittest.TestCase):
                 }
                 pres.update_chart_data(0, {"rel_id": rel_id}, data)
 
-    def test_normalize_table_index(self):
+    def test_normalize_table_index(self) -> None:
+        """Table-index normalizer accepts integer-like values only."""
         self.assertEqual(normalize_table_index(1.0), 1)
         with self.assertRaises(ValueError):
             normalize_table_index(1.5)
         with self.assertRaises(ValueError):
             normalize_table_index("not_an_int")
         with self.assertRaises(ValueError):
-            normalize_table_index(True)
+            normalize_table_index(value=True)
 
-    def test_json_fallback(self):
+    def test_json_fallback(self) -> None:
+        """JSON helper falls back when orjson is unavailable."""
         # Test helpers.json_dumps and json_loads when orjson is missing
         with patch("gopptx.presentation.helpers._orjson", None):
             data = {"a": 1}

@@ -168,6 +168,10 @@ func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
 		return handleAddImage, true
 	case OpRemoveShape:
 		return handleRemoveShape, true
+	case OpGroupShapes:
+		return handleGroupShapes, true
+	case OpUngroupShapes:
+		return handleUngroupShapes, true
 	case OpUpdateShape:
 		return handleUpdateShape, true
 	case OpMoveShapeToFront:

@@ -1,23 +1,25 @@
-import os  # noqa: D100
+"""Section-management smoke tests for Python bindings."""
+
 import pathlib
 import sys
 
 from gopptx import Presentation
 
 # Add project root to sys.path to find 'gopptx' package
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+sys.path.append(str(project_root / "python"))
+
+EXPECTED_SLIDE_COUNT = 3
 
 
 def test_python_sections(tmp_path: pathlib.Path) -> None:
+    """Sections API can add sections and preserve expected slide count."""
     output_path = tmp_path / "python_sections_test.pptx"
 
     with Presentation.new("Sections Test") as pres:
         # 1. Create a few slides
-        s1 = pres.add_slide("Slide 1")
-        s2 = pres.add_slide("Slide 2")
+        pres.add_slide("Slide 1")
+        pres.add_slide("Slide 2")
         s3 = pres.add_slide("Slide 3")
 
         # 2. Add sections
@@ -32,12 +34,15 @@ def test_python_sections(tmp_path: pathlib.Path) -> None:
         # 4. Verify dynamic indexing
         pres.remove_slide(0)
 
-        if s3.index == 2:  # noqa: PLR2004
+        if s3.index == EXPECTED_SLIDE_COUNT - 1:
             pass
 
         pres.save(output_path)
 
-        assert len(pres.sections) >= 1
-        assert pres.slide_count == 3
+        if len(pres.sections) < 1:
+            raise AssertionError("expected at least one section")
+        if pres.slide_count != EXPECTED_SLIDE_COUNT:
+            raise AssertionError("expected slide count to remain 3")
 
-    assert output_path.exists()
+    if not output_path.exists():
+        raise AssertionError("expected sections output deck to exist")

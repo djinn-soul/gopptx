@@ -32,8 +32,12 @@ func TestTableCell_FluentAPI(t *testing.T) {
 	if c.BackgroundColor != "FF0000" || !c.Bold || c.Align != TableAlignLeft || c.VAlign != TableVAlignBottom {
 		t.Error("Basic cell props failed")
 	}
-	if c.RowSpan != 2 || c.ColSpan != 3 { t.Error("Span failed") }
-	if c.BorderLeft == nil || c.BorderLeft.Color != "222222" { t.Error("Borders failed") }
+	if c.RowSpan != 2 || c.ColSpan != 3 {
+		t.Error("Span failed")
+	}
+	if c.BorderLeft == nil || c.BorderLeft.Color != "222222" {
+		t.Error("Borders failed")
+	}
 }
 
 func TestTableCell_LayoutAPI(t *testing.T) {
@@ -52,7 +56,13 @@ func TestTableCell_LayoutAPI(t *testing.T) {
 
 func TestTable_Normalization_Helpers(t *testing.T) {
 	// These are unexported but we are in package tables
-	if normalizeTableAlign("CTR") != TableAlignCenter { t.Error("Align normalization failed") }
-	if normalizeTableVAlign("CTR") != TableVAlignMiddle { t.Error("VAlign normalization failed") }
-	if NormalizeTableBorderDash("DASH") != "dash" { t.Error("Dash normalization failed") }
+	if normalizeTableAlign("CTR") != TableAlignCenter {
+		t.Error("Align normalization failed")
+	}
+	if normalizeTableVAlign("CTR") != TableVAlignMiddle {
+		t.Error("VAlign normalization failed")
+	}
+	if NormalizeTableBorderDash("DASH") != "dash" {
+		t.Error("Dash normalization failed")
+	}
 }

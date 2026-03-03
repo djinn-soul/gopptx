@@ -162,10 +162,12 @@ func (r *Repairer) repairBrokenRelationship(issue Issue) error {
 
 	// Use XML parsing for robust handling of different attribute orderings and whitespace.
 	var rels relationshipsXML
-	if err := xml.Unmarshal(data, &rels); err != nil {
+	if !tryUnmarshalRelationships(data, &rels) {
 		// If XML parsing fails, fall back to regex-based removal.
 		content := string(data)
-		relPattern := regexp.MustCompile(`(?s)<Relationship\s+[^>]*?Target="` + regexp.QuoteMeta(targetPart) + `"[^>]*?/>`)
+		relPattern := regexp.MustCompile(
+			`(?s)<Relationship\s+[^>]*?Target="` + regexp.QuoteMeta(targetPart) + `"[^>]*?/>`,
+		)
 		repaired := relPattern.ReplaceAllString(content, "")
 		r.modifier.Set(issue.Path, []byte(repaired))
 		return nil
@@ -191,6 +193,10 @@ func (r *Repairer) repairBrokenRelationship(issue Issue) error {
 	repairedStr := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + string(repaired)
 	r.modifier.Set(issue.Path, []byte(repairedStr))
 	return nil
+}
+
+func tryUnmarshalRelationships(data []byte, rels *relationshipsXML) bool {
+	return xml.Unmarshal(data, rels) == nil
 }
 
 func (r *Repairer) repairOrphanSlide(p string) error {
@@ -260,7 +266,9 @@ func (r *Repairer) generateContentTypes() string {
 	sb.WriteString("\n")
 	sb.WriteString(`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`)
 	sb.WriteString("\n")
-	sb.WriteString(`  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`)
+	sb.WriteString(
+		`  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`,
+	)
 	sb.WriteString("\n")
 	sb.WriteString(`  <Default Extension="xml" ContentType="application/xml"/>`)
 	sb.WriteString("\n")

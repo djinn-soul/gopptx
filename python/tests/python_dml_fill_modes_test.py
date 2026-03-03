@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
 from gopptx import Presentation
 
 
 def test_shape_gradient_fill_round_trip_fixture(tmp_path: Path) -> None:
+    """Test shape gradient fill round trip fixture."""
     out_path = tmp_path / "dml_gradient_fill.pptx"
 
     with Presentation.new("DML Gradient") as prs:
@@ -40,6 +44,7 @@ def test_shape_gradient_fill_round_trip_fixture(tmp_path: Path) -> None:
 
 
 def test_shape_pattern_fill_round_trip_fixture(tmp_path: Path) -> None:
+    """Test shape pattern fill round trip fixture."""
     out_path = tmp_path / "dml_pattern_fill.pptx"
 
     with Presentation.new("DML Pattern") as prs:
@@ -67,6 +72,7 @@ def test_shape_pattern_fill_round_trip_fixture(tmp_path: Path) -> None:
 
 
 def test_shape_fill_modes_reject_mutual_exclusive() -> None:
+    """Test shape fill modes reject mutual exclusive."""
     with Presentation.new("DML Fill Invalid") as prs:
         slide = prs.slides[0]
         with pytest.raises(Exception, match="mutually exclusive"):
@@ -83,6 +89,7 @@ def test_shape_fill_modes_reject_mutual_exclusive() -> None:
 
 
 def test_shape_fill_modes_reject_background_with_other_modes() -> None:
+    """Test shape fill modes reject background with other modes."""
     with Presentation.new("DML Fill Invalid Background") as prs:
         slide = prs.slides[0]
         with pytest.raises(Exception, match="mutually exclusive"):

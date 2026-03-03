@@ -73,13 +73,17 @@ type Protection struct {
 type CoreProperties struct {
 	Title          string `json:"title"          xml:"http://purl.org/dc/elements/1.1/ title,omitempty"`
 	Subject        string `json:"subject"        xml:"http://purl.org/dc/elements/1.1/ subject,omitempty"`
-	Creator        string `json:"creator"        xml:"http://purl.org/dc/elements/1.1/ creator,omitempty"`
+	Creator        string `json:"creator"        xml:"http://purl.org/dc/elements/1.1/ creator,omitempty"` // Also known as "author" in python-pptx
 	Keywords       string `json:"keywords"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties keywords,omitempty"`
-	Description    string `json:"description"    xml:"http://purl.org/dc/elements/1.1/ description,omitempty"`
+	Description    string `json:"description"    xml:"http://purl.org/dc/elements/1.1/ description,omitempty"` // Also known as "comments" in python-pptx
 	LastModifiedBy string `json:"lastModifiedBy" xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties lastModifiedBy,omitempty"`
 	Revision       string `json:"revision"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties revision,omitempty"` //nolint:lll // struct tags cannot be split
 	Created        string `json:"created"        xml:"http://purl.org/dc/terms/ created,omitempty"`
 	Modified       string `json:"modified"       xml:"http://purl.org/dc/terms/ modified,omitempty"`
 	Category       string `json:"category"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties category,omitempty"`      //nolint:lll // struct tags cannot be split
 	ContentStatus  string `json:"contentStatus"  xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"` //nolint:lll // struct tags cannot be split
+	Identifier     string `json:"identifier"     xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties identifier,omitempty"`    //nolint:lll // struct tags cannot be split
+	Language       string `json:"language"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties language,omitempty"`      //nolint:lll // struct tags cannot be split
+	LastPrinted    string `json:"lastPrinted"    xml:"http://purl.org/dc/terms/ lastPrinted,omitempty"`
+	Version        string `json:"version"        xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties version,omitempty"` //nolint:lll // struct tags cannot be split
 }

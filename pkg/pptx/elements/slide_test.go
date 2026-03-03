@@ -366,11 +366,11 @@ func TestSlideContent_ExtraMethods(t *testing.T) {
 	}
 }
 
-func TestSlideContent_AutoReroute(t *testing.T) {
+func TestSlideContent_AutoReroute(_ *testing.T) {
 	s := elements.NewSlide("Reroute")
 	s = s.AddShape(shapes.NewRectangle(0, 0, 1, 1)).
 		AddConnector(shapes.NewStraightConnector(0, 0, 1, 1))
-	s = s.AutoRerouteConnectors()
+	_ = s.AutoRerouteConnectors()
 }
 
 func TestSlideContent_AnimationValidation(t *testing.T) {
@@ -430,13 +430,15 @@ func TestSlideContent_AllTransitions(t *testing.T) {
 
 	// Test options
 	s := elements.NewSlide("T").WithTransition(transitions.TransitionOptions{
-		Type: transitions.TransitionWipe,
-		Direction: transitions.TransitionDirRight,
-		DurationMS: 1000,
-		AdvanceAfterMS: 2000,
+		Type:                  transitions.TransitionWipe,
+		Direction:             transitions.TransitionDirRight,
+		DurationMS:            1000,
+		AdvanceAfterMS:        2000,
 		DisableAdvanceOnClick: true,
 	})
-	if err := s.Validate(1); err != nil { t.Errorf("Options validate failed: %v", err) }
+	if err := s.Validate(1); err != nil {
+		t.Errorf("Options validate failed: %v", err)
+	}
 }
 
 func TestSlideBackground_Normalization(t *testing.T) {

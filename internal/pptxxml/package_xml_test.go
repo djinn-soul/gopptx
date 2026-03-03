@@ -20,20 +20,20 @@ func TestContentTypes_Full(t *testing.T) {
 	xml := ContentTypes(
 		2, // 2 slides
 		[]string{"png", "jpg", "mp3"},
-		1, // 1 chart
-		1, // 1 smartart
+		1,        // 1 chart
+		1,        // 1 smartart
 		[]int{1}, // 1 notes slide
-		true, // has notes master
-		1, // 1 custom xml
-		1, // 1 master
-		1, // notes theme
-		true, // has sections
+		true,     // has notes master
+		1,        // 1 custom xml
+		1,        // 1 master
+		1,        // notes theme
+		true,     // has sections
 		[]int{1}, // 1 slide with comments
-		true, // has custom props
-		true, // has signatures
-		true, // has vba
-		true, // has handout master
-		true, // has embedded fonts
+		true,     // has custom props
+		true,     // has signatures
+		true,     // has vba
+		true,     // has handout master
+		true,     // has embedded fonts
 	)
 
 	checks := []string{

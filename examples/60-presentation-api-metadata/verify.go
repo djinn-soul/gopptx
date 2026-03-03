@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main
 
 import (
@@ -9,13 +11,13 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 )
 
-func main() {
+func runVerify() {
 	outDir := filepath.Join("examples", "output")
 	examplePath := filepath.Join(outDir, "60_metadata_persistence.pptx")
 	copyPath := filepath.Join(outDir, "60_metadata_copy.pptx")
 
 	// First create a sample presentation
-	if err := createSamplePresentation(examplePath); err != nil {
+	if err := createSamplePresentationVerify(examplePath); err != nil {
 		log.Fatalf("failed to create sample presentation: %v", err)
 	}
 
@@ -47,7 +49,7 @@ func main() {
 	fmt.Printf("Saved copy to %s\n", copyPath)
 }
 
-func createSamplePresentation(path string) error {
+func createSamplePresentationVerify(path string) error {
 	data, err := pptx.Create("Sample Presentation", 3)
 	if err != nil {
 		return fmt.Errorf("create: %w", err)

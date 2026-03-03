@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -14,32 +15,51 @@ import (
 )
 
 func main() {
-	// Example 1: Open an existing presentation
+	if err := run(); err != nil {
+		log.Fatalf("presentation metadata example failed: %v", err)
+	}
+}
+
+func run() error {
 	examplePath := "example.pptx"
 
-	// First create a sample presentation
 	if err := createSamplePresentation(examplePath); err != nil {
-		log.Fatalf("failed to create sample presentation: %v", err)
+		return fmt.Errorf("failed to create sample presentation: %w", err)
 	}
 	defer os.Remove(examplePath)
 
-	fmt.Println("=== Example 1: Opening a presentation ===")
+	printLine("=== Example 1: Opening a presentation ===")
 	prs, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to open presentation: %v", err)
+		return fmt.Errorf("failed to open presentation: %w", err)
 	}
 	defer prs.Close()
 
-	fmt.Printf("Opened presentation with %d slides\n", prs.SlideCount())
-	fmt.Printf("Current title: %s\n", prs.Title())
-	fmt.Printf("Current author: %s\n", prs.Creator())
+	printFmtf("Opened presentation with %d slides\n", prs.SlideCount())
+	printFmtf("Current title: %s\n", prs.Title())
+	printFmtf("Current author: %s\n", prs.Creator())
 
 	// Example 2: Reading metadata
-	fmt.Println("\n=== Example 2: Reading all metadata ===")
+	printLine("\n=== Example 2: Reading all metadata ===")
 	readAllMetadata(prs)
 
-	// Example 3: Modifying metadata
-	fmt.Println("\n=== Example 3: Modifying metadata ===")
+	if err := updateMetadata(prs); err != nil {
+		return err
+	}
+	if err := reopenAndVerify(examplePath); err != nil {
+		return err
+	}
+	if err := saveCopyExample(examplePath); err != nil {
+		return err
+	}
+	if err := updateCoreProperties(examplePath); err != nil {
+		return err
+	}
+	return validatePresentation(examplePath)
+}
+
+func updateMetadata(prs *pptx.Presentation) error {
+	printLine("\n=== Example 3: Modifying metadata ===")
 	prs.SetTitle("Updated Presentation Title")
 	prs.SetAuthor("Jane Doe")
 	prs.SetCreator("Jane Doe") // Author is an alias for Creator
@@ -49,94 +69,110 @@ func main() {
 	prs.SetCategory("Technical Documentation")
 	prs.SetContentStatus("Draft")
 	prs.SetRevision("2")
-
-	// Save the changes
 	if err := prs.Save(); err != nil {
-		log.Fatalf("failed to save presentation: %v", err)
+		return fmt.Errorf("failed to save presentation: %w", err)
 	}
-	fmt.Println("Changes saved!")
+	printLine("Changes saved!")
+	return nil
+}
 
-	// Example 4: Reopen and verify persistence
-	fmt.Println("\n=== Example 4: Reopening to verify persistence ===")
-	prs2, err := pptx.Open(examplePath)
+func reopenAndVerify(examplePath string) error {
+	printLine("\n=== Example 4: Reopening to verify persistence ===")
+	prs, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to reopen presentation: %v", err)
+		return fmt.Errorf("failed to reopen presentation: %w", err)
 	}
-	defer prs2.Close()
+	defer prs.Close()
 
-	fmt.Printf("Title: %s\n", prs2.Title())
-	fmt.Printf("Author: %s\n", prs2.Author())
-	fmt.Printf("Keywords: %s\n", prs2.Keywords())
-	fmt.Printf("Category: %s\n", prs2.Category())
+	printFmtf("Title: %s\n", prs.Title())
+	printFmtf("Author: %s\n", prs.Author())
+	printFmtf("Keywords: %s\n", prs.Keywords())
+	printFmtf("Category: %s\n", prs.Category())
+	return nil
+}
 
-	// Example 5: SaveAs to create a copy
-	fmt.Println("\n=== Example 5: SaveAs to create a copy ===")
+func saveCopyExample(examplePath string) error {
+	printLine("\n=== Example 5: SaveAs to create a copy ===")
 	copyPath := "example_copy.pptx"
 	defer os.Remove(copyPath)
 
-	prs2.SetTitle("Copy of the Presentation")
-	if err := prs2.SaveAs(copyPath); err != nil {
-		log.Fatalf("failed to save copy: %v", err)
-	}
-	fmt.Printf("Saved copy to %s\n", copyPath)
-
-	// Verify original wasn't modified
-	prs3, err := pptx.Open(examplePath)
+	prs, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to verify original presentation: %v", err)
+		return fmt.Errorf("failed to open presentation for copy: %w", err)
 	}
-	defer prs3.Close()
+	defer prs.Close()
 
-	if prs3.Title() != "Updated Presentation Title" {
-		fmt.Printf("Warning: Original presentation was modified\n")
+	prs.SetTitle("Copy of the Presentation")
+	if err := prs.SaveAs(copyPath); err != nil {
+		return fmt.Errorf("failed to save copy: %w", err)
 	}
-	fmt.Printf("Original title unchanged: %s\n", prs3.Title())
+	printFmtf("Saved copy to %s\n", copyPath)
 
-	// Example 6: Using CoreProperties directly
-	fmt.Println("\n=== Example 6: Using CoreProperties directly ===")
-	prs4, err := pptx.Open(examplePath)
+	original, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to open presentation: %v", err)
+		return fmt.Errorf("failed to verify original presentation: %w", err)
 	}
-	defer prs4.Close()
+	defer original.Close()
 
-	props := prs4.CoreProperties()
-	fmt.Printf("CoreProperties.Title: %s\n", props.Title)
-	fmt.Printf("CoreProperties.Creator: %s\n", props.Creator)
-	fmt.Printf("CoreProperties.Revision: %s\n", props.Revision)
+	if original.Title() != "Updated Presentation Title" {
+		printFmtf("Warning: Original presentation was modified\n")
+	}
+	printFmtf("Original title unchanged: %s\n", original.Title())
+	return nil
+}
 
-	// Modify using SetCoreProperties
+func updateCoreProperties(examplePath string) error {
+	printLine("\n=== Example 6: Using CoreProperties directly ===")
+	prs, err := pptx.Open(examplePath)
+	if err != nil {
+		return fmt.Errorf("failed to open presentation: %w", err)
+	}
+	defer prs.Close()
+
+	props := prs.CoreProperties()
+	printFmtf("CoreProperties.Title: %s\n", props.Title)
+	printFmtf("CoreProperties.Creator: %s\n", props.Creator)
+	printFmtf("CoreProperties.Revision: %s\n", props.Revision)
+
 	props.Title = "Final Title"
 	props.Revision = "3"
-	prs4.SetCoreProperties(props)
+	prs.SetCoreProperties(props)
 
-	if err := prs4.Save(); err != nil {
-		log.Fatalf("failed to save: %v", err)
+	if err := prs.Save(); err != nil {
+		return fmt.Errorf("failed to save: %w", err)
 	}
 
-	// Verify
-	prs5, err := pptx.Open(examplePath)
+	verified, err := pptx.Open(examplePath)
 	if err != nil {
-		log.Fatalf("failed to verify: %v", err)
+		return fmt.Errorf("failed to verify: %w", err)
 	}
-	defer prs5.Close()
+	defer verified.Close()
 
-	fmt.Printf("After core props update - Title: %s, Revision: %s\n",
-		prs5.Title(), prs5.Revision())
+	printFmtf("After core props update - Title: %s, Revision: %s\n",
+		verified.Title(), verified.Revision())
+	return nil
+}
 
-	// Example 7: Validate presentation
-	fmt.Println("\n=== Example 7: Validate presentation ===")
-	issues := prs5.Validate()
-	if issues == nil || len(issues) == 0 {
-		fmt.Println("Presentation is valid!")
+func validatePresentation(examplePath string) error {
+	printLine("\n=== Example 7: Validate presentation ===")
+	prs, err := pptx.Open(examplePath)
+	if err != nil {
+		return fmt.Errorf("failed to open presentation for validation: %w", err)
+	}
+	defer prs.Close()
+
+	issues := prs.Validate()
+	if len(issues) == 0 {
+		printLine("Presentation is valid!")
 	} else {
-		fmt.Printf("Found %d validation issues:\n", len(issues))
+		printFmtf("Found %d validation issues:\n", len(issues))
 		for _, issue := range issues {
-			fmt.Printf("  - %s\n", issue.Description)
+			printFmtf("  - %s\n", issue.Description)
 		}
 	}
 
-	fmt.Println("\nAll examples completed successfully!")
+	printLine("\nAll examples completed successfully!")
+	return nil
 }
 
 func createSamplePresentation(path string) error {
@@ -151,16 +187,24 @@ func createSamplePresentation(path string) error {
 }
 
 func readAllMetadata(prs *pptx.Presentation) {
-	fmt.Printf("Title: %s\n", prs.Title())
-	fmt.Printf("Subject: %s\n", prs.Subject())
-	fmt.Printf("Creator: %s\n", prs.Creator())
-	fmt.Printf("Author: %s\n", prs.Author()) // Alias for Creator
-	fmt.Printf("Keywords: %s\n", prs.Keywords())
-	fmt.Printf("Description: %s\n", prs.Description())
-	fmt.Printf("Last Modified By: %s\n", prs.LastModifiedBy())
-	fmt.Printf("Revision: %s\n", prs.Revision())
-	fmt.Printf("Created: %s\n", prs.Created())
-	fmt.Printf("Modified: %s\n", prs.Modified())
-	fmt.Printf("Category: %s\n", prs.Category())
-	fmt.Printf("Content Status: %s\n", prs.ContentStatus())
+	printFmtf("Title: %s\n", prs.Title())
+	printFmtf("Subject: %s\n", prs.Subject())
+	printFmtf("Creator: %s\n", prs.Creator())
+	printFmtf("Author: %s\n", prs.Author()) // Alias for Creator
+	printFmtf("Keywords: %s\n", prs.Keywords())
+	printFmtf("Description: %s\n", prs.Description())
+	printFmtf("Last Modified By: %s\n", prs.LastModifiedBy())
+	printFmtf("Revision: %s\n", prs.Revision())
+	printFmtf("Created: %s\n", prs.Created())
+	printFmtf("Modified: %s\n", prs.Modified())
+	printFmtf("Category: %s\n", prs.Category())
+	printFmtf("Content Status: %s\n", prs.ContentStatus())
+}
+
+func printLine(args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintln(args...))
+}
+
+func printFmtf(format string, args ...any) {
+	_, _ = io.WriteString(os.Stdout, fmt.Sprintf(format, args...))
 }

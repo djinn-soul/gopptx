@@ -30,7 +30,7 @@ func applyConditionals(slideXML []byte, ctx Context) []byte {
 
 		// Extract key.
 		keyMatch := ifPattern.FindStringSubmatch(content[m[0]:])
-		if len(keyMatch) < 2 {
+		if len(keyMatch) < minSubmatchLen {
 			break
 		}
 		key := keyMatch[1]

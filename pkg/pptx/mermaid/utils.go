@@ -65,7 +65,7 @@ func ExtractDirection(header string) FlowDirection {
 }
 
 // SplitConnection splits a line at a connection arrow and returns (from, arrow, rest, found).
-// Handles patterns like: "A --> B", "A -->|label| B", "A -- label --> B"
+// Handles patterns like: "A --> B", "A -->|label| B", "A -- label --> B".
 func SplitConnection(line string) (string, string, string, bool) {
 	arrows := []string{"==>", "-.->", "-->", "---", "->"}
 	for _, arrow := range arrows {

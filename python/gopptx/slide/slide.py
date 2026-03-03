@@ -12,7 +12,6 @@ from .table import Table
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
     from ..schemas import (
-        ImageCrop,
         ImageMetadata,
         Shape,
         ShapeProps,
@@ -97,25 +96,14 @@ class SlideShapeMixin:
         self,
         path: str | None,
         bounds: tuple[float, float, float, float],
-        *,
-        data: bytes | None = None,
-        format: str | None = None,
-        crop: ImageCrop | None = None,
-        rotation: float | None = None,
-        flip_h: bool | None = None,
-        flip_v: bool | None = None,
+        **kwargs: object,
     ) -> int:
         """Add an image to this slide."""
         return self._presentation.add_image(
             self.index,
             path,
             bounds,
-            data=data,
-            format=format,
-            crop=crop,
-            rotation=rotation,
-            flip_h=flip_h,
-            flip_v=flip_v,
+            **kwargs,
         )
 
     def get_image_metadata(self, shape_id: int) -> ImageMetadata:
@@ -158,6 +146,17 @@ class SlideShapeMixin:
     def remove_shape(self, shape_id: int) -> None:
         """Remove a shape from this slide."""
         self._presentation.remove_shape(self.index, shape_id)
+
+    def group_shapes(self, shape_ids: list[int]) -> int:
+        """Group multiple shapes on this slide into a group shape.
+
+        Returns the ID of the created group shape.
+        """
+        return self._presentation.group_shapes(self.index, shape_ids)
+
+    def ungroup_shapes(self, shape_id: int) -> int:
+        """Ungroup a group shape, returning the ID of the first member shape."""
+        return self._presentation.ungroup_shapes(self.index, shape_id)
 
     def move_shape_to_front(self, shape_id: int) -> None:
         """Move a shape to the front of the z-order."""
@@ -220,7 +219,7 @@ class SlideBase:
         """Return a notes-slide proxy, or None when notes slide is absent."""
         if self._presentation is None or self.index < 0:
             return None
-        notes_payload = self._presentation._get_notes_payload(self.index)
+        notes_payload = self._presentation.get_notes_payload(self.index)
         if notes_payload.get("notes_slide") is None:
             return None
         return NotesSlide(self)

@@ -8,11 +8,17 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
+const (
+	percentScale     = 100.0
+	alphabetRuneSpan = 26
+	minLineSpacing   = 0.6
+)
+
 func paragraphLineSpacingFactor(style text.ParagraphStyle) float64 {
 	if style.LineSpacingPct <= 0 {
 		return 1.0
 	}
-	return math.Max(float64(style.LineSpacingPct)/100.0, 0.6)
+	return math.Max(float64(style.LineSpacingPct)/percentScale, minLineSpacing)
 }
 
 func paragraphStartGap(index int, prevAfter float64, style text.ParagraphStyle) float64 {
@@ -34,9 +40,9 @@ func bulletPrefix(style text.ParagraphStyle, idx int) string {
 	case text.BulletStyleNumber:
 		return fmt.Sprintf("%d.", idx+1)
 	case text.BulletStyleLetterLower:
-		return fmt.Sprintf("%c.", 'a'+(idx%26))
+		return fmt.Sprintf("%c.", 'a'+(idx%alphabetRuneSpan))
 	case text.BulletStyleLetterUpper:
-		return fmt.Sprintf("%c.", 'A'+(idx%26))
+		return fmt.Sprintf("%c.", 'A'+(idx%alphabetRuneSpan))
 	case text.BulletStyleRomanLower:
 		return strings.ToLower(romanNumeral(idx + 1))
 	case text.BulletStyleRomanUpper:

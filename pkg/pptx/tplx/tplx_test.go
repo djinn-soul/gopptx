@@ -76,15 +76,15 @@ func slideText(text string) string {
 </p:sld>`, text)
 }
 
-// extractAllText reads all <a:t>…</a:t> content from a zip part named ppt/slides/slide1.xml.
-func extractAllText(t *testing.T, data []byte, partName string) string {
+// extractAllText reads all <a:t>…</a:t> content from ppt/slides/slide1.xml.
+func extractAllText(t *testing.T, data []byte) string {
 	t.Helper()
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		t.Fatalf("zip open: %v", err)
 	}
 	for _, f := range zr.File {
-		if f.Name != partName {
+		if f.Name != "ppt/slides/slide1.xml" {
 			continue
 		}
 		rc, _ := f.Open()
@@ -93,7 +93,7 @@ func extractAllText(t *testing.T, data []byte, partName string) string {
 		_ = rc.Close()
 		return extractTextTags(buf.String())
 	}
-	t.Fatalf("part %s not found", partName)
+	t.Fatalf("part ppt/slides/slide1.xml not found")
 	return ""
 }
 
@@ -130,7 +130,7 @@ func TestRenderScalar(t *testing.T) {
 		t.Fatalf("RenderBytes: %v", err)
 	}
 
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	if !strings.Contains(got, "Acme Corp") {
 		t.Errorf("expected 'Acme Corp' in output, got %q", got)
 	}
@@ -152,7 +152,7 @@ func TestRenderMissingKeyLenient(t *testing.T) {
 		t.Fatalf("RenderBytes: %v", err)
 	}
 
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	if !strings.Contains(got, "Bob") {
 		t.Errorf("expected 'Bob' in output, got %q", got)
 	}
@@ -191,7 +191,7 @@ func TestRenderEscapedLiteralBraces(t *testing.T) {
 		t.Fatalf("RenderBytesWithOptions strict: %v", err)
 	}
 
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	if !strings.Contains(got, "Literal {{name}}") {
 		t.Fatalf("expected escaped literal token to remain, got %q", got)
 	}
@@ -208,7 +208,7 @@ func TestRenderIf_Truthy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderBytes: %v", err)
 	}
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	if !strings.Contains(got, "VISIBLE") {
 		t.Errorf("expected VISIBLE in truthy output, got %q", got)
 	}
@@ -225,7 +225,7 @@ func TestRenderIf_Falsy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderBytes: %v", err)
 	}
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	if strings.Contains(got, "HIDDEN") {
 		t.Errorf("expected HIDDEN to be removed in falsy output, got %q", got)
 	}
@@ -233,7 +233,7 @@ func TestRenderIf_Falsy(t *testing.T) {
 
 func TestRenderTableRows(t *testing.T) {
 	// Table slide with one template row.
-	slide := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+	slide := `<?xml version="1.0" encoding="UTF-8"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
   <p:cSld><p:spTree>
@@ -244,7 +244,7 @@ func TestRenderTableRows(t *testing.T) {
       </a:tbl>
     </a:graphicData></a:graphic></a:graphicFrame>
   </p:spTree></p:cSld>
-</p:sld>`)
+</p:sld>`
 
 	pptx := buildMinimalPPTX(t, slide)
 	result, err := tplx.RenderBytes(pptx, tplx.Context{
@@ -257,7 +257,7 @@ func TestRenderTableRows(t *testing.T) {
 		t.Fatalf("RenderBytes: %v", err)
 	}
 
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	if !strings.Contains(got, "Widget A") {
 		t.Errorf("expected 'Widget A' in output, got %q", got)
 	}
@@ -288,7 +288,7 @@ func TestRunMerger(t *testing.T) {
 		t.Fatalf("RenderBytes with split run: %v", err)
 	}
 
-	got := extractAllText(t, result.Bytes(), "ppt/slides/slide1.xml")
+	got := extractAllText(t, result.Bytes())
 	// Either the run merger collapsed the token or interpolation found it.
 	// We accept either "Merged" appearing or at minimum no crash.
 	t.Logf("merged output: %q", got)

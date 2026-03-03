@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import pytest
 from gopptx import ParagraphProps, Presentation
 
 
 def test_paragraph_props_aliases_emit_ooxml_attrs(tmp_path: Path) -> None:
+    """Test paragraph props aliases emit ooxml attrs."""
     out_path = tmp_path / "paragraph_props_facade.pptx"
 
     with Presentation.new("Paragraph Facade") as prs:
@@ -31,5 +35,6 @@ def test_paragraph_props_aliases_emit_ooxml_attrs(tmp_path: Path) -> None:
 
 
 def test_paragraph_props_rejects_negative_hanging() -> None:
-    with pytest.raises(ValueError, match="paragraph.hanging must be >= 0"):
+    """Test paragraph props rejects negative hanging."""
+    with pytest.raises(ValueError, match=r"paragraph\.hanging must be >= 0"):
         ParagraphProps(hanging=-1).to_payload()

@@ -61,7 +61,7 @@ func runHTMLCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	opts.IncludeNavigation = nav
 
 	htmlContent := export.HTMLWithOptions(strings.TrimSpace(title), slides, opts)
-	if err := os.WriteFile(outPath, []byte(htmlContent), 0o644); err != nil {
+	if err := os.WriteFile(outPath, []byte(htmlContent), 0o600); err != nil {
 		printErrorf(stderr, "failed to write HTML to %q: %v", outPath, err)
 		return exitIO
 	}

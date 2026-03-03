@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const formatPNG = "png"
+
 // SlideImage holds image bytes and its position on the slide (in EMU).
 type SlideImage struct {
 	Bytes  []byte
@@ -276,7 +278,7 @@ func imageFormat(p string) string {
 	ext := strings.ToLower(path.Ext(p))
 	switch ext {
 	case ".png":
-		return "png"
+		return formatPNG
 	case ".jpg", ".jpeg":
 		return "jpeg"
 	case ".gif":
@@ -284,7 +286,7 @@ func imageFormat(p string) string {
 	case ".emf", ".wmf":
 		return "emf"
 	default:
-		return "png"
+		return formatPNG
 	}
 }
 

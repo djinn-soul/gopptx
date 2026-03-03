@@ -2,6 +2,7 @@ package export
 
 import (
 	"testing"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
@@ -24,7 +25,7 @@ func TestSanitizeTitle(t *testing.T) {
 
 func TestHexToRGB(t *testing.T) {
 	tests := []struct {
-		input string
+		input   string
 		r, g, b uint8
 	}{
 		{"FF0000", 255, 0, 0},
@@ -107,34 +108,64 @@ func TestGradientStopsFromFill(t *testing.T) {
 }
 
 func TestIsMostlyVerticalGradient(t *testing.T) {
-	if !isMostlyVerticalGradient(90) { t.Error("90 should be vertical") }
-	if !isMostlyVerticalGradient(270) { t.Error("270 should be vertical") }
-	if isMostlyVerticalGradient(0) { t.Error("0 should be horizontal") }
-	if isMostlyVerticalGradient(180) { t.Error("180 should be horizontal") }
+	if !isMostlyVerticalGradient(90) {
+		t.Error("90 should be vertical")
+	}
+	if !isMostlyVerticalGradient(270) {
+		t.Error("270 should be vertical")
+	}
+	if isMostlyVerticalGradient(0) {
+		t.Error("0 should be horizontal")
+	}
+	if isMostlyVerticalGradient(180) {
+		t.Error("180 should be horizontal")
+	}
 	// Edge cases
-	if isMostlyVerticalGradient(45) { t.Error("45 should be horizontal") }
-	if !isMostlyVerticalGradient(46) { t.Error("46 should be vertical") }
+	if isMostlyVerticalGradient(45) {
+		t.Error("45 should be horizontal")
+	}
+	if !isMostlyVerticalGradient(46) {
+		t.Error("46 should be vertical")
+	}
 }
 
 func TestDrawStyle(t *testing.T) {
-	if got := drawStyle(true, true); got != "DF" { t.Errorf("expected DF, got %q", got) }
-	if got := drawStyle(true, false); got != "F" { t.Errorf("expected F, got %q", got) }
-	if got := drawStyle(false, true); got != "D" { t.Errorf("expected D, got %q", got) }
-	if got := drawStyle(false, false); got != "" { t.Errorf("expected empty, got %q", got) }
+	if got := drawStyle(true, true); got != "DF" {
+		t.Errorf("expected DF, got %q", got)
+	}
+	if got := drawStyle(true, false); got != "F" {
+		t.Errorf("expected F, got %q", got)
+	}
+	if got := drawStyle(false, true); got != "D" {
+		t.Errorf("expected D, got %q", got)
+	}
+	if got := drawStyle(false, false); got != "" {
+		t.Errorf("expected empty, got %q", got)
+	}
 }
 
 func TestStripHash(t *testing.T) {
-	if got := stripHash("#ABC"); got != "ABC" { t.Errorf("expected ABC, got %q", got) }
-	if got := stripHash("ABC"); got != "ABC" { t.Errorf("expected ABC, got %q", got) }
+	if got := stripHash("#ABC"); got != "ABC" {
+		t.Errorf("expected ABC, got %q", got)
+	}
+	if got := stripHash("ABC"); got != "ABC" {
+		t.Errorf("expected ABC, got %q", got)
+	}
 }
 
 func TestNormalizePDFDriver(t *testing.T) {
 	d, err := normalizePDFDriver(PDFOptions{Driver: ""})
-	if err != nil || d != PDFDriverAuto { t.Error("Auto failed") }
+	if err != nil || d != PDFDriverAuto {
+		t.Error("Auto failed")
+	}
 
 	d, err = normalizePDFDriver(PDFOptions{Driver: "native"})
-	if err != nil || d != PDFDriverNative { t.Error("Native failed") }
+	if err != nil || d != PDFDriverNative {
+		t.Error("Native failed")
+	}
 
 	_, err = normalizePDFDriver(PDFOptions{Driver: "invalid"})
-	if err == nil { t.Error("expected error for invalid driver") }
+	if err == nil {
+		t.Error("expected error for invalid driver")
+	}
 }

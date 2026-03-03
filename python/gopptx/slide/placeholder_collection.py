@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from .placeholder import Placeholder, create_placeholder
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from .slide import Slide
 
 
@@ -22,10 +23,11 @@ class PlaceholderCollection:
     """
 
     def __init__(self, slide: Slide) -> None:
+        """Bind collection to a single slide proxy."""
         self._slide = slide
 
     def _items(self) -> list[Placeholder]:
-        ph_data = self._slide._presentation.list_placeholders(self._slide.index)
+        ph_data = self._slide.list_placeholders()
         placeholders = [
             create_placeholder(
                 self._slide,
@@ -39,12 +41,15 @@ class PlaceholderCollection:
         return placeholders
 
     def __iter__(self) -> Iterator[Placeholder]:
+        """Iterate placeholders ordered by idx."""
         return iter(self._items())
 
     def __len__(self) -> int:
+        """Return number of placeholders."""
         return len(self._items())
 
     def __getitem__(self, idx: int) -> Placeholder:
+        """Return placeholder by idx."""
         for placeholder in self._items():
             if placeholder.idx == idx:
                 return placeholder

@@ -2,6 +2,7 @@ package text
 
 import (
 	"testing"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 )
 
@@ -45,9 +46,13 @@ func TestText_RunCreation(t *testing.T) {
 	}
 
 	r = r.WithUnderlineStyle(UnderlineStyleDouble)
-	if r.Underline != UnderlineStyleDouble { t.Error("UnderlineStyle failed") }
+	if r.Underline != UnderlineStyleDouble {
+		t.Error("UnderlineStyle failed")
+	}
 	r = r.WithStrikethroughStyle(StrikethroughStyleDouble)
-	if r.Strikethrough != StrikethroughStyleDouble { t.Error("StrikethroughStyle failed") }
+	if r.Strikethrough != StrikethroughStyleDouble {
+		t.Error("StrikethroughStyle failed")
+	}
 }
 
 func TestText_ParagraphCreation(t *testing.T) {
@@ -72,10 +77,14 @@ func TestText_ParagraphCreation(t *testing.T) {
 
 	// Test other alignments
 	s2 := NewParagraphStyle().WithAlignLeft().WithAlignRight().WithAlignJustify()
-	if s2.Align != TextAlignJustify { t.Error("Align chaining failed") }
+	if s2.Align != TextAlignJustify {
+		t.Error("Align chaining failed")
+	}
 
 	s3 := NewParagraphStyle().WithLetteredLower().WithRomanUpper().WithNoBullet().WithCustomBullet("*")
-	if s3.BulletStyle != BulletStyleCustom || s3.BulletChar != "*" { t.Error("Bullet style failed") }
+	if s3.BulletStyle != BulletStyleCustom || s3.BulletChar != "*" {
+		t.Error("Bullet style failed")
+	}
 }
 
 func TestText_Validate(t *testing.T) {
