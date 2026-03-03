@@ -264,6 +264,33 @@ func TestOpenPresentationEditorRejectsCorruptPackage(t *testing.T) {
 	}
 }
 
+func TestOpenPresentationEditorRejectsLegacyPPT(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "legacy.ppt")
+	// Write the OLE2 magic number: D0 CF 11 E0 A1 B1 1A E1
+	magic := []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0x00, 0x00, 0x00, 0x00}
+	if err := os.WriteFile(path, magic, 0o600); err != nil {
+		t.Fatalf("write legacy fixture: %v", err)
+	}
+
+	// 1. Test filepath entry-point
+	_, err := OpenPresentationEditor(path)
+	if err == nil {
+		t.Fatalf("expected error for legacy .ppt file")
+	}
+	if !strings.Contains(err.Error(), "legacy proprietary .ppt (OLE2) files are not supported") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+
+	// 2. Test byte-slice entry-point
+	_, err = OpenPresentationEditorFromBytes(magic)
+	if err == nil {
+		t.Fatalf("expected error for legacy .ppt bytes")
+	}
+	if !strings.Contains(err.Error(), "legacy proprietary .ppt (OLE2) files are not supported") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
 func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), name)

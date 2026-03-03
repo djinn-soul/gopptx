@@ -100,6 +100,10 @@ func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 		return handleGetCoreProperties, true
 	case OpSetCoreProperties:
 		return handleSetCoreProperties, true
+	case OpListPlaceholders:
+		return handleListPlaceholders, true
+	case OpSetPlaceholderContent:
+		return handleSetPlaceholderContent, true
 	default:
 		return nil, false
 	}
@@ -162,6 +166,12 @@ func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
 		return handleMoveShapeToFront, true
 	case OpMoveShapeToBack:
 		return handleMoveShapeToBack, true
+	case OpGetImageMetadata:
+		return handleGetImageMetadata, true
+	case OpAddVideo:
+		return handleAddVideo, true
+	case OpAddOLEObject:
+		return handleAddOLEObject, true
 	default:
 		return nil, false
 	}

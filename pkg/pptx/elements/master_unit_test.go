@@ -31,7 +31,7 @@ func TestNotesMaster_Methods(t *testing.T) {
 		WithDateTime(true).
 		WithSlideNumber(true).
 		WithBodyStyle([]TextLevelStyle{{Level: 0, Bold: true}})
-	
+
 	if nm.HeaderText != "Header" || nm.FooterText != "Footer" || !nm.ShowDateTime || !nm.ShowSlideNum {
 		t.Error("NotesMaster options failed")
 	}

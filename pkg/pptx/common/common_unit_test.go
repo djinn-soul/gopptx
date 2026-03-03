@@ -32,7 +32,7 @@ func TestColor_IsValid(t *testing.T) {
 func TestGeometry_SlideSize(t *testing.T) {
 	s43 := GetSlideSize4x3()
 	if s43.Width != 9144000 { t.Error("4x3 width mismatch") }
-	
+
 	s169 := GetSlideSize16x9()
 	if s169.Width != 12192000 { t.Error("16x9 width mismatch") }
 }
@@ -50,16 +50,16 @@ func TestGUID(t *testing.T) {
 func TestZipHelpers(t *testing.T) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	
+
 	if err := WriteFile(zw, "test.txt", "hello"); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 	if err := WriteBinaryFile(zw, "test.bin", []byte{1, 2, 3}); err != nil {
 		t.Fatalf("WriteBinaryFile failed: %v", err)
 	}
-	
+
 	zw.Close()
-	
+
 	zr, _ := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
 	if len(zr.File) != 2 {
 		t.Errorf("expected 2 files in zip, got %d", len(zr.File))

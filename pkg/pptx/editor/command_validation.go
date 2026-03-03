@@ -395,3 +395,20 @@ func ParseRawPayload(payload json.RawMessage) (map[string]any, error) {
 	}
 	return result, nil
 }
+
+// parseFloat is a internal helper to handle various numeric types from unmarshaled JSON.
+func parseFloat(v any) (float64, bool) {
+	switch val := v.(type) {
+	case float64:
+		return val, true
+	case int:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case float32:
+		return float64(val), true
+	}
+	return 0, false
+}

@@ -198,6 +198,7 @@ func rewriteContentTypes(
 	commentPaths []string,
 	hasVBA bool,
 	hasHandoutMaster bool,
+	customXMLPropsPaths []string,
 ) (string, error) {
 	doc, err := parseContentTypesDocument(current)
 	if err != nil {
@@ -228,6 +229,8 @@ func rewriteContentTypes(
 	overrides = appendOptionalContentTypeOverride(overrides, hasVBA, "/ppt/vbaProject.bin",
 		"application/vnd.ms-office.vbaProject")
 	overrides = appendPathOverrides(overrides, commentPaths, commentsPartType)
+	overrides = appendPathOverrides(overrides, customXMLPropsPaths,
+		"application/vnd.openxmlformats-officedocument.customXmlProperties+xml")
 
 	sort.Slice(overrides, func(i, j int) bool { return overrides[i].PartName < overrides[j].PartName })
 	doc.Overrides = overrides
@@ -652,9 +655,7 @@ func buildPresentationSectionExtensionXML(sections []Section) string {
 	return b.String()
 }
 
-var (
-	embeddedFontLstPattern = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
-)
+var embeddedFontLstPattern = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
 
 func rewritePresentationEmbeddedFonts(current []byte, fontLst string) (string, error) {
 	if fontLst == "" {

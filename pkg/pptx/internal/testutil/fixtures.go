@@ -22,10 +22,17 @@ func RootTestdataDir() string {
 	return base
 }
 
-// FixtureZipReader reads a fixture file from testdata/ppt_rs and returns a [zip.Reader].
+// FixtureZipReader reads a fixture file from testdata and returns a [zip.Reader].
+// For backward compatibility, it falls back to testdata/ppt_rs.
 func FixtureZipReader(t *testing.T, fixtureName string) *zip.Reader {
 	t.Helper()
-	fixturePath := filepath.Join(RootTestdataDir(), "ppt_rs", fixtureName)
+
+	root := RootTestdataDir()
+	fixturePath := filepath.Join(root, fixtureName)
+	if _, err := os.Stat(fixturePath); err != nil {
+		fixturePath = filepath.Join(root, "ppt_rs", fixtureName)
+	}
+
 	data, err := os.ReadFile(fixturePath)
 	if err != nil {
 		t.Fatalf("read fixture %s: %v", fixturePath, err)

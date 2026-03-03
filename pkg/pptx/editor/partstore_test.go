@@ -3,6 +3,7 @@ package editor
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -239,7 +240,7 @@ func buildConcurrentPartStoreZip(t *testing.T, slideCount int) string {
 	}
 	writer := zip.NewWriter(file)
 	for i := range slideCount {
-		partName := filepath.ToSlash(filepath.Join("ppt", "slides", "slide"+string(rune('0'+i))+".xml"))
+		partName := filepath.ToSlash(filepath.Join("ppt", "slides", fmt.Sprintf("slide%d.xml", i)))
 		entry, createErr := writer.Create(partName)
 		if createErr != nil {
 			t.Fatal(createErr)

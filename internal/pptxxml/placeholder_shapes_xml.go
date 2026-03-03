@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-func placeholderShape(ph PlaceholderOverrideSpec, id int) string {
+func PlaceholderShape(ph PlaceholderOverrideSpec, id int) string {
 	phAttr := fmt.Sprintf(` idx="%d"`, ph.Index)
-	phType := normalizePlaceholderType(ph.Type)
-	if phType != "" {
+	phType := NormalizePlaceholderType(ph.Type)
+	if phType != "" && phType != "obj" {
 		phAttr += fmt.Sprintf(` type="%s"`, phType)
 	}
 
@@ -44,7 +44,7 @@ func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
 	}
 
 	return fmt.Sprintf(`
-<p:pic>
+<p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
     <p:cNvPr id="%d" name="%s"/>
     <p:cNvPicPr>
@@ -82,7 +82,7 @@ func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) st
   </p:xfrm>`, x, y, cx, cy)
 
 	return fmt.Sprintf(`
-<p:graphicFrame>
+<p:graphicFrame xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvGraphicFramePr>
     <p:cNvPr id="%d" name="Placeholder Table %d"%s/>
     <p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr>
@@ -113,7 +113,7 @@ func renderPlaceholderChart(ch *ChartFrame, id int, index int, phAttr string) st
   </p:xfrm>`, x, y, cx, cy)
 
 	return fmt.Sprintf(`
-<p:graphicFrame>
+<p:graphicFrame xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvGraphicFramePr>
     <p:cNvPr id="%d" name="Placeholder Chart %d"%s/>
     <p:cNvGraphicFramePr/>
@@ -236,8 +236,12 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 	return b.String()
 }
 
-func normalizePlaceholderType(raw string) string {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
+func NormalizePlaceholderType(raw string) string {
+	raw = strings.ToLower(strings.TrimSpace(raw))
+	if raw == "" {
+		return "obj"
+	}
+	switch raw {
 	case "picture", "pic":
 		return "pic"
 	case "title":
@@ -247,6 +251,6 @@ func normalizePlaceholderType(raw string) string {
 	case "ctrtitle", "centeredtitle", "centered_title":
 		return "ctrTitle"
 	default:
-		return strings.TrimSpace(raw)
+		return raw
 	}
 }

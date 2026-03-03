@@ -16,7 +16,7 @@ func handleAddTable(e *PresentationEditor, payload json.RawMessage) (any, error)
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
@@ -42,10 +42,6 @@ func handleAddTable(e *PresentationEditor, payload json.RawMessage) (any, error)
 	cy, _ := v.OptionalInt64(p, "cy")
 
 	if v.HasErrors() {
-		return nil, v.Error()
-	}
-
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 

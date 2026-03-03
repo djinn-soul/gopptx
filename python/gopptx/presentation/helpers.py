@@ -44,9 +44,16 @@ class PresentationProtocol(ABC):
 
 def json_dumps(payload: dict[str, object]) -> bytes:
     """Serialize a dictionary to JSON bytes."""
+    import pathlib
+
+    def default(obj: object) -> str:
+        if isinstance(obj, pathlib.Path):
+            return str(obj)
+        raise TypeError(f"Type {type(obj)} not serializable")
+
     if _orjson is not None:
-        return _orjson.dumps(payload)
-    return json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        return _orjson.dumps(payload, default=default)
+    return json.dumps(payload, separators=(",", ":"), default=default).encode("utf-8")
 
 
 def json_loads(raw: bytes) -> object:

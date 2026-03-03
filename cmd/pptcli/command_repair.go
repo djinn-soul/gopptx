@@ -52,22 +52,12 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		if jsonMode {
-			outputJSONError(stdout, fmt.Sprintf("failed to read file: %v", err))
-			return exitIO
-		}
-		printErrorf(stderr, "failed to read file: %v", err)
-		return exitIO
+		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to read file: %v", err)
 	}
 
 	repairedData, result, err := pptx.Repair(data)
 	if err != nil {
-		if jsonMode {
-			outputJSONError(stdout, fmt.Sprintf("repair failed: %v", err))
-			return exitIO
-		}
-		printErrorf(stderr, "repair failed: %v", err)
-		return exitIO
+		return handleRepairError(stdout, stderr, jsonMode, exitIO, "repair failed: %v", err)
 	}
 
 	var jsonOut []byte
@@ -79,8 +69,7 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 		jsonOut, err = json.MarshalIndent(outObj, "", "  ")
 		if err != nil {
-			outputJSONError(stdout, fmt.Sprintf("failed to marshal JSON: %v", err))
-			return exitIO
+			return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to marshal JSON: %v", err)
 		}
 	}
 
@@ -115,12 +104,7 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	outDir := filepath.Dir(outPath)
 	tmpFile, err := os.CreateTemp(outDir, ".repair-*.pptx")
 	if err != nil {
-		if jsonMode {
-			outputJSONError(stdout, fmt.Sprintf("failed to create temp file: %v", err))
-			return exitIO
-		}
-		printErrorf(stderr, "failed to create temp file: %v", err)
-		return exitIO
+		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to create temp file: %v", err)
 	}
 	tmpPath := tmpFile.Name()
 
@@ -129,32 +113,17 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	closeErr := tmpFile.Close()
 	if writeErr != nil {
 		os.Remove(tmpPath)
-		if jsonMode {
-			outputJSONError(stdout, fmt.Sprintf("failed to write repaired file: %v", writeErr))
-			return exitIO
-		}
-		printErrorf(stderr, "failed to write repaired file: %v", writeErr)
-		return exitIO
+		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to write repaired file: %v", writeErr)
 	}
 	if closeErr != nil {
 		os.Remove(tmpPath)
-		if jsonMode {
-			outputJSONError(stdout, fmt.Sprintf("failed to close temp file: %v", closeErr))
-			return exitIO
-		}
-		printErrorf(stderr, "failed to close temp file: %v", closeErr)
-		return exitIO
+		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to close temp file: %v", closeErr)
 	}
 
 	// Rename temp file to target (atomic on most filesystems)
 	if err := os.Rename(tmpPath, outPath); err != nil {
 		os.Remove(tmpPath)
-		if jsonMode {
-			outputJSONError(stdout, fmt.Sprintf("failed to save repaired file: %v", err))
-			return exitIO
-		}
-		printErrorf(stderr, "failed to save repaired file: %v", err)
-		return exitIO
+		return handleRepairError(stdout, stderr, jsonMode, exitIO, "failed to save repaired file: %v", err)
 	}
 
 	if jsonMode {
@@ -170,4 +139,14 @@ func runRepairCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 
 func printRepairUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage: pptcli repair -file file.pptx [-out fixed.pptx] [-dry-run] [-format text|json]")
+}
+
+func handleRepairError(stdout io.Writer, stderr io.Writer, jsonMode bool, exitCode int, format string, a ...any) int {
+	msg := fmt.Sprintf(format, a...)
+	if jsonMode {
+		outputJSONError(stdout, msg)
+	} else {
+		printErrorf(stderr, msg)
+	}
+	return exitCode
 }

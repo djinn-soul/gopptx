@@ -59,6 +59,11 @@ const (
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
 	OpAddVba                  = "add_vba"
+	OpListPlaceholders        = "list_placeholders"
+	OpSetPlaceholderContent   = "set_placeholder_content"
+	OpGetImageMetadata        = "get_image_metadata"
+	OpAddVideo                = "add_video"
+	OpAddOLEObject            = "add_ole_object"
 )
 
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
@@ -119,5 +124,10 @@ func SupportedOps() []string {
 		OpListCustomXML,
 		OpRemoveCustomXML,
 		OpAddVba,
+		OpListPlaceholders,
+		OpSetPlaceholderContent,
+		OpGetImageMetadata,
+		OpAddVideo,
+		OpAddOLEObject,
 	}
 }

@@ -34,7 +34,7 @@ func FuzzContentTypes(f *testing.F) {
 				exts[i] = "png" // Use valid extensions to avoid panic
 			}
 		}
-		
+
 		notesSlides := []int{1, 2}
 		commentSlides := []int{1, 2}
 
@@ -78,14 +78,14 @@ func FuzzPresentation(f *testing.F) {
 	f.Fuzz(func(t *testing.T, title string, slideCount int, width, height int64, masterCount int, hashData, saltData string, spinCount int) {
 		if slideCount < 0 || slideCount > 100 { slideCount = 10 }
 		if masterCount < 0 || masterCount > 100 { masterCount = 1 }
-		
+
 		protection := &ProtectionInfo{
 			HashAlgSID: 14,
 			HashData:   hashData,
 			SaltData:   saltData,
 			SpinCount:  spinCount,
 		}
-		
+
 		_ = Presentation(
 			title,
 			slideCount,

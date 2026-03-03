@@ -41,7 +41,9 @@ logs/
 examples/output/
 scripts/*.py
 tools/*
+.gopptx-*.tmp
 testdata/
+pkg/gopptx/models_test.go.*
 .tmp/*
 pkg/pptx/*.pptx
 issues

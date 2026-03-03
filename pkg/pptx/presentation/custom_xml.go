@@ -58,6 +58,13 @@ func writeCustomXMLParts(pw *pptxxml.PackageWriter, customXML []common.CustomXML
 </ds:datastoreItem>`, itemID, schemaRefs)
 		propsPath := fmt.Sprintf("customXml/itemProps%d.xml", i+1)
 		pw.AddPart(propsPath, propsContent)
+
+		// Create itemN.xml.rels to link the item to its properties.
+		itemRelContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="itemProps%d.xml"/>
+</Relationships>`, i+1)
+		pw.AddPart(fmt.Sprintf("customXml/_rels/item%d.xml.rels", i+1), itemRelContent)
 	}
 	return nil
 }
@@ -85,9 +92,6 @@ func generateCustomXMLItem(part common.CustomXMLPart) (string, error) {
 			propsSb55.WriteString(fmt.Sprintf("<%s>%s</%s>", kv.Key, escapeCustomXML(kv.Value), kv.Key))
 		}
 		inner = propsSb55.String()
-	} else if inner != "" {
-		// If providing raw content for a structural part, ensure it is escaped.
-		inner = escapeCustomXML(inner)
 	}
 
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

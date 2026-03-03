@@ -128,11 +128,8 @@ func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (any,
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -157,11 +154,8 @@ func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any,
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 
@@ -214,15 +208,12 @@ func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (an
 	}
 
 	v := NewPayloadValidator()
-	slideIndex, ok := v.RequireInt(p, "slide_index")
+	slideIndex, ok := requireSlideIndex(e, p, v)
 	if !ok {
 		return nil, v.Error()
 	}
 	layoutPart, ok := v.RequireString(p, "layout_part")
 	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
 		return nil, v.Error()
 	}
 

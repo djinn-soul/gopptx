@@ -50,8 +50,10 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 
 	// 4. Create relationships
 	// Slide -> Chart
-	slideRelID := fmt.Sprintf("rId%d", e.nextRelIDNum)
-	e.nextRelIDNum++
+	slideRelID, err := e.nextSlideRelID(slideRef.Part)
+	if err != nil {
+		return fmt.Errorf("allocate slide relationship id: %w", err)
+	}
 	if addSlideRelErr := e.addSlideRelationship(
 		slideRef.Part,
 		slideRelID,
@@ -131,15 +133,19 @@ func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error)
 	sum := sha256.Sum256(data)
 	hash := hex.EncodeToString(sum[:])
 
+	// Build a hash -> part map for efficient lookup
+	hashToPart := make(map[string]string)
 	for _, part := range e.parts.KeysWithPrefix("ppt/embeddings/") {
 		existing, ok := e.parts.Get(part)
 		if !ok {
 			continue
 		}
 		existingSum := sha256.Sum256(existing)
-		if hash == hex.EncodeToString(existingSum[:]) {
-			return part, nil
-		}
+		hashToPart[hex.EncodeToString(existingSum[:])] = part
+	}
+
+	if existingPath, ok := hashToPart[hash]; ok {
+		return existingPath, nil
 	}
 
 	excelNum := e.nextExcelNum
@@ -212,6 +218,12 @@ func (e *PresentationEditor) addRelationship(partPath, id, relType, target strin
 		ID:     id,
 		Type:   relType,
 		Target: target,
+		TargetMode: func() string {
+			if relType == common.RelTypeHyperlink {
+				return "External"
+			}
+			return ""
+		}(),
 	})
 	return e.writeRelationships(relsPath, rels)
 }
@@ -254,7 +266,7 @@ func (e *PresentationEditor) nextShapeID(slidePart string) int {
 
 func (e *PresentationEditor) createChartGraphicFrameXML(id int, name, rID string, x, y, cx, cy int64) string {
 	return fmt.Sprintf(`
-	<p:graphicFrame>
+	<p:graphicFrame xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 		<p:nvGraphicFramePr>
 			<p:cNvPr id="%d" name="%s"/>
 			<p:cNvGraphicFramePr/>

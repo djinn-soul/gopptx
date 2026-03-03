@@ -77,7 +77,7 @@ func TestHyperlinkAction_Methods(t *testing.T) {
 		if a.RelationshipTarget() != "mailto:test@example.com" {
 			t.Errorf("RelationshipTarget failed: %s", a.RelationshipTarget())
 		}
-		
+
 		a2 := HyperlinkEmailWithSubject("test@example.com", "Hello World")
 		if a2.RelationshipTarget() != "mailto:test@example.com?subject=Hello+World" {
 			t.Errorf("RelationshipTarget with subject failed: %s", a2.RelationshipTarget())
@@ -100,7 +100,7 @@ func TestHyperlinkAction_Methods(t *testing.T) {
 			t.Error("ActionType failed")
 		}
 	})
-	
+
 	t.Run("Default", func(t *testing.T) {
 		a := HyperlinkAction{Type: "unknown"}
 		if a.RelationshipTarget() != "" {
@@ -116,7 +116,7 @@ func TestHyperlink_Methods(t *testing.T) {
 	h := NewHyperlink(HyperlinkURL("https://example.com")).
 		WithTooltip("Tooltip").
 		WithHighlightClick(false)
-	
+
 	if h.Tooltip != "Tooltip" {
 		t.Error("WithTooltip failed")
 	}
