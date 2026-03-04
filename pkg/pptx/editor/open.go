@@ -113,9 +113,9 @@ func NewPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 		editor.metadata.VBA = vba.FromData(vbaData)
 	}
 
-	editor.nextSlideID = nextSlideID(slideRefs)
-	editor.nextRelIDNum = nextRelationshipNumber(rels)
-	editor.nextSlideNum = nextSlidePartNumber(slideRefs)
+	editor.nextSlideID = editorslide.NextSlideID(slideRefs)
+	editor.nextRelIDNum = common.NextRelationshipNumber(rels)
+	editor.nextSlideNum = editorslide.NextSlidePartNumber(slideRefs)
 
 	partKeys := ps.Keys()
 	editor.mediaInventory, editor.nextMediaNum = editorslide.ParseMediaInventory(ps, partKeys)
@@ -213,7 +213,7 @@ func resolveSlideReferences(
 		if !ps.Has(partName) {
 			return nil, nil, fmt.Errorf("slide part %q not found", partName)
 		}
-		if err := editorEnsureSlideRelsExistPS(ps, partName); err != nil {
+		if err := editorslide.EnsureSlideRelsExist(ps.Has, partName); err != nil {
 			return nil, nil, err
 		}
 		out = append(out, common.EditorSlideRef{

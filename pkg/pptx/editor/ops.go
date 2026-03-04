@@ -1,20 +1,17 @@
 package editor
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
-	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -25,7 +22,7 @@ func (e *PresentationEditor) AddSlide(slide elements.SlideContent) (int, error) 
 	if e == nil {
 		return 0, errors.New("editor cannot be nil")
 	}
-	if err := validateEditorSlideContent(slide); err != nil {
+	if err := editorslide.ValidateEditorSlideContent(slide); err != nil {
 		return 0, err
 	}
 
@@ -75,23 +72,23 @@ func (e *PresentationEditor) UpdateSlide(index int, slide elements.SlideContent)
 	}
 	ref := e.slides[index]
 	slide = preserveExistingSlideTransition(e.parts, ref.Part, slide)
-	if err := validateEditorSlideContent(slide); err != nil {
+	if err := editorslide.ValidateEditorSlideContent(slide); err != nil {
 		return err
 	}
 
-	existingRels, err := e.slideRelationships(ref.Part)
+	existingRels, err := editorslide.SlideRelationships(ref.Part, e.parts.Get, parseRelationshipsXML)
 	if err != nil {
 		return err
 	}
-	notesTarget, err := scanSupportedSlideRels(existingRels)
+	notesTarget, err := editorslide.ScanSupportedSlideRels(existingRels)
 	if err != nil {
 		return fmt.Errorf("slide %d cannot be updated safely: %w", index, err)
 	}
-	if slideHasImageContent(slide) && !hasSlideLayoutRelationship(existingRels) {
+	if editorslide.SlideHasImageContent(slide) && !editorslide.HasSlideLayoutRelationship(existingRels) {
 		return fmt.Errorf("slide %d cannot add images without a slideLayout relationship", index)
 	}
 
-	number, ok := parseSlidePartNumber(ref.Part)
+	number, ok := common.ParseSlidePartNumber(ref.Part)
 	if !ok {
 		return fmt.Errorf("unsupported slide part path %q", ref.Part)
 	}
@@ -182,7 +179,7 @@ func (e *PresentationEditor) DuplicateSlide(srcIndex, destIndex int) (int, error
 	copy(newRelsBytes, relsBytes)
 
 	// Try to visually indicate copy in the XML
-	newSlideBytes = appendCopySuffixToXML(newSlideBytes)
+	newSlideBytes = editorslide.AppendCopySuffixToXML(newSlideBytes)
 	e.parts.Set(newPart, newSlideBytes)
 
 	updatedRelsBytes, err := e.deepCloneSlideParts(srcRef.Part, relsBytes, newPart)
@@ -306,205 +303,8 @@ func (e *PresentationEditor) MergeFromEditor(other *PresentationEditor) error {
 	return nil
 }
 
-func (e *PresentationEditor) slideRelationships(slidePart string) ([]common.EditorRelationship, error) {
-	relsPart := common.SlideRelsPartName(slidePart)
-	data, ok := e.parts.Get(relsPart)
-	if !ok {
-		return nil, fmt.Errorf("missing slide relationships part %q", relsPart)
-	}
-	rels, err := parseRelationshipsXML(data)
-	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", relsPart, err)
-	}
-	return rels, nil
-}
-
-func scanSupportedSlideRels(rels []common.EditorRelationship) (string, error) {
-	notesTarget := ""
-	for _, rel := range rels {
-		switch rel.Type {
-		case common.RelTypeSlideLayout:
-		case common.RelTypeNotesSlide:
-			notesTarget = rel.Target
-		case common.RelTypeHyperlink:
-		case common.RelTypeImage, common.RelTypeChart, common.RelTypeAudio, common.RelTypeVideo, common.RelTypeTheme:
-			// Shared assets supported by existing slide/update flows.
-		default:
-			return "", fmt.Errorf("unsupported relationship type %q", rel.Type)
-		}
-	}
-	return notesTarget, nil
-}
-
-func hasSlideLayoutRelationship(rels []common.EditorRelationship) bool {
-	for _, rel := range rels {
-		if rel.Type == common.RelTypeSlideLayout {
-			return true
-		}
-	}
-	return false
-}
-
-func slideHasImageContent(slide elements.SlideContent) bool {
-	if len(slide.Images) > 0 {
-		return true
-	}
-	if slide.Background != nil && slide.Background.Type == elements.SlideBackgroundPicture &&
-		slide.Background.PictureFill != nil {
-		return true
-	}
-	for _, override := range slide.PlaceholderOverrides {
-		if override.Image != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func validateEditorSlideContent(slide elements.SlideContent) error {
-	// Notes and Images/Charts are now supported!
-	if err := slide.Validate(1); err != nil {
-		return err
-	}
-	return nil
-}
-
-var (
-	aTTitlePattern          = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
-	titlePlaceholderPattern = regexp.MustCompile(
-		`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`,
-	)
-)
-
-func appendCopySuffixToXML(content []byte) []byte {
-	res, _ := replaceTitleLikeText(content, replaceLastTextRun, func(match []byte) []byte {
-		// Insert " (Copy)" before the closing tag.
-		return []byte(strings.Replace(string(match), "</a:t>", " (Copy)</a:t>", 1))
-	})
-	return res
-}
-
-func replaceTitleLikeText(
-	content []byte,
-	runSelector func([]byte, func([]byte) []byte) ([]byte, bool),
-	replaceFn func(match []byte) []byte,
-) ([]byte, bool) {
-	// Prefer replacing text inside the title placeholder shape when present.
-	updated, ok := replaceTitlePlaceholderText(content, runSelector, replaceFn)
-	if ok {
-		return updated, true
-	}
-	// Fallback to first <a:t> to preserve behavior on unusual slide XML.
-	return runSelector(content, replaceFn)
-}
-
-func replaceTitlePlaceholderText(
-	content []byte,
-	runSelector func([]byte, func([]byte) []byte) ([]byte, bool),
-	replaceFn func(match []byte) []byte,
-) ([]byte, bool) {
-	const (
-		shapeStart = "<p:sp"
-		shapeEnd   = "</p:sp>"
-	)
-
-	searchFrom := 0
-	for {
-		startIdx := bytes.Index(content[searchFrom:], []byte(shapeStart))
-		if startIdx < 0 {
-			return content, false
-		}
-		start := searchFrom + startIdx
-
-		endIdx := bytes.Index(content[start:], []byte(shapeEnd))
-		if endIdx < 0 {
-			return content, false
-		}
-		end := start + endIdx + len(shapeEnd)
-
-		shape := content[start:end]
-		if isTitlePlaceholderShape(shape) {
-			replacedShape, replaced := runSelector(shape, replaceFn)
-			if !replaced {
-				return content, false
-			}
-
-			out := make([]byte, 0, len(content)-len(shape)+len(replacedShape))
-			out = append(out, content[:start]...)
-			out = append(out, replacedShape...)
-			out = append(out, content[end:]...)
-			return out, true
-		}
-
-		searchFrom = end
-	}
-}
-
-func isTitlePlaceholderShape(shape []byte) bool {
-	if !bytes.Contains(shape, []byte("<p:ph")) {
-		return false
-	}
-	return titlePlaceholderPattern.Match(shape)
-}
-
-func replaceLastTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
-	indexes := aTTitlePattern.FindAllIndex(content, -1)
-	if len(indexes) == 0 {
-		return content, false
-	}
-	last := indexes[len(indexes)-1]
-	start, end := last[0], last[1]
-	match := content[start:end]
-	replacement := replaceFn(match)
-
-	out := make([]byte, 0, len(content)-len(match)+len(replacement))
-	out = append(out, content[:start]...)
-	out = append(out, replacement...)
-	out = append(out, content[end:]...)
-	return out, true
-}
-
-func replaceAllTextRuns(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
-	modified := false
-	replacedFirst := false
-	res := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
-		modified = true
-		if !replacedFirst {
-			replacedFirst = true
-			return replaceFn(match)
-		}
-		return clearTextRun(match)
-	})
-	return res, modified
-}
-
-func clearTextRun(match []byte) []byte {
-	endOpenTag := bytes.IndexByte(match, '>')
-	if endOpenTag < 0 {
-		return []byte("<a:t></a:t>")
-	}
-	openTag := match[:endOpenTag+1]
-	out := make([]byte, 0, len(openTag)+len("</a:t>"))
-	out = append(out, openTag...)
-	out = append(out, []byte("</a:t>")...)
-	return out
-}
-
 func (e *PresentationEditor) recalculateNextRelIDNum() {
-	maxNum := 0
-	// Scan slide references
-	for _, slide := range e.slides {
-		if num, ok := parseRelationshipNumber(slide.RelID); ok && num > maxNum {
-			maxNum = num
-		}
-	}
-	// Scan non-slide relationships (e.g. presentation.xml.rels)
-	for _, rel := range e.nonSlideRels {
-		if num, ok := parseRelationshipNumber(rel.ID); ok && num > maxNum {
-			maxNum = num
-		}
-	}
-	e.nextRelIDNum = maxNum + 1
+	e.nextRelIDNum = editorslide.NextRelationshipIDNum(e.slides, e.nonSlideRels)
 }
 
 // SetSlideTitle replaces title placeholder text runs with the provided title.
@@ -522,9 +322,7 @@ func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 		return fmt.Errorf("slide part %q missing", ref.Part)
 	}
 
-	newContent, modified := replaceTitleLikeText(content, replaceAllTextRuns, func(_ []byte) []byte {
-		return []byte("<a:t>" + common.XMLEscape(title) + "</a:t>")
-	})
+	newContent, modified := editorslide.ReplaceAllTitleTextRuns(content, common.XMLEscape(title))
 	if !modified {
 		return fmt.Errorf("slide %d has no title text run to update", index)
 	}
@@ -569,28 +367,15 @@ func (e *PresentationEditor) AddSection(name string, slideIndices []int) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
 	}
-	if name == "" {
-		return errors.New("section name cannot be empty")
-	}
-
-	ids := make([]int64, 0, len(slideIndices))
-	for _, idx := range slideIndices {
-		if idx < 0 || idx >= len(e.slides) {
-			return fmt.Errorf("slide index %d out of range", idx)
-		}
-		ids = append(ids, e.slides[idx].SlideID)
-	}
-
-	guid, err := common.NewGUID()
+	ids, err := editorslide.BuildSectionSlideIDs(e.slides, slideIndices)
 	if err != nil {
-		return fmt.Errorf("generate section GUID: %w", err)
+		return err
 	}
-
-	e.sections = append(e.sections, Section{
-		Name:     name,
-		GUID:     guid,
-		SlideIDs: ids,
-	})
+	next, err := editorslide.AddSectionData(e.sections, name, ids, common.NewGUID)
+	if err != nil {
+		return err
+	}
+	e.sections = next
 	return nil
 }
 
@@ -599,17 +384,9 @@ func (e *PresentationEditor) RemoveSection(name string) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
 	}
-	next := make([]Section, 0, len(e.sections))
-	found := false
-	for _, s := range e.sections {
-		if s.Name == name {
-			found = true
-			continue
-		}
-		next = append(next, s)
-	}
-	if !found {
-		return fmt.Errorf("section %q not found", name)
+	next, err := editorslide.RemoveSectionData(e.sections, name)
+	if err != nil {
+		return err
 	}
 	e.sections = next
 	return nil
@@ -620,20 +397,11 @@ func (e *PresentationEditor) RenameSection(oldName, newName string) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
 	}
-	if newName == "" {
-		return errors.New("new section name cannot be empty")
+	next, err := editorslide.RenameSectionData(e.sections, oldName, newName)
+	if err != nil {
+		return err
 	}
-	found := false
-	for i := range e.sections {
-		if e.sections[i].Name == oldName {
-			e.sections[i].Name = newName
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("section %q not found", oldName)
-	}
+	e.sections = next
 	return nil
 }
 
@@ -696,7 +464,7 @@ func (e *PresentationEditor) cloneChartPart(rel common.EditorRelationship) (stri
 		return "../charts/" + path.Base(newChartPart), true
 	}
 
-	newChartData := cloneBytes(data)
+	newChartData := editorslide.CloneBytes(data)
 	newChartData = e.cloneChartDependencies(srcChartPart, newChartPart, newChartData)
 	e.parts.Set(newChartPart, newChartData)
 	return "../charts/" + path.Base(newChartPart), true
@@ -744,7 +512,7 @@ func (e *PresentationEditor) cloneChartEmbedding(
 		return newChartData, "", false
 	}
 
-	e.parts.Set(newExcel, cloneBytes(xdata))
+	e.parts.Set(newExcel, editorslide.CloneBytes(xdata))
 	newChartData = rewriteChartExternalData(newChartData, chartRel.ID)
 	return newChartData, newExcel, true
 }
@@ -762,7 +530,7 @@ func (e *PresentationEditor) cloneNotesSlidePart(
 		return "../notesSlides/" + path.Base(newNotesPart), true
 	}
 
-	e.parts.Set(newNotesPart, cloneBytes(data))
+	e.parts.Set(newNotesPart, editorslide.CloneBytes(data))
 	e.cloneNotesRelationships(srcNotesPart, newNotesPart, newSlidePart)
 	e.notesInventory[newSlidePart] = newNotesPart
 	return "../notesSlides/" + path.Base(newNotesPart), true
@@ -787,15 +555,6 @@ func (e *PresentationEditor) cloneNotesRelationships(srcNotesPart, newNotesPart,
 	e.parts.Set(newNotesRelsPath, []byte(rendered))
 }
 
-func cloneBytes(b []byte) []byte {
-	if b == nil {
-		return nil
-	}
-	c := make([]byte, len(b))
-	copy(c, b)
-	return c
-}
-
 // UpdateNotesMaster configures the global notes master for the presentation.
 //
 //nolint:gocognit // Notes-master update coordinates validation, media registration, and rel wiring in one flow.
@@ -811,50 +570,13 @@ func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) err
 	e.ensureNotesInfrastructure()
 	e.ensureNotesMasterThemePart()
 
-	var backgroundRID string
-	var mediaNames []string
-
-	//nolint:nestif // Background media registration requires staged checks to preserve error context.
-	if master != nil && master.Background != nil && master.Background.Type == elements.SlideBackgroundPicture &&
-		master.Background.PictureFill != nil {
-		img := master.Background.PictureFill
-
-		var data []byte
-		var err error
-
-		if len(img.Data) > 0 {
-			data = img.Data
-		} else if img.Path != "" {
-			data, err = os.ReadFile(img.Path)
-			if err != nil {
-				return fmt.Errorf("read background image: %w", err)
-			}
-		}
-
-		if len(data) > 0 {
-			format := img.Format
-			if format == "" {
-				if img.Path != "" {
-					format = strings.TrimPrefix(filepath.Ext(img.Path), ".")
-				}
-				if format == "" {
-					format = "png"
-				}
-			}
-
-			internalPath, err := e.RegisterImage(data, format)
-			if err != nil {
-				return fmt.Errorf("register background image: %w", err)
-			}
-
-			// internalPath is like "ppt/media/image1.png"
-			// Target relative to "ppt/notesMasters/" is "../media/image1.png"
-			base := path.Base(internalPath)
-			target := "../media/" + base
-
-			backgroundRID = "rId2"
-			mediaNames = []string{target}
-		}
+	backgroundRID, mediaNames, err := editorslide.ResolveNotesMasterBackgroundMedia(
+		master,
+		os.ReadFile,
+		e.RegisterImage,
+	)
+	if err != nil {
+		return err
 	}
 
 	spec := elements.MapNotesMasterToSpec(master, backgroundRID)
@@ -868,39 +590,20 @@ func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) err
 }
 
 func (e *PresentationEditor) ensureNotesInfrastructure() {
+	editorslide.EnsureNotesMasterThemePart(e.parts.Has, e.parts.Get, e.parts.Set)
 	if e.parts.Has("ppt/notesMasters/notesMaster1.xml") {
 		return
 	}
-	e.ensureNotesMasterThemePart()
-	e.parts.Set("ppt/notesMasters/notesMaster1.xml", []byte(pptxxml.NotesMaster(nil)))
-	e.parts.Set(
-		"ppt/notesMasters/_rels/notesMaster1.xml.rels",
-		[]byte(pptxxml.NotesMasterRelationships(notesMasterThemeIndex, nil)),
-	)
-
-	for _, rel := range e.nonSlideRels {
-		if rel.Type == common.RelTypeNotesMaster {
-			return
-		}
-	}
 	e.recalculateNextRelIDNum()
-	e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
-		ID:     fmt.Sprintf("rId%d", e.nextRelIDNum),
-		Type:   common.RelTypeNotesMaster,
-		Target: "notesMasters/notesMaster1.xml",
-	})
-	e.nextRelIDNum++
+	e.nonSlideRels, e.nextRelIDNum = editorslide.EnsureNotesInfrastructure(
+		e.parts.Has,
+		e.parts.Set,
+		e.nonSlideRels,
+		e.nextRelIDNum,
+		notesMasterThemeIndex,
+	)
 }
 
 func (e *PresentationEditor) ensureNotesMasterThemePart() {
-	if e.parts.Has("ppt/theme/theme2.xml") {
-		return
-	}
-	theme1, ok := e.parts.Get("ppt/theme/theme1.xml")
-	if !ok {
-		return
-	}
-	clone := make([]byte, len(theme1))
-	copy(clone, theme1)
-	e.parts.Set("ppt/theme/theme2.xml", clone)
+	editorslide.EnsureNotesMasterThemePart(e.parts.Has, e.parts.Get, e.parts.Set)
 }

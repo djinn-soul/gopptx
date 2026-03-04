@@ -2,17 +2,14 @@ package editor
 
 import (
 	"bytes"
-	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
-	"sort"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/logical"
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
@@ -24,11 +21,7 @@ const (
 )
 
 // Section describes a PowerPoint section entry.
-type Section struct {
-	Name     string
-	GUID     string
-	SlideIDs []int64
-}
+type Section = editorslide.SectionData
 
 // PresentationEditor provides read/modify/save operations for existing PPTX files.
 type PresentationEditor struct {
@@ -162,98 +155,13 @@ func (e *PresentationEditor) nextSlideRelID(partPath string) (string, error) {
 	return fmt.Sprintf("rId%d", nextNum), nil
 }
 
-func nextSlideID(slides []common.EditorSlideRef) int64 {
-	var maxID int64 = 255
-	for _, slide := range slides {
-		if slide.SlideID > maxID {
-			maxID = slide.SlideID
-		}
-	}
-	return maxID + 1
-}
-
-func nextRelationshipNumber(rels []common.EditorRelationship) int {
-	return common.NextRelationshipNumber(rels)
-}
-
-func nextSlidePartNumber(slides []common.EditorSlideRef) int {
-	maxNum := 0
-	for _, slide := range slides {
-		num, ok := common.ParseSlidePartNumber(slide.Part)
-		if ok && num > maxNum {
-			maxNum = num
-		}
-	}
-	return maxNum + 1
-}
-
-func parseRelationshipNumber(id string) (int, bool) {
-	return common.ParseRelationshipNumber(id)
-}
-
-func parseSlidePartNumber(partPath string) (int, bool) {
-	return common.ParseSlidePartNumber(partPath)
-}
-
 func (e *PresentationEditor) populateSlideTitlesConcurrently() {
 	if e == nil || len(e.slides) == 0 {
 		return
 	}
-
-	type result struct {
-		index int
-		title string
-	}
-	ch := make(chan result, len(e.slides))
-	var wg sync.WaitGroup
-
-	for idx := range e.slides {
-		wg.Go(func() {
-			// Note: Ignoring Get errors is intentional - slide titles are optional metadata
-			// and we'll just skip titles for slides that can't be read
-			data, _ := e.parts.Get(e.slides[idx].Part)
-			title := extractFirstAText(data)
-			ch <- result{index: idx, title: title}
-		})
-	}
-	wg.Wait()
-	close(ch)
-
-	results := make([]result, 0, len(e.slides))
-	for item := range ch {
-		results = append(results, item)
-	}
-	sort.Slice(results, func(i, j int) bool { return results[i].index < results[j].index })
-	for _, item := range results {
-		e.slides[item.index].Title = item.title
-	}
-}
-
-func extractFirstAText(content []byte) string {
-	if len(content) == 0 {
-		return ""
-	}
-	decoder := xml.NewDecoder(bytes.NewReader(content))
-	for {
-		token, err := decoder.Token()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				return ""
-			}
-			return ""
-		}
-		start, ok := token.(xml.StartElement)
-		if !ok || start.Name.Local != "t" {
-			continue
-		}
-		var value string
-		if decodeErr := decoder.DecodeElement(&value, &start); decodeErr != nil {
-			return ""
-		}
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			return trimmed
-		}
+	titles := editorslide.PopulateSlideTitlesConcurrently(e.slides, e.parts.Get)
+	for idx, title := range titles {
+		e.slides[idx].Title = title
 	}
 }
 
@@ -406,7 +314,7 @@ func (e *PresentationEditor) UngroupShapes(slideIndex, shapeID int) (int, error)
 
 	groupShape := shapes[groupShapeIndex]
 	groupXML := content[groupShape.Start:groupShape.End]
-	children, err := extractGroupChildShapeNodes(groupXML)
+	children, err := editorshape.ExtractGroupChildShapeNodes(groupXML, groupShapeTag, shapeTypePicture)
 	if err != nil {
 		return 0, fmt.Errorf("extract grouped shapes: %w", err)
 	}
@@ -423,111 +331,9 @@ func (e *PresentationEditor) UngroupShapes(slideIndex, shapeID int) (int, error)
 	})
 	e.parts.Set(partPath, newContent)
 
-	firstChildID := firstShapeIDInXML(children)
+	firstChildID := editorshape.FirstShapeIDInXML(children, cNvPrIDPattern, cNvPrSubmatchSize)
 	if firstChildID == 0 {
 		return shapeID, nil
 	}
 	return firstChildID, nil
-}
-
-func extractGroupChildShapeNodes(groupXML []byte) ([][]byte, error) {
-	decoder := xml.NewDecoder(bytes.NewReader(groupXML))
-	rootDepth := 0
-	rootSeen := false
-	children := make([][]byte, 0)
-
-	for {
-		startOffset := decoder.InputOffset()
-		token, err := decoder.Token()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		switch t := token.(type) {
-		case xml.StartElement:
-			nextDepth, sawRoot, childNode, startErr := processGroupStartElement(
-				decoder,
-				groupXML,
-				startOffset,
-				rootDepth,
-				rootSeen,
-				t,
-			)
-			if startErr != nil {
-				return nil, startErr
-			}
-			rootDepth = nextDepth
-			rootSeen = sawRoot
-			if len(childNode) > 0 {
-				children = append(children, childNode)
-			}
-		case xml.EndElement:
-			var done bool
-			rootDepth, done = processGroupEndElement(rootDepth, rootSeen)
-			if done {
-				return children, nil
-			}
-		}
-	}
-
-	return children, nil
-}
-
-func processGroupStartElement(
-	decoder *xml.Decoder,
-	groupXML []byte,
-	startOffset int64,
-	rootDepth int,
-	rootSeen bool,
-	start xml.StartElement,
-) (int, bool, []byte, error) {
-	if !rootSeen {
-		if start.Name.Local == groupShapeTag {
-			return 1, true, nil, nil
-		}
-		return rootDepth, false, nil, nil
-	}
-	if rootDepth == 1 && isShapeElementLocal(start.Name.Local) {
-		_, endOffset, err := extractShapeNode(groupXML, startOffset, decoder, start.Name.Local, true)
-		if err != nil {
-			return rootDepth, rootSeen, nil, err
-		}
-		child := bytes.TrimSpace(groupXML[startOffset:endOffset])
-		return rootDepth, rootSeen, child, nil
-	}
-	return rootDepth + 1, rootSeen, nil, nil
-}
-
-func processGroupEndElement(rootDepth int, rootSeen bool) (int, bool) {
-	if !rootSeen {
-		return rootDepth, false
-	}
-	rootDepth--
-	return rootDepth, rootDepth == 0
-}
-
-func isShapeElementLocal(name string) bool {
-	switch name {
-	case "sp", shapeTypePicture, "graphicFrame", groupShapeTag, "cxnSp":
-		return true
-	default:
-		return false
-	}
-}
-
-func firstShapeIDInXML(shapesXML [][]byte) int {
-	for _, shapeXML := range shapesXML {
-		match := cNvPrIDPattern.FindSubmatch(shapeXML)
-		if len(match) < cNvPrSubmatchSize {
-			continue
-		}
-		id, err := strconv.Atoi(string(match[1]))
-		if err == nil {
-			return id
-		}
-	}
-	return 0
 }

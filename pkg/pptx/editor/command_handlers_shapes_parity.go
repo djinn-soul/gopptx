@@ -254,7 +254,7 @@ func parseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 
 	hasExplicitUpdates := text != "" || len(runs) > 0 || textFrame != nil || paragraph != nil || clickAction != nil ||
 		hoverAction != nil
-	hasProperties := hasAnyUpdate(properties)
+	hasProperties := editorcommand.HasAnyUpdate(properties)
 	if !hasExplicitUpdates && !hasProperties {
 		return common.ShapeUpdate{}, false, nil
 	}

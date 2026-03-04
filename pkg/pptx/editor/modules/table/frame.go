@@ -46,10 +46,25 @@ func TruthyAttr(v string) bool {
 }
 
 func FindTableFrame(slideContent []byte, shapeID int) (int, int, []byte, error) {
-	idStr := fmt.Appendf(nil, ` id="%d"`, shapeID)
-	idIdx := bytes.Index(slideContent, idStr)
-	if idIdx == -1 {
-		return 0, 0, nil, fmt.Errorf("shape id %d not found", shapeID)
+	idStr := fmt.Sprintf(` id="%d"`, shapeID)
+	cursor := 0
+	var idIdx int
+	for {
+		relIdx := bytes.Index(slideContent[cursor:], []byte(idStr))
+		if relIdx == -1 {
+			return 0, 0, nil, fmt.Errorf("shape id %d not found", shapeID)
+		}
+		idIdx = cursor + relIdx
+		nextCharIdx := idIdx + len(idStr)
+		if nextCharIdx < len(slideContent) {
+			nextChar := slideContent[nextCharIdx]
+			if nextChar == ' ' || nextChar == '"' || nextChar == '>' || nextChar == '/' {
+				break // Exact match found
+			}
+		} else {
+			break // Exact match at end of content
+		}
+		cursor = idIdx + 1
 	}
 
 	frameStart := bytes.LastIndex(slideContent[:idIdx], []byte("<p:graphicFrame"))

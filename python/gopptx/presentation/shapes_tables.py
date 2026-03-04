@@ -104,12 +104,10 @@ class PresentationShapeMixin(PresentationProtocol):
             "properties",
         )
         for key in keys:
-            if key == "text" and not include_text:
-                continue
             value = options.get(key)
             if value is None:
                 continue
-            if key == "text" and not isinstance(value, str):
+            if key == "text" and (not include_text or not isinstance(value, str)):
                 continue
             serializer = serializers.get(key)
             payload[key] = serializer(value) if serializer is not None else value
@@ -135,13 +133,6 @@ class PresentationShapeMixin(PresentationProtocol):
     ) -> int:
         """Add a shape to a slide."""
         x, y, w, h = bounds
-        text = kwargs.get("text")
-        runs = kwargs.get("runs")
-        text_frame = kwargs.get("text_frame")
-        paragraph = kwargs.get("paragraph")
-        click_action = kwargs.get("click_action")
-        hover_action = kwargs.get("hover_action")
-        properties = kwargs.get("properties")
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "type": shape_type,
@@ -150,20 +141,9 @@ class PresentationShapeMixin(PresentationProtocol):
             "w": w,
             "h": h,
         }
-        if text is not None:
-            payload["text"] = text
-        if runs is not None:
-            payload["runs"] = serialize_runs_for_payload(runs)
-        if text_frame is not None:
-            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
-        if paragraph is not None:
-            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
-        if click_action is not None:
-            payload["click_action"] = cast("dict[str, object]", click_action)
-        if hover_action is not None:
-            payload["hover_action"] = cast("dict[str, object]", hover_action)
-        if properties is not None:
-            payload["properties"] = properties
+        self._apply_shape_payload_options(
+            payload, cast("dict[str, object]", kwargs), include_text=True
+        )
         result = self.execute(ops.OP_ADD_SHAPE, payload)
         return int(cast("int", result.get("shape_id", -1)))
 

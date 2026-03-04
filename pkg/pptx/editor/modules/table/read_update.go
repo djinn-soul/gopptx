@@ -120,6 +120,10 @@ func UpdateTableFlagsInFrame(frame []byte, flags map[string]any) ([]byte, error)
 	return updatedFrame, nil
 }
 
+// UpdateTableCellTextInFrame modifies the text of a single table cell.
+// NOTE: This implementation replaces all existing paragraphs and runs within the cell
+// with a single paragraph containing the new text, while preserving cell-level
+// formatting properties like vertical alignment.
 func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) ([]byte, error) {
 	parsed, err := ParseTable(frame)
 	if err != nil {
@@ -134,9 +138,6 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 	if err := xml.EscapeText(&escaped, []byte(text)); err != nil {
 		return nil, fmt.Errorf("escape cell text: %w", err)
 	}
-	newTxBody := []byte(
-		`<a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr/><a:t>` + escaped.String() + `</a:t></a:r></a:p></a:txBody>`,
-	)
 
 	updatedFrame, err := MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
 		return MutateTableCells(rowContent, colIdx, colIdx, func(_ int, cellContent []byte) ([]byte, error) {
@@ -150,6 +151,27 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 			}
 			txEnd := txStart + txEndRel + len("</a:txBody>")
 
+			oldTxBody := cellContent[txStart:txEnd]
+
+			// Extract bodyPr and lstStyle to preserve cell-level formatting (like vertical alignment)
+			bodyPr := extractXMLElement(oldTxBody, []byte("<a:bodyPr"))
+			if len(bodyPr) == 0 {
+				bodyPr = []byte("<a:bodyPr/>")
+			}
+			lstStyle := extractXMLElement(oldTxBody, []byte("<a:lstStyle"))
+			if len(lstStyle) == 0 {
+				lstStyle = []byte("<a:lstStyle/>")
+			}
+
+			newTxBody := bytes.Join([][]byte{
+				[]byte("<a:txBody>"),
+				bodyPr,
+				lstStyle,
+				[]byte("<a:p><a:r><a:rPr/><a:t>"),
+				escaped.Bytes(),
+				[]byte("</a:t></a:r></a:p></a:txBody>"),
+			}, nil)
+
 			updated := make([]byte, 0, len(cellContent)-((txEnd-txStart)-len(newTxBody)))
 			updated = append(updated, cellContent[:txStart]...)
 			updated = append(updated, newTxBody...)
@@ -161,4 +183,31 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 		return nil, err
 	}
 	return updatedFrame, nil
+}
+
+func extractXMLElement(content []byte, tagOpen []byte) []byte {
+	start := bytes.Index(content, tagOpen)
+	if start == -1 {
+		return nil
+	}
+
+	// Check if it's self-closing: <tag ... />
+	tagEnd := bytes.Index(content[start:], []byte(">"))
+	if tagEnd == -1 {
+		return nil
+	}
+	if tagEnd > 0 && content[start+tagEnd-1] == '/' {
+		return content[start : start+tagEnd+1]
+	}
+
+	// Not self-closing, need to find the matching </tag>
+	// This is a simple scanner, assumes no nested same-name tags for bodyPr/lstStyle
+	tagName := bytes.TrimPrefix(tagOpen, []byte("<"))
+	closeTag := append([]byte("</"), append(tagName, []byte(">")...)...)
+	end := bytes.Index(content[start:], closeTag)
+	if end == -1 {
+		// Fallback to just the opening tag if no closing tag found (invalid XML but avoids panic)
+		return content[start : start+tagEnd+1]
+	}
+	return content[start : start+end+len(closeTag)]
 }

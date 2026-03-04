@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html"
 	"strings"
+
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 func SetTableStyleInFrame(frame []byte, styleGUID string) ([]byte, error) {
@@ -40,7 +41,7 @@ func SetTableStyleInFrame(frame []byte, styleGUID string) ([]byte, error) {
 		tblPrEnd += tblPrStart + len("</a:tblPr>")
 	}
 
-	newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, html.EscapeString(styleGUID))
+	newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, common.XMLEscape(styleGUID))
 	if tblPrSelfClosing {
 		openTag := string(tblPrOpenTag)
 		tagCloseIdx := strings.LastIndex(openTag, "/>")

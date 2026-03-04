@@ -3,6 +3,8 @@ package editor
 import (
 	"archive/zip"
 	"testing"
+
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
 func TestSaveZipMethodStoresNotesAndMedia(t *testing.T) {
@@ -18,8 +20,8 @@ func TestSaveZipMethodStoresNotesAndMedia(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		if got := saveZipMethod(tc.path); got != tc.want {
-			t.Fatalf("saveZipMethod(%q) = %d, want %d", tc.path, got, tc.want)
+		if got := editorslide.SaveZipMethod(tc.path); got != tc.want {
+			t.Fatalf("SaveZipMethod(%q) = %d, want %d", tc.path, got, tc.want)
 		}
 	}
 }

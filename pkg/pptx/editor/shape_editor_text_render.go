@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
 func replaceShapeNodes(
@@ -274,7 +275,7 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 	if raw < -360.0 || raw > 360.0 {
 		return 0, errors.New("text_frame.rotation must be between -360 and 360 degrees")
 	}
-	return int64(math.Round(raw * rotationDegreeToOOXML)), nil
+	return int64(math.Round(raw * editorslide.RotationDegreeToOOXML)), nil
 }
 
 func renderParagraphPropsXML(paragraph *common.Paragraph) (string, error) {
