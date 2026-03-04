@@ -139,9 +139,7 @@ class PresentationShapeMixin(PresentationProtocol):
             "w": w,
             "h": h,
         }
-        self._apply_shape_payload_options(
-            payload, kwargs, include_text=True
-        )
+        self._apply_shape_payload_options(payload, kwargs, include_text=True)
         result = self.execute(ops.OP_ADD_SHAPE, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -424,12 +422,13 @@ class PresentationShapeMixin(PresentationProtocol):
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None:
         """Update shape properties."""
+        updates_dict = dict(cast("dict[str, object]", updates))
         normalized_updates: dict[str, object] = {}
         self._apply_shape_payload_options(
-            normalized_updates, dict(cast("dict[str, object]", updates)), include_text=True
+            normalized_updates, updates_dict, include_text=True
         )
         # Copy remaining update fields not handled by the helper
-        for k, v in dict(cast("dict[str, object]", updates)).items():
+        for k, v in updates_dict.items():
             if k not in normalized_updates:
                 normalized_updates[k] = v
 

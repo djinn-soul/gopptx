@@ -39,7 +39,10 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 	for rIdx, row := range parsed.Rows {
 		for cIdx, cell := range row.Cells {
 			var textBuf bytes.Buffer
-			for _, p := range cell.TxBody.Paragraphs {
+			for i, p := range cell.TxBody.Paragraphs {
+				if i > 0 {
+					textBuf.WriteString("\n")
+				}
 				for _, r := range p.Runs {
 					textBuf.WriteString(r.Text)
 				}

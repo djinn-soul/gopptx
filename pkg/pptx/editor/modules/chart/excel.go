@@ -1,4 +1,4 @@
-package editor
+package chart
 
 import (
 	"archive/zip"
@@ -12,24 +12,21 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+type Kind int
+
+const (
+	KindCategory Kind = iota
+	KindScatter
+	KindBubble
+)
+
 const (
 	excelDataStartRow      = 2
 	scatterHeaderColFactor = 3
 	excelColumnBase        = 26
 )
 
-// generateExcelForChart creates a minimal .xlsx file content (as []byte)
-// suitable for a PowerPoint chart data source.
-//
-// It generates a single sheet "Sheet1" with:
-// - Header row: "Category", "Series 1"
-// - Data rows: category[i], value[i]
-//
-// Limitations:
-// - Single series only (for now)
-// - No styling beyond basics
-// - No shared strings optimization (inline strings for simplicity).
-func generateExcelForChart(categories []string, values []float64) ([]byte, error) {
+func GenerateExcelForChart(categories []string, values []float64) ([]byte, error) {
 	if len(categories) != len(values) {
 		return nil, fmt.Errorf("categories and values length mismatch: %d vs %d", len(categories), len(values))
 	}
@@ -40,12 +37,12 @@ func generateExcelForChart(categories []string, values []float64) ([]byte, error
 	)
 }
 
-func generateExcelForChartUpdate(kind chartKind, req common.ChartDataUpdate) ([]byte, error) {
+func GenerateExcelForChartUpdate(kind Kind, req common.ChartDataUpdate) ([]byte, error) {
 	switch kind {
-	case chartKindScatter:
+	case KindScatter:
 		headers, rows := buildScatterSheet(req.Series, false)
 		return generateExcelSheetBinary(headers, rows)
-	case chartKindBubble:
+	case KindBubble:
 		headers, rows := buildScatterSheet(req.Series, true)
 		return generateExcelSheetBinary(headers, rows)
 	default:
@@ -66,32 +63,22 @@ func generateExcelSheetBinary(headers []string, rows [][]string) ([]byte, error)
 	buf := new(bytes.Buffer)
 	zw := zip.NewWriter(buf)
 
-	// 1. [Content_Types].xml
 	if err := writeZipFile(zw, "[Content_Types].xml", ExcelContentTypesXML); err != nil {
 		return nil, err
 	}
-
-	// 2. _rels/.rels
 	if err := writeZipFile(zw, "_rels/.rels", ExcelPackageRelsXML); err != nil {
 		return nil, err
 	}
-
-	// 3. xl/workbook.xml
 	if err := writeZipFile(zw, "xl/workbook.xml", ExcelWorkbookXML); err != nil {
 		return nil, err
 	}
-
-	// 4. xl/_rels/workbook.xml.rels
 	if err := writeZipFile(zw, "xl/_rels/workbook.xml.rels", ExcelWorkbookRelsXML); err != nil {
 		return nil, err
 	}
-
-	// 5. xl/styles.xml (Minimal)
 	if err := writeZipFile(zw, "xl/styles.xml", ExcelStylesXML); err != nil {
 		return nil, err
 	}
 
-	// 6. xl/worksheets/sheet1.xml (The actual data)
 	sheetXML, err := generateSheetXML(headers, rows)
 	if err != nil {
 		return nil, err
@@ -103,7 +90,6 @@ func generateExcelSheetBinary(headers []string, rows [][]string) ([]byte, error)
 	if closeErr := zw.Close(); closeErr != nil {
 		return nil, closeErr
 	}
-
 	return buf.Bytes(), nil
 }
 
@@ -122,39 +108,39 @@ func generateSheetXML(headers []string, rows [][]string) (string, error) {
 	}
 
 	xmlRows := fmt.Sprintf(`<row r="1" spans="1:%d">`, len(headers))
-	var xmlRowsSb115 strings.Builder
+	var sbHeaders strings.Builder
 	for i, h := range headers {
-		cell := columnName(i + 1)
-		xmlRowsSb115.WriteString(
+		cell := ColumnName(i + 1)
+		sbHeaders.WriteString(
 			fmt.Sprintf(`<c r="%s1" t="inlineStr"><is><t>%s</t></is></c>`, cell, simpleXMLEscape(h)),
 		)
 	}
-	xmlRows += xmlRowsSb115.String()
+	xmlRows += sbHeaders.String()
 	xmlRows += `</row>`
 
-	var xmlRowsSb121 strings.Builder
+	var sbRows strings.Builder
 	for i, row := range rows {
 		rowNum := i + excelDataStartRow
-		xmlRowsSb121.WriteString(fmt.Sprintf(`<row r="%d" spans="1:%d">`, rowNum, len(headers)))
-		var xmlRowsSb124 strings.Builder
+		sbRows.WriteString(fmt.Sprintf(`<row r="%d" spans="1:%d">`, rowNum, len(headers)))
+		var sbCols strings.Builder
 		for col := range headers {
 			val := ""
 			if col < len(row) {
 				val = row[col]
 			}
-			cell := columnName(col + 1)
+			cell := ColumnName(col + 1)
 			if isNumberLiteral(val) {
-				xmlRowsSb124.WriteString(fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, cell, rowNum, val))
+				sbCols.WriteString(fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, cell, rowNum, val))
 			} else {
-				xmlRowsSb124.WriteString(
+				sbCols.WriteString(
 					fmt.Sprintf(`<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>`, cell, rowNum, simpleXMLEscape(val)),
 				)
 			}
 		}
-		xmlRowsSb121.WriteString(xmlRowsSb124.String())
-		xmlRowsSb121.WriteString(`</row>`)
+		sbRows.WriteString(sbCols.String())
+		sbRows.WriteString(`</row>`)
 	}
-	xmlRows += xmlRowsSb121.String()
+	xmlRows += sbRows.String()
 
 	return fmt.Sprintf(ExcelSheetTemplate, xmlRows), nil
 }
@@ -235,7 +221,7 @@ func scatterValueAt(values []float64, idx int) string {
 	return strconv.FormatFloat(values[idx], 'f', -1, 64)
 }
 
-func columnName(n int) string {
+func ColumnName(n int) string {
 	name := ""
 	for n > 0 {
 		n--
@@ -255,7 +241,6 @@ func isNumberLiteral(s string) bool {
 	return true
 }
 
-// ExcelContentTypesXML and related constants form a minimal valid Excel package.
 const ExcelContentTypesXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`
 

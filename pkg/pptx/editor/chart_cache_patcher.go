@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 )
 
 var (
@@ -85,7 +86,7 @@ func patchCategorySeries(
 		return "", fmt.Errorf("series %d categories: %w", seriesIdx, err)
 	}
 
-	valueCol := columnName(seriesIdx + firstSeriesValueColumnOffset)
+	valueCol := editormodchart.ColumnName(seriesIdx + firstSeriesValueColumnOffset)
 	out, err = replaceFieldContent(out, "val", sheetRange(valueCol, len(data.Values)), nil, data.Values)
 	if err != nil {
 		return "", fmt.Errorf("series %d values: %w", seriesIdx, err)
@@ -98,8 +99,8 @@ func patchScatterSeries(seriesIdx int, seriesXML string, data common.ChartSeries
 	if bubble {
 		baseCol = seriesIdx*bubbleColumnsPerSeries + 1
 	}
-	xCol := columnName(baseCol)
-	yCol := columnName(baseCol + 1)
+	xCol := editormodchart.ColumnName(baseCol)
+	yCol := editormodchart.ColumnName(baseCol + 1)
 
 	out, err := replaceFieldContent(seriesXML, "xVal", sheetRange(xCol, len(data.XValues)), nil, data.XValues)
 	if err != nil {
@@ -113,7 +114,7 @@ func patchScatterSeries(seriesIdx int, seriesXML string, data common.ChartSeries
 		return out, nil
 	}
 
-	sizeCol := columnName(baseCol + bubbleSizeColumnOffset)
+	sizeCol := editormodchart.ColumnName(baseCol + bubbleSizeColumnOffset)
 	out, err = replaceFieldContent(out, "bubbleSize", sheetRange(sizeCol, len(data.Sizes)), nil, data.Sizes)
 	if err != nil {
 		return "", fmt.Errorf("series %d bubble sizes: %w", seriesIdx, err)

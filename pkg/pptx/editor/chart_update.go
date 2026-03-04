@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 )
 
 type chartKind int
@@ -81,7 +82,7 @@ func (e *PresentationEditor) UpdateChartData(
 		return validateErr
 	}
 
-	workbook, err := generateExcelForChartUpdate(kind, req)
+	workbook, err := editormodchart.GenerateExcelForChartUpdate(chartKindToModuleKind(kind), req)
 	if err != nil {
 		return fmt.Errorf("generate excel: %w", err)
 	}
@@ -169,6 +170,17 @@ func detectChartKind(chartXML []byte) chartKind {
 		return chartKindScatter
 	default:
 		return chartKindCategory
+	}
+}
+
+func chartKindToModuleKind(kind chartKind) editormodchart.Kind {
+	switch kind {
+	case chartKindScatter:
+		return editormodchart.KindScatter
+	case chartKindBubble:
+		return editormodchart.KindBubble
+	default:
+		return editormodchart.KindCategory
 	}
 }
 

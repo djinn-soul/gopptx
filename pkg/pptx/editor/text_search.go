@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"html"
 	"regexp"
-	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -78,6 +77,12 @@ func (e *PresentationEditor) SearchShapes(query common.ShapeSearchQuery) ([]comm
 		return nil, errors.New("editor cannot be nil")
 	}
 
+	if !query.CaseSensitive {
+		query.NameContains = strings.ToLower(query.NameContains)
+		query.TypeEquals = strings.ToLower(query.TypeEquals)
+		query.TextContains = strings.ToLower(query.TextContains)
+	}
+
 	results := make([]common.ShapeSearchResult, 0)
 	for slideIndex := range e.slides {
 		shapes, err := e.GetShapes(slideIndex)
@@ -109,9 +114,6 @@ func shapeMatchesQuery(shape common.Shape, query common.ShapeSearchQuery) bool {
 		name = strings.ToLower(name)
 		typ = strings.ToLower(typ)
 		text = strings.ToLower(text)
-		qName = strings.ToLower(qName)
-		qType = strings.ToLower(qType)
-		qText = strings.ToLower(qText)
 	}
 
 	if qName != "" && !strings.Contains(name, qName) {
@@ -175,39 +177,16 @@ func (s *Slide) Placeholders() ([]Placeholder, error) {
 }
 
 func parsePlaceholdersFromSlideXML(content []byte) []Placeholder {
-	shapeMatches := shapeSPPattern.FindAll(content, -1)
-	result := make([]Placeholder, 0, len(shapeMatches))
-	for _, shape := range shapeMatches {
-		match := phPattern.FindSubmatch(shape)
-		if match == nil {
-			continue
+	parsed, _ := scanShapesWithOffsets(content, false)
+	var result []Placeholder
+	for _, s := range parsed {
+		if s.PhIndex != -1 {
+			result = append(result, Placeholder{
+				Index: s.PhIndex,
+				Type:  s.PhType,
+				Name:  s.Name,
+			})
 		}
-		ph := Placeholder{}
-		attrs := string(match[1])
-
-		if m := phIdxPattern.FindStringSubmatch(attrs); m != nil {
-			value := m[1]
-			if value == "" {
-				value = m[2]
-			}
-			val, _ := strconv.Atoi(value)
-			ph.Index = val
-		}
-		if m := phTypePattern.FindStringSubmatch(attrs); m != nil {
-			value := m[1]
-			if value == "" {
-				value = m[2]
-			}
-			ph.Type = value
-		}
-		if m := phNamePattern.FindSubmatch(shape); m != nil {
-			value := string(m[1])
-			if value == "" {
-				value = string(m[2])
-			}
-			ph.Name = value
-		}
-		result = append(result, ph)
 	}
 	return result
 }
