@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
 const (
@@ -117,7 +118,7 @@ func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error)
 	format := v.OptionalString(p, "format")
 
 	var opts *common.ShapeUpdate
-	if err := decodeOptionalPayloadValue(p, "options", &opts); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(p, "options", &opts); err != nil {
 		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
 
@@ -273,7 +274,7 @@ func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, err
 	}
 
 	var updates common.ShapeUpdate
-	if err := decodeOptionalPayloadValue(p, "updates", &updates); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(p, "updates", &updates); err != nil {
 		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
 
@@ -355,47 +356,47 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 
 func handleAddVideo(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	return handleMediaInsertCommand(e, payload, mediaInsertSpec{
-		metaKey:          "mime_type",
-		primaryPathKey:   "path",
-		primaryDataKey:   "data",
-		secondaryPathKey: "poster_path",
-		secondaryDataKey: "poster_data",
-		primaryMaxLen:    maxMediaBase64,
-		secondaryMaxLen:  maxMediaBase64,
-		primaryLabel:     "video",
-		secondaryLabel:   "poster",
-		insertBinary: func(
-			placement mediaPlacement,
+		MetaKey:          "mime_type",
+		PrimaryPathKey:   "path",
+		PrimaryDataKey:   "data",
+		SecondaryPathKey: "poster_path",
+		SecondaryDataKey: "poster_data",
+		PrimaryMaxLen:    maxMediaBase64,
+		SecondaryMaxLen:  maxMediaBase64,
+		PrimaryLabel:     "video",
+		SecondaryLabel:   "poster",
+		InsertBinary: func(
+			placement editorcommand.MediaPlacement,
 			mimeType string,
 			videoData []byte,
 			posterData []byte,
 		) (int, error) {
 			return e.AddVideo(
-				placement.slideIndex,
+				placement.SlideIndex,
 				videoData,
 				posterData,
 				mimeType,
-				placement.x,
-				placement.y,
-				placement.w,
-				placement.h,
+				placement.X,
+				placement.Y,
+				placement.W,
+				placement.H,
 			)
 		},
-		insertPath: func(
-			placement mediaPlacement,
+		InsertPath: func(
+			placement editorcommand.MediaPlacement,
 			mimeType string,
 			videoPath string,
 			posterPath string,
 		) (int, error) {
 			return e.AddVideoFromFile(
-				placement.slideIndex,
+				placement.SlideIndex,
 				videoPath,
 				posterPath,
 				mimeType,
-				placement.x,
-				placement.y,
-				placement.w,
-				placement.h,
+				placement.X,
+				placement.Y,
+				placement.W,
+				placement.H,
 			)
 		},
 	})
@@ -403,63 +404,230 @@ func handleAddVideo(e *PresentationEditor, payload json.RawMessage) (any, error)
 
 func handleAddOLEObject(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	return handleMediaInsertCommand(e, payload, mediaInsertSpec{
-		metaKey:          "prog_id",
-		primaryPathKey:   "path",
-		primaryDataKey:   "data",
-		secondaryPathKey: "icon_path",
-		secondaryDataKey: "icon_data",
-		primaryMaxLen:    maxEmbeddingBase64,
-		secondaryMaxLen:  maxEmbeddingBase64,
-		primaryLabel:     "object",
-		secondaryLabel:   "icon",
-		insertBinary: func(
-			placement mediaPlacement,
+		MetaKey:          "prog_id",
+		PrimaryPathKey:   "path",
+		PrimaryDataKey:   "data",
+		SecondaryPathKey: "icon_path",
+		SecondaryDataKey: "icon_data",
+		PrimaryMaxLen:    maxEmbeddingBase64,
+		SecondaryMaxLen:  maxEmbeddingBase64,
+		PrimaryLabel:     "object",
+		SecondaryLabel:   "icon",
+		InsertBinary: func(
+			placement editorcommand.MediaPlacement,
 			progID string,
 			objectData []byte,
 			iconData []byte,
 		) (int, error) {
 			return e.AddOLEObject(
-				placement.slideIndex,
+				placement.SlideIndex,
 				objectData,
 				iconData,
 				progID,
-				placement.x,
-				placement.y,
-				placement.w,
-				placement.h,
+				placement.X,
+				placement.Y,
+				placement.W,
+				placement.H,
 			)
 		},
-		insertPath: func(
-			placement mediaPlacement,
+		InsertPath: func(
+			placement editorcommand.MediaPlacement,
 			progID string,
 			objectPath string,
 			iconPath string,
 		) (int, error) {
 			return e.AddOLEObjectFromFile(
-				placement.slideIndex,
+				placement.SlideIndex,
 				objectPath,
 				iconPath,
 				progID,
-				placement.x,
-				placement.y,
-				placement.w,
-				placement.h,
+				placement.X,
+				placement.Y,
+				placement.W,
+				placement.H,
 			)
 		},
 	})
 }
 
-func decodeOptionalPayloadValue(payload map[string]any, key string, target any) error {
-	rawValue, ok := payload[key]
-	if !ok || rawValue == nil {
-		return nil
-	}
-	raw, err := json.Marshal(rawValue)
+type mediaInsertSpec = editorcommand.MediaInsertSpec
+
+func handleMediaInsertCommand(
+	e *PresentationEditor,
+	payload json.RawMessage,
+	spec mediaInsertSpec,
+) (any, error) {
+	p, err := ParseRawPayload(payload)
 	if err != nil {
-		return fmt.Errorf("invalid %s structure: %w", key, err)
+		return nil, err
 	}
-	if err := json.Unmarshal(raw, target); err != nil {
-		return fmt.Errorf("invalid %s payload: %w", key, err)
+
+	v := NewPayloadValidator()
+	placement, ok := parseMediaPlacement(e, p, v)
+	if !ok {
+		return nil, v.Error()
 	}
-	return nil
+
+	shapeID, err := editorcommand.ExecuteMediaInsert(p, placement, v.OptionalString, spec)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]int{"shape_id": shapeID}, nil
+}
+
+func parseMediaPlacement(
+	e *PresentationEditor,
+	payload map[string]any,
+	v *PayloadValidator,
+) (editorcommand.MediaPlacement, bool) {
+	slideIndex, ok := v.RequireInt(payload, "slide_index")
+	if !ok {
+		return editorcommand.MediaPlacement{}, false
+	}
+	x, ok := v.RequireFloat64(payload, "x")
+	if !ok {
+		return editorcommand.MediaPlacement{}, false
+	}
+	y, ok := v.RequireFloat64(payload, "y")
+	if !ok {
+		return editorcommand.MediaPlacement{}, false
+	}
+	w, ok := v.RequireFloat64(payload, "w")
+	if !ok {
+		return editorcommand.MediaPlacement{}, false
+	}
+	h, ok := v.RequireFloat64(payload, "h")
+	if !ok {
+		return editorcommand.MediaPlacement{}, false
+	}
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return editorcommand.MediaPlacement{}, false
+	}
+	return editorcommand.MediaPlacement{
+		SlideIndex: slideIndex,
+		X:          x,
+		Y:          y,
+		W:          w,
+		H:          h,
+	}, true
+}
+
+type addShapeRequest struct {
+	slideIndex  int
+	shapeType   string
+	x           float64
+	y           float64
+	w           float64
+	h           float64
+	text        string
+	textFrame   *common.TextFrame
+	paragraph   *common.Paragraph
+	clickAction *common.Hyperlink
+	hoverAction *common.Hyperlink
+	runs        []common.TextRun
+	properties  common.ShapeUpdate
+}
+
+func parseAddShapeRequest(
+	e *PresentationEditor,
+	payload map[string]any,
+	v *PayloadValidator,
+) (addShapeRequest, error) {
+	slideIndex, ok := requireSlideIndex(e, payload, v)
+	if !ok {
+		return addShapeRequest{}, v.Error()
+	}
+	shapeType, ok := v.RequireString(payload, "type")
+	if !ok {
+		return addShapeRequest{}, v.Error()
+	}
+	x, ok := v.RequireFloat64(payload, "x")
+	if !ok {
+		return addShapeRequest{}, v.Error()
+	}
+	y, ok := v.RequireFloat64(payload, "y")
+	if !ok {
+		return addShapeRequest{}, v.Error()
+	}
+	w, ok := v.RequireFloat64(payload, "w")
+	if !ok {
+		return addShapeRequest{}, v.Error()
+	}
+	h, ok := v.RequireFloat64(payload, "h")
+	if !ok {
+		return addShapeRequest{}, v.Error()
+	}
+
+	request := addShapeRequest{
+		slideIndex: slideIndex,
+		shapeType:  shapeType,
+		x:          x,
+		y:          y,
+		w:          w,
+		h:          h,
+		text:       v.OptionalString(payload, "text"),
+	}
+
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "text_frame", &request.textFrame); err != nil {
+		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "paragraph", &request.paragraph); err != nil {
+		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "click_action", &request.clickAction); err != nil {
+		return addShapeRequest{}, fmt.Errorf("invalid click_action: %w", err)
+	}
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "hover_action", &request.hoverAction); err != nil {
+		return addShapeRequest{}, fmt.Errorf("invalid hover_action: %w", err)
+	}
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "runs", &request.runs); err != nil {
+		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "properties", &request.properties); err != nil {
+		return addShapeRequest{}, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	return request, nil
+}
+
+func buildShapeUpdateForAdd(request addShapeRequest) (common.ShapeUpdate, bool) {
+	hasExplicitUpdates := request.text != "" ||
+		len(request.runs) > 0 ||
+		request.textFrame != nil ||
+		request.paragraph != nil ||
+		request.clickAction != nil ||
+		request.hoverAction != nil
+	hasProperties := hasAnyUpdate(request.properties)
+
+	if !hasExplicitUpdates && !hasProperties {
+		return common.ShapeUpdate{}, false
+	}
+
+	updates := request.properties
+	if request.text != "" {
+		updates.Text = &request.text
+	}
+	if len(request.runs) > 0 {
+		updates.Runs = &request.runs
+	}
+	if request.textFrame != nil {
+		updates.TextFrame = request.textFrame
+	}
+	if request.paragraph != nil {
+		updates.Paragraph = request.paragraph
+	}
+	if request.clickAction != nil {
+		updates.ClickAction = request.clickAction
+	}
+	if request.hoverAction != nil {
+		updates.HoverAction = request.hoverAction
+	}
+	return updates, true
+}
+
+func hasAnyUpdate(u common.ShapeUpdate) bool {
+	return u.Text != nil || u.Runs != nil || u.TextFrame != nil ||
+		u.Paragraph != nil || u.Fill != nil || u.Line != nil || u.Shadow != nil || u.Glow != nil || u.Blur != nil || u.SoftEdge != nil || u.Reflection != nil ||
+		u.ClickAction != nil || u.HoverAction != nil || u.X != nil ||
+		u.Y != nil || u.W != nil || u.H != nil || u.Rotation != nil ||
+		u.FlipH != nil || u.FlipV != nil || u.Crop != nil
 }

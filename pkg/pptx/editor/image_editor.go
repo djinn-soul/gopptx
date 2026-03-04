@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddImage adds a new image to the slide from a local file path with optional parameters.
@@ -62,7 +63,7 @@ func (e *PresentationEditor) addImageGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
 
 	imageXML := buildImageShapeXML(newID, relID, x, y, w, h, opts)

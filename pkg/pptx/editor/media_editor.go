@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 //nolint:gochecknoglobals // Reused escaper table avoids repeated allocations in hot XML-building paths.
@@ -100,7 +101,7 @@ func (e *PresentationEditor) addVideoGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
 	videoXML := buildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, x, y, w, h)
 	updatedContent, err := appendShapeXMLToSlide(content, videoXML)
@@ -178,7 +179,7 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
 	oleXML := buildOLEObjectShapeXML(newID, slideIndex, embedRelID, iconRelID, progID, x, y, w, h)
 	updatedContent, err := appendShapeXMLToSlide(content, oleXML)

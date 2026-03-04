@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddGroupShape adds a group shape to the target slide.
@@ -50,7 +52,7 @@ func (e *PresentationEditor) groupShapeContext(slideIndex int) (string, []byte, 
 }
 
 func nextGroupShapeID(content []byte, shapeNodes []parsedShape) (int, int64) {
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	lastShapeEnd := int64(-1)
 	for _, shape := range shapeNodes {
 		if shape.End > lastShapeEnd {

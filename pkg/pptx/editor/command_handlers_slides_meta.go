@@ -100,6 +100,10 @@ func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (an
 		Modified:       v.OptionalString(p, "modified"),
 		Category:       v.OptionalString(p, "category"),
 		ContentStatus:  v.OptionalString(p, "contentStatus"),
+		Identifier:     v.OptionalString(p, "identifier"),
+		Language:       v.OptionalString(p, "language"),
+		LastPrinted:    v.OptionalString(p, "lastPrinted"),
+		Version:        v.OptionalString(p, "version"),
 	}
 
 	if v.HasErrors() {

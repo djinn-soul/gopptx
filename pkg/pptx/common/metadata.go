@@ -84,6 +84,6 @@ type CoreProperties struct {
 	ContentStatus  string `json:"contentStatus"  xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties contentStatus,omitempty"` //nolint:lll // struct tags cannot be split
 	Identifier     string `json:"identifier"     xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties identifier,omitempty"`    //nolint:lll // struct tags cannot be split
 	Language       string `json:"language"       xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties language,omitempty"`      //nolint:lll // struct tags cannot be split
-	LastPrinted    string `json:"lastPrinted"    xml:"http://purl.org/dc/terms/ lastPrinted,omitempty"`
+	LastPrinted    string `json:"lastPrinted"    xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties lastPrinted,omitempty"`  //nolint:lll // struct tags cannot be split
 	Version        string `json:"version"        xml:"http://schemas.openxmlformats.org/package/2006/metadata/core-properties version,omitempty"` //nolint:lll // struct tags cannot be split
 }

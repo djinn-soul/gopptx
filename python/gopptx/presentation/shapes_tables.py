@@ -82,6 +82,38 @@ class PresentationShapeMixin(PresentationProtocol):
             return
         payload[data_key] = base64.b64encode(source).decode("ascii")
 
+    @staticmethod
+    def _apply_shape_payload_options(
+        payload: dict[str, object],
+        options: dict[str, object],
+        *,
+        include_text: bool,
+    ) -> None:
+        serializers = {
+            "runs": serialize_runs_for_payload,
+            "text_frame": serialize_text_frame_for_payload,
+            "paragraph": serialize_paragraph_for_payload,
+        }
+        keys = (
+            "text",
+            "runs",
+            "text_frame",
+            "paragraph",
+            "click_action",
+            "hover_action",
+            "properties",
+        )
+        for key in keys:
+            if key == "text" and not include_text:
+                continue
+            value = options.get(key)
+            if value is None:
+                continue
+            if key == "text" and not isinstance(value, str):
+                continue
+            serializer = serializers.get(key)
+            payload[key] = serializer(value) if serializer is not None else value
+
     def search_shapes(self, query: ShapeSearchQuery | str) -> list[ShapeSearchResult]:
         """Search for shapes matching a query."""
         if isinstance(query, str):
@@ -156,29 +188,11 @@ class PresentationShapeMixin(PresentationProtocol):
         }
         if text:
             payload["text"] = text
-        for key in (
-            "runs",
-            "text_frame",
-            "paragraph",
-            "click_action",
-            "hover_action",
-            "properties",
-        ):
-            if key in kwargs and kwargs[key] is not None:
-                value = cast("object", kwargs[key])
-                payload[key] = (
-                    serialize_runs_for_payload(value)
-                    if key == "runs"
-                    else (
-                        serialize_text_frame_for_payload(value)
-                        if key == "text_frame"
-                        else (
-                            serialize_paragraph_for_payload(value)
-                            if key == "paragraph"
-                            else value
-                        )
-                    )
-                )
+        self._apply_shape_payload_options(
+            payload,
+            cast("dict[str, object]", kwargs),
+            include_text=False,
+        )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -202,30 +216,11 @@ class PresentationShapeMixin(PresentationProtocol):
             "end_x": end_x,
             "end_y": end_y,
         }
-        for key in (
-            "text",
-            "runs",
-            "text_frame",
-            "paragraph",
-            "click_action",
-            "hover_action",
-            "properties",
-        ):
-            if key in kwargs and kwargs[key] is not None:
-                value = cast("object", kwargs[key])
-                payload[key] = (
-                    serialize_runs_for_payload(value)
-                    if key == "runs"
-                    else (
-                        serialize_text_frame_for_payload(value)
-                        if key == "text_frame"
-                        else (
-                            serialize_paragraph_for_payload(value)
-                            if key == "paragraph"
-                            else value
-                        )
-                    )
-                )
+        self._apply_shape_payload_options(
+            payload,
+            cast("dict[str, object]", kwargs),
+            include_text=True,
+        )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -272,27 +267,7 @@ class PresentationShapeMixin(PresentationProtocol):
             "close": close,
         }
         opt = options or {}
-        text = opt.get("text")
-        runs = opt.get("runs")
-        text_frame = opt.get("text_frame")
-        paragraph = opt.get("paragraph")
-        click_action = opt.get("click_action")
-        hover_action = opt.get("hover_action")
-        properties = opt.get("properties")
-        if isinstance(text, str):
-            payload["text"] = text
-        if runs is not None:
-            payload["runs"] = serialize_runs_for_payload(runs)
-        if text_frame is not None:
-            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
-        if paragraph is not None:
-            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
-        if click_action is not None:
-            payload["click_action"] = click_action
-        if hover_action is not None:
-            payload["hover_action"] = hover_action
-        if properties is not None:
-            payload["properties"] = properties
+        self._apply_shape_payload_options(payload, opt, include_text=True)
         result = self.execute(ops.OP_BUILD_FREEFORM, payload)
         return int(cast("int", result.get("shape_id", -1)))
 

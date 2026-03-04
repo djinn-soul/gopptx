@@ -6,6 +6,7 @@ import (
 	"math"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
 const minFreeformPointCount = 2
@@ -232,22 +233,22 @@ func parseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 		}
 		text = textValue
 	}
-	if err := decodeOptionalPayloadValue(payload, "runs", &runs); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "runs", &runs); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
-	if err := decodeOptionalPayloadValue(payload, "text_frame", &textFrame); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "text_frame", &textFrame); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
-	if err := decodeOptionalPayloadValue(payload, "paragraph", &paragraph); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "paragraph", &paragraph); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
-	if err := decodeOptionalPayloadValue(payload, "click_action", &clickAction); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "click_action", &clickAction); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
-	if err := decodeOptionalPayloadValue(payload, "hover_action", &hoverAction); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "hover_action", &hoverAction); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
-	if err := decodeOptionalPayloadValue(payload, "properties", &properties); err != nil {
+	if err := editorcommand.DecodeOptionalPayloadValue(payload, "properties", &properties); err != nil {
 		return common.ShapeUpdate{}, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
 

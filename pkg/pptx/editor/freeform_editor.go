@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 const minFreeformPoints = 2
@@ -38,7 +40,7 @@ func (e *PresentationEditor) AddFreeformShape(
 		return 0, fmt.Errorf("parse shapes: %w", err)
 	}
 
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	lastShapeEnd := int64(-1)
 	for _, shape := range shapeNodes {
 		if shape.End > lastShapeEnd {

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -174,20 +173,13 @@ func nextSlideID(slides []common.EditorSlideRef) int64 {
 }
 
 func nextRelationshipNumber(rels []common.EditorRelationship) int {
-	maxNum := 0
-	for _, rel := range rels {
-		num, ok := parseRelationshipNumber(rel.ID)
-		if ok && num > maxNum {
-			maxNum = num
-		}
-	}
-	return maxNum + 1
+	return common.NextRelationshipNumber(rels)
 }
 
 func nextSlidePartNumber(slides []common.EditorSlideRef) int {
 	maxNum := 0
 	for _, slide := range slides {
-		num, ok := parseSlidePartNumber(slide.Part)
+		num, ok := common.ParseSlidePartNumber(slide.Part)
 		if ok && num > maxNum {
 			maxNum = num
 		}
@@ -196,27 +188,11 @@ func nextSlidePartNumber(slides []common.EditorSlideRef) int {
 }
 
 func parseRelationshipNumber(id string) (int, bool) {
-	trimmed := strings.TrimSpace(id)
-	if !strings.HasPrefix(trimmed, "rId") {
-		return 0, false
-	}
-	num, err := strconv.Atoi(strings.TrimPrefix(trimmed, "rId"))
-	if err != nil || num <= 0 {
-		return 0, false
-	}
-	return num, true
+	return common.ParseRelationshipNumber(id)
 }
 
 func parseSlidePartNumber(partPath string) (int, bool) {
-	base := path.Base(strings.TrimSpace(partPath))
-	if !strings.HasPrefix(base, "slide") || !strings.HasSuffix(base, ".xml") {
-		return 0, false
-	}
-	num, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(base, "slide"), ".xml"))
-	if err != nil || num <= 0 {
-		return 0, false
-	}
-	return num, true
+	return common.ParseSlidePartNumber(partPath)
 }
 
 func (e *PresentationEditor) populateSlideTitlesConcurrently() {
