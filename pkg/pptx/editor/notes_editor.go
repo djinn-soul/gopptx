@@ -10,6 +10,8 @@ import (
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
@@ -171,4 +173,54 @@ func extractAllText(content []byte) string {
 		}
 	}
 	return strings.TrimSpace(sb.String())
+}
+
+// UpdateNotesMaster configures the global notes master for the presentation.
+//
+//nolint:gocognit // Notes-master update coordinates validation, media registration, and rel wiring in one flow.
+func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) error {
+	if e == nil {
+		return errors.New("editor cannot be nil")
+	}
+	if master != nil {
+		if err := master.Validate(); err != nil {
+			return err
+		}
+	}
+	editorslide.EnsureNotesMasterThemePart(e.parts.Has, e.parts.Get, e.parts.Set)
+	if !e.parts.Has("ppt/notesMasters/notesMaster1.xml") {
+		e.recalculateNextRelIDNum()
+		e.nonSlideRels, e.nextRelIDNum = editorslide.EnsureNotesInfrastructure(
+			e.parts.Has,
+			e.parts.Set,
+			e.nonSlideRels,
+			e.nextRelIDNum,
+			notesMasterThemeIndex,
+		)
+	}
+	return editorslide.UpdateNotesMasterParts(
+		master,
+		e.parts.Set,
+		notesMasterThemeIndex,
+		e.RegisterImage,
+	)
+}
+
+func (e *PresentationEditor) ensureNotesInfrastructure() {
+	editorslide.EnsureNotesMasterThemePart(e.parts.Has, e.parts.Get, e.parts.Set)
+	if e.parts.Has("ppt/notesMasters/notesMaster1.xml") {
+		return
+	}
+	e.recalculateNextRelIDNum()
+	e.nonSlideRels, e.nextRelIDNum = editorslide.EnsureNotesInfrastructure(
+		e.parts.Has,
+		e.parts.Set,
+		e.nonSlideRels,
+		e.nextRelIDNum,
+		notesMasterThemeIndex,
+	)
+}
+
+func (e *PresentationEditor) ensureNotesMasterThemePart() {
+	editorslide.EnsureNotesMasterThemePart(e.parts.Has, e.parts.Get, e.parts.Set)
 }

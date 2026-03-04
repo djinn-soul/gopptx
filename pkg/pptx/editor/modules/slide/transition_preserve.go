@@ -1,4 +1,4 @@
-package editor
+package slide
 
 import (
 	"errors"
@@ -7,43 +7,43 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
-type rawSlideTransition struct {
-	xml string
+type RawSlideTransition struct {
+	XMLValue string
 }
 
-func (t rawSlideTransition) Validate() error {
-	xml := strings.TrimSpace(t.xml)
+func (t RawSlideTransition) Validate() error {
+	xml := strings.TrimSpace(t.XMLValue)
 	if !strings.HasPrefix(xml, "<p:transition") || !strings.HasSuffix(xml, "</p:transition>") {
 		return errors.New("transition XML must be wrapped in <p:transition>...</p:transition>")
 	}
 	return nil
 }
 
-func (t rawSlideTransition) XML() string {
-	return strings.TrimSpace(t.xml)
+func (t RawSlideTransition) XML() string {
+	return strings.TrimSpace(t.XMLValue)
 }
 
-func preserveExistingSlideTransition(
-	parts *PartStore,
+func PreserveExistingSlideTransition(
+	getPart GetPartFn,
 	slidePart string,
 	slide elements.SlideContent,
 ) elements.SlideContent {
 	if slide.Transition != nil {
 		return slide
 	}
-	content, ok := parts.Get(slidePart)
+	content, ok := getPart(slidePart)
 	if !ok {
 		return slide
 	}
 
-	transitionXML := extractSlideTransitionXML(string(content))
+	transitionXML := ExtractSlideTransitionXML(string(content))
 	if transitionXML == "" {
 		return slide
 	}
-	return slide.WithTransition(rawSlideTransition{xml: transitionXML})
+	return slide.WithTransition(RawSlideTransition{XMLValue: transitionXML})
 }
 
-func extractSlideTransitionXML(slideXML string) string {
+func ExtractSlideTransitionXML(slideXML string) string {
 	start := strings.Index(slideXML, "<p:transition")
 	if start < 0 {
 		return ""

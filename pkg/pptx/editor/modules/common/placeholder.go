@@ -1,4 +1,4 @@
-package editor
+package common
 
 import (
 	"fmt"
@@ -8,19 +8,14 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-const placeholderBoundsLen = 4
+const PlaceholderBoundsLen = 4
 
-func requirePlaceholderIndex(payload map[string]any, v *PayloadValidator) (int, error) {
-	if val, ok := v.OptionalInt(payload, "index"); ok {
-		return val, nil
-	}
-	if val, ok := v.OptionalInt(payload, "ph_index"); ok {
-		return val, nil
-	}
-	return 0, NewBridgeError(ErrCodeMissingField, "missing index or ph_index")
+type PlaceholderShapeRef struct {
+	Index int
+	Type  string
 }
 
-func parsePlaceholderTextStyle(payload map[string]any) *shapes.PlaceholderOverrideOptions {
+func ParsePlaceholderTextStyle(payload map[string]any) *shapes.PlaceholderOverrideOptions {
 	styleMap, ok := payload["text_style"].(map[string]any)
 	if !ok {
 		return nil
@@ -29,7 +24,7 @@ func parsePlaceholderTextStyle(payload map[string]any) *shapes.PlaceholderOverri
 	styleOpts := &shapes.PlaceholderOverrideOptions{
 		TextStyle: &shapes.PlaceholderTextStyle{},
 	}
-	if sizePt, ok := parseFloat(styleMap["size_pt"]); ok {
+	if sizePt, ok := ParseFloat64(styleMap["size_pt"]); ok {
 		s := int(sizePt)
 		styleOpts.TextStyle.SizePt = &s
 	}
@@ -48,46 +43,26 @@ func parsePlaceholderTextStyle(payload map[string]any) *shapes.PlaceholderOverri
 	return styleOpts
 }
 
-func parsePlaceholderImageBounds(payload map[string]any) (float64, float64, float64, float64, error) {
+func ParsePlaceholderImageBounds(payload map[string]any) (float64, float64, float64, float64, error) {
 	boundsRaw, ok := payload["bounds"].([]any)
 	if !ok {
 		return 0, 0, 0, 0, nil
 	}
-	if len(boundsRaw) != placeholderBoundsLen {
-		return 0, 0, 0, 0, NewBridgeError(
-			ErrCodeInvalidPayload,
-			"bounds must be an array of 4 numbers [x, y, cx, cy]",
-		)
+	if len(boundsRaw) != PlaceholderBoundsLen {
+		return 0, 0, 0, 0, fmt.Errorf("bounds must be an array of 4 numbers [x, y, cx, cy]")
 	}
-	vals := make([]float64, placeholderBoundsLen)
+	vals := make([]float64, PlaceholderBoundsLen)
 	for i, b := range boundsRaw {
-		v, ok := parseFloat(b)
+		v, ok := ParseFloat64(b)
 		if !ok {
-			return 0, 0, 0, 0, NewBridgeError(
-				ErrCodeInvalidPayload,
-				fmt.Sprintf("bounds[%d] must be a number", i),
-			)
+			return 0, 0, 0, 0, fmt.Errorf("bounds[%d] must be a number", i)
 		}
 		vals[i] = v
 	}
 	return vals[0], vals[1], vals[2], vals[3], nil
 }
 
-func buildPlaceholderImageRef(
-	e *PresentationEditor,
-	slideIndex int,
-	imagePath string,
-	payload map[string]any,
-) (*pptxxml.ImageRef, error) {
-	x, y, cx, cy, err := parsePlaceholderImageBounds(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	relID, err := e.getOrCreateImageRelID(slideIndex, imagePath)
-	if err != nil {
-		return nil, err
-	}
+func BuildPlaceholderImageRef(relID, imagePath string, x, y, cx, cy float64) *pptxxml.ImageRef {
 	return &pptxxml.ImageRef{
 		RelID: relID,
 		Name:  imagePath,
@@ -95,23 +70,19 @@ func buildPlaceholderImageRef(
 		Y:     int64(styling.Points(y)),
 		CX:    int64(styling.Points(cx)),
 		CY:    int64(styling.Points(cy)),
-	}, nil
+	}
 }
 
-func findPlaceholderShapeIndex(
-	shapesList []parsedShape,
-	phIndex int,
-	phType string,
-) (int, int) {
+func FindPlaceholderShapeIndex(shapesList []PlaceholderShapeRef, phIndex int, phType string) (int, int) {
 	shapeIndex := -1
 	matches := 0
 	for i, s := range shapesList {
-		if s.PhIndex != phIndex {
+		if s.Index != phIndex {
 			continue
 		}
 		if phType != "" {
 			targetType := pptxxml.NormalizePlaceholderType(phType)
-			actualType := pptxxml.NormalizePlaceholderType(s.PhType)
+			actualType := pptxxml.NormalizePlaceholderType(s.Type)
 			if targetType != actualType {
 				continue
 			}
@@ -122,14 +93,14 @@ func findPlaceholderShapeIndex(
 	return shapeIndex, matches
 }
 
-func resolvePlaceholderType(phType string, shape parsedShape) string {
+func ResolvePlaceholderType(phType, detectedType string) string {
 	if phType != "" {
 		return phType
 	}
-	return shape.PhType
+	return detectedType
 }
 
-func buildPlaceholderOverrideSpec(
+func BuildPlaceholderOverrideSpec(
 	phIndex int,
 	resolvedType string,
 	text string,

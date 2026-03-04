@@ -72,6 +72,18 @@ func FindTableFrame(slideContent []byte, shapeID int) (int, int, []byte, error) 
 		return 0, 0, nil, fmt.Errorf("shape %d is not a graphicFrame", shapeID)
 	}
 
+	// Verify that no other shape start tag exists between frameStart and the ID.
+	lastAnyTag := bytes.LastIndex(slideContent[:idIdx], []byte("<p:"))
+	if lastAnyTag > frameStart {
+		tagNameEnd := bytes.IndexAny(slideContent[lastAnyTag:], " >/")
+		if tagNameEnd != -1 {
+			actualTag := string(slideContent[lastAnyTag : lastAnyTag+tagNameEnd])
+			if actualTag != "<p:graphicFrame" && actualTag != "<p:nvGraphicFramePr" && actualTag != "<p:cNvPr" {
+				return 0, 0, nil, fmt.Errorf("shape %d is a %s, not a graphicFrame", shapeID, actualTag[3:])
+			}
+		}
+	}
+
 	relEnd := bytes.Index(slideContent[idIdx:], []byte("</p:graphicFrame>"))
 	if relEnd == -1 {
 		return 0, 0, nil, errors.New("invalid graphicFrame xml")
@@ -89,7 +101,10 @@ func ReplaceTableFrame(slideContent []byte, frameStart, frameEnd int, frame []by
 }
 
 func ExtractTableXML(frame []byte) ([]byte, error) {
-	tblStart := bytes.Index(frame, []byte("<a:tbl"))
+	tblStart := bytes.Index(frame, []byte("<a:tbl "))
+	if tblStart == -1 {
+		tblStart = bytes.Index(frame, []byte("<a:tbl>"))
+	}
 	if tblStart == -1 {
 		return nil, errors.New("graphicFrame does not contain a table")
 	}
@@ -117,7 +132,13 @@ func TableDimensions(parsed *TableXML) (int, int) {
 	rows := len(parsed.Rows)
 	cols := len(parsed.Grid.Cols)
 	if cols == 0 && rows > 0 {
-		cols = len(parsed.Rows[0].Cells)
+		for _, cell := range parsed.Rows[0].Cells {
+			span := cell.GridSpan
+			if span <= 0 {
+				span = 1
+			}
+			cols += span
+		}
 	}
 	return rows, cols
 }

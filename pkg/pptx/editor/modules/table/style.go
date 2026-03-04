@@ -44,11 +44,11 @@ func SetTableStyleInFrame(frame []byte, styleGUID string) ([]byte, error) {
 	newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, common.XMLEscape(styleGUID))
 	if tblPrSelfClosing {
 		openTag := string(tblPrOpenTag)
-		tagCloseIdx := strings.LastIndex(openTag, "/>")
-		if tagCloseIdx == -1 {
+		trimmed := strings.TrimRight(openTag, " \t\r\n")
+		if !strings.HasSuffix(trimmed, "/>") {
 			return nil, errors.New("invalid tblPr element")
 		}
-		expandedTblPr := openTag[:tagCloseIdx] + ">" + newStyleTag + `</a:tblPr>`
+		expandedTblPr := trimmed[:len(trimmed)-2] + ">" + newStyleTag + `</a:tblPr>`
 		updatedFrame := make([]byte, 0, len(frame)+len(expandedTblPr))
 		updatedFrame = append(updatedFrame, frame[:tblPrStart]...)
 		updatedFrame = append(updatedFrame, []byte(expandedTblPr)...)

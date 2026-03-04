@@ -1,8 +1,6 @@
 package editorcommon
 
 import (
-	"bytes"
-	"encoding/xml"
 	"fmt"
 	"strings"
 )
@@ -60,11 +58,18 @@ type EditorSlideRef struct {
 	Title   string
 }
 
+// xmlEscaper provides fast, basic XML escaping.
+var xmlEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+	"'", "&apos;",
+)
+
 // XMLEscape provides basic XML attribute escaping.
 func XMLEscape(value string) string {
-	var b bytes.Buffer
-	_ = xml.EscapeText(&b, []byte(value))
-	return b.String()
+	return xmlEscaper.Replace(value)
 }
 
 // CanonicalPartPath cleans a path to use forward slashes and removes leading slash.

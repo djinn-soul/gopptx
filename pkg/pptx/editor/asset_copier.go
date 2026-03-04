@@ -5,6 +5,7 @@ import (
 	"path"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
 // deepCloneSlideAssets walks through the relationships of a source slide and copies
@@ -164,7 +165,7 @@ func (e *PresentationEditor) copyNotesSlideAsset(
 
 	newNotesPath := fmt.Sprintf("ppt/notesSlides/notesSlide%d.xml", e.nextNotesNum)
 	e.nextNotesNum++
-	e.parts.Set(newNotesPath, cloneBytes(data))
+	e.parts.Set(newNotesPath, editorslide.CloneBytes(data))
 
 	srcNotesRelsPath := common.SlideRelsPartName(srcPath)
 	if relsData, relsOK := srcEditor.parts.Get(srcNotesRelsPath); relsOK {

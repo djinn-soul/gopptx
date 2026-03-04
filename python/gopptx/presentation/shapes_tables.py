@@ -96,9 +96,7 @@ class PresentationShapeMixin(PresentationProtocol):
         }
         keys = (
             "text",
-            "runs",
-            "text_frame",
-            "paragraph",
+            *serializers.keys(),
             "click_action",
             "hover_action",
             "properties",
@@ -142,7 +140,7 @@ class PresentationShapeMixin(PresentationProtocol):
             "h": h,
         }
         self._apply_shape_payload_options(
-            payload, cast("dict[str, object]", kwargs), include_text=True
+            payload, kwargs, include_text=True
         )
         result = self.execute(ops.OP_ADD_SHAPE, payload)
         return int(cast("int", result.get("shape_id", -1)))
@@ -170,7 +168,7 @@ class PresentationShapeMixin(PresentationProtocol):
             payload["text"] = text
         self._apply_shape_payload_options(
             payload,
-            cast("dict[str, object]", kwargs),
+            kwargs,
             include_text=False,
         )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
@@ -198,7 +196,7 @@ class PresentationShapeMixin(PresentationProtocol):
         }
         self._apply_shape_payload_options(
             payload,
-            cast("dict[str, object]", kwargs),
+            kwargs,
             include_text=True,
         )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
@@ -426,18 +424,15 @@ class PresentationShapeMixin(PresentationProtocol):
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None:
         """Update shape properties."""
-        normalized_updates = dict(cast("dict[str, object]", updates))
-        runs = normalized_updates.get("runs")
-        if runs is not None:
-            normalized_updates["runs"] = serialize_runs_for_payload(runs)
-        text_frame = normalized_updates.get("text_frame")
-        if text_frame is not None:
-            normalized_updates["text_frame"] = serialize_text_frame_for_payload(
-                text_frame
-            )
-        paragraph = normalized_updates.get("paragraph")
-        if paragraph is not None:
-            normalized_updates["paragraph"] = serialize_paragraph_for_payload(paragraph)
+        normalized_updates: dict[str, object] = {}
+        self._apply_shape_payload_options(
+            normalized_updates, dict(cast("dict[str, object]", updates)), include_text=True
+        )
+        # Copy remaining update fields not handled by the helper
+        for k, v in dict(cast("dict[str, object]", updates)).items():
+            if k not in normalized_updates:
+                normalized_updates[k] = v
+
         self.execute(
             ops.OP_UPDATE_SHAPE,
             {

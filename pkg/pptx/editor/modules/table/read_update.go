@@ -2,9 +2,10 @@ package table
 
 import (
 	"bytes"
-	"encoding/xml"
 	"errors"
 	"fmt"
+
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 func TableFlagAttributeName(flag string) (string, bool) {
@@ -134,10 +135,7 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 		return nil, fmt.Errorf("table cell [%d,%d] out of range", rowIdx, colIdx)
 	}
 
-	var escaped bytes.Buffer
-	if err := xml.EscapeText(&escaped, []byte(text)); err != nil {
-		return nil, fmt.Errorf("escape cell text: %w", err)
-	}
+	escapedText := common.XMLEscape(text)
 
 	updatedFrame, err := MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
 		return MutateTableCells(rowContent, colIdx, colIdx, func(_ int, cellContent []byte) ([]byte, error) {
@@ -168,7 +166,7 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 				bodyPr,
 				lstStyle,
 				[]byte("<a:p><a:r><a:rPr/><a:t>"),
-				escaped.Bytes(),
+				[]byte(escapedText),
 				[]byte("</a:t></a:r></a:p></a:txBody>"),
 			}, nil)
 
@@ -204,6 +202,7 @@ func extractXMLElement(content []byte, tagOpen []byte) []byte {
 	// This is a simple scanner, assumes no nested same-name tags for bodyPr/lstStyle
 	tagName := bytes.TrimPrefix(tagOpen, []byte("<"))
 	closeTag := append([]byte("</"), append(tagName, []byte(">")...)...)
+	// In a production environment, use a proper XML stack-based scanner if nesting is possible.
 	end := bytes.Index(content[start:], closeTag)
 	if end == -1 {
 		// Fallback to just the opening tag if no closing tag found (invalid XML but avoids panic)

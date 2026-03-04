@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	editormodcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/common"
 )
 
 func handleListPlaceholders(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -72,7 +73,7 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	// For targeting, python-pptx typically relies on idx alone.
 	// But we can allow optional ph_type if provided.
 	phType := v.OptionalString(p, "ph_type")
-	styleOpts := parsePlaceholderTextStyle(p)
+	styleOpts := editormodcommon.ParsePlaceholderTextStyle(p)
 	var imageRef *pptxxml.ImageRef
 	if hasImagePath {
 		imageRef, err = buildPlaceholderImageRef(e, slideIndex, imagePath, p)
@@ -93,7 +94,14 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 		return nil, fmt.Errorf("parse shapes: %w", err)
 	}
 
-	shapeIndex, matches := findPlaceholderShapeIndex(shapesList, phIndex, phType)
+	shapeRefs := make([]editormodcommon.PlaceholderShapeRef, len(shapesList))
+	for i, s := range shapesList {
+		shapeRefs[i] = editormodcommon.PlaceholderShapeRef{
+			Index: s.PhIndex,
+			Type:  s.PhType,
+		}
+	}
+	shapeIndex, matches := editormodcommon.FindPlaceholderShapeIndex(shapeRefs, phIndex, phType)
 
 	if matches > 1 && phType == "" {
 		return nil, NewBridgeError(
@@ -111,8 +119,8 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	}
 
 	// Prepare the override spec for internal renderer
-	resolvedType := resolvePlaceholderType(phType, shapesList[shapeIndex])
-	phSpec := buildPlaceholderOverrideSpec(phIndex, resolvedType, text, imageRef, styleOpts)
+	resolvedType := editormodcommon.ResolvePlaceholderType(phType, shapesList[shapeIndex].PhType)
+	phSpec := editormodcommon.BuildPlaceholderOverrideSpec(phIndex, resolvedType, text, imageRef, styleOpts)
 
 	newShapeXML := pptxxml.PlaceholderShape(phSpec, shapesList[shapeIndex].ID)
 
@@ -125,4 +133,40 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 
 	e.parts.Set(partPath, newContent)
 	return map[string]bool{"updated": true}, nil
+}
+
+func requirePlaceholderIndex(payload map[string]any, v *PayloadValidator) (int, error) {
+	if val, ok := v.OptionalInt(payload, "index"); ok {
+		return val, nil
+	}
+	if val, ok := v.OptionalInt(payload, "ph_index"); ok {
+		return val, nil
+	}
+	return 0, NewBridgeError(ErrCodeMissingField, "missing index or ph_index")
+}
+
+func parsePlaceholderImageBounds(payload map[string]any) (float64, float64, float64, float64, error) {
+	x, y, cx, cy, err := editormodcommon.ParsePlaceholderImageBounds(payload)
+	if err != nil {
+		return 0, 0, 0, 0, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	return x, y, cx, cy, nil
+}
+
+func buildPlaceholderImageRef(
+	e *PresentationEditor,
+	slideIndex int,
+	imagePath string,
+	payload map[string]any,
+) (*pptxxml.ImageRef, error) {
+	x, y, cx, cy, err := parsePlaceholderImageBounds(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	relID, err := e.getOrCreateImageRelID(slideIndex, imagePath)
+	if err != nil {
+		return nil, err
+	}
+	return editormodcommon.BuildPlaceholderImageRef(relID, imagePath, x, y, cx, cy), nil
 }

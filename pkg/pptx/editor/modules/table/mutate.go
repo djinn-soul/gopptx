@@ -120,6 +120,19 @@ func MutateTableElements(
 			break
 		}
 		elementStart := cursor + rel
+
+		// Ensure exact tag match by checking next character
+		nextCharIdx := elementStart + len(openTag)
+		if nextCharIdx < len(content) {
+			nextChar := content[nextCharIdx]
+			if nextChar != ' ' && nextChar != '>' && nextChar != '/' {
+				// False match, skip and continue
+				out.Write(content[cursor:nextCharIdx])
+				cursor = nextCharIdx
+				continue
+			}
+		}
+
 		elementEndRel := bytes.Index(content[elementStart:], closeTag)
 		if elementEndRel == -1 {
 			return nil, fmt.Errorf("invalid %s xml at %s %d", string(openTag), label, index)

@@ -1,4 +1,4 @@
-package editor
+package media
 
 import (
 	"bytes"
@@ -11,14 +11,23 @@ import (
 
 const oleShapeIDStride = 10000
 
-func validateMediaSlideIndex(e *PresentationEditor, slideIndex int) error {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
+//nolint:gochecknoglobals // Reused escaper table avoids repeated allocations in hot XML-building paths.
+var xmlAttrEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+	"'", "&apos;",
+)
+
+func ValidateMediaSlideIndex(slideIndex, slideCount int) error {
+	if slideIndex < 0 || slideIndex >= slideCount {
 		return errors.New("slide index out of range")
 	}
 	return nil
 }
 
-func registerPartFromDataOrPath(
+func RegisterPartFromDataOrPath(
 	data []byte,
 	filePath string,
 	missingErr string,
@@ -34,47 +43,56 @@ func registerPartFromDataOrPath(
 	return "", errors.New(missingErr)
 }
 
-func registerVideoPart(e *PresentationEditor, videoData []byte, videoPath string, mimeType string) (string, error) {
+func RegisterVideoPart(
+	videoData []byte,
+	videoPath string,
+	mimeType string,
+	registerMedia func([]byte, string) (string, error),
+) (string, error) {
 	videoExt := "mp4"
 	if mimeType == "video/quicktime" {
 		videoExt = "mov"
 	}
-	return registerPartFromDataOrPath(
+	return RegisterPartFromDataOrPath(
 		videoData,
 		videoPath,
 		"video data or path is required",
 		func(data []byte) (string, error) {
-			return e.RegisterMedia(data, videoExt)
+			return registerMedia(data, videoExt)
 		},
 		func(filePath string) (string, error) {
 			data, err := os.ReadFile(filePath)
 			if err != nil {
 				return "", err
 			}
-			return e.RegisterMedia(data, strings.TrimPrefix(path.Ext(filePath), "."))
+			return registerMedia(data, strings.TrimPrefix(path.Ext(filePath), "."))
 		},
 	)
 }
 
-func registerEmbeddingPart(e *PresentationEditor, objectData []byte, objectPath string) (string, error) {
-	return registerPartFromDataOrPath(
+func RegisterEmbeddingPart(
+	objectData []byte,
+	objectPath string,
+	registerEmbedding func([]byte, string) (string, error),
+) (string, error) {
+	return RegisterPartFromDataOrPath(
 		objectData,
 		objectPath,
 		"object data or path is required",
 		func(data []byte) (string, error) {
-			return e.RegisterEmbedding(data, "bin")
+			return registerEmbedding(data, "bin")
 		},
 		func(filePath string) (string, error) {
 			data, err := os.ReadFile(filePath)
 			if err != nil {
 				return "", err
 			}
-			return e.RegisterEmbedding(data, strings.TrimPrefix(path.Ext(filePath), "."))
+			return registerEmbedding(data, strings.TrimPrefix(path.Ext(filePath), "."))
 		},
 	)
 }
 
-func appendShapeXMLToSlide(content []byte, shapeXML string) ([]byte, error) {
+func AppendShapeXMLToSlide(content []byte, shapeXML string) ([]byte, error) {
 	endTree := []byte("</p:spTree>")
 	idx := bytes.LastIndex(content, endTree)
 	if idx == -1 {
@@ -88,7 +106,7 @@ func appendShapeXMLToSlide(content []byte, shapeXML string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func buildVideoShapeXML(
+func BuildVideoShapeXML(
 	newID int,
 	videoRelID string,
 	mediaRelID string,
@@ -132,7 +150,7 @@ func buildVideoShapeXML(
 </p:pic>`, newID, name, videoRelID, mediaRelID, posterRelID, int64(x), int64(y), int64(w), int64(h))
 }
 
-func buildOLEObjectShapeXML(
+func BuildOLEObjectShapeXML(
 	newID int,
 	slideIndex int,
 	embedRelID string,
@@ -193,4 +211,8 @@ func buildOLEObjectShapeXML(
     </a:graphicData>
   </a:graphic>
 </p:graphicFrame>`, newID, name, int64(x), int64(y), int64(w), int64(h), 1024+(slideIndex*oleShapeIDStride)+newID, embedRelID, safeProgID, embedRelID, safeProgID, iconRelID, int64(x), int64(y), int64(w), int64(h))
+}
+
+func escapeXMLAttr(value string) string {
+	return xmlAttrEscaper.Replace(value)
 }

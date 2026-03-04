@@ -1,44 +1,66 @@
-package editor
+package command
 
 import (
 	"encoding/json"
-	"errors"
 	"maps"
 )
 
-type batchCommand struct {
+type BatchCommand struct {
 	Op        string          `json:"op"`
 	Payload   json.RawMessage `json:"payload"`
 	RequestID string          `json:"request_id,omitempty"`
 }
 
-type batchPayload struct {
-	Commands    []batchCommand `json:"commands"`
+type BatchPayload struct {
+	Commands    []BatchCommand `json:"commands"`
 	StopOnError bool           `json:"stop_on_error,omitempty"`
 }
 
-type batchResult struct {
-	OK        bool         `json:"ok"`
-	Op        string       `json:"op"`
-	RequestID string       `json:"request_id,omitempty"`
-	Result    any          `json:"result,omitempty"`
-	Error     *ErrorDetail `json:"error,omitempty"`
+type BatchResultError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
 }
 
-func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var p batchPayload
+type BatchResult struct {
+	OK        bool              `json:"ok"`
+	Op        string            `json:"op"`
+	RequestID string            `json:"request_id,omitempty"`
+	Result    any               `json:"result,omitempty"`
+	Error     *BatchResultError `json:"error,omitempty"`
+}
+
+type BridgeErrorView struct {
+	Code    string
+	Message string
+	Details any
+}
+
+type BatchOptions struct {
+	BatchOp       string
+	UnknownOpCode string
+	OpFailedCode  string
+}
+
+func HandleBatchExecute(
+	payload json.RawMessage,
+	resolve func(op string) (func(json.RawMessage) (any, error), bool),
+	asBridgeError func(error) (BridgeErrorView, bool),
+	options BatchOptions,
+) (map[string]any, error) {
+	var p BatchPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+		return nil, err
 	}
 
-	results := make([]batchResult, 0, len(p.Commands))
+	results := make([]BatchResult, 0, len(p.Commands))
 	for i, cmd := range p.Commands {
-		if cmd.Op == OpBatchExecute {
-			results = append(results, batchResult{
+		if cmd.Op == options.BatchOp {
+			results = append(results, BatchResult{
 				OK:        false,
 				Op:        cmd.Op,
 				RequestID: cmd.RequestID,
-				Error: &ErrorDetail{
+				Error: &BatchResultError{
 					Code:    "INVALID_BATCH_ITEM",
 					Message: "nested batch_execute is not supported",
 					Details: map[string]int{"index": i},
@@ -50,14 +72,14 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 			continue
 		}
 
-		handler, ok := commandHandlerFor(cmd.Op)
+		handler, ok := resolve(cmd.Op)
 		if !ok {
-			results = append(results, batchResult{
+			results = append(results, BatchResult{
 				OK:        false,
 				Op:        cmd.Op,
 				RequestID: cmd.RequestID,
-				Error: &ErrorDetail{
-					Code:    ErrCodeUnknownOp,
+				Error: &BatchResultError{
+					Code:    options.UnknownOpCode,
 					Message: "Operation " + `"` + cmd.Op + `"` + " not recognized",
 					Details: map[string]int{"index": i},
 				},
@@ -68,21 +90,19 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 			continue
 		}
 
-		result, err := handler(e, cmd.Payload)
+		result, err := handler(cmd.Payload)
 		if err != nil {
-			// Check if error is a BridgeError with specific code
-			var bridgeErr *BridgeError
-			code := ErrCodeOpFailed
+			code := options.OpFailedCode
 			details := any(map[string]any{"index": i})
-			if AsBridgeError(err, &bridgeErr) {
-				code = bridgeErr.Code
-				details = withBatchIndex(i, bridgeErr.Details)
+			if be, ok := asBridgeError(err); ok {
+				code = be.Code
+				details = withBatchIndex(i, be.Details)
 			}
-			results = append(results, batchResult{
+			results = append(results, BatchResult{
 				OK:        false,
 				Op:        cmd.Op,
 				RequestID: cmd.RequestID,
-				Error: &ErrorDetail{
+				Error: &BatchResultError{
 					Code:    code,
 					Message: err.Error(),
 					Details: details,
@@ -94,7 +114,7 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 			continue
 		}
 
-		results = append(results, batchResult{
+		results = append(results, BatchResult{
 			OK:        true,
 			Op:        cmd.Op,
 			RequestID: cmd.RequestID,
@@ -116,14 +136,4 @@ func withBatchIndex(index int, details any) map[string]any {
 	}
 	out["cause"] = details
 	return out
-}
-
-// AsBridgeError checks if an error is a BridgeError and extracts it.
-func AsBridgeError(err error, target **BridgeError) bool {
-	be := &BridgeError{}
-	if errors.As(err, &be) {
-		*target = be
-		return true
-	}
-	return false
 }
