@@ -3,18 +3,15 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING
 
 from ..ops import OP_ADD_VBA
-
-if TYPE_CHECKING:
-    from .base import PresentationBase
+from .helpers import PresentationProtocol
 
 
-class PresentationVBAMixin:
+class PresentationVBAMixin(PresentationProtocol):
     """Mixin providing VBA macro manipulation methods for Presentation."""
 
-    def add_vba_project(self: PresentationBase, data: bytes) -> None:
+    def add_vba_project(self, data: bytes) -> None:
         """Add a VBA project binary blob to the presentation.
 
         Args:

@@ -1,6 +1,8 @@
 package editor
 
 import (
+	"regexp"
+	"strings"
 	"testing"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -93,6 +95,41 @@ func TestSplitTableCellSupportsLargeSpans(t *testing.T) {
 		if c["is_spanned"].(bool) || c["is_merge_origin"].(bool) {
 			t.Fatalf("expected [0,%d] unmerged after split", col)
 		}
+	}
+}
+
+func TestSetTableStyleSupportsSelfClosingTblPr(t *testing.T) {
+	e := newTableEditorFixture()
+	shapeID, err := e.AddTable(0, 2, 2, 0, 0, 0, 0)
+	if err != nil {
+		t.Fatalf("AddTable failed: %v", err)
+	}
+
+	partPath := e.slides[0].Part
+	slideXML, ok := e.parts.Get(partPath)
+	if !ok {
+		t.Fatal("expected slide content")
+	}
+	tblPrPattern := regexp.MustCompile(`(?s)<a:tblPr\b([^>]*)>.*?</a:tblPr>`)
+	updatedSlideXML := tblPrPattern.ReplaceAllString(string(slideXML), `<a:tblPr$1/>`)
+	if updatedSlideXML == string(slideXML) {
+		t.Fatal("expected table XML fixture replacement to apply")
+	}
+	e.parts.Set(partPath, []byte(updatedSlideXML))
+
+	styleGUID := "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
+	if err := e.SetTableStyle(0, shapeID, styleGUID); err != nil {
+		t.Fatalf("SetTableStyle failed for self-closing tblPr: %v", err)
+	}
+	slideAfter, ok := e.parts.Get(partPath)
+	if !ok {
+		t.Fatal("expected updated slide content")
+	}
+	if !strings.Contains(
+		string(slideAfter),
+		`<a:tblPr firstRow="1" bandRow="1"><a:tableStyleId>{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}</a:tableStyleId></a:tblPr>`,
+	) {
+		t.Fatalf("expected style id inserted into expanded tblPr, got: %s", string(slideAfter))
 	}
 }
 

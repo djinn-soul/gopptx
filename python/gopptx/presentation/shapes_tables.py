@@ -16,6 +16,8 @@ from ..utils import normalize_table_index
 from .helpers import PresentationProtocol
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from ..schemas import (
         ImageMetadata,
         Shape,
@@ -37,10 +39,7 @@ class PresentationNotesMixin(PresentationProtocol):
 
     def get_notes_payload(self, slide_index: int) -> dict[str, object]:
         """Fetch raw notes payload from bridge with null-safe fallback."""
-        result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
-        if not isinstance(result, dict):
-            return {"text": "", "notes_slide": None}
-        return result
+        return self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
 
     def get_notes(self, slide_index: int) -> str:
         """Get speaker notes for a slide."""
@@ -82,6 +81,34 @@ class PresentationShapeMixin(PresentationProtocol):
             return
         payload[data_key] = base64.b64encode(source).decode("ascii")
 
+    @staticmethod
+    def _apply_shape_payload_options(
+        payload: dict[str, object],
+        options: Mapping[str, object],
+        *,
+        include_text: bool,
+    ) -> None:
+        serializers = {
+            "runs": serialize_runs_for_payload,
+            "text_frame": serialize_text_frame_for_payload,
+            "paragraph": serialize_paragraph_for_payload,
+        }
+        keys = (
+            "text",
+            *serializers.keys(),
+            "click_action",
+            "hover_action",
+            "properties",
+        )
+        for key in keys:
+            value = options.get(key)
+            if value is None:
+                continue
+            if key == "text" and (not include_text or not isinstance(value, str)):
+                continue
+            serializer = serializers.get(key)
+            payload[key] = serializer(value) if serializer is not None else value
+
     def search_shapes(self, query: ShapeSearchQuery | str) -> list[ShapeSearchResult]:
         """Search for shapes matching a query."""
         if isinstance(query, str):
@@ -103,13 +130,6 @@ class PresentationShapeMixin(PresentationProtocol):
     ) -> int:
         """Add a shape to a slide."""
         x, y, w, h = bounds
-        text = kwargs.get("text")
-        runs = kwargs.get("runs")
-        text_frame = kwargs.get("text_frame")
-        paragraph = kwargs.get("paragraph")
-        click_action = kwargs.get("click_action")
-        hover_action = kwargs.get("hover_action")
-        properties = kwargs.get("properties")
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "type": shape_type,
@@ -118,20 +138,7 @@ class PresentationShapeMixin(PresentationProtocol):
             "w": w,
             "h": h,
         }
-        if text is not None:
-            payload["text"] = text
-        if runs is not None:
-            payload["runs"] = serialize_runs_for_payload(runs)
-        if text_frame is not None:
-            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
-        if paragraph is not None:
-            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
-        if click_action is not None:
-            payload["click_action"] = cast("dict[str, object]", click_action)
-        if hover_action is not None:
-            payload["hover_action"] = cast("dict[str, object]", hover_action)
-        if properties is not None:
-            payload["properties"] = properties
+        self._apply_shape_payload_options(payload, kwargs, include_text=True)
         result = self.execute(ops.OP_ADD_SHAPE, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -156,29 +163,11 @@ class PresentationShapeMixin(PresentationProtocol):
         }
         if text:
             payload["text"] = text
-        for key in (
-            "runs",
-            "text_frame",
-            "paragraph",
-            "click_action",
-            "hover_action",
-            "properties",
-        ):
-            if key in kwargs and kwargs[key] is not None:
-                value = cast("object", kwargs[key])
-                payload[key] = (
-                    serialize_runs_for_payload(value)
-                    if key == "runs"
-                    else (
-                        serialize_text_frame_for_payload(value)
-                        if key == "text_frame"
-                        else (
-                            serialize_paragraph_for_payload(value)
-                            if key == "paragraph"
-                            else value
-                        )
-                    )
-                )
+        self._apply_shape_payload_options(
+            payload,
+            kwargs,
+            include_text=False,
+        )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -202,30 +191,11 @@ class PresentationShapeMixin(PresentationProtocol):
             "end_x": end_x,
             "end_y": end_y,
         }
-        for key in (
-            "text",
-            "runs",
-            "text_frame",
-            "paragraph",
-            "click_action",
-            "hover_action",
-            "properties",
-        ):
-            if key in kwargs and kwargs[key] is not None:
-                value = cast("object", kwargs[key])
-                payload[key] = (
-                    serialize_runs_for_payload(value)
-                    if key == "runs"
-                    else (
-                        serialize_text_frame_for_payload(value)
-                        if key == "text_frame"
-                        else (
-                            serialize_paragraph_for_payload(value)
-                            if key == "paragraph"
-                            else value
-                        )
-                    )
-                )
+        self._apply_shape_payload_options(
+            payload,
+            kwargs,
+            include_text=True,
+        )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -272,27 +242,7 @@ class PresentationShapeMixin(PresentationProtocol):
             "close": close,
         }
         opt = options or {}
-        text = opt.get("text")
-        runs = opt.get("runs")
-        text_frame = opt.get("text_frame")
-        paragraph = opt.get("paragraph")
-        click_action = opt.get("click_action")
-        hover_action = opt.get("hover_action")
-        properties = opt.get("properties")
-        if isinstance(text, str):
-            payload["text"] = text
-        if runs is not None:
-            payload["runs"] = serialize_runs_for_payload(runs)
-        if text_frame is not None:
-            payload["text_frame"] = serialize_text_frame_for_payload(text_frame)
-        if paragraph is not None:
-            payload["paragraph"] = serialize_paragraph_for_payload(paragraph)
-        if click_action is not None:
-            payload["click_action"] = click_action
-        if hover_action is not None:
-            payload["hover_action"] = hover_action
-        if properties is not None:
-            payload["properties"] = properties
+        self._apply_shape_payload_options(payload, opt, include_text=True)
         result = self.execute(ops.OP_BUILD_FREEFORM, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
@@ -387,10 +337,11 @@ class PresentationShapeMixin(PresentationProtocol):
         if isinstance(mime_type, str) and mime_type:
             payload["mime_type"] = mime_type
 
-        if poster_frame:
+        if isinstance(poster_frame, (str, bytes, os.PathLike)):
+            poster_source = cast("str | bytes | os.PathLike[str]", poster_frame)
             self._set_source_payload(
                 payload,
-                poster_frame,
+                poster_source,
                 path_key="poster_path",
                 data_key="poster_data",
             )
@@ -417,10 +368,11 @@ class PresentationShapeMixin(PresentationProtocol):
         if isinstance(prog_id, str) and prog_id:
             payload["prog_id"] = prog_id
 
-        if icon:
+        if isinstance(icon, (str, bytes, os.PathLike)):
+            icon_source = cast("str | bytes | os.PathLike[str]", icon)
             self._set_source_payload(
                 payload,
-                icon,
+                icon_source,
                 path_key="icon_path",
                 data_key="icon_data",
             )
@@ -471,18 +423,16 @@ class PresentationShapeMixin(PresentationProtocol):
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None:
         """Update shape properties."""
-        normalized_updates = dict(cast("dict[str, object]", updates))
-        runs = normalized_updates.get("runs")
-        if runs is not None:
-            normalized_updates["runs"] = serialize_runs_for_payload(runs)
-        text_frame = normalized_updates.get("text_frame")
-        if text_frame is not None:
-            normalized_updates["text_frame"] = serialize_text_frame_for_payload(
-                text_frame
-            )
-        paragraph = normalized_updates.get("paragraph")
-        if paragraph is not None:
-            normalized_updates["paragraph"] = serialize_paragraph_for_payload(paragraph)
+        updates_dict = dict(cast("dict[str, object]", updates))
+        normalized_updates: dict[str, object] = {}
+        self._apply_shape_payload_options(
+            normalized_updates, updates_dict, include_text=True
+        )
+        # Copy remaining update fields not handled by the helper
+        for k, v in updates_dict.items():
+            if k not in normalized_updates:
+                normalized_updates[k] = v
+
         self.execute(
             ops.OP_UPDATE_SHAPE,
             {

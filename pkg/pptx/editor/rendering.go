@@ -8,9 +8,9 @@ import (
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
@@ -149,39 +149,13 @@ func (e *PresentationEditor) renderSlideImageRef(
 	index int,
 	slideNumber int,
 ) (pptxxml.ImageRef, string, error) {
-	partPath, imgErr := e.registerEditorImage(img.Path, img.Data, img.Format)
-	if imgErr != nil {
-		if errors.Is(imgErr, errImagePayloadEmpty) {
-			return pptxxml.ImageRef{}, "", fmt.Errorf("slide %d image %d has no data or path", slideNumber, index+1)
-		}
-		return pptxxml.ImageRef{}, "", fmt.Errorf("read image %d: %w", index+1, imgErr)
-	}
-
-	relID := fmt.Sprintf("rId%d", index+firstImageRelationshipID)
-	ref := pptxxml.ImageRef{
-		RelID:        relID,
-		Name:         fmt.Sprintf("Picture %d", index+1),
-		X:            img.X.Emu(),
-		Y:            img.Y.Emu(),
-		CX:           img.CX.Emu(),
-		CY:           img.CY.Emu(),
-		Rotation:     int64(img.Rotation * rotationDegreeToOOXML),
-		FlipH:        img.FlipH,
-		FlipV:        img.FlipV,
-		Shadow:       img.Shadow,
-		Reflection:   img.Reflection,
-		AltText:      img.AltText,
-		IsDecorative: img.IsDecorative,
-	}
-	if img.Crop != (shapes.ImageCrop{}) {
-		ref.Crop = &pptxxml.ImageCropRef{
-			Left:   int64(img.Crop.Left * cropFractionToOOXML),
-			Right:  int64(img.Crop.Right * cropFractionToOOXML),
-			Top:    int64(img.Crop.Top * cropFractionToOOXML),
-			Bottom: int64(img.Crop.Bottom * cropFractionToOOXML),
-		}
-	}
-	return ref, "../media/" + path.Base(partPath), nil
+	return editorslide.RenderSlideImageRef(
+		img,
+		index,
+		slideNumber,
+		firstImageRelationshipID,
+		e.registerEditorImage,
+	)
 }
 
 func (e *PresentationEditor) renderSlideNotesTarget(
@@ -197,7 +171,7 @@ func (e *PresentationEditor) renderSlideNotesTarget(
 	e.ensureNotesInfrastructure()
 	slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNumber)
 	notesPath := e.ensureSlideNotesPart(slidePath)
-	e.parts.Set(notesPath, []byte(pptxxml.NotesSlide(editorNotesBody(slide))))
+	e.parts.Set(notesPath, []byte(pptxxml.NotesSlide(editorslide.EditorNotesBody(slide))))
 
 	notesRelsPath := common.SlideRelsPartName(notesPath)
 	e.parts.Set(notesRelsPath, []byte(pptxxml.NotesSlideRelationships(slideNumber)))
@@ -213,16 +187,6 @@ func (e *PresentationEditor) ensureSlideNotesPart(slidePath string) string {
 	e.nextNotesNum++
 	e.notesInventory[slidePath] = notesPath
 	return notesPath
-}
-
-func editorNotesBody(slide elements.SlideContent) []elements.Paragraph {
-	if len(slide.NotesBody) > 0 {
-		return slide.NotesBody
-	}
-
-	p := elements.NewParagraph()
-	p.Runs = append(p.Runs, elements.NewRun(slide.Notes))
-	return []elements.Paragraph{p}
 }
 
 func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxxml.TableSpec, error) {
@@ -252,13 +216,28 @@ func renderEditorPlaceholderSpecs(
 	var imageTargets []string
 	var chartRels []pptxxml.ChartRel
 	currentRID := startRID
-	placeholders, err := lookupSlidePlaceholders(e, slidePart)
+	placeholders, err := editorslide.LookupSlidePlaceholders(
+		slidePart,
+		e.parts.Get,
+		func(content []byte) []editorslide.PlaceholderMeta {
+			parsed := parsePlaceholdersFromSlideXML(content)
+			out := make([]editorslide.PlaceholderMeta, 0, len(parsed))
+			for _, ph := range parsed {
+				out = append(out, editorslide.PlaceholderMeta{
+					Name:  ph.Name,
+					Type:  ph.Type,
+					Index: ph.Index,
+				})
+			}
+			return out
+		},
+	)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	for _, override := range slide.PlaceholderOverrides {
-		targetType, targetIndex, err := resolveEditorPlaceholderTarget(override, placeholders)
+		targetType, targetIndex, err := editorslide.ResolvePlaceholderTarget(override, placeholders)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -269,11 +248,11 @@ func renderEditorPlaceholderSpecs(
 		}
 
 		if override.Override != nil {
-			spec.X = mapEditorOptionalLength(override.Override.X)
-			spec.Y = mapEditorOptionalLength(override.Override.Y)
-			spec.CX = mapEditorOptionalLength(override.Override.CX)
-			spec.CY = mapEditorOptionalLength(override.Override.CY)
-			spec.TextStyle = mapEditorPlaceholderTextStyle(override.Override.TextStyle)
+			spec.X = editorslide.MapOptionalLength(override.Override.X)
+			spec.Y = editorslide.MapOptionalLength(override.Override.Y)
+			spec.CX = editorslide.MapOptionalLength(override.Override.CX)
+			spec.CY = editorslide.MapOptionalLength(override.Override.CY)
+			spec.TextStyle = editorslide.MapPlaceholderTextStyle(override.Override.TextStyle)
 		}
 
 		// Handle image placeholder
@@ -325,145 +304,25 @@ func renderEditorPlaceholderSpecs(
 	return specs, imageTargets, chartRels, nil
 }
 
-var errImagePayloadEmpty = errors.New("image has no data or path")
-
 func (e *PresentationEditor) registerEditorImage(pathValue string, data []byte, format string) (string, error) {
-	switch {
-	case pathValue != "" && len(data) == 0:
-		return e.registerImageFromPath(pathValue, format)
-	case len(data) > 0:
-		return e.RegisterImage(data, format)
-	default:
-		return "", errImagePayloadEmpty
-	}
+	return editorslide.RegisterEditorImage(pathValue, data, format, e.registerImageFromPath, e.RegisterImage)
 }
 
 func (e *PresentationEditor) renderBackgroundImageTarget(
 	background *elements.SlideBackground,
 	currentImageCount int,
 ) (string, string, error) {
-	if background == nil || background.Type != elements.SlideBackgroundPicture || background.PictureFill == nil {
-		return "", "", nil
-	}
-
-	partPath, err := e.registerEditorImage(
-		background.PictureFill.Path,
-		background.PictureFill.Data,
-		background.PictureFill.Format,
+	return editorslide.RenderBackgroundImageTarget(
+		background,
+		currentImageCount,
+		firstImageRelationshipID,
+		e.registerEditorImage,
 	)
-	if err != nil {
-		if errors.Is(err, errImagePayloadEmpty) {
-			return "", "", nil
-		}
-		return "", "", fmt.Errorf("read background image: %w", err)
-	}
-
-	backgroundRID := fmt.Sprintf("rId%d", currentImageCount+firstImageRelationshipID)
-	return backgroundRID, "../media/" + path.Base(partPath), nil
 }
 
 func (e *PresentationEditor) renderPlaceholderImageRef(
 	override shapes.PlaceholderContent,
 	ridIndex int,
 ) (*pptxxml.ImageRef, string, error) {
-	if override.Image == nil {
-		return nil, "", nil
-	}
-
-	partPath, err := e.registerEditorImage(override.Image.Path, override.Image.Data, override.Image.Format)
-	if err != nil {
-		if errors.Is(err, errImagePayloadEmpty) {
-			return nil, "", nil
-		}
-		return nil, "", fmt.Errorf("placeholder image %d: %w", override.Index, err)
-	}
-
-	imageRef := &pptxxml.ImageRef{
-		RelID: fmt.Sprintf("rId%d", ridIndex),
-		Name:  "Placeholder Picture",
-		X:     override.Image.X.Emu(),
-		Y:     override.Image.Y.Emu(),
-		CX:    override.Image.CX.Emu(),
-		CY:    override.Image.CY.Emu(),
-	}
-	return imageRef, "../media/" + path.Base(partPath), nil
-}
-
-func mapEditorOptionalLength(l *styling.Length) *int64 {
-	if l == nil {
-		return nil
-	}
-	val := l.Emu()
-	return &val
-}
-
-func mapEditorPlaceholderTextStyle(ts *shapes.PlaceholderTextStyle) *pptxxml.PlaceholderTextStyleSpec {
-	if ts == nil {
-		return nil
-	}
-	return &pptxxml.PlaceholderTextStyleSpec{
-		SizePt:    ts.SizePt,
-		Color:     ts.Color,
-		Bold:      ts.Bold,
-		Italic:    ts.Italic,
-		Underline: ts.Underline,
-		Align:     ts.Align,
-		Font:      ts.Font,
-	}
-}
-
-func lookupSlidePlaceholders(e *PresentationEditor, slidePart string) ([]Placeholder, error) {
-	if strings.TrimSpace(slidePart) == "" {
-		return nil, nil
-	}
-	content, ok := e.parts.Get(slidePart)
-	if !ok {
-		return nil, fmt.Errorf("slide part %q missing for placeholder resolution", slidePart)
-	}
-	return parsePlaceholdersFromSlideXML(content), nil
-}
-
-func resolveEditorPlaceholderTarget(
-	override shapes.PlaceholderContent,
-	placeholders []Placeholder,
-) (string, int, error) {
-	targetType := strings.TrimSpace(override.Type)
-	targetIndex := override.Index
-	target := override.Target
-	if target == nil {
-		return targetType, targetIndex, nil
-	}
-
-	if t := strings.TrimSpace(target.Type); t != "" {
-		return t, target.Index, nil
-	}
-
-	name := strings.TrimSpace(target.Name)
-	if name == "" {
-		return targetType, targetIndex, nil
-	}
-
-	matches := make([]Placeholder, 0, 1)
-	for _, ph := range placeholders {
-		if strings.EqualFold(strings.TrimSpace(ph.Name), name) {
-			matches = append(matches, ph)
-		}
-	}
-
-	switch len(matches) {
-	case 1:
-		return matches[0].Type, matches[0].Index, nil
-	case 0:
-		return "", 0, fmt.Errorf("placeholder name %q not found", name)
-	default:
-		return "", 0, fmt.Errorf("placeholder name %q is ambiguous (%d matches)", name, len(matches))
-	}
-}
-
-func editorEnsureSlideRelsExistPS(ps *PartStore, slidePart string) error {
-	relsPath := common.SlideRelsPartName(slidePart)
-	if ps.Has(relsPath) {
-		return nil
-	}
-	return fmt.Errorf("missing slide relationships part %q", relsPath)
+	return editorslide.RenderPlaceholderImageRef(override, ridIndex, e.registerEditorImage)
 }

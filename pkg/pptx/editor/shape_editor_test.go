@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 func TestParseSlideShapes(t *testing.T) {
@@ -644,6 +645,39 @@ func TestReplaceShapeStyleRemovesOldStyleNodesAndKeepsOrdering(t *testing.T) {
 	}
 	if idxFill >= idxLine || idxLine >= idxGeom {
 		t.Fatalf("unexpected ordering after replace: %s", out)
+	}
+}
+
+func TestReplaceShapeStyleSelectivePreservesSchemeFillWhenFillNotUpdated(t *testing.T) {
+	xmlIn := []byte(
+		`<p:sp><p:spPr><a:xfrm/><a:solidFill><a:schemeClr val="accent1"/></a:solidFill>` +
+			`<a:ln w="12700"><a:solidFill><a:srgbClr val="222222"/></a:solidFill></a:ln>` +
+			`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:sp>`,
+	)
+	width := 25400
+	lineColor := "445566"
+	got, err := replaceShapeStyleSelective(
+		xmlIn,
+		nil,
+		&common.ShapeLine{Color: &lineColor, WidthEmu: &width},
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		false,
+		true,
+		false,
+	)
+	if err != nil {
+		t.Fatalf("replaceShapeStyleSelective failed: %v", err)
+	}
+	out := string(got)
+	if !strings.Contains(out, `<a:schemeClr val="accent1"/>`) {
+		t.Fatalf("expected scheme fill to be preserved, got: %s", out)
+	}
+	if !strings.Contains(out, `<a:ln w="25400"><a:solidFill><a:srgbClr val="445566"/></a:solidFill></a:ln>`) {
+		t.Fatalf("expected updated line to be present, got: %s", out)
 	}
 }
 
@@ -1327,7 +1361,7 @@ func TestMaxObjectIDIncludesGraphicFrame(t *testing.T) {
   </p:cSld>
 </p:sld>`)
 
-	got := maxObjectID(xmlContent)
+	got := editorshape.MaxObjectID(xmlContent, cNvPrIDPattern, cNvPrSubmatchSize)
 	if got != 9 {
 		t.Fatalf("maxObjectID() = %d, want 9", got)
 	}

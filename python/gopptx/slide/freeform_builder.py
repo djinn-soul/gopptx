@@ -31,6 +31,7 @@ class FreeformBuilder:
         scale: tuple[float, float] | float = 1.0,
     ) -> None:
         """Initialize builder state for one slide."""
+        super().__init__()
         self._committer = committer
         self._slide_index = slide_index
         if isinstance(scale, tuple):

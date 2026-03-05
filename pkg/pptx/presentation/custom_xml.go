@@ -12,6 +12,15 @@ import (
 
 var customXMLNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9._-]*$`)
 
+//nolint:gochecknoglobals // reusable immutable replacer
+var customXMLEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	"\"", "&quot;",
+	"'", "&apos;",
+)
+
 func writeCustomXMLParts(pw *pptxxml.PackageWriter, customXML []common.CustomXMLPart) error {
 	for i, part := range customXML {
 		var itemXML string
@@ -93,12 +102,5 @@ func generateCustomXMLItem(part common.CustomXMLPart) (string, error) {
 }
 
 func escapeCustomXML(value string) string {
-	replacer := strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		`"`, "&quot;",
-		"'", "&apos;",
-	)
-	return replacer.Replace(value)
+	return customXMLEscaper.Replace(value)
 }
