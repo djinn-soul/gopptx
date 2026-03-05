@@ -261,7 +261,10 @@ func (e *PresentationEditor) registerClonedMaster(newMaster string) error {
 		Target: common.MakeRelativePath(common.PresentationXMLPath, newMaster),
 	})
 
-	updatedPresentationXML, err := rewritePresentationSlideMasterList([]byte(e.presentationXML), newMasterRelID)
+	updatedPresentationXML, err := editorslide.RewritePresentationSlideMasterList(
+		[]byte(e.presentationXML),
+		newMasterRelID,
+	)
 	if err != nil {
 		return err
 	}

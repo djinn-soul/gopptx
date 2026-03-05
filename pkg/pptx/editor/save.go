@@ -142,7 +142,7 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
 	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
 
-	presentationRelsXML, err := renderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
+	presentationRelsXML, err := editorslide.RenderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (e *PresentationEditor) writeContentTypesPart(
 	filteredCommentPaths := editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/comments/comment"))
 
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
-	contentTypesXML, err := rewriteContentTypes(
+	contentTypesXML, err := editorslide.RewriteContentTypes(
 		contentTypesData,
 		e.slides,
 		mediaPaths,
@@ -232,7 +232,7 @@ func (e *PresentationEditor) writeOptionalPresentationParts(
 	vbaProject *vba.VBAProject,
 ) {
 	if hasSections {
-		out["ppt/sectionList.xml"] = []byte(buildSectionListXML(e.sections))
+		out["ppt/sectionList.xml"] = []byte(editorslide.BuildSectionListXML(e.sections))
 	}
 
 	if hasNotesMaster {
@@ -369,7 +369,7 @@ func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]b
 }
 
 func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error) {
-	presentationXML, err := rewritePresentationSlideList([]byte(e.presentationXML), e.slides)
+	presentationXML, err := editorslide.RewritePresentationSlideList([]byte(e.presentationXML), e.slides)
 	if err != nil {
 		return "", err
 	}
@@ -384,7 +384,7 @@ func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error)
 		return "", err
 	}
 
-	presentationXML, err = rewritePresentationNotesMasterList(
+	presentationXML, err = editorslide.RewritePresentationNotesMasterList(
 		[]byte(presentationXML),
 		notesMasterRelID,
 		hasNotesMaster,
@@ -397,12 +397,12 @@ func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error)
 		return presentationXML, nil
 	}
 
-	presentationXML, err = rewritePresentationSections([]byte(presentationXML), e.sections)
+	presentationXML, err = editorslide.RewritePresentationSections([]byte(presentationXML), e.sections)
 	if err != nil {
 		return "", fmt.Errorf("rewrite sections: %w", err)
 	}
 
-	presentationXML, err = rewritePresentationEmbeddedFonts([]byte(presentationXML), e.embeddedFontLst)
+	presentationXML, err = editorslide.RewritePresentationEmbeddedFonts([]byte(presentationXML), e.embeddedFontLst)
 	if err != nil {
 		return "", fmt.Errorf("rewrite embedded fonts: %w", err)
 	}
