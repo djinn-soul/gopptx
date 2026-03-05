@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections import UserString
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from .slide import Slide
@@ -40,6 +42,7 @@ class Placeholder:
             ph_type: The placeholder type (e.g., 'body', 'title', 'pic').
             name: The human-readable name of the placeholder.
         """
+        super().__init__()
         self._slide = slide
         self._index = index
         self._type = ph_type
@@ -80,7 +83,10 @@ class Placeholder:
             text_style[key] = v
 
         self._slide.set_placeholder_content(
-            self.idx, self._type, text=text, text_style=text_style
+            self.idx,
+            self._type,
+            text=text,
+            text_style=cast("dict[str, object]", text_style),
         )
 
     def insert_picture(
@@ -98,6 +104,7 @@ class Placeholder:
             self.idx, self._type, image_path=image_path, bounds=bounds
         )
 
+    @override
     def __repr__(self) -> str:
         """Return a string representation of this placeholder."""
         return f"<Placeholder idx={self.idx} type='{self.placeholder_format}' name='{self.name}'>"

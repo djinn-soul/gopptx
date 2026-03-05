@@ -11,20 +11,9 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
-
-//nolint:gochecknoglobals // Reused escaper table avoids repeated allocations in hot XML-building paths.
-var xmlAttrEscaper = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	`"`, "&quot;",
-	"'", "&apos;",
-)
-
-func escapeXMLAttr(value string) string {
-	return xmlAttrEscaper.Replace(value)
-}
 
 // AddVideo adds a video shape to the slide with a poster frame.
 func (e *PresentationEditor) AddVideo(
@@ -57,11 +46,11 @@ func (e *PresentationEditor) addVideoGeneric(
 	mimeType string,
 	x, y, w, h float64,
 ) (int, error) {
-	if err := validateMediaSlideIndex(e, slideIndex); err != nil {
+	if err := editormodmedia.ValidateMediaSlideIndex(slideIndex, len(e.slides)); err != nil {
 		return 0, err
 	}
 
-	posterFramePart, err := registerPartFromDataOrPath(
+	posterFramePart, err := editormodmedia.RegisterPartFromDataOrPath(
 		posterData,
 		posterPath,
 		"poster frame data or path is required for video",
@@ -76,7 +65,12 @@ func (e *PresentationEditor) addVideoGeneric(
 		return 0, fmt.Errorf("create poster rel: %w", err)
 	}
 
-	videoPart, err := registerVideoPart(e, videoData, videoPath, mimeType)
+	videoPart, err := editormodmedia.RegisterVideoPart(
+		videoData,
+		videoPath,
+		mimeType,
+		e.RegisterMedia,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("register video media: %w", err)
 	}
@@ -100,10 +94,10 @@ func (e *PresentationEditor) addVideoGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
-	videoXML := buildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, x, y, w, h)
-	updatedContent, err := appendShapeXMLToSlide(content, videoXML)
+	videoXML := editormodmedia.BuildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, x, y, w, h)
+	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, videoXML)
 	if err != nil {
 		return 0, err
 	}
@@ -143,11 +137,11 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 	progID string,
 	x, y, w, h float64,
 ) (int, error) {
-	if err := validateMediaSlideIndex(e, slideIndex); err != nil {
+	if err := editormodmedia.ValidateMediaSlideIndex(slideIndex, len(e.slides)); err != nil {
 		return 0, err
 	}
 
-	iconPart, err := registerPartFromDataOrPath(
+	iconPart, err := editormodmedia.RegisterPartFromDataOrPath(
 		iconData,
 		iconPath,
 		"icon data or path is required for OLE object",
@@ -162,7 +156,11 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 		return 0, fmt.Errorf("create icon rel: %w", err)
 	}
 
-	embedPart, err := registerEmbeddingPart(e, objectData, objectPath)
+	embedPart, err := editormodmedia.RegisterEmbeddingPart(
+		objectData,
+		objectPath,
+		e.RegisterEmbedding,
+	)
 	if err != nil {
 		return 0, fmt.Errorf("register embedding: %w", err)
 	}
@@ -178,10 +176,10 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := maxObjectID(content)
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
-	oleXML := buildOLEObjectShapeXML(newID, slideIndex, embedRelID, iconRelID, progID, x, y, w, h)
-	updatedContent, err := appendShapeXMLToSlide(content, oleXML)
+	oleXML := editormodmedia.BuildOLEObjectShapeXML(newID, slideIndex, embedRelID, iconRelID, progID, x, y, w, h)
+	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, oleXML)
 	if err != nil {
 		return 0, err
 	}

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from typing_extensions import override
+
 from .notes_slide import NotesSlide
 from .placeholder_mixin import SlidePlaceholderMixin
 from .table import Table
@@ -217,7 +219,7 @@ class SlideBase:
     @property
     def notes_slide(self) -> NotesSlide | None:
         """Return a notes-slide proxy, or None when notes slide is absent."""
-        if self._presentation is None or self.index < 0:
+        if self.index < 0:
             return None
         notes_payload = self._presentation.get_notes_payload(self.index)
         if notes_payload.get("notes_slide") is None:
@@ -346,6 +348,7 @@ class Slide(
         new_idx = self._presentation.duplicate_slide(self.index, insert_at=insert_at)
         return self._presentation.slides[new_idx]
 
-    def __repr__(self) -> str:  # pyright: ignore[reportImplicitOverride]
+    @override
+    def __repr__(self) -> str:
         """Return a string representation of this slide."""
         return f"<Slide index={self.index} title='{self.title}'>"

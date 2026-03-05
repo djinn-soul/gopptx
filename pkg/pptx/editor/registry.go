@@ -1,9 +1,13 @@
 package editor
 
 import (
+	"encoding/xml"
 	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 // Handle is an opaque identifier for a PresentationEditor instance.
@@ -141,4 +145,142 @@ func GetHandleError(registry *Registry, h Handle) string {
 		return fmt.Sprintf("invalid handle: %d", h)
 	}
 	return registry.GetHandleError(h)
+}
+
+// Metadata re-exports common.Metadata.
+type Metadata = common.Metadata
+
+// PresentationMetadata re-exports common.Metadata (for backward compatibility).
+type PresentationMetadata = common.Metadata
+
+// SlideMetadata re-exports common.SlideMetadata.
+type SlideMetadata = common.SlideMetadata
+
+// SlideSize re-exports common.SlideSize.
+type SlideSize = common.SlideSize
+
+// GetSlideSizeName returns the string representation of a common.SlideSize.
+func GetSlideSizeName(size common.SlideSize) string {
+	switch size {
+	case common.SlideSize4x3():
+		return "screen4x3"
+	case common.SlideSize16x9():
+		return "screen16x9"
+	default:
+		return ""
+	}
+}
+
+func SlideSize4x3() SlideSize { return common.SlideSize4x3() }
+func SlideSize16x9() SlideSize {
+	return common.SlideSize16x9()
+}
+
+const commentAuthorsPartName = "ppt/commentAuthors.xml"
+const authorColorCycle = 7
+
+type cmAuthorLst struct {
+	Authors []cmAuthor `xml:"cmAuthor"`
+}
+
+type cmAuthor struct {
+	ID       int64  `xml:"id,attr"`
+	Name     string `xml:"name,attr"`
+	Initials string `xml:"initials,attr"`
+	LastIdx  int    `xml:"lastIdx,attr"`
+	ClrIdx   int    `xml:"clrIdx,attr"`
+}
+
+// ensureAuthorsLoadedLocked reads the commentAuthors.xml part if cache is empty.
+func (e *PresentationEditor) ensureAuthorsLoadedLocked() error {
+	if e.authorCache != nil {
+		return nil
+	}
+	parsedCache := make(map[int64]comments.Author)
+	nextAuthorID := int64(1)
+	content, ok := e.parts.Get(commentAuthorsPartName)
+	if !ok {
+		e.authorCache = parsedCache
+		e.nextAuthorID = 1
+		return nil
+	}
+
+	var lst cmAuthorLst
+	if err := xml.Unmarshal(content, &lst); err != nil {
+		return fmt.Errorf("parse commentAuthors.xml: %w", err)
+	}
+
+	for _, ca := range lst.Authors {
+		parsedCache[ca.ID] = comments.Author{
+			ID:         ca.ID,
+			Name:       ca.Name,
+			Initials:   ca.Initials,
+			LastIndex:  ca.LastIdx,
+			ColorIndex: ca.ClrIdx,
+		}
+		if ca.ID >= nextAuthorID {
+			nextAuthorID = ca.ID + 1
+		}
+	}
+	e.authorCache = parsedCache
+	e.nextAuthorID = nextAuthorID
+	return nil
+}
+
+// GetAuthors returns a snapshot of all registered authors.
+func (e *PresentationEditor) GetAuthors() ([]comments.Author, error) {
+	e.authorCacheMu.Lock()
+	defer e.authorCacheMu.Unlock()
+
+	if err := e.ensureAuthorsLoadedLocked(); err != nil {
+		return nil, err
+	}
+
+	out := make([]comments.Author, 0, len(e.authorCache))
+	for _, a := range e.authorCache {
+		out = append(out, a)
+	}
+	return out, nil
+}
+
+// AddAuthor registers a new author or returns an existing one if name+initials match.
+func (e *PresentationEditor) AddAuthor(name, initials string) (comments.Author, error) {
+	e.authorCacheMu.Lock()
+	defer e.authorCacheMu.Unlock()
+
+	if err := e.ensureAuthorsLoadedLocked(); err != nil {
+		return comments.Author{}, err
+	}
+
+	for _, a := range e.authorCache {
+		if a.Name == name && a.Initials == initials {
+			return a, nil
+		}
+	}
+
+	id := e.nextAuthorID
+	e.nextAuthorID++
+	colorIdx := int(id) % authorColorCycle
+	newAuthor := comments.Author{
+		ID:         id,
+		Name:       name,
+		Initials:   initials,
+		LastIndex:  0,
+		ColorIndex: colorIdx,
+	}
+	e.authorCache[id] = newAuthor
+	return newAuthor, nil
+}
+
+// updateAuthorLastIndex updates the tracking index for an author.
+func (e *PresentationEditor) updateAuthorLastIndex(authorID int64, newIndex int) {
+	e.authorCacheMu.Lock()
+	defer e.authorCacheMu.Unlock()
+
+	if a, ok := e.authorCache[authorID]; ok {
+		if newIndex > a.LastIndex {
+			a.LastIndex = newIndex
+			e.authorCache[authorID] = a
+		}
+	}
 }

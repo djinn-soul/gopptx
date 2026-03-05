@@ -13,6 +13,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 )
 
 // AddChart adds a new chart to a specific slide.
@@ -23,7 +24,7 @@ func (e *PresentationEditor) AddChart(slideIndex int, chartDef charts.ChartDefin
 	slideRef := e.slides[slideIndex]
 
 	// 1. Generate Excel data part
-	excelData, err := generateExcelForChart(chartDef.GetCategories(), chartDef.GetValues())
+	excelData, err := editormodchart.GenerateExcelForChart(chartDef.GetCategories(), chartDef.GetValues())
 	if err != nil {
 		return fmt.Errorf("generate excel: %w", err)
 	}

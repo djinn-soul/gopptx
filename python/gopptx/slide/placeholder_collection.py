@@ -24,6 +24,7 @@ class PlaceholderCollection:
 
     def __init__(self, slide: Slide) -> None:
         """Bind collection to a single slide proxy."""
+        super().__init__()
         self._slide = slide
 
     def _items(self) -> list[Placeholder]:

@@ -3,6 +3,8 @@ package editor
 import (
 	"encoding/json"
 	"fmt"
+
+	editormodcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/common"
 )
 
 // BridgeError represents a structured error returned by the bridge API.
@@ -59,62 +61,56 @@ func (v *PayloadValidator) setCode(code string) {
 	}
 }
 
+func (v *PayloadValidator) missingField(field string) {
+	v.setCode(ErrCodeMissingField)
+	v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+}
+
+func (v *PayloadValidator) invalidType(field, expected string, value any) {
+	v.setCode(ErrCodeInvalidType)
+	v.errors = append(v.errors, fmt.Sprintf("field %s must be %s, got %T", field, expected, value))
+}
+
 // RequireInt validates that a field exists and is an integer.
 func (v *PayloadValidator) RequireInt(payload map[string]any, field string) (int, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return 0, false
 	}
-	switch n := val.(type) {
-	case float64:
-		return int(n), true
-	case int:
-		return n, true
-	case int64:
-		return int(n), true
-	default:
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an integer, got %T", field, val))
+	n, ok := editormodcommon.ParseInt(val)
+	if !ok {
+		v.invalidType(field, "an integer", val)
 		return 0, false
 	}
+	return n, true
 }
 
 // RequireInt64 validates that a field exists and is an int64.
 func (v *PayloadValidator) RequireInt64(payload map[string]any, field string) (int64, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return 0, false
 	}
-	switch n := val.(type) {
-	case float64:
-		return int64(n), true
-	case int:
-		return int64(n), true
-	case int64:
-		return n, true
-	default:
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an integer, got %T", field, val))
+	n, ok := editormodcommon.ParseInt64(val)
+	if !ok {
+		v.invalidType(field, "an integer", val)
 		return 0, false
 	}
+	return n, true
 }
 
 // RequireString validates that a field exists and is a string.
 func (v *PayloadValidator) RequireString(payload map[string]any, field string) (string, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return "", false
 	}
 	s, ok := val.(string)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be a string, got %T", field, val))
+		v.invalidType(field, "a string", val)
 		return "", false
 	}
 	return s, true
@@ -124,113 +120,60 @@ func (v *PayloadValidator) RequireString(payload map[string]any, field string) (
 func (v *PayloadValidator) RequireFloat64(payload map[string]any, field string) (float64, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return 0, false
 	}
-	switch n := val.(type) {
-	case float64:
-		return n, true
-	case int:
-		return float64(n), true
-	case int64:
-		return float64(n), true
-	default:
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be a number, got %T", field, val))
+	n, ok := editormodcommon.ParseFloat64(val)
+	if !ok {
+		v.invalidType(field, "a number", val)
 		return 0, false
 	}
+	return n, true
 }
 
 // RequireStringSlice validates that a field exists and is a string slice.
 func (v *PayloadValidator) RequireStringSlice(payload map[string]any, field string) ([]string, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return nil, false
 	}
-	arr, ok := val.([]any)
+	values, ok := editormodcommon.ParseStringSlice(val)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an array, got %T", field, val))
+		v.invalidType(field, "an array of strings", val)
 		return nil, false
 	}
-	result := make([]string, 0, len(arr))
-	for i, item := range arr {
-		s, ok := item.(string)
-		if !ok {
-			v.setCode(ErrCodeInvalidType)
-			v.errors = append(v.errors, fmt.Sprintf("field %s[%d] must be a string, got %T", field, i, item))
-			return nil, false
-		}
-		result = append(result, s)
-	}
-	return result, true
+	return values, true
 }
 
 // RequireFloat64Slice validates that a field exists and is a float64 slice.
 func (v *PayloadValidator) RequireFloat64Slice(payload map[string]any, field string) ([]float64, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return nil, false
 	}
-	arr, ok := val.([]any)
+	values, ok := editormodcommon.ParseFloat64Slice(val)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an array, got %T", field, val))
+		v.invalidType(field, "an array of numbers", val)
 		return nil, false
 	}
-	result := make([]float64, 0, len(arr))
-	for i, item := range arr {
-		switch n := item.(type) {
-		case float64:
-			result = append(result, n)
-		case int:
-			result = append(result, float64(n))
-		case int64:
-			result = append(result, float64(n))
-		default:
-			v.setCode(ErrCodeInvalidType)
-			v.errors = append(v.errors, fmt.Sprintf("field %s[%d] must be a number, got %T", field, i, item))
-			return nil, false
-		}
-	}
-	return result, true
+	return values, true
 }
 
 // RequireIntSlice validates that a field exists and is an int slice.
 func (v *PayloadValidator) RequireIntSlice(payload map[string]any, field string) ([]int, bool) {
 	val, ok := payload[field]
 	if !ok {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+		v.missingField(field)
 		return nil, false
 	}
-	arr, ok := val.([]any)
+	values, ok := editormodcommon.ParseIntSlice(val)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an array, got %T", field, val))
+		v.invalidType(field, "an array of integers", val)
 		return nil, false
 	}
-	result := make([]int, 0, len(arr))
-	for i, item := range arr {
-		switch n := item.(type) {
-		case float64:
-			result = append(result, int(n))
-		case int:
-			result = append(result, n)
-		case int64:
-			result = append(result, int(n))
-		default:
-			v.setCode(ErrCodeInvalidType)
-			v.errors = append(v.errors, fmt.Sprintf("field %s[%d] must be an integer, got %T", field, i, item))
-			return nil, false
-		}
-	}
-	return result, true
+	return values, true
 }
 
 // OptionalString returns a string if present, or empty string.
@@ -241,8 +184,7 @@ func (v *PayloadValidator) OptionalString(payload map[string]any, field string) 
 	}
 	s, ok := val.(string)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be a string, got %T", field, val))
+		v.invalidType(field, "a string", val)
 		return ""
 	}
 	return s
@@ -254,18 +196,12 @@ func (v *PayloadValidator) OptionalInt(payload map[string]any, field string) (in
 	if !ok {
 		return 0, false
 	}
-	switch n := val.(type) {
-	case float64:
-		return int(n), true
-	case int:
-		return n, true
-	case int64:
-		return int(n), true
-	default:
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an integer, got %T", field, val))
+	n, ok := editormodcommon.ParseInt(val)
+	if !ok {
+		v.invalidType(field, "an integer", val)
 		return 0, false
 	}
+	return n, true
 }
 
 // OptionalInt64 returns an int64 if present, or 0 with false.
@@ -274,18 +210,12 @@ func (v *PayloadValidator) OptionalInt64(payload map[string]any, field string) (
 	if !ok {
 		return 0, false
 	}
-	switch n := val.(type) {
-	case float64:
-		return int64(n), true
-	case int:
-		return int64(n), true
-	case int64:
-		return n, true
-	default:
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an integer, got %T", field, val))
+	n, ok := editormodcommon.ParseInt64(val)
+	if !ok {
+		v.invalidType(field, "an integer", val)
 		return 0, false
 	}
+	return n, true
 }
 
 // OptionalFloat64 returns a float64 if present, or 0 with false.
@@ -294,10 +224,9 @@ func (v *PayloadValidator) OptionalFloat64(payload map[string]any, field string)
 	if !ok {
 		return 0, false
 	}
-	num, ok := parseFloat(val)
+	num, ok := editormodcommon.ParseFloat64(val)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be a number, got %T", field, val))
+		v.invalidType(field, "a number", val)
 		return 0, false
 	}
 	return num, true
@@ -311,8 +240,7 @@ func (v *PayloadValidator) OptionalBool(payload map[string]any, field string) (b
 	}
 	b, ok := val.(bool)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be a boolean, got %T", field, val))
+		v.invalidType(field, "a boolean", val)
 		return false, false
 	}
 	return b, true
@@ -324,23 +252,12 @@ func (v *PayloadValidator) OptionalStringSlice(payload map[string]any, field str
 	if !ok {
 		return nil, false
 	}
-	arr, ok := val.([]any)
+	values, ok := editormodcommon.ParseStringSlice(val)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an array, got %T", field, val))
+		v.invalidType(field, "an array of strings", val)
 		return nil, false
 	}
-	result := make([]string, 0, len(arr))
-	for i, item := range arr {
-		s, ok := item.(string)
-		if !ok {
-			v.setCode(ErrCodeInvalidType)
-			v.errors = append(v.errors, fmt.Sprintf("field %s[%d] must be a string, got %T", field, i, item))
-			return nil, false
-		}
-		result = append(result, s)
-	}
-	return result, true
+	return values, true
 }
 
 // OptionalFloat64Slice returns a float64 slice if present, or empty slice with false.
@@ -349,28 +266,12 @@ func (v *PayloadValidator) OptionalFloat64Slice(payload map[string]any, field st
 	if !ok {
 		return nil, false
 	}
-	arr, ok := val.([]any)
+	values, ok := editormodcommon.ParseFloat64Slice(val)
 	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, fmt.Sprintf("field %s must be an array, got %T", field, val))
+		v.invalidType(field, "an array of numbers", val)
 		return nil, false
 	}
-	result := make([]float64, 0, len(arr))
-	for i, item := range arr {
-		switch n := item.(type) {
-		case float64:
-			result = append(result, n)
-		case int:
-			result = append(result, float64(n))
-		case int64:
-			result = append(result, float64(n))
-		default:
-			v.setCode(ErrCodeInvalidType)
-			v.errors = append(v.errors, fmt.Sprintf("field %s[%d] must be a number, got %T", field, i, item))
-			return nil, false
-		}
-	}
-	return result, true
+	return values, true
 }
 
 // IndexBounds checks if an index is within valid bounds.
@@ -409,21 +310,4 @@ func ParseRawPayload(payload json.RawMessage) (map[string]any, error) {
 		return nil, NewBridgeError(ErrCodeInvalidPayload, fmt.Sprintf("invalid JSON payload: %v", err))
 	}
 	return result, nil
-}
-
-// parseFloat is a internal helper to handle various numeric types from unmarshaled JSON.
-func parseFloat(v any) (float64, bool) {
-	switch val := v.(type) {
-	case float64:
-		return val, true
-	case int:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case int32:
-		return float64(val), true
-	case float32:
-		return float64(val), true
-	}
-	return 0, false
 }

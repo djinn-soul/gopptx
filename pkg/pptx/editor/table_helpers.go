@@ -1,111 +1,12 @@
 package editor
 
 import (
-	"bytes"
-	"encoding/xml"
 	"errors"
 	"fmt"
-	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	tablemod "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/table"
 )
-
-type tableXML struct {
-	TblPr struct {
-		FirstRow string `xml:"firstRow,attr"`
-		FirstCol string `xml:"firstCol,attr"`
-		LastRow  string `xml:"lastRow,attr"`
-		LastCol  string `xml:"lastCol,attr"`
-		BandRow  string `xml:"bandRow,attr"`
-		BandCol  string `xml:"bandCol,attr"`
-	} `xml:"tblPr"`
-	Grid struct {
-		Cols []struct{} `xml:"gridCol"`
-	} `xml:"tblGrid"`
-	Rows []tableRowXML `xml:"tr"`
-}
-
-type tableRowXML struct {
-	Cells []tableCellXML `xml:"tc"`
-}
-
-type tableCellXML struct {
-	RowSpan  int    `xml:"rowSpan,attr"`
-	GridSpan int    `xml:"gridSpan,attr"`
-	VMerge   string `xml:"vMerge,attr"`
-	HMerge   string `xml:"hMerge,attr"`
-	TxBody   struct {
-		Paragraphs []struct {
-			Runs []struct {
-				Text string `xml:"t"`
-			} `xml:"r"`
-		} `xml:"p"`
-	} `xml:"txBody"`
-}
-
-func truthyAttr(v string) bool {
-	return v == "1" || strings.EqualFold(v, "true")
-}
-
-func findTableFrame(slideContent []byte, shapeID int) (int, int, []byte, error) {
-	idStr := fmt.Appendf(nil, ` id="%d"`, shapeID)
-	idIdx := bytes.Index(slideContent, idStr)
-	if idIdx == -1 {
-		return 0, 0, nil, fmt.Errorf("shape id %d not found", shapeID)
-	}
-
-	frameStart := bytes.LastIndex(slideContent[:idIdx], []byte("<p:graphicFrame"))
-	if frameStart == -1 {
-		return 0, 0, nil, fmt.Errorf("shape %d is not a graphicFrame", shapeID)
-	}
-
-	relEnd := bytes.Index(slideContent[idIdx:], []byte("</p:graphicFrame>"))
-	if relEnd == -1 {
-		return 0, 0, nil, errors.New("invalid graphicFrame xml")
-	}
-	frameEnd := idIdx + relEnd + len("</p:graphicFrame>")
-	return frameStart, frameEnd, slideContent[frameStart:frameEnd], nil
-}
-
-func replaceTableFrame(slideContent []byte, frameStart, frameEnd int, frame []byte) []byte {
-	updated := make([]byte, 0, len(slideContent)-((frameEnd-frameStart)-len(frame)))
-	updated = append(updated, slideContent[:frameStart]...)
-	updated = append(updated, frame...)
-	updated = append(updated, slideContent[frameEnd:]...)
-	return updated
-}
-
-func extractTableXML(frame []byte) ([]byte, error) {
-	tblStart := bytes.Index(frame, []byte("<a:tbl"))
-	if tblStart == -1 {
-		return nil, errors.New("graphicFrame does not contain a table")
-	}
-	tblEnd := bytes.Index(frame[tblStart:], []byte("</a:tbl>"))
-	if tblEnd == -1 {
-		return nil, errors.New("invalid table xml")
-	}
-	tblEnd += tblStart + len("</a:tbl>")
-	return frame[tblStart:tblEnd], nil
-}
-
-func parseTable(frame []byte) (*tableXML, error) {
-	tblBytes, err := extractTableXML(frame)
-	if err != nil {
-		return nil, err
-	}
-	var parsed tableXML
-	if err := xml.Unmarshal(tblBytes, &parsed); err != nil {
-		return nil, fmt.Errorf("parse table xml: %w", err)
-	}
-	return &parsed, nil
-}
-
-func tableDimensions(parsed *tableXML) (int, int) {
-	rows := len(parsed.Rows)
-	cols := len(parsed.Grid.Cols)
-	if cols == 0 && rows > 0 {
-		cols = len(parsed.Rows[0].Cells)
-	}
-	return rows, cols
-}
 
 func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
 	string,
@@ -125,7 +26,7 @@ func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
 	if !ok {
 		return "", nil, 0, 0, nil, errors.New("slide part not found")
 	}
-	frameStart, frameEnd, frame, err := findTableFrame(slideContent, shapeID)
+	frameStart, frameEnd, frame, err := tablemod.FindTableFrame(slideContent, shapeID)
 	if err != nil {
 		return "", nil, 0, 0, nil, err
 	}
@@ -143,59 +44,104 @@ func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGUID st
 	if err != nil {
 		return err
 	}
-
-	// Extract the table XML to locate the tableStyleId element
-	tblStart := bytes.Index(frame, []byte("<a:tbl"))
-	if tblStart == -1 {
-		return errors.New("graphicFrame does not contain a table")
+	updatedFrame, err := tablemod.SetTableStyleInFrame(frame, styleGUID)
+	if err != nil {
+		return err
 	}
-
-	// Look for existing tableStyleId element
-	tblPrStart := bytes.Index(frame[tblStart:], []byte("<a:tblPr"))
-	if tblPrStart == -1 {
-		return errors.New("table has no tblPr element")
-	}
-	tblPrStart += tblStart
-	tblPrEnd := bytes.Index(frame[tblPrStart:], []byte("</a:tblPr>"))
-	if tblPrEnd == -1 {
-		return errors.New("invalid table tblPr element")
-	}
-	tblPrEnd += tblPrStart + len("</a:tblPr>")
-
-	// Check if tableStyleId already exists in tblPr
-	tblPrSection := frame[tblPrStart:tblPrEnd]
-	styleIDStart := bytes.Index(tblPrSection, []byte("<a:tableStyleId"))
-	var updatedFrame []byte
-
-	if styleIDStart != -1 {
-		// Update existing tableStyleId
-		styleIDStartInFrame := tblPrStart + styleIDStart
-		styleIDEnd := bytes.Index(frame[styleIDStartInFrame:], []byte("</a:tableStyleId>"))
-		if styleIDEnd == -1 {
-			return errors.New("invalid tableStyleId element")
-		}
-		styleIDEnd += styleIDStartInFrame + len("</a:tableStyleId>")
-		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGUID)
-		updatedFrame = make([]byte, 0, len(frame))
-		updatedFrame = append(updatedFrame, frame[:styleIDStartInFrame]...)
-		updatedFrame = append(updatedFrame, []byte(newStyleTag)...)
-		updatedFrame = append(updatedFrame, frame[styleIDEnd:]...)
-	} else {
-		// Insert new tableStyleId after firstRow or at start of tblPr
-		insertPos := bytes.Index(tblPrSection, []byte(">"))
-		if insertPos == -1 {
-			return errors.New("invalid tblPr element")
-		}
-		insertPos += tblPrStart + 1
-		newStyleTag := fmt.Sprintf(`<a:tableStyleId>%s</a:tableStyleId>`, styleGUID)
-		updatedFrame = make([]byte, 0, len(frame)+len(newStyleTag))
-		updatedFrame = append(updatedFrame, frame[:insertPos]...)
-		updatedFrame = append(updatedFrame, []byte(newStyleTag)...)
-		updatedFrame = append(updatedFrame, frame[insertPos:]...)
-	}
-
-	// Replace the entire frame in the slide content
-	updatedSlide := replaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame)
+	updatedSlide := tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame)
 	e.parts.Set(partPath, updatedSlide)
+	return nil
+}
+
+// AddTable adds a new graphic frame containing a table.
+func (e *PresentationEditor) AddTable(slideIndex, rowCount, colCount int, x, y, cx, cy int64) (int, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return 0, fmt.Errorf("slide index %d out of range", slideIndex)
+	}
+
+	slideRef := e.slides[slideIndex]
+	spec := &pptxxml.TableSpec{
+		X:          x,
+		Y:          y,
+		CX:         cx,
+		CY:         cy,
+		Rows:       make([][]string, rowCount),
+		StyledRows: make([][]pptxxml.TableCellSpec, rowCount),
+	}
+	for i := range rowCount {
+		spec.Rows[i] = make([]string, colCount)
+		spec.StyledRows[i] = make([]pptxxml.TableCellSpec, colCount)
+		for j := range colCount {
+			spec.StyledRows[i][j] = pptxxml.TableCellSpec{}
+		}
+	}
+
+	shapeID := e.nextShapeID(slideRef.Part)
+	shapeXML := pptxxml.RenderTable(spec, shapeID)
+	if err := e.appendShapeToSlide(slideRef.Part, shapeXML); err != nil {
+		return 0, fmt.Errorf("append table shape: %w", err)
+	}
+	return shapeID, nil
+}
+
+// GetTable reads a table's structure entirely from XML.
+func (e *PresentationEditor) GetTable(slideIndex, shapeID int) (map[string]any, error) {
+	_, _, _, _, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return nil, err
+	}
+	return tablemod.BuildTableInfo(frame)
+}
+
+// UpdateTableFlags modifies properties of the table like firstRow, bandRow, etc.
+func (e *PresentationEditor) UpdateTableFlags(slideIndex, shapeID int, flags map[string]any) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.UpdateTableFlagsInFrame(frame, flags)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+func (e *PresentationEditor) UpdateTableCellText(slideIndex, shapeID, rowIdx, colIdx int, text string) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.UpdateTableCellTextInFrame(frame, rowIdx, colIdx, text)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+func (e *PresentationEditor) MergeTableCells(slideIndex, shapeID, row1, col1, row2, col2 int) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.MergeCellsInFrame(frame, row1, col1, row2, col2)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+func (e *PresentationEditor) SplitTableCell(slideIndex, shapeID, row, col int) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.SplitCellInFrame(frame, row, col)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
 	return nil
 }

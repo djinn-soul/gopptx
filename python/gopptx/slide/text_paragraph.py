@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import cast
 
 _ALLOWED_PARAGRAPH_FIELDS = frozenset({"indent", "hanging"})
 _PARAGRAPH_FIELD_ALIASES = {
@@ -25,6 +26,7 @@ class ParagraphProps:
         hanging_indent: int | None = None,
     ) -> None:
         """Initialize paragraph controls with alias support."""
+        super().__init__()
         self.indent = indent
         self.hanging = hanging
         if left_margin is not None:
@@ -62,7 +64,7 @@ def serialize_paragraph_for_payload(paragraph: object) -> object:
     if isinstance(paragraph, ParagraphProps):
         return paragraph.to_payload()
     if isinstance(paragraph, Mapping):
-        props = ParagraphProps.from_payload(paragraph)
+        props = ParagraphProps.from_payload(cast("Mapping[str, object]", paragraph))
         return props.to_payload()
     return paragraph
 

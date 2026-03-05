@@ -70,7 +70,7 @@ func TestParsingHelpers(t *testing.T) {
 
 func TestXMLEscape(t *testing.T) {
 	got := XMLEscape("<tag> & \"")
-	expected := "&lt;tag&gt; &amp; &#34;"
+	expected := "&lt;tag&gt; &amp; &quot;"
 	if got != expected {
 		t.Errorf("XMLEscape failed: expected %q, got %q", expected, got)
 	}

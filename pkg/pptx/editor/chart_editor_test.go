@@ -9,6 +9,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -234,5 +235,43 @@ func TestReplaceChartData(t *testing.T) {
 	_, err = zip.NewReader(bytes.NewReader(excelData), int64(len(excelData)))
 	if err != nil {
 		t.Errorf("updated excel data is not a valid zip: %v", err)
+	}
+}
+
+func TestGenerateExcelForChart(t *testing.T) {
+	categories := []string{"Cat 1", "Cat 2"}
+	values := []float64{10.5, 20.0}
+
+	data, err := editormodchart.GenerateExcelForChart(categories, values)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify it's a valid zip
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("invalid zip archive: %v", err)
+	}
+
+	requiredFiles := []string{
+		"[Content_Types].xml",
+		"_rels/.rels",
+		"xl/workbook.xml",
+		"xl/_rels/workbook.xml.rels",
+		"xl/styles.xml",
+		"xl/worksheets/sheet1.xml",
+	}
+
+	for _, req := range requiredFiles {
+		found := false
+		for _, f := range zr.File {
+			if f.Name == req {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("missing required file in xlsx: %s", req)
+		}
 	}
 }

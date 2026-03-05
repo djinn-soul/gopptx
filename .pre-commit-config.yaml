@@ -70,7 +70,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        stages: [push]
+        stages: [commit, push]
 
       - id: pip-audit
         name: pip-audit dependency scan

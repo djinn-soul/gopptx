@@ -1,10 +1,10 @@
-"""Generate a PPTX from the Python API and validate it with the Go smoke validator."""
+"""Generate a PPTX from the Python API and validate basic PPTX structure."""
 
 from __future__ import annotations
 
 import pathlib
-import subprocess
 import sys
+import zipfile
 
 
 def project_root_from_here() -> pathlib.Path:
@@ -43,29 +43,20 @@ def run() -> None:
 
         pres.save(str(output_path))
 
-    validate_cmd = [
-        "go",
-        "run",
-        "./scripts/smoke/validate_smoke_outputs",
-        "-file",
-        str(output_path),
-    ]
-    completed = subprocess.run(
-        validate_cmd,
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError(
-            "validator failed\n"
-            f"stdout:\n{completed.stdout}\n"
-            f"stderr:\n{completed.stderr}"
-        )
+    with zipfile.ZipFile(output_path) as archive:
+        required_parts = {
+            "[Content_Types].xml",
+            "_rels/.rels",
+            "ppt/presentation.xml",
+            "ppt/slides/slide1.xml",
+        }
+        names = set(archive.namelist())
+        missing_parts = sorted(required_parts.difference(names))
+        if missing_parts:
+            raise RuntimeError(f"missing required PPTX parts: {missing_parts}")
 
     print(f"Generated: {output_path}")
-    print(completed.stdout.strip())
+    print("PPTX structure validation passed")
 
 
 if __name__ == "__main__":

@@ -6,11 +6,15 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, cast
 
+from typing_extensions import TypeGuard
+
 from .. import ops
 from ..slide.slide import Slide
 from .helpers import PresentationProtocol
 from .layout_theme import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideMasters
+
+_FOUR_BOUNDS_COMPONENTS = 4
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -251,7 +255,7 @@ class PresentationSlidesMixin(
             payload["text"] = text
         if isinstance(image_path, str):
             payload["image_path"] = image_path
-        if isinstance(bounds, tuple) and len(bounds) == self._BOUNDS_COMPONENTS:
+        if _is_four_number_bounds(bounds):
             payload["bounds"] = list(bounds)
         if isinstance(text_style, dict):
             payload["text_style"] = text_style
@@ -386,3 +390,14 @@ class PresentationSlidesMixin(
     def __iter__(self) -> Iterator[Slide]:
         """Iterate over all slides."""
         return iter(self.slides)
+
+
+def _is_four_number_bounds(
+    value: object,
+) -> TypeGuard[tuple[float, float, float, float]]:
+    if not isinstance(value, tuple):
+        return False
+    components = cast("tuple[object, ...]", value)
+    if len(components) != _FOUR_BOUNDS_COMPONENTS:
+        return False
+    return all(isinstance(component, int | float) for component in components)

@@ -177,7 +177,6 @@ class ShapeProps(TypedDict, total=False):
     blur: BlurFormat
     soft_edge: SoftEdgeFormat
     reflection: ReflectionFormat
-    click_action: Hyperlink
     hover_action: Hyperlink
     crop: ImageCrop
     rotation: float
@@ -252,7 +251,6 @@ class ShapeUpdate(TypedDict, total=False):
     blur: BlurFormat
     soft_edge: SoftEdgeFormat
     reflection: ReflectionFormat
-    click_action: Hyperlink
     crop: ImageCrop
     rotation: float
     flip_h: bool
