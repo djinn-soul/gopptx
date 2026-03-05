@@ -149,11 +149,11 @@ class Run:
     @property
     def hyperlink(self) -> RunHyperlink | None: ...
     @hyperlink.setter
-    def hyperlink(self, value: RunHyperlink) -> None: ...
+    def hyperlink(self, value: RunHyperlink | Hyperlink | None) -> None: ...  # type: ignore[reportPropertyTypeMismatch]
     @property
     def hover_action(self) -> RunHyperlink | None: ...
     @hover_action.setter
-    def hover_action(self, value: RunHyperlink | None) -> None: ...
+    def hover_action(self, value: RunHyperlink | Hyperlink | None) -> None: ...  # type: ignore[reportPropertyTypeMismatch]
     def __init__(
         self,
         text: str = "",

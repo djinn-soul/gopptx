@@ -251,6 +251,7 @@ class ShapeUpdate(TypedDict, total=False):
     blur: BlurFormat
     soft_edge: SoftEdgeFormat
     reflection: ReflectionFormat
+    click_action: Hyperlink
     crop: ImageCrop
     rotation: float
     flip_h: bool

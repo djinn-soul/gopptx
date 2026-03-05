@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from typing_extensions import TypeGuard
-
+from ..utils import is_four_number_bounds
 from .placeholder_collection import PlaceholderCollection
-
-_FOUR_BOUNDS_COMPONENTS = 4
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
@@ -17,8 +14,6 @@ if TYPE_CHECKING:
 
 class SlidePlaceholderMixin:
     """Mixin providing placeholder access methods for Slide objects."""
-
-    _BOUNDS_COMPONENTS = _FOUR_BOUNDS_COMPONENTS
 
     if TYPE_CHECKING:
         _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
@@ -60,7 +55,7 @@ class SlidePlaceholderMixin:
         bounds = kwargs.get("bounds")
         text_style = kwargs.get("text_style")
         typed_bounds: tuple[float, float, float, float] | None = None
-        if _is_four_number_bounds(bounds):
+        if is_four_number_bounds(bounds):
             typed_bounds = bounds
         self._presentation.set_placeholder_content(
             self.index,
@@ -73,14 +68,3 @@ class SlidePlaceholderMixin:
             if isinstance(text_style, dict)
             else None,
         )
-
-
-def _is_four_number_bounds(
-    value: object,
-) -> TypeGuard[tuple[float, float, float, float]]:
-    if not isinstance(value, tuple):
-        return False
-    components = cast("tuple[object, ...]", value)
-    if len(components) != _FOUR_BOUNDS_COMPONENTS:
-        return False
-    return all(isinstance(component, int | float) for component in components)
