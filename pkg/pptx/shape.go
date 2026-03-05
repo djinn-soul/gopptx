@@ -32,6 +32,26 @@ type (
 
 	// Length represents a distance in English Metric Units (EMU).
 	Length = styling.Length
+
+	// RichShapeFill provides rich fill properties (solid, gradient, pattern, no-fill).
+	RichShapeFill = shapes.RichShapeFill
+	// RichShapeLine provides rich line properties with full styling control.
+	RichShapeLine = shapes.RichShapeLine
+	// RichShapeShadow provides rich shadow properties with detailed controls.
+	RichShapeShadow = shapes.RichShapeShadow
+
+	// PatternType represents pattern fill types.
+	PatternType = shapes.PatternType
+	// LineDashStyle represents line dash styles.
+	LineDashStyle = shapes.LineDashStyle
+	// LineCapStyle represents line cap styles.
+	LineCapStyle = shapes.LineCapStyle
+	// LineJoinStyle represents line join styles.
+	LineJoinStyle = shapes.LineJoinStyle
+	// ShadowType represents shadow types.
+	ShadowType = shapes.ShadowType
+	// ShadowAlignment represents shadow alignment options.
+	ShadowAlignment = shapes.ShadowAlignment
 )
 
 const (
@@ -104,6 +124,43 @@ func NewShapeGradientFill(gradientType string, stops []ShapeGradientStop) ShapeG
 
 func NewTextFrame() TextFrame {
 	return shapes.NewTextFrame()
+}
+
+// Rich formatting factory functions
+
+// NewSolidFill creates a new solid color fill.
+func NewSolidFill(color string) *RichShapeFill {
+	return shapes.NewSolidFill(color)
+}
+
+// NewNoFill creates a fill that represents "no fill" (transparent).
+func NewNoFill() *RichShapeFill {
+	return shapes.NewNoFill()
+}
+
+// NewPatternFill creates a new pattern fill with the specified pattern type.
+func NewPatternFill(pattern PatternType) *RichShapeFill {
+	return shapes.NewPatternFill(pattern)
+}
+
+// NewRichShapeLine creates a new rich line style with the specified color and width.
+func NewRichShapeLine(color string, width Length) *RichShapeLine {
+	return shapes.NewRichShapeLine(color, width)
+}
+
+// NewOuterShadow creates a new outer shadow with the specified color.
+func NewOuterShadow(color string) *RichShapeShadow {
+	return shapes.NewOuterShadow(color)
+}
+
+// NewInnerShadow creates a new inner shadow with the specified color.
+func NewInnerShadow(color string) *RichShapeShadow {
+	return shapes.NewInnerShadow(color)
+}
+
+// NewPerspectiveShadow creates a new perspective shadow with the specified color.
+func NewPerspectiveShadow(color string) *RichShapeShadow {
+	return shapes.NewPerspectiveShadow(color)
 }
 
 // Fluent API Macros (Inches based)

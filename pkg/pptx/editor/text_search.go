@@ -185,28 +185,55 @@ func parsePlaceholdersFromSlideXML(content []byte) []Placeholder {
 
 // MoveShapeToFront moves the shape with the given ID to the front of the drawing order.
 func (e *PresentationEditor) MoveShapeToFront(slideIndex, shapeID int) error {
-	return e.moveShape(slideIndex, shapeID, true)
+	shapes, _, _, _, _, err := e.loadSlideShapesForReorder(slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	return e.MoveShapeToIndex(slideIndex, shapeID, len(shapes)-1)
 }
 
 // MoveShapeToBack moves the shape with the given ID to the back of the drawing order.
 func (e *PresentationEditor) MoveShapeToBack(slideIndex, shapeID int) error {
-	return e.moveShape(slideIndex, shapeID, false)
+	return e.MoveShapeToIndex(slideIndex, shapeID, 0)
 }
 
-func (e *PresentationEditor) moveShape(slideIndex, shapeID int, toFront bool) error {
+// MoveShapeToIndex moves the shape with the given ID to a specific drawing-order index.
+// Index 0 is back-most, and len(shapes)-1 is front-most.
+func (e *PresentationEditor) MoveShapeToIndex(slideIndex, shapeID, targetIndex int) error {
+	shapes, shapeIndex, content, partPath, partFound, err := e.loadSlideShapesForReorder(slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	if !partFound {
+		return fmt.Errorf("read slide part %s: not found", partPath)
+	}
+	shapeCount := len(shapes)
+	if targetIndex < 0 || targetIndex >= shapeCount {
+		return fmt.Errorf("shape index %d out of range [0,%d)", targetIndex, shapeCount)
+	}
+	if shapeCount <= 1 || shapeIndex == targetIndex {
+		return nil
+	}
+
+	return e.reorderShapeByIndex(content, partPath, shapes, shapeIndex, targetIndex)
+}
+
+func (e *PresentationEditor) loadSlideShapesForReorder(
+	slideIndex, shapeID int,
+) ([]parsedShape, int, []byte, string, bool, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return errors.New("slide index out of range")
+		return nil, 0, nil, "", false, errors.New("slide index out of range")
 	}
 
 	partPath := e.slides[slideIndex].Part
 	content, ok := e.parts.Get(partPath)
 	if !ok {
-		return fmt.Errorf("read slide part %s: not found", partPath)
+		return nil, 0, nil, partPath, false, nil
 	}
 
 	shapes, err := scanShapesWithOffsets(content, false)
 	if err != nil {
-		return fmt.Errorf("parse shapes: %w", err)
+		return nil, 0, nil, partPath, true, fmt.Errorf("parse shapes: %w", err)
 	}
 
 	shapeIndex := -1
@@ -217,35 +244,52 @@ func (e *PresentationEditor) moveShape(slideIndex, shapeID int, toFront bool) er
 		}
 	}
 	if shapeIndex == -1 {
-		return fmt.Errorf("shape with ID %d not found", shapeID)
+		return nil, 0, nil, partPath, true, fmt.Errorf("shape with ID %d not found", shapeID)
 	}
-	if len(shapes) <= 1 {
-		return nil
-	}
-	if toFront && shapeIndex == len(shapes)-1 {
-		return nil
-	}
-	if !toFront && shapeIndex == 0 {
-		return nil
-	}
+	return shapes, shapeIndex, content, partPath, true, nil
+}
 
+func (e *PresentationEditor) reorderShapeByIndex(
+	content []byte,
+	partPath string,
+	shapes []parsedShape,
+	shapeIndex, targetIndex int,
+) error {
 	targetShape := shapes[shapeIndex]
-	shapeXML := content[targetShape.Start:targetShape.End]
-	var buf bytes.Buffer
+	shapeXML := append([]byte(nil), content[targetShape.Start:targetShape.End]...)
 
-	if toFront {
-		lastShape := shapes[len(shapes)-1]
-		buf.Write(content[:targetShape.Start])
-		buf.Write(content[targetShape.End:lastShape.End])
-		buf.Write(shapeXML)
-		buf.Write(content[lastShape.End:])
-	} else {
-		firstShape := shapes[0]
-		buf.Write(content[:firstShape.Start])
-		buf.Write(shapeXML)
-		buf.Write(content[firstShape.Start:targetShape.Start])
-		buf.Write(content[targetShape.End:])
+	prefix := append([]byte(nil), content[:shapes[0].Start]...)
+	suffix := append([]byte(nil), content[shapes[len(shapes)-1].End:]...)
+
+	gaps := make([][]byte, 0, len(shapes)-1)
+	for i := range len(shapes) - 1 {
+		gap := append([]byte(nil), content[shapes[i].End:shapes[i+1].Start]...)
+		gaps = append(gaps, gap)
 	}
+
+	remaining := make([]int, 0, len(shapes)-1)
+	for i := range shapes {
+		if i == shapeIndex {
+			continue
+		}
+		remaining = append(remaining, i)
+	}
+	remaining = append(remaining[:targetIndex], append([]int{shapeIndex}, remaining[targetIndex:]...)...)
+
+	var buf bytes.Buffer
+	buf.Write(prefix)
+	for pos, idx := range remaining {
+		if idx == shapeIndex {
+			buf.Write(shapeXML)
+		} else {
+			s := shapes[idx]
+			buf.Write(content[s.Start:s.End])
+		}
+		if pos < len(gaps) {
+			buf.Write(gaps[pos])
+		}
+	}
+	buf.Write(suffix)
 
 	e.parts.Set(partPath, buf.Bytes())
 	return nil

@@ -71,6 +71,7 @@ const (
 	OpSetPlaceholderContent   = "set_placeholder_content"
 	OpGetImageMetadata        = "get_image_metadata"
 	OpAddVideo                = "add_video"
+	OpAddAudio                = "add_audio"
 	OpAddOLEObject            = "add_ole_object"
 )
 
@@ -144,6 +145,7 @@ func SupportedOps() []string {
 		OpSetPlaceholderContent,
 		OpGetImageMetadata,
 		OpAddVideo,
+		OpAddAudio,
 		OpAddOLEObject,
 	}
 }

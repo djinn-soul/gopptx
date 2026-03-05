@@ -3,7 +3,7 @@ package editor
 import (
 	"encoding/json"
 
-	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -12,101 +12,91 @@ func handleSlideCount(e *PresentationEditor, _ json.RawMessage) (any, error) {
 }
 
 func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	// Parse and validate payload
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	title := v.OptionalString(p, "title")
-	layout := v.OptionalString(p, "layout")
-	bullets, _ := v.OptionalStringSlice(p, "bullets")
-
-	if v.HasErrors() {
-		return nil, v.Error()
-	}
-
-	slide := elements.NewSlide(title)
-	if layout != "" {
-		slide = slide.WithLayout(layout)
-	}
-	for _, b := range bullets {
-		slide = slide.AddBullet(b)
-	}
-	index, err := e.AddSlide(slide)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]int{"index": index}, nil
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.AddSlideRequest, bool) {
+			return editorcommand.ParseAddSlideRequest(p, v.OptionalString, v.OptionalStringSlice), true
+		},
+		v.Error,
+		func(request editorcommand.AddSlideRequest) (any, error) {
+			slide := elements.NewSlide(request.Title)
+			if request.Layout != "" {
+				slide = slide.WithLayout(request.Layout)
+			}
+			for _, bullet := range request.Bullets {
+				slide = slide.AddBullet(bullet)
+			}
+			index, err := e.AddSlide(slide)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]int{"index": index}, nil
+		},
+	)
 }
 
 func handleRemoveSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	index, ok := v.RequireInt(p, "index")
-	if !ok {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(index, 0, e.SlideCount(), "index") {
-		return nil, v.Error()
-	}
-
-	return nil, e.RemoveSlide(index)
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SlideIndexRequest, bool) {
+			return editorcommand.ParseSlideIndexOnlyRequest(p, v.RequireInt)
+		},
+		v.Error,
+		func(request editorcommand.SlideIndexRequest) (any, error) {
+			if !v.IndexBounds(request.Index, 0, e.SlideCount(), "index") {
+				return nil, v.Error()
+			}
+			return nil, e.RemoveSlide(request.Index)
+		},
+	)
 }
 
 func handleMoveSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	from, ok := v.RequireInt(p, "from")
-	if !ok {
-		return nil, v.Error()
-	}
-	to, ok := v.RequireInt(p, "to")
-	if !ok {
-		return nil, v.Error()
-	}
-	slideCount := e.SlideCount()
-	if !v.IndexBounds(from, 0, slideCount, "from") {
-		return nil, v.Error()
-	}
-	if !v.IndexBounds(to, 0, slideCount, "to") {
-		return nil, v.Error()
-	}
-
-	return nil, e.MoveSlide(from, to)
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.MoveSlideRequest, bool) {
+			return editorcommand.ParseMoveSlideRequest(p, v.RequireInt)
+		},
+		v.Error,
+		func(request editorcommand.MoveSlideRequest) (any, error) {
+			slideCount := e.SlideCount()
+			if !v.IndexBounds(request.From, 0, slideCount, "from") {
+				return nil, v.Error()
+			}
+			if !v.IndexBounds(request.To, 0, slideCount, "to") {
+				return nil, v.Error()
+			}
+			return nil, e.MoveSlide(request.From, request.To)
+		},
+	)
 }
 
 func handleDuplicateSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	index, ok := v.RequireInt(p, "index")
-	if !ok {
-		return nil, v.Error()
-	}
-	insertAt, _ := v.OptionalInt(p, "insert_at")
-
-	if !v.IndexBounds(index, 0, e.SlideCount(), "index") {
-		return nil, v.Error()
-	}
-
-	newIdx, err := e.DuplicateSlide(index, insertAt)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]int{"new_index": newIdx}, nil
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.DuplicateSlideRequest, bool) {
+			return editorcommand.ParseDuplicateSlideRequest(p, v.RequireInt, v.OptionalInt)
+		},
+		v.Error,
+		func(request editorcommand.DuplicateSlideRequest) (any, error) {
+			if !v.IndexBounds(request.Index, 0, e.SlideCount(), "index") {
+				return nil, v.Error()
+			}
+			newIdx, err := e.DuplicateSlide(request.Index, request.InsertAt)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]int{"new_index": newIdx}, nil
+		},
+	)
 }
 
 func handleGetMetadata(e *PresentationEditor, _ json.RawMessage) (any, error) {
@@ -118,130 +108,5 @@ func handleGetMetadata(e *PresentationEditor, _ json.RawMessage) (any, error) {
 			"width":  m.SlideSize.Width,
 			"height": m.SlideSize.Height,
 		},
-	}, nil
-}
-
-func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-
-	var params struct {
-		ChartSelector common.ChartSelector   `json:"chart_selector"`
-		Data          common.ChartDataUpdate `json:"data"`
-	}
-	if err := json.Unmarshal(payload, &params); err != nil {
-		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
-	}
-
-	if err := e.UpdateChartData(slideIndex, params.ChartSelector, params.Data); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"updated": true}, nil
-}
-
-func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-
-	refs, err := e.ListSlideCharts(slideIndex)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{"charts": refs}, nil
-}
-
-func handleListSlideLayouts(e *PresentationEditor, _ json.RawMessage) (any, error) {
-	layouts, err := e.ListSlideLayouts()
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{"layouts": layouts}, nil
-}
-
-func handleListSlideMasters(e *PresentationEditor, _ json.RawMessage) (any, error) {
-	masters, err := e.ListSlideMasters()
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{"masters": masters}, nil
-}
-
-func handleListMasterLayouts(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	masterPart, ok := v.RequireString(p, "master_part")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	layouts, err := e.ListMasterLayouts(masterPart)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{"layouts": layouts}, nil
-}
-
-func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-	layoutPart, ok := v.RequireString(p, "layout_part")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.RebindSlideLayout(slideIndex, layoutPart); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"rebound": true}, nil
-}
-
-func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	layoutPart, ok := v.RequireString(p, "layout_part")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	result, err := e.CloneLayoutMasterFamily(layoutPart)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{
-		"master_part": result.MasterPart,
-		"theme_part":  result.ThemePart,
-		"layout_map":  result.LayoutMap,
 	}, nil
 }

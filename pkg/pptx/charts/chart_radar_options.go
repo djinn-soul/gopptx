@@ -36,6 +36,28 @@ func (c RadarChart) WithDataLabels(show bool) RadarChart {
 	return c
 }
 
+// WithDataLabelPosition sets data-label position:
+// ctr|inEnd|inBase|outEnd|bestFit|l|r|t|b.
+func (c RadarChart) WithDataLabelPosition(position string) RadarChart {
+	c.DataLabels.Position = strings.TrimSpace(position)
+	return c
+}
+
+// WithDataLabelContent customizes data-label content fields.
+func (c RadarChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) RadarChart {
+	c.DataLabels.UseCustom = true
+	c.DataLabels.ShowValue = showValue
+	c.DataLabels.ShowCategory = showCategory
+	c.DataLabels.ShowSeriesName = showSeriesName
+	c.DataLabels.ShowPercent = showPercent
+	return c
+}
+
 func (c RadarChart) WithAxisTitles(categoryAxisTitle string, valueAxisTitle string) RadarChart {
 	c.CategoryAxisTitle = strings.TrimSpace(categoryAxisTitle)
 	c.ValueAxisTitle = strings.TrimSpace(valueAxisTitle)
@@ -110,6 +132,21 @@ func (c RadarFilledChart) WithLegendOverlay(overlay bool) RadarFilledChart {
 
 func (c RadarFilledChart) WithDataLabels(show bool) RadarFilledChart {
 	c.RadarChart = c.RadarChart.WithDataLabels(show)
+	return c
+}
+
+func (c RadarFilledChart) WithDataLabelPosition(position string) RadarFilledChart {
+	c.RadarChart = c.RadarChart.WithDataLabelPosition(position)
+	return c
+}
+
+func (c RadarFilledChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) RadarFilledChart {
+	c.RadarChart = c.RadarChart.WithDataLabelContent(showValue, showCategory, showSeriesName, showPercent)
 	return c
 }
 

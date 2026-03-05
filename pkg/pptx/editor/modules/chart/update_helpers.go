@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -9,11 +10,10 @@ import (
 )
 
 func DetectChartKind(chartXML []byte) Kind {
-	s := string(chartXML)
 	switch {
-	case strings.Contains(s, "<c:bubbleChart"):
+	case bytes.Contains(chartXML, []byte("<c:bubbleChart")):
 		return KindBubble
-	case strings.Contains(s, "<c:scatterChart"):
+	case bytes.Contains(chartXML, []byte("<c:scatterChart")):
 		return KindScatter
 	default:
 		return KindCategory
@@ -96,7 +96,10 @@ func ResolveChartSelector(
 }
 
 func validateCategoryChartUpdatePayload(req common.ChartDataUpdate) error {
-	baseCats := len(req.Categories)
+	baseCats, err := categoryCountFromPayload(req)
+	if err != nil {
+		return err
+	}
 	if baseCats == 0 {
 		baseCats = firstSeriesCategoryCount(req.Series)
 	}
@@ -107,6 +110,23 @@ func validateCategoryChartUpdatePayload(req common.ChartDataUpdate) error {
 		}
 	}
 	return nil
+}
+
+func categoryCountFromPayload(req common.ChartDataUpdate) (int, error) {
+	if len(req.MultiLevelCategories) == 0 {
+		return len(req.Categories), nil
+	}
+
+	base := len(req.MultiLevelCategories[0])
+	if base == 0 {
+		return 0, errors.New("multi-level categories require at least one leaf value")
+	}
+	for i := 1; i < len(req.MultiLevelCategories); i++ {
+		if len(req.MultiLevelCategories[i]) != base {
+			return 0, fmt.Errorf("multi-level category level %d length mismatch", i)
+		}
+	}
+	return base, nil
 }
 
 func firstSeriesCategoryCount(series []common.ChartSeriesData) int {

@@ -264,6 +264,10 @@ type Shape struct {
 	Name         string
 	Adjustments  []ShapeAdjustment
 	Effects      *ShapeEffects
+	// Rich formatting properties (new)
+	RichFill   *RichShapeFill
+	RichLine   *RichShapeLine
+	RichShadow *RichShapeShadow
 }
 
 // NewShape creates one shape.
@@ -419,6 +423,34 @@ func (s Shape) WithName(name string) Shape {
 	return s
 }
 
+// WithRichFill applies a rich fill (solid, gradient, pattern, or no-fill) to a shape.
+func (s Shape) WithRichFill(fill *RichShapeFill) Shape {
+	s.RichFill = fill
+	// Clear legacy fill when using rich fill
+	s.Fill = nil
+	s.GradientFill = nil
+	return s
+}
+
+// WithRichLine applies a rich line style to a shape.
+func (s Shape) WithRichLine(line *RichShapeLine) Shape {
+	s.RichLine = line
+	// Clear legacy line when using rich line
+	s.Line = nil
+	return s
+}
+
+// WithRichShadow applies a rich shadow effect to a shape.
+func (s Shape) WithRichShadow(shadow *RichShapeShadow) Shape {
+	s.RichShadow = shadow
+	// Update legacy effects if present
+	if s.Effects == nil {
+		s.Effects = &ShapeEffects{}
+	}
+	s.Effects.Shadow = shadow != nil
+	return s
+}
+
 // Validate checks for validity of shape parameters.
 func (s Shape) Validate(slideIndex, shapeIndex int) error {
 	if !s.IsDecorative && len(s.AltText) > common.MaxAltTextLength {
@@ -457,6 +489,11 @@ func (s Shape) validateShapeBounds(slideIndex, shapeIndex int) error {
 }
 
 func (s Shape) validateFills(slideIndex, shapeIndex int) error {
+	// Check for conflicts between legacy and rich fill
+	if s.RichFill != nil && (s.Fill != nil || s.GradientFill != nil) {
+		return fmt.Errorf("shape %d (type %q) on slide %d cannot set both rich fill and legacy fill",
+			shapeIndex, s.Type, slideIndex)
+	}
 	if s.Fill != nil && s.GradientFill != nil {
 		return fmt.Errorf("shape %d (type %q) on slide %d cannot set both solid and gradient fill",
 			shapeIndex, s.Type, slideIndex)
@@ -471,13 +508,33 @@ func (s Shape) validateFills(slideIndex, shapeIndex int) error {
 			return fmt.Errorf("shape %d on slide %d has invalid gradient fill: %w", shapeIndex, slideIndex, err)
 		}
 	}
+	if s.RichFill != nil {
+		if err := s.RichFill.Validate(); err != nil {
+			return fmt.Errorf("shape %d on slide %d has invalid rich fill: %w", shapeIndex, slideIndex, err)
+		}
+	}
 	return nil
 }
 
 func (s Shape) validateLinesAndRotation(slideIndex, shapeIndex int) error {
+	// Check for conflicts between legacy and rich line
+	if s.RichLine != nil && s.Line != nil {
+		return fmt.Errorf("shape %d (type %q) on slide %d cannot set both rich line and legacy line",
+			shapeIndex, s.Type, slideIndex)
+	}
 	if s.Line != nil {
 		if err := s.Line.Validate(); err != nil {
 			return fmt.Errorf("shape %d on slide %d has invalid line: %w", shapeIndex, slideIndex, err)
+		}
+	}
+	if s.RichLine != nil {
+		if err := s.RichLine.Validate(); err != nil {
+			return fmt.Errorf("shape %d on slide %d has invalid rich line: %w", shapeIndex, slideIndex, err)
+		}
+	}
+	if s.RichShadow != nil {
+		if err := s.RichShadow.Validate(); err != nil {
+			return fmt.Errorf("shape %d on slide %d has invalid rich shadow: %w", shapeIndex, slideIndex, err)
 		}
 	}
 	if s.RotationDeg != nil {

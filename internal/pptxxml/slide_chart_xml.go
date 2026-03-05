@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const chartMajorGridlinesXML = "<c:majorGridlines/>"
+
 // ChartPartXML renders a chart part (`ppt/charts/chartN.xml`).
 func ChartPartXML(chart *ChartSpec) string {
 	return string(RenderChart(chart))
@@ -49,7 +51,7 @@ func RenderChart(chart *ChartSpec) []byte {
 
 func barChartPartXML(chart *ChartSpec) string {
 	series := chartSeriesXML(chart)
-	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	labels := chartDataLabelsXML(chart)
 	return chartPartEnvelope(
 		chart.Title,
 		chart.TitleOverlay,
@@ -71,7 +73,7 @@ func barChartPartXML(chart *ChartSpec) string {
 
 func lineChartPartXML(chart *ChartSpec) string {
 	series := chartLineSeriesXML(chart)
-	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	labels := chartDataLabelsXML(chart)
 	smooth := "0"
 	if chart.Smooth {
 		smooth = "1"
@@ -191,14 +193,69 @@ func chartLineSeriesXML(chart *ChartSpec) string {
 	)
 }
 
-func chartDataLabelsXML(show bool) string {
-	if !show {
+type chartDataLabelDefaults struct {
+	showLegendKey  bool
+	showValue      bool
+	showCategory   bool
+	showSeriesName bool
+	showPercent    bool
+	showBubbleSize bool
+}
+
+func chartDataLabelsXML(chart *ChartSpec) string {
+	return chartDataLabelsWithDefaults(chart, chartDataLabelDefaults{
+		showValue: true,
+	})
+}
+
+func chartDataLabelsWithDefaults(chart *ChartSpec, defaults chartDataLabelDefaults) string {
+	if !chart.ShowDataLabels {
 		return ""
 	}
-	return `
+	position := normalizedDataLabelPosition(chart.DataLabelPosition)
+	showLegendKey := resolvedDataLabelBool(chart.DataLabelShowLegendKey, defaults.showLegendKey)
+	showValue := resolvedDataLabelBool(chart.DataLabelShowValue, defaults.showValue)
+	showCategory := resolvedDataLabelBool(chart.DataLabelShowCategoryName, defaults.showCategory)
+	showSeriesName := resolvedDataLabelBool(chart.DataLabelShowSeriesName, defaults.showSeriesName)
+	showPercent := resolvedDataLabelBool(chart.DataLabelShowPercent, defaults.showPercent)
+	showBubbleSize := resolvedDataLabelBool(chart.DataLabelShowBubbleSize, defaults.showBubbleSize)
+
+	var b strings.Builder
+	b.WriteString(`
 <c:dLbls>
-<c:showVal val="1"/>
-</c:dLbls>`
+`)
+	if position != "" {
+		b.WriteString(`<c:dLblPos val="`)
+		b.WriteString(position)
+		b.WriteString(`"/>
+`)
+	}
+	if showLegendKey {
+		b.WriteString(`<c:showLegendKey val="1"/>
+`)
+	}
+	if showValue {
+		b.WriteString(`<c:showVal val="1"/>
+`)
+	}
+	if showCategory {
+		b.WriteString(`<c:showCatName val="1"/>
+`)
+	}
+	if showSeriesName {
+		b.WriteString(`<c:showSerName val="1"/>
+`)
+	}
+	if showPercent {
+		b.WriteString(`<c:showPercent val="1"/>
+`)
+	}
+	if showBubbleSize {
+		b.WriteString(`<c:showBubbleSize val="1"/>
+`)
+	}
+	b.WriteString(`</c:dLbls>`)
+	return b.String()
 }
 
 func normalizedLegendPosition(pos string) string {
@@ -211,50 +268,7 @@ func normalizedLegendPosition(pos string) string {
 }
 
 func chartAxesXML(chart *ChartSpec) string {
-	categoryAxisTitle := chartAxisTitleXML(chart.CategoryAxisTitle)
-	valueAxisTitle := chartAxisTitleXML(chart.ValueAxisTitle)
-	valueScaling := valueAxisScalingXML(chart.MinValue, chart.MaxValue)
-	valueFormat := chartValueFormatXML(chart.ValueFormat)
-	crossBetween := normalizedValueAxisCrossBetween(chart.ValueAxisCrossBetween)
-	majorGrid := ""
-	if chart.ShowMajorGridlines {
-		majorGrid = "<c:majorGridlines/>"
-	}
-
-	var b strings.Builder
-	b.WriteString(`
-<c:catAx>
-<c:axId val="48650112"/>
-<c:scaling><c:orientation val="minMax"/></c:scaling>
-<c:delete val="0"/>
-<c:axPos val="b"/>`)
-	b.WriteString(categoryAxisTitle)
-	b.WriteString(`
-<c:tickLblPos val="nextTo"/>
-<c:crossAx val="48672768"/>
-<c:crosses val="autoZero"/>
-<c:auto val="1"/>
-<c:lblAlgn val="ctr"/>
-<c:lblOffset val="100"/>
-</c:catAx>
-<c:valAx>
-<c:axId val="48672768"/>`)
-	b.WriteString(valueScaling)
-	b.WriteString(`
-<c:delete val="0"/>
-<c:axPos val="l"/>`)
-	b.WriteString(majorGrid)
-	b.WriteString(valueAxisTitle)
-	b.WriteString(valueFormat)
-	b.WriteString(`
-<c:tickLblPos val="nextTo"/>
-<c:crossAx val="48650112"/>
-<c:crosses val="autoZero"/>
-<c:crossBetween val="`)
-	b.WriteString(crossBetween)
-	b.WriteString(`"/>
-</c:valAx>`)
-	return b.String()
+	return buildChartAxesXML(chart, "catAx", false, true)
 }
 
 func chartAxisTitleXML(title string) string {
@@ -316,6 +330,40 @@ func normalizedValueAxisCrossBetween(mode string) string {
 	default:
 		return "between"
 	}
+}
+
+func normalizedAxisTickLabelPosition(pos string) string {
+	switch strings.ToLower(strings.TrimSpace(pos)) {
+	case "low", "high", "none":
+		return strings.ToLower(strings.TrimSpace(pos))
+	default:
+		return "nextTo"
+	}
+}
+
+func normalizedAxisCrosses(mode string) string {
+	switch strings.TrimSpace(mode) {
+	case "min", "max":
+		return strings.TrimSpace(mode)
+	default:
+		return "autoZero"
+	}
+}
+
+func normalizedDataLabelPosition(position string) string {
+	switch strings.TrimSpace(position) {
+	case "ctr", "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
+		return strings.TrimSpace(position)
+	default:
+		return ""
+	}
+}
+
+func resolvedDataLabelBool(value *bool, fallback bool) bool {
+	if value == nil {
+		return fallback
+	}
+	return *value
 }
 
 func boolToOneZero(value bool) string {

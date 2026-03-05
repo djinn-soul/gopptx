@@ -43,21 +43,38 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		}
 	}
 
-	if shape.Fill != nil {
-		spec.Fill = &pptxxml.ShapeFillSpec{
-			Color:        common.NormalizeHexColor(shape.Fill.Color),
-			Transparency: shape.Fill.Transparency,
+	// Handle rich fill first (takes precedence over legacy fill)
+	if shape.RichFill != nil {
+		spec.RichFill = toXMLRichFillSpec(shape.RichFill)
+	} else {
+		// Legacy fill handling
+		if shape.Fill != nil {
+			spec.Fill = &pptxxml.ShapeFillSpec{
+				Color:        common.NormalizeHexColor(shape.Fill.Color),
+				Transparency: shape.Fill.Transparency,
+			}
+		}
+		if shape.GradientFill != nil {
+			spec.GradientFill = toXMLGradientFillSpec(shape.GradientFill)
 		}
 	}
-	if shape.GradientFill != nil {
-		spec.GradientFill = toXMLGradientFillSpec(shape.GradientFill)
-	}
-	if shape.Line != nil {
+
+	// Handle rich line first (takes precedence over legacy line)
+	if shape.RichLine != nil {
+		spec.RichLine = toXMLRichLineSpec(shape.RichLine)
+	} else if shape.Line != nil {
 		spec.Line = &pptxxml.ShapeLineSpec{
 			Color: common.NormalizeHexColor(shape.Line.Color),
 			Width: shape.Line.Width.Emu(),
 			Dash:  NormalizeDrawingLineDash(shape.Line.Dash),
+			Cap:   shape.Line.Cap,
+			Join:  shape.Line.Join,
 		}
+	}
+
+	// Handle rich shadow
+	if shape.RichShadow != nil {
+		spec.RichShadow = toXMLRichShadowSpec(shape.RichShadow)
 	}
 
 	if shape.TextFrame != nil {
@@ -83,6 +100,64 @@ func toXMLGradientFillSpec(fill *ShapeGradientFill) *pptxxml.ShapeGradientFillSp
 		Type:     NormalizeShapeGradientType(fill.Type),
 		Stops:    stops,
 		AngleDeg: fill.AngleDeg,
+	}
+}
+
+func toXMLRichFillSpec(fill *RichShapeFill) *pptxxml.RichShapeFillSpec {
+	spec := &pptxxml.RichShapeFillSpec{
+		Type: pptxxml.FillType(fill.Type),
+	}
+
+	switch fill.Type {
+	case FillTypeSolid:
+		if fill.Solid != nil {
+			spec.Solid = &pptxxml.SolidFillSpec{
+				Color:        fill.Solid.Color,
+				Transparency: fill.Solid.Transparency,
+			}
+		}
+	case FillTypeGradient:
+		if fill.Gradient != nil {
+			spec.Gradient = toXMLGradientFillSpec(fill.Gradient)
+		}
+	case FillTypePattern:
+		if fill.Pattern != nil {
+			spec.Pattern = &pptxxml.PatternFillSpec{
+				Pattern: string(fill.Pattern.Pattern),
+				FgColor: fill.Pattern.FgColor,
+				BgColor: fill.Pattern.BgColor,
+			}
+		}
+	}
+
+	return spec
+}
+
+func toXMLRichLineSpec(line *RichShapeLine) *pptxxml.RichShapeLineSpec {
+	return &pptxxml.RichShapeLineSpec{
+		Color:        line.Color,
+		Width:        line.Width.Emu(),
+		DashStyle:    pptxxml.LineDashStyle(line.DashStyle),
+		CapStyle:     pptxxml.LineCapStyle(line.CapStyle),
+		JoinStyle:    pptxxml.LineJoinStyle(line.JoinStyle),
+		Transparency: line.Transparency,
+	}
+}
+
+func toXMLRichShadowSpec(shadow *RichShapeShadow) *pptxxml.RichShapeShadowSpec {
+	return &pptxxml.RichShapeShadowSpec{
+		Type:            pptxxml.ShadowType(shadow.Type),
+		Color:           shadow.Color,
+		Transparency:    shadow.Transparency,
+		BlurRadius:      shadow.BlurRadius,
+		Distance:        shadow.Distance,
+		Angle:           shadow.Angle,
+		Alignment:       string(shadow.Alignment),
+		SkewX:           shadow.SkewX,
+		SkewY:           shadow.SkewY,
+		ScaleX:          shadow.ScaleX,
+		ScaleY:          shadow.ScaleY,
+		RotateWithShape: shadow.RotateWithShape,
 	}
 }
 

@@ -10,6 +10,9 @@ const (
 	defaultTimeoutSecs        = 30
 	bytesPerMiB               = 1024 * 1024
 	defaultMaxBodyBytes       = 10 * bytesPerMiB
+	defaultMaxImageSizeBytes  = 5 * bytesPerMiB
+	defaultMaxTotalImageSize  = 20 * bytesPerMiB
+	defaultMaxImagesPerSlide  = 3
 )
 
 // Config holds options that control content extraction and slide generation.
@@ -35,6 +38,20 @@ type Config struct {
 	TimeoutSecs int
 	// MaxBodyBytes caps the fetched HTTP response body size in bytes.
 	MaxBodyBytes int64
+	// DownloadImages fetches and embeds remote images when true (replaces alt-text bullets).
+	DownloadImages bool
+	// MaxImageSizeBytes caps individual downloaded image size (default: 5MB).
+	MaxImageSizeBytes int64
+	// MaxTotalImageSizeBytes caps total downloaded image size per page (default: 20MB).
+	MaxTotalImageSizeBytes int64
+	// MaxImagesPerSlide limits images per slide (default: 3).
+	MaxImagesPerSlide int
+	// AllowedImageTypes filters by MIME type (default: ["image/png", "image/jpeg", "image/gif", "image/webp"]).
+	AllowedImageTypes []string
+	// ContentSelectors overrides default main-content CSS selectors.
+	ContentSelectors []string
+	// ExcludeSelectors removes matching elements from content.
+	ExcludeSelectors []string
 }
 
 // Web2PptConfig is a compatibility alias for Config.
@@ -48,16 +65,20 @@ type URLFetchConfig = Config
 // DefaultConfig returns a Config with sensible defaults.
 func DefaultConfig() Config {
 	return Config{
-		MaxSlides:          defaultMaxSlides,
-		MaxBulletsPerSlide: defaultMaxBulletsPerSlide,
-		IncludeImages:      true,
-		IncludeTables:      true,
-		IncludeCode:        true,
-		ExtractLinks:       true,
-		GroupByHeadings:    true,
-		UserAgent:          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-		TimeoutSecs:        defaultTimeoutSecs,
-		MaxBodyBytes:       defaultMaxBodyBytes,
+		MaxSlides:              defaultMaxSlides,
+		MaxBulletsPerSlide:     defaultMaxBulletsPerSlide,
+		IncludeImages:          true,
+		IncludeTables:          true,
+		IncludeCode:            true,
+		ExtractLinks:           true,
+		GroupByHeadings:        true,
+		UserAgent:              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+		TimeoutSecs:            defaultTimeoutSecs,
+		MaxBodyBytes:           defaultMaxBodyBytes,
+		MaxImageSizeBytes:      defaultMaxImageSizeBytes,
+		MaxTotalImageSizeBytes: defaultMaxTotalImageSize,
+		MaxImagesPerSlide:      defaultMaxImagesPerSlide,
+		AllowedImageTypes:      []string{"image/png", "image/jpeg", "image/gif", "image/webp"},
 	}
 }
 
@@ -118,6 +139,48 @@ func (c Config) WithTimeout(secs int) Config {
 // WithMaxBodyBytes sets the maximum response body size in bytes.
 func (c Config) WithMaxBodyBytes(n int64) Config {
 	c.MaxBodyBytes = n
+	return c
+}
+
+// WithDownloadImages enables or disables image downloading and embedding.
+func (c Config) WithDownloadImages(v bool) Config {
+	c.DownloadImages = v
+	return c
+}
+
+// WithMaxImageSizeBytes sets the maximum size for individual downloaded images.
+func (c Config) WithMaxImageSizeBytes(n int64) Config {
+	c.MaxImageSizeBytes = n
+	return c
+}
+
+// WithMaxTotalImageSizeBytes sets the maximum total size for all downloaded images.
+func (c Config) WithMaxTotalImageSizeBytes(n int64) Config {
+	c.MaxTotalImageSizeBytes = n
+	return c
+}
+
+// WithMaxImagesPerSlide sets the maximum number of images per slide.
+func (c Config) WithMaxImagesPerSlide(n int) Config {
+	c.MaxImagesPerSlide = n
+	return c
+}
+
+// WithAllowedImageTypes sets the allowed MIME types for downloaded images.
+func (c Config) WithAllowedImageTypes(types []string) Config {
+	c.AllowedImageTypes = types
+	return c
+}
+
+// WithContentSelectors sets custom CSS selectors for content extraction.
+func (c Config) WithContentSelectors(selectors []string) Config {
+	c.ContentSelectors = selectors
+	return c
+}
+
+// WithExcludeSelectors sets CSS selectors for elements to exclude from extraction.
+func (c Config) WithExcludeSelectors(selectors []string) Config {
+	c.ExcludeSelectors = selectors
 	return c
 }
 

@@ -17,6 +17,7 @@ OP_ADD_TABLE = "add_table"
 OP_ADD_TEXTBOX = "add_textbox"
 OP_ADD_VBA = "add_vba"
 OP_ADD_VIDEO = "add_video"
+OP_ADD_AUDIO = "add_audio"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
 OP_BUILD_FREEFORM = "build_freeform"
@@ -87,6 +88,7 @@ SUPPORTED_OPS = (
     OP_ADD_TEXTBOX,
     OP_ADD_VBA,
     OP_ADD_VIDEO,
+    OP_ADD_AUDIO,
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
     OP_BUILD_FREEFORM,

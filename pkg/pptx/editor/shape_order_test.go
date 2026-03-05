@@ -127,6 +127,61 @@ func TestMoveShape(t *testing.T) {
 			t.Errorf("expected order: A, B, C. Got indices A=%d, B=%d, C=%d", idx2, idx3, idx4)
 		}
 	})
+
+	t.Run("MoveToIndex (Middle Position)", func(t *testing.T) {
+		e := setupEditor()
+		err := e.MoveShapeToIndex(0, 2, 1) // A -> index 1 => B, A, C
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		content, _ := e.parts.Get("ppt/slides/slide1.xml")
+		str := string(content)
+
+		idx2 := strings.Index(str, `id="2"`)
+		idx3 := strings.Index(str, `id="3"`)
+		idx4 := strings.Index(str, `id="4"`)
+
+		if idx3 >= idx2 || idx2 >= idx4 {
+			t.Errorf("expected order: B, A, C. Got indices: B=%d, A=%d, C=%d", idx3, idx2, idx4)
+		}
+	})
+
+	t.Run("MoveToIndex (Out Of Range)", func(t *testing.T) {
+		e := setupEditor()
+		err := e.MoveShapeToIndex(0, 2, 99)
+		if err == nil || err.Error() != "shape index 99 out of range [0,3)" {
+			t.Fatalf("expected out-of-range error, got %v", err)
+		}
+	})
+
+	t.Run("MoveToIndex (Equivalent To Front And Back)", func(t *testing.T) {
+		e := setupEditor()
+		if err := e.MoveShapeToIndex(0, 3, 2); err != nil { // B -> front => A, C, B
+			t.Fatalf("MoveShapeToIndex to front failed: %v", err)
+		}
+		content, _ := e.parts.Get("ppt/slides/slide1.xml")
+		str := string(content)
+		idx2 := strings.Index(str, `id="2"`)
+		idx3 := strings.Index(str, `id="3"`)
+		idx4 := strings.Index(str, `id="4"`)
+		if idx2 >= idx4 || idx4 >= idx3 {
+			t.Fatalf("expected order A,C,B after index move to front, got A=%d C=%d B=%d", idx2, idx4, idx3)
+		}
+
+		e = setupEditor()
+		if err := e.MoveShapeToIndex(0, 3, 0); err != nil { // B -> back => B, A, C
+			t.Fatalf("MoveShapeToIndex to back failed: %v", err)
+		}
+		content, _ = e.parts.Get("ppt/slides/slide1.xml")
+		str = string(content)
+		idx2 = strings.Index(str, `id="2"`)
+		idx3 = strings.Index(str, `id="3"`)
+		idx4 = strings.Index(str, `id="4"`)
+		if idx3 >= idx2 || idx2 >= idx4 {
+			t.Fatalf("expected order B,A,C after index move to back, got B=%d A=%d C=%d", idx3, idx2, idx4)
+		}
+	})
 }
 
 func TestMoveShapeRejectsMissingIDOnEmptyOrSingleShapeSlides(t *testing.T) {
@@ -183,6 +238,11 @@ func TestMoveShapeRejectsMissingIDOnEmptyOrSingleShapeSlides(t *testing.T) {
 			errBack := e.MoveShapeToBack(0, 999)
 			if errBack == nil || errBack.Error() != "shape with ID 999 not found" {
 				t.Fatalf("MoveShapeToBack expected not-found error, got %v", errBack)
+			}
+
+			errAt := e.MoveShapeToIndex(0, 999, 0)
+			if errAt == nil || errAt.Error() != "shape with ID 999 not found" {
+				t.Fatalf("MoveShapeToIndex expected not-found error, got %v", errAt)
 			}
 		})
 	}

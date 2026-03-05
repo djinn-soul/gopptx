@@ -28,4 +28,7 @@ def is_four_number_bounds(
     components = cast("tuple[object, ...]", value)
     if len(components) != _FOUR_BOUNDS_COMPONENTS:
         return False
-    return all(isinstance(component, int | float) for component in components)
+    return all(
+        isinstance(component, int | float) and not isinstance(component, bool)
+        for component in components
+    )

@@ -20,7 +20,7 @@ func stockChartPartXML(chart *ChartSpec) string {
 	index++
 	seriesParts = append(seriesParts, chartSeriesWithValues(chart, "Close", chart.CloseValues, index))
 	visuals := stockVisualsXML(chart)
-	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	labels := chartDataLabelsXML(chart)
 	var plot strings.Builder
 	plot.WriteString(`
 <c:stockChart>`)

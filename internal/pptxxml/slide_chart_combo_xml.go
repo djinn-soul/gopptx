@@ -8,7 +8,7 @@ import (
 func comboChartPartXML(chart *ChartSpec) string {
 	barSeries := comboSeriesXML(chart, chart.BarSeries, 0)
 	lineSeries := comboSeriesXML(chart, chart.LineSeries, len(chart.BarSeries))
-	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	labels := chartDataLabelsXML(chart)
 	var plot strings.Builder
 	plot.WriteString(`
 <c:barChart>

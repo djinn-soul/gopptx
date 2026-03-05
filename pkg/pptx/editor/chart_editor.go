@@ -229,28 +229,6 @@ func (e *PresentationEditor) addRelationship(partPath, id, relType, target strin
 	return e.writeRelationships(relsPath, rels)
 }
 
-func (e *PresentationEditor) writeRelationships(path string, rels []common.EditorRelationship) error {
-	e.parts.Set(path, []byte(renderRelationshipsXML(rels)))
-	return nil
-}
-
-func (e *PresentationEditor) addContentTypeOverride(partName, contentType string) {
-	ctPath := "[Content_Types].xml"
-	data, ok := e.parts.Get(ctPath)
-	if !ok {
-		return
-	}
-
-	partNameRooted := "/" + partName
-	if bytes.Contains(data, []byte(`PartName="`+partNameRooted+`"`)) {
-		return
-	}
-
-	override := fmt.Sprintf(`<Override PartName="%s" ContentType="%s"/>`, partNameRooted, contentType)
-	replaced := bytes.Replace(data, []byte("</Types>"), []byte(override+"</Types>"), 1)
-	e.parts.Set(ctPath, replaced)
-}
-
 func (e *PresentationEditor) nextShapeID(slidePart string) int {
 	data, _ := e.parts.Get(slidePart)
 	re := regexp.MustCompile(`id="(\d+)"`)
@@ -299,10 +277,4 @@ func (e *PresentationEditor) appendShapeToSlide(slidePart, shapeXML string) erro
 	replaced := bytes.Replace(data, []byte("</p:spTree>"), []byte(shapeXML+"</p:spTree>"), 1)
 	e.parts.Set(slidePart, replaced)
 	return nil
-}
-
-func resolveRelationshipTarget(basePart, target string) string {
-	baseDir := path.Dir(basePart)
-	joined := path.Join(baseDir, target)
-	return path.Clean(joined)
 }

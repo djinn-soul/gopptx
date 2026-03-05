@@ -28,10 +28,14 @@ type MediaInsertSpec struct {
 	InsertPath       func(MediaPlacement, string, string, string) (int, error)
 }
 
-type VideoBinaryInsertFn func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
-type VideoPathInsertFn func(int, string, string, string, float64, float64, float64, float64) (int, error)
-type OLEBinaryInsertFn func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
-type OLEPathInsertFn func(int, string, string, string, float64, float64, float64, float64) (int, error)
+type (
+	VideoBinaryInsertFn func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
+	VideoPathInsertFn   func(int, string, string, string, float64, float64, float64, float64) (int, error)
+	AudioBinaryInsertFn func(int, []byte, string, float64, float64, float64, float64) (int, error)
+	AudioPathInsertFn   func(int, string, string, float64, float64, float64, float64) (int, error)
+	OLEBinaryInsertFn   func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
+	OLEPathInsertFn     func(int, string, string, string, float64, float64, float64, float64) (int, error)
+)
 
 func AdaptVideoBinaryInsert(insert VideoBinaryInsertFn) func(MediaPlacement, string, []byte, []byte) (int, error) {
 	return func(placement MediaPlacement, mimeType string, videoData []byte, posterData []byte) (int, error) {
@@ -54,6 +58,34 @@ func AdaptVideoPathInsert(insert VideoPathInsertFn) func(MediaPlacement, string,
 			placement.SlideIndex,
 			videoPath,
 			posterPath,
+			mimeType,
+			placement.X,
+			placement.Y,
+			placement.W,
+			placement.H,
+		)
+	}
+}
+
+func AdaptAudioBinaryInsert(insert AudioBinaryInsertFn) func(MediaPlacement, string, []byte, []byte) (int, error) {
+	return func(placement MediaPlacement, mimeType string, audioData []byte, _ []byte) (int, error) {
+		return insert(
+			placement.SlideIndex,
+			audioData,
+			mimeType,
+			placement.X,
+			placement.Y,
+			placement.W,
+			placement.H,
+		)
+	}
+}
+
+func AdaptAudioPathInsert(insert AudioPathInsertFn) func(MediaPlacement, string, string, string) (int, error) {
+	return func(placement MediaPlacement, mimeType string, audioPath string, _ string) (int, error) {
+		return insert(
+			placement.SlideIndex,
+			audioPath,
 			mimeType,
 			placement.X,
 			placement.Y,
@@ -113,6 +145,26 @@ func NewVideoInsertSpec(
 	}
 }
 
+func NewAudioInsertSpec(
+	maxLen int,
+	insertBinary func(MediaPlacement, string, []byte, []byte) (int, error),
+	insertPath func(MediaPlacement, string, string, string) (int, error),
+) MediaInsertSpec {
+	return MediaInsertSpec{
+		MetaKey:          "mime_type",
+		PrimaryPathKey:   "path",
+		PrimaryDataKey:   "data",
+		SecondaryPathKey: "",
+		SecondaryDataKey: "",
+		PrimaryMaxLen:    maxLen,
+		SecondaryMaxLen:  0,
+		PrimaryLabel:     "audio",
+		SecondaryLabel:   "",
+		InsertBinary:     insertBinary,
+		InsertPath:       insertPath,
+	}
+}
+
 func NewOLEInsertSpec(
 	maxLen int,
 	insertBinary func(MediaPlacement, string, []byte, []byte) (int, error),
@@ -133,11 +185,13 @@ func NewOLEInsertSpec(
 	}
 }
 
-type RequireIntFn func(map[string]any, string) (int, bool)
-type RequireFloatFn func(map[string]any, string) (float64, bool)
-type IndexBoundsFn func(int, int, int, string) bool
-type ParseRawPayloadFn func([]byte) (map[string]any, error)
-type BuildResultFn func(int) any
+type (
+	RequireIntFn      func(map[string]any, string) (int, bool)
+	RequireFloatFn    func(map[string]any, string) (float64, bool)
+	IndexBoundsFn     func(int, int, int, string) bool
+	ParseRawPayloadFn func([]byte) (map[string]any, error)
+	BuildResultFn     func(int) any
+)
 
 func ExecuteMediaInsert(
 	payload map[string]any,

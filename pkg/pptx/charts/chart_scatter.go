@@ -27,20 +27,26 @@ type ScatterChart struct {
 	CX           styling.Length
 	CY           styling.Length
 
-	LineColor             string
-	SeriesName            string
-	ScatterStyle          string
-	ShowLegend            bool
-	LegendPosition        string
-	LegendOverlay         bool
-	ShowDataLabels        bool
-	ShowMajorGridlines    bool
-	CategoryAxisTitle     string
-	ValueAxisTitle        string
-	ValueFormat           string
-	ValueAxisCrossBetween string
-	MinValue              *float64
-	MaxValue              *float64
+	LineColor                  string
+	SeriesName                 string
+	ScatterStyle               string
+	ShowLegend                 bool
+	LegendPosition             string
+	LegendOverlay              bool
+	ShowDataLabels             bool
+	DataLabels                 DataLabelSettings
+	ShowMajorGridlines         bool
+	ShowCategoryMajorGridlines bool
+	CategoryAxisTitle          string
+	ValueAxisTitle             string
+	CategoryTickLabelPosition  string
+	ValueTickLabelPosition     string
+	CategoryAxisCrosses        string
+	ValueAxisCrosses           string
+	ValueFormat                string
+	ValueAxisCrossBetween      string
+	MinValue                   *float64
+	MaxValue                   *float64
 
 	// Accessibility
 	AltText      string
@@ -62,15 +68,20 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 		CX:      styling.Emu(defaultChartCX),
 		CY:      styling.Emu(defaultChartCY),
 
-		LineColor:             "4F81BD",
-		SeriesName:            "Series 1",
-		ScatterStyle:          ScatterStyleMarker,
-		ShowLegend:            false,
-		LegendPosition:        LegendPositionRight,
-		ShowDataLabels:        false,
-		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
-		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
+		LineColor:                  "4F81BD",
+		SeriesName:                 "Series 1",
+		ScatterStyle:               ScatterStyleMarker,
+		ShowLegend:                 false,
+		LegendPosition:             LegendPositionRight,
+		ShowDataLabels:             false,
+		ShowMajorGridlines:         true,
+		ShowCategoryMajorGridlines: false,
+		CategoryTickLabelPosition:  AxisTickLabelPositionNextTo,
+		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
+		CategoryAxisCrosses:        AxisCrossesAutoZero,
+		ValueAxisCrosses:           AxisCrossesAutoZero,
+		ValueFormat:                "General",
+		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -114,7 +125,7 @@ func (c ScatterChart) WithLineColor(color string) ScatterChart {
 
 // ToChartSpec converts ScatterChart to internal XML spec.
 func (c ScatterChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindScatter,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -125,23 +136,30 @@ func (c ScatterChart) ToChartSpec() *pptxxml.ChartSpec {
 		CX:           c.CX.Emu(),
 		CY:           c.CY.Emu(),
 
-		Color:                 NormalizeHexColor(c.LineColor),
-		SeriesName:            c.SeriesName,
-		ScatterStyle:          c.ScatterStyle,
-		ShowLegend:            c.ShowLegend,
-		LegendPosition:        c.LegendPosition,
-		LegendOverlay:         c.LegendOverlay,
-		ShowDataLabels:        c.ShowDataLabels,
-		ShowMajorGridlines:    c.ShowMajorGridlines,
-		CategoryAxisTitle:     c.CategoryAxisTitle,
-		ValueAxisTitle:        c.ValueAxisTitle,
-		ValueFormat:           c.ValueFormat,
-		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
-		MinValue:              CopyFloat64Pointer(c.MinValue),
-		MaxValue:              CopyFloat64Pointer(c.MaxValue),
-		AltText:               c.AltText,
-		IsDecorative:          c.IsDecorative,
+		Color:                      NormalizeHexColor(c.LineColor),
+		SeriesName:                 c.SeriesName,
+		ScatterStyle:               c.ScatterStyle,
+		ShowLegend:                 c.ShowLegend,
+		LegendPosition:             c.LegendPosition,
+		LegendOverlay:              c.LegendOverlay,
+		ShowDataLabels:             c.ShowDataLabels,
+		ShowMajorGridlines:         c.ShowMajorGridlines,
+		ShowCategoryMajorGridlines: c.ShowCategoryMajorGridlines,
+		CategoryAxisTitle:          c.CategoryAxisTitle,
+		ValueAxisTitle:             c.ValueAxisTitle,
+		CategoryTickLabelPosition:  c.CategoryTickLabelPosition,
+		ValueTickLabelPosition:     c.ValueTickLabelPosition,
+		CategoryAxisCrosses:        c.CategoryAxisCrosses,
+		ValueAxisCrosses:           c.ValueAxisCrosses,
+		ValueFormat:                c.ValueFormat,
+		ValueAxisCrossBetween:      c.ValueAxisCrossBetween,
+		MinValue:                   CopyFloat64Pointer(c.MinValue),
+		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
+		AltText:                    c.AltText,
+		IsDecorative:               c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the scatter chart for consistency.
@@ -187,8 +205,32 @@ func (c ScatterChart) validateMetadata(slideIndex int) error {
 	if !isScatterStyle(c.ScatterStyle) {
 		return fmt.Errorf("slide %d scatter style must be one of marker,lineMarker,smoothMarker", slideIndex)
 	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d scatter chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
+	}
 	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d scatter chart value format cannot be empty", slideIndex)
+	}
+	if !IsAxisTickLabelPosition(c.CategoryTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d scatter chart x-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+		)
+	}
+	if !IsAxisTickLabelPosition(c.ValueTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d scatter chart y-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+		)
+	}
+	if !IsAxisCrosses(c.CategoryAxisCrosses) {
+		return fmt.Errorf("slide %d scatter chart x-axis crosses must be autoZero, min, or max", slideIndex)
+	}
+	if !IsAxisCrosses(c.ValueAxisCrosses) {
+		return fmt.Errorf("slide %d scatter chart y-axis crosses must be autoZero, min, or max", slideIndex)
 	}
 	if !IsValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d scatter chart value-axis crossBetween must be between or midCat", slideIndex)

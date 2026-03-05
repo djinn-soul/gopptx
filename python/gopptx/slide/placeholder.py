@@ -104,6 +104,54 @@ class Placeholder:
             self.idx, self._type, image_path=image_path, bounds=bounds
         )
 
+    def insert_table(
+        self,
+        rows: int,
+        cols: int,
+        bounds: tuple[float, float, float, float] | None = None,
+    ) -> None:
+        """Replace the placeholder with a table.
+
+        Args:
+            rows: Number of rows in the table.
+            cols: Number of columns in the table.
+            bounds: Optional (x, y, width, height) in points relative to the placeholder.
+        """
+        self._slide.set_placeholder_content(
+            self.idx,
+            self._type,
+            table_rows=rows,
+            table_cols=cols,
+            bounds=bounds,
+        )
+
+    def insert_chart(
+        self,
+        chart_type: str,
+        categories: list[str],
+        values_or_series: list[float] | list[dict[str, str | list[float]]],
+        bounds: tuple[float, float, float, float] | None = None,
+        **kwargs: object,
+    ) -> None:
+        """Replace the placeholder with a chart.
+
+        Args:
+            chart_type: Type of chart (e.g., 'bar', 'column', 'line', 'pie').
+            categories: List of category labels for the chart.
+            values_or_series: Data values or series data for the chart.
+            bounds: Optional (x, y, width, height) in points relative to the placeholder.
+            **kwargs: Additional chart options (title, legend, etc.).
+        """
+        self._slide.set_placeholder_content(
+            self.idx,
+            self._type,
+            chart_type=chart_type,
+            chart_categories=categories,
+            chart_values=values_or_series,
+            bounds=bounds,
+            chart_options=kwargs if kwargs else None,
+        )
+
     @override
     def __repr__(self) -> str:
         """Return a string representation of this placeholder."""

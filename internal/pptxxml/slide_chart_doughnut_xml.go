@@ -4,7 +4,7 @@ import "fmt"
 
 func doughnutChartPartXML(chart *ChartSpec) string {
 	series := chartPieSeriesXML(chart)
-	labels := chartPieDataLabelsXML(chart.ShowDataLabels)
+	labels := chartPieDataLabelsXML(chart)
 	return chartPartEnvelope(
 		chart.Title,
 		chart.TitleOverlay,

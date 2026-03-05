@@ -238,11 +238,18 @@ class PresentationSlidesMixin(
         ph_type: str = "",
         **kwargs: object,
     ) -> None:
-        """Bridge op: insert rich content into a placeholder."""
+        """Bridge op: insert rich content (text, image, table, or chart) into a placeholder."""
         text = kwargs.get("text")
         image_path = kwargs.get("image_path")
         bounds = kwargs.get("bounds")
         text_style = kwargs.get("text_style")
+        table_rows = kwargs.get("table_rows")
+        table_cols = kwargs.get("table_cols")
+        chart_type = kwargs.get("chart_type")
+        chart_categories = kwargs.get("chart_categories")
+        chart_values = kwargs.get("chart_values")
+        chart_options = kwargs.get("chart_options")
+
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "index": ph_index,
@@ -256,6 +263,17 @@ class PresentationSlidesMixin(
             payload["bounds"] = list(bounds)
         if isinstance(text_style, dict):
             payload["text_style"] = text_style
+        if isinstance(table_rows, int) and isinstance(table_cols, int):
+            payload["table_rows"] = table_rows
+            payload["table_cols"] = table_cols
+        if isinstance(chart_type, str):
+            payload["chart_type"] = chart_type
+        if isinstance(chart_categories, list):
+            payload["chart_categories"] = chart_categories
+        if isinstance(chart_values, list):
+            payload["chart_values"] = chart_values
+        if isinstance(chart_options, dict):
+            payload["chart_options"] = chart_options
 
         self.execute(ops.OP_SET_PLACEHOLDER_CONTENT, payload)
         self.invalidate_cache()
