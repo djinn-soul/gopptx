@@ -671,9 +671,9 @@ func TestRichShapeShadowDefaultValues(t *testing.T) {
 
 func TestValidationErrorMessages(t *testing.T) {
 	tests := []struct {
-		name  string
-		fill  *RichShapeFill
-		want  string
+		name string
+		fill *RichShapeFill
+		want string
 	}{
 		{
 			name: "invalid hex color",

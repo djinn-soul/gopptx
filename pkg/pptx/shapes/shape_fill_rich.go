@@ -103,10 +103,10 @@ type PatternFill struct {
 // RichShapeFill provides a unified interface for all fill types.
 // It supports solid fills, gradient fills, pattern fills, and no-fill.
 type RichShapeFill struct {
-	Type         FillType
-	Solid        *SolidFill
-	Gradient     *ShapeGradientFill
-	Pattern      *PatternFill
+	Type     FillType
+	Solid    *SolidFill
+	Gradient *ShapeGradientFill
+	Pattern  *PatternFill
 }
 
 // NewSolidFill creates a new solid color fill.
@@ -212,7 +212,7 @@ func (f *RichShapeFill) Foreground() *RichShapeFill {
 	return f
 }
 
-// Type returns the type of fill.
+// GetType returns the type of fill.
 func (f *RichShapeFill) GetType() FillType {
 	if f == nil {
 		return FillTypeNoFill
@@ -228,44 +228,53 @@ func (f *RichShapeFill) Validate() error {
 
 	switch f.Type {
 	case FillTypeSolid:
-		if f.Solid == nil {
-			return errors.New("solid fill requires Solid to be set")
-		}
-		if !common.IsHexColor(f.Solid.Color) {
-			return fmt.Errorf("invalid solid fill color: %s", f.Solid.Color)
-		}
-		if f.Solid.Transparency < 0 || f.Solid.Transparency > 1 {
-			return errors.New("transparency must be between 0.0 and 1.0")
-		}
-
+		return f.validateSolidFill()
 	case FillTypeGradient:
-		if f.Gradient == nil {
-			return errors.New("gradient fill requires Gradient to be set")
-		}
-		if err := f.Gradient.Validate(); err != nil {
-			return fmt.Errorf("invalid gradient: %w", err)
-		}
-
+		return f.validateGradientFill()
 	case FillTypePattern:
-		if f.Pattern == nil {
-			return errors.New("pattern fill requires Pattern to be set")
-		}
-		if !IsValidPatternType(f.Pattern.Pattern) {
-			return fmt.Errorf("invalid pattern type: %s", f.Pattern.Pattern)
-		}
-		if !common.IsHexColor(f.Pattern.FgColor) {
-			return fmt.Errorf("invalid pattern foreground color: %s", f.Pattern.FgColor)
-		}
-		if !common.IsHexColor(f.Pattern.BgColor) {
-			return fmt.Errorf("invalid pattern background color: %s", f.Pattern.BgColor)
-		}
-
+		return f.validatePatternFill()
 	case FillTypeNoFill:
-		// No validation needed for no-fill
-
+		return nil
 	default:
 		return fmt.Errorf("unknown fill type: %s", f.Type)
 	}
+}
 
+func (f *RichShapeFill) validateSolidFill() error {
+	if f.Solid == nil {
+		return errors.New("solid fill requires Solid to be set")
+	}
+	if !common.IsHexColor(f.Solid.Color) {
+		return fmt.Errorf("invalid solid fill color: %s", f.Solid.Color)
+	}
+	if f.Solid.Transparency < 0 || f.Solid.Transparency > 1 {
+		return errors.New("transparency must be between 0.0 and 1.0")
+	}
+	return nil
+}
+
+func (f *RichShapeFill) validateGradientFill() error {
+	if f.Gradient == nil {
+		return errors.New("gradient fill requires Gradient to be set")
+	}
+	if err := f.Gradient.Validate(); err != nil {
+		return fmt.Errorf("invalid gradient: %w", err)
+	}
+	return nil
+}
+
+func (f *RichShapeFill) validatePatternFill() error {
+	if f.Pattern == nil {
+		return errors.New("pattern fill requires Pattern to be set")
+	}
+	if !IsValidPatternType(f.Pattern.Pattern) {
+		return fmt.Errorf("invalid pattern type: %s", f.Pattern.Pattern)
+	}
+	if !common.IsHexColor(f.Pattern.FgColor) {
+		return fmt.Errorf("invalid pattern foreground color: %s", f.Pattern.FgColor)
+	}
+	if !common.IsHexColor(f.Pattern.BgColor) {
+		return fmt.Errorf("invalid pattern background color: %s", f.Pattern.BgColor)
+	}
 	return nil
 }

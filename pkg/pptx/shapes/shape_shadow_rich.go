@@ -52,6 +52,13 @@ const (
 	ShadowAlignBottomRight ShadowAlignment = "br"
 )
 
+const (
+	defaultShadowTransparency = 0.6
+	defaultShadowBlurRadius   = 40000
+	defaultShadowDistance     = 20000
+	defaultShadowAngleDeg     = 45
+)
+
 // IsValidShadowAlignment returns true if the shadow alignment is valid.
 func IsValidShadowAlignment(a ShadowAlignment) bool {
 	switch a {
@@ -65,18 +72,18 @@ func IsValidShadowAlignment(a ShadowAlignment) bool {
 
 // RichShapeShadow provides detailed control over shape shadow effects.
 type RichShapeShadow struct {
-	Type         ShadowType
-	Color        string
-	Transparency float64         // 0.0 = opaque, 1.0 = fully transparent
-	BlurRadius   int             // Blur radius in EMU
-	Distance     int             // Distance from shape in EMU
-	Angle        float64         // Direction angle in degrees (0-360)
-	Alignment    ShadowAlignment // Alignment relative to shape
-	SkewX        float64         // Horizontal skew angle for perspective shadows
-	SkewY        float64         // Vertical skew angle for perspective shadows
-	ScaleX       float64         // Horizontal scale factor
-	ScaleY       float64         // Vertical scale factor
-	RotateWithShape bool         // Whether shadow rotates with shape
+	Type            ShadowType
+	Color           string
+	Transparency    float64         // 0.0 = opaque, 1.0 = fully transparent
+	BlurRadius      int             // Blur radius in EMU
+	Distance        int             // Distance from shape in EMU
+	Angle           float64         // Direction angle in degrees (0-360)
+	Alignment       ShadowAlignment // Alignment relative to shape
+	SkewX           float64         // Horizontal skew angle for perspective shadows
+	SkewY           float64         // Vertical skew angle for perspective shadows
+	ScaleX          float64         // Horizontal scale factor
+	ScaleY          float64         // Vertical scale factor
+	RotateWithShape bool            // Whether shadow rotates with shape
 }
 
 // NewRichShapeShadow creates a new outer shadow with default settings.
@@ -84,10 +91,10 @@ func NewRichShapeShadow() *RichShapeShadow {
 	return &RichShapeShadow{
 		Type:            ShadowTypeOuter,
 		Color:           "000000",
-		Transparency:    0.6,
-		BlurRadius:      40000, // ~1mm blur
-		Distance:        20000, // ~0.5mm distance
-		Angle:           45,
+		Transparency:    defaultShadowTransparency,
+		BlurRadius:      defaultShadowBlurRadius, // ~1mm blur
+		Distance:        defaultShadowDistance,   // ~0.5mm distance
+		Angle:           defaultShadowAngleDeg,
 		Alignment:       ShadowAlignBottomRight,
 		ScaleX:          1.0,
 		ScaleY:          1.0,

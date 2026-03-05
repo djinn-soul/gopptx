@@ -128,6 +128,8 @@ func toXMLRichFillSpec(fill *RichShapeFill) *pptxxml.RichShapeFillSpec {
 				BgColor: fill.Pattern.BgColor,
 			}
 		}
+	case FillTypeNoFill:
+		// No nested payload is required for explicit no-fill.
 	}
 
 	return spec

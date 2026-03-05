@@ -220,9 +220,10 @@ func RegisterAudioPart(
 	registerMedia func([]byte, string) (string, error),
 ) (string, error) {
 	audioExt := "mp3"
-	if mimeType == "audio/wav" || mimeType == "audio/x-wav" {
+	switch mimeType {
+	case "audio/wav", "audio/x-wav":
 		audioExt = "wav"
-	} else if mimeType == "audio/m4a" || mimeType == "audio/mp4" {
+	case "audio/m4a", "audio/mp4":
 		audioExt = "m4a"
 	}
 	return RegisterPartFromDataOrPath(

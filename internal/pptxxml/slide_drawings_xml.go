@@ -11,6 +11,7 @@ const (
 	strokeDashSolid     = "solid"
 	arrowTypeNone       = "none"
 	emusPerDegree       = 60000
+	shadowScaleBase     = 100000
 	transparencyBase    = 100000
 	defaultMargin       = 457200
 	customShapeGrowCap  = 2048
@@ -736,8 +737,15 @@ func richSolidFillXML(fill SolidFillSpec) string {
 }
 
 func richPatternFillXML(fill PatternFillSpec) string {
-	return fmt.Sprintf(`<a:pattFill prst="%s"><a:fgClr><a:srgbClr val="%s"/></a:fgClr><a:bgClr><a:srgbClr val="%s"/></a:bgClr></a:pattFill>`,
-		Escape(fill.Pattern), Escape(fill.FgColor), Escape(fill.BgColor))
+	return fmt.Sprintf(
+		`<a:pattFill prst="%s">`+
+			`<a:fgClr><a:srgbClr val="%s"/></a:fgClr>`+
+			`<a:bgClr><a:srgbClr val="%s"/></a:bgClr>`+
+			`</a:pattFill>`,
+		Escape(fill.Pattern),
+		Escape(fill.FgColor),
+		Escape(fill.BgColor),
+	)
 }
 
 // Rich Shape Line XML rendering
@@ -825,12 +833,12 @@ func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
 
 	if shadow.SkewX != 0 || shadow.SkewY != 0 {
 		attrs += fmt.Sprintf(` sx="%d" sy="%d"`,
-			int(shadow.SkewX*100000), int(shadow.SkewY*100000))
+			int(shadow.SkewX*shadowScaleBase), int(shadow.SkewY*shadowScaleBase))
 	}
 
 	if shadow.ScaleX != 1.0 || shadow.ScaleY != 1.0 {
 		attrs += fmt.Sprintf(` kx="%d" ky="%d"`,
-			int(shadow.ScaleX*100000), int(shadow.ScaleY*100000))
+			int(shadow.ScaleX*shadowScaleBase), int(shadow.ScaleY*shadowScaleBase))
 	}
 
 	if shadow.Alignment != "" {
@@ -839,6 +847,8 @@ func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
 
 	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
 
-	return fmt.Sprintf(`<a:prstShdw prst="shdw1"><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:prstShdw>`,
-		Escape(shadow.Color), alphaVal)
+	return fmt.Sprintf(
+		`<a:prstShdw prst="shdw1" %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:prstShdw>`,
+		attrs, Escape(shadow.Color), alphaVal,
+	)
 }

@@ -151,8 +151,10 @@ class Run:
         self._hover_action = RunHyperlink.from_payload(hover_action)
 
     @property
-    def hyperlink(self) -> RunHyperlink | None:
-        """Return optional run hyperlink."""
+    def hyperlink(self) -> RunHyperlink:
+        """Return run hyperlink, lazily initializing an empty facade."""
+        if self._hyperlink is None:
+            self._hyperlink = RunHyperlink()
         return self._hyperlink
 
     @hyperlink.setter

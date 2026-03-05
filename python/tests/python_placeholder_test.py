@@ -2,6 +2,7 @@
 import pathlib
 
 import pytest
+from gopptx.api_errors import GopptxError
 from gopptx.presentation.presentation import Presentation
 from gopptx.slide.placeholder import BodyPlaceholder, Placeholder, TitlePlaceholder
 
@@ -86,10 +87,10 @@ def test_insert_placeholder_table(presentation: Presentation) -> None:
     try:
         ph.insert_table(rows=3, cols=3)
         # If it succeeds, great
-    except Exception as e:
+    except GopptxError:
         # If it fails due to placeholder type mismatch, that's expected
         # The important thing is the API exists
-        assert "insert_table" in str(type(ph).__dict__)
+        assert hasattr(ph, "insert_table")
 
 
 def test_insert_placeholder_chart(presentation: Presentation) -> None:
@@ -105,10 +106,10 @@ def test_insert_placeholder_chart(presentation: Presentation) -> None:
             values_or_series=[10.0, 20.0, 30.0],
         )
         # If it succeeds, great
-    except Exception as e:
+    except GopptxError:
         # If it fails due to placeholder type mismatch, that's expected
         # The important thing is the API exists
-        assert "insert_chart" in str(type(ph).__dict__)
+        assert hasattr(ph, "insert_chart")
 
 
 def test_placeholder_repr(presentation: Presentation) -> None:

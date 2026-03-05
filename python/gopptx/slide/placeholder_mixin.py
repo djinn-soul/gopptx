@@ -78,8 +78,12 @@ class SlidePlaceholderMixin:
             table_rows=int(table_rows) if isinstance(table_rows, int) else None,
             table_cols=int(table_cols) if isinstance(table_cols, int) else None,
             chart_type=chart_type if isinstance(chart_type, str) else None,
-            chart_categories=chart_categories if isinstance(chart_categories, list) else None,
-            chart_values=chart_values if isinstance(chart_values, list) else None,
+            chart_categories=cast("list[object]", chart_categories)
+            if isinstance(chart_categories, list)
+            else None,
+            chart_values=cast("list[object]", chart_values)
+            if isinstance(chart_values, list)
+            else None,
             chart_options=cast("dict[str, object] | None", chart_options)
             if isinstance(chart_options, dict)
             else None,

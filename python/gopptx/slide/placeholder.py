@@ -149,7 +149,7 @@ class Placeholder:
             chart_categories=categories,
             chart_values=values_or_series,
             bounds=bounds,
-            chart_options=kwargs if kwargs else None,
+            chart_options=kwargs or None,
         )
 
     @override
