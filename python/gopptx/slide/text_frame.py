@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import cast
 
 _SUPPORTED_KEYS = {
     "margin_top",
@@ -18,7 +19,7 @@ _SUPPORTED_KEYS = {
     "rotation",
 }
 
-_UNSUPPORTED_KEYS = set()
+_UNSUPPORTED_KEYS: set[str] = set()
 
 _KEY_ALIASES = {
     "marginTop": "margin_top",
@@ -113,6 +114,7 @@ class TextFrameProps:
         column_count: int | None = None,
         text_rotation: float | None = None,
     ) -> None:
+        super().__init__()
         self.margin_top = margin_top
         self.margin_bottom = margin_bottom
         self.margin_left = margin_left
@@ -207,7 +209,7 @@ def serialize_text_frame_for_payload(text_frame: object) -> object:
     if isinstance(text_frame, TextFrameProps):
         return text_frame.to_payload()
     if isinstance(text_frame, Mapping):
-        props = TextFrameProps.from_payload(text_frame)
+        props = TextFrameProps.from_payload(cast("Mapping[str, object]", text_frame))
         return props.to_payload()
     return text_frame
 

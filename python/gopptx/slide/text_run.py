@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import cast
 
 
 class RunHyperlink:
@@ -33,6 +34,7 @@ class RunHyperlink:
         highlight_click: bool | None = None,
         end_sound: bool | None = None,
     ) -> None:
+        super().__init__()
         self.address = address
         self.action = action
         self.tooltip = tooltip
@@ -130,6 +132,7 @@ class Run:
         hyperlink: Mapping[str, object] | RunHyperlink | None = None,
         hover_action: Mapping[str, object] | RunHyperlink | None = None,
     ) -> None:
+        super().__init__()
         self.text = text
         self.bold = bold
         self.italic = italic
@@ -148,14 +151,12 @@ class Run:
         self._hover_action = RunHyperlink.from_payload(hover_action)
 
     @property
-    def hyperlink(self) -> RunHyperlink:
-        """Return run hyperlink and allocate lazily when first accessed."""
-        if self._hyperlink is None:
-            self._hyperlink = RunHyperlink()
+    def hyperlink(self) -> RunHyperlink | None:
+        """Return optional run hyperlink."""
         return self._hyperlink
 
     @hyperlink.setter
-    def hyperlink(self, value: Mapping[str, object] | RunHyperlink | None) -> None:
+    def hyperlink(self, value: RunHyperlink) -> None:
         self._hyperlink = RunHyperlink.from_payload(value)
 
     @property
@@ -164,7 +165,7 @@ class Run:
         return self._hover_action
 
     @hover_action.setter
-    def hover_action(self, value: Mapping[str, object] | RunHyperlink | None) -> None:
+    def hover_action(self, value: RunHyperlink | None) -> None:
         self._hover_action = RunHyperlink.from_payload(value)
 
     def to_payload(self) -> dict[str, object]:  # noqa: C901, PLR0912
@@ -208,12 +209,12 @@ def serialize_runs_for_payload(runs: object) -> object:
     if not isinstance(runs, list):
         return runs
     serialized: list[object] = []
-    for item in runs:
+    for item in cast("list[object]", runs):
         if isinstance(item, Run):
             serialized.append(item.to_payload())
             continue
         if isinstance(item, Mapping):
-            as_dict = dict(item)
+            as_dict: dict[str, object] = dict(cast("Mapping[str, object]", item))
             hyperlink = as_dict.get("hyperlink")
             hover_action = as_dict.get("hover_action")
             if isinstance(hyperlink, RunHyperlink):

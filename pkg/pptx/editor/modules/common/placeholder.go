@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -49,7 +50,7 @@ func ParsePlaceholderImageBounds(payload map[string]any) (float64, float64, floa
 		return 0, 0, 0, 0, nil
 	}
 	if len(boundsRaw) != PlaceholderBoundsLen {
-		return 0, 0, 0, 0, fmt.Errorf("bounds must be an array of 4 numbers [x, y, cx, cy]")
+		return 0, 0, 0, 0, errors.New("bounds must be an array of 4 numbers [x, y, cx, cy]")
 	}
 	vals := make([]float64, PlaceholderBoundsLen)
 	for i, b := range boundsRaw {

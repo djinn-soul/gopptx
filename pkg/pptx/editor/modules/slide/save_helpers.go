@@ -134,7 +134,11 @@ func EnsureCommentAuthorsRelationship(
 	return relationships, nextRelIDNum
 }
 
-func ResolveNotesMasterRelID(relationships []common.EditorRelationship, hasNotesMaster bool, relType string) (string, error) {
+func ResolveNotesMasterRelID(
+	relationships []common.EditorRelationship,
+	hasNotesMaster bool,
+	relType string,
+) (string, error) {
 	if !hasNotesMaster {
 		return "", nil
 	}

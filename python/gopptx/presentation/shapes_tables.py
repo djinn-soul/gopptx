@@ -16,6 +16,8 @@ from ..utils import normalize_table_index
 from .helpers import PresentationProtocol
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from ..schemas import (
         ImageMetadata,
         Shape,
@@ -37,10 +39,7 @@ class PresentationNotesMixin(PresentationProtocol):
 
     def get_notes_payload(self, slide_index: int) -> dict[str, object]:
         """Fetch raw notes payload from bridge with null-safe fallback."""
-        result = self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
-        if not isinstance(result, dict):
-            return {"text": "", "notes_slide": None}
-        return result
+        return self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
 
     def get_notes(self, slide_index: int) -> str:
         """Get speaker notes for a slide."""
@@ -85,7 +84,7 @@ class PresentationShapeMixin(PresentationProtocol):
     @staticmethod
     def _apply_shape_payload_options(
         payload: dict[str, object],
-        options: dict[str, object],
+        options: Mapping[str, object],
         *,
         include_text: bool,
     ) -> None:
@@ -338,10 +337,11 @@ class PresentationShapeMixin(PresentationProtocol):
         if isinstance(mime_type, str) and mime_type:
             payload["mime_type"] = mime_type
 
-        if poster_frame:
+        if isinstance(poster_frame, (str, bytes, os.PathLike)):
+            poster_source = cast("str | bytes | os.PathLike[str]", poster_frame)
             self._set_source_payload(
                 payload,
-                poster_frame,
+                poster_source,
                 path_key="poster_path",
                 data_key="poster_data",
             )
@@ -368,10 +368,11 @@ class PresentationShapeMixin(PresentationProtocol):
         if isinstance(prog_id, str) and prog_id:
             payload["prog_id"] = prog_id
 
-        if icon:
+        if isinstance(icon, (str, bytes, os.PathLike)):
+            icon_source = cast("str | bytes | os.PathLike[str]", icon)
             self._set_source_payload(
                 payload,
-                icon,
+                icon_source,
                 path_key="icon_path",
                 data_key="icon_data",
             )

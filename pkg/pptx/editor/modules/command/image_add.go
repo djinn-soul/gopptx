@@ -3,15 +3,26 @@ package command
 import (
 	"errors"
 	"strings"
-)
 
-import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+)
 
 type AddImageRequireSlideIndexFn func(map[string]any) (int, bool)
 type AddImageRequireFloatFn func(map[string]any, string) (float64, bool)
 type AddImageOptionalStringFn func(map[string]any, string) string
-type AddImageFromBytesFn func(slideIndex int, data []byte, format string, x, y, w, h float64, options *common.ShapeUpdate) (int, error)
-type AddImageFromPathFn func(slideIndex int, imagePath string, x, y, w, h float64, options *common.ShapeUpdate) (int, error)
+type AddImageFromBytesFn func(
+	slideIndex int,
+	data []byte,
+	format string,
+	x, y, w, h float64,
+	options *common.ShapeUpdate,
+) (int, error)
+type AddImageFromPathFn func(
+	slideIndex int,
+	imagePath string,
+	x, y, w, h float64,
+	options *common.ShapeUpdate,
+) (int, error)
 
 type AddImageRequest struct {
 	SlideIndex int

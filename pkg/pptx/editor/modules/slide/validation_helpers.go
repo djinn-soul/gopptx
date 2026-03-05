@@ -9,7 +9,7 @@ import (
 
 type ParseRelationshipsFn func([]byte) ([]common.EditorRelationship, error)
 
-func SlideRelationships(
+func Relationships(
 	slidePart string,
 	getPart func(string) ([]byte, bool),
 	parseRelationships ParseRelationshipsFn,
@@ -51,7 +51,7 @@ func HasSlideLayoutRelationship(rels []common.EditorRelationship) bool {
 	return false
 }
 
-func SlideHasImageContent(slide elements.SlideContent) bool {
+func HasImageContent(slide elements.SlideContent) bool {
 	if len(slide.Images) > 0 {
 		return true
 	}

@@ -109,7 +109,7 @@ func BuildShapeUpdateForAdd(request AddShapeRequest) (common.ShapeUpdate, bool) 
 
 func HasAnyUpdate(u common.ShapeUpdate) bool {
 	v := reflect.ValueOf(u)
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
 		if field.Kind() == reflect.Ptr && !field.IsNil() {
 			return true

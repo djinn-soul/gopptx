@@ -176,8 +176,6 @@ func extractAllText(content []byte) string {
 }
 
 // UpdateNotesMaster configures the global notes master for the presentation.
-//
-//nolint:gocognit // Notes-master update coordinates validation, media registration, and rel wiring in one flow.
 func (e *PresentationEditor) UpdateNotesMaster(master *elements.NotesMaster) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")
@@ -219,8 +217,4 @@ func (e *PresentationEditor) ensureNotesInfrastructure() {
 		e.nextRelIDNum,
 		notesMasterThemeIndex,
 	)
-}
-
-func (e *PresentationEditor) ensureNotesMasterThemePart() {
-	editorslide.EnsureNotesMasterThemePart(e.parts.Has, e.parts.Get, e.parts.Set)
 }

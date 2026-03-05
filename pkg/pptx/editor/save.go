@@ -10,6 +10,7 @@ import (
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
+	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
 const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
@@ -100,7 +101,6 @@ func (e *PresentationEditor) Save(filePath string) error {
 	return nil
 }
 
-//nolint:gocognit,funlen // Part collection intentionally aggregates many conditional package part rewrites.
 func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	out := make(map[string][]byte)
 
@@ -115,95 +115,11 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		e.parts.Set("ppt/commentAuthors.xml", authorXML)
 	}
 
-	// 1. Process Custom XML and inject relationships Early.
-	var customXMLPropsPaths []string
-
-	for i, cXML := range e.metadata.CustomXML {
-		var itemStr string
-		var err error
-		if cXML.RootElement != "" {
-			itemStr, err = editorslide.GenerateCustomXMLItem(cXML)
-			if err != nil {
-				return nil, fmt.Errorf("custom XML part %d: %w", i+1, err)
-			}
-		} else {
-			itemStr = cXML.Content
-		}
-		itemPath := fmt.Sprintf("customXml/item%d.xml", i+1)
-		out[itemPath] = []byte(itemStr)
-
-		schemaRefs := "<ds:schemaRefs></ds:schemaRefs>"
-		if cXML.Namespace != "" {
-			schemaRefs = fmt.Sprintf(
-				`<ds:schemaRefs><ds:schemaRef ds:uri="%s"/></ds:schemaRefs>`,
-				editorslide.EscapeCustomXML(cXML.Namespace),
-			)
-		}
-
-		itemID := cXML.ItemID
-		if itemID == "" {
-			guid, err := common.NewGUID()
-			if err != nil {
-				return nil, err
-			}
-			itemID = guid
-		}
-
-		propsContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
-%s
-</ds:datastoreItem>`, itemID, schemaRefs)
-		propsPath := fmt.Sprintf("customXml/itemProps%d.xml", i+1)
-		out[propsPath] = []byte(propsContent)
-		customXMLPropsPaths = append(customXMLPropsPaths, propsPath)
-
-		// Injection into presentation.xml.rels
-		itemTarget := "../" + itemPath
-		foundItemRel := false
-		for _, r := range e.nonSlideRels {
-			if r.Type == common.RelTypeCustomXML && r.Target == itemTarget {
-				foundItemRel = true
-				break
-			}
-		}
-		if !foundItemRel {
-			e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
-				ID:     fmt.Sprintf("rId%d", e.nextRelIDNum),
-				Type:   common.RelTypeCustomXML,
-				Target: itemTarget,
-			})
-			e.nextRelIDNum++
-		}
-
-		// Create itemN.xml.rels
-		itemRelContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="itemProps%d.xml"/>
-</Relationships>`, i+1)
-		out[fmt.Sprintf("customXml/_rels/item%d.xml.rels", i+1)] = []byte(itemRelContent)
+	customXMLPropsPaths, err := e.processCustomXMLParts(out)
+	if err != nil {
+		return nil, err
 	}
-
-	// 2. Filter root package relationships (_rels/.rels) to remove any misplaced CustomXML rels.
-	packageRelsData, ok := e.parts.Get("_rels/.rels")
-	//nolint:nestif // Relationship parsing + filtering keeps error/condition handling local to this mutation block.
-	if ok {
-		rels, err := parseRelationshipsXML(packageRelsData)
-		if err == nil {
-			filtered := make([]common.EditorRelationship, 0, len(rels))
-			changed := false
-			for _, r := range rels {
-				// CustomXML rels belong in presentation.xml.rels in PowerPoint, not at the root.
-				if r.Type == common.RelTypeCustomXML || r.Type == common.RelTypeCustomXMLProps {
-					changed = true
-					continue
-				}
-				filtered = append(filtered, r)
-			}
-			if changed {
-				out["_rels/.rels"] = []byte(renderRelationshipsXML(filtered))
-			}
-		}
-	}
+	e.filterRootCustomXMLRelationships(out)
 
 	// Check for commentAuthors existence and relationship injection
 	hasCommentAuthors := e.parts.Has("ppt/commentAuthors.xml")
@@ -239,6 +155,39 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	}
 	out[common.CorePropsPath] = corePropsXML
 
+	hasHandoutMaster := e.parts.Has("ppt/handoutMasters/handoutMaster1.xml")
+	if err := e.writeContentTypesPart(
+		out,
+		hasSections,
+		hasNotesMaster,
+		hasCommentAuthors,
+		hasVBA,
+		hasHandoutMaster,
+		customXMLPropsPaths,
+	); err != nil {
+		return nil, err
+	}
+
+	e.writeOptionalPresentationParts(
+		out,
+		hasSections,
+		hasNotesMaster,
+		hasHandoutMaster,
+		hasVBA,
+		vbaProject,
+	)
+	return out, nil
+}
+
+func (e *PresentationEditor) writeContentTypesPart(
+	out map[string][]byte,
+	hasSections bool,
+	hasNotesMaster bool,
+	hasCommentAuthors bool,
+	hasVBA bool,
+	hasHandoutMaster bool,
+	customXMLPropsPaths []string,
+) error {
 	mediaPaths := editorslide.MapValues(e.mediaInventory)
 	filteredChartPaths := editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/charts/chart"))
 	notesPaths := editorslide.MapValues(e.notesInventory)
@@ -250,7 +199,6 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	filteredCommentPaths := editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/comments/comment"))
 
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
-	hasHandoutMaster := e.parts.Has("ppt/handoutMasters/handoutMaster1.xml")
 	contentTypesXML, err := rewriteContentTypes(
 		contentTypesData,
 		e.slides,
@@ -269,10 +217,20 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		customXMLPropsPaths,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	out[common.ContentTypesPath] = []byte(contentTypesXML)
+	return nil
+}
 
+func (e *PresentationEditor) writeOptionalPresentationParts(
+	out map[string][]byte,
+	hasSections bool,
+	hasNotesMaster bool,
+	hasHandoutMaster bool,
+	hasVBA bool,
+	vbaProject *vba.VBAProject,
+) {
 	if hasSections {
 		out["ppt/sectionList.xml"] = []byte(buildSectionListXML(e.sections))
 	}
@@ -295,8 +253,119 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	if hasVBA {
 		out["ppt/vbaProject.bin"] = vbaProject.Data
 	}
+}
 
-	return out, nil
+func (e *PresentationEditor) processCustomXMLParts(out map[string][]byte) ([]string, error) {
+	customXMLPropsPaths := make([]string, 0, len(e.metadata.CustomXML))
+	for i, cXML := range e.metadata.CustomXML {
+		itemPath, propsPath, err := e.writeCustomXMLPart(out, i, cXML)
+		if err != nil {
+			return nil, err
+		}
+		customXMLPropsPaths = append(customXMLPropsPaths, propsPath)
+		e.ensureCustomXMLRelationship(itemPath)
+		e.writeCustomXMLPropsRelationship(out, i+1)
+	}
+	return customXMLPropsPaths, nil
+}
+
+func (e *PresentationEditor) writeCustomXMLPart(
+	out map[string][]byte,
+	index int,
+	part common.CustomXMLPart,
+) (string, string, error) {
+	itemContent, err := buildCustomXMLItemContent(part, index+1)
+	if err != nil {
+		return "", "", err
+	}
+	itemPath := fmt.Sprintf("customXml/item%d.xml", index+1)
+	propsPath := fmt.Sprintf("customXml/itemProps%d.xml", index+1)
+	out[itemPath] = []byte(itemContent)
+	propsContent, err := buildCustomXMLPropsContent(part)
+	if err != nil {
+		return "", "", err
+	}
+	out[propsPath] = []byte(propsContent)
+	return itemPath, propsPath, nil
+}
+
+func buildCustomXMLItemContent(part common.CustomXMLPart, index int) (string, error) {
+	if part.RootElement == "" {
+		return part.Content, nil
+	}
+	itemContent, err := editorslide.GenerateCustomXMLItem(part)
+	if err != nil {
+		return "", fmt.Errorf("custom XML part %d: %w", index, err)
+	}
+	return itemContent, nil
+}
+
+func buildCustomXMLPropsContent(part common.CustomXMLPart) (string, error) {
+	schemaRefs := "<ds:schemaRefs></ds:schemaRefs>"
+	if part.Namespace != "" {
+		schemaRefs = fmt.Sprintf(
+			`<ds:schemaRefs><ds:schemaRef ds:uri="%s"/></ds:schemaRefs>`,
+			editorslide.EscapeCustomXML(part.Namespace),
+		)
+	}
+	itemID := part.ItemID
+	if itemID == "" {
+		guid, err := common.NewGUID()
+		if err != nil {
+			return "", err
+		}
+		itemID = guid
+	}
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ds:datastoreItem ds:itemID="%s" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">
+%s
+</ds:datastoreItem>`, itemID, schemaRefs), nil
+}
+
+func (e *PresentationEditor) ensureCustomXMLRelationship(itemPath string) {
+	itemTarget := "../" + itemPath
+	for _, r := range e.nonSlideRels {
+		if r.Type == common.RelTypeCustomXML && r.Target == itemTarget {
+			return
+		}
+	}
+	e.nonSlideRels = append(e.nonSlideRels, common.EditorRelationship{
+		ID:     fmt.Sprintf("rId%d", e.nextRelIDNum),
+		Type:   common.RelTypeCustomXML,
+		Target: itemTarget,
+	})
+	e.nextRelIDNum++
+}
+
+func (e *PresentationEditor) writeCustomXMLPropsRelationship(out map[string][]byte, index int) {
+	itemRelContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps" Target="itemProps%d.xml"/>
+</Relationships>`, index)
+	out[fmt.Sprintf("customXml/_rels/item%d.xml.rels", index)] = []byte(itemRelContent)
+}
+
+func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]byte) {
+	packageRelsData, ok := e.parts.Get("_rels/.rels")
+	if !ok {
+		return
+	}
+	rels, err := parseRelationshipsXML(packageRelsData)
+	if err != nil {
+		return
+	}
+	filtered := make([]common.EditorRelationship, 0, len(rels))
+	changed := false
+	for _, r := range rels {
+		if r.Type == common.RelTypeCustomXML || r.Type == common.RelTypeCustomXMLProps {
+			changed = true
+			continue
+		}
+		filtered = append(filtered, r)
+	}
+	if changed {
+		out["_rels/.rels"] = []byte(renderRelationshipsXML(filtered))
+	}
 }
 
 func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error) {

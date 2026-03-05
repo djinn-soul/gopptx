@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-type TableXML struct {
+type XML struct {
 	TblPr struct {
 		FirstRow string `xml:"firstRow,attr"`
 		FirstCol string `xml:"firstCol,attr"`
@@ -20,14 +20,14 @@ type TableXML struct {
 	Grid struct {
 		Cols []struct{} `xml:"gridCol"`
 	} `xml:"tblGrid"`
-	Rows []TableRowXML `xml:"tr"`
+	Rows []RowXML `xml:"tr"`
 }
 
-type TableRowXML struct {
-	Cells []TableCellXML `xml:"tc"`
+type RowXML struct {
+	Cells []CellXML `xml:"tc"`
 }
 
-type TableCellXML struct {
+type CellXML struct {
 	RowSpan  int    `xml:"rowSpan,attr"`
 	GridSpan int    `xml:"gridSpan,attr"`
 	VMerge   string `xml:"vMerge,attr"`
@@ -116,19 +116,19 @@ func ExtractTableXML(frame []byte) ([]byte, error) {
 	return frame[tblStart:tblEnd], nil
 }
 
-func ParseTable(frame []byte) (*TableXML, error) {
+func ParseTable(frame []byte) (*XML, error) {
 	tblBytes, err := ExtractTableXML(frame)
 	if err != nil {
 		return nil, err
 	}
-	var parsed TableXML
+	var parsed XML
 	if err := xml.Unmarshal(tblBytes, &parsed); err != nil {
 		return nil, fmt.Errorf("parse table xml: %w", err)
 	}
 	return &parsed, nil
 }
 
-func TableDimensions(parsed *TableXML) (int, int) {
+func Dimensions(parsed *XML) (int, int) {
 	rows := len(parsed.Rows)
 	cols := len(parsed.Grid.Cols)
 	if cols == 0 && rows > 0 {

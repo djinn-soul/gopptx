@@ -15,6 +15,8 @@ var layoutNumPattern = regexp.MustCompile(`^slideLayout(\d+)\.xml$`)
 var masterNumPattern = regexp.MustCompile(`^slideMaster(\d+)\.xml$`)
 var themeNumPattern = regexp.MustCompile(`^theme(\d+)\.xml$`)
 
+const nextPartPatternSubmatchSize = 2
+
 func (e *PresentationEditor) ListSlideMasters() ([]common.SlideMasterInfo, error) {
 	infos := make([]common.SlideMasterInfo, 0, len(e.nonSlideRels))
 	seen := make(map[string]struct{}, len(e.nonSlideRels))
@@ -136,11 +138,19 @@ func (e *PresentationEditor) CloneLayoutMasterFamily(layoutPart string) (common.
 	}
 
 	newMaster := editorslide.NextMasterPartPath(
-		editorslide.NextPartNumber(e.parts.KeysWithPrefix("ppt/slideMasters/"), masterNumPattern, 2),
+		editorslide.NextPartNumber(
+			e.parts.KeysWithPrefix("ppt/slideMasters/"),
+			masterNumPattern,
+			nextPartPatternSubmatchSize,
+		),
 	)
 	layoutMap := editorslide.BuildLayoutCloneMap(
 		layoutFamily,
-		editorslide.NextPartNumber(e.parts.KeysWithPrefix("ppt/slideLayouts/"), layoutNumPattern, 2),
+		editorslide.NextPartNumber(
+			e.parts.KeysWithPrefix("ppt/slideLayouts/"),
+			layoutNumPattern,
+			nextPartPatternSubmatchSize,
+		),
 	)
 	masterXML, masterRels, err := e.loadMasterCloneSource(sourceMaster)
 	if err != nil {
@@ -298,7 +308,11 @@ func (e *PresentationEditor) cloneMasterTheme(
 		}
 		newTheme := fmt.Sprintf(
 			"ppt/theme/theme%d.xml",
-			editorslide.NextPartNumber(e.parts.KeysWithPrefix("ppt/theme/"), themeNumPattern, 2),
+			editorslide.NextPartNumber(
+				e.parts.KeysWithPrefix("ppt/theme/"),
+				themeNumPattern,
+				nextPartPatternSubmatchSize,
+			),
 		)
 		e.parts.Set(newTheme, append([]byte(nil), themeXML...))
 		return oldTheme, newTheme, nil

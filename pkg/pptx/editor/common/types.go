@@ -58,18 +58,15 @@ type EditorSlideRef struct {
 	Title   string
 }
 
-// xmlEscaper provides fast, basic XML escaping.
-var xmlEscaper = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	`"`, "&quot;",
-	"'", "&apos;",
-)
-
 // XMLEscape provides basic XML attribute escaping.
 func XMLEscape(value string) string {
-	return xmlEscaper.Replace(value)
+	return strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		">", "&gt;",
+		`"`, "&quot;",
+		"'", "&apos;",
+	).Replace(value)
 }
 
 // CanonicalPartPath cleans a path to use forward slashes and removes leading slash.

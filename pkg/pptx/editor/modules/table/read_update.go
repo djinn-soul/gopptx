@@ -8,7 +8,7 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-func TableFlagAttributeName(flag string) (string, bool) {
+func FlagAttributeName(flag string) (string, bool) {
 	switch flag {
 	case "first_row", "firstRow":
 		return "firstRow", true
@@ -33,44 +33,12 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 		return nil, err
 	}
 
-	rowCount, colCount := TableDimensions(parsed)
+	rowCount, colCount := Dimensions(parsed)
 	cells := make([]map[string]any, 0, rowCount*max(colCount, 1))
 
 	for rIdx, row := range parsed.Rows {
 		for cIdx, cell := range row.Cells {
-			var textBuf bytes.Buffer
-			for i, p := range cell.TxBody.Paragraphs {
-				if i > 0 {
-					textBuf.WriteString("\n")
-				}
-				for _, r := range p.Runs {
-					textBuf.WriteString(r.Text)
-				}
-			}
-
-			rowSpan := cell.RowSpan
-			if rowSpan <= 0 {
-				rowSpan = 1
-			}
-			colSpan := cell.GridSpan
-			if colSpan <= 0 {
-				colSpan = 1
-			}
-
-			isOrigin := rowSpan > 1 || colSpan > 1
-			isSpanned := TruthyAttr(cell.VMerge) || TruthyAttr(cell.HMerge)
-
-			cells = append(cells, map[string]any{
-				"row":             rIdx,
-				"col":             cIdx,
-				"row_span":        rowSpan,
-				"col_span":        colSpan,
-				"v_merge":         TruthyAttr(cell.VMerge),
-				"h_merge":         TruthyAttr(cell.HMerge),
-				"is_merge_origin": isOrigin,
-				"is_spanned":      isSpanned,
-				"text":            textBuf.String(),
-			})
+			cells = append(cells, buildTableCellInfo(rIdx, cIdx, cell))
 		}
 	}
 
@@ -89,6 +57,44 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 	}, nil
 }
 
+func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
+	rowSpan := normalizeSpan(cell.RowSpan)
+	colSpan := normalizeSpan(cell.GridSpan)
+	vMerge := TruthyAttr(cell.VMerge)
+	hMerge := TruthyAttr(cell.HMerge)
+	return map[string]any{
+		"row":             rowIndex,
+		"col":             colIndex,
+		"row_span":        rowSpan,
+		"col_span":        colSpan,
+		"v_merge":         vMerge,
+		"h_merge":         hMerge,
+		"is_merge_origin": rowSpan > 1 || colSpan > 1,
+		"is_spanned":      vMerge || hMerge,
+		"text":            tableCellText(cell),
+	}
+}
+
+func normalizeSpan(span int) int {
+	if span <= 0 {
+		return 1
+	}
+	return span
+}
+
+func tableCellText(cell CellXML) string {
+	var textBuf bytes.Buffer
+	for i, p := range cell.TxBody.Paragraphs {
+		if i > 0 {
+			textBuf.WriteString("\n")
+		}
+		for _, r := range p.Runs {
+			textBuf.WriteString(r.Text)
+		}
+	}
+	return textBuf.String()
+}
+
 func UpdateTableFlagsInFrame(frame []byte, flags map[string]any) ([]byte, error) {
 	tblPrStart := bytes.Index(frame, []byte("<a:tblPr"))
 	if tblPrStart == -1 {
@@ -102,7 +108,7 @@ func UpdateTableFlagsInFrame(frame []byte, flags map[string]any) ([]byte, error)
 	tblPrXML := append([]byte(nil), frame[tblPrStart:tblPrEnd]...)
 
 	for k, v := range flags {
-		xmlKey, ok := TableFlagAttributeName(k)
+		xmlKey, ok := FlagAttributeName(k)
 		if !ok {
 			continue
 		}
@@ -133,7 +139,7 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 	if err != nil {
 		return nil, err
 	}
-	rows, cols := TableDimensions(parsed)
+	rows, cols := Dimensions(parsed)
 	if rowIdx < 0 || rowIdx >= rows || colIdx < 0 || colIdx >= cols {
 		return nil, fmt.Errorf("table cell [%d,%d] out of range", rowIdx, colIdx)
 	}

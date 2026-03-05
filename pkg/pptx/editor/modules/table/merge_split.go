@@ -7,48 +7,14 @@ import (
 )
 
 func MergeCellsInFrame(frame []byte, row1, col1, row2, col2 int) ([]byte, error) {
-	if row1 < 0 || col1 < 0 || row2 < 0 || col2 < 0 {
-		return nil, errors.New("merge coordinates must be non-negative")
-	}
-	if row1 > row2 || col1 > col2 {
-		return nil, errors.New("merge coordinates must be ordered: row1<=row2 and col1<=col2")
-	}
-
-	parsed, err := ParseTable(frame)
+	rowSpan, colSpan, err := validateMergeRange(frame, row1, col1, row2, col2)
 	if err != nil {
 		return nil, err
 	}
-	rows, cols := TableDimensions(parsed)
-	if row2 >= rows || col2 >= cols {
-		return nil, fmt.Errorf("merge range [%d:%d,%d:%d] out of table bounds %dx%d", row1, row2, col1, col2, rows, cols)
-	}
-
-	rowSpan := row2 - row1 + 1
-	colSpan := col2 - col1 + 1
 
 	updatedFrame, err := MutateTableRows(frame, row1, row2, func(r int, rowContent []byte) ([]byte, error) {
 		return MutateTableCells(rowContent, col1, col2, func(c int, cellContent []byte) ([]byte, error) {
-			cellContent = RemoveTcAttr(cellContent, "rowSpan")
-			cellContent = RemoveTcAttr(cellContent, "gridSpan")
-			cellContent = RemoveTcAttr(cellContent, "vMerge")
-			cellContent = RemoveTcAttr(cellContent, "hMerge")
-
-			if r == row1 && c == col1 {
-				if rowSpan > 1 {
-					cellContent = SetTcAttr(cellContent, "rowSpan", strconv.Itoa(rowSpan))
-				}
-				if colSpan > 1 {
-					cellContent = SetTcAttr(cellContent, "gridSpan", strconv.Itoa(colSpan))
-				}
-				return cellContent, nil
-			}
-			if r > row1 {
-				cellContent = SetTcAttr(cellContent, "vMerge", "1")
-			}
-			if c > col1 {
-				cellContent = SetTcAttr(cellContent, "hMerge", "1")
-			}
-			return cellContent, nil
+			return mergeCellContent(cellContent, r, c, row1, col1, rowSpan, colSpan), nil
 		})
 	})
 	if err != nil {
@@ -57,12 +23,71 @@ func MergeCellsInFrame(frame []byte, row1, col1, row2, col2 int) ([]byte, error)
 	return updatedFrame, nil
 }
 
+func validateMergeRange(frame []byte, row1, col1, row2, col2 int) (int, int, error) {
+	if row1 < 0 || col1 < 0 || row2 < 0 || col2 < 0 {
+		return 0, 0, errors.New("merge coordinates must be non-negative")
+	}
+	if row1 > row2 || col1 > col2 {
+		return 0, 0, errors.New("merge coordinates must be ordered: row1<=row2 and col1<=col2")
+	}
+
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return 0, 0, err
+	}
+	rows, cols := Dimensions(parsed)
+	if row2 >= rows || col2 >= cols {
+		return 0, 0, fmt.Errorf(
+			"merge range [%d:%d,%d:%d] out of table bounds %dx%d",
+			row1,
+			row2,
+			col1,
+			col2,
+			rows,
+			cols,
+		)
+	}
+	return row2 - row1 + 1, col2 - col1 + 1, nil
+}
+
+func mergeCellContent(cellContent []byte, row, col, row1, col1, rowSpan, colSpan int) []byte {
+	cellContent = clearMergeAttrs(cellContent)
+	if row == row1 && col == col1 {
+		return setOriginMergeAttrs(cellContent, rowSpan, colSpan)
+	}
+	if row > row1 {
+		cellContent = SetTcAttr(cellContent, "vMerge", "1")
+	}
+	if col > col1 {
+		cellContent = SetTcAttr(cellContent, "hMerge", "1")
+	}
+	return cellContent
+}
+
+func clearMergeAttrs(cellContent []byte) []byte {
+	cellContent = RemoveTcAttr(cellContent, "rowSpan")
+	cellContent = RemoveTcAttr(cellContent, "gridSpan")
+	cellContent = RemoveTcAttr(cellContent, "vMerge")
+	cellContent = RemoveTcAttr(cellContent, "hMerge")
+	return cellContent
+}
+
+func setOriginMergeAttrs(cellContent []byte, rowSpan, colSpan int) []byte {
+	if rowSpan > 1 {
+		cellContent = SetTcAttr(cellContent, "rowSpan", strconv.Itoa(rowSpan))
+	}
+	if colSpan > 1 {
+		cellContent = SetTcAttr(cellContent, "gridSpan", strconv.Itoa(colSpan))
+	}
+	return cellContent
+}
+
 func SplitCellInFrame(frame []byte, row, col int) ([]byte, error) {
 	parsed, err := ParseTable(frame)
 	if err != nil {
 		return nil, err
 	}
-	rows, cols := TableDimensions(parsed)
+	rows, cols := Dimensions(parsed)
 	if row < 0 || row >= rows || col < 0 || col >= cols {
 		return nil, fmt.Errorf("table cell [%d,%d] out of range", row, col)
 	}

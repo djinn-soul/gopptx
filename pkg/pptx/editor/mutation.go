@@ -203,13 +203,7 @@ func buildSectionListXML(sections []Section) string {
 
 func toModuleSections(sections []Section) []editorslide.SectionData {
 	moduleSections := make([]editorslide.SectionData, 0, len(sections))
-	for _, s := range sections {
-		moduleSections = append(moduleSections, editorslide.SectionData{
-			Name:     s.Name,
-			GUID:     s.GUID,
-			SlideIDs: s.SlideIDs,
-		})
-	}
+	moduleSections = append(moduleSections, sections...)
 	return moduleSections
 }
 

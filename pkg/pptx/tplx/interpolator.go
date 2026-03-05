@@ -13,15 +13,6 @@ const (
 	textElementCloseTag = "</a:t>"
 )
 
-// tplxEscaper provides XML-safe escaping for interpolated values.
-var tplxEscaper = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	`"`, "&quot;",
-	"'", "&apos;",
-)
-
 // scalarPattern matches {{ key }} with optional whitespace.
 var scalarPattern = regexp.MustCompile(`\{\{\s*([a-zA-Z0-9_.\-]+)\s*\}\}`)
 
@@ -32,6 +23,7 @@ var dotPattern = regexp.MustCompile(`\{\{\s*\.([a-zA-Z0-9_.\-]+)\s*\}\}`)
 // Unresolved keys are left as-is. Values are XML-escaped for safe insertion into <a:t> elements.
 func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) {
 	changed := false
+	escape := xmlEscape
 
 	// First resolve item-scoped {{.field}} tokens.
 	if item != nil {
@@ -43,7 +35,7 @@ func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) 
 			key := matches[1]
 			if val, ok := item[key]; ok {
 				changed = true
-				return tplxEscaper.Replace(val)
+				return escape(val)
 			}
 			return m
 		})
@@ -63,14 +55,24 @@ func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) 
 		changed = true
 		switch v := val.(type) {
 		case string:
-			return tplxEscaper.Replace(v)
+			return escape(v)
 		case fmtStringer:
-			return tplxEscaper.Replace(v.String())
+			return escape(v.String())
 		default:
-			return tplxEscaper.Replace(strings.TrimSpace(fmtSprint(v)))
+			return escape(strings.TrimSpace(fmtSprint(v)))
 		}
 	})
 	return text, changed
+}
+
+func xmlEscape(value string) string {
+	return strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		">", "&gt;",
+		`"`, "&quot;",
+		"'", "&apos;",
+	).Replace(value)
 }
 
 // fmtStringer is a copy-free equivalent of [fmt.Stringer] to avoid importing fmt.

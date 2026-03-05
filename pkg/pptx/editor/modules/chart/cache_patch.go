@@ -1,4 +1,4 @@
-package editor
+package chart
 
 import (
 	"errors"
@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
-	editormodchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 )
 
 var (
@@ -27,7 +26,7 @@ const (
 	bubbleSizeColumnOffset       = 2
 )
 
-func patchChartDataCache(chartXML []byte, kind chartKind, req common.ChartDataUpdate) ([]byte, error) {
+func PatchChartDataCache(chartXML []byte, kind Kind, req common.ChartDataUpdate) ([]byte, error) {
 	src := string(chartXML)
 	series := chartSeriesPattern.FindAllString(src, -1)
 	if len(series) == 0 {
@@ -43,9 +42,9 @@ func patchChartDataCache(chartXML []byte, kind chartKind, req common.ChartDataUp
 			err     error
 		)
 		switch kind {
-		case chartKindScatter:
+		case KindScatter:
 			updated, err = patchScatterSeries(i, series[i], req.Series[i], false)
-		case chartKindBubble:
+		case KindBubble:
 			updated, err = patchScatterSeries(i, series[i], req.Series[i], true)
 		default:
 			updated, err = patchCategorySeries(i, series[i], req.Categories, req.Series[i])
@@ -86,7 +85,7 @@ func patchCategorySeries(
 		return "", fmt.Errorf("series %d categories: %w", seriesIdx, err)
 	}
 
-	valueCol := editormodchart.ColumnName(seriesIdx + firstSeriesValueColumnOffset)
+	valueCol := ColumnName(seriesIdx + firstSeriesValueColumnOffset)
 	out, err = replaceFieldContent(out, "val", sheetRange(valueCol, len(data.Values)), nil, data.Values)
 	if err != nil {
 		return "", fmt.Errorf("series %d values: %w", seriesIdx, err)
@@ -99,8 +98,8 @@ func patchScatterSeries(seriesIdx int, seriesXML string, data common.ChartSeries
 	if bubble {
 		baseCol = seriesIdx*bubbleColumnsPerSeries + 1
 	}
-	xCol := editormodchart.ColumnName(baseCol)
-	yCol := editormodchart.ColumnName(baseCol + 1)
+	xCol := ColumnName(baseCol)
+	yCol := ColumnName(baseCol + 1)
 
 	out, err := replaceFieldContent(seriesXML, "xVal", sheetRange(xCol, len(data.XValues)), nil, data.XValues)
 	if err != nil {
@@ -114,7 +113,7 @@ func patchScatterSeries(seriesIdx int, seriesXML string, data common.ChartSeries
 		return out, nil
 	}
 
-	sizeCol := editormodchart.ColumnName(baseCol + bubbleSizeColumnOffset)
+	sizeCol := ColumnName(baseCol + bubbleSizeColumnOffset)
 	out, err = replaceFieldContent(out, "bubbleSize", sheetRange(sizeCol, len(data.Sizes)), nil, data.Sizes)
 	if err != nil {
 		return "", fmt.Errorf("series %d bubble sizes: %w", seriesIdx, err)

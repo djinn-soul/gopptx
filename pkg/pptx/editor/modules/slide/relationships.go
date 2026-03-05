@@ -137,7 +137,8 @@ func parseSlideIDRef(start xml.StartElement) (ParsedSlideIDRef, error) {
 			ref.SlideID = slideID
 			continue
 		}
-		if attr.Name.Space == "http://schemas.openxmlformats.org/officeDocument/2006/relationships" || attr.Name.Space == "r" {
+		if attr.Name.Space == "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ||
+			attr.Name.Space == "r" {
 			ref.RelID = strings.TrimSpace(attr.Value)
 		}
 	}

@@ -149,7 +149,7 @@ func (e *PresentationEditor) GetSlide(index int) (*Slide, error) {
 }
 
 func (e *PresentationEditor) slideRelationships(slidePart string) ([]common.EditorRelationship, error) {
-	return editorslide.SlideRelationships(slidePart, e.parts.Get, parseRelationshipsXML)
+	return editorslide.Relationships(slidePart, e.parts.Get, parseRelationshipsXML)
 }
 
 // Placeholder describes a discovered placeholder in an existing slide.
@@ -158,14 +158,6 @@ type Placeholder struct {
 	Type  string
 	Name  string
 }
-
-var (
-	phPattern      = regexp.MustCompile(`(?i)<p:ph\b([^>]*)/?>`)
-	phIdxPattern   = regexp.MustCompile(`(?i)\bidx\s*=\s*(?:"(\d+)"|'(\d+)')`)
-	phTypePattern  = regexp.MustCompile(`(?i)\btype\s*=\s*(?:"([^"]*)"|'([^']*)')`)
-	phNamePattern  = regexp.MustCompile(`(?i)<p:cNvPr\b[^>]*\bname\s*=\s*(?:"([^"]*)"|'([^']*)')`)
-	shapeSPPattern = regexp.MustCompile(`(?s)<p:sp\b.*?</p:sp>`)
-)
 
 // Placeholders parses the slide XML and returns all placeholder elements found.
 func (s *Slide) Placeholders() ([]Placeholder, error) {

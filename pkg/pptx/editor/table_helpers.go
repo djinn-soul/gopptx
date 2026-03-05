@@ -120,7 +120,6 @@ func (e *PresentationEditor) UpdateTableCellText(slideIndex, shapeID, rowIdx, co
 	return nil
 }
 
-//nolint:gocognit // Merge behavior needs explicit XML-state checks for correctness and bounds safety.
 func (e *PresentationEditor) MergeTableCells(slideIndex, shapeID, row1, col1, row2, col2 int) error {
 	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
 	if err != nil {

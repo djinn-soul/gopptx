@@ -10,14 +10,6 @@ import (
 	editormodchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 )
 
-type chartKind int
-
-const (
-	chartKindCategory chartKind = iota
-	chartKindScatter
-	chartKindBubble
-)
-
 func (e *PresentationEditor) ListSlideCharts(slideIndex int) ([]common.SlideChartRef, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return nil, fmt.Errorf("slide index %d out of range", slideIndex)
@@ -82,7 +74,7 @@ func (e *PresentationEditor) UpdateChartData(
 		return validateErr
 	}
 
-	workbook, err := editormodchart.GenerateExcelForChartUpdate(chartKindToModuleKind(kind), req)
+	workbook, err := editormodchart.GenerateExcelForChartUpdate(kind, req)
 	if err != nil {
 		return fmt.Errorf("generate excel: %w", err)
 	}
@@ -94,7 +86,7 @@ func (e *PresentationEditor) UpdateChartData(
 	e.parts.Set(excelPartPath, workbook)
 	e.chartEmbeddings[chartRef.ChartPart] = excelPartPath
 
-	patchedChartXML, err := patchChartDataCache(chartXML, kind, req)
+	patchedChartXML, err := editormodchart.PatchChartDataCache(chartXML, kind, req)
 	if err != nil {
 		return err
 	}
@@ -161,41 +153,30 @@ func (e *PresentationEditor) resolveChartSelector(
 	return common.SlideChartRef{}, errors.New("chart_selector must include index and/or rel_id")
 }
 
-func detectChartKind(chartXML []byte) chartKind {
+func detectChartKind(chartXML []byte) editormodchart.Kind {
 	s := string(chartXML)
 	switch {
 	case strings.Contains(s, "<c:bubbleChart"):
-		return chartKindBubble
-	case strings.Contains(s, "<c:scatterChart"):
-		return chartKindScatter
-	default:
-		return chartKindCategory
-	}
-}
-
-func chartKindToModuleKind(kind chartKind) editormodchart.Kind {
-	switch kind {
-	case chartKindScatter:
-		return editormodchart.KindScatter
-	case chartKindBubble:
 		return editormodchart.KindBubble
+	case strings.Contains(s, "<c:scatterChart"):
+		return editormodchart.KindScatter
 	default:
 		return editormodchart.KindCategory
 	}
 }
 
-func validateChartUpdatePayload(kind chartKind, req common.ChartDataUpdate) error {
+func validateChartUpdatePayload(kind editormodchart.Kind, req common.ChartDataUpdate) error {
 	if len(req.Series) == 0 {
 		return errors.New("chart update requires at least one series")
 	}
 
 	var err error
 	switch kind {
-	case chartKindCategory:
+	case editormodchart.KindCategory:
 		err = validateCategoryChartUpdatePayload(req)
-	case chartKindScatter:
+	case editormodchart.KindScatter:
 		err = validateScatterChartUpdatePayload(req.Series)
-	case chartKindBubble:
+	case editormodchart.KindBubble:
 		err = validateBubbleChartUpdatePayload(req.Series)
 	default:
 		err = errors.New("unsupported chart type")

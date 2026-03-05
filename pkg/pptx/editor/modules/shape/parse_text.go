@@ -1,8 +1,10 @@
 package shape
 
-import "strings"
+import (
+	"strings"
 
-import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+)
 
 func applyParsedShapeText(ps *ParsedShapeProperties, s *shapeXML) {
 	var txt strings.Builder

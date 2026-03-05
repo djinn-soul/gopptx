@@ -263,7 +263,7 @@ func UpdateSlideInState(
 	}
 
 	ref := state.Slides[index]
-	existingRels, err := SlideRelationships(ref.Part, getPart, parseRelationships)
+	existingRels, err := Relationships(ref.Part, getPart, parseRelationships)
 	if err != nil {
 		return state, err
 	}
@@ -271,7 +271,7 @@ func UpdateSlideInState(
 	if err != nil {
 		return state, fmt.Errorf("slide %d cannot be updated safely: %w", index, err)
 	}
-	if SlideHasImageContent(slide) && !HasSlideLayoutRelationship(existingRels) {
+	if HasImageContent(slide) && !HasSlideLayoutRelationship(existingRels) {
 		return state, fmt.Errorf("slide %d cannot add images without a slideLayout relationship", index)
 	}
 
