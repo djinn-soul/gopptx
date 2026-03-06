@@ -27,6 +27,7 @@ type StockHLCChart struct {
 	LegendPosition        string
 	LegendOverlay         bool
 	ShowDataLabels        bool
+	DataLabels            DataLabelSettings
 	ShowMajorGridlines    bool
 	CategoryAxisTitle     string
 	ValueAxisTitle        string
@@ -79,7 +80,7 @@ func (c StockHLCChart) WithDecorative(enabled bool) StockHLCChart {
 
 // ToChartSpec converts StockHLCChart to internal XML spec.
 func (c StockHLCChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindStockHLC,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -106,6 +107,8 @@ func (c StockHLCChart) ToChartSpec() *pptxxml.ChartSpec {
 		AltText:               c.AltText,
 		IsDecorative:          c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the stock chart for consistency.
@@ -125,6 +128,7 @@ func (c StockHLCChart) Validate(slideIndex int) error {
 		c.ValueFormat,
 		c.LegendPosition,
 		c.ValueAxisCrossBetween,
+		c.DataLabels,
 		c.MinValue,
 		c.MaxValue,
 	); err != nil {
@@ -224,6 +228,7 @@ type ComboChart struct {
 	LegendPosition        string
 	LegendOverlay         bool
 	ShowDataLabels        bool
+	DataLabels            DataLabelSettings
 	ShowMajorGridlines    bool
 	CategoryAxisTitle     string
 	ValueAxisTitle        string
@@ -271,7 +276,7 @@ func (c ComboChart) WithDecorative(enabled bool) ComboChart {
 
 // ToChartSpec converts ComboChart to internal XML spec.
 func (c ComboChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindCombo,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -297,6 +302,8 @@ func (c ComboChart) ToChartSpec() *pptxxml.ChartSpec {
 		AltText:               c.AltText,
 		IsDecorative:          c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the combo chart for consistency.
@@ -320,6 +327,12 @@ func (c ComboChart) Validate(slideIndex int) error {
 	}
 	if !IsLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d combo chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d combo chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
 	}
 	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d combo chart value format cannot be empty", slideIndex)
@@ -380,6 +393,7 @@ func validateStockCore(
 	valueFormat string,
 	legendPosition string,
 	valueAxisCrossBetween string,
+	dataLabels DataLabelSettings,
 	minValue *float64,
 	maxValue *float64,
 ) error {
@@ -394,6 +408,12 @@ func validateStockCore(
 	}
 	if !IsLegendPosition(legendPosition) {
 		return fmt.Errorf("slide %d stock chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if !IsDataLabelPosition(dataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d stock chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
 	}
 	if strings.TrimSpace(valueFormat) == "" {
 		return fmt.Errorf("slide %d stock chart value format cannot be empty", slideIndex)

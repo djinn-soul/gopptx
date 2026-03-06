@@ -93,7 +93,11 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 			}
 		}
 		if tf.VerticalAlign != nil && *tf.VerticalAlign != "" {
-			bodyPr += fmt.Sprintf(` anchor="%s"`, escape(*tf.VerticalAlign))
+			anchor, err := normalizeTextFrameVerticalAlign(*tf.VerticalAlign)
+			if err != nil {
+				return nil, err
+			}
+			bodyPr += fmt.Sprintf(` anchor="%s"`, escape(anchor))
 		}
 		if tf.Orientation != nil && *tf.Orientation != "" {
 			orientation, err := normalizeTextFrameOrientation(*tf.Orientation)
@@ -120,7 +124,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 		if tf.AutoFitType != nil {
 			switch *tf.AutoFitType {
 			case "normal":
-				bodyPr += `<a:normAutofit/>`
+				bodyPr += `<a:normAutoFit/>`
 			case "shape":
 				bodyPr += `<a:spAutoFit/>`
 			case "none":
@@ -183,10 +187,9 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				rPr += fmt.Sprintf(` sz="%d"`, *r.SizePt*textRunFontSizeScale)
 			}
 			if r.AllCaps != nil && *r.AllCaps {
-				rPr += ` caps="all"`
-			}
-			if r.SmallCaps != nil && *r.SmallCaps {
-				rPr += ` smCaps="1"`
+				rPr += ` cap="all"`
+			} else if r.SmallCaps != nil && *r.SmallCaps {
+				rPr += ` cap="small"`
 			}
 			rPr += `>`
 
@@ -265,6 +268,23 @@ func normalizeTextFrameOrientation(raw string) (string, error) {
 		return "wordArtVertRtl", nil
 	default:
 		return "", fmt.Errorf("unsupported text_frame.orientation %q", raw)
+	}
+}
+
+func normalizeTextFrameVerticalAlign(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "t", "top":
+		return "t", nil
+	case "ctr", "center", "middle":
+		return "ctr", nil
+	case "b", "bottom":
+		return "b", nil
+	case "just", "justify":
+		return "just", nil
+	case "dist", "distribute":
+		return "dist", nil
+	default:
+		return "", fmt.Errorf("unsupported text_frame.vertical_align %q", raw)
 	}
 }
 

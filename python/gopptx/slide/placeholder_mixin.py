@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from typing_extensions import TypeGuard
-
+from ..utils import is_four_number_bounds
 from .placeholder_collection import PlaceholderCollection
-
-_FOUR_BOUNDS_COMPONENTS = 4
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
@@ -17,8 +14,6 @@ if TYPE_CHECKING:
 
 class SlidePlaceholderMixin:
     """Mixin providing placeholder access methods for Slide objects."""
-
-    _BOUNDS_COMPONENTS = _FOUR_BOUNDS_COMPONENTS
 
     if TYPE_CHECKING:
         _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
@@ -54,14 +49,22 @@ class SlidePlaceholderMixin:
         ph_type: str = "",
         **kwargs: object,
     ) -> None:
-        """Set content (text or image) on a placeholder. Internal method used by Placeholder."""
+        """Set content (text, image, table, or chart) on a placeholder. Internal method used by Placeholder."""
         text = kwargs.get("text")
         image_path = kwargs.get("image_path")
         bounds = kwargs.get("bounds")
         text_style = kwargs.get("text_style")
+        table_rows = kwargs.get("table_rows")
+        table_cols = kwargs.get("table_cols")
+        chart_type = kwargs.get("chart_type")
+        chart_categories = kwargs.get("chart_categories")
+        chart_values = kwargs.get("chart_values")
+        chart_options = kwargs.get("chart_options")
+
         typed_bounds: tuple[float, float, float, float] | None = None
-        if _is_four_number_bounds(bounds):
+        if is_four_number_bounds(bounds):
             typed_bounds = bounds
+
         self._presentation.set_placeholder_content(
             self.index,
             ph_index,
@@ -72,15 +75,16 @@ class SlidePlaceholderMixin:
             text_style=cast("dict[str, object] | None", text_style)
             if isinstance(text_style, dict)
             else None,
+            table_rows=int(table_rows) if isinstance(table_rows, int) else None,
+            table_cols=int(table_cols) if isinstance(table_cols, int) else None,
+            chart_type=chart_type if isinstance(chart_type, str) else None,
+            chart_categories=cast("list[object]", chart_categories)
+            if isinstance(chart_categories, list)
+            else None,
+            chart_values=cast("list[object]", chart_values)
+            if isinstance(chart_values, list)
+            else None,
+            chart_options=cast("dict[str, object] | None", chart_options)
+            if isinstance(chart_options, dict)
+            else None,
         )
-
-
-def _is_four_number_bounds(
-    value: object,
-) -> TypeGuard[tuple[float, float, float, float]]:
-    if not isinstance(value, tuple):
-        return False
-    components = cast("tuple[object, ...]", value)
-    if len(components) != _FOUR_BOUNDS_COMPONENTS:
-        return False
-    return all(isinstance(component, int | float) for component in components)

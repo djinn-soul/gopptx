@@ -133,6 +133,12 @@ func contentTypeForExtension(ext string) string {
 		return "audio/mpeg"
 	case "m4a":
 		return "audio/mp4"
+	case "mp4":
+		return "video/mp4"
+	case "mov":
+		return "video/quicktime"
+	case "bin":
+		return "application/vnd.openxmlformats-officedocument.oleObject"
 	case "xlsx":
 		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 	default:

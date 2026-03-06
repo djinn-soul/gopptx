@@ -24,6 +24,7 @@ Use the following commands to run the examples:
 ### Masters & Layouts
 
 - `33-notes-master`: `go run ./examples/33-notes-master/notes_master_smoke.go` -> `33_notes_master_smoke.pptx`
+- `34-urlfetch`: `go run ./examples/34-urlfetch/main.go` -> `34_urlfetch_*.pptx` (HTML to PPTX with custom CSS selectors and image embedding)
 - `36-slide-master`: `go run ./examples/36-slide-master/multi_master_smoke.go` -> `36_multi_master_smoke.pptx`
 
 ### Editor & Modification

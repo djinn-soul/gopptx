@@ -51,6 +51,12 @@ func (c BarChart) WithMajorGridlines(show bool) BarChart {
 	return c
 }
 
+// WithCategoryMajorGridlines toggles category-axis major gridlines.
+func (c BarChart) WithCategoryMajorGridlines(show bool) BarChart {
+	c.ShowCategoryMajorGridlines = show
+	return c
+}
+
 // WithValueFormat sets the value-axis number format code.
 func (c BarChart) WithValueFormat(format string) BarChart {
 	c.ValueFormat = strings.TrimSpace(format)
@@ -60,6 +66,21 @@ func (c BarChart) WithValueFormat(format string) BarChart {
 // WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
 func (c BarChart) WithValueAxisCrossBetween(mode string) BarChart {
 	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
+	return c
+}
+
+// WithTickLabelPositions sets category/value axis tick label positions:
+// nextTo|low|high|none.
+func (c BarChart) WithTickLabelPositions(categoryPos string, valuePos string) BarChart {
+	c.CategoryTickLabelPosition = strings.TrimSpace(categoryPos)
+	c.ValueTickLabelPosition = strings.TrimSpace(valuePos)
+	return c
+}
+
+// WithAxisCrosses sets category/value axis crosses mode: autoZero|min|max.
+func (c BarChart) WithAxisCrosses(categoryCrosses string, valueCrosses string) BarChart {
+	c.CategoryAxisCrosses = strings.TrimSpace(categoryCrosses)
+	c.ValueAxisCrosses = strings.TrimSpace(valueCrosses)
 	return c
 }
 
@@ -119,6 +140,12 @@ func (c LineChart) WithMajorGridlines(show bool) LineChart {
 	return c
 }
 
+// WithCategoryMajorGridlines toggles category-axis major gridlines.
+func (c LineChart) WithCategoryMajorGridlines(show bool) LineChart {
+	c.ShowCategoryMajorGridlines = show
+	return c
+}
+
 // WithValueFormat sets the value-axis number format code.
 func (c LineChart) WithValueFormat(format string) LineChart {
 	c.ValueFormat = strings.TrimSpace(format)
@@ -128,6 +155,21 @@ func (c LineChart) WithValueFormat(format string) LineChart {
 // WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
 func (c LineChart) WithValueAxisCrossBetween(mode string) LineChart {
 	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
+	return c
+}
+
+// WithTickLabelPositions sets category/value axis tick label positions:
+// nextTo|low|high|none.
+func (c LineChart) WithTickLabelPositions(categoryPos string, valuePos string) LineChart {
+	c.CategoryTickLabelPosition = strings.TrimSpace(categoryPos)
+	c.ValueTickLabelPosition = strings.TrimSpace(valuePos)
+	return c
+}
+
+// WithAxisCrosses sets category/value axis crosses mode: autoZero|min|max.
+func (c LineChart) WithAxisCrosses(categoryCrosses string, valueCrosses string) LineChart {
+	c.CategoryAxisCrosses = strings.TrimSpace(categoryCrosses)
+	c.ValueAxisCrosses = strings.TrimSpace(valueCrosses)
 	return c
 }
 

@@ -17,6 +17,12 @@ type AddImageFromBytesFn func(
 	x, y, w, h float64,
 	options *common.ShapeUpdate,
 ) (int, error)
+type AddImageFromURLFn func(
+	slideIndex int,
+	sourceURL string,
+	x, y, w, h float64,
+	options *common.ShapeUpdate,
+) (int, error)
 type AddImageFromPathFn func(
 	slideIndex int,
 	imagePath string,
@@ -31,6 +37,7 @@ type AddImageRequest struct {
 	W          float64
 	H          float64
 	ImagePath  string
+	ImageURL   string
 	Base64Data string
 	Format     string
 	Options    *common.ShapeUpdate
@@ -70,6 +77,7 @@ func ParseAddImageRequest(
 		W:          w,
 		H:          h,
 		ImagePath:  optionalString(payload, "path"),
+		ImageURL:   optionalString(payload, "url"),
 		Base64Data: optionalString(payload, "data"),
 		Format:     optionalString(payload, "format"),
 	}
@@ -93,6 +101,7 @@ func ExecuteAddImageRequest(
 	request AddImageRequest,
 	maxLen int,
 	addImageFromBytes AddImageFromBytesFn,
+	addImageFromURL AddImageFromURLFn,
 	addImageFromPath AddImageFromPathFn,
 ) (int, error) {
 	if request.Base64Data != "" {
@@ -108,6 +117,17 @@ func ExecuteAddImageRequest(
 			request.SlideIndex,
 			decodedData,
 			request.Format,
+			request.X,
+			request.Y,
+			request.W,
+			request.H,
+			request.Options,
+		)
+	}
+	if request.ImageURL != "" {
+		return addImageFromURL(
+			request.SlideIndex,
+			request.ImageURL,
 			request.X,
 			request.Y,
 			request.W,

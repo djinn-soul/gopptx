@@ -7,7 +7,7 @@ import (
 
 func bubbleChartPartXML(chart *ChartSpec) string {
 	series := chartBubbleSeriesXML(chart)
-	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	labels := chartDataLabelsXML(chart)
 	var plot strings.Builder
 	plot.WriteString(`
 <c:bubbleChart>

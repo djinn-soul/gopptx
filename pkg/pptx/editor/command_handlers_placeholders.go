@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 	editormodcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/common"
 )
 
@@ -62,12 +63,20 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	// We support "text", "image_path", "text_style" inside the payload
 	text := v.OptionalString(p, "text")
 	imagePath := v.OptionalString(p, "image_path")
+	tableSpec, hasTableSpec, err := editorcommand.ParsePlaceholderTableSpec(p)
+	if err != nil {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	chartFrame, hasChart, err := buildPlaceholderChartFrame(e, slideIndex, p)
+	if err != nil {
+		return nil, err
+	}
 
 	hasText := text != ""
 	hasImagePath := imagePath != ""
 
-	if !hasText && !hasImagePath {
-		return nil, NewBridgeError(ErrCodeInvalidPayload, "Must provide 'text' or 'image_path'")
+	if err := validatePlaceholderContentKinds(hasText, hasImagePath, hasTableSpec, hasChart); err != nil {
+		return nil, err
 	}
 
 	// For targeting, python-pptx typically relies on idx alone.
@@ -94,33 +103,15 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 		return nil, fmt.Errorf("parse shapes: %w", err)
 	}
 
-	shapeRefs := make([]editormodcommon.PlaceholderShapeRef, len(shapesList))
-	for i, s := range shapesList {
-		shapeRefs[i] = editormodcommon.PlaceholderShapeRef{
-			Index: s.PhIndex,
-			Type:  s.PhType,
-		}
-	}
-	shapeIndex, matches := editormodcommon.FindPlaceholderShapeIndex(shapeRefs, phIndex, phType)
-
-	if matches > 1 && phType == "" {
-		return nil, NewBridgeError(
-			ErrCodeInvalidValue,
-			fmt.Sprintf("multiple placeholders with index %d found; provide 'ph_type' to disambiguate", phIndex),
-		)
-	}
-
-	if shapeIndex == -1 {
-		msg := fmt.Sprintf("placeholder with index %d not found on slide", phIndex)
-		if phType != "" {
-			msg = fmt.Sprintf("placeholder with index %d and type %q not found on slide", phIndex, phType)
-		}
-		return nil, NewBridgeError(ErrCodeInvalidValue, msg)
+	shapeIndex, resolvedType, err := resolvePlaceholderTargetShape(shapesList, phIndex, phType)
+	if err != nil {
+		return nil, err
 	}
 
 	// Prepare the override spec for internal renderer
-	resolvedType := editormodcommon.ResolvePlaceholderType(phType, shapesList[shapeIndex].PhType)
 	phSpec := editormodcommon.BuildPlaceholderOverrideSpec(phIndex, resolvedType, text, imageRef, styleOpts)
+	phSpec.Table = tableSpec
+	phSpec.Chart = chartFrame
 
 	newShapeXML := pptxxml.PlaceholderShape(phSpec, shapesList[shapeIndex].ID)
 
@@ -133,6 +124,35 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 
 	e.parts.Set(partPath, newContent)
 	return map[string]bool{"updated": true}, nil
+}
+
+func validatePlaceholderContentKinds(hasText, hasImagePath, hasTableContent, hasChart bool) error {
+	kinds := 0
+	if hasText {
+		kinds++
+	}
+	if hasImagePath {
+		kinds++
+	}
+	if hasTableContent {
+		kinds++
+	}
+	if hasChart {
+		kinds++
+	}
+	if kinds == 0 {
+		return NewBridgeError(
+			ErrCodeInvalidPayload,
+			"Must provide exactly one of 'text', 'image_path', 'table', or 'chart'",
+		)
+	}
+	if kinds > 1 {
+		return NewBridgeError(
+			ErrCodeInvalidPayload,
+			"Only one placeholder content kind is allowed: choose exactly one of 'text', 'image_path', 'table', or 'chart'",
+		)
+	}
+	return nil
 }
 
 func requirePlaceholderIndex(payload map[string]any, v *PayloadValidator) (int, error) {
@@ -169,4 +189,34 @@ func buildPlaceholderImageRef(
 		return nil, err
 	}
 	return editormodcommon.BuildPlaceholderImageRef(relID, imagePath, x, y, cx, cy), nil
+}
+
+func resolvePlaceholderTargetShape(
+	shapesList []parsedShape,
+	phIndex int,
+	phType string,
+) (int, string, error) {
+	shapeRefs := make([]editormodcommon.PlaceholderShapeRef, len(shapesList))
+	for i, shape := range shapesList {
+		shapeRefs[i] = editormodcommon.PlaceholderShapeRef{
+			Index: shape.PhIndex,
+			Type:  shape.PhType,
+		}
+	}
+	shapeIndex, matches := editormodcommon.FindPlaceholderShapeIndex(shapeRefs, phIndex, phType)
+	if matches > 1 && phType == "" {
+		return -1, "", NewBridgeError(
+			ErrCodeInvalidValue,
+			fmt.Sprintf("multiple placeholders with index %d found; provide 'ph_type' to disambiguate", phIndex),
+		)
+	}
+	if shapeIndex == -1 {
+		msg := fmt.Sprintf("placeholder with index %d not found on slide", phIndex)
+		if phType != "" {
+			msg = fmt.Sprintf("placeholder with index %d and type %q not found on slide", phIndex, phType)
+		}
+		return -1, "", NewBridgeError(ErrCodeInvalidValue, msg)
+	}
+	resolvedType := editormodcommon.ResolvePlaceholderType(phType, shapesList[shapeIndex].PhType)
+	return shapeIndex, resolvedType, nil
 }

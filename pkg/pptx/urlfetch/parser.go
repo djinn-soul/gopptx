@@ -1,6 +1,9 @@
 package urlfetch
 
 import (
+	"fmt"
+	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -153,13 +156,22 @@ func NewWebParserWithConfig(cfg Config) *WebParser {
 }
 
 // Parse extracts structured content from raw HTML, attributing it to url.
-func (p *WebParser) Parse(html, url string) (*WebContent, error) {
+func (p *WebParser) Parse(html, pageURL string) (*WebContent, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
 		return nil, err
 	}
 
-	wc := &WebContent{URL: url}
+	// Parse base URL for resolving relative URLs
+	var baseURL *url.URL
+	if pageURL != "" {
+		baseURL, err = url.Parse(pageURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid page URL: %w", err)
+		}
+	}
+
+	wc := &WebContent{URL: pageURL}
 	wc.Title = p.extractTitle(doc)
 	wc.Description = p.extractMetaDescription(doc)
 
@@ -168,7 +180,7 @@ func (p *WebParser) Parse(html, url string) (*WebContent, error) {
 		return nil, ErrNoContent
 	}
 
-	p.walkSelection(main, wc, 0)
+	p.walkSelection(main, wc, 0, baseURL)
 
 	if wc.IsEmpty() {
 		return nil, ErrNoContent
@@ -206,11 +218,23 @@ func (p *WebParser) extractMetaDescription(doc *goquery.Document) string {
 }
 
 func (p *WebParser) findMainContent(doc *goquery.Document) *goquery.Selection {
-	for _, sel := range mainContentSelectors() {
+	// Use custom selectors if provided, otherwise use defaults
+	selectors := p.cfg.ContentSelectors
+	if len(selectors) == 0 {
+		selectors = mainContentSelectors()
+	}
+
+	for _, sel := range selectors {
 		found := doc.Find(sel).First()
 		if found.Length() == 0 {
 			continue
 		}
+
+		// Apply exclude selectors
+		for _, excludeSel := range p.cfg.ExcludeSelectors {
+			found.Find(excludeSel).Remove()
+		}
+
 		if len(strings.TrimSpace(found.Text())) >= minMainTextLen {
 			return found
 		}
@@ -219,10 +243,15 @@ func (p *WebParser) findMainContent(doc *goquery.Document) *goquery.Selection {
 }
 
 //nolint:gocyclo,cyclop,gocognit,funlen // DOM-walk branching is intentionally linear and explicit.
-func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth int) {
+func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth int, baseURL *url.URL) {
 	tag := goquery.NodeName(sel)
 
 	if shouldSkipTag(tag) {
+		return
+	}
+
+	// Check exclude selectors
+	if slices.ContainsFunc(p.cfg.ExcludeSelectors, sel.Is) {
 		return
 	}
 
@@ -268,9 +297,11 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 			alt, _ := sel.Attr("alt")
 			alt = strings.TrimSpace(alt)
 			if src != "" && !strings.HasPrefix(src, "data:") && alt != "" {
-				wc.Images = append(wc.Images, [2]string{src, alt})
+				// Resolve relative URLs
+				resolvedSrc := p.resolveURL(src, baseURL)
+				wc.Images = append(wc.Images, [2]string{resolvedSrc, alt})
 				wc.Blocks = append(wc.Blocks, ContentBlock{
-					Kind: KindImage, ImageSrc: src, ImageAlt: alt,
+					Kind: KindImage, ImageSrc: resolvedSrc, ImageAlt: alt,
 				})
 			}
 		}
@@ -300,8 +331,33 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 	}
 
 	sel.Children().Each(func(_ int, child *goquery.Selection) {
-		p.walkSelection(child, wc, depth+1)
+		p.walkSelection(child, wc, depth+1, baseURL)
 	})
+}
+
+// resolveURL resolves a potentially relative URL against the base URL.
+func (p *WebParser) resolveURL(ref string, baseURL *url.URL) string {
+	if baseURL == nil {
+		return ref
+	}
+
+	// If already absolute, return as-is
+	if strings.HasPrefix(ref, "http://") || strings.HasPrefix(ref, "https://") {
+		return ref
+	}
+
+	// If protocol-relative, add https
+	if strings.HasPrefix(ref, "//") {
+		return "https:" + ref
+	}
+
+	// Resolve against base URL
+	u, err := baseURL.Parse(ref)
+	if err != nil {
+		return ref
+	}
+
+	return u.String()
 }
 
 func cleanText(sel *goquery.Selection) string {

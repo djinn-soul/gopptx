@@ -27,6 +27,7 @@ type DoughnutChart struct {
 	LegendPosition string
 	LegendOverlay  bool
 	ShowDataLabels bool
+	DataLabels     DataLabelSettings
 	HoleSize       int
 
 	// Accessibility
@@ -88,7 +89,7 @@ func (c DoughnutChart) WithTitle(title string) DoughnutChart {
 
 // ToChartSpec converts DoughnutChart to internal XML spec.
 func (c DoughnutChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindDoughnut,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -108,6 +109,8 @@ func (c DoughnutChart) ToChartSpec() *pptxxml.ChartSpec {
 		AltText:        c.AltText,
 		IsDecorative:   c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the doughnut chart for consistency.
@@ -133,6 +136,12 @@ func (c DoughnutChart) Validate(slideIndex int) error {
 	}
 	if !IsLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d doughnut chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d doughnut chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
 	}
 	if c.HoleSize < 10 || c.HoleSize > 90 {
 		return fmt.Errorf("slide %d doughnut chart hole size must be between 10 and 90", slideIndex)

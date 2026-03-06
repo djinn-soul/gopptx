@@ -60,6 +60,11 @@ Under `scripts/smoke/`, only the validator remains.
 
 - `go run ./scripts/tasks/generate_task_samples`
 
+## CI Guardrails
+
+- `uv run python scripts/ci/architectural_guardrails.py`
+- `uv run python scripts/ci/architectural_guardrails.py --write-current-baseline`
+
 ## Python Bindings
 
 - Windows (PowerShell): `./scripts/build_python.ps1`

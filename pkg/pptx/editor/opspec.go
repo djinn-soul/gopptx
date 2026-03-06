@@ -18,6 +18,10 @@ const (
 	OpListMasterLayouts       = "list_master_layouts"
 	OpRebindSlideLayout       = "rebind_slide_layout"
 	OpCloneLayoutMasterFamily = "clone_layout_master_family"
+	OpAddSlideMaster          = "add_slide_master"
+	OpRemoveSlideMaster       = "remove_slide_master"
+	OpAddSlideLayout          = "add_slide_layout"
+	OpRemoveSlideLayout       = "remove_slide_layout"
 	OpAddSection              = "add_section"
 	OpRemoveSection           = "remove_section"
 	OpRenameSection           = "rename_section"
@@ -71,6 +75,7 @@ const (
 	OpSetPlaceholderContent   = "set_placeholder_content"
 	OpGetImageMetadata        = "get_image_metadata"
 	OpAddVideo                = "add_video"
+	OpAddAudio                = "add_audio"
 	OpAddOLEObject            = "add_ole_object"
 )
 
@@ -91,6 +96,10 @@ func SupportedOps() []string {
 		OpListMasterLayouts,
 		OpRebindSlideLayout,
 		OpCloneLayoutMasterFamily,
+		OpAddSlideMaster,
+		OpRemoveSlideMaster,
+		OpAddSlideLayout,
+		OpRemoveSlideLayout,
 		OpAddSection,
 		OpRemoveSection,
 		OpRenameSection,
@@ -144,6 +153,7 @@ func SupportedOps() []string {
 		OpSetPlaceholderContent,
 		OpGetImageMetadata,
 		OpAddVideo,
+		OpAddAudio,
 		OpAddOLEObject,
 	}
 }

@@ -4,7 +4,7 @@ import "fmt"
 
 func radarChartPartXML(chart *ChartSpec) string {
 	series := chartSeriesXML(chart)
-	labels := chartDataLabelsXML(chart.ShowDataLabels)
+	labels := chartDataLabelsXML(chart)
 	return chartPartEnvelope(
 		chart.Title,
 		chart.TitleOverlay,

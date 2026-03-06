@@ -9,11 +9,6 @@ import (
 )
 
 const (
-	defaultCodeForeground = "D4D4D4"
-	codeKeywordColor      = "005A9E"
-	codeCommentColor      = "2E7D32"
-	codeStringColor       = "A31515"
-
 	codeHeaderFontSizePt = 13
 	codeBodyFontSizePt   = 14
 )
@@ -35,68 +30,64 @@ func addCodeBlock(slide *elements.SlideContent, lang string, code string) {
 	}
 	*slide = slide.AddBulletRunsWithStyle(header, style)
 
-	for line := range strings.SplitSeq(code, "\n") {
-		if strings.TrimSpace(line) == "" {
-			*slide = slide.AddBulletWithStyle(" ", style)
-			continue
+	// Use token-level syntax highlighting
+	highlighter := newSyntaxHighlighter(normalizedLang)
+	tokens := highlighter.Tokenize(code)
+
+	// Group tokens by lines and render with coloring
+	addTokenizedCodeLines(slide, tokens, style)
+}
+
+func addTokenizedCodeLines(slide *elements.SlideContent, tokens []Token, style elements.ParagraphStyle) {
+	var currentLine []Token
+
+	for _, tok := range tokens {
+		if tok.Text == "\n" {
+			// Render current line with token-level coloring
+			renderTokenizedLine(slide, currentLine, style)
+			currentLine = nil
+		} else {
+			currentLine = append(currentLine, tok)
 		}
-		run := elements.NewRun(line).
+	}
+
+	// Render remaining tokens
+	if len(currentLine) > 0 {
+		renderTokenizedLine(slide, currentLine, style)
+	}
+}
+
+func renderTokenizedLine(slide *elements.SlideContent, tokens []Token, style elements.ParagraphStyle) {
+	// Check if line is empty (only whitespace)
+	isEmpty := true
+	for _, tok := range tokens {
+		if tok.Type != TokenWhitespace || strings.TrimSpace(tok.Text) != "" {
+			isEmpty = false
+			break
+		}
+	}
+
+	if isEmpty || len(tokens) == 0 {
+		*slide = slide.AddBulletWithStyle(" ", style)
+		return
+	}
+
+	// Convert tokens to runs with their token-level colors (from Chroma/Solarized)
+	runs := make([]elements.Run, 0, len(tokens))
+	for _, tok := range tokens {
+		// Use token's color from Chroma lexer, fallback to Solarized mapping
+		color := tok.Color
+		if color == "" {
+			color = GetColor(tok.Type)
+		}
+		run := elements.NewRun(tok.Text).
 			WithCode(true).
-			WithColor(codeLineColor(normalizedLang, line)).
+			WithColor(color).
 			WithSizePt(codeBodyFontSizePt)
-		*slide = slide.AddBulletRunsWithStyle([]elements.Run{run}, style)
+		runs = append(runs, run)
 	}
-}
 
-func codeLineColor(lang string, line string) string {
-	trimmed := strings.TrimSpace(line)
-	if trimmed == "" {
-		return defaultCodeForeground
-	}
-	if isCodeComment(lang, trimmed) {
-		return codeCommentColor
-	}
-	if strings.Contains(trimmed, `"`) || strings.Contains(trimmed, `'`) {
-		return codeStringColor
-	}
-	if containsCodeKeyword(lang, trimmed) {
-		return codeKeywordColor
-	}
-	return defaultCodeForeground
-}
-
-func isCodeComment(lang string, line string) bool {
-	switch lang {
-	case "python", "py":
-		return strings.HasPrefix(line, "#")
-	default:
-		return strings.HasPrefix(line, "//")
-	}
-}
-
-func containsCodeKeyword(lang string, line string) bool {
-	keywords := codeKeywordsByLanguage(lang)
-	for _, keyword := range keywords {
-		if strings.Contains(line, keyword) {
-			return true
-		}
-	}
-	return false
-}
-
-func codeKeywordsByLanguage(lang string) []string {
-	switch lang {
-	case "rust", "rs":
-		return []string{"fn ", "let ", "impl ", "struct ", "enum ", "pub ", "use "}
-	case "python", "py":
-		return []string{"def ", "class ", "import ", "return ", "for ", "while ", "if "}
-	case "javascript", "js", "typescript", "ts":
-		return []string{"function ", "const ", "let ", "class ", "return ", "if "}
-	case "go", "golang":
-		return []string{"func ", "type ", "struct ", "package ", "import ", "return "}
-	default:
-		return nil
-	}
+	*slide = slide.AddBulletRunsWithStyle(runs, style)
 }
 
 func addMermaidPlaceholder(slide *elements.SlideContent, code string, lineNumber int) error {

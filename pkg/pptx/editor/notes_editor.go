@@ -21,20 +21,10 @@ func (e *PresentationEditor) GetNotes(slideIndex int) (string, error) {
 		return "", errors.New("slide index out of range")
 	}
 
-	ref := e.slides[slideIndex]
-	rels, err := e.slideRelationships(ref.Part)
+	notesPart, err := e.resolveSlideNotesPart(slideIndex)
 	if err != nil {
 		return "", err
 	}
-
-	var notesPart string
-	for _, rel := range rels {
-		if rel.Type == common.RelTypeNotesSlide {
-			notesPart = path.Join("ppt/slides", rel.Target)
-			break
-		}
-	}
-
 	if notesPart == "" {
 		return "", nil // No notes
 	}
@@ -45,6 +35,27 @@ func (e *PresentationEditor) GetNotes(slideIndex int) (string, error) {
 	}
 
 	return extractAllText(data), nil
+}
+
+// ListNotesPlaceholders enumerates placeholder metadata from a slide's notes page.
+func (e *PresentationEditor) ListNotesPlaceholders(slideIndex int) ([]Placeholder, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return nil, errors.New("slide index out of range")
+	}
+
+	notesPart, err := e.resolveSlideNotesPart(slideIndex)
+	if err != nil {
+		return nil, err
+	}
+	if notesPart == "" {
+		return []Placeholder{}, nil
+	}
+
+	data, ok := e.parts.Get(notesPart)
+	if !ok {
+		return []Placeholder{}, nil
+	}
+	return parsePlaceholdersFromSlideXML(data), nil
 }
 
 // HasNotesSlide reports whether a slide currently has a notes-slide relationship.
@@ -217,4 +228,19 @@ func (e *PresentationEditor) ensureNotesInfrastructure() {
 		e.nextRelIDNum,
 		notesMasterThemeIndex,
 	)
+}
+
+func (e *PresentationEditor) resolveSlideNotesPart(slideIndex int) (string, error) {
+	ref := e.slides[slideIndex]
+	rels, err := e.slideRelationships(ref.Part)
+	if err != nil {
+		return "", err
+	}
+
+	for _, rel := range rels {
+		if rel.Type == common.RelTypeNotesSlide {
+			return path.Join("ppt/slides", rel.Target), nil
+		}
+	}
+	return "", nil
 }

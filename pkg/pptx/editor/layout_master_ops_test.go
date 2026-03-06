@@ -184,3 +184,175 @@ func newLayoutFixtureEditor(t *testing.T) *PresentationEditor {
 	}
 	return editor
 }
+
+func TestAddSlideMaster(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+
+	// Add a new slide master
+	masterPart, err := editor.AddSlideMaster()
+	if err != nil {
+		t.Fatalf("AddSlideMaster failed: %v", err)
+	}
+
+	// Verify master was created with correct path
+	if masterPart != "ppt/slideMasters/slideMaster2.xml" {
+		t.Fatalf("expected masterPart ppt/slideMasters/slideMaster2.xml, got %s", masterPart)
+	}
+
+	// Verify master XML exists
+	if !editor.parts.Has(masterPart) {
+		t.Fatalf("master XML not found: %s", masterPart)
+	}
+
+	// Verify master relationships exist
+	masterRelsPath := "ppt/slideMasters/_rels/slideMaster2.xml.rels"
+	if !editor.parts.Has(masterRelsPath) {
+		t.Fatalf("master relationships not found: %s", masterRelsPath)
+	}
+
+	// Verify master is listed
+	masters, err := editor.ListSlideMasters()
+	if err != nil {
+		t.Fatalf("ListSlideMasters failed: %v", err)
+	}
+	if len(masters) != 2 { // Original master1 + new master2
+		t.Fatalf("expected 2 masters, got %d", len(masters))
+	}
+}
+
+func TestAddSlideLayout(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+
+	// Add a new slide layout to existing master
+	layoutPart, err := editor.AddSlideLayout("ppt/slideMasters/slideMaster1.xml", "Custom Layout")
+	if err != nil {
+		t.Fatalf("AddSlideLayout failed: %v", err)
+	}
+
+	// Verify layout was created (should be slideLayout2 since slideLayout1 exists)
+	if layoutPart != "ppt/slideLayouts/slideLayout2.xml" {
+		t.Fatalf("expected layoutPart ppt/slideLayouts/slideLayout2.xml, got %s", layoutPart)
+	}
+
+	// Verify layout XML exists
+	if !editor.parts.Has(layoutPart) {
+		t.Fatalf("layout XML not found: %s", layoutPart)
+	}
+
+	// Verify layout relationships exist
+	layoutRelsPath := "ppt/slideLayouts/_rels/slideLayout2.xml.rels"
+	if !editor.parts.Has(layoutRelsPath) {
+		t.Fatalf("layout relationships not found: %s", layoutRelsPath)
+	}
+
+	// Verify layout is listed under the master
+	layouts, err := editor.ListMasterLayouts("ppt/slideMasters/slideMaster1.xml")
+	if err != nil {
+		t.Fatalf("ListMasterLayouts failed: %v", err)
+	}
+	if len(layouts) != 2 { // Original layout1 + new layout2
+		t.Fatalf("expected 2 layouts under master, got %d", len(layouts))
+	}
+
+	// Verify layout has correct name
+	found := false
+	for _, l := range layouts {
+		if l.Name == "Custom Layout" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected to find layout with name 'Custom Layout'")
+	}
+}
+
+func TestRemoveSlideLayout(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+
+	// Add a new layout first
+	layoutPart, err := editor.AddSlideLayout("ppt/slideMasters/slideMaster1.xml", "To Be Removed")
+	if err != nil {
+		t.Fatalf("AddSlideLayout failed: %v", err)
+	}
+
+	// Verify layout exists
+	layoutsBefore, err := editor.ListMasterLayouts("ppt/slideMasters/slideMaster1.xml")
+	if err != nil {
+		t.Fatalf("ListMasterLayouts failed: %v", err)
+	}
+	countBefore := len(layoutsBefore)
+
+	// Remove the layout
+	err = editor.RemoveSlideLayout(layoutPart)
+	if err != nil {
+		t.Fatalf("RemoveSlideLayout failed: %v", err)
+	}
+
+	// Verify layout is removed
+	if editor.parts.Has(layoutPart) {
+		t.Fatalf("layout still exists after removal: %s", layoutPart)
+	}
+
+	// Verify layout relationships are removed
+	layoutRelsPath := "ppt/slideLayouts/_rels/slideLayout2.xml.rels"
+	if editor.parts.Has(layoutRelsPath) {
+		t.Fatalf("layout relationships still exist after removal: %s", layoutRelsPath)
+	}
+
+	// Verify it's gone from the list
+	layoutsAfter, err := editor.ListMasterLayouts("ppt/slideMasters/slideMaster1.xml")
+	if err != nil {
+		t.Fatalf("ListMasterLayouts failed: %v", err)
+	}
+	if len(layoutsAfter) != countBefore-1 {
+		t.Fatalf("expected %d layouts after removal, got %d", countBefore-1, len(layoutsAfter))
+	}
+}
+
+func TestAddSlideMasterAndLayoutRoundTrip(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+
+	// Add a new slide master
+	masterPart, err := editor.AddSlideMaster()
+	if err != nil {
+		t.Fatalf("AddSlideMaster failed: %v", err)
+	}
+
+	// Add a layout to the new master
+	layoutPart, err := editor.AddSlideLayout(masterPart, "Custom Layout for Master 2")
+	if err != nil {
+		t.Fatalf("AddSlideLayout failed: %v", err)
+	}
+
+	// Save and reopen
+	out := filepath.Join(t.TempDir(), "master-layout-add.pptx")
+	if err := editor.Save(out); err != nil {
+		t.Fatalf("save failed: %v", err)
+	}
+
+	reopen, err := OpenPresentationEditor(out)
+	if err != nil {
+		t.Fatalf("reopen failed: %v", err)
+	}
+	defer func() { _ = reopen.Close() }()
+
+	// Verify master exists after reopen
+	if !reopen.parts.Has(masterPart) {
+		t.Fatalf("master missing after reopen: %s", masterPart)
+	}
+
+	// Verify layout exists after reopen
+	if !reopen.parts.Has(layoutPart) {
+		t.Fatalf("layout missing after reopen: %s", layoutPart)
+	}
+
+	// Verify content types include both
+	contentTypes, _ := reopen.parts.Get("[Content_Types].xml")
+	if !strings.Contains(string(contentTypes), masterPart) {
+		t.Fatalf("content types missing master: %s", string(contentTypes))
+	}
+	if !strings.Contains(string(contentTypes), layoutPart) {
+		t.Fatalf("content types missing layout: %s", string(contentTypes))
+	}
+}

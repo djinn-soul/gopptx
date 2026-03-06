@@ -175,54 +175,6 @@ type ShapeSearchResult struct {
 	Shape      Shape
 }
 
-// ChartSelector identifies a slide chart by index and/or relationship ID.
-type ChartSelector struct {
-	Index *int   `json:"index,omitempty"`
-	RelID string `json:"rel_id,omitempty"`
-}
-
-// ChartSeriesData carries one chart series worth of input data.
-type ChartSeriesData struct {
-	Name       *string   `json:"name,omitempty"`
-	Categories []string  `json:"categories,omitempty"`
-	Values     []float64 `json:"values,omitempty"`
-	XValues    []float64 `json:"x_values,omitempty"`
-	YValues    []float64 `json:"y_values,omitempty"`
-	Sizes      []float64 `json:"sizes,omitempty"`
-}
-
-// ChartDataUpdate is the complete chart update payload.
-type ChartDataUpdate struct {
-	Categories []string          `json:"categories,omitempty"`
-	Series     []ChartSeriesData `json:"series,omitempty"`
-}
-
-// SlideChartRef describes a chart relationship discovered on a slide.
-type SlideChartRef struct {
-	Index     int
-	RelID     string
-	ChartPart string
-}
-
-// SlideLayoutInfo describes one available slide layout part.
-type SlideLayoutInfo struct {
-	Part       string
-	Name       string
-	MasterPart string
-}
-
-// SlideMasterInfo describes one available slide master part.
-type SlideMasterInfo struct {
-	Part string
-}
-
-// SlideMasterCloneResult summarizes an in-package layout/master clone operation.
-type SlideMasterCloneResult struct {
-	MasterPart string
-	ThemePart  string
-	LayoutMap  map[string]string
-}
-
 // Hyperlink holds properties for click or hover actions.
 type Hyperlink struct {
 	Address        *string `json:"address,omitempty"`
@@ -351,10 +303,11 @@ type PatternedFill struct {
 
 // ImageMetadata describes basic image properties returned by the bridge.
 type ImageMetadata struct {
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
-	Format string `json:"format"`
-	Hash   string `json:"hash,omitempty"`
+	Width       int    `json:"width"`
+	Height      int    `json:"height"`
+	Format      string `json:"format"`
+	ContentType string `json:"content_type,omitempty"`
+	Hash        string `json:"hash,omitempty"`
 }
 
 // ImageCrop defines cropping offsets (0.0 to 1.0).

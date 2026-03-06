@@ -8,6 +8,14 @@ import (
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
+func renderRelationshipsXML(rels []common.EditorRelationship) string {
+	return editorslide.RenderRelationshipsXML(rels)
+}
+
+func rewriteChartExternalData(current []byte, newRelID string) []byte {
+	return editorslide.RewriteChartExternalData(current, newRelID)
+}
+
 // deepCloneSlideAssets walks through the relationships of a source slide and copies
 // all referenced assets (images, charts, etc.) to the target editor.
 // It returns a modified relationships XML byte slice where targets are remapped to the new locations.

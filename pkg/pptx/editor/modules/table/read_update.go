@@ -41,6 +41,7 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 			cells = append(cells, buildTableCellInfo(rIdx, cIdx, cell))
 		}
 	}
+	rowsView, colsView := buildTableTraversalViews(rowCount, colCount, cells)
 
 	return map[string]any{
 		"table": map[string]any{
@@ -53,8 +54,52 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 			"band_row":  TruthyAttr(parsed.TblPr.BandRow),
 			"band_col":  TruthyAttr(parsed.TblPr.BandCol),
 			"cells":     cells,
+			"rows":      rowsView,
+			"columns":   colsView,
 		},
 	}, nil
+}
+
+func buildTableTraversalViews(
+	rowCount int,
+	colCount int,
+	cells []map[string]any,
+) ([]map[string]any, []map[string]any) {
+	rowsView := make([]map[string]any, rowCount)
+	for r := range rowCount {
+		rowsView[r] = map[string]any{
+			"index": r,
+			"cells": make([]map[string]any, 0, colCount),
+		}
+	}
+
+	colsView := make([]map[string]any, colCount)
+	for c := range colCount {
+		colsView[c] = map[string]any{
+			"index": c,
+			"cells": make([]map[string]any, 0, rowCount),
+		}
+	}
+
+	for _, cell := range cells {
+		rowIndex, rowOK := cell["row"].(int)
+		colIndex, colOK := cell["col"].(int)
+		if !rowOK || !colOK {
+			continue
+		}
+		if rowIndex >= 0 && rowIndex < rowCount {
+			if rowCells, ok := rowsView[rowIndex]["cells"].([]map[string]any); ok {
+				rowsView[rowIndex]["cells"] = append(rowCells, cell)
+			}
+		}
+		if colIndex >= 0 && colIndex < colCount {
+			if colCells, ok := colsView[colIndex]["cells"].([]map[string]any); ok {
+				colsView[colIndex]["cells"] = append(colCells, cell)
+			}
+		}
+	}
+
+	return rowsView, colsView
 }
 
 func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
