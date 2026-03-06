@@ -323,6 +323,23 @@ func TestConfig_NewBuilderOptions(t *testing.T) {
 	}
 }
 
+func TestConfig_DefaultAllowedImageTypes(t *testing.T) {
+	cfg := urlfetch.DefaultConfig()
+	want := map[string]struct{}{
+		"image/png":  {},
+		"image/jpeg": {},
+		"image/gif":  {},
+	}
+	if len(cfg.AllowedImageTypes) != len(want) {
+		t.Fatalf("AllowedImageTypes length: want %d, got %d", len(want), len(cfg.AllowedImageTypes))
+	}
+	for _, mime := range cfg.AllowedImageTypes {
+		if _, ok := want[mime]; !ok {
+			t.Fatalf("unexpected default MIME type: %s", mime)
+		}
+	}
+}
+
 // --- Custom selectors tests ---
 
 func TestParser_CustomContentSelectors(t *testing.T) {

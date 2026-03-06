@@ -174,7 +174,7 @@ func (f *ImageFetcher) isAllowedImageType(contentType string) bool {
 
 	allowedTypes := f.cfg.AllowedImageTypes
 	if len(allowedTypes) == 0 {
-		allowedTypes = []string{"image/png", "image/jpeg", "image/gif", "image/webp"}
+		allowedTypes = []string{"image/png", "image/jpeg", "image/gif"}
 	}
 
 	for _, allowed := range allowedTypes {

@@ -46,7 +46,7 @@ type Config struct {
 	MaxTotalImageSizeBytes int64
 	// MaxImagesPerSlide limits images per slide (default: 3).
 	MaxImagesPerSlide int
-	// AllowedImageTypes filters by MIME type (default: ["image/png", "image/jpeg", "image/gif", "image/webp"]).
+	// AllowedImageTypes filters by MIME type (default: ["image/png", "image/jpeg", "image/gif"]).
 	AllowedImageTypes []string
 	// ContentSelectors overrides default main-content CSS selectors.
 	ContentSelectors []string
@@ -78,7 +78,7 @@ func DefaultConfig() Config {
 		MaxImageSizeBytes:      defaultMaxImageSizeBytes,
 		MaxTotalImageSizeBytes: defaultMaxTotalImageSize,
 		MaxImagesPerSlide:      defaultMaxImagesPerSlide,
-		AllowedImageTypes:      []string{"image/png", "image/jpeg", "image/gif", "image/webp"},
+		AllowedImageTypes:      []string{"image/png", "image/jpeg", "image/gif"},
 	}
 }
 
