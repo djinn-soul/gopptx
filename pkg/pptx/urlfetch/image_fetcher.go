@@ -108,24 +108,23 @@ func (f *ImageFetcher) FetchImage(imageURL string) (*FetchedImage, error) {
 		return nil, fmt.Errorf("image exceeds maximum size of %d bytes", maxSize)
 	}
 
-	// Check total size limit
-	f.mu.Lock()
-	maxTotal := f.cfg.MaxTotalImageSizeBytes
-	if maxTotal <= 0 {
-		maxTotal = defaultMaxTotalImageSize
-	}
-	if f.totalSize+int64(len(data)) > maxTotal {
-		f.mu.Unlock()
-		return nil, fmt.Errorf("total image size would exceed maximum of %d bytes", maxTotal)
-	}
-	f.totalSize += int64(len(data))
-	f.mu.Unlock()
-
 	// Detect image dimensions and format
 	format, width, height, err := f.detectImageInfo(data)
 	if err != nil {
 		return nil, fmt.Errorf("detect image info: %w", err)
 	}
+
+	// Check and reserve total size limit only after validation succeeds.
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	maxTotal := f.cfg.MaxTotalImageSizeBytes
+	if maxTotal <= 0 {
+		maxTotal = defaultMaxTotalImageSize
+	}
+	if f.totalSize+int64(len(data)) > maxTotal {
+		return nil, fmt.Errorf("total image size would exceed maximum of %d bytes", maxTotal)
+	}
+	f.totalSize += int64(len(data))
 
 	return &FetchedImage{
 		Data:   data,

@@ -10,6 +10,7 @@ package digitalsig
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 // HashAlgorithm used for signing.
@@ -180,7 +181,7 @@ func (d DigitalSignature) ToOriginXML() string {
 
 // ToSignatureXML generates signature info XML for `_xmlsignatures/sig1.xml`.
 func (d DigitalSignature) ToSignatureXML() string {
-	date := "2025-01-01T00:00:00Z"
+	date := time.Now().UTC().Format("2006-01-02T15:04:05Z")
 	if d.SignDate != nil {
 		date = *d.SignDate
 	}

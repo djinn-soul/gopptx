@@ -13,6 +13,31 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/urlfetch"
 )
 
+func writePPTX(outDir, filename string, pptx []byte) {
+	path := filepath.Join(outDir, filename)
+	if err := os.WriteFile(path, pptx, 0o600); err != nil {
+		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+}
+
+func generateAndWriteWithOptions(
+	outDir string,
+	html string,
+	url string,
+	cfg urlfetch.Config,
+	opts urlfetch.ConversionOptions,
+	filename string,
+) {
+	pptx, err := urlfetch.HTMLToPPTXWithOptions(html, url, cfg, opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
+		os.Exit(1)
+	}
+	writePPTX(outDir, filename, pptx)
+}
+
 const mlHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -130,12 +155,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
 		os.Exit(1)
 	}
-	path := filepath.Join(outDir, "34_urlfetch_ml_intro.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	writePPTX(outDir, "34_urlfetch_ml_intro.pptx", pptx)
 
 	// Example 2: Custom config and options.
 	fmt.Println("📄 Example 2: Custom config and options")
@@ -154,12 +174,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
 		os.Exit(1)
 	}
-	path = filepath.Join(outDir, "34_urlfetch_ml_quick.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	writePPTX(outDir, "34_urlfetch_ml_quick.pptx", pptx)
 
 	// Example 3: Technical documentation with a real table slide.
 	fmt.Println("📄 Example 3: Technical documentation (with table)")
@@ -168,12 +183,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
 		os.Exit(1)
 	}
-	path = filepath.Join(outDir, "34_urlfetch_api_docs.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	writePPTX(outDir, "34_urlfetch_api_docs.pptx", pptx)
 
 	// Example 4: Custom CSS selectors for content extraction
 	fmt.Println("📄 Example 4: Custom CSS selectors")
@@ -196,17 +206,14 @@ func main() {
 		WithContentSelectors([]string{"article.post-content"}).
 		WithExcludeSelectors([]string{"nav", "footer", ".advertisement"})
 
-	pptx, err = urlfetch.HTMLToPPTXWithOptions(customHTML, "https://example.com/blog", cfg4, opts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
-		os.Exit(1)
-	}
-	path = filepath.Join(outDir, "34_urlfetch_custom_selectors.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	generateAndWriteWithOptions(
+		outDir,
+		customHTML,
+		"https://example.com/blog",
+		cfg4,
+		opts,
+		"34_urlfetch_custom_selectors.pptx",
+	)
 
 	// Example 5: Image embedding (if images are available - demonstrates feature)
 	fmt.Println("📄 Example 5: Image embedding configuration")
@@ -230,17 +237,14 @@ func main() {
 		WithMaxImageSizeBytes(2 * 1024 * 1024) // 2MB per image
 
 	// Note: This will fallback to alt-text for images since the URLs don't exist
-	pptx, err = urlfetch.HTMLToPPTXWithOptions(imageHTML, "https://docs.example.com/guide", cfg5, opts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
-		os.Exit(1)
-	}
-	path = filepath.Join(outDir, "34_urlfetch_image_config.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	generateAndWriteWithOptions(
+		outDir,
+		imageHTML,
+		"https://docs.example.com/guide",
+		cfg5,
+		opts,
+		"34_urlfetch_image_config.pptx",
+	)
 
 	fmt.Println("=== Done ===")
 	fmt.Println("Generated files in examples/output/:")

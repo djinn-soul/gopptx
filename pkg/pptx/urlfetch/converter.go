@@ -278,8 +278,8 @@ func (c *Converter) fetchAndCreateImage(fetcher *ImageFetcher, src, _ string) (s
 	img := shapes.NewImageFromBytes(
 		fetched.Data,
 		fetched.Format,
-		styling.Emu(widthEMU),
-		styling.Emu(heightEMU),
+		styling.Emu(0),
+		styling.Emu(0),
 		styling.Emu(widthEMU),
 		styling.Emu(heightEMU),
 	)
