@@ -7,7 +7,7 @@ import (
 
 func pieChartPartXML(chart *ChartSpec) string {
 	series := chartPieSeriesXML(chart)
-	labels := chartPieDataLabelsXML(chart.ShowDataLabels)
+	labels := chartPieDataLabelsXML(chart)
 	var plot strings.Builder
 	plot.WriteString(`
 <c:pieChart>
@@ -28,15 +28,11 @@ func pieChartPartXML(chart *ChartSpec) string {
 	)
 }
 
-func chartPieDataLabelsXML(show bool) string {
-	if !show {
-		return ""
-	}
-	return `
-<c:dLbls>
-<c:showCatName val="1"/>
-<c:showPercent val="1"/>
-</c:dLbls>`
+func chartPieDataLabelsXML(chart *ChartSpec) string {
+	return chartDataLabelsWithDefaults(chart, chartDataLabelDefaults{
+		showCategory: true,
+		showPercent:  true,
+	})
 }
 
 func chartPieSeriesXML(chart *ChartSpec) string {

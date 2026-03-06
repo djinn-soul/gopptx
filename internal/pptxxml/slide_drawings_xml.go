@@ -11,6 +11,7 @@ const (
 	strokeDashSolid     = "solid"
 	arrowTypeNone       = "none"
 	emusPerDegree       = 60000
+	shadowScaleBase     = 100000
 	transparencyBase    = 100000
 	defaultMargin       = 457200
 	customShapeGrowCap  = 2048
@@ -68,6 +69,10 @@ type ShapeSpec struct {
 	Name         string
 	Adjustments  []ConnectorAdjustmentSpec
 	Effects      *ShapeEffectsSpec
+	// Rich formatting specs (new)
+	RichFill   *RichShapeFillSpec
+	RichLine   *RichShapeLineSpec
+	RichShadow *RichShapeShadowSpec
 }
 
 // ShapeEffectsSpec describes effects for one custom shape.
@@ -76,6 +81,103 @@ type ShapeEffectsSpec struct {
 	Glow       bool
 	SoftEdges  bool
 	Reflection bool
+}
+
+// FillType represents the type of shape fill.
+type FillType string
+
+const (
+	FillTypeSolid    FillType = "solid"
+	FillTypeGradient FillType = "gradient"
+	FillTypePattern  FillType = "pattern"
+	FillTypeNoFill   FillType = "noFill"
+)
+
+// SolidFillSpec describes a solid fill.
+type SolidFillSpec struct {
+	Color        string
+	Transparency float64
+}
+
+// PatternFillSpec describes a pattern fill.
+type PatternFillSpec struct {
+	Pattern string
+	FgColor string
+	BgColor string
+}
+
+// RichShapeFillSpec provides a unified spec for all fill types.
+type RichShapeFillSpec struct {
+	Type     FillType
+	Solid    *SolidFillSpec
+	Gradient *ShapeGradientFillSpec
+	Pattern  *PatternFillSpec
+}
+
+// LineDashStyle represents line dash styles.
+type LineDashStyle string
+
+const (
+	LineDashStyleSolid       LineDashStyle = "solid"
+	LineDashStyleDash        LineDashStyle = "dash"
+	LineDashStyleDot         LineDashStyle = "dot"
+	LineDashStyleDashDot     LineDashStyle = "dashDot"
+	LineDashStyleDashDotDot  LineDashStyle = "dashDotDot"
+	LineDashStyleLongDash    LineDashStyle = "lgDash"
+	LineDashStyleLongDashDot LineDashStyle = "lgDashDot"
+)
+
+// LineCapStyle represents line cap styles.
+type LineCapStyle string
+
+const (
+	LineCapStyleFlat   LineCapStyle = "flat"
+	LineCapStyleRound  LineCapStyle = "rnd"
+	LineCapStyleSquare LineCapStyle = "sq"
+)
+
+// LineJoinStyle represents line join styles.
+type LineJoinStyle string
+
+const (
+	LineJoinStyleRound LineJoinStyle = "round"
+	LineJoinStyleBevel LineJoinStyle = "bevel"
+	LineJoinStyleMiter LineJoinStyle = "miter"
+)
+
+// RichShapeLineSpec provides detailed control over shape line properties.
+type RichShapeLineSpec struct {
+	Color        string
+	Width        int64
+	DashStyle    LineDashStyle
+	CapStyle     LineCapStyle
+	JoinStyle    LineJoinStyle
+	Transparency float64
+}
+
+// ShadowType represents shadow types.
+type ShadowType string
+
+const (
+	ShadowTypeOuter       ShadowType = "outer"
+	ShadowTypeInner       ShadowType = "inner"
+	ShadowTypePerspective ShadowType = "perspective"
+)
+
+// RichShapeShadowSpec provides detailed control over shape shadow effects.
+type RichShapeShadowSpec struct {
+	Type            ShadowType
+	Color           string
+	Transparency    float64
+	BlurRadius      int
+	Distance        int
+	Angle           float64
+	Alignment       string
+	SkewX           float64
+	SkewY           float64
+	ScaleX          float64
+	ScaleY          float64
+	RotateWithShape bool
 }
 
 // TextFrameSpec describes the text layout within a shape.
@@ -123,7 +225,9 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	fillXML := customShapeFill(shape)
 
 	lineXML := ""
-	if shape.Line != nil {
+	if shape.RichLine != nil {
+		lineXML = richShapeLineXML(*shape.RichLine)
+	} else if shape.Line != nil {
 		lineXML = shapeLineXML(*shape.Line)
 	}
 
@@ -161,7 +265,7 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	b.WriteString(`</a:prstGeom>`)
 	b.WriteString(fillXML)
 	b.WriteString(lineXML)
-	b.WriteString(shapeEffectsXML(shape.Effects))
+	b.WriteString(shapeEffectsXML(shape.Effects, shape.RichShadow))
 	b.WriteString(`
 </p:spPr>`)
 
@@ -171,29 +275,44 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	return b.String()
 }
 
-func shapeEffectsXML(effects *ShapeEffectsSpec) string {
-	if effects == nil || (!effects.Shadow && !effects.Glow && !effects.SoftEdges && !effects.Reflection) {
+func shapeEffectsXML(effects *ShapeEffectsSpec, richShadow *RichShapeShadowSpec) string {
+	// Check if we have rich shadow
+	hasRichShadow := richShadow != nil && richShadow.Type != ""
+
+	// Check if we have legacy effects
+	hasLegacyEffects := effects != nil && (effects.Shadow || effects.Glow || effects.SoftEdges || effects.Reflection)
+
+	if !hasRichShadow && !hasLegacyEffects {
 		return ""
 	}
+
 	var b strings.Builder
 	b.WriteString("<a:effectLst>")
-	if effects.Shadow {
+
+	// Rich shadow takes precedence over legacy shadow
+	if hasRichShadow {
+		b.WriteString(richShapeShadowXML(*richShadow))
+	} else if effects != nil && effects.Shadow {
 		b.WriteString(`<a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0">`)
 		b.WriteString(`<a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr>`)
 		b.WriteString(`</a:outerShdw>`)
 	}
-	if effects.Glow {
-		b.WriteString(`<a:glow rad="6350">`)
-		b.WriteString(`<a:srgbClr val="4472C4"><a:alpha val="35000"/></a:srgbClr>`)
-		b.WriteString(`</a:glow>`)
+
+	if effects != nil {
+		if effects.Glow {
+			b.WriteString(`<a:glow rad="6350">`)
+			b.WriteString(`<a:srgbClr val="4472C4"><a:alpha val="35000"/></a:srgbClr>`)
+			b.WriteString(`</a:glow>`)
+		}
+		if effects.SoftEdges {
+			b.WriteString(`<a:softEdge rad="38100"/>`)
+		}
+		if effects.Reflection {
+			b.WriteString(`<a:ref blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
+			b.WriteString(` dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`)
+		}
 	}
-	if effects.SoftEdges {
-		b.WriteString(`<a:softEdge rad="38100"/>`)
-	}
-	if effects.Reflection {
-		b.WriteString(`<a:ref blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
-		b.WriteString(` dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`)
-	}
+
 	b.WriteString("</a:effectLst>")
 	return b.String()
 }
@@ -242,6 +361,10 @@ func customShapeTransform(shape ShapeSpec) string {
 }
 
 func customShapeFill(shape ShapeSpec) string {
+	// Rich fill takes precedence over legacy fill
+	if shape.RichFill != nil {
+		return richShapeFillXML(*shape.RichFill)
+	}
 	switch {
 	case shape.GradientFill != nil:
 		return shapeGradientFillXML(*shape.GradientFill)
@@ -579,4 +702,153 @@ func connectorBounds(connector ConnectorSpec) (int64, int64, int64, int64) {
 		cy = -cy
 	}
 	return x, y, cx, cy
+}
+
+// Rich Shape Fill XML rendering
+
+func richShapeFillXML(fill RichShapeFillSpec) string {
+	switch fill.Type {
+	case FillTypeSolid:
+		if fill.Solid != nil {
+			return richSolidFillXML(*fill.Solid)
+		}
+	case FillTypeGradient:
+		if fill.Gradient != nil {
+			return shapeGradientFillXML(*fill.Gradient)
+		}
+	case FillTypePattern:
+		if fill.Pattern != nil {
+			return richPatternFillXML(*fill.Pattern)
+		}
+	case FillTypeNoFill:
+		return `<a:noFill/>`
+	}
+	return `<a:noFill/>`
+}
+
+func richSolidFillXML(fill SolidFillSpec) string {
+	alphaXML := ""
+	if fill.Transparency > 0 {
+		alphaVal := int((1.0 - fill.Transparency) * transparencyBase)
+		alphaXML = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaVal)
+	}
+	return fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s">%s</a:srgbClr></a:solidFill>`,
+		Escape(fill.Color), alphaXML)
+}
+
+func richPatternFillXML(fill PatternFillSpec) string {
+	return fmt.Sprintf(
+		`<a:pattFill prst="%s">`+
+			`<a:fgClr><a:srgbClr val="%s"/></a:fgClr>`+
+			`<a:bgClr><a:srgbClr val="%s"/></a:bgClr>`+
+			`</a:pattFill>`,
+		Escape(fill.Pattern),
+		Escape(fill.FgColor),
+		Escape(fill.BgColor),
+	)
+}
+
+// Rich Shape Line XML rendering
+
+func richShapeLineXML(line RichShapeLineSpec) string {
+	attrs := fmt.Sprintf(`w="%d"`, line.Width)
+
+	if line.CapStyle != "" {
+		attrs += fmt.Sprintf(` cap="%s"`, string(line.CapStyle))
+	}
+
+	dashXML := ""
+	if line.DashStyle != "" && line.DashStyle != LineDashStyleSolid {
+		dashXML = fmt.Sprintf(`<a:prstDash val="%s"/>`, string(line.DashStyle))
+	}
+
+	joinXML := ""
+	switch line.JoinStyle {
+	case LineJoinStyleBevel:
+		joinXML = `<a:bevel/>`
+	case LineJoinStyleMiter:
+		joinXML = `<a:miter/>`
+	case LineJoinStyleRound:
+		joinXML = `<a:round/>`
+	}
+
+	alphaXML := ""
+	if line.Transparency > 0 {
+		alphaVal := int((1.0 - line.Transparency) * transparencyBase)
+		alphaXML = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaVal)
+	}
+
+	return fmt.Sprintf(`<a:ln %s><a:solidFill><a:srgbClr val="%s">%s</a:srgbClr></a:solidFill>%s%s</a:ln>`,
+		attrs, Escape(line.Color), alphaXML, dashXML, joinXML)
+}
+
+// Rich Shape Shadow XML rendering
+
+func richShapeShadowXML(shadow RichShapeShadowSpec) string {
+	if shadow.Type == "" {
+		return ""
+	}
+
+	switch shadow.Type {
+	case ShadowTypeOuter:
+		return richOuterShadowXML(shadow)
+	case ShadowTypeInner:
+		return richInnerShadowXML(shadow)
+	case ShadowTypePerspective:
+		return richPerspectiveShadowXML(shadow)
+	}
+	return ""
+}
+
+func richOuterShadowXML(shadow RichShapeShadowSpec) string {
+	attrs := fmt.Sprintf(`blurRad="%d" dist="%d" dir="%d"`,
+		shadow.BlurRadius, shadow.Distance, int(shadow.Angle*emusPerDegree))
+
+	if shadow.Alignment != "" {
+		attrs += fmt.Sprintf(` algn="%s"`, Escape(shadow.Alignment))
+	}
+
+	if !shadow.RotateWithShape {
+		attrs += ` rotWithShape="0"`
+	}
+
+	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
+
+	return fmt.Sprintf(`<a:outerShdw %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
+		attrs, Escape(shadow.Color), alphaVal)
+}
+
+func richInnerShadowXML(shadow RichShapeShadowSpec) string {
+	attrs := fmt.Sprintf(`blurRad="%d" dist="%d" dir="%d"`,
+		shadow.BlurRadius, shadow.Distance, int(shadow.Angle*emusPerDegree))
+
+	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
+
+	return fmt.Sprintf(`<a:innerShdw %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:innerShdw>`,
+		attrs, Escape(shadow.Color), alphaVal)
+}
+
+func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
+	attrs := fmt.Sprintf(`dist="%d" dir="%d"`, shadow.Distance, int(shadow.Angle*emusPerDegree))
+
+	if shadow.SkewX != 0 || shadow.SkewY != 0 {
+		attrs += fmt.Sprintf(` sx="%d" sy="%d"`,
+			int(shadow.SkewX*shadowScaleBase), int(shadow.SkewY*shadowScaleBase))
+	}
+
+	if shadow.ScaleX != 1.0 || shadow.ScaleY != 1.0 {
+		attrs += fmt.Sprintf(` kx="%d" ky="%d"`,
+			int(shadow.ScaleX*shadowScaleBase), int(shadow.ScaleY*shadowScaleBase))
+	}
+
+	if shadow.Alignment != "" {
+		attrs += fmt.Sprintf(` algn="%s"`, Escape(shadow.Alignment))
+	}
+
+	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
+
+	return fmt.Sprintf(
+		`<a:prstShdw prst="shdw1" %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:prstShdw>`,
+		attrs, Escape(shadow.Color), alphaVal,
+	)
 }

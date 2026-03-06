@@ -33,7 +33,8 @@ func TestUpdateChartDataCategoryByIndexPreservesStyle(t *testing.T) {
 		t.Fatalf("expected formulas rewritten, got: %s", xml)
 	}
 
-	excelData, _ := e.parts.Get("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx")
+	excelPath := e.chartEmbeddings["ppt/charts/chart1.xml"]
+	excelData, _ := e.parts.Get(excelPath)
 	if _, zipErr := zip.NewReader(bytes.NewReader(excelData), int64(len(excelData))); zipErr != nil {
 		t.Fatalf("updated excel payload is invalid zip: %v", zipErr)
 	}
@@ -86,6 +87,28 @@ func TestUpdateChartDataBubbleByRelID(t *testing.T) {
 	}
 }
 
+func TestUpdateChartDataPreservesNumericFormatCode(t *testing.T) {
+	e := newChartUpdateEditorFixture()
+	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXMLWithNumericFormat()))
+
+	idx := 0
+	err := e.UpdateChartData(0, common.ChartSelector{Index: &idx}, common.ChartDataUpdate{
+		Categories: []string{"Q1", "Q2"},
+		Series: []common.ChartSeriesData{
+			{Values: []float64{0.125, 0.25}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateChartData failed: %v", err)
+	}
+
+	chartData, _ := e.parts.Get("ppt/charts/chart1.xml")
+	xml := string(chartData)
+	if !strings.Contains(xml, "<c:formatCode>0.00%</c:formatCode>") {
+		t.Fatalf("expected numeric format code to be preserved, got: %s", xml)
+	}
+}
+
 func TestUpdateChartDataSelectorMismatchFails(t *testing.T) {
 	e := newChartUpdateEditorFixture()
 	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXML()))
@@ -96,6 +119,37 @@ func TestUpdateChartDataSelectorMismatchFails(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatalf("expected selector mismatch error")
+	}
+}
+
+func TestUpdateChartDataMultiLevelCategoriesByIndex(t *testing.T) {
+	e := newChartUpdateEditorFixture()
+	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXMLWithMultiLevelCategories()))
+
+	idx := 0
+	err := e.UpdateChartData(0, common.ChartSelector{Index: &idx}, common.ChartDataUpdate{
+		MultiLevelCategories: [][]string{
+			{"2026", "2026"},
+			{"Q1", "Q2"},
+		},
+		Series: []common.ChartSeriesData{
+			{Values: []float64{100, 200}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateChartData failed: %v", err)
+	}
+
+	chartData, _ := e.parts.Get("ppt/charts/chart1.xml")
+	xml := string(chartData)
+	if !strings.Contains(xml, "Sheet1!$A$2:$B$3") {
+		t.Fatalf("expected multi-level category formula range, got: %s", xml)
+	}
+	if !strings.Contains(xml, "<c:multiLvlStrCache>") || !strings.Contains(xml, "<c:lvl>") {
+		t.Fatalf("expected multi-level category cache nodes, got: %s", xml)
+	}
+	if !strings.Contains(xml, "<c:v>2026</c:v>") || !strings.Contains(xml, "<c:v>Q2</c:v>") {
+		t.Fatalf("expected updated multi-level category values, got: %s", xml)
 	}
 }
 
@@ -110,7 +164,7 @@ func TestListSlideCharts(t *testing.T) {
 	}
 }
 
-func TestUpdateChartDataFailsWhenEmbeddingMissing(t *testing.T) {
+func TestUpdateChartDataSuccessWhenEmbeddingMissingButRelExists(t *testing.T) {
 	e := newChartUpdateEditorFixture()
 	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXML()))
 	e.parts.Delete("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx")
@@ -126,11 +180,13 @@ func TestUpdateChartDataFailsWhenEmbeddingMissing(t *testing.T) {
 		Categories: []string{"Q1"},
 		Series:     []common.ChartSeriesData{{Values: []float64{10}}},
 	})
-	if err == nil {
-		t.Fatalf("expected missing embedding error")
+	if err != nil {
+		t.Fatalf("UpdateChartData should succeed and create a new embedding: %v", err)
 	}
-	if !strings.Contains(err.Error(), "embedding part missing") {
-		t.Fatalf("unexpected error: %v", err)
+
+	excelPath := e.chartEmbeddings["ppt/charts/chart1.xml"]
+	if !e.parts.Has(excelPath) {
+		t.Error("new excel part was not created")
 	}
 }
 
@@ -159,6 +215,14 @@ func newChartUpdateEditorFixture() *PresentationEditor {
 				`Target="../charts/chart1.xml"/></Relationships>`,
 		),
 	)
+	e.parts.Set(
+		"ppt/charts/_rels/chart1.xml.rels",
+		[]byte(
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+				`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" `+
+				`Target="../embeddings/Microsoft_Excel_Worksheet1.xlsx"/></Relationships>`,
+		),
+	)
 	e.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx", []byte("old"))
 	return e
 }
@@ -170,6 +234,29 @@ func categoryChartXML() string {
 		`<c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Old</c:v></c:pt></c:strCache></c:strRef></c:cat>` +
 		`<c:val><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache><c:ptCount val="1"/><c:pt idx="0"><c:v>1</c:v></c:pt>` +
 		`</c:numCache></c:numRef></c:val></c:ser></c:barChart></c:plotArea></c:chartSpace>`
+}
+
+func categoryChartXMLWithNumericFormat() string {
+	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">` +
+		`<c:plotArea><c:barChart><c:ser>` +
+		`<c:cat><c:strRef><c:f>Sheet1!$A$2:$A$2</c:f><c:strCache><c:ptCount val="1"/>` +
+		`<c:pt idx="0"><c:v>Old</c:v></c:pt></c:strCache></c:strRef></c:cat>` +
+		`<c:val><c:numRef><c:f>Sheet1!$B$2:$B$2</c:f><c:numCache>` +
+		`<c:formatCode>0.00%</c:formatCode><c:ptCount val="1"/><c:pt idx="0"><c:v>0.10</c:v></c:pt>` +
+		`</c:numCache></c:numRef></c:val>` +
+		`</c:ser></c:barChart></c:plotArea></c:chartSpace>`
+}
+
+func categoryChartXMLWithMultiLevelCategories() string {
+	return `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart">` +
+		`<c:plotArea><c:barChart><c:ser><c:idx val="0"/><c:order val="0"/>` +
+		`<c:cat><c:multiLvlStrRef><c:f>Sheet1!$A$2:$B$2</c:f><c:multiLvlStrCache><c:ptCount val="1"/>` +
+		`<c:lvl><c:pt idx="0"><c:v>OLD-YEAR</c:v></c:pt></c:lvl>` +
+		`<c:lvl><c:pt idx="0"><c:v>OLD-Q</c:v></c:pt></c:lvl>` +
+		`</c:multiLvlStrCache></c:multiLvlStrRef></c:cat>` +
+		`<c:val><c:numRef><c:f>Sheet1!$C$2:$C$2</c:f><c:numCache><c:ptCount val="1"/>` +
+		`<c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:val>` +
+		`</c:ser></c:barChart></c:plotArea></c:chartSpace>`
 }
 
 func scatterChartXML() string {

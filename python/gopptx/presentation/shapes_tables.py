@@ -349,6 +349,24 @@ class PresentationShapeMixin(PresentationProtocol):
         result = self.execute(ops.OP_ADD_VIDEO, payload)
         return int(cast("int", result.get("shape_id", -1)))
 
+    def add_audio(
+        self,
+        slide_index: int,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        **kwargs: object,
+    ) -> int:
+        """Add an audio file to a slide."""
+        mime_type = kwargs.get("mime_type")
+        payload = self._init_bounds_payload(slide_index, bounds)
+        self._set_source_payload(payload, source)
+
+        if isinstance(mime_type, str) and mime_type:
+            payload["mime_type"] = mime_type
+
+        result = self.execute(ops.OP_ADD_AUDIO, payload)
+        return int(cast("int", result.get("shape_id", -1)))
+
     def add_ole_object(
         self,
         slide_index: int,

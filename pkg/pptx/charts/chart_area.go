@@ -20,19 +20,25 @@ type AreaChart struct {
 	CX           styling.Length
 	CY           styling.Length
 
-	AreaColor             string
-	SeriesName            string
-	ShowLegend            bool
-	LegendPosition        string
-	LegendOverlay         bool
-	ShowDataLabels        bool
-	ShowMajorGridlines    bool
-	CategoryAxisTitle     string
-	ValueAxisTitle        string
-	ValueFormat           string
-	ValueAxisCrossBetween string
-	MinValue              *float64
-	MaxValue              *float64
+	AreaColor                  string
+	SeriesName                 string
+	ShowLegend                 bool
+	LegendPosition             string
+	LegendOverlay              bool
+	ShowDataLabels             bool
+	DataLabels                 DataLabelSettings
+	ShowMajorGridlines         bool
+	ShowCategoryMajorGridlines bool
+	CategoryAxisTitle          string
+	ValueAxisTitle             string
+	CategoryTickLabelPosition  string
+	ValueTickLabelPosition     string
+	CategoryAxisCrosses        string
+	ValueAxisCrosses           string
+	ValueFormat                string
+	ValueAxisCrossBetween      string
+	MinValue                   *float64
+	MaxValue                   *float64
 
 	// Accessibility
 	AltText      string
@@ -51,14 +57,19 @@ func NewAreaChart(categories []string, values []float64) AreaChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		AreaColor:             "9BBB59",
-		SeriesName:            "Series 1",
-		ShowLegend:            false,
-		LegendPosition:        LegendPositionRight,
-		ShowDataLabels:        false,
-		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
-		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
+		AreaColor:                  "9BBB59",
+		SeriesName:                 "Series 1",
+		ShowLegend:                 false,
+		LegendPosition:             LegendPositionRight,
+		ShowDataLabels:             false,
+		ShowMajorGridlines:         true,
+		ShowCategoryMajorGridlines: false,
+		CategoryTickLabelPosition:  AxisTickLabelPositionNextTo,
+		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
+		CategoryAxisCrosses:        AxisCrossesAutoZero,
+		ValueAxisCrosses:           AxisCrossesAutoZero,
+		ValueFormat:                "General",
+		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -102,7 +113,7 @@ func (c AreaChart) WithAreaColor(color string) AreaChart {
 
 // ToChartSpec converts AreaChart to internal XML spec.
 func (c AreaChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindArea,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -113,23 +124,30 @@ func (c AreaChart) ToChartSpec() *pptxxml.ChartSpec {
 		CX:           c.CX.Emu(),
 		CY:           c.CY.Emu(),
 
-		Color:                 NormalizeHexColor(c.AreaColor),
-		SeriesName:            c.SeriesName,
-		ShowLegend:            c.ShowLegend,
-		LegendPosition:        c.LegendPosition,
-		LegendOverlay:         c.LegendOverlay,
-		ShowDataLabels:        c.ShowDataLabels,
-		ShowMajorGridlines:    c.ShowMajorGridlines,
-		CategoryAxisTitle:     c.CategoryAxisTitle,
-		ValueAxisTitle:        c.ValueAxisTitle,
-		ValueFormat:           c.ValueFormat,
-		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
-		MinValue:              CopyFloat64Pointer(c.MinValue),
-		MaxValue:              CopyFloat64Pointer(c.MaxValue),
-		Grouping:              "standard",
-		AltText:               c.AltText,
-		IsDecorative:          c.IsDecorative,
+		Color:                      NormalizeHexColor(c.AreaColor),
+		SeriesName:                 c.SeriesName,
+		ShowLegend:                 c.ShowLegend,
+		LegendPosition:             c.LegendPosition,
+		LegendOverlay:              c.LegendOverlay,
+		ShowDataLabels:             c.ShowDataLabels,
+		ShowMajorGridlines:         c.ShowMajorGridlines,
+		ShowCategoryMajorGridlines: c.ShowCategoryMajorGridlines,
+		CategoryAxisTitle:          c.CategoryAxisTitle,
+		ValueAxisTitle:             c.ValueAxisTitle,
+		CategoryTickLabelPosition:  c.CategoryTickLabelPosition,
+		ValueTickLabelPosition:     c.ValueTickLabelPosition,
+		CategoryAxisCrosses:        c.CategoryAxisCrosses,
+		ValueAxisCrosses:           c.ValueAxisCrosses,
+		ValueFormat:                c.ValueFormat,
+		ValueAxisCrossBetween:      c.ValueAxisCrossBetween,
+		MinValue:                   CopyFloat64Pointer(c.MinValue),
+		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
+		Grouping:                   "standard",
+		AltText:                    c.AltText,
+		IsDecorative:               c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the area chart for consistency.
@@ -159,8 +177,32 @@ func (c AreaChart) Validate(slideIndex int) error {
 	if !IsLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d area chart legend position must be one of r,l,t,b", slideIndex)
 	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d area chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
+	}
 	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d area chart value format cannot be empty", slideIndex)
+	}
+	if !IsAxisTickLabelPosition(c.CategoryTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d area chart category-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+		)
+	}
+	if !IsAxisTickLabelPosition(c.ValueTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d area chart value-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+		)
+	}
+	if !IsAxisCrosses(c.CategoryAxisCrosses) {
+		return fmt.Errorf("slide %d area chart category-axis crosses must be autoZero, min, or max", slideIndex)
+	}
+	if !IsAxisCrosses(c.ValueAxisCrosses) {
+		return fmt.Errorf("slide %d area chart value-axis crosses must be autoZero, min, or max", slideIndex)
 	}
 	if !IsValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d area chart value-axis crossBetween must be between or midCat", slideIndex)

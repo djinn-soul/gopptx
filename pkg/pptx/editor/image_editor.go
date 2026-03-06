@@ -9,7 +9,6 @@ import (
 	_ "image/jpeg" // register JPEG decoder for DecodeConfig metadata reads
 	_ "image/png"  // register PNG decoder for DecodeConfig metadata reads
 	"path"
-	"regexp"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -143,8 +142,7 @@ func (e *PresentationEditor) GetImageMetadata(slideIndex, shapeID int) (*common.
 		if s.ID == shapeID && s.Type == shapeTypePicture {
 			// Extract relID from XML (simplified: scan for r:embed)
 			shapeXML := content[s.Start:s.End]
-			re := regexp.MustCompile(`r:embed="([^"]+)"`)
-			match := re.FindSubmatch(shapeXML)
+			match := embeddedImageRelPattern.FindSubmatch(shapeXML)
 			if len(match) > 1 {
 				relID = string(match[1])
 			}
@@ -185,11 +183,7 @@ func (e *PresentationEditor) GetImageMetadata(slideIndex, shapeID int) (*common.
 		return nil, fmt.Errorf("decode image %s: %w", partPath, err)
 	}
 
-	return &common.ImageMetadata{
-		Width:  config.Width,
-		Height: config.Height,
-		Format: format,
-	}, nil
+	return buildImageMetadata(data, config, format), nil
 }
 
 func resolveAddImageRelID(

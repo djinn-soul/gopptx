@@ -170,7 +170,7 @@ class PresentationChartMixin(PresentationProtocol):
             return
 
         charts = self.list_slide_charts(slide_index)
-        selector: dict[str, object] = {"index": int(slide_index)}
+        selector: dict[str, object] = {"index": 0}
         if charts:
             first = cast("dict[str, object]", charts[0])
             rel_id = first.get("RelID", first.get("rel_id"))
@@ -196,3 +196,49 @@ class PresentationChartMixin(PresentationProtocol):
                 UserWarning,
                 stacklevel=2,
             )
+
+    def update_chart_data_by_index(
+        self,
+        slide_index: int,
+        chart_index: int,
+        data: ChartDataUpdate,
+    ) -> None:
+        """Update chart data by slide-local chart index."""
+        self.update_chart_data(slide_index, {"index": chart_index}, data)
+
+    def update_chart_data_by_rel_id(
+        self,
+        slide_index: int,
+        rel_id: str,
+        data: ChartDataUpdate,
+    ) -> None:
+        """Update chart data by chart relationship id."""
+        self.update_chart_data(slide_index, {"rel_id": rel_id}, data)
+
+    def replace_chart_data_by_index(
+        self,
+        slide_index: int,
+        chart_index: int,
+        categories: list[str],
+        values: list[float],
+    ) -> None:
+        """Replace category/value chart data by slide-local chart index."""
+        payload: ChartDataUpdate = {
+            "categories": categories,
+            "series": [{"values": values}],
+        }
+        self.update_chart_data_by_index(slide_index, chart_index, payload)
+
+    def replace_chart_data_by_rel_id(
+        self,
+        slide_index: int,
+        rel_id: str,
+        categories: list[str],
+        values: list[float],
+    ) -> None:
+        """Replace category/value chart data by chart relationship id."""
+        payload: ChartDataUpdate = {
+            "categories": categories,
+            "series": [{"values": values}],
+        }
+        self.update_chart_data_by_rel_id(slide_index, rel_id, payload)

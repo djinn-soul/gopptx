@@ -44,6 +44,28 @@ func (c ScatterChart) WithDataLabels(show bool) ScatterChart {
 	return c
 }
 
+// WithDataLabelPosition sets data-label position:
+// ctr|inEnd|inBase|outEnd|bestFit|l|r|t|b.
+func (c ScatterChart) WithDataLabelPosition(position string) ScatterChart {
+	c.DataLabels.Position = strings.TrimSpace(position)
+	return c
+}
+
+// WithDataLabelContent customizes data-label content fields.
+func (c ScatterChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) ScatterChart {
+	c.DataLabels.UseCustom = true
+	c.DataLabels.ShowValue = showValue
+	c.DataLabels.ShowCategory = showCategory
+	c.DataLabels.ShowSeriesName = showSeriesName
+	c.DataLabels.ShowPercent = showPercent
+	return c
+}
+
 // WithAxisTitles sets optional x/y axis titles.
 func (c ScatterChart) WithAxisTitles(xAxisTitle string, yAxisTitle string) ScatterChart {
 	c.CategoryAxisTitle = strings.TrimSpace(xAxisTitle)
@@ -57,6 +79,12 @@ func (c ScatterChart) WithMajorGridlines(show bool) ScatterChart {
 	return c
 }
 
+// WithCategoryMajorGridlines toggles primary x-axis major gridlines.
+func (c ScatterChart) WithCategoryMajorGridlines(show bool) ScatterChart {
+	c.ShowCategoryMajorGridlines = show
+	return c
+}
+
 // WithValueFormat sets the value-axis number format code.
 func (c ScatterChart) WithValueFormat(format string) ScatterChart {
 	c.ValueFormat = strings.TrimSpace(format)
@@ -66,6 +94,21 @@ func (c ScatterChart) WithValueFormat(format string) ScatterChart {
 // WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
 func (c ScatterChart) WithValueAxisCrossBetween(mode string) ScatterChart {
 	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
+	return c
+}
+
+// WithTickLabelPositions sets x/y axis tick label positions:
+// nextTo|low|high|none.
+func (c ScatterChart) WithTickLabelPositions(xAxisPos string, yAxisPos string) ScatterChart {
+	c.CategoryTickLabelPosition = strings.TrimSpace(xAxisPos)
+	c.ValueTickLabelPosition = strings.TrimSpace(yAxisPos)
+	return c
+}
+
+// WithAxisCrosses sets x/y axis crosses mode: autoZero|min|max.
+func (c ScatterChart) WithAxisCrosses(xAxisCrosses string, yAxisCrosses string) ScatterChart {
+	c.CategoryAxisCrosses = strings.TrimSpace(xAxisCrosses)
+	c.ValueAxisCrosses = strings.TrimSpace(yAxisCrosses)
 	return c
 }
 

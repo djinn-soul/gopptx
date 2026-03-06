@@ -25,6 +25,7 @@ type PieChart struct {
 	LegendPosition string
 	LegendOverlay  bool
 	ShowDataLabels bool
+	DataLabels     DataLabelSettings
 
 	// Accessibility
 	AltText      string
@@ -84,7 +85,7 @@ func (c PieChart) WithTitle(title string) PieChart {
 
 // ToChartSpec converts PieChart to internal XML spec.
 func (c PieChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindPie,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -103,6 +104,8 @@ func (c PieChart) ToChartSpec() *pptxxml.ChartSpec {
 		AltText:        c.AltText,
 		IsDecorative:   c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the pie chart for consistency.
@@ -128,6 +131,12 @@ func (c PieChart) Validate(slideIndex int) error {
 	}
 	if !IsLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d pie chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d pie chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
 	}
 	return nil
 }

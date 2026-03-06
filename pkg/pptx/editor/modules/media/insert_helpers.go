@@ -213,6 +213,79 @@ func BuildOLEObjectShapeXML(
 </p:graphicFrame>`, newID, name, int64(x), int64(y), int64(w), int64(h), 1024+(slideIndex*oleShapeIDStride)+newID, embedRelID, safeProgID, embedRelID, safeProgID, iconRelID, int64(x), int64(y), int64(w), int64(h))
 }
 
+func RegisterAudioPart(
+	audioData []byte,
+	audioPath string,
+	mimeType string,
+	registerMedia func([]byte, string) (string, error),
+) (string, error) {
+	audioExt := "mp3"
+	switch mimeType {
+	case "audio/wav", "audio/x-wav":
+		audioExt = "wav"
+	case "audio/m4a", "audio/mp4":
+		audioExt = "m4a"
+	}
+	return RegisterPartFromDataOrPath(
+		audioData,
+		audioPath,
+		"audio data or path is required",
+		func(data []byte) (string, error) {
+			return registerMedia(data, audioExt)
+		},
+		func(filePath string) (string, error) {
+			data, err := os.ReadFile(filePath)
+			if err != nil {
+				return "", err
+			}
+			return registerMedia(data, strings.TrimPrefix(path.Ext(filePath), "."))
+		},
+	)
+}
+
+func BuildAudioShapeXML(
+	newID int,
+	audioRelID string,
+	mediaRelID string,
+	x, y, w, h float64,
+) string {
+	name := fmt.Sprintf("Audio %d", newID)
+	return fmt.Sprintf(`
+<p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:nvPicPr>
+    <p:cNvPr id="%d" name="%s">
+      <a:extLst>
+        <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
+          <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{00000000-0000-0000-0000-000000000000}"/>
+        </a:ext>
+      </a:extLst>
+    </p:cNvPr>
+    <p:cNvPicPr>
+      <a:picLocks noChangeAspect="1"/>
+    </p:cNvPicPr>
+    <p:nvPr>
+      <a:audioFile r:link="%s"/>
+      <p:extLst>
+        <p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}">
+          <p14:media xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" r:embed="%s"/>
+        </p:ext>
+      </p:extLst>
+    </p:nvPr>
+  </p:nvPicPr>
+  <p:blipFill>
+    <a:blip/>
+    <a:stretch><a:fillRect/></a:stretch>
+  </p:blipFill>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="%d" y="%d"/>
+      <a:ext cx="%d" cy="%d"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>
+</p:pic>`, newID, name, audioRelID, mediaRelID, int64(x), int64(y), int64(w), int64(h))
+}
+
 func escapeXMLAttr(value string) string {
 	return xmlAttrEscaper.Replace(value)
 }

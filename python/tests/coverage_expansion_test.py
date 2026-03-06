@@ -204,6 +204,36 @@ class TestCoverageExpansion(unittest.TestCase):
                 }
                 pres.update_chart_data(0, {"rel_id": rel_id}, data)
 
+    def test_chart_expansion_convenience_methods(self) -> None:
+        """Chart convenience update/replace methods dispatch correctly."""
+        with Presentation(self.test_pptx) as pres:
+            pres.add_chart(0, "bar", ["A", "B"], [10.0, 20.0])
+            pres.update_chart_data_by_index(
+                0,
+                0,
+                {
+                    "categories": ["A", "B"],
+                    "series": [{"values": [11.0, 22.0]}],
+                },
+            )
+            pres.replace_chart_data_by_index(0, 0, ["X", "Y"], [1.0, 2.0])
+
+            charts = pres.list_slide_charts(0)
+            if charts:
+                rel_id = charts[0].get("RelID") or charts[0].get("rel_id")
+                if isinstance(rel_id, str) and rel_id:
+                    pres.update_chart_data_by_rel_id(
+                        0,
+                        rel_id,
+                        {
+                            "categories": ["R1", "R2"],
+                            "series": [{"values": [3.0, 4.0]}],
+                        },
+                    )
+                    pres.replace_chart_data_by_rel_id(
+                        0, rel_id, ["RR1", "RR2"], [5.0, 6.0]
+                    )
+
     def test_normalize_table_index(self) -> None:
         """Table-index normalizer accepts integer-like values only."""
         self.assertEqual(normalize_table_index(1.0), 1)

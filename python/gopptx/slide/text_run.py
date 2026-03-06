@@ -151,12 +151,14 @@ class Run:
         self._hover_action = RunHyperlink.from_payload(hover_action)
 
     @property
-    def hyperlink(self) -> RunHyperlink | None:
-        """Return optional run hyperlink."""
+    def hyperlink(self) -> RunHyperlink:
+        """Return run hyperlink, lazily initializing an empty facade."""
+        if self._hyperlink is None:
+            self._hyperlink = RunHyperlink()
         return self._hyperlink
 
     @hyperlink.setter
-    def hyperlink(self, value: RunHyperlink) -> None:
+    def hyperlink(self, value: Mapping[str, object] | RunHyperlink | None) -> None:  # type: ignore[reportPropertyTypeMismatch]
         self._hyperlink = RunHyperlink.from_payload(value)
 
     @property
@@ -165,7 +167,7 @@ class Run:
         return self._hover_action
 
     @hover_action.setter
-    def hover_action(self, value: RunHyperlink | None) -> None:
+    def hover_action(self, value: Mapping[str, object] | RunHyperlink | None) -> None:  # type: ignore[reportPropertyTypeMismatch]
         self._hover_action = RunHyperlink.from_payload(value)
 
     def to_payload(self) -> dict[str, object]:  # noqa: C901, PLR0912

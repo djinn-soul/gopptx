@@ -118,3 +118,70 @@ func TestCreateWithSlidesRejectsInvalidValueAxisCrossBetween(t *testing.T) {
 		t.Fatalf("expected crossBetween validation error")
 	}
 }
+
+func TestCreateWithSlidesAxisControlsRender(t *testing.T) {
+	chart := charts.NewBarChart(
+		[]string{"A", "B"},
+		[]float64{1, 2},
+	).
+		WithCategoryMajorGridlines(true).
+		WithTickLabelPositions(charts.AxisTickLabelPositionLow, charts.AxisTickLabelPositionHigh).
+		WithAxisCrosses(charts.AxisCrossesMin, charts.AxisCrossesMax)
+
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Bar").WithBarChart(chart),
+	}
+
+	data, err := pptx.CreateWithSlides("Demo", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides error: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("zip read error: %v", err)
+	}
+	chartXML := readZipFile(t, zr, "ppt/charts/chart1.xml")
+	checks := []string{
+		`<c:tickLblPos val="low"/>`,
+		`<c:tickLblPos val="high"/>`,
+		`<c:crosses val="min"/>`,
+		`<c:crosses val="max"/>`,
+	}
+	for _, needle := range checks {
+		if !strings.Contains(chartXML, needle) {
+			t.Fatalf("expected %q in chart XML", needle)
+		}
+	}
+}
+
+func TestCreateWithSlidesRejectsInvalidAxisTickLabelPosition(t *testing.T) {
+	chart := charts.NewLineChart(
+		[]string{"A"},
+		[]float64{1},
+	).WithTickLabelPositions("side", charts.AxisTickLabelPositionNextTo)
+
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Bad").WithLineChart(chart),
+	}
+
+	_, err := pptx.CreateWithSlides("Demo", slides)
+	if err == nil {
+		t.Fatalf("expected tick label position validation error")
+	}
+}
+
+func TestCreateWithSlidesRejectsInvalidAxisCrosses(t *testing.T) {
+	chart := charts.NewAreaChart(
+		[]string{"A"},
+		[]float64{1},
+	).WithAxisCrosses("center", charts.AxisCrossesAutoZero)
+
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Bad").WithAreaChart(chart),
+	}
+
+	_, err := pptx.CreateWithSlides("Demo", slides)
+	if err == nil {
+		t.Fatalf("expected axis crosses validation error")
+	}
+}

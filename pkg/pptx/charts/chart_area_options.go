@@ -38,6 +38,28 @@ func (c AreaChart) WithDataLabels(show bool) AreaChart {
 	return c
 }
 
+// WithDataLabelPosition sets data-label position:
+// ctr|inEnd|inBase|outEnd|bestFit|l|r|t|b.
+func (c AreaChart) WithDataLabelPosition(position string) AreaChart {
+	c.DataLabels.Position = strings.TrimSpace(position)
+	return c
+}
+
+// WithDataLabelContent customizes data-label content fields.
+func (c AreaChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) AreaChart {
+	c.DataLabels.UseCustom = true
+	c.DataLabels.ShowValue = showValue
+	c.DataLabels.ShowCategory = showCategory
+	c.DataLabels.ShowSeriesName = showSeriesName
+	c.DataLabels.ShowPercent = showPercent
+	return c
+}
+
 // WithAxisTitles sets optional category/value axis titles.
 func (c AreaChart) WithAxisTitles(categoryAxisTitle string, valueAxisTitle string) AreaChart {
 	c.CategoryAxisTitle = strings.TrimSpace(categoryAxisTitle)
@@ -51,6 +73,12 @@ func (c AreaChart) WithMajorGridlines(show bool) AreaChart {
 	return c
 }
 
+// WithCategoryMajorGridlines toggles category-axis major gridlines.
+func (c AreaChart) WithCategoryMajorGridlines(show bool) AreaChart {
+	c.ShowCategoryMajorGridlines = show
+	return c
+}
+
 // WithValueFormat sets the value-axis number format code.
 func (c AreaChart) WithValueFormat(format string) AreaChart {
 	c.ValueFormat = strings.TrimSpace(format)
@@ -60,6 +88,21 @@ func (c AreaChart) WithValueFormat(format string) AreaChart {
 // WithValueAxisCrossBetween sets value-axis crossing mode: between|midCat.
 func (c AreaChart) WithValueAxisCrossBetween(mode string) AreaChart {
 	c.ValueAxisCrossBetween = strings.TrimSpace(mode)
+	return c
+}
+
+// WithTickLabelPositions sets category/value axis tick label positions:
+// nextTo|low|high|none.
+func (c AreaChart) WithTickLabelPositions(categoryPos string, valuePos string) AreaChart {
+	c.CategoryTickLabelPosition = strings.TrimSpace(categoryPos)
+	c.ValueTickLabelPosition = strings.TrimSpace(valuePos)
+	return c
+}
+
+// WithAxisCrosses sets category/value axis crosses mode: autoZero|min|max.
+func (c AreaChart) WithAxisCrosses(categoryCrosses string, valueCrosses string) AreaChart {
+	c.CategoryAxisCrosses = strings.TrimSpace(categoryCrosses)
+	c.ValueAxisCrosses = strings.TrimSpace(valueCrosses)
 	return c
 }
 

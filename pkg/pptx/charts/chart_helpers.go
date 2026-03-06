@@ -29,6 +29,42 @@ func IsValueAxisCrossBetween(mode string) bool {
 	}
 }
 
+func IsAxisTickLabelPosition(position string) bool {
+	switch strings.ToLower(strings.TrimSpace(position)) {
+	case "", "nextto", "low", "high", "none":
+		return true
+	default:
+		return false
+	}
+}
+
+func IsAxisCrosses(mode string) bool {
+	switch strings.TrimSpace(mode) {
+	case "", AxisCrossesAutoZero, AxisCrossesMin, AxisCrossesMax:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsDataLabelPosition(position string) bool {
+	switch strings.TrimSpace(position) {
+	case "",
+		DataLabelPositionCenter,
+		DataLabelPositionInsideEnd,
+		DataLabelPositionInsideBase,
+		DataLabelPositionOutsideEnd,
+		DataLabelPositionBestFit,
+		DataLabelPositionLeft,
+		DataLabelPositionRight,
+		DataLabelPositionTop,
+		DataLabelPositionBottom:
+		return true
+	default:
+		return false
+	}
+}
+
 func CopyStringSlice(s []string) []string {
 	if s == nil {
 		return nil

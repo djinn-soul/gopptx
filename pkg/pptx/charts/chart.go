@@ -38,19 +38,25 @@ type BarChart struct {
 	CX           styling.Length
 	CY           styling.Length
 
-	BarColor              string
-	SeriesName            string
-	ShowLegend            bool
-	LegendPosition        string
-	LegendOverlay         bool
-	ShowDataLabels        bool
-	ShowMajorGridlines    bool
-	CategoryAxisTitle     string
-	ValueAxisTitle        string
-	ValueFormat           string
-	ValueAxisCrossBetween string
-	MinValue              *float64
-	MaxValue              *float64
+	BarColor                   string
+	SeriesName                 string
+	ShowLegend                 bool
+	LegendPosition             string
+	LegendOverlay              bool
+	ShowDataLabels             bool
+	DataLabels                 DataLabelSettings
+	ShowMajorGridlines         bool
+	ShowCategoryMajorGridlines bool
+	CategoryAxisTitle          string
+	ValueAxisTitle             string
+	CategoryTickLabelPosition  string
+	ValueTickLabelPosition     string
+	CategoryAxisCrosses        string
+	ValueAxisCrosses           string
+	ValueFormat                string
+	ValueAxisCrossBetween      string
+	MinValue                   *float64
+	MaxValue                   *float64
 
 	// Accessibility
 	AltText      string
@@ -69,14 +75,19 @@ func NewBarChart(categories []string, values []float64) BarChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		BarColor:              "4F81BD",
-		SeriesName:            "Series 1",
-		ShowLegend:            false,
-		LegendPosition:        LegendPositionRight,
-		ShowDataLabels:        false,
-		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
-		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
+		BarColor:                   "4F81BD",
+		SeriesName:                 "Series 1",
+		ShowLegend:                 false,
+		LegendPosition:             LegendPositionRight,
+		ShowDataLabels:             false,
+		ShowMajorGridlines:         true,
+		ShowCategoryMajorGridlines: false,
+		CategoryTickLabelPosition:  AxisTickLabelPositionNextTo,
+		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
+		CategoryAxisCrosses:        AxisCrossesAutoZero,
+		ValueAxisCrosses:           AxisCrossesAutoZero,
+		ValueFormat:                "General",
+		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 	}
 }
 
@@ -129,20 +140,26 @@ type LineChart struct {
 	CX           styling.Length
 	CY           styling.Length
 
-	LineColor             string
-	SeriesName            string
-	ShowLegend            bool
-	LegendPosition        string
-	LegendOverlay         bool
-	ShowDataLabels        bool
-	ShowMajorGridlines    bool
-	CategoryAxisTitle     string
-	ValueAxisTitle        string
-	ValueFormat           string
-	ValueAxisCrossBetween string
-	MinValue              *float64
-	MaxValue              *float64
-	Smooth                bool
+	LineColor                  string
+	SeriesName                 string
+	ShowLegend                 bool
+	LegendPosition             string
+	LegendOverlay              bool
+	ShowDataLabels             bool
+	DataLabels                 DataLabelSettings
+	ShowMajorGridlines         bool
+	ShowCategoryMajorGridlines bool
+	CategoryAxisTitle          string
+	ValueAxisTitle             string
+	CategoryTickLabelPosition  string
+	ValueTickLabelPosition     string
+	CategoryAxisCrosses        string
+	ValueAxisCrosses           string
+	ValueFormat                string
+	ValueAxisCrossBetween      string
+	MinValue                   *float64
+	MaxValue                   *float64
+	Smooth                     bool
 
 	// Accessibility
 	AltText      string
@@ -161,15 +178,20 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		LineColor:             "C0504D",
-		SeriesName:            "Series 1",
-		ShowLegend:            false,
-		LegendPosition:        LegendPositionRight,
-		ShowDataLabels:        false,
-		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
-		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
-		Smooth:                false,
+		LineColor:                  "C0504D",
+		SeriesName:                 "Series 1",
+		ShowLegend:                 false,
+		LegendPosition:             LegendPositionRight,
+		ShowDataLabels:             false,
+		ShowMajorGridlines:         true,
+		ShowCategoryMajorGridlines: false,
+		CategoryTickLabelPosition:  AxisTickLabelPositionNextTo,
+		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
+		CategoryAxisCrosses:        AxisCrossesAutoZero,
+		ValueAxisCrosses:           AxisCrossesAutoZero,
+		ValueFormat:                "General",
+		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
+		Smooth:                     false,
 	}
 }
 
@@ -213,7 +235,7 @@ func (c LineChart) WithLineColor(color string) LineChart {
 
 // ToChartSpec converts BarChart to internal XML spec.
 func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindBar,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -224,24 +246,31 @@ func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
 		CX:           c.CX.Emu(),
 		CY:           c.CY.Emu(),
 
-		Color:                 NormalizeHexColor(c.BarColor),
-		SeriesName:            c.SeriesName,
-		ShowLegend:            c.ShowLegend,
-		LegendPosition:        c.LegendPosition,
-		LegendOverlay:         c.LegendOverlay,
-		ShowDataLabels:        c.ShowDataLabels,
-		ShowMajorGridlines:    c.ShowMajorGridlines,
-		CategoryAxisTitle:     c.CategoryAxisTitle,
-		ValueAxisTitle:        c.ValueAxisTitle,
-		ValueFormat:           c.ValueFormat,
-		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
-		MinValue:              CopyFloat64Pointer(c.MinValue),
-		MaxValue:              CopyFloat64Pointer(c.MaxValue),
-		BarDir:                "col",
-		Grouping:              "clustered",
-		AltText:               c.AltText,
-		IsDecorative:          c.IsDecorative,
+		Color:                      NormalizeHexColor(c.BarColor),
+		SeriesName:                 c.SeriesName,
+		ShowLegend:                 c.ShowLegend,
+		LegendPosition:             c.LegendPosition,
+		LegendOverlay:              c.LegendOverlay,
+		ShowDataLabels:             c.ShowDataLabels,
+		ShowMajorGridlines:         c.ShowMajorGridlines,
+		ShowCategoryMajorGridlines: c.ShowCategoryMajorGridlines,
+		CategoryAxisTitle:          c.CategoryAxisTitle,
+		ValueAxisTitle:             c.ValueAxisTitle,
+		CategoryTickLabelPosition:  c.CategoryTickLabelPosition,
+		ValueTickLabelPosition:     c.ValueTickLabelPosition,
+		CategoryAxisCrosses:        c.CategoryAxisCrosses,
+		ValueAxisCrosses:           c.ValueAxisCrosses,
+		ValueFormat:                c.ValueFormat,
+		ValueAxisCrossBetween:      c.ValueAxisCrossBetween,
+		MinValue:                   CopyFloat64Pointer(c.MinValue),
+		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
+		BarDir:                     "col",
+		Grouping:                   "clustered",
+		AltText:                    c.AltText,
+		IsDecorative:               c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the bar chart for consistency.
@@ -254,7 +283,10 @@ func (c BarChart) Validate(slideIndex int) error {
 		c.Values, c.X, c.Y, c.CX, c.CY,
 		false, c.BarColor, c.SeriesName,
 		c.LegendPosition, c.ValueFormat,
+		c.CategoryTickLabelPosition, c.ValueTickLabelPosition,
+		c.CategoryAxisCrosses, c.ValueAxisCrosses,
 		c.ValueAxisCrossBetween,
+		c.DataLabels,
 		c.MinValue, c.MaxValue, "bar",
 	)
 }
@@ -269,7 +301,7 @@ func (c BarChart) GetValues() []float64 {
 
 // ToChartSpec converts LineChart to internal XML spec.
 func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindLine,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -280,24 +312,31 @@ func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 		CX:           c.CX.Emu(),
 		CY:           c.CY.Emu(),
 
-		Color:                 NormalizeHexColor(c.LineColor),
-		SeriesName:            c.SeriesName,
-		ShowLegend:            c.ShowLegend,
-		LegendPosition:        c.LegendPosition,
-		LegendOverlay:         c.LegendOverlay,
-		ShowDataLabels:        c.ShowDataLabels,
-		ShowMajorGridlines:    c.ShowMajorGridlines,
-		CategoryAxisTitle:     c.CategoryAxisTitle,
-		ValueAxisTitle:        c.ValueAxisTitle,
-		ValueFormat:           c.ValueFormat,
-		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
-		MinValue:              CopyFloat64Pointer(c.MinValue),
-		MaxValue:              CopyFloat64Pointer(c.MaxValue),
-		Grouping:              "standard",
-		Smooth:                c.Smooth,
-		AltText:               c.AltText,
-		IsDecorative:          c.IsDecorative,
+		Color:                      NormalizeHexColor(c.LineColor),
+		SeriesName:                 c.SeriesName,
+		ShowLegend:                 c.ShowLegend,
+		LegendPosition:             c.LegendPosition,
+		LegendOverlay:              c.LegendOverlay,
+		ShowDataLabels:             c.ShowDataLabels,
+		ShowMajorGridlines:         c.ShowMajorGridlines,
+		ShowCategoryMajorGridlines: c.ShowCategoryMajorGridlines,
+		CategoryAxisTitle:          c.CategoryAxisTitle,
+		ValueAxisTitle:             c.ValueAxisTitle,
+		CategoryTickLabelPosition:  c.CategoryTickLabelPosition,
+		ValueTickLabelPosition:     c.ValueTickLabelPosition,
+		CategoryAxisCrosses:        c.CategoryAxisCrosses,
+		ValueAxisCrosses:           c.ValueAxisCrosses,
+		ValueFormat:                c.ValueFormat,
+		ValueAxisCrossBetween:      c.ValueAxisCrossBetween,
+		MinValue:                   CopyFloat64Pointer(c.MinValue),
+		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
+		Grouping:                   "standard",
+		Smooth:                     c.Smooth,
+		AltText:                    c.AltText,
+		IsDecorative:               c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the line chart for consistency.
@@ -310,7 +349,10 @@ func (c LineChart) Validate(slideIndex int) error {
 		c.Values, c.X, c.Y, c.CX, c.CY,
 		true, c.LineColor, c.SeriesName,
 		c.LegendPosition, c.ValueFormat,
+		c.CategoryTickLabelPosition, c.ValueTickLabelPosition,
+		c.CategoryAxisCrosses, c.ValueAxisCrosses,
 		c.ValueAxisCrossBetween,
+		c.DataLabels,
 		c.MinValue, c.MaxValue, "line",
 	)
 }
@@ -326,7 +368,12 @@ func validateChartCommon(
 	seriesName string,
 	legendPosition string,
 	valueFormat string,
+	categoryTickLabelPosition string,
+	valueTickLabelPosition string,
+	categoryAxisCrosses string,
+	valueAxisCrosses string,
 	crossBetween string,
+	dataLabels DataLabelSettings,
 	minValue *float64,
 	maxValue *float64,
 	chartType string,
@@ -343,8 +390,43 @@ func validateChartCommon(
 	if !IsLegendPosition(legendPosition) {
 		return fmt.Errorf("slide %d %s chart legend position must be one of r,l,t,b", slideIndex, chartType)
 	}
+	if !IsDataLabelPosition(dataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d %s chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+			chartType,
+		)
+	}
 	if strings.TrimSpace(valueFormat) == "" {
 		return fmt.Errorf("slide %d %s chart value format cannot be empty", slideIndex, chartType)
+	}
+	if !IsAxisTickLabelPosition(categoryTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d %s chart category-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+			chartType,
+		)
+	}
+	if !IsAxisTickLabelPosition(valueTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d %s chart value-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+			chartType,
+		)
+	}
+	if !IsAxisCrosses(categoryAxisCrosses) {
+		return fmt.Errorf(
+			"slide %d %s chart category-axis crosses must be autoZero, min, or max",
+			slideIndex,
+			chartType,
+		)
+	}
+	if !IsAxisCrosses(valueAxisCrosses) {
+		return fmt.Errorf(
+			"slide %d %s chart value-axis crosses must be autoZero, min, or max",
+			slideIndex,
+			chartType,
+		)
 	}
 	if !IsValueAxisCrossBetween(crossBetween) {
 		return fmt.Errorf("slide %d %s chart value-axis crossBetween must be between or midCat", slideIndex, chartType)

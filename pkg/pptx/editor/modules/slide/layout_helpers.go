@@ -71,8 +71,10 @@ func ParseLayoutName(layoutXML []byte) string {
 	}
 }
 
-type LayoutMasterResolverFn func(layoutPart string) (string, error)
-type MasterLayoutsResolverFn func(masterPart string) ([]string, error)
+type (
+	LayoutMasterResolverFn  func(layoutPart string) (string, error)
+	MasterLayoutsResolverFn func(masterPart string) ([]string, error)
+)
 
 func CloneFamilyInputs(
 	layoutPart string,
@@ -119,4 +121,94 @@ func ResolveLayoutMasterPart(
 		}
 	}
 	return "", fmt.Errorf("layout %s has no slideMaster relationship", layoutPart)
+}
+
+// DefaultSlideMaster returns a basic slide master XML.
+func DefaultSlideMaster() string {
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:theme="http://schemas.openxmlformats.org/drawingml/2006/theme">
+  <p:cSld>
+    <p:bg>
+      <p:bgRef idx="10000">
+        <a:schemeClr val="bg1"/>
+      </p:bgRef>
+    </p:bg>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+    </p:spTree>
+    <p:txStyles>
+      <p:titleStyle>
+        <a:lvl1pPr algn="ltr" fontSz="32" kerning="1200">
+          <a:defRPr sz="3200" kerning="1200">
+            <a:solidFill>
+              <a:schemeClr val="tx1"/>
+            </a:solidFill>
+            <a:latin typeface="+mj-lt"/>
+          </a:defRPr>
+        </a:lvl1pPr>
+      </p:titleStyle>
+      <p:bodyStyle>
+        <a:lvl1pPr algn="ltr" fontSz="18" kerning="1200">
+          <a:defRPr sz="1800" kerning="1200">
+            <a:solidFill>
+              <a:schemeClr val="tx1"/>
+            </a:solidFill>
+            <a:latin typeface="+mj-lt"/>
+          </a:defRPr>
+        </a:lvl1pPr>
+      </p:bodyStyle>
+    </p:txStyles>
+  </p:cSld>
+  <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+  <p:transitions/>
+</p:sldMaster>`
+}
+
+// DefaultSlideMasterRelationships returns default relationships for a slide master.
+func DefaultSlideMasterRelationships() string {
+	// Link to first layout (slideLayout1.xml) - the first layout will be created automatically.
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="slideLayout1.xml"/>
+</Relationships>`
+}
+
+// DefaultSlideLayout returns a basic slide layout XML.
+func DefaultSlideLayout(layoutName string, layoutNum, masterNum int) string {
+	_ = layoutNum // suppress unused parameter warning
+	_ = masterNum // suppress unused parameter warning
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" preserve="1">
+  <p:cSld name="%s">
+    <p:bg>
+      <p:bgRef idx="10000">
+        <a:schemeClr val="bg1"/>
+      </p:bgRef>
+    </p:bg>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+    </p:spTree>
+  </p:cSld>
+  <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+  <p:sldLayoutPr preserve="1"/>
+</p:sldLayout>`, layoutName)
+}
+
+// DefaultSlideLayoutRelationships returns default relationships for a slide layout.
+func DefaultSlideLayoutRelationships(masterNum int) string {
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster%d.xml"/>
+</Relationships>`, masterNum)
 }

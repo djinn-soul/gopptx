@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 import base64
+from typing import TYPE_CHECKING
 
 from ..ops import OP_ADD_VBA
-from .helpers import PresentationProtocol
+
+if TYPE_CHECKING:
+    from .helpers import PresentationProtocol
+else:
+
+    class PresentationProtocol:
+        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
 class PresentationVBAMixin(PresentationProtocol):

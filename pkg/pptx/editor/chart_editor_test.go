@@ -212,6 +212,14 @@ func TestReplaceChartData(t *testing.T) {
 				`<c:pt idx="0"><c:v>1</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser></c:barChart></c:plotArea></c:chartSpace>`,
 		),
 	)
+	editor.parts.Set(
+		"ppt/charts/_rels/chart1.xml.rels",
+		[]byte(
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+				`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/package" `+
+				`Target="../embeddings/Microsoft_Excel_Worksheet1.xlsx"/></Relationships>`,
+		),
+	)
 
 	// Mock Excel Part
 	editor.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx", []byte("old data"))
@@ -225,11 +233,9 @@ func TestReplaceChartData(t *testing.T) {
 		t.Fatalf("ReplaceChartData failed: %v", err)
 	}
 
-	// 3. Verify Excel content changed (it should now be a valid zip, not "old data")
-	excelData, _ := editor.parts.Get("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx")
-	if string(excelData) == "old data" {
-		t.Error("excel data was not updated")
-	}
+	// 3. Verify Excel content changed (it should now be a valid zip)
+	excelPath := editor.chartEmbeddings["ppt/charts/chart1.xml"]
+	excelData, _ := editor.parts.Get(excelPath)
 
 	// Check if it's a valid zip
 	_, err = zip.NewReader(bytes.NewReader(excelData), int64(len(excelData)))

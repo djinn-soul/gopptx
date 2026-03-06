@@ -1,4 +1,4 @@
-package editor
+package slide
 
 import (
 	"errors"
@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
-	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
 var (
@@ -21,17 +20,17 @@ var (
 )
 
 const (
-	initialSlideMasterID   int64 = 2147483648
-	patternSubmatchPairLen int   = 2
+	initialSlideMasterID int64 = 2147483648
+	patternSubmatchLen   int   = 2
 )
 
-func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
+func RewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
 	if len(current) == 0 {
 		return "", errors.New("missing presentation XML content")
 	}
 	source := string(current)
 
-	replacement := buildPresentationSlideListXML(slides)
+	replacement := BuildPresentationSlideListXML(slides)
 	if !sldIDLstPattern.MatchString(source) {
 		return "", errors.New("presentation XML does not contain <p:sldIdLst>")
 	}
@@ -47,7 +46,7 @@ func rewritePresentationSlideList(current []byte, slides []common.EditorSlideRef
 	return result, nil
 }
 
-func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
+func BuildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	var b strings.Builder
 	b.WriteString("<p:sldIdLst>")
 	for _, slide := range slides {
@@ -64,7 +63,7 @@ func buildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	return b.String()
 }
 
-func rewritePresentationNotesMasterList(current []byte, relID string, enable bool) (string, error) {
+func RewritePresentationNotesMasterList(current []byte, relID string, enable bool) (string, error) {
 	if len(current) == 0 {
 		return "", errors.New("missing presentation XML content")
 	}
@@ -97,7 +96,7 @@ func rewritePresentationNotesMasterList(current []byte, relID string, enable boo
 	return "", errors.New("presentation XML does not contain insertion point for notesMasterIdLst")
 }
 
-func rewritePresentationSlideMasterList(current []byte, relID string) (string, error) {
+func RewritePresentationSlideMasterList(current []byte, relID string) (string, error) {
 	if len(current) == 0 {
 		return "", errors.New("missing presentation XML content")
 	}
@@ -109,7 +108,7 @@ func rewritePresentationSlideMasterList(current []byte, relID string) (string, e
 	matches := slideMasterIDPattern.FindAllStringSubmatch(source, -1)
 	nextMasterID := initialSlideMasterID
 	for _, m := range matches {
-		if len(m) != patternSubmatchPairLen {
+		if len(m) != patternSubmatchLen {
 			continue
 		}
 		val, err := strconv.ParseInt(m[1], 10, 64)
@@ -145,76 +144,4 @@ func rewritePresentationSlideMasterList(current []byte, relID string) (string, e
 		return source[:idx] + replacement + source[idx:], nil
 	}
 	return "", errors.New("presentation XML does not contain insertion point for sldMasterIdLst")
-}
-
-func renderPresentationRelsXML(
-	nonSlide []common.EditorRelationship,
-	slides []common.EditorSlideRef,
-	hasSections bool,
-	hasVBA bool,
-) (string, error) {
-	return editorslide.RenderPresentationRelsXML(nonSlide, slides, hasSections, hasVBA)
-}
-
-func renderRelationshipsXML(rels []common.EditorRelationship) string {
-	return editorslide.RenderRelationshipsXML(rels)
-}
-
-func rewriteContentTypes(
-	current []byte,
-	slides []common.EditorSlideRef,
-	mediaPaths []string,
-	hasSections bool,
-	chartPaths []string,
-	notesPaths []string,
-	themePaths []string,
-	layoutPaths []string,
-	masterPaths []string,
-	hasNotesMaster bool,
-	hasCommentAuthors bool,
-	commentPaths []string,
-	hasVBA bool,
-	hasHandoutMaster bool,
-	customXMLPropsPaths []string,
-) (string, error) {
-	return editorslide.RewriteContentTypes(
-		current,
-		slides,
-		mediaPaths,
-		hasSections,
-		chartPaths,
-		notesPaths,
-		themePaths,
-		layoutPaths,
-		masterPaths,
-		hasNotesMaster,
-		hasCommentAuthors,
-		commentPaths,
-		hasVBA,
-		hasHandoutMaster,
-		customXMLPropsPaths,
-	)
-}
-
-func buildSectionListXML(sections []Section) string {
-	moduleSections := toModuleSections(sections)
-	return editorslide.BuildSectionListXML(moduleSections)
-}
-
-func toModuleSections(sections []Section) []editorslide.SectionData {
-	moduleSections := make([]editorslide.SectionData, 0, len(sections))
-	moduleSections = append(moduleSections, sections...)
-	return moduleSections
-}
-
-func rewriteChartExternalData(current []byte, newRelID string) []byte {
-	return editorslide.RewriteChartExternalData(current, newRelID)
-}
-
-func rewritePresentationSections(current []byte, sections []Section) (string, error) {
-	return editorslide.RewritePresentationSections(current, toModuleSections(sections))
-}
-
-func rewritePresentationEmbeddedFonts(current []byte, fontLst string) (string, error) {
-	return editorslide.RewritePresentationEmbeddedFonts(current, fontLst)
 }

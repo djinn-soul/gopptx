@@ -31,6 +31,7 @@ type RadarChart struct {
 	LegendPosition        string
 	LegendOverlay         bool
 	ShowDataLabels        bool
+	DataLabels            DataLabelSettings
 	ShowMajorGridlines    bool
 	CategoryAxisTitle     string
 	ValueAxisTitle        string
@@ -104,7 +105,7 @@ func (c RadarChart) WithLineColor(color string) RadarChart {
 
 // ToChartSpec converts RadarChart to internal XML spec.
 func (c RadarChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
+	spec := &pptxxml.ChartSpec{
 		Kind:         pptxxml.ChartKindRadar,
 		Title:        c.Title,
 		TitleOverlay: c.TitleOverlay,
@@ -132,6 +133,8 @@ func (c RadarChart) ToChartSpec() *pptxxml.ChartSpec {
 		AltText:               c.AltText,
 		IsDecorative:          c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the radar chart for consistency.
@@ -160,6 +163,12 @@ func (c RadarChart) Validate(slideIndex int) error {
 	}
 	if !IsLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d radar chart legend position must be one of r,l,t,b", slideIndex)
+	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d radar chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
 	}
 	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d radar chart value format cannot be empty", slideIndex)

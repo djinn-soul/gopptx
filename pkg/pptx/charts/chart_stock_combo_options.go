@@ -48,6 +48,25 @@ func (c StockHLCChart) WithDataLabels(show bool) StockHLCChart {
 	return c
 }
 
+func (c StockHLCChart) WithDataLabelPosition(position string) StockHLCChart {
+	c.DataLabels.Position = strings.TrimSpace(position)
+	return c
+}
+
+func (c StockHLCChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) StockHLCChart {
+	c.DataLabels.UseCustom = true
+	c.DataLabels.ShowValue = showValue
+	c.DataLabels.ShowCategory = showCategory
+	c.DataLabels.ShowSeriesName = showSeriesName
+	c.DataLabels.ShowPercent = showPercent
+	return c
+}
+
 func (c StockHLCChart) WithAxisTitles(categoryAxisTitle string, valueAxisTitle string) StockHLCChart {
 	c.CategoryAxisTitle = strings.TrimSpace(categoryAxisTitle)
 	c.ValueAxisTitle = strings.TrimSpace(valueAxisTitle)
@@ -115,6 +134,21 @@ func (c StockOHLCChart) WithDataLabels(show bool) StockOHLCChart {
 	return c
 }
 
+func (c StockOHLCChart) WithDataLabelPosition(position string) StockOHLCChart {
+	c.StockHLCChart = c.StockHLCChart.WithDataLabelPosition(position)
+	return c
+}
+
+func (c StockOHLCChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) StockOHLCChart {
+	c.StockHLCChart = c.StockHLCChart.WithDataLabelContent(showValue, showCategory, showSeriesName, showPercent)
+	return c
+}
+
 func (c StockOHLCChart) WithAxisTitles(categoryAxisTitle string, valueAxisTitle string) StockOHLCChart {
 	c.StockHLCChart = c.StockHLCChart.WithAxisTitles(categoryAxisTitle, valueAxisTitle)
 	return c
@@ -179,6 +213,25 @@ func (c ComboChart) WithLegendOverlay(overlay bool) ComboChart {
 
 func (c ComboChart) WithDataLabels(show bool) ComboChart {
 	c.ShowDataLabels = show
+	return c
+}
+
+func (c ComboChart) WithDataLabelPosition(position string) ComboChart {
+	c.DataLabels.Position = strings.TrimSpace(position)
+	return c
+}
+
+func (c ComboChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) ComboChart {
+	c.DataLabels.UseCustom = true
+	c.DataLabels.ShowValue = showValue
+	c.DataLabels.ShowCategory = showCategory
+	c.DataLabels.ShowSeriesName = showSeriesName
+	c.DataLabels.ShowPercent = showPercent
 	return c
 }
 

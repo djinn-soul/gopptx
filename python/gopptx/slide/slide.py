@@ -131,6 +131,21 @@ class SlideShapeMixin:
             mime_type=mime_type,
         )
 
+    def add_audio(
+        self,
+        source: str | bytes,
+        bounds: tuple[float, float, float, float],
+        *,
+        mime_type: str | None = None,
+    ) -> int:
+        """Add an audio file to this slide."""
+        return self._presentation.add_audio(
+            self.index,
+            source,
+            bounds,
+            mime_type=mime_type,
+        )
+
     def add_ole_object(
         self,
         source: str | bytes,

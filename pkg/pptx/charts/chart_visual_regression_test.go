@@ -81,6 +81,15 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 		"bar": pptx.NewSlide("Bar").WithBarChart(
 			charts.NewBarChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).WithTitle("Bar"),
 		),
+		"barStyled": pptx.NewSlide("Bar Styled").WithBarChart(
+			charts.NewBarChart([]string{"Q1", "Q2", "Q3"}, []float64{12, 18, 24}).
+				WithTitle("Bar Styled").
+				WithLegend(true).
+				WithLegendPosition("b").
+				WithDataLabels(true).
+				WithDataLabelPosition(charts.DataLabelPositionOutsideEnd).
+				WithAxisTitles("Quarter", "Revenue"),
+		),
 		"barHorizontal": pptx.NewSlide("Bar Horizontal").WithBarHorizontalChart(
 			charts.NewBarHorizontalChart(
 				[]string{"Q1", "Q2", "Q3"},
@@ -110,11 +119,33 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 				[]charts.Series{{Name: "Line A", Values: []float64{2, 3, 4}}},
 			).WithTitle("Combo"),
 		),
+		"comboStyled": pptx.NewSlide("Combo Styled").WithComboChart(
+			charts.NewComboChart(
+				[]string{"Q1", "Q2", "Q3"},
+				[]charts.Series{{Name: "Bar A", Values: []float64{1, 2, 3}}},
+				[]charts.Series{{Name: "Line A", Values: []float64{2, 3, 4}}},
+			).WithTitle("Combo Styled").
+				WithLegend(true).
+				WithLegendPosition("t").
+				WithDataLabels(true).
+				WithDataLabelPosition(charts.DataLabelPositionInsideEnd).
+				WithDataLabelContent(true, false, false, false),
+		),
 		"doughnut": pptx.NewSlide("Doughnut").WithDoughnutChart(
 			charts.NewDoughnutChart([]string{"A", "B", "C"}, []float64{30, 45, 25}).WithTitle("Doughnut"),
 		),
 		"line": pptx.NewSlide("Line").WithLineChart(
 			charts.NewLineChart([]string{"Q1", "Q2", "Q3"}, []float64{10, 16, 22}).WithTitle("Line"),
+		),
+		"lineStyled": pptx.NewSlide("Line Styled").WithLineChart(
+			charts.NewLineChart([]string{"Q1", "Q2", "Q3"}, []float64{10, 16, 22}).
+				WithTitle("Line Styled").
+				WithLegend(true).
+				WithLegendPosition("t").
+				WithDataLabels(true).
+				WithDataLabelPosition(charts.DataLabelPositionBestFit).
+				WithCategoryMajorGridlines(true).
+				WithAxisTitles("Quarter", "Revenue"),
 		),
 		"lineMarkers": pptx.NewSlide("Line Markers").WithLineMarkersChart(
 			charts.NewLineMarkersChart(
@@ -127,6 +158,15 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 		),
 		"pie": pptx.NewSlide("Pie").WithPieChart(
 			charts.NewPieChart([]string{"A", "B", "C"}, []float64{30, 45, 25}).WithTitle("Pie"),
+		),
+		"pieStyled": pptx.NewSlide("Pie Styled").WithPieChart(
+			charts.NewPieChart([]string{"A", "B", "C"}, []float64{30, 45, 25}).
+				WithTitle("Pie Styled").
+				WithLegend(true).
+				WithLegendPosition("l").
+				WithDataLabels(true).
+				WithDataLabelPosition(charts.DataLabelPositionCenter).
+				WithDataLabelContent(true, false, false, false),
 		),
 		"radar": pptx.NewSlide("Radar").WithRadarChart(
 			charts.NewRadarChart([]string{"A", "B", "C"}, []float64{2, 3, 4}).WithTitle("Radar"),
@@ -148,6 +188,16 @@ func chartVisualRegressionSlides() map[string]pptx.SlideContent {
 			charts.NewScatterChart([]float64{1, 2, 3}, []float64{10, 15, 20}).
 				WithTitle("Scatter Smooth").
 				WithScatterStyle(charts.ScatterStyleSmoothMarker),
+		),
+		"scatterStyled": pptx.NewSlide("Scatter Styled").WithScatterChart(
+			charts.NewScatterChart([]float64{1, 2, 3}, []float64{10, 15, 20}).
+				WithTitle("Scatter Styled").
+				WithScatterStyle(charts.ScatterStyleLineMarker).
+				WithLegend(true).
+				WithLegendPosition("b").
+				WithDataLabels(true).
+				WithDataLabelPosition(charts.DataLabelPositionRight).
+				WithAxisTitles("X", "Y"),
 		),
 		"stockHLC": pptx.NewSlide("StockHLC").WithStockHLCChart(
 			charts.NewStockHLCChart(

@@ -13,10 +13,13 @@ OP_ADD_OLE_OBJECT = "add_ole_object"
 OP_ADD_SECTION = "add_section"
 OP_ADD_SHAPE = "add_shape"
 OP_ADD_SLIDE = "add_slide"
+OP_ADD_SLIDE_MASTER = "add_slide_master"
+OP_ADD_SLIDE_LAYOUT = "add_slide_layout"
 OP_ADD_TABLE = "add_table"
 OP_ADD_TEXTBOX = "add_textbox"
 OP_ADD_VBA = "add_vba"
 OP_ADD_VIDEO = "add_video"
+OP_ADD_AUDIO = "add_audio"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
 OP_BUILD_FREEFORM = "build_freeform"
@@ -52,6 +55,8 @@ OP_REMOVE_CUSTOM_XML = "remove_custom_xml"
 OP_REMOVE_SECTION = "remove_section"
 OP_REMOVE_SHAPE = "remove_shape"
 OP_REMOVE_SLIDE = "remove_slide"
+OP_REMOVE_SLIDE_MASTER = "remove_slide_master"
+OP_REMOVE_SLIDE_LAYOUT = "remove_slide_layout"
 OP_RENAME_SECTION = "rename_section"
 OP_SEARCH_SHAPES = "search_shapes"
 OP_SET_CORE_PROPERTIES = "set_core_properties"
@@ -83,10 +88,13 @@ SUPPORTED_OPS = (
     OP_ADD_SECTION,
     OP_ADD_SHAPE,
     OP_ADD_SLIDE,
+    OP_ADD_SLIDE_MASTER,
+    OP_ADD_SLIDE_LAYOUT,
     OP_ADD_TABLE,
     OP_ADD_TEXTBOX,
     OP_ADD_VBA,
     OP_ADD_VIDEO,
+    OP_ADD_AUDIO,
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
     OP_BUILD_FREEFORM,
@@ -122,6 +130,8 @@ SUPPORTED_OPS = (
     OP_REMOVE_SECTION,
     OP_REMOVE_SHAPE,
     OP_REMOVE_SLIDE,
+    OP_REMOVE_SLIDE_MASTER,
+    OP_REMOVE_SLIDE_LAYOUT,
     OP_RENAME_SECTION,
     OP_SEARCH_SHAPES,
     OP_SET_CORE_PROPERTIES,

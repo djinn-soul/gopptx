@@ -1,5 +1,5 @@
 from collections import UserString
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from types import TracebackType
 
 from typing_extensions import Self
@@ -147,13 +147,15 @@ class Run:
     all_caps: bool | None
     small_caps: bool | None
     @property
-    def hyperlink(self) -> RunHyperlink | None: ...
+    def hyperlink(self) -> Mapping[str, object] | RunHyperlink | None: ...
     @hyperlink.setter
-    def hyperlink(self, value: RunHyperlink) -> None: ...
+    def hyperlink(self, value: Mapping[str, object] | RunHyperlink | None) -> None: ...
     @property
-    def hover_action(self) -> RunHyperlink | None: ...
+    def hover_action(self) -> Mapping[str, object] | RunHyperlink | None: ...
     @hover_action.setter
-    def hover_action(self, value: RunHyperlink | None) -> None: ...
+    def hover_action(
+        self, value: Mapping[str, object] | RunHyperlink | None
+    ) -> None: ...
     def __init__(
         self,
         text: str = "",
@@ -613,6 +615,32 @@ class Presentation:
         slide_index: int,
         chart_selector: ChartSelector | list[str],
         data: ChartDataUpdate | list[dict[str, object]],
+    ) -> None: ...
+    def update_chart_data_by_index(
+        self,
+        slide_index: int,
+        chart_index: int,
+        data: ChartDataUpdate,
+    ) -> None: ...
+    def update_chart_data_by_rel_id(
+        self,
+        slide_index: int,
+        rel_id: str,
+        data: ChartDataUpdate,
+    ) -> None: ...
+    def replace_chart_data_by_index(
+        self,
+        slide_index: int,
+        chart_index: int,
+        categories: list[str],
+        values: list[float],
+    ) -> None: ...
+    def replace_chart_data_by_rel_id(
+        self,
+        slide_index: int,
+        rel_id: str,
+        categories: list[str],
+        values: list[float],
     ) -> None: ...
     def open(self, path: str) -> None: ...
     def save(self, path: str) -> None: ...

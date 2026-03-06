@@ -1,9 +1,12 @@
 package urlfetch
 
 import (
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
@@ -14,6 +17,8 @@ const (
 	maxQuoteLen   = 180
 	maxCodeBullet = 150
 	utf8ContMask  = 0x80
+	// defaultImageWidthEMU is the default width for embedded images (3 inches).
+	defaultImageWidthEMU int64 = 2743200
 )
 
 // Converter converts parsed web content into a PPTX byte slice.
@@ -111,28 +116,44 @@ func (c *Converter) buildGroupedSlides(
 		return c.buildLinearSlides(content, slides)
 	}
 
+	// Create image fetcher if downloading images
+	var imageFetcher *ImageFetcher
+	if c.cfg.DownloadImages {
+		client := &http.Client{
+			Timeout: time.Duration(c.cfg.TimeoutSecs) * time.Second,
+		}
+		imageFetcher = NewImageFetcher(client, c.cfg, content.URL)
+	}
+
 	for _, group := range groups {
 		if len(slides) >= c.cfg.MaxSlides {
 			break
 		}
 		slide := elements.NewSlide(group.Heading.Text).WithTitleAndContentLayout()
 		bulletCount := 0
+		imageCount := 0
+		maxImages := c.cfg.MaxImagesPerSlide
+		if maxImages <= 0 {
+			maxImages = defaultMaxImagesPerSlide
+		}
 
 		for _, block := range group.Children {
+			slide, bulletCount, imageCount, slides = c.appendGroupedBlock(
+				group.Heading.Text,
+				slide,
+				block,
+				bulletCount,
+				imageCount,
+				maxImages,
+				imageFetcher,
+				slides,
+			)
 			if len(slides) >= c.cfg.MaxSlides {
 				break
 			}
-			if bulletCount >= c.cfg.MaxBulletsPerSlide {
-				if bulletCount > 0 {
-					slides = append(slides, slide)
-				}
-				slide = elements.NewSlide(group.Heading.Text + " (cont.)").WithTitleAndContentLayout()
-				bulletCount = 0
-			}
-			slide, bulletCount = c.appendBlock(slide, block, bulletCount)
 		}
 
-		if bulletCount > 0 {
+		if bulletCount > 0 || imageCount > 0 {
 			slides = append(slides, slide)
 		}
 	}
@@ -151,40 +172,56 @@ func (c *Converter) buildLinearSlides(
 		return slides, nil
 	}
 
+	// Create image fetcher if downloading images
+	var imageFetcher *ImageFetcher
+	if c.cfg.DownloadImages {
+		client := &http.Client{
+			Timeout: time.Duration(c.cfg.TimeoutSecs) * time.Second,
+		}
+		imageFetcher = NewImageFetcher(client, c.cfg, content.URL)
+	}
+
 	var cur *elements.SlideContent
 	bulletCount := 0
+	imageCount := 0
+	maxImages := c.cfg.MaxImagesPerSlide
+	if maxImages <= 0 {
+		maxImages = defaultMaxImagesPerSlide
+	}
 
 	for _, block := range content.Blocks {
 		if len(slides) >= c.cfg.MaxSlides {
 			break
 		}
 
-		if block.IsHeading() {
-			if cur != nil && bulletCount > 0 {
-				slides = append(slides, *cur)
-			}
-			s := elements.NewSlide(block.Text).WithTitleAndContentLayout()
-			cur = &s
-			bulletCount = 0
+		var continueLoop bool
+		cur, slides, bulletCount, imageCount, continueLoop = c.handleLinearHeading(
+			block,
+			cur,
+			slides,
+			bulletCount,
+			imageCount,
+		)
+		if continueLoop {
 			continue
 		}
-
-		if cur == nil {
-			s := elements.NewSlide("Overview").WithTitleAndContentLayout()
-			cur = &s
-		}
-
-		if bulletCount >= c.cfg.MaxBulletsPerSlide {
-			slides = append(slides, *cur)
-			cont := elements.NewSlide(cur.Title + " (cont.)").WithTitleAndContentLayout()
-			cur = &cont
-			bulletCount = 0
-		}
-
-		*cur, bulletCount = c.appendBlock(*cur, block, bulletCount)
+		cur, bulletCount, imageCount, slides = c.ensureLinearSlideCapacity(
+			cur,
+			bulletCount,
+			imageCount,
+			maxImages,
+			slides,
+		)
+		*cur, bulletCount, imageCount = c.appendBlock(
+			*cur,
+			block,
+			bulletCount,
+			imageCount,
+			imageFetcher,
+		)
 	}
 
-	if cur != nil && bulletCount > 0 {
+	if cur != nil && (bulletCount > 0 || imageCount > 0) {
 		slides = append(slides, *cur)
 	}
 	return slides, nil
@@ -194,45 +231,205 @@ func (c *Converter) appendBlock(
 	slide elements.SlideContent,
 	block ContentBlock,
 	bulletCount int,
-) (elements.SlideContent, int) {
+	imageCount int,
+	imageFetcher *ImageFetcher,
+) (elements.SlideContent, int, int) {
+	maxImages := c.cfg.MaxImagesPerSlide
+	if maxImages <= 0 {
+		maxImages = defaultMaxImagesPerSlide
+	}
+
 	switch block.Kind {
 	case KindTitle, KindHeading:
-		// Headings are handled by slide grouping/creation logic.
+		return slide, bulletCount, imageCount
 	case KindParagraph:
-		slide = slide.AddBullet(truncateText(block.Text, maxParaLen))
-		bulletCount++
+		return c.appendParagraph(slide, block, bulletCount, imageCount)
 	case KindListItem:
-		slide = slide.AddBullet("• " + truncateText(block.Text, maxListLen))
-		bulletCount++
+		return c.appendListItem(slide, block, bulletCount, imageCount)
 	case KindQuote:
-		slide = slide.AddBullet(`"` + truncateText(block.Text, maxQuoteLen) + `"`)
-		bulletCount++
+		return c.appendQuote(slide, block, bulletCount, imageCount)
 	case KindCode:
-		if c.cfg.IncludeCode {
-			slide = slide.AddBullet("[Code] " + truncateText(block.Text, maxCodeBullet))
-			bulletCount++
-		}
+		return c.appendCode(slide, block, bulletCount, imageCount)
 	case KindTable:
-		if c.cfg.IncludeTables && len(block.TableRows) > 0 {
-			slide = slide.WithTable(buildTable(block.TableRows))
-			bulletCount++
-		}
+		return c.appendTable(slide, block, bulletCount, imageCount)
 	case KindImage:
-		if c.cfg.IncludeImages && block.ImageAlt != "" {
-			slide = slide.AddBullet("[Image: " + block.ImageAlt + "]")
-			bulletCount++
-		}
+		return c.appendImage(slide, block, bulletCount, imageCount, maxImages, imageFetcher)
 	case KindLink:
-		if c.cfg.ExtractLinks {
-			linkText := block.Text
-			if block.LinkHref != "" && block.LinkHref != block.Text {
-				linkText = linkText + " (" + block.LinkHref + ")"
-			}
-			slide = slide.AddBullet("[Link] " + truncateText(linkText, maxListLen))
-			bulletCount++
+		return c.appendLink(slide, block, bulletCount, imageCount)
+	}
+	return slide, bulletCount, imageCount
+}
+
+// fetchAndCreateImage downloads an image and creates a shapes.Image.
+func (c *Converter) fetchAndCreateImage(fetcher *ImageFetcher, src, _ string) (shapes.Image, error) {
+	fetched, err := fetcher.FetchImage(src)
+	if err != nil {
+		return shapes.Image{}, err
+	}
+
+	// Calculate dimensions preserving aspect ratio
+	widthEMU, heightEMU := CalculateImageDimensions(
+		fetched.Width,
+		fetched.Height,
+		defaultImageWidthEMU,
+	)
+
+	// Create image
+	img := shapes.NewImageFromBytes(
+		fetched.Data,
+		fetched.Format,
+		styling.Emu(0),
+		styling.Emu(0),
+		styling.Emu(widthEMU),
+		styling.Emu(heightEMU),
+	)
+
+	return img, nil
+}
+
+func (c *Converter) appendGroupedBlock(
+	heading string,
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+	maxImages int,
+	imageFetcher *ImageFetcher,
+	slides []elements.SlideContent,
+) (elements.SlideContent, int, int, []elements.SlideContent) {
+	if bulletCount >= c.cfg.MaxBulletsPerSlide || imageCount >= maxImages {
+		if bulletCount > 0 || imageCount > 0 {
+			slides = append(slides, slide)
+		}
+		slide = elements.NewSlide(heading + " (cont.)").WithTitleAndContentLayout()
+		bulletCount = 0
+		imageCount = 0
+	}
+	slide, bulletCount, imageCount = c.appendBlock(slide, block, bulletCount, imageCount, imageFetcher)
+	return slide, bulletCount, imageCount, slides
+}
+
+func (c *Converter) handleLinearHeading(
+	block ContentBlock,
+	cur *elements.SlideContent,
+	slides []elements.SlideContent,
+	bulletCount int,
+	imageCount int,
+) (*elements.SlideContent, []elements.SlideContent, int, int, bool) {
+	if !block.IsHeading() {
+		return cur, slides, bulletCount, imageCount, false
+	}
+	if cur != nil && (bulletCount > 0 || imageCount > 0) {
+		slides = append(slides, *cur)
+	}
+	s := elements.NewSlide(block.Text).WithTitleAndContentLayout()
+	return &s, slides, 0, 0, true
+}
+
+func (c *Converter) ensureLinearSlideCapacity(
+	cur *elements.SlideContent,
+	bulletCount int,
+	imageCount int,
+	maxImages int,
+	slides []elements.SlideContent,
+) (*elements.SlideContent, int, int, []elements.SlideContent) {
+	if cur == nil {
+		s := elements.NewSlide("Overview").WithTitleAndContentLayout()
+		cur = &s
+	}
+	if bulletCount < c.cfg.MaxBulletsPerSlide && imageCount < maxImages {
+		return cur, bulletCount, imageCount, slides
+	}
+	slides = append(slides, *cur)
+	cont := elements.NewSlide(cur.Title + " (cont.)").WithTitleAndContentLayout()
+	return &cont, 0, 0, slides
+}
+
+func (c *Converter) appendParagraph(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+) (elements.SlideContent, int, int) {
+	return slide.AddBullet(truncateText(block.Text, maxParaLen)), bulletCount + 1, imageCount
+}
+
+func (c *Converter) appendListItem(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+) (elements.SlideContent, int, int) {
+	return slide.AddBullet("• " + truncateText(block.Text, maxListLen)), bulletCount + 1, imageCount
+}
+
+func (c *Converter) appendQuote(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+) (elements.SlideContent, int, int) {
+	return slide.AddBullet(`"` + truncateText(block.Text, maxQuoteLen) + `"`), bulletCount + 1, imageCount
+}
+
+func (c *Converter) appendCode(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+) (elements.SlideContent, int, int) {
+	if !c.cfg.IncludeCode {
+		return slide, bulletCount, imageCount
+	}
+	return slide.AddBullet("[Code] " + truncateText(block.Text, maxCodeBullet)), bulletCount + 1, imageCount
+}
+
+func (c *Converter) appendTable(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+) (elements.SlideContent, int, int) {
+	if !c.cfg.IncludeTables || len(block.TableRows) == 0 {
+		return slide, bulletCount, imageCount
+	}
+	return slide.WithTable(buildTable(block.TableRows)), bulletCount + 1, imageCount
+}
+
+func (c *Converter) appendImage(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+	maxImages int,
+	imageFetcher *ImageFetcher,
+) (elements.SlideContent, int, int) {
+	if imageFetcher != nil && block.ImageSrc != "" && imageCount < maxImages {
+		img, err := c.fetchAndCreateImage(imageFetcher, block.ImageSrc, block.ImageAlt)
+		if err == nil {
+			return slide.AddImage(img), bulletCount, imageCount + 1
 		}
 	}
-	return slide, bulletCount
+	if c.cfg.IncludeImages && block.ImageAlt != "" {
+		return slide.AddBullet("[Image: " + block.ImageAlt + "]"), bulletCount + 1, imageCount
+	}
+	return slide, bulletCount, imageCount
+}
+
+func (c *Converter) appendLink(
+	slide elements.SlideContent,
+	block ContentBlock,
+	bulletCount int,
+	imageCount int,
+) (elements.SlideContent, int, int) {
+	if !c.cfg.ExtractLinks {
+		return slide, bulletCount, imageCount
+	}
+	linkText := block.Text
+	if block.LinkHref != "" && block.LinkHref != block.Text {
+		linkText = linkText + " (" + block.LinkHref + ")"
+	}
+	return slide.AddBullet("[Link] " + truncateText(linkText, maxListLen)), bulletCount + 1, imageCount
 }
 
 // buildTable converts raw HTML table rows to a tables.Table.

@@ -6,15 +6,12 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, cast
 
-from typing_extensions import TypeGuard
-
 from .. import ops
 from ..slide.slide import Slide
+from ..utils import is_four_number_bounds
 from .helpers import PresentationProtocol
 from .layout_theme import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideMasters
-
-_FOUR_BOUNDS_COMPONENTS = 4
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -29,6 +26,74 @@ else:
 
     class PresentationProtocol:
         """Runtime placeholder to avoid Protocol abstract behavior."""
+
+
+def _build_placeholder_table_payload(
+    table: object,
+    table_rows: object,
+    table_cols: object,
+) -> dict[str, object] | None:
+    if isinstance(table, dict):
+        return cast("dict[str, object]", table)
+    if isinstance(table_rows, int) and isinstance(table_cols, int):
+        return {"rows": [["" for _ in range(table_cols)] for _ in range(table_rows)]}
+    return None
+
+
+def _apply_series_chart_values(
+    chart_payload: dict[str, object],
+    chart_values: list[object],
+) -> None:
+    if chart_values and isinstance(chart_values[0], dict):
+        first = cast("dict[str, object]", chart_values[0])
+        if isinstance(first.get("values"), list):
+            chart_payload["values"] = cast("list[float]", first["values"])
+        if isinstance(first.get("x_values"), list):
+            chart_payload["x_values"] = cast("list[float]", first["x_values"])
+        if isinstance(first.get("y_values"), list):
+            chart_payload["y_values"] = cast("list[float]", first["y_values"])
+        if isinstance(first.get("sizes"), list):
+            chart_payload["sizes"] = cast("list[float]", first["sizes"])
+        if isinstance(first.get("categories"), list):
+            chart_payload["categories"] = cast("list[str]", first["categories"])
+        title_from_series = first.get("name")
+        if isinstance(title_from_series, str):
+            chart_payload["title"] = title_from_series
+        return
+    chart_payload["values"] = cast("list[float]", chart_values)
+
+
+def _build_placeholder_chart_payload(
+    kwargs: dict[str, object],
+    bounds: object,
+) -> dict[str, object] | None:
+    chart = kwargs.get("chart")
+    chart_type = kwargs.get("chart_type")
+    chart_categories = kwargs.get("chart_categories")
+    chart_values = kwargs.get("chart_values")
+    chart_options = kwargs.get("chart_options")
+    if isinstance(chart, dict):
+        return cast("dict[str, object]", chart)
+    if not isinstance(chart_type, str):
+        return None
+
+    chart_payload: dict[str, object] = {"chart_type": chart_type}
+    if isinstance(chart_categories, list):
+        chart_payload["categories"] = chart_categories
+    if isinstance(chart_values, list):
+        _apply_series_chart_values(
+            chart_payload,
+            cast("list[object]", chart_values),
+        )
+    if isinstance(chart_options, dict):
+        chart_payload.update(cast("dict[str, object]", chart_options))
+    if is_four_number_bounds(bounds):
+        x, y, w, h = bounds
+        chart_payload["x"] = int(x)
+        chart_payload["y"] = int(y)
+        chart_payload["w"] = int(w)
+        chart_payload["h"] = int(h)
+    return chart_payload
 
 
 class PresentationSectionMixin(PresentationProtocol):
@@ -241,24 +306,38 @@ class PresentationSlidesMixin(
         ph_type: str = "",
         **kwargs: object,
     ) -> None:
-        """Bridge op: insert rich content into a placeholder."""
-        text = kwargs.get("text")
-        image_path = kwargs.get("image_path")
+        """Bridge op: insert rich content (text, image, table, or chart) into a placeholder."""
         bounds = kwargs.get("bounds")
-        text_style = kwargs.get("text_style")
+
         payload: dict[str, object] = {
             "slide_index": slide_index,
             "index": ph_index,
             "ph_type": ph_type,
         }
+        text = kwargs.get("text")
         if isinstance(text, str):
             payload["text"] = text
+        image_path = kwargs.get("image_path")
         if isinstance(image_path, str):
             payload["image_path"] = image_path
-        if _is_four_number_bounds(bounds):
+        if is_four_number_bounds(bounds):
             payload["bounds"] = list(bounds)
+        text_style = kwargs.get("text_style")
         if isinstance(text_style, dict):
             payload["text_style"] = text_style
+        table_payload = _build_placeholder_table_payload(
+            kwargs.get("table"),
+            kwargs.get("table_rows"),
+            kwargs.get("table_cols"),
+        )
+        if table_payload is not None:
+            payload["table"] = table_payload
+        chart_payload = _build_placeholder_chart_payload(
+            kwargs,
+            bounds,
+        )
+        if chart_payload is not None:
+            payload["chart"] = chart_payload
 
         self.execute(ops.OP_SET_PLACEHOLDER_CONTENT, payload)
         self.invalidate_cache()
@@ -390,14 +469,3 @@ class PresentationSlidesMixin(
     def __iter__(self) -> Iterator[Slide]:
         """Iterate over all slides."""
         return iter(self.slides)
-
-
-def _is_four_number_bounds(
-    value: object,
-) -> TypeGuard[tuple[float, float, float, float]]:
-    if not isinstance(value, tuple):
-        return False
-    components = cast("tuple[object, ...]", value)
-    if len(components) != _FOUR_BOUNDS_COMPONENTS:
-        return False
-    return all(isinstance(component, int | float) for component in components)

@@ -32,6 +32,152 @@ type ErrorDetail struct {
 
 type commandHandler func(*PresentationEditor, json.RawMessage) (any, error)
 
+// BridgeError represents a structured error returned by the bridge API.
+type BridgeError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
+}
+
+// Error codes for the bridge API.
+const (
+	ErrCodeInvalidJSON    = "INVALID_JSON"
+	ErrCodeUnsupportedVer = "UNSUPPORTED_VERSION"
+	ErrCodeUnknownOp      = "UNKNOWN_OP"
+	ErrCodeInvalidPayload = "INVALID_PAYLOAD"
+	ErrCodeMissingField   = "MISSING_FIELD"
+	ErrCodeInvalidIndex   = "INVALID_INDEX"
+	ErrCodeInvalidType    = "INVALID_TYPE"
+	ErrCodeOpFailed       = "OP_FAILED"
+	ErrCodeMarshalError   = "MARSHAL_ERROR"
+	ErrCodeInternalError  = "INTERNAL_ERROR"
+	ErrCodeInvalidHandle  = "INVALID_HANDLE"
+	ErrCodeInvalidValue   = "INVALID_VALUE"
+)
+
+// NewBridgeError creates a new BridgeError with the given code and message.
+func NewBridgeError(code, message string) *BridgeError {
+	return &BridgeError{Code: code, Message: message}
+}
+
+// NewBridgeErrorWithDetails creates a new BridgeError with details.
+func NewBridgeErrorWithDetails(code, message string, details any) *BridgeError {
+	return &BridgeError{Code: code, Message: message, Details: details}
+}
+
+func (e *BridgeError) Error() string {
+	return e.Message
+}
+
+// PayloadValidator provides validation helpers for command payloads.
+type PayloadValidator struct {
+	errors []string
+	code   string
+}
+
+// NewPayloadValidator creates a new validator.
+func NewPayloadValidator() *PayloadValidator {
+	return &PayloadValidator{errors: nil, code: ErrCodeInvalidPayload}
+}
+
+func (v *PayloadValidator) setCode(code string) {
+	if v.code == ErrCodeInvalidPayload {
+		v.code = code
+	}
+}
+
+func (v *PayloadValidator) missingField(field string) {
+	v.setCode(ErrCodeMissingField)
+	v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+}
+
+func (v *PayloadValidator) invalidType(field, expected string, value any) {
+	v.setCode(ErrCodeInvalidType)
+	v.errors = append(v.errors, fmt.Sprintf("field %s must be %s, got %T", field, expected, value))
+}
+
+// HasErrors returns true if any validation errors occurred.
+func (v *PayloadValidator) HasErrors() bool {
+	return len(v.errors) > 0
+}
+
+// Error returns a combined error message.
+func (v *PayloadValidator) Error() error {
+	if len(v.errors) == 0 {
+		return nil
+	}
+	return NewBridgeErrorWithDetails(v.code, "payload validation failed", v.errors)
+}
+
+// ParseRawPayload parses [json.RawMessage] into a map for validation.
+func ParseRawPayload(payload json.RawMessage) (map[string]any, error) {
+	if len(payload) == 0 {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, "empty payload")
+	}
+	var result map[string]any
+	if err := json.Unmarshal(payload, &result); err != nil {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, fmt.Sprintf("invalid JSON payload: %v", err))
+	}
+	return result, nil
+}
+
+func requireSlideIndex(
+	e *PresentationEditor,
+	payload map[string]any,
+	v *PayloadValidator,
+) (int, bool) {
+	slideIndex, ok := v.RequireInt(payload, "slide_index")
+	if !ok {
+		return 0, false
+	}
+	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
+		return 0, false
+	}
+	return slideIndex, true
+}
+
+// ExecuteCommand dispatches a JSON command to the appropriate editor method.
+func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
+	var req RequestEnvelope
+	if err := json.Unmarshal([]byte(jsonInput), &req); err != nil {
+		return errorResponse(ErrCodeInvalidJSON, err.Error(), "")
+	}
+
+	if req.APIVersion != 1 {
+		return errorResponse(
+			ErrCodeUnsupportedVer,
+			fmt.Sprintf("API version %d not supported", req.APIVersion),
+			req.RequestID,
+		)
+	}
+
+	handler, ok := commandHandlerFor(req.Op)
+	if !ok {
+		return errorResponse(ErrCodeUnknownOp, fmt.Sprintf("Operation %q not recognized", req.Op), req.RequestID)
+	}
+
+	result, err := handler(e, req.Payload)
+	if err != nil {
+		// Check if error is a BridgeError with specific code
+		var bridgeErr *BridgeError
+		if errors.As(err, &bridgeErr) {
+			return errorResponseWithDetails(bridgeErr.Code, bridgeErr.Message, bridgeErr.Details, req.RequestID)
+		}
+		return errorResponse(ErrCodeOpFailed, err.Error(), req.RequestID)
+	}
+
+	resp := ResponseEnvelope{
+		OK:        true,
+		Result:    result,
+		RequestID: req.RequestID,
+	}
+	out, marshalErr := json.Marshal(resp)
+	if marshalErr != nil {
+		return errorResponse(ErrCodeMarshalError, marshalErr.Error(), req.RequestID)
+	}
+	return string(out)
+}
+
 func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	result, err := editormodcommand.HandleBatchExecute(
 		payload,
@@ -82,219 +228,6 @@ func commandHandlerFor(op string) (commandHandler, bool) {
 	return nil, false
 }
 
-func commandHandlerForSlides(op string) (commandHandler, bool) {
-	switch op {
-	case OpBatchExecute:
-		return handleBatchExecute, true
-	case OpSlideCount:
-		return handleSlideCount, true
-	case OpAddSlide:
-		return handleAddSlide, true
-	case OpRemoveSlide:
-		return handleRemoveSlide, true
-	case OpMoveSlide:
-		return handleMoveSlide, true
-	case OpDuplicateSlide:
-		return handleDuplicateSlide, true
-	case OpListSlides:
-		return handleListSlides, true
-	case OpSetSlideTitle:
-		return handleSetSlideTitle, true
-	case OpUpdateSlide:
-		return handleUpdateSlide, true
-	default:
-		return nil, false
-	}
-}
-
-func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetMetadata:
-		return handleGetMetadata, true
-	case OpListSlideCharts:
-		return handleListSlideCharts, true
-	case OpUpdateChartData:
-		return handleUpdateChartData, true
-	case OpAddChart:
-		return handleAddChart, true
-	case OpListSlideLayouts:
-		return handleListSlideLayouts, true
-	case OpListSlideMasters:
-		return handleListSlideMasters, true
-	case OpListMasterLayouts:
-		return handleListMasterLayouts, true
-	case OpRebindSlideLayout:
-		return handleRebindSlideLayout, true
-	case OpCloneLayoutMasterFamily:
-		return handleCloneLayoutMasterFamily, true
-	case OpApplyTheme:
-		return handleApplyTheme, true
-	case OpSetSlideSize:
-		return handleSetSlideSize, true
-	case OpMergeFromFile:
-		return handleMergeFromFile, true
-	case OpGetCoreProperties:
-		return handleGetCoreProperties, true
-	case OpSetCoreProperties:
-		return handleSetCoreProperties, true
-	case OpListPlaceholders:
-		return handleListPlaceholders, true
-	case OpSetPlaceholderContent:
-		return handleSetPlaceholderContent, true
-	default:
-		return nil, false
-	}
-}
-
-func commandHandlerForContent(op string) (commandHandler, bool) {
-	switch op {
-	case OpAddSection:
-		return handleAddSection, true
-	case OpRemoveSection:
-		return handleRemoveSection, true
-	case OpRenameSection:
-		return handleRenameSection, true
-	case OpGetSections:
-		return handleGetSections, true
-	case OpFindAndReplace:
-		return handleFindAndReplace, true
-	case OpSearchShapes:
-		return handleSearchShapes, true
-	case OpSetModifyPassword:
-		return handleSetModifyPassword, true
-	case OpSetMarkAsFinal:
-		return handleSetMarkAsFinal, true
-	case OpAddCustomXML:
-		return handleAddCustomXML, true
-	case OpListCustomXML:
-		return handleListCustomXML, true
-	case OpRemoveCustomXML:
-		return handleRemoveCustomXML, true
-	case OpAddVba:
-		return handleAddVba, true
-	default:
-		return nil, false
-	}
-}
-
-func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetAuthors:
-		return handleGetAuthors, true
-	case OpAddAuthor:
-		return handleAddAuthor, true
-	case OpGetComments:
-		return handleGetComments, true
-	case OpAddComment:
-		return handleAddComment, true
-	case OpRemoveComment:
-		return handleRemoveComment, true
-	case OpListShapes:
-		return handleListShapes, true
-	case OpAddShape:
-		return handleAddShape, true
-	case OpAddTextbox:
-		return handleAddTextbox, true
-	case OpAddConnector:
-		return handleAddConnector, true
-	case OpAddGroupShape:
-		return handleAddGroupShape, true
-	case OpBuildFreeform:
-		return handleBuildFreeform, true
-	case OpAddImage:
-		return handleAddImage, true
-	case OpRemoveShape:
-		return handleRemoveShape, true
-	case OpGroupShapes:
-		return handleGroupShapes, true
-	case OpUngroupShapes:
-		return handleUngroupShapes, true
-	case OpUpdateShape:
-		return handleUpdateShape, true
-	case OpMoveShapeToFront:
-		return handleMoveShapeToFront, true
-	case OpMoveShapeToBack:
-		return handleMoveShapeToBack, true
-	case OpGetImageMetadata:
-		return handleGetImageMetadata, true
-	case OpAddVideo:
-		return handleAddVideo, true
-	case OpAddOLEObject:
-		return handleAddOLEObject, true
-	default:
-		return nil, false
-	}
-}
-
-func commandHandlerForNotesTables(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetNotes:
-		return handleGetNotes, true
-	case OpHasNotesSlide:
-		return handleHasNotesSlide, true
-	case OpSetNotes:
-		return handleSetNotes, true
-	case OpAddTable:
-		return handleAddTable, true
-	case OpGetTable:
-		return handleGetTable, true
-	case OpMergeTableCells:
-		return handleMergeTableCells, true
-	case OpSplitTableCell:
-		return handleSplitTableCell, true
-	case OpUpdateTableFlags:
-		return handleUpdateTableFlags, true
-	case OpUpdateTableCell:
-		return handleUpdateTableCell, true
-	case OpSetTableStyle:
-		return handleSetTableStyle, true
-	default:
-		return nil, false
-	}
-}
-
-// ExecuteCommand dispatches a JSON command to the appropriate editor method.
-func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
-	var req RequestEnvelope
-	if err := json.Unmarshal([]byte(jsonInput), &req); err != nil {
-		return errorResponse(ErrCodeInvalidJSON, err.Error(), "")
-	}
-
-	if req.APIVersion != 1 {
-		return errorResponse(
-			ErrCodeUnsupportedVer,
-			fmt.Sprintf("API version %d not supported", req.APIVersion),
-			req.RequestID,
-		)
-	}
-
-	handler, ok := commandHandlerFor(req.Op)
-	if !ok {
-		return errorResponse(ErrCodeUnknownOp, fmt.Sprintf("Operation %q not recognized", req.Op), req.RequestID)
-	}
-
-	result, err := handler(e, req.Payload)
-	if err != nil {
-		// Check if error is a BridgeError with specific code
-		var bridgeErr *BridgeError
-		if errors.As(err, &bridgeErr) {
-			return errorResponseWithDetails(bridgeErr.Code, bridgeErr.Message, bridgeErr.Details, req.RequestID)
-		}
-		return errorResponse(ErrCodeOpFailed, err.Error(), req.RequestID)
-	}
-
-	resp := ResponseEnvelope{
-		OK:        true,
-		Result:    result,
-		RequestID: req.RequestID,
-	}
-	out, marshalErr := json.Marshal(resp)
-	if marshalErr != nil {
-		return errorResponse(ErrCodeMarshalError, marshalErr.Error(), req.RequestID)
-	}
-	return string(out)
-}
-
 func errorResponse(code, message, reqID string) string {
 	resp := ResponseEnvelope{
 		OK:        false,
@@ -326,19 +259,4 @@ func errorResponseWithDetails(code, message string, details any, reqID string) s
 		return `{"ok": false, "error": {"code": "INTERNAL_ERROR", "message": "Failed to marshal error response"}}`
 	}
 	return string(out)
-}
-
-func requireSlideIndex(
-	e *PresentationEditor,
-	payload map[string]any,
-	v *PayloadValidator,
-) (int, bool) {
-	slideIndex, ok := v.RequireInt(payload, "slide_index")
-	if !ok {
-		return 0, false
-	}
-	if !v.IndexBounds(slideIndex, 0, e.SlideCount(), "slide_index") {
-		return 0, false
-	}
-	return slideIndex, true
 }

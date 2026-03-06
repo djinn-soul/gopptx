@@ -7,70 +7,212 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-func handleAddSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
+func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
-	name, ok := v.RequireString(p, "name")
-	if !ok {
-		return nil, v.Error()
-	}
-	slideIndices, ok := v.RequireIntSlice(p, "slide_indices")
-	if !ok {
-		return nil, v.Error()
-	}
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SlideSizeRequest, bool) {
+			return editorcommand.ParseSlideSizeRequest(p, v.RequireInt64)
+		},
+		v.Error,
+		func(request editorcommand.SlideSizeRequest) (any, error) {
+			if err := e.SetSlideSize(common.SlideSize{Width: request.Width, Height: request.Height}); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
+}
 
-	if err := e.AddSection(name, slideIndices); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"added": true}, nil
+func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SlideTitleRequest, bool) {
+			return editorcommand.ParseSlideTitleRequest(
+				p,
+				func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
+				v.RequireString,
+			)
+		},
+		v.Error,
+		func(request editorcommand.SlideTitleRequest) (any, error) {
+			if err := e.SetSlideTitle(request.SlideIndex, request.Title); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
+}
+
+func handleMergeFromFile(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.MergeFromFileRequest, bool) {
+			return editorcommand.ParseMergeFromFileRequest(p, v.RequireString)
+		},
+		v.Error,
+		func(request editorcommand.MergeFromFileRequest) (any, error) {
+			if err := e.MergeFromFile(request.Path); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"merged": true}, nil
+		},
+	)
+}
+
+func handleUpdateSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.UpdateSlideRequest, bool) {
+			return editorcommand.ParseUpdateSlideRequest(
+				p,
+				func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
+				v.OptionalString,
+				v.OptionalStringSlice,
+			)
+		},
+		v.Error,
+		func(request editorcommand.UpdateSlideRequest) (any, error) {
+			title := request.Title
+			if title == "" {
+				title = e.slides[request.SlideIndex].Title
+			}
+
+			slide := elements.NewSlide(title)
+			if request.Layout != "" {
+				slide = slide.WithLayout(request.Layout)
+			}
+			for _, bullet := range request.Bullets {
+				slide = slide.AddBullet(bullet)
+			}
+			if err := e.UpdateSlide(request.SlideIndex, slide); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
+}
+
+func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.AddChartRequest, bool) {
+			return editorcommand.ParseAddChartRequest(
+				p,
+				func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
+				v.RequireString,
+				v.OptionalString,
+				v.RequireStringSlice,
+				v.RequireFloat64Slice,
+				v.OptionalInt64,
+			)
+		},
+		v.Error,
+		func(request editorcommand.AddChartRequest) (any, error) {
+			var chart charts.ChartDefinition
+			switch strings.ToLower(request.ChartType) {
+			case "bar":
+				c := charts.NewBarChart(request.Categories, request.Values).WithTitle(request.Title)
+				if request.W > 0 {
+					c = c.Size(styling.Emu(request.W), styling.Emu(request.H)).
+						Position(styling.Emu(request.X), styling.Emu(request.Y))
+				}
+				chart = c
+			case "line":
+				c := charts.NewLineChart(request.Categories, request.Values).WithTitle(request.Title)
+				if request.W > 0 {
+					c = c.Size(styling.Emu(request.W), styling.Emu(request.H)).
+						Position(styling.Emu(request.X), styling.Emu(request.Y))
+				}
+				chart = c
+			case "pie":
+				c := charts.NewPieChart(request.Categories, request.Values).WithTitle(request.Title)
+				if request.W > 0 {
+					c = c.Size(styling.Emu(request.W), styling.Emu(request.H)).
+						Position(styling.Emu(request.X), styling.Emu(request.Y))
+				}
+				chart = c
+			default:
+				return nil, NewBridgeError(
+					ErrCodeInvalidValue,
+					fmt.Sprintf("unsupported chart type: %q", request.ChartType),
+				)
+			}
+
+			if err := e.AddChart(request.SlideIndex, chart); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"added": true}, nil
+		},
+	)
+}
+
+func handleAddSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SectionAddRequest, bool) {
+			return editorcommand.ParseSectionAddRequest(p, v.RequireString, v.RequireIntSlice)
+		},
+		v.Error,
+		func(request editorcommand.SectionAddRequest) (any, error) {
+			if err := e.AddSection(request.Name, request.SlideIndices); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"added": true}, nil
+		},
+	)
 }
 
 func handleRemoveSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	name, ok := v.RequireString(p, "name")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.RemoveSection(name); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"removed": true}, nil
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SectionNameRequest, bool) {
+			return editorcommand.ParseSectionNameRequest(p, v.RequireString)
+		},
+		v.Error,
+		func(request editorcommand.SectionNameRequest) (any, error) {
+			if err := e.RemoveSection(request.Name); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"removed": true}, nil
+		},
+	)
 }
 
 func handleRenameSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	oldName, ok := v.RequireString(p, "old_name")
-	if !ok {
-		return nil, v.Error()
-	}
-	newName, ok := v.RequireString(p, "new_name")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.RenameSection(oldName, newName); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"renamed": true}, nil
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SectionRenameRequest, bool) {
+			return editorcommand.ParseSectionRenameRequest(p, v.RequireString)
+		},
+		v.Error,
+		func(request editorcommand.SectionRenameRequest) (any, error) {
+			if err := e.RenameSection(request.OldName, request.NewName); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"renamed": true}, nil
+		},
+	)
 }
 
 func handleGetSections(e *PresentationEditor, _ json.RawMessage) (any, error) {
@@ -88,24 +230,7 @@ func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (an
 	}
 
 	v := NewPayloadValidator()
-	props := common.CoreProperties{
-		Title:          v.OptionalString(p, "title"),
-		Subject:        v.OptionalString(p, "subject"),
-		Creator:        v.OptionalString(p, "creator"),
-		Keywords:       v.OptionalString(p, "keywords"),
-		Description:    v.OptionalString(p, "description"),
-		LastModifiedBy: v.OptionalString(p, "lastModifiedBy"),
-		Revision:       v.OptionalString(p, "revision"),
-		Created:        v.OptionalString(p, "created"),
-		Modified:       v.OptionalString(p, "modified"),
-		Category:       v.OptionalString(p, "category"),
-		ContentStatus:  v.OptionalString(p, "contentStatus"),
-		Identifier:     v.OptionalString(p, "identifier"),
-		Language:       v.OptionalString(p, "language"),
-		LastPrinted:    v.OptionalString(p, "lastPrinted"),
-		Version:        v.OptionalString(p, "version"),
-	}
-
+	props := editorcommand.ParseCorePropertiesRequest(p, v.OptionalString)
 	if v.HasErrors() {
 		return nil, v.Error()
 	}
@@ -126,185 +251,33 @@ func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (any, erro
 		return nil, v.Error()
 	}
 
-	var theme styling.Theme
-	switch themeName {
-	case "Corporate":
-		theme = styling.ThemeCorporate
-	case "Modern":
-		theme = styling.ThemeModern
-	case "Vibrant":
-		theme = styling.ThemeVibrant
-	case "Dark":
-		theme = styling.ThemeDark
-	case "Nature":
-		theme = styling.ThemeNature
-	case "Tech":
-		theme = styling.ThemeTech
-	case "Carbon":
-		theme = styling.ThemeCarbon
-	default:
-		return nil, NewBridgeError(ErrCodeInvalidValue, fmt.Sprintf("unknown theme name %q", themeName))
+	theme, err := resolveThemeByName(themeName)
+	if err != nil {
+		return nil, err
 	}
-
 	if err := e.ApplyTheme(theme); err != nil {
 		return nil, err
 	}
 	return map[string]bool{"applied": true}, nil
 }
 
-func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	width, ok := v.RequireInt64(p, "width")
-	if !ok {
-		return nil, v.Error()
-	}
-	height, ok := v.RequireInt64(p, "height")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.SetSlideSize(common.SlideSize{Width: width, Height: height}); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"updated": true}, nil
-}
-
-func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-	title, ok := v.RequireString(p, "title")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.SetSlideTitle(slideIndex, title); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"updated": true}, nil
-}
-
-func handleMergeFromFile(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	path, ok := v.RequireString(p, "path")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.MergeFromFile(path); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"merged": true}, nil
-}
-
-func handleUpdateSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-
-	title := v.OptionalString(p, "title")
-	layout := v.OptionalString(p, "layout")
-	bullets, _ := v.OptionalStringSlice(p, "bullets")
-
-	// Get current title if not provided
-	currentTitle := e.slides[slideIndex].Title
-	if title == "" {
-		title = currentTitle
-	}
-
-	slide := elements.NewSlide(title)
-	if layout != "" {
-		slide = slide.WithLayout(layout)
-	}
-	for _, b := range bullets {
-		slide = slide.AddBullet(b)
-	}
-	if err := e.UpdateSlide(slideIndex, slide); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"updated": true}, nil
-}
-
-func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-	chartType, ok := v.RequireString(p, "chart_type")
-	if !ok {
-		return nil, v.Error()
-	}
-	title := v.OptionalString(p, "title")
-	categories, ok := v.RequireStringSlice(p, "categories")
-	if !ok {
-		return nil, v.Error()
-	}
-	values, ok := v.RequireFloat64Slice(p, "values")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	x, _ := v.OptionalInt64(p, "x")
-	y, _ := v.OptionalInt64(p, "y")
-	w, _ := v.OptionalInt64(p, "w")
-	h, _ := v.OptionalInt64(p, "h")
-
-	var chart charts.ChartDefinition
-	switch strings.ToLower(chartType) {
-	case "bar":
-		c := charts.NewBarChart(categories, values).WithTitle(title)
-		if w > 0 {
-			c = c.Size(styling.Emu(w), styling.Emu(h)).Position(styling.Emu(x), styling.Emu(y))
-		}
-		chart = c
-	case "line":
-		c := charts.NewLineChart(categories, values).WithTitle(title)
-		if w > 0 {
-			c = c.Size(styling.Emu(w), styling.Emu(h)).Position(styling.Emu(x), styling.Emu(y))
-		}
-		chart = c
-	case "pie":
-		c := charts.NewPieChart(categories, values).WithTitle(title)
-		if w > 0 {
-			c = c.Size(styling.Emu(w), styling.Emu(h)).Position(styling.Emu(x), styling.Emu(y))
-		}
-		chart = c
+func resolveThemeByName(name string) (styling.Theme, error) {
+	switch name {
+	case "Corporate":
+		return styling.ThemeCorporate, nil
+	case "Modern":
+		return styling.ThemeModern, nil
+	case "Vibrant":
+		return styling.ThemeVibrant, nil
+	case "Dark":
+		return styling.ThemeDark, nil
+	case "Nature":
+		return styling.ThemeNature, nil
+	case "Tech":
+		return styling.ThemeTech, nil
+	case "Carbon":
+		return styling.ThemeCarbon, nil
 	default:
-		return nil, NewBridgeError(ErrCodeInvalidValue, fmt.Sprintf("unsupported chart type: %q", chartType))
+		return styling.Theme{}, NewBridgeError(ErrCodeInvalidValue, fmt.Sprintf("unknown theme name %q", name))
 	}
-
-	if err := e.AddChart(slideIndex, chart); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"added": true}, nil
 }

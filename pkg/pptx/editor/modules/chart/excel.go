@@ -33,7 +33,7 @@ func GenerateExcelForChart(categories []string, values []float64) ([]byte, error
 	seriesName := "Series 1"
 	return generateExcelSheetBinary(
 		[]string{"Category", seriesName},
-		buildCategoryRows(categories, []common.ChartSeriesData{{Values: values}}),
+		buildCategoryRows(categories, nil, []common.ChartSeriesData{{Values: values}}),
 	)
 }
 
@@ -46,7 +46,7 @@ func GenerateExcelForChartUpdate(kind Kind, req common.ChartDataUpdate) ([]byte,
 		headers, rows := buildScatterSheet(req.Series, true)
 		return generateExcelSheetBinary(headers, rows)
 	default:
-		headers := []string{"Category"}
+		headers := categoryHeaders(req)
 		for i, s := range req.Series {
 			name := fmt.Sprintf("Series %d", i+1)
 			if s.Name != nil && strings.TrimSpace(*s.Name) != "" {
@@ -54,7 +54,7 @@ func GenerateExcelForChartUpdate(kind Kind, req common.ChartDataUpdate) ([]byte,
 			}
 			headers = append(headers, name)
 		}
-		rows := buildCategoryRows(req.Categories, req.Series)
+		rows := buildCategoryRows(req.Categories, req.MultiLevelCategories, req.Series)
 		return generateExcelSheetBinary(headers, rows)
 	}
 }
@@ -151,31 +151,101 @@ func simpleXMLEscape(s string) string {
 	return buf.String()
 }
 
-func buildCategoryRows(categories []string, series []common.ChartSeriesData) [][]string {
+func categoryHeaders(req common.ChartDataUpdate) []string {
+	if len(req.MultiLevelCategories) == 0 {
+		return []string{"Category"}
+	}
+	headers := make([]string, 0, len(req.MultiLevelCategories))
+	for i := range req.MultiLevelCategories {
+		headers = append(headers, fmt.Sprintf("Category Level %d", i+1))
+	}
+	return headers
+}
+
+func buildCategoryRows(
+	categories []string,
+	multiLevel [][]string,
+	series []common.ChartSeriesData,
+) [][]string {
+	rowCount := categoryRowCount(categories, multiLevel, series)
+	rows := make([][]string, rowCount)
+	for i := range rowCount {
+		rows[i] = buildCategoryRow(i, categories, multiLevel, series)
+	}
+	return rows
+}
+
+func buildCategoryRow(
+	rowIndex int,
+	categories []string,
+	multiLevel [][]string,
+	series []common.ChartSeriesData,
+) []string {
+	row := make([]string, 0, categoryColumnCount(multiLevel)+len(series))
+	row = append(row, rowCategoryValues(rowIndex, categories, multiLevel, series)...)
+	for _, s := range series {
+		row = append(row, formatSeriesValueAt(s.Values, rowIndex))
+	}
+	return row
+}
+
+func rowCategoryValues(
+	rowIndex int,
+	categories []string,
+	multiLevel [][]string,
+	series []common.ChartSeriesData,
+) []string {
+	if len(multiLevel) > 0 {
+		return multiLevelCategoryValues(rowIndex, multiLevel)
+	}
+	return []string{singleLevelCategoryValue(rowIndex, categories, series)}
+}
+
+func multiLevelCategoryValues(rowIndex int, multiLevel [][]string) []string {
+	values := make([]string, 0, len(multiLevel))
+	for lvl := range multiLevel {
+		cat := ""
+		if len(multiLevel[lvl]) > rowIndex {
+			cat = multiLevel[lvl][rowIndex]
+		}
+		values = append(values, cat)
+	}
+	return values
+}
+
+func singleLevelCategoryValue(rowIndex int, categories []string, series []common.ChartSeriesData) string {
+	if len(categories) > rowIndex {
+		return categories[rowIndex]
+	}
+	if len(series) > 0 && len(series[0].Categories) > rowIndex {
+		return series[0].Categories[rowIndex]
+	}
+	return ""
+}
+
+func formatSeriesValueAt(values []float64, rowIndex int) string {
+	if len(values) <= rowIndex {
+		return ""
+	}
+	return strconv.FormatFloat(values[rowIndex], 'f', -1, 64)
+}
+
+func categoryRowCount(categories []string, multiLevel [][]string, series []common.ChartSeriesData) int {
+	if len(multiLevel) > 0 {
+		return len(multiLevel[0])
+	}
 	rowCount := len(categories)
 	if rowCount == 0 && len(series) > 0 && len(series[0].Categories) > 0 {
 		rowCount = len(series[0].Categories)
 	}
-	rows := make([][]string, rowCount)
-	for i := range rowCount {
-		row := make([]string, 0, 1+len(series))
-		cat := ""
-		if len(categories) > i {
-			cat = categories[i]
-		} else if len(series) > 0 && len(series[0].Categories) > i {
-			cat = series[0].Categories[i]
-		}
-		row = append(row, cat)
-		for _, s := range series {
-			if len(s.Values) > i {
-				row = append(row, strconv.FormatFloat(s.Values[i], 'f', -1, 64))
-			} else {
-				row = append(row, "")
-			}
-		}
-		rows[i] = row
+	return rowCount
+}
+
+func categoryColumnCount(multiLevel [][]string) int {
+	if len(multiLevel) == 0 {
+		return 1
 	}
-	return rows
+	return len(multiLevel)
 }
 
 func buildScatterSheet(series []common.ChartSeriesData, withSizes bool) ([]string, [][]string) {

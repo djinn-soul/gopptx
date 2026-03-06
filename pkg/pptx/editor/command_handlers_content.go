@@ -1,13 +1,13 @@
 package editor
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
@@ -16,26 +16,22 @@ func handleListSlides(e *PresentationEditor, _ json.RawMessage) (any, error) {
 }
 
 func handleFindAndReplace(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	find, ok := v.RequireString(p, "find")
-	if !ok {
-		return nil, v.Error()
-	}
-	replace, ok := v.RequireString(p, "replace")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	count, err := e.FindAndReplaceInShapes(find, replace)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]int{"replacements": count}, nil
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.FindReplaceRequest, bool) {
+			return editorcommand.ParseFindReplaceRequest(p, v.RequireString)
+		},
+		v.Error,
+		func(request editorcommand.FindReplaceRequest) (any, error) {
+			count, err := e.FindAndReplaceInShapes(request.Find, request.Replace)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]int{"replacements": count}, nil
+		},
+	)
 }
 
 func handleSearchShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -63,130 +59,20 @@ func handleSearchShapes(e *PresentationEditor, payload json.RawMessage) (any, er
 	return map[string]any{"results": results}, nil
 }
 
-func handleGetAuthors(e *PresentationEditor, _ json.RawMessage) (any, error) {
-	authors, err := e.GetAuthors()
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{"authors": authors}, nil
-}
-
-func handleAddAuthor(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	name, ok := v.RequireString(p, "name")
-	if !ok {
-		return nil, v.Error()
-	}
-	initials, ok := v.RequireString(p, "initials")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	author, err := e.AddAuthor(name, initials)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]int64{"author_id": author.ID}, nil
-}
-
-func handleGetComments(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-
-	comments, err := e.GetComments(slideIndex)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]any{"comments": comments}, nil
-}
-
-func handleAddComment(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-	authorID, ok := v.RequireInt64(p, "author_id")
-	if !ok {
-		return nil, v.Error()
-	}
-	text, ok := v.RequireString(p, "text")
-	if !ok {
-		return nil, v.Error()
-	}
-	x, ok := v.RequireInt64(p, "x")
-	if !ok {
-		return nil, v.Error()
-	}
-	y, ok := v.RequireInt64(p, "y")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.AddComment(slideIndex, authorID, text, x, y); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"added": true}, nil
-}
-
-func handleRemoveComment(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-	authorID, ok := v.RequireInt64(p, "author_id")
-	if !ok {
-		return nil, v.Error()
-	}
-	authorIndex, ok := v.RequireInt(p, "author_index")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	if err := e.RemoveComment(slideIndex, authorID, authorIndex); err != nil {
-		return nil, err
-	}
-	return map[string]bool{"removed": true}, nil
-}
-
 func handleSetModifyPassword(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	v := NewPayloadValidator()
-	password, ok := v.RequireString(p, "password")
-	if !ok {
-		return nil, v.Error()
-	}
-
-	e.Metadata().Protection.ModifyPassword = password
-	return map[string]bool{"updated": true}, nil
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SetModifyPasswordRequest, bool) {
+			return editorcommand.ParseSetModifyPasswordRequest(p, v.RequireString)
+		},
+		v.Error,
+		func(request editorcommand.SetModifyPasswordRequest) (any, error) {
+			e.Metadata().Protection.ModifyPassword = request.Password
+			return map[string]bool{"updated": true}, nil
+		},
+	)
 }
 
 func handleSetMarkAsFinal(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -196,7 +82,7 @@ func handleSetMarkAsFinal(e *PresentationEditor, payload json.RawMessage) (any, 
 	}
 
 	v := NewPayloadValidator()
-	final, ok := v.OptionalBool(p, "final")
+	final, ok := editorcommand.ParseSetMarkAsFinalRequest(p, v.OptionalBool)
 	if !ok && v.HasErrors() {
 		return nil, v.Error()
 	}
@@ -212,38 +98,37 @@ func handleAddCustomXML(e *PresentationEditor, payload json.RawMessage) (any, er
 	}
 
 	v := NewPayloadValidator()
-	content := v.OptionalString(p, "content")
-	rootElement := v.OptionalString(p, "root_element")
-	namespace := v.OptionalString(p, "namespace")
-
-	props := parseCustomXMLProperties(p, v)
-
-	if content == "" && rootElement == "" {
-		v.setCode(ErrCodeMissingField)
-		v.errors = append(v.errors, "either content or root_element must be provided")
-	}
+	request := editorcommand.ParseCustomXMLAddRequest(
+		p,
+		v.OptionalString,
+		func(code, message string) {
+			v.setCode(code)
+			v.errors = append(v.errors, message)
+		},
+		ErrCodeMissingField,
+		ErrCodeInvalidType,
+	)
 
 	if v.HasErrors() {
 		return nil, v.Error()
 	}
 
 	part := common.CustomXMLPart{
-		Content:     content,
-		RootElement: rootElement,
-		Namespace:   namespace,
+		Content:     request.Content,
+		RootElement: request.RootElement,
+		Namespace:   request.Namespace,
 	}
 
-	keys := make([]string, 0, len(props))
-	for k := range props {
+	keys := make([]string, 0, len(request.Properties))
+	for k := range request.Properties {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		part.Properties = append(part.Properties, common.CustomXMLKV{Key: k, Value: props[k]})
+		part.Properties = append(part.Properties, common.CustomXMLKV{Key: k, Value: request.Properties[k]})
 	}
 
 	e.metadata.CustomXML = append(e.metadata.CustomXML, part)
-
 	return map[string]int{"index": len(e.metadata.CustomXML) - 1}, nil
 }
 
@@ -264,7 +149,6 @@ func handleListCustomXML(e *PresentationEditor, _ json.RawMessage) (any, error) 
 				props[kv.Key] = kv.Value
 			}
 		}
-
 		out[i] = CustomXMLResp{
 			Content:     part.Content,
 			RootElement: part.RootElement,
@@ -286,7 +170,6 @@ func handleRemoveCustomXML(e *PresentationEditor, payload json.RawMessage) (any,
 	if !ok {
 		return nil, v.Error()
 	}
-
 	if index < 0 || index >= len(e.metadata.CustomXML) {
 		v.setCode(ErrCodeInvalidIndex)
 		v.errors = append(
@@ -295,34 +178,8 @@ func handleRemoveCustomXML(e *PresentationEditor, payload json.RawMessage) (any,
 		)
 		return nil, v.Error()
 	}
-
 	e.metadata.CustomXML = append(e.metadata.CustomXML[:index], e.metadata.CustomXML[index+1:]...)
-
 	return map[string]bool{"removed": true}, nil
-}
-
-func parseCustomXMLProperties(payload map[string]any, v *PayloadValidator) map[string]string {
-	rawProps, ok := payload["properties"]
-	if !ok || rawProps == nil {
-		return nil
-	}
-	propMap, ok := rawProps.(map[string]any)
-	if !ok {
-		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, "properties must be an object with string values")
-		return nil
-	}
-	props := make(map[string]string, len(propMap))
-	for k, val := range propMap {
-		s, ok := val.(string)
-		if !ok {
-			v.setCode(ErrCodeInvalidType)
-			v.errors = append(v.errors, fmt.Sprintf("property %q must be a string", k))
-			continue
-		}
-		props[k] = s
-	}
-	return props
 }
 
 func handleAddVba(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -332,15 +189,18 @@ func handleAddVba(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	}
 
 	v := NewPayloadValidator()
-	dataBase64, ok := v.RequireString(p, "data")
+	data, ok, err := editorcommand.DecodeRequiredBase64Field(
+		p,
+		v.RequireString,
+		"data",
+		"data must be a valid base64 string",
+	)
 	if !ok {
 		return nil, v.Error()
 	}
-
-	data, err := base64.StdEncoding.DecodeString(dataBase64)
 	if err != nil {
 		v.setCode(ErrCodeInvalidType)
-		v.errors = append(v.errors, "data must be a valid base64 string")
+		v.errors = append(v.errors, err.Error())
 		return nil, v.Error()
 	}
 
@@ -355,6 +215,5 @@ func handleAddVba(e *PresentationEditor, payload json.RawMessage) (any, error) {
 		}
 	}
 	project.SetData(data)
-
 	return map[string]bool{"added": true}, nil
 }

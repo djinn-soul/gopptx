@@ -32,6 +32,33 @@ type (
 
 	// Length represents a distance in English Metric Units (EMU).
 	Length = styling.Length
+
+	// RichShapeFill provides rich fill properties (solid, gradient, pattern, no-fill).
+	RichShapeFill = shapes.RichShapeFill
+	// RichShapeLine provides rich line properties with full styling control.
+	RichShapeLine = shapes.RichShapeLine
+	// RichShapeShadow provides rich shadow properties with detailed controls.
+	RichShapeShadow = shapes.RichShapeShadow
+
+	// PatternType represents pattern fill types.
+	PatternType = shapes.PatternType
+	// LineDashStyle represents line dash styles.
+	LineDashStyle = shapes.LineDashStyle
+	// LineCapStyle represents line cap styles.
+	LineCapStyle = shapes.LineCapStyle
+	// LineJoinStyle represents line join styles.
+	LineJoinStyle = shapes.LineJoinStyle
+	// ShadowType represents shadow types.
+	ShadowType = shapes.ShadowType
+	// ShadowAlignment represents shadow alignment options.
+	ShadowAlignment = shapes.ShadowAlignment
+
+	// GroupShape represents a group of shapes that move and transform together.
+	GroupShape = shapes.GroupShape
+	// Freeform represents a custom-geometry (freeform) shape.
+	Freeform = shapes.Freeform
+	// FreeformPoint represents a point in a freeform shape path.
+	FreeformPoint = shapes.FreeformPoint
 )
 
 const (
@@ -56,6 +83,7 @@ const (
 	ShapeTypeHeart               = shapes.ShapeTypeHeart
 	ShapeTypeFlowChartDocument   = shapes.ShapeTypeFlowChartDocument
 	ShapeTypeFlowChartData       = shapes.ShapeTypeFlowChartData
+	ShapeTypeGroup               = shapes.ShapeTypeGroup
 
 	ShapeGradientTypeLinear      = shapes.ShapeGradientTypeLinear
 	ShapeGradientTypeRadial      = shapes.ShapeGradientTypeRadial
@@ -104,6 +132,78 @@ func NewShapeGradientFill(gradientType string, stops []ShapeGradientStop) ShapeG
 
 func NewTextFrame() TextFrame {
 	return shapes.NewTextFrame()
+}
+
+// Rich formatting factory functions
+
+// NewSolidFill creates a new solid color fill.
+func NewSolidFill(color string) *RichShapeFill {
+	return shapes.NewSolidFill(color)
+}
+
+// NewNoFill creates a fill that represents "no fill" (transparent).
+func NewNoFill() *RichShapeFill {
+	return shapes.NewNoFill()
+}
+
+// NewPatternFill creates a new pattern fill with the specified pattern type.
+func NewPatternFill(pattern PatternType) *RichShapeFill {
+	return shapes.NewPatternFill(pattern)
+}
+
+// NewRichShapeLine creates a new rich line style with the specified color and width.
+func NewRichShapeLine(color string, width Length) *RichShapeLine {
+	return shapes.NewRichShapeLine(color, width)
+}
+
+// NewOuterShadow creates a new outer shadow with the specified color.
+func NewOuterShadow(color string) *RichShapeShadow {
+	return shapes.NewOuterShadow(color)
+}
+
+// NewInnerShadow creates a new inner shadow with the specified color.
+func NewInnerShadow(color string) *RichShapeShadow {
+	return shapes.NewInnerShadow(color)
+}
+
+// NewPerspectiveShadow creates a new perspective shadow with the specified color.
+func NewPerspectiveShadow(color string) *RichShapeShadow {
+	return shapes.NewPerspectiveShadow(color)
+}
+
+// NewGroupShape creates a new empty group shape at the specified position and size.
+func NewGroupShape(x, y, w, h Length) GroupShape {
+	return shapes.NewGroupShape(x, y, w, h)
+}
+
+// NewGroupShapeBounds creates a new group shape that auto-calculates bounds from its children.
+func NewGroupShapeBounds(shapesList []Shape) GroupShape {
+	return shapes.NewGroupShapeBounds(shapesList)
+}
+
+// NewFreeform creates a new freeform shape from the specified points.
+func NewFreeform(points []FreeformPoint) Freeform {
+	return shapes.NewFreeform(points)
+}
+
+// NewFreeformCoords creates a new freeform shape from coordinate values (in EMUs).
+func NewFreeformCoords(xCoords, yCoords []int64) (Freeform, error) {
+	return shapes.NewFreeformCoords(xCoords, yCoords)
+}
+
+// NewFreeformInches creates a new freeform shape from points specified in inches.
+func NewFreeformInches(points [][2]float64) (Freeform, error) {
+	return shapes.NewFreeformInches(points)
+}
+
+// NewFreeformClosed creates a new closed freeform shape.
+func NewFreeformClosed(points []FreeformPoint) Freeform {
+	return shapes.NewFreeformClosed(points)
+}
+
+// NewFreeformOpen creates a new open freeform shape (line).
+func NewFreeformOpen(points []FreeformPoint) Freeform {
+	return shapes.NewFreeformOpen(points)
 }
 
 // Fluent API Macros (Inches based)
@@ -322,92 +422,4 @@ func NewTrapezoid(x, y, w, h float64) Shape {
 
 func NewCube(x, y, w, h float64) Shape {
 	return shapes.NewCube(x, y, w, h)
-}
-
-func NewFlowChartPredefinedProcess(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartPredefinedProcess(x, y, w, h)
-}
-
-func NewFlowChartInternalStorage(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartInternalStorage(x, y, w, h)
-}
-
-func NewFlowChartManualInput(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartManualInput(x, y, w, h)
-}
-
-func NewFlowChartManualOperation(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartManualOperation(x, y, w, h)
-}
-
-func NewFlowChartConnector(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartConnector(x, y, w, h)
-}
-
-func NewFlowChartOffpageConnector(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartOffpageConnector(x, y, w, h)
-}
-
-func NewFlowChartPunchedCard(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartPunchedCard(x, y, w, h)
-}
-
-func NewFlowChartPunchedTape(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartPunchedTape(x, y, w, h)
-}
-
-func NewFlowChartSummingJunction(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartSummingJunction(x, y, w, h)
-}
-
-func NewFlowChartOr(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartOr(x, y, w, h)
-}
-
-func NewFlowChartCollate(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartCollate(x, y, w, h)
-}
-
-func NewFlowChartSort(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartSort(x, y, w, h)
-}
-
-func NewFlowChartExtract(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartExtract(x, y, w, h)
-}
-
-func NewFlowChartMerge(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartMerge(x, y, w, h)
-}
-
-func NewFlowChartOnlineStorage(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartOnlineStorage(x, y, w, h)
-}
-
-func NewFlowChartDelay(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartDelay(x, y, w, h)
-}
-
-func NewFlowChartMagneticTape(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartMagneticTape(x, y, w, h)
-}
-
-func NewFlowChartMagneticDisk(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartMagneticDisk(x, y, w, h)
-}
-
-func NewFlowChartMagneticDrum(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartMagneticDrum(x, y, w, h)
-}
-
-func NewFlowChartDisplay(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartDisplay(x, y, w, h)
-}
-
-func NewFlowChartPreparation(x, y, w, h float64) Shape {
-	return shapes.NewFlowChartPreparation(x, y, w, h)
-}
-
-func NewBadge(text string, x, y float64, color string) Shape {
-	return shapes.NewBadge(text, x, y, color)
 }

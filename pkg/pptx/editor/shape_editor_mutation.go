@@ -77,6 +77,7 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 var cNvPrIDPattern = regexp.MustCompile(`\bcNvPr\b[^>]*\bid="(\d+)"`)
 
 const cNvPrSubmatchSize = 2
+const placeholderTypeTitle = "title"
 
 func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
@@ -128,11 +129,19 @@ func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
 		return nil, false
 	}
 	u.found = true
+	if hasPictureUpdateFields(u.updates) && s.Type != shapeTypePicture {
+		u.err = fmt.Errorf("shape id %d is not a picture shape", u.shapeID)
+		return nil, false
+	}
 
 	updatedXML := u.origSlide[s.Start:s.End]
 	replaced := false
 
 	updatedXML, replaced = u.applyTransforms(updatedXML, s, replaced)
+	updatedXML, replaced, u.err = u.applyPicture(updatedXML, s, replaced)
+	if u.err != nil {
+		return nil, false
+	}
 	updatedXML, replaced, u.err = u.applyText(updatedXML, s, replaced)
 	if u.err != nil {
 		return nil, false
@@ -152,7 +161,7 @@ func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
 }
 
 func (u *shapeUpdater) matchesTarget(s *parsedShape) bool {
-	return s.ID == u.shapeID || (s.PhType == "title" && u.shapeID == 0)
+	return s.ID == u.shapeID || (s.PhType == placeholderTypeTitle && u.shapeID == 0)
 }
 
 func (u *shapeUpdater) applyTransforms(
@@ -176,6 +185,24 @@ func (u *shapeUpdater) applyTransforms(
 		s.H = *u.updates.H
 	}
 	return editorshape.UpdateShapeTransforms(xmlData, s.X, s.Y, s.W, s.H), true
+}
+
+func (u *shapeUpdater) applyPicture(
+	xmlData []byte,
+	s *parsedShape,
+	replaced bool,
+) ([]byte, bool, error) {
+	if !hasPictureUpdateFields(u.updates) {
+		return xmlData, replaced, nil
+	}
+	if s.Type != shapeTypePicture {
+		return xmlData, replaced, fmt.Errorf("shape id %d is not a picture shape", s.ID)
+	}
+	updatedXML, err := applyPictureShapeUpdates(xmlData, u.updates)
+	if err != nil {
+		return xmlData, replaced, err
+	}
+	return updatedXML, true, nil
 }
 
 func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {

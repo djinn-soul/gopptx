@@ -13,6 +13,31 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/urlfetch"
 )
 
+func writePPTX(outDir, filename string, pptx []byte) {
+	path := filepath.Join(outDir, filename)
+	if err := os.WriteFile(path, pptx, 0o600); err != nil {
+		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+}
+
+func generateAndWriteWithOptions(
+	outDir string,
+	html string,
+	url string,
+	cfg urlfetch.Config,
+	opts urlfetch.ConversionOptions,
+	filename string,
+) {
+	pptx, err := urlfetch.HTMLToPPTXWithOptions(html, url, cfg, opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
+		os.Exit(1)
+	}
+	writePPTX(outDir, filename, pptx)
+}
+
 const mlHTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -130,12 +155,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
 		os.Exit(1)
 	}
-	path := filepath.Join(outDir, "34_urlfetch_ml_intro.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	writePPTX(outDir, "34_urlfetch_ml_intro.pptx", pptx)
 
 	// Example 2: Custom config and options.
 	fmt.Println("📄 Example 2: Custom config and options")
@@ -154,12 +174,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
 		os.Exit(1)
 	}
-	path = filepath.Join(outDir, "34_urlfetch_ml_quick.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	writePPTX(outDir, "34_urlfetch_ml_quick.pptx", pptx)
 
 	// Example 3: Technical documentation with a real table slide.
 	fmt.Println("📄 Example 3: Technical documentation (with table)")
@@ -168,16 +183,74 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  ❌ error: %v\n", err)
 		os.Exit(1)
 	}
-	path = filepath.Join(outDir, "34_urlfetch_api_docs.pptx")
-	if err := os.WriteFile(path, pptx, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "  ❌ write: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("  ✅ Created %s (%d bytes)\n\n", path, len(pptx))
+	writePPTX(outDir, "34_urlfetch_api_docs.pptx", pptx)
+
+	// Example 4: Custom CSS selectors for content extraction
+	fmt.Println("📄 Example 4: Custom CSS selectors")
+	customHTML := `<!DOCTYPE html>
+<html>
+<head><title>Custom Selectors Demo</title></head>
+<body>
+  <nav>This navigation should be excluded</nav>
+  <article class="post-content">
+    <h1>Main Article Content</h1>
+    <p>This is the primary content that we want to extract using a custom CSS selector. It has enough text to pass the minimum content length check.</p>
+    <div class="advertisement">Buy something!</div>
+    <p>More valuable content here that should be included in the presentation.</p>
+  </article>
+  <footer>This footer should also be excluded</footer>
+</body>
+</html>`
+
+	cfg4 := urlfetch.DefaultConfig().
+		WithContentSelectors([]string{"article.post-content"}).
+		WithExcludeSelectors([]string{"nav", "footer", ".advertisement"})
+
+	generateAndWriteWithOptions(
+		outDir,
+		customHTML,
+		"https://example.com/blog",
+		cfg4,
+		opts,
+		"34_urlfetch_custom_selectors.pptx",
+	)
+
+	// Example 5: Image embedding (if images are available - demonstrates feature)
+	fmt.Println("📄 Example 5: Image embedding configuration")
+	imageHTML := `<!DOCTYPE html>
+<html>
+<head><title>Page with Images</title></head>
+<body>
+  <main>
+    <h1>Documentation with Images</h1>
+    <p>This example demonstrates the image download and embedding configuration. When DownloadImages is enabled, images will be fetched and embedded as actual PPTX images.</p>
+    <img src="/diagrams/architecture.png" alt="Architecture Diagram">
+    <p>More content here with sufficient length to pass the parser validation requirements.</p>
+    <img src="https://cdn.example.com/screenshot.jpg" alt="Application Screenshot">
+  </main>
+</body>
+</html>`
+
+	cfg5 := urlfetch.DefaultConfig().
+		WithDownloadImages(true).
+		WithMaxImagesPerSlide(2).
+		WithMaxImageSizeBytes(2 * 1024 * 1024) // 2MB per image
+
+	// Note: This will fallback to alt-text for images since the URLs don't exist
+	generateAndWriteWithOptions(
+		outDir,
+		imageHTML,
+		"https://docs.example.com/guide",
+		cfg5,
+		opts,
+		"34_urlfetch_image_config.pptx",
+	)
 
 	fmt.Println("=== Done ===")
 	fmt.Println("Generated files in examples/output/:")
 	fmt.Println("  - 34_urlfetch_ml_intro.pptx")
 	fmt.Println("  - 34_urlfetch_ml_quick.pptx")
 	fmt.Println("  - 34_urlfetch_api_docs.pptx")
+	fmt.Println("  - 34_urlfetch_custom_selectors.pptx")
+	fmt.Println("  - 34_urlfetch_image_config.pptx")
 }

@@ -1,19 +1,113 @@
 package editor
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
+)
+
+var embeddedImageRelPattern = regexp.MustCompile(`r:embed="([^"]+)"`)
+
+const (
+	mimePNG    = "image/png"
+	mimeJPEG   = "image/jpeg"
+	mimeGIF    = "image/gif"
+	mimeBMP    = "image/bmp"
+	mimeTIFF   = "image/tiff"
+	formatPNG  = "png"
+	formatJPEG = "jpeg"
+	formatGIF  = "gif"
+	formatBMP  = "bmp"
+	formatTIFF = "tiff"
 )
 
 type imagePathCacheEntry struct {
 	data     []byte
 	format   string
 	partPath string
+}
+
+// AddImageFromBase64 adds an image from raw base64 bytes or a data URI payload.
+func (e *PresentationEditor) AddImageFromBase64(
+	slideIndex int,
+	base64Data string,
+	format string,
+	x, y, w, h float64,
+	opts *common.ShapeUpdate,
+) (int, error) {
+	data, detectedFormat, err := editormodmedia.DecodeBase64ImagePayload(base64Data)
+	if err != nil {
+		return 0, err
+	}
+	resolvedFormat := strings.TrimSpace(format)
+	if resolvedFormat == "" {
+		resolvedFormat = detectedFormat
+	}
+	if resolvedFormat == "" {
+		return 0, errors.New("image format is required for base64 image payload")
+	}
+	return e.AddImageFromBytes(slideIndex, data, resolvedFormat, x, y, w, h, opts)
+}
+
+// AddImageFromURL downloads an image and embeds it into the specified slide.
+func (e *PresentationEditor) AddImageFromURL(
+	slideIndex int,
+	sourceURL string,
+	x, y, w, h float64,
+	opts *common.ShapeUpdate,
+) (int, error) {
+	data, format, err := editormodmedia.FetchImageFromURL(sourceURL)
+	if err != nil {
+		return 0, err
+	}
+	return e.AddImageFromBytes(slideIndex, data, format, x, y, w, h, opts)
+}
+
+func buildImageMetadata(data []byte, cfg image.Config, format string) *common.ImageMetadata {
+	return &common.ImageMetadata{
+		Width:       cfg.Width,
+		Height:      cfg.Height,
+		Format:      strings.ToLower(strings.TrimSpace(format)),
+		ContentType: imageContentType(data, format),
+		Hash:        imageSHA256Hex(data),
+	}
+}
+
+func imageSHA256Hex(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func imageContentType(data []byte, format string) string {
+	contentType := strings.TrimSpace(http.DetectContentType(data))
+	if contentType != "" && contentType != "application/octet-stream" {
+		return contentType
+	}
+
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "jpg", formatJPEG:
+		return mimeJPEG
+	case formatPNG:
+		return mimePNG
+	case formatGIF:
+		return mimeGIF
+	case formatBMP:
+		return mimeBMP
+	case "tif", formatTIFF:
+		return mimeTIFF
+	default:
+		return contentType
+	}
 }
 
 func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string) (string, error) {
@@ -36,11 +130,7 @@ func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string)
 	}
 
 	e.imagePathMu.Lock()
-	e.imagePathCache[cleanPath] = imagePathCacheEntry{
-		data:     nil,
-		format:   format,
-		partPath: partPath,
-	}
+	e.imagePathCache[cleanPath] = imagePathCacheEntry{data: nil, format: format, partPath: partPath}
 	e.imagePathMu.Unlock()
 	return partPath, nil
 }
@@ -106,11 +196,7 @@ func (e *PresentationEditor) ListSlideImages(slideIndex int) ([]common.SlideImag
 		if rel.Type != common.RelTypeImage {
 			continue
 		}
-		out = append(out, common.SlideImageRef{
-			Index:  len(out),
-			RelID:  rel.ID,
-			Target: rel.Target,
-		})
+		out = append(out, common.SlideImageRef{Index: len(out), RelID: rel.ID, Target: rel.Target})
 	}
 	return out, nil
 }

@@ -13,29 +13,35 @@ const defaultBubbleScale = 100
 
 // BubbleChart is a bubble chart using x/y coordinates and bubble sizes.
 type BubbleChart struct {
-	Title                 string
-	TitleOverlay          bool
-	XValues               []float64
-	YValues               []float64
-	BubbleSizes           []float64
-	X                     int64
-	Y                     int64
-	CX                    int64
-	CY                    int64
-	LineColor             string
-	SeriesName            string
-	ShowLegend            bool
-	LegendPosition        string
-	LegendOverlay         bool
-	ShowDataLabels        bool
-	ShowMajorGridlines    bool
-	CategoryAxisTitle     string
-	ValueAxisTitle        string
-	ValueFormat           string
-	ValueAxisCrossBetween string
-	MinValue              *float64
-	MaxValue              *float64
-	BubbleScale           int
+	Title                      string
+	TitleOverlay               bool
+	XValues                    []float64
+	YValues                    []float64
+	BubbleSizes                []float64
+	X                          int64
+	Y                          int64
+	CX                         int64
+	CY                         int64
+	LineColor                  string
+	SeriesName                 string
+	ShowLegend                 bool
+	LegendPosition             string
+	LegendOverlay              bool
+	ShowDataLabels             bool
+	DataLabels                 DataLabelSettings
+	ShowMajorGridlines         bool
+	ShowCategoryMajorGridlines bool
+	CategoryAxisTitle          string
+	ValueAxisTitle             string
+	CategoryTickLabelPosition  string
+	ValueTickLabelPosition     string
+	CategoryAxisCrosses        string
+	ValueAxisCrosses           string
+	ValueFormat                string
+	ValueAxisCrossBetween      string
+	MinValue                   *float64
+	MaxValue                   *float64
+	BubbleScale                int
 
 	// Accessibility
 	AltText      string
@@ -50,23 +56,28 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 	bs := make([]float64, len(bubbleSizes))
 	copy(bs, bubbleSizes)
 	return BubbleChart{
-		Title:                 "Chart",
-		XValues:               xs,
-		YValues:               ys,
-		BubbleSizes:           bs,
-		X:                     defaultChartX,
-		Y:                     defaultChartY,
-		CX:                    defaultChartCX,
-		CY:                    defaultChartCY,
-		LineColor:             "4F81BD",
-		SeriesName:            "Series 1",
-		ShowLegend:            false,
-		LegendPosition:        LegendPositionRight,
-		ShowDataLabels:        false,
-		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
-		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
-		BubbleScale:           defaultBubbleScale,
+		Title:                      "Chart",
+		XValues:                    xs,
+		YValues:                    ys,
+		BubbleSizes:                bs,
+		X:                          defaultChartX,
+		Y:                          defaultChartY,
+		CX:                         defaultChartCX,
+		CY:                         defaultChartCY,
+		LineColor:                  "4F81BD",
+		SeriesName:                 "Series 1",
+		ShowLegend:                 false,
+		LegendPosition:             LegendPositionRight,
+		ShowDataLabels:             false,
+		ShowMajorGridlines:         true,
+		ShowCategoryMajorGridlines: false,
+		CategoryTickLabelPosition:  AxisTickLabelPositionNextTo,
+		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
+		CategoryAxisCrosses:        AxisCrossesAutoZero,
+		ValueAxisCrosses:           AxisCrossesAutoZero,
+		ValueFormat:                "General",
+		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
+		BubbleScale:                defaultBubbleScale,
 	}
 }
 
@@ -106,34 +117,41 @@ func (c BubbleChart) WithLineColor(color string) BubbleChart {
 
 // ToChartSpec converts BubbleChart to internal XML spec.
 func (c BubbleChart) ToChartSpec() *pptxxml.ChartSpec {
-	return &pptxxml.ChartSpec{
-		Kind:                  pptxxml.ChartKindBubble,
-		Title:                 c.Title,
-		TitleOverlay:          c.TitleOverlay,
-		XValues:               CopyFloat64Slice(c.XValues),
-		Values:                CopyFloat64Slice(c.YValues),
-		BubbleSizes:           CopyFloat64Slice(c.BubbleSizes),
-		X:                     c.X,
-		Y:                     c.Y,
-		CX:                    c.CX,
-		CY:                    c.CY,
-		Color:                 NormalizeHexColor(c.LineColor),
-		SeriesName:            c.SeriesName,
-		ShowLegend:            c.ShowLegend,
-		LegendPosition:        c.LegendPosition,
-		LegendOverlay:         c.LegendOverlay,
-		ShowDataLabels:        c.ShowDataLabels,
-		ShowMajorGridlines:    c.ShowMajorGridlines,
-		CategoryAxisTitle:     c.CategoryAxisTitle,
-		ValueAxisTitle:        c.ValueAxisTitle,
-		ValueFormat:           c.ValueFormat,
-		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
-		MinValue:              CopyFloat64Pointer(c.MinValue),
-		MaxValue:              CopyFloat64Pointer(c.MaxValue),
-		BubbleScale:           c.BubbleScale,
-		AltText:               c.AltText,
-		IsDecorative:          c.IsDecorative,
+	spec := &pptxxml.ChartSpec{
+		Kind:                       pptxxml.ChartKindBubble,
+		Title:                      c.Title,
+		TitleOverlay:               c.TitleOverlay,
+		XValues:                    CopyFloat64Slice(c.XValues),
+		Values:                     CopyFloat64Slice(c.YValues),
+		BubbleSizes:                CopyFloat64Slice(c.BubbleSizes),
+		X:                          c.X,
+		Y:                          c.Y,
+		CX:                         c.CX,
+		CY:                         c.CY,
+		Color:                      NormalizeHexColor(c.LineColor),
+		SeriesName:                 c.SeriesName,
+		ShowLegend:                 c.ShowLegend,
+		LegendPosition:             c.LegendPosition,
+		LegendOverlay:              c.LegendOverlay,
+		ShowDataLabels:             c.ShowDataLabels,
+		ShowMajorGridlines:         c.ShowMajorGridlines,
+		ShowCategoryMajorGridlines: c.ShowCategoryMajorGridlines,
+		CategoryAxisTitle:          c.CategoryAxisTitle,
+		ValueAxisTitle:             c.ValueAxisTitle,
+		CategoryTickLabelPosition:  c.CategoryTickLabelPosition,
+		ValueTickLabelPosition:     c.ValueTickLabelPosition,
+		CategoryAxisCrosses:        c.CategoryAxisCrosses,
+		ValueAxisCrosses:           c.ValueAxisCrosses,
+		ValueFormat:                c.ValueFormat,
+		ValueAxisCrossBetween:      c.ValueAxisCrossBetween,
+		MinValue:                   CopyFloat64Pointer(c.MinValue),
+		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
+		BubbleScale:                c.BubbleScale,
+		AltText:                    c.AltText,
+		IsDecorative:               c.IsDecorative,
 	}
+	applyDataLabelSettings(spec, c.DataLabels)
+	return spec
 }
 
 // Validate checks the bubble chart for consistency.
@@ -176,8 +194,32 @@ func (c BubbleChart) validateMetadata(slideIndex int) error {
 	if !IsLegendPosition(c.LegendPosition) {
 		return fmt.Errorf("slide %d bubble chart legend position must be one of r,l,t,b", slideIndex)
 	}
+	if !IsDataLabelPosition(c.DataLabels.Position) {
+		return fmt.Errorf(
+			"slide %d bubble chart data-label position must be ctr,inEnd,inBase,outEnd,bestFit,l,r,t,or b",
+			slideIndex,
+		)
+	}
 	if strings.TrimSpace(c.ValueFormat) == "" {
 		return fmt.Errorf("slide %d bubble chart value format cannot be empty", slideIndex)
+	}
+	if !IsAxisTickLabelPosition(c.CategoryTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d bubble chart x-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+		)
+	}
+	if !IsAxisTickLabelPosition(c.ValueTickLabelPosition) {
+		return fmt.Errorf(
+			"slide %d bubble chart y-axis tick label position must be nextTo, low, high, or none",
+			slideIndex,
+		)
+	}
+	if !IsAxisCrosses(c.CategoryAxisCrosses) {
+		return fmt.Errorf("slide %d bubble chart x-axis crosses must be autoZero, min, or max", slideIndex)
+	}
+	if !IsAxisCrosses(c.ValueAxisCrosses) {
+		return fmt.Errorf("slide %d bubble chart y-axis crosses must be autoZero, min, or max", slideIndex)
 	}
 	if !IsValueAxisCrossBetween(c.ValueAxisCrossBetween) {
 		return fmt.Errorf("slide %d bubble chart value-axis crossBetween must be between or midCat", slideIndex)
