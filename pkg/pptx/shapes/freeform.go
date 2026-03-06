@@ -2,10 +2,11 @@ package shapes
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
+
+const minFreeformPoints = 2
 
 // FreeformPoint represents a point in a freeform shape path.
 type FreeformPoint struct {
@@ -45,12 +46,12 @@ func NewFreeformCoords(xCoords, yCoords []int64) (Freeform, error) {
 	if len(xCoords) != len(yCoords) {
 		return Freeform{}, errors.New("x and y coordinate slices must have the same length")
 	}
-	if len(xCoords) < 2 {
+	if len(xCoords) < minFreeformPoints {
 		return Freeform{}, errors.New("freeform requires at least 2 points")
 	}
 
 	points := make([]FreeformPoint, len(xCoords))
-	for i := 0; i < len(xCoords); i++ {
+	for i := range xCoords {
 		points[i] = FreeformPoint{
 			X: styling.Emu(xCoords[i]),
 			Y: styling.Emu(yCoords[i]),
@@ -62,7 +63,7 @@ func NewFreeformCoords(xCoords, yCoords []int64) (Freeform, error) {
 
 // NewFreeformInches creates a new freeform shape from points specified in inches.
 func NewFreeformInches(points [][2]float64) (Freeform, error) {
-	if len(points) < 2 {
+	if len(points) < minFreeformPoints {
 		return Freeform{}, errors.New("freeform requires at least 2 points")
 	}
 
@@ -97,8 +98,8 @@ func NewFreeformOpen(points []FreeformPoint) Freeform {
 }
 
 // WithClosePath sets whether the freeform path should be closed.
-func (f Freeform) WithClosePath(close bool) Freeform {
-	f.ClosePath = close
+func (f Freeform) WithClosePath(closed bool) Freeform {
+	f.ClosePath = closed
 	return f
 }
 
@@ -190,65 +191,6 @@ func (f Freeform) WithTextFrame(frame TextFrame) Freeform {
 func (f Freeform) WithEffects(effects ShapeEffects) Freeform {
 	f.Effects = &effects
 	return f
-}
-
-// Validate checks the freeform for validity.
-func (f Freeform) Validate() error {
-	if len(f.Points) < 2 {
-		return errors.New("freeform requires at least 2 points")
-	}
-
-	// Validate fills
-	if f.RichFill != nil && (f.Fill != nil || f.GradientFill != nil) {
-		return fmt.Errorf("cannot set both rich fill and legacy fill")
-	}
-	if f.Fill != nil && f.GradientFill != nil {
-		return fmt.Errorf("cannot set both solid and gradient fill")
-	}
-
-	// Validate rich fill
-	if f.RichFill != nil {
-		if err := f.RichFill.Validate(); err != nil {
-			return fmt.Errorf("invalid rich fill: %w", err)
-		}
-	}
-
-	// Validate legacy fill
-	if f.Fill != nil {
-		if err := f.Fill.Validate(); err != nil {
-			return fmt.Errorf("invalid fill: %w", err)
-		}
-	}
-
-	// Validate gradient fill
-	if f.GradientFill != nil {
-		if err := f.GradientFill.Validate(); err != nil {
-			return fmt.Errorf("invalid gradient fill: %w", err)
-		}
-	}
-
-	// Validate rich line
-	if f.RichLine != nil {
-		if err := f.RichLine.Validate(); err != nil {
-			return fmt.Errorf("invalid rich line: %w", err)
-		}
-	}
-
-	// Validate legacy line
-	if f.Line != nil {
-		if err := f.Line.Validate(); err != nil {
-			return fmt.Errorf("invalid line: %w", err)
-		}
-	}
-
-	// Validate rich shadow
-	if f.RichShadow != nil {
-		if err := f.RichShadow.Validate(); err != nil {
-			return fmt.Errorf("invalid rich shadow: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // ToShape converts the freeform to a Shape for slide addition.

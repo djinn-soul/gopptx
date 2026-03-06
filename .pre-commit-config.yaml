@@ -72,6 +72,13 @@ repos:
         pass_filenames: false
         stages: [commit, push]
 
+      - id: architectural-guardrails
+        name: architectural guardrails (LOC + import cycles)
+        entry: uv run python scripts/ci/architectural_guardrails.py
+        language: system
+        pass_filenames: false
+        stages: [commit, push]
+
       - id: pip-audit
         name: pip-audit dependency scan
         entry: uv run pip-audit -r requirements.txt

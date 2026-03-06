@@ -35,9 +35,9 @@ func buildPlaceholderChartFrame(
 	w, _ := v.OptionalInt64(chartMap, "w")
 	h, _ := v.OptionalInt64(chartMap, "h")
 
-	chartDef, err := placeholderChartDefinition(v, chartMap, chartType, title, x, y, w, h)
+	chartDef, err := editormodchart.PlaceholderChartDefinition(chartMap, chartType, title, x, y, w, h)
 	if err != nil {
-		return nil, false, err
+		return nil, false, NewBridgeError(ErrCodeInvalidPayload, err.Error())
 	}
 	frame, err := e.createPlaceholderChartPart(slideIndex, chartDef)
 	if err != nil {

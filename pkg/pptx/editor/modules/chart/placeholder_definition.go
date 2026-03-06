@@ -1,6 +1,7 @@
-package editor
+package chart
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,8 +9,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-func placeholderChartDefinition(
-	v *PayloadValidator,
+func PlaceholderChartDefinition(
 	chartMap map[string]any,
 	chartType string,
 	title string,
@@ -18,11 +18,11 @@ func placeholderChartDefinition(
 	normalizedType := strings.ToLower(chartType)
 	switch normalizedType {
 	case "scatter":
-		return buildScatterChartDefinition(v, chartMap, title, x, y, w, h)
+		return buildScatterChartDefinition(chartMap, title, x, y, w, h)
 	case "bubble":
-		return buildBubbleChartDefinition(v, chartMap, title, x, y, w, h)
+		return buildBubbleChartDefinition(chartMap, title, x, y, w, h)
 	}
-	categories, values, err := requireCategorySeries(v, chartMap)
+	categories, values, err := requireCategorySeries(chartMap)
 	if err != nil {
 		return nil, err
 	}
@@ -30,12 +30,11 @@ func placeholderChartDefinition(
 }
 
 func buildScatterChartDefinition(
-	v *PayloadValidator,
 	chartMap map[string]any,
 	title string,
 	x, y, w, h int64,
 ) (charts.ChartDefinition, error) {
-	xValues, yValues, err := requireXYSeries(v, chartMap)
+	xValues, yValues, err := requireXYSeries(chartMap)
 	if err != nil {
 		return nil, err
 	}
@@ -44,12 +43,11 @@ func buildScatterChartDefinition(
 }
 
 func buildBubbleChartDefinition(
-	v *PayloadValidator,
 	chartMap map[string]any,
 	title string,
 	x, y, w, h int64,
 ) (charts.ChartDefinition, error) {
-	xValues, yValues, sizes, err := requireBubbleSeries(v, chartMap)
+	xValues, yValues, sizes, err := requireBubbleSeries(chartMap)
 	if err != nil {
 		return nil, err
 	}
@@ -97,47 +95,76 @@ func buildCategoryChartDefinition(
 	case "radar_filled", "radar-filled":
 		return applyStyledBounds(charts.NewRadarFilledChart(categories, values).WithTitle(title), x, y, w, h), nil
 	default:
-		return nil, NewBridgeError(ErrCodeInvalidValue, fmt.Sprintf("unsupported chart type: %q", chartType))
+		return nil, fmt.Errorf("unsupported chart type: %q", chartType)
 	}
 }
 
-func requireCategorySeries(v *PayloadValidator, chartMap map[string]any) ([]string, []float64, error) {
-	categories, ok := v.RequireStringSlice(chartMap, "categories")
+func requireCategorySeries(chartMap map[string]any) ([]string, []float64, error) {
+	categories, ok := parseStringSlice(chartMap["categories"])
 	if !ok {
-		return nil, nil, v.Error()
+		return nil, nil, errors.New("field categories must be an array of strings")
 	}
-	values, ok := v.RequireFloat64Slice(chartMap, "values")
+	values, ok := parseFloat64Slice(chartMap["values"])
 	if !ok {
-		return nil, nil, v.Error()
+		return nil, nil, errors.New("field values must be an array of numbers")
 	}
 	return categories, values, nil
 }
 
-func requireXYSeries(v *PayloadValidator, chartMap map[string]any) ([]float64, []float64, error) {
-	xValues, ok := v.RequireFloat64Slice(chartMap, "x_values")
+func requireXYSeries(chartMap map[string]any) ([]float64, []float64, error) {
+	xValues, ok := parseFloat64Slice(chartMap["x_values"])
 	if !ok {
-		return nil, nil, v.Error()
+		return nil, nil, errors.New("field x_values must be an array of numbers")
 	}
-	yValues, ok := v.RequireFloat64Slice(chartMap, "y_values")
+	yValues, ok := parseFloat64Slice(chartMap["y_values"])
 	if !ok {
-		return nil, nil, v.Error()
+		return nil, nil, errors.New("field y_values must be an array of numbers")
 	}
 	return xValues, yValues, nil
 }
 
-func requireBubbleSeries(
-	v *PayloadValidator,
-	chartMap map[string]any,
-) ([]float64, []float64, []float64, error) {
-	xValues, yValues, err := requireXYSeries(v, chartMap)
+func requireBubbleSeries(chartMap map[string]any) ([]float64, []float64, []float64, error) {
+	xValues, yValues, err := requireXYSeries(chartMap)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	sizes, ok := v.RequireFloat64Slice(chartMap, "sizes")
+	sizes, ok := parseFloat64Slice(chartMap["sizes"])
 	if !ok {
-		return nil, nil, nil, v.Error()
+		return nil, nil, nil, errors.New("field sizes must be an array of numbers")
 	}
 	return xValues, yValues, sizes, nil
+}
+
+func parseStringSlice(raw any) ([]string, bool) {
+	values, ok := raw.([]any)
+	if !ok {
+		return nil, false
+	}
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		s, ok := v.(string)
+		if !ok {
+			return nil, false
+		}
+		out = append(out, s)
+	}
+	return out, true
+}
+
+func parseFloat64Slice(raw any) ([]float64, bool) {
+	values, ok := raw.([]any)
+	if !ok {
+		return nil, false
+	}
+	out := make([]float64, 0, len(values))
+	for _, v := range values {
+		num, ok := v.(float64)
+		if !ok {
+			return nil, false
+		}
+		out = append(out, num)
+	}
+	return out, true
 }
 
 func applyStyledBounds[T interface {

@@ -1,41 +1,41 @@
 package editor
 
 import (
-	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"image"
-	"io"
 	"net/http"
-	"net/url"
-	"path"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
 )
-
-const imageURLFetchTimeout = 30 * time.Second
 
 var embeddedImageRelPattern = regexp.MustCompile(`r:embed="([^"]+)"`)
 
 const (
-	dataURIParts = 2
-	mimePNG      = "image/png"
-	mimeJPEG     = "image/jpeg"
-	mimeGIF      = "image/gif"
-	mimeBMP      = "image/bmp"
-	mimeTIFF     = "image/tiff"
-	formatPNG    = "png"
-	formatJPEG   = "jpeg"
-	formatGIF    = "gif"
-	formatBMP    = "bmp"
-	formatTIFF   = "tiff"
+	mimePNG    = "image/png"
+	mimeJPEG   = "image/jpeg"
+	mimeGIF    = "image/gif"
+	mimeBMP    = "image/bmp"
+	mimeTIFF   = "image/tiff"
+	formatPNG  = "png"
+	formatJPEG = "jpeg"
+	formatGIF  = "gif"
+	formatBMP  = "bmp"
+	formatTIFF = "tiff"
 )
+
+type imagePathCacheEntry struct {
+	data     []byte
+	format   string
+	partPath string
+}
 
 // AddImageFromBase64 adds an image from raw base64 bytes or a data URI payload.
 func (e *PresentationEditor) AddImageFromBase64(
@@ -45,7 +45,7 @@ func (e *PresentationEditor) AddImageFromBase64(
 	x, y, w, h float64,
 	opts *common.ShapeUpdate,
 ) (int, error) {
-	data, detectedFormat, err := decodeBase64ImagePayload(base64Data)
+	data, detectedFormat, err := editormodmedia.DecodeBase64ImagePayload(base64Data)
 	if err != nil {
 		return 0, err
 	}
@@ -66,123 +66,11 @@ func (e *PresentationEditor) AddImageFromURL(
 	x, y, w, h float64,
 	opts *common.ShapeUpdate,
 ) (int, error) {
-	data, format, err := fetchImageFromURL(sourceURL)
+	data, format, err := editormodmedia.FetchImageFromURL(sourceURL)
 	if err != nil {
 		return 0, err
 	}
 	return e.AddImageFromBytes(slideIndex, data, format, x, y, w, h, opts)
-}
-
-func decodeBase64ImagePayload(raw string) ([]byte, string, error) {
-	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
-		return nil, "", errors.New("image base64 data is required")
-	}
-
-	payload := trimmed
-	detectedFormat := ""
-	if strings.HasPrefix(strings.ToLower(trimmed), "data:") {
-		mimeType, dataPart, err := splitDataURI(trimmed)
-		if err != nil {
-			return nil, "", err
-		}
-		detectedFormat = formatFromMimeType(mimeType)
-		payload = dataPart
-	}
-
-	data, err := base64.StdEncoding.DecodeString(payload)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid image base64 data: %w", err)
-	}
-	return data, detectedFormat, nil
-}
-
-func splitDataURI(raw string) (string, string, error) {
-	parts := strings.SplitN(raw, ",", dataURIParts)
-	if len(parts) != dataURIParts {
-		return "", "", errors.New("invalid data URI image payload")
-	}
-	meta := parts[0]
-	if !strings.Contains(strings.ToLower(meta), ";base64") {
-		return "", "", errors.New("data URI image payload must be base64 encoded")
-	}
-	mimeType := strings.TrimPrefix(meta, "data:")
-	if idx := strings.Index(mimeType, ";"); idx >= 0 {
-		mimeType = mimeType[:idx]
-	}
-	return strings.TrimSpace(mimeType), parts[1], nil
-}
-
-func fetchImageFromURL(sourceURL string) ([]byte, string, error) {
-	parsed, err := url.ParseRequestURI(strings.TrimSpace(sourceURL))
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid image URL: %w", err)
-	}
-
-	client := &http.Client{Timeout: imageURLFetchTimeout}
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, parsed.String(), nil)
-	if err != nil {
-		return nil, "", fmt.Errorf("fetch image URL: build request: %w", err)
-	}
-	resp, err := client.Do(req) // #nosec G107: explicit URL validation above.
-	if err != nil {
-		return nil, "", fmt.Errorf("fetch image URL: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("fetch image URL: unexpected status %s", resp.Status)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, "", fmt.Errorf("read image URL body: %w", err)
-	}
-	if len(data) == 0 {
-		return nil, "", errors.New("fetch image URL: empty response body")
-	}
-
-	format := formatFromMimeType(resp.Header.Get("Content-Type"))
-	if format == "" {
-		format = formatFromPath(parsed.Path)
-	}
-	if format == "" {
-		return nil, "", errors.New("fetch image URL: unable to infer image format")
-	}
-	return data, format, nil
-}
-
-func formatFromMimeType(contentType string) string {
-	mimeType := strings.TrimSpace(strings.ToLower(contentType))
-	if idx := strings.Index(mimeType, ";"); idx >= 0 {
-		mimeType = strings.TrimSpace(mimeType[:idx])
-	}
-	switch mimeType {
-	case mimePNG:
-		return formatPNG
-	case mimeJPEG:
-		return formatJPEG
-	case mimeGIF:
-		return formatGIF
-	case mimeBMP:
-		return formatBMP
-	case mimeTIFF:
-		return formatTIFF
-	default:
-		return ""
-	}
-}
-
-func formatFromPath(pathValue string) string {
-	ext := strings.TrimPrefix(strings.ToLower(path.Ext(pathValue)), ".")
-	switch ext {
-	case formatPNG, "jpg", formatJPEG, formatGIF, formatBMP:
-		return ext
-	case "tif", formatTIFF:
-		return formatTIFF
-	default:
-		return ""
-	}
 }
 
 func buildImageMetadata(data []byte, cfg image.Config, format string) *common.ImageMetadata {
@@ -220,4 +108,159 @@ func imageContentType(data []byte, format string) string {
 	default:
 		return contentType
 	}
+}
+
+func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string) (string, error) {
+	cleanPath := filepath.Clean(imagePath)
+	e.imagePathMu.RLock()
+	entry, ok := e.imagePathCache[cleanPath]
+	e.imagePathMu.RUnlock()
+	if ok && entry.partPath != "" {
+		return entry.partPath, nil
+	}
+
+	data, format, err := e.loadImageFromPath(cleanPath, formatHint)
+	if err != nil {
+		return "", err
+	}
+
+	partPath, err := e.RegisterImage(data, format)
+	if err != nil {
+		return "", err
+	}
+
+	e.imagePathMu.Lock()
+	e.imagePathCache[cleanPath] = imagePathCacheEntry{data: nil, format: format, partPath: partPath}
+	e.imagePathMu.Unlock()
+	return partPath, nil
+}
+
+func (e *PresentationEditor) loadImageFromPath(cleanPath, formatHint string) ([]byte, string, error) {
+	e.imagePathMu.RLock()
+	entry, ok := e.imagePathCache[cleanPath]
+	e.imagePathMu.RUnlock()
+	if ok && len(entry.data) > 0 {
+		format := normalizeImageFormatHint(formatHint)
+		if format == "" {
+			format = entry.format
+		}
+		return entry.data, format, nil
+	}
+
+	data, err := os.ReadFile(cleanPath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	format := normalizeImageFormatHint(formatHint)
+	if format == "" {
+		format = normalizeImageFormatHint(filepath.Ext(cleanPath))
+	}
+	if format == "" {
+		return nil, "", fmt.Errorf("image path %q has no detectable format", cleanPath)
+	}
+
+	e.imagePathMu.Lock()
+	entry = e.imagePathCache[cleanPath]
+	if len(entry.data) == 0 {
+		entry.data = data
+	}
+	if entry.format == "" {
+		entry.format = format
+	}
+	e.imagePathCache[cleanPath] = entry
+	e.imagePathMu.Unlock()
+	return entry.data, entry.format, nil
+}
+
+func normalizeImageFormatHint(format string) string {
+	trimmed := strings.TrimSpace(strings.ToLower(format))
+	return strings.TrimPrefix(trimmed, ".")
+}
+
+// ListSlideImages returns image relationships for a slide in relationship order.
+func (e *PresentationEditor) ListSlideImages(slideIndex int) ([]common.SlideImageRef, error) {
+	if e == nil {
+		return nil, errors.New("editor cannot be nil")
+	}
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return nil, fmt.Errorf("slide index %d out of range [0,%d)", slideIndex, len(e.slides))
+	}
+	rels, err := e.slideRelationships(e.slides[slideIndex].Part)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]common.SlideImageRef, 0)
+	for _, rel := range rels {
+		if rel.Type != common.RelTypeImage {
+			continue
+		}
+		out = append(out, common.SlideImageRef{Index: len(out), RelID: rel.ID, Target: rel.Target})
+	}
+	return out, nil
+}
+
+// SwapImageByIndex replaces one slide image relationship target by image index.
+func (e *PresentationEditor) SwapImageByIndex(slideIndex, imageIndex int, data []byte, format string) error {
+	images, err := e.ListSlideImages(slideIndex)
+	if err != nil {
+		return err
+	}
+	if imageIndex < 0 || imageIndex >= len(images) {
+		return fmt.Errorf("image index %d out of range (found %d images)", imageIndex, len(images))
+	}
+	return e.swapImageByRelID(slideIndex, images[imageIndex].RelID, data, format)
+}
+
+// SwapImageByRelID replaces one slide image relationship target by relationship ID.
+func (e *PresentationEditor) SwapImageByRelID(slideIndex int, relID string, data []byte, format string) error {
+	if strings.TrimSpace(relID) == "" {
+		return errors.New("relationship id cannot be empty")
+	}
+	return e.swapImageByRelID(slideIndex, relID, data, format)
+}
+
+func (e *PresentationEditor) swapImageByRelID(slideIndex int, relID string, data []byte, format string) error {
+	if e == nil {
+		return errors.New("editor cannot be nil")
+	}
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return fmt.Errorf("slide index %d out of range [0,%d)", slideIndex, len(e.slides))
+	}
+	slidePart := e.slides[slideIndex].Part
+	relsPath := common.SlideRelsPartName(slidePart)
+	relsData, ok := e.parts.Get(relsPath)
+	if !ok {
+		return fmt.Errorf("missing slide relationships part %q", relsPath)
+	}
+	rels, err := parseRelationshipsXML(relsData)
+	if err != nil {
+		return fmt.Errorf("parse %s: %w", relsPath, err)
+	}
+
+	updated := false
+	for i := range rels {
+		if rels[i].ID == relID && rels[i].Type == common.RelTypeImage {
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		return fmt.Errorf("image relationship %q not found on slide %d", relID, slideIndex)
+	}
+	newPart, err := e.RegisterImage(data, format)
+	if err != nil {
+		return err
+	}
+	for i := range rels {
+		if rels[i].ID == relID && rels[i].Type == common.RelTypeImage {
+			rels[i].Target = common.MakeRelativePath(slidePart, newPart)
+			break
+		}
+	}
+
+	rendered := renderRelationshipsXML(rels)
+	e.parts.Set(relsPath, []byte(rendered))
+	return nil
 }

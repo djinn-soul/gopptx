@@ -233,8 +233,8 @@ func TestFreeformValidateTooFewPoints(t *testing.T) {
 	}
 }
 
-// TestFreeformValidateConflictRichAndLegacyFill tests that fluent methods clear the other type
-// This test verifies that using WithRichFill after WithFill clears the legacy fill
+// TestFreeformValidateConflictRichAndLegacyFill tests that fluent methods clear the other type.
+// This test verifies that using WithRichFill after WithFill clears the legacy fill.
 func TestFreeformValidateRichFillClearsLegacy(t *testing.T) {
 	f := NewFreeform([]FreeformPoint{{X: 0, Y: 0}, {X: 100, Y: 100}}).
 		WithFill(NewShapeFill("FF0000")).
@@ -254,7 +254,7 @@ func TestFreeformValidateRichFillClearsLegacy(t *testing.T) {
 	}
 }
 
-// TestFreeformValidateConflictSolidAndGradientFill tests that fluent methods clear the other type
+// TestFreeformValidateConflictSolidAndGradientFill tests that fluent methods clear the other type.
 func TestFreeformValidateGradientFillClearsLegacy(t *testing.T) {
 	f := NewFreeform([]FreeformPoint{{X: 0, Y: 0}, {X: 100, Y: 100}}).
 		WithFill(NewShapeFill("FF0000")).
@@ -277,7 +277,7 @@ func TestFreeformValidateGradientFillClearsLegacy(t *testing.T) {
 	}
 }
 
-// TestFreeformValidateRichLineClearsLegacy tests that fluent methods clear the other type
+// TestFreeformValidateRichLineClearsLegacy tests that fluent methods clear the other type.
 func TestFreeformValidateRichLineClearsLegacy(t *testing.T) {
 	f := NewFreeform([]FreeformPoint{{X: 0, Y: 0}, {X: 100, Y: 100}}).
 		WithLine(NewShapeLine("FF0000", styling.Points(1))).
@@ -359,7 +359,7 @@ func TestFreeformToShapeEmpty(t *testing.T) {
 	}
 }
 
-// Test that validation passes when there are no conflicts
+// Test that validation passes when there are no conflicts.
 func TestFreeformValidateNoConflict(t *testing.T) {
 	f := NewFreeform([]FreeformPoint{{X: 0, Y: 0}, {X: 100, Y: 100}}).
 		WithFill(NewShapeFill("FF0000")).
@@ -371,7 +371,7 @@ func TestFreeformValidateNoConflict(t *testing.T) {
 	}
 }
 
-// Test that validation passes with valid rich fill
+// Test that validation passes with valid rich fill.
 func TestFreeformValidateValidRichFill(t *testing.T) {
 	f := NewFreeform([]FreeformPoint{{X: 0, Y: 0}, {X: 100, Y: 100}}).
 		WithRichFill(NewSolidFill("FF0000"))
@@ -382,7 +382,7 @@ func TestFreeformValidateValidRichFill(t *testing.T) {
 	}
 }
 
-// Test that validation correctly identifies specific error types
+// Test that validation correctly identifies specific error types.
 func TestFreeformValidateSpecificErrors(t *testing.T) {
 	tests := []struct {
 		name        string

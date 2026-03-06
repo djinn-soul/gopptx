@@ -33,8 +33,20 @@ func TestNewGroupShape(t *testing.T) {
 
 func TestNewGroupShapeBounds(t *testing.T) {
 	shapes := []Shape{
-		NewShape(ShapeTypeRectangle, styling.Emu(0), styling.Emu(0), styling.Emu(100000), styling.Emu(100000)),
-		NewShape(ShapeTypeRectangle, styling.Emu(200000), styling.Emu(200000), styling.Emu(100000), styling.Emu(100000)),
+		NewShape(
+			ShapeTypeRectangle,
+			styling.Emu(0),
+			styling.Emu(0),
+			styling.Emu(100000),
+			styling.Emu(100000),
+		),
+		NewShape(
+			ShapeTypeRectangle,
+			styling.Emu(200000),
+			styling.Emu(200000),
+			styling.Emu(100000),
+			styling.Emu(100000),
+		),
 	}
 
 	g := NewGroupShapeBounds(shapes)
