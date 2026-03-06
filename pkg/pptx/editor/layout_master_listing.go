@@ -3,7 +3,9 @@ package editor
 import (
 	"fmt"
 	"path"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -25,7 +27,16 @@ func (e *PresentationEditor) ListSlideMasters() ([]common.SlideMasterInfo, error
 			return nil, fmt.Errorf("slide master part not found: %s", masterPart)
 		}
 		seen[masterPart] = struct{}{}
-		infos = append(infos, common.SlideMasterInfo{Part: masterPart})
+
+		// Get shapes and placeholders from the master
+		shapes := e.GetMasterShapes(masterPart)
+		placeholders := e.GetMasterPlaceholders(masterPart)
+
+		infos = append(infos, common.SlideMasterInfo{
+			Part:         masterPart,
+			Shapes:       shapes,
+			Placeholders: placeholders,
+		})
 	}
 	return infos, nil
 }
@@ -45,10 +56,16 @@ func (e *PresentationEditor) ListMasterLayouts(masterPart string) ([]common.Slid
 		if !ok {
 			return nil, fmt.Errorf("layout part not found: %s", part)
 		}
+		// Get shapes and placeholders from the layout
+		shapes := e.GetLayoutShapes(part)
+		placeholders := e.GetLayoutPlaceholders(part)
+
 		infos = append(infos, common.SlideLayoutInfo{
-			Part:       part,
-			Name:       editorslide.ParseLayoutName(xmlData),
-			MasterPart: masterPart,
+			Part:         part,
+			Name:         editorslide.ParseLayoutName(xmlData),
+			MasterPart:   masterPart,
+			Shapes:       shapes,
+			Placeholders: placeholders,
 		})
 	}
 	return infos, nil
@@ -69,10 +86,16 @@ func (e *PresentationEditor) ListSlideLayouts() ([]common.SlideLayoutInfo, error
 		if !ok {
 			return nil, fmt.Errorf("layout part not found: %s", part)
 		}
+		// Get shapes and placeholders from the layout
+		shapes := e.GetLayoutShapes(part)
+		placeholders := e.GetLayoutPlaceholders(part)
+
 		infos = append(infos, common.SlideLayoutInfo{
-			Part:       part,
-			Name:       editorslide.ParseLayoutName(xmlData),
-			MasterPart: masterPart,
+			Part:         part,
+			Name:         editorslide.ParseLayoutName(xmlData),
+			MasterPart:   masterPart,
+			Shapes:       shapes,
+			Placeholders: placeholders,
 		})
 	}
 	sort.Slice(infos, func(i, j int) bool { return infos[i].Part < infos[j].Part })
@@ -138,4 +161,113 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 		out = append(out, layoutPart)
 	}
 	return out, nil
+}
+
+// GetMasterShapes returns the shapes in a slide master.
+func (e *PresentationEditor) GetMasterShapes(masterPart string) []string {
+	xmlData, ok := e.parts.Get(masterPart)
+	if !ok {
+		return nil
+	}
+	return parseShapesFromMasterLayoutXML(xmlData)
+}
+
+// GetMasterPlaceholders returns the placeholders in a slide master.
+func (e *PresentationEditor) GetMasterPlaceholders(masterPart string) []common.PlaceholderInfo {
+	xmlData, ok := e.parts.Get(masterPart)
+	if !ok {
+		return nil
+	}
+	return parsePlaceholdersFromMasterLayoutXML(xmlData)
+}
+
+// GetLayoutShapes returns the shapes in a slide layout.
+func (e *PresentationEditor) GetLayoutShapes(layoutPart string) []string {
+	xmlData, ok := e.parts.Get(layoutPart)
+	if !ok {
+		return nil
+	}
+	return parseShapesFromMasterLayoutXML(xmlData)
+}
+
+// GetLayoutPlaceholders returns the placeholders in a slide layout.
+func (e *PresentationEditor) GetLayoutPlaceholders(layoutPart string) []common.PlaceholderInfo {
+	xmlData, ok := e.parts.Get(layoutPart)
+	if !ok {
+		return nil
+	}
+	return parsePlaceholdersFromMasterLayoutXML(xmlData)
+}
+
+// parseShapesFromMasterLayoutXML extracts shape names from master/layout XML.
+func parseShapesFromMasterLayoutXML(content []byte) []string {
+	// Look for non-placeholder shapes (spTree elements that are not ph elements)
+	var shapes []string
+
+	// Simple pattern: find <p:sp> elements and extract name from <p:nvSpPr><p:cNvPr>
+	// This is a simplified implementation
+	namePattern := `(?s)<p:nvSpPr>.*?<p:cNvPr[^>]*name="([^"]+)"`
+	nameRegex := commonCompile(namePattern)
+	if nameRegex == nil {
+		return nil
+	}
+
+	matches := nameRegex.FindAllStringSubmatch(string(content), -1)
+	for _, m := range matches {
+		if len(m) > 1 {
+			shapes = append(shapes, m[1])
+		}
+	}
+	return shapes
+}
+
+// parsePlaceholdersFromMasterLayoutXML extracts placeholder info from master/layout XML.
+func parsePlaceholdersFromMasterLayoutXML(content []byte) []common.PlaceholderInfo {
+	var placeholders []common.PlaceholderInfo
+
+	// Find all placeholder elements <p:ph>
+	phPattern := `(?s)<p:ph[^>]*>`
+	phRegex := commonCompile(phPattern)
+	if phRegex == nil {
+		return nil
+	}
+
+	matches := phRegex.FindAllString(string(content), -1)
+	for _, m := range matches {
+		placeholders = append(placeholders, common.PlaceholderInfo{
+			Type:  parsePlaceholderAttrString(m, `type="([^"]+)"`),
+			Index: parsePlaceholderAttrIndex(m),
+			Name:  parsePlaceholderAttrString(m, `name="([^"]+)"`),
+		})
+	}
+
+	return placeholders
+}
+
+func parsePlaceholderAttrIndex(match string) int {
+	raw := parsePlaceholderAttrString(match, `idx="([^"]+)"`)
+	if raw == "" {
+		return 0
+	}
+	idx, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0
+	}
+	return idx
+}
+
+func parsePlaceholderAttrString(match, pattern string) string {
+	re := commonCompile(pattern)
+	if re == nil {
+		return ""
+	}
+	ms := re.FindStringSubmatch(match)
+	if len(ms) <= 1 {
+		return ""
+	}
+	return ms[1]
+}
+
+func commonCompile(pattern string) *regexp.Regexp {
+	return regexp.MustCompile(pattern)
 }

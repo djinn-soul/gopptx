@@ -129,3 +129,70 @@ func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessag
 		"layout_map":  result.LayoutMap,
 	}, nil
 }
+
+func handleAddSlideMaster(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	masterPart, err := e.AddSlideMaster()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"master_part": masterPart}, nil
+}
+
+func handleRemoveSlideMaster(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	masterPart, ok := v.RequireString(p, "master_part")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if err := e.RemoveSlideMaster(masterPart); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"removed": true}, nil
+}
+
+func handleAddSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	masterPart, ok := v.RequireString(p, "master_part")
+	if !ok {
+		return nil, v.Error()
+	}
+	layoutName, ok := v.RequireString(p, "layout_name")
+	if !ok {
+		layoutName = "Custom Layout"
+	}
+
+	layoutPart, err := e.AddSlideLayout(masterPart, layoutName)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"layout_part": layoutPart}, nil
+}
+
+func handleRemoveSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	layoutPart, ok := v.RequireString(p, "layout_part")
+	if !ok {
+		return nil, v.Error()
+	}
+
+	if err := e.RemoveSlideLayout(layoutPart); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"removed": true}, nil
+}

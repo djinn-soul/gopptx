@@ -9,6 +9,7 @@ type SlideMaster struct {
 	Background   *SlideBackground
 	Shapes       []shapes.ShapeDefinition
 	Images       []shapes.Image
+	Placeholders []shapes.Placeholder
 	FooterText   string
 	ColorMapping *ColorMapping
 	TxStyles     *TxStyles
@@ -59,6 +60,12 @@ func (m *SlideMaster) AddShape(sd shapes.ShapeDefinition) *SlideMaster {
 // AddImage adds an image to the slide master.
 func (m *SlideMaster) AddImage(img shapes.Image) *SlideMaster {
 	m.Images = append(m.Images, img)
+	return m
+}
+
+// AddPlaceholder adds a placeholder to the slide master.
+func (m *SlideMaster) AddPlaceholder(ph shapes.Placeholder) *SlideMaster {
+	m.Placeholders = append(m.Placeholders, ph)
 	return m
 }
 

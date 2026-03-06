@@ -2,13 +2,17 @@ package editor
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,6 +20,8 @@ import (
 )
 
 const imageURLFetchTimeout = 30 * time.Second
+
+var embeddedImageRelPattern = regexp.MustCompile(`r:embed="([^"]+)"`)
 
 const (
 	dataURIParts = 2
@@ -176,5 +182,42 @@ func formatFromPath(pathValue string) string {
 		return formatTIFF
 	default:
 		return ""
+	}
+}
+
+func buildImageMetadata(data []byte, cfg image.Config, format string) *common.ImageMetadata {
+	return &common.ImageMetadata{
+		Width:       cfg.Width,
+		Height:      cfg.Height,
+		Format:      strings.ToLower(strings.TrimSpace(format)),
+		ContentType: imageContentType(data, format),
+		Hash:        imageSHA256Hex(data),
+	}
+}
+
+func imageSHA256Hex(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func imageContentType(data []byte, format string) string {
+	contentType := strings.TrimSpace(http.DetectContentType(data))
+	if contentType != "" && contentType != "application/octet-stream" {
+		return contentType
+	}
+
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "jpg", formatJPEG:
+		return mimeJPEG
+	case formatPNG:
+		return mimePNG
+	case formatGIF:
+		return mimeGIF
+	case formatBMP:
+		return mimeBMP
+	case "tif", formatTIFF:
+		return mimeTIFF
+	default:
+		return contentType
 	}
 }

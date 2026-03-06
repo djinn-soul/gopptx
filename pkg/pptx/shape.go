@@ -52,6 +52,13 @@ type (
 	ShadowType = shapes.ShadowType
 	// ShadowAlignment represents shadow alignment options.
 	ShadowAlignment = shapes.ShadowAlignment
+
+	// GroupShape represents a group of shapes that move and transform together.
+	GroupShape = shapes.GroupShape
+	// Freeform represents a custom-geometry (freeform) shape.
+	Freeform = shapes.Freeform
+	// FreeformPoint represents a point in a freeform shape path.
+	FreeformPoint = shapes.FreeformPoint
 )
 
 const (
@@ -76,6 +83,7 @@ const (
 	ShapeTypeHeart               = shapes.ShapeTypeHeart
 	ShapeTypeFlowChartDocument   = shapes.ShapeTypeFlowChartDocument
 	ShapeTypeFlowChartData       = shapes.ShapeTypeFlowChartData
+	ShapeTypeGroup               = shapes.ShapeTypeGroup
 
 	ShapeGradientTypeLinear      = shapes.ShapeGradientTypeLinear
 	ShapeGradientTypeRadial      = shapes.ShapeGradientTypeRadial
@@ -161,6 +169,41 @@ func NewInnerShadow(color string) *RichShapeShadow {
 // NewPerspectiveShadow creates a new perspective shadow with the specified color.
 func NewPerspectiveShadow(color string) *RichShapeShadow {
 	return shapes.NewPerspectiveShadow(color)
+}
+
+// NewGroupShape creates a new empty group shape at the specified position and size.
+func NewGroupShape(x, y, w, h Length) GroupShape {
+	return shapes.NewGroupShape(x, y, w, h)
+}
+
+// NewGroupShapeBounds creates a new group shape that auto-calculates bounds from its children.
+func NewGroupShapeBounds(shapesList []Shape) GroupShape {
+	return shapes.NewGroupShapeBounds(shapesList)
+}
+
+// NewFreeform creates a new freeform shape from the specified points.
+func NewFreeform(points []FreeformPoint) Freeform {
+	return shapes.NewFreeform(points)
+}
+
+// NewFreeformCoords creates a new freeform shape from coordinate values (in EMUs).
+func NewFreeformCoords(xCoords, yCoords []int64) (Freeform, error) {
+	return shapes.NewFreeformCoords(xCoords, yCoords)
+}
+
+// NewFreeformInches creates a new freeform shape from points specified in inches.
+func NewFreeformInches(points [][2]float64) (Freeform, error) {
+	return shapes.NewFreeformInches(points)
+}
+
+// NewFreeformClosed creates a new closed freeform shape.
+func NewFreeformClosed(points []FreeformPoint) Freeform {
+	return shapes.NewFreeformClosed(points)
+}
+
+// NewFreeformOpen creates a new open freeform shape (line).
+func NewFreeformOpen(points []FreeformPoint) Freeform {
+	return shapes.NewFreeformOpen(points)
 }
 
 // Fluent API Macros (Inches based)

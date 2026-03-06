@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 const (
@@ -136,4 +137,87 @@ func setOrRemoveXMLAttr(attrs, name, value string, enabled bool) string {
 		return updated + ` ` + name + `="` + value + `"`
 	}
 	return updated
+}
+
+// GetShapeTextState returns a read snapshot of text, runs, and paragraph/frame settings for one shape.
+func (e *PresentationEditor) GetShapeTextState(slideIndex, shapeID int) (common.ShapeTextState, error) {
+	shape, err := e.getShapeForTextOps(slideIndex, shapeID)
+	if err != nil {
+		return common.ShapeTextState{}, err
+	}
+
+	state := common.ShapeTextState{
+		Text:      shape.Text,
+		Runs:      editorshape.CopyTextRuns(shape.Runs),
+		TextFrame: shape.TextFrame,
+		Paragraph: shape.Paragraph,
+	}
+	return state, nil
+}
+
+// GetShapeRuns returns a copy of the shape's text runs.
+func (e *PresentationEditor) GetShapeRuns(slideIndex, shapeID int) ([]common.TextRun, error) {
+	state, err := e.GetShapeTextState(slideIndex, shapeID)
+	if err != nil {
+		return nil, err
+	}
+	return state.Runs, nil
+}
+
+// SetShapeRuns replaces all runs on a shape.
+func (e *PresentationEditor) SetShapeRuns(slideIndex, shapeID int, runs []common.TextRun) error {
+	runsCopy := editorshape.CopyTextRuns(runs)
+	updates := common.ShapeUpdate{Runs: &runsCopy}
+	return e.UpdateShape(slideIndex, shapeID, updates)
+}
+
+// UpdateRunText updates the text of one run by index.
+func (e *PresentationEditor) UpdateRunText(slideIndex, shapeID, runIndex int, text string) error {
+	runs, err := e.GetShapeRuns(slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedRuns, err := editorshape.UpdateRunText(runs, runIndex, text)
+	if err != nil {
+		return err
+	}
+	return e.SetShapeRuns(slideIndex, shapeID, updatedRuns)
+}
+
+// AppendShapeRun appends one run to the shape's existing runs.
+func (e *PresentationEditor) AppendShapeRun(slideIndex, shapeID int, run common.TextRun) error {
+	runs, err := e.GetShapeRuns(slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	runs = editorshape.AppendRun(runs, run)
+	return e.SetShapeRuns(slideIndex, shapeID, runs)
+}
+
+func (e *PresentationEditor) getShapeForTextOps(slideIndex, shapeID int) (parsedShape, error) {
+	if e == nil {
+		return parsedShape{}, errors.New("editor cannot be nil")
+	}
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return parsedShape{}, errors.New("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return parsedShape{}, fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return parsedShape{}, fmt.Errorf("parse shapes: %w", err)
+	}
+
+	for _, shape := range shapes {
+		if shape.ID == shapeID || (shape.PhType == placeholderTypeTitle && shapeID == 0) {
+			return shape, nil
+		}
+	}
+
+	return parsedShape{}, fmt.Errorf("shape id %d not found on slide %d", shapeID, slideIndex)
 }

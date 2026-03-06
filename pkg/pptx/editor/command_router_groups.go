@@ -45,6 +45,14 @@ func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 		return handleRebindSlideLayout, true
 	case OpCloneLayoutMasterFamily:
 		return handleCloneLayoutMasterFamily, true
+	case OpAddSlideMaster:
+		return handleAddSlideMaster, true
+	case OpRemoveSlideMaster:
+		return handleRemoveSlideMaster, true
+	case OpAddSlideLayout:
+		return handleAddSlideLayout, true
+	case OpRemoveSlideLayout:
+		return handleRemoveSlideLayout, true
 	case OpApplyTheme:
 		return handleApplyTheme, true
 	case OpSetSlideSize:

@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -102,6 +103,36 @@ func (e *PresentationEditor) UpdateChartData(
 	return nil
 }
 
+// UpdateChartFormatting applies a partial formatting patch to an existing chart.
+func (e *PresentationEditor) UpdateChartFormatting(
+	slideIndex int,
+	selector common.ChartSelector,
+	req common.ChartFormatUpdate,
+) error {
+	refs, err := e.ListSlideCharts(slideIndex)
+	if err != nil {
+		return err
+	}
+	chartRef, err := editormodchart.ResolveChartSelector(refs, selector, slideIndex)
+	if err != nil {
+		return err
+	}
+	if err := editormodchart.ValidateChartFormatUpdate(req); err != nil {
+		return err
+	}
+
+	chartXML, ok := e.parts.Get(chartRef.ChartPart)
+	if !ok {
+		return fmt.Errorf("chart part %s not found", chartRef.ChartPart)
+	}
+	patched, err := editormodchart.PatchChartFormatting(chartXML, req)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(chartRef.ChartPart, patched)
+	return nil
+}
+
 func (e *PresentationEditor) updateChartEmbeddingRel(chartPart, excelPath string) error {
 	relsPath := common.RelsPathFor(chartPart)
 	relsData, ok := e.parts.Get(relsPath)
@@ -130,4 +161,26 @@ func (e *PresentationEditor) updateChartEmbeddingRel(chartPart, excelPath string
 		e.parts.Set(relsPath, []byte(newRelsData))
 	}
 	return nil
+}
+
+func (e *PresentationEditor) writeRelationships(path string, rels []common.EditorRelationship) error {
+	e.parts.Set(path, []byte(renderRelationshipsXML(rels)))
+	return nil
+}
+
+func (e *PresentationEditor) addContentTypeOverride(partName, contentType string) {
+	ctPath := "[Content_Types].xml"
+	data, ok := e.parts.Get(ctPath)
+	if !ok {
+		return
+	}
+
+	partNameRooted := "/" + partName
+	if bytes.Contains(data, []byte(`PartName="`+partNameRooted+`"`)) {
+		return
+	}
+
+	override := fmt.Sprintf(`<Override PartName="%s" ContentType="%s"/>`, partNameRooted, contentType)
+	replaced := bytes.Replace(data, []byte("</Types>"), []byte(override+"</Types>"), 1)
+	e.parts.Set(ctPath, replaced)
 }
