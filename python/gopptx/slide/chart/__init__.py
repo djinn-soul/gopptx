@@ -1,14 +1,12 @@
-"""Compatibility re-exports for slide chart model proxies."""
+"""Chart proxy model package for slide APIs."""
 
-from .chart import (
+from .axis_series import ChartAxis, ChartSeries, ChartSeriesCollection
+from .model import (
     Chart,
-    ChartAxis,
     ChartCollection,
     ChartLegend,
     ChartPlot,
     ChartPlots,
-    ChartSeries,
-    ChartSeriesCollection,
     ChartTitle,
     DataLabels,
 )
