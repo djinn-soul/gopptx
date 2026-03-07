@@ -1,10 +1,11 @@
-package layoutmaster
+package editor
 
 import (
 	"errors"
 	"fmt"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	layoutmaster "github.com/djinn-soul/gopptx/pkg/pptx/editor/layoutmaster"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
@@ -76,7 +77,7 @@ func (e *PresentationEditor) AddSlideLayout(masterPart, layoutName string) (stri
 		nextPartPatternSubmatchSize,
 	)
 	layoutPart := fmt.Sprintf("ppt/slideLayouts/slideLayout%d.xml", layoutNum)
-	masterNum := extractMasterNumber(masterPart)
+	masterNum := layoutmaster.ExtractMasterNumber(masterPart)
 
 	layoutXML := editorslide.DefaultSlideLayout(layoutName, layoutNum, masterNum)
 	e.parts.Set(layoutPart, []byte(layoutXML))

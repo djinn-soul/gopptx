@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	slidescatalog "github.com/djinn-soul/gopptx/pkg/pptx/editor/handlers/slidescatalog"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
@@ -30,7 +31,7 @@ func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (any,
 	if err := e.UpdateChartData(slideIndex, params.ChartSelector, params.Data); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return slidescatalog.BuildUpdatedResponse(), nil
 }
 
 func handleUpdateChartFormatting(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -56,7 +57,7 @@ func handleUpdateChartFormatting(e *PresentationEditor, payload json.RawMessage)
 	if err := e.UpdateChartFormatting(slideIndex, params.ChartSelector, params.Format); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return slidescatalog.BuildUpdatedResponse(), nil
 }
 
 func handleGetChartState(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -82,7 +83,7 @@ func handleGetChartState(e *PresentationEditor, payload json.RawMessage) (any, e
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"state": state}, nil
+	return slidescatalog.BuildChartStateResponse(state), nil
 }
 
 func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -97,7 +98,7 @@ func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any,
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{"charts": refs}, nil
+			return slidescatalog.BuildChartsResponse(refs), nil
 		},
 	)
 }
@@ -114,10 +115,7 @@ func handleGetSlideLayoutRef(e *PresentationEditor, payload json.RawMessage) (an
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{
-				"layout_part": layoutPart,
-				"master_part": masterPart,
-			}, nil
+			return slidescatalog.BuildLayoutRefResponse(layoutPart, masterPart), nil
 		},
 	)
 }
@@ -127,7 +125,7 @@ func handleListSlideLayouts(e *PresentationEditor, _ json.RawMessage) (any, erro
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"layouts": layouts}, nil
+	return slidescatalog.BuildLayoutsResponse(layouts), nil
 }
 
 func handleListSlideMasters(e *PresentationEditor, _ json.RawMessage) (any, error) {
@@ -135,7 +133,7 @@ func handleListSlideMasters(e *PresentationEditor, _ json.RawMessage) (any, erro
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"masters": masters}, nil
+	return slidescatalog.BuildMastersResponse(masters), nil
 }
 
 func handleListMasterLayouts(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -154,7 +152,7 @@ func handleListMasterLayouts(e *PresentationEditor, payload json.RawMessage) (an
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"layouts": layouts}, nil
+	return slidescatalog.BuildLayoutsResponse(layouts), nil
 }
 
 func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -176,7 +174,7 @@ func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (an
 	if err := e.RebindSlideLayout(slideIndex, layoutPart); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"rebound": true}, nil
+	return slidescatalog.BuildReboundResponse(), nil
 }
 
 func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -195,11 +193,7 @@ func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessag
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{
-		"master_part": result.MasterPart,
-		"theme_part":  result.ThemePart,
-		"layout_map":  result.LayoutMap,
-	}, nil
+	return slidescatalog.BuildCloneFamilyResponse(result), nil
 }
 
 func handleAddSlideMaster(e *PresentationEditor, _ json.RawMessage) (any, error) {
@@ -207,7 +201,7 @@ func handleAddSlideMaster(e *PresentationEditor, _ json.RawMessage) (any, error)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"master_part": masterPart}, nil
+	return slidescatalog.BuildAddedMasterResponse(masterPart), nil
 }
 
 func handleRemoveSlideMaster(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -225,7 +219,7 @@ func handleRemoveSlideMaster(e *PresentationEditor, payload json.RawMessage) (an
 	if err := e.RemoveSlideMaster(masterPart); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"removed": true}, nil
+	return slidescatalog.BuildRemovedResponse(), nil
 }
 
 func handleAddSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -248,7 +242,7 @@ func handleAddSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, 
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"layout_part": layoutPart}, nil
+	return slidescatalog.BuildAddedLayoutResponse(layoutPart), nil
 }
 
 func handleRemoveSlideLayout(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -266,5 +260,5 @@ func handleRemoveSlideLayout(e *PresentationEditor, payload json.RawMessage) (an
 	if err := e.RemoveSlideLayout(layoutPart); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"removed": true}, nil
+	return slidescatalog.BuildRemovedResponse(), nil
 }
