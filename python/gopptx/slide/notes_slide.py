@@ -9,27 +9,13 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
+from .notes_text_model import NotesTextFrame
+
 if TYPE_CHECKING:
     from .slide import SlideBase
 
 
 _TEXT_PLACEHOLDER_TYPES = {"body", "title", "ctrTitle", "subTitle"}
-
-
-class NotesTextFrame:
-    """Minimal text-frame proxy for notes text placeholders."""
-
-    def __init__(self, shape: NotesShape) -> None:
-        super().__init__()
-        self._shape = shape
-
-    @property
-    def text(self) -> str:
-        return self._shape.text
-
-    @text.setter
-    def text(self, value: str) -> None:
-        self._shape.text = value
 
 
 class NotesShape:

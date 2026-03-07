@@ -38,3 +38,22 @@ def test_notes_shape_collection_and_body_proxy() -> None:
             assert notes_tf is not None
             notes_tf.text = "updated via notes_text_frame"
             assert slide.notes == "updated via notes_text_frame"
+            assert len(notes_tf.paragraphs) == 1
+            para0 = notes_tf.paragraphs[0]
+            assert para0.text == "updated via notes_text_frame"
+            run0 = para0.runs[0]
+            assert run0.text == "updated via notes_text_frame"
+            run0.text = "updated via notes run"
+            assert slide.notes == "updated via notes run"
+            para0.runs.add_run(" + appended")
+            assert slide.notes == "updated via notes run + appended"
+            para0.add_run(" via paragraph")
+            assert slide.notes == "updated via notes run + appended via paragraph"
+            para1 = notes_tf.add_paragraph("second paragraph")
+            assert para1.text == "second paragraph"
+            assert (
+                slide.notes
+                == "updated via notes run + appended via paragraph\nsecond paragraph"
+            )
+            notes_tf.clear()
+            assert not slide.notes
