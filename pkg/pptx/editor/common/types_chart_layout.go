@@ -46,6 +46,11 @@ type ChartFormatUpdate struct {
 	ValueAxisMajorGrid       *bool   `json:"value_axis_major_gridlines,omitempty"`
 	CategoryAxisCrosses      *string `json:"category_axis_crosses,omitempty"`
 	ValueAxisCrosses         *string `json:"value_axis_crosses,omitempty"`
+	CameraPreset             *string `json:"camera_preset,omitempty"`
+	CameraFieldOfView        *int    `json:"camera_field_of_view,omitempty"`
+	LightRig                 *string `json:"light_rig,omitempty"`
+	LightDirection           *string `json:"light_direction,omitempty"`
+	LightRigRevolution       *bool   `json:"light_rig_revolution,omitempty"`
 }
 
 // ChartAxisState is a read snapshot for one chart axis.
@@ -62,6 +67,16 @@ type ChartState struct {
 	CategoryAx ChartAxisState    `json:"category_axis"`
 	ValueAx    ChartAxisState    `json:"value_axis"`
 	Series     []ChartSeriesData `json:"series,omitempty"`
+	Scene3D    ChartScene3DState `json:"scene3d"`
+}
+
+// ChartScene3DState is a read snapshot for chart-level 3D scene settings.
+type ChartScene3DState struct {
+	CameraPreset       string `json:"camera_preset,omitempty"`
+	CameraFieldOfView  int    `json:"camera_field_of_view,omitempty"`
+	LightRig           string `json:"light_rig,omitempty"`
+	LightDirection     string `json:"light_direction,omitempty"`
+	LightRigRevolution bool   `json:"light_rig_revolution,omitempty"`
 }
 
 // SlideChartRef describes a chart relationship discovered on a slide.

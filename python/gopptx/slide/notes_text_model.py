@@ -1,13 +1,14 @@
 """Notes text-frame paragraph/run traversal helpers."""
-# ruff: noqa: D102, D105, D107
+# ruff: noqa: D102, D105, D107, SLF001
 # pyright: reportPrivateUsage=false
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from .notes_slide import NotesShape
 
 

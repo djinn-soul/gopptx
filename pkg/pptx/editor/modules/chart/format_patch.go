@@ -39,6 +39,9 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if err := validateAxisCrosses("value_axis_crosses", req.ValueAxisCrosses); err != nil {
 		return err
 	}
+	if err := validateScene3DUpdate(req); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -67,6 +70,7 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchAxisCrosses(updated, "catAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)
+	updated = patchChartScene3D(updated, req)
 	return []byte(updated), nil
 }
 

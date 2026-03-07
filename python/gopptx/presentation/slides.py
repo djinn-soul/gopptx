@@ -268,6 +268,9 @@ class PresentationSlidesMixin(
         text_style = kwargs.get("text_style")
         if isinstance(text_style, dict):
             payload["text_style"] = text_style
+        force_rect = kwargs.get("force_rect_geometry")
+        if isinstance(force_rect, bool):
+            payload["force_rect_geometry"] = force_rect
         table_payload = build_placeholder_table_payload(
             kwargs.get("table"),
             kwargs.get("table_rows"),

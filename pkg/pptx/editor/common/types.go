@@ -33,6 +33,7 @@ const (
 	RelTypeTheme          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
 	RelTypeSectionList    = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
 	RelTypePackage        = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
+	RelTypeTableStyles    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles"
 	RelTypeCustomXML      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml"
 	RelTypeCustomXMLProps = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps"
 

@@ -151,6 +151,86 @@ func TestHandleSetPlaceholderContentPreservesTypeWithoutPhType(t *testing.T) {
 	}
 }
 
+func TestHandleSetPlaceholderContentPreservesExistingGeometry(t *testing.T) {
+	basePath := writeDeckFixture(t, "placeholder-bridge-preserve-geometry.pptx", []elements.SlideContent{
+		elements.NewSlide("Original"),
+	})
+
+	editor, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	editor.parts.Set(editor.slides[0].Part, []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:cSld><p:spTree><p:sp>
+  <p:nvSpPr><p:cNvPr id="2" name="Body 2"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>
+  <p:spPr>
+    <a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>
+    <a:custGeom><a:avLst/><a:pathLst/></a:custGeom>
+  </p:spPr>
+</p:sp></p:spTree></p:cSld></p:sld>`))
+
+	payload := []byte(`{"slide_index":0,"ph_index":1,"text":"Updated body","bounds":[10,20,30,40]}`)
+	if _, err := handleSetPlaceholderContent(editor, payload); err != nil {
+		t.Fatalf("handleSetPlaceholderContent: %v", err)
+	}
+
+	content, ok := editor.parts.Get(editor.slides[0].Part)
+	if !ok {
+		t.Fatal("expected updated slide part")
+	}
+	slideXML := string(content)
+	if !strings.Contains(slideXML, "<a:custGeom>") {
+		t.Fatalf("expected custom geometry to be preserved, got: %s", slideXML)
+	}
+	if !strings.Contains(slideXML, `off x="127000" y="254000"`) {
+		t.Fatalf("expected updated bounds in EMU, got: %s", slideXML)
+	}
+}
+
+func TestHandleSetPlaceholderContentForceRectGeometry(t *testing.T) {
+	basePath := writeDeckFixture(t, "placeholder-bridge-force-rect-geometry.pptx", []elements.SlideContent{
+		elements.NewSlide("Original"),
+	})
+
+	editor, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	editor.parts.Set(editor.slides[0].Part, []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+<p:cSld><p:spTree><p:sp>
+  <p:nvSpPr><p:cNvPr id="2" name="Body 2"/><p:cNvSpPr/><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>
+  <p:spPr>
+    <a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>
+    <a:custGeom><a:avLst/><a:pathLst/></a:custGeom>
+  </p:spPr>
+</p:sp></p:spTree></p:cSld></p:sld>`))
+
+	payload := []byte(
+		`{"slide_index":0,"ph_index":1,"text":"Updated body","bounds":[10,20,30,40],"force_rect_geometry":true}`,
+	)
+	if _, err := handleSetPlaceholderContent(editor, payload); err != nil {
+		t.Fatalf("handleSetPlaceholderContent: %v", err)
+	}
+
+	content, ok := editor.parts.Get(editor.slides[0].Part)
+	if !ok {
+		t.Fatal("expected updated slide part")
+	}
+	slideXML := string(content)
+	if strings.Contains(slideXML, "<a:custGeom>") {
+		t.Fatalf("expected custom geometry removed when force_rect_geometry=true, got: %s", slideXML)
+	}
+	if !strings.Contains(slideXML, `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`) {
+		t.Fatalf("expected rect geometry when force_rect_geometry=true, got: %s", slideXML)
+	}
+}
+
 type placeholderDef struct {
 	name    string
 	phType  string

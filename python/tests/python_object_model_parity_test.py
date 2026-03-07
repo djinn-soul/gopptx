@@ -23,12 +23,21 @@ def test_chart_object_model_updates() -> None:
         chart.value_axis.tick_label_position = "high"
         chart.value_axis.major_gridlines_visible = False
         chart.value_axis.crosses = "min"
+        chart.chart_area.scene3d.update(
+            camera_preset="orthographicFront",
+            light_rig="threePt",
+            light_direction="t",
+            camera_field_of_view=45,
+            light_rig_revolution=True,
+        )
         chart.plots[0].data_labels_visible = True
         chart.plots[0].data_labels.show_value = True
         assert chart.category_axis.tick_label_position == "low"
         assert chart.category_axis.crosses == "max"
         assert chart.value_axis.tick_label_position == "high"
         assert chart.value_axis.crosses == "min"
+        assert chart.chart_area.scene3d.camera_preset == "orthographicFront"
+        assert chart.chart_area.scene3d.light_rig == "threePt"
 
         new_data = CategoryChartData(categories=["X", "Y"])
         new_data.add_series("S2", [3.0, 4.0])

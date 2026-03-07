@@ -166,6 +166,38 @@ func TestPatchChartFormatting_AxisGridlinesAndCrosses(t *testing.T) {
 	}
 }
 
+func TestPatchChartFormatting_Scene3D(t *testing.T) {
+	withChart := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<c:chart><c:plotArea><c:barChart><c:ser/></c:barChart></c:plotArea></c:chart></c:chartSpace>`
+	camera := "perspectiveAboveLeftFacing"
+	fov := 30
+	rig := "threePt"
+	dir := "tr"
+	rev := true
+	got, err := PatchChartFormatting([]byte(withChart), common.ChartFormatUpdate{
+		CameraPreset:       &camera,
+		CameraFieldOfView:  &fov,
+		LightRig:           &rig,
+		LightDirection:     &dir,
+		LightRigRevolution: &rev,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	xml := string(got)
+	mustContain(t, xml, `<c:spPr><a:scene3d>`)
+	mustContain(t, xml, `<a:camera prst="perspectiveAboveLeftFacing" fov="30"/>`)
+	mustContain(t, xml, `<a:lightRig rig="threePt" dir="tr" rev="1"/>`)
+}
+
+func TestValidateChartFormatUpdate_Scene3DRequiresCoreFields(t *testing.T) {
+	rig := "threePt"
+	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{LightRig: &rig}); err == nil {
+		t.Fatalf("expected validation error when camera_preset/light_direction missing")
+	}
+}
+
 func mustContain(t *testing.T, xml string, want string) {
 	t.Helper()
 	if !strings.Contains(xml, want) {

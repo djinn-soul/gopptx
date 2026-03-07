@@ -6,6 +6,7 @@ func TestExtractChartState(t *testing.T) {
 	xml := []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
 <c:style val="10"/>
+<c:spPr><a:scene3d><a:camera prst="orthographicFront" fov="45"/><a:lightRig rig="threePt" dir="t" rev="1"/></a:scene3d></c:spPr>
 <c:chart><c:plotArea>
 <c:barChart>
 <c:ser><c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>North</c:v></c:pt></c:strCache></c:strRef></c:tx><c:val><c:numRef><c:numCache><c:pt idx="0"><c:v>1.5</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>
@@ -33,5 +34,13 @@ func TestExtractChartState(t *testing.T) {
 	}
 	if len(state.Series) != 1 || len(state.Series[0].Values) != 2 {
 		t.Fatalf("unexpected series state %#v", state.Series)
+	}
+	if state.Scene3D.CameraPreset != "orthographicFront" || state.Scene3D.LightRig != "threePt" {
+		t.Fatalf("unexpected scene3d state %#v", state.Scene3D)
+	}
+	if state.Scene3D.CameraFieldOfView != 45 ||
+		state.Scene3D.LightDirection != "t" ||
+		!state.Scene3D.LightRigRevolution {
+		t.Fatalf("unexpected scene3d values %#v", state.Scene3D)
 	}
 }

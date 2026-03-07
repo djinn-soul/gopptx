@@ -67,6 +67,7 @@ func renderEditorPlaceholderSpecs(
 			spec.CX = editorslide.MapOptionalLength(override.Override.CX)
 			spec.CY = editorslide.MapOptionalLength(override.Override.CY)
 			spec.TextStyle = editorslide.MapPlaceholderTextStyle(override.Override.TextStyle)
+			spec.ForceRectGeometry = override.Override.ForceRect
 		}
 
 		if override.Image != nil {

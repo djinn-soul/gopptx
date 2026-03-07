@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, cast
 
 from .axis_series import ChartAxis, ChartSeriesCollection
+from .scene3d_area import ChartArea
 
 if TYPE_CHECKING:
     from ...schemas import ChartDataUpdate, ChartFormatUpdate, ChartState
@@ -153,6 +154,7 @@ class Chart:
         self._chart_title = ChartTitle(self)
         self._legend = ChartLegend(self)
         self._plots = ChartPlots(self)
+        self._chart_area = ChartArea(self)
         self._category_axis = ChartAxis(self, axis_name="category")
         self._value_axis = ChartAxis(self, axis_name="value")
 
@@ -193,6 +195,10 @@ class Chart:
     @property
     def plots(self) -> ChartPlots:
         return self._plots
+
+    @property
+    def chart_area(self) -> ChartArea:
+        return self._chart_area
 
     @property
     def category_axis(self) -> ChartAxis:

@@ -56,6 +56,17 @@ class PresentationTableMixin(PresentationMixinBase):
             },
         )
 
+    def define_table_style(self, name: str, style_id: str | None = None) -> str:
+        payload: dict[str, object] = {"name": name}
+        if style_id is not None:
+            payload["style_id"] = style_id
+        result = self.execute(ops.OP_DEFINE_TABLE_STYLE, payload)
+        return str(result.get("style_id", ""))
+
+    def list_table_styles(self) -> list[dict[str, str]]:
+        result = self.execute(ops.OP_LIST_TABLE_STYLES, {})
+        return cast("list[dict[str, str]]", result.get("styles", []))
+
     def set_table_flags(
         self,
         slide_index: int,

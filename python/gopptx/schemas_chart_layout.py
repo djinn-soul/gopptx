@@ -57,6 +57,11 @@ class ChartFormatUpdate(TypedDict, total=False):
     value_axis_major_gridlines: bool
     category_axis_crosses: str
     value_axis_crosses: str
+    camera_preset: str
+    camera_field_of_view: int
+    light_rig: str
+    light_direction: str
+    light_rig_revolution: bool
 
 
 class ChartAxisState(TypedDict, total=False):
@@ -75,6 +80,17 @@ class ChartState(TypedDict, total=False):
     category_axis: ChartAxisState
     value_axis: ChartAxisState
     series: list[ChartSeriesData]
+    scene3d: NotRequired[ChartScene3DState]
+
+
+class ChartScene3DState(TypedDict, total=False):
+    """Chart scene3d state snapshot."""
+
+    camera_preset: str
+    camera_field_of_view: int
+    light_rig: str
+    light_direction: str
+    light_rig_revolution: bool
 
 
 class SlideChartRef(TypedDict):

@@ -75,6 +75,8 @@ const (
 	OpUpdateTableFlags        = "update_table_flags"
 	OpUpdateTableCell         = "update_table_cell"
 	OpSetTableStyle           = "set_table_style"
+	OpDefineTableStyle        = "define_table_style"
+	OpListTableStyles         = "list_table_styles"
 	OpSetTableRowHeight       = "set_table_row_height"
 	OpSetTableColumnWidth     = "set_table_column_width"
 	OpAddCustomXML            = "add_custom_xml"
@@ -163,6 +165,8 @@ func SupportedOps() []string {
 		OpUpdateTableFlags,
 		OpUpdateTableCell,
 		OpSetTableStyle,
+		OpDefineTableStyle,
+		OpListTableStyles,
 		OpSetTableRowHeight,
 		OpSetTableColumnWidth,
 		OpAddCustomXML,

@@ -75,6 +75,8 @@ OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SET_TABLE_COLUMN_WIDTH = "set_table_column_width"
 OP_SET_TABLE_ROW_HEIGHT = "set_table_row_height"
 OP_SET_TABLE_STYLE = "set_table_style"
+OP_DEFINE_TABLE_STYLE = "define_table_style"
+OP_LIST_TABLE_STYLES = "list_table_styles"
 OP_SLIDE_COUNT = "slide_count"
 OP_SPLIT_TABLE_CELL = "split_table_cell"
 OP_UNGROUP_SHAPES = "ungroup_shapes"
@@ -160,6 +162,8 @@ SUPPORTED_OPS = (
     OP_SET_TABLE_COLUMN_WIDTH,
     OP_SET_TABLE_ROW_HEIGHT,
     OP_SET_TABLE_STYLE,
+    OP_DEFINE_TABLE_STYLE,
+    OP_LIST_TABLE_STYLES,
     OP_SLIDE_COUNT,
     OP_SPLIT_TABLE_CELL,
     OP_UNGROUP_SHAPES,

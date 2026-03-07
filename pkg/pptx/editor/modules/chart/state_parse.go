@@ -15,6 +15,12 @@ var (
 	reNumValue   = regexp.MustCompile(`(?s)<c:v>(-?\d+(?:\.\d+)?)</c:v>`)
 	reTickLblPos = regexp.MustCompile(`<c:tickLblPos val="([^"]+)"`)
 	reCrosses    = regexp.MustCompile(`<c:crosses val="([^"]+)"`)
+	reScene3D    = regexp.MustCompile(`(?s)<a:scene3d\b.*?</a:scene3d>`)
+	reCamera     = regexp.MustCompile(`<a:camera\b[^>]*prst="([^"]+)"[^>]*>`)
+	reCameraFOV  = regexp.MustCompile(`<a:camera\b[^>]*fov="([^"]+)"[^>]*>`)
+	reLightRig   = regexp.MustCompile(`<a:lightRig\b[^>]*rig="([^"]+)"[^>]*>`)
+	reLightDir   = regexp.MustCompile(`<a:lightRig\b[^>]*dir="([^"]+)"[^>]*>`)
+	reLightRev   = regexp.MustCompile(`<a:lightRig\b[^>]*rev="([^"]+)"[^>]*>`)
 )
 
 const expectedSingleGroupMatch = 2
@@ -26,11 +32,38 @@ func ExtractChartState(chartXML []byte) common.ChartState {
 		CategoryAx: buildAxisState(xml, []string{"catAx", "dateAx"}),
 		ValueAx:    buildAxisState(xml, []string{"valAx"}),
 		Series:     parseSeriesState(xml),
+		Scene3D:    parseScene3DState(xml),
 	}
 	if match := reChartStyle.FindStringSubmatch(xml); len(match) == expectedSingleGroupMatch {
 		if style, err := strconv.Atoi(match[1]); err == nil {
 			state.ChartStyle = &style
 		}
+	}
+	return state
+}
+
+func parseScene3DState(xml string) common.ChartScene3DState {
+	match := reScene3D.FindString(xml)
+	if match == "" {
+		return common.ChartScene3DState{}
+	}
+	state := common.ChartScene3DState{}
+	if m := reCamera.FindStringSubmatch(match); len(m) == expectedSingleGroupMatch {
+		state.CameraPreset = strings.TrimSpace(m[1])
+	}
+	if m := reCameraFOV.FindStringSubmatch(match); len(m) == expectedSingleGroupMatch {
+		if fov, err := strconv.Atoi(strings.TrimSpace(m[1])); err == nil {
+			state.CameraFieldOfView = fov
+		}
+	}
+	if m := reLightRig.FindStringSubmatch(match); len(m) == expectedSingleGroupMatch {
+		state.LightRig = strings.TrimSpace(m[1])
+	}
+	if m := reLightDir.FindStringSubmatch(match); len(m) == expectedSingleGroupMatch {
+		state.LightDirection = strings.TrimSpace(m[1])
+	}
+	if m := reLightRev.FindStringSubmatch(match); len(m) == expectedSingleGroupMatch {
+		state.LightRigRevolution = strings.TrimSpace(m[1]) == "1"
 	}
 	return state
 }

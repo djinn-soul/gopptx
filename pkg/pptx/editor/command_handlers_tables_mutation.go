@@ -3,6 +3,7 @@ package editor
 import (
 	"encoding/json"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
@@ -185,6 +186,45 @@ func handleSetTableStyle(e *PresentationEditor, payload json.RawMessage) (any, e
 			return map[string]bool{"success": true}, nil
 		},
 	)
+}
+
+func handleDefineTableStyle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	v := NewPayloadValidator()
+	name, ok := v.RequireString(p, "name")
+	if !ok {
+		return nil, v.Error()
+	}
+	styleID := v.OptionalString(p, "style_id")
+	id, err := e.DefineTableStyle(common.TableStyleDefinition{
+		StyleID: styleID,
+		Name:    name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"style_id": id,
+		"name":     name,
+	}, nil
+}
+
+func handleListTableStyles(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	styles, err := e.ListTableStyles()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]map[string]string, 0, len(styles))
+	for _, style := range styles {
+		out = append(out, map[string]string{
+			"style_id": style.StyleID,
+			"name":     style.Name,
+		})
+	}
+	return map[string]any{"styles": out}, nil
 }
 
 func handleSetTableRowHeight(e *PresentationEditor, payload json.RawMessage) (any, error) {
