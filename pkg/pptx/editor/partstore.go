@@ -2,16 +2,10 @@ package editor
 
 import (
 	"archive/zip"
-	"bytes"
-	"errors"
 	"fmt"
-	"io"
-	"maps"
 	"os"
 	"sort"
 	"sync"
-
-	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 const (
@@ -61,59 +55,6 @@ type PartStore struct {
 
 	// allKeys maintains the set of all active part names to avoid O(N) map scans in Keys().
 	allKeys map[string]struct{}
-}
-
-// newPartStoreFromZip creates a lazy store backed by the given zip reader.
-// The [os.File] must remain open for the lifetime of the store.
-func newPartStoreFromZip(file *os.File, zr *zip.Reader) *PartStore {
-	allKeys := make(map[string]struct{}, len(zr.File))
-	index := make(map[string]*zip.File, len(zr.File))
-	for _, entry := range zr.File {
-		if entry.FileInfo().IsDir() {
-			continue
-		}
-		name := common.CanonicalPartPath(entry.Name)
-		index[name] = entry
-		allKeys[name] = struct{}{}
-	}
-
-	return &PartStore{
-		file:      file,
-		index:     index,
-		cache:     make(map[string][]byte),
-		modified:  make(map[string][]byte),
-		deleted:   make(map[string]bool),
-		keysDirty: true,
-		inflight:  make(map[string]*inflightRead),
-		allKeys:   allKeys,
-	}
-}
-
-// NewPartStore creates a new, empty in-memory part store.
-// NewPartStore creates a new, empty in-memory part store.
-func NewPartStore() *PartStore {
-	return newPartStoreFromMap(nil)
-}
-
-// newPartStoreFromMap creates an in-memory store from a pre-loaded map.
-// Used by tests and by newPresentationEditorFromParts when parts are
-// already loaded (e.g. from MergeFromEditor).
-func newPartStoreFromMap(parts map[string][]byte) *PartStore {
-	cached := make(map[string][]byte, len(parts))
-	maps.Copy(cached, parts)
-	allKeys := make(map[string]struct{}, len(parts))
-	for k := range parts {
-		allKeys[k] = struct{}{}
-	}
-	return &PartStore{
-		index:     make(map[string]*zip.File),
-		cache:     cached,
-		modified:  make(map[string][]byte),
-		deleted:   make(map[string]bool),
-		keysDirty: true,
-		inflight:  make(map[string]*inflightRead),
-		allKeys:   allKeys,
-	}
 }
 
 // Get returns the data for the named part. Modified data takes priority,
@@ -310,78 +251,4 @@ func (ps *PartStore) Snapshot() map[string][]byte {
 func (ps *PartStore) invalidateKeysLocked() {
 	ps.keysDirty = true
 	ps.keysCache = nil
-}
-
-func readZipEntry(entry *zip.File) ([]byte, error) {
-	rc, err := entry.Open()
-	if err != nil {
-		return nil, fmt.Errorf("open zip entry %q: %w", entry.Name, err)
-	}
-	defer func() { _ = rc.Close() }()
-
-	const maxInt = int(^uint(0) >> 1)
-	size64 := entry.UncompressedSize64
-	if size64 > 0 && size64 <= uint64(maxInt) {
-		// Pre-allocate the exact size when available.
-		data := make([]byte, int(size64))
-		if _, err := io.ReadFull(rc, data); err != nil {
-			return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)
-		}
-		return data, nil
-	}
-
-	// Fallback for unknown sizes: use a pooled read buffer to reduce temporary allocations.
-	chunkPtr, ok := zipReadChunkPool.Get().(*[]byte)
-	if !ok || chunkPtr == nil {
-		return nil, errors.New("zip read pool returned invalid buffer")
-	}
-	defer zipReadChunkPool.Put(chunkPtr)
-	chunk := *chunkPtr
-	var out bytes.Buffer
-	limitedReader := io.LimitReader(rc, maxUnknownZipEntryBytes+1)
-	if _, err := io.CopyBuffer(&out, limitedReader, chunk); err != nil {
-		return nil, fmt.Errorf("read zip entry %q: %w", entry.Name, err)
-	}
-	if out.Len() > maxUnknownZipEntryBytes {
-		return nil, fmt.Errorf("zip entry %q exceeds max size %d bytes", entry.Name, maxUnknownZipEntryBytes)
-	}
-	return out.Bytes(), nil
-}
-
-// Materialize eagerly reads all remaining lazy zip entries into the cache
-// and then closes the underlying file handle. After this call the store
-// is fully in-memory and the source file is no longer locked.
-func (ps *PartStore) Materialize() error {
-	ps.mu.RLock()
-	toLoad := make([]string, 0, len(ps.index))
-	for name := range ps.index {
-		if ps.deleted[name] {
-			continue
-		}
-		if _, ok := ps.cache[name]; ok {
-			continue
-		}
-		if _, ok := ps.modified[name]; ok {
-			continue
-		}
-		toLoad = append(toLoad, name)
-	}
-	ps.mu.RUnlock()
-
-	for _, name := range toLoad {
-		if _, ok := ps.Get(name); !ok {
-			return fmt.Errorf("materialize part %q: read failed", name)
-		}
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-	ps.index = make(map[string]*zip.File)
-	ps.invalidateKeysLocked()
-	if ps.file != nil {
-		err := ps.file.Close()
-		ps.file = nil
-		return err
-	}
-	return nil
 }
