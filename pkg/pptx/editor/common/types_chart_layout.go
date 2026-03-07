@@ -42,13 +42,18 @@ type ChartFormatUpdate struct {
 	DataLabelShowBubbleSize  *bool   `json:"data_label_show_bubble_size,omitempty"`
 	CategoryAxisTickLabelPos *string `json:"category_axis_tick_label_pos,omitempty"`
 	ValueAxisTickLabelPos    *string `json:"value_axis_tick_label_pos,omitempty"`
+	CategoryAxisMajorGrid    *bool   `json:"category_axis_major_gridlines,omitempty"`
+	ValueAxisMajorGrid       *bool   `json:"value_axis_major_gridlines,omitempty"`
+	CategoryAxisCrosses      *string `json:"category_axis_crosses,omitempty"`
+	ValueAxisCrosses         *string `json:"value_axis_crosses,omitempty"`
 }
 
 // ChartAxisState is a read snapshot for one chart axis.
 type ChartAxisState struct {
-	Present          bool   `json:"present"`
-	TickLabelPos     string `json:"tick_label_pos,omitempty"`
-	HasMajorGridline bool   `json:"has_major_gridline,omitempty"`
+	Present       bool   `json:"present"`
+	TickLabelPos  string `json:"tick_label_pos,omitempty"`
+	MajorGridline bool   `json:"major_gridline,omitempty"`
+	Crosses       string `json:"crosses,omitempty"`
 }
 
 // ChartState is a read snapshot for chart-level object model traversal.

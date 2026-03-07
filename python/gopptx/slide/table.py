@@ -156,38 +156,38 @@ class Table:
             self.invalidate_cache()
 
     @property
-    def has_header_row(self) -> bool:
+    def header_row_enabled(self) -> bool:
         self._ensure_cache()
         return self._cache.get("first_row", False) is True if self._cache else False
 
-    @has_header_row.setter
-    def has_header_row(self, value: bool) -> None:
+    @header_row_enabled.setter
+    def header_row_enabled(self, value: bool) -> None:
         self._update_flags({"first_row": value})
 
     @property
-    def has_banded_rows(self) -> bool:
+    def banded_rows_enabled(self) -> bool:
         self._ensure_cache()
         return self._cache.get("band_row", False) is True if self._cache else False
 
-    @has_banded_rows.setter
-    def has_banded_rows(self, value: bool) -> None:
+    @banded_rows_enabled.setter
+    def banded_rows_enabled(self, value: bool) -> None:
         self._update_flags({"band_row": value})
 
     @property
     def first_row(self) -> bool:
-        return self.has_header_row
+        return self.header_row_enabled
 
     @first_row.setter
     def first_row(self, value: bool) -> None:
-        self.has_header_row = value
+        self.header_row_enabled = value
 
     @property
     def horz_banding(self) -> bool:
-        return self.has_banded_rows
+        return self.banded_rows_enabled
 
     @horz_banding.setter
     def horz_banding(self, value: bool) -> None:
-        self.has_banded_rows = value
+        self.banded_rows_enabled = value
 
     @property
     def first_col(self) -> bool:

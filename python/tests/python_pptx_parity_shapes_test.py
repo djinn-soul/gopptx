@@ -99,11 +99,11 @@ def test_freeform_builder_scale_and_segments() -> None:
         ids = {int(s["ID"]) for s in shapes}
         if freeform_id not in ids:
             raise AssertionError("expected freeform id present in shape list")
-        has_expected_text = any(
+        expected_text_present = any(
             int(shape["ID"]) == freeform_id and shape.get("Text") == "freeform text"
             for shape in shapes
         )
-        if not has_expected_text:
+        if not expected_text_present:
             raise AssertionError("expected freeform shape to retain provided text")
 
 

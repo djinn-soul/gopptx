@@ -53,6 +53,10 @@ class ChartFormatUpdate(TypedDict, total=False):
     data_label_show_bubble_size: bool
     category_axis_tick_label_pos: str
     value_axis_tick_label_pos: str
+    category_axis_major_gridlines: bool
+    value_axis_major_gridlines: bool
+    category_axis_crosses: str
+    value_axis_crosses: str
 
 
 class ChartAxisState(TypedDict, total=False):
@@ -60,7 +64,8 @@ class ChartAxisState(TypedDict, total=False):
 
     present: bool
     tick_label_pos: str
-    has_major_gridline: bool
+    major_gridline: bool
+    crosses: str
 
 
 class ChartState(TypedDict, total=False):

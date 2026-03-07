@@ -65,7 +65,7 @@ func run() error {
 	itemSlide := pptx.NewSlide("Line Items").WithTable(tbl)
 
 	notesSlide := pptx.NewSlide("Notes").
-		AddBullet("{{#if has_notes}}{{notes}}{{/if}}").
+		AddBullet("{{#if notes_present}}{{notes}}{{/if}}").
 		AddBullet("Payment due within 30 days.")
 
 	templatePath := filepath.Join(outputDir, "16_invoice_template.pptx")
@@ -77,12 +77,12 @@ func run() error {
 
 	// ── Step 2: render the template with data ──────────────────────────────────
 	result, err := tplx.Render(templatePath, tplx.Context{
-		"company":    "Acme Corp",
-		"date":       "2026-03-01",
-		"invoice_id": "INV-2026-0042",
-		"total":      "$3,600",
-		"has_notes":  true,
-		"notes":      "Thank you for your business!",
+		"company":       "Acme Corp",
+		"date":          "2026-03-01",
+		"invoice_id":    "INV-2026-0042",
+		"total":         "$3,600",
+		"notes_present": true,
+		"notes":         "Thank you for your business!",
 		"line_items": []tplx.Row{
 			{"num": "1", "name": "Widget A", "qty": "10", "price": "$1,200"},
 			{"num": "2", "name": "Widget B", "qty": "4", "price": "$800"},

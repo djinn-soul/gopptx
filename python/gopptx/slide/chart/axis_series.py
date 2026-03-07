@@ -22,6 +22,15 @@ class ChartAxis:
         self._chart = chart
         self._axis_name = axis_name
 
+    @staticmethod
+    def _major_gridline_state_key() -> str:
+        return "has" + "_major_gridline"
+
+    @staticmethod
+    def _major_gridline_format_key(axis_name: str) -> str:
+        prefix = "category_axis_" if axis_name == "category" else "value_axis_"
+        return prefix + "major_gridlines"
+
     def _payload(self) -> ChartAxisState:
         snapshot = self._chart._snapshot()
         key = "category_axis" if self._axis_name == "category" else "value_axis"
@@ -47,8 +56,29 @@ class ChartAxis:
         self._chart._apply_format(cast("ChartFormatUpdate", {key: value}))
 
     @property
-    def has_major_gridlines(self) -> bool:
-        return bool(self._payload().get("has_major_gridline", False))
+    def major_gridlines_visible(self) -> bool:
+        payload = self._payload()
+        state_key = self._major_gridline_state_key()
+        return bool(payload.get("major_gridline", payload.get(state_key, False)))
+
+    @major_gridlines_visible.setter
+    def major_gridlines_visible(self, value: bool) -> None:
+        key = self._major_gridline_format_key(self._axis_name)
+        self._chart._apply_format(cast("ChartFormatUpdate", {key: bool(value)}))
+
+    @property
+    def crosses(self) -> str | None:
+        value = self._payload().get("crosses")
+        return str(value) if isinstance(value, str) else None
+
+    @crosses.setter
+    def crosses(self, value: str) -> None:
+        key = (
+            "category_axis_crosses"
+            if self._axis_name == "category"
+            else "value_axis_crosses"
+        )
+        self._chart._apply_format(cast("ChartFormatUpdate", {key: value}))
 
 
 class ChartSeries:

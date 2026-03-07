@@ -14,6 +14,7 @@ var (
 	reAText      = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
 	reNumValue   = regexp.MustCompile(`(?s)<c:v>(-?\d+(?:\.\d+)?)</c:v>`)
 	reTickLblPos = regexp.MustCompile(`<c:tickLblPos val="([^"]+)"`)
+	reCrosses    = regexp.MustCompile(`<c:crosses val="([^"]+)"`)
 )
 
 const expectedSingleGroupMatch = 2
@@ -52,7 +53,10 @@ func buildAxisState(xml string, tags []string) common.ChartAxisState {
 		if match := reTickLblPos.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
 			state.TickLabelPos = strings.TrimSpace(match[1])
 		}
-		state.HasMajorGridline = strings.Contains(block, "<c:majorGridlines")
+		if match := reCrosses.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+			state.Crosses = strings.TrimSpace(match[1])
+		}
+		state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
 		break
 	}
 	return state

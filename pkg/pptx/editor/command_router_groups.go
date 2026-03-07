@@ -181,8 +181,8 @@ func commandHandlerForNotesTables(op string) (commandHandler, bool) {
 	switch op {
 	case OpGetNotes:
 		return handleGetNotes, true
-	case OpHasNotesSlide:
-		return handleHasNotesSlide, true
+	case OpNotesSlideExists:
+		return handleNotesSlideExists, true
 	case OpSetNotes:
 		return handleSetNotes, true
 	case OpAddTable:

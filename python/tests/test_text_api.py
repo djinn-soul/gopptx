@@ -48,6 +48,6 @@ def test_add_shape_text_frame_controls(tmp_path: Path) -> None:
     # Reload to verify
     with Presentation(output_path) as prs:
         shapes = prs.slides[0].list_shapes()
-        has_hello_text = any(shape["Text"].startswith("Hello") for shape in shapes)
-        if not has_hello_text:
+        hello_text_present = any(shape["Text"].startswith("Hello") for shape in shapes)
+        if not hello_text_present:
             raise AssertionError("expected to find shape text starting with 'Hello'")

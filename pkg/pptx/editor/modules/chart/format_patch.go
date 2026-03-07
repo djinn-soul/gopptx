@@ -33,6 +33,12 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if err := validateAxisTickLabelPosition("value_axis_tick_label_pos", req.ValueAxisTickLabelPos); err != nil {
 		return err
 	}
+	if err := validateAxisCrosses("category_axis_crosses", req.CategoryAxisCrosses); err != nil {
+		return err
+	}
+	if err := validateAxisCrosses("value_axis_crosses", req.ValueAxisCrosses); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -55,6 +61,12 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchAxisTickLabelPosition(updated, "catAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "dateAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "valAx", req.ValueAxisTickLabelPos)
+	updated = patchAxisMajorGridlines(updated, "catAx", req.CategoryAxisMajorGrid)
+	updated = patchAxisMajorGridlines(updated, "dateAx", req.CategoryAxisMajorGrid)
+	updated = patchAxisMajorGridlines(updated, "valAx", req.ValueAxisMajorGrid)
+	updated = patchAxisCrosses(updated, "catAx", req.CategoryAxisCrosses)
+	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
+	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)
 	return []byte(updated), nil
 }
 

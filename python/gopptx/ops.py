@@ -40,7 +40,7 @@ OP_GET_SHAPE_TEXT_STATE = "get_shape_text_state"
 OP_GET_SLIDE_LAYOUT_REF = "get_slide_layout_ref"
 OP_GET_TABLE = "get_table"
 OP_GROUP_SHAPES = "group_shapes"
-OP_HAS_NOTES_SLIDE = "has_notes_slide"
+OP_NOTES_SLIDE_EXISTS = "notes_slide_exists"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
 OP_LIST_PLACEHOLDERS = "list_placeholders"
@@ -125,7 +125,7 @@ SUPPORTED_OPS = (
     OP_GET_SLIDE_LAYOUT_REF,
     OP_GET_TABLE,
     OP_GROUP_SHAPES,
-    OP_HAS_NOTES_SLIDE,
+    OP_NOTES_SLIDE_EXISTS,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
     OP_LIST_PLACEHOLDERS,

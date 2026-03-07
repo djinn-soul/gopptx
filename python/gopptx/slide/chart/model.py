@@ -107,11 +107,11 @@ class ChartPlot:
         self._data_labels = DataLabels(chart)
 
     @property
-    def has_data_labels(self) -> bool:
+    def data_labels_visible(self) -> bool:
         return bool(self._chart._state.get("show_data_labels", False))
 
-    @has_data_labels.setter
-    def has_data_labels(self, value: bool) -> None:
+    @data_labels_visible.setter
+    def data_labels_visible(self, value: bool) -> None:
         self._chart._state["show_data_labels"] = value
         self._chart._apply_format({"show_data_labels": value})
 
@@ -179,11 +179,11 @@ class Chart:
         return self._chart_title
 
     @property
-    def has_title(self) -> bool:
+    def title_visible(self) -> bool:
         return self._chart_title.visible
 
-    @has_title.setter
-    def has_title(self, value: bool) -> None:
+    @title_visible.setter
+    def title_visible(self, value: bool) -> None:
         self._chart_title.visible = value
 
     @property

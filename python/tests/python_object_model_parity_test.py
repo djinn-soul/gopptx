@@ -14,12 +14,22 @@ def test_chart_object_model_updates() -> None:
         _shape_id = slide.add_chart("bar", data)
 
         chart = slide.charts[0]
-        chart.has_title = True
+        chart.title_visible = True
         chart.chart_title.text = "Updated Title"
         chart.legend.visible = True
         chart.legend.position = "r"
-        chart.plots[0].has_data_labels = True
+        chart.category_axis.tick_label_position = "low"
+        chart.category_axis.major_gridlines_visible = True
+        chart.category_axis.crosses = "max"
+        chart.value_axis.tick_label_position = "high"
+        chart.value_axis.major_gridlines_visible = False
+        chart.value_axis.crosses = "min"
+        chart.plots[0].data_labels_visible = True
         chart.plots[0].data_labels.show_value = True
+        assert chart.category_axis.tick_label_position == "low"  # noqa: S101
+        assert chart.category_axis.crosses == "max"  # noqa: S101
+        assert chart.value_axis.tick_label_position == "high"  # noqa: S101
+        assert chart.value_axis.crosses == "min"  # noqa: S101
 
         new_data = CategoryChartData(categories=["X", "Y"])
         new_data.add_series("S2", [3.0, 4.0])

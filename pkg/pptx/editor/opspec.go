@@ -64,7 +64,7 @@ const (
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
-	OpHasNotesSlide           = "has_notes_slide"
+	OpNotesSlideExists        = "notes_slide_exists"
 	OpSetNotes                = "set_notes"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
@@ -152,7 +152,7 @@ func SupportedOps() []string {
 		OpMoveShapeToFront,
 		OpMoveShapeToBack,
 		OpGetNotes,
-		OpHasNotesSlide,
+		OpNotesSlideExists,
 		OpSetNotes,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,

@@ -87,16 +87,16 @@ def test_table_style_flags(table_shape) -> None:  # noqa: ANN001, D103
     table = slide.table(shape_id)
 
     # Header row
-    table.has_header_row = True
-    assert table.has_header_row is True  # noqa: S101
-    table.has_header_row = False
-    assert table.has_header_row is False  # noqa: S101
+    table.header_row_enabled = True
+    assert table.header_row_enabled is True  # noqa: S101
+    table.header_row_enabled = False
+    assert table.header_row_enabled is False  # noqa: S101
 
     # Banded rows
-    table.has_banded_rows = True
-    assert table.has_banded_rows is True  # noqa: S101
-    table.has_banded_rows = False
-    assert table.has_banded_rows is False  # noqa: S101
+    table.banded_rows_enabled = True
+    assert table.banded_rows_enabled is True  # noqa: S101
+    table.banded_rows_enabled = False
+    assert table.banded_rows_enabled is False  # noqa: S101
 
 
 def test_table_indexing_errors(table_shape) -> None:  # noqa: ANN001, D103

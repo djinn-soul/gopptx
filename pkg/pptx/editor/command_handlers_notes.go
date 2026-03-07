@@ -40,7 +40,7 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	)
 }
 
-func handleHasNotesSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
+func handleNotesSlideExists(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleSlideIndexRequest(
 		payload,
@@ -52,7 +52,7 @@ func handleHasNotesSlide(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err != nil {
 				return nil, err
 			}
-			return map[string]bool{"has_notes_slide": hasNotesSlide}, nil
+			return map[string]bool{"notes_slide_exists": hasNotesSlide}, nil
 		},
 	)
 }

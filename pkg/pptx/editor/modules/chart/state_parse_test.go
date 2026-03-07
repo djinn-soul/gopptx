@@ -22,8 +22,14 @@ func TestExtractChartState(t *testing.T) {
 	if !state.CategoryAx.Present || state.CategoryAx.TickLabelPos != "low" {
 		t.Fatalf("unexpected category axis state %#v", state.CategoryAx)
 	}
-	if !state.ValueAx.Present || state.ValueAx.TickLabelPos != "nextTo" || !state.ValueAx.HasMajorGridline {
+	if state.CategoryAx.Crosses != "autoZero" {
+		t.Fatalf("expected category axis crosses autoZero, got %#v", state.CategoryAx.Crosses)
+	}
+	if !state.ValueAx.Present || state.ValueAx.TickLabelPos != "nextTo" || !state.ValueAx.MajorGridline {
 		t.Fatalf("unexpected value axis state %#v", state.ValueAx)
+	}
+	if state.ValueAx.Crosses != "autoZero" {
+		t.Fatalf("expected value axis crosses autoZero, got %#v", state.ValueAx.Crosses)
 	}
 	if len(state.Series) != 1 || len(state.Series[0].Values) != 2 {
 		t.Fatalf("unexpected series state %#v", state.Series)
