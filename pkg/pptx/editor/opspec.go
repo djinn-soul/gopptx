@@ -12,7 +12,9 @@ const (
 	OpDuplicateSlide          = "duplicate_slide"
 	OpGetMetadata             = "get_metadata"
 	OpUpdateChartData         = "update_chart_data"
+	OpUpdateChartFormatting   = "update_chart_formatting"
 	OpListSlideCharts         = "list_slide_charts"
+	OpGetSlideLayoutRef       = "get_slide_layout_ref"
 	OpListSlideLayouts        = "list_slide_layouts"
 	OpListSlideMasters        = "list_slide_masters"
 	OpListMasterLayouts       = "list_master_layouts"
@@ -43,6 +45,11 @@ const (
 	OpAddComment              = "add_comment"
 	OpRemoveComment           = "remove_comment"
 	OpListShapes              = "list_shapes"
+	OpGetShapeTextState       = "get_shape_text_state"
+	OpGetShapeRuns            = "get_shape_runs"
+	OpSetShapeRuns            = "set_shape_runs"
+	OpUpdateShapeRunText      = "update_shape_run_text"
+	OpAppendShapeRun          = "append_shape_run"
 	OpAddShape                = "add_shape"
 	OpAddTextbox              = "add_textbox"
 	OpAddConnector            = "add_connector"
@@ -67,6 +74,8 @@ const (
 	OpUpdateTableFlags        = "update_table_flags"
 	OpUpdateTableCell         = "update_table_cell"
 	OpSetTableStyle           = "set_table_style"
+	OpSetTableRowHeight       = "set_table_row_height"
+	OpSetTableColumnWidth     = "set_table_column_width"
 	OpAddCustomXML            = "add_custom_xml"
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
@@ -90,7 +99,9 @@ func SupportedOps() []string {
 		OpDuplicateSlide,
 		OpGetMetadata,
 		OpUpdateChartData,
+		OpUpdateChartFormatting,
 		OpListSlideCharts,
+		OpGetSlideLayoutRef,
 		OpListSlideLayouts,
 		OpListSlideMasters,
 		OpListMasterLayouts,
@@ -121,6 +132,11 @@ func SupportedOps() []string {
 		OpAddComment,
 		OpRemoveComment,
 		OpListShapes,
+		OpGetShapeTextState,
+		OpGetShapeRuns,
+		OpSetShapeRuns,
+		OpUpdateShapeRunText,
+		OpAppendShapeRun,
 		OpAddShape,
 		OpAddTextbox,
 		OpAddConnector,
@@ -145,6 +161,8 @@ func SupportedOps() []string {
 		OpUpdateTableFlags,
 		OpUpdateTableCell,
 		OpSetTableStyle,
+		OpSetTableRowHeight,
+		OpSetTableColumnWidth,
 		OpAddCustomXML,
 		OpListCustomXML,
 		OpRemoveCustomXML,

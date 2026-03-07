@@ -13,10 +13,12 @@ if TYPE_CHECKING:
     from ..schemas import (
         Author,
         ChartDataUpdate,
+        ChartFormatUpdate,
         ChartSelector,
         Comment,
         SlideChartRef,
     )
+    from ..slide.chart_data import CategoryChartData, XyChartData
 else:
 
     class PresentationProtocol:
@@ -112,11 +114,22 @@ class PresentationChartMixin(PresentationProtocol):
         self,
         slide_index: int,
         chart_type: str,
-        categories: list[str],
-        values_or_series: list[float] | list[dict[str, str | list[float]]],
+        categories: list[str] | CategoryChartData | XyChartData,
+        values_or_series: list[float]
+        | list[dict[str, str | list[float]]]
+        | None = None,
         **kwargs: str | tuple[float, float, float, float],
     ) -> int:
         """Add a chart to a slide."""
+        if hasattr(categories, "to_add_chart_args"):
+            chart_builder = cast("CategoryChartData | XyChartData", categories)
+            builder_categories, builder_values = chart_builder.to_add_chart_args()
+            categories = builder_categories
+            values_or_series = cast(
+                "list[float] | list[dict[str, str | list[float]]]", builder_values
+            )
+        if values_or_series is None:
+            values_or_series = []
         bounds = kwargs.get("bounds", (0, 0, 0, 0))
         if len(bounds) != self._BOUNDS_LEN:
             raise ValueError("bounds must be a tuple of (x, y, w, h)")
@@ -196,6 +209,40 @@ class PresentationChartMixin(PresentationProtocol):
                 UserWarning,
                 stacklevel=2,
             )
+
+    def update_chart_formatting(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+        fmt: ChartFormatUpdate,
+    ) -> None:
+        """Update chart formatting for a chart on a slide."""
+        self.execute(
+            ops.OP_UPDATE_CHART_FORMATTING,
+            {
+                "slide_index": slide_index,
+                "chart_selector": chart_selector,
+                "format": fmt,
+            },
+        )
+
+    def update_chart_formatting_by_index(
+        self,
+        slide_index: int,
+        chart_index: int,
+        fmt: ChartFormatUpdate,
+    ) -> None:
+        """Update chart formatting by chart index."""
+        self.update_chart_formatting(slide_index, {"index": chart_index}, fmt)
+
+    def update_chart_formatting_by_rel_id(
+        self,
+        slide_index: int,
+        rel_id: str,
+        fmt: ChartFormatUpdate,
+    ) -> None:
+        """Update chart formatting by chart relationship id."""
+        self.update_chart_formatting(slide_index, {"rel_id": rel_id}, fmt)
 
     def update_chart_data_by_index(
         self,

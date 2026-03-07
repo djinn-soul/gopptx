@@ -140,8 +140,8 @@ def _process_import_from_node(
     module = node.module or ""
 
     if level > 0:
-        # Fixed: removed off-by-one (+1) that incorrectly included extra level
-        base_parts = current_pkg_parts[: len(current_pkg_parts) - level]
+        # level 1 is current package, level 2 is parent, etc.
+        base_parts = current_pkg_parts[: len(current_pkg_parts) - level + 1]
         target = ".".join(base_parts + ([module] if module else []))
     else:
         target = module

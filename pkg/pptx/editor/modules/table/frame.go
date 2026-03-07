@@ -18,13 +18,16 @@ type XML struct {
 		BandCol  string `xml:"bandCol,attr"`
 	} `xml:"tblPr"`
 	Grid struct {
-		Cols []struct{} `xml:"gridCol"`
+		Cols []struct {
+			Width int64 `xml:"w,attr"`
+		} `xml:"gridCol"`
 	} `xml:"tblGrid"`
 	Rows []RowXML `xml:"tr"`
 }
 
 type RowXML struct {
-	Cells []CellXML `xml:"tc"`
+	Height int64     `xml:"h,attr"`
+	Cells  []CellXML `xml:"tc"`
 }
 
 type CellXML struct {

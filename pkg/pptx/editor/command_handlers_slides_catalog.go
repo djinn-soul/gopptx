@@ -33,6 +33,32 @@ func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (any,
 	return map[string]bool{"updated": true}, nil
 }
 
+func handleUpdateChartFormatting(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+
+	var params struct {
+		ChartSelector common.ChartSelector     `json:"chart_selector"`
+		Format        common.ChartFormatUpdate `json:"format"`
+	}
+	if err := json.Unmarshal(payload, &params); err != nil {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+
+	if err := e.UpdateChartFormatting(slideIndex, params.ChartSelector, params.Format); err != nil {
+		return nil, err
+	}
+	return map[string]bool{"updated": true}, nil
+}
+
 func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleSlideIndexRequest(
@@ -46,6 +72,26 @@ func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any,
 				return nil, err
 			}
 			return map[string]any{"charts": refs}, nil
+		},
+	)
+}
+
+func handleGetSlideLayoutRef(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleSlideIndexRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(raw map[string]any) (int, bool) { return requireSlideIndex(e, raw, v) },
+		v.Error,
+		func(slideIndex int) (any, error) {
+			layoutPart, masterPart, err := e.GetSlideLayoutRef(slideIndex)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{
+				"layout_part": layoutPart,
+				"master_part": masterPart,
+			}, nil
 		},
 	)
 }

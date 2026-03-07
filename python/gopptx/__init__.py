@@ -1,4 +1,5 @@
 """gopptx - High-performance PPTX engine powered by Go."""
+# ruff: noqa: RUF022
 
 from .api import GopptxError, Presentation, Slide
 from .constants import (
@@ -41,6 +42,7 @@ from .schemas import (
     BatchCommand,
     BatchItemResult,
     ChartDataUpdate,
+    ChartFormatUpdate,
     ChartSelector,
     ChartSeriesData,
     Comment,
@@ -58,7 +60,30 @@ from .schemas import (
     TableCellInfo,
     TableInfo,
 )
-from .slide import ParagraphProps, Run, RunHyperlink, TextFrameProps
+from .slide import (
+    CategoryChartData,
+    CategorySeries,
+    Chart,
+    ChartCollection,
+    ChartLegend,
+    ChartPlot,
+    ChartPlots,
+    ChartTitle,
+    DataLabels,
+    ParagraphProps,
+    Run,
+    RunHyperlink,
+    ShapeCollection,
+    ShapeProxy,
+    ShapeTextFrame,
+    TableColumn,
+    TableColumns,
+    TableRow,
+    TableRows,
+    TextFrameProps,
+    XyChartData,
+    XySeries,
+)
 from .slide.table import Cell, Table
 
 __all__ = (
@@ -96,10 +121,20 @@ __all__ = (
     "BatchCommand",
     "BatchItemResult",
     "Cell",
+    "CategoryChartData",
+    "CategorySeries",
+    "Chart",
+    "ChartCollection",
     "ChartDataUpdate",
+    "ChartFormatUpdate",
+    "ChartLegend",
+    "ChartPlot",
+    "ChartPlots",
     "ChartSelector",
     "ChartSeriesData",
+    "ChartTitle",
     "Comment",
+    "DataLabels",
     "GopptxError",
     "ParagraphProps",
     "Presentation",
@@ -107,9 +142,12 @@ __all__ = (
     "Run",
     "RunHyperlink",
     "Shape",
+    "ShapeCollection",
     "ShapeProps",
+    "ShapeProxy",
     "ShapeSearchQuery",
     "ShapeSearchResult",
+    "ShapeTextFrame",
     "ShapeUpdate",
     "Slide",
     "SlideChartRef",
@@ -122,7 +160,13 @@ __all__ = (
     "SlideMetadata",
     "SlideSize",
     "Table",
+    "TableColumn",
+    "TableColumns",
+    "TableRow",
+    "TableRows",
     "TableCellInfo",
     "TableInfo",
     "TextFrameProps",
+    "XyChartData",
+    "XySeries",
 )

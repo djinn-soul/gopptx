@@ -185,14 +185,17 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 	shapes := make([]common.Shape, len(parsed))
 	for i, p := range parsed {
 		shapes[i] = common.Shape{
-			ID:   p.ID,
-			Name: p.Name,
-			Type: p.Type,
-			Text: p.Text,
-			X:    p.X,
-			Y:    p.Y,
-			W:    p.W,
-			H:    p.H,
+			ID:     p.ID,
+			Name:   p.Name,
+			Type:   p.Type,
+			Text:   p.Text,
+			X:      p.X,
+			Y:      p.Y,
+			W:      p.W,
+			H:      p.H,
+			Fill:   p.Fill,
+			Line:   p.Line,
+			Shadow: p.Shadow,
 		}
 	}
 	return shapes, nil
@@ -252,24 +255,6 @@ func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 	}
 
 	return e.applyShapeRemoval(partPath, content, shapes, shapeIndex)
-}
-
-func (e *PresentationEditor) applyShapeRemoval(
-	partPath string,
-	content []byte,
-	shapes []parsedShape,
-	shapeIndex int,
-) error {
-	// Replace with empty byte slice
-	newContent := replaceShapeNodes(content, shapes, func(i int, _ *parsedShape) ([]byte, bool) {
-		if i == shapeIndex {
-			return []byte{}, true
-		}
-		return nil, false
-	})
-
-	e.parts.Set(partPath, newContent)
-	return nil
 }
 
 // GroupShapes groups the specified shapes on a slide into a group shape.

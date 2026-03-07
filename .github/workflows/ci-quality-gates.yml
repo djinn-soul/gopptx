@@ -1,0 +1,192 @@
+name: CI Quality Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-quality-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: always
+
+  guardrails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Sync dev dependencies
+        run: uv sync --extra dev
+
+      - name: Run architectural guardrails
+        run: uv run python scripts/ci/architectural_guardrails.py
+
+  prek-all-files:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+          install-mode: binary
+          skip-pkg-cache: true
+          skip-build-cache: true
+          skip-save-cache: true
+          args: --version
+
+      - name: Sync dev dependencies
+        run: uv sync --extra dev
+
+      - name: Run full pre-commit gate
+        run: uv run prek run --all-files
+
+  go-fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run bounded fuzzing (internal/pptxxml)
+        run: go test ./internal/pptxxml -run=^$ -fuzz=Fuzz -fuzztime=30s
+
+  go-vulncheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  semgrep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Semgrep
+        run: python -m pip install --upgrade semgrep
+
+      - name: Run Semgrep scan
+        run: |
+          semgrep --config=auto --error \
+            --exclude=.venv \
+            --exclude=scripts/tools/PptxValidator/bin \
+            --exclude=scripts/tools/PptxValidator/obj
+
+  python-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Sync dev dependencies
+        run: uv sync --extra dev
+
+      - name: Run Python coverage gate
+        run: |
+          uv run pytest python/tests \
+            --cov=python/gopptx \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=50
+
+  go-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run Go coverage gate
+        shell: bash
+        run: |
+          go test ./... -coverprofile=coverage-go.out -covermode=atomic -count=1
+          total="$(go tool cover -func=coverage-go.out | awk '/^total:/ {gsub("%","",$3); print $3}')"
+          echo "Total Go coverage: ${total}%"
+          min_cov=50
+          awk -v t="$total" -v m="$min_cov" 'BEGIN { exit !(t+0 >= m+0) }' || {
+            echo "Go coverage ${total}% is below required ${min_cov}%"
+            exit 1
+          }

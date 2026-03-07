@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
@@ -35,71 +36,49 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 
 	rowCount, colCount := Dimensions(parsed)
 	cells := make([]map[string]any, 0, rowCount*max(colCount, 1))
+	rowHeights := make([]int64, rowCount)
+	for i := range rowCount {
+		if i < len(parsed.Rows) {
+			rowHeights[i] = parsed.Rows[i].Height
+		}
+	}
+	columnWidths := make([]int64, colCount)
+	for i := range colCount {
+		if i < len(parsed.Grid.Cols) {
+			columnWidths[i] = parsed.Grid.Cols[i].Width
+		}
+	}
 
 	for rIdx, row := range parsed.Rows {
 		for cIdx, cell := range row.Cells {
 			cells = append(cells, buildTableCellInfo(rIdx, cIdx, cell))
 		}
 	}
-	rowsView, colsView := buildTableTraversalViews(rowCount, colCount, cells)
+	rowsView, colsView := buildTableTraversalViews(
+		rowCount,
+		colCount,
+		cells,
+		rowHeights,
+		columnWidths,
+	)
 
 	return map[string]any{
 		"table": map[string]any{
-			"row_count": rowCount,
-			"col_count": colCount,
-			"first_row": TruthyAttr(parsed.TblPr.FirstRow),
-			"first_col": TruthyAttr(parsed.TblPr.FirstCol),
-			"last_row":  TruthyAttr(parsed.TblPr.LastRow),
-			"last_col":  TruthyAttr(parsed.TblPr.LastCol),
-			"band_row":  TruthyAttr(parsed.TblPr.BandRow),
-			"band_col":  TruthyAttr(parsed.TblPr.BandCol),
-			"cells":     cells,
-			"rows":      rowsView,
-			"columns":   colsView,
+			"row_count":     rowCount,
+			"col_count":     colCount,
+			"first_row":     TruthyAttr(parsed.TblPr.FirstRow),
+			"first_col":     TruthyAttr(parsed.TblPr.FirstCol),
+			"last_row":      TruthyAttr(parsed.TblPr.LastRow),
+			"last_col":      TruthyAttr(parsed.TblPr.LastCol),
+			"band_row":      TruthyAttr(parsed.TblPr.BandRow),
+			"band_col":      TruthyAttr(parsed.TblPr.BandCol),
+			"row_heights":   rowHeights,
+			"column_widths": columnWidths,
+			"cells":         cells,
+			"rows":          rowsView,
+			"columns":       colsView,
 		},
 	}, nil
-}
-
-func buildTableTraversalViews(
-	rowCount int,
-	colCount int,
-	cells []map[string]any,
-) ([]map[string]any, []map[string]any) {
-	rowsView := make([]map[string]any, rowCount)
-	for r := range rowCount {
-		rowsView[r] = map[string]any{
-			"index": r,
-			"cells": make([]map[string]any, 0, colCount),
-		}
-	}
-
-	colsView := make([]map[string]any, colCount)
-	for c := range colCount {
-		colsView[c] = map[string]any{
-			"index": c,
-			"cells": make([]map[string]any, 0, rowCount),
-		}
-	}
-
-	for _, cell := range cells {
-		rowIndex, rowOK := cell["row"].(int)
-		colIndex, colOK := cell["col"].(int)
-		if !rowOK || !colOK {
-			continue
-		}
-		if rowIndex >= 0 && rowIndex < rowCount {
-			if rowCells, ok := rowsView[rowIndex]["cells"].([]map[string]any); ok {
-				rowsView[rowIndex]["cells"] = append(rowCells, cell)
-			}
-		}
-		if colIndex >= 0 && colIndex < colCount {
-			if colCells, ok := colsView[colIndex]["cells"].([]map[string]any); ok {
-				colsView[colIndex]["cells"] = append(colCells, cell)
-			}
-		}
-	}
-
-	return rowsView, colsView
 }
 
 func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
@@ -263,4 +242,56 @@ func extractXMLElement(content []byte, tagOpen []byte) []byte {
 		return content[start : start+tagEnd+1]
 	}
 	return content[start : start+end+len(closeTag)]
+}
+
+func UpdateTableRowHeightInFrame(frame []byte, rowIdx int, height int64) ([]byte, error) {
+	if height <= 0 {
+		return nil, errors.New("row height must be > 0")
+	}
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return nil, err
+	}
+	rowCount, _ := Dimensions(parsed)
+	if rowIdx < 0 || rowIdx >= rowCount {
+		return nil, fmt.Errorf("table row %d out of range", rowIdx)
+	}
+	return MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
+		tagEnd := bytes.Index(rowContent, []byte(">"))
+		if tagEnd == -1 {
+			return nil, errors.New("invalid table row xml")
+		}
+		openTag := rowContent[:tagEnd+1]
+		updatedTag := SetOrInsertAttr(openTag, "h", strconv.FormatInt(height, 10))
+		updated := make([]byte, 0, len(rowContent)-len(openTag)+len(updatedTag))
+		updated = append(updated, updatedTag...)
+		updated = append(updated, rowContent[tagEnd+1:]...)
+		return updated, nil
+	})
+}
+
+func UpdateTableColumnWidthInFrame(frame []byte, colIdx int, width int64) ([]byte, error) {
+	if width <= 0 {
+		return nil, errors.New("column width must be > 0")
+	}
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return nil, err
+	}
+	_, colCount := Dimensions(parsed)
+	if colIdx < 0 || colIdx >= colCount {
+		return nil, fmt.Errorf("table column %d out of range", colIdx)
+	}
+	return MutateTableElements(
+		frame,
+		[]byte("<a:gridCol"),
+		[]byte("/>"),
+		colIdx,
+		colIdx,
+		"column",
+		func(_ int, colContent []byte) ([]byte, error) {
+			updated := SetOrInsertAttr(colContent, "w", strconv.FormatInt(width, 10))
+			return updated, nil
+		},
+	)
 }

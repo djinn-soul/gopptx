@@ -159,6 +159,10 @@ type Shape struct {
 	Text string
 	X, Y int
 	W, H int
+
+	Fill   *ShapeFill
+	Line   *ShapeLine
+	Shadow *ShapeShadow
 }
 
 // ShapeSearchQuery filters shapes for editor-wide search.

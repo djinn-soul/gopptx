@@ -186,3 +186,55 @@ func handleSetTableStyle(e *PresentationEditor, payload json.RawMessage) (any, e
 		},
 	)
 }
+
+func handleSetTableRowHeight(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.TableShapeRequest, bool) {
+			return editorcommand.ParseTableShapeRequest(p, v.RequireInt)
+		},
+		v.Error,
+		func(request editorcommand.TableShapeRequest, p map[string]any) (any, error) {
+			row, ok := v.RequireInt(p, "row")
+			if !ok {
+				return nil, v.Error()
+			}
+			height, ok := v.RequireInt(p, "height")
+			if !ok {
+				return nil, v.Error()
+			}
+			if err := e.SetTableRowHeight(request.SlideIndex, request.ShapeID, row, int64(height)); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"success": true}, nil
+		},
+	)
+}
+
+func handleSetTableColumnWidth(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.TableShapeRequest, bool) {
+			return editorcommand.ParseTableShapeRequest(p, v.RequireInt)
+		},
+		v.Error,
+		func(request editorcommand.TableShapeRequest, p map[string]any) (any, error) {
+			col, ok := v.RequireInt(p, "col")
+			if !ok {
+				return nil, v.Error()
+			}
+			width, ok := v.RequireInt(p, "width")
+			if !ok {
+				return nil, v.Error()
+			}
+			if err := e.SetTableColumnWidth(request.SlideIndex, request.ShapeID, col, int64(width)); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"success": true}, nil
+		},
+	)
+}
