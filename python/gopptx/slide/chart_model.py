@@ -7,8 +7,10 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, cast
 
+from .chart_model_axis_series import ChartAxis, ChartSeriesCollection
+
 if TYPE_CHECKING:
-    from ..schemas import ChartDataUpdate, ChartFormatUpdate
+    from ..schemas import ChartDataUpdate, ChartFormatUpdate, ChartState
     from .chart_data import CategoryChartData, XyChartData
     from .slide import Slide
 
@@ -151,6 +153,14 @@ class Chart:
         self._chart_title = ChartTitle(self)
         self._legend = ChartLegend(self)
         self._plots = ChartPlots(self)
+        self._category_axis = ChartAxis(self, axis_name="category")
+        self._value_axis = ChartAxis(self, axis_name="value")
+
+    def _snapshot(self) -> ChartState:
+        return self._slide._presentation.get_chart_state_by_index(
+            self._slide.index,
+            self._index,
+        )
 
     @property
     def index(self) -> int:
@@ -183,6 +193,27 @@ class Chart:
     @property
     def plots(self) -> ChartPlots:
         return self._plots
+
+    @property
+    def category_axis(self) -> ChartAxis:
+        return self._category_axis
+
+    @property
+    def value_axis(self) -> ChartAxis:
+        return self._value_axis
+
+    @property
+    def chart_style(self) -> int | None:
+        snapshot = self._snapshot()
+        style = snapshot.get("chart_style")
+        return int(style) if isinstance(style, int) else None
+
+    @property
+    def series(self) -> ChartSeriesCollection:
+        snapshot = self._snapshot()
+        return ChartSeriesCollection(
+            cast("list[dict[str, object]]", snapshot.get("series", []))
+        )
 
     def replace_data(
         self, data: CategoryChartData | XyChartData | ChartDataUpdate

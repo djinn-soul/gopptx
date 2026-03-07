@@ -1,5 +1,5 @@
 """Live text object model facades for shape text editing."""
-# ruff: noqa: D102,D105,D107,TC003,PLR6201
+# ruff: noqa: D101,D102,D105,D107,TC003,PLR6201
 # pyright: reportMissingSuperCall=false, reportPrivateUsage=false, reportArgumentType=false, reportCallIssue=false, reportPropertyTypeMismatch=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportAttributeAccessIssue=false
 
 from __future__ import annotations
@@ -142,12 +142,31 @@ class ShapeParagraphProxy:
         presentation: Presentation,
         slide_index: int,
         shape_id: int,
-        paragraph_index: int,
     ) -> None:
         self._presentation = presentation
         self._slide_index = slide_index
         self._shape_id = shape_id
-        self._paragraph_index = paragraph_index
+
+    def _paragraph_payload(self) -> dict[str, object]:
+        state = self._presentation.get_shape_text_state(
+            self._slide_index, self._shape_id
+        )
+        paragraph = state.get("paragraph")
+        if isinstance(paragraph, dict):
+            return dict(cast("dict[str, object]", paragraph))
+        return {}
+
+    def _set_paragraph_field(self, field: str, value: object) -> None:
+        paragraph = self._paragraph_payload()
+        if value is None:
+            paragraph.pop(field, None)
+        else:
+            paragraph[field] = value
+        self._presentation.update_shape(
+            self._slide_index,
+            self._shape_id,
+            cast("dict[str, object]", {"paragraph": paragraph}),
+        )
 
     @property
     def runs(self) -> ShapeRunCollection:
@@ -155,7 +174,8 @@ class ShapeParagraphProxy:
 
     @property
     def text(self) -> str:
-        return "".join(run.text for run in self.runs)
+        runs = self._presentation.get_shape_runs(self._slide_index, self._shape_id)
+        return "".join(str(r.get("text", "")) for r in runs)
 
     @text.setter
     def text(self, value: str) -> None:
@@ -165,13 +185,69 @@ class ShapeParagraphProxy:
             [Run(text=value).to_payload()],
         )
 
+    @property
+    def alignment(self) -> str | None:
+        value = self._paragraph_payload().get("alignment")
+        return str(value) if isinstance(value, str) else None
+
+    @alignment.setter
+    def alignment(self, value: str | None) -> None:
+        self._set_paragraph_field("alignment", value)
+
+    @property
+    def level(self) -> int | None:
+        value = self._paragraph_payload().get("level")
+        return int(value) if isinstance(value, int) else None
+
+    @level.setter
+    def level(self, value: int | None) -> None:
+        self._set_paragraph_field("level", value)
+
+    @property
+    def line_spacing(self) -> float | int | None:
+        payload = self._paragraph_payload()
+        pct = payload.get("line_spacing_pct")
+        if isinstance(pct, int):
+            return float(pct) / 100000.0
+        pts = payload.get("line_spacing_pts")
+        if isinstance(pts, int):
+            return pts
+        return None
+
+    @line_spacing.setter
+    def line_spacing(self, value: float | None) -> None:
+        if value is None:
+            self._set_paragraph_field("line_spacing_pct", None)
+            self._set_paragraph_field("line_spacing_pts", None)
+            return
+        if isinstance(value, float):
+            pct = round(value * 100000)
+            self._set_paragraph_field("line_spacing_pts", None)
+            self._set_paragraph_field("line_spacing_pct", pct)
+            return
+        self._set_paragraph_field("line_spacing_pct", None)
+        self._set_paragraph_field("line_spacing_pts", value)
+
+    @property
+    def space_before(self) -> int | None:
+        value = self._paragraph_payload().get("space_before_pts")
+        return int(value) if isinstance(value, int) else None
+
+    @space_before.setter
+    def space_before(self, value: int | None) -> None:
+        self._set_paragraph_field("space_before_pts", value)
+
+    @property
+    def space_after(self) -> int | None:
+        value = self._paragraph_payload().get("space_after_pts")
+        return int(value) if isinstance(value, int) else None
+
+    @space_after.setter
+    def space_after(self, value: int | None) -> None:
+        self._set_paragraph_field("space_after_pts", value)
+
 
 class ShapeParagraphCollection:
-    """Paragraph collection facade for shape text.
-
-    Current bridge semantics expose a single normalized paragraph object.
-    """
-
     def __init__(
         self, presentation: Presentation, slide_index: int, shape_id: int
     ) -> None:
@@ -186,7 +262,7 @@ class ShapeParagraphCollection:
         if index not in (0, -1):
             raise IndexError("paragraph index out of range")
         return ShapeParagraphProxy(
-            self._presentation, self._slide_index, self._shape_id, 0
+            self._presentation, self._slide_index, self._shape_id
         )
 
     def __iter__(self) -> Iterator[ShapeParagraphProxy]:
@@ -209,4 +285,15 @@ class ShapeTextFrame:
             self._presentation,
             self._slide_index,
             self._shape_id,
+        )
+
+    def fit_text(self) -> None:
+        """Best-effort fit text behavior using bridge-supported controls."""
+        self._presentation.update_shape(
+            self._slide_index,
+            self._shape_id,
+            cast(
+                "dict[str, object]",
+                {"text_frame": {"word_wrap": True, "auto_fit_type": "shape"}},
+            ),
         )

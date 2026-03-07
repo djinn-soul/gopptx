@@ -3,6 +3,7 @@ package editor
 import (
 	"encoding/json"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
@@ -22,7 +23,19 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err != nil {
 				return nil, err
 			}
-			return editorcommand.BuildNotesResult(notes, hasNotesSlide), nil
+			rawPlaceholders, err := e.ListNotesPlaceholders(slideIndex)
+			if err != nil {
+				return nil, err
+			}
+			placeholders := make([]common.PlaceholderInfo, 0, len(rawPlaceholders))
+			for _, ph := range rawPlaceholders {
+				placeholders = append(placeholders, common.PlaceholderInfo{
+					Type:  ph.Type,
+					Index: ph.Index,
+					Name:  ph.Name,
+				})
+			}
+			return editorcommand.BuildNotesResultDetailed(notes, hasNotesSlide, placeholders), nil
 		},
 	)
 }

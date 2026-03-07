@@ -53,6 +53,30 @@ type patternFillXML struct {
 	} `xml:"bgClr"`
 }
 
+type spacingNodeXML struct {
+	SpcPct *struct {
+		Val *int `xml:"val,attr"`
+	} `xml:"spcPct"`
+	SpcPts *struct {
+		Val *int `xml:"val,attr"`
+	} `xml:"spcPts"`
+}
+
+type paragraphPropsXML struct {
+	MarL   *int    `xml:"marL,attr"`
+	Indent *int    `xml:"indent,attr"`
+	Algn   *string `xml:"algn,attr"`
+	Lvl    *int    `xml:"lvl,attr"`
+	TabLst *struct {
+		Tabs []struct {
+			Pos *int `xml:"pos,attr"`
+		} `xml:"tab"`
+	} `xml:"tabLst"`
+	LnSp   *spacingNodeXML `xml:"lnSp"`
+	SpcBef *spacingNodeXML `xml:"spcBef"`
+	SpcAft *spacingNodeXML `xml:"spcAft"`
+}
+
 type shapeXML struct {
 	NvSpPr struct {
 		CNvPr struct {
@@ -147,16 +171,8 @@ type shapeXML struct {
 	} `xml:"grpSpPr"`
 	TxBody struct {
 		P []struct {
-			PPr *struct {
-				MarL   *int `xml:"marL,attr"`
-				Indent *int `xml:"indent,attr"`
-				TabLst *struct {
-					Tabs []struct {
-						Pos *int `xml:"pos,attr"`
-					} `xml:"tab"`
-				} `xml:"tabLst"`
-			} `xml:"pPr"`
-			R []struct {
+			PPr *paragraphPropsXML `xml:"pPr"`
+			R   []struct {
 				RPr *runPropsXML `xml:"rPr"`
 				T   string       `xml:"t"`
 			} `xml:"r"`

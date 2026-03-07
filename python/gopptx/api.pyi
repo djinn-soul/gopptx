@@ -10,6 +10,7 @@ from .schemas import (
     BatchItemResult,
     ChartDataUpdate,
     ChartSelector,
+    ChartState,
     Comment,
     CoreProperties,
     Hyperlink,
@@ -216,6 +217,12 @@ class ParagraphProps:
     indent: int | None
     hanging: int | None
     tab_stops: list[int] | None
+    alignment: str | None
+    level: int | None
+    line_spacing_pct: int | None
+    line_spacing_pts: int | None
+    space_before_pts: int | None
+    space_after_pts: int | None
     def __init__(
         self,
         *,
@@ -224,6 +231,12 @@ class ParagraphProps:
         tab_stops: list[int] | None = None,
         left_margin: int | None = None,
         hanging_indent: int | None = None,
+        alignment: str | None = None,
+        level: int | None = None,
+        line_spacing_pct: int | None = None,
+        line_spacing_pts: int | None = None,
+        space_before_pts: int | None = None,
+        space_after_pts: int | None = None,
         tabs: list[int] | None = None,
     ) -> None: ...
     def to_payload(self) -> dict[str, object]: ...
@@ -352,6 +365,10 @@ class NotesSlide:
     def text(self) -> str: ...
     @text.setter
     def text(self, value: str) -> None: ...
+    @property
+    def placeholders(self) -> list[dict[str, object]]: ...
+    @property
+    def shapes(self) -> list[dict[str, object]]: ...
 
 class PlaceholderFormat(UserString):
     @property
@@ -613,6 +630,17 @@ class Presentation:
     def get_notes(self, slide_index: int) -> str: ...
     def set_notes(self, slide_index: int, text: str) -> None: ...
     def list_slide_charts(self, slide_index: int) -> list[SlideChartRef]: ...
+    def get_chart_state(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+    ) -> ChartState: ...
+    def get_chart_state_by_index(
+        self, slide_index: int, chart_index: int
+    ) -> ChartState: ...
+    def get_chart_state_by_rel_id(
+        self, slide_index: int, rel_id: str
+    ) -> ChartState: ...
     def update_chart_data(
         self,
         slide_index: int,

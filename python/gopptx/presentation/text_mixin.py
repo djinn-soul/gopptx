@@ -6,10 +6,10 @@ from __future__ import annotations
 from typing import cast
 
 from .. import ops
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
 
 
-class PresentationTextMixin(PresentationProtocol):
+class PresentationTextMixin(PresentationMixinBase):
     """Mixin providing text search and replace methods."""
 
     def find_and_replace(self, find_text: str, replace_text: str) -> int:

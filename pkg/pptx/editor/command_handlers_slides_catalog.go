@@ -59,6 +59,32 @@ func handleUpdateChartFormatting(e *PresentationEditor, payload json.RawMessage)
 	return map[string]bool{"updated": true}, nil
 }
 
+func handleGetChartState(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+
+	var params struct {
+		ChartSelector common.ChartSelector `json:"chart_selector"`
+	}
+	if err := json.Unmarshal(payload, &params); err != nil {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+
+	state, err := e.GetChartState(slideIndex, params.ChartSelector)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"state": state}, nil
+}
+
 func handleListSlideCharts(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleSlideIndexRequest(

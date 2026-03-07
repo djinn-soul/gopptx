@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, cast
 
 from .. import ops
 from ..api_errors import GopptxError
-from .helpers import PresentationProtocol
+from .chart_state_mixin import PresentationChartStateMixin
+from .helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
     from ..schemas import (
@@ -19,13 +20,9 @@ if TYPE_CHECKING:
         SlideChartRef,
     )
     from ..slide.chart_data import CategoryChartData, XyChartData
-else:
-
-    class PresentationProtocol:
-        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
-class PresentationCommentMixin(PresentationProtocol):
+class PresentationCommentMixin(PresentationMixinBase):
     """Mixin providing comment and author management methods."""
 
     def get_authors(self) -> list[Author]:
@@ -105,7 +102,7 @@ class PresentationCommentMixin(PresentationProtocol):
         )
 
 
-class PresentationChartMixin(PresentationProtocol):
+class PresentationChartMixin(PresentationChartStateMixin):
     """Mixin providing chart creation and manipulation methods."""
 
     _BOUNDS_LEN = 4

@@ -1,32 +1,49 @@
 package chart
 
-import "bytes"
+import "strings"
 
-func boolToOneZero(value bool) string {
-	if value {
-		return "1"
+func firstChartBlockBounds(xml string) (int, int) {
+	chartTags := []string{
+		"barChart",
+		"lineChart",
+		"areaChart",
+		"pieChart",
+		"doughnutChart",
+		"scatterChart",
+		"bubbleChart",
+		"radarChart",
+		"stockChart",
 	}
-	return "0"
+	for _, tag := range chartTags {
+		startTag := "<c:" + tag + ">"
+		start := strings.Index(xml, startTag)
+		if start < 0 {
+			continue
+		}
+		endTag := "</c:" + tag + ">"
+		relEnd := strings.Index(xml[start:], endTag)
+		if relEnd < 0 {
+			continue
+		}
+		return start, start + relEnd + len(endTag)
+	}
+	return -1, -1
 }
 
-func xmlEscape(value string) string {
-	var b bytes.Buffer
-	b.Grow(len(value))
-	for _, r := range value {
-		switch r {
-		case '&':
-			b.WriteString("&amp;")
-		case '<':
-			b.WriteString("&lt;")
-		case '>':
-			b.WriteString("&gt;")
-		case '"':
-			b.WriteString("&quot;")
-		case '\'':
-			b.WriteString("&apos;")
-		default:
-			b.WriteRune(r)
-		}
+func isLegendPosition(position string) bool {
+	switch strings.ToLower(strings.TrimSpace(position)) {
+	case "r", "l", "t", "b":
+		return true
+	default:
+		return false
 	}
-	return b.String()
+}
+
+func isDataLabelPosition(position string) bool {
+	switch strings.TrimSpace(position) {
+	case "ctr", "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
+		return true
+	default:
+		return false
+	}
 }

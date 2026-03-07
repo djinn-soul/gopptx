@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 from .. import ops
 from ..slide.slide import Slide
 from ..utils import is_four_number_bounds
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
 from .layout_theme import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideMasters
 from .placeholder_payloads import (
@@ -25,14 +25,11 @@ if TYPE_CHECKING:
         Section,
         SlideMetadata,
     )
+    from .helpers import PresentationProtocol
     from .presentation import Presentation
-else:
-
-    class PresentationProtocol:
-        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
-class PresentationSectionMixin(PresentationProtocol):
+class PresentationSectionMixin(PresentationMixinBase):
     """Mixin providing section management methods."""
 
     @property
@@ -89,7 +86,7 @@ class PresentationSectionMixin(PresentationProtocol):
         )
 
 
-class PresentationPropertiesMixin(PresentationProtocol):
+class PresentationPropertiesMixin(PresentationMixinBase):
     """Mixin providing document properties and protection methods."""
 
     @property

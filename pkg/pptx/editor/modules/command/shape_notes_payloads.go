@@ -1,5 +1,7 @@
 package command
 
+import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+
 type ParseSlideIndexFn func(map[string]any) (int, bool)
 type ParseIntFieldFn func(map[string]any, string) (int, bool)
 type ParseIntSliceFieldFn func(map[string]any, string) ([]int, bool)
@@ -71,12 +73,23 @@ func ParseSetNotesRequest(
 }
 
 func BuildNotesResult(text string, hasNotesSlide bool) map[string]any {
+	return BuildNotesResultDetailed(text, hasNotesSlide, nil)
+}
+
+func BuildNotesResultDetailed(
+	text string,
+	hasNotesSlide bool,
+	placeholders []common.PlaceholderInfo,
+) map[string]any {
 	var notesSlide any
 	if hasNotesSlide {
-		notesSlide = map[string]string{"text": text}
+		notesSlide = map[string]any{
+			"text": text,
+		}
 	}
 	return map[string]any{
-		"text":        text,
-		"notes_slide": notesSlide,
+		"text":               text,
+		"notes_slide":        notesSlide,
+		"notes_placeholders": placeholders,
 	}
 }

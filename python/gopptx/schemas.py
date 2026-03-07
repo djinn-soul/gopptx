@@ -10,6 +10,8 @@ except ImportError:  # pragma: no cover
 from . import schemas_chart_layout as _schemas_chart_layout
 
 ChartDataUpdate = _schemas_chart_layout.ChartDataUpdate
+ChartAxisState = _schemas_chart_layout.ChartAxisState
+ChartState = _schemas_chart_layout.ChartState
 ChartFormatUpdate = _schemas_chart_layout.ChartFormatUpdate
 ChartSelector = _schemas_chart_layout.ChartSelector
 ChartSeriesData = _schemas_chart_layout.ChartSeriesData
@@ -99,6 +101,12 @@ class Paragraph(TypedDict, total=False):
     indent: int
     hanging: int
     tab_stops: list[int]
+    alignment: str
+    level: int
+    line_spacing_pct: int
+    line_spacing_pts: int
+    space_before_pts: int
+    space_after_pts: int
 
 
 class FillFormat(TypedDict, total=False):

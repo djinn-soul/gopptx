@@ -112,6 +112,27 @@ func TestPatchChartFormatting_ShowTitleAndPlotVisibleOnly(t *testing.T) {
 	mustContain(t, xml, `<c:plotVisOnly val="0"/>`)
 }
 
+func TestPatchChartFormatting_AxisTickLabelPosition(t *testing.T) {
+	withAxes := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<c:chart><c:plotArea><c:barChart><c:axId val="1"/><c:axId val="2"/></c:barChart>
+<c:catAx><c:axId val="1"/><c:crosses val="autoZero"/></c:catAx>
+<c:valAx><c:axId val="2"/><c:crosses val="autoZero"/></c:valAx>
+</c:plotArea></c:chart></c:chartSpace>`
+	categoryTick := "low"
+	valueTick := "high"
+	got, err := PatchChartFormatting([]byte(withAxes), common.ChartFormatUpdate{
+		CategoryAxisTickLabelPos: &categoryTick,
+		ValueAxisTickLabelPos:    &valueTick,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	xml := string(got)
+	mustContain(t, xml, `<c:catAx><c:axId val="1"/><c:tickLblPos val="low"`)
+	mustContain(t, xml, `<c:valAx><c:axId val="2"/><c:tickLblPos val="high"`)
+}
+
 func mustContain(t *testing.T, xml string, want string) {
 	t.Helper()
 	if !strings.Contains(xml, want) {

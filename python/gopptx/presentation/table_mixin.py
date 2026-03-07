@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, cast
 from .. import ops
 from ..api_errors import GopptxError
 from ..utils import normalize_table_index
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
     from ..schemas import TableCellInfo, TableInfo
 
 
-class PresentationTableMixin(PresentationProtocol):
+class PresentationTableMixin(PresentationMixinBase):
     """Mixin providing table creation and manipulation methods."""
 
     def add_table(

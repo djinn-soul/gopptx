@@ -51,6 +51,25 @@ class ChartFormatUpdate(TypedDict, total=False):
     data_label_show_series_name: bool
     data_label_show_percent: bool
     data_label_show_bubble_size: bool
+    category_axis_tick_label_pos: str
+    value_axis_tick_label_pos: str
+
+
+class ChartAxisState(TypedDict, total=False):
+    """Chart axis state snapshot."""
+
+    present: bool
+    tick_label_pos: str
+    has_major_gridline: bool
+
+
+class ChartState(TypedDict, total=False):
+    """Chart traversal state snapshot."""
+
+    chart_style: int
+    category_axis: ChartAxisState
+    value_axis: ChartAxisState
+    series: list[ChartSeriesData]
 
 
 class SlideChartRef(TypedDict):

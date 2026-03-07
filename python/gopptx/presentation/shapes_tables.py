@@ -12,7 +12,7 @@ from ..slide.freeform_builder import FreeformBuilder
 from ..slide.text_frame import serialize_text_frame_for_payload
 from ..slide.text_paragraph import serialize_paragraph_for_payload
 from ..slide.text_run import serialize_runs_for_payload
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
 from .notes_mixin import PresentationNotesMixin
 from .table_mixin import PresentationTableMixin
 from .text_mixin import PresentationTextMixin
@@ -29,13 +29,9 @@ if TYPE_CHECKING:
         ShapeUpdate,
         TextRun,
     )
-else:
-
-    class PresentationProtocol:
-        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
-class PresentationShapeMixin(PresentationProtocol):
+class PresentationShapeMixin(PresentationMixinBase):
     """Mixin providing shape manipulation methods."""
 
     _RECT_BOUNDS_COMPONENTS = 4

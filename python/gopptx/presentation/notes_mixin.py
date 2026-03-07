@@ -6,10 +6,10 @@ from __future__ import annotations
 from typing import cast
 
 from .. import ops
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
 
 
-class PresentationNotesMixin(PresentationProtocol):
+class PresentationNotesMixin(PresentationMixinBase):
     """Mixin providing speaker notes methods."""
 
     def get_notes_payload(self, slide_index: int) -> dict[str, object]:

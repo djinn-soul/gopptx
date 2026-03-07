@@ -13,6 +13,7 @@ const (
 	OpGetMetadata             = "get_metadata"
 	OpUpdateChartData         = "update_chart_data"
 	OpUpdateChartFormatting   = "update_chart_formatting"
+	OpGetChartState           = "get_chart_state"
 	OpListSlideCharts         = "list_slide_charts"
 	OpGetSlideLayoutRef       = "get_slide_layout_ref"
 	OpListSlideLayouts        = "list_slide_layouts"
@@ -100,6 +101,7 @@ func SupportedOps() []string {
 		OpGetMetadata,
 		OpUpdateChartData,
 		OpUpdateChartFormatting,
+		OpGetChartState,
 		OpListSlideCharts,
 		OpGetSlideLayoutRef,
 		OpListSlideLayouts,

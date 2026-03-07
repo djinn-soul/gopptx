@@ -35,6 +35,8 @@ func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 		return handleUpdateChartData, true
 	case OpUpdateChartFormatting:
 		return handleUpdateChartFormatting, true
+	case OpGetChartState:
+		return handleGetChartState, true
 	case OpAddChart:
 		return handleAddChart, true
 	case OpGetSlideLayoutRef:

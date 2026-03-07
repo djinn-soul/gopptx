@@ -25,3 +25,7 @@ def test_notes_slide_is_none_until_created() -> None:
             raise AssertionError("expected notes_slide after setting notes")
         if notes_slide.text != "hello notes":
             raise AssertionError("expected notes text round-trip to match")
+        if len(notes_slide.placeholders) == 0:
+            raise AssertionError("expected notes placeholders metadata to be available")
+        if len(notes_slide.shapes) == 0:
+            raise AssertionError("expected notes shapes alias to expose metadata")

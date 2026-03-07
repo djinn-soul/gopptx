@@ -45,9 +45,11 @@ def test_complex_text_layout_fixture_emits_expected_tokens(tmp_path: Path) -> No
 
     assert 'marL="228600"' in slide_xml  # noqa: S101
     assert 'indent="-114300"' in slide_xml  # noqa: S101
-    assert (
-        '<a:tabLst><a:tab pos="457200"/><a:tab pos="914400"/></a:tabLst>' in slide_xml
-    )
+    if (
+        '<a:tabLst><a:tab pos="457200"/><a:tab pos="914400"/></a:tabLst>'
+        not in slide_xml
+    ):
+        raise AssertionError("expected serialized tab list in slide XML")
     assert 'wrap="none"' in slide_xml  # noqa: S101
     assert 'vert="vert270"' in slide_xml  # noqa: S101
     assert 'numCol="2"' in slide_xml  # noqa: S101

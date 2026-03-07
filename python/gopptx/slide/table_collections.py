@@ -28,8 +28,7 @@ class TableRow:
         rows = cast("list[dict[str, object]]", self._table._cache.get("rows", []))
         if self.index >= len(rows):
             return 0
-        value = rows[self.index].get("height", 0)
-        return int(cast("int", value))
+        return _as_int(rows[self.index].get("height"))
 
     @height.setter
     def height(self, value: int) -> None:
@@ -85,8 +84,7 @@ class TableColumn:
         cols = cast("list[dict[str, object]]", self._table._cache.get("columns", []))
         if self.index >= len(cols):
             return 0
-        value = cols[self.index].get("width", 0)
-        return int(cast("int", value))
+        return _as_int(cols[self.index].get("width"))
 
     @width.setter
     def width(self, value: int) -> None:
@@ -127,3 +125,9 @@ class TableColumns:
     def __iter__(self) -> Iterator[TableColumn]:
         for i in range(len(self)):
             yield TableColumn(self._table, i)
+
+
+def _as_int(value: object) -> int:
+    if isinstance(value, int):
+        return value
+    return 0

@@ -28,6 +28,7 @@ OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
 OP_DUPLICATE_SLIDE = "duplicate_slide"
 OP_FIND_AND_REPLACE = "find_and_replace"
 OP_GET_AUTHORS = "get_authors"
+OP_GET_CHART_STATE = "get_chart_state"
 OP_GET_COMMENTS = "get_comments"
 OP_GET_CORE_PROPERTIES = "get_core_properties"
 OP_GET_IMAGE_METADATA = "get_image_metadata"
@@ -112,6 +113,7 @@ SUPPORTED_OPS = (
     OP_DUPLICATE_SLIDE,
     OP_FIND_AND_REPLACE,
     OP_GET_AUTHORS,
+    OP_GET_CHART_STATE,
     OP_GET_COMMENTS,
     OP_GET_CORE_PROPERTIES,
     OP_GET_IMAGE_METADATA,
