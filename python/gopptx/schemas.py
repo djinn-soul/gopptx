@@ -98,6 +98,7 @@ class Paragraph(TypedDict, total=False):
 
     indent: int
     hanging: int
+    tab_stops: list[int]
 
 
 class FillFormat(TypedDict, total=False):

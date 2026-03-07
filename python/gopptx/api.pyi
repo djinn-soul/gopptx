@@ -215,13 +215,16 @@ class TextFrameProps:
 class ParagraphProps:
     indent: int | None
     hanging: int | None
+    tab_stops: list[int] | None
     def __init__(
         self,
         *,
         indent: int | None = None,
         hanging: int | None = None,
+        tab_stops: list[int] | None = None,
         left_margin: int | None = None,
         hanging_indent: int | None = None,
+        tabs: list[int] | None = None,
     ) -> None: ...
     def to_payload(self) -> dict[str, object]: ...
 

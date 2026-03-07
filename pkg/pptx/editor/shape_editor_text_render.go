@@ -312,8 +312,24 @@ func renderParagraphPropsXML(paragraph *common.Paragraph) (string, error) {
 		}
 		pPr += fmt.Sprintf(` indent="%d"`, -*paragraph.Hanging)
 	}
-	pPr += `/>`
-	if pPr == `<a:pPr/>` {
+	hasTabStops := len(paragraph.TabStops) > 0
+	if !hasTabStops {
+		pPr += `/>`
+		if pPr == `<a:pPr/>` {
+			return "", nil
+		}
+		return pPr, nil
+	}
+	pPr += `>`
+	pPr += `<a:tabLst>`
+	for _, pos := range paragraph.TabStops {
+		if pos < 0 {
+			return "", errors.New("paragraph.tab_stops values must be >= 0")
+		}
+		pPr += fmt.Sprintf(`<a:tab pos="%d"/>`, pos)
+	}
+	pPr += `</a:tabLst></a:pPr>`
+	if pPr == `<a:pPr><a:tabLst></a:tabLst></a:pPr>` {
 		return "", nil
 	}
 	return pPr, nil

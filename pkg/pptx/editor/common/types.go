@@ -236,8 +236,9 @@ type TextFrame struct {
 
 // Paragraph defines paragraph-level formatting controls.
 type Paragraph struct {
-	Indent  *int `json:"indent,omitempty"`  // Left paragraph margin (EMU, maps to a:pPr marL).
-	Hanging *int `json:"hanging,omitempty"` // Hanging indent amount (EMU, rendered as negative a:pPr indent).
+	Indent   *int  `json:"indent,omitempty"`    // Left paragraph margin (EMU, maps to a:pPr marL).
+	Hanging  *int  `json:"hanging,omitempty"`   // Hanging indent amount (EMU, rendered as negative a:pPr indent).
+	TabStops []int `json:"tab_stops,omitempty"` // Tab stop positions in EMU (<a:tabLst><a:tab pos="..."/>...).
 }
 
 // ShapeFill defines generic shape fill controls.

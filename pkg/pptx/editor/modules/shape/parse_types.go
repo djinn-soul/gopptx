@@ -150,6 +150,11 @@ type shapeXML struct {
 			PPr *struct {
 				MarL   *int `xml:"marL,attr"`
 				Indent *int `xml:"indent,attr"`
+				TabLst *struct {
+					Tabs []struct {
+						Pos *int `xml:"pos,attr"`
+					} `xml:"tab"`
+				} `xml:"tabLst"`
 			} `xml:"pPr"`
 			R []struct {
 				RPr *runPropsXML `xml:"rPr"`

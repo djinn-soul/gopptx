@@ -294,6 +294,58 @@ func TestRenderShapeXMLWithParagraphInvalidHanging(t *testing.T) {
 	}
 }
 
+func TestRenderShapeXMLWithParagraphTabStops(t *testing.T) {
+	tabStops := []int{228600, 457200}
+	s := &parsedShape{
+		ID:   171,
+		Name: "Paragraph Tabs",
+		Type: "sp",
+		Text: "Tabs",
+		X:    10,
+		Y:    20,
+		W:    300,
+		H:    200,
+		Paragraph: &common.Paragraph{
+			TabStops: tabStops,
+		},
+	}
+	e := &PresentationEditor{nextRelIDNum: 1}
+
+	xmlBytes, err := e.renderShapeXML("ppt/slides/slide1.xml", s)
+	if err != nil {
+		t.Fatalf("renderShapeXML failed: %v", err)
+	}
+	xmlStr := string(xmlBytes)
+	if !strings.Contains(xmlStr, `<a:tabLst><a:tab pos="228600"/><a:tab pos="457200"/></a:tabLst>`) {
+		t.Fatalf("expected paragraph tab list in XML, got: %s", xmlStr)
+	}
+}
+
+func TestRenderShapeXMLWithParagraphInvalidTabStop(t *testing.T) {
+	s := &parsedShape{
+		ID:   172,
+		Name: "Invalid Paragraph Tab",
+		Type: "sp",
+		Text: "Invalid",
+		X:    10,
+		Y:    20,
+		W:    300,
+		H:    200,
+		Paragraph: &common.Paragraph{
+			TabStops: []int{-1},
+		},
+	}
+	e := &PresentationEditor{nextRelIDNum: 1}
+
+	_, err := e.renderShapeXML("ppt/slides/slide1.xml", s)
+	if err == nil {
+		t.Fatal("expected invalid paragraph tab stop to fail")
+	}
+	if !strings.Contains(err.Error(), "paragraph.tab_stops values must be >=") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestRenderShapeXMLWithHoverAction(t *testing.T) {
 	macro := "HoverMacro"
 	s := &parsedShape{
@@ -475,6 +527,30 @@ func TestParseShapePropertiesExtractsParagraphIndentAndHanging(t *testing.T) {
 	}
 	if shape.Paragraph.Hanging == nil || *shape.Paragraph.Hanging != 114300 {
 		t.Fatalf("expected hanging 114300, got %#v", shape.Paragraph.Hanging)
+	}
+}
+
+func TestParseShapePropertiesExtractsParagraphTabStops(t *testing.T) {
+	shapeXML := []byte(
+		`<p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+			`<p:nvSpPr><p:cNvPr id="21" name="Paragraph Tabs Parse"/></p:nvSpPr>` +
+			`<p:spPr><a:xfrm><a:off x="10" y="20"/><a:ext cx="300" cy="200"/></a:xfrm></p:spPr>` +
+			`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:tabLst><a:tab pos="228600"/><a:tab pos="457200"/></a:tabLst></a:pPr>` +
+			`<a:r><a:rPr lang="en-US"/><a:t>Text</a:t></a:r></a:p></p:txBody></p:sp>`,
+	)
+
+	shape, err := parseShapeProperties(shapeXML)
+	if err != nil {
+		t.Fatalf("parseShapeProperties failed: %v", err)
+	}
+	if shape.Paragraph == nil {
+		t.Fatal("expected paragraph properties to be parsed")
+	}
+	if len(shape.Paragraph.TabStops) != 2 {
+		t.Fatalf("expected 2 tab stops, got %#v", shape.Paragraph.TabStops)
+	}
+	if shape.Paragraph.TabStops[0] != 228600 || shape.Paragraph.TabStops[1] != 457200 {
+		t.Fatalf("unexpected tab stop values %#v", shape.Paragraph.TabStops)
 	}
 }
 

@@ -26,6 +26,11 @@ func applyParsedShapeText(ps *ParsedShapeProperties, s *shapeXML) {
 func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *struct {
 	MarL   *int `xml:"marL,attr"`
 	Indent *int `xml:"indent,attr"`
+	TabLst *struct {
+		Tabs []struct {
+			Pos *int `xml:"pos,attr"`
+		} `xml:"tab"`
+	} `xml:"tabLst"`
 }) {
 	if index != 0 || pPr == nil {
 		return
@@ -38,7 +43,19 @@ func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *struct {
 		hanging := -*pPr.Indent
 		paragraph.Hanging = &hanging
 	}
-	if paragraph.Indent != nil || paragraph.Hanging != nil {
+	if pPr.TabLst != nil {
+		tabStops := make([]int, 0, len(pPr.TabLst.Tabs))
+		for _, tab := range pPr.TabLst.Tabs {
+			if tab.Pos == nil {
+				continue
+			}
+			tabStops = append(tabStops, *tab.Pos)
+		}
+		if len(tabStops) > 0 {
+			paragraph.TabStops = tabStops
+		}
+	}
+	if paragraph.Indent != nil || paragraph.Hanging != nil || len(paragraph.TabStops) > 0 {
 		ps.Paragraph = paragraph
 	}
 }

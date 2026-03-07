@@ -38,3 +38,15 @@ def test_paragraph_props_rejects_negative_hanging() -> None:
     """Test paragraph props rejects negative hanging."""
     with pytest.raises(ValueError, match=r"paragraph\.hanging must be >= 0"):
         ParagraphProps(hanging=-1).to_payload()
+
+
+def test_paragraph_props_tab_stops_payload() -> None:
+    """Tab-stop positions should serialize into paragraph payload."""
+    payload = ParagraphProps(tab_stops=[228600, 457200]).to_payload()
+    assert payload["tab_stops"] == [228600, 457200]  # noqa: S101
+
+
+def test_paragraph_props_rejects_negative_tab_stop() -> None:
+    """Negative tab-stop positions should fail fast."""
+    with pytest.raises(ValueError, match=r"paragraph\.tab_stops values must be >= 0"):
+        ParagraphProps(tab_stops=[-1]).to_payload()
