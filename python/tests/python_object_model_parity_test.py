@@ -1,5 +1,4 @@
 """Tests for chart/placeholder/shape object-model parity helpers."""
-# ruff: noqa: D103
 
 from __future__ import annotations
 
@@ -26,10 +25,10 @@ def test_chart_object_model_updates() -> None:
         chart.value_axis.crosses = "min"
         chart.plots[0].data_labels_visible = True
         chart.plots[0].data_labels.show_value = True
-        assert chart.category_axis.tick_label_position == "low"  # noqa: S101
-        assert chart.category_axis.crosses == "max"  # noqa: S101
-        assert chart.value_axis.tick_label_position == "high"  # noqa: S101
-        assert chart.value_axis.crosses == "min"  # noqa: S101
+        assert chart.category_axis.tick_label_position == "low"
+        assert chart.category_axis.crosses == "max"
+        assert chart.value_axis.tick_label_position == "high"
+        assert chart.value_axis.crosses == "min"
 
         new_data = CategoryChartData(categories=["X", "Y"])
         new_data.add_series("S2", [3.0, 4.0])
@@ -44,8 +43,8 @@ def test_placeholder_inheritance_navigation() -> None:
             return
 
         ph = placeholders[0]
-        assert ph.layout_placeholder is not None  # noqa: S101
-        assert ph.master_placeholder is not None  # noqa: S101
+        assert ph.layout_placeholder is not None
+        assert ph.master_placeholder is not None
 
 
 def test_shape_fill_line_shadow_proxies() -> None:

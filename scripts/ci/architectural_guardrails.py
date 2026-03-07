@@ -56,7 +56,7 @@ def _is_test_file(path: Path) -> bool:
 
 
 def _line_count(path: Path) -> int:
-    with path.open("r", encoding="utf-8", errors="ignore") as file:
+    with path.open("rb") as file:
         return sum(1 for _ in file)
 
 

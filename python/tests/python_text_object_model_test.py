@@ -1,5 +1,5 @@
 """Tests for live text object-model traversal APIs."""
-# ruff: noqa: D103,PLR2004,TC003
+# ruff: noqa: TC003
 
 from __future__ import annotations
 
@@ -22,13 +22,13 @@ def test_shape_text_traversal_and_run_updates(tmp_path: Path) -> None:
 
         shape = slide.shape(shape_id)
         para = shape.text_frame.paragraphs[0]
-        assert len(para.runs) == 2  # noqa: S101
-        assert para.runs[0].text == "Hello"  # noqa: S101
-        assert para.runs[1].text == " World"  # noqa: S101
+        assert len(para.runs) == 2
+        assert para.runs[0].text == "Hello"
+        assert para.runs[1].text == " World"
 
         para.runs[1].text = " gopptx"
         para.runs.add_run("!")
-        assert para.runs[2].text == "!"  # noqa: S101
+        assert para.runs[2].text == "!"
 
         prs.save(str(out_path))
 
@@ -57,8 +57,8 @@ def test_shape_paragraph_advanced_controls(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_path = f"ppt/slides/slide{slide_number}.xml"
         xml = zf.read(slide_path).decode("utf-8")
-    assert 'algn="ctr"' in xml  # noqa: S101
-    assert 'lvl="1"' in xml  # noqa: S101
-    assert '<a:spcPct val="120000"/>' in xml  # noqa: S101
-    assert '<a:spcBef><a:spcPts val="200"/></a:spcBef>' in xml  # noqa: S101
-    assert '<a:spcAft><a:spcPts val="100"/></a:spcAft>' in xml  # noqa: S101
+    assert 'algn="ctr"' in xml
+    assert 'lvl="1"' in xml
+    assert '<a:spcPct val="120000"/>' in xml
+    assert '<a:spcBef><a:spcPts val="200"/></a:spcBef>' in xml
+    assert '<a:spcAft><a:spcPts val="100"/></a:spcAft>' in xml

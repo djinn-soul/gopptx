@@ -29,11 +29,11 @@ dev = [
     "pip-audit>=2.10.0",
     "detect-secrets>=1.5.0",
     # CI/Automation
-    "prek>=0.2.30",
-    "poethepoet>=0.40.0",
+    "prek>=0.3.4",
+    "poethepoet>=0.42.1",
     # Advanced Static Analysis
-    "basedpyright>=1.38.1",
-    "vulture>=2.14",
+    "basedpyright>=1.38.2",
+    "vulture>=2.15",
     "gitingest",
     "pillow==12.1.1",
     "pypdfium2==5.5.0",
@@ -126,7 +126,7 @@ convention = "google"
 "python/gopptx/presentation/**/*.py" = ["TID252"]
 "python/gopptx/slide/**/*.py" = ["TID252"]
 "python/gopptx/ops.py" = ["S105"]
-"tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
+"python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
 
 "examples/**/*.py" = ["T201", "INP001", "D"]
 

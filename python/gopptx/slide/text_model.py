@@ -114,9 +114,10 @@ class ShapeRunCollection:
         return self._count()
 
     def __getitem__(self, index: int) -> ShapeRunProxy:
+        count = self._count()
         if index < 0:
-            index += self._count()
-        if index < 0 or index >= self._count():
+            index += count
+        if index < 0 or index >= count:
             raise IndexError("run index out of range")
         return ShapeRunProxy(
             self._presentation, self._slide_index, self._shape_id, index

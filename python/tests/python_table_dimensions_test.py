@@ -1,5 +1,4 @@
 """Tests for table row/column dimension accessors."""
-# ruff: noqa: D103,PLR2004
 
 from __future__ import annotations
 
@@ -16,5 +15,5 @@ def test_table_row_and_column_dimension_accessors() -> None:
         table.columns[1].width = 1800000
 
         table_after = slide.table(shape_id)
-        assert table_after.rows[0].height == 250000  # noqa: S101
-        assert table_after.columns[1].width == 1800000  # noqa: S101
+        assert table_after.rows[0].height == 250000
+        assert table_after.columns[1].width == 1800000

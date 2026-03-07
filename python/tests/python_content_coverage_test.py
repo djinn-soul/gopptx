@@ -1,4 +1,4 @@
-import os  # noqa: D100
+import os
 import pathlib
 
 import pytest
@@ -10,7 +10,7 @@ project_root = pathlib.Path(
 input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
 
 
-def test_presentation_content_basic() -> None:  # noqa: D103
+def test_presentation_content_basic() -> None:
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
@@ -24,11 +24,11 @@ def test_presentation_content_basic() -> None:  # noqa: D103
             text="Hello",
             properties={"fill_color": "FF0000"},
         )
-        assert shape_id > 0  # noqa: S101
+        assert shape_id > 0
 
         # List shapes
         shapes = slide.list_shapes()
-        assert len(shapes) > 0  # noqa: S101
+        assert len(shapes) > 0
 
         # Update shape
         slide.update_shape(shape_id, {"text": "Updated"})
@@ -43,23 +43,23 @@ def test_presentation_content_basic() -> None:  # noqa: D103
         # Find and replace
         slide.title = "Find Me"
         count = prs.find_and_replace("Find Me", "Found Me")
-        assert count >= 1  # noqa: S101
+        assert count >= 1
 
         # Search shapes
         results = prs.search_shapes("Found Me")
-        assert len(results) > 0  # noqa: S101
+        assert len(results) > 0
 
 
-def test_comments_and_authors() -> None:  # noqa: D103
+def test_comments_and_authors() -> None:
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
     with Presentation(input_deck) as prs:
         # Authors
         author_id = prs.add_author("Test Author", "TA")
-        assert author_id >= 0  # noqa: S101
+        assert author_id >= 0
         authors = prs.get_authors()
-        assert any(a["Name"] == "Test Author" for a in authors)  # noqa: S101
+        assert any(a["Name"] == "Test Author" for a in authors)
 
         # Comments
         slide_idx = 0
@@ -67,15 +67,15 @@ def test_comments_and_authors() -> None:  # noqa: D103
             slide_idx, author_id, "This is a comment", x=100, y=100
         )
         comments = prs.get_comments(slide_idx)
-        assert len(comments) > 0  # noqa: S101
+        assert len(comments) > 0
 
         # Remove comment
         prs.remove_comment(comment_index)
         comments_after = prs.get_comments(slide_idx)
-        assert len(comments_after) < len(comments)  # noqa: S101
+        assert len(comments_after) < len(comments)
 
 
-def test_charts_basic() -> None:  # noqa: D103
+def test_charts_basic() -> None:
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
@@ -85,7 +85,7 @@ def test_charts_basic() -> None:  # noqa: D103
         slide.add_chart("bar", ["A", "B"], [10, 20], title="Test Chart")
 
         charts = slide.list_charts()
-        assert len(charts) > 0  # noqa: S101
+        assert len(charts) > 0
 
         # Update chart data - now succeeds for charts without formula nodes
         prs.update_chart_data(
@@ -93,14 +93,14 @@ def test_charts_basic() -> None:  # noqa: D103
         )
 
 
-def test_notes() -> None:  # noqa: D103
+def test_notes() -> None:
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
     with Presentation(input_deck) as prs:
         slide = prs.slides[0]
         slide.notes = "New Notes"
-        assert slide.notes == "New Notes"  # noqa: S101
+        assert slide.notes == "New Notes"
 
         prs.set_notes(0, "Updated Notes")
-        assert prs.get_notes(0) == "Updated Notes"  # noqa: S101
+        assert prs.get_notes(0) == "Updated Notes"

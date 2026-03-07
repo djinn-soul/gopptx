@@ -42,7 +42,7 @@ def test_shape_dml_style_xml_ordering_fixture(tmp_path: Path) -> None:
     idx_line = shape_xml.index('<a:ln w="25400"><a:prstDash val="dash"/>')
     idx_effect = shape_xml.index("<a:effectLst><a:outerShdw")
     idx_geom = shape_xml.index("<a:prstGeom")
-    assert idx_fill < idx_line < idx_effect < idx_geom  # noqa: S101
+    assert idx_fill < idx_line < idx_effect < idx_geom
 
 
 def test_shape_line_defaults_emit_without_solid_fill_fixture(tmp_path: Path) -> None:
@@ -61,4 +61,4 @@ def test_shape_line_defaults_emit_without_solid_fill_fixture(tmp_path: Path) -> 
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert '<a:ln w="38100"><a:prstDash val="sysDot"/></a:ln>' in slide_xml  # noqa: S101
+    assert '<a:ln w="38100"><a:prstDash val="sysDot"/></a:ln>' in slide_xml

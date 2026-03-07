@@ -42,7 +42,7 @@ def test_shape_fill_and_line_round_trip_fixture(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert 'val="112233"' in slide_xml  # noqa: S101
-    assert 'a:ln w="38100"' in slide_xml  # noqa: S101
-    assert '<a:prstDash val="lgDashDot"/>' in slide_xml  # noqa: S101
-    assert 'val="334455"' in slide_xml  # noqa: S101
+    assert 'val="112233"' in slide_xml
+    assert 'a:ln w="38100"' in slide_xml
+    assert '<a:prstDash val="lgDashDot"/>' in slide_xml
+    assert 'val="334455"' in slide_xml

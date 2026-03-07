@@ -37,7 +37,7 @@ def test_shape_shadow_round_trip_fixture(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert "effectLst" not in slide_xml  # noqa: S101
+    assert "effectLst" not in slide_xml
 
 
 def test_shape_shadow_rejects_inherit_with_explicit_fields() -> None:
@@ -65,4 +65,4 @@ def test_shape_shadow_inherit_false_emits_empty_effect_list(tmp_path: Path) -> N
         prs.save(out_path)
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
-    assert "<a:effectLst/>" in slide_xml  # noqa: S101
+    assert "<a:effectLst/>" in slide_xml

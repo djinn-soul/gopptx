@@ -24,14 +24,14 @@ def test_paragraph_props_aliases_emit_ooxml_attrs(tmp_path: Path) -> None:
             text="paragraph",
             paragraph=ParagraphProps(left_margin=228600, hanging_indent=228600),
         )
-        assert shape_id > 0  # noqa: S101
+        assert shape_id > 0
         prs.save(out_path)
 
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert 'marL="228600"' in slide_xml  # noqa: S101
-    assert 'indent="-228600"' in slide_xml  # noqa: S101
+    assert 'marL="228600"' in slide_xml
+    assert 'indent="-228600"' in slide_xml
 
 
 def test_paragraph_props_rejects_negative_hanging() -> None:
@@ -43,7 +43,7 @@ def test_paragraph_props_rejects_negative_hanging() -> None:
 def test_paragraph_props_tab_stops_payload() -> None:
     """Tab-stop positions should serialize into paragraph payload."""
     payload = ParagraphProps(tab_stops=[228600, 457200]).to_payload()
-    assert payload["tab_stops"] == [228600, 457200]  # noqa: S101
+    assert payload["tab_stops"] == [228600, 457200]
 
 
 def test_paragraph_props_rejects_negative_tab_stop() -> None:
