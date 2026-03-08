@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
@@ -12,11 +12,12 @@ from .placeholder_mixin import SlidePlaceholderMixin
 from .shape_proxy import ShapeCollection, ShapeProxy
 from .slide_mixins import SlideChartMixin, SlideShapeMixin, SlideTableMixin
 from .slide_shape_batch_mixin import SlideShapeBatchMixin
+from .slide_text_cache_mixin import SlideTextCacheMixin
 from .slide_text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
-    from ..schemas import Shape, SlideMetadata
+    from ..schemas import Shape, ShapeProps, ShapeUpdate, SlideMetadata
 
 
 class SlideBase:
@@ -71,6 +72,7 @@ class Slide(
     SlideChartMixin,
     SlidePlaceholderMixin,
     SlideBase,
+    SlideTextCacheMixin,
     SlideTextMixin,
     SlideShapeBatchMixin,
     SlideShapeMixin,
@@ -84,12 +86,15 @@ class Slide(
         self._metadata = metadata
         self._shapes_collection: ShapeCollection | None = None
         self._charts_collection: ChartCollection | None = None
+        self._shape_proxy_map: dict[int, ShapeProxy] = {}
         self._shape_records_cache: list[Shape] | None = None
         self._shape_record_map: dict[int, Shape] | None = None
         self._shape_text_state_cache: dict[int, dict[str, object]] | None = None
 
     def _shape_records(self) -> list[Shape]:
+        self._flush_pending_textbox_adds_if_present()
         if self._shape_records_cache is None:
+            self._flush_pending_text_updates_if_present()
             self._shape_records_cache = self._presentation.list_shapes(self.index)
             self._shape_record_map = None
         return self._shape_records_cache
@@ -108,8 +113,25 @@ class Slide(
         self._shape_records_cache = None
         self._shape_record_map = None
 
+    def _shape_proxy_for_id(self, shape_id: int) -> ShapeProxy:
+        proxy = self._shape_proxy_map.get(shape_id)
+        if proxy is None:
+            proxy = ShapeProxy(self, shape_id)
+            self._shape_proxy_map[shape_id] = proxy
+        return proxy
+
+    def _flush_pending_textbox_adds_if_present(self) -> None:
+        has_pending = getattr(self._presentation, "has_pending_textbox_adds", None)
+        flush_pending = getattr(self._presentation, "flush_pending_textbox_adds", None)
+        if not callable(has_pending) or not callable(flush_pending):
+            return
+        if has_pending(self.index):
+            flush_pending(self.index)
+
     def _shape_text_states(self) -> dict[int, dict[str, object]]:
+        self._flush_pending_textbox_adds_if_present()
         if self._shape_text_state_cache is None:
+            self._flush_pending_text_updates_if_present()
             state_map: dict[int, dict[str, object]] = {}
             for state in self._presentation.get_slide_text_states(self.index):
                 raw_id = state.get("shape_id", state.get("ShapeID"))
@@ -145,7 +167,38 @@ class Slide(
 
     def shape(self, shape_id: int) -> ShapeProxy:
         """Return a live shape proxy by ID."""
-        return self.shapes.by_id(shape_id)
+        return self._shape_proxy_for_id(shape_id)
+
+    @override
+    def add_textbox(
+        self,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Queue simple textbox inserts and flush them in bulk at slide boundaries."""
+        if kwargs or bool(getattr(self._presentation, "_batch_active", False)):
+            return super().add_textbox(left, top, width, height, text=text, **kwargs)
+        queue = getattr(self._presentation, "queue_textbox_add", None)
+        if not callable(queue):
+            return super().add_textbox(left, top, width, height, text=text, **kwargs)
+        shape_id = queue(
+            self.index,
+            {
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+                "text": text,
+            },
+        )
+        self._invalidate_shape_cache()
+        self._invalidate_text_state_cache()
+        return int(cast("int", shape_id))
 
     @property
     def charts(self) -> ChartCollection:
@@ -157,6 +210,13 @@ class Slide(
     def chart(self, index: int) -> Chart:
         """Return a chart proxy by slide-local chart index."""
         return self.charts[index]
+
+    @override
+    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None:
+        """Flush buffered run-text writes before generic shape updates."""
+        self._flush_pending_textbox_adds_if_present()
+        self._flush_pending_text_updates_if_present()
+        super().update_shape(shape_id, updates)
 
     def update(
         self,

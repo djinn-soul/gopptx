@@ -23,3 +23,9 @@ type ShapeRunTextUpdate struct {
 	RunIndex int    `json:"run_index"`
 	Text     string `json:"text"`
 }
+
+// SlideRunTextUpdates describes a set of run-text mutations for one slide.
+type SlideRunTextUpdates struct {
+	SlideIndex int                  `json:"slide_index"`
+	Updates    []ShapeRunTextUpdate `json:"updates"`
+}

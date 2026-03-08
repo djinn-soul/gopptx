@@ -69,6 +69,32 @@ def test_bulk_textbox_creation() -> None:
             raise AssertionError(f"unexpected bulk textbox texts: {texts_by_id!r}")
 
 
+def test_buffered_textbox_id_remains_addressable() -> None:
+    """Simple textbox inserts keep a stable real ID through buffered flush."""
+    if not input_deck.exists():
+        pytest.skip("smoke sample missing")
+
+    with Presentation(input_deck) as prs:
+        slide = prs.add_slide("python-pptx parity buffered textbox")
+        textbox_id = slide.add_textbox(914400, 914400, 1828800, 914400, text="queued")
+
+        if textbox_id <= 0:
+            raise AssertionError(f"expected positive textbox id, got {textbox_id!r}")
+
+        shape = slide.shape(textbox_id)
+        if shape.text != "queued":
+            raise AssertionError(f"expected queued text, got {shape.text!r}")
+
+        shape.text = "updated"
+        texts_by_id = {
+            int(shape_info["ID"]): shape_info.get("Text", "")
+            for shape_info in slide.list_shapes()
+            if int(shape_info["ID"]) == textbox_id
+        }
+        if texts_by_id != {textbox_id: "updated"}:
+            raise AssertionError(f"unexpected textbox text state: {texts_by_id!r}")
+
+
 def test_group_and_freeform_creation() -> None:
     """Group and freeform creation produce addressable shapes."""
     if not input_deck.exists():

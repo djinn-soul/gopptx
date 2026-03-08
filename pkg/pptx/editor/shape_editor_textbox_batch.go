@@ -38,6 +38,32 @@ func (e *PresentationEditor) AddTextboxes(slideIndex int, textboxes []common.Tex
 	return shapeIDs, nil
 }
 
+// ReserveShapeIDs returns the next available shape IDs on a slide without mutating XML.
+func (e *PresentationEditor) ReserveShapeIDs(slideIndex int, count int) ([]int, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return nil, errors.New("slide index out of range")
+	}
+	if count < 0 {
+		return nil, errors.New("count must be non-negative")
+	}
+	if count == 0 {
+		return []int{}, nil
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return nil, fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
+	shapeIDs := make([]int, 0, count)
+	for offset := range count {
+		shapeIDs = append(shapeIDs, maxID+offset+1)
+	}
+	return shapeIDs, nil
+}
+
 func (e *PresentationEditor) buildTextboxBatchXML(
 	partPath string,
 	startID int,
@@ -48,6 +74,9 @@ func (e *PresentationEditor) buildTextboxBatchXML(
 
 	for offset, textbox := range textboxes {
 		shapeID := startID + offset + 1
+		if textbox.ShapeID != nil && *textbox.ShapeID > 0 {
+			shapeID = *textbox.ShapeID
+		}
 		shape := parsedShape{
 			ID:   shapeID,
 			Name: fmt.Sprintf("rect %d", shapeID),

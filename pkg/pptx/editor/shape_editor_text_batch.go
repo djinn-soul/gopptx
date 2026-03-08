@@ -74,6 +74,18 @@ func (e *PresentationEditor) UpdateSlideRunTexts(
 	return nil
 }
 
+// UpdateDeckRunTexts updates run texts across multiple slides.
+func (e *PresentationEditor) UpdateDeckRunTexts(
+	slideUpdates []common.SlideRunTextUpdates,
+) error {
+	for _, slideUpdate := range slideUpdates {
+		if err := e.UpdateSlideRunTexts(slideUpdate.SlideIndex, slideUpdate.Updates); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func matchRunTextTarget(
 	shape *parsedShape,
 	updatesByShape map[int][]common.ShapeRunTextUpdate,

@@ -14,9 +14,15 @@ from .text_run import Run, RunHyperlink
 class ShapeTextFrame(BaseShapeTextFrame):
     """Public text-frame facade with paragraph collection access."""
 
+    def __init__(self, slide: object, shape_id: int) -> None:
+        super().__init__(slide, shape_id)
+        self._paragraphs: ShapeParagraphCollection | None = None
+
     @property
     def paragraphs(self) -> ShapeParagraphCollection:
-        return ShapeParagraphCollection(self)
+        if self._paragraphs is None:
+            self._paragraphs = ShapeParagraphCollection(self)
+        return self._paragraphs
 
 
 class ShapeRunProxy:
@@ -96,6 +102,7 @@ class ShapeRunCollection:
 
     def __init__(self, text_frame: ShapeTextFrame) -> None:
         self._text_frame = text_frame
+        self._run_proxies: dict[int, ShapeRunProxy] = {}
 
     def __len__(self) -> int:
         return len(self._text_frame.get_runs())
@@ -105,7 +112,11 @@ class ShapeRunCollection:
             index += len(self)
         if index < 0:
             raise IndexError("run index out of range")
-        return ShapeRunProxy(self._text_frame, index)
+        proxy = self._run_proxies.get(index)
+        if proxy is None:
+            proxy = ShapeRunProxy(self._text_frame, index)
+            self._run_proxies[index] = proxy
+        return proxy
 
     def __iter__(self) -> Iterator[ShapeRunProxy]:
         for index, _ in enumerate(self._text_frame.get_runs()):
@@ -121,6 +132,7 @@ class ShapeParagraphProxy:
 
     def __init__(self, text_frame: ShapeTextFrame) -> None:
         self._text_frame = text_frame
+        self._runs = ShapeRunCollection(text_frame)
 
     def _paragraph_payload(self) -> dict[str, object]:
         return self._text_frame.get_paragraph_payload()
@@ -130,7 +142,7 @@ class ShapeParagraphProxy:
 
     @property
     def runs(self) -> ShapeRunCollection:
-        return ShapeRunCollection(self._text_frame)
+        return self._runs
 
     @property
     def text(self) -> str:
@@ -204,6 +216,7 @@ class ShapeParagraphProxy:
 class ShapeParagraphCollection:
     def __init__(self, text_frame: ShapeTextFrame) -> None:
         self._text_frame = text_frame
+        self._paragraph = ShapeParagraphProxy(text_frame)
 
     def __len__(self) -> int:
         return 1
@@ -211,7 +224,7 @@ class ShapeParagraphCollection:
     def __getitem__(self, index: int) -> ShapeParagraphProxy:
         if index not in (0, -1):
             raise IndexError("paragraph index out of range")
-        return ShapeParagraphProxy(self._text_frame)
+        return self._paragraph
 
     def __iter__(self) -> Iterator[ShapeParagraphProxy]:
         yield self[0]

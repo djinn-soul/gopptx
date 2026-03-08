@@ -131,6 +131,8 @@ func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
 		return handleGetShapeRuns, true
 	case OpSetShapeRuns:
 		return handleSetShapeRuns, true
+	case OpUpdateDeckRunTexts:
+		return handleUpdateDeckRunTexts, true
 	case OpUpdateSlideRunTexts:
 		return handleUpdateSlideRunTexts, true
 	case OpUpdateShapeRunText:
@@ -150,6 +152,8 @@ func commandHandlerForShapeMutations(op string) (commandHandler, bool) {
 		return handleAddTextbox, true
 	case OpAddTextboxes:
 		return handleAddTextboxes, true
+	case OpReserveShapeIDs:
+		return handleReserveShapeIDs, true
 	case OpAddConnector:
 		return handleAddConnector, true
 	case OpAddGroupShape:

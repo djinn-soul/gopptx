@@ -31,3 +31,14 @@ class PresentationTextBatchMixin:
                 "updates": [dict(update) for update in updates],
             },
         )
+
+    def update_deck_run_texts(
+        self,
+        slide_updates: list[dict[str, object]],
+    ) -> None:
+        self.execute(
+            ops.OP_UPDATE_DECK_RUN_TEXTS,
+            {
+                "slides": [dict(slide_update) for slide_update in slide_updates],
+            },
+        )

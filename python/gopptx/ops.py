@@ -64,6 +64,7 @@ OP_REMOVE_SHAPE = "remove_shape"
 OP_REMOVE_SLIDE = "remove_slide"
 OP_REMOVE_SLIDE_LAYOUT = "remove_slide_layout"
 OP_REMOVE_SLIDE_MASTER = "remove_slide_master"
+OP_RESERVE_SHAPE_IDS = "reserve_shape_ids"
 OP_RENAME_SECTION = "rename_section"
 OP_SEARCH_SHAPES = "search_shapes"
 OP_SET_CORE_PROPERTIES = "set_core_properties"
@@ -84,6 +85,7 @@ OP_SPLIT_TABLE_CELL = "split_table_cell"
 OP_UNGROUP_SHAPES = "ungroup_shapes"
 OP_UPDATE_CHART_DATA = "update_chart_data"
 OP_UPDATE_CHART_FORMATTING = "update_chart_formatting"
+OP_UPDATE_DECK_RUN_TEXTS = "update_deck_run_texts"
 OP_UPDATE_SHAPE = "update_shape"
 OP_UPDATE_SLIDE_RUN_TEXTS = "update_slide_run_texts"
 OP_UPDATE_SHAPE_RUN_TEXT = "update_shape_run_text"
@@ -154,6 +156,7 @@ SUPPORTED_OPS = (
     OP_REMOVE_SLIDE,
     OP_REMOVE_SLIDE_LAYOUT,
     OP_REMOVE_SLIDE_MASTER,
+    OP_RESERVE_SHAPE_IDS,
     OP_RENAME_SECTION,
     OP_SEARCH_SHAPES,
     OP_SET_CORE_PROPERTIES,
@@ -174,6 +177,7 @@ SUPPORTED_OPS = (
     OP_UNGROUP_SHAPES,
     OP_UPDATE_CHART_DATA,
     OP_UPDATE_CHART_FORMATTING,
+    OP_UPDATE_DECK_RUN_TEXTS,
     OP_UPDATE_SHAPE,
     OP_UPDATE_SLIDE_RUN_TEXTS,
     OP_UPDATE_SHAPE_RUN_TEXT,

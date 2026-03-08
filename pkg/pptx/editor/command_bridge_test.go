@@ -40,6 +40,12 @@ func TestCommandShapeOps(t *testing.T) {
 		t.Fatalf("add_textboxes failed: %s", resp)
 	}
 
+	reserveShapeIDsReq := `{"api_version":1,"request_id":"r1bc","op":"reserve_shape_ids","payload":{"slide_index":0,"count":2}}`
+	resp = ExecuteCommand(e, reserveShapeIDsReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"shape_ids":[`) {
+		t.Fatalf("reserve_shape_ids failed: %s", resp)
+	}
+
 	// 1c. Add Connector (python-pptx compatibility op)
 	addConnectorReq := `{"api_version":1,"request_id":"r1c","op":"add_connector","payload":{"slide_index":0,"connector_type":"line","begin_x":200,"begin_y":200,"end_x":900,"end_y":650}}`
 	resp = ExecuteCommand(e, addConnectorReq)

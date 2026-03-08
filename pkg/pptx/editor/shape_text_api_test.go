@@ -149,6 +149,64 @@ func TestShapeTextAPI_UpdateSlideRunTexts(t *testing.T) {
 	}
 }
 
+func TestShapeTextAPI_UpdateDeckRunTexts(t *testing.T) {
+	basePath := writeDeckFixture(t, "shape-text-api-deck-bulk.pptx", []elements.SlideContent{
+		elements.NewSlide("Text API"),
+		elements.NewSlide("Text API 2"),
+	})
+
+	ed, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	firstShapeID, err := ed.AddShape(0, "rect", 120, 120, 2000, 1000)
+	if err != nil {
+		t.Fatalf("add first slide shape: %v", err)
+	}
+	secondShapeID, err := ed.AddShape(1, "rect", 120, 120, 2000, 1000)
+	if err != nil {
+		t.Fatalf("add second slide shape: %v", err)
+	}
+	if err := ed.SetShapeRuns(0, firstShapeID, []common.TextRun{{Text: "One"}}); err != nil {
+		t.Fatalf("set first slide runs: %v", err)
+	}
+	if err := ed.SetShapeRuns(1, secondShapeID, []common.TextRun{{Text: "Two"}}); err != nil {
+		t.Fatalf("set second slide runs: %v", err)
+	}
+
+	err = ed.UpdateDeckRunTexts([]common.SlideRunTextUpdates{
+		{
+			SlideIndex: 0,
+			Updates: []common.ShapeRunTextUpdate{
+				{ShapeID: firstShapeID, RunIndex: 0, Text: "Alpha"},
+			},
+		},
+		{
+			SlideIndex: 1,
+			Updates: []common.ShapeRunTextUpdate{
+				{ShapeID: secondShapeID, RunIndex: 0, Text: "Beta"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("deck bulk update run texts: %v", err)
+	}
+
+	firstRuns, err := ed.GetShapeRuns(0, firstShapeID)
+	if err != nil {
+		t.Fatalf("get first shape runs: %v", err)
+	}
+	secondRuns, err := ed.GetShapeRuns(1, secondShapeID)
+	if err != nil {
+		t.Fatalf("get second shape runs: %v", err)
+	}
+	if firstRuns[0].Text != "Alpha" || secondRuns[0].Text != "Beta" {
+		t.Fatalf("unexpected deck bulk-updated runs: %#v %#v", firstRuns, secondRuns)
+	}
+}
+
 func TestShapeTextAPI_GetShapeRunsRejectsMissingShape(t *testing.T) {
 	basePath := writeDeckFixture(t, "shape-text-api-missing-shape.pptx", []elements.SlideContent{
 		elements.NewSlide("Text API"),

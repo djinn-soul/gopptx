@@ -284,11 +284,8 @@ class ShapeCollection:
             index += len(ids)
         if index < 0 or index >= len(ids):
             raise IndexError("shape index out of range")
-        return ShapeProxy(self._slide, ids[index])
+        return self._slide.shape(ids[index])
 
     def __iter__(self) -> Iterator[ShapeProxy]:
         for shape_id in self._shape_ids():
-            yield ShapeProxy(self._slide, shape_id)
-
-    def by_id(self, shape_id: int) -> ShapeProxy:
-        return ShapeProxy(self._slide, shape_id)
+            yield self._slide.shape(shape_id)
