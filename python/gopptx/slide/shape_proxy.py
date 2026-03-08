@@ -170,14 +170,10 @@ class ShapeProxy:
         self._fill = ShapeFillProxy(self)
         self._line = ShapeLineProxy(self)
         self._shadow = ShapeShadowProxy(self)
+        self._text_frame: ShapeTextFrame | None = None
 
     def _shape_record(self) -> Shape:
-        shapes = self._slide.list_shapes()
-        for shape in shapes:
-            shape_id = shape.get("ID", shape.get("id"))
-            if shape_id is not None and int(str(shape_id)) == self._shape_id:
-                return shape
-        raise KeyError(f"shape id {self._shape_id} not found on slide")
+        return self._slide._shape_record_by_id(self._shape_id)
 
     @property
     def id(self) -> int:
@@ -207,7 +203,9 @@ class ShapeProxy:
 
     @property
     def text_frame(self) -> ShapeTextFrame:
-        return ShapeTextFrame(self._presentation, self._slide.index, self._shape_id)
+        if self._text_frame is None:
+            self._text_frame = ShapeTextFrame(self._slide, self._shape_id)
+        return self._text_frame
 
     @property
     def fill(self) -> ShapeFillProxy:

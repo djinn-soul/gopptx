@@ -462,6 +462,14 @@ class PresentationShapeMixin(PresentationMixinBase):
             {"slide_index": slide_index, "shape_id": shape_id},
         )
 
+    def get_slide_text_states(self, slide_index: int) -> list[dict[str, object]]:
+        """Get text/runs/text-frame/paragraph state for all shapes on a slide."""
+        result = self.execute(
+            ops.OP_GET_SLIDE_TEXT_STATES,
+            {"slide_index": slide_index},
+        )
+        return cast("list[dict[str, object]]", result.get("states", []))
+
     def get_shape_runs(self, slide_index: int, shape_id: int) -> list[TextRun]:
         """Get text runs for a shape."""
         result = self.execute(

@@ -62,3 +62,30 @@ def test_shape_paragraph_advanced_controls(tmp_path: Path) -> None:
     assert '<a:spcPct val="120000"/>' in xml
     assert '<a:spcBef><a:spcPts val="200"/></a:spcBef>' in xml
     assert '<a:spcAft><a:spcPts val="100"/></a:spcAft>' in xml
+
+
+def test_slide_bulk_run_text_updates() -> None:
+    with Presentation.new("Bulk Text") as prs:
+        slide = prs.add_slide("Bulk")
+        first_shape_id = slide.add_shape(
+            "rect",
+            (1000000, 1000000, 5000000, 1000000),
+            runs=[Run("One").to_payload()],
+        )
+        second_shape_id = slide.add_shape(
+            "rect",
+            (1000000, 2200000, 5000000, 1000000),
+            runs=[Run("Two").to_payload()],
+        )
+
+        slide.update_shape_run_texts([
+            {"shape_id": first_shape_id, "run_index": 0, "text": "Alpha"},
+            (second_shape_id, 0, "Beta"),
+        ])
+
+        assert (
+            slide.shape(first_shape_id).text_frame.paragraphs[0].runs[0].text == "Alpha"
+        )
+        assert (
+            slide.shape(second_shape_id).text_frame.paragraphs[0].runs[0].text == "Beta"
+        )

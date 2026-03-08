@@ -5,43 +5,39 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
+from .shape_text_frame import ShapeTextFrame as BaseShapeTextFrame
 from .text_run import Run, RunHyperlink
 
-if TYPE_CHECKING:
-    from ..presentation.presentation import Presentation
+
+class ShapeTextFrame(BaseShapeTextFrame):
+    """Public text-frame facade with paragraph collection access."""
+
+    @property
+    def paragraphs(self) -> ShapeParagraphCollection:
+        return ShapeParagraphCollection(self)
 
 
 class ShapeRunProxy:
     """Live run proxy backed by bridge operations."""
 
-    def __init__(
-        self,
-        presentation: Presentation,
-        slide_index: int,
-        shape_id: int,
-        run_index: int,
-    ) -> None:
-        self._presentation = presentation
-        self._slide_index = slide_index
-        self._shape_id = shape_id
+    def __init__(self, text_frame: ShapeTextFrame, run_index: int) -> None:
+        self._text_frame = text_frame
         self._run_index = run_index
 
     def _run_payload(self) -> dict[str, object]:
-        runs = self._presentation.get_shape_runs(self._slide_index, self._shape_id)
+        runs = self._text_frame.get_runs()
         if self._run_index < 0 or self._run_index >= len(runs):
             raise IndexError("run index out of range")
         return cast("dict[str, object]", runs[self._run_index])
 
     def _set_field(self, name: str, value: object) -> None:
-        runs = self._presentation.get_shape_runs(self._slide_index, self._shape_id)
+        runs = [dict(run) for run in self._text_frame.get_runs()]
         if self._run_index < 0 or self._run_index >= len(runs):
             raise IndexError("run index out of range")
-        run = dict(cast("dict[str, object]", runs[self._run_index]))
-        run[name] = value
-        runs[self._run_index] = run
-        self._presentation.set_shape_runs(self._slide_index, self._shape_id, runs)
+        runs[self._run_index][name] = value
+        self._text_frame.replace_runs(runs)
 
     @property
     def text(self) -> str:
@@ -49,9 +45,7 @@ class ShapeRunProxy:
 
     @text.setter
     def text(self, value: str) -> None:
-        self._presentation.update_shape_run_text(
-            self._slide_index, self._shape_id, self._run_index, value
-        )
+        self._text_frame.update_run_text(self._run_index, value)
 
     @property
     def bold(self) -> bool | None:
@@ -100,91 +94,51 @@ class ShapeRunProxy:
 class ShapeRunCollection:
     """Live run collection for a paragraph proxy."""
 
-    def __init__(
-        self, presentation: Presentation, slide_index: int, shape_id: int
-    ) -> None:
-        self._presentation = presentation
-        self._slide_index = slide_index
-        self._shape_id = shape_id
-
-    def _count(self) -> int:
-        return len(self._presentation.get_shape_runs(self._slide_index, self._shape_id))
+    def __init__(self, text_frame: ShapeTextFrame) -> None:
+        self._text_frame = text_frame
 
     def __len__(self) -> int:
-        return self._count()
+        return len(self._text_frame.get_runs())
 
     def __getitem__(self, index: int) -> ShapeRunProxy:
-        count = self._count()
         if index < 0:
-            index += count
-        if index < 0 or index >= count:
+            index += len(self)
+        if index < 0:
             raise IndexError("run index out of range")
-        return ShapeRunProxy(
-            self._presentation, self._slide_index, self._shape_id, index
-        )
+        return ShapeRunProxy(self._text_frame, index)
 
     def __iter__(self) -> Iterator[ShapeRunProxy]:
-        for i in range(self._count()):
-            yield ShapeRunProxy(
-                self._presentation, self._slide_index, self._shape_id, i
-            )
+        for index, _ in enumerate(self._text_frame.get_runs()):
+            yield ShapeRunProxy(self._text_frame, index)
 
     def add_run(self, text: str = "") -> ShapeRunProxy:
-        run = Run(text=text).to_payload()
-        self._presentation.append_shape_run(self._slide_index, self._shape_id, run)
+        self._text_frame.append_run(Run(text=text).to_payload())
         return self[len(self) - 1]
 
 
 class ShapeParagraphProxy:
     """Single-paragraph proxy; PPTX run API currently models one normalized paragraph."""
 
-    def __init__(
-        self,
-        presentation: Presentation,
-        slide_index: int,
-        shape_id: int,
-    ) -> None:
-        self._presentation = presentation
-        self._slide_index = slide_index
-        self._shape_id = shape_id
+    def __init__(self, text_frame: ShapeTextFrame) -> None:
+        self._text_frame = text_frame
 
     def _paragraph_payload(self) -> dict[str, object]:
-        state = self._presentation.get_shape_text_state(
-            self._slide_index, self._shape_id
-        )
-        paragraph = state.get("paragraph")
-        if isinstance(paragraph, dict):
-            return dict(cast("dict[str, object]", paragraph))
-        return {}
+        return self._text_frame.get_paragraph_payload()
 
     def _set_paragraph_field(self, field: str, value: object) -> None:
-        paragraph = self._paragraph_payload()
-        if value is None:
-            paragraph.pop(field, None)
-        else:
-            paragraph[field] = value
-        self._presentation.update_shape(
-            self._slide_index,
-            self._shape_id,
-            cast("dict[str, object]", {"paragraph": paragraph}),
-        )
+        self._text_frame.set_paragraph_field(field, value)
 
     @property
     def runs(self) -> ShapeRunCollection:
-        return ShapeRunCollection(self._presentation, self._slide_index, self._shape_id)
+        return ShapeRunCollection(self._text_frame)
 
     @property
     def text(self) -> str:
-        runs = self._presentation.get_shape_runs(self._slide_index, self._shape_id)
-        return "".join(str(r.get("text", "")) for r in runs)
+        return "".join(str(run.get("text", "")) for run in self._text_frame.get_runs())
 
     @text.setter
     def text(self, value: str) -> None:
-        self._presentation.set_shape_runs(
-            self._slide_index,
-            self._shape_id,
-            [Run(text=value).to_payload()],
-        )
+        self._text_frame.replace_runs([Run(text=value).to_payload()])
 
     @property
     def alignment(self) -> str | None:
@@ -222,9 +176,8 @@ class ShapeParagraphProxy:
             self._set_paragraph_field("line_spacing_pts", None)
             return
         if isinstance(value, float):
-            pct = round(value * 100000)
             self._set_paragraph_field("line_spacing_pts", None)
-            self._set_paragraph_field("line_spacing_pct", pct)
+            self._set_paragraph_field("line_spacing_pct", round(value * 100000))
             return
         self._set_paragraph_field("line_spacing_pct", None)
         self._set_paragraph_field("line_spacing_pts", value)
@@ -249,12 +202,8 @@ class ShapeParagraphProxy:
 
 
 class ShapeParagraphCollection:
-    def __init__(
-        self, presentation: Presentation, slide_index: int, shape_id: int
-    ) -> None:
-        self._presentation = presentation
-        self._slide_index = slide_index
-        self._shape_id = shape_id
+    def __init__(self, text_frame: ShapeTextFrame) -> None:
+        self._text_frame = text_frame
 
     def __len__(self) -> int:
         return 1
@@ -262,39 +211,7 @@ class ShapeParagraphCollection:
     def __getitem__(self, index: int) -> ShapeParagraphProxy:
         if index not in (0, -1):
             raise IndexError("paragraph index out of range")
-        return ShapeParagraphProxy(
-            self._presentation, self._slide_index, self._shape_id
-        )
+        return ShapeParagraphProxy(self._text_frame)
 
     def __iter__(self) -> Iterator[ShapeParagraphProxy]:
         yield self[0]
-
-
-class ShapeTextFrame:
-    """Live text-frame facade for one shape."""
-
-    def __init__(
-        self, presentation: Presentation, slide_index: int, shape_id: int
-    ) -> None:
-        self._presentation = presentation
-        self._slide_index = slide_index
-        self._shape_id = shape_id
-
-    @property
-    def paragraphs(self) -> ShapeParagraphCollection:
-        return ShapeParagraphCollection(
-            self._presentation,
-            self._slide_index,
-            self._shape_id,
-        )
-
-    def fit_text(self) -> None:
-        """Best-effort fit text behavior using bridge-supported controls."""
-        self._presentation.update_shape(
-            self._slide_index,
-            self._shape_id,
-            cast(
-                "dict[str, object]",
-                {"text_frame": {"word_wrap": True, "auto_fit_type": "shape"}},
-            ),
-        )

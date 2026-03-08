@@ -46,13 +46,16 @@ const (
 	OpAddComment              = "add_comment"
 	OpRemoveComment           = "remove_comment"
 	OpListShapes              = "list_shapes"
+	OpGetSlideTextStates      = "get_slide_text_states"
 	OpGetShapeTextState       = "get_shape_text_state"
 	OpGetShapeRuns            = "get_shape_runs"
 	OpSetShapeRuns            = "set_shape_runs"
+	OpUpdateSlideRunTexts     = "update_slide_run_texts"
 	OpUpdateShapeRunText      = "update_shape_run_text"
 	OpAppendShapeRun          = "append_shape_run"
 	OpAddShape                = "add_shape"
 	OpAddTextbox              = "add_textbox"
+	OpAddTextboxes            = "add_textboxes"
 	OpAddConnector            = "add_connector"
 	OpAddGroupShape           = "add_group_shape"
 	OpGroupShapes             = "group_shapes"
@@ -136,13 +139,16 @@ func SupportedOps() []string {
 		OpAddComment,
 		OpRemoveComment,
 		OpListShapes,
+		OpGetSlideTextStates,
 		OpGetShapeTextState,
 		OpGetShapeRuns,
 		OpSetShapeRuns,
+		OpUpdateSlideRunTexts,
 		OpUpdateShapeRunText,
 		OpAppendShapeRun,
 		OpAddShape,
 		OpAddTextbox,
+		OpAddTextboxes,
 		OpAddConnector,
 		OpAddGroupShape,
 		OpGroupShapes,

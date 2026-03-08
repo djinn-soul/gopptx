@@ -123,12 +123,16 @@ func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
 		return handleRemoveComment, true
 	case OpListShapes:
 		return handleListShapes, true
+	case OpGetSlideTextStates:
+		return handleGetSlideTextStates, true
 	case OpGetShapeTextState:
 		return handleGetShapeTextState, true
 	case OpGetShapeRuns:
 		return handleGetShapeRuns, true
 	case OpSetShapeRuns:
 		return handleSetShapeRuns, true
+	case OpUpdateSlideRunTexts:
+		return handleUpdateSlideRunTexts, true
 	case OpUpdateShapeRunText:
 		return handleUpdateShapeRunText, true
 	case OpAppendShapeRun:
@@ -144,6 +148,8 @@ func commandHandlerForShapeMutations(op string) (commandHandler, bool) {
 		return handleAddShape, true
 	case OpAddTextbox:
 		return handleAddTextbox, true
+	case OpAddTextboxes:
+		return handleAddTextboxes, true
 	case OpAddConnector:
 		return handleAddConnector, true
 	case OpAddGroupShape:

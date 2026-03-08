@@ -210,6 +210,11 @@ class PresentationRuntimeMixin:
             self._slides_metadata_cache = None
             self._metadata_cache = None
             self._comment_ref_cache = {}
+            invalidate_slide_lookup = getattr(
+                self, "_invalidate_slide_lookup_cache", None
+            )
+            if callable(invalidate_slide_lookup):
+                invalidate_slide_lookup()
 
     def _get_last_error(self) -> str:
         """Get the last error message from the Go engine."""

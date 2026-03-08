@@ -12,9 +12,10 @@ from typing import cast
 from ..api_errors import GopptxError
 from .helpers import PresentationProtocol
 from .runtime import PresentationRuntimeMixin
+from .slide_lookup_mixin import PresentationSlideLookupMixin
 
 
-class PresentationBase(PresentationRuntimeMixin):
+class PresentationBase(PresentationSlideLookupMixin, PresentationRuntimeMixin):
     """Base class for Presentation with core library loading and execution."""
 
     _lib = None

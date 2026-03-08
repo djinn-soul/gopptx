@@ -11,10 +11,12 @@ from .notes_slide import NotesSlide
 from .placeholder_mixin import SlidePlaceholderMixin
 from .shape_proxy import ShapeCollection, ShapeProxy
 from .slide_mixins import SlideChartMixin, SlideShapeMixin, SlideTableMixin
+from .slide_shape_batch_mixin import SlideShapeBatchMixin
+from .slide_text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
-    from ..schemas import SlideMetadata
+    from ..schemas import Shape, SlideMetadata
 
 
 class SlideBase:
@@ -27,10 +29,7 @@ class SlideBase:
     @property
     def index(self) -> int:
         """The zero-based index of this slide."""
-        for slide_meta in self._presentation.slides_metadata:
-            if slide_meta["SlideID"] == self.slide_id:
-                return int(slide_meta["Index"])
-        return -1
+        return self._presentation.slide_index_for_id(self.slide_id)
 
     @property
     def slide_id(self) -> int:
@@ -72,6 +71,8 @@ class Slide(
     SlideChartMixin,
     SlidePlaceholderMixin,
     SlideBase,
+    SlideTextMixin,
+    SlideShapeBatchMixin,
     SlideShapeMixin,
 ):
     """Proxy object for a slide within a presentation."""
@@ -83,6 +84,43 @@ class Slide(
         self._metadata = metadata
         self._shapes_collection: ShapeCollection | None = None
         self._charts_collection: ChartCollection | None = None
+        self._shape_records_cache: list[Shape] | None = None
+        self._shape_record_map: dict[int, Shape] | None = None
+        self._shape_text_state_cache: dict[int, dict[str, object]] | None = None
+
+    def _shape_records(self) -> list[Shape]:
+        if self._shape_records_cache is None:
+            self._shape_records_cache = self._presentation.list_shapes(self.index)
+            self._shape_record_map = None
+        return self._shape_records_cache
+
+    def _shape_record_by_id(self, shape_id: int) -> Shape:
+        if self._shape_record_map is None:
+            record_map: dict[int, Shape] = {}
+            for shape in self._shape_records():
+                raw_id = shape.get("ID", shape.get("id"))
+                if raw_id is not None:
+                    record_map[int(str(raw_id))] = shape
+            self._shape_record_map = record_map
+        return self._shape_record_map[shape_id]
+
+    def _invalidate_shape_cache(self) -> None:
+        self._shape_records_cache = None
+        self._shape_record_map = None
+
+    def _shape_text_states(self) -> dict[int, dict[str, object]]:
+        if self._shape_text_state_cache is None:
+            state_map: dict[int, dict[str, object]] = {}
+            for state in self._presentation.get_slide_text_states(self.index):
+                raw_id = state.get("shape_id", state.get("ShapeID"))
+                if raw_id is None:
+                    continue
+                state_map[int(str(raw_id))] = dict(state)
+            self._shape_text_state_cache = state_map
+        return self._shape_text_state_cache
+
+    def _invalidate_text_state_cache(self) -> None:
+        self._shape_text_state_cache = None
 
     @property
     def shapes(self) -> ShapeCollection:
@@ -90,6 +128,20 @@ class Slide(
         if self._shapes_collection is None:
             self._shapes_collection = ShapeCollection(self)
         return self._shapes_collection
+
+    @override
+    def list_shapes(self) -> list[Shape]:
+        """List slide shapes using a slide-local snapshot cache."""
+        return self._shape_records()
+
+    @override
+    def get_shape_text_state(self, shape_id: int) -> dict[str, object]:
+        """Get shape text state using slide-local bulk-prefetched cache."""
+        state = self._shape_text_states().get(shape_id)
+        if state is None:
+            state = self._presentation.get_shape_text_state(self.index, shape_id)
+            self._shape_text_states()[shape_id] = dict(state)
+        return dict(state)
 
     def shape(self, shape_id: int) -> ShapeProxy:
         """Return a live shape proxy by ID."""

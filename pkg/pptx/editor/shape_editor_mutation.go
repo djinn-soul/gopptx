@@ -1,7 +1,6 @@
 package editor
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"regexp"
@@ -21,20 +20,7 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 		return 0, fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
-	// Parse existing shapes to find max ID and last shape position
-	// OPTIMIZATION: We only need the offsets, not the full properties.
-	shapes, err := scanShapesWithOffsets(content, true) // true = skip properties parsing
-	if err != nil {
-		return 0, fmt.Errorf("parse shapes: %w", err)
-	}
-
 	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	lastShapeEnd := int64(-1)
-	for _, s := range shapes {
-		if s.End > lastShapeEnd {
-			lastShapeEnd = s.End
-		}
-	}
 	newID := maxID + 1
 
 	newShape := parsedShape{
@@ -53,24 +39,12 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 		return 0, err
 	}
 
-	// Insertion point: After last shape if exists, else before </p:spTree>
-	var buf bytes.Buffer
-	if lastShapeEnd != -1 {
-		buf.Write(content[:lastShapeEnd])
-		buf.Write(shapeXML)
-		buf.Write(content[lastShapeEnd:])
-	} else {
-		endTree := []byte("</p:spTree>")
-		idx := bytes.LastIndex(content, endTree)
-		if idx == -1 {
-			return 0, errors.New("invalid slide xml: missing spTree end")
-		}
-		buf.Write(content[:idx])
-		buf.Write(shapeXML)
-		buf.Write(content[idx:])
+	newXML, err := insertShapeXML(content, shapeXML)
+	if err != nil {
+		return 0, err
 	}
 
-	e.parts.Set(partPath, buf.Bytes())
+	e.parts.Set(partPath, newXML)
 	return newID, nil
 }
 

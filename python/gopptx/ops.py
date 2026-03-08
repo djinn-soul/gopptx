@@ -18,6 +18,7 @@ OP_ADD_SLIDE_LAYOUT = "add_slide_layout"
 OP_ADD_SLIDE_MASTER = "add_slide_master"
 OP_ADD_TABLE = "add_table"
 OP_ADD_TEXTBOX = "add_textbox"
+OP_ADD_TEXTBOXES = "add_textboxes"
 OP_ADD_VBA = "add_vba"
 OP_ADD_VIDEO = "add_video"
 OP_APPEND_SHAPE_RUN = "append_shape_run"
@@ -35,6 +36,7 @@ OP_GET_IMAGE_METADATA = "get_image_metadata"
 OP_GET_METADATA = "get_metadata"
 OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
+OP_GET_SLIDE_TEXT_STATES = "get_slide_text_states"
 OP_GET_SHAPE_RUNS = "get_shape_runs"
 OP_GET_SHAPE_TEXT_STATE = "get_shape_text_state"
 OP_GET_SLIDE_LAYOUT_REF = "get_slide_layout_ref"
@@ -83,6 +85,7 @@ OP_UNGROUP_SHAPES = "ungroup_shapes"
 OP_UPDATE_CHART_DATA = "update_chart_data"
 OP_UPDATE_CHART_FORMATTING = "update_chart_formatting"
 OP_UPDATE_SHAPE = "update_shape"
+OP_UPDATE_SLIDE_RUN_TEXTS = "update_slide_run_texts"
 OP_UPDATE_SHAPE_RUN_TEXT = "update_shape_run_text"
 OP_UPDATE_SLIDE = "update_slide"
 OP_UPDATE_TABLE_CELL = "update_table_cell"
@@ -105,6 +108,7 @@ SUPPORTED_OPS = (
     OP_ADD_SLIDE_MASTER,
     OP_ADD_TABLE,
     OP_ADD_TEXTBOX,
+    OP_ADD_TEXTBOXES,
     OP_ADD_VBA,
     OP_ADD_VIDEO,
     OP_APPEND_SHAPE_RUN,
@@ -122,6 +126,7 @@ SUPPORTED_OPS = (
     OP_GET_METADATA,
     OP_GET_NOTES,
     OP_GET_SECTIONS,
+    OP_GET_SLIDE_TEXT_STATES,
     OP_GET_SHAPE_RUNS,
     OP_GET_SHAPE_TEXT_STATE,
     OP_GET_SLIDE_LAYOUT_REF,
@@ -170,6 +175,7 @@ SUPPORTED_OPS = (
     OP_UPDATE_CHART_DATA,
     OP_UPDATE_CHART_FORMATTING,
     OP_UPDATE_SHAPE,
+    OP_UPDATE_SLIDE_RUN_TEXTS,
     OP_UPDATE_SHAPE_RUN_TEXT,
     OP_UPDATE_SLIDE,
     OP_UPDATE_TABLE_CELL,
