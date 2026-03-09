@@ -164,6 +164,14 @@ type Shape struct {
 	Fill   *ShapeFill
 	Line   *ShapeLine
 	Shadow *ShapeShadow
+
+	Adjustments []ShapeAdjustment
+}
+
+// ShapeAdjustment represents one preset-geometry adjustment formula.
+type ShapeAdjustment struct {
+	Name    string
+	Formula string
 }
 
 // ShapeSearchQuery filters shapes for editor-wide search.

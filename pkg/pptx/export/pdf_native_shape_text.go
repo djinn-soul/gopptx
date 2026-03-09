@@ -17,7 +17,8 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 	if boxW <= 2 || boxH <= 2 {
 		return
 	}
-	fontSize := fitPDFTextToBox(
+	fontHint := inferCodeFontHint(s.Text)
+	fontSize := fitPDFTextToBoxWithMetrics(
 		pdf,
 		s.Text,
 		defaultFontSize,
@@ -26,9 +27,10 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 		false,
 		boxW,
 		boxH,
+		fontHint,
 	)
-	setPDFTextFont(pdf, fontSize, false, false)
-	lines := wrapPDFText(pdf, s.Text, boxW)
+	setPDFTextFontWithHint(pdf, fontSize, false, false, fontHint)
+	lines := wrapPDFTextWithMetrics(pdf, s.Text, boxW, fontHint)
 	lineH := pdfLineHeight(fontSize)
 	textBlockH := lineH * float64(len(lines))
 	startY := shapeTextStartY(anchor, boxY, boxH, textBlockH)
@@ -40,11 +42,11 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 			break
 		}
 		pdf.SetX(boxX)
-		pdf.SetY(yPos)
+		pdf.SetY(yPos + fontBaselineShift(fontHint, fontSize))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
 	}
-	setPDFTextFont(pdf, defaultFontSize, false, false)
+	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
 
 func shapeTextBox(
@@ -55,7 +57,7 @@ func shapeTextBox(
 	right := defaultShapeTextPaddingPt
 	top := defaultShapeTextPaddingPt
 	bottom := defaultShapeTextPaddingPt
-	anchor := shapes.TextAnchorMiddle
+	anchor := shapes.TextAnchorTop
 	if s.TextFrame != nil {
 		left = emuToPt(s.TextFrame.MarginLeft.Emu())
 		right = emuToPt(s.TextFrame.MarginRight.Emu())

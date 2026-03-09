@@ -43,7 +43,7 @@ func fitPDFTextToBoxWithMetrics(
 		minSize = minTextAutoFitSize
 	}
 	for size > minSize {
-		setPDFTextFont(pdf, size, bold, italic)
+		setPDFTextFontWithHint(pdf, size, bold, italic, fontHint)
 		lines := wrapPDFTextWithMetrics(pdf, text, maxWidth, fontHint)
 		textH := float64(len(lines)) * pdfLineHeight(size)
 		if textH <= maxHeight {

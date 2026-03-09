@@ -61,14 +61,12 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			default:
 				pdf.SetFillColor(255, 255, 255)
 			}
+			pdf.RectFromUpperLeftWithStyle(cellX, cellY, cw, rowH, "F")
+			defaultBorderColor := "B4B4B4"
 			if hasStyledHeader {
-				r, g, b := hexToRGB(pdfTableGridColor)
-				pdf.SetStrokeColor(r, g, b)
-			} else {
-				pdf.SetStrokeColor(180, 180, 180)
+				defaultBorderColor = pdfTableGridColor
 			}
-			pdf.SetLineWidth(0.5)
-			pdf.RectFromUpperLeftWithStyle(cellX, cellY, cw, rowH, "DF")
+			drawPDFTableCellBorders(pdf, cell, cellX, cellY, cw, rowH, defaultBorderColor, 0.5)
 			switch {
 			case cell.Color != "":
 				r, g, b := hexToRGB(cell.Color)
@@ -79,10 +77,11 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			default:
 				pdf.SetTextColor(0, 0, 0)
 			}
-			usableW := cw - 8
-			if usableW < 24 {
-				usableW = 24
-			}
+			leftPad := tableCellPadding(cell.MarginLeftPt)
+			rightPad := tableCellPadding(cell.MarginRightPt)
+			topPad := tableCellPadding(cell.MarginTopPt)
+			bottomPad := tableCellPadding(cell.MarginBottomPt)
+			usableW := max(cw-leftPad-rightPad, tableMinUsableWidthPt)
 			fontSize := fitPDFTextToBoxWithMetrics(
 				pdf,
 				text,
@@ -91,37 +90,40 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 				cell.Bold,
 				false,
 				usableW,
-				max(rowH-4, 8),
+				max(rowH-topPad-bottomPad, 8),
 				"",
 			)
-			setPDFTextFont(pdf, fontSize, cell.Bold, false)
-			lines := wrapPDFTextWithMetrics(pdf, text, usableW, "")
+			hint := inferCodeFontHint(text)
+			setPDFTextFontWithHint(pdf, fontSize, cell.Bold, false, hint)
+			lines := wrapPDFTextWithMetrics(pdf, text, usableW, hint)
 			lineHeight := math.Max(pdfLineHeight(fontSize), 12)
 			totalTextH := lineHeight * float64(len(lines))
 			textY := tableCellStartY(cell, cellY, rowH, totalTextH)
 			for _, line := range lines {
-				pdf.SetX(cellX + 4)
-				pdf.SetY(textY + fontBaselineShift("", fontSize))
+				pdf.SetX(tableCellTextX(pdf, cell, line, cellX, cw))
+				pdf.SetY(textY + fontBaselineShift(hint, fontSize))
 				_ = pdf.Cell(nil, line)
 				textY += lineHeight
 				if textY > cellY+rowH-2 {
 					break
 				}
 			}
-			setPDFTextFont(pdf, defaultFontSize, false, false)
+			setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 			cellX += cw
 		}
 	}
 }
 
 func tableCellStartY(cell tables.TableCell, cellY, rowH, totalTextH float64) float64 {
+	topPad := tableCellPadding(cell.MarginTopPt)
+	bottomPad := tableCellPadding(cell.MarginBottomPt)
 	switch strings.TrimSpace(cell.VAlign) {
 	case tables.TableVAlignTop:
-		return cellY + 2
+		return cellY + topPad
 	case tables.TableVAlignBottom:
-		return cellY + math.Max(rowH-totalTextH-2, 2)
+		return cellY + math.Max(rowH-totalTextH-bottomPad, topPad)
 	default:
-		return cellY + math.Max((rowH-totalTextH)/2, 2)
+		return cellY + math.Max((rowH-totalTextH)/2, topPad)
 	}
 }
 
@@ -157,13 +159,18 @@ func computePDFTableRowHeights(
 				cell = tab.StyledRows[ri][ci]
 				text = cell.Text
 			}
-			usableW := max(cw-8, 24)
+			leftPad := tableCellPadding(cell.MarginLeftPt)
+			rightPad := tableCellPadding(cell.MarginRightPt)
+			topPad := tableCellPadding(cell.MarginTopPt)
+			bottomPad := tableCellPadding(cell.MarginBottomPt)
+			usableW := max(cw-leftPad-rightPad, tableMinUsableWidthPt)
+			hint := inferCodeFontHint(text)
 			fontSize := fitPDFTextToBoxWithMetrics(
-				pdf, text, defaultFontSize, minTextAutoFitSize, cell.Bold, false, usableW, rowH*2, "",
+				pdf, text, defaultFontSize, minTextAutoFitSize, cell.Bold, false, usableW, rowH*2, hint,
 			)
-			setPDFTextFont(pdf, fontSize, cell.Bold, false)
-			lineCount := float64(len(wrapPDFTextWithMetrics(pdf, text, usableW, "")))
-			needH := max(lineCount*math.Max(pdfLineHeight(fontSize), 12)+4, rowH)
+			setPDFTextFontWithHint(pdf, fontSize, cell.Bold, false, hint)
+			lineCount := float64(len(wrapPDFTextWithMetrics(pdf, text, usableW, hint)))
+			needH := max(lineCount*math.Max(pdfLineHeight(fontSize), 12)+topPad+bottomPad, rowH)
 			if needH > needed {
 				needed = needH
 			}
@@ -174,7 +181,7 @@ func computePDFTableRowHeights(
 		}
 		out[ri] = needed
 	}
-	setPDFTextFont(pdf, defaultFontSize, false, false)
+	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 	return out
 }
 

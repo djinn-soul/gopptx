@@ -108,7 +108,32 @@ type shapeXML struct {
 			Name string `xml:"name,attr"`
 		} `xml:"cNvPr"`
 	} `xml:"nvGrpSpPr"`
+	NvGraphicFramePr struct {
+		CNvPr struct {
+			ID   int    `xml:"id,attr"`
+			Name string `xml:"name,attr"`
+		} `xml:"cNvPr"`
+	} `xml:"nvGraphicFramePr"`
+	Xfrm struct {
+		Off struct {
+			X int `xml:"x,attr"`
+			Y int `xml:"y,attr"`
+		} `xml:"off"`
+		Ext struct {
+			Cx int `xml:"cx,attr"`
+			Cy int `xml:"cy,attr"`
+		} `xml:"ext"`
+	} `xml:"xfrm"`
 	SpPr struct {
+		PrstGeom *struct {
+			Prst  string `xml:"prst,attr"`
+			AvLst *struct {
+				Gd []struct {
+					Name string `xml:"name,attr"`
+					Fmla string `xml:"fmla,attr"`
+				} `xml:"gd"`
+			} `xml:"avLst"`
+		} `xml:"prstGeom"`
 		NoFill    *struct{}        `xml:"noFill"`
 		SolidFill *solidFillXML    `xml:"solidFill"`
 		GradFill  *gradientFillXML `xml:"gradFill"`
@@ -183,6 +208,7 @@ type shapeXML struct {
 type ParsedShapeProperties struct {
 	ID         int
 	Name       string
+	Type       string
 	Text       string
 	Runs       []common.TextRun
 	Paragraph  *common.Paragraph
@@ -197,4 +223,6 @@ type ParsedShapeProperties struct {
 	W, H       int
 	PhIndex    int
 	PhType     string
+
+	Adjustments []common.ShapeAdjustment
 }
