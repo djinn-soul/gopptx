@@ -2,6 +2,7 @@ package export
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
@@ -164,6 +165,8 @@ func extractTableContent(
 			value, _ := cell["text"].(string)
 			values = append(values, value)
 			styledCell := tables.NewTableCell(value)
+			applyTableCellLayout(&styledCell, cell)
+			applyTableCellBorders(&styledCell, cell)
 			if firstRow && rowIndex == 0 {
 				styledCell = styledCell.WithBold(true).WithBackgroundColor("4472C4")
 				styledCell.Color = "FFFFFF"
@@ -179,6 +182,72 @@ func extractTableContent(
 		table = table.AddRow(values)
 	}
 	return &table
+}
+
+func applyTableCellLayout(cell *tables.TableCell, cellMeta map[string]any) {
+	if rawAlign, _ := cellMeta["v_align"].(string); rawAlign != "" {
+		switch strings.ToLower(strings.TrimSpace(rawAlign)) {
+		case "top":
+			*cell = cell.WithVAlignTop()
+		case "bottom":
+			*cell = cell.WithVAlignBottom()
+		case "middle", "center", "ctr":
+			*cell = cell.WithVAlignMiddle()
+		}
+	}
+	applyMargin := func(
+		margin any,
+		setter func(float64) tables.TableCell,
+	) {
+		emu, ok := parseNumericInt64(margin)
+		if !ok || emu <= 0 {
+			return
+		}
+		pts := math.Max(emuToPt(emu), 0)
+		*cell = setter(pts)
+	}
+	applyMargin(cellMeta["margin_left"], cell.WithMarginLeftPt)
+	applyMargin(cellMeta["margin_right"], cell.WithMarginRightPt)
+	applyMargin(cellMeta["margin_top"], cell.WithMarginTopPt)
+	applyMargin(cellMeta["margin_bottom"], cell.WithMarginBottomPt)
+}
+
+func applyTableCellBorders(cell *tables.TableCell, cellMeta map[string]any) {
+	applyBorder := func(
+		key string,
+		setter func(float64, string) tables.TableCell,
+	) {
+		borderMeta, ok := cellMeta[key].(map[string]any)
+		if !ok {
+			return
+		}
+		widthEmu, ok := parseNumericInt64(borderMeta["width"])
+		if !ok || widthEmu <= 0 {
+			return
+		}
+		color := "B4B4B4"
+		if c, ok := borderMeta["color"].(string); ok && strings.TrimSpace(c) != "" {
+			color = c
+		}
+		*cell = setter(math.Max(emuToPt(widthEmu), 0.25), color)
+	}
+	applyBorder("border_left", cell.WithLeftBorder)
+	applyBorder("border_right", cell.WithRightBorder)
+	applyBorder("border_top", cell.WithTopBorder)
+	applyBorder("border_bottom", cell.WithBottomBorder)
+}
+
+func parseNumericInt64(value any) (int64, bool) {
+	switch v := value.(type) {
+	case int64:
+		return v, true
+	case int:
+		return int64(v), true
+	case float64:
+		return int64(v), true
+	default:
+		return 0, false
+	}
 }
 
 func toMapSlice(value any) []map[string]any {
