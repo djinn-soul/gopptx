@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
-	"path"
 	"strings"
 )
 
@@ -49,23 +47,26 @@ func RegisterVideoPart(
 	mimeType string,
 	registerMedia func([]byte, string) (string, error),
 ) (string, error) {
-	videoExt := "mp4"
-	if mimeType == "video/quicktime" {
-		videoExt = "mov"
+	videoExt, err := ResolveVideoExtension(mimeType, videoPath, len(videoData) > 0)
+	if err != nil {
+		return "", err
 	}
 	return RegisterPartFromDataOrPath(
 		videoData,
 		videoPath,
 		"video data or path is required",
 		func(data []byte) (string, error) {
+			if sizeErr := ValidateMediaPayloadSize(data, "video"); sizeErr != nil {
+				return "", sizeErr
+			}
 			return registerMedia(data, videoExt)
 		},
 		func(filePath string) (string, error) {
-			data, err := os.ReadFile(filePath)
-			if err != nil {
-				return "", err
+			data, readErr := ReadMediaFileWithSizeLimit(filePath, "video")
+			if readErr != nil {
+				return "", readErr
 			}
-			return registerMedia(data, strings.TrimPrefix(path.Ext(filePath), "."))
+			return registerMedia(data, videoExt)
 		},
 	)
 }
@@ -219,26 +220,26 @@ func RegisterAudioPart(
 	mimeType string,
 	registerMedia func([]byte, string) (string, error),
 ) (string, error) {
-	audioExt := "mp3"
-	switch mimeType {
-	case "audio/wav", "audio/x-wav":
-		audioExt = "wav"
-	case "audio/m4a", "audio/mp4":
-		audioExt = "m4a"
+	audioExt, err := ResolveAudioExtension(mimeType, audioPath, len(audioData) > 0)
+	if err != nil {
+		return "", err
 	}
 	return RegisterPartFromDataOrPath(
 		audioData,
 		audioPath,
 		"audio data or path is required",
 		func(data []byte) (string, error) {
+			if sizeErr := ValidateMediaPayloadSize(data, "audio"); sizeErr != nil {
+				return "", sizeErr
+			}
 			return registerMedia(data, audioExt)
 		},
 		func(filePath string) (string, error) {
-			data, err := os.ReadFile(filePath)
-			if err != nil {
-				return "", err
+			data, readErr := ReadMediaFileWithSizeLimit(filePath, "audio")
+			if readErr != nil {
+				return "", readErr
 			}
-			return registerMedia(data, strings.TrimPrefix(path.Ext(filePath), "."))
+			return registerMedia(data, audioExt)
 		},
 	)
 }

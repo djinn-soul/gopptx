@@ -301,3 +301,4 @@ go.work.sum
 .gocache/
 .task
 scripts/tools/*
+tmp/
