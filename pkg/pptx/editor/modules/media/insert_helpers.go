@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
+	"path"
 	"strings"
 )
 
@@ -112,13 +114,19 @@ func BuildVideoShapeXML(
 	videoRelID string,
 	mediaRelID string,
 	posterRelID string,
+	altText string,
 	x, y, w, h float64,
 ) string {
 	name := fmt.Sprintf("Video %d", newID)
+	descr := strings.TrimSpace(altText)
+	if descr == "" {
+		descr = "Video"
+	}
 	return fmt.Sprintf(`
 <p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
-    <p:cNvPr id="%d" name="%s">
+    <p:cNvPr id="%d" name="%s" descr="%s">
+      <a:hlinkClick r:id="" action="ppaction://media"/>
       <a:extLst>
         <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
           <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{00000000-0000-0000-0000-000000000000}"/>
@@ -148,7 +156,7 @@ func BuildVideoShapeXML(
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
   </p:spPr>
-</p:pic>`, newID, name, videoRelID, mediaRelID, posterRelID, int64(x), int64(y), int64(w), int64(h))
+</p:pic>`, newID, name, escapeXMLAttr(descr), videoRelID, mediaRelID, posterRelID, int64(x), int64(y), int64(w), int64(h))
 }
 
 func BuildOLEObjectShapeXML(
@@ -248,13 +256,24 @@ func BuildAudioShapeXML(
 	newID int,
 	audioRelID string,
 	mediaRelID string,
+	iconRelID string,
+	altText string,
 	x, y, w, h float64,
 ) string {
 	name := fmt.Sprintf("Audio %d", newID)
+	descr := strings.TrimSpace(altText)
+	if descr == "" {
+		descr = "Audio"
+	}
+	blip := "<a:blip/>"
+	if strings.TrimSpace(iconRelID) != "" {
+		blip = fmt.Sprintf(`<a:blip r:embed="%s"/>`, iconRelID)
+	}
 	return fmt.Sprintf(`
 <p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
-    <p:cNvPr id="%d" name="%s">
+    <p:cNvPr id="%d" name="%s" descr="%s">
+      <a:hlinkClick r:id="" action="ppaction://media"/>
       <a:extLst>
         <a:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">
           <a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{00000000-0000-0000-0000-000000000000}"/>
@@ -274,7 +293,7 @@ func BuildAudioShapeXML(
     </p:nvPr>
   </p:nvPicPr>
   <p:blipFill>
-    <a:blip/>
+    %s
     <a:stretch><a:fillRect/></a:stretch>
   </p:blipFill>
   <p:spPr>
@@ -284,7 +303,7 @@ func BuildAudioShapeXML(
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
   </p:spPr>
-</p:pic>`, newID, name, audioRelID, mediaRelID, int64(x), int64(y), int64(w), int64(h))
+</p:pic>`, newID, name, escapeXMLAttr(descr), audioRelID, mediaRelID, blip, int64(x), int64(y), int64(w), int64(h))
 }
 
 func escapeXMLAttr(value string) string {

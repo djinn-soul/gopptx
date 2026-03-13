@@ -205,3 +205,75 @@ func TestWritePresentationPackage_EmitsModifyVerifier(t *testing.T) {
 		}
 	}
 }
+
+func TestWritePresentationPackage_WithVBA_EmitsMacroEnabledWiring(t *testing.T) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+
+	meta := Metadata{
+		Metadata: common.Metadata{
+			Title: "VBA Presentation",
+		},
+		VBA: vba.FromData([]byte("fake_vba_bin_content")),
+	}
+	slides := []elements.SlideContent{elements.NewSlide("Slide 1")}
+
+	if err := WritePresentationPackage(zw, meta, slides, len(slides)); err != nil {
+		t.Fatalf("WritePresentationPackage failed: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zip close failed: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		t.Fatalf("zip open failed: %v", err)
+	}
+
+	contentTypes := readZipText(t, zr, "[Content_Types].xml")
+	if !strings.Contains(contentTypes, "application/vnd.ms-powerpoint.presentation.macroEnabled.main+xml") {
+		t.Fatalf("expected macro-enabled presentation content type in [Content_Types].xml")
+	}
+	if !strings.Contains(contentTypes, "application/vnd.ms-office.vbaProject") {
+		t.Fatalf("expected VBA content type in [Content_Types].xml")
+	}
+
+	presentationRels := readZipText(t, zr, "ppt/_rels/presentation.xml.rels")
+	if !strings.Contains(presentationRels, "http://schemas.microsoft.com/office/2006/relationships/vbaProject") {
+		t.Fatalf("expected vbaProject relationship in presentation rels")
+	}
+	if !strings.Contains(presentationRels, `Target="vbaProject.bin"`) {
+		t.Fatalf("expected vbaProject target in presentation rels")
+	}
+
+	vbaBlob := readZipBinary(t, zr, "ppt/vbaProject.bin")
+	if !bytes.Equal(vbaBlob, []byte("fake_vba_bin_content")) {
+		t.Fatalf("expected VBA blob roundtrip in package")
+	}
+}
+
+func readZipText(t *testing.T, zr *zip.Reader, path string) string {
+	t.Helper()
+	return string(readZipBinary(t, zr, path))
+}
+
+func readZipBinary(t *testing.T, zr *zip.Reader, path string) []byte {
+	t.Helper()
+	for _, f := range zr.File {
+		if f.Name != path {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatalf("open %s failed: %v", path, err)
+		}
+		data, err := io.ReadAll(rc)
+		_ = rc.Close()
+		if err != nil {
+			t.Fatalf("read %s failed: %v", path, err)
+		}
+		return data
+	}
+	t.Fatalf("zip part not found: %s", path)
+	return nil
+}

@@ -220,6 +220,9 @@ func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, err
 }
 
 func handleAddVideo(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	if shouldUseMediaPlaybackCommand(payload) {
+		return handleAddVideoWithPlaybackCommand(e, payload)
+	}
 	return handleMediaInsertCommand(
 		e,
 		payload,
@@ -232,13 +235,16 @@ func handleAddVideo(e *PresentationEditor, payload json.RawMessage) (any, error)
 }
 
 func handleAddAudio(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	if shouldUseMediaPlaybackCommand(payload) {
+		return handleAddAudioWithPlaybackCommand(e, payload)
+	}
 	return handleMediaInsertCommand(
 		e,
 		payload,
 		editorcommand.NewAudioInsertSpec(
 			maxMediaBase64,
-			editorcommand.AdaptAudioBinaryInsert(e.AddAudio),
-			editorcommand.AdaptAudioPathInsert(e.AddAudioFromFile),
+			editorcommand.AdaptAudioBinaryInsertWithOptionalIcon(e.AddAudio, e.AddAudioWithIcon),
+			editorcommand.AdaptAudioPathInsertWithOptionalIcon(e.AddAudioFromFile, e.AddAudioWithIconFromFile),
 		),
 	)
 }

@@ -1,12 +1,14 @@
 package command
 
 type (
-	VideoBinaryInsertFn func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
-	VideoPathInsertFn   func(int, string, string, string, float64, float64, float64, float64) (int, error)
-	AudioBinaryInsertFn func(int, []byte, string, float64, float64, float64, float64) (int, error)
-	AudioPathInsertFn   func(int, string, string, float64, float64, float64, float64) (int, error)
-	OLEBinaryInsertFn   func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
-	OLEPathInsertFn     func(int, string, string, string, float64, float64, float64, float64) (int, error)
+	VideoBinaryInsertFn     func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
+	VideoPathInsertFn       func(int, string, string, string, float64, float64, float64, float64) (int, error)
+	AudioBinaryInsertFn     func(int, []byte, string, float64, float64, float64, float64) (int, error)
+	AudioBinaryIconInsertFn func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
+	AudioPathInsertFn       func(int, string, string, float64, float64, float64, float64) (int, error)
+	AudioPathIconInsertFn   func(int, string, string, string, float64, float64, float64, float64) (int, error)
+	OLEBinaryInsertFn       func(int, []byte, []byte, string, float64, float64, float64, float64) (int, error)
+	OLEPathInsertFn         func(int, string, string, string, float64, float64, float64, float64) (int, error)
 )
 
 func AdaptVideoBinaryInsert(insert VideoBinaryInsertFn) func(MediaPlacement, string, []byte, []byte) (int, error) {
@@ -55,6 +57,64 @@ func AdaptAudioBinaryInsert(insert AudioBinaryInsertFn) func(MediaPlacement, str
 
 func AdaptAudioPathInsert(insert AudioPathInsertFn) func(MediaPlacement, string, string, string) (int, error) {
 	return func(placement MediaPlacement, mimeType string, audioPath string, _ string) (int, error) {
+		return insert(
+			placement.SlideIndex,
+			audioPath,
+			mimeType,
+			placement.X,
+			placement.Y,
+			placement.W,
+			placement.H,
+		)
+	}
+}
+
+func AdaptAudioBinaryInsertWithOptionalIcon(
+	insert AudioBinaryInsertFn,
+	insertWithIcon AudioBinaryIconInsertFn,
+) func(MediaPlacement, string, []byte, []byte) (int, error) {
+	return func(placement MediaPlacement, mimeType string, audioData []byte, iconData []byte) (int, error) {
+		if len(iconData) > 0 {
+			return insertWithIcon(
+				placement.SlideIndex,
+				audioData,
+				iconData,
+				mimeType,
+				placement.X,
+				placement.Y,
+				placement.W,
+				placement.H,
+			)
+		}
+		return insert(
+			placement.SlideIndex,
+			audioData,
+			mimeType,
+			placement.X,
+			placement.Y,
+			placement.W,
+			placement.H,
+		)
+	}
+}
+
+func AdaptAudioPathInsertWithOptionalIcon(
+	insert AudioPathInsertFn,
+	insertWithIcon AudioPathIconInsertFn,
+) func(MediaPlacement, string, string, string) (int, error) {
+	return func(placement MediaPlacement, mimeType string, audioPath string, iconPath string) (int, error) {
+		if iconPath != "" {
+			return insertWithIcon(
+				placement.SlideIndex,
+				audioPath,
+				iconPath,
+				mimeType,
+				placement.X,
+				placement.Y,
+				placement.W,
+				placement.H,
+			)
+		}
 		return insert(
 			placement.SlideIndex,
 			audioPath,
@@ -126,12 +186,12 @@ func NewAudioInsertSpec(
 		MetaKey:          "mime_type",
 		PrimaryPathKey:   "path",
 		PrimaryDataKey:   "data",
-		SecondaryPathKey: "",
-		SecondaryDataKey: "",
+		SecondaryPathKey: "icon_path",
+		SecondaryDataKey: "icon_data",
 		PrimaryMaxLen:    maxLen,
-		SecondaryMaxLen:  0,
+		SecondaryMaxLen:  maxLen,
 		PrimaryLabel:     "audio",
-		SecondaryLabel:   "",
+		SecondaryLabel:   "icon",
 		InsertBinary:     insertBinary,
 		InsertPath:       insertPath,
 	}

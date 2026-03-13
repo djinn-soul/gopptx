@@ -33,6 +33,7 @@ Use the following commands to run the examples:
 - `19-read-modify-existing` (Basic): `go run ./examples/19-read-modify-existing/editor_smoke.go` -> `19_editor_modified.pptx`
 - `19-read-modify-existing` (Overwrite): `go run ./examples/19-read-modify-existing/editor_overwrite.go` -> `19_editor_overwrite.pptx`
 - `22-speaker-notes`: `go run ./examples/22-speaker-notes/editor_notes_smoke.go` -> `22_editor_notes_smoke.pptx`
+- `23-media-embed`: `go run ./examples/23-media-embed/main.go` -> `23_media_embed_editor.pptx`
 - `37-slide-duplication` (Basic): `go run ./examples/37-slide-duplication/slide_duplication.go` -> `37_slide_duplication.pptx`
 - `37-slide-duplication` (Complex): `go run ./examples/37-slide-duplication/complex_duplication.go` -> `37_complex_duplication.pptx`
 - `38-editor-image-support`: `go run ./examples/38-editor-image-support/editor_image_smoke.go` -> `38_editor_image_smoke.pptx`

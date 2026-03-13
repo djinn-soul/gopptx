@@ -11,19 +11,30 @@ const maxMediaPayloadBytes = 512 * 1024 * 1024 // 512 MiB
 
 var (
 	videoMimeToExt = map[string]string{
-		"video/mp4":      "mp4",
-		"video/webm":     "webm",
-		"video/x-msvideo": "avi",
-		"video/avi":      "avi",
-		"video/quicktime": "mov",
+		"video/mp4":        "mp4",
+		"video/webm":       "webm",
+		"video/x-msvideo":  "avi",
+		"video/avi":        "avi",
+		"video/x-ms-wmv":   "wmv",
+		"video/wmv":        "wmv",
+		"video/quicktime":  "mov",
+		"video/x-matroska": "mkv",
+		"video/mkv":        "mkv",
+		"video/x-m4v":      "m4v",
+		"video/m4v":        "m4v",
 	}
 	audioMimeToExt = map[string]string{
-		"audio/mpeg": "mp3",
-		"audio/mp3":  "mp3",
-		"audio/wav":  "wav",
-		"audio/x-wav": "wav",
-		"audio/m4a":  "m4a",
-		"audio/mp4":  "m4a",
+		"audio/mpeg":     "mp3",
+		"audio/mp3":      "mp3",
+		"audio/wav":      "wav",
+		"audio/x-wav":    "wav",
+		"audio/m4a":      "m4a",
+		"audio/mp4":      "m4a",
+		"audio/x-ms-wma": "wma",
+		"audio/wma":      "wma",
+		"audio/ogg":      "ogg",
+		"audio/flac":     "flac",
+		"audio/aac":      "aac",
 	}
 )
 

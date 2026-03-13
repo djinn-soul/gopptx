@@ -9,7 +9,8 @@ import (
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
-// AddVideo adds a video shape to the slide with a poster frame.
+// AddVideo adds a video shape to the slide. If no poster frame bytes are
+// provided, a built-in tiny PNG poster is used.
 func (e *PresentationEditor) AddVideo(
 	slideIndex int,
 	videoData []byte,
@@ -17,10 +18,11 @@ func (e *PresentationEditor) AddVideo(
 	mimeType string,
 	x, y, w, h float64,
 ) (int, error) {
-	return e.addVideoGeneric(slideIndex, videoData, "", posterFrameData, "", mimeType, x, y, w, h)
+	return e.addVideoGeneric(slideIndex, videoData, "", posterFrameData, "", mimeType, "", x, y, w, h)
 }
 
-// AddVideoFromFile adds a video shape from local files.
+// AddVideoFromFile adds a video shape from local files. If posterFramePath is
+// empty, a built-in tiny PNG poster is used.
 func (e *PresentationEditor) AddVideoFromFile(
 	slideIndex int,
 	videoPath string,
@@ -28,7 +30,7 @@ func (e *PresentationEditor) AddVideoFromFile(
 	mimeType string,
 	x, y, w, h float64,
 ) (int, error) {
-	return e.addVideoGeneric(slideIndex, nil, videoPath, nil, posterFramePath, mimeType, x, y, w, h)
+	return e.addVideoGeneric(slideIndex, nil, videoPath, nil, posterFramePath, mimeType, "", x, y, w, h)
 }
 
 func (e *PresentationEditor) addVideoGeneric(
@@ -38,21 +40,33 @@ func (e *PresentationEditor) addVideoGeneric(
 	posterData []byte,
 	posterPath string,
 	mimeType string,
+	altText string,
 	x, y, w, h float64,
 ) (int, error) {
 	if err := editormodmedia.ValidateMediaSlideIndex(slideIndex, len(e.slides)); err != nil {
 		return 0, err
 	}
 
-	posterFramePart, err := editormodmedia.RegisterPartFromDataOrPath(
-		posterData,
-		posterPath,
-		"poster frame data or path is required for video",
-		func(data []byte) (string, error) { return e.RegisterImage(data, "png") },
-		func(filePath string) (string, error) { return e.RegisterImageFromFile(filePath) },
-	)
-	if err != nil {
-		return 0, fmt.Errorf("register poster frame: %w", err)
+	posterFramePart := ""
+	if len(posterData) > 0 || posterPath != "" {
+		var err error
+		posterFramePart, err = editormodmedia.RegisterPartFromDataOrPath(
+			posterData,
+			posterPath,
+			"poster frame data or path is required for video",
+			func(data []byte) (string, error) { return e.RegisterImage(data, "png") },
+			func(filePath string) (string, error) { return e.RegisterImageFromFile(filePath) },
+		)
+		if err != nil {
+			return 0, fmt.Errorf("register poster frame: %w", err)
+		}
+	}
+	if posterFramePart == "" {
+		var err error
+		posterFramePart, err = e.RegisterImage(editormodmedia.DefaultVideoPosterPNG(), "png")
+		if err != nil {
+			return 0, fmt.Errorf("register default poster frame: %w", err)
+		}
 	}
 	posterRelID, err := e.getOrCreateSlideRel(slideIndex, posterFramePart)
 	if err != nil {
@@ -90,7 +104,7 @@ func (e *PresentationEditor) addVideoGeneric(
 
 	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
-	videoXML := editormodmedia.BuildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, x, y, w, h)
+	videoXML := editormodmedia.BuildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, altText, x, y, w, h)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, videoXML)
 	if err != nil {
 		return 0, err
@@ -174,78 +188,6 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 	newID := maxID + 1
 	oleXML := editormodmedia.BuildOLEObjectShapeXML(newID, slideIndex, embedRelID, iconRelID, progID, x, y, w, h)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, oleXML)
-	if err != nil {
-		return 0, err
-	}
-	e.parts.Set(slideRef.Part, updatedContent)
-
-	return newID, nil
-}
-
-// AddAudio adds an audio shape to the slide.
-func (e *PresentationEditor) AddAudio(
-	slideIndex int,
-	audioData []byte,
-	mimeType string,
-	x, y, w, h float64,
-) (int, error) {
-	return e.addAudioGeneric(slideIndex, audioData, "", mimeType, x, y, w, h)
-}
-
-// AddAudioFromFile adds an audio shape from a local file.
-func (e *PresentationEditor) AddAudioFromFile(
-	slideIndex int,
-	audioPath string,
-	mimeType string,
-	x, y, w, h float64,
-) (int, error) {
-	return e.addAudioGeneric(slideIndex, nil, audioPath, mimeType, x, y, w, h)
-}
-
-func (e *PresentationEditor) addAudioGeneric(
-	slideIndex int,
-	audioData []byte,
-	audioPath string,
-	mimeType string,
-	x, y, w, h float64,
-) (int, error) {
-	if err := editormodmedia.ValidateMediaSlideIndex(slideIndex, len(e.slides)); err != nil {
-		return 0, err
-	}
-
-	audioPart, err := editormodmedia.RegisterAudioPart(
-		audioData,
-		audioPath,
-		mimeType,
-		e.RegisterMedia,
-	)
-	if err != nil {
-		return 0, fmt.Errorf("register audio media: %w", err)
-	}
-
-	// Create relationships
-	// Legacy audio rel
-	audioRelID, err := e.getOrCreateSlideRelWithType(slideIndex, audioPart, common.RelTypeAudio)
-	if err != nil {
-		return 0, err
-	}
-	// Modern media rel
-	mediaRelID, err := e.getOrCreateSlideRelWithType(slideIndex, audioPart, common.RelTypeMedia)
-	if err != nil {
-		return 0, err
-	}
-
-	// Generate XML
-	slideRef := e.slides[slideIndex]
-	content, ok := e.parts.Get(slideRef.Part)
-	if !ok {
-		return 0, errors.New("read slide part: not found")
-	}
-
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
-	audioXML := editormodmedia.BuildAudioShapeXML(newID, audioRelID, mediaRelID, x, y, w, h)
-	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, audioXML)
 	if err != nil {
 		return 0, err
 	}

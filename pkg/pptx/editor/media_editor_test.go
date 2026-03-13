@@ -55,6 +55,12 @@ func TestAddVideoEmbedsMediaAndPosterWithMimeHandling(t *testing.T) {
 	if !strings.Contains(slideText, `<a:videoFile r:link="`) {
 		t.Fatalf("expected video file link in slide xml: %s", slideText)
 	}
+	if !strings.Contains(slideText, `descr="Video"`) {
+		t.Fatalf("expected default video descr attr in slide xml: %s", slideText)
+	}
+	if !strings.Contains(slideText, `ppaction://media`) {
+		t.Fatalf("expected media click action in slide xml: %s", slideText)
+	}
 	if !strings.Contains(slideText, `<p14:media`) {
 		t.Fatalf("expected modern media extension in slide xml: %s", slideText)
 	}
@@ -70,6 +76,43 @@ func TestAddVideoEmbedsMediaAndPosterWithMimeHandling(t *testing.T) {
 	relsText := string(relsXML)
 	if !strings.Contains(relsText, common.RelTypeVideo) || !strings.Contains(relsText, common.RelTypeMedia) {
 		t.Fatalf("expected video+media relationships in rels xml: %s", relsText)
+	}
+}
+
+func TestAddVideoGeneratesDefaultPosterWhenMissing(t *testing.T) {
+	e := newMediaEditorFixture()
+	shapeID, err := e.AddVideo(
+		0,
+		[]byte("video-bytes"),
+		nil,
+		"video/mp4",
+		10,
+		20,
+		300,
+		200,
+	)
+	if err != nil {
+		t.Fatalf("AddVideo with default poster failed: %v", err)
+	}
+	if shapeID == 0 {
+		t.Fatal("expected non-zero shape id")
+	}
+
+	mediaParts := e.parts.KeysWithPrefix("ppt/media/")
+	hasPoster := false
+	for _, part := range mediaParts {
+		if strings.HasSuffix(part, ".png") {
+			hasPoster = true
+			break
+		}
+	}
+	if !hasPoster {
+		t.Fatalf("expected generated default poster png in media parts, got: %v", mediaParts)
+	}
+
+	slideText := string(getFixturePart(t, e, "ppt/slides/slide1.xml"))
+	if !strings.Contains(slideText, `<a:blip r:embed="`) {
+		t.Fatalf("expected poster relationship embed in slide xml: %s", slideText)
 	}
 }
 
@@ -156,6 +199,12 @@ func TestAddAudioEmbedsModernMediaAndAudioRelationships(t *testing.T) {
 	slideXML := string(getFixturePart(t, e, "ppt/slides/slide1.xml"))
 	if !strings.Contains(slideXML, `<a:audioFile r:link="`) || !strings.Contains(slideXML, `<p14:media`) {
 		t.Fatalf("expected audio+modern media xml in slide: %s", slideXML)
+	}
+	if !strings.Contains(slideXML, `descr="Audio"`) {
+		t.Fatalf("expected default audio descr attr in slide xml: %s", slideXML)
+	}
+	if !strings.Contains(slideXML, `ppaction://media`) {
+		t.Fatalf("expected media click action in audio slide xml: %s", slideXML)
 	}
 
 	relsXML := string(getFixturePart(t, e, "ppt/slides/_rels/slide1.xml.rels"))

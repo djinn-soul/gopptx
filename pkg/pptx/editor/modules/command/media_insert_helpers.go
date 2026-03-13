@@ -30,3 +30,13 @@ func insertShapeFromBinaryOrPath(
 	}
 	return insertFromPath()
 }
+
+// InsertShapeFromBinaryOrPath routes an insert call to binary or path variants
+// using deterministic precedence (binary first when present).
+func InsertShapeFromBinaryOrPath(
+	hasBinary bool,
+	insertFromBinary func() (int, error),
+	insertFromPath func() (int, error),
+) (int, error) {
+	return insertShapeFromBinaryOrPath(hasBinary, insertFromBinary, insertFromPath)
+}
