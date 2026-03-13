@@ -3,8 +3,10 @@ package presentation
 import (
 	"archive/zip"
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -138,5 +140,68 @@ func TestPresentation_SlideSize_Helpers(t *testing.T) {
 	}
 	if GetSlideSize16x9().Width != 12192000 {
 		t.Error("16x9 failed")
+	}
+}
+
+func TestWritePresentationPackage_EmitsModifyVerifier(t *testing.T) {
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+
+	meta := Metadata{
+		Metadata: common.Metadata{
+			Title: "Protection Test",
+			Protection: common.Protection{
+				ModifyPassword: "Secret123!",
+			},
+		},
+	}
+	slides := []elements.SlideContent{elements.NewSlide("Slide 1")}
+
+	if err := WritePresentationPackage(zw, meta, slides, len(slides)); err != nil {
+		t.Fatalf("WritePresentationPackage failed: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zip close failed: %v", err)
+	}
+
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	if err != nil {
+		t.Fatalf("zip open failed: %v", err)
+	}
+
+	var presentationXML string
+	for _, f := range zr.File {
+		if f.Name != "ppt/presentation.xml" {
+			continue
+		}
+		rc, openErr := f.Open()
+		if openErr != nil {
+			t.Fatalf("open presentation.xml failed: %v", openErr)
+		}
+		data, readErr := io.ReadAll(rc)
+		_ = rc.Close()
+		if readErr != nil {
+			t.Fatalf("read presentation.xml failed: %v", readErr)
+		}
+		presentationXML = string(data)
+		break
+	}
+	if presentationXML == "" {
+		t.Fatal("ppt/presentation.xml not found in generated package")
+	}
+
+	requiredFragments := []string{
+		"<p:modifyVerifier",
+		`cryptProviderType="rsaAES"`,
+		`cryptAlgorithmClass="hash"`,
+		`cryptAlgorithmSid="14"`,
+		`spinCount="100000"`,
+		`saltData="`,
+		`hashData="`,
+	}
+	for _, fragment := range requiredFragments {
+		if !strings.Contains(presentationXML, fragment) {
+			t.Fatalf("expected presentation.xml to contain %q, got: %s", fragment, presentationXML)
+		}
 	}
 }

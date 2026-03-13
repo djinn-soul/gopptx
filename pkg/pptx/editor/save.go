@@ -2,14 +2,17 @@ package editor
 
 import (
 	"archive/zip"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"sort"
+	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
+	"github.com/djinn-soul/gopptx/pkg/pptx/presentation/protection"
 	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
@@ -44,14 +47,8 @@ func (e *PresentationEditor) Save(filePath string) error {
 		}
 	}
 
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("create %s: %w", filePath, err)
-	}
-	defer func() { _ = file.Close() }()
-
-	zw := zip.NewWriter(file)
-	defer func() { _ = zw.Close() }()
+	var zipBuf bytes.Buffer
+	zw := zip.NewWriter(&zipBuf)
 
 	// Iterate over ALL unique part names from both existing state and updates
 	allNamesSet := make(map[string]struct{})
@@ -98,6 +95,22 @@ func (e *PresentationEditor) Save(filePath string) error {
 		}
 	}
 
+	if err := zw.Close(); err != nil {
+		return fmt.Errorf("finalize zip stream: %w", err)
+	}
+
+	output := zipBuf.Bytes()
+	if password := strings.TrimSpace(e.metadata.Protection.EncryptPassword); password != "" {
+		encrypted, err := protection.EncryptAgilePackage(output, password)
+		if err != nil {
+			return fmt.Errorf("encrypt presentation package: %w", err)
+		}
+		output = encrypted
+	}
+
+	if err := os.WriteFile(filePath, output, 0o600); err != nil {
+		return fmt.Errorf("write %s: %w", filePath, err)
+	}
 	return nil
 }
 

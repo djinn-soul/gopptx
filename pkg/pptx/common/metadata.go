@@ -67,6 +67,7 @@ type Protection struct {
 	ModifyPassword    string
 	MarkAsFinal       bool
 	SignaturesEnabled bool
+	EncryptPassword   string
 }
 
 // CoreProperties represents the docProps/core.xml metadata.

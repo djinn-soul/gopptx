@@ -216,3 +216,54 @@ func TestBrandingApplyAtAddsCoverAndBodyDynamics(t *testing.T) {
 		t.Fatalf("expected body content color to be set")
 	}
 }
+
+func TestTemplateLayoutOverrides(t *testing.T) {
+	tmpl := SimpleTemplate{
+		Title:   "Simple Deck",
+		Content: "Hello World",
+		LayoutOverrides: LayoutOverrides{
+			1: elements.SlideLayoutTwoColumn,
+		},
+	}
+
+	slides, err := tmpl.Build()
+	if err != nil {
+		t.Fatalf("SimpleTemplate Build error: %v", err)
+	}
+
+	if slides[1].Layout != elements.SlideLayoutTwoColumn {
+		t.Fatalf("expected slide 1 layout override to be %q, got %q", elements.SlideLayoutTwoColumn, slides[1].Layout)
+	}
+}
+
+func TestTemplateLayoutOverridesValidation(t *testing.T) {
+	t.Run("index out of range", func(t *testing.T) {
+		tmpl := SimpleTemplate{
+			Title:   "Simple Deck",
+			Content: "Hello World",
+			LayoutOverrides: LayoutOverrides{
+				10: elements.SlideLayoutBlank,
+			},
+		}
+
+		_, err := tmpl.Build()
+		if err == nil {
+			t.Fatal("expected index out of range error")
+		}
+	})
+
+	t.Run("unsupported layout", func(t *testing.T) {
+		tmpl := SimpleTemplate{
+			Title:   "Simple Deck",
+			Content: "Hello World",
+			LayoutOverrides: LayoutOverrides{
+				1: "custom-unsupported-layout",
+			},
+		}
+
+		_, err := tmpl.Build()
+		if err == nil {
+			t.Fatal("expected unsupported layout error")
+		}
+	})
+}

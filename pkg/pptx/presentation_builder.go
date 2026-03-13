@@ -126,6 +126,12 @@ func (b *PresentationBuilder) WithSignaturesEnabled(enabled bool) *PresentationB
 	return b
 }
 
+// WithEncryptionPassword enables Agile package encryption for output.
+func (b *PresentationBuilder) WithEncryptionPassword(password string) *PresentationBuilder {
+	b.metadata.Protection.EncryptPassword = password
+	return b
+}
+
 // Build compiles the presentation into a PPTX byte slice.
 func (b *PresentationBuilder) Build() ([]byte, error) {
 	// Metadata title overrides builder title if both are present.

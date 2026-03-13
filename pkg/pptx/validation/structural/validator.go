@@ -9,6 +9,7 @@ import (
 	"io"
 	"path"
 	"strings"
+	"sync"
 )
 
 const packageRelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
@@ -85,24 +86,40 @@ func (v *Validator) checkRequiredParts() {
 }
 
 func (v *Validator) checkXMLValidity() {
-	for _, p := range v.provider.Keys() {
+	paths := v.provider.Keys()
+	issuesChan := make(chan Issue, len(paths))
+	var wg sync.WaitGroup
+
+	for _, p := range paths {
 		if !strings.HasSuffix(p, ".xml") && !strings.HasSuffix(p, ".rels") {
 			continue
 		}
-		data, ok := v.provider.Get(p)
-		if !ok {
-			continue
-		}
+		wg.Add(1)
+		go func(partPath string) {
+			defer wg.Done()
 
-		if err := v.validateXML(data); err != nil {
-			v.issues = append(v.issues, Issue{
-				Code:        CodeInvalidXML,
-				Severity:    SeverityError,
-				Path:        p,
-				Description: fmt.Sprintf("Invalid XML: %v", err),
-				Repairable:  true,
-			})
-		}
+			data, ok := v.provider.Get(partPath)
+			if !ok {
+				return
+			}
+
+			if err := v.validateXML(data); err != nil {
+				issuesChan <- Issue{
+					Code:        CodeInvalidXML,
+					Severity:    SeverityError,
+					Path:        partPath,
+					Description: fmt.Sprintf("Invalid XML: %v", err),
+					Repairable:  true,
+				}
+			}
+		}(p)
+	}
+
+	wg.Wait()
+	close(issuesChan)
+
+	for issue := range issuesChan {
+		v.issues = append(v.issues, issue)
 	}
 }
 
@@ -124,11 +141,26 @@ func (v *Validator) validateXML(data []byte) error {
 }
 
 func (v *Validator) checkRelationships() {
-	for _, p := range v.provider.Keys() {
+	paths := v.provider.Keys()
+	issuesChan := make(chan []Issue, len(paths))
+	var wg sync.WaitGroup
+
+	for _, p := range paths {
 		if !strings.HasSuffix(p, ".rels") {
 			continue
 		}
-		v.checkRelsFile(p)
+		wg.Add(1)
+		go func(relsPath string) {
+			defer wg.Done()
+			issuesChan <- v.checkRelsFile(relsPath)
+		}(p)
+	}
+
+	wg.Wait()
+	close(issuesChan)
+
+	for issues := range issuesChan {
+		v.issues = append(v.issues, issues...)
 	}
 }
 
@@ -165,10 +197,11 @@ type contentTypesXML struct {
 	Overrides []contentTypeOverride `xml:"Override"`
 }
 
-func (v *Validator) checkRelsFile(relsPath string) {
+func (v *Validator) checkRelsFile(relsPath string) []Issue {
+	var issues []Issue
 	data, ok := v.provider.Get(relsPath)
 	if !ok {
-		return
+		return issues
 	}
 
 	// Parse relationships using proper XML decoder
@@ -176,7 +209,7 @@ func (v *Validator) checkRelsFile(relsPath string) {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&rels); err != nil {
 		// If XML parsing fails, the XML validity check will report it
-		return
+		return issues
 	}
 
 	for _, rel := range rels.Relationships {
@@ -192,7 +225,7 @@ func (v *Validator) checkRelsFile(relsPath string) {
 
 		fullPath := v.resolvePath(relsPath, target)
 		if !v.provider.Has(fullPath) {
-			v.issues = append(v.issues, Issue{
+			issues = append(issues, Issue{
 				Code:        CodeBrokenRelationship,
 				Severity:    SeverityWarning,
 				Path:        relsPath,
@@ -202,6 +235,7 @@ func (v *Validator) checkRelsFile(relsPath string) {
 			})
 		}
 	}
+	return issues
 }
 
 func (v *Validator) resolvePath(relsPath, target string) string {

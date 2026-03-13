@@ -9,6 +9,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/presentation/protection"
 )
 
 func TestCreateWithMetadata(t *testing.T) {
@@ -123,5 +124,35 @@ func TestSlideSize(t *testing.T) {
 				t.Errorf("incorrect presentation format in app.xml: %s", xml)
 			}
 		}
+	}
+}
+
+func TestCreateWithMetadataEncryptedPackage(t *testing.T) {
+	if !protection.CanEncryptAgile() {
+		t.Skip("Agile encryption unavailable on this runtime")
+	}
+
+	meta := pptx.Metadata{
+		Metadata: common.Metadata{
+			Title: "Encrypted Deck",
+			Protection: common.Protection{
+				EncryptPassword: "Secret123!",
+			},
+		},
+	}
+	slides := []pptx.SlideContent{pptx.NewSlide("Slide 1")}
+
+	data, err := pptx.CreateWithMetadata(meta, slides)
+	if err != nil {
+		t.Fatalf("CreateWithMetadata failed: %v", err)
+	}
+	if len(data) < 8 {
+		t.Fatalf("encrypted output too short: %d", len(data))
+	}
+	if bytes.Equal(data[:4], []byte("PK\x03\x04")) {
+		t.Fatal("expected encrypted CFB output, got zip header")
+	}
+	if !bytes.Equal(data[:8], []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}) {
+		t.Fatalf("expected CFB header signature, got %x", data[:8])
 	}
 }
