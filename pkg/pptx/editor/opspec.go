@@ -72,6 +72,7 @@ const (
 	OpNotesSlideExists        = "notes_slide_exists"
 	OpSetNotes                = "set_notes"
 	OpSetNotesShapeText       = "set_notes_shape_text"
+	OpSetNotesShapeProps      = "set_notes_shape_props"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
 	OpAddTable                = "add_table"
@@ -168,6 +169,7 @@ func SupportedOps() []string {
 		OpNotesSlideExists,
 		OpSetNotes,
 		OpSetNotesShapeText,
+		OpSetNotesShapeProps,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,
 		OpAddTable,

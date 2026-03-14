@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from gopptx import Presentation
 from gopptx.slide.notes_slide import NotesShape
+from gopptx.slide.notes_slide import NotesSlide
 
 
 def test_notes_shape_collection_and_body_proxy() -> None:
@@ -36,6 +37,7 @@ def test_notes_shape_collection_and_body_proxy() -> None:
             assert notes_slide.shapes.by_id(first.shape_id) is not None
             assert notes_slide.shape(first.shape_id) is not None
         assert notes_slide.shapes.get(shape_type=first.shape_type) is not None
+        assert notes_slide.shape_by_name(first.name) is not None
         assert isinstance(notes_slide.text_shapes, list)
         assert isinstance(notes_slide.placeholder_shapes, list)
         assert all(shape.has_text_frame for shape in notes_slide.text_shapes)
@@ -105,3 +107,145 @@ def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
     assert dummy.called_shape_id == 42
     assert dummy.called_text == "after"
     assert shape.text == "after"
+
+
+def test_notes_shape_geometry_and_style_route_to_props_setter() -> None:
+    class _DummyNotesSlide:
+        def __init__(self) -> None:
+            self.calls: list[tuple[int, dict[str, object]]] = []
+            self.text = ""
+
+        def _set_shape_props(self, shape_id: int, updates: dict[str, object]) -> None:
+            self.calls.append((shape_id, dict(updates)))
+
+    dummy = _DummyNotesSlide()
+    shape = NotesShape(
+        dummy,  # type: ignore[arg-type]
+        {
+            "id": 7,
+            "name": "Aux",
+            "type": "sp",
+            "has_text_frame": True,
+            "placeholder_type": "",
+            "x": 10.0,
+            "y": 20.0,
+            "cx": 30.0,
+            "cy": 40.0,
+        },
+    )
+    shape.left = 111
+    shape.top = 222
+    shape.width = 333
+    shape.height = 444
+    shape.set_fill_solid("FF0000")
+    shape.set_line_color("00FF00")
+    shape.set_line_width(12700)
+
+    assert len(dummy.calls) == 7
+    assert dummy.calls[0] == (7, {"x": 111})
+    assert dummy.calls[1] == (7, {"y": 222})
+    assert dummy.calls[2] == (7, {"w": 333})
+    assert dummy.calls[3] == (7, {"h": 444})
+    assert dummy.calls[4] == (7, {"fill": {"solid": "FF0000"}})
+    assert dummy.calls[5] == (7, {"line": {"color": "00FF00"}})
+    assert dummy.calls[6] == (7, {"line": {"width_emu": 12700}})
+
+
+def test_notes_slide_shape_bounds_and_fill_background_helpers() -> None:
+    class _DummyPresentation:
+        def __init__(self) -> None:
+            self.calls: list[tuple[int, int, dict[str, object]]] = []
+
+        def get_notes_payload(self, _slide_index: int) -> dict[str, object]:
+            return {
+                "notes_shapes": [
+                    {"id": 5, "name": "Body 1", "placeholder_type": "body"},
+                ]
+            }
+
+        def set_notes_shape_props(
+            self, slide_index: int, shape_id: int, updates: dict[str, object]
+        ) -> None:
+            self.calls.append((slide_index, shape_id, updates))
+
+    class _DummySlide:
+        def __init__(self) -> None:
+            self.index = 2
+            self._presentation = _DummyPresentation()
+            self.notes = ""
+
+    dummy_slide = _DummySlide()
+    notes_slide = NotesSlide(dummy_slide)  # type: ignore[arg-type]
+    assert notes_slide.shape_by_name("Body 1") is not None
+    notes_slide.set_shape_bounds(5, left=10, top=20, width=30, height=40)
+    notes_slide.set_shape_fill_background(5)
+    assert dummy_slide._presentation.calls[0] == (2, 5, {"x": 10, "y": 20, "w": 30, "h": 40})
+    assert dummy_slide._presentation.calls[1] == (2, 5, {"fill": {"background": True}})
+
+
+def test_notes_slide_shape_style_helpers_route_updates() -> None:
+    class _DummyPresentation:
+        def __init__(self) -> None:
+            self.calls: list[tuple[int, int, dict[str, object]]] = []
+
+        def get_notes_payload(self, _slide_index: int) -> dict[str, object]:
+            return {"notes_shapes": [{"id": 9, "name": "Aux"}]}
+
+        def set_notes_shape_props(
+            self, slide_index: int, shape_id: int, updates: dict[str, object]
+        ) -> None:
+            self.calls.append((slide_index, shape_id, updates))
+
+    class _DummySlide:
+        def __init__(self) -> None:
+            self.index = 4
+            self._presentation = _DummyPresentation()
+            self.notes = ""
+
+    notes_slide = NotesSlide(_DummySlide())  # type: ignore[arg-type]
+    notes_slide.set_shape_fill_gradient(
+        9,
+        angle_deg=45.0,
+        stops=[
+            {"position_pct": 0.0, "color": "FF0000"},
+            {"position_pct": 1.0, "color": "00FF00"},
+        ],
+    )
+    notes_slide.set_shape_fill_pattern(
+        9,
+        preset="pct10",
+        fg_color="FFFFFF",
+        bg_color="000000",
+    )
+    notes_slide.set_shape_line_dash(
+        9,
+        dash_style="sysDot",
+        color="FF00FF",
+        width_emu=12700,
+    )
+
+    calls = notes_slide._slide._presentation.calls  # type: ignore[attr-defined]
+    assert calls[0][0:2] == (4, 9)
+    assert calls[0][2] == {
+        "fill": {
+            "gradient": {
+                "angle_deg": 45.0,
+                "stops": [
+                    {"position_pct": 0.0, "color": "FF0000"},
+                    {"position_pct": 1.0, "color": "00FF00"},
+                ],
+            }
+        }
+    }
+    assert calls[1][2] == {
+        "fill": {
+            "pattern": {
+                "preset": "pct10",
+                "fg_color": "FFFFFF",
+                "bg_color": "000000",
+            }
+        }
+    }
+    assert calls[2][2] == {
+        "line": {"dash_style": "sysDot", "color": "FF00FF", "width_emu": 12700}
+    }

@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import cast
 
 from .. import ops
+from ..schemas import ShapeUpdate
 from .helpers import PresentationMixinBase
 
 
@@ -26,4 +27,16 @@ class PresentationNotesMixin(PresentationMixinBase):
         self.execute(
             ops.OP_SET_NOTES_SHAPE_TEXT,
             {"slide_index": slide_index, "shape_id": shape_id, "text": text},
+        )
+
+    def set_notes_shape_props(
+        self, slide_index: int, shape_id: int, updates: ShapeUpdate
+    ) -> None:
+        self.execute(
+            ops.OP_SET_NOTES_SHAPE_PROPS,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "updates": cast("dict[str, object]", updates),
+            },
         )

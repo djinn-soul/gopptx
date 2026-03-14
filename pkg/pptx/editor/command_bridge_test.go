@@ -194,6 +194,14 @@ func TestCommandNotesOps(t *testing.T) {
 	if !strings.Contains(resp, "Shape-level notes text") {
 		t.Fatalf("get_notes missing shape-level update text: %s", resp)
 	}
+	setShapePropsReq := fmt.Sprintf(
+		`{"api_version":1,"request_id":"n2c","op":"set_notes_shape_props","payload":{"slide_index":0,"shape_id":%d,"updates":{"x":1234,"y":2345}}}`,
+		targetShapeID,
+	)
+	resp = ExecuteCommand(e, setShapePropsReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("set_notes_shape_props failed: %s", resp)
+	}
 
 	// 3. Update Notes
 	setReq2 := `{"api_version":1,"request_id":"n3","op":"set_notes","payload":{"slide_index":0,"text":"Updated notes"}}`

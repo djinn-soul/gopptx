@@ -44,6 +44,11 @@ class ChartAxis:
         prefix = "category_axis_" if axis_name == "category" else "value_axis_"
         return prefix + "major_gridlines"
 
+    @staticmethod
+    def _minor_gridline_format_key(axis_name: str) -> str:
+        prefix = "category_axis_" if axis_name == "category" else "value_axis_"
+        return prefix + "minor_gridlines"
+
     def _payload(self) -> ChartAxisState:
         snapshot = self._chart._snapshot()
         key = "category_axis" if self._axis_name == "category" else "value_axis"
@@ -99,6 +104,24 @@ class ChartAxis:
     @has_major_gridlines.setter
     def has_major_gridlines(self, value: bool) -> None:
         self.major_gridlines_visible = value
+
+    @property
+    def minor_gridlines_visible(self) -> bool:
+        payload = self._payload()
+        return bool(payload.get("minor_gridline", False))
+
+    @minor_gridlines_visible.setter
+    def minor_gridlines_visible(self, value: bool) -> None:
+        key = self._minor_gridline_format_key(self._axis_name)
+        self._chart._apply_format(cast("ChartFormatUpdate", {key: bool(value)}))
+
+    @property
+    def has_minor_gridlines(self) -> bool:
+        return self.minor_gridlines_visible
+
+    @has_minor_gridlines.setter
+    def has_minor_gridlines(self, value: bool) -> None:
+        self.minor_gridlines_visible = value
 
     @property
     def crosses(self) -> str | None:

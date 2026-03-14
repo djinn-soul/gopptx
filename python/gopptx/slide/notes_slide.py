@@ -10,8 +10,10 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import override
 
 from .notes_text_model import NotesTextFrame
+from .notes_slide_style_mixin import NotesSlideStyleMixin
 
 if TYPE_CHECKING:
+    from ..schemas import ShapeUpdate
     from .slide import SlideBase
 
 
@@ -98,17 +100,49 @@ class NotesShape:
     def left(self) -> float:
         return self.x
 
+    @left.setter
+    def left(self, value: float) -> None:
+        self._notes_slide._set_shape_props(self.shape_id, {"x": int(value)})
+        self._payload["x"] = float(value)
+
     @property
     def top(self) -> float:
         return self.y
+
+    @top.setter
+    def top(self, value: float) -> None:
+        self._notes_slide._set_shape_props(self.shape_id, {"y": int(value)})
+        self._payload["y"] = float(value)
 
     @property
     def width(self) -> float:
         return self.cx
 
+    @width.setter
+    def width(self, value: float) -> None:
+        self._notes_slide._set_shape_props(self.shape_id, {"w": int(value)})
+        self._payload["cx"] = float(value)
+
     @property
     def height(self) -> float:
         return self.cy
+
+    @height.setter
+    def height(self, value: float) -> None:
+        self._notes_slide._set_shape_props(self.shape_id, {"h": int(value)})
+        self._payload["cy"] = float(value)
+
+    def set_fill_solid(self, color: str) -> None:
+        self._notes_slide._set_shape_props(self.shape_id, {"fill": {"solid": color}})
+
+    def set_line_color(self, color: str) -> None:
+        self._notes_slide._set_shape_props(self.shape_id, {"line": {"color": color}})
+
+    def set_line_width(self, width_emu: int) -> None:
+        self._notes_slide._set_shape_props(
+            self.shape_id,
+            {"line": {"width_emu": int(width_emu)}},
+        )
 
     @property
     def text(self) -> str:
@@ -222,7 +256,7 @@ class NotesShapeCollection:
         return self.get(shape_id=shape_id)
 
 
-class NotesSlide:
+class NotesSlide(NotesSlideStyleMixin):
     """Proxy for slide notes content."""
 
     def __init__(self, slide: SlideBase) -> None:
@@ -252,6 +286,15 @@ class NotesSlide:
             self._slide.index, shape_id, text
         )
 
+    def _set_shape_props(self, shape_id: int, updates: ShapeUpdate) -> None:
+        if shape_id < 0:
+            raise ValueError("notes shape id is unavailable for mutation")
+        self._slide._presentation.set_notes_shape_props(
+            self._slide.index,
+            shape_id,
+            updates,
+        )
+
     def _placeholder_payloads(self) -> list[dict[str, object]]:
         payload = self._slide._presentation.get_notes_payload(self._slide.index)
         raw = payload.get("notes_placeholders")
@@ -270,6 +313,21 @@ class NotesSlide:
     def shape(self, shape_id: int) -> NotesShape | None:
         """Return one notes shape by id, if present."""
         return self.shapes.by_id(shape_id)
+
+    def shape_by_name(self, name: str) -> NotesShape | None:
+        """Return one notes shape by name, if present."""
+        return self.shapes.get(name=name)
+
+    def set_shape_bounds(
+        self, shape_id: int, *, left: float, top: float, width: float, height: float
+    ) -> None:
+        self._set_shape_props(
+            shape_id,
+            {"x": int(left), "y": int(top), "w": int(width), "h": int(height)},
+        )
+
+    def set_shape_fill_background(self, shape_id: int) -> None:
+        self._set_shape_props(shape_id, {"fill": {"background": True}})
 
     @property
     def body_shape(self) -> NotesShape | None:

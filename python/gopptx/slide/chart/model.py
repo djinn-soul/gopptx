@@ -209,6 +209,52 @@ class Chart:
         return self._value_axis
 
     @property
+    def axes(self) -> tuple[ChartAxis, ChartAxis]:
+        return (self._category_axis, self._value_axis)
+
+    def axis(self, axis_name: str) -> ChartAxis:
+        normalized = axis_name.strip().lower()
+        if normalized in {"category", "cat"}:
+            return self._category_axis
+        if normalized in {"value", "val"}:
+            return self._value_axis
+        raise ValueError("axis_name must be one of: category, value")
+
+    def _axes_for(self, axis: str) -> tuple[ChartAxis, ...]:
+        normalized = axis.strip().lower()
+        if normalized in {"both", "all"}:
+            return self.axes
+        if normalized in {"category", "cat"}:
+            return (self._category_axis,)
+        if normalized in {"value", "val"}:
+            return (self._value_axis,)
+        raise ValueError("axis must be one of: both, category, value")
+
+    def set_tick_labels_visibility(self, *, visible: bool) -> None:
+        value = "nextTo" if visible else "none"
+        self._category_axis.tick_label_position = value
+        self._value_axis.tick_label_position = value
+
+    def set_axis_crosses(self, *, crosses: str, axis: str = "both") -> None:
+        for target in self._axes_for(axis):
+            target.crosses = crosses
+
+    def set_axis_gridlines(
+        self,
+        *,
+        major: bool | None = None,
+        minor: bool | None = None,
+        axis: str = "both",
+    ) -> None:
+        if major is None and minor is None:
+            raise ValueError("at least one of major/minor must be provided")
+        for target in self._axes_for(axis):
+            if major is not None:
+                target.major_gridlines_visible = major
+            if minor is not None:
+                target.minor_gridlines_visible = minor
+
+    @property
     def chart_style(self) -> int | None:
         snapshot = self._snapshot()
         style = snapshot.get("chart_style")

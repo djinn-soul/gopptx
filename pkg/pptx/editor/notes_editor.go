@@ -208,13 +208,23 @@ func (e *PresentationEditor) SetNotes(slideIndex int, textContent string) error 
 
 // SetNotesShapeText updates text for one shape on the notes slide identified by shape ID.
 func (e *PresentationEditor) SetNotesShapeText(slideIndex, shapeID int, textContent string) error {
+	return e.SetNotesShapeProperties(slideIndex, shapeID, common.ShapeUpdate{
+		Text: &textContent,
+		Runs: &[]common.TextRun{{Text: textContent}},
+	})
+}
+
+// SetNotesShapeProperties updates one notes-shape using ShapeUpdate semantics.
+func (e *PresentationEditor) SetNotesShapeProperties(
+	slideIndex, shapeID int,
+	updates common.ShapeUpdate,
+) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
 	}
 	if shapeID < 0 {
 		return errors.New("shape_id must be >= 0")
 	}
-
 	notesPart, err := e.resolveSlideNotesPart(slideIndex)
 	if err != nil {
 		return err
@@ -222,43 +232,7 @@ func (e *PresentationEditor) SetNotesShapeText(slideIndex, shapeID int, textCont
 	if notesPart == "" {
 		return errors.New("notes slide not found")
 	}
-	content, ok := e.parts.Get(notesPart)
-	if !ok {
-		return fmt.Errorf("notes part %s not found", notesPart)
-	}
-	shapes, err := scanShapesWithOffsets(content, false)
-	if err != nil {
-		return fmt.Errorf("parse notes shapes: %w", err)
-	}
-
-	found := false
-	var updateErr error
-	updatedXML := replaceShapeNodes(content, shapes, func(_ int, shape *parsedShape) ([]byte, bool) {
-		if shape.ID != shapeID {
-			return nil, false
-		}
-		if shape.TextFrame == nil && len(shape.Runs) == 0 && shape.Text == "" {
-			updateErr = errors.New("target notes shape has no text frame")
-			return nil, false
-		}
-		found = true
-		shape.Runs = []common.TextRun{{Text: textContent}}
-		shape.Text = textContent
-		updatedShapeXML, err := replaceShapeTextBody(e, notesPart, content[shape.Start:shape.End], shape)
-		if err != nil {
-			updateErr = err
-			return nil, false
-		}
-		return updatedShapeXML, true
-	})
-	if updateErr != nil {
-		return updateErr
-	}
-	if !found {
-		return fmt.Errorf("shape id %d not found on notes slide", shapeID)
-	}
-	e.parts.Set(notesPart, updatedXML)
-	return nil
+	return e.updateShapeInPart(notesPart, shapeID, updates)
 }
 
 func extractAllText(content []byte) string {

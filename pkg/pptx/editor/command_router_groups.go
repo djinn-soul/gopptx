@@ -197,6 +197,8 @@ func commandHandlerForNotesTables(op string) (commandHandler, bool) {
 		return handleSetNotes, true
 	case OpSetNotesShapeText:
 		return handleSetNotesShapeText, true
+	case OpSetNotesShapeProps:
+		return handleSetNotesShapeProps, true
 	case OpAddTable:
 		return handleAddTable, true
 	case OpGetTable:

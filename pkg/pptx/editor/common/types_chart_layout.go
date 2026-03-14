@@ -44,6 +44,8 @@ type ChartFormatUpdate struct {
 	ValueAxisTickLabelPos    *string `json:"value_axis_tick_label_pos,omitempty"`
 	CategoryAxisMajorGrid    *bool   `json:"category_axis_major_gridlines,omitempty"`
 	ValueAxisMajorGrid       *bool   `json:"value_axis_major_gridlines,omitempty"`
+	CategoryAxisMinorGrid    *bool   `json:"category_axis_minor_gridlines,omitempty"`
+	ValueAxisMinorGrid       *bool   `json:"value_axis_minor_gridlines,omitempty"`
 	CategoryAxisCrosses      *string `json:"category_axis_crosses,omitempty"`
 	ValueAxisCrosses         *string `json:"value_axis_crosses,omitempty"`
 	CameraPreset             *string `json:"camera_preset,omitempty"`
@@ -58,6 +60,7 @@ type ChartAxisState struct {
 	Present       bool   `json:"present"`
 	TickLabelPos  string `json:"tick_label_pos,omitempty"`
 	MajorGridline bool   `json:"major_gridline,omitempty"`
+	MinorGridline bool   `json:"minor_gridline,omitempty"`
 	Crosses       string `json:"crosses,omitempty"`
 }
 

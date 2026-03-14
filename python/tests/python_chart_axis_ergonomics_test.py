@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from gopptx import Presentation
 
 
@@ -25,6 +24,21 @@ def test_chart_axis_aliases_and_crosses_helpers() -> None:
 
         axis.has_major_gridlines = True
         assert axis.has_major_gridlines is True
+        chart.set_tick_labels_visibility(visible=False)
+        assert chart.category_axis.tick_label_position == "none"
+        assert chart.value_axis.tick_label_position == "none"
+        chart.set_tick_labels_visibility(visible=True)
+        assert chart.category_axis.tick_label_position == "nextTo"
+        assert chart.value_axis.tick_label_position == "nextTo"
+        assert chart.axis("category") is chart.category_axis
+        assert chart.axis("value") is chart.value_axis
+        assert len(chart.axes) == 2
+        chart.set_axis_gridlines(major=True, axis="both")
+        chart.set_axis_gridlines(minor=True, axis="value")
+        assert chart.category_axis.has_major_gridlines is True
+        assert chart.value_axis.has_major_gridlines is True
+        chart.set_axis_crosses(crosses="max", axis="value")
+        assert chart.value_axis.crosses_at_maximum is True
 
         axis.set_crosses_at_maximum()
         assert axis.crosses_at_maximum is True
@@ -48,3 +62,7 @@ def test_chart_axis_validation_errors() -> None:
             axis.tick_label_position = "middle"
         with pytest.raises(ValueError):
             axis.crosses = "zero"
+        with pytest.raises(ValueError):
+            slide.charts[0].set_axis_gridlines(axis="both")
+        with pytest.raises(ValueError):
+            slide.charts[0].set_axis_crosses(crosses="autoZero", axis="x")
