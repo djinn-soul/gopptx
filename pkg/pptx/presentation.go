@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/presentation"
+	"github.com/djinn-soul/gopptx/pkg/pptx/presentation/protection"
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/logical"
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
@@ -103,7 +105,15 @@ func CreateWithMetadata(meta Metadata, slides []SlideContent) ([]byte, error) {
 	if err := zw.Close(); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	out := buf.Bytes()
+	if password := strings.TrimSpace(meta.Protection.EncryptPassword); password != "" {
+		encrypted, err := protection.EncryptAgilePackage(out, password)
+		if err != nil {
+			return nil, fmt.Errorf("encrypt pptx package: %w", err)
+		}
+		out = encrypted
+	}
+	return out, nil
 }
 
 // WriteFile is a convenience helper that writes the generated PPTX to disk.

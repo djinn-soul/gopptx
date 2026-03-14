@@ -7,6 +7,19 @@ try:
 except ImportError:  # pragma: no cover
     from typing_extensions import NotRequired, TypedDict
 
+from . import schemas_chart_layout as _schemas_chart_layout
+
+ChartDataUpdate = _schemas_chart_layout.ChartDataUpdate
+ChartAxisState = _schemas_chart_layout.ChartAxisState
+ChartState = _schemas_chart_layout.ChartState
+ChartFormatUpdate = _schemas_chart_layout.ChartFormatUpdate
+ChartSelector = _schemas_chart_layout.ChartSelector
+ChartSeriesData = _schemas_chart_layout.ChartSeriesData
+PlaceholderInfo = _schemas_chart_layout.PlaceholderInfo
+SlideChartRef = _schemas_chart_layout.SlideChartRef
+SlideLayoutInfo = _schemas_chart_layout.SlideLayoutInfo
+SlideMasterCloneResult = _schemas_chart_layout.SlideMasterCloneResult
+
 
 def emu(value: int) -> int:
     """English Metric Unit."""
@@ -87,6 +100,13 @@ class Paragraph(TypedDict, total=False):
 
     indent: int
     hanging: int
+    tab_stops: list[int]
+    alignment: str
+    level: int
+    line_spacing_pct: int
+    line_spacing_pts: int
+    space_before_pts: int
+    space_after_pts: int
 
 
 class FillFormat(TypedDict, total=False):
@@ -262,7 +282,7 @@ class ShapeUpdate(TypedDict, total=False):
     h: int
 
 
-class Shape(TypedDict):
+class Shape(TypedDict, total=False):
     """Shape information."""
 
     ID: int
@@ -273,55 +293,9 @@ class Shape(TypedDict):
     Y: int
     W: int
     H: int
-
-
-class ChartSelector(TypedDict, total=False):
-    """Chart selector for identifying charts."""
-
-    index: int
-    rel_id: str
-
-
-class ChartSeriesData(TypedDict, total=False):
-    """Chart series data for updates."""
-
-    name: str
-    categories: list[str]
-    values: list[float]
-    x_values: list[float]
-    y_values: list[float]
-    sizes: list[float]
-
-
-class ChartDataUpdate(TypedDict, total=False):
-    """Chart data update payload."""
-
-    categories: list[str]
-    series: list[ChartSeriesData]
-
-
-class SlideChartRef(TypedDict):
-    """Reference to a chart on a slide."""
-
-    Index: int
-    RelID: str
-    ChartPart: str
-
-
-class SlideLayoutInfo(TypedDict):
-    """Information about a slide layout."""
-
-    Part: str
-    Name: str
-    MasterPart: str
-
-
-class SlideMasterCloneResult(TypedDict):
-    """Result of cloning a slide master."""
-
-    MasterPart: str
-    ThemePart: str
-    LayoutMap: dict[str, str]
+    fill: FillFormat
+    line: LineFormat
+    shadow: ShadowFormat
 
 
 class SlideMetadata(TypedDict):

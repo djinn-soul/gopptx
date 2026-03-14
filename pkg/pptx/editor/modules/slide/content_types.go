@@ -61,6 +61,7 @@ func RewriteContentTypes(
 	overrides = appendPathOverrides(overrides, commentPaths, commentsPartType)
 	overrides = appendPathOverrides(overrides, customXMLPropsPaths,
 		"application/vnd.openxmlformats-officedocument.customXmlProperties+xml")
+	overrides = dedupeContentTypeOverrides(overrides)
 
 	sort.Slice(overrides, func(i, j int) bool { return overrides[i].PartName < overrides[j].PartName })
 	doc.Overrides = overrides
@@ -133,10 +134,28 @@ func contentTypeForExtension(ext string) string {
 		return "audio/mpeg"
 	case "m4a":
 		return "audio/mp4"
+	case "wma":
+		return "audio/x-ms-wma"
+	case "ogg":
+		return "audio/ogg"
+	case "flac":
+		return "audio/flac"
+	case "aac":
+		return "audio/aac"
 	case "mp4":
 		return "video/mp4"
+	case "webm":
+		return "video/webm"
+	case "avi":
+		return "video/x-msvideo"
+	case "wmv":
+		return "video/x-ms-wmv"
 	case "mov":
 		return "video/quicktime"
+	case "mkv":
+		return "video/x-matroska"
+	case "m4v":
+		return "video/x-m4v"
 	case "bin":
 		return "application/vnd.openxmlformats-officedocument.oleObject"
 	case "xlsx":
@@ -213,6 +232,29 @@ func appendOptionalContentTypeOverride(
 		PartName:    partName,
 		ContentType: contentType,
 	})
+}
+
+func dedupeContentTypeOverrides(overrides []contentTypeOverride) []contentTypeOverride {
+	if len(overrides) == 0 {
+		return overrides
+	}
+	seen := make(map[string]contentTypeOverride, len(overrides))
+	order := make([]string, 0, len(overrides))
+	for _, override := range overrides {
+		key := "/" + common.CanonicalPartPath(strings.TrimPrefix(strings.TrimSpace(override.PartName), "/"))
+		if _, exists := seen[key]; !exists {
+			order = append(order, key)
+		}
+		seen[key] = contentTypeOverride{
+			PartName:    key,
+			ContentType: strings.TrimSpace(override.ContentType),
+		}
+	}
+	deduped := make([]contentTypeOverride, 0, len(order))
+	for _, key := range order {
+		deduped = append(deduped, seen[key])
+	}
+	return deduped
 }
 
 func renderContentTypesDocument(doc contentTypesDocument) (string, error) {

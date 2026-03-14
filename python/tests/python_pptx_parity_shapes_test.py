@@ -33,6 +33,68 @@ def test_textbox_and_connector_compat() -> None:
             raise AssertionError("expected inserted shapes to exist in shape list")
 
 
+def test_bulk_textbox_creation() -> None:
+    """Slide bulk textbox helper creates all requested textboxes."""
+    if not input_deck.exists():
+        pytest.skip("smoke sample missing")
+
+    with Presentation(input_deck) as prs:
+        slide = prs.add_slide("python-pptx parity bulk textboxes")
+        textbox_ids = slide.add_textboxes([
+            {
+                "left": 914400,
+                "top": 914400,
+                "width": 1828800,
+                "height": 914400,
+                "text": "alpha",
+            },
+            {
+                "left": 914400,
+                "top": 1828800,
+                "width": 1828800,
+                "height": 914400,
+                "text": "beta",
+            },
+        ])
+
+        if len(textbox_ids) != 2 or any(shape_id <= 0 for shape_id in textbox_ids):
+            raise AssertionError(f"expected two positive ids, got {textbox_ids!r}")
+
+        texts_by_id = {
+            int(shape["ID"]): shape.get("Text", "")
+            for shape in slide.list_shapes()
+            if int(shape["ID"]) in textbox_ids
+        }
+        if texts_by_id != {textbox_ids[0]: "alpha", textbox_ids[1]: "beta"}:
+            raise AssertionError(f"unexpected bulk textbox texts: {texts_by_id!r}")
+
+
+def test_buffered_textbox_id_remains_addressable() -> None:
+    """Simple textbox inserts keep a stable real ID through buffered flush."""
+    if not input_deck.exists():
+        pytest.skip("smoke sample missing")
+
+    with Presentation(input_deck) as prs:
+        slide = prs.add_slide("python-pptx parity buffered textbox")
+        textbox_id = slide.add_textbox(914400, 914400, 1828800, 914400, text="queued")
+
+        if textbox_id <= 0:
+            raise AssertionError(f"expected positive textbox id, got {textbox_id!r}")
+
+        shape = slide.shape(textbox_id)
+        if shape.text != "queued":
+            raise AssertionError(f"expected queued text, got {shape.text!r}")
+
+        shape.text = "updated"
+        texts_by_id = {
+            int(shape_info["ID"]): shape_info.get("Text", "")
+            for shape_info in slide.list_shapes()
+            if int(shape_info["ID"]) == textbox_id
+        }
+        if texts_by_id != {textbox_id: "updated"}:
+            raise AssertionError(f"unexpected textbox text state: {texts_by_id!r}")
+
+
 def test_group_and_freeform_creation() -> None:
     """Group and freeform creation produce addressable shapes."""
     if not input_deck.exists():
@@ -99,11 +161,11 @@ def test_freeform_builder_scale_and_segments() -> None:
         ids = {int(s["ID"]) for s in shapes}
         if freeform_id not in ids:
             raise AssertionError("expected freeform id present in shape list")
-        has_expected_text = any(
+        expected_text_present = any(
             int(shape["ID"]) == freeform_id and shape.get("Text") == "freeform text"
             for shape in shapes
         )
-        if not has_expected_text:
+        if not expected_text_present:
             raise AssertionError("expected freeform shape to retain provided text")
 
 

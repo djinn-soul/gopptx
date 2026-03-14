@@ -6,6 +6,14 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+type testLayoutProvider struct {
+	uri string
+}
+
+func (t testLayoutProvider) LayoutURI() string {
+	return t.uri
+}
+
 func TestLayout_Name(t *testing.T) {
 	tests := []struct {
 		layout   Layout
@@ -135,5 +143,17 @@ func TestSmartArt_LayoutNameHelpers(t *testing.T) {
 	name, ok = matrixPictureLayoutName(PictureStrips)
 	if !ok || name != "Picture Strips" {
 		t.Error("matrix failed")
+	}
+}
+
+func TestCustomLayoutAndProvider(t *testing.T) {
+	custom := CustomLayout(" urn:custom/layout/foo ")
+	if custom.LayoutURI() != "urn:custom/layout/foo" {
+		t.Fatalf("CustomLayout URI = %q, want %q", custom.LayoutURI(), "urn:custom/layout/foo")
+	}
+
+	sa := NewSmartArtWithLayout(testLayoutProvider{uri: "urn:custom/layout/bar"})
+	if sa.Layout.LayoutURI() != "urn:custom/layout/bar" {
+		t.Fatalf("NewSmartArtWithLayout URI = %q, want %q", sa.Layout.LayoutURI(), "urn:custom/layout/bar")
 	}
 }

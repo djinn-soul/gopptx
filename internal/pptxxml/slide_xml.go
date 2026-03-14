@@ -16,9 +16,7 @@ const (
 	slideBackgroundPicture     = "picture"
 )
 
-const (
-	startImageRID = 2
-)
+const startImageRID = 2
 
 // PlaceholderOverrideSpec describes content override for a placeholder.
 type PlaceholderOverrideSpec struct {
@@ -30,8 +28,10 @@ type PlaceholderOverrideSpec struct {
 	Chart *ChartFrame
 
 	// Extension: Layout/Style Overrides
-	X, Y, CX, CY *int64
-	TextStyle    *PlaceholderTextStyleSpec
+	X, Y, CX, CY      *int64
+	TextStyle         *PlaceholderTextStyleSpec
+	GeometryXML       string
+	ForceRectGeometry *bool
 }
 
 // PlaceholderTextStyleSpec describes text formatting overrides for a placeholder.

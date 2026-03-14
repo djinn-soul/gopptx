@@ -12,7 +12,10 @@ const (
 	OpDuplicateSlide          = "duplicate_slide"
 	OpGetMetadata             = "get_metadata"
 	OpUpdateChartData         = "update_chart_data"
+	OpUpdateChartFormatting   = "update_chart_formatting"
+	OpGetChartState           = "get_chart_state"
 	OpListSlideCharts         = "list_slide_charts"
+	OpGetSlideLayoutRef       = "get_slide_layout_ref"
 	OpListSlideLayouts        = "list_slide_layouts"
 	OpListSlideMasters        = "list_slide_masters"
 	OpListMasterLayouts       = "list_master_layouts"
@@ -43,8 +46,18 @@ const (
 	OpAddComment              = "add_comment"
 	OpRemoveComment           = "remove_comment"
 	OpListShapes              = "list_shapes"
+	OpGetSlideTextStates      = "get_slide_text_states"
+	OpGetShapeTextState       = "get_shape_text_state"
+	OpGetShapeRuns            = "get_shape_runs"
+	OpSetShapeRuns            = "set_shape_runs"
+	OpUpdateDeckRunTexts      = "update_deck_run_texts"
+	OpUpdateSlideRunTexts     = "update_slide_run_texts"
+	OpUpdateShapeRunText      = "update_shape_run_text"
+	OpAppendShapeRun          = "append_shape_run"
 	OpAddShape                = "add_shape"
 	OpAddTextbox              = "add_textbox"
+	OpAddTextboxes            = "add_textboxes"
+	OpReserveShapeIDs         = "reserve_shape_ids"
 	OpAddConnector            = "add_connector"
 	OpAddGroupShape           = "add_group_shape"
 	OpGroupShapes             = "group_shapes"
@@ -56,7 +69,7 @@ const (
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
-	OpHasNotesSlide           = "has_notes_slide"
+	OpNotesSlideExists        = "notes_slide_exists"
 	OpSetNotes                = "set_notes"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
@@ -67,6 +80,10 @@ const (
 	OpUpdateTableFlags        = "update_table_flags"
 	OpUpdateTableCell         = "update_table_cell"
 	OpSetTableStyle           = "set_table_style"
+	OpDefineTableStyle        = "define_table_style"
+	OpListTableStyles         = "list_table_styles"
+	OpSetTableRowHeight       = "set_table_row_height"
+	OpSetTableColumnWidth     = "set_table_column_width"
 	OpAddCustomXML            = "add_custom_xml"
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
@@ -90,7 +107,10 @@ func SupportedOps() []string {
 		OpDuplicateSlide,
 		OpGetMetadata,
 		OpUpdateChartData,
+		OpUpdateChartFormatting,
+		OpGetChartState,
 		OpListSlideCharts,
+		OpGetSlideLayoutRef,
 		OpListSlideLayouts,
 		OpListSlideMasters,
 		OpListMasterLayouts,
@@ -121,8 +141,18 @@ func SupportedOps() []string {
 		OpAddComment,
 		OpRemoveComment,
 		OpListShapes,
+		OpGetSlideTextStates,
+		OpGetShapeTextState,
+		OpGetShapeRuns,
+		OpSetShapeRuns,
+		OpUpdateDeckRunTexts,
+		OpUpdateSlideRunTexts,
+		OpUpdateShapeRunText,
+		OpAppendShapeRun,
 		OpAddShape,
 		OpAddTextbox,
+		OpAddTextboxes,
+		OpReserveShapeIDs,
 		OpAddConnector,
 		OpAddGroupShape,
 		OpGroupShapes,
@@ -134,7 +164,7 @@ func SupportedOps() []string {
 		OpMoveShapeToFront,
 		OpMoveShapeToBack,
 		OpGetNotes,
-		OpHasNotesSlide,
+		OpNotesSlideExists,
 		OpSetNotes,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,
@@ -145,6 +175,10 @@ func SupportedOps() []string {
 		OpUpdateTableFlags,
 		OpUpdateTableCell,
 		OpSetTableStyle,
+		OpDefineTableStyle,
+		OpListTableStyles,
+		OpSetTableRowHeight,
+		OpSetTableColumnWidth,
 		OpAddCustomXML,
 		OpListCustomXML,
 		OpRemoveCustomXML,

@@ -2,6 +2,8 @@
 package export
 
 import (
+	"strings"
+
 	"github.com/signintech/gopdf"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -17,7 +19,8 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 	if boxW <= 2 || boxH <= 2 {
 		return
 	}
-	fontSize := fitPDFTextToBox(
+	fontHint := inferCodeFontHint(s.Text)
+	fontSize := fitPDFTextToBoxWithMetrics(
 		pdf,
 		s.Text,
 		defaultFontSize,
@@ -26,25 +29,37 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 		false,
 		boxW,
 		boxH,
+		fontHint,
 	)
-	setPDFTextFont(pdf, fontSize, false, false)
-	lines := wrapPDFText(pdf, s.Text, boxW)
+	setPDFTextFontWithHint(pdf, fontSize, false, false, fontHint)
+	lines := wrapPDFTextWithMetrics(pdf, s.Text, boxW, fontHint)
 	lineH := pdfLineHeight(fontSize)
-	textBlockH := lineH * float64(len(lines))
+	isCode := strings.Contains(strings.ToLower(fontHint), "consolas")
+	lineSpacing := 1.0
+	paragraphGap := 2.0
+	if isCode {
+		lineSpacing = 0.95
+		paragraphGap = 0
+	}
+	lineH *= lineSpacing
+	textBlockH := lineH*float64(len(lines)) + paragraphGap*float64(max(len(lines)-1, 0))
 	startY := shapeTextStartY(anchor, boxY, boxH, textBlockH)
 
 	pdf.SetTextColor(0, 0, 0)
 	yPos := startY
-	for _, line := range lines {
+	for i, line := range lines {
 		if yPos+lineH > boxY+boxH+0.5 {
 			break
 		}
 		pdf.SetX(boxX)
-		pdf.SetY(yPos)
+		pdf.SetY(yPos + fontBaselineShift(fontHint, fontSize))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
+		if i < len(lines)-1 {
+			yPos += paragraphGap
+		}
 	}
-	setPDFTextFont(pdf, defaultFontSize, false, false)
+	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
 
 func shapeTextBox(
@@ -55,7 +70,7 @@ func shapeTextBox(
 	right := defaultShapeTextPaddingPt
 	top := defaultShapeTextPaddingPt
 	bottom := defaultShapeTextPaddingPt
-	anchor := shapes.TextAnchorMiddle
+	anchor := shapes.TextAnchorTop
 	if s.TextFrame != nil {
 		left = emuToPt(s.TextFrame.MarginLeft.Emu())
 		right = emuToPt(s.TextFrame.MarginRight.Emu())

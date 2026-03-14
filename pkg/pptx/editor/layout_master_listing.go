@@ -3,9 +3,7 @@ package editor
 import (
 	"fmt"
 	"path"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -100,6 +98,41 @@ func (e *PresentationEditor) ListSlideLayouts() ([]common.SlideLayoutInfo, error
 	}
 	sort.Slice(infos, func(i, j int) bool { return infos[i].Part < infos[j].Part })
 	return infos, nil
+}
+
+func (e *PresentationEditor) GetSlideLayoutRef(slideIndex int) (string, string, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return "", "", fmt.Errorf("slide index %d out of range", slideIndex)
+	}
+
+	slidePart := e.slides[slideIndex].Part
+	relsPath := common.RelsPathFor(slidePart)
+	relsData, ok := e.parts.Get(relsPath)
+	if !ok {
+		return "", "", fmt.Errorf("slide rels part not found: %s", relsPath)
+	}
+	rels, err := parseRelationshipsXML(relsData)
+	if err != nil {
+		return "", "", fmt.Errorf("parse slide rels: %w", err)
+	}
+
+	var layoutPart string
+	for _, rel := range rels {
+		if rel.Type != common.RelTypeSlideLayout {
+			continue
+		}
+		layoutPart = common.ResolveRelationshipTarget(slidePart, rel.Target)
+		break
+	}
+	if layoutPart == "" {
+		return "", "", fmt.Errorf("slide %d has no layout relationship", slideIndex)
+	}
+
+	masterPart, err := editorslide.ResolveLayoutMasterPart(layoutPart, e.parts.Get, parseRelationshipsXML)
+	if err != nil {
+		return "", "", err
+	}
+	return layoutPart, masterPart, nil
 }
 
 func (e *PresentationEditor) RebindSlideLayout(slideIndex int, layoutPart string) error {
@@ -242,32 +275,4 @@ func parsePlaceholdersFromMasterLayoutXML(content []byte) []common.PlaceholderIn
 	}
 
 	return placeholders
-}
-
-func parsePlaceholderAttrIndex(match string) int {
-	raw := parsePlaceholderAttrString(match, `idx="([^"]+)"`)
-	if raw == "" {
-		return 0
-	}
-	idx, err := strconv.Atoi(raw)
-	if err != nil {
-		return 0
-	}
-	return idx
-}
-
-func parsePlaceholderAttrString(match, pattern string) string {
-	re := commonCompile(pattern)
-	if re == nil {
-		return ""
-	}
-	ms := re.FindStringSubmatch(match)
-	if len(ms) <= 1 {
-		return ""
-	}
-	return ms[1]
-}
-
-func commonCompile(pattern string) *regexp.Regexp {
-	return regexp.MustCompile(pattern)
 }

@@ -132,4 +132,72 @@ func TestSmartArtDrawingXMLClearsPlaceholderTextForVerticalBlockList(t *testing.
 	if !strings.Contains(xml, "<a:t>Vertical A</a:t>") {
 		t.Fatal("expected node text injected into drawing XML")
 	}
+	if !strings.Contains(xml, "<a:t>Vertical B</a:t>") {
+		t.Fatal("expected second node text injected into drawing XML")
+	}
+	if !strings.Contains(xml, "<a:t>Vertical C</a:t>") {
+		t.Fatal("expected third node text injected into drawing XML")
+	}
+	if strings.Contains(xml, "Bright-") || strings.Contains(xml, "Prime-") {
+		t.Fatal("unexpected verifier filler text leaked into drawing XML")
+	}
+}
+
+func TestSmartArtDataXMLClearsPlaceholderFlagForInjectedText(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/process1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Phase 1"},
+			{Text: "Phase 2"},
+			{Text: "Phase 3"},
+		},
+	}
+
+	xml := pptxxml.SmartArtDataXML(spec)
+
+	for _, text := range []string{"Phase 1", "Phase 2", "Phase 3"} {
+		segment := pointSegmentContainingText(xml, text)
+		if segment == "" {
+			t.Fatalf("expected data point segment for %q", text)
+		}
+		if strings.Contains(segment, `phldr="1"`) {
+			t.Fatalf("expected injected text point %q to clear phldr=\"1\"", text)
+		}
+	}
+}
+
+func TestSmartArtDataXMLOrgChartDoesNotMapFirstNodeToDocRoot(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{
+				Text: "CEO",
+				Children: []pptxxml.SmartArtNodeSpec{
+					{Text: "VP Sales"},
+					{Text: "VP Eng"},
+				},
+			},
+		},
+	}
+
+	xml := pptxxml.SmartArtDataXML(spec)
+	segment := pointSegmentContainingText(xml, "CEO")
+	if segment == "" {
+		t.Fatal("expected CEO in SmartArt data XML")
+	}
+	if strings.Contains(segment, `type="doc"`) {
+		t.Fatal("expected CEO text to map to content node, not doc root")
+	}
+}
+
+func pointSegmentContainingText(xml, text string) string {
+	needle := "<a:t>" + text + "</a:t>"
+	segments := strings.Split(xml, "<dgm:pt ")
+	for i := 1; i < len(segments); i++ {
+		segment := "<dgm:pt " + segments[i]
+		if strings.Contains(segment, needle) {
+			return segment
+		}
+	}
+	return ""
 }

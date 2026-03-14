@@ -90,6 +90,7 @@ type PlaceholderTextStyle struct {
 type PlaceholderOverrideOptions struct {
 	X, Y, CX, CY *styling.Length
 	TextStyle    *PlaceholderTextStyle
+	ForceRect    *bool
 }
 
 // Validate ensures override options are coherent and safe to render.

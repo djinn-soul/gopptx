@@ -48,21 +48,33 @@ func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, o
 }
 
 func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
-	if tryNativePDFFonts(pdf, opts.NativeFontPaths) {
-		return nil
+	sansAlias := ""
+	if tryNativePDFFonts(pdf, opts.NativeFontPaths, fontFamilySans) {
+		sansAlias = fontFamilySans
+	} else if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilySans), fontFamilySans) {
+		sansAlias = fontFamilySans
 	}
-	if tryNativePDFFonts(pdf, systemFontPaths()) {
-		return nil
+	if sansAlias == "" {
+		return errors.New("no system TTF font found; install Arial or DejaVu Sans, or specify NativeFontPaths")
 	}
-	return errors.New("no system TTF font found; install Arial or DejaVu Sans, or specify NativeFontPaths")
+	serifAlias := ""
+	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilySerif), fontFamilySerif) {
+		serifAlias = fontFamilySerif
+	}
+	monoAlias := ""
+	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilyMono), fontFamilyMono) {
+		monoAlias = fontFamilyMono
+	}
+	setPDFFontAliases(sansAlias, serifAlias, monoAlias)
+	return nil
 }
 
-func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string) bool {
+func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string, alias string) bool {
 	for _, path := range fontPaths {
-		if err := pdf.AddTTFFont("sans", path); err != nil {
+		if err := pdf.AddTTFFont(alias, path); err != nil {
 			continue
 		}
-		if err := pdf.SetFont("sans", "", defaultFontSize); err == nil {
+		if err := pdf.SetFont(alias, "", defaultFontSize); err == nil {
 			return true
 		}
 	}
@@ -139,7 +151,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		titleBoxH,
 		slide.TitleFont,
 	)
-	setPDFTextFont(pdf, titleSize, slide.TitleBold, slide.TitleItalic)
+	setPDFTextFontWithHint(pdf, titleSize, slide.TitleBold, slide.TitleItalic, slide.TitleFont)
 	if slide.TitleColor != "" {
 		pdf.SetTextColor(hexToRGB(slide.TitleColor))
 	} else {
@@ -157,7 +169,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
 	}
-	setPDFTextFont(pdf, defaultFontSize, false, false)
+	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
 
 func fitPDFTitleSize(
@@ -172,7 +184,7 @@ func fitPDFTitleSize(
 ) int {
 	size := max(14, min(initialSize, 44))
 	for size > 14 {
-		setPDFTextFont(pdf, size, bold, italic)
+		setPDFTextFontWithHint(pdf, size, bold, italic, fontHint)
 		if fitPDFTextToBoxWithMetrics(
 			pdf, text, size, 14, bold, italic, maxWidth, maxHeight, fontHint,
 		) == size {

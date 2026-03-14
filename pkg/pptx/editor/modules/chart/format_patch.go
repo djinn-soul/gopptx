@@ -27,6 +27,21 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if req.DataLabelPosition != nil && !isDataLabelPosition(*req.DataLabelPosition) {
 		return errors.New("data_label_position must be one of ctr,inEnd,inBase,outEnd,bestFit,l,r,t,b")
 	}
+	if err := validateAxisTickLabelPosition("category_axis_tick_label_pos", req.CategoryAxisTickLabelPos); err != nil {
+		return err
+	}
+	if err := validateAxisTickLabelPosition("value_axis_tick_label_pos", req.ValueAxisTickLabelPos); err != nil {
+		return err
+	}
+	if err := validateAxisCrosses("category_axis_crosses", req.CategoryAxisCrosses); err != nil {
+		return err
+	}
+	if err := validateAxisCrosses("value_axis_crosses", req.ValueAxisCrosses); err != nil {
+		return err
+	}
+	if err := validateScene3DUpdate(req); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -46,6 +61,16 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchPlotVisibleOnly(updated, req.PlotVisibleOnly)
 	updated = patchChartLegend(updated, req.ShowLegend, req.LegendPosition, req.LegendOverlay)
 	updated = patchChartDataLabels(updated, req)
+	updated = patchAxisTickLabelPosition(updated, "catAx", req.CategoryAxisTickLabelPos)
+	updated = patchAxisTickLabelPosition(updated, "dateAx", req.CategoryAxisTickLabelPos)
+	updated = patchAxisTickLabelPosition(updated, "valAx", req.ValueAxisTickLabelPos)
+	updated = patchAxisMajorGridlines(updated, "catAx", req.CategoryAxisMajorGrid)
+	updated = patchAxisMajorGridlines(updated, "dateAx", req.CategoryAxisMajorGrid)
+	updated = patchAxisMajorGridlines(updated, "valAx", req.ValueAxisMajorGrid)
+	updated = patchAxisCrosses(updated, "catAx", req.CategoryAxisCrosses)
+	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
+	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)
+	updated = patchChartScene3D(updated, req)
 	return []byte(updated), nil
 }
 
@@ -254,47 +279,5 @@ func insertDefaultDataLabels(xml string) string {
 }
 
 func firstChartBlockRange(xml string) (int, int) {
-	chartTags := []string{
-		"barChart",
-		"lineChart",
-		"areaChart",
-		"pieChart",
-		"doughnutChart",
-		"scatterChart",
-		"bubbleChart",
-		"radarChart",
-		"stockChart",
-	}
-	for _, tag := range chartTags {
-		startTag := "<c:" + tag + ">"
-		start := strings.Index(xml, startTag)
-		if start < 0 {
-			continue
-		}
-		endTag := "</c:" + tag + ">"
-		relEnd := strings.Index(xml[start:], endTag)
-		if relEnd < 0 {
-			continue
-		}
-		return start, start + relEnd + len(endTag)
-	}
-	return -1, -1
-}
-
-func isLegendPosition(position string) bool {
-	switch strings.ToLower(strings.TrimSpace(position)) {
-	case "r", "l", "t", "b":
-		return true
-	default:
-		return false
-	}
-}
-
-func isDataLabelPosition(position string) bool {
-	switch strings.TrimSpace(position) {
-	case "ctr", "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
-		return true
-	default:
-		return false
-	}
+	return firstChartBlockBounds(xml)
 }

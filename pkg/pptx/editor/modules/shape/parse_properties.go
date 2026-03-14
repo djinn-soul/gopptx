@@ -17,9 +17,33 @@ func ParseShapeProperties(content []byte) (ParsedShapeProperties, error) {
 	applyParsedShapeLine(&ps, &s)
 	applyParsedShapeEffects(&ps, &s)
 	applyParsedShapeIdentity(&ps, &s)
+	applyParsedShapeGeometry(&ps, &s)
 	applyParsedShapeTransform(&ps, &s)
 	applyParsedShapeText(&ps, &s)
 	return ps, nil
+}
+
+func applyParsedShapeGeometry(ps *ParsedShapeProperties, s *shapeXML) {
+	if s.SpPr.PrstGeom == nil || s.SpPr.PrstGeom.Prst == "" {
+		return
+	}
+	ps.Type = s.SpPr.PrstGeom.Prst
+	if s.SpPr.PrstGeom.AvLst == nil || len(s.SpPr.PrstGeom.AvLst.Gd) == 0 {
+		return
+	}
+	adjustments := make([]common.ShapeAdjustment, 0, len(s.SpPr.PrstGeom.AvLst.Gd))
+	for _, gd := range s.SpPr.PrstGeom.AvLst.Gd {
+		if gd.Name == "" || gd.Fmla == "" {
+			continue
+		}
+		adjustments = append(adjustments, common.ShapeAdjustment{
+			Name:    gd.Name,
+			Formula: gd.Fmla,
+		})
+	}
+	if len(adjustments) > 0 {
+		ps.Adjustments = adjustments
+	}
 }
 
 func applyParsedShapeFill(ps *ParsedShapeProperties, s *shapeXML) {
@@ -208,6 +232,9 @@ func applyParsedShapeIdentity(ps *ParsedShapeProperties, s *shapeXML) {
 	case s.NvGrpSpPr.CNvPr.ID != 0:
 		ps.ID = s.NvGrpSpPr.CNvPr.ID
 		ps.Name = s.NvGrpSpPr.CNvPr.Name
+	case s.NvGraphicFramePr.CNvPr.ID != 0:
+		ps.ID = s.NvGraphicFramePr.CNvPr.ID
+		ps.Name = s.NvGraphicFramePr.CNvPr.Name
 	}
 }
 
@@ -232,6 +259,13 @@ func applyParsedShapeTransform(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Y = s.SpPr.Xfrm.Off.Y
 		ps.W = s.SpPr.Xfrm.Ext.Cx
 		ps.H = s.SpPr.Xfrm.Ext.Cy
+		return
+	}
+	if s.Xfrm.Ext.Cx != 0 || s.Xfrm.Ext.Cy != 0 || s.Xfrm.Off.X != 0 || s.Xfrm.Off.Y != 0 {
+		ps.X = s.Xfrm.Off.X
+		ps.Y = s.Xfrm.Off.Y
+		ps.W = s.Xfrm.Ext.Cx
+		ps.H = s.Xfrm.Ext.Cy
 		return
 	}
 	ps.X = s.GrpSpPr.Xfrm.Off.X

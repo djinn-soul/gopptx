@@ -19,6 +19,9 @@ func TestHyperlinkValidation(t *testing.T) {
 		{"invalid email", HyperlinkEmail("invalid"), true},
 		{"valid file", HyperlinkFile("C:\\docs\\file.pdf"), false},
 		{"empty file", HyperlinkFile(""), true},
+		{"invalid file scheme", HyperlinkFile("https://example.com/file.pdf"), true},
+		{"valid file URI", HyperlinkFile("file:///C:/docs/file.pdf"), false},
+		{"invalid program scheme", HyperlinkProgram("https://example.com/app.exe"), true},
 	}
 
 	for _, tt := range tests {

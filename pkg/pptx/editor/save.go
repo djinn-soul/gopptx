@@ -2,14 +2,19 @@ package editor
 
 import (
 	"archive/zip"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
+	"sync"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
+	"github.com/djinn-soul/gopptx/pkg/pptx/presentation/protection"
 	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
 
@@ -22,13 +27,20 @@ func (e *PresentationEditor) Save(filePath string) error {
 	if e == nil {
 		return errors.New("nil editor")
 	}
+	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
+	if hasVBA {
+		ext := strings.ToLower(strings.TrimSpace(filepath.Ext(filePath)))
+		if ext != ".pptm" {
+			return fmt.Errorf("macro-enabled presentations must be saved with .pptm extension, got %q", ext)
+		}
+	}
 
 	// Materialize all lazy parts into memory and release the source file handle.
 	if err := e.parts.Materialize(); err != nil {
 		return fmt.Errorf("failed to materialize lazy PPTX parts from source archive: %w", err)
 	}
 
-	updatedParts, err := e.collectUpdatedParts()
+	updatedParts, err := e.collectUpdatedParts(vbaProject, hasVBA)
 	if err != nil {
 		return fmt.Errorf("prepare updated parts: %w", err)
 	}
@@ -44,14 +56,8 @@ func (e *PresentationEditor) Save(filePath string) error {
 		}
 	}
 
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("create %s: %w", filePath, err)
-	}
-	defer func() { _ = file.Close() }()
-
-	zw := zip.NewWriter(file)
-	defer func() { _ = zw.Close() }()
+	var zipBuf bytes.Buffer
+	zw := zip.NewWriter(&zipBuf)
 
 	// Iterate over ALL unique part names from both existing state and updates
 	allNamesSet := make(map[string]struct{})
@@ -98,11 +104,31 @@ func (e *PresentationEditor) Save(filePath string) error {
 		}
 	}
 
+	if err := zw.Close(); err != nil {
+		return fmt.Errorf("finalize zip stream: %w", err)
+	}
+
+	output := zipBuf.Bytes()
+	if password := strings.TrimSpace(e.metadata.Protection.EncryptPassword); password != "" {
+		encrypted, err := protection.EncryptAgilePackage(output, password)
+		if err != nil {
+			return fmt.Errorf("encrypt presentation package: %w", err)
+		}
+		output = encrypted
+	}
+
+	if err := os.WriteFile(filePath, output, 0o600); err != nil {
+		return fmt.Errorf("write %s: %w", filePath, err)
+	}
 	return nil
 }
 
-func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
+func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, hasVBA bool) (map[string][]byte, error) {
 	out := make(map[string][]byte)
+
+	if err := e.verifyMediaInventoryChecksumsParallel(); err != nil {
+		return nil, fmt.Errorf("verify media inventory: %w", err)
+	}
 
 	e.authorCacheMu.RLock()
 	authorCache := e.authorCache
@@ -132,41 +158,24 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 		)
 	}
 
-	presentationXML, err := e.renderPresentationXMLWithSections()
-	if err != nil {
-		return nil, err
-	}
-	out[common.PresentationXMLPath] = []byte(presentationXML)
-
 	hasSections := len(e.sections) > 0
 	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
-	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
-
-	presentationRelsXML, err := editorslide.RenderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
-	if err != nil {
-		return nil, err
-	}
-	out[common.PresentationRelPath] = []byte(presentationRelsXML)
-
-	// Persist Core Properties
-	corePropsXML, err := renderCoreProperties(e.metadata.CoreProperties)
-	if err != nil {
-		return nil, fmt.Errorf("render core properties: %w", err)
-	}
-	out[common.CorePropsPath] = corePropsXML
-
 	hasHandoutMaster := e.parts.Has("ppt/handoutMasters/handoutMaster1.xml")
-	if err := e.writeContentTypesPart(
-		out,
+	manifestParts, err := e.buildManifestPartsParallel(
 		hasSections,
 		hasNotesMaster,
 		hasCommentAuthors,
 		hasVBA,
 		hasHandoutMaster,
 		customXMLPropsPaths,
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
 	}
+	out[common.PresentationXMLPath] = manifestParts.presentationXML
+	out[common.PresentationRelPath] = manifestParts.presentationRelsXML
+	out[common.CorePropsPath] = manifestParts.corePropsXML
+	out[common.ContentTypesPath] = manifestParts.contentTypesXML
 
 	e.writeOptionalPresentationParts(
 		out,
@@ -179,15 +188,102 @@ func (e *PresentationEditor) collectUpdatedParts() (map[string][]byte, error) {
 	return out, nil
 }
 
-func (e *PresentationEditor) writeContentTypesPart(
-	out map[string][]byte,
+type manifestParts struct {
+	presentationXML     []byte
+	presentationRelsXML []byte
+	corePropsXML        []byte
+	contentTypesXML     []byte
+}
+
+func (e *PresentationEditor) buildManifestPartsParallel(
 	hasSections bool,
 	hasNotesMaster bool,
 	hasCommentAuthors bool,
 	hasVBA bool,
 	hasHandoutMaster bool,
 	customXMLPropsPaths []string,
-) error {
+) (manifestParts, error) {
+	var (
+		wg      sync.WaitGroup
+		errOnce sync.Once
+		outErr  error
+
+		parts manifestParts
+	)
+
+	setErr := func(err error) {
+		if err == nil {
+			return
+		}
+		errOnce.Do(func() {
+			outErr = err
+		})
+	}
+
+	wg.Add(4)
+
+	go func() {
+		defer wg.Done()
+		presentationXML, err := e.renderPresentationXMLWithSections()
+		if err != nil {
+			setErr(err)
+			return
+		}
+		parts.presentationXML = []byte(presentationXML)
+	}()
+
+	go func() {
+		defer wg.Done()
+		presentationRelsXML, err := editorslide.RenderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
+		if err != nil {
+			setErr(err)
+			return
+		}
+		parts.presentationRelsXML = []byte(presentationRelsXML)
+	}()
+
+	go func() {
+		defer wg.Done()
+		corePropsXML, err := renderCoreProperties(e.metadata.CoreProperties)
+		if err != nil {
+			setErr(fmt.Errorf("render core properties: %w", err))
+			return
+		}
+		parts.corePropsXML = corePropsXML
+	}()
+
+	go func() {
+		defer wg.Done()
+		contentTypesXML, err := e.renderContentTypesPart(
+			hasSections,
+			hasNotesMaster,
+			hasCommentAuthors,
+			hasVBA,
+			hasHandoutMaster,
+			customXMLPropsPaths,
+		)
+		if err != nil {
+			setErr(err)
+			return
+		}
+		parts.contentTypesXML = contentTypesXML
+	}()
+
+	wg.Wait()
+	if outErr != nil {
+		return manifestParts{}, outErr
+	}
+	return parts, nil
+}
+
+func (e *PresentationEditor) renderContentTypesPart(
+	hasSections bool,
+	hasNotesMaster bool,
+	hasCommentAuthors bool,
+	hasVBA bool,
+	hasHandoutMaster bool,
+	customXMLPropsPaths []string,
+) ([]byte, error) {
 	mediaPaths := editorslide.MapValues(e.mediaInventory)
 	filteredChartPaths := editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/charts/chart"))
 	notesPaths := editorslide.MapValues(e.notesInventory)
@@ -217,10 +313,9 @@ func (e *PresentationEditor) writeContentTypesPart(
 		customXMLPropsPaths,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	out[common.ContentTypesPath] = []byte(contentTypesXML)
-	return nil
+	return []byte(contentTypesXML), nil
 }
 
 func (e *PresentationEditor) writeOptionalPresentationParts(

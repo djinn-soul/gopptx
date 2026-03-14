@@ -43,8 +43,9 @@ type parsedShape struct {
 	W, H        int
 	PhIndex     int    // Placeholder index, -1 if not a placeholder
 	PhType      string // Placeholder type (e.g. "title", "body")
-	Start       int64  // Byte offset of the start of the node
-	End         int64  // Byte offset of the end of the node
+	Adjustments []common.ShapeAdjustment
+	Start       int64 // Byte offset of the start of the node
+	End         int64 // Byte offset of the end of the node
 	IsGroup     bool
 }
 
@@ -57,6 +58,16 @@ func (p parsedShape) ToShape() shapes.Shape {
 		CY:   styling.Emu(int64(p.H)),
 		Text: p.Text,
 		Name: p.Name,
+		Adjustments: func() []shapes.ShapeAdjustment {
+			out := make([]shapes.ShapeAdjustment, 0, len(p.Adjustments))
+			for _, adj := range p.Adjustments {
+				out = append(out, shapes.ShapeAdjustment{
+					Name:    adj.Name,
+					Formula: adj.Formula,
+				})
+			}
+			return out
+		}(),
 	}
 }
 
@@ -205,9 +216,13 @@ func buildParsedShapeFromRange(
 	if parseErr != nil {
 		return parsedShape{}, parseErr
 	}
+	if stopTag == shapeTypePicture || stopTag == "graphicFrame" || stopTag == "grpSp" {
+		pShape.Type = stopTag
+	} else if pShape.Type == "" {
+		pShape.Type = stopTag
+	}
 	pShape.Start = startOffset
 	pShape.End = endOffset
-	pShape.Type = stopTag
 	pShape.IsGroup = stopTag == "grpSp"
 	return pShape, nil
 }
@@ -218,24 +233,26 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		return parsedShape{}, err
 	}
 	return parsedShape{
-		ID:         props.ID,
-		Name:       props.Name,
-		Text:       props.Text,
-		Runs:       props.Runs,
-		Paragraph:  props.Paragraph,
-		Fill:       props.Fill,
-		Line:       props.Line,
-		Shadow:     props.Shadow,
-		Glow:       props.Glow,
-		Blur:       props.Blur,
-		SoftEdge:   props.SoftEdge,
-		Reflection: props.Reflection,
-		X:          props.X,
-		Y:          props.Y,
-		W:          props.W,
-		H:          props.H,
-		PhIndex:    props.PhIndex,
-		PhType:     props.PhType,
+		ID:          props.ID,
+		Name:        props.Name,
+		Type:        props.Type,
+		Text:        props.Text,
+		Runs:        props.Runs,
+		Paragraph:   props.Paragraph,
+		Fill:        props.Fill,
+		Line:        props.Line,
+		Shadow:      props.Shadow,
+		Glow:        props.Glow,
+		Blur:        props.Blur,
+		SoftEdge:    props.SoftEdge,
+		Reflection:  props.Reflection,
+		X:           props.X,
+		Y:           props.Y,
+		W:           props.W,
+		H:           props.H,
+		PhIndex:     props.PhIndex,
+		PhType:      props.PhType,
+		Adjustments: props.Adjustments,
 	}, nil
 }
 

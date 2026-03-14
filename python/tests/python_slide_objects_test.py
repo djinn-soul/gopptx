@@ -54,3 +54,23 @@ def test_python_slide_objects(tmp_path: pathlib.Path) -> None:
 
     if not output_path.exists():
         raise AssertionError("expected object-proxy output deck to exist")
+
+
+def test_python_slide_proxy_cache_invalidation() -> None:
+    """Cached slide proxies are rebuilt when slide structure changes."""
+    with Presentation.new("Slide Cache Test") as pres:
+        initial_slides = pres.slides
+        if len(initial_slides) != 1:
+            raise AssertionError(
+                f"expected one initial slide, got {len(initial_slides)}"
+            )
+
+        second_slide = pres.add_slide("Second")
+        refreshed_slides = pres.slides
+
+        if len(refreshed_slides) != 2:
+            raise AssertionError(
+                f"expected two slides after add_slide, got {len(refreshed_slides)}"
+            )
+        if refreshed_slides[1].slide_id != second_slide.slide_id:
+            raise AssertionError("expected refreshed slide cache to expose new slide")

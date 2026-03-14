@@ -89,6 +89,11 @@ class RunHyperlink:
             payload["end_sound"] = self.end_sound
         return payload
 
+    @property
+    def is_empty(self) -> bool:
+        """Return True if this hyperlink has no attributes set."""
+        return not any(getattr(self, attr) is not None for attr in self.__slots__)
+
 
 class Run:
     """Run-level facade supporting python-pptx-style `run.hyperlink.address`."""
@@ -199,9 +204,9 @@ class Run:
             payload["all_caps"] = self.all_caps
         if self.small_caps is not None:
             payload["small_caps"] = self.small_caps
-        if self._hyperlink is not None:
+        if self._hyperlink is not None and not self._hyperlink.is_empty:
             payload["hyperlink"] = self._hyperlink.to_payload()
-        if self._hover_action is not None:
+        if self._hover_action is not None and not self._hover_action.is_empty:
             payload["hover_action"] = self._hover_action.to_payload()
         return payload
 

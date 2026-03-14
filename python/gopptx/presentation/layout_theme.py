@@ -5,17 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from .. import ops
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
     from ..schemas import SlideLayoutInfo, SlideMasterCloneResult
-else:
-
-    class PresentationProtocol:
-        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
-class PresentationLayoutMixin(PresentationProtocol):
+class PresentationLayoutMixin(PresentationMixinBase):
     """Mixin providing slide layout management methods."""
 
     def list_slide_layouts(self) -> list[SlideLayoutInfo]:
@@ -54,7 +50,7 @@ class PresentationLayoutMixin(PresentationProtocol):
         return cast("SlideMasterCloneResult", result)
 
 
-class PresentationThemeMixin(PresentationProtocol):
+class PresentationThemeMixin(PresentationMixinBase):
     """Mixin providing theme and slide size configuration methods."""
 
     def apply_theme(self, theme_name: str) -> None:

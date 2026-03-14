@@ -97,6 +97,9 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		fontHint := firstRunFont(runs)
 		prefix := bulletPrefix(style, i)
 		renderedText := renderRunsPlain(runs)
+		if strings.TrimSpace(fontHint) == "" {
+			fontHint = inferCodeFontHint(renderedText)
+		}
 		yPos += paragraphStartGap(i, prevSpaceAfter, style)
 		availableWidth := maxWidth - levelIndent - leftIndent - rightIndent
 		if availableWidth < 80 {
@@ -113,7 +116,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 			maxY-yPos,
 			fontHint,
 		)
-		setPDFTextFont(pdf, fontSize, bold, italic)
+		setPDFTextFontWithHint(pdf, fontSize, bold, italic, fontHint)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
 		prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
 		allRuns := append(append([]pdfStyledRun{}, prefixRuns...), styledRuns...)
@@ -122,7 +125,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		continuationIndent := continuationLineIndent(pdf, prefixRuns, style)
 		for li, line := range lines {
 			if yPos+lineHeight > maxY {
-				setPDFTextFont(pdf, defaultFontSize, false, false)
+				setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 				return
 			}
 			lineX := baseX + levelIndent + leftIndent
@@ -141,7 +144,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		}
 		prevSpaceAfter = paragraphAfterGap(style)
 	}
-	setPDFTextFont(pdf, defaultFontSize, false, false)
+	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
 
 func bulletStyleForIndex(slide elements.SlideContent, idx int) text.ParagraphStyle {
@@ -271,15 +274,5 @@ func continuationLineIndent(pdf *gopdf.GoPdf, prefixRuns []pdfStyledRun, style t
 }
 
 func setPDFTextFont(pdf *gopdf.GoPdf, size int, bold bool, italic bool) {
-	style := ""
-	if bold {
-		style += "B"
-	}
-	if italic {
-		style += "I"
-	}
-	if size <= 0 {
-		size = defaultFontSize
-	}
-	_ = pdf.SetFont("sans", style, size)
+	setPDFTextFontWithHint(pdf, size, bold, italic, "")
 }

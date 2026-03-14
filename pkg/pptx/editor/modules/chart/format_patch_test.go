@@ -92,6 +92,11 @@ func TestValidateChartFormatUpdateRejectsInvalidPositions(t *testing.T) {
 	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{DataLabelPosition: &labelPosition}); err == nil {
 		t.Fatalf("expected invalid data label position error")
 	}
+
+	crosses := "center"
+	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{CategoryAxisCrosses: &crosses}); err == nil {
+		t.Fatalf("expected invalid axis crosses error")
+	}
 }
 
 func TestPatchChartFormatting_ShowTitleAndPlotVisibleOnly(t *testing.T) {
@@ -110,6 +115,87 @@ func TestPatchChartFormatting_ShowTitleAndPlotVisibleOnly(t *testing.T) {
 	}
 	mustContain(t, xml, `<c:autoTitleDeleted val="1"/>`)
 	mustContain(t, xml, `<c:plotVisOnly val="0"/>`)
+}
+
+func TestPatchChartFormatting_AxisTickLabelPosition(t *testing.T) {
+	withAxes := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<c:chart><c:plotArea><c:barChart><c:axId val="1"/><c:axId val="2"/></c:barChart>
+<c:catAx><c:axId val="1"/><c:crosses val="autoZero"/></c:catAx>
+<c:valAx><c:axId val="2"/><c:crosses val="autoZero"/></c:valAx>
+</c:plotArea></c:chart></c:chartSpace>`
+	categoryTick := "low"
+	valueTick := "high"
+	got, err := PatchChartFormatting([]byte(withAxes), common.ChartFormatUpdate{
+		CategoryAxisTickLabelPos: &categoryTick,
+		ValueAxisTickLabelPos:    &valueTick,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	xml := string(got)
+	mustContain(t, xml, `<c:catAx><c:axId val="1"/><c:tickLblPos val="low"`)
+	mustContain(t, xml, `<c:valAx><c:axId val="2"/><c:tickLblPos val="high"`)
+}
+
+func TestPatchChartFormatting_AxisGridlinesAndCrosses(t *testing.T) {
+	withAxes := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<c:chart><c:plotArea><c:barChart><c:axId val="1"/><c:axId val="2"/></c:barChart>
+<c:catAx><c:axId val="1"/><c:crosses val="autoZero"/></c:catAx>
+<c:valAx><c:axId val="2"/><c:majorGridlines/><c:crosses val="autoZero"/></c:valAx>
+</c:plotArea></c:chart></c:chartSpace>`
+	categoryHasMajor := true
+	valueHasMajor := false
+	categoryCrosses := "max"
+	valueCrosses := "min"
+	got, err := PatchChartFormatting([]byte(withAxes), common.ChartFormatUpdate{
+		CategoryAxisMajorGrid: &categoryHasMajor,
+		ValueAxisMajorGrid:    &valueHasMajor,
+		CategoryAxisCrosses:   &categoryCrosses,
+		ValueAxisCrosses:      &valueCrosses,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	xml := string(got)
+	mustContain(t, xml, `<c:catAx><c:axId val="1"/><c:majorGridlines/><c:crosses val="max"/>`)
+	mustContain(t, xml, `<c:valAx><c:axId val="2"/><c:crosses val="min"/>`)
+	if strings.Contains(xml, `<c:valAx><c:axId val="2"/><c:majorGridlines/>`) {
+		t.Fatalf("expected value axis major gridlines removed")
+	}
+}
+
+func TestPatchChartFormatting_Scene3D(t *testing.T) {
+	withChart := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<c:chart><c:plotArea><c:barChart><c:ser/></c:barChart></c:plotArea></c:chart></c:chartSpace>`
+	camera := "perspectiveAboveLeftFacing"
+	fov := 30
+	rig := "threePt"
+	dir := "tr"
+	rev := true
+	got, err := PatchChartFormatting([]byte(withChart), common.ChartFormatUpdate{
+		CameraPreset:       &camera,
+		CameraFieldOfView:  &fov,
+		LightRig:           &rig,
+		LightDirection:     &dir,
+		LightRigRevolution: &rev,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	xml := string(got)
+	mustContain(t, xml, `<c:spPr><a:scene3d>`)
+	mustContain(t, xml, `<a:camera prst="perspectiveAboveLeftFacing" fov="30"/>`)
+	mustContain(t, xml, `<a:lightRig rig="threePt" dir="tr" rev="1"/>`)
+}
+
+func TestValidateChartFormatUpdate_Scene3DRequiresCoreFields(t *testing.T) {
+	rig := "threePt"
+	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{LightRig: &rig}); err == nil {
+		t.Fatalf("expected validation error when camera_preset/light_direction missing")
+	}
 }
 
 func mustContain(t *testing.T, xml string, want string) {

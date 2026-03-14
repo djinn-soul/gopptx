@@ -53,6 +53,30 @@ type patternFillXML struct {
 	} `xml:"bgClr"`
 }
 
+type spacingNodeXML struct {
+	SpcPct *struct {
+		Val *int `xml:"val,attr"`
+	} `xml:"spcPct"`
+	SpcPts *struct {
+		Val *int `xml:"val,attr"`
+	} `xml:"spcPts"`
+}
+
+type paragraphPropsXML struct {
+	MarL   *int    `xml:"marL,attr"`
+	Indent *int    `xml:"indent,attr"`
+	Algn   *string `xml:"algn,attr"`
+	Lvl    *int    `xml:"lvl,attr"`
+	TabLst *struct {
+		Tabs []struct {
+			Pos *int `xml:"pos,attr"`
+		} `xml:"tab"`
+	} `xml:"tabLst"`
+	LnSp   *spacingNodeXML `xml:"lnSp"`
+	SpcBef *spacingNodeXML `xml:"spcBef"`
+	SpcAft *spacingNodeXML `xml:"spcAft"`
+}
+
 type shapeXML struct {
 	NvSpPr struct {
 		CNvPr struct {
@@ -84,7 +108,32 @@ type shapeXML struct {
 			Name string `xml:"name,attr"`
 		} `xml:"cNvPr"`
 	} `xml:"nvGrpSpPr"`
+	NvGraphicFramePr struct {
+		CNvPr struct {
+			ID   int    `xml:"id,attr"`
+			Name string `xml:"name,attr"`
+		} `xml:"cNvPr"`
+	} `xml:"nvGraphicFramePr"`
+	Xfrm struct {
+		Off struct {
+			X int `xml:"x,attr"`
+			Y int `xml:"y,attr"`
+		} `xml:"off"`
+		Ext struct {
+			Cx int `xml:"cx,attr"`
+			Cy int `xml:"cy,attr"`
+		} `xml:"ext"`
+	} `xml:"xfrm"`
 	SpPr struct {
+		PrstGeom *struct {
+			Prst  string `xml:"prst,attr"`
+			AvLst *struct {
+				Gd []struct {
+					Name string `xml:"name,attr"`
+					Fmla string `xml:"fmla,attr"`
+				} `xml:"gd"`
+			} `xml:"avLst"`
+		} `xml:"prstGeom"`
 		NoFill    *struct{}        `xml:"noFill"`
 		SolidFill *solidFillXML    `xml:"solidFill"`
 		GradFill  *gradientFillXML `xml:"gradFill"`
@@ -147,11 +196,8 @@ type shapeXML struct {
 	} `xml:"grpSpPr"`
 	TxBody struct {
 		P []struct {
-			PPr *struct {
-				MarL   *int `xml:"marL,attr"`
-				Indent *int `xml:"indent,attr"`
-			} `xml:"pPr"`
-			R []struct {
+			PPr *paragraphPropsXML `xml:"pPr"`
+			R   []struct {
 				RPr *runPropsXML `xml:"rPr"`
 				T   string       `xml:"t"`
 			} `xml:"r"`
@@ -162,6 +208,7 @@ type shapeXML struct {
 type ParsedShapeProperties struct {
 	ID         int
 	Name       string
+	Type       string
 	Text       string
 	Runs       []common.TextRun
 	Paragraph  *common.Paragraph
@@ -176,4 +223,6 @@ type ParsedShapeProperties struct {
 	W, H       int
 	PhIndex    int
 	PhType     string
+
+	Adjustments []common.ShapeAdjustment
 }

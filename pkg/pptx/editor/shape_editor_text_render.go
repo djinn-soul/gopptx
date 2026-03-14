@@ -8,7 +8,6 @@ import (
 	"math"
 	"strings"
 
-	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
@@ -187,9 +186,9 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				rPr += fmt.Sprintf(` sz="%d"`, *r.SizePt*textRunFontSizeScale)
 			}
 			if r.AllCaps != nil && *r.AllCaps {
-				rPr += ` cap="all"`
+				rPr += ` caps="all"`
 			} else if r.SmallCaps != nil && *r.SmallCaps {
-				rPr += ` cap="small"`
+				rPr += ` smCaps="1"`
 			}
 			rPr += `>`
 
@@ -275,14 +274,14 @@ func normalizeTextFrameVerticalAlign(raw string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "t", "top":
 		return "t", nil
-	case "ctr", "center", "middle":
-		return "ctr", nil
+	case alignCtr, alignCenter, "middle":
+		return alignCtr, nil
 	case "b", "bottom":
 		return "b", nil
-	case "just", "justify":
-		return "just", nil
-	case "dist", "distribute":
-		return "dist", nil
+	case alignJust, "justify":
+		return alignJust, nil
+	case alignDist, "distribute":
+		return alignDist, nil
 	default:
 		return "", fmt.Errorf("unsupported text_frame.vertical_align %q", raw)
 	}
@@ -296,25 +295,4 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 		return 0, errors.New("text_frame.rotation must be between -360 and 360 degrees")
 	}
 	return int64(math.Round(raw * editorslide.RotationDegreeToOOXML)), nil
-}
-
-func renderParagraphPropsXML(paragraph *common.Paragraph) (string, error) {
-	if paragraph == nil {
-		return "", nil
-	}
-	pPr := `<a:pPr`
-	if paragraph.Indent != nil {
-		pPr += fmt.Sprintf(` marL="%d"`, *paragraph.Indent)
-	}
-	if paragraph.Hanging != nil {
-		if *paragraph.Hanging < 0 {
-			return "", errors.New("paragraph.hanging must be >= 0")
-		}
-		pPr += fmt.Sprintf(` indent="%d"`, -*paragraph.Hanging)
-	}
-	pPr += `/>`
-	if pPr == `<a:pPr/>` {
-		return "", nil
-	}
-	return pPr, nil
 }

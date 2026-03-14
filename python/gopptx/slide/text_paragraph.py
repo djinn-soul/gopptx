@@ -5,34 +5,57 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
-_ALLOWED_PARAGRAPH_FIELDS = frozenset({"indent", "hanging"})
+_MAX_PARAGRAPH_LEVEL = 8
+_ALLOWED_PARAGRAPH_FIELDS = frozenset({
+    "alignment",
+    "hanging",
+    "indent",
+    "level",
+    "line_spacing_pct",
+    "line_spacing_pts",
+    "space_after_pts",
+    "space_before_pts",
+    "tab_stops",
+})
 _PARAGRAPH_FIELD_ALIASES = {
-    "left_margin": "indent",
     "hanging_indent": "hanging",
+    "left_margin": "indent",
+    "tabStops": "tab_stops",
+    "tabs": "tab_stops",
 }
 
 
 class ParagraphProps:
     """Paragraph-level controls mapped to the bridge `paragraph` payload."""
 
-    __slots__ = ("hanging", "indent")
+    __slots__ = (
+        "alignment",
+        "hanging",
+        "indent",
+        "level",
+        "line_spacing_pct",
+        "line_spacing_pts",
+        "space_after_pts",
+        "space_before_pts",
+        "tab_stops",
+    )
 
-    def __init__(
-        self,
-        *,
-        indent: int | None = None,
-        hanging: int | None = None,
-        left_margin: int | None = None,
-        hanging_indent: int | None = None,
-    ) -> None:
+    def __init__(self, **kwargs: object) -> None:
         """Initialize paragraph controls with alias support."""
         super().__init__()
-        self.indent = indent
-        self.hanging = hanging
-        if left_margin is not None:
-            self.indent = left_margin
-        if hanging_indent is not None:
-            self.hanging = hanging_indent
+        self.indent = _as_optional_int(kwargs.get("indent", kwargs.get("left_margin")))
+        self.hanging = _as_optional_int(
+            kwargs.get("hanging", kwargs.get("hanging_indent"))
+        )
+        self.tab_stops = _coerce_optional_int_list(
+            kwargs.get("tab_stops", kwargs.get("tabs"))
+        )
+        self.alignment = _as_optional_string(kwargs.get("alignment"))
+        self.level = _as_optional_int(kwargs.get("level"))
+        self.line_spacing_pct = _as_optional_int(kwargs.get("line_spacing_pct"))
+        self.line_spacing_pts = _as_optional_int(kwargs.get("line_spacing_pts"))
+        self.space_before_pts = _as_optional_int(kwargs.get("space_before_pts"))
+        self.space_after_pts = _as_optional_int(kwargs.get("space_after_pts"))
 
     @classmethod
     def from_payload(
@@ -42,20 +65,19 @@ class ParagraphProps:
         if isinstance(payload, ParagraphProps):
             return payload
         normalized = _normalize_paragraph_mapping(payload)
-        return cls(
-            indent=_as_optional_int(normalized.get("indent")),
-            hanging=_as_optional_int(normalized.get("hanging")),
-        )
+        return cls(**normalized)
 
     def to_payload(self) -> dict[str, object]:
         """Serialize paragraph controls for the bridge payload."""
         payload: dict[str, object] = {}
-        if self.indent is not None:
-            payload["indent"] = self.indent
-        if self.hanging is not None:
-            if self.hanging < 0:
-                raise ValueError("paragraph.hanging must be >= 0")
-            payload["hanging"] = self.hanging
+        _append_int_field(payload, "indent", self.indent)
+        _append_hanging(payload, self.hanging)
+        _append_tab_stops(payload, self.tab_stops)
+        _append_string_field(payload, "alignment", self.alignment)
+        _append_level(payload, self.level)
+        _append_line_spacing(payload, self.line_spacing_pct, self.line_spacing_pts)
+        _append_non_negative(payload, "space_before_pts", self.space_before_pts)
+        _append_non_negative(payload, "space_after_pts", self.space_after_pts)
         return payload
 
 
@@ -79,9 +101,102 @@ def _normalize_paragraph_mapping(payload: Mapping[str, object]) -> dict[str, obj
     return normalized
 
 
+def _append_int_field(payload: dict[str, object], key: str, value: int | None) -> None:
+    if value is not None:
+        payload[key] = value
+
+
+def _append_string_field(
+    payload: dict[str, object], key: str, value: str | None
+) -> None:
+    if value is not None:
+        payload[key] = value
+
+
+def _append_hanging(payload: dict[str, object], hanging: int | None) -> None:
+    if hanging is None:
+        return
+    if hanging < 0:
+        raise ValueError("paragraph.hanging must be >= 0")
+    payload["hanging"] = hanging
+
+
+def _append_tab_stops(payload: dict[str, object], tab_stops: list[int] | None) -> None:
+    if tab_stops is None:
+        return
+    payload["tab_stops"] = _normalize_tab_stops(tab_stops)
+
+
+def _append_level(payload: dict[str, object], level: int | None) -> None:
+    if level is None:
+        return
+    if level < 0 or level > _MAX_PARAGRAPH_LEVEL:
+        raise ValueError("paragraph.level must be between 0 and 8")
+    payload["level"] = level
+
+
+def _append_line_spacing(
+    payload: dict[str, object], pct: int | None, pts: int | None
+) -> None:
+    if pct is not None and pts is not None:
+        raise ValueError(
+            "paragraph cannot set both line_spacing_pct and line_spacing_pts"
+        )
+    _append_non_negative(payload, "line_spacing_pct", pct)
+    _append_non_negative(payload, "line_spacing_pts", pts)
+
+
+def _append_non_negative(
+    payload: dict[str, object], key: str, value: int | None
+) -> None:
+    if value is None:
+        return
+    if value < 0:
+        raise ValueError(f"paragraph.{key} must be >= 0")
+    payload[key] = value
+
+
 def _as_optional_int(value: object) -> int | None:
     if value is None:
         return None
     if isinstance(value, int):
         return value
     return None
+
+
+def _as_optional_string(value: object) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return None
+
+
+def _as_optional_int_list(value: object) -> list[int] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        return None
+    value_list = cast("list[object]", value)
+    out: list[int] = []
+    for item in value_list:
+        if not isinstance(item, int):
+            return None
+        out.append(item)
+    return out
+
+
+def _coerce_optional_int_list(value: object) -> list[int] | None:
+    converted = _as_optional_int_list(value)
+    if converted is None and value is not None:
+        raise ValueError("paragraph.tab_stops must be a list of integers")
+    return converted
+
+
+def _normalize_tab_stops(values: list[int]) -> list[int]:
+    normalized_tab_stops: list[int] = []
+    for pos in values:
+        if pos < 0:
+            raise ValueError("paragraph.tab_stops values must be >= 0")
+        normalized_tab_stops.append(pos)
+    return normalized_tab_stops

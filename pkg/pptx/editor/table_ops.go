@@ -145,3 +145,29 @@ func (e *PresentationEditor) SplitTableCell(slideIndex, shapeID, row, col int) e
 	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
 	return nil
 }
+
+func (e *PresentationEditor) SetTableRowHeight(slideIndex, shapeID, row int, height int64) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.UpdateTableRowHeightInFrame(frame, row, height)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+func (e *PresentationEditor) SetTableColumnWidth(slideIndex, shapeID, col int, width int64) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.UpdateTableColumnWidthInFrame(frame, col, width)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}

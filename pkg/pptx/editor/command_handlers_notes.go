@@ -3,6 +3,7 @@ package editor
 import (
 	"encoding/json"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
@@ -22,12 +23,24 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err != nil {
 				return nil, err
 			}
-			return editorcommand.BuildNotesResult(notes, hasNotesSlide), nil
+			rawPlaceholders, err := e.ListNotesPlaceholders(slideIndex)
+			if err != nil {
+				return nil, err
+			}
+			placeholders := make([]common.PlaceholderInfo, 0, len(rawPlaceholders))
+			for _, ph := range rawPlaceholders {
+				placeholders = append(placeholders, common.PlaceholderInfo{
+					Type:  ph.Type,
+					Index: ph.Index,
+					Name:  ph.Name,
+				})
+			}
+			return editorcommand.BuildNotesResultDetailed(notes, hasNotesSlide, placeholders), nil
 		},
 	)
 }
 
-func handleHasNotesSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
+func handleNotesSlideExists(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleSlideIndexRequest(
 		payload,
@@ -39,7 +52,7 @@ func handleHasNotesSlide(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err != nil {
 				return nil, err
 			}
-			return map[string]bool{"has_notes_slide": hasNotesSlide}, nil
+			return map[string]bool{"notes_slide_exists": hasNotesSlide}, nil
 		},
 	)
 }

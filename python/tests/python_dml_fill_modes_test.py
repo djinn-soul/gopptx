@@ -38,9 +38,9 @@ def test_shape_gradient_fill_round_trip_fixture(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert "<a:gradFill>" in slide_xml  # noqa: S101
-    assert 'ang="5400000"' in slide_xml  # noqa: S101
-    assert 'pos="0"' in slide_xml and 'pos="100000"' in slide_xml  # noqa: S101
+    assert "<a:gradFill>" in slide_xml
+    assert 'ang="5400000"' in slide_xml
+    assert 'pos="0"' in slide_xml and 'pos="100000"' in slide_xml
 
 
 def test_shape_pattern_fill_round_trip_fixture(tmp_path: Path) -> None:
@@ -67,8 +67,8 @@ def test_shape_pattern_fill_round_trip_fixture(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert 'a:pattFill prst="diagCross"' in slide_xml  # noqa: S101
-    assert 'val="112233"' in slide_xml and 'val="AABBCC"' in slide_xml  # noqa: S101
+    assert 'a:pattFill prst="diagCross"' in slide_xml
+    assert 'val="112233"' in slide_xml and 'val="AABBCC"' in slide_xml
 
 
 def test_shape_fill_modes_reject_mutual_exclusive() -> None:

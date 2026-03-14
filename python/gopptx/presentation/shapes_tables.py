@@ -1,4 +1,5 @@
-"""Shape, text, notes, and table mixins for the Presentation API."""
+"""Shape mixin and compatibility re-exports for the Presentation API."""
+# ruff: noqa: PLR0904
 
 from __future__ import annotations
 
@@ -7,13 +8,14 @@ import os
 from typing import TYPE_CHECKING, cast
 
 from .. import ops
-from ..api_errors import GopptxError
 from ..slide.freeform_builder import FreeformBuilder
 from ..slide.text_frame import serialize_text_frame_for_payload
 from ..slide.text_paragraph import serialize_paragraph_for_payload
 from ..slide.text_run import serialize_runs_for_payload
-from ..utils import normalize_table_index
-from .helpers import PresentationProtocol
+from .helpers import PresentationMixinBase
+from .notes_mixin import PresentationNotesMixin
+from .table_mixin import PresentationTableMixin
+from .text_mixin import PresentationTextMixin
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -25,33 +27,11 @@ if TYPE_CHECKING:
         ShapeSearchQuery,
         ShapeSearchResult,
         ShapeUpdate,
-        TableCellInfo,
-        TableInfo,
+        TextRun,
     )
-else:
-
-    class PresentationProtocol:
-        """Runtime placeholder to avoid Protocol abstract behavior."""
 
 
-class PresentationNotesMixin(PresentationProtocol):
-    """Mixin providing speaker notes methods."""
-
-    def get_notes_payload(self, slide_index: int) -> dict[str, object]:
-        """Fetch raw notes payload from bridge with null-safe fallback."""
-        return self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})
-
-    def get_notes(self, slide_index: int) -> str:
-        """Get speaker notes for a slide."""
-        result = self.get_notes_payload(slide_index)
-        return str(cast("str", result.get("text", "")))
-
-    def set_notes(self, slide_index: int, text: str) -> None:
-        """Set speaker notes for a slide."""
-        self.execute(ops.OP_SET_NOTES, {"slide_index": slide_index, "text": text})
-
-
-class PresentationShapeMixin(PresentationProtocol):
+class PresentationShapeMixin(PresentationMixinBase):
     """Mixin providing shape manipulation methods."""
 
     _RECT_BOUNDS_COMPONENTS = 4
@@ -357,12 +337,25 @@ class PresentationShapeMixin(PresentationProtocol):
         **kwargs: object,
     ) -> int:
         """Add an audio file to a slide."""
+        name = kwargs.get("name")
+        poster_frame = kwargs.get("poster_frame")
         mime_type = kwargs.get("mime_type")
         payload = self._init_bounds_payload(slide_index, bounds)
         self._set_source_payload(payload, source)
 
+        if isinstance(name, str) and name:
+            payload["name"] = name
         if isinstance(mime_type, str) and mime_type:
             payload["mime_type"] = mime_type
+
+        if isinstance(poster_frame, (str, bytes, os.PathLike)):
+            poster_source = cast("str | bytes | os.PathLike[str]", poster_frame)
+            self._set_source_payload(
+                payload,
+                poster_source,
+                path_key="poster_path",
+                data_key="poster_data",
+            )
 
         result = self.execute(ops.OP_ADD_AUDIO, payload)
         return int(cast("int", result.get("shape_id", -1)))
@@ -460,136 +453,84 @@ class PresentationShapeMixin(PresentationProtocol):
             },
         )
 
-
-class PresentationTextMixin(PresentationProtocol):
-    """Mixin providing text search and replace methods."""
-
-    def find_and_replace(self, find_text: str, replace_text: str) -> int:
-        """Find and replace text in the presentation."""
-        result = self.execute(
-            ops.OP_FIND_AND_REPLACE, {"find": find_text, "replace": replace_text}
+    def get_shape_text_state(
+        self, slide_index: int, shape_id: int
+    ) -> dict[str, object]:
+        """Get text/runs/text-frame/paragraph state for a shape."""
+        return self.execute(
+            ops.OP_GET_SHAPE_TEXT_STATE,
+            {"slide_index": slide_index, "shape_id": shape_id},
         )
-        return int(cast("int", result.get("replacements", 0)))
 
-
-class PresentationTableMixin(PresentationProtocol):
-    """Mixin providing table creation and manipulation methods."""
-
-    def add_table(
-        self,
-        slide_index: int,
-        rows: int,
-        cols: int,
-        bounds: tuple[int, int, int, int],
-    ) -> int:
-        """Add a table to a slide."""
-        x, y, cx, cy = bounds
+    def get_slide_text_states(self, slide_index: int) -> list[dict[str, object]]:
+        """Get text/runs/text-frame/paragraph state for all shapes on a slide."""
         result = self.execute(
-            ops.OP_ADD_TABLE,
-            {
-                "slide_index": slide_index,
-                "rows": rows,
-                "cols": cols,
-                "x": x,
-                "y": y,
-                "cx": cx,
-                "cy": cy,
-            },
+            ops.OP_GET_SLIDE_TEXT_STATES,
+            {"slide_index": slide_index},
         )
-        return int(cast("int", result.get("shape_id", 0)))
+        return cast("list[dict[str, object]]", result.get("states", []))
 
-    def get_table(self, slide_index: int, shape_id: int) -> TableInfo:
-        """Get table information for a table shape."""
+    def get_shape_runs(self, slide_index: int, shape_id: int) -> list[TextRun]:
+        """Get text runs for a shape."""
         result = self.execute(
-            ops.OP_GET_TABLE, {"slide_index": slide_index, "shape_id": shape_id}
+            ops.OP_GET_SHAPE_RUNS,
+            {"slide_index": slide_index, "shape_id": shape_id},
         )
-        return cast("TableInfo", cast("dict[str, object]", result.get("table", {})))
+        return cast("list[TextRun]", result.get("runs", []))
 
-    def set_table_style(self, slide_index: int, shape_id: int, style_guid: str) -> None:
-        """Apply a table style to a table.
-
-        The style_guid must be a valid PowerPoint table style GUID, e.g.:
-            "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
-            "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
-            "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
-        """
+    def set_shape_runs(
+        self, slide_index: int, shape_id: int, runs: list[TextRun]
+    ) -> None:
+        """Replace all text runs on a shape."""
         self.execute(
-            ops.OP_SET_TABLE_STYLE,
+            ops.OP_SET_SHAPE_RUNS,
             {
                 "slide_index": slide_index,
                 "shape_id": shape_id,
-                "style_guid": style_guid,
+                "runs": serialize_runs_for_payload(cast("object", runs)),
             },
         )
 
-    def set_table_flags(
-        self, slide_index: int, shape_id: int, flags: dict[str, bool]
-    ) -> None:
-        """Set table style flags."""
-        self.execute(
-            ops.OP_UPDATE_TABLE_FLAGS,
-            {"slide_index": slide_index, "shape_id": shape_id, "flags": flags},
-        )
-
-    def set_table_cell_text(
-        self, slide_index: int, shape_id: int, row: int, col: int, text: str
-    ) -> None:
-        """Set the text of a table cell."""
-        self.execute(
-            ops.OP_UPDATE_TABLE_CELL,
-            {
-                "slide_index": slide_index,
-                "shape_id": shape_id,
-                "row": row,
-                "col": col,
-                "updates": {"text": text},
-            },
-        )
-
-    def get_table_cell(
-        self, slide_index: int, shape_id: int, row: int, col: int
-    ) -> TableCellInfo:
-        """Get information about a table cell."""
-        table = self.get_table(slide_index, shape_id)
-        cells = table.get("cells", [])
-        cell_map: dict[tuple[int, int], dict[str, object]] = {}
-        for cell in cells:
-            try:
-                row_idx = normalize_table_index(cell["row"])
-                col_idx = normalize_table_index(cell["col"])
-            except (KeyError, ValueError):
-                continue
-            cell_map[row_idx, col_idx] = cast("dict[str, object]", cell)
-        found = cell_map.get((row, col))
-        if found is not None:
-            return cast("TableCellInfo", found)
-        raise GopptxError(f"table cell [{row},{col}] not found", code="OP_FAILED")
-
-    def merge_table_cells(
+    def update_shape_run_text(
         self,
         slide_index: int,
         shape_id: int,
-        cell_range: tuple[int, int, int, int],
+        run_index: int,
+        text: str,
     ) -> None:
-        """Merge a range of table cells."""
-        row1, col1, row2, col2 = cell_range
+        """Update text for one run by run index."""
         self.execute(
-            ops.OP_MERGE_TABLE_CELLS,
+            ops.OP_UPDATE_SHAPE_RUN_TEXT,
             {
                 "slide_index": slide_index,
                 "shape_id": shape_id,
-                "row1": row1,
-                "col1": col1,
-                "row2": row2,
-                "col2": col2,
+                "run_index": run_index,
+                "text": text,
             },
         )
 
-    def split_table_cell(
-        self, slide_index: int, shape_id: int, row: int, col: int
+    def append_shape_run(
+        self,
+        slide_index: int,
+        shape_id: int,
+        run: TextRun,
     ) -> None:
-        """Split a merged table cell."""
+        """Append a run to a shape."""
+        payload = serialize_runs_for_payload([cast("object", run)])
+        run_payload = cast("dict[str, object]", cast("list[object]", payload)[0])
         self.execute(
-            ops.OP_SPLIT_TABLE_CELL,
-            {"slide_index": slide_index, "shape_id": shape_id, "row": row, "col": col},
+            ops.OP_APPEND_SHAPE_RUN,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "run": run_payload,
+            },
         )
+
+
+__all__ = [
+    "PresentationNotesMixin",
+    "PresentationShapeMixin",
+    "PresentationTableMixin",
+    "PresentationTextMixin",
+]

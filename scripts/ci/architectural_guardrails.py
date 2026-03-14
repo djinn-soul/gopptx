@@ -56,7 +56,7 @@ def _is_test_file(path: Path) -> bool:
 
 
 def _line_count(path: Path) -> int:
-    with path.open("r", encoding="utf-8", errors="ignore") as file:
+    with path.open("rb") as file:
         return sum(1 for _ in file)
 
 
@@ -140,8 +140,8 @@ def _process_import_from_node(
     module = node.module or ""
 
     if level > 0:
-        # Fixed: removed off-by-one (+1) that incorrectly included extra level
-        base_parts = current_pkg_parts[: len(current_pkg_parts) - level]
+        # level 1 is current package, level 2 is parent, etc.
+        base_parts = current_pkg_parts[: len(current_pkg_parts) - level + 1]
         target = ".".join(base_parts + ([module] if module else []))
     else:
         target = module

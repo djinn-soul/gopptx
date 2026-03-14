@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,6 +90,90 @@ func TestCLI_MD2PPTSubcommand_DefaultOutput(t *testing.T) {
 	outPath := filepath.Join(tmpDir, "deck.pptx")
 	if _, err := os.Stat(outPath); err != nil {
 		t.Fatalf("expected derived output file %s: %v", outPath, err)
+	}
+}
+
+func TestCLI_ExportSubcommand_HTMLFromMarkdown(t *testing.T) {
+	tmpDir := t.TempDir()
+	inPath := filepath.Join(tmpDir, "deck.md")
+	if err := os.WriteFile(inPath, []byte("# Intro\n- one\n- two\n"), 0o600); err != nil {
+		t.Fatalf("write markdown: %v", err)
+	}
+	outPath := filepath.Join(tmpDir, "deck.html")
+
+	stdout, stderr, code := runCLI(t, "export", "-in", inPath, "-format", "html", "-out", outPath, "-title", "Export HTML")
+	if code != exitOK {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("expected html output file: %v", err)
+	}
+	if !strings.Contains(strings.ToLower(string(data)), "<!doctype html>") {
+		t.Fatalf("expected html output, got %q", string(data))
+	}
+}
+
+func TestCLI_ExportSubcommand_RejectsUnknownFormat(t *testing.T) {
+	stdout, stderr, code := runCLI(t, "export", "-in", "deck.md", "-format", "svg")
+	if code != exitUsage {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitUsage, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "unsupported export format") {
+		t.Fatalf("expected unsupported format error, got %q", stderr)
+	}
+}
+
+func TestCLI_URLFetchSubcommand(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`<!DOCTYPE html>
+<html>
+<head><title>URLFetch</title></head>
+<body>
+  <main>
+    <h1>Hello URL</h1>
+    <p>This paragraph has enough content to be parsed into deck bullets, and it intentionally contains more than one hundred characters so the urlfetch parser accepts this document as primary page content.</p>
+    <p>Second paragraph to ensure there is meaningful body text for section extraction and slide generation.</p>
+  </main>
+</body>
+</html>`))
+	}))
+	t.Cleanup(server.Close)
+
+	outPath := filepath.Join(t.TempDir(), "urlfetch.pptx")
+	stdout, stderr, code := runCLI(t, "urlfetch", "-url", server.URL, "-out", outPath, "-title", "URL Deck")
+	if code != exitOK {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr)
+	}
+	if !strings.Contains(stdout, "OK: wrote") {
+		t.Fatalf("expected success output, got %q", stdout)
+	}
+	if info, err := os.Stat(outPath); err != nil {
+		t.Fatalf("expected output file: %v", err)
+	} else if info.Size() == 0 {
+		t.Fatalf("expected non-empty pptx file")
+	}
+}
+
+func TestCLI_URLFetchSubcommand_RequiresURL(t *testing.T) {
+	stdout, stderr, code := runCLI(t, "urlfetch")
+	if code != exitUsage {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitUsage, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "urlfetch requires -url") {
+		t.Fatalf("expected missing-url error, got %q", stderr)
 	}
 }
 

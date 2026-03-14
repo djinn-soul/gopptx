@@ -17,9 +17,10 @@ type Template interface {
 
 // SimpleTemplate creates a basic 2-slide deck: a title slide and a content slide.
 type SimpleTemplate struct {
-	Title    string       // Main title for the first slide
-	Content  string       // Bullet point content for the second slide
-	Branding BrandingSpec // Optional branding/theme
+	Title           string          // Main title for the first slide
+	Content         string          // Bullet point content for the second slide
+	Branding        BrandingSpec    // Optional branding/theme
+	LayoutOverrides LayoutOverrides // Optional per-slide layout overrides (0-based index)
 }
 
 // Build generates slides for SimpleTemplate.
@@ -43,18 +44,19 @@ func (t SimpleTemplate) Build() ([]elements.SlideContent, error) {
 	for i := range slides {
 		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
-	return slides, nil
+	return applyLayoutOverrides(slides, t.LayoutOverrides)
 }
 
 // ProposalTemplate creates a standard 5-slide proposal deck.
 type ProposalTemplate struct {
-	Title    string        // Main proposal title
-	Subtitle string        // Optional subtitle
-	Context  string        // Problem or background context
-	Solution string        // Proposed solution details
-	Pricing  []PricingTier // List of pricing items or tiers
-	Timeline []Milestone   // Project timeline or milestones
-	Branding BrandingSpec  // Optional branding/theme
+	Title           string          // Main proposal title
+	Subtitle        string          // Optional subtitle
+	Context         string          // Problem or background context
+	Solution        string          // Proposed solution details
+	Pricing         []PricingTier   // List of pricing items or tiers
+	Timeline        []Milestone     // Project timeline or milestones
+	Branding        BrandingSpec    // Optional branding/theme
+	LayoutOverrides LayoutOverrides // Optional per-slide layout overrides (0-based index)
 }
 
 // Build generates slides for ProposalTemplate.
@@ -104,16 +106,17 @@ func (t ProposalTemplate) Build() ([]elements.SlideContent, error) {
 	for i := range slides {
 		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
-	return slides, nil
+	return applyLayoutOverrides(slides, t.LayoutOverrides)
 }
 
 // TrainingTemplate creates an educational deck.
 type TrainingTemplate struct {
-	Title    string       // Title of the training session
-	Agenda   []string     // List of topics to be covered
-	Concepts []string     // Each concept will get its own slide
-	Summary  string       // Closing summary or key takeaways
-	Branding BrandingSpec // Optional branding/theme
+	Title           string          // Title of the training session
+	Agenda          []string        // List of topics to be covered
+	Concepts        []string        // Each concept will get its own slide
+	Summary         string          // Closing summary or key takeaways
+	Branding        BrandingSpec    // Optional branding/theme
+	LayoutOverrides LayoutOverrides // Optional per-slide layout overrides (0-based index)
 }
 
 // Build generates slides for TrainingTemplate.
@@ -153,16 +156,17 @@ func (t TrainingTemplate) Build() ([]elements.SlideContent, error) {
 	for i := range slides {
 		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
-	return slides, nil
+	return applyLayoutOverrides(slides, t.LayoutOverrides)
 }
 
 // StatusTemplate creates a 4-slide project status report.
 type StatusTemplate struct {
-	Project   string   // Name of the project
-	OKRs      []string // Current status of key metrics or OKRs
-	Risks     []string // Active risks or blocking issues
-	NextSteps []string // Upcoming tasks or milestones
-	Branding  BrandingSpec
+	Project         string   // Name of the project
+	OKRs            []string // Current status of key metrics or OKRs
+	Risks           []string // Active risks or blocking issues
+	NextSteps       []string // Upcoming tasks or milestones
+	Branding        BrandingSpec
+	LayoutOverrides LayoutOverrides // Optional per-slide layout overrides (0-based index)
 }
 
 // Build generates slides for StatusTemplate.
@@ -200,16 +204,17 @@ func (t StatusTemplate) Build() ([]elements.SlideContent, error) {
 	for i := range slides {
 		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
-	return slides, nil
+	return applyLayoutOverrides(slides, t.LayoutOverrides)
 }
 
 // TechnicalTemplate creates a 4-slide technical deep-dive.
 type TechnicalTemplate struct {
-	Title        string       // Subject of the technical presentation
-	Architecture string       // High-level architecture description
-	DeepDive     string       // Specific technical details
-	Benchmarks   string       // Performance or comparison data
-	Branding     BrandingSpec // Optional branding/theme
+	Title           string          // Subject of the technical presentation
+	Architecture    string          // High-level architecture description
+	DeepDive        string          // Specific technical details
+	Benchmarks      string          // Performance or comparison data
+	Branding        BrandingSpec    // Optional branding/theme
+	LayoutOverrides LayoutOverrides // Optional per-slide layout overrides (0-based index)
 }
 
 // Build generates slides for TechnicalTemplate.
@@ -248,7 +253,7 @@ func (t TechnicalTemplate) Build() ([]elements.SlideContent, error) {
 	for i := range slides {
 		slides[i] = t.Branding.ApplyAt(slides[i], i)
 	}
-	return slides, nil
+	return applyLayoutOverrides(slides, t.LayoutOverrides)
 }
 
 // buildParallel executes slide generation functions in parallel.

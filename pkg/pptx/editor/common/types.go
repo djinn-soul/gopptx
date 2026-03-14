@@ -33,6 +33,7 @@ const (
 	RelTypeTheme          = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
 	RelTypeSectionList    = "http://schemas.microsoft.com/office/2007/relationships/sectionList"
 	RelTypePackage        = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"
+	RelTypeTableStyles    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles"
 	RelTypeCustomXML      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml"
 	RelTypeCustomXMLProps = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps"
 
@@ -159,6 +160,18 @@ type Shape struct {
 	Text string
 	X, Y int
 	W, H int
+
+	Fill   *ShapeFill
+	Line   *ShapeLine
+	Shadow *ShapeShadow
+
+	Adjustments []ShapeAdjustment
+}
+
+// ShapeAdjustment represents one preset-geometry adjustment formula.
+type ShapeAdjustment struct {
+	Name    string
+	Formula string
 }
 
 // ShapeSearchQuery filters shapes for editor-wide search.
@@ -232,8 +245,15 @@ type TextFrame struct {
 
 // Paragraph defines paragraph-level formatting controls.
 type Paragraph struct {
-	Indent  *int `json:"indent,omitempty"`  // Left paragraph margin (EMU, maps to a:pPr marL).
-	Hanging *int `json:"hanging,omitempty"` // Hanging indent amount (EMU, rendered as negative a:pPr indent).
+	Indent         *int    `json:"indent,omitempty"`           // Left paragraph margin (EMU, maps to a:pPr marL).
+	Hanging        *int    `json:"hanging,omitempty"`          // Hanging indent amount (EMU, rendered as negative a:pPr indent).
+	TabStops       []int   `json:"tab_stops,omitempty"`        // Tab stop positions in EMU (<a:tabLst><a:tab pos="..."/>...).
+	Alignment      *string `json:"alignment,omitempty"`        // Horizontal alignment (e.g. l, ctr, r, just, dist).
+	Level          *int    `json:"level,omitempty"`            // Paragraph level [0..8].
+	LineSpacingPct *int    `json:"line_spacing_pct,omitempty"` // <a:lnSp><a:spcPct val="..."/> where 100000 = 100%.
+	LineSpacingPts *int    `json:"line_spacing_pts,omitempty"` // <a:lnSp><a:spcPts val="..."/> in centipoints.
+	SpaceBeforePts *int    `json:"space_before_pts,omitempty"` // <a:spcBef><a:spcPts val="..."/> in centipoints.
+	SpaceAfterPts  *int    `json:"space_after_pts,omitempty"`  // <a:spcAft><a:spcPts val="..."/> in centipoints.
 }
 
 // ShapeFill defines generic shape fill controls.

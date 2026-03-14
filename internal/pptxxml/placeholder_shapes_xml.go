@@ -164,12 +164,29 @@ func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string)
   </p:nvSpPr>
   %s
 %s
-</p:sp>`, id, ph.Index, phAttr, renderOverrideXfrm(ph.X, ph.Y, ph.CX, ph.CY), txBody)
+</p:sp>`,
+		id,
+		ph.Index,
+		phAttr,
+		renderOverrideXfrm(ph.X, ph.Y, ph.CX, ph.CY, ph.GeometryXML, ph.ForceRectGeometry),
+		txBody,
+	)
 }
 
-func renderOverrideXfrm(x, y, cx, cy *int64) string {
-	if x == nil && y == nil && cx == nil && cy == nil {
-		return "<p:spPr/>"
+func renderOverrideXfrm(x, y, cx, cy *int64, geometryXML string, forceRect *bool) string {
+	hasBounds := x != nil || y != nil || cx != nil || cy != nil
+	geomXML := strings.TrimSpace(geometryXML)
+	if geomXML == "" || shouldForceRect(forceRect) {
+		geomXML = `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`
+	}
+	if !hasBounds {
+		if geomXML == "" {
+			return "<p:spPr/>"
+		}
+		return fmt.Sprintf(`
+  <p:spPr>
+    %s
+  </p:spPr>`, geomXML)
 	}
 	// Default to 0 if not specified but others are
 	xv, yv, cxv, cyv := int64(0), int64(0), int64(0), int64(0)
@@ -191,8 +208,12 @@ func renderOverrideXfrm(x, y, cx, cy *int64) string {
       <a:off x="%d" y="%d"/>
       <a:ext cx="%d" cy="%d"/>
     </a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-  </p:spPr>`, xv, yv, cxv, cyv)
+    %s
+  </p:spPr>`, xv, yv, cxv, cyv, geomXML)
+}
+
+func shouldForceRect(forceRect *bool) bool {
+	return forceRect != nil && *forceRect
 }
 
 func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {

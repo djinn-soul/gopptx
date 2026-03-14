@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
@@ -35,71 +36,49 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 
 	rowCount, colCount := Dimensions(parsed)
 	cells := make([]map[string]any, 0, rowCount*max(colCount, 1))
+	rowHeights := make([]int64, rowCount)
+	for i := range rowCount {
+		if i < len(parsed.Rows) {
+			rowHeights[i] = parsed.Rows[i].Height
+		}
+	}
+	columnWidths := make([]int64, colCount)
+	for i := range colCount {
+		if i < len(parsed.Grid.Cols) {
+			columnWidths[i] = parsed.Grid.Cols[i].Width
+		}
+	}
 
 	for rIdx, row := range parsed.Rows {
 		for cIdx, cell := range row.Cells {
 			cells = append(cells, buildTableCellInfo(rIdx, cIdx, cell))
 		}
 	}
-	rowsView, colsView := buildTableTraversalViews(rowCount, colCount, cells)
+	rowsView, colsView := buildTableTraversalViews(
+		rowCount,
+		colCount,
+		cells,
+		rowHeights,
+		columnWidths,
+	)
 
 	return map[string]any{
 		"table": map[string]any{
-			"row_count": rowCount,
-			"col_count": colCount,
-			"first_row": TruthyAttr(parsed.TblPr.FirstRow),
-			"first_col": TruthyAttr(parsed.TblPr.FirstCol),
-			"last_row":  TruthyAttr(parsed.TblPr.LastRow),
-			"last_col":  TruthyAttr(parsed.TblPr.LastCol),
-			"band_row":  TruthyAttr(parsed.TblPr.BandRow),
-			"band_col":  TruthyAttr(parsed.TblPr.BandCol),
-			"cells":     cells,
-			"rows":      rowsView,
-			"columns":   colsView,
+			"row_count":     rowCount,
+			"col_count":     colCount,
+			"first_row":     TruthyAttr(parsed.TblPr.FirstRow),
+			"first_col":     TruthyAttr(parsed.TblPr.FirstCol),
+			"last_row":      TruthyAttr(parsed.TblPr.LastRow),
+			"last_col":      TruthyAttr(parsed.TblPr.LastCol),
+			"band_row":      TruthyAttr(parsed.TblPr.BandRow),
+			"band_col":      TruthyAttr(parsed.TblPr.BandCol),
+			"row_heights":   rowHeights,
+			"column_widths": columnWidths,
+			"cells":         cells,
+			"rows":          rowsView,
+			"columns":       colsView,
 		},
 	}, nil
-}
-
-func buildTableTraversalViews(
-	rowCount int,
-	colCount int,
-	cells []map[string]any,
-) ([]map[string]any, []map[string]any) {
-	rowsView := make([]map[string]any, rowCount)
-	for r := range rowCount {
-		rowsView[r] = map[string]any{
-			"index": r,
-			"cells": make([]map[string]any, 0, colCount),
-		}
-	}
-
-	colsView := make([]map[string]any, colCount)
-	for c := range colCount {
-		colsView[c] = map[string]any{
-			"index": c,
-			"cells": make([]map[string]any, 0, rowCount),
-		}
-	}
-
-	for _, cell := range cells {
-		rowIndex, rowOK := cell["row"].(int)
-		colIndex, colOK := cell["col"].(int)
-		if !rowOK || !colOK {
-			continue
-		}
-		if rowIndex >= 0 && rowIndex < rowCount {
-			if rowCells, ok := rowsView[rowIndex]["cells"].([]map[string]any); ok {
-				rowsView[rowIndex]["cells"] = append(rowCells, cell)
-			}
-		}
-		if colIndex >= 0 && colIndex < colCount {
-			if colCells, ok := colsView[colIndex]["cells"].([]map[string]any); ok {
-				colsView[colIndex]["cells"] = append(colCells, cell)
-			}
-		}
-	}
-
-	return rowsView, colsView
 }
 
 func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
@@ -107,7 +86,7 @@ func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
 	colSpan := normalizeSpan(cell.GridSpan)
 	vMerge := TruthyAttr(cell.VMerge)
 	hMerge := TruthyAttr(cell.HMerge)
-	return map[string]any{
+	info := map[string]any{
 		"row":             rowIndex,
 		"col":             colIndex,
 		"row_span":        rowSpan,
@@ -118,6 +97,102 @@ func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
 		"is_spanned":      vMerge || hMerge,
 		"text":            tableCellText(cell),
 	}
+	applyTableCellLayoutInfo(info, cell.TcPr)
+	applyTableCellBorderInfo(info, cell.TcPr)
+	return info
+}
+
+func applyTableCellLayoutInfo(info map[string]any, props cellPropertiesXML) {
+	if align := normalizeTableCellVAlign(props.Anchor); align != "" {
+		info["v_align"] = align
+	}
+	if props.MarL != nil {
+		info["margin_left"] = *props.MarL
+	}
+	if props.MarR != nil {
+		info["margin_right"] = *props.MarR
+	}
+	if props.MarT != nil {
+		info["margin_top"] = *props.MarT
+	}
+	if props.MarB != nil {
+		info["margin_bottom"] = *props.MarB
+	}
+}
+
+func normalizeTableCellVAlign(anchor string) string {
+	switch anchor {
+	case "t":
+		return "top"
+	case "b":
+		return "bottom"
+	case "ctr":
+		return "middle"
+	default:
+		return ""
+	}
+}
+
+func applyTableCellBorderInfo(info map[string]any, props cellPropertiesXML) {
+	if border := lineToBorderInfo(props.LnL); border != nil {
+		info["border_left"] = border
+	}
+	if border := lineToBorderInfo(props.LnR); border != nil {
+		info["border_right"] = border
+	}
+	if border := lineToBorderInfo(props.LnT); border != nil {
+		info["border_top"] = border
+	}
+	if border := lineToBorderInfo(props.LnB); border != nil {
+		info["border_bottom"] = border
+	}
+}
+
+func lineToBorderInfo(line *linePropertiesXML) map[string]any {
+	if line == nil || line.NoFill != nil {
+		return nil
+	}
+	border := map[string]any{}
+	if line.Width > 0 {
+		border["width"] = line.Width
+	}
+	if line.PrstDash != nil && line.PrstDash.Val != "" {
+		border["dash"] = line.PrstDash.Val
+	}
+	if color := lineColorToken(line); color != "" {
+		border["color"] = color
+	}
+	if len(border) == 0 {
+		return nil
+	}
+	return border
+}
+
+func lineColorToken(line *linePropertiesXML) string {
+	if line == nil || line.SolidFill == nil {
+		return ""
+	}
+	if line.SolidFill.SrgbClr != nil && line.SolidFill.SrgbClr.Val != "" {
+		return line.SolidFill.SrgbClr.Val
+	}
+	scheme := line.SolidFill.SchemeClr
+	if scheme == nil || scheme.Val == "" {
+		return ""
+	}
+	token := "scheme:" + scheme.Val
+	if scheme.LumMod != nil && scheme.LumMod.Val != "" {
+		token += "|lumMod=" + scheme.LumMod.Val
+	}
+	if scheme.LumOff != nil && scheme.LumOff.Val != "" {
+		token += "|lumOff=" + scheme.LumOff.Val
+	}
+	if scheme.Tint != nil && scheme.Tint.Val != "" {
+		token += "|tint=" + scheme.Tint.Val
+	}
+	if scheme.Shade != nil && scheme.Shade.Val != "" {
+		token += "|shade=" + scheme.Shade.Val
+	}
+	return token
 }
 
 func normalizeSpan(span int) int {
@@ -263,4 +338,56 @@ func extractXMLElement(content []byte, tagOpen []byte) []byte {
 		return content[start : start+tagEnd+1]
 	}
 	return content[start : start+end+len(closeTag)]
+}
+
+func UpdateTableRowHeightInFrame(frame []byte, rowIdx int, height int64) ([]byte, error) {
+	if height <= 0 {
+		return nil, errors.New("row height must be > 0")
+	}
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return nil, err
+	}
+	rowCount, _ := Dimensions(parsed)
+	if rowIdx < 0 || rowIdx >= rowCount {
+		return nil, fmt.Errorf("table row %d out of range", rowIdx)
+	}
+	return MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
+		tagEnd := bytes.Index(rowContent, []byte(">"))
+		if tagEnd == -1 {
+			return nil, errors.New("invalid table row xml")
+		}
+		openTag := rowContent[:tagEnd+1]
+		updatedTag := SetOrInsertAttr(openTag, "h", strconv.FormatInt(height, 10))
+		updated := make([]byte, 0, len(rowContent)-len(openTag)+len(updatedTag))
+		updated = append(updated, updatedTag...)
+		updated = append(updated, rowContent[tagEnd+1:]...)
+		return updated, nil
+	})
+}
+
+func UpdateTableColumnWidthInFrame(frame []byte, colIdx int, width int64) ([]byte, error) {
+	if width <= 0 {
+		return nil, errors.New("column width must be > 0")
+	}
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return nil, err
+	}
+	_, colCount := Dimensions(parsed)
+	if colIdx < 0 || colIdx >= colCount {
+		return nil, fmt.Errorf("table column %d out of range", colIdx)
+	}
+	return MutateTableElements(
+		frame,
+		[]byte("<a:gridCol"),
+		[]byte("/>"),
+		colIdx,
+		colIdx,
+		"column",
+		func(_ int, colContent []byte) ([]byte, error) {
+			updated := SetOrInsertAttr(colContent, "w", strconv.FormatInt(width, 10))
+			return updated, nil
+		},
+	)
 }

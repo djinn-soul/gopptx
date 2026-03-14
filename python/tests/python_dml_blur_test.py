@@ -28,7 +28,7 @@ def test_shape_blur_round_trip_fixture(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert '<a:blur rad="61000"/>' in slide_xml  # noqa: S101
+    assert '<a:blur rad="61000"/>' in slide_xml
 
 
 def test_shape_blur_rejects_shadow_inherit_true_combo() -> None:

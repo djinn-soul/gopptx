@@ -9,7 +9,7 @@ from .. import ops
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ..schemas import SlideLayoutInfo
+    from ..schemas import PlaceholderInfo, SlideLayoutInfo
     from .base import PresentationProtocol
 
 
@@ -25,6 +25,7 @@ class SlideLayout:
         """
         super().__init__()
         self._master = master
+        self._info = info
         self._part = str(info.get("part", info.get("Part", "")))
         self._name = str(info.get("name", info.get("Name", "")))
 
@@ -42,6 +43,24 @@ class SlideLayout:
     def slide_master(self) -> SlideMaster:
         """The parent slide master."""
         return self._master
+
+    @property
+    def shapes(self) -> list[str]:
+        """Layout shape names snapshot."""
+        shapes = self._info.get("shapes", self._info.get("Shapes", []))
+        if isinstance(shapes, list):
+            return [str(item) for item in cast("list[object]", shapes)]
+        return []
+
+    @property
+    def placeholders(self) -> list[PlaceholderInfo]:
+        """Layout placeholder records snapshot."""
+        placeholders = self._info.get(
+            "placeholders", self._info.get("Placeholders", [])
+        )
+        if isinstance(placeholders, list):
+            return cast("list[PlaceholderInfo]", placeholders)
+        return []
 
 
 class SlideLayouts:
@@ -88,16 +107,23 @@ class SlideLayouts:
 class SlideMaster:
     """Represents a slide master in the presentation."""
 
-    def __init__(self, prs: PresentationProtocol, part: str) -> None:
+    def __init__(
+        self,
+        prs: PresentationProtocol,
+        part: str,
+        info: dict[str, object] | None = None,
+    ) -> None:
         """Initialize the slide master.
 
         Args:
             prs: The presentation base instance.
             part: The part path of this slide master.
+            info: Optional master metadata payload from the bridge.
         """
         super().__init__()
         self._prs = prs
         self._part = part
+        self._info = info or {}
         self._slide_layouts: SlideLayouts | None = None
 
     @property
@@ -118,6 +144,24 @@ class SlideMaster:
                 self, cast("list[SlideLayoutInfo]", layouts)
             )
         return self._slide_layouts
+
+    @property
+    def shapes(self) -> list[str]:
+        """Master shape names snapshot."""
+        shapes = self._info.get("shapes", self._info.get("Shapes", []))
+        if isinstance(shapes, list):
+            return [str(item) for item in cast("list[object]", shapes)]
+        return []
+
+    @property
+    def placeholders(self) -> list[PlaceholderInfo]:
+        """Master placeholder records snapshot."""
+        placeholders = self._info.get(
+            "placeholders", self._info.get("Placeholders", [])
+        )
+        if isinstance(placeholders, list):
+            return cast("list[PlaceholderInfo]", placeholders)
+        return []
 
 
 class SlideMasters:
@@ -142,7 +186,7 @@ class SlideMasters:
         self._masters = []
         for info in master_infos:
             part = str(info.get("part", info.get("Part", "")))
-            self._masters.append(SlideMaster(self._prs, part))
+            self._masters.append(SlideMaster(self._prs, part, info))
 
     def __len__(self) -> int:
         """Return the number of slide masters."""
