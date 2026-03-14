@@ -27,6 +27,10 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err != nil {
 				return nil, err
 			}
+			rawShapes, err := e.ListNotesShapes(slideIndex)
+			if err != nil {
+				return nil, err
+			}
 			placeholders := make([]common.PlaceholderInfo, 0, len(rawPlaceholders))
 			for _, ph := range rawPlaceholders {
 				placeholders = append(placeholders, common.PlaceholderInfo{
@@ -35,7 +39,12 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 					Name:  ph.Name,
 				})
 			}
-			return editorcommand.BuildNotesResultDetailed(notes, hasNotesSlide, placeholders), nil
+			return editorcommand.BuildNotesResultDetailed(
+				notes,
+				hasNotesSlide,
+				placeholders,
+				rawShapes,
+			), nil
 		},
 	)
 }
@@ -76,6 +85,50 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 		return nil, err
 	}
 	return map[string]bool{"updated": true}, nil
+}
+
+func handleSetNotesShapeText(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SetNotesShapeTextRequest, bool) {
+			return editorcommand.ParseSetNotesShapeTextRequest(
+				p,
+				func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
+				v.RequireInt,
+				v.RequireString,
+			)
+		},
+		v.Error,
+		func(request editorcommand.SetNotesShapeTextRequest) (any, error) {
+			if err := e.SetNotesShapeText(request.SlideIndex, request.ShapeID, request.Text); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
+}
+
+func handleSetNotesShapeProps(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleSlideShapeRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (int, bool) { return requireSlideIndex(e, p, v) },
+		v.RequireInt,
+		v.Error,
+		func(request editorcommand.SlideShapeRequest, p map[string]any) (any, error) {
+			var updates common.ShapeUpdate
+			if err := editorcommand.DecodeOptionalPayloadValue(p, "updates", &updates); err != nil {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+			}
+			if err := e.SetNotesShapeProperties(request.SlideIndex, request.ShapeID, updates); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
 }
 
 func handleGetAuthors(e *PresentationEditor, _ json.RawMessage) (any, error) {

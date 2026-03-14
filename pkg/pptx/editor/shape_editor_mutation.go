@@ -59,6 +59,14 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 	}
 
 	partPath := e.slides[slideIndex].Part
+	return e.updateShapeInPart(partPath, shapeID, updates)
+}
+
+func (e *PresentationEditor) updateShapeInPart(
+	partPath string,
+	shapeID int,
+	updates common.ShapeUpdate,
+) error {
 	content, ok := e.parts.Get(partPath)
 	if !ok {
 		return fmt.Errorf("read slide part %s: not found", partPath)
@@ -81,7 +89,7 @@ func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common
 		return updater.err
 	}
 	if !updater.found {
-		return fmt.Errorf("shape id %d not found on slide %d", shapeID, slideIndex)
+		return fmt.Errorf("shape id %d not found in part %s", shapeID, partPath)
 	}
 
 	e.parts.Set(partPath, newXML)

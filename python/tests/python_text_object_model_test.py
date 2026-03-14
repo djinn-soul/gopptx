@@ -6,7 +6,7 @@ from __future__ import annotations
 import zipfile
 from pathlib import Path
 
-from gopptx import Presentation, Run
+from gopptx import Presentation, Run, RunHyperlink
 
 
 def test_shape_text_traversal_and_run_updates(tmp_path: Path) -> None:
@@ -183,3 +183,32 @@ def test_shape_run_text_buffer_keeps_slide_local_reads_coherent() -> None:
             slide.shape(first_shape_id).text_frame.paragraphs[0].runs[0].text == "Alpha"
         )
         assert slide.shape(second_shape_id).text == "Beta"
+
+
+def test_shape_run_hyperlink_updates_buffer_and_persist_final_state(
+    tmp_path: Path,
+) -> None:
+    out_path = tmp_path / "text_object_model_hyperlink_buffered_save.pptx"
+
+    with Presentation.new("Buffered Hyperlink") as prs:
+        slide = prs.add_slide("Text")
+        slide_number = slide.index + 1
+        shape_id = slide.add_shape(
+            "rect",
+            (1000000, 1000000, 5000000, 1000000),
+            runs=[Run("Link").to_payload()],
+        )
+        run = slide.shape(shape_id).text_frame.paragraphs[0].runs[0]
+
+        run.hyperlink = RunHyperlink(address="https://example.com/one")
+        assert run.hyperlink.address == "https://example.com/one"
+        run.hyperlink = RunHyperlink(address="https://example.com/two")
+        assert run.hyperlink.address == "https://example.com/two"
+        run.hyperlink = None
+        assert run.hyperlink.address is None
+
+        prs.save(str(out_path))
+
+    with zipfile.ZipFile(out_path) as zf:
+        slide_xml = zf.read(f"ppt/slides/slide{slide_number}.xml").decode("utf-8")
+    assert "hlinkClick" not in slide_xml

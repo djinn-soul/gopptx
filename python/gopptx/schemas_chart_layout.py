@@ -55,6 +55,8 @@ class ChartFormatUpdate(TypedDict, total=False):
     value_axis_tick_label_pos: str
     category_axis_major_gridlines: bool
     value_axis_major_gridlines: bool
+    category_axis_minor_gridlines: bool
+    value_axis_minor_gridlines: bool
     category_axis_crosses: str
     value_axis_crosses: str
     camera_preset: str
@@ -70,6 +72,7 @@ class ChartAxisState(TypedDict, total=False):
     present: bool
     tick_label_pos: str
     major_gridline: bool
+    minor_gridline: bool
     crosses: str
 
 

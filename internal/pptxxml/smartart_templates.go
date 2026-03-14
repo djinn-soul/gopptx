@@ -42,6 +42,9 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 	} else {
 		data = injectSmartArtNodeTexts(data, orderedTexts)
 	}
+	if strings.Contains(spec.LayoutURI, "/orgChart1") {
+		data = pruneUnusedOrgChartPlaceholderBranches(data)
+	}
 	return data
 }
 
@@ -77,6 +80,11 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 	data := renderSmartArtDataFromTemplate(spec)
 	orderedTexts := flattenSmartArtNodeTexts(spec.Nodes)
 	textByModelID := buildDrawingTextMapFromData(data)
+	hiddenPlaceholderModels := unfilledPlaceholderPresModelIDs(data)
+	var allowedDrawingModels map[string]struct{}
+	if strings.Contains(spec.LayoutURI, "/orgChart1") {
+		allowedDrawingModels = existingPresModelIDs(data)
+	}
 	if preferOrderedNodeMapping(spec.LayoutURI) {
 		preferred := mapOrderedTextsToPreferredPresNodes(data, orderedTexts)
 		if len(preferred) >= len(orderedTexts) && len(preferred) > 0 {
@@ -88,7 +96,7 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 			textByModelID = preferred
 		}
 	}
-	return injectSmartArtDrawingTexts(drawing, textByModelID)
+	return injectSmartArtDrawingTexts(drawing, textByModelID, hiddenPlaceholderModels, allowedDrawingModels)
 }
 
 func preferOrderedNodeMapping(layoutURI string) bool {
@@ -247,11 +255,25 @@ func injectSmartArtNodeTextsForModelIDs(data string, modelIDs []string, texts []
 		return clearSmartArtPlaceholderTextRuns(data)
 	}
 	textByModelID := map[string]string{}
-	for i, modelID := range modelIDs {
-		if i >= len(texts) {
+	textIndex := 0
+	for _, modelID := range modelIDs {
+		if textIndex >= len(texts) {
 			break
 		}
-		textByModelID[modelID] = texts[i]
+		textByModelID[modelID] = texts[textIndex]
+		textIndex++
+	}
+	if textIndex < len(texts) {
+		for _, modelID := range placeholderDataModelIDsInOrder(data) {
+			if textIndex >= len(texts) {
+				break
+			}
+			if _, exists := textByModelID[modelID]; exists {
+				continue
+			}
+			textByModelID[modelID] = texts[textIndex]
+			textIndex++
+		}
 	}
 	segments := strings.Split(data, "<dgm:pt ")
 	if len(segments) <= 1 {
@@ -343,7 +365,12 @@ func clearSmartArtPlaceholderTextRuns(xml string) string {
 	return placeholderTextRunPattern.ReplaceAllString(xml, "<a:t></a:t>")
 }
 
-func injectSmartArtDrawingTexts(drawing string, textByModelID map[string]string) string {
+func injectSmartArtDrawingTexts(
+	drawing string,
+	textByModelID map[string]string,
+	hiddenPlaceholderModels map[string]struct{},
+	allowedDrawingModels map[string]struct{},
+) string {
 	matches := drawingShapePattern.FindAllStringSubmatchIndex(drawing, -1)
 	if len(matches) == 0 {
 		return clearSmartArtPlaceholderTextRuns(drawing)
@@ -351,7 +378,6 @@ func injectSmartArtDrawingTexts(drawing string, textByModelID map[string]string)
 
 	var b strings.Builder
 	last := 0
-	fallbackIndex := 0
 	for _, idx := range matches {
 		start := idx[0]
 		end := idx[1]
@@ -359,11 +385,19 @@ func injectSmartArtDrawingTexts(drawing string, textByModelID map[string]string)
 
 		b.WriteString(drawing[last:start])
 		shape := drawing[start:end]
+		if allowedDrawingModels != nil {
+			if _, allowed := allowedDrawingModels[modelID]; !allowed {
+				last = end
+				continue
+			}
+		}
 		if text, ok := textByModelID[modelID]; ok {
 			shape = injectTextIntoDrawingShape(shape, text)
+		} else if _, hide := hiddenPlaceholderModels[modelID]; hide {
+			last = end
+			continue
 		} else if strings.Contains(shape, "[Text]") || (strings.Contains(shape, "<dsp:txBody>") && !drawingShapeHasNonEmptyText(shape)) {
 			shape = injectTextIntoDrawingShape(shape, "")
-			fallbackIndex++
 		}
 		b.WriteString(shape)
 		last = end

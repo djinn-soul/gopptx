@@ -13,7 +13,7 @@ func TestExtractChartState(t *testing.T) {
 <c:axId val="1"/><c:axId val="2"/>
 </c:barChart>
 <c:catAx><c:axId val="1"/><c:tickLblPos val="low"/><c:crosses val="autoZero"/></c:catAx>
-<c:valAx><c:axId val="2"/><c:majorGridlines/><c:tickLblPos val="nextTo"/><c:crosses val="autoZero"/></c:valAx>
+<c:valAx><c:axId val="2"/><c:majorGridlines/><c:minorGridlines/><c:tickLblPos val="nextTo"/><c:crosses val="autoZero"/></c:valAx>
 </c:plotArea></c:chart></c:chartSpace>`)
 
 	state := ExtractChartState(xml)
@@ -28,6 +28,9 @@ func TestExtractChartState(t *testing.T) {
 	}
 	if !state.ValueAx.Present || state.ValueAx.TickLabelPos != "nextTo" || !state.ValueAx.MajorGridline {
 		t.Fatalf("unexpected value axis state %#v", state.ValueAx)
+	}
+	if !state.ValueAx.MinorGridline {
+		t.Fatalf("expected value axis minor gridline true, got %#v", state.ValueAx)
 	}
 	if state.ValueAx.Crosses != "autoZero" {
 		t.Fatalf("expected value axis crosses autoZero, got %#v", state.ValueAx.Crosses)

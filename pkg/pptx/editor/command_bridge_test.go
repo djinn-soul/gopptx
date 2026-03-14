@@ -66,6 +66,12 @@ func TestCommandShapeOps(t *testing.T) {
 		t.Fatalf("expected valid shape_id, got 0")
 	}
 
+	addConnectorsReq := `{"api_version":1,"request_id":"r1cc","op":"add_connectors","payload":{"slide_index":0,"connectors":[{"connector_type":"line","begin_x":220,"begin_y":700,"end_x":920,"end_y":700,"properties":{"line":{"width_emu":25400,"color":"3366CC"}}},{"connector_type":"elbow","begin_x":220,"begin_y":760,"end_x":920,"end_y":820}]}}`
+	resp = ExecuteCommand(e, addConnectorsReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"shape_ids":[`) {
+		t.Fatalf("add_connectors failed: %s", resp)
+	}
+
 	// 1d. Group shape op supports empty group creation.
 	addGroupReq := `{"api_version":1,"request_id":"r1d","op":"add_group_shape","payload":{"slide_index":0}}`
 	resp = ExecuteCommand(e, addGroupReq)
@@ -157,6 +163,50 @@ func TestCommandNotesOps(t *testing.T) {
 	}
 	if !strings.Contains(resp, `"notes_slide":{"text":"Speaker notes here"}`) {
 		t.Fatalf("expected notes_slide object after notes creation: %s", resp)
+	}
+	if !strings.Contains(resp, `"notes_shapes":[`) {
+		t.Fatalf("expected notes_shapes payload in get_notes response: %s", resp)
+	}
+	var notesOut struct {
+		Result struct {
+			NotesShapes []struct {
+				ID           int  `json:"ID"`
+				HasTextFrame bool `json:"HasTextFrame"`
+			} `json:"notes_shapes"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal([]byte(resp), &notesOut); err != nil {
+		t.Fatalf("unmarshal get_notes response: %v", err)
+	}
+	targetShapeID := -1
+	for _, shape := range notesOut.Result.NotesShapes {
+		if shape.HasTextFrame && shape.ID > 0 {
+			targetShapeID = shape.ID
+			break
+		}
+	}
+	if targetShapeID == -1 {
+		t.Fatalf("expected a notes shape with text frame in response: %s", resp)
+	}
+	setShapeReq := fmt.Sprintf(
+		`{"api_version":1,"request_id":"n2b","op":"set_notes_shape_text","payload":{"slide_index":0,"shape_id":%d,"text":"Shape-level notes text"}}`,
+		targetShapeID,
+	)
+	resp = ExecuteCommand(e, setShapeReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("set_notes_shape_text failed: %s", resp)
+	}
+	resp = ExecuteCommand(e, getReq)
+	if !strings.Contains(resp, "Shape-level notes text") {
+		t.Fatalf("get_notes missing shape-level update text: %s", resp)
+	}
+	setShapePropsReq := fmt.Sprintf(
+		`{"api_version":1,"request_id":"n2c","op":"set_notes_shape_props","payload":{"slide_index":0,"shape_id":%d,"updates":{"x":1234,"y":2345}}}`,
+		targetShapeID,
+	)
+	resp = ExecuteCommand(e, setShapePropsReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("set_notes_shape_props failed: %s", resp)
 	}
 
 	// 3. Update Notes

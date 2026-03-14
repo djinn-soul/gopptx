@@ -57,6 +57,7 @@ const (
 	OpAddShape                = "add_shape"
 	OpAddTextbox              = "add_textbox"
 	OpAddTextboxes            = "add_textboxes"
+	OpAddConnectors           = "add_connectors"
 	OpReserveShapeIDs         = "reserve_shape_ids"
 	OpAddConnector            = "add_connector"
 	OpAddGroupShape           = "add_group_shape"
@@ -71,6 +72,8 @@ const (
 	OpGetNotes                = "get_notes"
 	OpNotesSlideExists        = "notes_slide_exists"
 	OpSetNotes                = "set_notes"
+	OpSetNotesShapeText       = "set_notes_shape_text"
+	OpSetNotesShapeProps      = "set_notes_shape_props"
 	OpSetModifyPassword       = "set_modify_password"
 	OpSetMarkAsFinal          = "set_mark_as_final"
 	OpAddTable                = "add_table"
@@ -152,6 +155,7 @@ func SupportedOps() []string {
 		OpAddShape,
 		OpAddTextbox,
 		OpAddTextboxes,
+		OpAddConnectors,
 		OpReserveShapeIDs,
 		OpAddConnector,
 		OpAddGroupShape,
@@ -166,6 +170,8 @@ func SupportedOps() []string {
 		OpGetNotes,
 		OpNotesSlideExists,
 		OpSetNotes,
+		OpSetNotesShapeText,
+		OpSetNotesShapeProps,
 		OpSetModifyPassword,
 		OpSetMarkAsFinal,
 		OpAddTable,

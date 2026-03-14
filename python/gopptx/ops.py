@@ -7,6 +7,7 @@ OP_ADD_AUTHOR = "add_author"
 OP_ADD_CHART = "add_chart"
 OP_ADD_COMMENT = "add_comment"
 OP_ADD_CONNECTOR = "add_connector"
+OP_ADD_CONNECTORS = "add_connectors"
 OP_ADD_CUSTOM_XML = "add_custom_xml"
 OP_ADD_GROUP_SHAPE = "add_group_shape"
 OP_ADD_IMAGE = "add_image"
@@ -71,6 +72,8 @@ OP_SET_CORE_PROPERTIES = "set_core_properties"
 OP_SET_MARK_AS_FINAL = "set_mark_as_final"
 OP_SET_MODIFY_PASSWORD = "set_modify_password"
 OP_SET_NOTES = "set_notes"
+OP_SET_NOTES_SHAPE_TEXT = "set_notes_shape_text"
+OP_SET_NOTES_SHAPE_PROPS = "set_notes_shape_props"
 OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SHAPE_RUNS = "set_shape_runs"
 OP_SET_SLIDE_SIZE = "set_slide_size"
@@ -99,6 +102,7 @@ SUPPORTED_OPS = (
     OP_ADD_CHART,
     OP_ADD_COMMENT,
     OP_ADD_CONNECTOR,
+    OP_ADD_CONNECTORS,
     OP_ADD_CUSTOM_XML,
     OP_ADD_GROUP_SHAPE,
     OP_ADD_IMAGE,
@@ -163,6 +167,8 @@ SUPPORTED_OPS = (
     OP_SET_MARK_AS_FINAL,
     OP_SET_MODIFY_PASSWORD,
     OP_SET_NOTES,
+    OP_SET_NOTES_SHAPE_TEXT,
+    OP_SET_NOTES_SHAPE_PROPS,
     OP_SET_PLACEHOLDER_CONTENT,
     OP_SET_SHAPE_RUNS,
     OP_SET_SLIDE_SIZE,

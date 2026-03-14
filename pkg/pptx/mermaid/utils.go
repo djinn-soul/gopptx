@@ -8,6 +8,7 @@ import (
 var (
 	themeInitRegex      = regexp.MustCompile(`(?i)%%\{init:\s*\{.*['"]theme['"]:\s*['"]([^'"]+)['"].*\}\s*\}%%`)
 	themeDirectiveRegex = regexp.MustCompile(`(?i)^\s*theme:\s*(\w+)`)
+	flowLabelArrowRegex = regexp.MustCompile(`^\s*(.+?)\s*--\s+(.+?)\s+-->\s*(.+?)\s*$`)
 )
 
 // DetectTheme identifies the theme from the Mermaid code.
@@ -67,6 +68,17 @@ func ExtractDirection(header string) FlowDirection {
 // SplitConnection splits a line at a connection arrow and returns (from, arrow, rest, found).
 // Handles patterns like: "A --> B", "A -->|label| B", "A -- label --> B".
 func SplitConnection(line string) (string, string, string, bool) {
+	// Handle Mermaid's spaced label syntax first: A -- label --> B
+	// We normalize it into the standard label form consumed by ExtractArrowLabel.
+	if matches := flowLabelArrowRegex.FindStringSubmatch(line); len(matches) == 4 {
+		from := strings.TrimSpace(matches[1])
+		label := strings.TrimSpace(matches[2])
+		to := strings.TrimSpace(matches[3])
+		if from != "" && label != "" && to != "" {
+			return from, "-->", "|" + label + "| " + to, true
+		}
+	}
+
 	arrows := []string{"==>", "-.->", "-->", "---", "->"}
 	for _, arrow := range arrows {
 		if before, after, ok := strings.Cut(line, arrow); ok {

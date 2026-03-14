@@ -7,6 +7,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.23.1
 	github.com/richardlehane/mscfb v1.0.6
 	github.com/signintech/gopdf v0.36.0
+	github.com/yuin/goldmark v1.7.13
 	golang.org/x/text v0.34.0
 )
 
