@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-from .comments_charts import (
-    PresentationChartMixin,
-    PresentationCommentMixin,
-)
+from .charts import PresentationChartMixin
+from .comments import PresentationCommentMixin
+from .notes_mixin import PresentationNotesMixin
 from .shape_batch_mixin import PresentationShapeBatchMixin
-from .shapes.shapes_tables import (
-    PresentationNotesMixin,
-    PresentationShapeMixin,
-    PresentationTableMixin,
-)
+from .shapes.shapes_tables import PresentationShapeMixin
+from .table_mixin import PresentationTableMixin
 from .text.text_batch_mixin import PresentationTextBatchMixin
 from .text.text_mixin import PresentationTextMixin
 from .vba import PresentationVBAMixin

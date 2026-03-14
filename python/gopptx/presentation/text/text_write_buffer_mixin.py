@@ -133,9 +133,7 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
             payload_updates = [
                 {
                     "shape_id": pending_shape_id,
-                    "runs": [
-                        dict(run) for run in slide_replacements[pending_shape_id]
-                    ],
+                    "runs": [dict(run) for run in slide_replacements[pending_shape_id]],
                 }
                 for pending_shape_id in target_shape_ids
             ]

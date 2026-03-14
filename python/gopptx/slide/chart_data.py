@@ -1,5 +1,4 @@
 """Chart data builder classes for python-pptx-style ergonomics."""
-# ruff: noqa: D102
 
 from __future__ import annotations
 
@@ -23,14 +22,17 @@ class CategoryChartData:
     series: list[CategorySeries] = field(default_factory=list)
 
     def add_category(self, value: str) -> None:
+        """Append a category label."""
         self.categories.append(value)
 
     def add_series(self, name: str, values: list[float]) -> None:
+        """Append a numeric series for the current category axis."""
         self.series.append(CategorySeries(name=name, values=[float(v) for v in values]))
 
     def to_add_chart_args(
         self,
     ) -> tuple[list[str], list[float] | list[dict[str, object]]]:
+        """Return payload compatible with slide.add_chart(...)."""
         if not self.series:
             return self.categories, []
         if len(self.series) == 1:
@@ -42,6 +44,7 @@ class CategoryChartData:
         return self.categories, payload
 
     def to_update_payload(self) -> dict[str, object]:
+        """Return bridge payload for chart-data update operations."""
         return {
             "categories": self.categories,
             "series": [
@@ -78,6 +81,7 @@ class XyChartData:
         y_values: list[float],
         sizes: list[float] | None = None,
     ) -> None:
+        """Append an XY/bubble series."""
         self.series.append(
             XySeries(
                 name=name,
@@ -88,6 +92,7 @@ class XyChartData:
         )
 
     def to_update_payload(self) -> dict[str, object]:
+        """Return bridge payload for XY/scatter chart updates."""
         out_series: list[dict[str, object]] = []
         for item in self.series:
             entry: dict[str, object] = {
@@ -103,6 +108,7 @@ class XyChartData:
     def to_add_chart_args(
         self,
     ) -> tuple[list[str], list[float] | list[dict[str, object]]]:
+        """Return payload compatible with slide.add_chart(...)."""
         payload = self.to_update_payload()
         # add_chart legacy path expects category/value signature; pass series payload.
         series = cast("list[dict[str, object]]", payload.get("series", []))

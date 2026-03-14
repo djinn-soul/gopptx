@@ -1,4 +1,4 @@
-"""Shape mixin and compatibility re-exports for the Presentation API."""
+"""Shape-domain mixin for the Presentation API."""
 
 from __future__ import annotations
 
@@ -7,9 +7,6 @@ from typing import TYPE_CHECKING, cast
 from ... import ops
 from ...slide.shapes.freeform_builder import FreeformBuilder
 from ..helpers import PresentationMixinBase
-from ..notes_mixin import PresentationNotesMixin
-from ..table_mixin import PresentationTableMixin
-from ..text.text_mixin import PresentationTextMixin
 from .shape_media_mixin import PresentationShapeMediaMixin
 from .shape_payload_mixin import PresentationShapePayloadMixin
 from .shape_text_runs_mixin import PresentationShapeTextRunMixin
@@ -232,8 +229,5 @@ class PresentationShapeMixin(
 
 
 __all__ = [
-    "PresentationNotesMixin",
     "PresentationShapeMixin",
-    "PresentationTableMixin",
-    "PresentationTextMixin",
 ]

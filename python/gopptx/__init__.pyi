@@ -1,5 +1,3 @@
-# ruff: noqa: RUF022
-
 from .api import GopptxError, Presentation, Slide
 from .constants import (
     ALIGN_CENTER,
@@ -119,9 +117,9 @@ __all__ = (
     "Author",
     "BatchCommand",
     "BatchItemResult",
-    "Cell",
     "CategoryChartData",
     "CategorySeries",
+    "Cell",
     "Chart",
     "ChartCollection",
     "ChartDataUpdate",
@@ -159,12 +157,12 @@ __all__ = (
     "SlideMetadata",
     "SlideSize",
     "Table",
+    "TableCellInfo",
     "TableColumn",
     "TableColumns",
+    "TableInfo",
     "TableRow",
     "TableRows",
-    "TableCellInfo",
-    "TableInfo",
     "TextFrameProps",
     "XyChartData",
     "XySeries",

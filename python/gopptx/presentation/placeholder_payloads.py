@@ -1,5 +1,4 @@
 """Placeholder content payload builders."""
-# ruff: noqa: D103
 
 from __future__ import annotations
 
@@ -13,6 +12,7 @@ def build_placeholder_table_payload(
     table_rows: object,
     table_cols: object,
 ) -> dict[str, object] | None:
+    """Build a normalized table payload from direct dict or row/col counts."""
     if isinstance(table, dict):
         return cast("dict[str, object]", table)
     if isinstance(table_rows, int) and isinstance(table_cols, int):
@@ -24,6 +24,7 @@ def apply_series_chart_values(
     chart_payload: dict[str, object],
     chart_values: list[object],
 ) -> None:
+    """Populate chart payload values from flat or series-style chart value inputs."""
     if chart_values and isinstance(chart_values[0], dict):
         first = cast("dict[str, object]", chart_values[0])
         if isinstance(first.get("values"), list):
@@ -47,6 +48,7 @@ def build_placeholder_chart_payload(
     kwargs: dict[str, object],
     bounds: object,
 ) -> dict[str, object] | None:
+    """Build a normalized chart payload from placeholder insertion kwargs."""
     chart = kwargs.get("chart")
     chart_type = kwargs.get("chart_type")
     chart_categories = kwargs.get("chart_categories")

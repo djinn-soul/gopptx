@@ -1,6 +1,15 @@
 """Slide-domain modules."""
-# ruff: noqa: I001,RUF022
 
+from .chart import (
+    Chart,
+    ChartCollection,
+    ChartLegend,
+    ChartPlot,
+    ChartPlots,
+    ChartTitle,
+    DataLabels,
+)
+from .chart_data import CategoryChartData, CategorySeries, XyChartData, XySeries
 from .placeholders.placeholder import (
     BodyPlaceholder,
     ChartPlaceholder,
@@ -23,15 +32,7 @@ from .tables.table import (
     TableRow,
     TableRows,
 )
-from .chart_model import (
-    Chart,
-    ChartCollection,
-    ChartLegend,
-    ChartPlot,
-    ChartPlots,
-    ChartTitle,
-    DataLabels,
-)
+from .text.text_frame import TextFrameProps
 from .text.text_model import (
     ShapeParagraphCollection,
     ShapeParagraphProxy,
@@ -39,26 +40,24 @@ from .text.text_model import (
     ShapeRunProxy,
     ShapeTextFrame,
 )
-from .chart_data import CategoryChartData, CategorySeries, XyChartData, XySeries
-from .text.text_frame import TextFrameProps
 from .text.text_paragraph import ParagraphProps
 from .text.text_run import Run, RunHyperlink
 
 __all__ = [
     "BodyPlaceholder",
-    "Cell",
-    "CellRange",
-    "ChartPlaceholder",
     "CategoryChartData",
     "CategorySeries",
+    "Cell",
+    "CellRange",
     "Chart",
     "ChartCollection",
     "ChartLegend",
+    "ChartPlaceholder",
     "ChartPlot",
     "ChartPlots",
     "ChartTitle",
-    "FreeformBuilder",
     "DataLabels",
+    "FreeformBuilder",
     "ParagraphProps",
     "PicturePlaceholder",
     "Placeholder",
@@ -66,20 +65,20 @@ __all__ = [
     "PlaceholderFormat",
     "Run",
     "RunHyperlink",
-    "Slide",
     "ShapeCollection",
-    "ShapeProxy",
-    "ShapeTextFrame",
     "ShapeParagraphCollection",
     "ShapeParagraphProxy",
+    "ShapeProxy",
     "ShapeRunCollection",
     "ShapeRunProxy",
+    "ShapeTextFrame",
+    "Slide",
     "Table",
     "TableColumn",
     "TableColumns",
+    "TablePlaceholder",
     "TableRow",
     "TableRows",
-    "TablePlaceholder",
     "TextFrameProps",
     "TitlePlaceholder",
     "XyChartData",

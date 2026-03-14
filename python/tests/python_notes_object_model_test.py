@@ -42,7 +42,9 @@ def _assert_first_shape_contract(notes_slide: NotesSlide, first: NotesShape) -> 
         assert body_matches[0].placeholder_type == "body"
 
 
-def _exercise_body_proxy(slide: _HasNotes, notes_slide: NotesSlide, body: NotesShape) -> None:
+def _exercise_body_proxy(
+    slide: _HasNotes, notes_slide: NotesSlide, body: NotesShape
+) -> None:
     assert body.text == "speaker notes"
     body_tf = body.text_frame
     assert body_tf is not None

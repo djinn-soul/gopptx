@@ -1,5 +1,4 @@
 """gopptx - High-performance PPTX engine powered by Go."""
-# ruff: noqa: RUF022
 
 from .api import GopptxError, Presentation, Slide
 from .constants import (
@@ -120,9 +119,9 @@ __all__ = (
     "Author",
     "BatchCommand",
     "BatchItemResult",
-    "Cell",
     "CategoryChartData",
     "CategorySeries",
+    "Cell",
     "Chart",
     "ChartCollection",
     "ChartDataUpdate",
@@ -160,12 +159,12 @@ __all__ = (
     "SlideMetadata",
     "SlideSize",
     "Table",
+    "TableCellInfo",
     "TableColumn",
     "TableColumns",
+    "TableInfo",
     "TableRow",
     "TableRows",
-    "TableCellInfo",
-    "TableInfo",
     "TextFrameProps",
     "XyChartData",
     "XySeries",

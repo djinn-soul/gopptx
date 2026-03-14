@@ -93,7 +93,11 @@ class Placeholder:
             if master_obj is None and master.part == master_part:
                 master_obj = master
             matched_layout = next(
-                (layout for layout in master.slide_layouts if layout.part == layout_part),
+                (
+                    layout
+                    for layout in master.slide_layouts
+                    if layout.part == layout_part
+                ),
                 None,
             )
             if matched_layout is None:
