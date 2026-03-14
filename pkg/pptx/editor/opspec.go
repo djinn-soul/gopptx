@@ -12,6 +12,7 @@ const (
 	OpDuplicateSlide          = "duplicate_slide"
 	OpGetMetadata             = "get_metadata"
 	OpUpdateChartData         = "update_chart_data"
+	OpUpdateChartDataBatch    = "update_chart_data_batch"
 	OpUpdateChartFormatting   = "update_chart_formatting"
 	OpGetChartState           = "get_chart_state"
 	OpListSlideCharts         = "list_slide_charts"
@@ -50,6 +51,7 @@ const (
 	OpGetShapeTextState       = "get_shape_text_state"
 	OpGetShapeRuns            = "get_shape_runs"
 	OpSetShapeRuns            = "set_shape_runs"
+	OpSetSlideShapeRuns       = "set_slide_shape_runs"
 	OpUpdateDeckRunTexts      = "update_deck_run_texts"
 	OpUpdateSlideRunTexts     = "update_slide_run_texts"
 	OpUpdateShapeRunText      = "update_shape_run_text"
@@ -110,6 +112,7 @@ func SupportedOps() []string {
 		OpDuplicateSlide,
 		OpGetMetadata,
 		OpUpdateChartData,
+		OpUpdateChartDataBatch,
 		OpUpdateChartFormatting,
 		OpGetChartState,
 		OpListSlideCharts,
@@ -148,6 +151,7 @@ func SupportedOps() []string {
 		OpGetShapeTextState,
 		OpGetShapeRuns,
 		OpSetShapeRuns,
+		OpSetSlideShapeRuns,
 		OpUpdateDeckRunTexts,
 		OpUpdateSlideRunTexts,
 		OpUpdateShapeRunText,

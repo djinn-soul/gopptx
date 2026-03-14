@@ -76,6 +76,7 @@ OP_SET_NOTES_SHAPE_TEXT = "set_notes_shape_text"
 OP_SET_NOTES_SHAPE_PROPS = "set_notes_shape_props"
 OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SHAPE_RUNS = "set_shape_runs"
+OP_SET_SLIDE_SHAPE_RUNS = "set_slide_shape_runs"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SET_TABLE_COLUMN_WIDTH = "set_table_column_width"
@@ -87,6 +88,7 @@ OP_SLIDE_COUNT = "slide_count"
 OP_SPLIT_TABLE_CELL = "split_table_cell"
 OP_UNGROUP_SHAPES = "ungroup_shapes"
 OP_UPDATE_CHART_DATA = "update_chart_data"
+OP_UPDATE_CHART_DATA_BATCH = "update_chart_data_batch"
 OP_UPDATE_CHART_FORMATTING = "update_chart_formatting"
 OP_UPDATE_DECK_RUN_TEXTS = "update_deck_run_texts"
 OP_UPDATE_SHAPE = "update_shape"
@@ -171,6 +173,7 @@ SUPPORTED_OPS = (
     OP_SET_NOTES_SHAPE_PROPS,
     OP_SET_PLACEHOLDER_CONTENT,
     OP_SET_SHAPE_RUNS,
+    OP_SET_SLIDE_SHAPE_RUNS,
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
     OP_SET_TABLE_COLUMN_WIDTH,
@@ -182,6 +185,7 @@ SUPPORTED_OPS = (
     OP_SPLIT_TABLE_CELL,
     OP_UNGROUP_SHAPES,
     OP_UPDATE_CHART_DATA,
+    OP_UPDATE_CHART_DATA_BATCH,
     OP_UPDATE_CHART_FORMATTING,
     OP_UPDATE_DECK_RUN_TEXTS,
     OP_UPDATE_SHAPE,

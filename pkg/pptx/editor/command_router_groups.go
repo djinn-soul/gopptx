@@ -33,6 +33,8 @@ func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 		return handleListSlideCharts, true
 	case OpUpdateChartData:
 		return handleUpdateChartData, true
+	case OpUpdateChartDataBatch:
+		return handleUpdateChartDataBatch, true
 	case OpUpdateChartFormatting:
 		return handleUpdateChartFormatting, true
 	case OpGetChartState:
@@ -131,6 +133,8 @@ func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
 		return handleGetShapeRuns, true
 	case OpSetShapeRuns:
 		return handleSetShapeRuns, true
+	case OpSetSlideShapeRuns:
+		return handleSetSlideShapeRuns, true
 	case OpUpdateDeckRunTexts:
 		return handleUpdateDeckRunTexts, true
 	case OpUpdateSlideRunTexts:

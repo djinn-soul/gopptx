@@ -43,6 +43,8 @@ type PresentationEditor struct {
 	chartEmbeddings map[string]string
 	nextChartNum    int
 	nextExcelNum    int
+	// Cached SHA-256 -> embedding part map for fast workbook dedupe.
+	excelEmbeddingHashIndex map[string]string
 
 	// Notes inventory (SlidePath -> NotesSlidePath)
 	notesInventory map[string]string

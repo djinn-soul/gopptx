@@ -23,6 +23,12 @@ type ChartDataUpdate struct {
 	Series               []ChartSeriesData `json:"series,omitempty"`
 }
 
+// ChartDataBatchItem describes one chart update in a batch payload.
+type ChartDataBatchItem struct {
+	ChartSelector ChartSelector   `json:"chart_selector"`
+	Data          ChartDataUpdate `json:"data"`
+}
+
 // ChartFormatUpdate is a partial formatting patch for an existing chart part.
 type ChartFormatUpdate struct {
 	ShowTitle                *bool   `json:"show_title,omitempty"`
