@@ -34,6 +34,33 @@ func handleUpdateChartData(e *PresentationEditor, payload json.RawMessage) (any,
 	return slidescatalog.BuildUpdatedResponse(), nil
 }
 
+func handleUpdateChartDataBatch(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+
+	var params struct {
+		Updates []common.ChartDataBatchItem `json:"updates"`
+	}
+	if err := json.Unmarshal(payload, &params); err != nil {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	if len(params.Updates) == 0 {
+		return nil, NewBridgeError(ErrCodeInvalidPayload, "updates must be a non-empty array")
+	}
+	if err := e.UpdateChartDataBatch(slideIndex, params.Updates); err != nil {
+		return nil, err
+	}
+	return slidescatalog.BuildUpdatedResponse(), nil
+}
+
 func handleUpdateChartFormatting(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
 	if err != nil {

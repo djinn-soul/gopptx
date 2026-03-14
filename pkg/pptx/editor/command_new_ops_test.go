@@ -25,6 +25,23 @@ func TestCommandUpdateChartData(t *testing.T) {
 	}
 }
 
+func TestCommandUpdateChartDataBatch(t *testing.T) {
+	e := newChartUpdateEditorFixture()
+	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXML()))
+
+	req := `{"api_version":1,"request_id":"r1b","op":"update_chart_data_batch",` +
+		`"payload":{"slide_index":0,"updates":[{"chart_selector":{"index":0},` +
+		`"data":{"categories":["A"],"series":[{"values":[3]}]}}]}}`
+	resp := ExecuteCommand(e, req)
+	var out map[string]any
+	if err := json.Unmarshal([]byte(resp), &out); err != nil {
+		t.Fatalf("invalid response json: %v", err)
+	}
+	if ok, _ := out["ok"].(bool); !ok {
+		t.Fatalf("expected ok response: %s", resp)
+	}
+}
+
 func TestCommandLayoutOps(t *testing.T) {
 	e := newLayoutFixtureEditor(t)
 

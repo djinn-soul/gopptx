@@ -124,6 +124,22 @@ class PresentationChartMixin(PresentationChartStateMixin):
                 stacklevel=2,
             )
 
+    def update_chart_data_batch(
+        self,
+        slide_index: int,
+        updates: list[dict[str, object]],
+    ) -> None:
+        """Update multiple charts on one slide in a single bridge call."""
+        if not updates:
+            return
+        self.execute(
+            ops.OP_UPDATE_CHART_DATA_BATCH,
+            {
+                "slide_index": slide_index,
+                "updates": [dict(item) for item in updates],
+            },
+        )
+
     def update_chart_formatting(
         self,
         slide_index: int,

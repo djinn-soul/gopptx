@@ -129,17 +129,23 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
             target_shape_ids = [shape_id]
         else:
             target_shape_ids = []
-        for pending_shape_id in target_shape_ids:
+        if target_shape_ids:
+            payload_updates = [
+                {
+                    "shape_id": pending_shape_id,
+                    "runs": [
+                        dict(run) for run in slide_replacements[pending_shape_id]
+                    ],
+                }
+                for pending_shape_id in target_shape_ids
+            ]
             PresentationRuntimeMixin.execute(
                 runtime_self,
-                ops.OP_SET_SHAPE_RUNS,
-                {
-                    "slide_index": slide_index,
-                    "shape_id": pending_shape_id,
-                    "runs": [dict(run) for run in slide_replacements[pending_shape_id]],
-                },
+                ops.OP_SET_SLIDE_SHAPE_RUNS,
+                {"slide_index": slide_index, "updates": payload_updates},
             )
-            slide_replacements.pop(pending_shape_id, None)
+            for pending_shape_id in target_shape_ids:
+                slide_replacements.pop(pending_shape_id, None)
         if not slide_replacements:
             self._pending_shape_runs_replacements.pop(slide_index, None)
 

@@ -86,6 +86,26 @@ func handleSetShapeRuns(e *PresentationEditor, payload json.RawMessage) (any, er
 	)
 }
 
+func handleSetSlideShapeRuns(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (int, bool) { return requireSlideIndex(e, p, v) },
+		v.Error,
+		func(slideIndex int, p map[string]any) (any, error) {
+			var updates []common.ShapeRunsUpdate
+			if err := editorcommand.DecodeOptionalPayloadValue(p, "updates", &updates); err != nil {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+			}
+			if err := e.SetSlideShapeRuns(slideIndex, updates); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
+}
+
 func handleUpdateDeckRunTexts(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
 	if err != nil {

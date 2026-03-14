@@ -24,6 +24,12 @@ type ShapeRunTextUpdate struct {
 	Text     string `json:"text"`
 }
 
+// ShapeRunsUpdate describes replacing all runs on one shape.
+type ShapeRunsUpdate struct {
+	ShapeID int       `json:"shape_id"`
+	Runs    []TextRun `json:"runs"`
+}
+
 // SlideRunTextUpdates describes a set of run-text mutations for one slide.
 type SlideRunTextUpdates struct {
 	SlideIndex int                  `json:"slide_index"`
