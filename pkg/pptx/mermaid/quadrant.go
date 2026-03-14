@@ -218,12 +218,13 @@ func quadrantLabelShape(
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
 		x,
-		y+quadSize-styling.Inches(0.4),
+		y+styling.Inches(0.08),
 		quadSize,
-		styling.Inches(0.3),
+		styling.Inches(0.36),
 	).WithText(label).
 		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
-		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithAutoFit(shapes.TextAutoFitNormal)
 }
 
 func quadrantAxisShapes(
@@ -271,15 +272,17 @@ func quadrantXAxisLabelShape(label string, layout quadrantLayout, theme Theme) s
 }
 
 func quadrantYAxisLabelShape(label string, layout quadrantLayout, theme Theme) shapes.Shape {
+	centerY := layout.startY + (layout.chartSize / 2)
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		layout.startX-styling.Inches(1.4),
-		layout.startY-styling.Inches(0.4),
-		styling.Inches(1.3),
-		styling.Inches(0.3),
+		layout.startX-styling.Inches(1.9),
+		centerY-styling.Inches(0.18),
+		styling.Inches(1.7),
+		styling.Inches(0.36),
 	).WithText(label).
 		WithFill(shapes.NewShapeFill(theme.Background)).
 		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithRotation(-90).
 		WithAutoFit(shapes.TextAutoFitNormal)
 }
 
@@ -310,10 +313,11 @@ func quadrantPointLabelShape(px styling.Length, py styling.Length, label string,
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
 		px+styling.Inches(0.1),
-		py-styling.Inches(0.15),
-		styling.Inches(1.5),
-		styling.Inches(0.3),
+		py-styling.Inches(0.18),
+		styling.Inches(2.0),
+		styling.Inches(0.38),
 	).WithText(label).
 		WithFill(shapes.NewShapeFill(theme.Background)).
-		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight))
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithAutoFit(shapes.TextAutoFitNormal)
 }

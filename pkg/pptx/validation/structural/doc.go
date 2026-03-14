@@ -3,6 +3,7 @@
 // Validation strategy:
 //   - Validate required package parts (`[Content_Types].xml`, `presentation.xml`, rels).
 //   - Validate XML well-formedness for all XML and `.rels` parts.
+//   - Run part-level namespace, relationship, and empty-element checks in parallel.
 //   - Validate relationship targets and flag broken internal references.
 //   - Validate presentation slide references and content-type registrations.
 //   - Return structured issues with severity, repairability, and optional context.

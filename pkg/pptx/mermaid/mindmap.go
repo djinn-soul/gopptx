@@ -140,10 +140,10 @@ type mindmapBounds struct {
 func newMindmapRenderer(theme Theme) *mindmapRenderer {
 	return &mindmapRenderer{
 		theme:        theme,
-		nodeWidth:    styling.Inches(1.4),
-		nodeHeight:   styling.Inches(0.6),
-		radiusStep:   styling.Inches(2.0),
-		rootRadius:   styling.Inches(2.5),
+		nodeWidth:    styling.Inches(2.4),
+		nodeHeight:   styling.Inches(0.72),
+		radiusStep:   styling.Inches(2.2),
+		rootRadius:   styling.Inches(3.0),
 		textMarginX:  styling.Inches(0.1),
 		textMarginY:  styling.Inches(0.05),
 		layoutMargin: styling.Inches(1),
@@ -164,24 +164,34 @@ func (r *mindmapRenderer) layoutNode(
 		return
 	}
 	angleStep := (angleEnd - angleStart) / float64(len(node.Children))
-	currentAngle := angleStart + angleStep/2
 	nextRadius := radius + r.radiusStep
-	for _, child := range node.Children {
+	for i, child := range node.Children {
+		currentAngle := (angleStart + angleEnd) / 2
+		if len(node.Children) > 1 {
+			// Place children on stable spokes. This avoids the 2-child vertical collapse
+			// (pi/2 and 3pi/2) and yields expected left/right branching for common mindmaps.
+			currentAngle = angleStart + (angleStep * float64(i))
+		}
 		childX := x + styling.Length(float64(radius)*math.Cos(currentAngle))
 		childY := y + styling.Length(float64(radius)*math.Sin(currentAngle))
+		ux := math.Cos(currentAngle)
+		uy := math.Sin(currentAngle)
+		startX := x + styling.Length(ux*float64(r.nodeWidth)/2)
+		startY := y + styling.Length(uy*float64(r.nodeHeight)/2)
+		endX := childX - styling.Length(ux*float64(r.nodeWidth)/2)
+		endY := childY - styling.Length(uy*float64(r.nodeHeight)/2)
 		connector := shapes.NewConnector(
 			shapes.ConnectorTypeStraight,
-			x,
-			y,
-			childX,
-			childY,
+			startX,
+			startY,
+			endX,
+			endY,
 		).WithLine(shapes.NewShapeLine(r.theme.SecondaryStroke, r.theme.LineWeight))
 		r.connectors = append(r.connectors, connector)
 		r.includeConnector(connector)
 		childAngleStart := currentAngle - angleStep/2
 		childAngleEnd := currentAngle + angleStep/2
 		r.layoutNode(child, childX, childY, childAngleStart, childAngleEnd, nextRadius)
-		currentAngle += angleStep
 	}
 }
 

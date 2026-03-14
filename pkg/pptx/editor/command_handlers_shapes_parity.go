@@ -73,6 +73,63 @@ func handleAddConnector(e *PresentationEditor, payload json.RawMessage) (any, er
 	)
 }
 
+func handleAddConnectors(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (int, bool) { return requireSlideIndex(e, p, v) },
+		v.Error,
+		func(slideIndex int, p map[string]any) (any, error) {
+			rawConnectors, ok := p["connectors"]
+			if !ok {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, "missing required field: connectors")
+			}
+			connectorItems, ok := rawConnectors.([]any)
+			if !ok {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, "field connectors must be an array")
+			}
+
+			connectors := make([]common.ConnectorInsert, 0, len(connectorItems))
+			for _, item := range connectorItems {
+				connectorPayload, ok := item.(map[string]any)
+				if !ok {
+					return nil, NewBridgeError(ErrCodeInvalidPayload, "connector payload must be an object")
+				}
+				request, ok := editorcommand.ParseConnectorPlacementRequest(
+					connectorPayload,
+					func(map[string]any) (int, bool) { return slideIndex, true },
+					v.RequireString,
+					v.RequireFloat64,
+				)
+				if !ok {
+					return nil, v.Error()
+				}
+				updates, hasUpdates, updateErr := editorcommand.ParseOptionalShapeUpdates(connectorPayload)
+				if updateErr != nil {
+					return nil, bridgeValidationError(updateErr)
+				}
+				connector := common.ConnectorInsert{
+					ConnectorType: request.ConnectorType,
+					BeginX:        request.BeginX,
+					BeginY:        request.BeginY,
+					EndX:          request.EndX,
+					EndY:          request.EndY,
+				}
+				if hasUpdates {
+					connector.ShapeUpdate = updates
+				}
+				connectors = append(connectors, connector)
+			}
+			shapeIDs, err := e.AddConnectors(slideIndex, connectors)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"shape_ids": shapeIDs}, nil
+		},
+	)
+}
+
 func handleAddTextboxes(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleParsedRequestWithPayload(

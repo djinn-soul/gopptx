@@ -114,6 +114,34 @@ func TestSmartArt_Validate(t *testing.T) {
 		wantErr bool
 	}{
 		{"Valid", NewSmartArt(BasicBlockList).AddNode(NewNode("A")), false},
+		{
+			"VerticalBlockList Too Many Items",
+			NewSmartArt(VerticalBlockList).AddItems([]string{"A", "B", "C", "D"}),
+			true,
+		},
+		{
+			"AlternatingFlow Too Many Items",
+			NewSmartArt(AlternatingFlow).AddItems([]string{"A", "B", "C", "D"}),
+			true,
+		},
+		{
+			"OrgChart Nested Children Unsupported",
+			NewSmartArt(OrgChart).AddNode(
+				NewNode("CEO").
+					WithChild(NewNode("VP").WithChild(NewNode("Mgr"))),
+			),
+			true,
+		},
+		{
+			"Hierarchy Too Many Root Branches",
+			NewSmartArt(Hierarchy).AddNode(
+				NewNode("Root").
+					WithChild(NewNode("A")).
+					WithChild(NewNode("B")).
+					WithChild(NewNode("C")),
+			),
+			true,
+		},
 		{"Empty Layout", SmartArt{Nodes: []Node{{Text: "A"}}}, true},
 		{"No Nodes", NewSmartArt(BasicBlockList), true},
 		{"Invalid Node", NewSmartArt(BasicBlockList).AddNode(Node{}), true},

@@ -34,3 +34,17 @@ class SlideShapeBatchMixin:
         if callable(invalidate_text):
             invalidate_text()
         return shape_ids
+
+    def add_connectors(
+        self,
+        connectors: list[Mapping[str, object]],
+    ) -> list[int]:
+        """Add multiple connectors to this slide in a single bridge call."""
+        shape_ids = self._presentation.add_connectors(self.index, connectors)
+        invalidate_shapes = getattr(self, "_invalidate_shape_cache", None)
+        if callable(invalidate_shapes):
+            invalidate_shapes()
+        invalidate_text = getattr(self, "_invalidate_text_state_cache", None)
+        if callable(invalidate_text):
+            invalidate_text()
+        return shape_ids

@@ -28,6 +28,83 @@ func (sa SmartArt) Validate(slideIndex int) error {
 			return err
 		}
 	}
+	if err := validateLayoutConstraint(sa, slideIndex); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateLayoutConstraint(sa SmartArt, slideIndex int) error {
+	constraint, ok := smartArtLayoutConstraints[sa.Layout]
+	if !ok {
+		return nil
+	}
+
+	if constraint.maxItems > 0 {
+		if hasNestedChildren(sa.Nodes) {
+			return fmt.Errorf(
+				"slide %d: SmartArt layout %q only supports flat item lists",
+				slideIndex,
+				sa.Layout.Name(),
+			)
+		}
+		if len(sa.Nodes) > constraint.maxItems {
+			return fmt.Errorf(
+				"slide %d: SmartArt layout %q supports at most %d item(s), got %d",
+				slideIndex,
+				sa.Layout.Name(),
+				constraint.maxItems,
+				len(sa.Nodes),
+			)
+		}
+		return nil
+	}
+
+	if constraint.requireSingleRoot && len(sa.Nodes) != 1 {
+		return fmt.Errorf(
+			"slide %d: SmartArt layout %q requires exactly one root node, got %d",
+			slideIndex,
+			sa.Layout.Name(),
+			len(sa.Nodes),
+		)
+	}
+	if len(sa.Nodes) == 0 {
+		return nil
+	}
+	root := sa.Nodes[0]
+	if constraint.maxRootChildren > 0 && len(root.Children) > constraint.maxRootChildren {
+		return fmt.Errorf(
+			"slide %d: SmartArt layout %q supports at most %d root child node(s), got %d",
+			slideIndex,
+			sa.Layout.Name(),
+			constraint.maxRootChildren,
+			len(root.Children),
+		)
+	}
+	if constraint.maxChildrenPerNode > 0 {
+		maxChildren := maxChildrenInTree(sa.Nodes)
+		if maxChildren > constraint.maxChildrenPerNode {
+			return fmt.Errorf(
+				"slide %d: SmartArt layout %q supports at most %d children per node, got %d",
+				slideIndex,
+				sa.Layout.Name(),
+				constraint.maxChildrenPerNode,
+				maxChildren,
+			)
+		}
+	}
+	if constraint.maxDepth > 0 {
+		depth := smartArtTreeDepth(sa.Nodes)
+		if depth > constraint.maxDepth {
+			return fmt.Errorf(
+				"slide %d: SmartArt layout %q supports node depth up to %d, got %d",
+				slideIndex,
+				sa.Layout.Name(),
+				constraint.maxDepth,
+				depth,
+			)
+		}
+	}
 	return nil
 }
 

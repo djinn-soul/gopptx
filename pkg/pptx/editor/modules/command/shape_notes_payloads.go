@@ -72,14 +72,46 @@ func ParseSetNotesRequest(
 	return slideIndex, text, true
 }
 
+type SetNotesShapeTextRequest struct {
+	SlideIndex int
+	ShapeID    int
+	Text       string
+}
+
+func ParseSetNotesShapeTextRequest(
+	payload map[string]any,
+	parseSlideIndex ParseSlideIndexFn,
+	parseIntField ParseIntFieldFn,
+	parseStringField ParseStringFieldFn,
+) (SetNotesShapeTextRequest, bool) {
+	slideIndex, ok := parseSlideIndex(payload)
+	if !ok {
+		return SetNotesShapeTextRequest{}, false
+	}
+	shapeID, ok := parseIntField(payload, "shape_id")
+	if !ok {
+		return SetNotesShapeTextRequest{}, false
+	}
+	text, ok := parseStringField(payload, "text")
+	if !ok {
+		return SetNotesShapeTextRequest{}, false
+	}
+	return SetNotesShapeTextRequest{
+		SlideIndex: slideIndex,
+		ShapeID:    shapeID,
+		Text:       text,
+	}, true
+}
+
 func BuildNotesResult(text string, hasNotesSlide bool) map[string]any {
-	return BuildNotesResultDetailed(text, hasNotesSlide, nil)
+	return BuildNotesResultDetailed(text, hasNotesSlide, nil, nil)
 }
 
 func BuildNotesResultDetailed(
 	text string,
 	hasNotesSlide bool,
 	placeholders []common.PlaceholderInfo,
+	shapes []common.NotesShapeInfo,
 ) map[string]any {
 	var notesSlide any
 	if hasNotesSlide {
@@ -91,5 +123,6 @@ func BuildNotesResultDetailed(
 		"text":               text,
 		"notes_slide":        notesSlide,
 		"notes_placeholders": placeholders,
+		"notes_shapes":       shapes,
 	}
 }

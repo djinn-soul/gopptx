@@ -166,6 +166,30 @@ func TestPatchChartFormatting_AxisGridlinesAndCrosses(t *testing.T) {
 	}
 }
 
+func TestPatchChartFormatting_AxisMinorGridlines(t *testing.T) {
+	withAxes := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+<c:chart><c:plotArea><c:barChart><c:axId val="1"/><c:axId val="2"/></c:barChart>
+<c:catAx><c:axId val="1"/><c:crosses val="autoZero"/></c:catAx>
+<c:valAx><c:axId val="2"/><c:minorGridlines/><c:crosses val="autoZero"/></c:valAx>
+</c:plotArea></c:chart></c:chartSpace>`
+	categoryHasMinor := true
+	valueHasMinor := false
+	got, err := PatchChartFormatting([]byte(withAxes), common.ChartFormatUpdate{
+		CategoryAxisMinorGrid: &categoryHasMinor,
+		ValueAxisMinorGrid:    &valueHasMinor,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	xml := string(got)
+	mustContain(t, xml, `<c:catAx><c:axId val="1"/><c:minorGridlines/><c:crosses val="autoZero"/>`)
+	mustContain(t, xml, `<c:valAx><c:axId val="2"/><c:crosses val="autoZero"/>`)
+	if strings.Contains(xml, `<c:valAx><c:axId val="2"/><c:minorGridlines/>`) {
+		t.Fatalf("expected value axis minor gridlines removed")
+	}
+}
+
 func TestPatchChartFormatting_Scene3D(t *testing.T) {
 	withChart := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">

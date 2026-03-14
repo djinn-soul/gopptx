@@ -222,6 +222,10 @@ func scoreSmartArtPresTextNode(name string) int {
 		return -2
 	case strings.Contains(name, "linnode"), name == "sp":
 		return -1
+	case strings.Contains(name, "partx"):
+		return 9
+	case strings.Contains(name, "destx"):
+		return 7
 	case strings.Contains(name, "parenttext"), strings.Contains(name, "roottext"):
 		return 10
 	case strings.Contains(name, "node"):

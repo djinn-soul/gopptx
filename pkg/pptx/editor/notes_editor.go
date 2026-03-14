@@ -58,6 +58,47 @@ func (e *PresentationEditor) ListNotesPlaceholders(slideIndex int) ([]Placeholde
 	return parsePlaceholdersFromSlideXML(data), nil
 }
 
+// ListNotesShapes enumerates shape metadata from a slide's notes page.
+func (e *PresentationEditor) ListNotesShapes(slideIndex int) ([]common.NotesShapeInfo, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return nil, errors.New("slide index out of range")
+	}
+
+	notesPart, err := e.resolveSlideNotesPart(slideIndex)
+	if err != nil {
+		return nil, err
+	}
+	if notesPart == "" {
+		return []common.NotesShapeInfo{}, nil
+	}
+
+	data, ok := e.parts.Get(notesPart)
+	if !ok {
+		return []common.NotesShapeInfo{}, nil
+	}
+	parsed, err := scanShapesWithOffsets(data, false)
+	if err != nil {
+		return nil, err
+	}
+	shapes := make([]common.NotesShapeInfo, 0, len(parsed))
+	for _, shape := range parsed {
+		shapes = append(shapes, common.NotesShapeInfo{
+			ID:               shape.ID,
+			Name:             shape.Name,
+			Type:             shape.Type,
+			Text:             shape.Text,
+			X:                float64(shape.X),
+			Y:                float64(shape.Y),
+			CX:               float64(shape.W),
+			CY:               float64(shape.H),
+			PlaceholderIndex: shape.PhIndex,
+			PlaceholderType:  shape.PhType,
+			HasTextFrame:     shape.TextFrame != nil || len(shape.Runs) > 0 || shape.Text != "",
+		})
+	}
+	return shapes, nil
+}
+
 // HasNotesSlide reports whether a slide currently has a notes-slide relationship.
 func (e *PresentationEditor) HasNotesSlide(slideIndex int) (bool, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
@@ -163,6 +204,35 @@ func (e *PresentationEditor) SetNotes(slideIndex int, textContent string) error 
 	e.notesInventory[ref.Part] = newNotesPart
 
 	return nil
+}
+
+// SetNotesShapeText updates text for one shape on the notes slide identified by shape ID.
+func (e *PresentationEditor) SetNotesShapeText(slideIndex, shapeID int, textContent string) error {
+	return e.SetNotesShapeProperties(slideIndex, shapeID, common.ShapeUpdate{
+		Text: &textContent,
+		Runs: &[]common.TextRun{{Text: textContent}},
+	})
+}
+
+// SetNotesShapeProperties updates one notes-shape using ShapeUpdate semantics.
+func (e *PresentationEditor) SetNotesShapeProperties(
+	slideIndex, shapeID int,
+	updates common.ShapeUpdate,
+) error {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return errors.New("slide index out of range")
+	}
+	if shapeID < 0 {
+		return errors.New("shape_id must be >= 0")
+	}
+	notesPart, err := e.resolveSlideNotesPart(slideIndex)
+	if err != nil {
+		return err
+	}
+	if notesPart == "" {
+		return errors.New("notes slide not found")
+	}
+	return e.updateShapeInPart(notesPart, shapeID, updates)
 }
 
 func extractAllText(content []byte) string {

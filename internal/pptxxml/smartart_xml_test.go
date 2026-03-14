@@ -190,8 +190,110 @@ func TestSmartArtDataXMLOrgChartDoesNotMapFirstNodeToDocRoot(t *testing.T) {
 	}
 }
 
+func TestSmartArtDataXMLHorizontalBulletMapsAcrossPrimaryColumns(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hList1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Col A"},
+			{Text: "Col B"},
+			{Text: "Col C"},
+		},
+	}
+
+	xml := pptxxml.SmartArtDataXML(spec)
+
+	if segment := pointSegmentByModelID(xml, "{40A0009A-D31E-4203-8A68-5BC7235C8A6B}"); !strings.Contains(segment, "<a:t>Col A</a:t>") {
+		t.Fatal("expected first horizontal-bullet text in first primary column node")
+	}
+	if segment := pointSegmentByModelID(xml, "{366D710F-3C7C-4530-80E1-1F49B4505CB6}"); !strings.Contains(segment, "<a:t>Col B</a:t>") {
+		t.Fatal("expected second horizontal-bullet text in second primary column node")
+	}
+	if segment := pointSegmentByModelID(xml, "{38041CF9-B0F0-4D98-8547-E9C385390400}"); !strings.Contains(segment, "<a:t>Col C</a:t>") {
+		t.Fatal("expected third horizontal-bullet text in third primary column node")
+	}
+}
+
+func TestSmartArtDrawingXMLOrgChartHidesUnfilledPlaceholderShapes(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{
+				Text: "CEO",
+				Children: []pptxxml.SmartArtNodeSpec{
+					{Text: "Finance"},
+					{Text: "Engineering"},
+				},
+			},
+		},
+	}
+
+	drawing := pptxxml.SmartArtDrawingXML(spec)
+
+	if strings.Contains(drawing, `modelId="{02DEC6B8-6043-47C0-A1CA-36E0D9C9344A}"`) {
+		t.Fatal("expected assistant placeholder shape to be omitted when no assistant text is provided")
+	}
+	if strings.Contains(drawing, `modelId="{0F1F6AAE-361E-4C23-8CC3-9AADE342BC57}"`) {
+		t.Fatal("expected unused third child placeholder shape to be omitted")
+	}
+	if strings.Contains(drawing, `modelId="{F3D5C6F3-90CA-45EE-AA32-5EE9940677BF}"`) {
+		t.Fatal("expected assistant connector branch shape to be omitted")
+	}
+	if strings.Contains(drawing, `modelId="{7552B3CA-53DB-4D69-9562-354F6F7EBFAA}"`) {
+		t.Fatal("expected unused third-child connector branch shape to be omitted")
+	}
+	if !strings.Contains(drawing, "<a:t>CEO</a:t>") {
+		t.Fatal("expected root text in org chart drawing")
+	}
+	if !strings.Contains(drawing, "<a:t>Finance</a:t>") {
+		t.Fatal("expected first child text in org chart drawing")
+	}
+	if !strings.Contains(drawing, "<a:t>Engineering</a:t>") {
+		t.Fatal("expected second child text in org chart drawing")
+	}
+}
+
+func TestSmartArtDataXMLOrgChartPrunesUnusedAssistantAndChildBranches(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{
+				Text: "CEO",
+				Children: []pptxxml.SmartArtNodeSpec{
+					{Text: "Finance"},
+					{Text: "Engineering"},
+				},
+			},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+
+	for _, removed := range []string{
+		`modelId="{197A29FD-B529-4802-9A22-4AB325650FFC}"`, // assistant data node
+		`modelId="{7B78C063-41AF-46CB-9560-1E5EFBA80343}"`, // unused third child data node
+		`modelId="{02DEC6B8-6043-47C0-A1CA-36E0D9C9344A}"`, // assistant text pres node
+		`modelId="{0F1F6AAE-361E-4C23-8CC3-9AADE342BC57}"`, // unused child text pres node
+	} {
+		if strings.Contains(data, removed) {
+			t.Fatalf("expected %s to be pruned from org chart data", removed)
+		}
+	}
+}
+
 func pointSegmentContainingText(xml, text string) string {
 	needle := "<a:t>" + text + "</a:t>"
+	segments := strings.Split(xml, "<dgm:pt ")
+	for i := 1; i < len(segments); i++ {
+		segment := "<dgm:pt " + segments[i]
+		if strings.Contains(segment, needle) {
+			return segment
+		}
+	}
+	return ""
+}
+
+func pointSegmentByModelID(xml, modelID string) string {
+	needle := `modelId="` + modelID + `"`
 	segments := strings.Split(xml, "<dgm:pt ")
 	for i := 1; i < len(segments); i++ {
 		segment := "<dgm:pt " + segments[i]

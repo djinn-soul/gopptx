@@ -2,24 +2,22 @@ package markdown
 
 import (
 	"errors"
-	"regexp"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
-var numberedListPattern = regexp.MustCompile(`^\d+\.\s+(.+)$`)
-
 const defaultInlineRunsCapacity = 4
 
 const (
-	numberedListMatchCount = 2
-	boldMarkerLength       = 2
+	boldMarkerLength = 2
 )
 
-type parsedMarkdownBullet struct {
-	text  string
-	style elements.ParagraphStyle
+// ParseOptions controls markdown-to-slide conversion behavior.
+type ParseOptions struct {
+	BaseDir string
 }
 
 // SlidesFromMarkdown converts a markdown document into slide content.
@@ -34,40 +32,26 @@ type parsedMarkdownBullet struct {
 // - fenced mermaid blocks are converted to placeholder shapes
 // - blockquotes are parsed into slide speaker notes.
 func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
+	return SlidesFromMarkdownWithOptions(markdown, ParseOptions{})
+}
+
+// SlidesFromMarkdownWithOptions converts markdown with parser options.
+func SlidesFromMarkdownWithOptions(markdown string, options ParseOptions) ([]elements.SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
 		return nil, errors.New("markdown content cannot be empty")
 	}
-	parser := newMarkdownParser(markdown)
-	return parser.parse()
+	return parseMarkdownWithAST(markdown, options)
 }
 
-func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
-	for _, marker := range []string{"- ", "* ", "+ "} {
-		if after, ok := strings.CutPrefix(line, marker); ok {
-			return parsedMarkdownBullet{
-				text:  strings.TrimSpace(after),
-				style: elements.DefaultParagraphStyle(),
-			}, true
-		}
+// SlidesFromMarkdownFile reads markdown from disk and parses it with BaseDir set
+// to the markdown file's directory for relative image resolution.
+func SlidesFromMarkdownFile(markdownPath string) ([]elements.SlideContent, error) {
+	content, err := os.ReadFile(filepath.Clean(markdownPath))
+	if err != nil {
+		return nil, err
 	}
-
-	matches := numberedListPattern.FindStringSubmatch(line)
-	if len(matches) == numberedListMatchCount {
-		return parsedMarkdownBullet{
-			text:  strings.TrimSpace(matches[1]),
-			style: elements.DefaultParagraphStyle().WithNumbered(),
-		}, true
-	}
-	return parsedMarkdownBullet{}, false
-}
-
-func appendMarkdownBullet(slide *elements.SlideContent, text string, style elements.ParagraphStyle) {
-	runs, rich := parseInlineTextRuns(text)
-	if rich {
-		*slide = slide.AddBulletRunsWithStyle(runs, style)
-		return
-	}
-	*slide = slide.AddBulletWithStyle(text, style)
+	options := ParseOptions{BaseDir: filepath.Dir(filepath.Clean(markdownPath))}
+	return SlidesFromMarkdownWithOptions(string(content), options)
 }
 
 func parseInlineTextRuns(text string) ([]elements.Run, bool) {

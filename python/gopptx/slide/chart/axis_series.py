@@ -10,6 +10,19 @@ from typing import TYPE_CHECKING, Protocol, cast
 if TYPE_CHECKING:
     from ...schemas import ChartAxisState, ChartFormatUpdate, ChartState
 
+_VALID_TICK_LABEL_POSITIONS = {
+    "high",
+    "low",
+    "nextTo",
+    "none",
+}
+
+_VALID_CROSSES = {
+    "autoZero",
+    "max",
+    "min",
+}
+
 
 class ChartProtocol(Protocol):
     def _snapshot(self) -> ChartState: ...
@@ -31,11 +44,28 @@ class ChartAxis:
         prefix = "category_axis_" if axis_name == "category" else "value_axis_"
         return prefix + "major_gridlines"
 
+    @staticmethod
+    def _minor_gridline_format_key(axis_name: str) -> str:
+        prefix = "category_axis_" if axis_name == "category" else "value_axis_"
+        return prefix + "minor_gridlines"
+
     def _payload(self) -> ChartAxisState:
         snapshot = self._chart._snapshot()
         key = "category_axis" if self._axis_name == "category" else "value_axis"
         raw: object = snapshot.get(key, {})
         return cast("ChartAxisState", raw if isinstance(raw, dict) else {})
+
+    @property
+    def axis_kind(self) -> str:
+        return "category" if self._axis_name == "category" else "value"
+
+    @property
+    def is_category_axis(self) -> bool:
+        return self._axis_name == "category"
+
+    @property
+    def is_value_axis(self) -> bool:
+        return self._axis_name == "value"
 
     @property
     def present(self) -> bool:
@@ -48,12 +78,13 @@ class ChartAxis:
 
     @tick_label_position.setter
     def tick_label_position(self, value: str) -> None:
+        normalized = self._normalize_tick_label_position(value)
         key = (
             "category_axis_tick_label_pos"
             if self._axis_name == "category"
             else "value_axis_tick_label_pos"
         )
-        self._chart._apply_format(cast("ChartFormatUpdate", {key: value}))
+        self._chart._apply_format(cast("ChartFormatUpdate", {key: normalized}))
 
     @property
     def major_gridlines_visible(self) -> bool:
@@ -67,18 +98,82 @@ class ChartAxis:
         self._chart._apply_format(cast("ChartFormatUpdate", {key: bool(value)}))
 
     @property
+    def has_major_gridlines(self) -> bool:
+        return self.major_gridlines_visible
+
+    @has_major_gridlines.setter
+    def has_major_gridlines(self, value: bool) -> None:
+        self.major_gridlines_visible = value
+
+    @property
+    def minor_gridlines_visible(self) -> bool:
+        payload = self._payload()
+        return bool(payload.get("minor_gridline", False))
+
+    @minor_gridlines_visible.setter
+    def minor_gridlines_visible(self, value: bool) -> None:
+        key = self._minor_gridline_format_key(self._axis_name)
+        self._chart._apply_format(cast("ChartFormatUpdate", {key: bool(value)}))
+
+    @property
+    def has_minor_gridlines(self) -> bool:
+        return self.minor_gridlines_visible
+
+    @has_minor_gridlines.setter
+    def has_minor_gridlines(self, value: bool) -> None:
+        self.minor_gridlines_visible = value
+
+    @property
     def crosses(self) -> str | None:
         value = self._payload().get("crosses")
         return str(value) if isinstance(value, str) else None
 
     @crosses.setter
     def crosses(self, value: str) -> None:
+        normalized = self._normalize_crosses(value)
         key = (
             "category_axis_crosses"
             if self._axis_name == "category"
             else "value_axis_crosses"
         )
-        self._chart._apply_format(cast("ChartFormatUpdate", {key: value}))
+        self._chart._apply_format(cast("ChartFormatUpdate", {key: normalized}))
+
+    @property
+    def crosses_auto_zero(self) -> bool:
+        return self.crosses == "autoZero"
+
+    @property
+    def crosses_at_maximum(self) -> bool:
+        return self.crosses == "max"
+
+    @property
+    def crosses_at_minimum(self) -> bool:
+        return self.crosses == "min"
+
+    def set_crosses_auto_zero(self) -> None:
+        self.crosses = "autoZero"
+
+    def set_crosses_at_maximum(self) -> None:
+        self.crosses = "max"
+
+    def set_crosses_at_minimum(self) -> None:
+        self.crosses = "min"
+
+    @staticmethod
+    def _normalize_tick_label_position(value: str) -> str:
+        normalized = value.strip()
+        if normalized not in _VALID_TICK_LABEL_POSITIONS:
+            raise ValueError(
+                "tick_label_position must be one of: high, low, nextTo, none"
+            )
+        return normalized
+
+    @staticmethod
+    def _normalize_crosses(value: str) -> str:
+        normalized = value.strip()
+        if normalized not in _VALID_CROSSES:
+            raise ValueError("crosses must be one of: autoZero, max, min")
+        return normalized
 
 
 class ChartSeries:

@@ -90,6 +90,7 @@ func buildAxisState(xml string, tags []string) common.ChartAxisState {
 			state.Crosses = strings.TrimSpace(match[1])
 		}
 		state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
+		state.MinorGridline = strings.Contains(block, "<c:minorGridlines")
 		break
 	}
 	return state
