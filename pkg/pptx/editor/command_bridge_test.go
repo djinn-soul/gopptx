@@ -161,6 +161,39 @@ func TestCommandNotesOps(t *testing.T) {
 	if !strings.Contains(resp, `"notes_shapes":[`) {
 		t.Fatalf("expected notes_shapes payload in get_notes response: %s", resp)
 	}
+	var notesOut struct {
+		Result struct {
+			NotesShapes []struct {
+				ID           int  `json:"ID"`
+				HasTextFrame bool `json:"HasTextFrame"`
+			} `json:"notes_shapes"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal([]byte(resp), &notesOut); err != nil {
+		t.Fatalf("unmarshal get_notes response: %v", err)
+	}
+	targetShapeID := -1
+	for _, shape := range notesOut.Result.NotesShapes {
+		if shape.HasTextFrame && shape.ID > 0 {
+			targetShapeID = shape.ID
+			break
+		}
+	}
+	if targetShapeID == -1 {
+		t.Fatalf("expected a notes shape with text frame in response: %s", resp)
+	}
+	setShapeReq := fmt.Sprintf(
+		`{"api_version":1,"request_id":"n2b","op":"set_notes_shape_text","payload":{"slide_index":0,"shape_id":%d,"text":"Shape-level notes text"}}`,
+		targetShapeID,
+	)
+	resp = ExecuteCommand(e, setShapeReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("set_notes_shape_text failed: %s", resp)
+	}
+	resp = ExecuteCommand(e, getReq)
+	if !strings.Contains(resp, "Shape-level notes text") {
+		t.Fatalf("get_notes missing shape-level update text: %s", resp)
+	}
 
 	// 3. Update Notes
 	setReq2 := `{"api_version":1,"request_id":"n3","op":"set_notes","payload":{"slide_index":0,"text":"Updated notes"}}`

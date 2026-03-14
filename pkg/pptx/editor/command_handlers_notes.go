@@ -87,6 +87,29 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	return map[string]bool{"updated": true}, nil
 }
 
+func handleSetNotesShapeText(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.SetNotesShapeTextRequest, bool) {
+			return editorcommand.ParseSetNotesShapeTextRequest(
+				p,
+				func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
+				v.RequireInt,
+				v.RequireString,
+			)
+		},
+		v.Error,
+		func(request editorcommand.SetNotesShapeTextRequest) (any, error) {
+			if err := e.SetNotesShapeText(request.SlideIndex, request.ShapeID, request.Text); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"updated": true}, nil
+		},
+	)
+}
+
 func handleGetAuthors(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	authors, err := e.GetAuthors()
 	if err != nil {

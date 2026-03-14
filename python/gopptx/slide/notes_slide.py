@@ -119,9 +119,15 @@ class NotesShape:
 
     @text.setter
     def text(self, value: str) -> None:
-        if self.placeholder_type not in _TEXT_PLACEHOLDER_TYPES:
-            raise ValueError("only notes text placeholders support text mutation")
-        self._notes_slide.text = value
+        if self.placeholder_type in _TEXT_PLACEHOLDER_TYPES:
+            self._notes_slide.text = value
+            return
+        if not self.has_text_frame:
+            raise ValueError("target notes shape has no text frame")
+        if self.shape_id < 0:
+            raise ValueError("notes shape id is unavailable for mutation")
+        self._notes_slide._set_shape_text(self.shape_id, value)
+        self._payload["text"] = value
 
     @property
     def text_frame(self) -> NotesTextFrame | None:
@@ -240,6 +246,11 @@ class NotesSlide:
         if isinstance(raw, list):
             return cast("list[dict[str, object]]", raw)
         return self._placeholder_payloads()
+
+    def _set_shape_text(self, shape_id: int, text: str) -> None:
+        self._slide._presentation.set_notes_shape_text(
+            self._slide.index, shape_id, text
+        )
 
     def _placeholder_payloads(self) -> list[dict[str, object]]:
         payload = self._slide._presentation.get_notes_payload(self._slide.index)

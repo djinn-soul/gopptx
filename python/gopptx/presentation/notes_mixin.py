@@ -21,3 +21,9 @@ class PresentationNotesMixin(PresentationMixinBase):
 
     def set_notes(self, slide_index: int, text: str) -> None:
         self.execute(ops.OP_SET_NOTES, {"slide_index": slide_index, "text": text})
+
+    def set_notes_shape_text(self, slide_index: int, shape_id: int, text: str) -> None:
+        self.execute(
+            ops.OP_SET_NOTES_SHAPE_TEXT,
+            {"slide_index": slide_index, "shape_id": shape_id, "text": text},
+        )

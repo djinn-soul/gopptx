@@ -72,6 +72,37 @@ func ParseSetNotesRequest(
 	return slideIndex, text, true
 }
 
+type SetNotesShapeTextRequest struct {
+	SlideIndex int
+	ShapeID    int
+	Text       string
+}
+
+func ParseSetNotesShapeTextRequest(
+	payload map[string]any,
+	parseSlideIndex ParseSlideIndexFn,
+	parseIntField ParseIntFieldFn,
+	parseStringField ParseStringFieldFn,
+) (SetNotesShapeTextRequest, bool) {
+	slideIndex, ok := parseSlideIndex(payload)
+	if !ok {
+		return SetNotesShapeTextRequest{}, false
+	}
+	shapeID, ok := parseIntField(payload, "shape_id")
+	if !ok {
+		return SetNotesShapeTextRequest{}, false
+	}
+	text, ok := parseStringField(payload, "text")
+	if !ok {
+		return SetNotesShapeTextRequest{}, false
+	}
+	return SetNotesShapeTextRequest{
+		SlideIndex: slideIndex,
+		ShapeID:    shapeID,
+		Text:       text,
+	}, true
+}
+
 func BuildNotesResult(text string, hasNotesSlide bool) map[string]any {
 	return BuildNotesResultDetailed(text, hasNotesSlide, nil, nil)
 }

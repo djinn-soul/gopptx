@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from gopptx import Presentation
+from gopptx.slide.notes_slide import NotesShape
 
 
 def test_notes_shape_collection_and_body_proxy() -> None:
@@ -75,3 +76,32 @@ def test_notes_shape_collection_and_body_proxy() -> None:
             )
             notes_tf.clear()
             assert not slide.notes
+
+
+def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
+    class _DummyNotesSlide:
+        def __init__(self) -> None:
+            self.text = ""
+            self.called_shape_id: int | None = None
+            self.called_text: str | None = None
+
+        def _set_shape_text(self, shape_id: int, text: str) -> None:
+            self.called_shape_id = shape_id
+            self.called_text = text
+
+    dummy = _DummyNotesSlide()
+    shape = NotesShape(
+        dummy,  # type: ignore[arg-type]
+        {
+            "id": 42,
+            "name": "Aux text",
+            "type": "sp",
+            "has_text_frame": True,
+            "placeholder_type": "",
+            "text": "before",
+        },
+    )
+    shape.text = "after"
+    assert dummy.called_shape_id == 42
+    assert dummy.called_text == "after"
+    assert shape.text == "after"
