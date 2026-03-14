@@ -27,3 +27,16 @@ class PresentationShapeBatchMixin(PresentationMixinBase):
         )
         result = self.execute(ops.OP_ADD_TEXTBOXES, payload)
         return cast("list[int]", result.get("shape_ids", []))
+
+    def add_connectors(
+        self,
+        slide_index: int,
+        connectors: list[Mapping[str, object]],
+    ) -> list[int]:
+        """Add multiple connectors to one slide in a single bridge call."""
+        if not connectors:
+            return []
+        payload: dict[str, object] = {"slide_index": slide_index}
+        payload["connectors"] = cast("object", [dict(connector) for connector in connectors])
+        result = self.execute(ops.OP_ADD_CONNECTORS, payload)
+        return cast("list[int]", result.get("shape_ids", []))

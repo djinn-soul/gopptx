@@ -69,6 +69,41 @@ def test_bulk_textbox_creation() -> None:
             raise AssertionError(f"unexpected bulk textbox texts: {texts_by_id!r}")
 
 
+def test_bulk_connector_creation() -> None:
+    """Slide bulk connector helper creates all requested connectors."""
+    if not input_deck.exists():
+        pytest.skip("smoke sample missing")
+
+    with Presentation(input_deck) as prs:
+        slide = prs.add_slide("python-pptx parity bulk connectors")
+        connector_ids = slide.add_connectors([
+            {
+                "connector_type": "straight",
+                "begin_x": 914400,
+                "begin_y": 914400,
+                "end_x": 1828800,
+                "end_y": 914400,
+            },
+            {
+                "connector_type": "elbow",
+                "begin_x": 914400,
+                "begin_y": 1828800,
+                "end_x": 1828800,
+                "end_y": 2743200,
+                "properties": {"line": {"width_emu": 12700, "color": "3366CC"}},
+            },
+        ])
+
+        if len(connector_ids) != 2 or any(shape_id <= 0 for shape_id in connector_ids):
+            raise AssertionError(f"expected two positive connector ids, got {connector_ids!r}")
+
+        shape_ids = {int(shape["ID"]) for shape in slide.list_shapes()}
+        if any(connector_id not in shape_ids for connector_id in connector_ids):
+            raise AssertionError(
+                f"expected inserted connectors in shape list: {connector_ids!r}"
+            )
+
+
 def test_buffered_textbox_id_remains_addressable() -> None:
     """Simple textbox inserts keep a stable real ID through buffered flush."""
     if not input_deck.exists():

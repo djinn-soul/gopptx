@@ -57,6 +57,7 @@ const (
 	OpAddShape                = "add_shape"
 	OpAddTextbox              = "add_textbox"
 	OpAddTextboxes            = "add_textboxes"
+	OpAddConnectors           = "add_connectors"
 	OpReserveShapeIDs         = "reserve_shape_ids"
 	OpAddConnector            = "add_connector"
 	OpAddGroupShape           = "add_group_shape"
@@ -154,6 +155,7 @@ func SupportedOps() []string {
 		OpAddShape,
 		OpAddTextbox,
 		OpAddTextboxes,
+		OpAddConnectors,
 		OpReserveShapeIDs,
 		OpAddConnector,
 		OpAddGroupShape,

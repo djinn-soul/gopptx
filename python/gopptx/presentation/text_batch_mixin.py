@@ -28,7 +28,7 @@ class PresentationTextBatchMixin:
             ops.OP_UPDATE_SLIDE_RUN_TEXTS,
             {
                 "slide_index": slide_index,
-                "updates": [dict(update) for update in updates],
+                "updates": updates,
             },
         )
 
@@ -39,6 +39,6 @@ class PresentationTextBatchMixin:
         self.execute(
             ops.OP_UPDATE_DECK_RUN_TEXTS,
             {
-                "slides": [dict(slide_update) for slide_update in slide_updates],
+                "slides": slide_updates,
             },
         )

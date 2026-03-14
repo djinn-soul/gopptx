@@ -7,6 +7,7 @@ OP_ADD_AUTHOR = "add_author"
 OP_ADD_CHART = "add_chart"
 OP_ADD_COMMENT = "add_comment"
 OP_ADD_CONNECTOR = "add_connector"
+OP_ADD_CONNECTORS = "add_connectors"
 OP_ADD_CUSTOM_XML = "add_custom_xml"
 OP_ADD_GROUP_SHAPE = "add_group_shape"
 OP_ADD_IMAGE = "add_image"
@@ -101,6 +102,7 @@ SUPPORTED_OPS = (
     OP_ADD_CHART,
     OP_ADD_COMMENT,
     OP_ADD_CONNECTOR,
+    OP_ADD_CONNECTORS,
     OP_ADD_CUSTOM_XML,
     OP_ADD_GROUP_SHAPE,
     OP_ADD_IMAGE,

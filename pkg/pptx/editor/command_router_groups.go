@@ -152,6 +152,8 @@ func commandHandlerForShapeMutations(op string) (commandHandler, bool) {
 		return handleAddTextbox, true
 	case OpAddTextboxes:
 		return handleAddTextboxes, true
+	case OpAddConnectors:
+		return handleAddConnectors, true
 	case OpReserveShapeIDs:
 		return handleReserveShapeIDs, true
 	case OpAddConnector:

@@ -66,6 +66,12 @@ func TestCommandShapeOps(t *testing.T) {
 		t.Fatalf("expected valid shape_id, got 0")
 	}
 
+	addConnectorsReq := `{"api_version":1,"request_id":"r1cc","op":"add_connectors","payload":{"slide_index":0,"connectors":[{"connector_type":"line","begin_x":220,"begin_y":700,"end_x":920,"end_y":700,"properties":{"line":{"width_emu":25400,"color":"3366CC"}}},{"connector_type":"elbow","begin_x":220,"begin_y":760,"end_x":920,"end_y":820}]}}`
+	resp = ExecuteCommand(e, addConnectorsReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"shape_ids":[`) {
+		t.Fatalf("add_connectors failed: %s", resp)
+	}
+
 	// 1d. Group shape op supports empty group creation.
 	addGroupReq := `{"api_version":1,"request_id":"r1d","op":"add_group_shape","payload":{"slide_index":0}}`
 	resp = ExecuteCommand(e, addGroupReq)

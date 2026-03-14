@@ -9,3 +9,14 @@ type TextboxInsert struct {
 	ShapeID *int    `json:"shape_id,omitempty"`
 	Text    string  `json:"text,omitempty"`
 }
+
+// ConnectorInsert describes one connector to add in a bulk slide insert operation.
+type ConnectorInsert struct {
+	ConnectorType string  `json:"connector_type"`
+	BeginX        float64 `json:"begin_x"`
+	BeginY        float64 `json:"begin_y"`
+	EndX          float64 `json:"end_x"`
+	EndY          float64 `json:"end_y"`
+	ShapeID       *int    `json:"shape_id,omitempty"`
+	ShapeUpdate
+}
