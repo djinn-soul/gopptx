@@ -3,6 +3,8 @@ package editor
 import (
 	"errors"
 	"fmt"
+	"runtime"
+	"sync"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
@@ -78,8 +80,63 @@ func (e *PresentationEditor) UpdateSlideRunTexts(
 func (e *PresentationEditor) UpdateDeckRunTexts(
 	slideUpdates []common.SlideRunTextUpdates,
 ) error {
+	if len(slideUpdates) == 0 {
+		return nil
+	}
+
+	groupedBySlide := make(map[int][]common.ShapeRunTextUpdate, len(slideUpdates))
+	slideOrder := make([]int, 0, len(slideUpdates))
 	for _, slideUpdate := range slideUpdates {
-		if err := e.UpdateSlideRunTexts(slideUpdate.SlideIndex, slideUpdate.Updates); err != nil {
+		if _, seen := groupedBySlide[slideUpdate.SlideIndex]; !seen {
+			slideOrder = append(slideOrder, slideUpdate.SlideIndex)
+		}
+		groupedBySlide[slideUpdate.SlideIndex] = append(
+			groupedBySlide[slideUpdate.SlideIndex],
+			slideUpdate.Updates...,
+		)
+	}
+	if len(slideOrder) == 1 {
+		slideIndex := slideOrder[0]
+		return e.UpdateSlideRunTexts(slideIndex, groupedBySlide[slideIndex])
+	}
+
+	workerCount := runtime.GOMAXPROCS(0)
+	if workerCount < 1 {
+		workerCount = 1
+	}
+	if workerCount > len(slideOrder) {
+		workerCount = len(slideOrder)
+	}
+	type job struct {
+		slideIndex int
+	}
+	jobs := make(chan job, len(slideOrder))
+	errBySlide := make(map[int]error, len(slideOrder))
+	var (
+		errMu sync.Mutex
+		wg    sync.WaitGroup
+	)
+	for range workerCount {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for item := range jobs {
+				if err := e.UpdateSlideRunTexts(item.slideIndex, groupedBySlide[item.slideIndex]); err != nil {
+					errMu.Lock()
+					errBySlide[item.slideIndex] = err
+					errMu.Unlock()
+				}
+			}
+		}()
+	}
+	for _, slideIndex := range slideOrder {
+		jobs <- job{slideIndex: slideIndex}
+	}
+	close(jobs)
+	wg.Wait()
+
+	for _, slideIndex := range slideOrder {
+		if err := errBySlide[slideIndex]; err != nil {
 			return err
 		}
 	}

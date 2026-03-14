@@ -65,6 +65,82 @@ func (e *PresentationEditor) UpdateChartData(
 	if err != nil {
 		return err
 	}
+	return e.applyChartDataUpdateByRef(chartRef, req)
+}
+
+func (e *PresentationEditor) UpdateChartDataBatch(
+	slideIndex int,
+	updates []common.ChartDataBatchItem,
+) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	refs, err := e.ListSlideCharts(slideIndex)
+	if err != nil {
+		return err
+	}
+	refsByIndex := make(map[int]common.SlideChartRef, len(refs))
+	refsByRelID := make(map[string]common.SlideChartRef, len(refs))
+	for _, ref := range refs {
+		refsByIndex[ref.Index] = ref
+		if ref.RelID != "" {
+			refsByRelID[ref.RelID] = ref
+		}
+	}
+
+	for _, item := range updates {
+		chartRef, resolveErr := resolveChartRefFast(
+			item.ChartSelector,
+			refsByIndex,
+			refsByRelID,
+			slideIndex,
+		)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		if applyErr := e.applyChartDataUpdateByRef(chartRef, item.Data); applyErr != nil {
+			return applyErr
+		}
+	}
+	return nil
+}
+
+func resolveChartRefFast(
+	selector common.ChartSelector,
+	refsByIndex map[int]common.SlideChartRef,
+	refsByRelID map[string]common.SlideChartRef,
+	slideIndex int,
+) (common.SlideChartRef, error) {
+	if selector.Index == nil && selector.RelID == "" {
+		return common.SlideChartRef{}, fmt.Errorf("slide %d: chart selector requires index or rel_id", slideIndex)
+	}
+	if selector.RelID != "" {
+		ref, ok := refsByRelID[selector.RelID]
+		if !ok {
+			return common.SlideChartRef{}, fmt.Errorf("slide %d: chart with rel_id %q not found", slideIndex, selector.RelID)
+		}
+		if selector.Index != nil && ref.Index != *selector.Index {
+			return common.SlideChartRef{}, fmt.Errorf(
+				"slide %d: selector mismatch index=%d rel_id=%s",
+				slideIndex,
+				*selector.Index,
+				selector.RelID,
+			)
+		}
+		return ref, nil
+	}
+	ref, ok := refsByIndex[*selector.Index]
+	if !ok {
+		return common.SlideChartRef{}, fmt.Errorf("slide %d: chart with index %d not found", slideIndex, *selector.Index)
+	}
+	return ref, nil
+}
+
+func (e *PresentationEditor) applyChartDataUpdateByRef(
+	chartRef common.SlideChartRef,
+	req common.ChartDataUpdate,
+) error {
 
 	chartXML, ok := e.parts.Get(chartRef.ChartPart)
 	if !ok {

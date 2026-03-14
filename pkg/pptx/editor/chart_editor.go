@@ -133,18 +133,7 @@ func (e *PresentationEditor) allocChartRelID(chartPart string) (string, error) {
 func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error) {
 	sum := sha256.Sum256(data)
 	hash := hex.EncodeToString(sum[:])
-
-	// Build a hash -> part map for efficient lookup
-	hashToPart := make(map[string]string)
-	for _, part := range e.parts.KeysWithPrefix("ppt/embeddings/") {
-		existing, ok := e.parts.Get(part)
-		if !ok {
-			continue
-		}
-		existingSum := sha256.Sum256(existing)
-		hashToPart[hex.EncodeToString(existingSum[:])] = part
-	}
-
+	hashToPart := e.ensureExcelEmbeddingHashIndex()
 	if existingPath, ok := hashToPart[hash]; ok {
 		return existingPath, nil
 	}
@@ -153,6 +142,7 @@ func (e *PresentationEditor) registerExcelEmbedding(data []byte) (string, error)
 	e.nextExcelNum++
 	partPath := fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", excelNum)
 	e.parts.Set(partPath, data)
+	hashToPart[hash] = partPath
 	return partPath, nil
 }
 
