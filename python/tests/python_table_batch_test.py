@@ -1,4 +1,4 @@
-import os  # noqa: D100
+import os
 import pathlib
 
 import pytest
@@ -10,7 +10,7 @@ project_root = pathlib.Path(
 input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
 
 
-def test_table_batch_mode() -> None:  # noqa: D103
+def test_table_batch_mode() -> None:
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
@@ -28,16 +28,16 @@ def test_table_batch_mode() -> None:  # noqa: D103
             table[-1, -1].text = "Last"  # Test negative indexing
 
             # Read back from local cache should work inside batch
-            assert table[0, 0].text == "R0C0"  # noqa: S101
-            assert table[-1, -1].text == "Last"  # noqa: S101
+            assert table[0, 0].text == "R0C0"
+            assert table[-1, -1].text == "Last"
 
         # Verify after batch
-        assert table[0, 0].text == "R0C0"  # noqa: S101
-        assert table[0, 1].text == "R0C1"  # noqa: S101
-        assert table[2, 2].text == "Last"  # noqa: S101
+        assert table[0, 0].text == "R0C0"
+        assert table[0, 1].text == "R0C1"
+        assert table[2, 2].text == "Last"
 
 
-def test_table_negative_indexing() -> None:  # noqa: D103
+def test_table_negative_indexing() -> None:
     if not pathlib.Path(input_deck).exists():
         pytest.skip("smoke sample missing")
 
@@ -49,8 +49,8 @@ def test_table_negative_indexing() -> None:  # noqa: D103
         table[0, 0].text = "TopLeft"
         table[2, 2].text = "BottomRight"
 
-        assert table[-3, -3].text == "TopLeft"  # noqa: S101
-        assert table[-1, -1].text == "BottomRight"  # noqa: S101
+        assert table[-3, -3].text == "TopLeft"
+        assert table[-1, -1].text == "BottomRight"
 
         with pytest.raises(IndexError):
             _ = table[3, 0]

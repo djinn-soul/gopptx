@@ -12,7 +12,6 @@ from typing_extensions import Self
 
 from .. import ops
 from ..api_errors import GopptxError
-from ..slide.slide import Slide
 from .batch import BatchContext
 from .helpers import (
     PresentationProtocol,
@@ -25,13 +24,20 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..schemas import BatchItemResult, PresentationMetadata, SlideMetadata
-    from .presentation import Presentation
+    from ..slide.slide import Slide
 
 
 class PresentationRuntimeMixin:
     """Methods for executing commands and managing presentation runtime state."""
 
     _lib = None
+
+    if TYPE_CHECKING:
+
+        @property
+        def slides(self) -> list[Slide]:
+            """Cached slide proxy list."""
+            ...
 
     def __init__(self) -> None:
         """Initialize runtime-managed state."""
@@ -157,11 +163,6 @@ class PresentationRuntimeMixin:
             )
             return self._metadata_cache
 
-    @property
-    def slides(self) -> list[Slide]:
-        """List of slide proxies for all slides in the presentation."""
-        return [Slide(cast("Presentation", self), m) for m in self.slides_metadata]
-
     def __getitem__(self, index: int | slice) -> Slide | list[Slide]:
         """Return a slide or list of slides by index or slice.
 
@@ -181,14 +182,12 @@ class PresentationRuntimeMixin:
                 index += count
             if not (0 <= index < count):
                 raise IndexError("Slide index out of range")
-            return Slide(cast("Presentation", self), self.slides_metadata[index])
+            return self.slides[index]
 
         if type(index) is slice:
             indices = range(*index.indices(self.slide_count))
-            return [
-                Slide(cast("Presentation", self), self.slides_metadata[i])
-                for i in indices
-            ]
+            slides = self.slides
+            return [slides[i] for i in indices]
 
         raise TypeError("Slide index must be an integer or a slice")
 
@@ -210,6 +209,16 @@ class PresentationRuntimeMixin:
             self._slides_metadata_cache = None
             self._metadata_cache = None
             self._comment_ref_cache = {}
+            invalidate_slide_lookup = getattr(
+                self, "_invalidate_slide_lookup_cache", None
+            )
+            if callable(invalidate_slide_lookup):
+                invalidate_slide_lookup()
+            invalidate_slide_proxy = getattr(
+                self, "_invalidate_slide_proxy_cache", None
+            )
+            if callable(invalidate_slide_proxy):
+                invalidate_slide_proxy()
 
     def _get_last_error(self) -> str:
         """Get the last error message from the Go engine."""

@@ -8,7 +8,9 @@
 // opaque: it can preserve an existing blob from an opened .pptm file or embed
 // a caller-supplied blob verbatim. Synthesising CFB bytecode from VBA source
 // text is out of scope — callers must supply a pre-built .bin produced by
-// Microsoft Office or a compatible tool.
+// Microsoft Office or a compatible tool. The package exposes CFB inspection
+// helpers backed by github.com/richardlehane/mscfb for validation and stream
+// inventory.
 package vba
 
 import "fmt"
@@ -134,6 +136,14 @@ const FileExtension = "pptm"
 
 // Validate returns an error if the project is in an invalid state.
 func (p *VBAProject) Validate() error {
+	if p == nil {
+		return nil
+	}
+	if len(p.Data) > 0 {
+		if _, err := p.InspectCFB(); err != nil {
+			return fmt.Errorf("invalid vbaProject.bin CFB data: %w", err)
+		}
+	}
 	for i, m := range p.Modules {
 		if m.Name == "" {
 			return fmt.Errorf("vba module at index %d has an empty name", i)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
 
@@ -68,6 +69,51 @@ func handleAddConnector(e *PresentationEditor, payload json.RawMessage) (any, er
 			}
 			editorcommand.CopyShapeUpdateFields(p, addPayload)
 			return addShapeFromPayload(e, addPayload)
+		},
+	)
+}
+
+func handleAddTextboxes(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (int, bool) { return requireSlideIndex(e, p, v) },
+		v.Error,
+		func(slideIndex int, p map[string]any) (any, error) {
+			if _, ok := p["textboxes"]; !ok {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, "missing required field: textboxes")
+			}
+			var textboxes []common.TextboxInsert
+			if err := editorcommand.DecodeOptionalPayloadValue(p, "textboxes", &textboxes); err != nil {
+				return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+			}
+			shapeIDs, err := e.AddTextboxes(slideIndex, textboxes)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"shape_ids": shapeIDs}, nil
+		},
+	)
+}
+
+func handleReserveShapeIDs(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequestWithPayload(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (int, bool) { return requireSlideIndex(e, p, v) },
+		v.Error,
+		func(slideIndex int, p map[string]any) (any, error) {
+			count, ok := v.RequireInt(p, "count")
+			if !ok {
+				return nil, v.Error()
+			}
+			shapeIDs, err := e.ReserveShapeIDs(slideIndex, count)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"shape_ids": shapeIDs}, nil
 		},
 	)
 }

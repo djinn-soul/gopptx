@@ -12,9 +12,19 @@ from typing import cast
 from ..api_errors import GopptxError
 from .helpers import PresentationProtocol
 from .runtime import PresentationRuntimeMixin
+from .shape_write_buffer_mixin import PresentationShapeWriteBufferMixin
+from .slide_lookup_mixin import PresentationSlideLookupMixin
+from .slide_proxy_mixin import PresentationSlideProxyMixin
+from .text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 
-class PresentationBase(PresentationRuntimeMixin):
+class PresentationBase(
+    PresentationSlideProxyMixin,
+    PresentationSlideLookupMixin,
+    PresentationShapeWriteBufferMixin,
+    PresentationTextWriteBufferMixin,
+    PresentationRuntimeMixin,
+):
     """Base class for Presentation with core library loading and execution."""
 
     _lib = None

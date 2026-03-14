@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
+    from typing_extensions import Protocol
+
     from ..schemas import BatchItemResult
 
 try:
@@ -41,6 +43,31 @@ class PresentationProtocol(ABC):
 
     @abstractmethod
     def abort_batch(self) -> None: ...
+
+
+if TYPE_CHECKING:
+
+    class PresentationMixinBase(Protocol):
+        """Typed contract for mixins without altering runtime MRO behavior."""
+
+        _comment_ref_cache: dict[int, tuple[int, int, int]]
+
+        def execute(
+            self, op: str, payload: dict[str, object] | None = None
+        ) -> dict[str, object]: ...
+
+        def invalidate_cache(self) -> None: ...
+
+        def begin_batch(self, *, stop_on_error: bool = False) -> None: ...
+
+        def end_batch(self) -> list[BatchItemResult]: ...
+
+        def abort_batch(self) -> None: ...
+
+else:
+
+    class PresentationMixinBase:
+        """Runtime marker base for presentation mixins."""
 
 
 def json_dumps(payload: dict[str, object]) -> bytes:

@@ -18,13 +18,16 @@ type XML struct {
 		BandCol  string `xml:"bandCol,attr"`
 	} `xml:"tblPr"`
 	Grid struct {
-		Cols []struct{} `xml:"gridCol"`
+		Cols []struct {
+			Width int64 `xml:"w,attr"`
+		} `xml:"gridCol"`
 	} `xml:"tblGrid"`
 	Rows []RowXML `xml:"tr"`
 }
 
 type RowXML struct {
-	Cells []CellXML `xml:"tc"`
+	Height int64     `xml:"h,attr"`
+	Cells  []CellXML `xml:"tc"`
 }
 
 type CellXML struct {
@@ -32,6 +35,7 @@ type CellXML struct {
 	GridSpan int    `xml:"gridSpan,attr"`
 	VMerge   string `xml:"vMerge,attr"`
 	HMerge   string `xml:"hMerge,attr"`
+	TcPr     cellPropertiesXML `xml:"tcPr"`
 	TxBody   struct {
 		Paragraphs []struct {
 			Runs []struct {
@@ -39,6 +43,46 @@ type CellXML struct {
 			} `xml:"r"`
 		} `xml:"p"`
 	} `xml:"txBody"`
+}
+
+type cellPropertiesXML struct {
+	Anchor string `xml:"anchor,attr"`
+	MarL   *int64 `xml:"marL,attr"`
+	MarR   *int64 `xml:"marR,attr"`
+	MarT   *int64 `xml:"marT,attr"`
+	MarB   *int64 `xml:"marB,attr"`
+	LnL    *linePropertiesXML `xml:"lnL"`
+	LnR    *linePropertiesXML `xml:"lnR"`
+	LnT    *linePropertiesXML `xml:"lnT"`
+	LnB    *linePropertiesXML `xml:"lnB"`
+}
+
+type linePropertiesXML struct {
+	Width int64 `xml:"w,attr"`
+	NoFill *struct{} `xml:"noFill"`
+	PrstDash *struct {
+		Val string `xml:"val,attr"`
+	} `xml:"prstDash"`
+	SolidFill *struct {
+		SrgbClr *struct {
+			Val string `xml:"val,attr"`
+		} `xml:"srgbClr"`
+		SchemeClr *struct {
+			Val    string `xml:"val,attr"`
+			LumMod *struct {
+				Val string `xml:"val,attr"`
+			} `xml:"lumMod"`
+			LumOff *struct {
+				Val string `xml:"val,attr"`
+			} `xml:"lumOff"`
+			Tint *struct {
+				Val string `xml:"val,attr"`
+			} `xml:"tint"`
+			Shade *struct {
+				Val string `xml:"val,attr"`
+			} `xml:"shade"`
+		} `xml:"schemeClr"`
+	} `xml:"solidFill"`
 }
 
 func TruthyAttr(v string) bool {

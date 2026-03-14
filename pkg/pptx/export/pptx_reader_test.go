@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -181,5 +182,104 @@ func TestEditorTypeToPreset(t *testing.T) {
 		if got := editorTypeToPreset(tt.input); got != tt.expected {
 			t.Errorf("editorTypeToPreset(%q) = %q, want %q", tt.input, got, tt.expected)
 		}
+	}
+}
+
+func TestEditorShapeToShape_MapsStyleAndAdjustments(t *testing.T) {
+	fillColor := "4285F4"
+	lineColor := "FFFFFF"
+	lineWidth := 12700
+	source := editorcommon.Shape{
+		ID:   4,
+		Name: "pie-slice",
+		Type: "pie",
+		X:    100,
+		Y:    200,
+		W:    300,
+		H:    400,
+		Fill: &editorcommon.ShapeFill{Solid: &fillColor},
+		Line: &editorcommon.ShapeLine{Color: &lineColor, WidthEmu: &lineWidth},
+		Adjustments: []editorcommon.ShapeAdjustment{
+			{Name: "adj1", Formula: "val 0"},
+			{Name: "adj2", Formula: "val 17100000"},
+		},
+	}
+
+	mapped := editorShapeToShape(source)
+	if mapped.Type != "pie" {
+		t.Fatalf("expected mapped type pie, got %q", mapped.Type)
+	}
+	if mapped.Fill == nil || mapped.Fill.Color != fillColor {
+		t.Fatalf("expected fill color %q, got %#v", fillColor, mapped.Fill)
+	}
+	if mapped.Line == nil || mapped.Line.Color != lineColor {
+		t.Fatalf("expected line color %q, got %#v", lineColor, mapped.Line)
+	}
+	if int64(mapped.Line.Width) != int64(lineWidth) {
+		t.Fatalf("expected line width %d, got %d", lineWidth, mapped.Line.Width)
+	}
+	if len(mapped.Adjustments) != 2 {
+		t.Fatalf("expected 2 adjustments, got %d", len(mapped.Adjustments))
+	}
+	if mapped.Adjustments[0].Name != "adj1" || mapped.Adjustments[1].Name != "adj2" {
+		t.Fatalf("unexpected adjustments: %#v", mapped.Adjustments)
+	}
+}
+
+func TestSlidesFromPPTX_PieShapesKeepGeometryAndFill(t *testing.T) {
+	deckPath := filepath.Clean("../../../examples/output/03_markdown_mermaid_complex_edited.pptx")
+	if _, err := os.Stat(deckPath); err != nil {
+		t.Skipf("deck fixture unavailable: %v", err)
+	}
+	_, slides, err := SlidesFromPPTX(deckPath)
+	if err != nil {
+		t.Fatalf("SlidesFromPPTX failed: %v", err)
+	}
+	if len(slides) < 4 {
+		t.Fatalf("expected at least 4 slides, got %d", len(slides))
+	}
+	slide := slides[3]
+	found := 0
+	for _, shape := range slide.Shapes {
+		if shape.Name != "Shape 4" && shape.Name != "Shape 5" && shape.Name != "Shape 6" {
+			continue
+		}
+		found++
+		if shape.Type != "pie" {
+			t.Fatalf("%s expected type=pie, got %q", shape.Name, shape.Type)
+		}
+		if shape.Fill == nil || shape.Fill.Color == "" {
+			t.Fatalf("%s expected non-empty fill, got %#v", shape.Name, shape.Fill)
+		}
+		if len(shape.Adjustments) < 2 {
+			t.Fatalf("%s expected adjustments, got %#v", shape.Name, shape.Adjustments)
+		}
+	}
+	if found != 3 {
+		t.Fatalf("expected 3 pie slice shapes, got %d", found)
+	}
+}
+
+func TestSlidesFromPPTX_Slide14ExtractsTable(t *testing.T) {
+	deckPath := filepath.Clean("../../../examples/output/03_markdown_mermaid_complex.pptx")
+	if _, err := os.Stat(deckPath); err != nil {
+		t.Skipf("deck fixture unavailable: %v", err)
+	}
+	_, slides, err := SlidesFromPPTX(deckPath)
+	if err != nil {
+		t.Fatalf("SlidesFromPPTX failed: %v", err)
+	}
+	if len(slides) < 14 {
+		t.Fatalf("expected at least 14 slides, got %d", len(slides))
+	}
+	slide := slides[13]
+	if slide.Table == nil {
+		t.Fatalf("expected slide 14 table to be extracted")
+	}
+	if len(slide.Table.Rows) < 2 {
+		t.Fatalf("expected extracted table rows, got %d", len(slide.Table.Rows))
+	}
+	if len(slide.Table.ColumnWidths) != 2 {
+		t.Fatalf("expected 2 table columns, got %d", len(slide.Table.ColumnWidths))
 	}
 }

@@ -10,10 +10,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-const (
-	firstSlideRelIDNumber = 2
-	rotationEmuFactor     = 60000
-)
+const firstSlideRelIDNumber, rotationEmuFactor = 2, 60000
 
 type slidePartBuilder struct {
 	num     int
@@ -328,6 +325,7 @@ func buildPlaceholderBaseSpec(o shapes.PlaceholderContent) pptxxml.PlaceholderOv
 	spec.CX = mapOptionalLength(o.Override.CX)
 	spec.CY = mapOptionalLength(o.Override.CY)
 	spec.TextStyle = mapPlaceholderTextStyle(o.Override.TextStyle)
+	spec.ForceRectGeometry = o.Override.ForceRect
 	return spec
 }
 

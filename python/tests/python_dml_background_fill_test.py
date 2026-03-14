@@ -28,7 +28,7 @@ def test_shape_background_fill_round_trip_fixture(tmp_path: Path) -> None:
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
 
-    assert "<a:noFill/>" in slide_xml  # noqa: S101
+    assert "<a:noFill/>" in slide_xml
 
 
 def test_shape_background_fill_rejects_false_flag() -> None:

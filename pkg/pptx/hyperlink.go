@@ -70,6 +70,10 @@ func HyperlinkFile(path string) HyperlinkAction {
 	return action.HyperlinkFile(path)
 }
 
+func HyperlinkProgram(path string) HyperlinkAction {
+	return action.HyperlinkProgram(path)
+}
+
 func validateHyperlinkAction(a HyperlinkAction, context string) error {
 	return elements.ValidateHyperlinkAction(a, context)
 }

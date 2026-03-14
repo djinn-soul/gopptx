@@ -34,6 +34,18 @@ func TestCommandShapeOps(t *testing.T) {
 		t.Fatalf("add_textbox failed: %s", resp)
 	}
 
+	addTextboxesReq := `{"api_version":1,"request_id":"r1bb","op":"add_textboxes","payload":{"slide_index":0,"textboxes":[{"left":140,"top":520,"width":800,"height":300,"text":"textbox one"},{"left":140,"top":860,"width":800,"height":300,"text":"textbox two"}]}}`
+	resp = ExecuteCommand(e, addTextboxesReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("add_textboxes failed: %s", resp)
+	}
+
+	reserveShapeIDsReq := `{"api_version":1,"request_id":"r1bc","op":"reserve_shape_ids","payload":{"slide_index":0,"count":2}}`
+	resp = ExecuteCommand(e, reserveShapeIDsReq)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"shape_ids":[`) {
+		t.Fatalf("reserve_shape_ids failed: %s", resp)
+	}
+
 	// 1c. Add Connector (python-pptx compatibility op)
 	addConnectorReq := `{"api_version":1,"request_id":"r1c","op":"add_connector","payload":{"slide_index":0,"connector_type":"line","begin_x":200,"begin_y":200,"end_x":900,"end_y":650}}`
 	resp = ExecuteCommand(e, addConnectorReq)
@@ -110,10 +122,10 @@ func TestCommandNotesOps(t *testing.T) {
 	defer func() { _ = e.Close() }()
 
 	// 0. Slide starts without a notes slide
-	hasReq := `{"api_version":1,"request_id":"n0","op":"has_notes_slide","payload":{"slide_index":0}}`
+	hasReq := `{"api_version":1,"request_id":"n0","op":"notes_slide_exists","payload":{"slide_index":0}}`
 	resp := ExecuteCommand(e, hasReq)
-	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"has_notes_slide":false`) {
-		t.Fatalf("expected has_notes_slide false before notes creation: %s", resp)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"notes_slide_exists":false`) {
+		t.Fatalf("expected notes_slide_exists false before notes creation: %s", resp)
 	}
 	getReq := `{"api_version":1,"request_id":"n2","op":"get_notes","payload":{"slide_index":0}}`
 	resp = ExecuteCommand(e, getReq)
@@ -131,8 +143,8 @@ func TestCommandNotesOps(t *testing.T) {
 
 	// 1b. Notes slide now exists
 	resp = ExecuteCommand(e, hasReq)
-	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"has_notes_slide":true`) {
-		t.Fatalf("expected has_notes_slide true after notes creation: %s", resp)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"notes_slide_exists":true`) {
+		t.Fatalf("expected notes_slide_exists true after notes creation: %s", resp)
 	}
 
 	// 2. Get Notes

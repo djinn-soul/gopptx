@@ -7,6 +7,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 	editormodcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func handleListPlaceholders(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -55,40 +56,9 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 		return nil, v.Error()
 	}
 
-	phIndex, err := requirePlaceholderIndex(p, v)
+	phSpec, phIndex, phType, forceRect, err := buildPlaceholderOverrideSpecForPayload(e, slideIndex, p, v)
 	if err != nil {
 		return nil, err
-	}
-
-	// We support "text", "image_path", "text_style" inside the payload
-	text := v.OptionalString(p, "text")
-	imagePath := v.OptionalString(p, "image_path")
-	tableSpec, hasTableSpec, err := editorcommand.ParsePlaceholderTableSpec(p)
-	if err != nil {
-		return nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
-	}
-	chartFrame, hasChart, err := buildPlaceholderChartFrame(e, slideIndex, p)
-	if err != nil {
-		return nil, err
-	}
-
-	hasText := text != ""
-	hasImagePath := imagePath != ""
-
-	if err := validatePlaceholderContentKinds(hasText, hasImagePath, hasTableSpec, hasChart); err != nil {
-		return nil, err
-	}
-
-	// For targeting, python-pptx typically relies on idx alone.
-	// But we can allow optional ph_type if provided.
-	phType := v.OptionalString(p, "ph_type")
-	styleOpts := editormodcommon.ParsePlaceholderTextStyle(p)
-	var imageRef *pptxxml.ImageRef
-	if hasImagePath {
-		imageRef, err = buildPlaceholderImageRef(e, slideIndex, imagePath, p)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Surgical update: parse slide XML, find the shape, replace it
@@ -108,10 +78,11 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 		return nil, err
 	}
 
-	// Prepare the override spec for internal renderer
-	phSpec := editormodcommon.BuildPlaceholderOverrideSpec(phIndex, resolvedType, text, imageRef, styleOpts)
-	phSpec.Table = tableSpec
-	phSpec.Chart = chartFrame
+	phSpec.Type = resolvedType
+	phSpec.GeometryXML = extractPlaceholderGeometryXML(content[shapesList[shapeIndex].Start:shapesList[shapeIndex].End])
+	if forceRect != nil {
+		phSpec.ForceRectGeometry = forceRect
+	}
 
 	newShapeXML := pptxxml.PlaceholderShape(phSpec, shapesList[shapeIndex].ID)
 
@@ -124,6 +95,73 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 
 	e.parts.Set(partPath, newContent)
 	return map[string]bool{"updated": true}, nil
+}
+
+func buildPlaceholderOverrideSpecForPayload(
+	e *PresentationEditor,
+	slideIndex int,
+	payload map[string]any,
+	v *PayloadValidator,
+) (pptxxml.PlaceholderOverrideSpec, int, string, *bool, error) {
+	phIndex, err := requirePlaceholderIndex(payload, v)
+	if err != nil {
+		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
+	}
+	phType := v.OptionalString(payload, "ph_type")
+	text := v.OptionalString(payload, "text")
+	imagePath := v.OptionalString(payload, "image_path")
+	styleOpts := editormodcommon.ParsePlaceholderTextStyle(payload)
+	tableSpec, hasTableSpec, err := editorcommand.ParsePlaceholderTableSpec(payload)
+	if err != nil {
+		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	chartFrame, hasChart, err := buildPlaceholderChartFrame(e, slideIndex, payload)
+	if err != nil {
+		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
+	}
+	hasImagePath := imagePath != ""
+	if err := validatePlaceholderContentKinds(text != "", hasImagePath, hasTableSpec, hasChart); err != nil {
+		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
+	}
+
+	var imageRef *pptxxml.ImageRef
+	if hasImagePath {
+		imageRef, err = buildPlaceholderImageRef(e, slideIndex, imagePath, payload)
+		if err != nil {
+			return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
+		}
+	}
+	phSpec := editormodcommon.BuildPlaceholderOverrideSpec(phIndex, phType, text, imageRef, styleOpts)
+	phSpec.Table = tableSpec
+	phSpec.Chart = chartFrame
+	if err := applyPlaceholderBounds(payload, &phSpec); err != nil {
+		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
+	}
+
+	forceRect, hasForceRect := v.OptionalBool(payload, "force_rect_geometry")
+	if hasForceRect {
+		return phSpec, phIndex, phType, &forceRect, nil
+	}
+	return phSpec, phIndex, phType, nil, nil
+}
+
+func applyPlaceholderBounds(payload map[string]any, phSpec *pptxxml.PlaceholderOverrideSpec) error {
+	if _, hasBounds := payload["bounds"]; !hasBounds {
+		return nil
+	}
+	xPt, yPt, cxPt, cyPt, err := editormodcommon.ParsePlaceholderImageBounds(payload)
+	if err != nil {
+		return NewBridgeError(ErrCodeInvalidPayload, err.Error())
+	}
+	xEMU := int64(styling.Points(xPt))
+	yEMU := int64(styling.Points(yPt))
+	cxEMU := int64(styling.Points(cxPt))
+	cyEMU := int64(styling.Points(cyPt))
+	phSpec.X = &xEMU
+	phSpec.Y = &yEMU
+	phSpec.CX = &cxEMU
+	phSpec.CY = &cyEMU
+	return nil
 }
 
 func validatePlaceholderContentKinds(hasText, hasImagePath, hasTableContent, hasChart bool) error {

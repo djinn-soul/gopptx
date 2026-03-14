@@ -2,7 +2,9 @@ package presentation
 
 import (
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -41,32 +43,99 @@ func smartArtPartBySlide(parts []SmartArtPart) map[int][]SmartArtPart {
 }
 
 func writeSmartArtFiles(pw *pptxxml.PackageWriter, parts []SmartArtPart) error {
-	for _, part := range parts {
-		// Write 5 parts for each diagram
-		num := part.partNumber
-
-		// Data
-		pw.AddPart(fmt.Sprintf("ppt/diagrams/data%d.xml", num),
-			pptxxml.SmartArtDataXML(part.spec))
-
-		// Layout (stub)
-		category := categoryFromURI(part.spec.LayoutURI)
-		pw.AddPart(fmt.Sprintf("ppt/diagrams/layout%d.xml", num),
-			pptxxml.SmartArtLayoutXML(part.spec.LayoutURI, category))
-
-		// Colors (stub)
-		pw.AddPart(fmt.Sprintf("ppt/diagrams/colors%d.xml", num),
-			pptxxml.SmartArtColorsXML(part.spec.ColorStyleID))
-
-		// QuickStyle (stub)
-		pw.AddPart(fmt.Sprintf("ppt/diagrams/quickStyle%d.xml", num),
-			pptxxml.SmartArtStyleXML(part.spec.QuickStyleID))
-
-		// Drawing (required by PowerPoint for SmartArt wiring)
-		pw.AddPart(fmt.Sprintf("ppt/diagrams/drawing%d.xml", num),
-			pptxxml.SmartArtDrawingXML(part.spec))
+	renderedParts, err := renderSmartArtPartsParallel(parts)
+	if err != nil {
+		return err
+	}
+	for _, rendered := range renderedParts {
+		pw.AddPart(rendered.path, rendered.content)
 	}
 	return nil
+}
+
+type smartArtRenderedPart struct {
+	partNumber int
+	order      int
+	path       string
+	content    string
+}
+
+func renderSmartArtPartsParallel(parts []SmartArtPart) ([]smartArtRenderedPart, error) {
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		results = make([]smartArtRenderedPart, 0, len(parts)*5)
+	)
+
+	for _, part := range parts {
+		part := part
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rendered := renderSmartArtPart(part)
+			mu.Lock()
+			results = append(results, rendered...)
+			mu.Unlock()
+		}()
+	}
+	wg.Wait()
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].partNumber != results[j].partNumber {
+			return results[i].partNumber < results[j].partNumber
+		}
+		return results[i].order < results[j].order
+	})
+	return results, nil
+}
+
+func renderSmartArtPart(part SmartArtPart) []smartArtRenderedPart {
+	num := part.partNumber
+	category := categoryFromURI(part.spec.LayoutURI)
+	return []smartArtRenderedPart{
+		{
+			partNumber: num,
+			order:      0,
+			path:       fmt.Sprintf("ppt/diagrams/data%d.xml", num),
+			content:    pptxxml.SmartArtDataXML(part.spec),
+		},
+		{
+			partNumber: num,
+			order:      1,
+			path:       fmt.Sprintf("ppt/diagrams/layout%d.xml", num),
+			content:    pptxxml.SmartArtLayoutXML(part.spec.LayoutURI, category),
+		},
+		{
+			partNumber: num,
+			order:      2,
+			path:       fmt.Sprintf("ppt/diagrams/colors%d.xml", num),
+			content:    pptxxml.SmartArtColorsXML(part.spec.ColorStyleID),
+		},
+		{
+			partNumber: num,
+			order:      3,
+			path:       fmt.Sprintf("ppt/diagrams/quickStyle%d.xml", num),
+			content:    pptxxml.SmartArtStyleXML(part.spec.QuickStyleID),
+		},
+		{
+			partNumber: num,
+			order:      4,
+			path:       fmt.Sprintf("ppt/diagrams/drawing%d.xml", num),
+			content:    pptxxml.SmartArtDrawingXML(part.spec),
+		},
+		{
+			partNumber: num,
+			order:      5,
+			path:       fmt.Sprintf("ppt/diagrams/_rels/data%d.xml.rels", num),
+			content:    smartArtDataRelsXML(num),
+		},
+	}
+}
+
+func smartArtDataRelsXML(partNumber int) string {
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId6" Type="http://schemas.microsoft.com/office/2007/relationships/diagramDrawing" Target="drawing%d.xml"/>
+</Relationships>`, partNumber)
 }
 
 func categoryFromURI(uri string) string {

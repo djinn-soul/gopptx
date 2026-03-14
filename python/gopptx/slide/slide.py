@@ -1,195 +1,23 @@
 """Slide proxy class for gopptx library."""
-# ruff: noqa: D102
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
+from .chart_model import Chart, ChartCollection
 from .notes_slide import NotesSlide
 from .placeholder_mixin import SlidePlaceholderMixin
-from .table import Table
+from .shape_proxy import ShapeCollection, ShapeProxy
+from .slide_mixins import SlideChartMixin, SlideShapeMixin, SlideTableMixin
+from .slide_shape_batch_mixin import SlideShapeBatchMixin
+from .slide_text_cache_mixin import SlideTextCacheMixin
+from .slide_text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
-    from ..schemas import (
-        ImageMetadata,
-        Shape,
-        ShapeProps,
-        ShapeUpdate,
-        SlideChartRef,
-        SlideMetadata,
-        TableCellInfo,
-        TableInfo,
-    )
-    from .freeform_builder import FreeformBuilder
-
-
-class SlideShapeMixin:
-    """Mixin providing shape manipulation methods for Slide objects."""
-
-    if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
-
-        @property
-        def index(self) -> int: ...
-
-    def add_shape(
-        self,
-        shape_type: str,
-        bounds: tuple[float, float, float, float],
-        **kwargs: str | ShapeProps,
-    ) -> int:
-        """Add a shape to this slide."""
-        return self._presentation.add_shape(self.index, shape_type, bounds, **kwargs)
-
-    def add_textbox(
-        self,
-        left: float,
-        top: float,
-        width: float,
-        height: float,
-        *,
-        text: str = "",
-        **kwargs: str | ShapeProps,
-    ) -> int:
-        """Add a textbox-like shape to this slide."""
-        return self._presentation.add_textbox(
-            self.index, left, top, width, height, text=text, **kwargs
-        )
-
-    def add_connector(
-        self,
-        connector_type: str,
-        begin_x: float,
-        begin_y: float,
-        end_x: float,
-        end_y: float,
-        **kwargs: str | ShapeProps,
-    ) -> int:
-        """Add a connector-like shape to this slide."""
-        return self._presentation.add_connector(
-            self.index,
-            connector_type,
-            begin_x,
-            begin_y,
-            end_x,
-            end_y,
-            **kwargs,
-        )
-
-    def add_group_shape(self, shapes: list[int] | None = None) -> int:
-        """Placeholder for python-pptx parity; not currently supported."""
-        return self._presentation.add_group_shape(self.index, shapes=shapes)
-
-    def build_freeform(
-        self,
-        start_x: float = 0,
-        start_y: float = 0,
-        scale: tuple[float, float] | float = 1.0,
-    ) -> FreeformBuilder:
-        """Create a freeform builder for this slide."""
-        return self._presentation.build_freeform(
-            self.index, start_x=start_x, start_y=start_y, scale=scale
-        )
-
-    def add_image(
-        self,
-        path: str | None,
-        bounds: tuple[float, float, float, float],
-        **kwargs: object,
-    ) -> int:
-        """Add an image to this slide."""
-        return self._presentation.add_image(
-            self.index,
-            path,
-            bounds,
-            **kwargs,
-        )
-
-    def get_image_metadata(self, shape_id: int) -> ImageMetadata:
-        """Get dimensions and format for an image shape on this slide."""
-        return self._presentation.get_image_metadata(self.index, shape_id)
-
-    def add_video(
-        self,
-        source: str | bytes,
-        bounds: tuple[float, float, float, float],
-        *,
-        name: str | None = None,
-        poster_frame: str | bytes | None = None,
-        mime_type: str | None = None,
-    ) -> int:
-        """Add a video to this slide."""
-        return self._presentation.add_video(
-            self.index,
-            source,
-            bounds,
-            name=name,
-            poster_frame=poster_frame,
-            mime_type=mime_type,
-        )
-
-    def add_audio(
-        self,
-        source: str | bytes,
-        bounds: tuple[float, float, float, float],
-        *,
-        mime_type: str | None = None,
-    ) -> int:
-        """Add an audio file to this slide."""
-        return self._presentation.add_audio(
-            self.index,
-            source,
-            bounds,
-            mime_type=mime_type,
-        )
-
-    def add_ole_object(
-        self,
-        source: str | bytes,
-        bounds: tuple[float, float, float, float],
-        *,
-        name: str | None = None,
-        prog_id: str | None = None,
-        icon: str | bytes | None = None,
-    ) -> int:
-        """Add an OLE object to this slide."""
-        return self._presentation.add_ole_object(
-            self.index, source, bounds, name=name, prog_id=prog_id, icon=icon
-        )
-
-    def remove_shape(self, shape_id: int) -> None:
-        """Remove a shape from this slide."""
-        self._presentation.remove_shape(self.index, shape_id)
-
-    def group_shapes(self, shape_ids: list[int]) -> int:
-        """Group multiple shapes on this slide into a group shape.
-
-        Returns the ID of the created group shape.
-        """
-        return self._presentation.group_shapes(self.index, shape_ids)
-
-    def ungroup_shapes(self, shape_id: int) -> int:
-        """Ungroup a group shape, returning the ID of the first member shape."""
-        return self._presentation.ungroup_shapes(self.index, shape_id)
-
-    def move_shape_to_front(self, shape_id: int) -> None:
-        """Move a shape to the front of the z-order."""
-        self._presentation.move_shape_to_front(self.index, shape_id)
-
-    def move_shape_to_back(self, shape_id: int) -> None:
-        """Move a shape to the back of the z-order."""
-        self._presentation.move_shape_to_back(self.index, shape_id)
-
-    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None:
-        """Update shape properties."""
-        self._presentation.update_shape(self.index, shape_id, updates)
-
-    def list_shapes(self) -> list[Shape]:
-        """List all shapes on this slide."""
-        return self._presentation.list_shapes(self.index)
+    from ..schemas import Shape, ShapeProps, ShapeUpdate, SlideMetadata
 
 
 class SlideBase:
@@ -202,10 +30,7 @@ class SlideBase:
     @property
     def index(self) -> int:
         """The zero-based index of this slide."""
-        for s in self._presentation.slides_metadata:
-            if s["SlideID"] == self.slide_id:
-                return int(s["Index"])
-        return -1
+        return self._presentation.slide_index_for_id(self.slide_id)
 
     @property
     def slide_id(self) -> int:
@@ -242,95 +67,14 @@ class SlideBase:
         return NotesSlide(self)
 
 
-class SlideChartMixin:
-    """Mixin providing chart-related methods for Slide objects."""
-
-    if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
-
-        @property
-        def index(self) -> int: ...
-
-    def list_charts(self) -> list[SlideChartRef]:
-        """List all charts on this slide."""
-        return self._presentation.list_slide_charts(self.index)
-
-    def add_chart(
-        self,
-        chart_type: str,
-        categories: list[str],
-        values_or_series: list[float] | list[dict[str, str | list[float]]],
-        **kwargs: str | tuple[float, float, float, float],
-    ) -> int:
-        """Add a chart to this slide.
-
-        Returns:
-            int: The created chart shape ID.
-        """
-        return self._presentation.add_chart(
-            self.index, chart_type, categories, values_or_series, **kwargs
-        )
-
-
-class SlideTableMixin:
-    """Mixin providing table manipulation methods for Slide objects."""
-
-    if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
-
-        @property
-        def index(self) -> int: ...
-
-    def add_table(self, rows: int, cols: int, bounds: tuple[int, int, int, int]) -> int:
-        """Add a table to this slide."""
-        return self._presentation.add_table(self.index, rows, cols, bounds)
-
-    def get_table(self, shape_id: int) -> TableInfo:
-        """Get table information for a table shape."""
-        return self._presentation.get_table(self.index, shape_id)
-
-    def table(self, shape_id: int) -> Table:
-        """Return a Table object for shape_id with a Pythonic grid API."""
-        return Table(self._presentation, self.index, shape_id)
-
-    def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
-        """Set table style flags."""
-        self._presentation.set_table_flags(self.index, shape_id, flags)
-
-    def set_table_cell_text(self, shape_id: int, row: int, col: int, text: str) -> None:
-        """Set the text of a table cell."""
-        self._presentation.set_table_cell_text(self.index, shape_id, row, col, text)
-
-    def get_table_cell(self, shape_id: int, row: int, col: int) -> TableCellInfo:
-        """Get information about a table cell."""
-        return self._presentation.get_table_cell(self.index, shape_id, row, col)
-
-    def merge_table_cells(
-        self, shape_id: int, cell_range: tuple[int, int, int, int]
-    ) -> None:
-        """Merge a range of table cells."""
-        self._presentation.merge_table_cells(self.index, shape_id, cell_range)
-
-    def split_table_cell(self, shape_id: int, row: int, col: int) -> None:
-        """Split a merged table cell."""
-        self._presentation.split_table_cell(self.index, shape_id, row, col)
-
-    def set_table_style(self, shape_id: int, style_guid: str) -> None:
-        """Apply a table style to a table.
-
-        The style_guid must be a valid PowerPoint table style GUID, e.g.:
-            "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1
-            "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
-            "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
-        """
-        self._presentation.set_table_style(self.index, shape_id, style_guid)
-
-
 class Slide(
     SlideTableMixin,
     SlideChartMixin,
     SlidePlaceholderMixin,
     SlideBase,
+    SlideTextCacheMixin,
+    SlideTextMixin,
+    SlideShapeBatchMixin,
     SlideShapeMixin,
 ):
     """Proxy object for a slide within a presentation."""
@@ -340,6 +84,139 @@ class Slide(
         super().__init__()
         self._presentation = presentation
         self._metadata = metadata
+        self._shapes_collection: ShapeCollection | None = None
+        self._charts_collection: ChartCollection | None = None
+        self._shape_proxy_map: dict[int, ShapeProxy] = {}
+        self._shape_records_cache: list[Shape] | None = None
+        self._shape_record_map: dict[int, Shape] | None = None
+        self._shape_text_state_cache: dict[int, dict[str, object]] | None = None
+
+    def _shape_records(self) -> list[Shape]:
+        self._flush_pending_textbox_adds_if_present()
+        if self._shape_records_cache is None:
+            self._flush_pending_text_updates_if_present()
+            self._shape_records_cache = self._presentation.list_shapes(self.index)
+            self._shape_record_map = None
+        return self._shape_records_cache
+
+    def _shape_record_by_id(self, shape_id: int) -> Shape:
+        if self._shape_record_map is None:
+            record_map: dict[int, Shape] = {}
+            for shape in self._shape_records():
+                raw_id = shape.get("ID", shape.get("id"))
+                if raw_id is not None:
+                    record_map[int(str(raw_id))] = shape
+            self._shape_record_map = record_map
+        return self._shape_record_map[shape_id]
+
+    def _invalidate_shape_cache(self) -> None:
+        self._shape_records_cache = None
+        self._shape_record_map = None
+
+    def _shape_proxy_for_id(self, shape_id: int) -> ShapeProxy:
+        proxy = self._shape_proxy_map.get(shape_id)
+        if proxy is None:
+            proxy = ShapeProxy(self, shape_id)
+            self._shape_proxy_map[shape_id] = proxy
+        return proxy
+
+    def _flush_pending_textbox_adds_if_present(self) -> None:
+        has_pending = getattr(self._presentation, "has_pending_textbox_adds", None)
+        flush_pending = getattr(self._presentation, "flush_pending_textbox_adds", None)
+        if not callable(has_pending) or not callable(flush_pending):
+            return
+        if has_pending(self.index):
+            flush_pending(self.index)
+
+    def _shape_text_states(self) -> dict[int, dict[str, object]]:
+        self._flush_pending_textbox_adds_if_present()
+        if self._shape_text_state_cache is None:
+            self._flush_pending_text_updates_if_present()
+            state_map: dict[int, dict[str, object]] = {}
+            for state in self._presentation.get_slide_text_states(self.index):
+                raw_id = state.get("shape_id", state.get("ShapeID"))
+                if raw_id is None:
+                    continue
+                state_map[int(str(raw_id))] = dict(state)
+            self._shape_text_state_cache = state_map
+        return self._shape_text_state_cache
+
+    def _invalidate_text_state_cache(self) -> None:
+        self._shape_text_state_cache = None
+
+    @property
+    def shapes(self) -> ShapeCollection:
+        """python-pptx-style shape collection."""
+        if self._shapes_collection is None:
+            self._shapes_collection = ShapeCollection(self)
+        return self._shapes_collection
+
+    @override
+    def list_shapes(self) -> list[Shape]:
+        """List slide shapes using a slide-local snapshot cache."""
+        return self._shape_records()
+
+    @override
+    def get_shape_text_state(self, shape_id: int) -> dict[str, object]:
+        """Get shape text state using slide-local bulk-prefetched cache."""
+        state = self._shape_text_states().get(shape_id)
+        if state is None:
+            state = self._presentation.get_shape_text_state(self.index, shape_id)
+            self._shape_text_states()[shape_id] = dict(state)
+        return dict(state)
+
+    def shape(self, shape_id: int) -> ShapeProxy:
+        """Return a live shape proxy by ID."""
+        return self._shape_proxy_for_id(shape_id)
+
+    @override
+    def add_textbox(
+        self,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int:
+        """Queue simple textbox inserts and flush them in bulk at slide boundaries."""
+        if kwargs or bool(getattr(self._presentation, "_batch_active", False)):
+            return super().add_textbox(left, top, width, height, text=text, **kwargs)
+        queue = getattr(self._presentation, "queue_textbox_add", None)
+        if not callable(queue):
+            return super().add_textbox(left, top, width, height, text=text, **kwargs)
+        shape_id = queue(
+            self.index,
+            {
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+                "text": text,
+            },
+        )
+        self._invalidate_shape_cache()
+        self._invalidate_text_state_cache()
+        return int(cast("int", shape_id))
+
+    @property
+    def charts(self) -> ChartCollection:
+        """python-pptx-style chart collection."""
+        if self._charts_collection is None:
+            self._charts_collection = ChartCollection(self)
+        return self._charts_collection
+
+    def chart(self, index: int) -> Chart:
+        """Return a chart proxy by slide-local chart index."""
+        return self.charts[index]
+
+    @override
+    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None:
+        """Flush buffered run-text writes before generic shape updates."""
+        self._flush_pending_textbox_adds_if_present()
+        self._flush_pending_text_updates_if_present()
+        super().update_shape(shape_id, updates)
 
     def update(
         self,

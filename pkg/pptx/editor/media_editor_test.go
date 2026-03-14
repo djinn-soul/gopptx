@@ -55,6 +55,12 @@ func TestAddVideoEmbedsMediaAndPosterWithMimeHandling(t *testing.T) {
 	if !strings.Contains(slideText, `<a:videoFile r:link="`) {
 		t.Fatalf("expected video file link in slide xml: %s", slideText)
 	}
+	if !strings.Contains(slideText, `descr="Video"`) {
+		t.Fatalf("expected default video descr attr in slide xml: %s", slideText)
+	}
+	if !strings.Contains(slideText, `ppaction://media`) {
+		t.Fatalf("expected media click action in slide xml: %s", slideText)
+	}
 	if !strings.Contains(slideText, `<p14:media`) {
 		t.Fatalf("expected modern media extension in slide xml: %s", slideText)
 	}
@@ -70,6 +76,43 @@ func TestAddVideoEmbedsMediaAndPosterWithMimeHandling(t *testing.T) {
 	relsText := string(relsXML)
 	if !strings.Contains(relsText, common.RelTypeVideo) || !strings.Contains(relsText, common.RelTypeMedia) {
 		t.Fatalf("expected video+media relationships in rels xml: %s", relsText)
+	}
+}
+
+func TestAddVideoGeneratesDefaultPosterWhenMissing(t *testing.T) {
+	e := newMediaEditorFixture()
+	shapeID, err := e.AddVideo(
+		0,
+		[]byte("video-bytes"),
+		nil,
+		"video/mp4",
+		10,
+		20,
+		300,
+		200,
+	)
+	if err != nil {
+		t.Fatalf("AddVideo with default poster failed: %v", err)
+	}
+	if shapeID == 0 {
+		t.Fatal("expected non-zero shape id")
+	}
+
+	mediaParts := e.parts.KeysWithPrefix("ppt/media/")
+	hasPoster := false
+	for _, part := range mediaParts {
+		if strings.HasSuffix(part, ".png") {
+			hasPoster = true
+			break
+		}
+	}
+	if !hasPoster {
+		t.Fatalf("expected generated default poster png in media parts, got: %v", mediaParts)
+	}
+
+	slideText := string(getFixturePart(t, e, "ppt/slides/slide1.xml"))
+	if !strings.Contains(slideText, `<a:blip r:embed="`) {
+		t.Fatalf("expected poster relationship embed in slide xml: %s", slideText)
 	}
 }
 
@@ -123,6 +166,69 @@ func TestAddOLEObjectEmbedsPackageAndEscapesProgID(t *testing.T) {
 	}
 }
 
+func TestAddAudioEmbedsModernMediaAndAudioRelationships(t *testing.T) {
+	e := newMediaEditorFixture()
+	shapeID, err := e.AddAudio(
+		0,
+		[]byte("audio-bytes"),
+		"audio/mp4",
+		12,
+		24,
+		220,
+		90,
+	)
+	if err != nil {
+		t.Fatalf("AddAudio failed: %v", err)
+	}
+	if shapeID == 0 {
+		t.Fatal("expected non-zero shape id")
+	}
+
+	mediaParts := e.parts.KeysWithPrefix("ppt/media/")
+	hasM4A := false
+	for _, part := range mediaParts {
+		if strings.HasSuffix(part, ".m4a") {
+			hasM4A = true
+			break
+		}
+	}
+	if !hasM4A {
+		t.Fatalf("expected m4a media part, got: %v", mediaParts)
+	}
+
+	slideXML := string(getFixturePart(t, e, "ppt/slides/slide1.xml"))
+	if !strings.Contains(slideXML, `<a:audioFile r:link="`) || !strings.Contains(slideXML, `<p14:media`) {
+		t.Fatalf("expected audio+modern media xml in slide: %s", slideXML)
+	}
+	if !strings.Contains(slideXML, `descr="Audio"`) {
+		t.Fatalf("expected default audio descr attr in slide xml: %s", slideXML)
+	}
+	if !strings.Contains(slideXML, `ppaction://media`) {
+		t.Fatalf("expected media click action in audio slide xml: %s", slideXML)
+	}
+
+	relsXML := string(getFixturePart(t, e, "ppt/slides/_rels/slide1.xml.rels"))
+	if !strings.Contains(relsXML, common.RelTypeAudio) || !strings.Contains(relsXML, common.RelTypeMedia) {
+		t.Fatalf("expected audio/media relationships in rels xml: %s", relsXML)
+	}
+}
+
+func TestAddVideoRejectsUnsupportedMimeType(t *testing.T) {
+	e := newMediaEditorFixture()
+	_, err := e.AddVideo(0, []byte("video-bytes"), testutil.TinyPNG(), "video/unsupported", 1, 2, 3, 4)
+	if err == nil || !strings.Contains(err.Error(), "unsupported video mime type") {
+		t.Fatalf("expected unsupported video mime validation error, got: %v", err)
+	}
+}
+
+func TestAddAudioRejectsUnsupportedMimeType(t *testing.T) {
+	e := newMediaEditorFixture()
+	_, err := e.AddAudio(0, []byte("audio-bytes"), "audio/unsupported", 1, 2, 3, 4)
+	if err == nil || !strings.Contains(err.Error(), "unsupported audio mime type") {
+		t.Fatalf("expected unsupported audio mime validation error, got: %v", err)
+	}
+}
+
 func newMediaEditorFixture() *PresentationEditor {
 	ps := NewPartStore()
 	ps.Set(
@@ -150,6 +256,15 @@ func newMediaEditorFixture() *PresentationEditor {
 		mediaInventory: map[string]string{},
 		nextMediaNum:   1,
 	}
+}
+
+func getFixturePart(t *testing.T, e *PresentationEditor, part string) []byte {
+	t.Helper()
+	value, ok := e.parts.Get(part)
+	if !ok {
+		t.Fatalf("missing part %s", part)
+	}
+	return value
 }
 
 func TestMediaAndOLESaveWiresPackagingAndContentTypes(t *testing.T) {

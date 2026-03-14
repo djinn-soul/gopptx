@@ -33,7 +33,7 @@ def test_run_hyperlink_address_facade_round_trip(tmp_path: Path) -> None:
                 "vertical_align": "ctr",
             },
         )
-        assert shape_id > 0  # noqa: S101
+        assert shape_id > 0
 
         jump_run = Run("Jump")
         jump_run.hyperlink.jump = "nextslide"
@@ -50,10 +50,10 @@ def test_run_hyperlink_address_facade_round_trip(tmp_path: Path) -> None:
 
     with Presentation(out_path) as prs:
         texts = [shape["Text"] for shape in prs.slides[0].list_shapes()]
-        assert "Jump" in texts  # noqa: S101
-        assert "mixed" in texts  # noqa: S101
+        assert "Jump" in texts
+        assert "mixed" in texts
 
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read("ppt/slides/slide1.xml").decode("utf-8")
-    assert "hlinkMouseOver" in slide_xml  # noqa: S101
-    assert "ppaction://macro?name=HoverMacro" in slide_xml  # noqa: S101
+    assert "hlinkMouseOver" in slide_xml
+    assert "ppaction://macro?name=HoverMacro" in slide_xml

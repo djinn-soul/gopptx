@@ -13,6 +13,7 @@ Use the following commands to run the examples:
 - `04-text-formatting` (Text Frame): `go run ./examples/04-text-formatting/text_frame.go` -> `04_text_frame_smoke.pptx`
 - `09-charts`: `go run ./examples/09-charts/chart_smoke.go` -> `09_charts_*.pptx`
 - `12-shapes`: `go run ./examples/12-shapes/feature_showcase.go` -> `12_feature_showcase.pptx`
+- `16-templates`: `go run ./examples/16-templates/main.go` -> `16_invoice_template.pptx`, `16_template_invoice.pptx`
 - `17-themes`: `go run ./examples/17-themes/theme_master_smoke.go` -> `17_theme_master_smoke.pptx`
 - `28-animations`: `go run ./examples/28-animations/main.go` -> `28_animations.pptx`
 - `31-hyperlinks`: `go run ./examples/31-hyperlinks/main.go` -> `31_advanced_hyperlink_smoke.pptx`
@@ -32,6 +33,7 @@ Use the following commands to run the examples:
 - `19-read-modify-existing` (Basic): `go run ./examples/19-read-modify-existing/editor_smoke.go` -> `19_editor_modified.pptx`
 - `19-read-modify-existing` (Overwrite): `go run ./examples/19-read-modify-existing/editor_overwrite.go` -> `19_editor_overwrite.pptx`
 - `22-speaker-notes`: `go run ./examples/22-speaker-notes/editor_notes_smoke.go` -> `22_editor_notes_smoke.pptx`
+- `23-media-embed`: `go run ./examples/23-media-embed/main.go` -> `23_media_embed_editor.pptx`
 - `37-slide-duplication` (Basic): `go run ./examples/37-slide-duplication/slide_duplication.go` -> `37_slide_duplication.pptx`
 - `37-slide-duplication` (Complex): `go run ./examples/37-slide-duplication/complex_duplication.go` -> `37_complex_duplication.pptx`
 - `38-editor-image-support`: `go run ./examples/38-editor-image-support/editor_image_smoke.go` -> `38_editor_image_smoke.pptx`
@@ -43,7 +45,7 @@ Use the following commands to run the examples:
 - `40-metadata-writer`: `go run ./examples/40-metadata-writer/main.go`
 - `41-deep-shape-editing`: `go run ./examples/41-deep-shape-editing/main.go`
 - `42-smart-merge-assets`: `go run ./examples/42-smart-merge-assets/main.go`
-- `43-presentation-props-editor`: `go run ./examples/43-presentation-props-editor/main.go`
+- `43-presentation-props-editor`: `go run ./examples/43-presentation-props-editor/main.go` -> `43_presentation_props_editor.pptx`, `43_brand_reskin_theme_swap.pptx`
 - `45-commenting-api`: `go run ./examples/45-commenting-api/comments_basic.go`
 - `49-advanced-hyperlinks`: `go run ./examples/49-advanced-hyperlinks/main.go`
 - `56-action-api` (Smoke): `go run ./examples/56-action-api/action_smoke.go` -> `56_action_smoke.pptx`

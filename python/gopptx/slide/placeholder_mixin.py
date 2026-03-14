@@ -62,8 +62,12 @@ class SlidePlaceholderMixin:
         chart_options = kwargs.get("chart_options")
 
         typed_bounds: tuple[float, float, float, float] | None = None
-        if is_four_number_bounds(bounds):
-            typed_bounds = bounds
+        if bounds is not None:
+            if is_four_number_bounds(bounds):
+                typed_bounds = bounds
+            else:
+                msg = f"bounds must be a tuple of four numbers, got {bounds!r}"
+                raise ValueError(msg)
 
         self._presentation.set_placeholder_content(
             self.index,

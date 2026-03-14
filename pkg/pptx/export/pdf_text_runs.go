@@ -109,7 +109,7 @@ func measureStyledRunWidth(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
 	if size <= 0 {
 		size = defaultFontSize
 	}
-	setPDFTextFont(pdf, size, run.Bold, run.Italic)
+	setPDFTextFontWithHint(pdf, size, run.Bold, run.Italic, run.FontHint)
 	return measuredWidthWithMetrics(pdf, run.Text, run.FontHint)
 }
 
@@ -131,7 +131,7 @@ func renderStyledLine(pdf *gopdf.GoPdf, line []pdfStyledRun, x, y float64) {
 		if size <= 0 {
 			size = defaultFontSize
 		}
-		setPDFTextFont(pdf, size, run.Bold, run.Italic)
+		setPDFTextFontWithHint(pdf, size, run.Bold, run.Italic, run.FontHint)
 		pdf.SetTextColor(run.Color[0], run.Color[1], run.Color[2])
 		pdf.SetX(cursorX)
 		pdf.SetY(y + fontBaselineShift(run.FontHint, size))

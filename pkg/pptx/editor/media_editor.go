@@ -1,21 +1,16 @@
 package editor
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"os"
-	"path"
-	"strconv"
-	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
-// AddVideo adds a video shape to the slide with a poster frame.
+// AddVideo adds a video shape to the slide. If no poster frame bytes are
+// provided, a built-in tiny PNG poster is used.
 func (e *PresentationEditor) AddVideo(
 	slideIndex int,
 	videoData []byte,
@@ -23,10 +18,11 @@ func (e *PresentationEditor) AddVideo(
 	mimeType string,
 	x, y, w, h float64,
 ) (int, error) {
-	return e.addVideoGeneric(slideIndex, videoData, "", posterFrameData, "", mimeType, x, y, w, h)
+	return e.addVideoGeneric(slideIndex, videoData, "", posterFrameData, "", mimeType, "", x, y, w, h)
 }
 
-// AddVideoFromFile adds a video shape from local files.
+// AddVideoFromFile adds a video shape from local files. If posterFramePath is
+// empty, a built-in tiny PNG poster is used.
 func (e *PresentationEditor) AddVideoFromFile(
 	slideIndex int,
 	videoPath string,
@@ -34,7 +30,7 @@ func (e *PresentationEditor) AddVideoFromFile(
 	mimeType string,
 	x, y, w, h float64,
 ) (int, error) {
-	return e.addVideoGeneric(slideIndex, nil, videoPath, nil, posterFramePath, mimeType, x, y, w, h)
+	return e.addVideoGeneric(slideIndex, nil, videoPath, nil, posterFramePath, mimeType, "", x, y, w, h)
 }
 
 func (e *PresentationEditor) addVideoGeneric(
@@ -44,21 +40,33 @@ func (e *PresentationEditor) addVideoGeneric(
 	posterData []byte,
 	posterPath string,
 	mimeType string,
+	altText string,
 	x, y, w, h float64,
 ) (int, error) {
 	if err := editormodmedia.ValidateMediaSlideIndex(slideIndex, len(e.slides)); err != nil {
 		return 0, err
 	}
 
-	posterFramePart, err := editormodmedia.RegisterPartFromDataOrPath(
-		posterData,
-		posterPath,
-		"poster frame data or path is required for video",
-		func(data []byte) (string, error) { return e.RegisterImage(data, "png") },
-		func(filePath string) (string, error) { return e.RegisterImageFromFile(filePath) },
-	)
-	if err != nil {
-		return 0, fmt.Errorf("register poster frame: %w", err)
+	posterFramePart := ""
+	if len(posterData) > 0 || posterPath != "" {
+		var err error
+		posterFramePart, err = editormodmedia.RegisterPartFromDataOrPath(
+			posterData,
+			posterPath,
+			"poster frame data or path is required for video",
+			func(data []byte) (string, error) { return e.RegisterImage(data, "png") },
+			func(filePath string) (string, error) { return e.RegisterImageFromFile(filePath) },
+		)
+		if err != nil {
+			return 0, fmt.Errorf("register poster frame: %w", err)
+		}
+	}
+	if posterFramePart == "" {
+		var err error
+		posterFramePart, err = e.RegisterImage(editormodmedia.DefaultVideoPosterPNG(), "png")
+		if err != nil {
+			return 0, fmt.Errorf("register default poster frame: %w", err)
+		}
 	}
 	posterRelID, err := e.getOrCreateSlideRel(slideIndex, posterFramePart)
 	if err != nil {
@@ -96,7 +104,7 @@ func (e *PresentationEditor) addVideoGeneric(
 
 	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	newID := maxID + 1
-	videoXML := editormodmedia.BuildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, x, y, w, h)
+	videoXML := editormodmedia.BuildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, altText, x, y, w, h)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, videoXML)
 	if err != nil {
 		return 0, err
@@ -186,182 +194,4 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 	e.parts.Set(slideRef.Part, updatedContent)
 
 	return newID, nil
-}
-
-// AddAudio adds an audio shape to the slide.
-func (e *PresentationEditor) AddAudio(
-	slideIndex int,
-	audioData []byte,
-	mimeType string,
-	x, y, w, h float64,
-) (int, error) {
-	return e.addAudioGeneric(slideIndex, audioData, "", mimeType, x, y, w, h)
-}
-
-// AddAudioFromFile adds an audio shape from a local file.
-func (e *PresentationEditor) AddAudioFromFile(
-	slideIndex int,
-	audioPath string,
-	mimeType string,
-	x, y, w, h float64,
-) (int, error) {
-	return e.addAudioGeneric(slideIndex, nil, audioPath, mimeType, x, y, w, h)
-}
-
-func (e *PresentationEditor) addAudioGeneric(
-	slideIndex int,
-	audioData []byte,
-	audioPath string,
-	mimeType string,
-	x, y, w, h float64,
-) (int, error) {
-	if err := editormodmedia.ValidateMediaSlideIndex(slideIndex, len(e.slides)); err != nil {
-		return 0, err
-	}
-
-	audioPart, err := editormodmedia.RegisterAudioPart(
-		audioData,
-		audioPath,
-		mimeType,
-		e.RegisterMedia,
-	)
-	if err != nil {
-		return 0, fmt.Errorf("register audio media: %w", err)
-	}
-
-	// Create relationships
-	// Legacy audio rel
-	audioRelID, err := e.getOrCreateSlideRelWithType(slideIndex, audioPart, common.RelTypeAudio)
-	if err != nil {
-		return 0, err
-	}
-	// Modern media rel
-	mediaRelID, err := e.getOrCreateSlideRelWithType(slideIndex, audioPart, common.RelTypeMedia)
-	if err != nil {
-		return 0, err
-	}
-
-	// Generate XML
-	slideRef := e.slides[slideIndex]
-	content, ok := e.parts.Get(slideRef.Part)
-	if !ok {
-		return 0, errors.New("read slide part: not found")
-	}
-
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
-	audioXML := editormodmedia.BuildAudioShapeXML(newID, audioRelID, mediaRelID, x, y, w, h)
-	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, audioXML)
-	if err != nil {
-		return 0, err
-	}
-	e.parts.Set(slideRef.Part, updatedContent)
-
-	return newID, nil
-}
-
-// RegisterImageFromFile adds an image from a file path.
-func (e *PresentationEditor) RegisterImageFromFile(filePath string) (string, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", err
-	}
-	format := strings.TrimPrefix(path.Ext(filePath), ".")
-	return e.RegisterImage(data, format)
-}
-
-// RegisterMedia adds a media file to the presentation or reuses an existing one.
-func (e *PresentationEditor) RegisterMedia(data []byte, ext string) (string, error) {
-	if e == nil {
-		return "", errors.New("editor cannot be nil")
-	}
-	if len(data) == 0 {
-		return "", errors.New("media data cannot be empty")
-	}
-
-	hash := sha256.Sum256(data)
-	hexHash := hex.EncodeToString(hash[:])
-
-	e.mediaMu.Lock()
-	defer e.mediaMu.Unlock()
-
-	if part, ok := e.mediaInventory[hexHash]; ok && strings.HasPrefix(part, "ppt/media/") {
-		return part, nil
-	}
-
-	partPath := "ppt/media/media" + strconv.Itoa(e.nextMediaNum) + "." + ext
-	e.nextMediaNum++
-
-	e.parts.Set(partPath, data)
-	e.mediaInventory[hexHash] = partPath
-
-	return partPath, nil
-}
-
-// RegisterEmbedding adds an OLE embedding to the presentation.
-func (e *PresentationEditor) RegisterEmbedding(data []byte, ext string) (string, error) {
-	if e == nil {
-		return "", errors.New("editor cannot be nil")
-	}
-	if len(data) == 0 {
-		return "", errors.New("embedding data cannot be empty")
-	}
-
-	hash := sha256.Sum256(data)
-	hexHash := hex.EncodeToString(hash[:])
-
-	e.mediaMu.Lock()
-	defer e.mediaMu.Unlock()
-
-	if part, ok := e.mediaInventory[hexHash]; ok && strings.HasPrefix(part, "ppt/embeddings/") {
-		return part, nil
-	}
-
-	partPath := "ppt/embeddings/oleObject" + strconv.Itoa(e.nextMediaNum) + "." + ext
-	e.nextMediaNum++
-
-	e.parts.Set(partPath, data)
-	e.mediaInventory[hexHash] = partPath
-
-	return partPath, nil
-}
-
-func (e *PresentationEditor) getOrCreateSlideRelWithType(
-	slideIndex int,
-	partPath string,
-	relType string,
-) (string, error) {
-	slideRef := e.slides[slideIndex]
-	rels, err := e.slideRelationships(slideRef.Part)
-	if err != nil {
-		return "", err
-	}
-
-	var target string
-	switch {
-	case strings.HasPrefix(partPath, "ppt/media/"):
-		target = "../media/" + path.Base(partPath)
-	case strings.HasPrefix(partPath, "ppt/embeddings/"):
-		target = "../embeddings/" + path.Base(partPath)
-	default:
-		target = path.Base(partPath)
-	}
-
-	for _, r := range rels {
-		if r.Type == relType && r.Target == target {
-			return r.ID, nil
-		}
-	}
-
-	nextNum := common.NextRelationshipNumber(rels)
-	relID := fmt.Sprintf("rId%d", nextNum)
-
-	rels = append(rels, common.EditorRelationship{
-		ID:     relID,
-		Type:   relType,
-		Target: target,
-	})
-
-	e.parts.Set(common.SlideRelsPartName(slideRef.Part), []byte(renderRelationshipsXML(rels)))
-	return relID, nil
 }

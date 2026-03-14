@@ -2,6 +2,9 @@ package vba
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -100,5 +103,36 @@ func TestVBAProject_Validate(t *testing.T) {
 	p.AddModule(NewModule("", ""))
 	if err := p.Validate(); err == nil {
 		t.Error("Validate() error = nil, want error on empty module name")
+	}
+}
+
+func TestInspectCFB_Invalid(t *testing.T) {
+	if _, err := InspectCFB([]byte("not a cfb")); err == nil {
+		t.Fatal("InspectCFB() expected error for invalid data")
+	}
+}
+
+func TestInspectCFB_ValidFixture(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "valid_cfb.bin"))
+	if err != nil {
+		t.Fatalf("read valid CFB fixture: %v", err)
+	}
+	info, err := InspectCFB(data)
+	if err != nil {
+		t.Fatalf("InspectCFB(valid fixture) error = %v", err)
+	}
+	if len(info.Entries) == 0 {
+		t.Fatal("expected at least one CFB entry from valid fixture")
+	}
+}
+
+func TestVBAProject_Validate_InvalidCFBData(t *testing.T) {
+	p := FromData([]byte("invalid-cfb"))
+	err := p.Validate()
+	if err == nil {
+		t.Fatal("expected Validate() to fail for invalid CFB data")
+	}
+	if !strings.Contains(err.Error(), "invalid vbaProject.bin CFB data") {
+		t.Fatalf("expected CFB validation message, got: %v", err)
 	}
 }

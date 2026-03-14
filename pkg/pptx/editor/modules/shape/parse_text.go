@@ -23,14 +23,21 @@ func applyParsedShapeText(ps *ParsedShapeProperties, s *shapeXML) {
 	ps.Text = txt.String()
 }
 
-func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *struct {
-	MarL   *int `xml:"marL,attr"`
-	Indent *int `xml:"indent,attr"`
-}) {
+func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *paragraphPropsXML) {
 	if index != 0 || pPr == nil {
 		return
 	}
 	paragraph := &common.Paragraph{}
+	applyParagraphIndent(paragraph, pPr)
+	applyParagraphTabStops(paragraph, pPr)
+	applyParagraphAlignmentLevel(paragraph, pPr)
+	applyParagraphSpacing(paragraph, pPr)
+	if hasParagraphProps(paragraph) {
+		ps.Paragraph = paragraph
+	}
+}
+
+func applyParagraphIndent(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
 	if pPr.MarL != nil {
 		paragraph.Indent = pPr.MarL
 	}
@@ -38,9 +45,60 @@ func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *struct {
 		hanging := -*pPr.Indent
 		paragraph.Hanging = &hanging
 	}
-	if paragraph.Indent != nil || paragraph.Hanging != nil {
-		ps.Paragraph = paragraph
+}
+
+func applyParagraphTabStops(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
+	if pPr.TabLst == nil {
+		return
 	}
+	tabStops := make([]int, 0, len(pPr.TabLst.Tabs))
+	for _, tab := range pPr.TabLst.Tabs {
+		if tab.Pos == nil {
+			continue
+		}
+		tabStops = append(tabStops, *tab.Pos)
+	}
+	if len(tabStops) > 0 {
+		paragraph.TabStops = tabStops
+	}
+}
+
+func applyParagraphAlignmentLevel(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
+	if pPr.Algn != nil && *pPr.Algn != "" {
+		paragraph.Alignment = pPr.Algn
+	}
+	if pPr.Lvl != nil {
+		paragraph.Level = pPr.Lvl
+	}
+}
+
+func applyParagraphSpacing(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
+	if pPr.LnSp != nil {
+		if pPr.LnSp.SpcPct != nil && pPr.LnSp.SpcPct.Val != nil {
+			paragraph.LineSpacingPct = pPr.LnSp.SpcPct.Val
+		}
+		if pPr.LnSp.SpcPts != nil && pPr.LnSp.SpcPts.Val != nil {
+			paragraph.LineSpacingPts = pPr.LnSp.SpcPts.Val
+		}
+	}
+	if pPr.SpcBef != nil && pPr.SpcBef.SpcPts != nil && pPr.SpcBef.SpcPts.Val != nil {
+		paragraph.SpaceBeforePts = pPr.SpcBef.SpcPts.Val
+	}
+	if pPr.SpcAft != nil && pPr.SpcAft.SpcPts != nil && pPr.SpcAft.SpcPts.Val != nil {
+		paragraph.SpaceAfterPts = pPr.SpcAft.SpcPts.Val
+	}
+}
+
+func hasParagraphProps(paragraph *common.Paragraph) bool {
+	return paragraph.Indent != nil ||
+		paragraph.Hanging != nil ||
+		len(paragraph.TabStops) > 0 ||
+		paragraph.Alignment != nil ||
+		paragraph.Level != nil ||
+		paragraph.LineSpacingPct != nil ||
+		paragraph.LineSpacingPts != nil ||
+		paragraph.SpaceBeforePts != nil ||
+		paragraph.SpaceAfterPts != nil
 }
 
 func parseTextRun(runXML struct {

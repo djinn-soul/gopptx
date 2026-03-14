@@ -35,7 +35,13 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 		`csTypeId="`+Escape(defaultColorStyleID(spec.ColorStyleID))+`"`,
 		1,
 	)
-	data = injectSmartArtNodeTexts(data, flattenSmartArtNodeTexts(spec.Nodes))
+	orderedTexts := flattenSmartArtNodeTexts(spec.Nodes)
+	targetDataModelIDs := preferredDataModelIDsInOrder(data)
+	if len(targetDataModelIDs) > 0 {
+		data = injectSmartArtNodeTextsForModelIDs(data, targetDataModelIDs, orderedTexts)
+	} else {
+		data = injectSmartArtNodeTexts(data, orderedTexts)
+	}
 	return data
 }
 
@@ -69,7 +75,24 @@ func renderSmartArtColorsFromTemplate(colorStyleID string) string {
 func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 	drawing := mustTemplate(templatePathForLayout(spec.LayoutURI, "drawing.xml"))
 	data := renderSmartArtDataFromTemplate(spec)
-	return injectSmartArtDrawingTexts(drawing, buildDrawingTextMapFromData(data))
+	orderedTexts := flattenSmartArtNodeTexts(spec.Nodes)
+	textByModelID := buildDrawingTextMapFromData(data)
+	if preferOrderedNodeMapping(spec.LayoutURI) {
+		preferred := mapOrderedTextsToPreferredPresNodes(data, orderedTexts)
+		if len(preferred) >= len(orderedTexts) && len(preferred) > 0 {
+			textByModelID = preferred
+		}
+	}
+	if len(textByModelID) == 0 && len(orderedTexts) > 0 {
+		if preferred := mapOrderedTextsToPreferredPresNodes(data, orderedTexts); len(preferred) > 0 {
+			textByModelID = preferred
+		}
+	}
+	return injectSmartArtDrawingTexts(drawing, textByModelID)
+}
+
+func preferOrderedNodeMapping(layoutURI string) bool {
+	return strings.Contains(layoutURI, "/vList5")
 }
 
 func flattenSmartArtNodeTexts(nodes []SmartArtNodeSpec) []string {
@@ -219,11 +242,39 @@ func injectSmartArtNodeTexts(data string, texts []string) string {
 	return clearSmartArtPlaceholderTextRuns(b.String())
 }
 
+func injectSmartArtNodeTextsForModelIDs(data string, modelIDs []string, texts []string) string {
+	if len(modelIDs) == 0 {
+		return clearSmartArtPlaceholderTextRuns(data)
+	}
+	textByModelID := map[string]string{}
+	for i, modelID := range modelIDs {
+		if i >= len(texts) {
+			break
+		}
+		textByModelID[modelID] = texts[i]
+	}
+	segments := strings.Split(data, "<dgm:pt ")
+	if len(segments) <= 1 {
+		return clearSmartArtPlaceholderTextRuns(data)
+	}
+	var b strings.Builder
+	b.WriteString(segments[0])
+	for i := 1; i < len(segments); i++ {
+		segment := "<dgm:pt " + segments[i]
+		modelID := extractXMLAttr(segment, "modelId")
+		if text, ok := textByModelID[modelID]; ok {
+			segment = injectTextIntoPointSegment(segment, text)
+		}
+		b.WriteString(segment)
+	}
+	return clearSmartArtPlaceholderTextRuns(b.String())
+}
+
 func placeholderTextForIndex(texts []string, idx int) string {
 	if idx < len(texts) {
 		return texts[idx]
 	}
-	return generatedVerifierText(idx)
+	return ""
 }
 
 func generatedVerifierText(idx int) string {
@@ -246,7 +297,12 @@ func generatedVerifierText(idx int) string {
 }
 
 func injectTextIntoPointSegment(segment, text string) string {
+	if text != "" {
+		segment = strings.Replace(segment, ` phldr="1"`, "", 1)
+	}
+
 	escaped := Escape(text)
+	runXML := injectedSmartArtRunXML(escaped)
 
 	if strings.Contains(segment, "<a:t>") {
 		start := strings.Index(segment, "<a:t>")
@@ -260,7 +316,7 @@ func injectTextIntoPointSegment(segment, text string) string {
 	withRun := strings.Replace(
 		segment,
 		"<a:p><a:endParaRPr",
-		"<a:p><a:r><a:t>"+escaped+"</a:t></a:r><a:endParaRPr",
+		"<a:p>"+runXML+"<a:endParaRPr",
 		1,
 	)
 	if withRun != segment {
@@ -268,15 +324,19 @@ func injectTextIntoPointSegment(segment, text string) string {
 	}
 
 	if endParaIdx := strings.Index(segment, "<a:endParaRPr"); endParaIdx >= 0 {
-		return segment[:endParaIdx] + "<a:r><a:t>" + escaped + "</a:t></a:r>" + segment[endParaIdx:]
+		return segment[:endParaIdx] + runXML + segment[endParaIdx:]
 	}
 
 	return strings.Replace(
 		segment,
 		"<a:p/>",
-		"<a:p><a:r><a:t>"+escaped+"</a:t></a:r></a:p>",
+		"<a:p>"+runXML+"</a:p>",
 		1,
 	)
+}
+
+func injectedSmartArtRunXML(escapedText string) string {
+	return `<a:r><a:rPr lang="en-US" sz="1800"/><a:t>` + escapedText + `</a:t></a:r>`
 }
 
 func clearSmartArtPlaceholderTextRuns(xml string) string {
@@ -302,7 +362,7 @@ func injectSmartArtDrawingTexts(drawing string, textByModelID map[string]string)
 		if text, ok := textByModelID[modelID]; ok {
 			shape = injectTextIntoDrawingShape(shape, text)
 		} else if strings.Contains(shape, "[Text]") || (strings.Contains(shape, "<dsp:txBody>") && !drawingShapeHasNonEmptyText(shape)) {
-			shape = injectTextIntoDrawingShape(shape, generatedVerifierText(fallbackIndex))
+			shape = injectTextIntoDrawingShape(shape, "")
 			fallbackIndex++
 		}
 		b.WriteString(shape)
@@ -339,7 +399,7 @@ func fillPlaceholderTextRuns(xml, text string) string {
 	if strings.Contains(xml, "<a:t>[Text") {
 		xml = placeholderTextRunPattern.ReplaceAllString(xml, "<a:t>"+escaped+"</a:t>")
 	}
-	return strings.ReplaceAll(xml, "<a:t></a:t>", "<a:t>"+escaped+"</a:t>")
+	return xml
 }
 
 func drawingShapeHasNonEmptyText(shape string) bool {

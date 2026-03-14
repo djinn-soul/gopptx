@@ -210,12 +210,18 @@ func (h Hyperlink) Validate() error {
 		if strings.Contains(h.Action.FilePath, "..") {
 			return errors.New("hyperlink file path cannot contain directory traversal (..)")
 		}
+		if err := validateFilePathScheme(h.Action.FilePath); err != nil {
+			return err
+		}
 	case HyperlinkActionProgram:
 		if h.Action.ProgramPath == "" {
 			return errors.New("hyperlink program path cannot be empty")
 		}
 		if strings.Contains(h.Action.ProgramPath, "..") {
 			return errors.New("hyperlink program path cannot contain directory traversal (..)")
+		}
+		if err := validateFilePathScheme(h.Action.ProgramPath); err != nil {
+			return err
 		}
 	case HyperlinkActionEmail:
 		if h.Action.EmailAddress == "" {

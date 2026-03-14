@@ -133,6 +133,27 @@ func (e *PresentationEditor) UpdateChartFormatting(
 	return nil
 }
 
+// GetChartState returns a read-only chart snapshot suitable for object-model traversal.
+func (e *PresentationEditor) GetChartState(
+	slideIndex int,
+	selector common.ChartSelector,
+) (common.ChartState, error) {
+	refs, err := e.ListSlideCharts(slideIndex)
+	if err != nil {
+		return common.ChartState{}, err
+	}
+	chartRef, err := editormodchart.ResolveChartSelector(refs, selector, slideIndex)
+	if err != nil {
+		return common.ChartState{}, err
+	}
+
+	chartXML, ok := e.parts.Get(chartRef.ChartPart)
+	if !ok {
+		return common.ChartState{}, fmt.Errorf("chart part %s not found", chartRef.ChartPart)
+	}
+	return editormodchart.ExtractChartState(chartXML), nil
+}
+
 func (e *PresentationEditor) updateChartEmbeddingRel(chartPart, excelPath string) error {
 	relsPath := common.RelsPathFor(chartPart)
 	relsData, ok := e.parts.Get(relsPath)

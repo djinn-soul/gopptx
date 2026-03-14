@@ -6,12 +6,20 @@
 package smartart
 
 import (
+	"strings"
+
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // Layout identifies a SmartArt layout type by its OOXML URN.
 type Layout string
+
+// LayoutProvider allows custom layout strategies to plug into SmartArt creation.
+// Implementations may return built-in layout URIs or external/custom URIs.
+type LayoutProvider interface {
+	LayoutURI() string
+}
 
 // Phase-1 supported SmartArt layouts.
 const (
@@ -69,6 +77,16 @@ func (l Layout) Name() string {
 		return name
 	}
 	return string(l)
+}
+
+// LayoutURI returns the raw layout URI.
+func (l Layout) LayoutURI() string {
+	return string(l)
+}
+
+// CustomLayout creates a layout from an arbitrary URI (including custom .glox-based URIs).
+func CustomLayout(uri string) Layout {
+	return Layout(strings.TrimSpace(uri))
 }
 
 func processLayoutName(l Layout) (string, bool) {
@@ -199,6 +217,11 @@ func NewSmartArt(layout Layout) SmartArt {
 		CX:     defaultCX,
 		CY:     defaultCY,
 	}
+}
+
+// NewSmartArtWithLayout creates a SmartArt diagram from any layout provider.
+func NewSmartArtWithLayout(layout LayoutProvider) SmartArt {
+	return NewSmartArt(CustomLayout(layout.LayoutURI()))
 }
 
 // WithAltText sets the alternative text for accessibility.

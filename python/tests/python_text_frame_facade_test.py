@@ -29,12 +29,12 @@ def test_text_frame_props_aliases_round_trip(tmp_path: Path) -> None:
                 text_rotation=45.0,
             ),
         )
-        assert shape_id > 0  # noqa: S101
+        assert shape_id > 0
         prs.save(out_path)
 
     with Presentation(out_path) as prs:
         texts = [shape["Text"] for shape in prs.slides[0].list_shapes()]
-        assert "frame" in texts  # noqa: S101
+        assert "frame" in texts
 
 
 def test_text_frame_props_rejects_out_of_range_rotation() -> None:

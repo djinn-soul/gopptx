@@ -155,6 +155,26 @@ func (e *PresentationEditor) GetShapeTextState(slideIndex, shapeID int) (common.
 	return state, nil
 }
 
+// GetSlideTextStates returns text-related state for every parsed shape on a slide.
+func (e *PresentationEditor) GetSlideTextStates(slideIndex int) ([]common.SlideShapeTextState, error) {
+	shapes, err := e.getShapesForTextOps(slideIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	states := make([]common.SlideShapeTextState, 0, len(shapes))
+	for _, shape := range shapes {
+		states = append(states, common.SlideShapeTextState{
+			ShapeID:   shape.ID,
+			Text:      shape.Text,
+			Runs:      editorshape.CopyTextRuns(shape.Runs),
+			TextFrame: shape.TextFrame,
+			Paragraph: shape.Paragraph,
+		})
+	}
+	return states, nil
+}
+
 // GetShapeRuns returns a copy of the shape's text runs.
 func (e *PresentationEditor) GetShapeRuns(slideIndex, shapeID int) ([]common.TextRun, error) {
 	state, err := e.GetShapeTextState(slideIndex, shapeID)
@@ -195,22 +215,9 @@ func (e *PresentationEditor) AppendShapeRun(slideIndex, shapeID int, run common.
 }
 
 func (e *PresentationEditor) getShapeForTextOps(slideIndex, shapeID int) (parsedShape, error) {
-	if e == nil {
-		return parsedShape{}, errors.New("editor cannot be nil")
-	}
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return parsedShape{}, errors.New("slide index out of range")
-	}
-
-	partPath := e.slides[slideIndex].Part
-	content, ok := e.parts.Get(partPath)
-	if !ok {
-		return parsedShape{}, fmt.Errorf("read slide part %s: not found", partPath)
-	}
-
-	shapes, err := parseSlideShapes(content)
+	shapes, err := e.getShapesForTextOps(slideIndex)
 	if err != nil {
-		return parsedShape{}, fmt.Errorf("parse shapes: %w", err)
+		return parsedShape{}, err
 	}
 
 	for _, shape := range shapes {
@@ -220,4 +227,25 @@ func (e *PresentationEditor) getShapeForTextOps(slideIndex, shapeID int) (parsed
 	}
 
 	return parsedShape{}, fmt.Errorf("shape id %d not found on slide %d", shapeID, slideIndex)
+}
+
+func (e *PresentationEditor) getShapesForTextOps(slideIndex int) ([]parsedShape, error) {
+	if e == nil {
+		return nil, errors.New("editor cannot be nil")
+	}
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return nil, errors.New("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return nil, fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return nil, fmt.Errorf("parse shapes: %w", err)
+	}
+	return shapes, nil
 }
