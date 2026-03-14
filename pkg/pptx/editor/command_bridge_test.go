@@ -158,6 +158,9 @@ func TestCommandNotesOps(t *testing.T) {
 	if !strings.Contains(resp, `"notes_slide":{"text":"Speaker notes here"}`) {
 		t.Fatalf("expected notes_slide object after notes creation: %s", resp)
 	}
+	if !strings.Contains(resp, `"notes_shapes":[`) {
+		t.Fatalf("expected notes_shapes payload in get_notes response: %s", resp)
+	}
 
 	// 3. Update Notes
 	setReq2 := `{"api_version":1,"request_id":"n3","op":"set_notes","payload":{"slide_index":0,"text":"Updated notes"}}`

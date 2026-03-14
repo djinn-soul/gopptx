@@ -106,6 +106,21 @@ type PlaceholderInfo struct {
 	CY    float64
 }
 
+// NotesShapeInfo describes one shape discovered on a notes slide.
+type NotesShapeInfo struct {
+	ID               int
+	Name             string
+	Type             string
+	Text             string
+	X                float64
+	Y                float64
+	CX               float64
+	CY               float64
+	PlaceholderIndex int
+	PlaceholderType  string
+	HasTextFrame     bool
+}
+
 // SlideMasterInfo describes one available slide master part.
 type SlideMasterInfo struct {
 	Part         string

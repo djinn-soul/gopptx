@@ -73,13 +73,14 @@ func ParseSetNotesRequest(
 }
 
 func BuildNotesResult(text string, hasNotesSlide bool) map[string]any {
-	return BuildNotesResultDetailed(text, hasNotesSlide, nil)
+	return BuildNotesResultDetailed(text, hasNotesSlide, nil, nil)
 }
 
 func BuildNotesResultDetailed(
 	text string,
 	hasNotesSlide bool,
 	placeholders []common.PlaceholderInfo,
+	shapes []common.NotesShapeInfo,
 ) map[string]any {
 	var notesSlide any
 	if hasNotesSlide {
@@ -91,5 +92,6 @@ func BuildNotesResultDetailed(
 		"text":               text,
 		"notes_slide":        notesSlide,
 		"notes_placeholders": placeholders,
+		"notes_shapes":       shapes,
 	}
 }

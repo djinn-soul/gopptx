@@ -15,14 +15,32 @@ def test_notes_shape_collection_and_body_proxy() -> None:
 
         assert len(notes_slide.shapes) > 0
         first = notes_slide.shapes[0]
+        assert isinstance(first.shape_id, int)
         assert isinstance(first.name, str)
+        assert isinstance(first.shape_type, str)
         assert isinstance(first.placeholder_type, str)
         assert isinstance(first.is_placeholder, bool)
+        assert isinstance(first.has_text_frame, bool)
         assert isinstance(first.x, float)
         assert isinstance(first.y, float)
         assert isinstance(first.cx, float)
         assert isinstance(first.cy, float)
+        assert isinstance(first.left, float)
+        assert isinstance(first.top, float)
+        assert isinstance(first.width, float)
+        assert isinstance(first.height, float)
         assert notes_slide.shapes.get(name=first.name) is not None
+        if first.shape_id >= 0:
+            assert notes_slide.shapes.get(shape_id=first.shape_id) is not None
+            assert notes_slide.shapes.by_id(first.shape_id) is not None
+            assert notes_slide.shape(first.shape_id) is not None
+        assert notes_slide.shapes.get(shape_type=first.shape_type) is not None
+        assert isinstance(notes_slide.text_shapes, list)
+        assert isinstance(notes_slide.placeholder_shapes, list)
+        assert all(shape.has_text_frame for shape in notes_slide.text_shapes)
+        body_matches = notes_slide.shapes.find_all(placeholder_type="body")
+        if body_matches:
+            assert body_matches[0].placeholder_type == "body"
 
         body = notes_slide.body_shape
         if body is not None:

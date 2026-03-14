@@ -27,6 +27,10 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err != nil {
 				return nil, err
 			}
+			rawShapes, err := e.ListNotesShapes(slideIndex)
+			if err != nil {
+				return nil, err
+			}
 			placeholders := make([]common.PlaceholderInfo, 0, len(rawPlaceholders))
 			for _, ph := range rawPlaceholders {
 				placeholders = append(placeholders, common.PlaceholderInfo{
@@ -35,7 +39,12 @@ func handleGetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 					Name:  ph.Name,
 				})
 			}
-			return editorcommand.BuildNotesResultDetailed(notes, hasNotesSlide, placeholders), nil
+			return editorcommand.BuildNotesResultDetailed(
+				notes,
+				hasNotesSlide,
+				placeholders,
+				rawShapes,
+			), nil
 		},
 	)
 }

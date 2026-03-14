@@ -63,19 +63,91 @@ func ValidateHyperlinkAction(a HyperlinkAction, context string) error {
 }
 
 func validateFilePathScheme(pathValue string) error {
+	pathValue = strings.TrimSpace(pathValue)
+	if pathValue == "" {
+		return fmt.Errorf("file path cannot be empty")
+	}
 	parsed, err := url.Parse(pathValue)
 	if err != nil {
 		return fmt.Errorf("invalid file path %q: %w", pathValue, err)
 	}
+	pathPart := pathValue
 	if parsed.Scheme == "" {
-		return nil
-	}
-	if len(parsed.Scheme) == 1 && filepath.IsAbs(pathValue) {
+		pathPart = pathValue
+	} else if len(parsed.Scheme) == 1 && filepath.IsAbs(pathValue) {
 		// Windows drive prefix (for example `C:\...`) is not a URI scheme.
-		return nil
+		pathPart = pathValue
+	} else {
+		if !strings.EqualFold(parsed.Scheme, "file") {
+			return fmt.Errorf("file path must use file:// scheme or no scheme, got %q", parsed.Scheme)
+		}
+		if parsed.RawQuery != "" || parsed.Fragment != "" {
+			return fmt.Errorf("file URI must not include query or fragment components")
+		}
+		if parsed.Opaque != "" {
+			return fmt.Errorf("file URI uses unsupported opaque path form")
+		}
+		host := strings.ToLower(strings.TrimSpace(parsed.Host))
+		if host != "" && host != "localhost" {
+			return fmt.Errorf("file URI host %q is not allowed", parsed.Host)
+		}
+		unescaped, unescapeErr := url.PathUnescape(parsed.Path)
+		if unescapeErr != nil {
+			return fmt.Errorf("invalid escaped file URI path %q: %w", parsed.Path, unescapeErr)
+		}
+		pathPart = unescaped
 	}
-	if !strings.EqualFold(parsed.Scheme, "file") {
-		return fmt.Errorf("file path must use file:// scheme or no scheme, got %q", parsed.Scheme)
+	if pathPart == "" {
+		return fmt.Errorf("file path cannot be empty")
+	}
+	if strings.ContainsRune(pathPart, '\x00') {
+		return fmt.Errorf("file path cannot contain NUL characters")
+	}
+
+	normalized := strings.ReplaceAll(pathPart, "\\", "/")
+	if containsTraversalSegment(normalized) {
+		return fmt.Errorf("file path cannot contain directory traversal (..)")
+	}
+	if isSensitiveSystemPath(normalized) {
+		return fmt.Errorf("file path references a restricted system location")
 	}
 	return nil
+}
+
+func containsTraversalSegment(path string) bool {
+	for _, seg := range strings.Split(path, "/") {
+		if seg == ".." {
+			return true
+		}
+	}
+	return false
+}
+
+func isSensitiveSystemPath(path string) bool {
+	lower := strings.ToLower(strings.TrimSpace(path))
+	lower = strings.TrimPrefix(lower, "file:///")
+	lower = strings.TrimPrefix(lower, "file://")
+	lower = strings.TrimPrefix(lower, "//localhost/")
+	lower = strings.TrimPrefix(lower, "/")
+
+	restrictedPrefixes := []string{
+		"windows/", "windows/system32/",
+		"programdata/",
+		"etc/", "bin/", "sbin/", "usr/bin/", "usr/sbin/", "proc/", "sys/", "dev/",
+	}
+	for _, prefix := range restrictedPrefixes {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+
+	drivePrefixes := []string{
+		"c:/windows/", "c:/windows/system32/", "c:/programdata/",
+	}
+	for _, prefix := range drivePrefixes {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return false
 }
