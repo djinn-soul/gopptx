@@ -164,7 +164,7 @@ func generateFlowchartElements(flowchart *FlowchartDiagram, theme Theme) Diagram
 	isHorizontal := flowchart.Direction == FlowDirectionLR || flowchart.Direction == FlowDirectionRL
 	layout := defaultFlowchartLayout()
 	state := newFlowchartRenderState(layout, theme, isHorizontal, flowchart.Nodes)
-	state.layoutNodes(flowchart.Subgraphs)
+	state.layoutNodes(flowchart.Subgraphs, flowchart.Connections)
 	state.addConnectors(flowchart.Connections)
 	return state.diagramElements()
 }
@@ -242,8 +242,8 @@ func defaultFlowchartLayout() flowchartLayout {
 		gridStartX:     styling.Inches(1.0),
 		gridStartY:     styling.Inches(1.5),
 		gridMaxCols:    5,
-		labelWidth:     styling.Inches(0.8),
-		labelHeight:    styling.Inches(0.3),
+		labelWidth:     styling.Inches(0.55),
+		labelHeight:    styling.Inches(0.22),
 	}
 }
 
@@ -274,10 +274,13 @@ func newFlowchartRenderState(
 	}
 }
 
-func (s *flowchartRenderState) layoutNodes(subgraphs []Subgraph) {
+func (s *flowchartRenderState) layoutNodes(subgraphs []Subgraph, connections []FlowConnection) {
 	if len(subgraphs) > 0 {
 		s.layoutSubgraphs(subgraphs)
 		s.layoutOrphanNodes()
+		return
+	}
+	if s.layoutByConnections(connections) {
 		return
 	}
 	s.layoutSimpleGrid()
@@ -381,6 +384,9 @@ func (s *flowchartRenderState) calculateWidth(label string) styling.Length {
 }
 
 func (s *flowchartRenderState) addNodeShape(node FlowNode, x, y, width styling.Length) {
+	if node.Shape == NodeShapeDiamond && width < styling.Inches(2.6) {
+		width = styling.Inches(2.6)
+	}
 	s.nodePositions[node.ID] = flowchartPoint{x: x, y: y}
 	s.nodeWidths[node.ID] = width
 	shape := createNodeShape(&node, x, y, width, s.layout.nodeHeight, s.theme)
@@ -472,6 +478,9 @@ func (s *flowchartRenderState) connectorGeometry(
 }
 
 func (s *flowchartRenderState) connectorType(geometry flowConnectorGeometry) string {
+	if s.isHorizontal {
+		return shapes.ConnectorTypeStraight
+	}
 	diffX := geometry.startX - geometry.endX
 	if diffX < 0 {
 		diffX = -diffX
@@ -508,18 +517,24 @@ func (s *flowchartRenderState) connectorLabelShape(
 	label string,
 	geometry flowConnectorGeometry,
 ) shapes.Shape {
-	midX := (geometry.startX + geometry.endX) / 2
-	midY := (geometry.startY + geometry.endY) / 2
-	return shapes.NewShape(
+	labelX := (geometry.startX*2 + geometry.endX) / 3
+	labelY := (geometry.startY + geometry.endY) / 2
+	if geometry.endY >= geometry.startY {
+		labelY += styling.Inches(0.18)
+	} else {
+		labelY -= styling.Inches(0.18)
+	}
+	labelShape := shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		midX-s.layout.labelWidth/2,
-		midY-s.layout.labelHeight/2,
+		labelX-s.layout.labelWidth/2,
+		labelY-s.layout.labelHeight/2,
 		s.layout.labelWidth,
 		s.layout.labelHeight,
 	).WithFill(shapes.NewShapeFill(s.theme.Background)).
-		WithLine(shapes.NewShapeLine(s.theme.SecondaryStroke, styling.Emu(12700))).
 		WithText(label).
 		WithAutoFit(shapes.TextAutoFitNormal)
+	labelShape.Line = nil
+	return labelShape
 }
 
 func (b *flowchartBounds) includeShape(shape shapes.Shape) {
@@ -586,7 +601,7 @@ func createNodeShape(node *FlowNode, x, y, width, height styling.Length, theme T
 	// Diamond shapes need more height for text to avoid clipping
 	nodeHeight := height
 	if node.Shape == NodeShapeDiamond {
-		nodeHeight = (height * 3) / 2
+		nodeHeight = height * 2
 	}
 
 	return shapes.NewShape(shapeType, x, y, width, nodeHeight).

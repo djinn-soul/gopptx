@@ -8,8 +8,17 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
+)
+
+const (
+	defaultTableWidthEMU       = 8230200
+	markdownTableBaseYEMU      = 1600200
+	markdownTableBulletLineEMU = 228600
+	markdownTableGapEMU        = 152400
+	markdownTableMaxYEMU       = 2743200
 )
 
 func (p *markdownASTParser) ensureCurrent(line int) error {
@@ -57,14 +66,6 @@ func (p *markdownASTParser) addMarkdownImage(image markdownImage) error {
 	*p.current = p.current.AddImage(placed)
 	p.imagePlacementCount++
 	return nil
-}
-
-func (p *markdownASTParser) nextEmbeddedImageFrame() (styling.Length, styling.Length, styling.Length, styling.Length) {
-	y := embeddedImageStartYInch + float64(p.imagePlacementCount)*embeddedImageGapInch
-	return styling.Inches(embeddedImageXInches),
-		styling.Inches(y),
-		styling.Inches(embeddedImageWidthInches),
-		styling.Inches(embeddedImageHeightInches)
 }
 
 func segmentText(lines *text.Segments, source []byte) string {
@@ -118,4 +119,16 @@ func extractInlineRunsFromMarkdownText(textLine string) []elements.Run {
 		return []elements.Run{elements.NewRun(textLine)}
 	}
 	return runs
+}
+
+func positionMarkdownTable(table tables.Table, slide elements.SlideContent) tables.Table {
+	if table.Y.Emu() != markdownTableBaseYEMU {
+		return table
+	}
+	if len(slide.Bullets) == 0 {
+		return table
+	}
+	newY := markdownTableBaseYEMU + int64(len(slide.Bullets))*markdownTableBulletLineEMU + markdownTableGapEMU
+	newY = min(newY, markdownTableMaxYEMU)
+	return table.Position(table.X, styling.Emu(newY))
 }

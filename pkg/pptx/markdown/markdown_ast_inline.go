@@ -3,6 +3,7 @@ package markdown
 import (
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/yuin/goldmark/ast"
 	extast "github.com/yuin/goldmark/extension/ast"
@@ -19,15 +20,29 @@ type markdownImage struct {
 	Dest string
 }
 
-func extractInlineRuns(node ast.Node, source []byte, state inlineStyleState) []elements.Run {
+const markdownTableRowsCapacity = 4
+
+type markdownRunLinkResolver func(destination string) (action.Hyperlink, bool)
+
+func extractInlineRuns(
+	node ast.Node,
+	source []byte,
+	state inlineStyleState,
+	resolveLink markdownRunLinkResolver,
+) []elements.Run {
 	runs := make([]elements.Run, 0, defaultInlineRunsCapacity)
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
-		runs = append(runs, extractInlineRunsFromNode(child, source, state)...)
+		runs = append(runs, extractInlineRunsFromNode(child, source, state, resolveLink)...)
 	}
 	return elements.NormalizeRuns(runs)
 }
 
-func extractInlineRunsFromNode(node ast.Node, source []byte, state inlineStyleState) []elements.Run {
+func extractInlineRunsFromNode(
+	node ast.Node,
+	source []byte,
+	state inlineStyleState,
+	resolveLink markdownRunLinkResolver,
+) []elements.Run {
 	switch typed := node.(type) {
 	case *ast.Text:
 		text := string(typed.Segment.Value(source))
@@ -46,19 +61,20 @@ func extractInlineRunsFromNode(node ast.Node, source []byte, state inlineStyleSt
 		} else {
 			next.italic = true
 		}
-		return extractInlineRuns(typed, source, next)
+		return extractInlineRuns(typed, source, next, resolveLink)
 	case *extast.Strikethrough:
 		next := state
 		next.strikethrough = true
-		return extractInlineRuns(typed, source, next)
+		return extractInlineRuns(typed, source, next, resolveLink)
 	case *ast.Link:
-		return extractInlineRuns(typed, source, state)
+		return applyMarkdownLinkRuns(extractInlineRuns(typed, source, state, resolveLink), string(typed.Destination), resolveLink)
 	case *ast.AutoLink:
-		return []elements.Run{styledTextRun(string(typed.Label(source)), state)}
+		run := styledTextRun(string(typed.Label(source)), state)
+		return applyMarkdownLinkRuns([]elements.Run{run}, string(typed.URL(source)), resolveLink)
 	case *ast.Image:
 		return nil
 	default:
-		return extractInlineRuns(node, source, state)
+		return extractInlineRuns(node, source, state, resolveLink)
 	}
 }
 
@@ -78,7 +94,7 @@ func styledCodeRun(text string, state inlineStyleState) elements.Run {
 }
 
 func extractPlainText(node ast.Node, source []byte) string {
-	runs := extractInlineRuns(node, source, inlineStyleState{})
+	runs := extractInlineRuns(node, source, inlineStyleState{}, nil)
 	return strings.TrimSpace(elements.RunsToPlainText(runs))
 }
 

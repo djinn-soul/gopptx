@@ -4,25 +4,16 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
-var numberedListPattern = regexp.MustCompile(`^\d+\.\s+(.+)$`)
-
 const defaultInlineRunsCapacity = 4
 
 const (
-	numberedListMatchCount = 2
-	boldMarkerLength       = 2
+	boldMarkerLength = 2
 )
-
-type parsedMarkdownBullet struct {
-	text  string
-	style elements.ParagraphStyle
-}
 
 // ParseOptions controls markdown-to-slide conversion behavior.
 type ParseOptions struct {
@@ -61,35 +52,6 @@ func SlidesFromMarkdownFile(markdownPath string) ([]elements.SlideContent, error
 	}
 	options := ParseOptions{BaseDir: filepath.Dir(filepath.Clean(markdownPath))}
 	return SlidesFromMarkdownWithOptions(string(content), options)
-}
-
-func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
-	for _, marker := range []string{"- ", "* ", "+ "} {
-		if after, ok := strings.CutPrefix(line, marker); ok {
-			return parsedMarkdownBullet{
-				text:  strings.TrimSpace(after),
-				style: elements.DefaultParagraphStyle(),
-			}, true
-		}
-	}
-
-	matches := numberedListPattern.FindStringSubmatch(line)
-	if len(matches) == numberedListMatchCount {
-		return parsedMarkdownBullet{
-			text:  strings.TrimSpace(matches[1]),
-			style: elements.DefaultParagraphStyle().WithNumbered(),
-		}, true
-	}
-	return parsedMarkdownBullet{}, false
-}
-
-func appendMarkdownBullet(slide *elements.SlideContent, text string, style elements.ParagraphStyle) {
-	runs, rich := parseInlineTextRuns(text)
-	if rich {
-		*slide = slide.AddBulletRunsWithStyle(runs, style)
-		return
-	}
-	*slide = slide.AddBulletWithStyle(text, style)
 }
 
 func parseInlineTextRuns(text string) ([]elements.Run, bool) {

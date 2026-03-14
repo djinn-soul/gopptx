@@ -27,12 +27,7 @@ type markdownASTParser struct {
 }
 
 const (
-	initialASTSlideCapacity   = 8
-	embeddedImageXInches      = 0.8
-	embeddedImageStartYInch   = 4.8
-	embeddedImageWidthInches  = 3.4
-	embeddedImageHeightInches = 2.1
-	embeddedImageGapInch      = 2.25
+	initialASTSlideCapacity = 8
 )
 
 func parseMarkdownWithAST(markdownContent string, options ParseOptions) ([]elements.SlideContent, error) {
@@ -108,7 +103,7 @@ func (p *markdownASTParser) consumeHeading(node *ast.Heading) error {
 	if err := p.ensureCurrent(line); err != nil {
 		return err
 	}
-	runs := extractInlineRuns(node, p.source, inlineStyleState{})
+	runs := extractInlineRuns(node, p.source, inlineStyleState{}, p.resolveRunHyperlink)
 	if len(runs) == 0 {
 		return nil
 	}
@@ -151,7 +146,7 @@ func (p *markdownASTParser) consumeParagraph(
 		}
 	}
 
-	runs := extractInlineRuns(node, p.source, inlineStyleState{})
+	runs := extractInlineRuns(node, p.source, inlineStyleState{}, p.resolveRunHyperlink)
 	if len(runs) == 0 {
 		return nil
 	}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
@@ -196,6 +197,96 @@ func TestSlidesFromMarkdownFile_ResolvesRelativeImagePath(t *testing.T) {
 	expectedPath := filepath.Clean(filepath.Join(tmpDir, "photo.png"))
 	if got := filepath.Clean(slides[0].Images[0].Path); got != expectedPath {
 		t.Fatalf("expected resolved image path %q, got %q", expectedPath, got)
+	}
+}
+
+func TestSlidesFromMarkdown_LinkRunHyperlink(t *testing.T) {
+	input := `# Links
+- [OpenAI](https://openai.com)
+`
+	slides, err := SlidesFromMarkdown(input)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
+	}
+	if len(slides) != 1 || len(slides[0].BulletRuns) != 1 {
+		t.Fatalf("expected one linked bullet run")
+	}
+	if len(slides[0].BulletRuns[0]) == 0 {
+		t.Fatalf("expected run entries")
+	}
+	linkRun := slides[0].BulletRuns[0][0]
+	if linkRun.Hyperlink == nil {
+		t.Fatalf("expected hyperlink on markdown link run")
+	}
+	if got := linkRun.Hyperlink.Action.URL; got != "https://openai.com" {
+		t.Fatalf("expected hyperlink URL https://openai.com, got %q", got)
+	}
+}
+
+func TestSlidesFromMarkdown_AnchorLinkIsSkipped(t *testing.T) {
+	input := `# Links
+- [Local Section](#overview)
+`
+	slides, err := SlidesFromMarkdown(input)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
+	}
+	if len(slides) != 1 || len(slides[0].BulletRuns) != 1 || len(slides[0].BulletRuns[0]) == 0 {
+		t.Fatalf("expected one bullet run row")
+	}
+	if slides[0].BulletRuns[0][0].Hyperlink != nil {
+		t.Fatalf("expected anchor hyperlink to be skipped")
+	}
+}
+
+func TestSlidesFromMarkdownFile_RelativeLinkUsesFileHyperlink(t *testing.T) {
+	tmpDir := t.TempDir()
+	markdownPath := filepath.Join(tmpDir, "deck.md")
+	targetPath := filepath.Join(tmpDir, "guide.md")
+	if err := os.WriteFile(targetPath, []byte("# guide"), 0o600); err != nil {
+		t.Fatalf("write guide fixture: %v", err)
+	}
+	if err := os.WriteFile(markdownPath, []byte("# Links\n- [Guide](guide.md)\n"), 0o600); err != nil {
+		t.Fatalf("write markdown fixture: %v", err)
+	}
+
+	slides, err := SlidesFromMarkdownFile(markdownPath)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdownFile returned error: %v", err)
+	}
+	run := slides[0].BulletRuns[0][0]
+	if run.Hyperlink == nil {
+		t.Fatalf("expected file hyperlink for relative markdown link")
+	}
+	if run.Hyperlink.Action.Type != action.HyperlinkActionFile {
+		t.Fatalf("expected file hyperlink action, got %q", run.Hyperlink.Action.Type)
+	}
+	want := filepath.Clean(targetPath)
+	got := filepath.Clean(run.Hyperlink.Action.FilePath)
+	if got != want {
+		t.Fatalf("expected resolved file path %q, got %q", want, got)
+	}
+}
+
+func TestSlidesFromMarkdown_MultiImageAdaptivePlacement(t *testing.T) {
+	encoded := base64.StdEncoding.EncodeToString(testutil.TinyPNG())
+	img := "![img](data:image/png;base64," + encoded + ")"
+	input := "# Gallery\n" + img + "\n" + img + "\n" + img + "\n"
+	slides, err := SlidesFromMarkdown(input)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
+	}
+	if len(slides) != 1 || len(slides[0].Images) != 3 {
+		t.Fatalf("expected 3 placed images")
+	}
+	first := slides[0].Images[0]
+	second := slides[0].Images[1]
+	third := slides[0].Images[2]
+	if second.X.Emu() <= first.X.Emu() {
+		t.Fatalf("expected second image to move to next column")
+	}
+	if third.Y.Emu() <= first.Y.Emu() {
+		t.Fatalf("expected third image to move to next row")
 	}
 }
 

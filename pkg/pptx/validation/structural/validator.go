@@ -63,6 +63,8 @@ func (v *Validator) Validate() []Issue {
 	v.checkRelationships()
 	v.checkSlideReferences()
 	v.checkContentTypes()
+	v.checkNamespaces()
+	v.checkEmptyElements()
 
 	for _, c := range v.checkers {
 		v.issues = append(v.issues, c.Check(v.provider)...)
@@ -356,4 +358,94 @@ func (v *Validator) checkContentTypes() {
 func ValidateZipIntegrity(r io.ReaderAt, size int64) error {
 	_, err := zip.NewReader(r, size)
 	return err
+}
+
+func (v *Validator) checkNamespaces() {
+	for _, p := range v.provider.Keys() {
+		if !strings.HasSuffix(p, ".xml") {
+			continue
+		}
+		data, ok := v.provider.Get(p)
+		if !ok {
+			continue
+		}
+		content := string(data)
+		xmlDeclIdx := strings.Index(content, "?>")
+		startIdx := xmlDeclIdx + 2
+		if xmlDeclIdx == -1 {
+			startIdx = 0
+		}
+		
+		firstTagStart := strings.Index(content[startIdx:], "<")
+		if firstTagStart == -1 {
+			continue
+		}
+		
+		firstTagEnd := strings.Index(content[startIdx+firstTagStart:], ">")
+		if firstTagEnd == -1 {
+			continue
+		}
+		
+		openingTag := content[startIdx+firstTagStart : startIdx+firstTagStart+firstTagEnd+1]
+		
+		// If it's a presentation part, must have xmlns:p
+		if strings.HasPrefix(p, "ppt/presentation.xml") || strings.HasPrefix(p, "ppt/slides/") || strings.HasPrefix(p, "ppt/slideMasters/") || strings.HasPrefix(p, "ppt/slideLayouts/") {
+			if !strings.Contains(openingTag, "xmlns:p=") && !strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"`) {
+				v.issues = append(v.issues, Issue{
+					Code:        CodeMissingNamespace,
+					Severity:    SeverityWarning,
+					Path:        p,
+					Description: "Missing presentationml namespace declaration",
+					Repairable:  true,
+					Context:     map[string]string{"ns": "p"},
+				})
+			}
+			if !strings.Contains(openingTag, "xmlns:a=") && !strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/drawingml/2006/main"`) {
+				v.issues = append(v.issues, Issue{
+					Code:        CodeMissingNamespace,
+					Severity:    SeverityWarning,
+					Path:        p,
+					Description: "Missing drawingml namespace declaration",
+					Repairable:  true,
+					Context:     map[string]string{"ns": "a"},
+				})
+			}
+			if !strings.Contains(openingTag, "xmlns:r=") && !strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`) {
+				v.issues = append(v.issues, Issue{
+					Code:        CodeMissingNamespace,
+					Severity:    SeverityWarning,
+					Path:        p,
+					Description: "Missing relationships namespace declaration",
+					Repairable:  true,
+					Context:     map[string]string{"ns": "r"},
+				})
+			}
+		}
+	}
+}
+
+func (v *Validator) checkEmptyElements() {
+	// A basic implementation to catch some known fragile elements
+	// that shouldn't be empty self-closing (like p:sldIdLst) 
+	// unless they are explicitly handled correctly by a reader.
+	for _, p := range v.provider.Keys() {
+		if !strings.HasSuffix(p, ".xml") {
+			continue
+		}
+		data, ok := v.provider.Get(p)
+		if !ok {
+			continue
+		}
+		content := string(data)
+		if strings.Contains(content, "<p:sldIdLst/>") {
+			v.issues = append(v.issues, Issue{
+				Code:        CodeEmptyRequiredElement,
+				Severity:    SeverityInfo,
+				Path:        p,
+				Description: "Found empty self-closing <p:sldIdLst/> element",
+				Repairable:  true,
+				Context:     map[string]string{"element": "p:sldIdLst"},
+			})
+		}
+	}
 }

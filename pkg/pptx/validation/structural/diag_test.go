@@ -164,3 +164,107 @@ func TestRepairer_BrokenRelationshipPreservesOOXMLRelationshipsRoot(t *testing.T
 		t.Fatalf("expected OOXML relationships namespace, got: %s", content)
 	}
 }
+
+func TestRepairer_MissingSlideRef(t *testing.T) {
+	presRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
+</Relationships>`
+
+	presXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation>
+  <p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>
+  <p:sldIdLst/>
+</p:presentation>`
+
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/presentation.xml":            []byte(presXml),
+		"ppt/_rels/presentation.xml.rels": []byte(presRels),
+		"ppt/slides/slide1.xml":           []byte("<root/>"), // Orphan/Missing ref
+	}}
+
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeMissingSlideRef,
+		Path:        "ppt/slides/slide1.xml",
+		Description: "Missing slide ref",
+		Repairable:  true,
+	}})
+
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Fatalf("expected issue to be repaired, got unrepaired")
+	}
+
+	relsData, _ := m.Get("ppt/_rels/presentation.xml.rels")
+	if !strings.Contains(string(relsData), `Target="slides/slide1.xml"`) {
+		t.Errorf("expected slides/slide1.xml added to presentation.xml.rels, got %s", relsData)
+	}
+	if !strings.Contains(string(relsData), `Id="rId2"`) {
+		t.Errorf("expected rId2 added to presentation.xml.rels, got %s", relsData)
+	}
+
+	presData, _ := m.Get("ppt/presentation.xml")
+	if !strings.Contains(string(presData), `<p:sldId id="256" r:id="rId2"/>`) {
+		t.Errorf("expected sldId added to presentation.xml, got %s", presData)
+	}
+}
+
+func TestRepairer_MissingNamespace(t *testing.T) {
+	slideXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://drawingml">
+  <p:cSld/>
+</p:sld>`
+
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/slides/slide1.xml": []byte(slideXml),
+	}}
+
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeMissingNamespace,
+		Path:        "ppt/slides/slide1.xml",
+		Description: "Missing namespace p",
+		Repairable:  true,
+		Context:     map[string]string{"ns": "p"},
+	}})
+
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Fatalf("expected issue to be repaired")
+	}
+
+	data, _ := m.Get("ppt/slides/slide1.xml")
+	content := string(data)
+	if !strings.Contains(content, `xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"`) {
+		t.Errorf("expected p namespace added to root element, got: %s", content)
+	}
+}
+
+func TestRepairer_EmptyRequiredElement(t *testing.T) {
+	presXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation>
+  <p:sldIdLst/>
+</p:presentation>`
+
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/presentation.xml": []byte(presXml),
+	}}
+
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeEmptyRequiredElement,
+		Path:        "ppt/presentation.xml",
+		Description: "Empty sldIdLst",
+		Repairable:  true,
+		Context:     map[string]string{"element": "p:sldIdLst"},
+	}})
+
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Fatalf("expected issue to be repaired")
+	}
+
+	data, _ := m.Get("ppt/presentation.xml")
+	content := string(data)
+	if !strings.Contains(content, `<p:sldIdLst></p:sldIdLst>`) {
+		t.Errorf("expected empty element expanded, got: %s", content)
+	}
+}

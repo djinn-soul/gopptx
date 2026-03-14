@@ -234,3 +234,56 @@ func assertDiagramCase(t *testing.T, tc diagramCase) {
 		t.Error("Expected bounds to be set")
 	}
 }
+
+func TestFlowchartParsesSpacedEdgeLabelsWithoutGhostNodes(t *testing.T) {
+	diagram := parseFlowchart(`flowchart LR
+A[Start] --> B{Decision}
+B -- Yes --> C[Ship]
+B -- No --> D[Revise]`)
+
+	if len(diagram.Connections) != 3 {
+		t.Fatalf("expected 3 connections, got %d", len(diagram.Connections))
+	}
+
+	if diagram.Connections[1].Label != "Yes" {
+		t.Fatalf("expected Yes label, got %q", diagram.Connections[1].Label)
+	}
+	if diagram.Connections[2].Label != "No" {
+		t.Fatalf("expected No label, got %q", diagram.Connections[2].Label)
+	}
+
+	for _, n := range diagram.Nodes {
+		if n.ID == "B -- Yes" || n.ID == "B -- No" {
+			t.Fatalf("unexpected ghost node id parsed from edge label: %q", n.ID)
+		}
+	}
+}
+
+func TestMindmapTwoChildrenUsesHorizontalBranches(t *testing.T) {
+	diagram, err := CreateDiagram(`mindmap
+root((mindmap))
+    Left
+    Right`)
+	if err != nil {
+		t.Fatalf("CreateDiagram failed: %v", err)
+	}
+
+	var rootX, leftX, rightX int64
+	for _, s := range diagram.Shapes {
+		switch s.Text {
+		case "mindmap":
+			rootX = int64(s.X)
+		case "Left":
+			leftX = int64(s.X)
+		case "Right":
+			rightX = int64(s.X)
+		}
+	}
+
+	if leftX == 0 || rightX == 0 || rootX == 0 {
+		t.Fatal("expected root and child nodes to be present")
+	}
+	if (leftX > rootX && rightX > rootX) || (leftX < rootX && rightX < rootX) {
+		t.Fatalf("expected mindmap children on opposite sides of root; root=%d left=%d right=%d", rootX, leftX, rightX)
+	}
+}
