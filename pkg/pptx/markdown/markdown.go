@@ -37,8 +37,7 @@ func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
 		return nil, errors.New("markdown content cannot be empty")
 	}
-	parser := newMarkdownParser(markdown)
-	return parser.parse()
+	return parseMarkdownWithAST(markdown)
 }
 
 func parseBulletLine(line string) (parsedMarkdownBullet, bool) {
