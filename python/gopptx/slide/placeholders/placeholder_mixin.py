@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ..utils import is_four_number_bounds
+from ...utils import is_four_number_bounds
 from .placeholder_collection import PlaceholderCollection
 
 if TYPE_CHECKING:
-    from ..presentation.presentation import Presentation
+    from ...presentation.presentation import Presentation
     from .placeholder import Placeholder
 
 

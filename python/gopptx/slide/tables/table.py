@@ -6,15 +6,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .. import ops
-from ..utils import normalize_table_index
+from ... import ops
+from ...utils import normalize_table_index
 from .table_cells import Cell, CellRange
 from .table_collections import TableColumn, TableColumns, TableRow, TableRows
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ..presentation.presentation import Presentation
+    from ...presentation.presentation import Presentation
 
 _TABLE_INDEX_DIMENSIONS = 2
 

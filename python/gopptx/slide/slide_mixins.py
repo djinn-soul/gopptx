@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .table import Table
+from .tables.table import Table
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
         TableInfo,
     )
     from .chart_data import CategoryChartData, XyChartData
-    from .freeform_builder import FreeformBuilder
+    from .shapes.freeform_builder import FreeformBuilder
 
 
 class SlideShapeMixin:

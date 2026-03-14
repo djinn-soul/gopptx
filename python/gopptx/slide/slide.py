@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import override
 
 from .chart_model import Chart, ChartCollection
-from .notes_slide import NotesSlide
-from .placeholder_mixin import SlidePlaceholderMixin
-from .shape_proxy import ShapeCollection, ShapeProxy
+from .notes.notes_slide import NotesSlide
+from .placeholders.placeholder_mixin import SlidePlaceholderMixin
+from .shapes.shape_proxy import ShapeCollection, ShapeProxy
 from .slide_mixins import SlideChartMixin, SlideShapeMixin, SlideTableMixin
 from .slide_shape_batch_mixin import SlideShapeBatchMixin
 from .slide_text_cache_mixin import SlideTextCacheMixin
@@ -26,6 +26,11 @@ class SlideBase:
     if TYPE_CHECKING:
         _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
         _metadata: SlideMetadata  # pyright: ignore[reportUninitializedInstanceVariable]
+
+    @property
+    def presentation(self) -> Presentation:
+        """Return the owning presentation proxy."""
+        return self._presentation
 
     @property
     def index(self) -> int:

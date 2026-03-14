@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .. import ops
-from ..api_errors import GopptxError
+from ... import ops
+from ...api_errors import GopptxError
 
 if TYPE_CHECKING:
     from .table import Table

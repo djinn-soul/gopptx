@@ -1,5 +1,4 @@
 """Placeholder proxy class for gopptx library."""
-# ruff: noqa: I001,PLR1702
 # pyright: reportPrivateUsage=false
 
 from __future__ import annotations
@@ -10,10 +9,12 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import override
 
 if TYPE_CHECKING:
-    from ..schemas import PlaceholderInfo
-    from ..presentation.master import SlideLayout, SlideMaster
-    from .slide import Slide
-    from .chart_data import CategoryChartData, XyChartData
+    from collections.abc import Iterable
+
+    from ...presentation.master import SlideLayout, SlideMaster
+    from ...schemas import PlaceholderInfo
+    from ..chart_data import CategoryChartData, XyChartData
+    from ..slide import Slide
 
 
 class PlaceholderFormat(UserString):
@@ -71,25 +72,36 @@ class Placeholder:
     def _lookup_layout_and_master(
         self,
     ) -> tuple[SlideLayout | None, SlideMaster | None]:
-        layout_part, master_part = self._slide._presentation.get_slide_layout_ref(  # noqa: SLF001
-            self._slide.index
-        )
+        presentation = self._slide.presentation
+        layout_part, master_part = presentation.get_slide_layout_ref(self._slide.index)
         if not layout_part:
             return None, None
 
+        return self._find_layout_and_master(
+            presentation.slide_masters, layout_part, master_part
+        )
+
+    @staticmethod
+    def _find_layout_and_master(
+        masters: Iterable[SlideMaster],
+        layout_part: str,
+        master_part: str,
+    ) -> tuple[SlideLayout | None, SlideMaster | None]:
         layout_obj: SlideLayout | None = None
         master_obj: SlideMaster | None = None
-        for master in self._slide._presentation.slide_masters:  # noqa: SLF001
-            if master.part == master_part:
+        for master in masters:
+            if master_obj is None and master.part == master_part:
                 master_obj = master
-            for layout in master.slide_layouts:
-                if layout.part == layout_part:
-                    layout_obj = layout
-                    if master_obj is None:
-                        master_obj = master
-                    break
-            if layout_obj is not None and master_obj is not None:
-                break
+            matched_layout = next(
+                (layout for layout in master.slide_layouts if layout.part == layout_part),
+                None,
+            )
+            if matched_layout is None:
+                continue
+            layout_obj = matched_layout
+            if master_obj is None:
+                master_obj = master
+            break
         return layout_obj, master_obj
 
     def _find_placeholder_info(

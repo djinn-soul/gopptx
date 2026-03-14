@@ -9,201 +9,23 @@ from typing import TYPE_CHECKING, cast
 from .. import ops
 from ..slide.slide import Slide
 from ..utils import is_four_number_bounds
-from .helpers import PresentationMixinBase
 from .layout_theme import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideMasters
 from .placeholder_payloads import (
     build_placeholder_chart_payload,
     build_placeholder_table_payload,
 )
+from .properties import PresentationPropertiesMixin
+from .sections import PresentationSectionMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ..schemas import (
-        CoreProperties,
-        Section,
         SlideMetadata,
     )
     from .helpers import PresentationProtocol
     from .presentation import Presentation
-
-
-class PresentationSectionMixin(PresentationMixinBase):
-    """Mixin providing section management methods."""
-
-    @property
-    def sections(self) -> list[Section]:
-        """Get all sections in the presentation."""
-        result = self.execute(ops.OP_GET_SECTIONS, {})
-        raw_sections = result.get("sections")
-        sections = cast(
-            "list[dict[str, object]]",
-            raw_sections if isinstance(raw_sections, list) else [],
-        )
-        for s in sections:
-            if "Name" in s and "name" not in s:
-                s["name"] = s["Name"]
-            if "GUID" in s and "guid" not in s:
-                s["guid"] = s["GUID"]
-            if "SlideIDs" in s and "slide_ids" not in s:
-                s["slide_ids"] = s["SlideIDs"]
-            if "id" not in s and "name" in s:
-                s["id"] = s["name"]
-        return cast("list[Section]", sections)
-
-    def get_sections(self) -> list[Section]:
-        """Get all sections in the presentation."""
-        return self.sections
-
-    def add_section(self, name: str, slide_indices: list[int]) -> None:
-        """Add a section to the presentation.
-
-        Args:
-            name: Name of the section.
-            slide_indices: List of slide indices to include in the section.
-        """
-        self.execute(ops.OP_ADD_SECTION, {"name": name, "slide_indices": slide_indices})
-
-    def remove_section(self, name: str) -> None:
-        """Remove a section from the presentation.
-
-        Args:
-            name: Name of the section to remove.
-        """
-        self.execute(ops.OP_REMOVE_SECTION, {"name": str(name)})
-
-    def rename_section(self, old_name: str, new_name: str) -> None:
-        """Rename a section.
-
-        Args:
-            old_name: Current name of the section.
-            new_name: New name for the section.
-        """
-        self.execute(
-            ops.OP_RENAME_SECTION,
-            {"old_name": str(old_name), "new_name": str(new_name)},
-        )
-
-
-class PresentationPropertiesMixin(PresentationMixinBase):
-    """Mixin providing document properties and protection methods."""
-
-    @property
-    def core_properties(self) -> CoreProperties:
-        """Get the core properties of the presentation."""
-        return cast("CoreProperties", self.execute(ops.OP_GET_CORE_PROPERTIES, {}))
-
-    def get_core_properties(self) -> CoreProperties:
-        """Get the core properties of the presentation."""
-        return self.core_properties
-
-    @core_properties.setter
-    def core_properties(self, props: CoreProperties) -> None:
-        self.execute(ops.OP_SET_CORE_PROPERTIES, cast("dict[str, object]", props))
-
-    def set_core_properties(self, props: CoreProperties) -> None:
-        """Set the core properties of the presentation.
-
-        Args:
-            props: Dictionary of core properties to set.
-        """
-        self.core_properties = props
-
-    @property
-    def title(self) -> str:
-        """The title of the presentation."""
-        return self.core_properties.get("title", "")
-
-    @title.setter
-    def title(self, value: str) -> None:
-        props = self.core_properties
-        props["title"] = value
-        self.core_properties = props
-
-    def set_modify_password(self, password: str) -> None:
-        """Set the modify password for the presentation.
-
-        Args:
-            password: Password to set.
-        """
-        self.execute(ops.OP_SET_MODIFY_PASSWORD, {"password": password})
-
-    def set_mark_as_final(self, *, final: bool = True) -> None:
-        """Mark the presentation as final.
-
-        Args:
-            final: True to mark as final, False to unmark.
-        """
-        self.execute(ops.OP_SET_MARK_AS_FINAL, {"final": final})
-
-    # Additional python-pptx compatible core properties
-
-    @property
-    def author(self) -> str:
-        """The author/creator of the presentation (python-pptx: author)."""
-        return self.core_properties.get("creator", "")
-
-    @author.setter
-    def author(self, value: str) -> None:
-        props = self.core_properties
-        props["creator"] = value
-        self.core_properties = props
-
-    @property
-    def comments(self) -> str:
-        """The comments/description of the presentation (python-pptx: comments)."""
-        return self.core_properties.get("description", "")
-
-    @comments.setter
-    def comments(self, value: str) -> None:
-        props = self.core_properties
-        props["description"] = value
-        self.core_properties = props
-
-    @property
-    def identifier(self) -> str:
-        """The identifier of the presentation."""
-        return self.core_properties.get("identifier", "")
-
-    @identifier.setter
-    def identifier(self, value: str) -> None:
-        props = self.core_properties
-        props["identifier"] = value
-        self.core_properties = props
-
-    @property
-    def language(self) -> str:
-        """The language of the presentation."""
-        return self.core_properties.get("language", "")
-
-    @language.setter
-    def language(self, value: str) -> None:
-        props = self.core_properties
-        props["language"] = value
-        self.core_properties = props
-
-    @property
-    def last_printed(self) -> str:
-        """The last printed date of the presentation."""
-        return self.core_properties.get("lastPrinted", "")
-
-    @last_printed.setter
-    def last_printed(self, value: str) -> None:
-        props = self.core_properties
-        props["lastPrinted"] = value
-        self.core_properties = props
-
-    @property
-    def version(self) -> str:
-        """The version of the presentation."""
-        return self.core_properties.get("version", "")
-
-    @version.setter
-    def version(self, value: str) -> None:
-        props = self.core_properties
-        props["version"] = value
-        self.core_properties = props
 
 
 class PresentationSlidesMixin(

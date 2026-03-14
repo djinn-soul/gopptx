@@ -7,11 +7,11 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, cast
 
-from .text_model import ShapeTextFrame
+from ..text.text_model import ShapeTextFrame
 
 if TYPE_CHECKING:
-    from ..schemas import FillFormat, LineFormat, ShadowFormat, Shape, ShapeUpdate
-    from .slide import Slide
+    from ...schemas import FillFormat, LineFormat, ShadowFormat, Shape, ShapeUpdate
+    from ..slide import Slide
 
 
 class ShapeFillProxy:

@@ -101,6 +101,7 @@ func runCommand(root, command string, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
 	defer cancel()
 
+	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = root
 	cmd.Stdout = os.Stdout

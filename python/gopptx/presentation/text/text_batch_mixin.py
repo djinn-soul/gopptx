@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .. import ops
+from ... import ops
 
 
 class PresentationTextBatchMixin:

@@ -9,7 +9,7 @@ from .placeholder import Placeholder, create_placeholder
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .slide import Slide
+    from ..slide import Slide
 
 
 class PlaceholderCollection:
@@ -19,7 +19,6 @@ class PlaceholderCollection:
     - iteration (`for ph in slide.placeholders`)
     - length (`len(slide.placeholders)`)
     - idx lookup (`slide.placeholders[idx]`)
-    - legacy call style (`slide.placeholders()`) for transition convenience
     """
 
     def __init__(self, slide: Slide) -> None:
@@ -62,7 +61,3 @@ class PlaceholderCollection:
             return self[idx]
         except KeyError:
             return default
-
-    def __call__(self) -> list[Placeholder]:
-        """Legacy compatibility: allow `slide.placeholders()`."""
-        return self._items()

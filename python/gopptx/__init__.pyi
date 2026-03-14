@@ -1,4 +1,3 @@
-"""gopptx - High-performance PPTX engine powered by Go."""
 # ruff: noqa: RUF022
 
 from .api import GopptxError, Presentation, Slide

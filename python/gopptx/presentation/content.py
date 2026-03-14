@@ -7,13 +7,13 @@ from .comments_charts import (
     PresentationCommentMixin,
 )
 from .shape_batch_mixin import PresentationShapeBatchMixin
-from .shapes_tables import (
+from .shapes.shapes_tables import (
     PresentationNotesMixin,
     PresentationShapeMixin,
     PresentationTableMixin,
-    PresentationTextMixin,
 )
-from .text_batch_mixin import PresentationTextBatchMixin
+from .text.text_batch_mixin import PresentationTextBatchMixin
+from .text.text_mixin import PresentationTextMixin
 from .vba import PresentationVBAMixin
 
 

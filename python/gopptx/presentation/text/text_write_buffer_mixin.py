@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .. import ops
-from .helpers import PresentationMixinBase
-from .runtime import PresentationRuntimeMixin
+from ... import ops
+from ..helpers import PresentationMixinBase
+from ..runtime import PresentationRuntimeMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

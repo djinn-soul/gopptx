@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from ..schemas import ShapeUpdate
+    from ...schemas import ShapeUpdate
 
 
 class NotesSlideStyleMixin:

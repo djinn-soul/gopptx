@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from ..schemas import ShapeUpdate, TextRun
-    from .slide import Slide
+    from ...schemas import ShapeUpdate, TextRun
+    from ..slide import Slide
 
 
 class ShapeTextFrame:

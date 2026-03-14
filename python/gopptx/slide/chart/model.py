@@ -1,16 +1,17 @@
 """Live chart object model proxies."""
-# ruff: noqa: D101,D102,D105,D107,SLF001,TC003
+# ruff: noqa: D101,D102,D105,D107,SLF001
 # pyright: reportPrivateUsage=false, reportMissingSuperCall=false, reportUnknownMemberType=false, reportAttributeAccessIssue=false
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from typing import TYPE_CHECKING, cast
 
 from .axis_series import ChartAxis, ChartSeriesCollection
 from .scene3d_area import ChartArea
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from ...schemas import ChartDataUpdate, ChartFormatUpdate, ChartState
     from ..chart_data import CategoryChartData, XyChartData
     from ..slide import Slide
@@ -287,34 +288,3 @@ class Chart:
             self._index,
             fmt,
         )
-
-
-class ChartCollection:
-    def __init__(self, slide: Slide) -> None:
-        self._slide = slide
-
-    def _items(self) -> list[Chart]:
-        refs = self._slide.list_charts()
-        out: list[Chart] = []
-        for item in refs:
-            ref = item
-            index = int(ref.get("Index", ref.get("index", 0)))
-            rel_id = str(ref.get("RelID", ref.get("rel_id", "")))
-            chart_part = str(ref.get("ChartPart", ref.get("chart_part", "")))
-            out.append(Chart(self._slide, index, rel_id, chart_part))
-        out.sort(key=lambda chart: chart.index)
-        return out
-
-    def __len__(self) -> int:
-        return len(self._items())
-
-    def __getitem__(self, index: int) -> Chart:
-        items = self._items()
-        if index < 0:
-            index += len(items)
-        if index < 0 or index >= len(items):
-            raise IndexError("chart index out of range")
-        return items[index]
-
-    def __iter__(self) -> Iterator[Chart]:
-        return iter(self._items())

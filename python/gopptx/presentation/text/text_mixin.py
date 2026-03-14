@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import cast
 
-from .. import ops
-from .helpers import PresentationMixinBase
+from ... import ops
+from ..helpers import PresentationMixinBase
 
 
 class PresentationTextMixin(PresentationMixinBase):

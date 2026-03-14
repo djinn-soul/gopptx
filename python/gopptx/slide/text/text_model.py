@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import cast
 
-from .shape_text_frame import ShapeTextFrame as BaseShapeTextFrame
+from ..shapes.shape_text_frame import ShapeTextFrame as BaseShapeTextFrame
 from .text_run import Run, RunHyperlink
 
 
