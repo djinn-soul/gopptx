@@ -16,25 +16,26 @@ import (
 )
 
 type markdownASTParser struct {
-	source                []byte
-	lineOffsets           []int
-	slides                []elements.SlideContent
-	current               *elements.SlideContent
-	lastTitle             string
-	continuationTitle     string
-	imagePlaceholderCount int
+	source              []byte
+	lineOffsets         []int
+	options             ParseOptions
+	slides              []elements.SlideContent
+	current             *elements.SlideContent
+	lastTitle           string
+	continuationTitle   string
+	imagePlacementCount int
 }
 
 const (
-	initialASTSlideCapacity     = 8
-	imagePlaceholderXInches     = 0.8
-	imagePlaceholderStartYInch  = 4.9
-	imagePlaceholderWidthInches = 8.0
-	imagePlaceholderHeightInch  = 0.8
-	imagePlaceholderGapInch     = 0.95
+	initialASTSlideCapacity   = 8
+	embeddedImageXInches      = 0.8
+	embeddedImageStartYInch   = 4.8
+	embeddedImageWidthInches  = 3.4
+	embeddedImageHeightInches = 2.1
+	embeddedImageGapInch      = 2.25
 )
 
-func parseMarkdownWithAST(markdownContent string) ([]elements.SlideContent, error) {
+func parseMarkdownWithAST(markdownContent string, options ParseOptions) ([]elements.SlideContent, error) {
 	md := goldmark.New(goldmark.WithExtensions(extension.GFM))
 	source := []byte(markdownContent)
 	doc := md.Parser().Parse(text.NewReader(source))
@@ -42,6 +43,7 @@ func parseMarkdownWithAST(markdownContent string) ([]elements.SlideContent, erro
 	parser := &markdownASTParser{
 		source:      source,
 		lineOffsets: buildLineOffsets(source),
+		options:     options,
 		slides:      make([]elements.SlideContent, 0, initialASTSlideCapacity),
 	}
 	if err := parser.consumeDocument(doc); err != nil {
@@ -137,11 +139,16 @@ func (p *markdownASTParser) consumeParagraph(
 		return err
 	}
 
-	if placeholders, ok := collectParagraphImagePlaceholders(node, p.source); ok && len(placeholders) > 0 {
-		for _, placeholder := range placeholders {
-			p.addImagePlaceholderShape(placeholder)
+	images, onlyImages := collectParagraphImages(node, p.source)
+	if len(images) > 0 {
+		for _, image := range images {
+			if err := p.addMarkdownImage(image); err != nil {
+				return fmt.Errorf("line %d: %w", line, err)
+			}
 		}
-		return nil
+		if onlyImages {
+			return nil
+		}
 	}
 
 	runs := extractInlineRuns(node, p.source, inlineStyleState{})

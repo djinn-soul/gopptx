@@ -2,6 +2,8 @@ package markdown
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -22,6 +24,11 @@ type parsedMarkdownBullet struct {
 	style elements.ParagraphStyle
 }
 
+// ParseOptions controls markdown-to-slide conversion behavior.
+type ParseOptions struct {
+	BaseDir string
+}
+
 // SlidesFromMarkdown converts a markdown document into slide content.
 //
 // Supported syntax:
@@ -34,10 +41,26 @@ type parsedMarkdownBullet struct {
 // - fenced mermaid blocks are converted to placeholder shapes
 // - blockquotes are parsed into slide speaker notes.
 func SlidesFromMarkdown(markdown string) ([]elements.SlideContent, error) {
+	return SlidesFromMarkdownWithOptions(markdown, ParseOptions{})
+}
+
+// SlidesFromMarkdownWithOptions converts markdown with parser options.
+func SlidesFromMarkdownWithOptions(markdown string, options ParseOptions) ([]elements.SlideContent, error) {
 	if strings.TrimSpace(markdown) == "" {
 		return nil, errors.New("markdown content cannot be empty")
 	}
-	return parseMarkdownWithAST(markdown)
+	return parseMarkdownWithAST(markdown, options)
+}
+
+// SlidesFromMarkdownFile reads markdown from disk and parses it with BaseDir set
+// to the markdown file's directory for relative image resolution.
+func SlidesFromMarkdownFile(markdownPath string) ([]elements.SlideContent, error) {
+	content, err := os.ReadFile(filepath.Clean(markdownPath))
+	if err != nil {
+		return nil, err
+	}
+	options := ParseOptions{BaseDir: filepath.Dir(filepath.Clean(markdownPath))}
+	return SlidesFromMarkdownWithOptions(string(content), options)
 }
 
 func parseBulletLine(line string) (parsedMarkdownBullet, bool) {

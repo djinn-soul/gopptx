@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
-	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
@@ -23,7 +22,7 @@ func (p *markdownASTParser) ensureCurrent(line int) error {
 		p.current = &slide
 		p.lastTitle = title
 		p.continuationTitle = ""
-		p.imagePlaceholderCount = 0
+		p.imagePlacementCount = 0
 		return nil
 	}
 	return fmt.Errorf("line %d: content found before first slide title", line)
@@ -39,7 +38,7 @@ func (p *markdownASTParser) flushCurrent() {
 	}
 	p.slides = append(p.slides, *p.current)
 	p.current = nil
-	p.imagePlaceholderCount = 0
+	p.imagePlacementCount = 0
 }
 
 func (p *markdownASTParser) nodeLine(node ast.Node) int {
@@ -50,17 +49,22 @@ func (p *markdownASTParser) nodeLine(node ast.Node) int {
 	return 1
 }
 
-func (p *markdownASTParser) addImagePlaceholderShape(label string) {
-	y := imagePlaceholderStartYInch + float64(p.imagePlaceholderCount)*imagePlaceholderGapInch
-	shape := shapes.NewShape(
-		shapes.ShapeTypeRoundedRectangle,
-		styling.Inches(imagePlaceholderXInches),
+func (p *markdownASTParser) addMarkdownImage(image markdownImage) error {
+	placed, err := p.resolveMarkdownImage(image)
+	if err != nil {
+		return err
+	}
+	*p.current = p.current.AddImage(placed)
+	p.imagePlacementCount++
+	return nil
+}
+
+func (p *markdownASTParser) nextEmbeddedImageFrame() (styling.Length, styling.Length, styling.Length, styling.Length) {
+	y := embeddedImageStartYInch + float64(p.imagePlacementCount)*embeddedImageGapInch
+	return styling.Inches(embeddedImageXInches),
 		styling.Inches(y),
-		styling.Inches(imagePlaceholderWidthInches),
-		styling.Inches(imagePlaceholderHeightInch),
-	).WithText(label)
-	*p.current = p.current.AddShape(shape)
-	p.imagePlaceholderCount++
+		styling.Inches(embeddedImageWidthInches),
+		styling.Inches(embeddedImageHeightInches)
 }
 
 func segmentText(lines *text.Segments, source []byte) string {

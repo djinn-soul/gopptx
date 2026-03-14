@@ -1,7 +1,6 @@
 package markdown
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -13,6 +12,11 @@ type inlineStyleState struct {
 	bold          bool
 	italic        bool
 	strikethrough bool
+}
+
+type markdownImage struct {
+	Alt  string
+	Dest string
 }
 
 func extractInlineRuns(node ast.Node, source []byte, state inlineStyleState) []elements.Run {
@@ -52,7 +56,7 @@ func extractInlineRunsFromNode(node ast.Node, source []byte, state inlineStyleSt
 	case *ast.AutoLink:
 		return []elements.Run{styledTextRun(string(typed.Label(source)), state)}
 	case *ast.Image:
-		return []elements.Run{styledTextRun(imagePlaceholderLabel(typed, source), state)}
+		return nil
 	default:
 		return extractInlineRuns(node, source, state)
 	}
@@ -106,8 +110,8 @@ func taskCheckboxState(node ast.Node) (bool, bool) {
 	return false, false
 }
 
-func collectParagraphImagePlaceholders(node ast.Node, source []byte) ([]string, bool) {
-	placeholders := make([]string, 0, 2)
+func collectParagraphImages(node ast.Node, source []byte) ([]markdownImage, bool) {
+	images := make([]markdownImage, 0, 2)
 	onlyImages := true
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
 		image, ok := child.(*ast.Image)
@@ -120,21 +124,12 @@ func collectParagraphImagePlaceholders(node ast.Node, source []byte) ([]string, 
 			onlyImages = false
 			continue
 		}
-		placeholders = append(placeholders, imagePlaceholderLabel(image, source))
+		images = append(images, markdownImage{
+			Alt:  strings.TrimSpace(extractPlainText(image, source)),
+			Dest: strings.TrimSpace(string(image.Destination)),
+		})
 	}
-	return placeholders, onlyImages
-}
-
-func imagePlaceholderLabel(node *ast.Image, source []byte) string {
-	alt := strings.TrimSpace(extractPlainText(node, source))
-	dest := strings.TrimSpace(string(node.Destination))
-	if alt == "" {
-		alt = "image"
-	}
-	if dest == "" {
-		return fmt.Sprintf("[Image: %s]", alt)
-	}
-	return fmt.Sprintf("[Image: %s] %s", alt, dest)
+	return images, onlyImages
 }
 
 func forceBoldRuns(runs []elements.Run) []elements.Run {

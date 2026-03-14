@@ -24,14 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read markdown asset %s: %v", assetMarkdownPath, err)
 	}
-	markdown := string(markdownBytes)
-
 	// Keep a copy in examples/output for generated artifact inspection.
 	if err := os.WriteFile(markdownPath, markdownBytes, 0o600); err != nil {
 		log.Fatalf("failed to write markdown output copy: %v", err)
 	}
 
-	slides, err := pptx.SlidesFromMarkdown(markdown)
+	slides, err := pptx.SlidesFromMarkdownFile(assetMarkdownPath)
 	if err != nil {
 		log.Fatalf("failed to parse markdown: %v", err)
 	}
