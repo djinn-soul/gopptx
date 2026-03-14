@@ -9,7 +9,7 @@ from .chart import (
     ChartTitle,
     DataLabels,
 )
-from .chart_data import CategoryChartData, CategorySeries, XyChartData, XySeries
+from .chart.data import CategoryChartData, CategorySeries, XyChartData, XySeries
 from .placeholders.placeholder import (
     BodyPlaceholder,
     ChartPlaceholder,

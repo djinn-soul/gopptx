@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from ...presentation.master import SlideLayout, SlideMaster
     from ...schemas import PlaceholderInfo
-    from ..chart_data import CategoryChartData, XyChartData
+    from ..chart.data import CategoryChartData, XyChartData
     from ..slide import Slide
 
 

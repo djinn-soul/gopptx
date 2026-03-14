@@ -10,12 +10,12 @@ from .chart import Chart, ChartCollection
 from .chart.chart_mixin import SlideChartMixin
 from .notes.notes_slide import NotesSlide
 from .placeholders.placeholder_mixin import SlidePlaceholderMixin
+from .shapes.shape_batch_mixin import SlideShapeBatchMixin
 from .shapes.shape_mixin import SlideShapeMixin
 from .shapes.shape_proxy import ShapeCollection, ShapeProxy
-from .slide_shape_batch_mixin import SlideShapeBatchMixin
-from .slide_text_cache_mixin import SlideTextCacheMixin
-from .slide_text_mixin import SlideTextMixin
 from .tables.table_mixin import SlideTableMixin
+from .text.text_cache_mixin import SlideTextCacheMixin
+from .text.text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation

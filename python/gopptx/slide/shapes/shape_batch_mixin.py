@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from ..presentation.presentation import Presentation
+    from ...presentation.presentation import Presentation
 
 
 class SlideShapeBatchMixin:

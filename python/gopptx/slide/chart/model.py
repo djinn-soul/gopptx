@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...schemas import ChartDataUpdate, ChartFormatUpdate, ChartState
-    from ..chart_data import CategoryChartData, XyChartData
     from ..slide import Slide
+    from .data import CategoryChartData, XyChartData
 
 
 class ChartTitle:

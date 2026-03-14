@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...presentation.presentation import Presentation
     from ...schemas import SlideChartRef
-    from ..chart_data import CategoryChartData, XyChartData
+    from .data import CategoryChartData, XyChartData
 
 
 class SlideChartMixin:

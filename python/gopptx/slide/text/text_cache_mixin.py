@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from ..schemas import Shape
+    from ...schemas import Shape
 
 
 class SlideTextCacheMixin:

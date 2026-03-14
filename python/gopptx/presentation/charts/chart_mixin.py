@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         ChartSelector,
         SlideChartRef,
     )
-    from ...slide.chart_data import CategoryChartData, XyChartData
+    from ...slide.chart.data import CategoryChartData, XyChartData
 
 
 class PresentationChartMixin(PresentationChartStateMixin):
