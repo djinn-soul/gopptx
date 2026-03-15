@@ -54,7 +54,11 @@ func encryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 	script := buildPowerPointEncryptScript(inPath, outPath, password)
 	output, err := runPowerShellScript(script, powerPointEncryptTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("powerpoint agile encryption failed: %w; output: %s", err, strings.TrimSpace(string(output)))
+		return nil, fmt.Errorf(
+			"powerpoint agile encryption failed: %w; output: %s",
+			err,
+			strings.TrimSpace(string(output)),
+		)
 	}
 
 	encrypted, err := os.ReadFile(outPath)

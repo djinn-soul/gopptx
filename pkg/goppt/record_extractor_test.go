@@ -106,10 +106,17 @@ func TestTextDecodersAndPocketScanner(t *testing.T) {
 
 func TestSkipRecords(t *testing.T) {
 	// Stream with UserEditAtom then PersistDirectoryAtom then Slide.
-	buf := append(encodeRecord(recordTypeUserEditAtom, []byte{1}), encodeRecord(recordTypePersistDirectoryAtom, []byte{2})...)
+	buf := append(
+		encodeRecord(recordTypeUserEditAtom, []byte{1}),
+		encodeRecord(recordTypePersistDirectoryAtom, []byte{2})...,
+	)
 	buf = append(buf, encodeRecord(recordTypeSlide, []byte{3, 4})...)
 
-	offset, err := skipRecords(bytes.NewReader(buf), 0, []recordType{recordTypeUserEditAtom, recordTypePersistDirectoryAtom})
+	offset, err := skipRecords(
+		bytes.NewReader(buf),
+		0,
+		[]recordType{recordTypeUserEditAtom, recordTypePersistDirectoryAtom},
+	)
 	if err != nil {
 		t.Fatalf("skipRecords failed: %v", err)
 	}

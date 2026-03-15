@@ -12,7 +12,10 @@ func TestResponseBuilders(t *testing.T) {
 		t.Fatalf("BuildChartsResponse unexpected payload: %+v", got)
 	}
 
-	layoutRef := BuildLayoutRefResponse("ppt/slideLayouts/slideLayout1.xml", "ppt/slideMasters/slideMaster1.xml")
+	layoutRef := BuildLayoutRefResponse(
+		"ppt/slideLayouts/slideLayout1.xml",
+		"ppt/slideMasters/slideMaster1.xml",
+	)
 	if layoutRef["layout_part"] != "ppt/slideLayouts/slideLayout1.xml" {
 		t.Fatalf("BuildLayoutRefResponse unexpected layout part: %+v", layoutRef)
 	}
@@ -40,7 +43,9 @@ func TestResponseBuilders(t *testing.T) {
 	clone := common.SlideMasterCloneResult{
 		MasterPart: "ppt/slideMasters/slideMaster2.xml",
 		ThemePart:  "ppt/theme/theme2.xml",
-		LayoutMap:  map[string]string{"ppt/slideLayouts/slideLayout1.xml": "ppt/slideLayouts/slideLayout9.xml"},
+		LayoutMap: map[string]string{
+			"ppt/slideLayouts/slideLayout1.xml": "ppt/slideLayouts/slideLayout9.xml",
+		},
 	}
 	cloneResp := BuildCloneFamilyResponse(clone)
 	if cloneResp["master_part"] != clone.MasterPart || cloneResp["theme_part"] != clone.ThemePart {

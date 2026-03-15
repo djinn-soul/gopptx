@@ -33,7 +33,8 @@ func TestRenderFillLineAndEffectsXML(t *testing.T) {
 		},
 	}
 	gradXML, err := RenderFillXML(&common.ShapeFill{Gradient: grad})
-	if err != nil || !strings.Contains(gradXML, "<a:gradFill>") || !strings.Contains(gradXML, "<a:lin") {
+	if err != nil || !strings.Contains(gradXML, "<a:gradFill>") ||
+		!strings.Contains(gradXML, "<a:lin") {
 		t.Fatalf("RenderFillXML(gradient) failed: xml=%q err=%v", gradXML, err)
 	}
 
@@ -44,7 +45,8 @@ func TestRenderFillLineAndEffectsXML(t *testing.T) {
 			BgColor: strPtr2("#445566"),
 		},
 	})
-	if err != nil || !strings.Contains(patternXML, `prst="diagCross"`) || !strings.Contains(patternXML, `val="112233"`) {
+	if err != nil || !strings.Contains(patternXML, `prst="diagCross"`) ||
+		!strings.Contains(patternXML, `val="112233"`) {
 		t.Fatalf("RenderFillXML(pattern) failed: xml=%q err=%v", patternXML, err)
 	}
 
@@ -53,7 +55,8 @@ func TestRenderFillLineAndEffectsXML(t *testing.T) {
 		Color:     strPtr2("ABCDEF"),
 		DashStyle: strPtr2("long_dash"),
 	})
-	if err != nil || !strings.Contains(lineXML, `w="12700"`) || !strings.Contains(lineXML, `prstDash val="lgDash"`) {
+	if err != nil || !strings.Contains(lineXML, `w="12700"`) ||
+		!strings.Contains(lineXML, `prstDash val="lgDash"`) {
 		t.Fatalf("RenderLineXML failed: xml=%q err=%v", lineXML, err)
 	}
 	_, err = RenderLineXML(&common.ShapeLine{WidthEmu: intPtr2(0)})
@@ -62,24 +65,48 @@ func TestRenderFillLineAndEffectsXML(t *testing.T) {
 	}
 
 	effectsXML, err := RenderEffectsXML(
-		&common.ShapeShadow{Color: strPtr2("#000000"), BlurEmu: intPtr2(100), DistanceEmu: intPtr2(200), AngleDeg: floatPtr2(10)},
+		&common.ShapeShadow{
+			Color:       strPtr2("#000000"),
+			BlurEmu:     intPtr2(100),
+			DistanceEmu: intPtr2(200),
+			AngleDeg:    floatPtr2(10),
+		},
 		&common.ShapeGlow{Color: strPtr2("FF00FF"), RadiusEmu: intPtr2(300)},
 		&common.ShapeBlur{RadiusEmu: intPtr2(400)},
 		&common.ShapeSoftEdge{RadiusEmu: intPtr2(500)},
 		&common.ShapeReflection{BlurEmu: intPtr2(600), DistanceEmu: intPtr2(700)},
 	)
-	if err != nil || !strings.Contains(effectsXML, "<a:effectLst>") || !strings.Contains(effectsXML, "<a:outerShdw") {
+	if err != nil || !strings.Contains(effectsXML, "<a:effectLst>") ||
+		!strings.Contains(effectsXML, "<a:outerShdw") {
 		t.Fatalf("RenderEffectsXML(explicit) failed: xml=%q err=%v", effectsXML, err)
 	}
-	inheritXML, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtr2(false)}, nil, nil, nil, nil)
+	inheritXML, err := RenderEffectsXML(
+		&common.ShapeShadow{Inherit: boolPtr2(false)},
+		nil,
+		nil,
+		nil,
+		nil,
+	)
 	if err != nil || inheritXML != "<a:effectLst/>" {
 		t.Fatalf("RenderEffectsXML(inherit false) failed: xml=%q err=%v", inheritXML, err)
 	}
-	inheritXML, err = RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtr2(true)}, nil, nil, nil, nil)
+	inheritXML, err = RenderEffectsXML(
+		&common.ShapeShadow{Inherit: boolPtr2(true)},
+		nil,
+		nil,
+		nil,
+		nil,
+	)
 	if err != nil || inheritXML != "" {
 		t.Fatalf("RenderEffectsXML(inherit true) failed: xml=%q err=%v", inheritXML, err)
 	}
-	_, err = RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtr2(true), Color: strPtr2("FF0000")}, nil, nil, nil, nil)
+	_, err = RenderEffectsXML(
+		&common.ShapeShadow{Inherit: boolPtr2(true), Color: strPtr2("FF0000")},
+		nil,
+		nil,
+		nil,
+		nil,
+	)
 	if err == nil {
 		t.Fatal("expected inherit + explicit shadow validation error")
 	}
@@ -113,7 +140,8 @@ func TestActionMutationHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ApplyCNvPrActions(self-closing) failed: %v", err)
 	}
-	if !strings.Contains(string(updated), "<p:cNvPr id=\"1\">") || !strings.Contains(string(updated), `r:id="rId4"`) {
+	if !strings.Contains(string(updated), "<p:cNvPr id=\"1\">") ||
+		!strings.Contains(string(updated), `r:id="rId4"`) {
 		t.Fatalf("ApplyCNvPrActions did not expand/append actions: %s", string(updated))
 	}
 

@@ -92,7 +92,10 @@ func TestConvertFromPpt_EmptyOutDir(t *testing.T) {
 
 	// Test with empty outDir to hit the `outDir == ""` branch
 	_, err := ConvertFromPpt(dummyPPT, "")
-	if err != nil && !strings.Contains(err.Error(), "libreoffice required") && !strings.Contains(err.Error(), "conversion failed") && !strings.Contains(err.Error(), "soffice binary not found") {
+	if err != nil &&
+		!strings.Contains(err.Error(), "libreoffice required") &&
+		!strings.Contains(err.Error(), "conversion failed") &&
+		!strings.Contains(err.Error(), "soffice binary not found") {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

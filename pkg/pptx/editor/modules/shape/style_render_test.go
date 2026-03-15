@@ -21,7 +21,8 @@ func TestRenderLineAndFillXML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderLineXML failed: %v", err)
 	}
-	if !strings.Contains(lineXML, `w="12700"`) || !strings.Contains(lineXML, `prstDash val="lgDash"`) {
+	if !strings.Contains(lineXML, `w="12700"`) ||
+		!strings.Contains(lineXML, `prstDash val="lgDash"`) {
 		t.Fatalf("unexpected line xml: %s", lineXML)
 	}
 	if _, err = RenderLineXML(&common.ShapeLine{WidthEmu: intPtrSR(0)}); err == nil {
@@ -61,7 +62,8 @@ func TestRenderLineAndFillXML(t *testing.T) {
 			},
 		},
 	})
-	if err != nil || !strings.Contains(gradientXML, "<a:gradFill>") || !strings.Contains(gradientXML, `ang="2700000"`) {
+	if err != nil || !strings.Contains(gradientXML, "<a:gradFill>") ||
+		!strings.Contains(gradientXML, `ang="2700000"`) {
 		t.Fatalf("gradient fill render failed: xml=%q err=%v", gradientXML, err)
 	}
 	if _, err = RenderFillXML(&common.ShapeFill{Gradient: &common.GradientFill{Stops: nil}}); err == nil {
@@ -106,14 +108,17 @@ func TestRenderEffectsXMLAndRotationValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderEffectsXML failed: %v", err)
 	}
-	if !strings.Contains(effectsXML, "<a:effectLst>") || !strings.Contains(effectsXML, "<a:outerShdw") {
+	if !strings.Contains(effectsXML, "<a:effectLst>") ||
+		!strings.Contains(effectsXML, "<a:outerShdw") {
 		t.Fatalf("unexpected effects XML: %s", effectsXML)
 	}
 
-	if xml, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtrSR(true)}, nil, nil, nil, nil); err != nil || xml != "" {
+	if xml, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtrSR(true)}, nil, nil, nil, nil); err != nil ||
+		xml != "" {
 		t.Fatalf("shadow inherit=true should emit empty xml without error: xml=%q err=%v", xml, err)
 	}
-	if xml, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtrSR(false)}, nil, nil, nil, nil); err != nil || xml != `<a:effectLst/>` {
+	if xml, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtrSR(false)}, nil, nil, nil, nil); err != nil ||
+		xml != `<a:effectLst/>` {
 		t.Fatalf("shadow inherit=false should emit empty effect list: xml=%q err=%v", xml, err)
 	}
 
@@ -153,7 +158,8 @@ func TestRenderShapeStyleXMLComposition(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderShapeStyleXML failed: %v", err)
 	}
-	if !strings.Contains(xml, "<a:solidFill>") || !strings.Contains(xml, "<a:ln") || !strings.Contains(xml, "<a:effectLst>") {
+	if !strings.Contains(xml, "<a:solidFill>") || !strings.Contains(xml, "<a:ln") ||
+		!strings.Contains(xml, "<a:effectLst>") {
 		t.Fatalf("expected fill+line+effects composition, got: %s", xml)
 	}
 }

@@ -35,7 +35,11 @@ func TestAllMSOAnchor(t *testing.T) {
 }
 
 func TestAllMSOThemeColor(t *testing.T) {
-	values := []string{"bg1", "tx1", "bg2", "tx2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6", "hlink", "folhlink"}
+	values := []string{
+		"bg1", "tx1", "bg2", "tx2",
+		"accent1", "accent2", "accent3", "accent4", "accent5", "accent6",
+		"hlink", "folhlink",
+	}
 	for _, v := range values {
 		if _, err := ParseMSOThemeColor(v); err != nil {
 			t.Errorf("failed to parse MSOThemeColor %q: %v", v, err)
@@ -88,7 +92,16 @@ func TestAllMSOShape(t *testing.T) {
 }
 
 func TestAllXLChartType(t *testing.T) {
-	values := []string{"bar", "barhorizontal", "barstacked", "barstacked100", "line", "linemarkers", "linestacked", "scatter", "xy", "area", "areastacked", "areastacked100", "pie", "doughnut", "bubble", "radar", "radarfilled", "stockhlc", "stockohlc", "combo"}
+	values := []string{
+		"bar", "barhorizontal", "barstacked", "barstacked100",
+		"line", "linemarkers", "linestacked",
+		"scatter", "xy",
+		"area", "areastacked", "areastacked100",
+		"pie", "doughnut", "bubble",
+		"radar", "radarfilled",
+		"stockhlc", "stockohlc",
+		"combo",
+	}
 	for _, v := range values {
 		if _, err := ParseXLChartType(v); err != nil {
 			t.Errorf("failed to parse XLChartType %q: %v", v, err)

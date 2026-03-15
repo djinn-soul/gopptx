@@ -34,7 +34,15 @@ func TestCFBWriter_Internal(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for empty name")
 	}
-	_, err = newDirEntry("very long name that exceeds the sixty four byte limit for compound file binary format directory entries", 1, 0, 0, 0, 0, 0)
+	_, err = newDirEntry(
+		"very long name that exceeds the sixty four byte limit for compound file binary format directory entries",
+		1,
+		0,
+		0,
+		0,
+		0,
+		0,
+	)
 	if err == nil {
 		t.Error("Expected error for long name")
 	}

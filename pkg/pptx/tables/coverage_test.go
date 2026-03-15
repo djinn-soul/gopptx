@@ -22,7 +22,11 @@ func TestTableValidation_EdgeCases(t *testing.T) {
 
 	// No columns
 	t3 := Table{X: 0, Y: 0, CX: 100, CY: 100}
-	if err := validateTableColumns(t3, 1); err == nil || !strings.Contains(err.Error(), "must define at least one column") {
+	if err := validateTableColumns(
+		t3,
+		1,
+	); err == nil ||
+		!strings.Contains(err.Error(), "must define at least one column") {
 		t.Errorf("Expected no columns error, got %v", err)
 	}
 
@@ -66,7 +70,13 @@ func TestTableCellValidation_EdgeCases(t *testing.T) {
 
 	// Invalid Color
 	c2 := NewTableCell("A").WithBackgroundColor("invalid")
-	if err := validateTableCell(c2, 1, 1, 1); err == nil || !strings.Contains(err.Error(), "background color must be 6-digit RGB hex") {
+	if err := validateTableCell(
+		c2,
+		1,
+		1,
+		1,
+	); err == nil ||
+		!strings.Contains(err.Error(), "background color must be 6-digit RGB hex") {
 		t.Errorf("Expected background color error, got %v", err)
 	}
 
@@ -106,13 +116,25 @@ func TestTableBorderValidation_EdgeCases(t *testing.T) {
 
 	// Invalid border dash
 	c3 := NewTableCell("A").WithBorderStyle(1, "000000", "zigzag")
-	if err := validateTableCell(c3, 1, 1, 1); err == nil || !strings.Contains(err.Error(), "dash style must be one of") {
+	if err := validateTableCell(
+		c3,
+		1,
+		1,
+		1,
+	); err == nil ||
+		!strings.Contains(err.Error(), "dash style must be one of") {
 		t.Errorf("Expected border dash error, got %v", err)
 	}
 
 	// Explicit sides
 	c4 := NewTableCell("A").WithTopBorder(1, "bad")
-	if err := validateTableCell(c4, 1, 1, 1); err == nil || !strings.Contains(err.Error(), "top border color must be 6-digit RGB hex") {
+	if err := validateTableCell(
+		c4,
+		1,
+		1,
+		1,
+	); err == nil ||
+		!strings.Contains(err.Error(), "top border color must be 6-digit RGB hex") {
 		t.Errorf("Expected explicit top border error, got %v", err)
 	}
 }

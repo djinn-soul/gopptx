@@ -68,7 +68,11 @@ func extractInlineRunsFromNode(
 		next.strikethrough = true
 		return extractInlineRuns(typed, source, next, resolveLink)
 	case *ast.Link:
-		return applyMarkdownLinkRuns(extractInlineRuns(typed, source, state, resolveLink), string(typed.Destination), resolveLink)
+		return applyMarkdownLinkRuns(
+			extractInlineRuns(typed, source, state, resolveLink),
+			string(typed.Destination),
+			resolveLink,
+		)
 	case *ast.AutoLink:
 		run := styledTextRun(string(typed.Label(source)), state)
 		return applyMarkdownLinkRuns([]elements.Run{run}, string(typed.URL(source)), resolveLink)

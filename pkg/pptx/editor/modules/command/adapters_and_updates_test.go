@@ -14,7 +14,8 @@ func TestMediaInsertAdaptersAndSpecs(t *testing.T) {
 	videoAdapter := AdaptVideoBinaryInsert(
 		func(slideIndex int, videoData, posterData []byte, mimeType string, x, y, w, h float64) (int, error) {
 			videoCalled = true
-			if slideIndex != 2 || mimeType != "video/mp4" || len(videoData) != 1 || len(posterData) != 1 {
+			if slideIndex != 2 || mimeType != "video/mp4" || len(videoData) != 1 ||
+				len(posterData) != 1 {
 				t.Fatalf("unexpected video adapter args")
 			}
 			if x != 1 || y != 2 || w != 3 || h != 4 {
@@ -42,17 +43,30 @@ func TestMediaInsertAdaptersAndSpecs(t *testing.T) {
 	)
 	id, err = audioWithIcon(placement, "audio/mpeg", []byte{1}, nil)
 	if err != nil || id != 201 || !audioPlainCalled || audioIconCalled {
-		t.Fatalf("audio adapter (plain) failed: id=%d err=%v plain=%v icon=%v", id, err, audioPlainCalled, audioIconCalled)
+		t.Fatalf(
+			"audio adapter (plain) failed: id=%d err=%v plain=%v icon=%v",
+			id,
+			err,
+			audioPlainCalled,
+			audioIconCalled,
+		)
 	}
 	audioPlainCalled = false
 	audioIconCalled = false
 	id, err = audioWithIcon(placement, "audio/mpeg", []byte{1}, []byte{9})
 	if err != nil || id != 202 || audioPlainCalled || !audioIconCalled {
-		t.Fatalf("audio adapter (icon) failed: id=%d err=%v plain=%v icon=%v", id, err, audioPlainCalled, audioIconCalled)
+		t.Fatalf(
+			"audio adapter (icon) failed: id=%d err=%v plain=%v icon=%v",
+			id,
+			err,
+			audioPlainCalled,
+			audioIconCalled,
+		)
 	}
 
 	spec := NewVideoInsertSpec(4096, nil, nil)
-	if spec.PrimaryLabel != "video" || spec.SecondaryLabel != "poster" || spec.PrimaryMaxLen != 4096 {
+	if spec.PrimaryLabel != "video" || spec.SecondaryLabel != "poster" ||
+		spec.PrimaryMaxLen != 4096 {
 		t.Fatalf("unexpected video spec: %+v", spec)
 	}
 	spec = NewAudioInsertSpec(2048, nil, nil)
@@ -72,7 +86,8 @@ func TestShapeUpdateAndAddHelpers(t *testing.T) {
 			"x": 10,
 		},
 	})
-	if err != nil || !has || updates.Text == nil || *updates.Text != "hello" || updates.X == nil || *updates.X != 10 {
+	if err != nil || !has || updates.Text == nil || *updates.Text != "hello" || updates.X == nil ||
+		*updates.X != 10 {
 		t.Fatalf("ParseOptionalShapeUpdates failed: updates=%+v has=%v err=%v", updates, has, err)
 	}
 	if _, _, err = ParseOptionalShapeUpdates(map[string]any{"text": 99}); err == nil {
@@ -92,7 +107,15 @@ func TestShapeUpdateAndAddHelpers(t *testing.T) {
 	}
 
 	req, ok := ParseAddShapeBase(
-		map[string]any{"slide_index": 1, "type": "rect", "x": 1.0, "y": 2.0, "w": 3.0, "h": 4.0, "text": "t"},
+		map[string]any{
+			"slide_index": 1,
+			"type":        "rect",
+			"x":           1.0,
+			"y":           2.0,
+			"w":           3.0,
+			"h":           4.0,
+			"text":        "t",
+		},
 		testParseSlideIndex,
 		testParseStringField,
 		func(payload map[string]any, key string) (float64, bool) {
@@ -187,14 +210,33 @@ func TestContentRequestHelpers(t *testing.T) {
 		"bad",
 	)
 	if err != nil || !present || string(data) != "abc" {
-		t.Fatalf("DecodeRequiredBase64Field success failed: data=%q present=%v err=%v", string(data), present, err)
+		t.Fatalf(
+			"DecodeRequiredBase64Field success failed: data=%q present=%v err=%v",
+			string(data),
+			present,
+			err,
+		)
 	}
-	_, present, err = DecodeRequiredBase64Field(map[string]any{}, testParseStringField, "blob", "bad")
+	_, present, err = DecodeRequiredBase64Field(
+		map[string]any{},
+		testParseStringField,
+		"blob",
+		"bad",
+	)
 	if err != nil || present {
 		t.Fatalf("DecodeRequiredBase64Field missing field failed: present=%v err=%v", present, err)
 	}
-	_, present, err = DecodeRequiredBase64Field(map[string]any{"blob": "%%%invalid"}, testParseStringField, "blob", "bad")
+	_, present, err = DecodeRequiredBase64Field(
+		map[string]any{"blob": "%%%invalid"},
+		testParseStringField,
+		"blob",
+		"bad",
+	)
 	if err == nil || !present {
-		t.Fatalf("DecodeRequiredBase64Field invalid data should error with present=true: present=%v err=%v", present, err)
+		t.Fatalf(
+			"DecodeRequiredBase64Field invalid data should error with present=true: present=%v err=%v",
+			present,
+			err,
+		)
 	}
 }

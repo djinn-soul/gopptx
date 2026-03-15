@@ -79,7 +79,9 @@ func TestSlideLoopsAndRels(t *testing.T) {
 
 	// Rels for slide 1
 	r1, _ := zw.Create("ppt/slides/_rels/slide1.xml.rels")
-	_, _ = r1.Write([]byte(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`))
+	_, _ = r1.Write(
+		[]byte(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`),
+	)
 
 	_ = zw.Close()
 

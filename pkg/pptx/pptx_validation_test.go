@@ -68,7 +68,10 @@ func TestSlideValidation_Animations(t *testing.T) {
 
 	anim1 := animations.NewAnimation(1, animations.AnimationEntranceFade).WithTrigger(animations.AnimationWithPrevious)
 	s1.Animations = append(s1.Animations, anim1)
-	if err := s1.Validate(1); err == nil || !strings.Contains(err.Error(), "first animation trigger cannot be with/after previous") {
+	if err := s1.Validate(1); err == nil || !strings.Contains(
+		err.Error(),
+		"first animation trigger cannot be with/after previous",
+	) {
 		t.Errorf("Expected first animation trigger error, got %v", err)
 	}
 
@@ -76,7 +79,10 @@ func TestSlideValidation_Animations(t *testing.T) {
 	s2 := NewSlide("T")
 	anim2 := animations.NewAnimation(10, animations.AnimationEntranceFade)
 	s2.Animations = append(s2.Animations, anim2)
-	if err := s2.Validate(1); err == nil || !strings.Contains(err.Error(), "targets shape index 10, but slide only has 0") {
+	if err := s2.Validate(1); err == nil || !strings.Contains(
+		err.Error(),
+		"targets shape index 10, but slide only has 0",
+	) {
 		t.Errorf("Expected animation shape index error, got %v", err)
 	}
 }

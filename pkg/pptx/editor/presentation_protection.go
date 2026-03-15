@@ -58,7 +58,9 @@ func rewritePresentationModifyVerifier(current []byte, password string) (string,
 
 func buildModifyVerifierXML(saltData, hashData string) string {
 	var b strings.Builder
-	b.WriteString(`<p:modifyVerifier cryptProviderType="rsaAES" cryptAlgorithmClass="hash" cryptAlgorithmType="typeAny" cryptAlgorithmSid="`)
+	b.WriteString(
+		`<p:modifyVerifier cryptProviderType="rsaAES" cryptAlgorithmClass="hash" cryptAlgorithmType="typeAny" cryptAlgorithmSid="`,
+	)
 	b.WriteString(strconv.Itoa(protectionHashAlgSID))
 	b.WriteString(`" spinCount="`)
 	b.WriteString(strconv.Itoa(protectionSpinCountEditor))

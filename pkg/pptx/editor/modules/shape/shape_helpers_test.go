@@ -123,13 +123,18 @@ func TestTextRunHelpers(t *testing.T) {
 }
 
 func TestShapeXMLMutationHelpers(t *testing.T) {
-	xmlData := []byte(`<p:sp><p:spPr><a:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></a:xfrm><a:solidFill/></p:spPr></p:sp>`)
+	xmlData := []byte(
+		`<p:sp><p:spPr><a:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></a:xfrm><a:solidFill/></p:spPr></p:sp>`,
+	)
 	transformed := string(UpdateShapeTransforms(xmlData, 10, 20, 30, 40))
-	if !strings.Contains(transformed, `<a:off x="10" y="20"/>`) || !strings.Contains(transformed, `<a:ext cx="30" cy="40"/>`) {
+	if !strings.Contains(transformed, `<a:off x="10" y="20"/>`) ||
+		!strings.Contains(transformed, `<a:ext cx="30" cy="40"/>`) {
 		t.Fatalf("UpdateShapeTransforms output unexpected: %s", transformed)
 	}
 
-	base := []byte(`<p:sp><p:spPr bwMode="auto"><a:solidFill/><a:ln w="1"/><a:effectLst/><a:prstGeom prst="rect"/></p:spPr></p:sp>`)
+	base := []byte(
+		`<p:sp><p:spPr bwMode="auto"><a:solidFill/><a:ln w="1"/><a:effectLst/><a:prstGeom prst="rect"/></p:spPr></p:sp>`,
+	)
 	updated := string(ReplaceStyleInSpPr(base, `<a:noFill/>`, true, false, true))
 	if strings.Contains(updated, "<a:solidFill") || strings.Contains(updated, "<a:effectLst") {
 		t.Fatalf("ReplaceStyleInSpPr should remove fill/effects blocks: %s", updated)
@@ -175,7 +180,8 @@ func TestPresetShapeRenderingHelpers(t *testing.T) {
 	if !strings.Contains(xml, `name="Name &#34;A&#34;"`) {
 		t.Fatalf("BuildPresetShapeXML should escape name: %s", xml)
 	}
-	if !strings.Contains(xml, `prst="ellipse"`) || !strings.Contains(xml, `<a:noFill/>`) || !strings.Contains(xml, `<p:txBody/>`) {
+	if !strings.Contains(xml, `prst="ellipse"`) || !strings.Contains(xml, `<a:noFill/>`) ||
+		!strings.Contains(xml, `<p:txBody/>`) {
 		t.Fatalf("BuildPresetShapeXML missing expected blocks: %s", xml)
 	}
 }

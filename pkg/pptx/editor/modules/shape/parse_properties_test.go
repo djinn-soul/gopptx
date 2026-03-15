@@ -97,7 +97,8 @@ func TestParseShapeProperties_ParsesTextAndEffects(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseShapeProperties error: %v", err)
 	}
-	if props.Name != "Shape 9" || props.X != 100 || props.Y != 200 || props.W != 300 || props.H != 400 {
+	if props.Name != "Shape 9" || props.X != 100 || props.Y != 200 || props.W != 300 ||
+		props.H != 400 {
 		t.Fatalf("unexpected identity/transform parse: %+v", props)
 	}
 	if props.PhType != "body" || props.PhIndex != 3 {
@@ -107,7 +108,13 @@ func TestParseShapeProperties_ParsesTextAndEffects(t *testing.T) {
 		t.Fatalf("unexpected shadow parse: %+v", props.Shadow)
 	}
 	if props.Glow == nil || props.Blur == nil || props.SoftEdge == nil || props.Reflection == nil {
-		t.Fatalf("expected all effects parsed: glow=%+v blur=%+v soft=%+v refl=%+v", props.Glow, props.Blur, props.SoftEdge, props.Reflection)
+		t.Fatalf(
+			"expected all effects parsed: glow=%+v blur=%+v soft=%+v refl=%+v",
+			props.Glow,
+			props.Blur,
+			props.SoftEdge,
+			props.Reflection,
+		)
 	}
 	if len(props.Runs) != 1 || props.Runs[0].Text != "Hello" {
 		t.Fatalf("unexpected run parse: %+v", props.Runs)
@@ -115,7 +122,8 @@ func TestParseShapeProperties_ParsesTextAndEffects(t *testing.T) {
 	if props.Runs[0].Color == nil || *props.Runs[0].Color != "FF00FF" {
 		t.Fatalf("unexpected run style parse: %+v", props.Runs[0])
 	}
-	if props.Paragraph == nil || props.Paragraph.Alignment == nil || *props.Paragraph.Alignment != "ctr" {
+	if props.Paragraph == nil || props.Paragraph.Alignment == nil ||
+		*props.Paragraph.Alignment != "ctr" {
 		t.Fatalf("unexpected paragraph parse: %+v", props.Paragraph)
 	}
 }

@@ -8,6 +8,7 @@ import (
 )
 
 var cTnIDPattern = regexp.MustCompile(`<p:cTn[^>]*\sid="([0-9]+)"`)
+
 var mediaShapePatternTemplate = `(?s)<p:pic\b[^>]*>.*?<p:cNvPr\b[^>]*\bid="%d"[^>]*>.*?</p:cNvPr>.*?<p14:media\b[^>]*\br:embed="([^"]+)"[^>]*/>.*?</p:pic>`
 
 type MediaTimingOptions struct {
@@ -21,7 +22,12 @@ type MediaTimingOptions struct {
 	SlideCount       int
 }
 
-func ApplyMediaTiming(content []byte, mediaKind string, shapeID int, options MediaTimingOptions) ([]byte, error) {
+func ApplyMediaTiming(
+	content []byte,
+	mediaKind string,
+	shapeID int,
+	options MediaTimingOptions,
+) ([]byte, error) {
 	slideXML := string(content)
 	if !strings.Contains(slideXML, "<p:timing>") {
 		withTiming, err := addDefaultTimingBlock(slideXML)

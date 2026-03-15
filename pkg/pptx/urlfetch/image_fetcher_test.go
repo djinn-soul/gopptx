@@ -52,7 +52,11 @@ func TestImageFetcher_FetchImage(t *testing.T) {
 		{"Invalid type", "/invalid.txt", true},
 		{"Server error", "/error", true},
 		{"Not found", "/notfound", true},
-		{"Data URI (unsupported)", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", true},
+		{
+			"Data URI (unsupported)",
+			"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+			true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -123,7 +127,16 @@ func TestCalculateImageDimensions(t *testing.T) {
 	for _, tt := range tests {
 		gotW, gotH := CalculateImageDimensions(tt.w, tt.h, tt.targetW)
 		if gotW != tt.wantW || gotH != tt.wantH {
-			t.Errorf("CalculateImageDimensions(%d, %d, %d) = %d, %d; want %d, %d", tt.w, tt.h, tt.targetW, gotW, gotH, tt.wantW, tt.wantH)
+			t.Errorf(
+				"CalculateImageDimensions(%d, %d, %d) = %d, %d; want %d, %d",
+				tt.w,
+				tt.h,
+				tt.targetW,
+				gotW,
+				gotH,
+				tt.wantW,
+				tt.wantH,
+			)
 		}
 	}
 }

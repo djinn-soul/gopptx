@@ -12,7 +12,11 @@ func TestCachePatchReplaceHelpers(t *testing.T) {
 		t.Fatalf("applyFieldFormula failed: %s", withFormula)
 	}
 
-	out, err := applyStringValues("c:cat", `<c:cat><c:strCache></c:strCache></c:cat>`, []string{"A", "B"})
+	out, err := applyStringValues(
+		"c:cat",
+		`<c:cat><c:strCache></c:strCache></c:cat>`,
+		[]string{"A", "B"},
+	)
 	if err != nil || !strings.Contains(out, "<c:pt idx=\"1\"><c:v>B</c:v></c:pt>") {
 		t.Fatalf("applyStringValues failed: out=%s err=%v", out, err)
 	}
@@ -43,13 +47,22 @@ func TestCachePatchReplaceHelpers(t *testing.T) {
 		t.Fatal("expected convertStringsToFloats parse error")
 	}
 
-	if got := buildStringData("c:strCache", []string{"A"}); !strings.Contains(got, `<c:ptCount val="1"/>`) {
+	if got := buildStringData("c:strCache", []string{"A"}); !strings.Contains(
+		got,
+		`<c:ptCount val="1"/>`,
+	) {
 		t.Fatalf("buildStringData unexpected output: %s", got)
 	}
-	if got := buildNumberData("c:numCache", "General", []float64{3.14}); !strings.Contains(got, "<c:formatCode>General</c:formatCode>") {
+	if got := buildNumberData("c:numCache", "General", []float64{3.14}); !strings.Contains(
+		got,
+		"<c:formatCode>General</c:formatCode>",
+	) {
 		t.Fatalf("buildNumberData unexpected output: %s", got)
 	}
-	if got := buildMultiLevelData("c:multiLvlStrCache", [][]string{{"A"}}); !strings.Contains(got, "<c:lvl>") {
+	if got := buildMultiLevelData("c:multiLvlStrCache", [][]string{{"A"}}); !strings.Contains(
+		got,
+		"<c:lvl>",
+	) {
 		t.Fatalf("buildMultiLevelData unexpected output: %s", got)
 	}
 

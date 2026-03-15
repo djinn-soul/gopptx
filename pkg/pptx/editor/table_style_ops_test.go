@@ -68,7 +68,10 @@ func TestDefineTableStyleCreatesPackageInfrastructure(t *testing.T) {
 		string(presentationRels),
 		`relationships/tableStyles" Target="tableStyles.xml"`,
 	) {
-		t.Fatalf("expected presentation table styles relationship, got: %s", string(presentationRels))
+		t.Fatalf(
+			"expected presentation table styles relationship, got: %s",
+			string(presentationRels),
+		)
 	}
 }
 
@@ -162,7 +165,9 @@ func TestEnsureTableStylesInfrastructureExistingPartNoDef(t *testing.T) {
 	// Part exists but has no 'def' attribute
 	e.parts.Set(
 		"ppt/tableStyles.xml",
-		[]byte(`<?xml version="1.0"?><a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"></a:tblStyleLst>`),
+		[]byte(
+			`<?xml version="1.0"?><a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"></a:tblStyleLst>`,
+		),
 	)
 
 	guid := "{1A111111-1111-1111-1111-111111111111}"

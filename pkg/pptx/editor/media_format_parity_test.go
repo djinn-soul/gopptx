@@ -13,7 +13,11 @@ import (
 )
 
 func TestMediaSaveIncludesWmvWmaOggContentTypes(t *testing.T) {
-	base := writeDeckFixture(t, "media-format-base.pptx", []elements.SlideContent{elements.NewSlide("Slide 1")})
+	base := writeDeckFixture(
+		t,
+		"media-format-base.pptx",
+		[]elements.SlideContent{elements.NewSlide("Slide 1")},
+	)
 	editor, err := OpenPresentationEditor(base)
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
