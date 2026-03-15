@@ -99,7 +99,7 @@ func TestInsertAndSlideHelpers(t *testing.T) {
 		[]byte{1},
 		"",
 		"missing",
-		func(data []byte) (string, error) {
+		func(_ []byte) (string, error) {
 			calledData = true
 			return "ppt/media/x.bin", nil
 		},

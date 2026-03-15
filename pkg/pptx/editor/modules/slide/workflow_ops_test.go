@@ -23,7 +23,7 @@ func TestWorkflowAddRemoveMove(t *testing.T) {
 		SlideWidth:   100,
 		SlideHeight:  200,
 	}
-	render := func(slide elements.SlideContent, part string, n int, w, h int64) (string, string, error) {
+	render := func(_ elements.SlideContent, _ string, _ int, _ int64, _ int64) (string, string, error) {
 		return "<slide/>", "<rels/>", nil
 	}
 	added, idx, err := AddSlideToState(state, elements.NewSlide("S1"), render, setPart)
@@ -87,7 +87,7 @@ func TestWorkflowDuplicateMergeAndValidation(t *testing.T) {
 		NextSlideID:  300,
 	}
 	appendCopy := func(b []byte) []byte { return append(b, []byte(" copy")...) }
-	cloneRels := func(src []byte, newPart string) ([]byte, error) {
+	cloneRels := func(src []byte, _ string) ([]byte, error) {
 		return append([]byte{}, src...), nil
 	}
 	duplicated, insertIndex, err := DuplicateSlideInState(dupState, 0, 1, getPart, setPart, appendCopy, cloneRels)
@@ -139,7 +139,7 @@ func TestWorkflowDuplicateMergeAndValidation(t *testing.T) {
 		mergeState,
 		sourceSlides,
 		func(path string) ([]byte, bool) { v, ok := sourceParts[path]; return v, ok },
-		func(srcPart string, srcRels []byte, newPart string) ([]byte, error) {
+		func(_ string, srcRels []byte, _ string) ([]byte, error) {
 			return append([]byte{}, srcRels...), nil
 		},
 		setPart,
@@ -195,10 +195,10 @@ func TestWorkflowUpdateAndSetTitle(t *testing.T) {
 	}
 	renderExisting := func(
 		slide elements.SlideContent,
-		part string,
-		number int,
-		notesTarget string,
-		width, height int64,
+		_ string,
+		_ int,
+		_ string,
+		_, _ int64,
 	) (string, string, error) {
 		return fmt.Sprintf("<slide title=%q/>", slide.Title), "<rels/>", nil
 	}

@@ -202,7 +202,7 @@ func TestMediaInsertHelpersAndAdapters(t *testing.T) {
 	}
 
 	placement := MediaPlacement{SlideIndex: 1, X: 1, Y: 2, W: 3, H: 4}
-	videoAdapter := AdaptVideoBinaryInsert(func(idx int, video, poster []byte, mime string, x, y, w, h float64) (int, error) {
+	videoAdapter := AdaptVideoBinaryInsert(func(idx int, _, _ []byte, mime string, x, _ float64, _ float64, h float64) (int, error) {
 		if idx != 1 || mime != "video/mp4" || x != 1 || h != 4 {
 			t.Fatalf("AdaptVideoBinaryInsert passed wrong args: idx=%d mime=%q x=%v h=%v", idx, mime, x, h)
 		}
@@ -214,7 +214,7 @@ func TestMediaInsertHelpersAndAdapters(t *testing.T) {
 
 	audioAdapter := AdaptAudioPathInsertWithOptionalIcon(
 		func(int, string, string, float64, float64, float64, float64) (int, error) { return 10, nil },
-		func(idx int, path, icon, mime string, _, _, _, _ float64) (int, error) {
+		func(idx int, _, icon, mime string, _, _, _, _ float64) (int, error) {
 			if idx != 1 || icon != "icon.png" || mime != "audio/mpeg" {
 				t.Fatalf("AdaptAudioPathInsertWithOptionalIcon wrong args idx=%d icon=%q mime=%q", idx, icon, mime)
 			}

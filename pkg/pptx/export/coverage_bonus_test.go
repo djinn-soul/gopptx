@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
@@ -82,10 +82,10 @@ func TestReader_NumericParsing(t *testing.T) {
 	}
 }
 
-func TestReader_LayoutCoverage(t *testing.T) {
+func TestReader_LayoutCoverage(_ *testing.T) {
 	cell := tables.NewTableCell("Test")
 	meta := map[string]any{
-		"v_align": "bottom",
+		"v_align":     "bottom",
 		"margin_left": int64(10000), // EMU
 	}
 	applyTableCellLayout(&cell, meta)

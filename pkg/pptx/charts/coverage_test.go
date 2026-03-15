@@ -118,10 +118,10 @@ func TestChartValidationErrors(t *testing.T) {
 	}
 
 	// Value range error
-	min, max := 10.0, 5.0
+	minValue, maxValue := 10.0, 5.0
 	barRange := charts.NewBarChart([]string{"A"}, []float64{10})
-	barRange.MinValue = &min
-	barRange.MaxValue = &max
+	barRange.MinValue = &minValue
+	barRange.MaxValue = &maxValue
 	if err := barRange.Validate(1); err == nil {
 		t.Error("Expected error for invalid value range")
 	}

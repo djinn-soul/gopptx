@@ -2,8 +2,9 @@ package elements
 
 import (
 	"testing"
-	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 func TestChartHelpers_Counts(t *testing.T) {
@@ -93,7 +94,8 @@ func TestSlideMaster_Metadata(t *testing.T) {
 type mockTransition struct {
 	xml string
 }
-func (m mockTransition) XML() string { return m.xml }
+
+func (m mockTransition) XML() string     { return m.xml }
 func (m mockTransition) Validate() error { return nil }
 
 func TestTransition_Coverage(t *testing.T) {

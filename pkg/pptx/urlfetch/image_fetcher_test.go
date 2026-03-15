@@ -79,7 +79,7 @@ func TestImageFetcher_FetchImage(t *testing.T) {
 }
 
 func TestImageFetcher_TotalSizeLimit(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
 		// Minimal PNG
 		pngData := []byte{
@@ -112,8 +112,8 @@ func TestImageFetcher_TotalSizeLimit(t *testing.T) {
 
 func TestCalculateImageDimensions(t *testing.T) {
 	tests := []struct {
-		w, h        int
-		targetW     int64
+		w, h         int
+		targetW      int64
 		wantW, wantH int64
 	}{
 		{100, 200, 1000, 1000, 2000},
