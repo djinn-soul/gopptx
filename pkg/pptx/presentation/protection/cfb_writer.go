@@ -100,7 +100,7 @@ func linkChain(fat []uint32, start, count int) {
 	if count <= 0 {
 		return
 	}
-	for i := 0; i < count-1; i++ {
+	for i := range count - 1 {
 		fat[start+i] = uint32(start + i + 1)
 	}
 	fat[start+count-1] = cfbEndOfChain

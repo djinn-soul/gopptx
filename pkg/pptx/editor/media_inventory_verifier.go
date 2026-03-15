@@ -54,7 +54,7 @@ func (e *PresentationEditor) verifyMediaInventoryChecksumsParallel() error {
 	}
 
 	wg.Add(workerCount)
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		go startWorker()
 	}
 
