@@ -273,7 +273,7 @@ func (p *markdownASTParser) consumeBlockquote(node *ast.Blockquote) error {
 		if strings.TrimSpace(lines) == "" {
 			continue
 		}
-		for _, raw := range strings.Split(lines, "\n") {
+		for raw := range strings.SplitSeq(lines, "\n") {
 			trimmed := strings.TrimSpace(raw)
 			if trimmed == "" {
 				continue

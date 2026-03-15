@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -21,9 +22,7 @@ var standardThemePresets = map[string]styling.Theme{
 // StandardThemePresets returns common preset names mapped to theme payloads.
 func StandardThemePresets() map[string]styling.Theme {
 	out := make(map[string]styling.Theme, len(standardThemePresets))
-	for k, v := range standardThemePresets {
-		out[k] = v
-	}
+	maps.Copy(out, standardThemePresets)
 	return out
 }
 

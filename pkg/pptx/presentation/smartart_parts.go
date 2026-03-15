@@ -68,14 +68,12 @@ func renderSmartArtPartsParallel(parts []SmartArtPart) ([]smartArtRenderedPart, 
 	)
 
 	for _, part := range parts {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			rendered := renderSmartArtPart(part)
 			mu.Lock()
 			results = append(results, rendered...)
 			mu.Unlock()
-		}()
+		})
 	}
 	wg.Wait()
 	sort.Slice(results, func(i, j int) bool {

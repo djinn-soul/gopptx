@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -127,7 +128,7 @@ func runThemeReskinSmoke() error {
 		return fmt.Errorf("theme inventory: %w", err)
 	}
 	if len(inv.ThemeParts) == 0 {
-		return fmt.Errorf("no theme parts discovered")
+		return errors.New("no theme parts discovered")
 	}
 
 	if err := ed.SetGlobalThemePreset("facet"); err != nil {
