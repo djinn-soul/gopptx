@@ -65,7 +65,7 @@ func TestSlideValidation_Animations(t *testing.T) {
 	s1 := NewSlide("T")
 	// Add a real shape to pass index validation
 	s1.Shapes = append(s1.Shapes, shapes.NewRectangle(0, 0, 100, 100).ToShape())
-	
+
 	anim1 := animations.NewAnimation(1, animations.AnimationEntranceFade).WithTrigger(animations.AnimationWithPrevious)
 	s1.Animations = append(s1.Animations, anim1)
 	if err := s1.Validate(1); err == nil || !strings.Contains(err.Error(), "first animation trigger cannot be with/after previous") {
@@ -90,7 +90,7 @@ func TestSlideValidation_EmptyTitle(t *testing.T) {
 
 	// Empty title with blank layout is OK
 	s2 := NewSlide("")
-	s2.Layout = SlideLayoutBlank 
+	s2.Layout = SlideLayoutBlank
 	if err := s2.Validate(1); err != nil {
 		t.Errorf("Empty title with blank layout should be OK, got %v", err)
 	}
@@ -110,7 +110,7 @@ func TestCreateWithMetadata_ExtraPathways(t *testing.T) {
 	bg := elements.NewSolidBackground("invalid")
 	nm.Background = &bg
 	meta.NotesMaster = nm
-	
+
 	_, err := CreateWithMetadata(meta, []SlideContent{NewSlide("S")})
 	if err == nil || !strings.Contains(err.Error(), "invalid notes master background") {
 		t.Errorf("Expected notes master background error, got %v", err)
@@ -131,7 +131,7 @@ func TestValidateAndRepair_Pathways(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
-	
+
 	issues, err := Validate(data)
 	if err != nil {
 		t.Errorf("Validate failed on valid PPTX: %v", err)
@@ -167,7 +167,7 @@ func TestValidateAndRepair_Pathways(t *testing.T) {
 	w, _ := zw.Create("garbage.txt")
 	w.Write([]byte("data"))
 	zw.Close()
-	
+
 	// OpenPartStoreFromBytes should succeed on valid zip, but Validate will find issues
 	issues, err = Validate(buf.Bytes())
 	if err != nil {

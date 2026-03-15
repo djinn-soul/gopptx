@@ -202,7 +202,7 @@ func TestShapeLine_BuildersAndValidation(t *testing.T) {
 		WithDash(LineDashDot).
 		WithCap(LineCapRound).
 		WithJoin(LineJoinBevel)
-	
+
 	if line.Dash != LineDashDot {
 		t.Errorf("expected dash %s, got %s", LineDashDot, line.Dash)
 	}

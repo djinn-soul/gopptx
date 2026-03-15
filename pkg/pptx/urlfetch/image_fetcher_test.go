@@ -39,7 +39,7 @@ func TestImageFetcher_FetchImage(t *testing.T) {
 	cfg := DefaultConfig().
 		WithMaxImageSizeBytes(1000).
 		WithMaxTotalImageSizeBytes(5000)
-	
+
 	fetcher := NewImageFetcher(http.DefaultClient, cfg, server.URL)
 
 	tests := []struct {

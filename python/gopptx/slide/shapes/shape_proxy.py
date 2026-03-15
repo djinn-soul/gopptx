@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
 
 if TYPE_CHECKING:
@@ -276,13 +277,11 @@ class ShapeProxy:
     @property
     def has_table(self) -> bool:
         """True if this shape is a table."""
-        return self.shape_type in ("tbl", "graphicFrame")
+        return self.shape_type in {"tbl", "graphicFrame"}
 
     @property
     def table(self) -> Table:
         """Return a table proxy if this shape is a table."""
-        from ..tables.table import Table
-
         if not self.has_table:
             raise AttributeError(f"shape {self._shape_id} has no table")
         return Table(self._slide.presentation, self._slide.index, self._shape_id)

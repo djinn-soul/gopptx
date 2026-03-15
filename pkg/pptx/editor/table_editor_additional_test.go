@@ -47,7 +47,7 @@ func TestTableResizeOps(t *testing.T) {
 	} else {
 		t.Errorf("failed to retrieve col width")
 	}
-	
+
 	// Error cases
 	if err := ed.SetTableRowHeight(sid, 9999, 0, 1500); err == nil {
 		t.Error("expected error for invalid shapeID")

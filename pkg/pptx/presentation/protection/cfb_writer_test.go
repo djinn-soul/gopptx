@@ -56,7 +56,7 @@ func TestCFBWriter_LargeFileError(t *testing.T) {
 	// Each FAT sector holds 128 entries. 110 FAT sectors * 128 = 14080 sectors.
 	// 14080 * 512 bytes = ~7.2MB
 	// Let's use a huge size to trigger the limit.
-	huge := make([]byte, 8*1024*1024) 
+	huge := make([]byte, 8*1024*1024)
 	_, err := buildCompoundFile(huge, huge, "I", "P")
 	if err == nil {
 		t.Error("Expected error for too large file")

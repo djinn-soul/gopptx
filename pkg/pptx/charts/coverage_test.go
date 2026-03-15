@@ -116,7 +116,7 @@ func TestChartValidationErrors(t *testing.T) {
 	if err := barColor.Validate(1); err == nil {
 		t.Error("Expected error for invalid color")
 	}
-	
+
 	// Value range error
 	min, max := 10.0, 5.0
 	barRange := charts.NewBarChart([]string{"A"}, []float64{10})

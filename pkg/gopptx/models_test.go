@@ -174,7 +174,7 @@ func TestSlideNotesRich(t *testing.T) {
 	p1.Runs = append(p1.Runs, elements.NewRun("Line 1"))
 	p2 := elements.NewParagraph()
 	p2.Runs = append(p2.Runs, elements.NewRun("Line 2"))
-	
+
 	slide.SetRichNotes([]elements.Paragraph{p1, p2})
 	if slide.Notes != "Line 1\nLine 2" {
 		t.Errorf("Expected combined notes %q, got %q", "Line 1\nLine 2", slide.Notes)

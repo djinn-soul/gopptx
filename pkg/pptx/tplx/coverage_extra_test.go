@@ -76,11 +76,11 @@ func TestSlideLoopsAndRels(t *testing.T) {
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:sp><p:txBody><a:p><a:r><a:t>{{#each items}}{{val}}{{/each}}</a:t></a:r></a:p></p:txBody></p:sp>
 </p:sld>`))
-	
+
 	// Rels for slide 1
 	r1, _ := zw.Create("ppt/slides/_rels/slide1.xml.rels")
 	_, _ = r1.Write([]byte(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`))
-	
+
 	_ = zw.Close()
 
 	ctx := Context{
@@ -140,7 +140,7 @@ func TestSlideLoopEmptyData(t *testing.T) {
 			t.Error("Slide1 should have been removed")
 		}
 	}
-	
+
 	// Missing key should also remove the slide
 	res, _ = RenderBytes(buf.Bytes(), Context{})
 	outZr, _ = zip.NewReader(bytes.NewReader(res.Bytes()), int64(len(res.Bytes())))
@@ -205,7 +205,7 @@ func TestHelpers(t *testing.T) {
 	if lastSegment("abc") != "abc" {
 		t.Errorf("lastSegment failed for no slash")
 	}
-	
+
 	ss := []string{"c", "a", "b"}
 	sortStrings(ss)
 	if ss[0] != "a" || ss[1] != "b" || ss[2] != "c" {
