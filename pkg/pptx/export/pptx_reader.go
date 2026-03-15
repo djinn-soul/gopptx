@@ -20,6 +20,7 @@ const (
 	placeholderSubtitle    = "subtitle"
 	placeholderObject      = "obj"
 	placeholderContentName = "content"
+	minTableBorderWidthPt  = 0.25
 )
 
 // SlidesFromPPTX reads an existing PPTX file and extracts slide content
@@ -229,7 +230,7 @@ func applyTableCellBorders(cell *tables.TableCell, cellMeta map[string]any) {
 		if c, ok := borderMeta["color"].(string); ok && strings.TrimSpace(c) != "" {
 			color = c
 		}
-		*cell = setter(math.Max(emuToPt(widthEmu), 0.25), color)
+		*cell = setter(math.Max(emuToPt(widthEmu), minTableBorderWidthPt), color)
 	}
 	applyBorder("border_left", cell.WithLeftBorder)
 	applyBorder("border_right", cell.WithRightBorder)

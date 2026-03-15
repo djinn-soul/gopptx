@@ -25,6 +25,7 @@ func commandHandlerForSlides(op string) (commandHandler, bool) {
 	}
 }
 
+//nolint:funlen // Op routing table is intentionally explicit to keep command coverage and discoverability straightforward.
 func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 	switch op {
 	case OpGetMetadata:

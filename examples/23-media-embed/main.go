@@ -23,6 +23,7 @@ func main() {
 	}
 }
 
+//nolint:gocognit,funlen // Example flow intentionally keeps scenario setup in one place for readability.
 func run() error {
 	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)

@@ -195,6 +195,8 @@ func SupportedOps() []string {
 		OpListCustomXML,
 		OpRemoveCustomXML,
 		OpAddVba,
+		OpExportPDF,
+		OpExportHTML,
 		OpListPlaceholders,
 		OpSetPlaceholderContent,
 		OpGetImageMetadata,

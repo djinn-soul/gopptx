@@ -19,10 +19,11 @@ import (
 )
 
 const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
+const manifestBuildWorkers = 4
 
 // Save writes the edited presentation back to a PPTX file.
 //
-//nolint:gocognit // Save flow intentionally sequences materialize/validate/write/cleanup steps with explicit guards.
+//nolint:gocognit,funlen // Save flow intentionally sequences materialize/validate/write/cleanup steps with explicit guards.
 func (e *PresentationEditor) Save(filePath string) error {
 	if e == nil {
 		return errors.New("nil editor")
@@ -220,7 +221,7 @@ func (e *PresentationEditor) buildManifestPartsParallel(
 		})
 	}
 
-	wg.Add(4)
+	wg.Add(manifestBuildWorkers)
 
 	go func() {
 		defer wg.Done()

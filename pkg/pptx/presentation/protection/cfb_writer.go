@@ -1,3 +1,4 @@
+//nolint:mnd // CFB container writing uses fixed values from the binary file format specification.
 package protection
 
 import (

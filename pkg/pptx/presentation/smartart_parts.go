@@ -16,6 +16,16 @@ type SmartArtPart struct {
 	spec       pptxxml.SmartArtSpec
 }
 
+const (
+	smartArtRenderedFilesPerPart = 5
+	smartArtOrderData            = 0
+	smartArtOrderLayout          = 1
+	smartArtOrderColors          = 2
+	smartArtOrderQuickStyle      = 3
+	smartArtOrderDrawing         = 4
+	smartArtOrderDataRels        = 5
+)
+
 func SmartArtPartCount(parts []SmartArtPart) int {
 	return len(parts)
 }
@@ -70,7 +80,7 @@ func renderSmartArtPartsParallel(parts []SmartArtPart) ([]smartArtRenderedPart, 
 	var (
 		wg      sync.WaitGroup
 		mu      sync.Mutex
-		results = make([]smartArtRenderedPart, 0, len(parts)*5)
+		results = make([]smartArtRenderedPart, 0, len(parts)*smartArtRenderedFilesPerPart)
 	)
 
 	for _, part := range parts {
@@ -97,37 +107,37 @@ func renderSmartArtPart(part SmartArtPart) []smartArtRenderedPart {
 	return []smartArtRenderedPart{
 		{
 			partNumber: num,
-			order:      0,
+			order:      smartArtOrderData,
 			path:       fmt.Sprintf("ppt/diagrams/data%d.xml", num),
 			content:    pptxxml.SmartArtDataXML(part.spec),
 		},
 		{
 			partNumber: num,
-			order:      1,
+			order:      smartArtOrderLayout,
 			path:       fmt.Sprintf("ppt/diagrams/layout%d.xml", num),
 			content:    pptxxml.SmartArtLayoutXML(part.spec.LayoutURI, category),
 		},
 		{
 			partNumber: num,
-			order:      2,
+			order:      smartArtOrderColors,
 			path:       fmt.Sprintf("ppt/diagrams/colors%d.xml", num),
 			content:    pptxxml.SmartArtColorsXML(part.spec.ColorStyleID),
 		},
 		{
 			partNumber: num,
-			order:      3,
+			order:      smartArtOrderQuickStyle,
 			path:       fmt.Sprintf("ppt/diagrams/quickStyle%d.xml", num),
 			content:    pptxxml.SmartArtStyleXML(part.spec.QuickStyleID),
 		},
 		{
 			partNumber: num,
-			order:      4,
+			order:      smartArtOrderDrawing,
 			path:       fmt.Sprintf("ppt/diagrams/drawing%d.xml", num),
 			content:    pptxxml.SmartArtDrawingXML(part.spec),
 		},
 		{
 			partNumber: num,
-			order:      5,
+			order:      smartArtOrderDataRels,
 			path:       fmt.Sprintf("ppt/diagrams/_rels/data%d.xml.rels", num),
 			content:    smartArtDataRelsXML(num),
 		},

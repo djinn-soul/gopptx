@@ -54,6 +54,7 @@ func TestFrameReadAndDimensions(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo,cyclop // Table mutation coverage intentionally exercises a broad end-to-end scenario in one test.
 func TestMutationsAndInfoProjection(t *testing.T) {
 	_, frame := buildTestSlideAndFrame(t, 9)
 

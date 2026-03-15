@@ -56,6 +56,8 @@ type ThemeColorScheme struct {
 }
 
 // GetThemeInventory discovers all theme parts and master/theme bindings in the package.
+//
+//nolint:gocognit // Inventory assembly handles legacy/current theme parts with explicit fallbacks and normalization.
 func (e *PresentationEditor) GetThemeInventory() (ThemeInventory, error) {
 	if e == nil || e.parts == nil {
 		return ThemeInventory{}, errors.New("editor cannot be nil")

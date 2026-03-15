@@ -17,6 +17,7 @@ const (
 	errInvalidDataURIImagePayload = "invalid data URI image payload"
 	formatPNG                     = "png"
 	formatJPG                     = "jpg"
+	splitNPair                    = 2
 )
 
 func (p *markdownASTParser) resolveMarkdownImage(image markdownImage) (shapes.Image, error) {
@@ -60,8 +61,8 @@ func isHTTPImageURL(raw string) bool {
 }
 
 func decodeMarkdownDataURIImage(dataURI string) ([]byte, string, error) {
-	parts := strings.SplitN(dataURI, ",", 2)
-	if len(parts) != 2 {
+	parts := strings.SplitN(dataURI, ",", splitNPair)
+	if len(parts) != splitNPair {
 		return nil, "", errors.New(errInvalidDataURIImagePayload)
 	}
 
@@ -74,7 +75,7 @@ func decodeMarkdownDataURIImage(dataURI string) ([]byte, string, error) {
 		return nil, "", errors.New("data URI image payload must be base64 encoded")
 	}
 
-	mimeType := strings.TrimPrefix(strings.SplitN(meta, ";", 2)[0], dataURIPrefix)
+	mimeType := strings.TrimPrefix(strings.SplitN(meta, ";", splitNPair)[0], dataURIPrefix)
 	format, ok := dataURIImageMimeToFormat(strings.ToLower(mimeType))
 	if !ok {
 		return nil, "", fmt.Errorf("unsupported data URI image mime type %q", mimeType)

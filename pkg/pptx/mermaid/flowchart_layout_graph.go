@@ -6,6 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+//nolint:gocognit // Graph layout uses explicit branching to preserve stable node placement heuristics.
 func (s *flowchartRenderState) layoutByConnections(connections []FlowConnection) bool {
 	if len(s.nodes) == 0 || len(connections) == 0 {
 		return false

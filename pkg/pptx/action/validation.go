@@ -12,6 +12,8 @@ import (
 var windowsDrivePathPattern = regexp.MustCompile(`^[A-Za-z]:[\\/].+`)
 
 // ValidateHyperlinkAction ensures a hyperlink action is well-formed.
+//
+//nolint:gocognit // Validation enumerates many explicit policy branches for precise caller-facing errors.
 func ValidateHyperlinkAction(a HyperlinkAction, context string) error {
 	switch a.Type {
 	case HyperlinkActionURL:

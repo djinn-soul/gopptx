@@ -15,6 +15,8 @@ var (
 	pdfMonoAlias  = fontFamilySans
 )
 
+const codeTokenHintThreshold = 2
+
 func setPDFFontAliases(sansAlias, serifAlias, monoAlias string) {
 	pdfSansAlias = fallbackAlias(sansAlias, fontFamilySans)
 	pdfSerifAlias = fallbackAlias(serifAlias, pdfSansAlias)
@@ -78,7 +80,7 @@ func inferCodeFontHint(textValue string) string {
 			tokenHits++
 		}
 	}
-	if tokenHits < 2 {
+	if tokenHits < codeTokenHintThreshold {
 		return ""
 	}
 	punct := 0

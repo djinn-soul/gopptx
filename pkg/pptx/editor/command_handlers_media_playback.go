@@ -97,6 +97,7 @@ func handleAddVideoWithPlaybackCommand(
 	return map[string]int{"shape_id": shapeID}, nil
 }
 
+//nolint:funlen // Handler keeps parse/validate/apply steps together for stable bridge error semantics.
 func handleAddAudioWithPlaybackCommand(
 	e *PresentationEditor,
 	payload json.RawMessage,

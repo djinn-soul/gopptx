@@ -167,6 +167,7 @@ func (p *markdownASTParser) consumeParagraph(
 	return nil
 }
 
+//nolint:gocognit // List parsing keeps markdown edge-case handling explicit for deterministic slide output.
 func (p *markdownASTParser) consumeList(node *ast.List, depth int) error {
 	for item := node.FirstChild(); item != nil; item = item.NextSibling() {
 		if item.Kind() != ast.KindListItem {
