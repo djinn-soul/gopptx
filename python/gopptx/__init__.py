@@ -35,7 +35,12 @@ from .ops import (
     OP_SLIDE_COUNT,
     SUPPORTED_OPS,
 )
-from .presentation.master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
+from .presentation.slides.master import (
+    SlideLayout,
+    SlideLayouts,
+    SlideMaster,
+    SlideMasters,
+)
 from .schemas import (
     Author,
     BatchCommand,

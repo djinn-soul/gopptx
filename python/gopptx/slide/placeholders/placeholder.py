@@ -11,7 +11,7 @@ from typing_extensions import override
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from ...presentation.master import SlideLayout, SlideMaster
+    from ...presentation.slides.master import SlideLayout, SlideMaster
     from ...schemas import PlaceholderInfo
     from ..chart.data import CategoryChartData, XyChartData
     from ..slide import Slide

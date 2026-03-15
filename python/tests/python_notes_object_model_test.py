@@ -189,6 +189,10 @@ def test_notes_slide_shape_bounds_and_fill_background_helpers() -> None:
             self._presentation = presentation
             self.notes = ""
 
+        @property
+        def presentation(self) -> _DummyPresentation:
+            return self._presentation
+
     dummy_presentation = _DummyPresentation()
     dummy_slide = _DummySlide(dummy_presentation)
     notes_slide = NotesSlide(dummy_slide)  # type: ignore[arg-type]
@@ -217,6 +221,10 @@ def test_notes_slide_shape_style_helpers_route_updates() -> None:
             self.index = 4
             self._presentation = presentation
             self.notes = ""
+
+        @property
+        def presentation(self) -> _DummyPresentation:
+            return self._presentation
 
     dummy_presentation = _DummyPresentation()
     notes_slide = NotesSlide(_DummySlide(dummy_presentation))  # type: ignore[arg-type]

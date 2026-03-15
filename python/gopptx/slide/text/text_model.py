@@ -1,31 +1,34 @@
 """Live text object model facades for shape text editing."""
-# ruff: noqa: D101,D102,D105,D107,TC003,PLR6201
 # pyright: reportMissingSuperCall=false, reportPrivateUsage=false, reportArgumentType=false, reportCallIssue=false, reportPropertyTypeMismatch=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportAttributeAccessIssue=false
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from ..shapes.shape_text_frame import ShapeTextFrame as BaseShapeTextFrame
 from .text_run import Run, RunHyperlink
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class ShapeTextFrame(BaseShapeTextFrame):
     """Public text-frame facade with paragraph collection access."""
 
     def __init__(self, slide: object, shape_id: int) -> None:
+        """Create a text-frame proxy for a shape."""
         super().__init__(slide, shape_id)
-        self._paragraphs: ShapeParagraphCollection | None = None
+        self._paragraphs: _ShapeParagraphCollection | None = None
 
     @property
-    def paragraphs(self) -> ShapeParagraphCollection:
+    def paragraphs(self) -> _ShapeParagraphCollection:
+        """Return paragraph collection facade."""
         if self._paragraphs is None:
-            self._paragraphs = ShapeParagraphCollection(self)
+            self._paragraphs = _ShapeParagraphCollection(self)
         return self._paragraphs
 
 
-class ShapeRunProxy:
+class _ShapeRunProxy:
     """Live run proxy backed by bridge operations."""
 
     def __init__(self, text_frame: ShapeTextFrame, run_index: int) -> None:
@@ -97,42 +100,42 @@ class ShapeRunProxy:
         self._set_field("hyperlink", value)
 
 
-class ShapeRunCollection:
+class _ShapeRunCollection:
     """Live run collection for a paragraph proxy."""
 
     def __init__(self, text_frame: ShapeTextFrame) -> None:
         self._text_frame = text_frame
-        self._run_proxies: dict[int, ShapeRunProxy] = {}
+        self._run_proxies: dict[int, _ShapeRunProxy] = {}
 
     def __len__(self) -> int:
         return len(self._text_frame.get_runs())
 
-    def __getitem__(self, index: int) -> ShapeRunProxy:
+    def __getitem__(self, index: int) -> _ShapeRunProxy:
         if index < 0:
             index += len(self)
         if index < 0:
             raise IndexError("run index out of range")
         proxy = self._run_proxies.get(index)
         if proxy is None:
-            proxy = ShapeRunProxy(self._text_frame, index)
+            proxy = _ShapeRunProxy(self._text_frame, index)
             self._run_proxies[index] = proxy
         return proxy
 
-    def __iter__(self) -> Iterator[ShapeRunProxy]:
+    def __iter__(self) -> Iterator[_ShapeRunProxy]:
         for index, _ in enumerate(self._text_frame.get_runs()):
-            yield ShapeRunProxy(self._text_frame, index)
+            yield _ShapeRunProxy(self._text_frame, index)
 
-    def add_run(self, text: str = "") -> ShapeRunProxy:
+    def add_run(self, text: str = "") -> _ShapeRunProxy:
         self._text_frame.append_run(Run(text=text).to_payload())
         return self[len(self) - 1]
 
 
-class ShapeParagraphProxy:
+class _ShapeParagraphProxy:
     """Single-paragraph proxy; PPTX run API currently models one normalized paragraph."""
 
     def __init__(self, text_frame: ShapeTextFrame) -> None:
         self._text_frame = text_frame
-        self._runs = ShapeRunCollection(text_frame)
+        self._runs = _ShapeRunCollection(text_frame)
 
     def _paragraph_payload(self) -> dict[str, object]:
         return self._text_frame.get_paragraph_payload()
@@ -141,7 +144,7 @@ class ShapeParagraphProxy:
         self._text_frame.set_paragraph_field(field, value)
 
     @property
-    def runs(self) -> ShapeRunCollection:
+    def runs(self) -> _ShapeRunCollection:
         return self._runs
 
     @property
@@ -213,18 +216,25 @@ class ShapeParagraphProxy:
         self._set_paragraph_field("space_after_pts", value)
 
 
-class ShapeParagraphCollection:
+class _ShapeParagraphCollection:
+    """Collection facade for the normalized single paragraph."""
+
     def __init__(self, text_frame: ShapeTextFrame) -> None:
-        self._text_frame = text_frame
-        self._paragraph = ShapeParagraphProxy(text_frame)
+        self._paragraph = _ShapeParagraphProxy(text_frame)
 
     def __len__(self) -> int:
         return 1
 
-    def __getitem__(self, index: int) -> ShapeParagraphProxy:
-        if index not in (0, -1):
+    def __getitem__(self, index: int) -> _ShapeParagraphProxy:
+        if index not in {0, -1}:
             raise IndexError("paragraph index out of range")
         return self._paragraph
 
-    def __iter__(self) -> Iterator[ShapeParagraphProxy]:
+    def __iter__(self) -> Iterator[_ShapeParagraphProxy]:
         yield self[0]
+
+
+ShapeRunProxy = _ShapeRunProxy
+ShapeRunCollection = _ShapeRunCollection
+ShapeParagraphProxy = _ShapeParagraphProxy
+ShapeParagraphCollection = _ShapeParagraphCollection

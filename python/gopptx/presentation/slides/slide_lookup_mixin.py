@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .helpers import PresentationMixinBase
+from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
     import threading
 
-    from ..schemas import SlideMetadata
+    from ...schemas import SlideMetadata
 
 
 class PresentationSlideLookupMixin(PresentationMixinBase):

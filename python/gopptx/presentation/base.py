@@ -13,8 +13,8 @@ from ..api_errors import GopptxError
 from .helpers import PresentationProtocol
 from .runtime import PresentationRuntimeMixin
 from .shapes.shape_write_buffer_mixin import PresentationShapeWriteBufferMixin
-from .slide_lookup_mixin import PresentationSlideLookupMixin
-from .slide_proxy_mixin import PresentationSlideProxyMixin
+from .slides.slide_lookup_mixin import PresentationSlideLookupMixin
+from .slides.slide_proxy_mixin import PresentationSlideProxyMixin
 from .text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 

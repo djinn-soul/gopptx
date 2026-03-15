@@ -1,5 +1,4 @@
 """Table proxy classes for gopptx."""
-# ruff: noqa: D102,D105,D107
 # pyright: reportMissingSuperCall=false, reportPrivateUsage=false, reportOptionalMemberAccess=false
 
 from __future__ import annotations
@@ -13,8 +12,18 @@ from .table_collections import TableColumn, TableColumns, TableRow, TableRows
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from typing import Protocol
 
     from ...presentation.presentation import Presentation
+
+    class _TableBandingProto(Protocol):
+        _cache: dict[str, object] | None
+
+        def _ensure_cache(self) -> None:
+            ...
+
+        def _update_flags(self, flags: dict[str, bool]) -> None:
+            ...
 
 _TABLE_INDEX_DIMENSIONS = 2
 
@@ -29,10 +38,39 @@ __all__ = [
 ]
 
 
-class Table:
-    """Pythonic Table API supporting table[row, col] and slices."""
+class _TableBandingMixin:
+    """Banding flag properties shared by table proxies."""
+
+    @property
+    def header_row_enabled(self: _TableBandingProto) -> bool:
+        """Whether the first row is formatted as a header row."""
+        self._ensure_cache()
+        if self._cache is None:
+            return False
+        return self._cache.get("first_row", False) is True
+
+    @header_row_enabled.setter
+    def header_row_enabled(self: _TableBandingProto, value: bool) -> None:
+        self._update_flags({"first_row": value})
+
+    @property
+    def banded_rows_enabled(self: _TableBandingProto) -> bool:
+        """Whether alternating row banding is enabled."""
+        self._ensure_cache()
+        if self._cache is None:
+            return False
+        return self._cache.get("band_row", False) is True
+
+    @banded_rows_enabled.setter
+    def banded_rows_enabled(self: _TableBandingProto, value: bool) -> None:
+        self._update_flags({"band_row": value})
+
+
+class Table(_TableBandingMixin):
+    """Pythonic Table API supporting ``table[row, col]`` and slices."""
 
     def __init__(self, prs: Presentation, slide_index: int, shape_id: int) -> None:
+        """Initialize a table proxy bound to a slide shape."""
         self.prs = prs
         self.slide_index = slide_index
         self.shape_id = shape_id
@@ -63,16 +101,24 @@ class Table:
         self._col_count = int(cast("int", self._cache.get("col_count", 0)))
 
     def invalidate_cache(self) -> None:
+        """Clear local table caches when not inside a batch."""
         if getattr(self.prs, "_batch_active", False):
             return
         self._cache = None
         self._cell_map = {}
 
+    def table_state(self) -> dict[str, object]:
+        """Return cached table state, loading it if needed."""
+        self._ensure_cache()
+        return self._cache or {}
+
     def get_cell_info(self, row: int, col: int) -> dict[str, object]:
+        """Return raw cell metadata for ``(row, col)`` when present."""
         self._ensure_cache()
         return self._cell_map.get((row, col), {})
 
     def update_cell(self, row: int, col: int, updates: dict[str, object]) -> None:
+        """Apply updates to a single cell."""
         self.prs.execute(
             ops.OP_UPDATE_TABLE_CELL,
             {
@@ -90,6 +136,7 @@ class Table:
 
     @property
     def row_count(self) -> int:
+        """Number of rows in the table."""
         if self._row_count is not None:
             return self._row_count
         self._ensure_cache()
@@ -97,12 +144,14 @@ class Table:
 
     @property
     def col_count(self) -> int:
+        """Number of columns in the table."""
         if self._col_count is not None:
             return self._col_count
         self._ensure_cache()
         return self._col_count or 0
 
     def __getitem__(self, idx: tuple[int | slice, int | slice]) -> Cell | CellRange:
+        """Return a cell or rectangular range for the given index tuple."""
         if len(idx) != _TABLE_INDEX_DIMENSIONS:
             raise TypeError("Table indices must be a tuple of (row, col)")
         row_idx, col_idx = idx
@@ -136,9 +185,11 @@ class Table:
         return Cell(self, row_idx, col_idx)
 
     def cell(self, row: int, col: int) -> Cell:
+        """Return the cell at the given zero-based row and column."""
         return self[row, col]  # type: ignore[return-value]
 
     def iter_cells(self) -> Iterator[Cell]:
+        """Iterate all cells row-major."""
         for row in range(self.row_count):
             for col in range(self.col_count):
                 yield Cell(self, row, col)
@@ -156,25 +207,8 @@ class Table:
             self.invalidate_cache()
 
     @property
-    def header_row_enabled(self) -> bool:
-        self._ensure_cache()
-        return self._cache.get("first_row", False) is True if self._cache else False
-
-    @header_row_enabled.setter
-    def header_row_enabled(self, value: bool) -> None:
-        self._update_flags({"first_row": value})
-
-    @property
-    def banded_rows_enabled(self) -> bool:
-        self._ensure_cache()
-        return self._cache.get("band_row", False) is True if self._cache else False
-
-    @banded_rows_enabled.setter
-    def banded_rows_enabled(self, value: bool) -> None:
-        self._update_flags({"band_row": value})
-
-    @property
     def first_row(self) -> bool:
+        """Compatibility alias for ``header_row_enabled``."""
         return self.header_row_enabled
 
     @first_row.setter
@@ -183,6 +217,7 @@ class Table:
 
     @property
     def horz_banding(self) -> bool:
+        """Compatibility alias for ``banded_rows_enabled``."""
         return self.banded_rows_enabled
 
     @horz_banding.setter
@@ -191,6 +226,7 @@ class Table:
 
     @property
     def first_col(self) -> bool:
+        """Whether first-column emphasis is enabled."""
         self._ensure_cache()
         return self._cache.get("first_col", False) is True if self._cache else False
 
@@ -200,6 +236,7 @@ class Table:
 
     @property
     def last_col(self) -> bool:
+        """Whether last-column emphasis is enabled."""
         self._ensure_cache()
         return self._cache.get("last_col", False) is True if self._cache else False
 
@@ -209,6 +246,7 @@ class Table:
 
     @property
     def last_row(self) -> bool:
+        """Whether last-row emphasis is enabled."""
         self._ensure_cache()
         return self._cache.get("last_row", False) is True if self._cache else False
 
@@ -218,6 +256,7 @@ class Table:
 
     @property
     def vert_banding(self) -> bool:
+        """Whether alternating column banding is enabled."""
         self._ensure_cache()
         return self._cache.get("band_col", False) is True if self._cache else False
 
@@ -226,6 +265,7 @@ class Table:
         self._update_flags({"band_col": value})
 
     def apply_style(self, style_guid: str) -> None:
+        """Apply a table style by GUID."""
         self.prs.execute(
             ops.OP_SET_TABLE_STYLE,
             {
@@ -239,8 +279,10 @@ class Table:
 
     @property
     def rows(self) -> TableRows:
+        """A row collection proxy."""
         return TableRows(self)
 
     @property
     def columns(self) -> TableColumns:
+        """A column collection proxy."""
         return TableColumns(self)

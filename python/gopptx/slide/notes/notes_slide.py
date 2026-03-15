@@ -1,5 +1,4 @@
 """Notes slide proxy for gopptx slide API."""
-# ruff: noqa: D102, SLF001
 # pyright: reportPrivateUsage=false
 
 from __future__ import annotations
@@ -37,7 +36,7 @@ class NotesSlide(NotesSlideStyleMixin):
         self._slide.notes = value
 
     def _shape_payloads(self) -> list[dict[str, object]]:
-        payload = self._slide._presentation.get_notes_payload(self._slide.index)
+        payload = self._slide.presentation.get_notes_payload(self._slide.index)
         raw = payload.get("notes_shapes")
         if isinstance(raw, list):
             return cast("list[dict[str, object]]", raw)
@@ -48,7 +47,7 @@ class NotesSlide(NotesSlideStyleMixin):
         return self._shape_payloads()
 
     def _set_shape_text(self, shape_id: int, text: str) -> None:
-        self._slide._presentation.set_notes_shape_text(
+        self._slide.presentation.set_notes_shape_text(
             self._slide.index, shape_id, text
         )
 
@@ -56,14 +55,14 @@ class NotesSlide(NotesSlideStyleMixin):
     def _set_shape_props(self, shape_id: int, updates: ShapeUpdate) -> None:
         if shape_id < 0:
             raise ValueError("notes shape id is unavailable for mutation")
-        self._slide._presentation.set_notes_shape_props(
+        self._slide.presentation.set_notes_shape_props(
             self._slide.index,
             shape_id,
             updates,
         )
 
     def _placeholder_payloads(self) -> list[dict[str, object]]:
-        payload = self._slide._presentation.get_notes_payload(self._slide.index)
+        payload = self._slide.presentation.get_notes_payload(self._slide.index)
         raw = payload.get("notes_placeholders")
         return cast("list[dict[str, object]]", raw if isinstance(raw, list) else [])
 
@@ -88,12 +87,14 @@ class NotesSlide(NotesSlideStyleMixin):
     def set_shape_bounds(
         self, shape_id: int, *, left: float, top: float, width: float, height: float
     ) -> None:
+        """Set notes-shape geometry in EMU units."""
         self._set_shape_props(
             shape_id,
             {"x": int(left), "y": int(top), "w": int(width), "h": int(height)},
         )
 
     def set_shape_fill_background(self, shape_id: int) -> None:
+        """Set notes-shape fill to background mode."""
         self._set_shape_props(shape_id, {"fill": {"background": True}})
 
     @property

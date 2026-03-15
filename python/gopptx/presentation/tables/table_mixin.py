@@ -1,5 +1,4 @@
 """Presentation table mixin."""
-# ruff: noqa: D102
 
 from __future__ import annotations
 
@@ -24,6 +23,7 @@ class PresentationTableMixin(PresentationMixinBase):
         cols: int,
         bounds: tuple[int, int, int, int],
     ) -> int:
+        """Add a table shape to a slide and return its shape ID."""
         x, y, cx, cy = bounds
         result = self.execute(
             ops.OP_ADD_TABLE,
@@ -40,6 +40,7 @@ class PresentationTableMixin(PresentationMixinBase):
         return int(cast("int", result.get("shape_id", 0)))
 
     def get_table(self, slide_index: int, shape_id: int) -> TableInfo:
+        """Return serialized table information for a table shape."""
         result = self.execute(
             ops.OP_GET_TABLE,
             {"slide_index": slide_index, "shape_id": shape_id},
@@ -47,6 +48,7 @@ class PresentationTableMixin(PresentationMixinBase):
         return cast("TableInfo", cast("dict[str, object]", result.get("table", {})))
 
     def set_table_style(self, slide_index: int, shape_id: int, style_guid: str) -> None:
+        """Apply a table style GUID to an existing table shape."""
         self.execute(
             ops.OP_SET_TABLE_STYLE,
             {
@@ -57,6 +59,7 @@ class PresentationTableMixin(PresentationMixinBase):
         )
 
     def define_table_style(self, name: str, style_id: str | None = None) -> str:
+        """Define a custom table style and return its resolved style ID."""
         payload: dict[str, object] = {"name": name}
         if style_id is not None:
             payload["style_id"] = style_id
@@ -64,6 +67,7 @@ class PresentationTableMixin(PresentationMixinBase):
         return str(result.get("style_id", ""))
 
     def list_table_styles(self) -> list[dict[str, str]]:
+        """List available table styles visible to the presentation."""
         result = self.execute(ops.OP_LIST_TABLE_STYLES, {})
         return cast("list[dict[str, str]]", result.get("styles", []))
 
@@ -73,6 +77,7 @@ class PresentationTableMixin(PresentationMixinBase):
         shape_id: int,
         flags: dict[str, bool],
     ) -> None:
+        """Set table display flags such as header-row or banded options."""
         self.execute(
             ops.OP_UPDATE_TABLE_FLAGS,
             {"slide_index": slide_index, "shape_id": shape_id, "flags": flags},
@@ -86,6 +91,7 @@ class PresentationTableMixin(PresentationMixinBase):
         col: int,
         text: str,
     ) -> None:
+        """Update the text value for one table cell."""
         self.execute(
             ops.OP_UPDATE_TABLE_CELL,
             {
@@ -104,6 +110,7 @@ class PresentationTableMixin(PresentationMixinBase):
         row: int,
         col: int,
     ) -> TableCellInfo:
+        """Return one table cell payload by zero-based row and column."""
         table = self.get_table(slide_index, shape_id)
         cells = cast("list[dict[str, object]]", table.get("cells", []))
         cell_map: dict[tuple[int, int], dict[str, object]] = {}
@@ -125,6 +132,7 @@ class PresentationTableMixin(PresentationMixinBase):
         shape_id: int,
         cell_range: tuple[int, int, int, int],
     ) -> None:
+        """Merge a rectangular range of table cells."""
         row1, col1, row2, col2 = cell_range
         self.execute(
             ops.OP_MERGE_TABLE_CELLS,
@@ -145,6 +153,7 @@ class PresentationTableMixin(PresentationMixinBase):
         row: int,
         col: int,
     ) -> None:
+        """Split a merged table cell back into its original cells."""
         self.execute(
             ops.OP_SPLIT_TABLE_CELL,
             {"slide_index": slide_index, "shape_id": shape_id, "row": row, "col": col},
@@ -157,6 +166,7 @@ class PresentationTableMixin(PresentationMixinBase):
         row: int,
         height: int,
     ) -> None:
+        """Set the height of a specific table row."""
         self.execute(
             ops.OP_SET_TABLE_ROW_HEIGHT,
             {
@@ -174,6 +184,7 @@ class PresentationTableMixin(PresentationMixinBase):
         col: int,
         width: int,
     ) -> None:
+        """Set the width of a specific table column."""
         self.execute(
             ops.OP_SET_TABLE_COLUMN_WIDTH,
             {

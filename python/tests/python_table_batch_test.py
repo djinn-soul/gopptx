@@ -1,20 +1,17 @@
-import os
 import pathlib
 
 import pytest
 from gopptx import Presentation
 
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+input_deck = project_root / "examples/assets/01/01_basic_pptx.pptx"
 
 
 def test_table_batch_mode() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         slide = prs.add_slide("Table Batch Test")
         shape_id = slide.add_table(3, 3, bounds=(1000, 1000, 5000, 2000))
 
@@ -38,10 +35,10 @@ def test_table_batch_mode() -> None:
 
 
 def test_table_negative_indexing() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         slide = prs.add_slide("Table Indexing Test")
         shape_id = slide.add_table(3, 3, bounds=(1000, 1000, 5000, 2000))
         table = slide.table(shape_id)

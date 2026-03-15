@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .. import ops
+from ... import ops
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ..schemas import PlaceholderInfo, SlideLayoutInfo
-    from .base import PresentationProtocol
+    from ...schemas import PlaceholderInfo, SlideLayoutInfo
+    from ..helpers import PresentationProtocol
 
 
 class SlideLayout:

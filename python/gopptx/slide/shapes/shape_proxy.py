@@ -1,35 +1,32 @@
 """Shape object proxies with python-pptx-like ergonomics."""
-# ruff: noqa: D102,D105,D107,SLF001,TC003
 # pyright: reportPrivateUsage=false, reportMissingSuperCall=false
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from typing import TYPE_CHECKING, cast
 
 from ..text.text_model import ShapeTextFrame
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from ...schemas import FillFormat, LineFormat, ShadowFormat, Shape, ShapeUpdate
     from ..slide import Slide
 
 
-class ShapeFillProxy:
+class _ShapeFillProxy:
     """Live fill proxy."""
 
     def __init__(self, shape: ShapeProxy) -> None:
         self._shape = shape
 
     def _payload(self) -> FillFormat:
-        record = self._shape._shape_record()
+        record = self._shape.shape_record()
         raw = cast("object", record.get("fill", record.get("Fill", {})))
         return cast("FillFormat", raw if raw is not None else {})
 
     def _apply(self, payload: FillFormat) -> None:
-        self._shape._slide.update_shape(
-            self._shape.id,
-            cast("ShapeUpdate", {"fill": payload}),
-        )
+        self._shape.apply_update(cast("ShapeUpdate", {"fill": payload}))
 
     @property
     def solid_color(self) -> str | None:
@@ -48,24 +45,21 @@ class ShapeFillProxy:
         self._apply(cast("FillFormat", {"background": True}))
 
 
-class ShapeLineProxy:
+class _ShapeLineProxy:
     """Live line proxy."""
 
     def __init__(self, shape: ShapeProxy) -> None:
         self._shape = shape
 
     def _payload(self) -> LineFormat:
-        record = self._shape._shape_record()
+        record = self._shape.shape_record()
         raw = cast("object", record.get("line", record.get("Line", {})))
         return cast("LineFormat", raw if raw is not None else {})
 
     def _apply(self, patch: dict[str, object]) -> None:
         payload = dict(cast("dict[str, object]", self._payload()))
         payload.update(patch)
-        self._shape._slide.update_shape(
-            self._shape.id,
-            cast("ShapeUpdate", {"line": payload}),
-        )
+        self._shape.apply_update(cast("ShapeUpdate", {"line": payload}))
 
     @property
     def color(self) -> str | None:
@@ -95,24 +89,21 @@ class ShapeLineProxy:
         self._apply({"dash_style": value})
 
 
-class ShapeShadowProxy:
+class _ShapeShadowProxy:
     """Live shadow proxy."""
 
     def __init__(self, shape: ShapeProxy) -> None:
         self._shape = shape
 
     def _payload(self) -> ShadowFormat:
-        record = self._shape._shape_record()
+        record = self._shape.shape_record()
         raw = cast("object", record.get("shadow", record.get("Shadow", {})))
         return cast("ShadowFormat", raw if raw is not None else {})
 
     def _apply(self, patch: dict[str, object]) -> None:
         payload = dict(cast("dict[str, object]", self._payload()))
         payload.update(patch)
-        self._shape._slide.update_shape(
-            self._shape.id,
-            cast("ShapeUpdate", {"shadow": payload}),
-        )
+        self._shape.apply_update(cast("ShapeUpdate", {"shadow": payload}))
 
     @property
     def color(self) -> str | None:
@@ -164,106 +155,130 @@ class ShapeProxy:
     """Live shape proxy object."""
 
     def __init__(self, slide: Slide, shape_id: int) -> None:
+        """Create a proxy around the specified slide shape."""
         self._slide = slide
-        self._presentation = slide._presentation
         self._shape_id = shape_id
-        self._fill = ShapeFillProxy(self)
-        self._line = ShapeLineProxy(self)
-        self._shadow = ShapeShadowProxy(self)
+        self._fill = _ShapeFillProxy(self)
+        self._line = _ShapeLineProxy(self)
+        self._shadow = _ShapeShadowProxy(self)
         self._text_frame: ShapeTextFrame | None = None
 
-    def _shape_record(self) -> Shape:
-        return self._slide._shape_record_by_id(self._shape_id)
+    def shape_record(self) -> Shape:
+        """Return the current shape payload from slide state."""
+        for shape in self._slide.list_shapes():
+            shape_id = shape.get("ID", shape.get("id"))
+            if shape_id is None:
+                continue
+            if int(str(shape_id)) == self._shape_id:
+                return shape
+        raise KeyError(f"shape id not found: {self._shape_id}")
+
+    def apply_update(self, patch: ShapeUpdate) -> None:
+        """Apply a shape patch to the backing slide."""
+        self._slide.update_shape(self._shape_id, patch)
 
     @property
     def id(self) -> int:
+        """Return the shape id."""
         return self._shape_id
 
     @property
     def name(self) -> str:
-        shape = self._shape_record()
+        """Return the shape name."""
+        shape = self.shape_record()
         value = shape.get("Name", shape.get("name", ""))
         return str(value)
 
     @property
     def shape_type(self) -> str:
-        shape = self._shape_record()
+        """Return the shape type token."""
+        shape = self.shape_record()
         value = shape.get("Type", shape.get("type", ""))
         return str(value)
 
     @property
     def text(self) -> str:
-        shape = self._shape_record()
+        """Return shape text content."""
+        shape = self.shape_record()
         value = shape.get("Text", shape.get("text", ""))
         return str(value)
 
     @text.setter
     def text(self, value: str) -> None:
-        self._slide.update_shape(self._shape_id, cast("ShapeUpdate", {"text": value}))
+        self.apply_update(cast("ShapeUpdate", {"text": value}))
 
     @property
     def text_frame(self) -> ShapeTextFrame:
+        """Return the lazy text-frame proxy."""
         if self._text_frame is None:
             self._text_frame = ShapeTextFrame(self._slide, self._shape_id)
         return self._text_frame
 
     @property
-    def fill(self) -> ShapeFillProxy:
+    def fill(self) -> _ShapeFillProxy:
+        """Return fill formatting facade."""
         return self._fill
 
     @property
-    def line(self) -> ShapeLineProxy:
+    def line(self) -> _ShapeLineProxy:
+        """Return line formatting facade."""
         return self._line
 
     @property
-    def shadow(self) -> ShapeShadowProxy:
+    def shadow(self) -> _ShapeShadowProxy:
+        """Return shadow formatting facade."""
         return self._shadow
 
     @property
     def left(self) -> int:
-        shape = self._shape_record()
+        """Return shape left position in EMU."""
+        shape = self.shape_record()
         value = shape.get("X", shape.get("x", 0))
         return int(str(value))
 
     @left.setter
     def left(self, value: int) -> None:
-        self._slide.update_shape(self._shape_id, cast("ShapeUpdate", {"x": value}))
+        self.apply_update(cast("ShapeUpdate", {"x": value}))
 
     @property
     def top(self) -> int:
-        shape = self._shape_record()
+        """Return shape top position in EMU."""
+        shape = self.shape_record()
         value = shape.get("Y", shape.get("y", 0))
         return int(str(value))
 
     @top.setter
     def top(self, value: int) -> None:
-        self._slide.update_shape(self._shape_id, cast("ShapeUpdate", {"y": value}))
+        self.apply_update(cast("ShapeUpdate", {"y": value}))
 
     @property
     def width(self) -> int:
-        shape = self._shape_record()
+        """Return shape width in EMU."""
+        shape = self.shape_record()
         value = shape.get("W", shape.get("w", 0))
         return int(str(value))
 
     @width.setter
     def width(self, value: int) -> None:
-        self._slide.update_shape(self._shape_id, cast("ShapeUpdate", {"w": value}))
+        self.apply_update(cast("ShapeUpdate", {"w": value}))
 
     @property
     def height(self) -> int:
-        shape = self._shape_record()
+        """Return shape height in EMU."""
+        shape = self.shape_record()
         value = shape.get("H", shape.get("h", 0))
         return int(str(value))
 
     @height.setter
     def height(self, value: int) -> None:
-        self._slide.update_shape(self._shape_id, cast("ShapeUpdate", {"h": value}))
+        self.apply_update(cast("ShapeUpdate", {"h": value}))
 
 
 class ShapeCollection:
     """python-pptx-style slide shapes collection."""
 
     def __init__(self, slide: Slide) -> None:
+        """Create a shape collection for a slide."""
         self._slide = slide
 
     def _shape_ids(self) -> list[int]:
@@ -276,9 +291,11 @@ class ShapeCollection:
         return out
 
     def __len__(self) -> int:
+        """Return shape count."""
         return len(self._shape_ids())
 
     def __getitem__(self, index: int) -> ShapeProxy:
+        """Return shape proxy at index."""
         ids = self._shape_ids()
         if index < 0:
             index += len(ids)
@@ -287,5 +304,11 @@ class ShapeCollection:
         return self._slide.shape(ids[index])
 
     def __iter__(self) -> Iterator[ShapeProxy]:
+        """Iterate shape proxies."""
         for shape_id in self._shape_ids():
             yield self._slide.shape(shape_id)
+
+
+ShapeFillProxy = _ShapeFillProxy
+ShapeLineProxy = _ShapeLineProxy
+ShapeShadowProxy = _ShapeShadowProxy

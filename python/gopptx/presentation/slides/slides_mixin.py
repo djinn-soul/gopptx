@@ -1,5 +1,4 @@
 """Presentation slides mixin for gopptx library."""
-# ruff: noqa: D102
 
 from __future__ import annotations
 
@@ -9,12 +8,12 @@ from typing import TYPE_CHECKING, cast
 from ... import ops
 from ...slide.slide import Slide
 from ...utils import is_four_number_bounds
-from ..layout_theme import PresentationLayoutMixin, PresentationThemeMixin
-from ..master import SlideMasters
 from ..placeholders import (
     build_placeholder_chart_payload,
     build_placeholder_table_payload,
 )
+from .layout_theme_mixin import PresentationLayoutMixin, PresentationThemeMixin
+from .master import SlideMasters
 from .properties_mixin import PresentationPropertiesMixin
 from .sections_mixin import PresentationSectionMixin
 
@@ -41,10 +40,14 @@ class PresentationSlidesMixin(
     if TYPE_CHECKING:
 
         @property
-        def slides(self) -> list[Slide]: ...
+        def slides(self) -> list[Slide]:
+            """Return materialized slide objects for the current presentation."""
+            ...
 
         @property
-        def slide_count(self) -> int: ...
+        def slide_count(self) -> int:
+            """Return the total number of slides in the presentation."""
+            ...
 
     def list_placeholders(self, slide_index: int) -> list[dict[str, object]]:
         """Bridge op: list all placeholders on a slide."""

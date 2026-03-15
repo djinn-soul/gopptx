@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ..slide.slide import Slide
-from .helpers import PresentationMixinBase
+from ...slide.slide import Slide
+from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
     import threading
 
-    from ..schemas import SlideMetadata
-    from .presentation import Presentation
+    from ...schemas import SlideMetadata
+    from ..presentation import Presentation
 
 
 class PresentationSlideProxyMixin(PresentationMixinBase):

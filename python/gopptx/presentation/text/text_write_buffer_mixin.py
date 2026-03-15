@@ -1,5 +1,4 @@
 """Buffered run-text updates for presentation save/read flows."""
-# ruff: noqa: D102
 
 from __future__ import annotations
 
@@ -22,12 +21,16 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
             self,
             slide_index: int,
             updates: list[dict[str, object]],
-        ) -> None: ...
+        ) -> None:
+            """Apply batched run-text updates to a single slide."""
+            ...
 
         def update_deck_run_texts(
             self,
             slide_updates: list[dict[str, object]],
-        ) -> None: ...
+        ) -> None:
+            """Apply batched run-text updates spanning multiple slides."""
+            ...
 
     def __init__(self) -> None:
         """Initialize pending slide text-update state."""
@@ -153,6 +156,7 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
             self.flush_pending_shape_runs_replacements(slide_index=slide_index)
 
     def _pending_slide_indexes(self) -> Iterable[int]:
+        """Return sorted slide indexes that have pending run-text updates."""
         return sorted(self._pending_slide_run_text_updates)
 
     def save(self, path: str) -> None:
