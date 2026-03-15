@@ -3,10 +3,11 @@ package markdown
 import (
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/action"
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/yuin/goldmark/ast"
 	extast "github.com/yuin/goldmark/extension/ast"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type inlineStyleState struct {

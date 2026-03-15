@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
-	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	extast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 type markdownASTParser struct {

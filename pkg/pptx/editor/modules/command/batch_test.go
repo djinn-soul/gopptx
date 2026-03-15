@@ -121,7 +121,7 @@ func TestHandleBatchExecute_BridgeErrorMappingAndDetailsMerge(t *testing.T) {
 			}, true
 		},
 		func(err error) (BridgeErrorView, bool) {
-			if err == bridgeErr {
+			if errors.Is(err, bridgeErr) {
 				return BridgeErrorView{
 					Code:    "INVALID_FIELD",
 					Message: "ignored by HandleBatchExecute",

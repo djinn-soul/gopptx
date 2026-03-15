@@ -68,7 +68,6 @@ func renderSmartArtPartsParallel(parts []SmartArtPart) ([]smartArtRenderedPart, 
 	)
 
 	for _, part := range parts {
-		part := part
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

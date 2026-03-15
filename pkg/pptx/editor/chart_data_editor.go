@@ -141,7 +141,6 @@ func (e *PresentationEditor) applyChartDataUpdateByRef(
 	chartRef common.SlideChartRef,
 	req common.ChartDataUpdate,
 ) error {
-
 	chartXML, ok := e.parts.Get(chartRef.ChartPart)
 	if !ok {
 		return fmt.Errorf("chart part %s not found", chartRef.ChartPart)
