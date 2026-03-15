@@ -46,7 +46,7 @@ func TestHandleParsedRequest(t *testing.T) {
 			},
 			func(int) (any, error) {
 				t.Fatal("execute should not be called on parseRaw error")
-				return nil, nil
+				return nil, errors.New("execute should not be called")
 			},
 		)
 		if !errors.Is(err, parseErr) || got != nil {
@@ -67,7 +67,7 @@ func TestHandleParsedRequest(t *testing.T) {
 			func() error { return validationErr },
 			func(int) (any, error) {
 				t.Fatal("execute should not be called when request validation fails")
-				return nil, nil
+				return nil, errors.New("execute should not be called")
 			},
 		)
 		if !errors.Is(err, validationErr) || got != nil {
@@ -120,7 +120,7 @@ func TestHandleParsedRequestWithPayload(t *testing.T) {
 			},
 			func(int, map[string]any) (any, error) {
 				t.Fatal("execute should not be called on parseRaw error")
-				return nil, nil
+				return nil, errors.New("execute should not be called")
 			},
 		)
 		if !errors.Is(err, parseErr) || got != nil {
@@ -141,7 +141,7 @@ func TestHandleParsedRequestWithPayload(t *testing.T) {
 			func() error { return validationErr },
 			func(int, map[string]any) (any, error) {
 				t.Fatal("execute should not be called when request validation fails")
-				return nil, nil
+				return nil, errors.New("execute should not be called")
 			},
 		)
 		if !errors.Is(err, validationErr) || got != nil {

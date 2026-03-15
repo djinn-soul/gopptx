@@ -72,7 +72,7 @@ func TestWorkflowAddRemoveMove(t *testing.T) {
 
 func TestWorkflowDuplicateMergeAndValidation(t *testing.T) {
 	parts := map[string][]byte{
-		"ppt/slides/slide1.xml":       []byte(`<p:sld><a:t>Old</a:t></p:sld>`),
+		"ppt/slides/slide1.xml":            []byte(`<p:sld><a:t>Old</a:t></p:sld>`),
 		"ppt/slides/_rels/slide1.xml.rels": []byte(`<Relationships/>`),
 	}
 	getPart := func(path string) ([]byte, bool) { v, ok := parts[path]; return v, ok }
@@ -132,7 +132,7 @@ func TestWorkflowDuplicateMergeAndValidation(t *testing.T) {
 	}
 	sourceSlides := []common.EditorSlideRef{{Part: "ppt/slides/slideX.xml", Title: "Imported"}}
 	sourceParts := map[string][]byte{
-		"ppt/slides/slideX.xml":       []byte("<slide/>"),
+		"ppt/slides/slideX.xml":            []byte("<slide/>"),
 		"ppt/slides/_rels/slideX.xml.rels": []byte("<rels/>"),
 	}
 	merged, err := MergeSlidesFromSource(
@@ -185,7 +185,7 @@ func TestWorkflowUpdateAndSetTitle(t *testing.T) {
   </p:sp>
  </p:sld>`)
 	parts := map[string][]byte{
-		"ppt/slides/slide3.xml":       originalSlide,
+		"ppt/slides/slide3.xml":            originalSlide,
 		"ppt/slides/_rels/slide3.xml.rels": []byte(`<Relationships/>`),
 	}
 	getPart := func(path string) ([]byte, bool) { v, ok := parts[path]; return v, ok }

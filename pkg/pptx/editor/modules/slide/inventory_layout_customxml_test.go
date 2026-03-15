@@ -18,8 +18,8 @@ func (m mapPartLookup) Get(partPath string) ([]byte, bool) {
 
 func TestInventoryParsing(t *testing.T) {
 	ps := mapPartLookup{
-		"ppt/media/image1.png": []byte("img-1"),
-		"ppt/media/image3.png": []byte("img-3"),
+		"ppt/media/image1.png":  []byte("img-1"),
+		"ppt/media/image3.png":  []byte("img-3"),
 		"ppt/charts/chart2.xml": []byte("<chart/>"),
 		"ppt/charts/_rels/chart2.xml.rels": []byte(
 			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +

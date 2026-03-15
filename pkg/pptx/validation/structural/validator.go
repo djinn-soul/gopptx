@@ -14,6 +14,13 @@ import (
 
 const packageRelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
+const (
+	presentationRelsPath = "ppt/_rels/presentation.xml.rels"
+	contentTypesPath     = "[Content_Types].xml"
+	xmlDeclSuffixLength  = 2
+	namespaceIssueCap    = 3
+)
+
 // PartProvider defines the interface for accessing package parts.
 type PartProvider interface {
 	Has(path string) bool
@@ -48,10 +55,10 @@ func (v *Validator) AddChecker(c Checker) {
 // requiredParts identifies the minimum set of parts for a valid PPTX.
 func requiredParts() map[string]string {
 	return map[string]string{
-		"[Content_Types].xml":             "Content types definition",
-		"_rels/.rels":                     "Package relationships",
-		"ppt/presentation.xml":            "Presentation document",
-		"ppt/_rels/presentation.xml.rels": "Presentation relationships",
+		contentTypesPath:       "Content types definition",
+		"_rels/.rels":          "Package relationships",
+		"ppt/presentation.xml": "Presentation document",
+		presentationRelsPath:   "Presentation relationships",
 	}
 }
 
@@ -253,12 +260,11 @@ func (v *Validator) resolvePath(relsPath, target string) string {
 }
 
 func (v *Validator) checkSlideReferences() {
-	presentationRels := "ppt/_rels/presentation.xml.rels"
-	if !v.provider.Has(presentationRels) {
+	if !v.provider.Has(presentationRelsPath) {
 		return
 	}
 
-	data, _ := v.provider.Get(presentationRels)
+	data, _ := v.provider.Get(presentationRelsPath)
 	referencedSlides := make(map[string]bool)
 
 	// Parse relationships using proper XML decoder
@@ -273,7 +279,7 @@ func (v *Validator) checkSlideReferences() {
 		// Check if this is a slide relationship (but not slideMaster or slideLayout)
 		// The type should end with "/slide" not contain "/slide" somewhere
 		if strings.HasSuffix(rel.Type, "/slide") && rel.Target != "" {
-			fullPath := v.resolvePath(presentationRels, rel.Target)
+			fullPath := v.resolvePath(presentationRelsPath, rel.Target)
 			referencedSlides[fullPath] = true
 		}
 	}
@@ -299,7 +305,7 @@ func (v *Validator) checkSlideReferences() {
 			v.issues = append(v.issues, Issue{
 				Code:        CodeMissingSlideRef,
 				Severity:    SeverityError,
-				Path:        presentationRels,
+				Path:        presentationRelsPath,
 				Description: fmt.Sprintf("Referenced slide not found: %s", slidePath),
 				Repairable:  true,
 			})
@@ -308,8 +314,7 @@ func (v *Validator) checkSlideReferences() {
 }
 
 func (v *Validator) checkContentTypes() {
-	ctPath := "[Content_Types].xml"
-	data, ok := v.provider.Get(ctPath)
+	data, ok := v.provider.Get(contentTypesPath)
 	if !ok {
 		return
 	}
@@ -331,7 +336,7 @@ func (v *Validator) checkContentTypes() {
 	}
 
 	for _, p := range v.provider.Keys() {
-		if p == ctPath || strings.HasSuffix(p, ".rels") {
+		if p == contentTypesPath || strings.HasSuffix(p, ".rels") {
 			continue
 		}
 
@@ -419,7 +424,7 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 
 	content := string(data)
 	xmlDeclIdx := strings.Index(content, "?>")
-	startIdx := xmlDeclIdx + 2
+	startIdx := xmlDeclIdx + xmlDeclSuffixLength
 	if xmlDeclIdx == -1 {
 		startIdx = 0
 	}
@@ -439,7 +444,7 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 		return nil
 	}
 
-	issues := make([]Issue, 0, 3)
+	issues := make([]Issue, 0, namespaceIssueCap)
 	if !strings.Contains(openingTag, "xmlns:p=") &&
 		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"`) {
 		issues = append(issues, Issue{

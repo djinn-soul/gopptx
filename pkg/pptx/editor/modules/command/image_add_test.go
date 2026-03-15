@@ -22,7 +22,7 @@ func TestParseAddImageRequest_BasicAndValidation(t *testing.T) {
 	}
 	req, ok, err := ParseAddImageRequest(
 		payload,
-		func(m map[string]any) (int, bool) { return int(m["slide_index"].(int)), true },
+		func(m map[string]any) (int, bool) { return m["slide_index"].(int), true },
 		func(m map[string]any, key string) (float64, bool) {
 			v, ok := m[key].(float64)
 			return v, ok
@@ -176,7 +176,9 @@ func TestExecuteAddImageRequest_ByteDecodeError(t *testing.T) {
 	_, err := ExecuteAddImageRequest(
 		req,
 		1024,
-		func(int, []byte, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) { return 0, nil },
+		func(int, []byte, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) {
+			return 0, nil
+		},
 		func(int, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) { return 0, nil },
 		func(int, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) { return 0, nil },
 	)
@@ -188,7 +190,9 @@ func TestExecuteAddImageRequest_ByteDecodeError(t *testing.T) {
 	_, err = ExecuteAddImageRequest(
 		req,
 		1024,
-		func(int, []byte, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) { return 0, errors.New("should not call") },
+		func(int, []byte, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) {
+			return 0, errors.New("should not call")
+		},
 		func(int, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) { return 0, nil },
 		func(int, string, float64, float64, float64, float64, *common.ShapeUpdate) (int, error) { return 0, nil },
 	)

@@ -7,9 +7,9 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-func intPtrSR(v int) *int { return &v }
-func boolPtrSR(v bool) *bool { return &v }
-func strPtrSR(v string) *string { return &v }
+func intPtrSR(v int) *int           { return &v }
+func boolPtrSR(v bool) *bool        { return &v }
+func strPtrSR(v string) *string     { return &v }
 func floatPtrSR(v float64) *float64 { return &v }
 
 func TestRenderLineAndFillXML(t *testing.T) {

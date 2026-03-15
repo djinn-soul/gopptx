@@ -171,14 +171,14 @@ func TestRepairer_MissingSlideRef(t *testing.T) {
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
 </Relationships>`
 
-	presXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	presXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation>
   <p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>
   <p:sldIdLst/>
 </p:presentation>`
 
 	m := &mockPartStore{parts: map[string][]byte{
-		"ppt/presentation.xml":            []byte(presXml),
+		"ppt/presentation.xml":            []byte(presXML),
 		"ppt/_rels/presentation.xml.rels": []byte(presRels),
 		"ppt/slides/slide1.xml":           []byte("<root/>"), // Orphan/Missing ref
 	}}
@@ -210,9 +210,12 @@ func TestRepairer_MissingSlideRef(t *testing.T) {
 }
 
 func TestRepairer_MissingSlideRef_NonSlidePathIsNotMarkedRepaired(t *testing.T) {
+	presentationXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation><p:sldMasterIdLst/><p:sldIdLst/></p:presentation>`
+	presentationRelsXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`
+
 	m := &mockPartStore{parts: map[string][]byte{
-		"ppt/presentation.xml":            []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation><p:sldMasterIdLst/><p:sldIdLst/></p:presentation>`),
-		"ppt/_rels/presentation.xml.rels": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`),
+		"ppt/presentation.xml":            []byte(presentationXML),
+		"ppt/_rels/presentation.xml.rels": []byte(presentationRelsXML),
 	}}
 	r := NewRepairer(m)
 	result := r.Repair([]Issue{{
@@ -225,18 +228,22 @@ func TestRepairer_MissingSlideRef_NonSlidePathIsNotMarkedRepaired(t *testing.T) 
 		t.Fatalf("expected non-slide missing-ref issue to remain unrepaired")
 	}
 	if len(result.IssuesUnrepaired) != 1 {
-		t.Fatalf("expected one unrepaired issue, got repaired=%d unrepaired=%d", len(result.IssuesRepaired), len(result.IssuesUnrepaired))
+		t.Fatalf(
+			"expected one unrepaired issue, got repaired=%d unrepaired=%d",
+			len(result.IssuesRepaired),
+			len(result.IssuesUnrepaired),
+		)
 	}
 }
 
 func TestRepairer_MissingNamespace(t *testing.T) {
-	slideXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	slideXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://drawingml">
   <p:cSld/>
 </p:sld>`
 
 	m := &mockPartStore{parts: map[string][]byte{
-		"ppt/slides/slide1.xml": []byte(slideXml),
+		"ppt/slides/slide1.xml": []byte(slideXML),
 	}}
 
 	r := NewRepairer(m)
@@ -260,13 +267,13 @@ func TestRepairer_MissingNamespace(t *testing.T) {
 }
 
 func TestRepairer_EmptyRequiredElement(t *testing.T) {
-	presXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+	presXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation>
   <p:sldIdLst/>
 </p:presentation>`
 
 	m := &mockPartStore{parts: map[string][]byte{
-		"ppt/presentation.xml": []byte(presXml),
+		"ppt/presentation.xml": []byte(presXML),
 	}}
 
 	r := NewRepairer(m)
@@ -324,7 +331,7 @@ type mockChecker struct {
 	called bool
 }
 
-func (m *mockChecker) Check(ps PartProvider) []Issue {
+func (m *mockChecker) Check(_ PartProvider) []Issue {
 	m.called = true
 	return []Issue{{Code: "MOCK_ISSUE"}}
 }
@@ -378,9 +385,9 @@ func TestRepairer_OrphanSlide(t *testing.T) {
 }
 
 func TestRepairer_InvalidContentType(t *testing.T) {
-	ctXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>`
+	ctXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>`
 	m := &mockPartStore{parts: map[string][]byte{
-		"[Content_Types].xml":               []byte(ctXml),
+		"[Content_Types].xml":               []byte(ctXML),
 		"ppt/slides/slide1.xml":             []byte("<root/>"),
 		"ppt/slideLayouts/slideLayout1.xml": []byte("<root/>"),
 		"ppt/slideMasters/slideMaster1.xml": []byte("<root/>"),

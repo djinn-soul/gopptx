@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 func TestSlideNumberingHelpers(t *testing.T) {

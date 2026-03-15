@@ -154,9 +154,9 @@ func TestParityAndShapeUpdateParsers(t *testing.T) {
 	}
 
 	updates, has, err := ParseOptionalShapeUpdates(map[string]any{
-		"text":        "hello",
-		"runs":        []map[string]any{{"text": "x"}},
-		"text_frame":  map[string]any{"columns": 2},
+		"text":         "hello",
+		"runs":         []map[string]any{{"text": "x"}},
+		"text_frame":   map[string]any{"columns": 2},
 		"click_action": map[string]any{"address": "https://example.com"},
 	})
 	if err != nil || !has || updates.Text == nil || *updates.Text != "hello" {
