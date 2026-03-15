@@ -74,7 +74,7 @@ func buildPowerPointEncryptScript(inPath, outPath, password string) string {
 		"$pw=" + pwQ + ";" +
 		"$app=New-Object -ComObject PowerPoint.Application;" +
 		"try {" +
-		"$pres=$app.Presentations.Open($in,0,0,-1);" +
+		"$pres=$app.Presentations.Open($in,0,0,0);" +
 		"$pres.Password=$pw;" +
 		"$pres.SaveAs($out);" +
 		"$pres.Close();" +

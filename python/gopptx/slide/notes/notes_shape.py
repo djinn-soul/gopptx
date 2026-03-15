@@ -96,7 +96,7 @@ class NotesShape(_NotesShapeStyleMixin):
     @property
     def has_text_frame(self) -> bool:
         """Return whether this shape exposes text-frame behavior."""
-        value = self._payload.get("has_text_frame")
+        value = self._payload.get("has_text_frame", self._payload.get("HasTextFrame"))
         if isinstance(value, bool):
             return value
         return self.placeholder_type in _TEXT_PLACEHOLDER_TYPES

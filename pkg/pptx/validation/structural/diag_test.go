@@ -209,6 +209,26 @@ func TestRepairer_MissingSlideRef(t *testing.T) {
 	}
 }
 
+func TestRepairer_MissingSlideRef_NonSlidePathIsNotMarkedRepaired(t *testing.T) {
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/presentation.xml":            []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:presentation><p:sldMasterIdLst/><p:sldIdLst/></p:presentation>`),
+		"ppt/_rels/presentation.xml.rels": []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`),
+	}}
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeMissingSlideRef,
+		Path:        "ppt/_rels/presentation.xml.rels",
+		Description: "missing slide ref",
+		Repairable:  true,
+	}})
+	if len(result.IssuesRepaired) != 0 {
+		t.Fatalf("expected non-slide missing-ref issue to remain unrepaired")
+	}
+	if len(result.IssuesUnrepaired) != 1 {
+		t.Fatalf("expected one unrepaired issue, got repaired=%d unrepaired=%d", len(result.IssuesRepaired), len(result.IssuesUnrepaired))
+	}
+}
+
 func TestRepairer_MissingNamespace(t *testing.T) {
 	slideXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://drawingml">
@@ -314,7 +334,7 @@ func TestValidator_AddChecker(t *testing.T) {
 	v := NewValidator(m)
 	checker := &mockChecker{}
 	v.AddChecker(checker)
-	
+
 	issues := v.Validate()
 	if !checker.called {
 		t.Error("expected custom checker to be called")
@@ -345,9 +365,9 @@ func TestRepairer_OrphanSlide(t *testing.T) {
 	}}
 	r := NewRepairer(m)
 	result := r.Repair([]Issue{{
-		Code:        CodeOrphanSlide,
-		Path:        "ppt/slides/slide1.xml",
-		Repairable:  true,
+		Code:       CodeOrphanSlide,
+		Path:       "ppt/slides/slide1.xml",
+		Repairable: true,
 	}})
 	if len(result.IssuesUnrepaired) > 0 {
 		t.Errorf("expected orphan slide issue to be repaired")
@@ -360,39 +380,39 @@ func TestRepairer_OrphanSlide(t *testing.T) {
 func TestRepairer_InvalidContentType(t *testing.T) {
 	ctXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>`
 	m := &mockPartStore{parts: map[string][]byte{
-		"[Content_Types].xml": []byte(ctXml),
-		"ppt/slides/slide1.xml": []byte("<root/>"),
+		"[Content_Types].xml":               []byte(ctXml),
+		"ppt/slides/slide1.xml":             []byte("<root/>"),
 		"ppt/slideLayouts/slideLayout1.xml": []byte("<root/>"),
 		"ppt/slideMasters/slideMaster1.xml": []byte("<root/>"),
-		"ppt/presentation.xml": []byte("<root/>"),
-		"docProps/core.xml": []byte("<root/>"),
-		"image.png": []byte("image data"),
+		"ppt/presentation.xml":              []byte("<root/>"),
+		"docProps/core.xml":                 []byte("<root/>"),
+		"image.png":                         []byte("image data"),
 	}}
 	r := NewRepairer(m)
 	result := r.Repair([]Issue{{
-		Code:        CodeInvalidContentType,
-		Path:        "ppt/slides/slide1.xml",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "ppt/slides/slide1.xml",
+		Repairable: true,
 	}, {
-		Code:        CodeInvalidContentType,
-		Path:        "ppt/slideLayouts/slideLayout1.xml",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "ppt/slideLayouts/slideLayout1.xml",
+		Repairable: true,
 	}, {
-		Code:        CodeInvalidContentType,
-		Path:        "ppt/slideMasters/slideMaster1.xml",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "ppt/slideMasters/slideMaster1.xml",
+		Repairable: true,
 	}, {
-		Code:        CodeInvalidContentType,
-		Path:        "ppt/presentation.xml",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "ppt/presentation.xml",
+		Repairable: true,
 	}, {
-		Code:        CodeInvalidContentType,
-		Path:        "docProps/core.xml",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "docProps/core.xml",
+		Repairable: true,
 	}, {
-		Code:        CodeInvalidContentType,
-		Path:        "image.png",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "image.png",
+		Repairable: true,
 	}})
 
 	if len(result.IssuesUnrepaired) > 0 {
@@ -401,7 +421,7 @@ func TestRepairer_InvalidContentType(t *testing.T) {
 
 	data, _ := m.Get("[Content_Types].xml")
 	content := string(data)
-	
+
 	failed := false
 	if !strings.Contains(content, "presentationml.slide+xml") {
 		t.Errorf("missing slide content type")
@@ -427,16 +447,16 @@ func TestRepairer_InvalidContentType(t *testing.T) {
 		t.Errorf("missing default content type")
 		failed = true
 	}
-	
+
 	if failed {
 		t.Logf("Generated content:\n%s", content)
 	}
 
 	m.Delete("[Content_Types].xml")
 	result = r.Repair([]Issue{{
-		Code:        CodeInvalidContentType,
-		Path:        "ppt/slides/slide1.xml",
-		Repairable:  true,
+		Code:       CodeInvalidContentType,
+		Path:       "ppt/slides/slide1.xml",
+		Repairable: true,
 	}})
 	if len(result.IssuesUnrepaired) > 0 {
 		t.Errorf("expected issue to be repaired when [Content_Types].xml is missing")
@@ -462,10 +482,10 @@ func TestRepairer_BrokenRelationshipFallback(t *testing.T) {
 	}}
 	r := NewRepairer(m)
 	result := r.Repair([]Issue{{
-		Code:        CodeBrokenRelationship,
-		Path:        "ppt/_rels/presentation.xml.rels",
-		Context:     map[string]string{"target": "slides/missing.xml"},
-		Repairable:  true,
+		Code:       CodeBrokenRelationship,
+		Path:       "ppt/_rels/presentation.xml.rels",
+		Context:    map[string]string{"target": "slides/missing.xml"},
+		Repairable: true,
 	}})
 	if len(result.IssuesUnrepaired) > 0 {
 		t.Errorf("expected broken relationship to be repaired using fallback")
@@ -482,9 +502,8 @@ func TestRepairer_UnsupportedRepair(t *testing.T) {
 		Code:       CodeMissingPart,
 		Repairable: false,
 	}})
-	
+
 	if len(result.IssuesUnrepaired) != 2 {
 		t.Errorf("expected 2 unrepaired issues")
 	}
 }
-

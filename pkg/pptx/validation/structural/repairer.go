@@ -216,7 +216,11 @@ func (r *Repairer) repairMissingSlideRef(issue Issue) error {
 	// A slide file exists but is missing from presentation.xml / presentation.xml.rels
 	slidePath := issue.Path
 	if !strings.HasPrefix(slidePath, "ppt/slides/") {
-		return nil
+		if candidate := strings.TrimSpace(issue.Context["slide_part"]); strings.HasPrefix(candidate, "ppt/slides/") {
+			slidePath = candidate
+		} else {
+			return fmt.Errorf("missing slide ref requires a slide part path, got %q", issue.Path)
+		}
 	}
 
 	relsPath := "ppt/_rels/presentation.xml.rels"

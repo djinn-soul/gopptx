@@ -112,7 +112,7 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
     ) -> int:
         """Add an audio file to a slide and return the created shape ID."""
         name = kwargs.get("name")
-        poster_frame = kwargs.get("poster_frame")
+        icon = kwargs.get("icon", kwargs.get("poster_frame"))
         mime_type = kwargs.get("mime_type")
         payload = self._init_bounds_payload(slide_index, bounds)
         self._set_source_payload(payload, source)
@@ -122,13 +122,13 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         if isinstance(mime_type, str) and mime_type:
             payload["mime_type"] = mime_type
 
-        if isinstance(poster_frame, (str, bytes, os.PathLike)):
-            poster_source = cast("str | bytes | os.PathLike[str]", poster_frame)
+        if isinstance(icon, (str, bytes, os.PathLike)):
+            icon_source = cast("str | bytes | os.PathLike[str]", icon)
             self._set_source_payload(
                 payload,
-                poster_source,
-                path_key="poster_path",
-                data_key="poster_data",
+                icon_source,
+                path_key="icon_path",
+                data_key="icon_data",
             )
 
         result = self.execute(ops.OP_ADD_AUDIO, payload)

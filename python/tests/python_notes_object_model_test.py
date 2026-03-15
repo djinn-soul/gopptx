@@ -124,6 +124,27 @@ def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
     assert shape.text == "after"
 
 
+def test_notes_shape_has_text_frame_accepts_camel_case_payload_key() -> None:
+    class _DummyNotesSlide:
+        text = ""
+
+        def _set_shape_text(self, _shape_id: int, _text: str) -> None:
+            return
+
+    shape = NotesShape(
+        _DummyNotesSlide(),  # type: ignore[arg-type]
+        {
+            "id": 42,
+            "name": "Aux text",
+            "type": "sp",
+            "HasTextFrame": True,
+            "placeholder_type": "",
+            "text": "before",
+        },
+    )
+    assert shape.has_text_frame is True
+
+
 def test_notes_shape_geometry_and_style_route_to_props_setter() -> None:
     class _DummyNotesSlide:
         def __init__(self) -> None:

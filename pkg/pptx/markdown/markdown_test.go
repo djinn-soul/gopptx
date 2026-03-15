@@ -268,6 +268,31 @@ func TestSlidesFromMarkdownFile_RelativeLinkUsesFileHyperlink(t *testing.T) {
 	}
 }
 
+func TestSlidesFromMarkdownFile_RelativeLinkTraversalIsRejected(t *testing.T) {
+	tmpDir := t.TempDir()
+	markdownPath := filepath.Join(tmpDir, "deck.md")
+	outsideDir := filepath.Join(tmpDir, "outside")
+	if err := os.MkdirAll(outsideDir, 0o700); err != nil {
+		t.Fatalf("create outside dir: %v", err)
+	}
+	outsidePath := filepath.Join(outsideDir, "secret.md")
+	if err := os.WriteFile(outsidePath, []byte("# secret"), 0o600); err != nil {
+		t.Fatalf("write outside fixture: %v", err)
+	}
+	if err := os.WriteFile(markdownPath, []byte("# Links\n- [Secret](../outside/secret.md)\n"), 0o600); err != nil {
+		t.Fatalf("write markdown fixture: %v", err)
+	}
+
+	slides, err := SlidesFromMarkdownFile(markdownPath)
+	if err != nil {
+		t.Fatalf("SlidesFromMarkdownFile returned error: %v", err)
+	}
+	run := slides[0].BulletRuns[0][0]
+	if run.Hyperlink != nil {
+		t.Fatalf("expected traversal hyperlink to be skipped, got %#v", run.Hyperlink.Action)
+	}
+}
+
 func TestSlidesFromMarkdown_MultiImageAdaptivePlacement(t *testing.T) {
 	encoded := base64.StdEncoding.EncodeToString(testutil.TinyPNG())
 	img := "![img](data:image/png;base64," + encoded + ")"

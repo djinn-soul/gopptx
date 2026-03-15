@@ -3,9 +3,11 @@ package action
 import (
 	"fmt"
 	"net/url"
-	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+var windowsDrivePathPattern = regexp.MustCompile(`^[A-Za-z]:[\\/].+`)
 
 // ValidateHyperlinkAction ensures a hyperlink action is well-formed.
 func ValidateHyperlinkAction(a HyperlinkAction, context string) error {
@@ -74,7 +76,7 @@ func validateFilePathScheme(pathValue string) error {
 	pathPart := pathValue
 	if parsed.Scheme == "" {
 		pathPart = pathValue
-	} else if len(parsed.Scheme) == 1 && filepath.IsAbs(pathValue) {
+	} else if isWindowsDrivePath(pathValue, parsed.Scheme) {
 		// Windows drive prefix (for example `C:\...`) is not a URI scheme.
 		pathPart = pathValue
 	} else {
@@ -112,6 +114,13 @@ func validateFilePathScheme(pathValue string) error {
 		return fmt.Errorf("file path references a restricted system location")
 	}
 	return nil
+}
+
+func isWindowsDrivePath(pathValue, scheme string) bool {
+	if len(scheme) != 1 {
+		return false
+	}
+	return windowsDrivePathPattern.MatchString(pathValue)
 }
 
 func containsTraversalSegment(path string) bool {
