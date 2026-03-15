@@ -55,10 +55,12 @@ func TestResponseBuilders(t *testing.T) {
 		t.Fatalf("BuildCloneFamilyResponse missing layout map: %+v", cloneResp)
 	}
 
-	if got := BuildAddedMasterResponse("ppt/slideMasters/slideMaster3.xml"); got["master_part"] != "ppt/slideMasters/slideMaster3.xml" {
+	if got := BuildAddedMasterResponse("ppt/slideMasters/slideMaster3.xml"); got["master_part"] !=
+		"ppt/slideMasters/slideMaster3.xml" {
 		t.Fatalf("BuildAddedMasterResponse unexpected payload: %+v", got)
 	}
-	if got := BuildAddedLayoutResponse("ppt/slideLayouts/slideLayout2.xml"); got["layout_part"] != "ppt/slideLayouts/slideLayout2.xml" {
+	if got := BuildAddedLayoutResponse("ppt/slideLayouts/slideLayout2.xml"); got["layout_part"] !=
+		"ppt/slideLayouts/slideLayout2.xml" {
 		t.Fatalf("BuildAddedLayoutResponse unexpected payload: %+v", got)
 	}
 

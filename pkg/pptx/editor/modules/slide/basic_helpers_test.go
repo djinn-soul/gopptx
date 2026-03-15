@@ -59,7 +59,12 @@ func TestSectionDataHelpers(t *testing.T) {
 	if _, err = AddSectionData(current, "", nil, func() (string, error) { return "g-2", nil }); err == nil {
 		t.Fatal("expected empty section name error")
 	}
-	if _, err = AddSectionData(current, "B", nil, func() (string, error) { return "", errors.New("boom") }); err == nil {
+	if _, err = AddSectionData(
+		current,
+		"B",
+		nil,
+		func() (string, error) { return "", errors.New("boom") },
+	); err == nil {
 		t.Fatal("expected guid generation error")
 	}
 

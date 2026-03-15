@@ -188,16 +188,21 @@ func handleAddAudioWithPlaybackCommand(
 
 	// Icon-specific insertion APIs do not currently carry playback options, so apply timing now.
 	if hasIcon {
-		if timingErr := e.applyMediaPlaybackTiming(placement.SlideIndex, shapeID, "audio", editormodmedia.MediaTimingOptions{
-			AutoPlay:         opts.AutoPlay,
-			LoopPlayback:     opts.LoopPlayback,
-			Muted:            false,
-			Volume:           opts.Volume,
-			ShowWhenStopped:  !opts.HideDuringShow,
-			PlayAcrossSlides: opts.PlayAcrossSlides,
-			SlideIndex:       placement.SlideIndex,
-			SlideCount:       len(e.slides),
-		}); timingErr != nil {
+		if timingErr := e.applyMediaPlaybackTiming(
+			placement.SlideIndex,
+			shapeID,
+			"audio",
+			editormodmedia.MediaTimingOptions{
+				AutoPlay:         opts.AutoPlay,
+				LoopPlayback:     opts.LoopPlayback,
+				Muted:            false,
+				Volume:           opts.Volume,
+				ShowWhenStopped:  !opts.HideDuringShow,
+				PlayAcrossSlides: opts.PlayAcrossSlides,
+				SlideIndex:       placement.SlideIndex,
+				SlideCount:       len(e.slides),
+			},
+		); timingErr != nil {
 			return nil, timingErr
 		}
 	}

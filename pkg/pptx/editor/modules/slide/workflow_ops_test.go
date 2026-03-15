@@ -233,7 +233,15 @@ func TestWorkflowUpdateAndSetTitle(t *testing.T) {
 	if err != nil || updated.Slides[0].Title != "New" {
 		t.Fatalf("UpdateSlideInState failed: state=%+v err=%v", updated, err)
 	}
-	if _, err = UpdateSlideInState(updateState, 2, elements.NewSlide("x"), getPart, setPart, parseRels, renderExisting); err == nil {
+	if _, err = UpdateSlideInState(
+		updateState,
+		2,
+		elements.NewSlide("x"),
+		getPart,
+		setPart,
+		parseRels,
+		renderExisting,
+	); err == nil {
 		t.Fatal("expected update index out-of-range error")
 	}
 	if _, err = UpdateSlideInState(updateState, 0, elements.NewSlide("x"), getPart, setPart,

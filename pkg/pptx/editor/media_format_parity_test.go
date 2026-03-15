@@ -24,7 +24,16 @@ func TestMediaSaveIncludesWmvWmaOggContentTypes(t *testing.T) {
 	}
 	defer func() { _ = editor.Close() }()
 
-	if _, err := editor.AddVideo(0, []byte("video-wmv"), testutil.TinyPNG(), "video/x-ms-wmv", 10, 10, 100, 80); err != nil {
+	if _, err := editor.AddVideo(
+		0,
+		[]byte("video-wmv"),
+		testutil.TinyPNG(),
+		"video/x-ms-wmv",
+		10,
+		10,
+		100,
+		80,
+	); err != nil {
 		t.Fatalf("AddVideo wmv failed: %v", err)
 	}
 	if _, err := editor.AddAudio(0, []byte("audio-wma"), "audio/x-ms-wma", 120, 10, 80, 40); err != nil {
