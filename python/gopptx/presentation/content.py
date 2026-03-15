@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from .charts import PresentationChartMixin
 from .comments import PresentationCommentMixin
+from .custom_xml import PresentationCustomXMLMixin
+from .export import PresentationExportMixin
 from .notes import PresentationNotesMixin
 from .shapes import PresentationShapeBatchMixin, PresentationShapeMixin
 from .tables import PresentationTableMixin
@@ -22,5 +24,7 @@ class PresentationContentMixin(
     PresentationChartMixin,
     PresentationCommentMixin,
     PresentationVBAMixin,
+    PresentationCustomXMLMixin,
+    PresentationExportMixin,
 ):
     """Mixin providing content manipulation methods for Presentation."""

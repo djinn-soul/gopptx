@@ -12,6 +12,9 @@ type AnimationEffect string
 const (
 	// AnimationEntranceAppear starts the entrance-effects group.
 	classEntr                                    = "entr"
+	classExit                                    = "exit"
+	classEmph                                    = "emph"
+	classPath                                    = "path"
 	AnimationEntranceAppear      AnimationEffect = "entr_appear"
 	AnimationEntranceFade        AnimationEffect = "entr_fade"
 	AnimationEntranceFlyIn       AnimationEffect = "entr_flyIn"
@@ -221,11 +224,11 @@ func (t AnimationTrigger) Validate() error {
 func (a Animation) PresetID() uint32 {
 	// NOTE: This switch statement avoids high-frequency map allocation. Do not convert to a map lookup.
 	switch a.PresetClass() {
-	case "entr", "exit":
+	case classEntr, classExit:
 		return a.presetIDEntranceExit()
-	case "emph":
+	case classEmph:
 		return a.presetIDEmphasis()
-	case "path":
+	case classPath:
 		return a.presetIDPath()
 	}
 	return 0
@@ -315,11 +318,11 @@ func (a Animation) PresetClass() string {
 	case strings.HasPrefix(string(a.Effect), "entr_"):
 		return classEntr
 	case strings.HasPrefix(string(a.Effect), "exit_"):
-		return "exit"
+		return classExit
 	case strings.HasPrefix(string(a.Effect), "emph_"):
-		return "emph"
+		return classEmph
 	case strings.HasPrefix(string(a.Effect), "path_"):
-		return "path"
+		return classPath
 	default:
 		return classEntr
 	}

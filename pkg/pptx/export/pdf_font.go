@@ -11,12 +11,6 @@ const (
 	fontFamilyMono  = "mono"
 )
 
-// systemFontPaths returns candidate TTF paths for common sans-serif fonts
-// on Windows, macOS, and Linux. Paths are tried in order; first hit wins.
-func systemFontPaths() []string {
-	return systemFontPathsForFamily(fontFamilySans)
-}
-
 func systemFontPathsForFamily(family string) []string {
 	var paths []string
 

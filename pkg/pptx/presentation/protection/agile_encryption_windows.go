@@ -19,6 +19,7 @@ const (
 	powerPointEncryptTimeout = 90 * time.Second
 )
 
+//nolint:gochecknoglobals // COM availability probe result is cached process-wide via sync.Once for deterministic behavior.
 var (
 	agileAvailabilityOnce sync.Once
 	agileAvailable        bool

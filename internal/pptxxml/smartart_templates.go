@@ -2,7 +2,6 @@ package pptxxml
 
 import (
 	"embed"
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -12,10 +11,6 @@ var smartArtTemplateFS embed.FS
 
 const (
 	flattenSmartArtTextsInitCap = 8
-	verifierLCGMultiplier       = int64(1664525)
-	verifierLCGIncrement        = int64(1013904223)
-	verifierNounIndexDivisor    = int64(256)
-	verifierLCGModulus          = int64(1 << 32)
 )
 
 func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
@@ -297,25 +292,6 @@ func placeholderTextForIndex(texts []string, idx int) string {
 		return texts[idx]
 	}
 	return ""
-}
-
-func generatedVerifierText(idx int) string {
-	adjectives := [...]string{
-		"Amber", "Nova", "Rapid", "Bright", "Swift",
-		"Calm", "Bold", "Clear", "Prime", "Sharp",
-	}
-	nouns := [...]string{
-		"Falcon", "River", "Orbit", "Matrix", "Beacon",
-		"Vertex", "Signal", "Pulse", "Summit", "Vector",
-	}
-
-	v := ((int64(idx)+1)*verifierLCGMultiplier + verifierLCGIncrement) % verifierLCGModulus
-	if v < 0 {
-		v += verifierLCGModulus
-	}
-	a := adjectives[v%int64(len(adjectives))]
-	n := nouns[(v/verifierNounIndexDivisor)%int64(len(nouns))]
-	return fmt.Sprintf("%s-%s-%02d", a, n, idx+1)
 }
 
 func injectTextIntoPointSegment(segment, text string) string {

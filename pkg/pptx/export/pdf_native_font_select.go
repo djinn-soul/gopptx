@@ -8,6 +8,7 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+//nolint:gochecknoglobals // Alias values are runtime-configurable for renderer-level font fallback tuning.
 var (
 	pdfSansAlias  = fontFamilySans
 	pdfSerifAlias = fontFamilySans

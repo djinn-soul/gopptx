@@ -55,11 +55,19 @@ func buildCompoundFile(infoStream, pkgStream []byte, infoName, pkgName string) (
 	}
 
 	header := buildCFBHeader(fatSectors, dirSector, fatStart)
+	infoStartU32, err := checkedUint32FromInt(infoStart)
+	if err != nil {
+		return nil, err
+	}
+	pkgStartU32, err := checkedUint32FromInt(pkgStart)
+	if err != nil {
+		return nil, err
+	}
 	dirBytes, err := buildDirectorySector(
 		infoName,
 		pkgName,
-		uint32(infoStart),
-		uint32(pkgStart),
+		infoStartU32,
+		pkgStartU32,
 		uint64(len(infoStream)),
 		uint64(len(pkgStream)),
 	)
@@ -101,7 +109,11 @@ func linkChain(fat []uint32, start, count int) {
 		return
 	}
 	for i := range count - 1 {
-		fat[start+i] = uint32(start + i + 1)
+		nextSector, err := checkedUint32FromInt(start + i + 1)
+		if err != nil {
+			panic(err)
+		}
+		fat[start+i] = nextSector
 	}
 	fat[start+count-1] = cfbEndOfChain
 }
@@ -122,8 +134,8 @@ func buildCFBHeader(numFatSectors, firstDirSector, fatStart int) []byte {
 	binary.LittleEndian.PutUint16(h[28:30], 0xFFFE)
 	binary.LittleEndian.PutUint16(h[30:32], 0x0009)
 	binary.LittleEndian.PutUint16(h[32:34], 0x0006)
-	binary.LittleEndian.PutUint32(h[40:44], uint32(numFatSectors))
-	binary.LittleEndian.PutUint32(h[44:48], uint32(firstDirSector))
+	binary.LittleEndian.PutUint32(h[40:44], mustUint32FromInt(numFatSectors))
+	binary.LittleEndian.PutUint32(h[44:48], mustUint32FromInt(firstDirSector))
 	binary.LittleEndian.PutUint32(h[56:60], cfbMinRegularBytes)
 	binary.LittleEndian.PutUint32(h[60:64], cfbEndOfChain)
 	binary.LittleEndian.PutUint32(h[64:68], 0)
@@ -133,7 +145,7 @@ func buildCFBHeader(numFatSectors, firstDirSector, fatStart int) []byte {
 		binary.LittleEndian.PutUint32(h[76+i*4:80+i*4], cfbFreeSect)
 	}
 	for i := range min(numFatSectors, 109) {
-		binary.LittleEndian.PutUint32(h[76+i*4:80+i*4], uint32(fatStart+i))
+		binary.LittleEndian.PutUint32(h[76+i*4:80+i*4], mustUint32FromInt(fatStart+i))
 	}
 	return h
 }
@@ -184,7 +196,7 @@ func newDirEntry(
 	for i, v := range u16 {
 		binary.LittleEndian.PutUint16(entry[i*2:], v)
 	}
-	binary.LittleEndian.PutUint16(entry[64:66], uint16(nameLenBytes))
+	binary.LittleEndian.PutUint16(entry[64:66], mustUint16FromInt(nameLenBytes))
 	entry[66] = objType
 	entry[67] = 1
 	binary.LittleEndian.PutUint32(entry[68:72], leftSibling)
@@ -209,4 +221,26 @@ func buildFATSectors(entries []uint32, fatSectors int) []byte {
 		binary.LittleEndian.PutUint32(out[i*4:], v)
 	}
 	return out
+}
+
+func checkedUint32FromInt(v int) (uint32, error) {
+	if v < 0 || v > math.MaxUint32 {
+		return 0, fmt.Errorf("int value out of uint32 range: %d", v)
+	}
+	return uint32(v), nil
+}
+
+func mustUint32FromInt(v int) uint32 {
+	out, err := checkedUint32FromInt(v)
+	if err != nil {
+		panic(err)
+	}
+	return out
+}
+
+func mustUint16FromInt(v int) uint16 {
+	if v < 0 || v > math.MaxUint16 {
+		panic(fmt.Sprintf("int value out of uint16 range: %d", v))
+	}
+	return uint16(v)
 }

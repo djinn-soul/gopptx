@@ -8,6 +8,8 @@ import (
 	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
 )
 
+const maxUint32Value = int(^uint32(0))
+
 func shouldUseMediaPlaybackCommand(payload json.RawMessage) bool {
 	raw := strings.ToLower(string(payload))
 	for _, token := range []string{
@@ -249,8 +251,8 @@ func parseVideoPlaybackOptionsPayload(
 		opts.HideWhenStopped = val
 	}
 	if val, ok := v.OptionalInt(payload, "volume"); ok {
-		if val < 0 {
-			v.invalidType("volume", "a non-negative integer", val)
+		if val < 0 || val > maxUint32Value {
+			v.invalidType("volume", "a non-negative integer within uint32 range", val)
 		} else {
 			opts = opts.WithVolume(uint32(val))
 		}
@@ -276,8 +278,8 @@ func parseAudioPlaybackOptionsPayload(
 		opts.HideDuringShow = val
 	}
 	if val, ok := v.OptionalInt(payload, "volume"); ok {
-		if val < 0 {
-			v.invalidType("volume", "a non-negative integer", val)
+		if val < 0 || val > maxUint32Value {
+			v.invalidType("volume", "a non-negative integer within uint32 range", val)
 		} else {
 			opts = opts.WithVolume(uint32(val))
 		}

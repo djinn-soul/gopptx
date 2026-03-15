@@ -93,6 +93,8 @@ const (
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
 	OpAddVba                  = "add_vba"
+	OpExportPDF               = "export_pdf"
+	OpExportHTML              = "export_html"
 	OpListPlaceholders        = "list_placeholders"
 	OpSetPlaceholderContent   = "set_placeholder_content"
 	OpGetImageMetadata        = "get_image_metadata"

@@ -12,6 +12,13 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
+const (
+	dataURIPrefix                 = "data:"
+	errInvalidDataURIImagePayload = "invalid data URI image payload"
+	formatPNG                     = "png"
+	formatJPG                     = "jpg"
+)
+
 func (p *markdownASTParser) resolveMarkdownImage(image markdownImage) (shapes.Image, error) {
 	dest := strings.TrimSpace(image.Dest)
 	if dest == "" {
@@ -27,7 +34,7 @@ func (p *markdownASTParser) resolveMarkdownImage(image markdownImage) (shapes.Im
 	if isHTTPImageURL(dest) {
 		return shapes.NewImageFromURL(dest, x, y, cx, cy).WithAltText(alt), nil
 	}
-	if strings.HasPrefix(strings.ToLower(dest), "data:") {
+	if strings.HasPrefix(strings.ToLower(dest), dataURIPrefix) {
 		data, format, err := decodeMarkdownDataURIImage(dest)
 		if err != nil {
 			return shapes.Image{}, err
@@ -55,19 +62,19 @@ func isHTTPImageURL(raw string) bool {
 func decodeMarkdownDataURIImage(dataURI string) ([]byte, string, error) {
 	parts := strings.SplitN(dataURI, ",", 2)
 	if len(parts) != 2 {
-		return nil, "", errors.New("invalid data URI image payload")
+		return nil, "", errors.New(errInvalidDataURIImagePayload)
 	}
 
 	meta := strings.TrimSpace(parts[0])
 	payload := strings.TrimSpace(parts[1])
-	if !strings.HasPrefix(strings.ToLower(meta), "data:") {
-		return nil, "", errors.New("invalid data URI image payload")
+	if !strings.HasPrefix(strings.ToLower(meta), dataURIPrefix) {
+		return nil, "", errors.New(errInvalidDataURIImagePayload)
 	}
 	if !strings.Contains(strings.ToLower(meta), ";base64") {
 		return nil, "", errors.New("data URI image payload must be base64 encoded")
 	}
 
-	mimeType := strings.TrimPrefix(strings.SplitN(meta, ";", 2)[0], "data:")
+	mimeType := strings.TrimPrefix(strings.SplitN(meta, ";", 2)[0], dataURIPrefix)
 	format, ok := dataURIImageMimeToFormat(strings.ToLower(mimeType))
 	if !ok {
 		return nil, "", fmt.Errorf("unsupported data URI image mime type %q", mimeType)
@@ -86,11 +93,11 @@ func decodeMarkdownDataURIImage(dataURI string) ([]byte, string, error) {
 func dataURIImageMimeToFormat(mimeType string) (string, bool) {
 	switch mimeType {
 	case "image/png":
-		return "png", true
+		return formatPNG, true
 	case "image/jpeg":
-		return "jpg", true
+		return formatJPG, true
 	case "image/jpg":
-		return "jpg", true
+		return formatJPG, true
 	case "image/gif":
 		return "gif", true
 	case "image/bmp":
@@ -101,7 +108,7 @@ func dataURIImageMimeToFormat(mimeType string) (string, bool) {
 		// Keep alignment with supported media extensions.
 		ext := media.NormalizeExtension(mimeType)
 		switch ext {
-		case "png", "jpg", "jpeg", "gif", "bmp", "tiff":
+		case formatPNG, "jpg", "jpeg", "gif", "bmp", "tiff":
 			return ext, true
 		default:
 			return "", false

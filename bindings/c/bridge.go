@@ -16,6 +16,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
+	"github.com/djinn-soul/gopptx/pkg/pptx/editorexport"
 )
 
 //nolint:gochecknoglobals // global bridge state
@@ -47,6 +48,10 @@ func deck_global_error() *C.char {
 }
 
 // main is required for cgo build but not used for library.
+func init() {
+	editorexport.Register()
+}
+
 func main() {}
 
 // recoverPanic prevents Go panics from crashing the C host.

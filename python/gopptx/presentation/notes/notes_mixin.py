@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 class PresentationNotesMixin(PresentationMixinBase):
     """Mixin providing speaker notes methods."""
 
+    def notes_slide_exists(self, slide_index: int) -> bool:
+        """Return True if a notes slide exists for the given slide index."""
+        result = self.execute(ops.OP_NOTES_SLIDE_EXISTS, {"slide_index": slide_index})
+        return bool(result.get("notes_slide_exists", False))
+
     def get_notes_payload(self, slide_index: int) -> dict[str, object]:
         """Return raw notes payload for a slide index."""
         return self.execute(ops.OP_GET_NOTES, {"slide_index": slide_index})

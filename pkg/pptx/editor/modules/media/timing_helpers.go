@@ -10,8 +10,14 @@ import (
 
 var cTnIDPattern = regexp.MustCompile(`<p:cTn[^>]*\sid="([0-9]+)"`)
 
-var mediaShapePatternTemplate = `(?s)<p:pic\b[^>]*>.*?<p:cNvPr\b[^>]*\bid="%d"[^>]*>.*?</p:cNvPr>.*?<p14:media\b[^>]*\br:embed="([^"]+)"[^>]*/>.*?</p:pic>`
+const mediaShapePatternTemplate = `(?s)<p:pic\b[^>]*>.*?<p:cNvPr\b[^>]*\bid="%d"[^>]*>.*?</p:cNvPr>.*?<p14:media\b[^>]*\br:embed="([^"]+)"[^>]*/>.*?</p:pic>`
+const (
+	minRegexSubmatchCount = 2
+	maxVolumePercent      = 100
+	volumeScaleThousand   = 1000
+)
 
+//nolint:revive // Exported name kept for API compatibility across editor and bindings.
 type MediaTimingOptions struct {
 	AutoPlay         bool
 	LoopPlayback     bool
@@ -89,7 +95,7 @@ func nextTimingCTnID(timingXML string) int {
 	matches := cTnIDPattern.FindAllStringSubmatch(timingXML, -1)
 	maxID := 2
 	for _, match := range matches {
-		if len(match) < 2 {
+		if len(match) < minRegexSubmatchCount {
 			continue
 		}
 		idValue, err := strconv.Atoi(match[1])
@@ -198,15 +204,15 @@ func mediaRelIDForShape(slideXML string, shapeID int) string {
 	pattern := fmt.Sprintf(mediaShapePatternTemplate, shapeID)
 	re := regexp.MustCompile(pattern)
 	match := re.FindStringSubmatch(slideXML)
-	if len(match) < 2 {
+	if len(match) < minRegexSubmatchCount {
 		return ""
 	}
 	return strings.TrimSpace(match[1])
 }
 
 func normalizeMediaVolume(volume uint32) uint32 {
-	if volume > 100 {
-		volume = 100
+	if volume > maxVolumePercent {
+		volume = maxVolumePercent
 	}
-	return volume * 1000
+	return volume * volumeScaleThousand
 }

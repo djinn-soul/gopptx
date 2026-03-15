@@ -9,6 +9,8 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+const effectListEmptyXML = `<a:effectLst/>`
+
 func RenderEffectsXML(
 	shadow *common.ShapeShadow,
 	glow *common.ShapeGlow,
@@ -56,7 +58,7 @@ func renderInheritedShadowEffects(
 	if *shadow.Inherit {
 		return true, "", nil
 	}
-	return true, `<a:effectLst/>`, nil
+	return true, effectListEmptyXML, nil
 }
 
 func renderEffectItems(
