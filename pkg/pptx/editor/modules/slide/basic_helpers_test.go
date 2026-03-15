@@ -47,7 +47,12 @@ func TestSectionDataHelpers(t *testing.T) {
 	}
 
 	current := []SectionData{{Name: "A", GUID: "g-1", SlideIDs: []int64{1001}}}
-	next, err := AddSectionData(current, "B", []int64{1002}, func() (string, error) { return "g-2", nil })
+	next, err := AddSectionData(
+		current,
+		"B",
+		[]int64{1002},
+		func() (string, error) { return "g-2", nil },
+	)
 	if err != nil || len(next) != 2 || next[1].Name != "B" {
 		t.Fatalf("AddSectionData failed: next=%+v err=%v", next, err)
 	}
@@ -141,7 +146,12 @@ func TestRelationshipsRenderingHelpers(t *testing.T) {
 		t.Fatalf("expected slide relationships in XML: %s", xml)
 	}
 
-	_, err = RenderPresentationRelsXML([]common.EditorRelationship{{ID: "", Type: "x"}}, slides, false, false)
+	_, err = RenderPresentationRelsXML(
+		[]common.EditorRelationship{{ID: "", Type: "x"}},
+		slides,
+		false,
+		false,
+	)
 	if err == nil {
 		t.Fatal("expected empty relationship id error")
 	}

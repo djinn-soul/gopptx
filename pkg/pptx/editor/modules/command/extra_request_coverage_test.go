@@ -39,10 +39,12 @@ func TestContentRequestParsers(t *testing.T) {
 	); !ok {
 		t.Fatal("ParseCommentRemoveRequest should succeed")
 	}
-	if req, ok := ParseSetModifyPasswordRequest(map[string]any{"password": "pw"}, testParseStringField); !ok || req.Password != "pw" {
+	if req, ok := ParseSetModifyPasswordRequest(map[string]any{"password": "pw"}, testParseStringField); !ok ||
+		req.Password != "pw" {
 		t.Fatalf("ParseSetModifyPasswordRequest failed: req=%+v ok=%v", req, ok)
 	}
-	if final, ok := ParseSetMarkAsFinalRequest(map[string]any{"final": true}, testOptionalBoolField); !ok || !final {
+	if final, ok := ParseSetMarkAsFinalRequest(map[string]any{"final": true}, testOptionalBoolField); !ok ||
+		!final {
 		t.Fatalf("ParseSetMarkAsFinalRequest failed: final=%v ok=%v", final, ok)
 	}
 }
@@ -97,7 +99,8 @@ func TestCustomXMLAndBase64Parsing(t *testing.T) {
 	if err != nil || !ok || string(data) != "abc" {
 		t.Fatalf("DecodeRequiredBase64Field failed: data=%q ok=%v err=%v", string(data), ok, err)
 	}
-	if _, ok, err = DecodeRequiredBase64Field(map[string]any{}, testParseStringField, "data", "bad"); err != nil || ok {
+	if _, ok, err = DecodeRequiredBase64Field(map[string]any{}, testParseStringField, "data", "bad"); err != nil ||
+		ok {
 		t.Fatalf("missing base64 field should be ignored: ok=%v err=%v", ok, err)
 	}
 	if _, _, err = DecodeRequiredBase64Field(map[string]any{"data": "%%%bad"}, testParseStringField, "data", "bad"); err == nil {
@@ -113,11 +116,14 @@ func TestParityAndShapeUpdateParsers(t *testing.T) {
 	); !ok || len(req.ShapeIDs) != 2 {
 		t.Fatalf("ParseGroupShapeRequest with shapes failed: req=%+v ok=%v", req, ok)
 	}
-	if req, ok := ParseGroupShapeRequest(map[string]any{"slide_index": 2}, testParseIntField, testParseIntSliceField); !ok || len(req.ShapeIDs) != 0 {
+	if req, ok := ParseGroupShapeRequest(map[string]any{"slide_index": 2}, testParseIntField, testParseIntSliceField); !ok ||
+		len(req.ShapeIDs) != 0 {
 		t.Fatalf("ParseGroupShapeRequest without shapes failed: req=%+v ok=%v", req, ok)
 	}
 
-	points, err := ParseFreeformPoints(map[string]any{"points": []any{[]any{1, 2}, []any{3.0, 4.0}}})
+	points, err := ParseFreeformPoints(
+		map[string]any{"points": []any{[]any{1, 2}, []any{3.0, 4.0}}},
+	)
 	if err != nil || len(points) != 2 || points[1].X != 3 {
 		t.Fatalf("ParseFreeformPoints failed: points=%+v err=%v", points, err)
 	}
@@ -198,16 +204,29 @@ func TestMediaInsertHelpersAndAdapters(t *testing.T) {
 		return 7, nil
 	}, func() (int, error) { return 0, nil })
 	if err != nil || !binaryCalled || shapeID != 7 {
-		t.Fatalf("InsertShapeFromBinaryOrPath(binary) failed: id=%d called=%v err=%v", shapeID, binaryCalled, err)
+		t.Fatalf(
+			"InsertShapeFromBinaryOrPath(binary) failed: id=%d called=%v err=%v",
+			shapeID,
+			binaryCalled,
+			err,
+		)
 	}
 
 	placement := MediaPlacement{SlideIndex: 1, X: 1, Y: 2, W: 3, H: 4}
-	videoAdapter := AdaptVideoBinaryInsert(func(idx int, _, _ []byte, mime string, x, _ float64, _ float64, h float64) (int, error) {
-		if idx != 1 || mime != "video/mp4" || x != 1 || h != 4 {
-			t.Fatalf("AdaptVideoBinaryInsert passed wrong args: idx=%d mime=%q x=%v h=%v", idx, mime, x, h)
-		}
-		return 9, nil
-	})
+	videoAdapter := AdaptVideoBinaryInsert(
+		func(idx int, _, _ []byte, mime string, x, _ float64, _ float64, h float64) (int, error) {
+			if idx != 1 || mime != "video/mp4" || x != 1 || h != 4 {
+				t.Fatalf(
+					"AdaptVideoBinaryInsert passed wrong args: idx=%d mime=%q x=%v h=%v",
+					idx,
+					mime,
+					x,
+					h,
+				)
+			}
+			return 9, nil
+		},
+	)
 	if _, err = videoAdapter(placement, "video/mp4", []byte{1}, []byte{2}); err != nil {
 		t.Fatalf("AdaptVideoBinaryInsert execution failed: %v", err)
 	}
@@ -216,7 +235,12 @@ func TestMediaInsertHelpersAndAdapters(t *testing.T) {
 		func(int, string, string, float64, float64, float64, float64) (int, error) { return 10, nil },
 		func(idx int, _, icon, mime string, _, _, _, _ float64) (int, error) {
 			if idx != 1 || icon != "icon.png" || mime != "audio/mpeg" {
-				t.Fatalf("AdaptAudioPathInsertWithOptionalIcon wrong args idx=%d icon=%q mime=%q", idx, icon, mime)
+				t.Fatalf(
+					"AdaptAudioPathInsertWithOptionalIcon wrong args idx=%d icon=%q mime=%q",
+					idx,
+					icon,
+					mime,
+				)
 			}
 			return 11, nil
 		},
@@ -225,8 +249,13 @@ func TestMediaInsertHelpersAndAdapters(t *testing.T) {
 		t.Fatalf("AdaptAudioPathInsertWithOptionalIcon failed: %v", err)
 	}
 
-	spec := NewVideoInsertSpec(100, func(MediaPlacement, string, []byte, []byte) (int, error) { return 20, nil }, func(MediaPlacement, string, string, string) (int, error) { return 21, nil })
-	if spec.MetaKey != "mime_type" || spec.PrimaryLabel != "video" || spec.SecondaryLabel != "poster" {
+	spec := NewVideoInsertSpec(
+		100,
+		func(MediaPlacement, string, []byte, []byte) (int, error) { return 20, nil },
+		func(MediaPlacement, string, string, string) (int, error) { return 21, nil },
+	)
+	if spec.MetaKey != "mime_type" || spec.PrimaryLabel != "video" ||
+		spec.SecondaryLabel != "poster" {
 		t.Fatalf("NewVideoInsertSpec unexpected defaults: %+v", spec)
 	}
 }

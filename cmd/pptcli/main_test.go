@@ -101,7 +101,18 @@ func TestCLI_ExportSubcommand_HTMLFromMarkdown(t *testing.T) {
 	}
 	outPath := filepath.Join(tmpDir, "deck.html")
 
-	stdout, stderr, code := runCLI(t, "export", "-in", inPath, "-format", "html", "-out", outPath, "-title", "Export HTML")
+	stdout, stderr, code := runCLI(
+		t,
+		"export",
+		"-in",
+		inPath,
+		"-format",
+		"html",
+		"-out",
+		outPath,
+		"-title",
+		"Export HTML",
+	)
 	if code != exitOK {
 		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
 	}

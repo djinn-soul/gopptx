@@ -90,9 +90,22 @@ func TestWorkflowDuplicateMergeAndValidation(t *testing.T) {
 	cloneRels := func(src []byte, _ string) ([]byte, error) {
 		return append([]byte{}, src...), nil
 	}
-	duplicated, insertIndex, err := DuplicateSlideInState(dupState, 0, 1, getPart, setPart, appendCopy, cloneRels)
+	duplicated, insertIndex, err := DuplicateSlideInState(
+		dupState,
+		0,
+		1,
+		getPart,
+		setPart,
+		appendCopy,
+		cloneRels,
+	)
 	if err != nil || insertIndex != 1 || len(duplicated.Slides) != 2 {
-		t.Fatalf("DuplicateSlideInState failed: idx=%d state=%+v err=%v", insertIndex, duplicated, err)
+		t.Fatalf(
+			"DuplicateSlideInState failed: idx=%d state=%+v err=%v",
+			insertIndex,
+			duplicated,
+			err,
+		)
 	}
 	if !strings.Contains(duplicated.Slides[1].Title, "(Copy)") {
 		t.Fatalf("expected duplicated title suffix, got %q", duplicated.Slides[1].Title)
@@ -191,7 +204,9 @@ func TestWorkflowUpdateAndSetTitle(t *testing.T) {
 	getPart := func(path string) ([]byte, bool) { v, ok := parts[path]; return v, ok }
 	setPart := func(path string, content []byte) { parts[path] = content }
 	parseRels := func([]byte) ([]common.EditorRelationship, error) {
-		return []common.EditorRelationship{{Type: common.RelTypeSlideLayout, Target: "../slideLayouts/slideLayout1.xml"}}, nil
+		return []common.EditorRelationship{
+			{Type: common.RelTypeSlideLayout, Target: "../slideLayouts/slideLayout1.xml"},
+		}, nil
 	}
 	renderExisting := func(
 		slide elements.SlideContent,

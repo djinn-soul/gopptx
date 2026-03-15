@@ -44,7 +44,8 @@ func TestInventoryParsing(t *testing.T) {
 		"ppt/charts/chart2.xml",
 		"ppt/charts/chartX.xml",
 	})
-	if len(chartInv) != 1 || chartInv["ppt/charts/chart2.xml"] != "ppt/embeddings/Microsoft_Excel_Worksheet4.xlsx" {
+	if len(chartInv) != 1 ||
+		chartInv["ppt/charts/chart2.xml"] != "ppt/embeddings/Microsoft_Excel_Worksheet4.xlsx" {
 		t.Fatalf("unexpected chart inventory: %+v", chartInv)
 	}
 	if nextChart != 3 || nextExcel != 5 {
@@ -63,7 +64,8 @@ func TestLayoutHelpers(t *testing.T) {
 	}
 
 	layoutMap := BuildLayoutCloneMap([]string{"a", "b"}, 10)
-	if layoutMap["a"] != "ppt/slideLayouts/slideLayout10.xml" || layoutMap["b"] != "ppt/slideLayouts/slideLayout11.xml" {
+	if layoutMap["a"] != "ppt/slideLayouts/slideLayout10.xml" ||
+		layoutMap["b"] != "ppt/slideLayouts/slideLayout11.xml" {
 		t.Fatalf("unexpected layout clone map: %+v", layoutMap)
 	}
 	if got := CloneResultTheme("ppt/theme/theme1.xml", ""); got != "ppt/theme/theme1.xml" {
@@ -102,7 +104,12 @@ func TestLayoutHelpers(t *testing.T) {
 		func(string) ([]string, error) { return []string{"ppt/slideLayouts/slideLayout1.xml"}, nil },
 	)
 	if err != nil || sourceMaster == "" || len(family) != 1 {
-		t.Fatalf("CloneFamilyInputs success case failed: master=%q family=%v err=%v", sourceMaster, family, err)
+		t.Fatalf(
+			"CloneFamilyInputs success case failed: master=%q family=%v err=%v",
+			sourceMaster,
+			family,
+			err,
+		)
 	}
 
 	getPart := func(path string) ([]byte, bool) {
@@ -110,15 +117,24 @@ func TestLayoutHelpers(t *testing.T) {
 			return []byte(
 				`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
 					`<Relationship Id="rId1" Type="` + common.RelTypeSlideMaster + `" Target="../slideMasters/slideMaster1.xml"/>` +
-					`</Relationships>`), true
+					`</Relationships>`,
+			), true
 		}
 		return nil, false
 	}
-	masterPart, err := ResolveLayoutMasterPart("ppt/slideLayouts/slideLayout1.xml", getPart, ParseRelationshipsXML)
+	masterPart, err := ResolveLayoutMasterPart(
+		"ppt/slideLayouts/slideLayout1.xml",
+		getPart,
+		ParseRelationshipsXML,
+	)
 	if err != nil || masterPart != "ppt/slideMasters/slideMaster1.xml" {
 		t.Fatalf("ResolveLayoutMasterPart failed: master=%q err=%v", masterPart, err)
 	}
-	_, err = ResolveLayoutMasterPart("ppt/slideLayouts/slideLayout2.xml", getPart, ParseRelationshipsXML)
+	_, err = ResolveLayoutMasterPart(
+		"ppt/slideLayouts/slideLayout2.xml",
+		getPart,
+		ParseRelationshipsXML,
+	)
 	if err == nil {
 		t.Fatal("expected missing layout rels error")
 	}
@@ -143,7 +159,8 @@ func TestCustomXMLInventoryParsing(t *testing.T) {
 		"customXml/itemProps1.xml": []byte(
 			`<ds:datastoreItem ds:itemID="{ID-1}" xmlns:ds="http://schemas.openxmlformats.org/officeDocument/2006/customXml">` +
 				`<ds:schemaRefs><ds:schemaRef ds:uri="urn:test"/></ds:schemaRefs>` +
-				`</ds:datastoreItem>`),
+				`</ds:datastoreItem>`,
+		),
 		"customXml/item2.xml": []byte(`<raw>text</raw>`),
 	}
 	parts := ParseCustomXMLInventory(ps, []string{
@@ -154,7 +171,8 @@ func TestCustomXMLInventoryParsing(t *testing.T) {
 	if len(parts) != 2 {
 		t.Fatalf("expected 2 custom xml parts, got %d (%+v)", len(parts), parts)
 	}
-	if parts[0].Namespace != "urn:test" || parts[0].RootElement != "root" || parts[0].ItemID != "{ID-1}" {
+	if parts[0].Namespace != "urn:test" || parts[0].RootElement != "root" ||
+		parts[0].ItemID != "{ID-1}" {
 		t.Fatalf("unexpected structured custom xml parse result: %+v", parts[0])
 	}
 	if len(parts[0].Properties) != 2 || parts[0].Properties[0].Key != "name" {

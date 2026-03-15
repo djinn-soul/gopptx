@@ -81,7 +81,11 @@ func TestValidationErrorAndOptionalPayloadDecode(t *testing.T) {
 	}
 
 	decoded = target{}
-	derr := DecodeOptionalPayloadValue(map[string]any{"data": map[string]any{"name": 123}}, "data", &decoded)
+	derr := DecodeOptionalPayloadValue(
+		map[string]any{"data": map[string]any{"name": 123}},
+		"data",
+		&decoded,
+	)
 	if derr == nil || !strings.Contains(derr.Error(), "invalid data payload") {
 		t.Fatalf("expected payload decode error, got: %v", derr)
 	}
@@ -140,7 +144,10 @@ func TestSlideAndTableRequestParsing(t *testing.T) {
 		t.Fatalf("expected valid dimensions: %v", err)
 	}
 
-	shapeReq, ok := ParseTableShapeRequest(map[string]any{"slide_index": 1, "shape_id": 7}, testParseIntField)
+	shapeReq, ok := ParseTableShapeRequest(
+		map[string]any{"slide_index": 1, "shape_id": 7},
+		testParseIntField,
+	)
 	if !ok || shapeReq.ShapeID != 7 {
 		t.Fatalf("unexpected table shape request: %+v ok=%v", shapeReq, ok)
 	}

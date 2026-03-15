@@ -38,7 +38,8 @@ func TestParseAddImageRequest_BasicAndValidation(t *testing.T) {
 	if req.SlideIndex != 2 || req.X != 1 || req.Y != 2 || req.W != 3 || req.H != 4 {
 		t.Fatalf("unexpected geometry parse: %+v", req)
 	}
-	if req.ImagePath != "img.png" || req.ImageURL == "" || req.Base64Data == "" || req.Format != "png" {
+	if req.ImagePath != "img.png" || req.ImageURL == "" || req.Base64Data == "" ||
+		req.Format != "png" {
 		t.Fatalf("unexpected source fields: %+v", req)
 	}
 
@@ -106,7 +107,10 @@ func TestExecuteAddImageRequest_RoutesSources(t *testing.T) {
 		1024,
 		func(slideIndex int, data []byte, format string, x, y, w, h float64, _ *common.ShapeUpdate) (int, error) {
 			called = "bytes"
-			if slideIndex != 1 || string(data) != "hello" || format != "png" || x != 10 || y != 20 || w != 30 || h != 40 {
+			if slideIndex != 1 || string(data) != "hello" || format != "png" || x != 10 ||
+				y != 20 ||
+				w != 30 ||
+				h != 40 {
 				t.Fatalf("unexpected bytes args")
 			}
 			return 11, nil

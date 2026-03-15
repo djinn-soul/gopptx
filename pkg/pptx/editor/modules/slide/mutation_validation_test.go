@@ -16,7 +16,8 @@ func TestPresentationMutationHelpers(t *testing.T) {
 		{SlideID: 300, RelID: "rId5"},
 	}
 	slideListXML := BuildPresentationSlideListXML(slides)
-	if !strings.Contains(slideListXML, `id="256"`) || !strings.Contains(slideListXML, `r:id="rId5"`) {
+	if !strings.Contains(slideListXML, `id="256"`) ||
+		!strings.Contains(slideListXML, `r:id="rId5"`) {
 		t.Fatalf("BuildPresentationSlideListXML unexpected output: %s", slideListXML)
 	}
 
@@ -52,7 +53,9 @@ func TestPresentationMutationHelpers(t *testing.T) {
 	}
 
 	masterXML, err := RewritePresentationSlideMasterList(
-		[]byte(`<p:presentation><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst/></p:presentation>`),
+		[]byte(
+			`<p:presentation><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst/></p:presentation>`,
+		),
 		"rId99",
 	)
 	if err != nil || !strings.Contains(masterXML, `r:id="rId99"`) {
@@ -66,7 +69,8 @@ func TestPresentationMutationHelpers(t *testing.T) {
 func TestSectionMutationHelpers(t *testing.T) {
 	sections := []SectionData{{Name: "A&B", GUID: "{GUID-1}", SlideIDs: []int64{256, 300}}}
 	sectionListXML := BuildSectionListXML(sections)
-	if !strings.Contains(sectionListXML, "A&amp;B") || !strings.Contains(sectionListXML, `id="300"`) {
+	if !strings.Contains(sectionListXML, "A&amp;B") ||
+		!strings.Contains(sectionListXML, `id="300"`) {
 		t.Fatalf("BuildSectionListXML unexpected output: %s", sectionListXML)
 	}
 
@@ -81,7 +85,10 @@ func TestSectionMutationHelpers(t *testing.T) {
 	if err != nil || !strings.Contains(withSections, "sectionLst") {
 		t.Fatalf("RewritePresentationSections extLst failed: %s err=%v", withSections, err)
 	}
-	withSections, err = RewritePresentationSections([]byte(`<p:presentation></p:presentation>`), sections)
+	withSections, err = RewritePresentationSections(
+		[]byte(`<p:presentation></p:presentation>`),
+		sections,
+	)
 	if err != nil || !strings.Contains(withSections, "<p:extLst>") {
 		t.Fatalf("RewritePresentationSections append failed: %s err=%v", withSections, err)
 	}
@@ -90,7 +97,10 @@ func TestSectionMutationHelpers(t *testing.T) {
 	}
 
 	fontLst := `<p:embeddedFontLst><p:embeddedFont typeface="x"/></p:embeddedFontLst>`
-	withFonts, err := RewritePresentationEmbeddedFonts([]byte(`<p:presentation><p:extLst/></p:presentation>`), fontLst)
+	withFonts, err := RewritePresentationEmbeddedFonts(
+		[]byte(`<p:presentation><p:extLst/></p:presentation>`),
+		fontLst,
+	)
 	if err != nil || !strings.Contains(withFonts, "embeddedFontLst") {
 		t.Fatalf("RewritePresentationEmbeddedFonts insert failed: %s err=%v", withFonts, err)
 	}
@@ -135,7 +145,9 @@ func TestValidationHelpers(t *testing.T) {
 		return nil, false
 	}
 	parseOK := func([]byte) ([]common.EditorRelationship, error) {
-		return []common.EditorRelationship{{Type: common.RelTypeSlideLayout, Target: "../slideLayouts/slideLayout1.xml"}}, nil
+		return []common.EditorRelationship{
+			{Type: common.RelTypeSlideLayout, Target: "../slideLayouts/slideLayout1.xml"},
+		}, nil
 	}
 	rels, err := Relationships("ppt/slides/slide1.xml", getPart, parseOK)
 	if err != nil || len(rels) != 1 {
