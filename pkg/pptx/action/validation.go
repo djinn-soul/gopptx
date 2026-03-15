@@ -1,9 +1,11 @@
 package action
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -67,27 +69,28 @@ func ValidateHyperlinkAction(a HyperlinkAction, context string) error {
 func validateFilePathScheme(pathValue string) error {
 	pathValue = strings.TrimSpace(pathValue)
 	if pathValue == "" {
-		return fmt.Errorf("file path cannot be empty")
+		return errors.New("file path cannot be empty")
 	}
 	parsed, err := url.Parse(pathValue)
 	if err != nil {
 		return fmt.Errorf("invalid file path %q: %w", pathValue, err)
 	}
-	pathPart := pathValue
-	if parsed.Scheme == "" {
+	var pathPart string
+	switch {
+	case parsed.Scheme == "":
 		pathPart = pathValue
-	} else if isWindowsDrivePath(pathValue, parsed.Scheme) {
+	case isWindowsDrivePath(pathValue, parsed.Scheme):
 		// Windows drive prefix (for example `C:\...`) is not a URI scheme.
 		pathPart = pathValue
-	} else {
+	default:
 		if !strings.EqualFold(parsed.Scheme, "file") {
 			return fmt.Errorf("file path must use file:// scheme or no scheme, got %q", parsed.Scheme)
 		}
 		if parsed.RawQuery != "" || parsed.Fragment != "" {
-			return fmt.Errorf("file URI must not include query or fragment components")
+			return errors.New("file URI must not include query or fragment components")
 		}
 		if parsed.Opaque != "" {
-			return fmt.Errorf("file URI uses unsupported opaque path form")
+			return errors.New("file URI uses unsupported opaque path form")
 		}
 		host := strings.ToLower(strings.TrimSpace(parsed.Host))
 		if host != "" && host != "localhost" {
@@ -100,18 +103,18 @@ func validateFilePathScheme(pathValue string) error {
 		pathPart = unescaped
 	}
 	if pathPart == "" {
-		return fmt.Errorf("file path cannot be empty")
+		return errors.New("file path cannot be empty")
 	}
 	if strings.ContainsRune(pathPart, '\x00') {
-		return fmt.Errorf("file path cannot contain NUL characters")
+		return errors.New("file path cannot contain NUL characters")
 	}
 
 	normalized := strings.ReplaceAll(pathPart, "\\", "/")
 	if containsTraversalSegment(normalized) {
-		return fmt.Errorf("file path cannot contain directory traversal (..)")
+		return errors.New("file path cannot contain directory traversal (..)")
 	}
 	if isSensitiveSystemPath(normalized) {
-		return fmt.Errorf("file path references a restricted system location")
+		return errors.New("file path references a restricted system location")
 	}
 	return nil
 }
@@ -124,12 +127,7 @@ func isWindowsDrivePath(pathValue, scheme string) bool {
 }
 
 func containsTraversalSegment(path string) bool {
-	for _, seg := range strings.Split(path, "/") {
-		if seg == ".." {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(strings.Split(path, "/"), "..")
 }
 
 func isSensitiveSystemPath(path string) bool {

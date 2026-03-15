@@ -2,6 +2,7 @@ package protection
 
 import (
 	"encoding/base64"
+	"strings"
 	"testing"
 )
 
@@ -32,10 +33,7 @@ func TestHashModifyPassword(t *testing.T) {
 	}
 
 	// Edge case: Long password (> 255 runes)
-	longPwd := ""
-	for i := 0; i < 300; i++ {
-		longPwd += "a"
-	}
+	longPwd := strings.Repeat("a", 300)
 	hashLong := HashModifyPassword(longPwd, salt, 10)
 	if hashLong == "" {
 		t.Error("HashLong should not be empty")

@@ -11,10 +11,11 @@ import (
 )
 
 func encodeRecord(rt recordType, payload []byte) []byte {
-	header := make([]byte, headerSize)
-	binary.LittleEndian.PutUint16(header[2:4], uint16(rt))
-	binary.LittleEndian.PutUint32(header[4:8], uint32(len(payload)))
-	return append(header, payload...)
+	recordBytes := make([]byte, headerSize+len(payload))
+	binary.LittleEndian.PutUint16(recordBytes[2:4], uint16(rt))
+	binary.LittleEndian.PutUint32(recordBytes[4:8], uint32(len(payload)))
+	copy(recordBytes[headerSize:], payload)
+	return recordBytes
 }
 
 func TestRecordAndRecordDataHelpers(t *testing.T) {

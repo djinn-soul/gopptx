@@ -1,6 +1,7 @@
 package media
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -40,7 +41,7 @@ func ApplyMediaTiming(
 	timingStart := strings.Index(slideXML, "<p:timing>")
 	timingEnd := strings.Index(slideXML, "</p:timing>")
 	if timingStart < 0 || timingEnd < 0 {
-		return nil, fmt.Errorf("invalid slide xml: timing block not found after insertion")
+		return nil, errors.New("invalid slide xml: timing block not found after insertion")
 	}
 	timingEnd += len("</p:timing>")
 	timingXML := slideXML[timingStart:timingEnd]
@@ -79,7 +80,7 @@ func addDefaultTimingBlock(slideXML string) (string, error) {
 	const closeSlide = "</p:sld>"
 	idx := strings.LastIndex(slideXML, closeSlide)
 	if idx < 0 {
-		return "", fmt.Errorf("invalid slide xml: missing </p:sld>")
+		return "", errors.New("invalid slide xml: missing </p:sld>")
 	}
 	return slideXML[:idx] + timingBlock + slideXML[idx:], nil
 }
@@ -105,16 +106,16 @@ func nextTimingCTnID(timingXML string) int {
 func insertMediaNodeIntoMainSeq(timingXML, mediaNode string) (string, error) {
 	mainSeqIdx := strings.Index(timingXML, `nodeType="mainSeq"`)
 	if mainSeqIdx < 0 {
-		return "", fmt.Errorf("invalid timing xml: mainSeq cTn not found")
+		return "", errors.New("invalid timing xml: mainSeq cTn not found")
 	}
 	childStart := strings.Index(timingXML[mainSeqIdx:], "<p:childTnLst>")
 	if childStart < 0 {
-		return "", fmt.Errorf("invalid timing xml: mainSeq childTnLst not found")
+		return "", errors.New("invalid timing xml: mainSeq childTnLst not found")
 	}
 	childStart += mainSeqIdx
 	childEnd := strings.Index(timingXML[childStart:], "</p:childTnLst>")
 	if childEnd < 0 {
-		return "", fmt.Errorf("invalid timing xml: mainSeq childTnLst end not found")
+		return "", errors.New("invalid timing xml: mainSeq childTnLst end not found")
 	}
 	childEnd += childStart
 	return timingXML[:childEnd] + mediaNode + timingXML[childEnd:], nil
@@ -145,10 +146,7 @@ func buildMediaTimingNode(
 	}
 	numSldAttr := ` numSld="1"`
 	if options.PlayAcrossSlides {
-		numSlides := options.SlideCount - options.SlideIndex
-		if numSlides < 1 {
-			numSlides = 1
-		}
+		numSlides := max(1, options.SlideCount-options.SlideIndex)
 		numSldAttr = fmt.Sprintf(` numSld="%d"`, numSlides)
 	}
 
