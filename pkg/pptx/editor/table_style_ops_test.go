@@ -90,3 +90,88 @@ func TestListTableStyles(t *testing.T) {
 		t.Fatalf("unexpected styles: %#v", styles)
 	}
 }
+
+func TestDefineTableStyleWithExplicitGUID(t *testing.T) {
+	e := newTableEditorFixture()
+	e.parts.Set("[Content_Types].xml", []byte(contentTypesFixtureXML))
+	e.parts.Set("ppt/_rels/presentation.xml.rels", []byte(presentationRelsFixtureXML))
+
+	guid := "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
+	styleID, err := e.DefineTableStyle(common.TableStyleDefinition{
+		Name:    "Explicit GUID Style",
+		StyleID: guid,
+	})
+	if err != nil {
+		t.Fatalf("DefineTableStyle with GUID failed: %v", err)
+	}
+	if styleID != guid {
+		t.Errorf("expected styleID %s, got %s", guid, styleID)
+	}
+	tableStyles, _ := e.parts.Get("ppt/tableStyles.xml")
+	if !strings.Contains(string(tableStyles), guid) {
+		t.Errorf("expected GUID in table styles XML, got: %s", string(tableStyles))
+	}
+}
+
+func TestDefineTableStyleOverwritesExistingEntry(t *testing.T) {
+	e := newTableEditorFixture()
+	e.parts.Set("[Content_Types].xml", []byte(contentTypesFixtureXML))
+	e.parts.Set("ppt/_rels/presentation.xml.rels", []byte(presentationRelsFixtureXML))
+	e.parts.Set("ppt/tableStyles.xml", []byte(tableStylesListFixtureXML))
+
+	// Overwrite entry B with new name
+	_, err := e.DefineTableStyle(common.TableStyleDefinition{
+		Name:    "B Renamed",
+		StyleID: "{B2222222-2222-2222-2222-222222222222}",
+	})
+	if err != nil {
+		t.Fatalf("DefineTableStyle overwrite failed: %v", err)
+	}
+	tableStyles, _ := e.parts.Get("ppt/tableStyles.xml")
+	if !strings.Contains(string(tableStyles), "B Renamed") {
+		t.Errorf("expected renamed style, got: %s", string(tableStyles))
+	}
+}
+
+func TestDefineTableStyleInvalidName(t *testing.T) {
+	e := newTableEditorFixture()
+	_, err := e.DefineTableStyle(common.TableStyleDefinition{Name: ""})
+	if err == nil {
+		t.Error("expected error for empty name")
+	}
+}
+
+func TestNormalizeOrGenerateStyleIDAutoGen(t *testing.T) {
+	// Pass empty styleID to trigger auto-generation
+	id, err := normalizeOrGenerateStyleID("")
+	if err != nil {
+		t.Fatalf("expected auto-generated ID, got error: %v", err)
+	}
+	if id == "" {
+		t.Error("expected non-empty generated ID")
+	}
+	if !strings.HasPrefix(id, "{") || !strings.HasSuffix(id, "}") {
+		t.Errorf("expected GUID format, got: %s", id)
+	}
+}
+
+func TestEnsureTableStylesInfrastructureExistingPartNoDef(t *testing.T) {
+	e := newTableEditorFixture()
+	e.parts.Set("[Content_Types].xml", []byte(contentTypesFixtureXML))
+	e.parts.Set("ppt/_rels/presentation.xml.rels", []byte(presentationRelsFixtureXML))
+	// Part exists but has no 'def' attribute
+	e.parts.Set(
+		"ppt/tableStyles.xml",
+		[]byte(`<?xml version="1.0"?><a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"></a:tblStyleLst>`),
+	)
+
+	guid := "{1A111111-1111-1111-1111-111111111111}"
+	err := e.ensureTableStylesInfrastructure(guid)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	part, _ := e.parts.Get("ppt/tableStyles.xml")
+	if !strings.Contains(string(part), `def="`+guid+`"`) {
+		t.Errorf("expected def attribute in existing part, got: %s", string(part))
+	}
+}
