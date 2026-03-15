@@ -105,7 +105,9 @@ func run() error {
 		}
 		log.Printf("Added audio fixture: %s\n", audioMP3FixturePath)
 	case fileExists(audioWAVFixturePath):
-		audioOpts := editor.NewAudioPlaybackOptions().WithVolume(85).WithAltText("Background soundtrack")
+		audioOpts := editor.NewAudioPlaybackOptions().
+			WithVolume(85).
+			WithAltText("Background soundtrack")
 		if _, err := ed.AddAudioFromFileWithPlaybackOptions(
 			0,
 			audioWAVFixturePath,
@@ -123,7 +125,9 @@ func run() error {
 		if _, err := ed.AddAudioWithIcon(0, tinyWAV(), tinyPNG(), "audio/wav", 4500000, 1500000, 1800000, 900000); err != nil {
 			return fmt.Errorf("add fallback audio with icon: %w", err)
 		}
-		log.Printf("Audio fixtures missing (sample.mp3/sample.wav); inserted fallback tiny WAV with generated icon.")
+		log.Printf(
+			"Audio fixtures missing (sample.mp3/sample.wav); inserted fallback tiny WAV with generated icon.",
+		)
 	}
 
 	oleFixturePath := filepath.Join("examples", "assets", "23", "sample_ole.bin")

@@ -87,7 +87,9 @@ func TestRenderLineAndFillXML(t *testing.T) {
 	if err != nil || !strings.Contains(patternXML, `prst="diagCross"`) {
 		t.Fatalf("pattern fill render failed: xml=%q err=%v", patternXML, err)
 	}
-	if _, err = RenderFillXML(&common.ShapeFill{Pattern: &common.PatternedFill{FgColor: strPtrSR("BADHEX")}}); err == nil {
+	if _, err = RenderFillXML(
+		&common.ShapeFill{Pattern: &common.PatternedFill{FgColor: strPtrSR("BADHEX")}},
+	); err == nil {
 		t.Fatal("expected pattern fg color validation error")
 	}
 }
@@ -122,10 +124,22 @@ func TestRenderEffectsXMLAndRotationValidation(t *testing.T) {
 		t.Fatalf("shadow inherit=false should emit empty effect list: xml=%q err=%v", xml, err)
 	}
 
-	if _, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtrSR(true), Color: strPtrSR("FFFFFF")}, nil, nil, nil, nil); err == nil {
+	if _, err := RenderEffectsXML(
+		&common.ShapeShadow{Inherit: boolPtrSR(true), Color: strPtrSR("FFFFFF")},
+		nil,
+		nil,
+		nil,
+		nil,
+	); err == nil {
 		t.Fatal("expected inherit + explicit shadow attribute error")
 	}
-	if _, err := RenderEffectsXML(&common.ShapeShadow{Inherit: boolPtrSR(true)}, &common.ShapeGlow{}, nil, nil, nil); err == nil {
+	if _, err := RenderEffectsXML(
+		&common.ShapeShadow{Inherit: boolPtrSR(true)},
+		&common.ShapeGlow{},
+		nil,
+		nil,
+		nil,
+	); err == nil {
 		t.Fatal("expected inherit + other effects error")
 	}
 	if _, err := RenderEffectsXML(&common.ShapeShadow{BlurEmu: intPtrSR(-1)}, nil, nil, nil, nil); err == nil {

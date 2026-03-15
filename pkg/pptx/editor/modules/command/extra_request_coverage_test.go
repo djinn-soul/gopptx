@@ -103,7 +103,12 @@ func TestCustomXMLAndBase64Parsing(t *testing.T) {
 		ok {
 		t.Fatalf("missing base64 field should be ignored: ok=%v err=%v", ok, err)
 	}
-	if _, _, err = DecodeRequiredBase64Field(map[string]any{"data": "%%%bad"}, testParseStringField, "data", "bad"); err == nil {
+	if _, _, err = DecodeRequiredBase64Field(
+		map[string]any{"data": "%%%bad"},
+		testParseStringField,
+		"data",
+		"bad",
+	); err == nil {
 		t.Fatal("expected invalid base64 error")
 	}
 }
@@ -116,8 +121,11 @@ func TestParityAndShapeUpdateParsers(t *testing.T) {
 	); !ok || len(req.ShapeIDs) != 2 {
 		t.Fatalf("ParseGroupShapeRequest with shapes failed: req=%+v ok=%v", req, ok)
 	}
-	if req, ok := ParseGroupShapeRequest(map[string]any{"slide_index": 2}, testParseIntField, testParseIntSliceField); !ok ||
-		len(req.ShapeIDs) != 0 {
+	if req, ok := ParseGroupShapeRequest(
+		map[string]any{"slide_index": 2},
+		testParseIntField,
+		testParseIntSliceField,
+	); !ok || len(req.ShapeIDs) != 0 {
 		t.Fatalf("ParseGroupShapeRequest without shapes failed: req=%+v ok=%v", req, ok)
 	}
 

@@ -70,7 +70,11 @@ func TestValidationErrorAndOptionalPayloadDecode(t *testing.T) {
 		Name string `json:"name"`
 	}
 	decoded := target{}
-	if derr := DecodeOptionalPayloadValue(map[string]any{"data": map[string]any{"name": "ok"}}, "data", &decoded); derr != nil {
+	if derr := DecodeOptionalPayloadValue(
+		map[string]any{"data": map[string]any{"name": "ok"}},
+		"data",
+		&decoded,
+	); derr != nil {
 		t.Fatalf("DecodeOptionalPayloadValue failed: %v", derr)
 	}
 	if decoded.Name != "ok" {
