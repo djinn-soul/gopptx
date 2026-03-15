@@ -50,7 +50,7 @@ func buildCompoundFile(infoStream, pkgStream []byte, infoName, pkgName string) (
 	fatEntries[dirSector] = cfbEndOfChain
 	linkChain(fatEntries, infoStart, infoSectors)
 	linkChain(fatEntries, pkgStart, pkgSectors)
-	for i := 0; i < fatSectors; i++ {
+	for i := range fatSectors {
 		fatEntries[fatStart+i] = cfbFatSect
 	}
 
@@ -129,10 +129,10 @@ func buildCFBHeader(numFatSectors, firstDirSector, fatStart int) []byte {
 	binary.LittleEndian.PutUint32(h[64:68], 0)
 	binary.LittleEndian.PutUint32(h[68:72], cfbEndOfChain)
 	binary.LittleEndian.PutUint32(h[72:76], 0)
-	for i := 0; i < 109; i++ {
+	for i := range 109 {
 		binary.LittleEndian.PutUint32(h[76+i*4:80+i*4], cfbFreeSect)
 	}
-	for i := 0; i < numFatSectors && i < 109; i++ {
+	for i := range min(numFatSectors, 109) {
 		binary.LittleEndian.PutUint32(h[76+i*4:80+i*4], uint32(fatStart+i))
 	}
 	return h
@@ -201,7 +201,7 @@ func newDirEntry(
 
 func buildFATSectors(entries []uint32, fatSectors int) []byte {
 	out := make([]byte, fatSectors*cfbSectorSize)
-	for i := 0; i < fatSectors*128; i++ {
+	for i := range fatSectors * 128 {
 		v := uint32(cfbFreeSect)
 		if i < len(entries) {
 			v = entries[i]

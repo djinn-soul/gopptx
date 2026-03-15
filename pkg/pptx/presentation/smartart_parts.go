@@ -61,6 +61,12 @@ type smartArtRenderedPart struct {
 }
 
 func renderSmartArtPartsParallel(parts []SmartArtPart) ([]smartArtRenderedPart, error) {
+	for _, part := range parts {
+		if part.partNumber <= 0 {
+			return nil, fmt.Errorf("invalid SmartArt part number: %d", part.partNumber)
+		}
+	}
+
 	var (
 		wg      sync.WaitGroup
 		mu      sync.Mutex

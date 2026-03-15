@@ -74,7 +74,7 @@ func segmentText(lines *text.Segments, source []byte) string {
 		return ""
 	}
 	var buffer bytes.Buffer
-	for i := 0; i < lines.Len(); i++ {
+	for i := range lines.Len() {
 		segment := lines.At(i)
 		buffer.Write(segment.Value(source))
 	}

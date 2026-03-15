@@ -16,7 +16,7 @@ func (s *flowchartRenderState) layoutByConnections(connections []FlowConnection)
 		depth[n.ID] = 0
 	}
 
-	for i := 0; i < len(s.nodes); i++ {
+	for range len(s.nodes) {
 		changed := false
 		for _, c := range connections {
 			fromDepth, fromOK := depth[c.From]
@@ -44,7 +44,7 @@ func (s *flowchartRenderState) layoutByConnections(connections []FlowConnection)
 		}
 	}
 
-	for d := 0; d <= maxDepth; d++ {
+	for d := range maxDepth + 1 {
 		if len(buckets[d]) == 0 {
 			continue
 		}

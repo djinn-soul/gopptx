@@ -72,26 +72,27 @@ func (p *markdownASTParser) resolveRunHyperlink(destination string) (action.Hype
 	}
 
 	baseDir := strings.TrimSpace(p.options.BaseDir)
-	if baseDir != "" && !filepath.IsAbs(localPath) {
-		absBaseDir, err := filepath.Abs(baseDir)
-		if err != nil {
-			return action.Hyperlink{}, false
-		}
-		absLocalPath, err := filepath.Abs(filepath.Join(baseDir, localPath))
-		if err != nil {
-			return action.Hyperlink{}, false
-		}
-		relPath, err := filepath.Rel(absBaseDir, absLocalPath)
-		if err != nil || relPath == ".." || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
-			return action.Hyperlink{}, false
-		}
-		localPath = absLocalPath
-	} else {
+	if baseDir == "" || filepath.IsAbs(localPath) {
 		localPath = filepath.Clean(localPath)
 		if strings.Contains(localPath, "..") {
 			return action.Hyperlink{}, false
 		}
+		return action.NewHyperlink(action.HyperlinkFile(localPath)), true
 	}
+
+	absBaseDir, err := filepath.Abs(baseDir)
+	if err != nil {
+		return action.Hyperlink{}, false
+	}
+	absLocalPath, err := filepath.Abs(filepath.Join(baseDir, localPath))
+	if err != nil {
+		return action.Hyperlink{}, false
+	}
+	relPath, err := filepath.Rel(absBaseDir, absLocalPath)
+	if err != nil || relPath == ".." || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
+		return action.Hyperlink{}, false
+	}
+	localPath = absLocalPath
 
 	return action.NewHyperlink(action.HyperlinkFile(localPath)), true
 }
