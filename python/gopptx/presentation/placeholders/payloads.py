@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from ..utils import is_four_number_bounds
+from ...utils import is_four_number_bounds
 
 
 def build_placeholder_table_payload(

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .. import ops
-from .helpers import PresentationMixinBase
+from ... import ops
+from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
-    from ..schemas import Section
+    from ...schemas import Section
 
 
 class PresentationSectionMixin(PresentationMixinBase):

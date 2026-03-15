@@ -6,26 +6,26 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, cast
 
-from .. import ops
-from ..slide.slide import Slide
-from ..utils import is_four_number_bounds
-from .layout_theme import PresentationLayoutMixin, PresentationThemeMixin
-from .master import SlideMasters
-from .placeholder_payloads import (
+from ... import ops
+from ...slide.slide import Slide
+from ...utils import is_four_number_bounds
+from ..layout_theme import PresentationLayoutMixin, PresentationThemeMixin
+from ..master import SlideMasters
+from ..placeholders import (
     build_placeholder_chart_payload,
     build_placeholder_table_payload,
 )
-from .properties import PresentationPropertiesMixin
-from .sections import PresentationSectionMixin
+from .properties_mixin import PresentationPropertiesMixin
+from .sections_mixin import PresentationSectionMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ..schemas import (
+    from ...schemas import (
         SlideMetadata,
     )
-    from .helpers import PresentationProtocol
-    from .presentation import Presentation
+    from ..helpers import PresentationProtocol
+    from ..presentation import Presentation
 
 
 class PresentationSlidesMixin(

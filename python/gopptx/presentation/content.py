@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from .charts import PresentationChartMixin
 from .comments import PresentationCommentMixin
-from .notes_mixin import PresentationNotesMixin
-from .shape_batch_mixin import PresentationShapeBatchMixin
-from .shapes.shapes_tables import PresentationShapeMixin
-from .table_mixin import PresentationTableMixin
+from .notes import PresentationNotesMixin
+from .shapes import PresentationShapeBatchMixin, PresentationShapeMixin
+from .tables import PresentationTableMixin
 from .text.text_batch_mixin import PresentationTextBatchMixin
 from .text.text_mixin import PresentationTextMixin
 from .vba import PresentationVBAMixin

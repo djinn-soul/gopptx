@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
-from .. import ops
-from .helpers import PresentationMixinBase
-from .runtime import PresentationRuntimeMixin
-from .text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
+from ... import ops
+from ..helpers import PresentationMixinBase
+from ..runtime import PresentationRuntimeMixin
+from ..text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
