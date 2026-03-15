@@ -1,6 +1,7 @@
 package styling
 
 import (
+	"math"
 	"testing"
 )
 
@@ -66,11 +67,46 @@ func TestLengthConversions(t *testing.T) {
 }
 
 func TestLengthClamping(t *testing.T) {
-	if got := Inches(10000); got != MaxEMU {
-		t.Errorf("Inches(10000) = %v, want %v (MaxEMU)", got, MaxEMU)
+	tests := []struct {
+		name string
+		val  float64
+		want Length
+	}{
+		{"10000 inches", 10000 * emuPerInch, MaxEMU},
+		{"-10000 inches", -10000 * emuPerInch, -MaxEMU},
+		{"NaN", math.NaN(), 0},
+		{"+Inf", math.Inf(1), MaxEMU},
+		{"-Inf", math.Inf(-1), -MaxEMU},
+		{"Large positive", 1e15, MaxEMU},
+		{"Large negative", -1e15, -MaxEMU},
 	}
-	if got := Inches(-10000); got != -MaxEMU {
-		t.Errorf("Inches(-10000) = %v, want %v (-MaxEMU)", got, -MaxEMU)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := clampToLength(tt.val); got != tt.want {
+				t.Errorf("clampToLength(%v) = %v, want %v", tt.val, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAliasFunctions(t *testing.T) {
+	if got := InchesToEMU(1); got != Inches(1) {
+		t.Errorf("InchesToEMU(1) = %v, want %v", got, Inches(1))
+	}
+	if got := CMToEMU(1); got != Centimeters(1) {
+		t.Errorf("CMToEMU(1) = %v, want %v", got, Centimeters(1))
+	}
+	if got := PointsToEMU(72); got != Points(72) {
+		t.Errorf("PointsToEMU(72) = %v, want %v", got, Points(72))
+	}
+}
+
+func TestFontSizeEdgeCases(t *testing.T) {
+	if got := FontSize(math.MaxFloat64); got != math.MaxInt32 {
+		t.Errorf("FontSize(MaxFloat64) = %v, want %v", got, math.MaxInt32)
+	}
+	if got := FontSize(-math.MaxFloat64); got != math.MinInt32 {
+		t.Errorf("FontSize(-MaxFloat64) = %v, want %v", got, math.MinInt32)
 	}
 }
 

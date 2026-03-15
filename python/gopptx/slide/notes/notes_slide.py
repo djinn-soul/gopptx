@@ -47,9 +47,7 @@ class NotesSlide(NotesSlideStyleMixin):
         return self._shape_payloads()
 
     def _set_shape_text(self, shape_id: int, text: str) -> None:
-        self._slide.presentation.set_notes_shape_text(
-            self._slide.index, shape_id, text
-        )
+        self._slide.presentation.set_notes_shape_text(self._slide.index, shape_id, text)
 
     @override
     def _set_shape_props(self, shape_id: int, updates: ShapeUpdate) -> None:

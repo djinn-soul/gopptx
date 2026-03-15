@@ -268,3 +268,223 @@ func TestRepairer_EmptyRequiredElement(t *testing.T) {
 		t.Errorf("expected empty element expanded, got: %s", content)
 	}
 }
+
+func TestIssue_String(t *testing.T) {
+	s := SeverityInfo
+	if s.String() != "INFO" {
+		t.Errorf("expected INFO, got %s", s.String())
+	}
+	s = SeverityWarning
+	if s.String() != "WARNING" {
+		t.Errorf("expected WARNING, got %s", s.String())
+	}
+	s = SeverityError
+	if s.String() != "ERROR" {
+		t.Errorf("expected ERROR, got %s", s.String())
+	}
+	s = Severity(99)
+	if s.String() != "UNKNOWN" {
+		t.Errorf("expected UNKNOWN, got %s", s.String())
+	}
+
+	issue := Issue{
+		Code:        CodeMissingPart,
+		Severity:    SeverityError,
+		Path:        "test.xml",
+		Description: "test description",
+		Repairable:  true,
+	}
+	expected := "[ERROR] MISSING_PART (test.xml): test description (Repairable: true)"
+	if issue.String() != expected {
+		t.Errorf("expected %s, got %s", expected, issue.String())
+	}
+}
+
+type mockChecker struct {
+	called bool
+}
+
+func (m *mockChecker) Check(ps PartProvider) []Issue {
+	m.called = true
+	return []Issue{{Code: "MOCK_ISSUE"}}
+}
+
+func TestValidator_AddChecker(t *testing.T) {
+	m := &mockPartStore{parts: make(map[string][]byte)}
+	v := NewValidator(m)
+	checker := &mockChecker{}
+	v.AddChecker(checker)
+	
+	issues := v.Validate()
+	if !checker.called {
+		t.Error("expected custom checker to be called")
+	}
+	found := false
+	for _, issue := range issues {
+		if issue.Code == "MOCK_ISSUE" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected mock issue from custom checker")
+	}
+}
+
+func TestValidateZipIntegrity(t *testing.T) {
+	r := strings.NewReader("not a zip file")
+	err := ValidateZipIntegrity(r, int64(r.Len()))
+	if err == nil {
+		t.Error("expected error for invalid zip data")
+	}
+}
+
+func TestRepairer_OrphanSlide(t *testing.T) {
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/slides/slide1.xml": []byte("<root/>"),
+	}}
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeOrphanSlide,
+		Path:        "ppt/slides/slide1.xml",
+		Repairable:  true,
+	}})
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Errorf("expected orphan slide issue to be repaired")
+	}
+	if m.Has("ppt/slides/slide1.xml") {
+		t.Errorf("expected orphan slide to be deleted")
+	}
+}
+
+func TestRepairer_InvalidContentType(t *testing.T) {
+	ctXml := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>`
+	m := &mockPartStore{parts: map[string][]byte{
+		"[Content_Types].xml": []byte(ctXml),
+		"ppt/slides/slide1.xml": []byte("<root/>"),
+		"ppt/slideLayouts/slideLayout1.xml": []byte("<root/>"),
+		"ppt/slideMasters/slideMaster1.xml": []byte("<root/>"),
+		"ppt/presentation.xml": []byte("<root/>"),
+		"docProps/core.xml": []byte("<root/>"),
+		"image.png": []byte("image data"),
+	}}
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeInvalidContentType,
+		Path:        "ppt/slides/slide1.xml",
+		Repairable:  true,
+	}, {
+		Code:        CodeInvalidContentType,
+		Path:        "ppt/slideLayouts/slideLayout1.xml",
+		Repairable:  true,
+	}, {
+		Code:        CodeInvalidContentType,
+		Path:        "ppt/slideMasters/slideMaster1.xml",
+		Repairable:  true,
+	}, {
+		Code:        CodeInvalidContentType,
+		Path:        "ppt/presentation.xml",
+		Repairable:  true,
+	}, {
+		Code:        CodeInvalidContentType,
+		Path:        "docProps/core.xml",
+		Repairable:  true,
+	}, {
+		Code:        CodeInvalidContentType,
+		Path:        "image.png",
+		Repairable:  true,
+	}})
+
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Errorf("expected issues to be repaired, got %d unrepaired", len(result.IssuesUnrepaired))
+	}
+
+	data, _ := m.Get("[Content_Types].xml")
+	content := string(data)
+	
+	failed := false
+	if !strings.Contains(content, "presentationml.slide+xml") {
+		t.Errorf("missing slide content type")
+		failed = true
+	}
+	if !strings.Contains(content, "presentationml.slideLayout+xml") {
+		t.Errorf("missing layout content type")
+		failed = true
+	}
+	if !strings.Contains(content, "presentationml.slideMaster+xml") {
+		t.Errorf("missing master content type")
+		failed = true
+	}
+	if !strings.Contains(content, "presentationml.presentation.main+xml") {
+		t.Errorf("missing presentation content type")
+		failed = true
+	}
+	if !strings.Contains(content, "application/xml") {
+		t.Errorf("missing xml content type")
+		failed = true
+	}
+	if !strings.Contains(content, "application/octet-stream") {
+		t.Errorf("missing default content type")
+		failed = true
+	}
+	
+	if failed {
+		t.Logf("Generated content:\n%s", content)
+	}
+
+	m.Delete("[Content_Types].xml")
+	result = r.Repair([]Issue{{
+		Code:        CodeInvalidContentType,
+		Path:        "ppt/slides/slide1.xml",
+		Repairable:  true,
+	}})
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Errorf("expected issue to be repaired when [Content_Types].xml is missing")
+	}
+	if !m.Has("[Content_Types].xml") {
+		t.Errorf("expected [Content_Types].xml to be generated")
+	}
+}
+
+func TestRepairer_EscapeBareAmpersands(t *testing.T) {
+	input := "Here is a & and an encoded &amp; and &gt; but wait & more."
+	expected := "Here is a &amp; and an encoded &amp; and &gt; but wait &amp; more."
+	escaped := escapeBareAmpersands(input)
+	if escaped != expected {
+		t.Errorf("expected %s, got %s", expected, escaped)
+	}
+}
+
+func TestRepairer_BrokenRelationshipFallback(t *testing.T) {
+	rels := `<?xml version="1.0" encoding="UTF-8"?><InvalidXML`
+	m := &mockPartStore{parts: map[string][]byte{
+		"ppt/_rels/presentation.xml.rels": []byte(rels),
+	}}
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:        CodeBrokenRelationship,
+		Path:        "ppt/_rels/presentation.xml.rels",
+		Context:     map[string]string{"target": "slides/missing.xml"},
+		Repairable:  true,
+	}})
+	if len(result.IssuesUnrepaired) > 0 {
+		t.Errorf("expected broken relationship to be repaired using fallback")
+	}
+}
+
+func TestRepairer_UnsupportedRepair(t *testing.T) {
+	m := &mockPartStore{parts: make(map[string][]byte)}
+	r := NewRepairer(m)
+	result := r.Repair([]Issue{{
+		Code:       CodeModelValidationError,
+		Repairable: true,
+	}, {
+		Code:       CodeMissingPart,
+		Repairable: false,
+	}})
+	
+	if len(result.IssuesUnrepaired) != 2 {
+		t.Errorf("expected 2 unrepaired issues")
+	}
+}
+

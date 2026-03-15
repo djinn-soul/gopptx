@@ -17,8 +17,7 @@ if TYPE_CHECKING:
     from .data import CategoryChartData, XyChartData
 
     class _ChartAxisBulkOpsProto(Protocol):
-        def _axes_for(self, axis: str) -> tuple[ChartAxis, ...]:
-            ...
+        def _axes_for(self, axis: str) -> tuple[ChartAxis, ...]: ...
 
 
 class ChartTitle:

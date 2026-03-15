@@ -69,4 +69,3 @@ func buildModifyVerifierXML(saltData, hashData string) string {
 	b.WriteString(`"/>`)
 	return b.String()
 }
-

@@ -37,6 +37,8 @@ class PresentationShapeBatchMixin(PresentationMixinBase):
         if not connectors:
             return []
         payload: dict[str, object] = {"slide_index": slide_index}
-        payload["connectors"] = cast("object", [dict(connector) for connector in connectors])
+        payload["connectors"] = cast(
+            "object", [dict(connector) for connector in connectors]
+        )
         result = self.execute(ops.OP_ADD_CONNECTORS, payload)
         return cast("list[int]", result.get("shape_ids", []))

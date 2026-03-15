@@ -30,4 +30,21 @@ func TestHashModifyPassword(t *testing.T) {
 	if hash == hash3 {
 		t.Error("Hash collision for different passwords")
 	}
+
+	// Edge case: Long password (> 255 runes)
+	longPwd := ""
+	for i := 0; i < 300; i++ {
+		longPwd += "a"
+	}
+	hashLong := HashModifyPassword(longPwd, salt, 10)
+	if hashLong == "" {
+		t.Error("HashLong should not be empty")
+	}
+
+	// Edge case: Negative spin count
+	hashNeg := HashModifyPassword(password, salt, -1)
+	hashZero := HashModifyPassword(password, salt, 0)
+	if hashNeg != hashZero {
+		t.Errorf("Expected negative spin count to be treated as 0: %s != %s", hashNeg, hashZero)
+	}
 }

@@ -323,14 +323,14 @@ func (r *Repairer) repairInvalidContentType(p string) error {
 }
 
 func (r *Repairer) inferContentType(p string) string {
-	if strings.Contains(p, "slide") && strings.HasSuffix(p, ".xml") {
-		return "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
-	}
 	if strings.Contains(p, "slideLayout") {
 		return "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"
 	}
 	if strings.Contains(p, "slideMaster") {
 		return "application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"
+	}
+	if strings.Contains(p, "slide") && strings.HasSuffix(p, ".xml") {
+		return "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
 	}
 	if strings.Contains(p, "presentation.xml") {
 		return "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"
@@ -373,12 +373,12 @@ func (r *Repairer) repairMissingNamespace(issue Issue) error {
 		return nil
 	}
 	content := string(data)
-	
+
 	ns := issue.Context["ns"]
 	if ns == "" {
 		return nil
 	}
-	
+
 	nsDecl := ""
 	switch ns {
 	case "p":
@@ -390,7 +390,7 @@ func (r *Repairer) repairMissingNamespace(issue Issue) error {
 	default:
 		return nil
 	}
-	
+
 	// Find the first '>' which should be closing the root or XML decl
 	// We want to skip the <?xml ... ?> if it exists.
 	xmlDeclIdx := strings.Index(content, "?>")
@@ -398,19 +398,19 @@ func (r *Repairer) repairMissingNamespace(issue Issue) error {
 	if xmlDeclIdx != -1 {
 		searchStart = xmlDeclIdx + 2
 	}
-	
+
 	firstBracket := strings.Index(content[searchStart:], "<")
 	if firstBracket == -1 {
 		return nil
 	}
 	rootStart := searchStart + firstBracket
-	
+
 	// Find the end of this opening tag
 	firstClose := strings.Index(content[rootStart:], ">")
 	if firstClose == -1 {
 		return nil
 	}
-	
+
 	// Check if namespace already exists here just in case
 	tagContent := content[rootStart : rootStart+firstClose]
 	if !strings.Contains(tagContent, nsDecl) {
@@ -418,7 +418,7 @@ func (r *Repairer) repairMissingNamespace(issue Issue) error {
 		repaired := content[:rootStart+firstClose] + " " + nsDecl + content[rootStart+firstClose:]
 		r.modifier.Set(issue.Path, []byte(repaired))
 	}
-	
+
 	return nil
 }
 
@@ -428,17 +428,17 @@ func (r *Repairer) repairEmptyRequiredElement(issue Issue) error {
 		return nil
 	}
 	content := string(data)
-	
+
 	element := issue.Context["element"]
 	if element == "" {
 		return nil
 	}
-	
+
 	emptyPattern := fmt.Sprintf("<%s/>", element)
 	filledPattern := fmt.Sprintf("<%s></%s>", element, element)
-	
+
 	repaired := strings.ReplaceAll(content, emptyPattern, filledPattern)
 	r.modifier.Set(issue.Path, []byte(repaired))
-	
+
 	return nil
 }

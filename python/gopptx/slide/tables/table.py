@@ -19,11 +19,10 @@ if TYPE_CHECKING:
     class _TableBandingProto(Protocol):
         _cache: dict[str, object] | None
 
-        def _ensure_cache(self) -> None:
-            ...
+        def _ensure_cache(self) -> None: ...
 
-        def _update_flags(self, flags: dict[str, bool]) -> None:
-            ...
+        def _update_flags(self, flags: dict[str, bool]) -> None: ...
+
 
 _TABLE_INDEX_DIMENSIONS = 2
 

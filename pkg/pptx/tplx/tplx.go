@@ -258,6 +258,7 @@ func expandSlideLoops(
 			newSlides = append(newSlides, name)
 			continue
 		}
+		templateRels, hasTemplateRels := parts[slideRelsPath(name)]
 
 		// Get the rows.
 		rowsAny, ok := ctx[cond.key]
@@ -285,7 +286,9 @@ func expandSlideLoops(
 			parts[newName] = slideXML
 			newSlides = append(newSlides, newName)
 			// Copy the rels file from the original template slide.
-			copySlideRels(parts, name, newName)
+			if hasTemplateRels {
+				parts[slideRelsPath(newName)] = templateRels
+			}
 			nextNum++
 		}
 	}
@@ -322,14 +325,6 @@ func deleteSlideRels(parts map[string][]byte, slideName string) {
 	delete(parts, relsName)
 }
 
-func copySlideRels(parts map[string][]byte, src, dst string) {
-	relsData, ok := parts[slideRelsPath(src)]
-	if !ok {
-		return
-	}
-	parts[slideRelsPath(dst)] = relsData
-}
-
 func slideRelsPath(slideName string) string {
 	// ppt/slides/slideN.xml → ppt/slides/_rels/slideN.xml.rels
 	base := lastSegment(slideName)
@@ -363,6 +358,9 @@ func repackZip(original *zip.Reader, parts map[string][]byte) ([]byte, error) {
 	written := make(map[string]bool)
 	for _, f := range original.File {
 		if f.FileInfo().IsDir() {
+			continue
+		}
+		if _, ok := parts[f.Name]; !ok {
 			continue
 		}
 		err := writeArchiveEntry(zw, f, parts)

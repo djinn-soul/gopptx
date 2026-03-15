@@ -152,4 +152,3 @@ func containsBinding(inv ThemeInventory, owner, theme string) bool {
 	}
 	return false
 }
-

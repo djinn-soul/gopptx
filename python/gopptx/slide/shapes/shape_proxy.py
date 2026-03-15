@@ -273,6 +273,20 @@ class ShapeProxy:
     def height(self, value: int) -> None:
         self.apply_update(cast("ShapeUpdate", {"h": value}))
 
+    @property
+    def has_table(self) -> bool:
+        """True if this shape is a table."""
+        return self.shape_type in ("tbl", "graphicFrame")
+
+    @property
+    def table(self) -> Table:
+        """Return a table proxy if this shape is a table."""
+        from ..tables.table import Table
+
+        if not self.has_table:
+            raise AttributeError(f"shape {self._shape_id} has no table")
+        return Table(self._slide.presentation, self._slide.index, self._shape_id)
+
 
 class ShapeCollection:
     """python-pptx-style slide shapes collection."""

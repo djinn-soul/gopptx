@@ -95,7 +95,9 @@ def test_bulk_connector_creation() -> None:
         ])
 
         if len(connector_ids) != 2 or any(shape_id <= 0 for shape_id in connector_ids):
-            raise AssertionError(f"expected two positive connector ids, got {connector_ids!r}")
+            raise AssertionError(
+                f"expected two positive connector ids, got {connector_ids!r}"
+            )
 
         shape_ids = {int(shape["ID"]) for shape in slide.list_shapes()}
         if any(connector_id not in shape_ids for connector_id in connector_ids):

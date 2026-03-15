@@ -25,7 +25,9 @@ class TableRow:
     @property
     def height(self) -> int:
         """Return row height in EMUs."""
-        rows = cast("list[dict[str, object]]", self._table.table_state().get("rows", []))
+        rows = cast(
+            "list[dict[str, object]]", self._table.table_state().get("rows", [])
+        )
         if self.index >= len(rows):
             return 0
         return _as_int(rows[self.index].get("height"))

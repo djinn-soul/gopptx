@@ -44,4 +44,3 @@ func TestValidateHyperlinkAction_FileAndProgramSchemeChecks(t *testing.T) {
 		})
 	}
 }
-
