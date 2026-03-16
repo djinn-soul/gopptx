@@ -47,6 +47,11 @@ func NewWeb2PptWithConfig(cfg Config) *Converter {
 	return NewURLFetchConverterWithConfig(cfg)
 }
 
+// ConvertToSlides transforms parsed web content into slide content objects.
+func (c *Converter) ConvertToSlides(content *WebContent, opts *ConversionOptions) ([]elements.SlideContent, error) {
+	return c.buildSlides(content, opts)
+}
+
 // Convert transforms parsed web content into PPTX bytes.
 func (c *Converter) Convert(content *WebContent, opts *ConversionOptions) ([]byte, error) {
 	slides, err := c.buildSlides(content, opts)
@@ -116,7 +121,6 @@ func (c *Converter) buildGroupedSlides(
 		return c.buildLinearSlides(content, slides)
 	}
 
-	// Create image fetcher if downloading images
 	var imageFetcher *ImageFetcher
 	if c.cfg.DownloadImages {
 		client := &http.Client{
@@ -172,7 +176,6 @@ func (c *Converter) buildLinearSlides(
 		return slides, nil
 	}
 
-	// Create image fetcher if downloading images
 	var imageFetcher *ImageFetcher
 	if c.cfg.DownloadImages {
 		client := &http.Client{
@@ -267,14 +270,12 @@ func (c *Converter) fetchAndCreateImage(fetcher *ImageFetcher, src, _ string) (s
 		return shapes.Image{}, err
 	}
 
-	// Calculate dimensions preserving aspect ratio
 	widthEMU, heightEMU := CalculateImageDimensions(
 		fetched.Width,
 		fetched.Height,
 		defaultImageWidthEMU,
 	)
 
-	// Create image
 	img := shapes.NewImageFromBytes(
 		fetched.Data,
 		fetched.Format,
@@ -432,8 +433,7 @@ func (c *Converter) appendLink(
 	return slide.AddBullet("[Link] " + truncateText(linkText, maxListLen)), bulletCount + 1, imageCount
 }
 
-// buildTable converts raw HTML table rows to a tables.Table.
-// Row 0 is rendered as a bold header row.
+// buildTable converts raw HTML table rows to a table with a bold header row.
 func buildTable(rows [][]string) tables.Table {
 	if len(rows) == 0 {
 		return tables.NewTable(nil)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ... import ops
+
 if TYPE_CHECKING:
     from ...presentation.presentation import Presentation
     from ...schemas import ImageMetadata, Shape, ShapeProps, ShapeUpdate
@@ -216,6 +218,42 @@ class SlideShapeMixin:
         self._presentation.update_shape(self.index, shape_id, updates)
         self._invalidate_shape_cache_if_present()
         self._invalidate_text_state_cache_if_present()
+
+    def add_mermaid(self, diagram: str, *, theme: str = "") -> tuple[int, int]:
+        r"""Render a Mermaid diagram onto this slide using the Go engine.
+
+        The diagram code is parsed and converted into native PowerPoint shapes
+        and connectors which are appended to the slide.
+
+        Args:
+            diagram: Mermaid diagram source code (e.g. ``"flowchart LR\nA-->B"``).
+            theme: Optional Mermaid theme name (reserved for future use).
+
+        Returns:
+            A ``(shape_count, connector_count)`` tuple indicating how many
+            shapes and connectors were added to the slide.
+
+        Example::
+
+            count, conns = slide.add_mermaid("flowchart LR\nA-->B-->C")
+        """
+        payload: dict[str, object] = {
+            "slide_index": self.index,
+            "diagram": diagram,
+        }
+        if theme:
+            payload["theme"] = theme
+        result = self._presentation.execute(ops.OP_ADD_MERMAID_SHAPE, payload)
+        self._invalidate_shape_cache_if_present()
+        shape_count = result.get("shape_count")
+        if not isinstance(shape_count, int):
+            msg = "bridge response shape_count must be an int"
+            raise TypeError(msg)
+        connector_count = result.get("connector_count")
+        if not isinstance(connector_count, int):
+            msg = "bridge response connector_count must be an int"
+            raise TypeError(msg)
+        return shape_count, connector_count
 
     def list_shapes(self) -> list[Shape]:
         """List shapes on the slide."""

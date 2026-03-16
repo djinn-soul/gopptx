@@ -2,8 +2,8 @@
 
 from .axis_series import ChartAxis, ChartSeries, ChartSeriesCollection
 from .collection import ChartCollection
-from .model import (
-    Chart,
+from .model import Chart
+from .model_proxies import (
     ChartLegend,
     ChartPlot,
     ChartPlots,

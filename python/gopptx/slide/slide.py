@@ -13,6 +13,7 @@ from .placeholders.placeholder_mixin import SlidePlaceholderMixin
 from .shapes.shape_batch_mixin import SlideShapeBatchMixin
 from .shapes.shape_mixin import SlideShapeMixin
 from .shapes.shape_proxy import ShapeCollection, ShapeProxy
+from .shapes.smartart_anim_mixin import SlideSmartArtAnimMixin
 from .tables.table_mixin import SlideTableMixin
 from .text.text_cache_mixin import SlideTextCacheMixin
 from .text.text_mixin import SlideTextMixin
@@ -82,6 +83,7 @@ class Slide(
     SlideTextCacheMixin,
     SlideTextMixin,
     SlideShapeBatchMixin,
+    SlideSmartArtAnimMixin,
     SlideShapeMixin,
 ):
     """Proxy object for a slide within a presentation."""

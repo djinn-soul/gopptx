@@ -19,8 +19,8 @@ func TestAnimationPresetSubtypeExtra(t *testing.T) {
 		{"Wipe Left", AnimationEntranceWipe, AnimationDirLeft, presetSubtypeFromTop},
 		{"Wipe Right", AnimationEntranceWipe, AnimationDirRight, presetSubtypeFromRight},
 
-		{"Split Out", AnimationEntranceSplit, AnimationDirOut, presetSubtypeSplitOut},
-		{"Split Default", AnimationEntranceSplit, "invalid", presetSubtypeSplitOut},
+		{"Split Out", AnimationEntranceSplit, AnimationDirOut, presetSubtypeFromRight},
+		{"Split Default", AnimationEntranceSplit, "invalid", presetSubtypeFromRight},
 
 		{"Other", AnimationEntranceFade, AnimationDirUp, 0},
 	}

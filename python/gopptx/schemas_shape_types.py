@@ -122,6 +122,14 @@ class ImageMetadata(TypedDict):
     hash: NotRequired[str]
 
 
+class SlideImageRef(TypedDict):
+    """Reference to an image embedded in a slide."""
+
+    Index: int
+    RelID: str
+    Target: str
+
+
 class ImageCrop(TypedDict, total=False):
     """Cropping offsets (0.0 to 1.0)."""
 

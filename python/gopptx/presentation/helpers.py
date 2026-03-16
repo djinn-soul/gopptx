@@ -26,6 +26,11 @@ class PresentationProtocol(ABC):
     _lock: object  # threading.RLock at runtime
     _comment_ref_cache: dict[int, tuple[int, int, int]]
 
+    @property
+    def handle(self) -> int | None:
+        """Return the opaque integer handle for this presentation instance."""
+        return self._handle
+
     @abstractmethod
     def execute(
         self, op: str, payload: dict[str, object] | None = None

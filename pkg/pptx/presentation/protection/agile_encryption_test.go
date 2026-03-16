@@ -18,6 +18,9 @@ func TestEncryptAgilePackage_WrapsIntoCFB(t *testing.T) {
 	zipPayload := buildMinimalPPTX(t)
 	out, err := EncryptAgilePackage(zipPayload, "Secret123!")
 	if err != nil {
+		if isPowerPointRuntimeUnavailable(err) {
+			t.Skipf("Agile encryption unavailable on this runtime: %v", err)
+		}
 		t.Fatalf("EncryptAgilePackage error: %v", err)
 	}
 
@@ -91,6 +94,15 @@ func normalizeStreamName(name string) string {
 	name = strings.ToLower(strings.TrimSpace(name))
 	name = strings.TrimRight(name, "\x00")
 	return name
+}
+
+func isPowerPointRuntimeUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "0x80CB900C") ||
+		strings.Contains(msg, "COMException")
 }
 
 func buildMinimalPPTX(t *testing.T) []byte {

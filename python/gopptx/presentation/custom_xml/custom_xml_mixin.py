@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from ... import ops
 from ..helpers import PresentationMixinBase
 
@@ -35,7 +37,7 @@ class PresentationCustomXMLMixin(PresentationMixinBase):
         if properties is not None:
             payload["properties"] = properties
         result = self.execute(ops.OP_ADD_CUSTOM_XML, payload)
-        return int(result.get("index", 0))
+        return int(cast("int", result.get("index", 0)))
 
     def list_custom_xml(self) -> list[dict[str, object]]:
         """Return all custom XML parts embedded in the presentation.
@@ -44,7 +46,7 @@ class PresentationCustomXMLMixin(PresentationMixinBase):
         """
         result = self.execute(ops.OP_LIST_CUSTOM_XML, {})
         items = result.get("custom_xml", [])
-        return list(items) if isinstance(items, list) else []
+        return cast("list[dict[str, object]]", items) if isinstance(items, list) else []
 
     def remove_custom_xml(self, index: int) -> None:
         """Remove a custom XML part by its index.

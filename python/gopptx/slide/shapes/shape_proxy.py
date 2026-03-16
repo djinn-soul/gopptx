@@ -7,149 +7,19 @@ from typing import TYPE_CHECKING, cast
 
 from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
+from .shape_format_proxies import (
+    _ShapeFillProxy,
+    _ShapeLineProxy,
+    _ShapeShadowProxy,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ...schemas import FillFormat, LineFormat, ShadowFormat, Shape, ShapeUpdate
+    from ...schemas import Shape, ShapeProps, ShapeUpdate
+    from ...shapes import ShapeBuilder
+    from ...text.run_builder import RunBuilder
     from ..slide import Slide
-
-
-class _ShapeFillProxy:
-    """Live fill proxy."""
-
-    def __init__(self, shape: ShapeProxy) -> None:
-        self._shape = shape
-
-    def _payload(self) -> FillFormat:
-        record = self._shape.shape_record()
-        raw = cast("object", record.get("fill", record.get("Fill", {})))
-        return cast("FillFormat", raw if raw is not None else {})
-
-    def _apply(self, payload: FillFormat) -> None:
-        self._shape.apply_update(cast("ShapeUpdate", {"fill": payload}))
-
-    @property
-    def solid_color(self) -> str | None:
-        payload = self._payload()
-        value = payload.get("solid")
-        return str(value) if isinstance(value, str) else None
-
-    @solid_color.setter
-    def solid_color(self, value: str | None) -> None:
-        if value is None:
-            self._apply(cast("FillFormat", {"background": True}))
-            return
-        self._apply(cast("FillFormat", {"solid": value}))
-
-    def background(self) -> None:
-        self._apply(cast("FillFormat", {"background": True}))
-
-
-class _ShapeLineProxy:
-    """Live line proxy."""
-
-    def __init__(self, shape: ShapeProxy) -> None:
-        self._shape = shape
-
-    def _payload(self) -> LineFormat:
-        record = self._shape.shape_record()
-        raw = cast("object", record.get("line", record.get("Line", {})))
-        return cast("LineFormat", raw if raw is not None else {})
-
-    def _apply(self, patch: dict[str, object]) -> None:
-        payload = dict(cast("dict[str, object]", self._payload()))
-        payload.update(patch)
-        self._shape.apply_update(cast("ShapeUpdate", {"line": payload}))
-
-    @property
-    def color(self) -> str | None:
-        value = self._payload().get("color")
-        return str(value) if isinstance(value, str) else None
-
-    @color.setter
-    def color(self, value: str) -> None:
-        self._apply({"color": value})
-
-    @property
-    def width(self) -> int | None:
-        value = self._payload().get("width_emu")
-        return int(value) if isinstance(value, int) else None
-
-    @width.setter
-    def width(self, value: int) -> None:
-        self._apply({"width_emu": value})
-
-    @property
-    def dash_style(self) -> str | None:
-        value = self._payload().get("dash_style")
-        return str(value) if isinstance(value, str) else None
-
-    @dash_style.setter
-    def dash_style(self, value: str) -> None:
-        self._apply({"dash_style": value})
-
-
-class _ShapeShadowProxy:
-    """Live shadow proxy."""
-
-    def __init__(self, shape: ShapeProxy) -> None:
-        self._shape = shape
-
-    def _payload(self) -> ShadowFormat:
-        record = self._shape.shape_record()
-        raw = cast("object", record.get("shadow", record.get("Shadow", {})))
-        return cast("ShadowFormat", raw if raw is not None else {})
-
-    def _apply(self, patch: dict[str, object]) -> None:
-        payload = dict(cast("dict[str, object]", self._payload()))
-        payload.update(patch)
-        self._shape.apply_update(cast("ShapeUpdate", {"shadow": payload}))
-
-    @property
-    def color(self) -> str | None:
-        value = self._payload().get("color")
-        return str(value) if isinstance(value, str) else None
-
-    @color.setter
-    def color(self, value: str) -> None:
-        self._apply({"color": value})
-
-    @property
-    def blur_radius(self) -> int | None:
-        value = self._payload().get("blur_emu")
-        return int(value) if isinstance(value, int) else None
-
-    @blur_radius.setter
-    def blur_radius(self, value: int) -> None:
-        self._apply({"blur_emu": value})
-
-    @property
-    def distance(self) -> int | None:
-        value = self._payload().get("distance_emu")
-        return int(value) if isinstance(value, int) else None
-
-    @distance.setter
-    def distance(self, value: int) -> None:
-        self._apply({"distance_emu": value})
-
-    @property
-    def angle(self) -> float | None:
-        value = self._payload().get("angle_deg")
-        return float(value) if isinstance(value, int | float) else None
-
-    @angle.setter
-    def angle(self, value: float) -> None:
-        self._apply({"angle_deg": value})
-
-    @property
-    def inherit(self) -> bool | None:
-        value = self._payload().get("inherit")
-        return bool(value) if isinstance(value, bool) else None
-
-    @inherit.setter
-    def inherit(self, value: bool) -> None:
-        self._apply({"inherit": value})
 
 
 class ShapeProxy:
@@ -274,6 +144,22 @@ class ShapeProxy:
     def height(self, value: int) -> None:
         self.apply_update(cast("ShapeUpdate", {"h": value}))
 
+    def set_text_runs(self, builders: list[RunBuilder]) -> None:
+        """Replace the shape's text runs from a list of :class:`~gopptx.text.RunBuilder` instances.
+
+        Convenience wrapper that delegates to :meth:`text_frame.set_runs`.
+
+        Example::
+
+            from gopptx.text import RunBuilder
+
+            proxy.set_text_runs([
+                RunBuilder("Hello").bold(),
+                RunBuilder(" world").italic(),
+            ])
+        """
+        self.text_frame.set_runs(builders)
+
     @property
     def has_table(self) -> bool:
         """True if this shape is a table."""
@@ -320,6 +206,24 @@ class ShapeCollection:
         """Iterate shape proxies."""
         for shape_id in self._shape_ids():
             yield self._slide.shape(shape_id)
+
+    def add(self, builder: ShapeBuilder) -> ShapeProxy:
+        """Add a shape from a :class:`~gopptx.shapes.ShapeBuilder` and return its proxy.
+
+        Example::
+
+            proxy = slide.shapes.add(
+                ShapeBuilder.rectangle(1.0, 1.0, 4.0, 2.0)
+                .with_text("Hello")
+                .with_fill("4472C4")
+            )
+        """
+        shape_id = self._slide.add_shape(
+            builder.shape_type,
+            builder.bounds,
+            **cast("dict[str, ShapeProps]", builder.to_kwargs()),
+        )
+        return self._slide.shape(shape_id)
 
 
 ShapeFillProxy = _ShapeFillProxy

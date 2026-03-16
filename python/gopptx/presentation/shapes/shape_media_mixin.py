@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import os
 from typing import TYPE_CHECKING, cast
 
@@ -9,7 +10,7 @@ from ... import ops
 from .shape_payload_mixin import PresentationShapePayloadMixin
 
 if TYPE_CHECKING:
-    from ...schemas import ImageMetadata
+    from ...schemas import ImageMetadata, SlideImageRef
 
 
 class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
@@ -164,3 +165,66 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
 
         result = self.execute(ops.OP_ADD_OLE_OBJECT, payload)
         return int(cast("int", result.get("shape_id", -1)))
+
+    def list_slide_images(self, slide_index: int) -> list[SlideImageRef]:
+        """List all images embedded in a slide.
+
+        Args:
+            slide_index: Zero-based index of the slide.
+
+        Returns:
+            List of SlideImageRef dicts with keys: index, rel_id, target.
+        """
+        result = self.execute(ops.OP_LIST_SLIDE_IMAGES, {"slide_index": slide_index})
+        return cast("list[SlideImageRef]", result.get("images", []))
+
+    def swap_image_by_index(
+        self,
+        slide_index: int,
+        image_index: int,
+        data: bytes,
+        img_format: str,
+    ) -> None:
+        """Replace an image at a given position within a slide.
+
+        Args:
+            slide_index: Zero-based slide index.
+            image_index: Zero-based position of the image within the slide's
+                image list (as returned by list_slide_images).
+            data: Raw image bytes.
+            img_format: Image format string (e.g. 'png', 'jpeg').
+        """
+        self.execute(
+            ops.OP_SWAP_IMAGE_BY_INDEX,
+            {
+                "slide_index": slide_index,
+                "image_index": image_index,
+                "data": base64.b64encode(data).decode(),
+                "format": img_format,
+            },
+        )
+
+    def swap_image_by_rel_id(
+        self,
+        slide_index: int,
+        rel_id: str,
+        data: bytes,
+        img_format: str,
+    ) -> None:
+        """Replace an image identified by its relationship ID.
+
+        Args:
+            slide_index: Zero-based slide index.
+            rel_id: Relationship ID of the image to replace (e.g. 'rId3').
+            data: Raw image bytes.
+            img_format: Image format string (e.g. 'png', 'jpeg').
+        """
+        self.execute(
+            ops.OP_SWAP_IMAGE_BY_REL_ID,
+            {
+                "slide_index": slide_index,
+                "rel_id": rel_id,
+                "data": base64.b64encode(data).decode(),
+                "format": img_format,
+            },
+        )

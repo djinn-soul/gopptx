@@ -101,10 +101,47 @@ const (
 	OpAddVideo                = "add_video"
 	OpAddAudio                = "add_audio"
 	OpAddOLEObject            = "add_ole_object"
+	OpMarkdownToSlides        = "markdown_to_slides"
+	OpURLFetchToSlides        = "url_fetch_to_slides"
+	OpAddMermaidShape         = "add_mermaid_shape"
+	OpAddSmartArt             = "add_smartart"
+	OpAddAnimation            = "add_animation"
+	OpSetSlideTransition      = "set_slide_transition"
+
+	// OpUpdateSmartArt, OpSetSlideBackground, OpSetSlideHeaderFooter, OpGetHandoutMaster,
+	// OpUpdateHandoutMaster, and OpHasDigitalSignature extend parity with the Go API.
+	OpUpdateSmartArt       = "update_smartart"
+	OpSetSlideBackground   = "set_slide_background"
+	OpSetSlideHeaderFooter = "set_slide_header_footer"
+	OpGetHandoutMaster     = "get_handout_master"
+	OpUpdateHandoutMaster  = "update_handout_master"
+	OpHasDigitalSignature  = "has_digital_signature"
+
+	// OpDuplicateSlideAfter and subsequent constants bridge PresentationEditor methods that had no JSON op.
+	OpDuplicateSlideAfter   = "duplicate_slide_after"
+	OpMoveShapeToIndex      = "move_shape_to_index"
+	OpValidate              = "validate"
+	OpRepair                = "repair"
+	OpListSlideImages       = "list_slide_images"
+	OpSwapImageByIndex      = "swap_image_by_index"
+	OpSwapImageByRelID      = "swap_image_by_rel_id"
+	OpGetLayoutShapes       = "get_layout_shapes"
+	OpGetMasterShapes       = "get_master_shapes"
+	OpGetLayoutPlaceholders = "get_layout_placeholders"
+	OpGetMasterPlaceholders = "get_master_placeholders"
+	OpSetGlobalThemePreset  = "set_global_theme_preset"
+	OpSetThemeColorScheme   = "set_theme_color_scheme"
+	OpSetThemeFontScheme    = "set_theme_font_scheme"
+	OpGetThemeInventory     = "get_theme_inventory"
+	OpListNotesShapes       = "list_notes_shapes"
+	OpListNotesPlaceholders = "list_notes_placeholders"
+	OpUpdateNotesMaster     = "update_notes_master"
+	OpMergeFromEditor       = "merge_from_editor"
 )
 
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.
-func SupportedOps() []string {
+// supportedSlideAndMetaOps returns ops for slide management, metadata, charts, and layout.
+func supportedSlideAndMetaOps() []string {
 	return []string{
 		OpBatchExecute,
 		OpSlideCount,
@@ -113,11 +150,18 @@ func SupportedOps() []string {
 		OpMoveSlide,
 		OpDuplicateSlide,
 		OpGetMetadata,
-		OpUpdateChartData,
-		OpUpdateChartDataBatch,
-		OpUpdateChartFormatting,
-		OpGetChartState,
-		OpListSlideCharts,
+		OpListSlides,
+		OpUpdateSlide,
+		OpSetSlideTitle,
+		OpMergeFromFile,
+		OpGetCoreProperties,
+		OpSetCoreProperties,
+		OpApplyTheme,
+		OpSetSlideSize,
+		OpAddSection,
+		OpRemoveSection,
+		OpRenameSection,
+		OpGetSections,
 		OpGetSlideLayoutRef,
 		OpListSlideLayouts,
 		OpListSlideMasters,
@@ -128,19 +172,29 @@ func SupportedOps() []string {
 		OpRemoveSlideMaster,
 		OpAddSlideLayout,
 		OpRemoveSlideLayout,
-		OpAddSection,
-		OpRemoveSection,
-		OpRenameSection,
-		OpGetSections,
-		OpGetCoreProperties,
-		OpSetCoreProperties,
-		OpApplyTheme,
-		OpSetSlideSize,
-		OpSetSlideTitle,
-		OpMergeFromFile,
-		OpUpdateSlide,
+		OpUpdateChartData,
+		OpUpdateChartDataBatch,
+		OpUpdateChartFormatting,
+		OpGetChartState,
+		OpListSlideCharts,
 		OpAddChart,
-		OpListSlides,
+		OpDuplicateSlideAfter,
+		OpValidate,
+		OpRepair,
+		OpGetLayoutShapes,
+		OpGetMasterShapes,
+		OpGetLayoutPlaceholders,
+		OpGetMasterPlaceholders,
+		OpSetGlobalThemePreset,
+		OpSetThemeColorScheme,
+		OpSetThemeFontScheme,
+		OpGetThemeInventory,
+	}
+}
+
+// supportedContentOps returns ops for shapes, text, tables, notes, media, and export.
+func supportedContentOps() []string {
+	return []string{
 		OpFindAndReplace,
 		OpSearchShapes,
 		OpGetAuthors,
@@ -203,5 +257,32 @@ func SupportedOps() []string {
 		OpAddVideo,
 		OpAddAudio,
 		OpAddOLEObject,
+		OpMarkdownToSlides,
+		OpURLFetchToSlides,
+		OpAddMermaidShape,
+		OpAddSmartArt,
+		OpAddAnimation,
+		OpSetSlideTransition,
+		OpMoveShapeToIndex,
+		OpListSlideImages,
+		OpSwapImageByIndex,
+		OpSwapImageByRelID,
+		OpListNotesShapes,
+		OpListNotesPlaceholders,
+		OpUpdateNotesMaster,
+		OpMergeFromEditor,
+		OpUpdateSmartArt,
+		OpSetSlideBackground,
+		OpSetSlideHeaderFooter,
+		OpGetHandoutMaster,
+		OpUpdateHandoutMaster,
+		OpHasDigitalSignature,
 	}
+}
+
+// SupportedOps returns the full list of operation codes handled by the bridge.
+func SupportedOps() []string {
+	ops := supportedSlideAndMetaOps()
+	ops = append(ops, supportedContentOps()...)
+	return ops
 }

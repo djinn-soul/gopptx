@@ -169,6 +169,15 @@ class PresentationSlidesMixin(
         self.invalidate_cache()
         return int(cast("int", result.get("new_index", -1)))
 
+    def duplicate_slide_after(self, index: int) -> int:
+        """Duplicate slide at *index* and insert it immediately after the original.
+
+        Returns the zero-based index of the newly inserted slide.
+        """
+        result = self.execute(ops.OP_DUPLICATE_SLIDE_AFTER, {"slide_index": index})
+        self.invalidate_cache()
+        return int(cast("int", result.get("new_index", -1)))
+
     def update_slide(
         self,
         index: int,
@@ -206,6 +215,11 @@ class PresentationSlidesMixin(
         self.execute(ops.OP_MERGE_FROM_FILE, {"path": path})
         self.invalidate_cache()
 
+    def merge_from_editor(self, other: PresentationProtocol) -> None:
+        """Merge all slides from *other* into this presentation."""
+        self.execute(ops.OP_MERGE_FROM_EDITOR, {"source_handle": other.handle})
+        self.invalidate_cache()
+
     def add_title_slide(self, title: str) -> Slide:
         """Add a title slide to the presentation.
 
@@ -228,6 +242,47 @@ class PresentationSlidesMixin(
             The newly created slide.
         """
         return self.add_slide(title, layout="title_and_content", bullets=bullets)
+
+    def add_slide_from_markdown(self, markdown: str, *, layout: str = "") -> int:
+        """Append slides generated from a Markdown string.
+
+        Converts the Markdown document into one or more slides using the Go
+        markdown engine and appends them to the presentation.
+
+        Args:
+            markdown: Markdown content to convert.
+            layout: Optional layout name to apply to all generated slides.
+
+        Returns:
+            Zero-based index of the first slide that was added, or -1 when no
+            slides were produced (empty markdown).
+        """
+        payload: dict[str, object] = {"markdown": markdown}
+        if layout:
+            payload["layout"] = layout
+        result = self.execute(ops.OP_MARKDOWN_TO_SLIDES, payload)
+        self.invalidate_cache()
+        return int(cast("int", result.get("first_index", -1)))
+
+    def add_slide_from_url(self, url: str, *, layout: str = "") -> int:
+        """Fetch a web page and append slides generated from its content.
+
+        Uses the Go URL-fetch engine to download the page, parse it, and
+        convert it into one or more slides that are appended to the
+        presentation.
+
+        Args:
+            url: URL of the web page to fetch.
+            layout: Optional layout name to apply to all generated slides.
+
+        Returns:
+            Zero-based index of the first slide that was added.
+        """
+        payload: dict[str, object] = {"url": url}
+        result = self.execute(ops.OP_URL_FETCH_TO_SLIDES, payload)
+        self.invalidate_cache()
+        _ = layout  # layout not yet forwarded for URL fetch
+        return int(cast("int", result.get("first_index", -1)))
 
     def __getitem__(self, index: int | slice) -> Slide | list[Slide]:
         """Get a slide by index or slice."""

@@ -17,6 +17,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editorexport"
+	"github.com/djinn-soul/gopptx/pkg/pptx/editorurlfetch"
 )
 
 //nolint:gochecknoglobals // global bridge state
@@ -50,6 +51,10 @@ func deck_global_error() *C.char {
 // main is required for cgo build but not used for library.
 func init() {
 	editorexport.Register()
+	editorurlfetch.Register()
+	editor.RegisterEditorLookupFn(func(h int64) (*editor.PresentationEditor, bool) {
+		return editor.GetEditor(deckRegistry, editor.Handle(h))
+	})
 }
 
 func main() {}

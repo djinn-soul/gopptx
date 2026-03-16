@@ -50,6 +50,27 @@ class PresentationPropertiesMixin(PresentationMixinBase):
         """Mark the presentation as final."""
         self.execute(ops.OP_SET_MARK_AS_FINAL, {"final": final})
 
+    def validate(self) -> list[dict[str, object]]:
+        """Run structural validation and return a list of issues.
+
+        Returns:
+            List of issue dicts with keys: code, severity, path, description,
+            repairable.
+        """
+        result = self.execute(ops.OP_VALIDATE, {})
+        return cast("list[dict[str, object]]", result.get("issues", []))
+
+    def repair(self) -> dict[str, object]:
+        """Attempt to automatically repair structural issues.
+
+        Returns:
+            Dict with keys: repaired_count, unrepaired_count, repaired,
+            unrepaired.
+        """
+        result = self.execute(ops.OP_REPAIR, {})
+        self.invalidate_cache()
+        return result
+
     @property
     def author(self) -> str:
         """The author/creator of the presentation (python-pptx: author)."""

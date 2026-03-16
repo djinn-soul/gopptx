@@ -99,9 +99,8 @@ type Animation struct {
 	AutoReverse bool
 }
 
-const defaultAnimationDurationMS = 500
-
 const (
+	defaultAnimationDurationMS   uint32 = 500
 	presetIDAppear               uint32 = 1
 	presetIDFly                  uint32 = 2
 	presetIDFade                 uint32 = 10
@@ -139,8 +138,6 @@ const (
 	presetSubtypeFromBottomRight        = 6
 	presetSubtypeFromBottomLeft         = 7
 	presetSubtypeFromBottom             = 8
-	presetSubtypeSplitIn                = 1
-	presetSubtypeSplitOut               = 2
 )
 
 // NewAnimation creates a new animation with default settings (500ms duration, OnClick).
@@ -331,8 +328,7 @@ func (a Animation) PresetClass() string {
 func (a Animation) XML(seqID int, actualShapeID int) string {
 	repeatAttr := ""
 	if a.RepeatCount > 0 {
-		const repeatMultiplier = 1000
-		repeatAttr = fmt.Sprintf(` repeatCount="%d"`, a.RepeatCount*repeatMultiplier)
+		repeatAttr = fmt.Sprintf(` repeatCount="%d"`, a.RepeatCount*1000) //nolint:mnd // OOXML scale
 	}
 	reverseAttr := ""
 	if a.AutoReverse {
@@ -413,11 +409,11 @@ func (a Animation) PresetSubtype() int {
 	case AnimationEntranceSplit:
 		switch a.Direction {
 		case AnimationDirIn:
-			return presetSubtypeSplitIn
+			return presetSubtypeFromTop
 		case AnimationDirOut:
-			return presetSubtypeSplitOut
+			return presetSubtypeFromRight
 		default:
-			return presetSubtypeSplitOut
+			return presetSubtypeFromRight
 		}
 	default:
 		return 0

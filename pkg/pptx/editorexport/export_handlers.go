@@ -58,17 +58,17 @@ func handleExportPDF(e *editor.PresentationEditor, payload json.RawMessage) (any
 		return nil, err
 	}
 
-	absOut, err := filepath.Abs(outputPath)
+	outPath, err := filepath.Abs(outputPath)
 	if err != nil {
 		return nil, err
 	}
 
 	opts := export.PDFOptions{Driver: driver}
-	if err = export.PDFFromFileWithOptions(tmpPath, absOut, opts); err != nil {
+	if err = export.PDFFromFileWithOptions(tmpPath, outPath, opts); err != nil {
 		return nil, err
 	}
 
-	return map[string]string{"output_path": absOut}, nil
+	return map[string]string{"output_path": outPath}, nil
 }
 
 func handleExportHTML(e *editor.PresentationEditor, payload json.RawMessage) (any, error) {
@@ -116,14 +116,14 @@ func handleExportHTML(e *editor.PresentationEditor, payload json.RawMessage) (an
 	htmlStr := export.HTMLWithOptions(title, slides, opts)
 
 	if outputPath != "" {
-		absOut, absErr := filepath.Abs(outputPath)
+		outPath, absErr := filepath.Abs(outputPath)
 		if absErr != nil {
 			return nil, absErr
 		}
-		if writeErr := os.WriteFile(absOut, []byte(htmlStr), 0o600); writeErr != nil {
+		if writeErr := os.WriteFile(outPath, []byte(htmlStr), 0o600); writeErr != nil {
 			return nil, writeErr
 		}
-		return map[string]string{"output_path": absOut}, nil
+		return map[string]string{"output_path": outPath}, nil
 	}
 
 	return map[string]string{"html": htmlStr}, nil

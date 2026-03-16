@@ -65,3 +65,66 @@ class PresentationThemeMixin(PresentationMixinBase):
         """Set the slide size."""
         self.execute(ops.OP_SET_SLIDE_SIZE, {"width": width, "height": height})
         self.invalidate_cache()
+
+    def set_global_theme_preset(self, name: str) -> None:
+        """Apply a named built-in theme preset (e.g. 'facet', 'ion', 'office')."""
+        self.execute(ops.OP_SET_GLOBAL_THEME_PRESET, {"name": name})
+        self.invalidate_cache()
+
+    def set_theme_font_scheme(self, major: str, minor: str) -> None:
+        """Update major/minor latin typefaces across all theme parts."""
+        self.execute(ops.OP_SET_THEME_FONT_SCHEME, {"major": major, "minor": minor})
+
+    def set_theme_color_scheme(self, **colors: str) -> None:
+        """Update one or more standard theme color slots.
+
+        Args:
+            **colors: Keyword arguments mapping color slot names to hex values.
+                Valid keys: dk1, lt1, dk2, lt2, accent1..accent6, hlink, fol_hlink.
+        """
+        valid_keys = {
+            "dk1",
+            "lt1",
+            "dk2",
+            "lt2",
+            "accent1",
+            "accent2",
+            "accent3",
+            "accent4",
+            "accent5",
+            "accent6",
+            "hlink",
+            "fol_hlink",
+        }
+        payload: dict[str, object] = {
+            k: v for k, v in colors.items() if k in valid_keys
+        }
+        self.execute(ops.OP_SET_THEME_COLOR_SCHEME, payload)
+
+    def get_theme_inventory(self) -> dict[str, object]:
+        """Return all theme parts and master/theme bindings in the package."""
+        return self.execute(ops.OP_GET_THEME_INVENTORY, {})
+
+    def get_layout_shapes(self, layout_part: str) -> list[str]:
+        """Return the shape names defined in a slide layout."""
+        result = self.execute(ops.OP_GET_LAYOUT_SHAPES, {"layout_part": layout_part})
+        return cast("list[str]", result.get("shapes", []))
+
+    def get_master_shapes(self, master_part: str) -> list[str]:
+        """Return the shape names defined in a slide master."""
+        result = self.execute(ops.OP_GET_MASTER_SHAPES, {"master_part": master_part})
+        return cast("list[str]", result.get("shapes", []))
+
+    def get_layout_placeholders(self, layout_part: str) -> list[dict[str, object]]:
+        """Return placeholder metadata for a slide layout."""
+        result = self.execute(
+            ops.OP_GET_LAYOUT_PLACEHOLDERS, {"layout_part": layout_part}
+        )
+        return cast("list[dict[str, object]]", result.get("placeholders", []))
+
+    def get_master_placeholders(self, master_part: str) -> list[dict[str, object]]:
+        """Return placeholder metadata for a slide master."""
+        result = self.execute(
+            ops.OP_GET_MASTER_PLACEHOLDERS, {"master_part": master_part}
+        )
+        return cast("list[dict[str, object]]", result.get("placeholders", []))

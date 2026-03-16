@@ -204,6 +204,25 @@ class PresentationShapeMixin(
             {"slide_index": slide_index, "shape_id": shape_id},
         )
 
+    def move_shape_to_index(
+        self, slide_index: int, shape_id: int, target_index: int
+    ) -> None:
+        """Move a shape to a specific z-index within a slide.
+
+        Args:
+            slide_index: Zero-based slide index.
+            shape_id: ID of the shape to reorder.
+            target_index: Zero-based target z-order position.
+        """
+        self.execute(
+            ops.OP_MOVE_SHAPE_TO_INDEX,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "target_index": target_index,
+            },
+        )
+
     def update_shape(
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None:

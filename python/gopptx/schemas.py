@@ -42,6 +42,7 @@ SoftEdgeFormat = _schemas_shape_types.SoftEdgeFormat
 ReflectionFormat = _schemas_shape_types.ReflectionFormat
 ShapeProps = _schemas_shape_types.ShapeProps
 ImageMetadata = _schemas_shape_types.ImageMetadata
+SlideImageRef = _schemas_shape_types.SlideImageRef
 ImageCrop = _schemas_shape_types.ImageCrop
 Hyperlink = _schemas_shape_types.Hyperlink
 TextRun = _schemas_shape_types.TextRun

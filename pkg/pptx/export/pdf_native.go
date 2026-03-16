@@ -110,7 +110,7 @@ func renderNativePDFSlideShapes(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 
 func renderNativePDFSlideAssets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	for _, img := range slide.Images {
-		_ = renderPDFImage(pdf, img)
+		_ = renderPDFImageWithEffects(pdf, img)
 	}
 	if slide.Table != nil {
 		renderPDFTable(pdf, *slide.Table)
@@ -296,9 +296,4 @@ func drawPDFGeometry(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64, style
 	default:
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
 	}
-}
-
-// renderPDFImage embeds a raster image into the PDF at the given EMU position.
-func renderPDFImage(pdf *gopdf.GoPdf, img shapes.Image) error {
-	return renderPDFImageWithEffects(pdf, img)
 }

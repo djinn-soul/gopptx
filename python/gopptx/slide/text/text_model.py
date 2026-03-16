@@ -11,6 +11,8 @@ from .text_run import Run, RunHyperlink
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from ...text.run_builder import RunBuilder
+
 
 class ShapeTextFrame(BaseShapeTextFrame):
     """Public text-frame facade with paragraph collection access."""
@@ -26,6 +28,24 @@ class ShapeTextFrame(BaseShapeTextFrame):
         if self._paragraphs is None:
             self._paragraphs = _ShapeParagraphCollection(self)
         return self._paragraphs
+
+    def set_runs(self, builders: list[RunBuilder]) -> None:
+        """Replace all runs from a list of :class:`~gopptx.text.RunBuilder` instances.
+
+        Each builder is converted to a ``TextRun`` payload dict and the full
+        run list is written to the bridge in a single round-trip.
+
+        Example::
+
+            from gopptx.text import RunBuilder
+
+            shape.text_frame.set_runs([
+                RunBuilder("Hello ").bold().color("FF0000"),
+                RunBuilder("World").italic(),
+            ])
+        """
+        payloads = [b.to_payload() for b in builders]
+        self.replace_runs(payloads)
 
 
 class _ShapeRunProxy:
