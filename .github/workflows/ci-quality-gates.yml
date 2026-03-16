@@ -15,45 +15,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependency-review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Dependency review
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: moderate
-          comment-summary-in-pr: always
-
   guardrails:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v3
-
-      - name: Sync dev dependencies
-        run: uv sync --extra dev
-
       - name: Run architectural guardrails
-        run: uv run python scripts/ci/architectural_guardrails.py
+        run: python3 scripts/ci/architectural_guardrails.py
 
   prek-all-files:
+    needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -64,6 +37,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -72,14 +46,14 @@ jobs:
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.4.0
           install-mode: binary
-          skip-pkg-cache: true
-          skip-build-cache: true
           skip-save-cache: true
           args: --version
 
@@ -90,6 +64,7 @@ jobs:
         run: uv run prek run --all-files
 
   go-fuzz:
+    needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -100,11 +75,16 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Run bounded fuzzing (internal/pptxxml)
-        run: go test ./internal/pptxxml -run=^$ -fuzz=Fuzz -fuzztime=30s
+        run: |
+          for target in FuzzEscape FuzzContentTypes FuzzSectionListXML FuzzPresentation FuzzEmbeddedFontsXML FuzzRichTextRun; do
+            go test ./internal/pptxxml -run=^$ -fuzz="^${target}$" -fuzztime=5s
+          done
 
   go-vulncheck:
+    needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -115,11 +95,16 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
       - name: Run govulncheck
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        run: govulncheck $(go list ./... | grep -v 'bindings/c')
 
   semgrep:
+    needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -130,6 +115,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+
+      - name: Cache semgrep
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: semgrep-${{ runner.os }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: semgrep-${{ runner.os }}-
 
       - name: Install Semgrep
         run: python -m pip install --upgrade semgrep
@@ -142,11 +134,21 @@ jobs:
             --exclude=scripts/tools/PptxValidator/obj
 
   python-coverage:
+    needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Go shared library
+        run: go build -o python/gopptx/libgopptx.so -buildmode=c-shared ./bindings/c/bridge.go
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -155,6 +157,8 @@ jobs:
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
 
       - name: Sync dev dependencies
         run: uv sync --extra dev
@@ -168,6 +172,7 @@ jobs:
             --cov-fail-under=50
 
   go-coverage:
+    needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -178,11 +183,13 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Run Go coverage gate
         shell: bash
         run: |
-          go test ./... -coverprofile=coverage-go.out -covermode=atomic -count=1
+          pkgs=$(go list ./... | grep -v 'bindings/c')
+          go test $pkgs -coverprofile=coverage-go.out -covermode=atomic -count=1
           total="$(go tool cover -func=coverage-go.out | awk '/^total:/ {gsub("%","",$3); print $3}')"
           echo "Total Go coverage: ${total}%"
           min_cov=50

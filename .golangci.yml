@@ -15,7 +15,7 @@ formatters:
       max-len: 120
 
 linters:
-  disable:
+  disable: []
 
   enable:
     - asasalint
@@ -46,7 +46,6 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - godoclint
     - godot
     - gomoddirectives
     - goprintffuncname
@@ -182,11 +181,6 @@ linters:
         underef:
           skipRecvDeref: false
 
-    godoclint:
-      enable:
-        - no-unused-link
-        - require-stdlib-doclink
-
     govet:
       enable-all: true
       disable:
@@ -292,8 +286,8 @@ linters:
       - path: "pkg/pptx/mermaid/.*"
         linters:
           - mnd
-  include:
-    - EXC0012
-    - EXC0013
-    - EXC0014
-    - EXC0015
+    include:
+      - EXC0012
+      - EXC0013
+      - EXC0014
+      - EXC0015

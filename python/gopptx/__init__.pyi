@@ -1,4 +1,4 @@
-from .api import GopptxError, Presentation, Slide
+from .api import GopptxError, Presentation, PresentationBuilder, Slide
 from .constants import (
     ALIGN_CENTER,
     ALIGN_JUSTIFY,
@@ -62,6 +62,7 @@ from .schemas import (
     TableCellInfo,
     TableInfo,
 )
+from .shapes import ShapeBuilder
 from .slide import (
     CategoryChartData,
     CategorySeries,
@@ -87,6 +88,7 @@ from .slide import (
     XySeries,
 )
 from .slide.tables.table import Cell, Table
+from .text import RunBuilder
 
 __all__ = (
     "ALIGN_CENTER",
@@ -140,10 +142,13 @@ __all__ = (
     "GopptxError",
     "ParagraphProps",
     "Presentation",
+    "PresentationBuilder",
     "PresentationMetadata",
     "Run",
+    "RunBuilder",
     "RunHyperlink",
     "Shape",
+    "ShapeBuilder",
     "ShapeCollection",
     "ShapeProps",
     "ShapeProxy",
