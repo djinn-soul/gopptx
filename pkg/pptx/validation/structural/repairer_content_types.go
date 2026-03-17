@@ -71,7 +71,7 @@ func (r *Repairer) generateContentTypes() string {
 	sb.WriteString("\n")
 
 	for _, p := range r.modifier.Keys() {
-		if strings.HasSuffix(p, ".rels") || p == "[Content_Types].xml" {
+		if strings.HasSuffix(p, ".rels") || p == contentTypesPath {
 			continue
 		}
 		contentType := r.inferContentType(p)

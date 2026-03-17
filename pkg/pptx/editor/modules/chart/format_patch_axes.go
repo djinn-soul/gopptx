@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	axisTickPosLow   = "low"
-	axisCrossesAuto  = "autoZero"
+	axisTickPosLow  = "low"
+	axisCrossesAuto = "autoZero"
 )
 
 func validateAxisTickLabelPosition(field string, value *string) error {
