@@ -62,7 +62,7 @@ jobs:
           version: v2.8.0
           install-mode: binary
           skip-save-cache: true
-          args: --version
+          skip-run: true
 
       - name: Sync dev dependencies
         run: uv sync --extra dev
