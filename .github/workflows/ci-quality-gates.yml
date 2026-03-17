@@ -56,13 +56,12 @@ jobs:
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: pre-commit-${{ runner.os }}-
 
-      - name: Install golangci-lint
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.8.0
           install-mode: binary
           skip-save-cache: true
-          skip-run: true
 
       - name: Sync dev dependencies
         run: uv sync --extra dev
