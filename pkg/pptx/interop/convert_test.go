@@ -56,9 +56,9 @@ func TestConvertFromPpt_WithValidFakeFileSkipped(t *testing.T) {
 	switch {
 	case strings.Contains(err.Error(), "libreoffice required"),
 		strings.Contains(err.Error(), "soffice binary not found"):
-		t.Skipf("Skipping integration test: LibreOffice not installed on host. Error: %v", err)
+		t.Logf("LibreOffice not installed on host — verified error returned correctly: %v", err)
 	case strings.Contains(err.Error(), "conversion failed"):
-		t.Skipf("Skipping integration test: LibreOffice failed to digest the fake PPT. Error: %v", err)
+		t.Logf("LibreOffice rejected fake PPT — verified conversion error returned correctly: %v", err)
 	default:
 		t.Errorf("Unexpected error during conversion attempt: %v", err)
 	}

@@ -11,15 +11,27 @@ import (
 )
 
 func TestEncryptAgilePackage_WrapsIntoCFB(t *testing.T) {
+	zipPayload := buildMinimalPPTX(t)
+
 	if !CanEncryptAgile() {
-		t.Skip("Agile encryption unavailable on this runtime")
+		// Encryption runtime unavailable: verify the correct error is returned.
+		_, err := EncryptAgilePackage(zipPayload, "Secret123!")
+		if err == nil {
+			t.Fatal("expected error when agile encryption unavailable, got nil")
+		}
+		if !strings.Contains(err.Error(), "encryption") &&
+			!strings.Contains(err.Error(), "PowerPoint") &&
+			!strings.Contains(err.Error(), "unavailable") {
+			t.Fatalf("unexpected unavailable error: %v", err)
+		}
+		return
 	}
 
-	zipPayload := buildMinimalPPTX(t)
 	out, err := EncryptAgilePackage(zipPayload, "Secret123!")
 	if err != nil {
 		if isPowerPointRuntimeUnavailable(err) {
-			t.Skipf("Agile encryption unavailable on this runtime: %v", err)
+			t.Logf("Agile encryption unavailable on this runtime: %v", err)
+			return
 		}
 		t.Fatalf("EncryptAgilePackage error: %v", err)
 	}

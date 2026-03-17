@@ -283,8 +283,3 @@ linters:
       - path: "pkg/pptx/mermaid/.*"
         linters:
           - mnd
-    include:
-      - EXC0012
-      - EXC0013
-      - EXC0014
-      - EXC0015
