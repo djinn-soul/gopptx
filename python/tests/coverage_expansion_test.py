@@ -1,5 +1,6 @@
 """Coverage-expansion tests for runtime, batch, and helper behaviors."""
 
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -13,9 +14,21 @@ class TestCoverageExpansion(unittest.TestCase):
     """Exercise lower-traffic API paths for regression coverage."""
 
     def setUp(self) -> None:
-        """Prepare a stable sample deck path for all test cases."""
-        project_root = Path(__file__).resolve().parents[2]
-        self.test_pptx = str(project_root / "testdata" / "simple.pptx")
+        """Generate a temporary PPTX fixture for each test."""
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.test_pptx = str(Path(self._tmpdir.name) / "simple.pptx")
+        with Presentation.new("Simple Test Deck") as pres:
+            pres.add_slide(
+                "Slide One",
+                layout="title_and_content",
+                bullets=["Bullet A", "Bullet B"],
+            )
+            pres.add_slide("Slide Two", layout="title_only")
+            pres.save(self.test_pptx)
+
+    def tearDown(self) -> None:
+        """Clean up the temporary directory."""
+        self._tmpdir.cleanup()
 
     def test_runtime_unopened_errors(self) -> None:
         """Unopened presentation raises consistently for runtime operations."""

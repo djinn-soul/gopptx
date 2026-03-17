@@ -5,15 +5,6 @@ from gopptx.presentation.presentation import Presentation
 from gopptx.slide.chart.data import CategoryChartData, XyChartData
 from gopptx.slide.placeholders.placeholder import PlaceholderFormat
 
-project_root = pathlib.Path(__file__).parent.parent.parent.resolve()
-
-
-@pytest.fixture
-def presentation() -> Presentation:
-    p = Presentation()
-    p.open(str(project_root / "testdata" / "placeholders.pptx"))
-    return p
-
 
 def test_placeholder_format_props():
     pf = PlaceholderFormat("body", 10)
@@ -31,30 +22,38 @@ def test_insert_text_style_aliases(presentation: Presentation):
     )
 
 
-def test_insert_chart_with_builders(presentation: Presentation):
-    slide = presentation.slides[0]
-    # Find a placeholder that supports charts (obj or body or chart)
-    ph = next(
-        (
-            p
-            for p in slide.placeholders
-            if p.placeholder_format.type in {"body", "obj", "chart"}
-        ),
-        None,
-    )
+def test_insert_chart_with_builders(presentation: Presentation, tmp_path):
+    # Add a fresh slide for each chart type to avoid clobbering the placeholder
+    def _body_ph(pres: Presentation, slide_idx: int):
+        slide = pres.slides[slide_idx]
+        return next(
+            (
+                p
+                for p in slide.placeholders
+                if p.placeholder_format.type in {"body", "obj", "chart"}
+            ),
+            None,
+        )
+
+    # CategoryChartData — use the existing slide
+    ph = _body_ph(presentation, 0)
     if ph is None:
         pytest.skip("No suitable placeholder for chart in testdata")
-
-    # CategoryChartData
     cat_data = CategoryChartData()
     cat_data.add_category("C1")
     cat_data.add_series("S1", [1.0])
     ph.insert_chart("bar", cat_data)
 
-    # XyChartData
+    # XyChartData — add a fresh slide so the body placeholder is intact
+    presentation.add_slide(
+        "Chart Slide 2", layout="title_and_content", bullets=["placeholder"]
+    )
+    xy_ph = _body_ph(presentation, presentation.slide_count - 1)
+    if xy_ph is None:
+        pytest.skip("No body placeholder on newly added slide")
     xy_data = XyChartData()
     xy_data.add_series("S1", [1.0], [2.0])
-    ph.insert_chart("scatter", xy_data)
+    xy_ph.insert_chart("scatter", xy_data)
 
 
 def test_placeholder_layout_master_refs(presentation: Presentation):

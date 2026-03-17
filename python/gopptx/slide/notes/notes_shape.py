@@ -56,13 +56,19 @@ class NotesShape(_NotesShapeStyleMixin):
     @property
     def placeholder_type(self) -> str:
         """Return placeholder kind (for example body/title) when present."""
-        value = self._payload.get("placeholder_type", self._payload.get("Type"))
+        value = self._payload.get(
+            "placeholder_type",
+            self._payload.get("PlaceholderType", self._payload.get("Type")),
+        )
         return str(value) if isinstance(value, str) else ""
 
     @property
     def idx(self) -> int:
         """Return placeholder index or -1 for non-placeholder shapes."""
-        value = self._payload.get("placeholder_index", self._payload.get("Index"))
+        value = self._payload.get(
+            "placeholder_index",
+            self._payload.get("PlaceholderIndex", self._payload.get("Index")),
+        )
         if isinstance(value, int):
             return value
         return -1

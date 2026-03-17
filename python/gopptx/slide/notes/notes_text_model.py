@@ -71,6 +71,10 @@ class NotesRun:
         super().__init__()
         self._text_frame = text_frame
         self._paragraph_index = paragraph_index
+        self.font_size: int | None = None
+        self.bold: bool | None = None
+        self.italic: bool | None = None
+        self.color: str | None = None
 
     @property
     def text(self) -> str:
@@ -128,6 +132,11 @@ class NotesParagraph:
         super().__init__()
         self._text_frame = text_frame
         self._index = index
+        self.font_size: int | None = None
+        self.bold: bool | None = None
+        self.italic: bool | None = None
+        self.color: str | None = None
+        self.alignment: str | None = None
 
     @property
     def text(self) -> str:
@@ -154,6 +163,22 @@ class NotesParagraph:
     def add_run(self, text: str = "") -> NotesRun:
         """Append text to the paragraph run."""
         return self.runs.add_run(text)
+
+    def align_left(self) -> None:
+        """Set paragraph alignment to left."""
+        self.alignment = "l"
+
+    def align_center(self) -> None:
+        """Set paragraph alignment to center."""
+        self.alignment = "ctr"
+
+    def align_right(self) -> None:
+        """Set paragraph alignment to right."""
+        self.alignment = "r"
+
+    def align_justify(self) -> None:
+        """Set paragraph alignment to justify."""
+        self.alignment = "just"
 
 
 class NotesParagraphCollection:

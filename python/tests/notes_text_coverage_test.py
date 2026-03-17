@@ -65,5 +65,8 @@ def test_notes_text_frame_add_paragraph():
         assert p2.text == "P2"
 
         tf.clear()
-        assert len(tf.paragraphs) == 0
+        assert (
+            len(tf.paragraphs) == 1
+        )  # clear() leaves one empty paragraph (python-pptx semantics)
+        assert not tf.paragraphs[0].text
         assert not slide.notes

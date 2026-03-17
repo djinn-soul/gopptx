@@ -417,3 +417,14 @@ _.set_header_footer  # unused method (python\gopptx\slide\shapes\smartart_anim_m
 _.get_handout_master  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.update_handout_master  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.has_digital_signature  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
+
+# Notes text model formatting properties and alignment methods
+_.font_size  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)
+_.bold  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)
+_.italic  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)
+_.color  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)
+_.alignment  # unused attribute (notes_text_model.py NotesParagraph)
+_.align_left  # unused method (notes_text_model.py NotesParagraph)
+_.align_center  # unused method (notes_text_model.py NotesParagraph)
+_.align_right  # unused method (notes_text_model.py NotesParagraph)
+_.align_justify  # unused method (notes_text_model.py NotesParagraph)

@@ -1,6 +1,5 @@
 import pathlib
 
-import pytest
 from gopptx.api_errors import GopptxError
 from gopptx.presentation.presentation import Presentation
 from gopptx.slide.placeholders.placeholder import (
@@ -8,16 +7,6 @@ from gopptx.slide.placeholders.placeholder import (
     Placeholder,
     TitlePlaceholder,
 )
-
-# Add project root to sys.path
-project_root = pathlib.Path(__file__).parent.parent.parent.resolve()
-
-
-@pytest.fixture
-def presentation() -> Presentation:
-    p = Presentation()
-    p.open(str(project_root / "testdata" / "placeholders.pptx"))
-    return p
 
 
 def test_list_placeholders(presentation: Presentation) -> None:
