@@ -2,6 +2,7 @@ package main
 
 /*
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef uintptr_t DeckHandle;
 */

@@ -280,9 +280,6 @@ linters:
       - path: "examples/.*"
         linters:
           - mnd
-      - path: "scripts/tasks/generate_task_samples/.*"
-        linters:
-          - mnd
       - path: "pkg/pptx/mermaid/.*"
         linters:
           - mnd
