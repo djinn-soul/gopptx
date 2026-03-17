@@ -24,6 +24,7 @@ extern const char *_GoStringPtr(_GoString_ s);
 #line 3 "bridge.go"
 
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef uintptr_t DeckHandle;
 

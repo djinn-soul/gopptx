@@ -1,12 +1,14 @@
 """Tests for live text object-model traversal APIs."""
-# ruff: noqa: TC003
 
 from __future__ import annotations
 
 import zipfile
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from gopptx import Presentation, Run, RunHyperlink
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_shape_text_traversal_and_run_updates(tmp_path: Path) -> None:

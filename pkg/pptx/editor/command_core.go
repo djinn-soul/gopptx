@@ -225,6 +225,11 @@ func commandHandlerFor(op string) (commandHandler, bool) {
 			return h, true
 		}
 	}
+	// Fallback: handlers registered by external packages (e.g. export) to avoid
+	// import cycles.
+	if h, ok := exportHandlers[op]; ok {
+		return h, true
+	}
 	return nil, false
 }
 

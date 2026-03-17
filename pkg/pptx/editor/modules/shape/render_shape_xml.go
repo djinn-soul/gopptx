@@ -7,7 +7,10 @@ import (
 	"strings"
 )
 
-const prstEllipse = "ellipse"
+const (
+	prstEllipse  = "ellipse"
+	prstTriangle = "triangle"
+)
 
 func escapeXMLText(value string) string {
 	var buf bytes.Buffer
@@ -21,8 +24,8 @@ func presetGeometry(shapeType string) string {
 	switch strings.ToLower(shapeType) {
 	case prstEllipse, "oval":
 		return prstEllipse
-	case "triangle":
-		return "triangle"
+	case prstTriangle:
+		return prstTriangle
 	default:
 		return "rect"
 	}

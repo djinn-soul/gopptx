@@ -35,7 +35,7 @@ func (sa SmartArt) Validate(slideIndex int) error {
 }
 
 func validateLayoutConstraint(sa SmartArt, slideIndex int) error {
-	constraint, ok := smartArtLayoutConstraints[sa.Layout]
+	constraint, ok := layoutConstraintFor(sa.Layout)
 	if !ok {
 		return nil
 	}

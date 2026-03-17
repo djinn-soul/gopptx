@@ -2,9 +2,80 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from gopptx import Presentation
-from gopptx.slide.notes_slide import NotesShape
-from gopptx.slide.notes_slide import NotesSlide
+from gopptx.slide.notes.notes_slide import NotesShape, NotesSlide
+
+
+class _HasNotes(Protocol):
+    notes: str
+
+
+def _assert_first_shape_contract(notes_slide: NotesSlide, first: NotesShape) -> None:
+    assert isinstance(first.shape_id, int)
+    assert isinstance(first.name, str)
+    assert isinstance(first.shape_type, str)
+    assert isinstance(first.placeholder_type, str)
+    assert isinstance(first.is_placeholder, bool)
+    assert isinstance(first.has_text_frame, bool)
+    assert isinstance(first.x, float)
+    assert isinstance(first.y, float)
+    assert isinstance(first.cx, float)
+    assert isinstance(first.cy, float)
+    assert isinstance(first.left, float)
+    assert isinstance(first.top, float)
+    assert isinstance(first.width, float)
+    assert isinstance(first.height, float)
+    assert notes_slide.shapes.get(name=first.name) is not None
+    if first.shape_id >= 0:
+        assert notes_slide.shapes.get(shape_id=first.shape_id) is not None
+        assert notes_slide.shapes.by_id(first.shape_id) is not None
+        assert notes_slide.shape(first.shape_id) is not None
+    assert notes_slide.shapes.get(shape_type=first.shape_type) is not None
+    assert notes_slide.shape_by_name(first.name) is not None
+    assert isinstance(notes_slide.text_shapes, list)
+    assert isinstance(notes_slide.placeholder_shapes, list)
+    assert all(shape.has_text_frame for shape in notes_slide.text_shapes)
+    body_matches = notes_slide.shapes.find_all(placeholder_type="body")
+    if body_matches:
+        assert body_matches[0].placeholder_type == "body"
+
+
+def _exercise_body_proxy(
+    slide: _HasNotes, notes_slide: NotesSlide, body: NotesShape
+) -> None:
+    assert body.text == "speaker notes"
+    body_tf = body.text_frame
+    assert body_tf is not None
+    assert body_tf.text == "speaker notes"
+    body_tf.text = "updated via text frame"
+    assert slide.notes == "updated via text frame"
+    body.text = "updated notes"
+    assert slide.notes == "updated notes"
+    notes_tf = notes_slide.notes_text_frame
+    assert notes_tf is not None
+    notes_tf.text = "updated via notes_text_frame"
+    assert slide.notes == "updated via notes_text_frame"
+    assert len(notes_tf.paragraphs) == 1
+    para0 = notes_tf.paragraphs[0]
+    assert para0.text == "updated via notes_text_frame"
+    run0 = para0.runs[0]
+    assert run0.text == "updated via notes_text_frame"
+    run0.text = "updated via notes run"
+    assert slide.notes == "updated via notes run"
+    para0.runs.add_run(" + appended")
+    assert slide.notes == "updated via notes run + appended"
+    para0.add_run(" via paragraph")
+    assert slide.notes == "updated via notes run + appended via paragraph"
+    para1 = notes_tf.add_paragraph("second paragraph")
+    assert para1.text == "second paragraph"
+    assert (
+        slide.notes
+        == "updated via notes run + appended via paragraph\nsecond paragraph"
+    )
+    notes_tf.clear()
+    assert not slide.notes
 
 
 def test_notes_shape_collection_and_body_proxy() -> None:
@@ -17,67 +88,11 @@ def test_notes_shape_collection_and_body_proxy() -> None:
 
         assert len(notes_slide.shapes) > 0
         first = notes_slide.shapes[0]
-        assert isinstance(first.shape_id, int)
-        assert isinstance(first.name, str)
-        assert isinstance(first.shape_type, str)
-        assert isinstance(first.placeholder_type, str)
-        assert isinstance(first.is_placeholder, bool)
-        assert isinstance(first.has_text_frame, bool)
-        assert isinstance(first.x, float)
-        assert isinstance(first.y, float)
-        assert isinstance(first.cx, float)
-        assert isinstance(first.cy, float)
-        assert isinstance(first.left, float)
-        assert isinstance(first.top, float)
-        assert isinstance(first.width, float)
-        assert isinstance(first.height, float)
-        assert notes_slide.shapes.get(name=first.name) is not None
-        if first.shape_id >= 0:
-            assert notes_slide.shapes.get(shape_id=first.shape_id) is not None
-            assert notes_slide.shapes.by_id(first.shape_id) is not None
-            assert notes_slide.shape(first.shape_id) is not None
-        assert notes_slide.shapes.get(shape_type=first.shape_type) is not None
-        assert notes_slide.shape_by_name(first.name) is not None
-        assert isinstance(notes_slide.text_shapes, list)
-        assert isinstance(notes_slide.placeholder_shapes, list)
-        assert all(shape.has_text_frame for shape in notes_slide.text_shapes)
-        body_matches = notes_slide.shapes.find_all(placeholder_type="body")
-        if body_matches:
-            assert body_matches[0].placeholder_type == "body"
+        _assert_first_shape_contract(notes_slide, first)
 
         body = notes_slide.body_shape
         if body is not None:
-            assert body.text == "speaker notes"
-            body_tf = body.text_frame
-            assert body_tf is not None
-            assert body_tf.text == "speaker notes"
-            body_tf.text = "updated via text frame"
-            assert slide.notes == "updated via text frame"
-            body.text = "updated notes"
-            assert slide.notes == "updated notes"
-            notes_tf = notes_slide.notes_text_frame
-            assert notes_tf is not None
-            notes_tf.text = "updated via notes_text_frame"
-            assert slide.notes == "updated via notes_text_frame"
-            assert len(notes_tf.paragraphs) == 1
-            para0 = notes_tf.paragraphs[0]
-            assert para0.text == "updated via notes_text_frame"
-            run0 = para0.runs[0]
-            assert run0.text == "updated via notes_text_frame"
-            run0.text = "updated via notes run"
-            assert slide.notes == "updated via notes run"
-            para0.runs.add_run(" + appended")
-            assert slide.notes == "updated via notes run + appended"
-            para0.add_run(" via paragraph")
-            assert slide.notes == "updated via notes run + appended via paragraph"
-            para1 = notes_tf.add_paragraph("second paragraph")
-            assert para1.text == "second paragraph"
-            assert (
-                slide.notes
-                == "updated via notes run + appended via paragraph\nsecond paragraph"
-            )
-            notes_tf.clear()
-            assert not slide.notes
+            _exercise_body_proxy(slide, notes_slide, body)
 
 
 def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
@@ -107,6 +122,27 @@ def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
     assert dummy.called_shape_id == 42
     assert dummy.called_text == "after"
     assert shape.text == "after"
+
+
+def test_notes_shape_has_text_frame_accepts_camel_case_payload_key() -> None:
+    class _DummyNotesSlide:
+        text = ""
+
+        def _set_shape_text(self, _shape_id: int, _text: str) -> None:
+            return
+
+    shape = NotesShape(
+        _DummyNotesSlide(),  # type: ignore[arg-type]
+        {
+            "id": 42,
+            "name": "Aux text",
+            "type": "sp",
+            "HasTextFrame": True,
+            "placeholder_type": "",
+            "text": "before",
+        },
+    )
+    assert shape.has_text_frame is True
 
 
 def test_notes_shape_geometry_and_style_route_to_props_setter() -> None:
@@ -169,18 +205,23 @@ def test_notes_slide_shape_bounds_and_fill_background_helpers() -> None:
             self.calls.append((slide_index, shape_id, updates))
 
     class _DummySlide:
-        def __init__(self) -> None:
+        def __init__(self, presentation: _DummyPresentation) -> None:
             self.index = 2
-            self._presentation = _DummyPresentation()
+            self._presentation = presentation
             self.notes = ""
 
-    dummy_slide = _DummySlide()
+        @property
+        def presentation(self) -> _DummyPresentation:
+            return self._presentation
+
+    dummy_presentation = _DummyPresentation()
+    dummy_slide = _DummySlide(dummy_presentation)
     notes_slide = NotesSlide(dummy_slide)  # type: ignore[arg-type]
     assert notes_slide.shape_by_name("Body 1") is not None
     notes_slide.set_shape_bounds(5, left=10, top=20, width=30, height=40)
     notes_slide.set_shape_fill_background(5)
-    assert dummy_slide._presentation.calls[0] == (2, 5, {"x": 10, "y": 20, "w": 30, "h": 40})
-    assert dummy_slide._presentation.calls[1] == (2, 5, {"fill": {"background": True}})
+    assert dummy_presentation.calls[0] == (2, 5, {"x": 10, "y": 20, "w": 30, "h": 40})
+    assert dummy_presentation.calls[1] == (2, 5, {"fill": {"background": True}})
 
 
 def test_notes_slide_shape_style_helpers_route_updates() -> None:
@@ -197,12 +238,17 @@ def test_notes_slide_shape_style_helpers_route_updates() -> None:
             self.calls.append((slide_index, shape_id, updates))
 
     class _DummySlide:
-        def __init__(self) -> None:
+        def __init__(self, presentation: _DummyPresentation) -> None:
             self.index = 4
-            self._presentation = _DummyPresentation()
+            self._presentation = presentation
             self.notes = ""
 
-    notes_slide = NotesSlide(_DummySlide())  # type: ignore[arg-type]
+        @property
+        def presentation(self) -> _DummyPresentation:
+            return self._presentation
+
+    dummy_presentation = _DummyPresentation()
+    notes_slide = NotesSlide(_DummySlide(dummy_presentation))  # type: ignore[arg-type]
     notes_slide.set_shape_fill_gradient(
         9,
         angle_deg=45.0,
@@ -224,7 +270,7 @@ def test_notes_slide_shape_style_helpers_route_updates() -> None:
         width_emu=12700,
     )
 
-    calls = notes_slide._slide._presentation.calls  # type: ignore[attr-defined]
+    calls = dummy_presentation.calls
     assert calls[0][0:2] == (4, 9)
     assert calls[0][2] == {
         "fill": {

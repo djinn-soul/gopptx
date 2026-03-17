@@ -11,19 +11,6 @@ import (
 
 const minTextAutoFitSize = 10
 
-func fitPDFTextToBox(
-	pdf *gopdf.GoPdf,
-	text string,
-	initialSize int,
-	minSize int,
-	bold bool,
-	italic bool,
-	maxWidth float64,
-	maxHeight float64,
-) int {
-	return fitPDFTextToBoxWithMetrics(pdf, text, initialSize, minSize, bold, italic, maxWidth, maxHeight, "")
-}
-
 func fitPDFTextToBoxWithMetrics(
 	pdf *gopdf.GoPdf,
 	text string,
@@ -52,10 +39,6 @@ func fitPDFTextToBoxWithMetrics(
 		size--
 	}
 	return size
-}
-
-func wrapPDFText(pdf *gopdf.GoPdf, text string, maxWidth float64) []string {
-	return wrapPDFTextWithMetrics(pdf, text, maxWidth, "")
 }
 
 func wrapPDFTextWithMetrics(pdf *gopdf.GoPdf, text string, maxWidth float64, fontHint string) []string {

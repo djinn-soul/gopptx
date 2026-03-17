@@ -11,6 +11,7 @@ import (
 const (
 	tableDefaultPaddingPt = 4.0
 	tableMinUsableWidthPt = 24.0
+	tableCenterDivisor    = 2.0
 )
 
 type tableCellBorderSpec struct {
@@ -32,7 +33,7 @@ func tableCellTextX(pdf *gopdf.GoPdf, cell tables.TableCell, line string, cellX,
 	switch cell.Align {
 	case tables.TableAlignCenter:
 		lineW := measuredWidthWithMetrics(pdf, line, "")
-		return cellX + leftPad + math.Max((contentW-lineW)/2, 0)
+		return cellX + leftPad + math.Max((contentW-lineW)/tableCenterDivisor, 0)
 	case tables.TableAlignRight:
 		lineW := measuredWidthWithMetrics(pdf, line, "")
 		return cellX + leftPad + math.Max(contentW-lineW, 0)

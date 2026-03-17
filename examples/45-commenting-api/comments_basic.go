@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
@@ -16,11 +18,19 @@ func main() {
 }
 
 func runCommentsBasic() error {
+	const outputDir = "examples/output"
+	const baseFile = "45_commenting_api_base.pptx"
+	const outFile = "45_commenting_api_output.pptx"
+
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
+		return fmt.Errorf("failed to create output dir: %w", err)
+	}
+
 	// 1. Create base
 	log.Println("Creating base presentation...")
 	p := pptx.NewPresentationBuilder("Comment Test")
 	p.AddTitleSlide("Slide 1")
-	basePath := "comment_base.pptx"
+	basePath := filepath.Join(outputDir, baseFile)
 	if err := p.WriteToFile(basePath); err != nil {
 		return fmt.Errorf("failed to save base: %w", err)
 	}
@@ -61,7 +71,7 @@ func runCommentsBasic() error {
 	}
 
 	// 5. Save
-	outPath := "comment_output.pptx"
+	outPath := filepath.Join(outputDir, outFile)
 	log.Printf("Saving to %s...\n", outPath)
 	if err := ed.Save(outPath); err != nil {
 		return fmt.Errorf("failed to save output: %w", err)

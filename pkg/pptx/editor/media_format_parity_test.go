@@ -13,14 +13,27 @@ import (
 )
 
 func TestMediaSaveIncludesWmvWmaOggContentTypes(t *testing.T) {
-	base := writeDeckFixture(t, "media-format-base.pptx", []elements.SlideContent{elements.NewSlide("Slide 1")})
+	base := writeDeckFixture(
+		t,
+		"media-format-base.pptx",
+		[]elements.SlideContent{elements.NewSlide("Slide 1")},
+	)
 	editor, err := OpenPresentationEditor(base)
 	if err != nil {
 		t.Fatalf("open editor: %v", err)
 	}
 	defer func() { _ = editor.Close() }()
 
-	if _, err := editor.AddVideo(0, []byte("video-wmv"), testutil.TinyPNG(), "video/x-ms-wmv", 10, 10, 100, 80); err != nil {
+	if _, err := editor.AddVideo(
+		0,
+		[]byte("video-wmv"),
+		testutil.TinyPNG(),
+		"video/x-ms-wmv",
+		10,
+		10,
+		100,
+		80,
+	); err != nil {
 		t.Fatalf("AddVideo wmv failed: %v", err)
 	}
 	if _, err := editor.AddAudio(0, []byte("audio-wma"), "audio/x-ms-wma", 120, 10, 80, 40); err != nil {

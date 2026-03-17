@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
-	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	extast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 type markdownASTParser struct {
@@ -166,6 +167,7 @@ func (p *markdownASTParser) consumeParagraph(
 	return nil
 }
 
+//nolint:gocognit // List parsing keeps markdown edge-case handling explicit for deterministic slide output.
 func (p *markdownASTParser) consumeList(node *ast.List, depth int) error {
 	for item := node.FirstChild(); item != nil; item = item.NextSibling() {
 		if item.Kind() != ast.KindListItem {
@@ -272,7 +274,7 @@ func (p *markdownASTParser) consumeBlockquote(node *ast.Blockquote) error {
 		if strings.TrimSpace(lines) == "" {
 			continue
 		}
-		for _, raw := range strings.Split(lines, "\n") {
+		for raw := range strings.SplitSeq(lines, "\n") {
 			trimmed := strings.TrimSpace(raw)
 			if trimmed == "" {
 				continue

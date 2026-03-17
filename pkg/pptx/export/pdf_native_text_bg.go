@@ -272,7 +272,3 @@ func continuationLineIndent(pdf *gopdf.GoPdf, prefixRuns []pdfStyledRun, style t
 	}
 	return indent
 }
-
-func setPDFTextFont(pdf *gopdf.GoPdf, size int, bold bool, italic bool) {
-	setPDFTextFontWithHint(pdf, size, bold, italic, "")
-}

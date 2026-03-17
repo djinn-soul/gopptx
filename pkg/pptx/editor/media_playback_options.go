@@ -6,6 +6,8 @@ import (
 	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
 )
 
+const defaultPlaybackVolume = 100
+
 // VideoPlaybackOptions mirrors ppt-rs generator video playback options.
 type VideoPlaybackOptions struct {
 	AutoPlay        bool
@@ -20,7 +22,7 @@ type VideoPlaybackOptions struct {
 
 // NewVideoPlaybackOptions returns default video playback options.
 func NewVideoPlaybackOptions() VideoPlaybackOptions {
-	return VideoPlaybackOptions{Volume: 100}
+	return VideoPlaybackOptions{Volume: defaultPlaybackVolume}
 }
 
 // NewAutoPlayVideoPlaybackOptions returns default video options with autoplay.
@@ -41,8 +43,8 @@ func (o VideoPlaybackOptions) WithMuted(muted bool) VideoPlaybackOptions {
 }
 
 func (o VideoPlaybackOptions) WithVolume(volume uint32) VideoPlaybackOptions {
-	if volume > 100 {
-		volume = 100
+	if volume > defaultPlaybackVolume {
+		volume = defaultPlaybackVolume
 	}
 	o.Volume = volume
 	return o
@@ -75,7 +77,7 @@ type AudioPlaybackOptions struct {
 
 // NewAudioPlaybackOptions returns default audio playback options.
 func NewAudioPlaybackOptions() AudioPlaybackOptions {
-	return AudioPlaybackOptions{Volume: 100}
+	return AudioPlaybackOptions{Volume: defaultPlaybackVolume}
 }
 
 // NewAutoPlayAudioPlaybackOptions returns default audio options with autoplay.
@@ -96,8 +98,8 @@ func (o AudioPlaybackOptions) WithPlayAcrossSlides(play bool) AudioPlaybackOptio
 }
 
 func (o AudioPlaybackOptions) WithVolume(volume uint32) AudioPlaybackOptions {
-	if volume > 100 {
-		volume = 100
+	if volume > defaultPlaybackVolume {
+		volume = defaultPlaybackVolume
 	}
 	o.Volume = volume
 	return o

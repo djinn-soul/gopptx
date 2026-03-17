@@ -11,6 +11,8 @@ var (
 	smartArtTextRunPattern   = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
 )
 
+const minSmartArtTextSubmatches = 2
+
 type smartArtDataPoint struct {
 	raw           string
 	modelID       string
@@ -135,6 +137,7 @@ func addRemovedDataID(removed map[string]struct{}, id string) bool {
 	return true
 }
 
+//nolint:gocognit // Removal propagation uses explicit branch checks to preserve deterministic pruning behavior.
 func removedOrgChartPresentationPointIDs(
 	points []smartArtDataPoint,
 	removedDataIDs map[string]struct{},
@@ -246,7 +249,7 @@ func rewriteSmartArtDataPointsAndConnections(data string, points []string, cxns 
 func smartArtPointHasText(pointXML string) bool {
 	matches := smartArtTextRunPattern.FindAllStringSubmatch(pointXML, -1)
 	for _, m := range matches {
-		if len(m) < 2 {
+		if len(m) < minSmartArtTextSubmatches {
 			continue
 		}
 		if strings.TrimSpace(m[1]) != "" {

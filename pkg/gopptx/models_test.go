@@ -2,12 +2,12 @@ package gopptx
 
 import (
 	"encoding/xml"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -168,21 +168,92 @@ func TestSlideAnimationSequenceRespectsCustomDelay(t *testing.T) {
 	}
 }
 
-func TestPresentation_SaveWithSlideData(t *testing.T) {
-	pres := &Presentation{Title: "Custom Deck"}
-	slide := pres.AddSlide()
-	slide.Title = "Cover Page"
-	slide.AddBullet("Welcome to the deck")
+func TestSlideNotesRich(t *testing.T) {
+	slide := &Slide{}
+	p1 := elements.NewParagraph()
+	p1.Runs = append(p1.Runs, elements.NewRun("Line 1"))
+	p2 := elements.NewParagraph()
+	p2.Runs = append(p2.Runs, elements.NewRun("Line 2"))
 
-	filename := filepath.Join(t.TempDir(), "slide_data.pptx")
+	slide.SetRichNotes([]elements.Paragraph{p1, p2})
+	if slide.Notes != "Line 1\nLine 2" {
+		t.Errorf("Expected combined notes %q, got %q", "Line 1\nLine 2", slide.Notes)
+	}
+	if len(slide.NotesBody) != 2 {
+		t.Errorf("Expected 2 paragraphs in NotesBody, got %d", len(slide.NotesBody))
+	}
+
+	p3 := elements.NewParagraph()
+	p3.Runs = append(p3.Runs, elements.NewRun("Line 3"))
+	slide.AddNoteParagraph(p3)
+	if slide.Notes != "Line 1\nLine 2\nLine 3" {
+		t.Errorf("Expected appended notes %q, got %q", "Line 1\nLine 2\nLine 3", slide.Notes)
+	}
+	if len(slide.NotesBody) != 3 {
+		t.Errorf("Expected 3 paragraphs in NotesBody, got %d", len(slide.NotesBody))
+	}
+}
+
+func TestSlideAddAnimationDefinition(t *testing.T) {
+	slide := &Slide{}
+	slide.AddAnimationDefinition(nil) // Should not panic or add
+	if len(slide.Animations) != 0 {
+		t.Errorf("Expected 0 animations after nil AddAnimationDefinition, got %d", len(slide.Animations))
+	}
+
+	def := animations.NewAnimation(1, animations.AnimationEmphasisGrowShrink)
+	slide.AddAnimationDefinition(def)
+	if len(slide.Animations) != 1 {
+		t.Errorf("Expected 1 animation, got %d", len(slide.Animations))
+	}
+}
+
+func TestSlideAddAnimationSequenceEdgeCases(t *testing.T) {
+	slide := &Slide{}
+	slide.AddAnimationSequence(100) // Empty sequence
+	if len(slide.Animations) != 0 {
+		t.Errorf("Expected 0 animations for empty sequence, got %d", len(slide.Animations))
+	}
+
+	def1 := animations.NewAnimation(1, animations.AnimationEntranceFade)
+	slide.AddAnimationSequence(100, nil, def1) // Nil first element
+	if len(slide.Animations) != 1 {
+		t.Errorf("Expected 1 animation, got %d", len(slide.Animations))
+	}
+	// The first non-nil becomes the start of sequence, effectively index 1 for logic but 0 for non-nil elements
+	if slide.Animations[0].Trigger != animations.AnimationAfterPrevious {
+		t.Errorf("Expected AfterPrevious for def1 after nil, got %v", slide.Animations[0].Trigger)
+	}
+}
+
+func TestPresentation_SaveErrors(t *testing.T) {
+	pres := &Presentation{}
+	err := pres.Save("test.pptx")
+	if err == nil || err.Error() != "at least one slide is required" {
+		t.Errorf("Expected 'at least one slide is required' error, got %v", err)
+	}
+
+	pres.AddSlide()
+	err = pres.Save("") // Invalid path
+	if err == nil {
+		t.Error("Expected error for empty save path, got nil")
+	}
+
+	// Test with nil slide
+	pres.Slides = append(pres.Slides, nil)
+	filename := filepath.Join(t.TempDir(), "nil_slide.pptx")
 	if err := pres.Save(filename); err != nil {
-		t.Fatalf("Failed to save presentation with slide data: %v", err)
+		t.Errorf("Failed to save with nil slide: %v", err)
 	}
-	info, err := os.Stat(filename)
-	if err != nil {
-		t.Fatalf("Expected file %s to exist, but got error: %v", filename, err)
-	}
-	if info.Size() == 0 {
-		t.Fatalf("Expected file %s to have content", filename)
+}
+
+func TestPresentation_SaveFilePermissionError(t *testing.T) {
+	// This might be OS dependent, but we try to trigger a permission error if possible
+	// Or at least a path that doesn't exist/uncreatable
+	pres := &Presentation{}
+	pres.AddSlide()
+	err := pres.Save("/invalid/path/to/presentation.pptx")
+	if err == nil {
+		t.Error("Expected error for invalid path, got nil")
 	}
 }

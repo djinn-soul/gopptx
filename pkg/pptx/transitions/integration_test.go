@@ -142,14 +142,8 @@ func transitionSlideXML(t *testing.T, slide pptx.SlideContent) string {
 
 func loadTransitionParityFixture(t *testing.T) []transitionParityFixtureEntry {
 	t.Helper()
-	path := filepath.Join(
-		testutil.RootTestdataDir(),
-		"..",
-		"pkg",
-		"pptx",
-		"fixtures",
-		"ppt_rs_transition_fragments.json",
-	)
+	// fixtures/ is a sibling of the transitions/ package directory, committed to git.
+	path := filepath.Join("..", "fixtures", "ppt_rs_transition_fragments.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read transition fixture %s: %v", path, err)

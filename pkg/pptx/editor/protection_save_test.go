@@ -70,4 +70,3 @@ func TestEditorSave_WithModifyPassword_WritesModifyVerifier(t *testing.T) {
 		}
 	}
 }
-

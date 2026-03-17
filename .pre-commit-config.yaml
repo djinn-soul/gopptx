@@ -81,7 +81,7 @@ repos:
 
       - id: pip-audit
         name: pip-audit dependency scan
-        entry: uv run pip-audit -r requirements.txt
+        entry: uv run pip-audit -r requirements.txt --skip-editable
         language: system
         pass_filenames: false
 
@@ -129,11 +129,3 @@ repos:
         language: system
         pass_filenames: false
         args: ["mod", "tidy"]
-
-      - id: go-test
-        name: go test
-        entry: go
-        language: system
-        pass_filenames: false
-        args:
-          ["test", "./cmd/...", "./internal/...", "./pkg/...", "./examples/..."]

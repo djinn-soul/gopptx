@@ -70,8 +70,8 @@ func titleShapeAt(title TitleSpec, x int64, y int64, cx int64, cy int64, align s
 <p:sp>
 <p:nvSpPr>
 <p:cNvPr id="2" name="Title"/>
-<p:cNvSpPr txBox="1"/>
-<p:nvPr/>
+<p:cNvSpPr/>
+<p:nvPr><p:ph type="title" idx="0"/></p:nvPr>
 </p:nvSpPr>
 <p:spPr>
 <a:xfrm>
@@ -248,8 +248,8 @@ func contentShapeAt(
 	b.WriteString(`" name="`)
 	b.WriteString(Escape(shapeName))
 	b.WriteString(`"/>
-<p:cNvSpPr txBox="1"/>
-<p:nvPr/>
+<p:cNvSpPr/>
+<p:nvPr><p:ph type="body" idx="1"/></p:nvPr>
 </p:nvSpPr>
 <p:spPr>
 <a:xfrm>

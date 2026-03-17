@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-from .comments_charts import (
-    PresentationChartMixin,
-    PresentationCommentMixin,
-)
-from .shape_batch_mixin import PresentationShapeBatchMixin
-from .shapes_tables import (
-    PresentationNotesMixin,
-    PresentationShapeMixin,
-    PresentationTableMixin,
-    PresentationTextMixin,
-)
-from .text_batch_mixin import PresentationTextBatchMixin
+from .charts import PresentationChartMixin
+from .comments import PresentationCommentMixin
+from .custom_xml import PresentationCustomXMLMixin
+from .export import PresentationExportMixin
+from .notes import PresentationNotesMixin
+from .shapes import PresentationShapeBatchMixin, PresentationShapeMixin
+from .tables import PresentationTableMixin
+from .text.text_batch_mixin import PresentationTextBatchMixin
+from .text.text_mixin import PresentationTextMixin
 from .vba import PresentationVBAMixin
 
 
@@ -27,5 +24,7 @@ class PresentationContentMixin(
     PresentationChartMixin,
     PresentationCommentMixin,
     PresentationVBAMixin,
+    PresentationCustomXMLMixin,
+    PresentationExportMixin,
 ):
     """Mixin providing content manipulation methods for Presentation."""

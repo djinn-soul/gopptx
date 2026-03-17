@@ -11,6 +11,10 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
+const arrowFillDrawStyle = "DF"
+
+const connectorAdjustmentPrimary = "adj1"
+
 //nolint:funlen // Connector rendering keeps geometry/routing/arrow/label logic together for predictable output.
 func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 	x1 := emuToPt(c.StartX.Emu())
@@ -132,7 +136,7 @@ func connectorControlPoint(x1, y1, x2, y2 float64, adjustments []shapes.Connecto
 	bendPct := 0.15
 
 	for _, adj := range adjustments {
-		if strings.TrimSpace(adj.Name) != "adj1" {
+		if strings.TrimSpace(adj.Name) != connectorAdjustmentPrimary {
 			continue
 		}
 		formula := strings.TrimSpace(adj.Formula)
@@ -199,7 +203,7 @@ func drawPDFArrowhead(
 			X: tipX - length*math.Cos(angle),
 			Y: tipY - length*math.Sin(angle),
 		}
-		pdf.Polygon([]gopdf.Point{{X: tipX, Y: tipY}, left, rear, right}, "DF")
+		pdf.Polygon([]gopdf.Point{{X: tipX, Y: tipY}, left, rear, right}, arrowFillDrawStyle)
 	case shapes.ArrowTypeOval:
 		pdf.Oval(
 			back.X-halfWidth,
@@ -208,9 +212,9 @@ func drawPDFArrowhead(
 			back.Y+halfWidth,
 		)
 	case shapes.ArrowTypeStealth:
-		pdf.Polygon([]gopdf.Point{{X: tipX, Y: tipY}, left, back, right}, "DF")
+		pdf.Polygon([]gopdf.Point{{X: tipX, Y: tipY}, left, back, right}, arrowFillDrawStyle)
 	default:
-		pdf.Polygon([]gopdf.Point{{X: tipX, Y: tipY}, left, right}, "DF")
+		pdf.Polygon([]gopdf.Point{{X: tipX, Y: tipY}, left, right}, arrowFillDrawStyle)
 	}
 }
 

@@ -11,13 +11,28 @@ import (
 )
 
 func TestEncryptAgilePackage_WrapsIntoCFB(t *testing.T) {
+	zipPayload := buildMinimalPPTX(t)
+
 	if !CanEncryptAgile() {
-		t.Skip("Agile encryption unavailable on this runtime")
+		// Encryption runtime unavailable: verify the correct error is returned.
+		_, err := EncryptAgilePackage(zipPayload, "Secret123!")
+		if err == nil {
+			t.Fatal("expected error when agile encryption unavailable, got nil")
+		}
+		if !strings.Contains(err.Error(), "encryption") &&
+			!strings.Contains(err.Error(), "PowerPoint") &&
+			!strings.Contains(err.Error(), "unavailable") {
+			t.Fatalf("unexpected unavailable error: %v", err)
+		}
+		return
 	}
 
-	zipPayload := buildMinimalPPTX(t)
 	out, err := EncryptAgilePackage(zipPayload, "Secret123!")
 	if err != nil {
+		if isPowerPointRuntimeUnavailable(err) {
+			t.Logf("Agile encryption unavailable on this runtime: %v", err)
+			return
+		}
 		t.Fatalf("EncryptAgilePackage error: %v", err)
 	}
 
@@ -58,10 +73,48 @@ func TestEncryptAgilePackage_WrapsIntoCFB(t *testing.T) {
 	}
 }
 
+func TestEncryptAgilePackage_ValidationErrors(t *testing.T) {
+	_, err := EncryptAgilePackage(nil, "password")
+	if err == nil || err.Error() != "zip payload cannot be empty" {
+		t.Errorf("Expected empty payload error, got %v", err)
+	}
+
+	_, err = EncryptAgilePackage([]byte("not-a-zip"), "")
+	if err == nil || err.Error() != "encryption password cannot be empty" {
+		t.Errorf("Expected empty password error, got %v", err)
+	}
+
+	invalidZip := []byte("PK\x03\x04" + strings.Repeat("\x00", 30))
+	_, err = EncryptAgilePackage(invalidZip, "password")
+	if err == nil || !strings.Contains(err.Error(), "invalid pptx zip payload") {
+		t.Errorf("Expected zip format error, got %v", err)
+	}
+
+	// Missing required parts in valid zip
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, _ := zw.Create("something.xml")
+	w.Write([]byte("data"))
+	zw.Close()
+	_, err = EncryptAgilePackage(buf.Bytes(), "password")
+	if err == nil || !strings.Contains(err.Error(), "missing required part") {
+		t.Errorf("Expected missing required part error, got %v", err)
+	}
+}
+
 func normalizeStreamName(name string) string {
 	name = strings.ToLower(strings.TrimSpace(name))
 	name = strings.TrimRight(name, "\x00")
 	return name
+}
+
+func isPowerPointRuntimeUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "0x80CB900C") ||
+		strings.Contains(msg, "COMException")
 }
 
 func buildMinimalPPTX(t *testing.T) []byte {

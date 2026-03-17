@@ -6,9 +6,6 @@ import (
 )
 
 func (e *PresentationEditor) ensureExcelEmbeddingHashIndex() map[string]string {
-	if e.excelEmbeddingHashIndex != nil {
-		return e.excelEmbeddingHashIndex
-	}
 	index := make(map[string]string)
 	for _, part := range e.parts.KeysWithPrefix("ppt/embeddings/") {
 		data, ok := e.parts.Get(part)

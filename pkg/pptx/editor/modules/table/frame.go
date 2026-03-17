@@ -31,10 +31,10 @@ type RowXML struct {
 }
 
 type CellXML struct {
-	RowSpan  int    `xml:"rowSpan,attr"`
-	GridSpan int    `xml:"gridSpan,attr"`
-	VMerge   string `xml:"vMerge,attr"`
-	HMerge   string `xml:"hMerge,attr"`
+	RowSpan  int               `xml:"rowSpan,attr"`
+	GridSpan int               `xml:"gridSpan,attr"`
+	VMerge   string            `xml:"vMerge,attr"`
+	HMerge   string            `xml:"hMerge,attr"`
 	TcPr     cellPropertiesXML `xml:"tcPr"`
 	TxBody   struct {
 		Paragraphs []struct {
@@ -46,11 +46,11 @@ type CellXML struct {
 }
 
 type cellPropertiesXML struct {
-	Anchor string `xml:"anchor,attr"`
-	MarL   *int64 `xml:"marL,attr"`
-	MarR   *int64 `xml:"marR,attr"`
-	MarT   *int64 `xml:"marT,attr"`
-	MarB   *int64 `xml:"marB,attr"`
+	Anchor string             `xml:"anchor,attr"`
+	MarL   *int64             `xml:"marL,attr"`
+	MarR   *int64             `xml:"marR,attr"`
+	MarT   *int64             `xml:"marT,attr"`
+	MarB   *int64             `xml:"marB,attr"`
 	LnL    *linePropertiesXML `xml:"lnL"`
 	LnR    *linePropertiesXML `xml:"lnR"`
 	LnT    *linePropertiesXML `xml:"lnT"`
@@ -58,8 +58,8 @@ type cellPropertiesXML struct {
 }
 
 type linePropertiesXML struct {
-	Width int64 `xml:"w,attr"`
-	NoFill *struct{} `xml:"noFill"`
+	Width    int64     `xml:"w,attr"`
+	NoFill   *struct{} `xml:"noFill"`
 	PrstDash *struct {
 		Val string `xml:"val,attr"`
 	} `xml:"prstDash"`

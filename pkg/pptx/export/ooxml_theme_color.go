@@ -1,4 +1,4 @@
-//nolint:mnd // OOXML color math uses spec-defined numeric ranges (e.g., 0..100000, 0..255).
+//nolint:mnd,goconst // OOXML color math uses spec-defined numeric ranges (e.g., 0..100000, 0..255); color name strings are OOXML spec identifiers.
 package export
 
 import (

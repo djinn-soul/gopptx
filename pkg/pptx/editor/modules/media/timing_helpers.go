@@ -1,6 +1,7 @@
 package media
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -8,8 +9,15 @@ import (
 )
 
 var cTnIDPattern = regexp.MustCompile(`<p:cTn[^>]*\sid="([0-9]+)"`)
-var mediaShapePatternTemplate = `(?s)<p:pic\b[^>]*>.*?<p:cNvPr\b[^>]*\bid="%d"[^>]*>.*?</p:cNvPr>.*?<p14:media\b[^>]*\br:embed="([^"]+)"[^>]*/>.*?</p:pic>`
 
+const mediaShapePatternTemplate = `(?s)<p:pic\b[^>]*>.*?<p:cNvPr\b[^>]*\bid="%d"[^>]*>.*?</p:cNvPr>.*?<p14:media\b[^>]*\br:embed="([^"]+)"[^>]*/>.*?</p:pic>`
+const (
+	minRegexSubmatchCount = 2
+	maxVolumePercent      = 100
+	volumeScaleThousand   = 1000
+)
+
+//nolint:revive // Exported name kept for API compatibility across editor and bindings.
 type MediaTimingOptions struct {
 	AutoPlay         bool
 	LoopPlayback     bool
@@ -21,7 +29,12 @@ type MediaTimingOptions struct {
 	SlideCount       int
 }
 
-func ApplyMediaTiming(content []byte, mediaKind string, shapeID int, options MediaTimingOptions) ([]byte, error) {
+func ApplyMediaTiming(
+	content []byte,
+	mediaKind string,
+	shapeID int,
+	options MediaTimingOptions,
+) ([]byte, error) {
 	slideXML := string(content)
 	if !strings.Contains(slideXML, "<p:timing>") {
 		withTiming, err := addDefaultTimingBlock(slideXML)
@@ -34,7 +47,7 @@ func ApplyMediaTiming(content []byte, mediaKind string, shapeID int, options Med
 	timingStart := strings.Index(slideXML, "<p:timing>")
 	timingEnd := strings.Index(slideXML, "</p:timing>")
 	if timingStart < 0 || timingEnd < 0 {
-		return nil, fmt.Errorf("invalid slide xml: timing block not found after insertion")
+		return nil, errors.New("invalid slide xml: timing block not found after insertion")
 	}
 	timingEnd += len("</p:timing>")
 	timingXML := slideXML[timingStart:timingEnd]
@@ -73,7 +86,7 @@ func addDefaultTimingBlock(slideXML string) (string, error) {
 	const closeSlide = "</p:sld>"
 	idx := strings.LastIndex(slideXML, closeSlide)
 	if idx < 0 {
-		return "", fmt.Errorf("invalid slide xml: missing </p:sld>")
+		return "", errors.New("invalid slide xml: missing </p:sld>")
 	}
 	return slideXML[:idx] + timingBlock + slideXML[idx:], nil
 }
@@ -82,7 +95,7 @@ func nextTimingCTnID(timingXML string) int {
 	matches := cTnIDPattern.FindAllStringSubmatch(timingXML, -1)
 	maxID := 2
 	for _, match := range matches {
-		if len(match) < 2 {
+		if len(match) < minRegexSubmatchCount {
 			continue
 		}
 		idValue, err := strconv.Atoi(match[1])
@@ -99,16 +112,16 @@ func nextTimingCTnID(timingXML string) int {
 func insertMediaNodeIntoMainSeq(timingXML, mediaNode string) (string, error) {
 	mainSeqIdx := strings.Index(timingXML, `nodeType="mainSeq"`)
 	if mainSeqIdx < 0 {
-		return "", fmt.Errorf("invalid timing xml: mainSeq cTn not found")
+		return "", errors.New("invalid timing xml: mainSeq cTn not found")
 	}
 	childStart := strings.Index(timingXML[mainSeqIdx:], "<p:childTnLst>")
 	if childStart < 0 {
-		return "", fmt.Errorf("invalid timing xml: mainSeq childTnLst not found")
+		return "", errors.New("invalid timing xml: mainSeq childTnLst not found")
 	}
 	childStart += mainSeqIdx
 	childEnd := strings.Index(timingXML[childStart:], "</p:childTnLst>")
 	if childEnd < 0 {
-		return "", fmt.Errorf("invalid timing xml: mainSeq childTnLst end not found")
+		return "", errors.New("invalid timing xml: mainSeq childTnLst end not found")
 	}
 	childEnd += childStart
 	return timingXML[:childEnd] + mediaNode + timingXML[childEnd:], nil
@@ -139,10 +152,7 @@ func buildMediaTimingNode(
 	}
 	numSldAttr := ` numSld="1"`
 	if options.PlayAcrossSlides {
-		numSlides := options.SlideCount - options.SlideIndex
-		if numSlides < 1 {
-			numSlides = 1
-		}
+		numSlides := max(1, options.SlideCount-options.SlideIndex)
 		numSldAttr = fmt.Sprintf(` numSld="%d"`, numSlides)
 	}
 
@@ -194,15 +204,15 @@ func mediaRelIDForShape(slideXML string, shapeID int) string {
 	pattern := fmt.Sprintf(mediaShapePatternTemplate, shapeID)
 	re := regexp.MustCompile(pattern)
 	match := re.FindStringSubmatch(slideXML)
-	if len(match) < 2 {
+	if len(match) < minRegexSubmatchCount {
 		return ""
 	}
 	return strings.TrimSpace(match[1])
 }
 
 func normalizeMediaVolume(volume uint32) uint32 {
-	if volume > 100 {
-		volume = 100
+	if volume > maxVolumePercent {
+		volume = maxVolumePercent
 	}
-	return volume * 1000
+	return volume * volumeScaleThousand
 }

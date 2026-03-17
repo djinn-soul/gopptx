@@ -11,13 +11,17 @@ const (
 	imageLayoutMinTopInches = 2.2
 	imageLayoutMaxTopInches = 4.6
 	imageLayoutMaxTopY      = 7.0
+	imageLayoutColumns      = 2
+	imageLayoutRowsDivisor  = 2
+	bulletOffsetPerItem     = 0.23
+	bulletOffsetMaxInches   = 1.6
 )
 
 func (p *markdownASTParser) nextEmbeddedImageFrame() (styling.Length, styling.Length, styling.Length, styling.Length) {
 	baseY := p.computeEmbeddedImageBaseYInches()
 	slot := p.imagePlacementCount
-	col := slot % 2
-	row := slot / 2
+	col := slot % imageLayoutColumns
+	row := slot / imageLayoutRowsDivisor
 
 	x := imageLayoutStartXInches + float64(col)*imageLayoutGapXInches
 	y := baseY + float64(row)*imageLayoutGapYInches
@@ -36,9 +40,9 @@ func (p *markdownASTParser) computeEmbeddedImageBaseYInches() float64 {
 	if p.current == nil {
 		return imageLayoutMinTopInches
 	}
-	bulletOffset := float64(len(p.current.Bullets)) * 0.23
-	if bulletOffset > 1.6 {
-		bulletOffset = 1.6
+	bulletOffset := float64(len(p.current.Bullets)) * bulletOffsetPerItem
+	if bulletOffset > bulletOffsetMaxInches {
+		bulletOffset = bulletOffsetMaxInches
 	}
 	tableOffset := 0.0
 	if p.current.Table != nil {

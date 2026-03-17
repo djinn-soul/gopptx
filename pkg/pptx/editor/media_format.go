@@ -28,33 +28,33 @@ const (
 // MIMEType returns the canonical MIME type for the format.
 func (f MediaFormat) MIMEType() string {
 	switch strings.ToLower(string(f)) {
-	case "mp4":
+	case string(MediaFormatMP4):
 		return "video/mp4"
-	case "webm":
+	case string(MediaFormatWEBM):
 		return "video/webm"
-	case "avi":
+	case string(MediaFormatAVI):
 		return "video/x-msvideo"
-	case "wmv":
+	case string(MediaFormatWMV):
 		return "video/x-ms-wmv"
-	case "mov":
+	case string(MediaFormatMOV):
 		return "video/quicktime"
-	case "mkv":
+	case string(MediaFormatMKV):
 		return "video/x-matroska"
-	case "m4v":
+	case string(MediaFormatM4V):
 		return "video/x-m4v"
-	case "mp3":
+	case string(MediaFormatMP3):
 		return "audio/mpeg"
-	case "wav":
+	case string(MediaFormatWAV):
 		return "audio/wav"
-	case "wma":
+	case string(MediaFormatWMA):
 		return "audio/x-ms-wma"
-	case "m4a":
+	case string(MediaFormatM4A):
 		return "audio/mp4"
-	case "ogg":
+	case string(MediaFormatOGG):
 		return "audio/ogg"
-	case "flac":
+	case string(MediaFormatFLAC):
 		return "audio/flac"
-	case "aac":
+	case string(MediaFormatAAC):
 		return "audio/aac"
 	default:
 		return ""
@@ -64,7 +64,13 @@ func (f MediaFormat) MIMEType() string {
 // IsVideo reports whether the format is a video type.
 func (f MediaFormat) IsVideo() bool {
 	switch strings.ToLower(string(f)) {
-	case "mp4", "webm", "avi", "wmv", "mov", "mkv", "m4v":
+	case string(MediaFormatMP4),
+		string(MediaFormatWEBM),
+		string(MediaFormatAVI),
+		string(MediaFormatWMV),
+		string(MediaFormatMOV),
+		string(MediaFormatMKV),
+		string(MediaFormatM4V):
 		return true
 	default:
 		return false
@@ -79,33 +85,33 @@ func (f MediaFormat) IsAudio() bool {
 // ParseMediaFormat parses a format extension into MediaFormat.
 func ParseMediaFormat(ext string) (MediaFormat, bool) {
 	switch strings.TrimPrefix(strings.ToLower(strings.TrimSpace(ext)), ".") {
-	case "mp4":
+	case string(MediaFormatMP4):
 		return MediaFormatMP4, true
-	case "webm":
+	case string(MediaFormatWEBM):
 		return MediaFormatWEBM, true
-	case "avi":
+	case string(MediaFormatAVI):
 		return MediaFormatAVI, true
-	case "wmv":
+	case string(MediaFormatWMV):
 		return MediaFormatWMV, true
-	case "mov":
+	case string(MediaFormatMOV):
 		return MediaFormatMOV, true
-	case "mkv":
+	case string(MediaFormatMKV):
 		return MediaFormatMKV, true
-	case "m4v":
+	case string(MediaFormatM4V):
 		return MediaFormatM4V, true
-	case "mp3":
+	case string(MediaFormatMP3):
 		return MediaFormatMP3, true
-	case "wav":
+	case string(MediaFormatWAV):
 		return MediaFormatWAV, true
-	case "wma":
+	case string(MediaFormatWMA):
 		return MediaFormatWMA, true
-	case "m4a":
+	case string(MediaFormatM4A):
 		return MediaFormatM4A, true
-	case "ogg":
+	case string(MediaFormatOGG):
 		return MediaFormatOGG, true
-	case "flac":
+	case string(MediaFormatFLAC):
 		return MediaFormatFLAC, true
-	case "aac":
+	case string(MediaFormatAAC):
 		return MediaFormatAAC, true
 	default:
 		return "", false

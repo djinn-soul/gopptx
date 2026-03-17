@@ -14,6 +14,13 @@ import (
 
 const packageRelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
+const (
+	presentationRelsPath = "ppt/_rels/presentation.xml.rels"
+	contentTypesPath     = "[Content_Types].xml"
+	xmlDeclSuffixLength  = 2
+	namespaceIssueCap    = 3
+)
+
 // PartProvider defines the interface for accessing package parts.
 type PartProvider interface {
 	Has(path string) bool
@@ -48,10 +55,10 @@ func (v *Validator) AddChecker(c Checker) {
 // requiredParts identifies the minimum set of parts for a valid PPTX.
 func requiredParts() map[string]string {
 	return map[string]string{
-		"[Content_Types].xml":             "Content types definition",
-		"_rels/.rels":                     "Package relationships",
-		"ppt/presentation.xml":            "Presentation document",
-		"ppt/_rels/presentation.xml.rels": "Presentation relationships",
+		contentTypesPath:       "Content types definition",
+		"_rels/.rels":          "Package relationships",
+		"ppt/presentation.xml": "Presentation document",
+		presentationRelsPath:   "Presentation relationships",
 	}
 }
 
@@ -252,252 +259,8 @@ func (v *Validator) resolvePath(relsPath, target string) string {
 	return strings.ReplaceAll(resolved, "\\", "/")
 }
 
-func (v *Validator) checkSlideReferences() {
-	presentationRels := "ppt/_rels/presentation.xml.rels"
-	if !v.provider.Has(presentationRels) {
-		return
-	}
-
-	data, _ := v.provider.Get(presentationRels)
-	referencedSlides := make(map[string]bool)
-
-	// Parse relationships using proper XML decoder
-	var rels relationshipsXML
-	decoder := xml.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&rels); err != nil {
-		// If XML parsing fails, the XML validity check will report it
-		return
-	}
-
-	for _, rel := range rels.Relationships {
-		// Check if this is a slide relationship (but not slideMaster or slideLayout)
-		// The type should end with "/slide" not contain "/slide" somewhere
-		if strings.HasSuffix(rel.Type, "/slide") && rel.Target != "" {
-			fullPath := v.resolvePath(presentationRels, rel.Target)
-			referencedSlides[fullPath] = true
-		}
-	}
-
-	// Find actual slide files
-	for _, p := range v.provider.Keys() {
-		if strings.HasPrefix(p, "ppt/slides/slide") && strings.HasSuffix(p, ".xml") && !strings.Contains(p, "_rels") {
-			if !referencedSlides[p] {
-				v.issues = append(v.issues, Issue{
-					Code:        CodeOrphanSlide,
-					Severity:    SeverityInfo,
-					Path:        p,
-					Description: fmt.Sprintf("Orphan slide: %s is not referenced in presentation.xml", p),
-					Repairable:  true,
-				})
-			}
-		}
-	}
-
-	// Check for missing slide files that are referenced
-	for slidePath := range referencedSlides {
-		if !v.provider.Has(slidePath) {
-			v.issues = append(v.issues, Issue{
-				Code:        CodeMissingSlideRef,
-				Severity:    SeverityError,
-				Path:        presentationRels,
-				Description: fmt.Sprintf("Referenced slide not found: %s", slidePath),
-				Repairable:  true,
-			})
-		}
-	}
-}
-
-func (v *Validator) checkContentTypes() {
-	ctPath := "[Content_Types].xml"
-	data, ok := v.provider.Get(ctPath)
-	if !ok {
-		return
-	}
-
-	var ct contentTypesXML
-	decoder := xml.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&ct); err != nil {
-		return
-	}
-
-	overrides := make(map[string]bool)
-	for _, o := range ct.Overrides {
-		overrides[strings.TrimPrefix(o.PartName, "/")] = true
-	}
-
-	defaults := make(map[string]bool)
-	for _, d := range ct.Defaults {
-		defaults[strings.ToLower(d.Extension)] = true
-	}
-
-	for _, p := range v.provider.Keys() {
-		if p == ctPath || strings.HasSuffix(p, ".rels") {
-			continue
-		}
-
-		if overrides[p] {
-			continue
-		}
-
-		ext := strings.TrimPrefix(path.Ext(p), ".")
-		if ext != "" && defaults[strings.ToLower(ext)] {
-			continue
-		}
-
-		v.issues = append(v.issues, Issue{
-			Code:        CodeInvalidContentType,
-			Severity:    SeverityError,
-			Path:        p,
-			Description: fmt.Sprintf("Part %s has no content type registration", p),
-			Repairable:  true,
-		})
-	}
-}
-
 // ValidateZipIntegrity checks if the reader points to a valid zip archive.
 func ValidateZipIntegrity(r io.ReaderAt, size int64) error {
 	_, err := zip.NewReader(r, size)
 	return err
-}
-
-func (v *Validator) checkNamespaces() {
-	paths := v.provider.Keys()
-	issuesChan := make(chan []Issue, len(paths))
-	var wg sync.WaitGroup
-
-	for _, p := range paths {
-		if !strings.HasSuffix(p, ".xml") {
-			continue
-		}
-		wg.Add(1)
-		go func(partPath string) {
-			defer wg.Done()
-			issuesChan <- v.checkNamespacesForPart(partPath)
-		}(p)
-	}
-
-	wg.Wait()
-	close(issuesChan)
-
-	for issues := range issuesChan {
-		v.issues = append(v.issues, issues...)
-	}
-}
-
-func (v *Validator) checkEmptyElements() {
-	// A basic implementation to catch some known fragile elements
-	// that shouldn't be empty self-closing (like p:sldIdLst)
-	// unless they are explicitly handled correctly by a reader.
-	paths := v.provider.Keys()
-	issuesChan := make(chan []Issue, len(paths))
-	var wg sync.WaitGroup
-
-	for _, p := range paths {
-		if !strings.HasSuffix(p, ".xml") {
-			continue
-		}
-		wg.Add(1)
-		go func(partPath string) {
-			defer wg.Done()
-			issuesChan <- v.checkEmptyElementsForPart(partPath)
-		}(p)
-	}
-
-	wg.Wait()
-	close(issuesChan)
-
-	for issues := range issuesChan {
-		v.issues = append(v.issues, issues...)
-	}
-}
-
-func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
-	data, ok := v.provider.Get(partPath)
-	if !ok {
-		return nil
-	}
-
-	content := string(data)
-	xmlDeclIdx := strings.Index(content, "?>")
-	startIdx := xmlDeclIdx + 2
-	if xmlDeclIdx == -1 {
-		startIdx = 0
-	}
-
-	firstTagStart := strings.Index(content[startIdx:], "<")
-	if firstTagStart == -1 {
-		return nil
-	}
-
-	firstTagEnd := strings.Index(content[startIdx+firstTagStart:], ">")
-	if firstTagEnd == -1 {
-		return nil
-	}
-
-	openingTag := content[startIdx+firstTagStart : startIdx+firstTagStart+firstTagEnd+1]
-	if !isPresentationNamespacePart(partPath) {
-		return nil
-	}
-
-	issues := make([]Issue, 0, 3)
-	if !strings.Contains(openingTag, "xmlns:p=") &&
-		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"`) {
-		issues = append(issues, Issue{
-			Code:        CodeMissingNamespace,
-			Severity:    SeverityWarning,
-			Path:        partPath,
-			Description: "Missing presentationml namespace declaration",
-			Repairable:  true,
-			Context:     map[string]string{"ns": "p"},
-		})
-	}
-	if !strings.Contains(openingTag, "xmlns:a=") &&
-		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/drawingml/2006/main"`) {
-		issues = append(issues, Issue{
-			Code:        CodeMissingNamespace,
-			Severity:    SeverityWarning,
-			Path:        partPath,
-			Description: "Missing drawingml namespace declaration",
-			Repairable:  true,
-			Context:     map[string]string{"ns": "a"},
-		})
-	}
-	if !strings.Contains(openingTag, "xmlns:r=") &&
-		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`) {
-		issues = append(issues, Issue{
-			Code:        CodeMissingNamespace,
-			Severity:    SeverityWarning,
-			Path:        partPath,
-			Description: "Missing relationships namespace declaration",
-			Repairable:  true,
-			Context:     map[string]string{"ns": "r"},
-		})
-	}
-	return issues
-}
-
-func (v *Validator) checkEmptyElementsForPart(partPath string) []Issue {
-	data, ok := v.provider.Get(partPath)
-	if !ok {
-		return nil
-	}
-	content := string(data)
-	if !strings.Contains(content, "<p:sldIdLst/>") {
-		return nil
-	}
-	return []Issue{{
-		Code:        CodeEmptyRequiredElement,
-		Severity:    SeverityInfo,
-		Path:        partPath,
-		Description: "Found empty self-closing <p:sldIdLst/> element",
-		Repairable:  true,
-		Context:     map[string]string{"element": "p:sldIdLst"},
-	}}
-}
-
-func isPresentationNamespacePart(partPath string) bool {
-	return strings.HasPrefix(partPath, "ppt/presentation.xml") ||
-		strings.HasPrefix(partPath, "ppt/slides/") ||
-		strings.HasPrefix(partPath, "ppt/slideMasters/") ||
-		strings.HasPrefix(partPath, "ppt/slideLayouts/")
 }

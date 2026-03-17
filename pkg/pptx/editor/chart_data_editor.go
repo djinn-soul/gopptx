@@ -113,12 +113,19 @@ func resolveChartRefFast(
 	slideIndex int,
 ) (common.SlideChartRef, error) {
 	if selector.Index == nil && selector.RelID == "" {
-		return common.SlideChartRef{}, fmt.Errorf("slide %d: chart selector requires index or rel_id", slideIndex)
+		return common.SlideChartRef{}, fmt.Errorf(
+			"slide %d: chart selector requires index or rel_id",
+			slideIndex,
+		)
 	}
 	if selector.RelID != "" {
 		ref, ok := refsByRelID[selector.RelID]
 		if !ok {
-			return common.SlideChartRef{}, fmt.Errorf("slide %d: chart with rel_id %q not found", slideIndex, selector.RelID)
+			return common.SlideChartRef{}, fmt.Errorf(
+				"slide %d: chart with rel_id %q not found",
+				slideIndex,
+				selector.RelID,
+			)
 		}
 		if selector.Index != nil && ref.Index != *selector.Index {
 			return common.SlideChartRef{}, fmt.Errorf(
@@ -132,7 +139,11 @@ func resolveChartRefFast(
 	}
 	ref, ok := refsByIndex[*selector.Index]
 	if !ok {
-		return common.SlideChartRef{}, fmt.Errorf("slide %d: chart with index %d not found", slideIndex, *selector.Index)
+		return common.SlideChartRef{}, fmt.Errorf(
+			"slide %d: chart with index %d not found",
+			slideIndex,
+			*selector.Index,
+		)
 	}
 	return ref, nil
 }
@@ -141,7 +152,6 @@ func (e *PresentationEditor) applyChartDataUpdateByRef(
 	chartRef common.SlideChartRef,
 	req common.ChartDataUpdate,
 ) error {
-
 	chartXML, ok := e.parts.Get(chartRef.ChartPart)
 	if !ok {
 		return fmt.Errorf("chart part %s not found", chartRef.ChartPart)
@@ -260,7 +270,10 @@ func (e *PresentationEditor) updateChartEmbeddingRel(chartPart, excelPath string
 	return nil
 }
 
-func (e *PresentationEditor) writeRelationships(path string, rels []common.EditorRelationship) error {
+func (e *PresentationEditor) writeRelationships(
+	path string,
+	rels []common.EditorRelationship,
+) error {
 	e.parts.Set(path, []byte(renderRelationshipsXML(rels)))
 	return nil
 }
@@ -277,7 +290,11 @@ func (e *PresentationEditor) addContentTypeOverride(partName, contentType string
 		return
 	}
 
-	override := fmt.Sprintf(`<Override PartName="%s" ContentType="%s"/>`, partNameRooted, contentType)
+	override := fmt.Sprintf(
+		`<Override PartName="%s" ContentType="%s"/>`,
+		partNameRooted,
+		contentType,
+	)
 	replaced := bytes.Replace(data, []byte("</Types>"), []byte(override+"</Types>"), 1)
 	e.parts.Set(ctPath, replaced)
 }

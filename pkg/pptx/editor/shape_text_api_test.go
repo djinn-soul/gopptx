@@ -247,6 +247,53 @@ func TestShapeTextAPI_UpdateDeckRunTexts(t *testing.T) {
 	}
 }
 
+func TestShapeTextAPI_UpdateDeckRunTexts_FailFastByInputOrder(t *testing.T) {
+	basePath := writeDeckFixture(t, "shape-text-api-deck-bulk-failfast.pptx", []elements.SlideContent{
+		elements.NewSlide("Text API"),
+		elements.NewSlide("Text API 2"),
+	})
+
+	ed, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	validShapeID, err := ed.AddShape(1, "rect", 120, 120, 2000, 1000)
+	if err != nil {
+		t.Fatalf("add second slide shape: %v", err)
+	}
+	if err := ed.SetShapeRuns(1, validShapeID, []common.TextRun{{Text: "Two"}}); err != nil {
+		t.Fatalf("set second slide runs: %v", err)
+	}
+
+	err = ed.UpdateDeckRunTexts([]common.SlideRunTextUpdates{
+		{
+			SlideIndex: 99, // invalid first item should fail before later slide updates
+			Updates: []common.ShapeRunTextUpdate{
+				{ShapeID: 1, RunIndex: 0, Text: "Nope"},
+			},
+		},
+		{
+			SlideIndex: 1,
+			Updates: []common.ShapeRunTextUpdate{
+				{ShapeID: validShapeID, RunIndex: 0, Text: "Beta"},
+			},
+		},
+	})
+	if err == nil {
+		t.Fatalf("expected out-of-range error")
+	}
+
+	secondRuns, err := ed.GetShapeRuns(1, validShapeID)
+	if err != nil {
+		t.Fatalf("get second shape runs: %v", err)
+	}
+	if secondRuns[0].Text != "Two" {
+		t.Fatalf("expected second slide runs unchanged on fail-fast, got %#v", secondRuns)
+	}
+}
+
 func TestShapeTextAPI_GetShapeRunsRejectsMissingShape(t *testing.T) {
 	basePath := writeDeckFixture(t, "shape-text-api-missing-shape.pptx", []elements.SlideContent{
 		elements.NewSlide("Text API"),

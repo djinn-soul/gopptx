@@ -126,9 +126,9 @@ func normalizeInputForPNG(inPath, title string) (string, func(), error) {
 }
 
 func defaultPNGOutputDir(inPath string) string {
-	cleanIn := strings.TrimSpace(inPath)
-	ext := strings.ToLower(filepath.Ext(cleanIn))
-	base := strings.TrimSuffix(cleanIn, ext)
+	cleanedIn := strings.TrimSpace(inPath)
+	ext := strings.ToLower(filepath.Ext(cleanedIn))
+	base := strings.TrimSuffix(cleanedIn, ext)
 	if strings.TrimSpace(base) == "" {
 		base = "export"
 	}

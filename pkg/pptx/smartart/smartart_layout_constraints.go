@@ -8,53 +8,57 @@ type layoutConstraint struct {
 	maxDepth           int
 }
 
-var smartArtLayoutConstraints = map[Layout]layoutConstraint{
-	BasicBlockList:      {maxItems: 5},
-	VerticalBlockList:   {maxItems: 3},
-	HorizontalBulletLst: {maxItems: 4},
-	SquareAccentList:    {maxItems: 4},
-	PictureAccentList:   {maxItems: 3},
+const (
+	layoutMaxTwo   = 2
+	layoutMaxThree = 3
+	layoutMaxFour  = 4
+	layoutMaxFive  = 5
+)
 
-	BasicProcess:           {maxItems: 3},
-	AccentProcess:          {maxItems: 5},
-	AlternatingFlow:        {maxItems: 3},
-	ContinuousBlockProcess: {maxItems: 3},
-
-	BasicCycle: {maxItems: 5},
-	TextCycle:  {maxItems: 5},
-	BlockCycle: {maxItems: 5},
-
-	OrgChart: {
-		requireSingleRoot: true,
-		maxRootChildren:   4,
-		maxDepth:          2,
-	},
-	Hierarchy: {
-		requireSingleRoot:  true,
-		maxRootChildren:    2,
-		maxChildrenPerNode: 2,
-		maxDepth:           3,
-	},
-	HorizontalHierarchy: {
-		requireSingleRoot:  true,
-		maxRootChildren:    2,
-		maxChildrenPerNode: 2,
-		maxDepth:           3,
-	},
-
-	BasicVenn:   {maxItems: 3},
-	LinearVenn:  {maxItems: 4},
-	StackedVenn: {maxItems: 4},
-	BasicRadial: {maxItems: 4},
-
-	BasicMatrix:  {maxItems: 4},
-	TitledMatrix: {maxItems: 4},
-
-	BasicPyramid:    {maxItems: 3},
-	InvertedPyramid: {maxItems: 3},
-
-	PictureStrips: {maxItems: 3},
-	PictureGrid:   {maxItems: 4},
+func layoutConstraintFor(layout Layout) (layoutConstraint, bool) {
+	switch layout {
+	case BasicBlockList:
+		return layoutConstraint{maxItems: layoutMaxFive}, true
+	case VerticalBlockList:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	case HorizontalBulletLst:
+		return layoutConstraint{maxItems: layoutMaxFour}, true
+	case SquareAccentList:
+		return layoutConstraint{maxItems: layoutMaxFour}, true
+	case PictureAccentList:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	case BasicProcess:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	case AccentProcess:
+		return layoutConstraint{maxItems: layoutMaxFive}, true
+	case AlternatingFlow:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	case ContinuousBlockProcess:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	case BasicCycle, TextCycle, BlockCycle:
+		return layoutConstraint{maxItems: layoutMaxFive}, true
+	case OrgChart:
+		return layoutConstraint{
+			requireSingleRoot: true,
+			maxRootChildren:   layoutMaxFour,
+			maxDepth:          layoutMaxTwo,
+		}, true
+	case Hierarchy, HorizontalHierarchy:
+		return layoutConstraint{
+			requireSingleRoot:  true,
+			maxRootChildren:    layoutMaxTwo,
+			maxChildrenPerNode: layoutMaxTwo,
+			maxDepth:           layoutMaxThree,
+		}, true
+	case BasicVenn:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	case LinearVenn, StackedVenn, BasicRadial, BasicMatrix, TitledMatrix, PictureGrid:
+		return layoutConstraint{maxItems: layoutMaxFour}, true
+	case BasicPyramid, InvertedPyramid, PictureStrips:
+		return layoutConstraint{maxItems: layoutMaxThree}, true
+	default:
+		return layoutConstraint{}, false
+	}
 }
 
 func hasNestedChildren(nodes []Node) bool {

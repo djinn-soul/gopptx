@@ -112,6 +112,24 @@ func TestAddChartDeduplicatesIdenticalExcelEmbeddings(t *testing.T) {
 	}
 }
 
+func TestEnsureExcelEmbeddingHashIndex_RefreshesAfterPartMutation(t *testing.T) {
+	editor := &PresentationEditor{
+		parts: NewPartStore(),
+	}
+	editor.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx", []byte("sheet-1"))
+
+	index1 := editor.ensureExcelEmbeddingHashIndex()
+	if len(index1) != 1 {
+		t.Fatalf("expected 1 embedding hash entry, got %d", len(index1))
+	}
+
+	editor.parts.Set("ppt/embeddings/Microsoft_Excel_Worksheet2.xlsx", []byte("sheet-2"))
+	index2 := editor.ensureExcelEmbeddingHashIndex()
+	if len(index2) != 2 {
+		t.Fatalf("expected hash index refresh to include second embedding, got %d", len(index2))
+	}
+}
+
 func TestMergeFromFilePreservesChartEmbeddingChain(t *testing.T) {
 	sourcePath := writeDeckFixture(t, "source-chart-base.pptx", []elements.SlideContent{
 		elements.NewSlide("Source Chart"),

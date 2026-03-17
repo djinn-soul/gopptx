@@ -1,7 +1,6 @@
 """gopptx - High-performance PPTX engine powered by Go."""
-# ruff: noqa: RUF022
 
-from .api import GopptxError, Presentation, Slide
+from .api import GopptxError, Presentation, PresentationBuilder, Slide
 from .constants import (
     ALIGN_CENTER,
     ALIGN_JUSTIFY,
@@ -36,7 +35,12 @@ from .ops import (
     OP_SLIDE_COUNT,
     SUPPORTED_OPS,
 )
-from .presentation.master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
+from .presentation.slides.master import (
+    SlideLayout,
+    SlideLayouts,
+    SlideMaster,
+    SlideMasters,
+)
 from .schemas import (
     Author,
     BatchCommand,
@@ -60,6 +64,7 @@ from .schemas import (
     TableCellInfo,
     TableInfo,
 )
+from .shapes import ShapeBuilder
 from .slide import (
     CategoryChartData,
     CategorySeries,
@@ -84,7 +89,8 @@ from .slide import (
     XyChartData,
     XySeries,
 )
-from .slide.table import Cell, Table
+from .slide.tables.table import Cell, Table
+from .text import RunBuilder
 
 __all__ = (
     "ALIGN_CENTER",
@@ -120,9 +126,9 @@ __all__ = (
     "Author",
     "BatchCommand",
     "BatchItemResult",
-    "Cell",
     "CategoryChartData",
     "CategorySeries",
+    "Cell",
     "Chart",
     "ChartCollection",
     "ChartDataUpdate",
@@ -138,10 +144,13 @@ __all__ = (
     "GopptxError",
     "ParagraphProps",
     "Presentation",
+    "PresentationBuilder",
     "PresentationMetadata",
     "Run",
+    "RunBuilder",
     "RunHyperlink",
     "Shape",
+    "ShapeBuilder",
     "ShapeCollection",
     "ShapeProps",
     "ShapeProxy",
@@ -160,12 +169,12 @@ __all__ = (
     "SlideMetadata",
     "SlideSize",
     "Table",
+    "TableCellInfo",
     "TableColumn",
     "TableColumns",
+    "TableInfo",
     "TableRow",
     "TableRows",
-    "TableCellInfo",
-    "TableInfo",
     "TextFrameProps",
     "XyChartData",
     "XySeries",

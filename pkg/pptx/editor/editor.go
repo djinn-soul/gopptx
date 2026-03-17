@@ -50,6 +50,9 @@ type PresentationEditor struct {
 	notesInventory map[string]string
 	nextNotesNum   int
 
+	// SmartArt diagram counter (for ppt/diagrams/data%d.xml etc.)
+	nextDiagramNum int
+
 	// Comment authors
 	authorCache   map[int64]comments.Author
 	nextAuthorID  int64

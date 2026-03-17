@@ -1,20 +1,17 @@
-import os
 import pathlib
 
 import pytest
 from gopptx import Presentation
 
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+input_deck = project_root / "examples/assets/01/01_basic_pptx.pptx"
 
 
 def test_slide_management() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         initial_count = prs.slide_count
 
         # Add slide
@@ -39,10 +36,10 @@ def test_slide_management() -> None:
 
 
 def test_presentation_metadata() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         meta = prs.metadata
         assert "title" in meta
         assert "size" in meta
@@ -56,10 +53,10 @@ def test_presentation_metadata() -> None:
 
 
 def test_sections() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         prs.add_slide("S1")
         prs.add_slide("S2")
 
@@ -74,10 +71,10 @@ def test_sections() -> None:
 
 
 def test_slide_layouts_and_masters() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         masters = prs.slide_masters
         assert len(masters) > 0
 
@@ -86,7 +83,7 @@ def test_slide_layouts_and_masters() -> None:
         assert len(layouts) > 0
 
         layout = layouts[0]
-        assert layout.name != ""  # noqa: PLC1901
+        assert layout.name
 
         # List all layouts
         all_layouts = prs.list_slide_layouts()

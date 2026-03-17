@@ -2,8 +2,7 @@ package vba
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
+	"encoding/binary"
 	"strings"
 	"testing"
 )
@@ -113,16 +112,94 @@ func TestInspectCFB_Invalid(t *testing.T) {
 }
 
 func TestInspectCFB_ValidFixture(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("testdata", "valid_cfb.bin"))
-	if err != nil {
-		t.Fatalf("read valid CFB fixture: %v", err)
-	}
+	data := minimalValidCFB()
 	info, err := InspectCFB(data)
 	if err != nil {
 		t.Fatalf("InspectCFB(valid fixture) error = %v", err)
 	}
 	if len(info.Entries) == 0 {
 		t.Fatal("expected at least one CFB entry from valid fixture")
+	}
+}
+
+// minimalValidCFB constructs a minimal Compound File Binary blob (v3, 512-byte sectors)
+// containing a root storage and one child stream, which is sufficient for InspectCFB.
+func minimalValidCFB() []byte {
+	const sectorSize = 512
+	const (
+		freeSect   = uint32(0xFFFFFFFF)
+		endOfChain = uint32(0xFFFFFFFE)
+		fatSect    = uint32(0xFFFFFFFD)
+		noStream   = uint32(0xFFFFFFFF)
+	)
+
+	buf := make([]byte, 4*sectorSize) // header + FAT sector + dir sector + stream sector
+
+	// ---- Header (offset 0-511) ----
+	copy(buf[0:], []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}) // magic
+	binary.LittleEndian.PutUint16(buf[24:], 0x003E)                       // minor version
+	binary.LittleEndian.PutUint16(buf[26:], 0x0003)                       // major version 3
+	binary.LittleEndian.PutUint16(buf[28:], 0xFFFE)                       // little-endian
+	binary.LittleEndian.PutUint16(buf[30:], 9)                            // sector size power (2^9 = 512)
+	binary.LittleEndian.PutUint16(buf[32:], 6)                            // mini sector size power (2^6 = 64)
+	binary.LittleEndian.PutUint32(buf[44:], 1)                            // 1 FAT sector
+	binary.LittleEndian.PutUint32(buf[48:], 1)                            // first directory sector = 1
+	binary.LittleEndian.PutUint32(buf[56:], 4096)                         // mini stream cutoff size
+	binary.LittleEndian.PutUint32(buf[60:], endOfChain)                   // first mini FAT sector (none)
+	binary.LittleEndian.PutUint32(buf[68:], endOfChain)                   // first DIFAT sector (none)
+	binary.LittleEndian.PutUint32(buf[76:], 0)                            // DIFAT[0] = sector 0 (FAT)
+	for i := 80; i < 512; i += 4 {
+		binary.LittleEndian.PutUint32(buf[i:], freeSect)
+	}
+
+	// ---- FAT sector (sector 0, offset 512) ----
+	fat := buf[sectorSize:]
+	binary.LittleEndian.PutUint32(fat[0:], fatSect)    // sector 0 = this FAT sector
+	binary.LittleEndian.PutUint32(fat[4:], endOfChain) // sector 1 = dir sector (end)
+	binary.LittleEndian.PutUint32(fat[8:], endOfChain) // sector 2 = stream sector (end)
+	for i := 12; i < sectorSize; i += 4 {
+		binary.LittleEndian.PutUint32(fat[i:], freeSect)
+	}
+
+	// ---- Directory sector (sector 1, offset 1024) — 4 entries × 128 bytes ----
+	dir := buf[2*sectorSize:]
+
+	// Entry 0: Root Entry
+	cfbPutUTF16LE(dir[0:64], "Root Entry")
+	binary.LittleEndian.PutUint16(dir[64:], 22)          // name len: 11 chars × 2 bytes
+	dir[66] = 5                                          // object type: root storage
+	dir[67] = 1                                          // color: black
+	binary.LittleEndian.PutUint32(dir[68:], noStream)    // no left sibling
+	binary.LittleEndian.PutUint32(dir[72:], noStream)    // no right sibling
+	binary.LittleEndian.PutUint32(dir[76:], 1)           // child = entry 1
+	binary.LittleEndian.PutUint32(dir[116:], endOfChain) // start sector (no mini stream)
+
+	// Entry 1: "VBA" stream (offset 128 in dir sector)
+	e1 := dir[128:]
+	cfbPutUTF16LE(e1[0:64], "VBA")
+	binary.LittleEndian.PutUint16(e1[64:], 8)           // name len: 4 chars × 2 bytes (V,B,A,\0)
+	e1[66] = 2                                          // object type: stream
+	e1[67] = 1                                          // color: black
+	binary.LittleEndian.PutUint32(e1[68:], noStream)    // no left sibling
+	binary.LittleEndian.PutUint32(e1[72:], noStream)    // no right sibling
+	binary.LittleEndian.PutUint32(e1[76:], noStream)    // no child
+	binary.LittleEndian.PutUint32(e1[116:], 2)          // starting sector = 2
+	binary.LittleEndian.PutUint32(e1[120:], sectorSize) // size = 512 bytes
+
+	// Entries 2-3: unallocated (all zeros, type 0x00) — already zeroed by make().
+
+	// Stream data (sector 2, offset 1536): zeros, already zeroed by make().
+	return buf
+}
+
+// cfbPutUTF16LE writes s as UTF-16-LE into dst, with a null terminator.
+func cfbPutUTF16LE(dst []byte, s string) {
+	for i, c := range s {
+		if i*2+1 >= len(dst) {
+			break
+		}
+		dst[i*2] = byte(c)
+		dst[i*2+1] = 0
 	}
 }
 

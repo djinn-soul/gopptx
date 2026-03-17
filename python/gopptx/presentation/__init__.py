@@ -1,8 +1,8 @@
 """Presentation-domain modules."""
 
 from .batch import BatchContext
-from .master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
 from .presentation import Presentation
+from .slides import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
 
 __all__ = [
     "BatchContext",

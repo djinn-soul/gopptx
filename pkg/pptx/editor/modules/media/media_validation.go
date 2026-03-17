@@ -7,43 +7,24 @@ import (
 	"strings"
 )
 
-const maxMediaPayloadBytes = 512 * 1024 * 1024 // 512 MiB
+const (
+	maxMediaPayloadBytes = 512 * 1024 * 1024 // 512 MiB
 
-var (
-	videoMimeToExt = map[string]string{
-		"video/mp4":        "mp4",
-		"video/webm":       "webm",
-		"video/x-msvideo":  "avi",
-		"video/avi":        "avi",
-		"video/x-ms-wmv":   "wmv",
-		"video/wmv":        "wmv",
-		"video/quicktime":  "mov",
-		"video/x-matroska": "mkv",
-		"video/mkv":        "mkv",
-		"video/x-m4v":      "m4v",
-		"video/m4v":        "m4v",
-	}
-	audioMimeToExt = map[string]string{
-		"audio/mpeg":     "mp3",
-		"audio/mp3":      "mp3",
-		"audio/wav":      "wav",
-		"audio/x-wav":    "wav",
-		"audio/m4a":      "m4a",
-		"audio/mp4":      "m4a",
-		"audio/x-ms-wma": "wma",
-		"audio/wma":      "wma",
-		"audio/ogg":      "ogg",
-		"audio/flac":     "flac",
-		"audio/aac":      "aac",
-	}
+	extWebm = "webm"
+	extWmv  = "wmv"
+	extMov  = "mov"
+	extMkv  = "mkv"
+	extM4a  = "m4a"
+	extOgg  = "ogg"
+	extFlac = "flac"
 )
 
 func ResolveVideoExtension(mimeType string, filePath string, hasInlineData bool) (string, error) {
-	return resolveMediaExtension("video", mimeType, filePath, hasInlineData, videoMimeToExt)
+	return resolveMediaExtension("video", mimeType, filePath, hasInlineData, videoExtForMIME, isAllowedVideoExt)
 }
 
 func ResolveAudioExtension(mimeType string, filePath string, hasInlineData bool) (string, error) {
-	return resolveMediaExtension("audio", mimeType, filePath, hasInlineData, audioMimeToExt)
+	return resolveMediaExtension("audio", mimeType, filePath, hasInlineData, audioExtForMIME, isAllowedAudioExt)
 }
 
 func resolveMediaExtension(
@@ -51,11 +32,12 @@ func resolveMediaExtension(
 	mimeType string,
 	filePath string,
 	hasInlineData bool,
-	mimeToExt map[string]string,
+	resolveMIME func(string) (string, bool),
+	isAllowedExt func(string) bool,
 ) (string, error) {
 	normalizedMime := normalizeMIMEType(mimeType)
 	if normalizedMime != "" {
-		if ext, ok := mimeToExt[normalizedMime]; ok {
+		if ext, ok := resolveMIME(normalizedMime); ok {
 			return ext, nil
 		}
 		return "", fmt.Errorf("unsupported %s mime type: %s", kind, mimeType)
@@ -69,12 +51,70 @@ func resolveMediaExtension(
 	if ext == "" {
 		return "", fmt.Errorf("%s file extension is required when mime type is empty", kind)
 	}
-	for _, allowed := range mimeToExt {
-		if ext == allowed {
-			return ext, nil
-		}
+	if isAllowedExt(ext) {
+		return ext, nil
 	}
 	return "", fmt.Errorf("unsupported %s file extension: %s", kind, ext)
+}
+
+func videoExtForMIME(mimeType string) (string, bool) {
+	switch mimeType {
+	case "video/mp4":
+		return "mp4", true
+	case "video/webm":
+		return extWebm, true
+	case "video/x-msvideo", "video/avi":
+		return "avi", true
+	case "video/x-ms-wmv", "video/wmv":
+		return extWmv, true
+	case "video/quicktime":
+		return extMov, true
+	case "video/x-matroska", "video/mkv":
+		return extMkv, true
+	case "video/x-m4v", "video/m4v":
+		return "m4v", true
+	default:
+		return "", false
+	}
+}
+
+func audioExtForMIME(mimeType string) (string, bool) {
+	switch mimeType {
+	case "audio/mpeg", "audio/mp3":
+		return "mp3", true
+	case "audio/wav", "audio/x-wav":
+		return "wav", true
+	case "audio/m4a", "audio/mp4":
+		return extM4a, true
+	case "audio/x-ms-wma", "audio/wma":
+		return "wma", true
+	case "audio/ogg":
+		return extOgg, true
+	case "audio/flac":
+		return extFlac, true
+	case "audio/aac":
+		return "aac", true
+	default:
+		return "", false
+	}
+}
+
+func isAllowedVideoExt(ext string) bool {
+	switch ext {
+	case "mp4", extWebm, "avi", extWmv, extMov, extMkv, "m4v":
+		return true
+	default:
+		return false
+	}
+}
+
+func isAllowedAudioExt(ext string) bool {
+	switch ext {
+	case "mp3", "wav", extM4a, "wma", extOgg, extFlac, "aac":
+		return true
+	default:
+		return false
+	}
 }
 
 func ValidateMediaPayloadSize(data []byte, kind string) error {

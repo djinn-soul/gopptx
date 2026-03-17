@@ -2,6 +2,7 @@ package main
 
 /*
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef uintptr_t DeckHandle;
 */
@@ -16,6 +17,8 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
+	"github.com/djinn-soul/gopptx/pkg/pptx/editorexport"
+	"github.com/djinn-soul/gopptx/pkg/pptx/editorurlfetch"
 )
 
 //nolint:gochecknoglobals // global bridge state
@@ -47,6 +50,14 @@ func deck_global_error() *C.char {
 }
 
 // main is required for cgo build but not used for library.
+func init() { //nolint:gochecknoinits // required for cgo shared library registration
+	editorexport.Register()
+	editorurlfetch.Register()
+	editor.RegisterEditorLookupFn(func(h int64) (*editor.PresentationEditor, bool) {
+		return editor.GetEditor(deckRegistry, editor.Handle(h))
+	})
+}
+
 func main() {}
 
 // recoverPanic prevents Go panics from crashing the C host.
