@@ -6,12 +6,17 @@ import (
 	"strings"
 )
 
+const (
+	axisTickPosLow  = "low"
+	axisCrossesAuto = "autoZero"
+)
+
 func validateAxisTickLabelPosition(field string, value *string) error {
 	if value == nil {
 		return nil
 	}
 	switch strings.TrimSpace(*value) {
-	case "nextTo", "high", "low", "none":
+	case "nextTo", "high", axisTickPosLow, "none":
 		return nil
 	default:
 		return fmt.Errorf("%s must be one of nextTo,high,low,none", field)
@@ -23,7 +28,7 @@ func validateAxisCrosses(field string, value *string) error {
 		return nil
 	}
 	switch strings.TrimSpace(*value) {
-	case "autoZero", "max", "min":
+	case axisCrossesAuto, "max", "min":
 		return nil
 	default:
 		return fmt.Errorf("%s must be one of autoZero,max,min", field)
@@ -64,46 +69,29 @@ func patchAxisTickLabelPosition(xml string, axisTag string, value *string) strin
 }
 
 func patchAxisMajorGridlines(xml string, axisTag string, value *bool) string {
-	if value == nil {
-		return xml
-	}
-	startTag := "<c:" + axisTag + ">"
-	endTag := "</c:" + axisTag + ">"
 	reMajor := regexp.MustCompile(`(?s)<c:majorGridlines(?:\s*/>|>.*?</c:majorGridlines>)`)
 	node := `<c:majorGridlines/>`
-
-	start := strings.Index(xml, startTag)
-	for start >= 0 {
-		endRel := strings.Index(xml[start:], endTag)
-		if endRel < 0 {
-			break
-		}
-		end := start + endRel + len(endTag)
-		block := xml[start:end]
-		nextBlock, ok := patchAxisMajorGridBlock(block, *value, reMajor, node)
-		if !ok {
-			start = nextAxisStart(xml[end:], startTag, end)
-			continue
-		}
-		block = nextBlock
-		xml = xml[:start] + block + xml[end:]
-		nextStart := strings.Index(xml[start+len(block):], startTag)
-		if nextStart < 0 {
-			break
-		}
-		start = start + len(block) + nextStart
-	}
-	return xml
+	return patchAxisGridlines(xml, axisTag, value, reMajor, node)
 }
 
 func patchAxisMinorGridlines(xml string, axisTag string, value *bool) string {
+	reMinor := regexp.MustCompile(`(?s)<c:minorGridlines(?:\s*/>|>.*?</c:minorGridlines>)`)
+	node := `<c:minorGridlines/>`
+	return patchAxisGridlines(xml, axisTag, value, reMinor, node)
+}
+
+func patchAxisGridlines(
+	xml string,
+	axisTag string,
+	value *bool,
+	re *regexp.Regexp,
+	node string,
+) string {
 	if value == nil {
 		return xml
 	}
 	startTag := "<c:" + axisTag + ">"
 	endTag := "</c:" + axisTag + ">"
-	reMinor := regexp.MustCompile(`(?s)<c:minorGridlines(?:\s*/>|>.*?</c:minorGridlines>)`)
-	node := `<c:minorGridlines/>`
 
 	start := strings.Index(xml, startTag)
 	for start >= 0 {
@@ -113,7 +101,7 @@ func patchAxisMinorGridlines(xml string, axisTag string, value *bool) string {
 		}
 		end := start + endRel + len(endTag)
 		block := xml[start:end]
-		nextBlock, ok := patchAxisMinorGridBlock(block, *value, reMinor, node)
+		nextBlock, ok := patchAxisGridBlock(block, *value, re, node)
 		if !ok {
 			start = nextAxisStart(xml[end:], startTag, end)
 			continue
@@ -129,35 +117,16 @@ func patchAxisMinorGridlines(xml string, axisTag string, value *bool) string {
 	return xml
 }
 
-func patchAxisMajorGridBlock(
+func patchAxisGridBlock(
 	block string,
 	enable bool,
-	reMajor *regexp.Regexp,
+	reGrid *regexp.Regexp,
 	node string,
 ) (string, bool) {
 	if !enable {
-		return reMajor.ReplaceAllString(block, ""), true
+		return reGrid.ReplaceAllString(block, ""), true
 	}
-	if reMajor.MatchString(block) {
-		return block, true
-	}
-	insertAt := axisNodeInsertIndex(block)
-	if insertAt < 0 {
-		return "", false
-	}
-	return block[:insertAt] + node + block[insertAt:], true
-}
-
-func patchAxisMinorGridBlock(
-	block string,
-	enable bool,
-	reMinor *regexp.Regexp,
-	node string,
-) (string, bool) {
-	if !enable {
-		return reMinor.ReplaceAllString(block, ""), true
-	}
-	if reMinor.MatchString(block) {
+	if reGrid.MatchString(block) {
 		return block, true
 	}
 	insertAt := axisNodeInsertIndex(block)

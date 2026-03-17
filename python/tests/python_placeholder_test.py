@@ -1,19 +1,12 @@
 import pathlib
 
-import pytest
 from gopptx.api_errors import GopptxError
 from gopptx.presentation.presentation import Presentation
-from gopptx.slide.placeholder import BodyPlaceholder, Placeholder, TitlePlaceholder
-
-# Add project root to sys.path
-project_root = pathlib.Path(__file__).parent.parent.parent.resolve()
-
-
-@pytest.fixture
-def presentation() -> Presentation:
-    p = Presentation()
-    p.open(str(project_root / "testdata" / "placeholders.pptx"))
-    return p
+from gopptx.slide.placeholders.placeholder import (
+    BodyPlaceholder,
+    Placeholder,
+    TitlePlaceholder,
+)
 
 
 def test_list_placeholders(presentation: Presentation) -> None:
@@ -38,7 +31,7 @@ def test_insert_placeholder_text(presentation: Presentation) -> None:
     placeholders = slide.placeholders
 
     # Find any placeholder we can type into
-    ph = placeholders()[0]
+    ph = next(iter(placeholders))
 
     # Insert text
     ph.insert_text("Injected Title Text")
@@ -61,7 +54,7 @@ def test_insert_placeholder_picture(
     # We just need to insert a picture and make sure it doesn't crash,
     # since we don't have a specific picture placeholder fixture here.
     slide = presentation.slides[0]
-    ph = slide.placeholders()[0]
+    ph = next(iter(slide.placeholders))
 
     img_path = tmp_path / "test_pic.jpg"
     pathlib.Path(img_path).write_bytes(b"fake image data")
@@ -78,7 +71,7 @@ def test_insert_placeholder_picture(
 def test_insert_placeholder_table(presentation: Presentation) -> None:
     """Test that insert_table API exists and can be called."""
     slide = presentation.slides[0]
-    ph = slide.placeholders()[0]
+    ph = next(iter(slide.placeholders))
 
     # Test API exists and is callable
     # Note: This may not create an actual table if the placeholder isn't a table placeholder,
@@ -95,7 +88,7 @@ def test_insert_placeholder_table(presentation: Presentation) -> None:
 def test_insert_placeholder_chart(presentation: Presentation) -> None:
     """Test that insert_chart API exists and can be called."""
     slide = presentation.slides[0]
-    ph = slide.placeholders()[0]
+    ph = next(iter(slide.placeholders))
 
     # Test API exists and is callable
     try:
@@ -113,7 +106,7 @@ def test_insert_placeholder_chart(presentation: Presentation) -> None:
 
 def test_placeholder_repr(presentation: Presentation) -> None:
     slide = presentation.slides[0]
-    ph = slide.placeholders()[0]
+    ph = next(iter(slide.placeholders))
 
     r = repr(ph)
     assert "Placeholder" in r
@@ -123,7 +116,7 @@ def test_placeholder_repr(presentation: Presentation) -> None:
 def test_placeholder_collection_idx_lookup(presentation: Presentation) -> None:
     slide = presentation.slides[0]
     collection = slide.placeholders
-    first = collection()[0]
+    first = next(iter(collection))
     by_idx = collection[first.idx]
     assert by_idx.idx == first.idx
     assert by_idx.placeholder_format.type == first.placeholder_format.type
@@ -131,7 +124,7 @@ def test_placeholder_collection_idx_lookup(presentation: Presentation) -> None:
 
 def test_placeholder_type_specific_classes(presentation: Presentation) -> None:
     slide = presentation.slides[0]
-    placeholders = slide.placeholders()
+    placeholders = list(slide.placeholders)
 
     assert any(isinstance(ph, TitlePlaceholder) for ph in placeholders)
     assert any(isinstance(ph, BodyPlaceholder) for ph in placeholders)

@@ -22,8 +22,17 @@ func RootTestdataDir() string {
 	return base
 }
 
+// SkipIfMissing calls t.Skip when path does not exist on disk.
+func SkipIfMissing(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err != nil {
+		t.Skipf("skipping: testdata file not present: %s", path)
+	}
+}
+
 // FixtureZipReader reads a fixture file from testdata and returns a [zip.Reader].
 // For backward compatibility, it falls back to testdata/ppt_rs.
+// The test is skipped when the fixture file is not present (e.g. in CI without testdata).
 func FixtureZipReader(t *testing.T, fixtureName string) *zip.Reader {
 	t.Helper()
 
@@ -32,6 +41,8 @@ func FixtureZipReader(t *testing.T, fixtureName string) *zip.Reader {
 	if _, err := os.Stat(fixturePath); err != nil {
 		fixturePath = filepath.Join(root, "ppt_rs", fixtureName)
 	}
+
+	SkipIfMissing(t, fixturePath)
 
 	data, err := os.ReadFile(fixturePath)
 	if err != nil {

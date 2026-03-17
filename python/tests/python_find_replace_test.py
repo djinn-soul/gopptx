@@ -1,25 +1,19 @@
-import os
 import pathlib
-import sys
 
 import pytest
 from gopptx import Presentation
 
-# Add project root to sys.path to find 'gopptx' package
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-sys.path.append(os.path.join(project_root, "python"))  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
 
 
 def test_find_and_replace() -> None:
     """Test find_and_replace slide operation via the Python wrapper."""
     # Ensure smoke sample exists
-    input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
-    if not pathlib.Path(input_deck).exists():
+    input_deck = project_root / "examples/assets/01/01_basic_pptx.pptx"
+    if not input_deck.exists():
         pytest.skip(f"Smoke sample not found: {input_deck}")
 
-    with Presentation(input_deck) as pres:
+    with Presentation(str(input_deck)) as pres:
         slide = pres.add_slide("Replace Flow Test")
         pres.add_shape(slide.index, "rect", (100, 100, 200, 100), text="Replace Me Now")
 

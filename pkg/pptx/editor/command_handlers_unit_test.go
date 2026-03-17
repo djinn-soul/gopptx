@@ -6,11 +6,13 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 func TestCommandHandlers_Content(t *testing.T) {
-	fixturePath := filepath.Join(testutil.RootTestdataDir(), "simple.pptx")
+	fixturePath := writeDeckFixture(t, "simple.pptx", []elements.SlideContent{
+		elements.NewSlide("Simple Slide").AddBullet("Body text"),
+	})
 	e, err := OpenPresentationEditor(fixturePath)
 	if err != nil {
 		t.Fatalf("failed to open editor: %v", err)

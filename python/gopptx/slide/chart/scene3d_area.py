@@ -1,5 +1,4 @@
 """Chart area and 3D scene proxies."""
-# ruff: noqa: D101,D102,D107,SLF001
 # pyright: reportPrivateUsage=false, reportMissingSuperCall=false, reportUnknownMemberType=false, reportAttributeAccessIssue=false
 
 from __future__ import annotations
@@ -12,16 +11,19 @@ if TYPE_CHECKING:
     from ...schemas import ChartFormatUpdate, ChartState
 
     class _ChartLike(Protocol):
-        def _snapshot(self) -> ChartState: ...
-        def _apply_format(self, fmt: ChartFormatUpdate) -> None: ...
+        def snapshot(self) -> ChartState: ...
+        def apply_format(self, fmt: ChartFormatUpdate) -> None: ...
 
 
 class ChartScene3D:
+    """3D scene formatting proxy for a chart."""
+
     def __init__(self, chart: _ChartLike) -> None:
+        """Initialize the scene proxy."""
         self._chart = chart
 
     def _state(self) -> dict[str, object]:
-        snapshot = self._chart._snapshot()
+        snapshot = self._chart.snapshot()
         raw = snapshot.get("scene3d", {})
         return cast("dict[str, object]", raw)
 
@@ -48,7 +50,7 @@ class ChartScene3D:
         revolution = merged.get("light_rig_revolution")
         if isinstance(revolution, bool):
             payload["light_rig_revolution"] = revolution
-        self._chart._apply_format(payload)
+        self._chart.apply_format(payload)
 
     def update(
         self,
@@ -59,6 +61,7 @@ class ChartScene3D:
         camera_field_of_view: int | None = None,
         light_rig_revolution: bool | None = None,
     ) -> None:
+        """Update scene values in one call."""
         changes: dict[str, object] = {
             "camera_preset": camera_preset,
             "light_rig": light_rig,
@@ -72,6 +75,7 @@ class ChartScene3D:
 
     @property
     def camera_preset(self) -> str | None:
+        """Return current camera preset."""
         value = self._state().get("camera_preset")
         return str(value) if isinstance(value, str) else None
 
@@ -81,6 +85,7 @@ class ChartScene3D:
 
     @property
     def camera_field_of_view(self) -> int | None:
+        """Return current camera field-of-view."""
         value = self._state().get("camera_field_of_view")
         return int(value) if isinstance(value, int) else None
 
@@ -90,6 +95,7 @@ class ChartScene3D:
 
     @property
     def light_rig(self) -> str | None:
+        """Return current light-rig preset."""
         value = self._state().get("light_rig")
         return str(value) if isinstance(value, str) else None
 
@@ -99,6 +105,7 @@ class ChartScene3D:
 
     @property
     def light_direction(self) -> str | None:
+        """Return current light direction."""
         value = self._state().get("light_direction")
         return str(value) if isinstance(value, str) else None
 
@@ -108,6 +115,7 @@ class ChartScene3D:
 
     @property
     def light_rig_revolution(self) -> bool | None:
+        """Return whether light-rig revolution is enabled."""
         value = self._state().get("light_rig_revolution")
         return bool(value) if isinstance(value, bool) else None
 
@@ -117,9 +125,13 @@ class ChartScene3D:
 
 
 class ChartArea:
+    """Chart area proxy entry-point."""
+
     def __init__(self, chart: _ChartLike) -> None:
+        """Initialize chart-area proxy wrappers."""
         self._scene3d = ChartScene3D(chart)
 
     @property
     def scene3d(self) -> ChartScene3D:
+        """Return the chart 3D-scene proxy."""
         return self._scene3d

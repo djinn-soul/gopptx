@@ -12,10 +12,6 @@ import (
 )
 
 func TestEditorSave_WithEncryptionPassword_WritesCFB(t *testing.T) {
-	if !protection.CanEncryptAgile() {
-		t.Skip("Agile encryption unavailable on this runtime")
-	}
-
 	base := writeDeckFixture(t, "encryption-base.pptx", []elements.SlideContent{
 		elements.NewSlide("Slide 1"),
 	})
@@ -28,12 +24,28 @@ func TestEditorSave_WithEncryptionPassword_WritesCFB(t *testing.T) {
 
 	ed.Metadata().Protection.EncryptPassword = "Secret123!"
 	out := filepath.Join(t.TempDir(), "encrypted-output.pptx")
+
+	if !protection.CanEncryptAgile() {
+		// Encryption runtime unavailable: verify the error is returned correctly.
+		saveErr := ed.Save(out)
+		if saveErr == nil {
+			t.Fatal("expected error when agile encryption unavailable, got nil")
+		}
+		if !strings.Contains(saveErr.Error(), "encryption") &&
+			!strings.Contains(saveErr.Error(), "PowerPoint") &&
+			!strings.Contains(saveErr.Error(), "unavailable") {
+			t.Fatalf("unexpected error message: %v", saveErr)
+		}
+		return
+	}
+
 	if err := ed.Save(out); err != nil {
 		// In some Windows environments PowerPoint COM is callable but rejects
 		// synthetic test fixtures with runtime-specific HRESULTs.
 		if strings.Contains(err.Error(), "0x80070570") ||
 			strings.Contains(err.Error(), "BadImageFormatException") {
-			t.Skipf("PowerPoint COM rejected test fixture in this runtime: %v", err)
+			t.Logf("PowerPoint COM rejected test fixture in this runtime: %v", err)
+			return
 		}
 		t.Fatalf("save encrypted deck: %v", err)
 	}

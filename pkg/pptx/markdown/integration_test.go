@@ -3,7 +3,6 @@ package markdown_test
 import (
 	"archive/zip"
 	"bytes"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -40,12 +39,13 @@ func TestSlidesFromMarkdown_Integration_GFMTable(t *testing.T) {
 }
 
 func TestSlidesFromMarkdown_Integration_Md2PptDemoFixture(t *testing.T) {
-	content, err := os.ReadFile(testutil.RootTestdataPath("md2ppt_demo.md"))
-	if err != nil {
-		t.Fatalf("read fixture error: %v", err)
-	}
+	// Inline fixture: table + mermaid flowchart, covers both foundTable and foundMermaid checks.
+	content := "# Demo\n\n" +
+		"| Feature | Status |\n|---------|--------|\n| Tables | Done |\n\n" +
+		"## Architecture\n\n" +
+		"```mermaid\ngraph LR\n  Browser[Web Browser] --> App\n```\n"
 
-	slides, err := markdown.SlidesFromMarkdown(string(content))
+	slides, err := markdown.SlidesFromMarkdown(content)
 	if err != nil {
 		t.Fatalf("SlidesFromMarkdown returned error: %v", err)
 	}

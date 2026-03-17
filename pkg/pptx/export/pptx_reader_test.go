@@ -1,6 +1,8 @@
 package export
 
 import (
+	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
 func TestSlidesFromPPTX_RoundTrip(t *testing.T) {
@@ -227,10 +230,7 @@ func TestEditorShapeToShape_MapsStyleAndAdjustments(t *testing.T) {
 }
 
 func TestSlidesFromPPTX_PieShapesKeepGeometryAndFill(t *testing.T) {
-	deckPath := filepath.Clean("../../../examples/output/03_markdown_mermaid_complex_edited.pptx")
-	if _, err := os.Stat(deckPath); err != nil {
-		t.Skipf("deck fixture unavailable: %v", err)
-	}
+	deckPath := writePieShapesPPTX(t)
 	_, slides, err := SlidesFromPPTX(deckPath)
 	if err != nil {
 		t.Fatalf("SlidesFromPPTX failed: %v", err)
@@ -261,18 +261,33 @@ func TestSlidesFromPPTX_PieShapesKeepGeometryAndFill(t *testing.T) {
 }
 
 func TestSlidesFromPPTX_Slide14ExtractsTable(t *testing.T) {
-	deckPath := filepath.Clean("../../../examples/output/03_markdown_mermaid_complex.pptx")
-	if _, err := os.Stat(deckPath); err != nil {
-		t.Skipf("deck fixture unavailable: %v", err)
+	// Generate a 14-slide deck with a 2-column table on the last slide.
+	slideList := make([]elements.SlideContent, 14)
+	for i := range 13 {
+		slideList[i] = elements.NewSlide(fmt.Sprintf("Slide %d", i+1))
 	}
-	_, slides, err := SlidesFromPPTX(deckPath)
+	slideList[13] = elements.NewSlide("Slide 14").
+		WithTable(tables.NewTable([]styling.Length{styling.Inches(1), styling.Inches(2)}).
+			AddRow([]string{"Header 1", "Header 2"}).
+			AddRow([]string{"Cell 1", "Cell 2"}))
+
+	data, err := pptx.CreateWithSlides("Test Deck", slideList)
+	if err != nil {
+		t.Fatalf("CreateWithSlides failed: %v", err)
+	}
+	deckPath := filepath.Join(t.TempDir(), "table14.pptx")
+	if err := os.WriteFile(deckPath, data, 0o600); err != nil {
+		t.Fatalf("write temp pptx: %v", err)
+	}
+
+	_, got, err := SlidesFromPPTX(deckPath)
 	if err != nil {
 		t.Fatalf("SlidesFromPPTX failed: %v", err)
 	}
-	if len(slides) < 14 {
-		t.Fatalf("expected at least 14 slides, got %d", len(slides))
+	if len(got) < 14 {
+		t.Fatalf("expected at least 14 slides, got %d", len(got))
 	}
-	slide := slides[13]
+	slide := got[13]
 	if slide.Table == nil {
 		t.Fatalf("expected slide 14 table to be extracted")
 	}
@@ -282,4 +297,114 @@ func TestSlidesFromPPTX_Slide14ExtractsTable(t *testing.T) {
 	if len(slide.Table.ColumnWidths) != 2 {
 		t.Fatalf("expected 2 table columns, got %d", len(slide.Table.ColumnWidths))
 	}
+}
+
+// writePieShapesPPTX builds a minimal 4-slide PPTX where slide 4 contains three
+// preset-geometry "pie" shapes (Shape 4/5/6) with solid fill and two adjustments each.
+// It returns the path to the written temp file.
+func writePieShapesPPTX(t *testing.T) string {
+	t.Helper()
+
+	const (
+		nsA = `xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"`
+		nsR = `xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`
+		nsP = `xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"`
+	)
+
+	blankSlide := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld ` + nsA + ` ` + nsR + ` ` + nsP + `>` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`</p:spTree></p:cSld></p:sld>`
+
+	pieShape := func(id int, color, adj2 string) string {
+		return fmt.Sprintf(
+			`<p:sp>`+
+				`<p:nvSpPr><p:cNvPr id="%d" name="Shape %d"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>`+
+				`<p:spPr>`+
+				`<a:xfrm><a:off x="%d" y="100"/><a:ext cx="500000" cy="500000"/></a:xfrm>`+
+				`<a:prstGeom prst="pie"><a:avLst>`+
+				`<a:gd name="adj1" fmla="val 0"/>`+
+				`<a:gd name="adj2" fmla="val %s"/>`+
+				`</a:avLst></a:prstGeom>`+
+				`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`+
+				`</p:spPr></p:sp>`,
+			id, id, (id-4)*600000, adj2, color,
+		)
+	}
+
+	slide4 := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld ` + nsA + ` ` + nsR + ` ` + nsP + `>` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		pieShape(4, "FF0000", "17100000") +
+		pieShape(5, "00FF00", "34200000") +
+		pieShape(6, "0000FF", "51300000") +
+		`</p:spTree></p:cSld></p:sld>`
+
+	blankRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`
+
+	files := map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>` +
+			`<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`<Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`<Override PartName="/ppt/slides/slide3.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`<Override PartName="/ppt/slides/slide4.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>` +
+			`</Relationships>`,
+		"ppt/presentation.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<p:presentation ` + nsA + ` ` + nsR + ` ` + nsP + `>` +
+			`<p:sldIdLst>` +
+			`<p:sldId id="256" r:id="rId1"/>` +
+			`<p:sldId id="257" r:id="rId2"/>` +
+			`<p:sldId id="258" r:id="rId3"/>` +
+			`<p:sldId id="259" r:id="rId4"/>` +
+			`</p:sldIdLst></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>` +
+			`<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>` +
+			`<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide3.xml"/>` +
+			`<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide4.xml"/>` +
+			`</Relationships>`,
+		"ppt/slides/slide1.xml":            blankSlide,
+		"ppt/slides/slide2.xml":            blankSlide,
+		"ppt/slides/slide3.xml":            blankSlide,
+		"ppt/slides/slide4.xml":            slide4,
+		"ppt/slides/_rels/slide1.xml.rels": blankRels,
+		"ppt/slides/_rels/slide2.xml.rels": blankRels,
+		"ppt/slides/_rels/slide3.xml.rels": blankRels,
+		"ppt/slides/_rels/slide4.xml.rels": blankRels,
+	}
+
+	outPath := filepath.Join(t.TempDir(), "pie_shapes.pptx")
+	f, err := os.Create(outPath)
+	if err != nil {
+		t.Fatalf("create pie shapes pptx: %v", err)
+	}
+	zw := zip.NewWriter(f)
+	for name, content := range files {
+		w, werr := zw.Create(name)
+		if werr != nil {
+			t.Fatalf("zip create %s: %v", name, werr)
+		}
+		if _, werr = fmt.Fprint(w, content); werr != nil {
+			t.Fatalf("zip write %s: %v", name, werr)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zip close: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("file close: %v", err)
+	}
+	return outPath
 }

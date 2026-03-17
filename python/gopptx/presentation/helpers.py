@@ -1,5 +1,4 @@
 """Shared helpers and protocol contracts for presentation APIs."""
-# ruff: noqa: D102
 
 from __future__ import annotations
 
@@ -27,22 +26,37 @@ class PresentationProtocol(ABC):
     _lock: object  # threading.RLock at runtime
     _comment_ref_cache: dict[int, tuple[int, int, int]]
 
+    @property
+    def handle(self) -> int | None:
+        """Return the opaque integer handle for this presentation instance."""
+        return self._handle
+
     @abstractmethod
     def execute(
         self, op: str, payload: dict[str, object] | None = None
-    ) -> dict[str, object]: ...
+    ) -> dict[str, object]:
+        """Execute a bridge operation and return the decoded response payload."""
+        ...
 
     @abstractmethod
-    def invalidate_cache(self) -> None: ...
+    def invalidate_cache(self) -> None:
+        """Invalidate cached presentation-derived state."""
+        ...
 
     @abstractmethod
-    def begin_batch(self, *, stop_on_error: bool = False) -> None: ...
+    def begin_batch(self, *, stop_on_error: bool = False) -> None:
+        """Start buffering operations into a batch."""
+        ...
 
     @abstractmethod
-    def end_batch(self) -> list[BatchItemResult]: ...
+    def end_batch(self) -> list[BatchItemResult]:
+        """Flush the active batch and return per-item execution results."""
+        ...
 
     @abstractmethod
-    def abort_batch(self) -> None: ...
+    def abort_batch(self) -> None:
+        """Discard buffered batch operations without executing them."""
+        ...
 
 
 if TYPE_CHECKING:
@@ -54,15 +68,25 @@ if TYPE_CHECKING:
 
         def execute(
             self, op: str, payload: dict[str, object] | None = None
-        ) -> dict[str, object]: ...
+        ) -> dict[str, object]:
+            """Execute a bridge operation and return the decoded response payload."""
+            ...
 
-        def invalidate_cache(self) -> None: ...
+        def invalidate_cache(self) -> None:
+            """Invalidate cached presentation-derived state."""
+            ...
 
-        def begin_batch(self, *, stop_on_error: bool = False) -> None: ...
+        def begin_batch(self, *, stop_on_error: bool = False) -> None:
+            """Start buffering operations into a batch."""
+            ...
 
-        def end_batch(self) -> list[BatchItemResult]: ...
+        def end_batch(self) -> list[BatchItemResult]:
+            """Flush the active batch and return per-item execution results."""
+            ...
 
-        def abort_batch(self) -> None: ...
+        def abort_batch(self) -> None:
+            """Discard buffered batch operations without executing them."""
+            ...
 
 else:
 

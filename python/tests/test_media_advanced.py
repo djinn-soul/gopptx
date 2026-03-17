@@ -3,6 +3,7 @@
 import pathlib
 
 from gopptx import Presentation
+from gopptx.presentation.shapes.shape_media_mixin import PresentationShapeMediaMixin
 from gopptx.schemas import Inches
 
 
@@ -95,3 +96,25 @@ def test_media_full(tmp_path: pathlib.Path) -> None:
 
     if not output_path.exists():
         raise AssertionError("expected output deck to exist")
+
+
+def test_add_audio_uses_icon_payload_keys() -> None:
+    """Audio icon payload uses backend-supported icon_path/icon_data keys."""
+
+    class _FakeShapeMedia(PresentationShapeMediaMixin):
+        def __init__(self) -> None:
+            self.last_payload: dict[str, object] = {}
+
+        def execute(self, _op: str, payload: dict[str, object]) -> dict[str, int]:
+            self.last_payload = payload
+            return {"shape_id": 1}
+
+    fake = _FakeShapeMedia()
+    _ = fake.add_audio(
+        0,
+        b"audio",
+        (0, 0, 1, 1),
+        icon=b"icon-bytes",
+    )
+    assert "icon_data" in fake.last_payload
+    assert "poster_data" not in fake.last_payload

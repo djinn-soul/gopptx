@@ -6,11 +6,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
 )
 
 const (
@@ -73,7 +74,7 @@ func segmentText(lines *text.Segments, source []byte) string {
 		return ""
 	}
 	var buffer bytes.Buffer
-	for i := 0; i < lines.Len(); i++ {
+	for i := range lines.Len() {
 		segment := lines.At(i)
 		buffer.Write(segment.Value(source))
 	}

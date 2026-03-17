@@ -1,29 +1,6 @@
 """Slide-domain modules."""
-# ruff: noqa: I001,RUF022
 
-from .freeform_builder import FreeformBuilder
-from .placeholder import (
-    BodyPlaceholder,
-    ChartPlaceholder,
-    PicturePlaceholder,
-    Placeholder,
-    PlaceholderFormat,
-    TablePlaceholder,
-    TitlePlaceholder,
-)
-from .placeholder_collection import PlaceholderCollection
-from .slide import Slide
-from .table import (
-    Cell,
-    CellRange,
-    Table,
-    TableColumn,
-    TableColumns,
-    TableRow,
-    TableRows,
-)
-from .shape_proxy import ShapeCollection, ShapeProxy
-from .chart_model import (
+from .chart import (
     Chart,
     ChartCollection,
     ChartLegend,
@@ -32,33 +9,55 @@ from .chart_model import (
     ChartTitle,
     DataLabels,
 )
-from .text_model import (
+from .chart.data import CategoryChartData, CategorySeries, XyChartData, XySeries
+from .placeholders.placeholder import (
+    BodyPlaceholder,
+    ChartPlaceholder,
+    PicturePlaceholder,
+    Placeholder,
+    PlaceholderFormat,
+    TablePlaceholder,
+    TitlePlaceholder,
+)
+from .placeholders.placeholder_collection import PlaceholderCollection
+from .shapes.freeform_builder import FreeformBuilder
+from .shapes.shape_proxy import ShapeCollection, ShapeProxy
+from .slide import Slide
+from .tables.table import (
+    Cell,
+    CellRange,
+    Table,
+    TableColumn,
+    TableColumns,
+    TableRow,
+    TableRows,
+)
+from .text.text_frame import TextFrameProps
+from .text.text_model import (
     ShapeParagraphCollection,
     ShapeParagraphProxy,
     ShapeRunCollection,
     ShapeRunProxy,
     ShapeTextFrame,
 )
-from .chart_data import CategoryChartData, CategorySeries, XyChartData, XySeries
-from .text_frame import TextFrameProps
-from .text_paragraph import ParagraphProps
-from .text_run import Run, RunHyperlink
+from .text.text_paragraph import ParagraphProps
+from .text.text_run import Run, RunHyperlink
 
 __all__ = [
     "BodyPlaceholder",
-    "Cell",
-    "CellRange",
-    "ChartPlaceholder",
     "CategoryChartData",
     "CategorySeries",
+    "Cell",
+    "CellRange",
     "Chart",
     "ChartCollection",
     "ChartLegend",
+    "ChartPlaceholder",
     "ChartPlot",
     "ChartPlots",
     "ChartTitle",
-    "FreeformBuilder",
     "DataLabels",
+    "FreeformBuilder",
     "ParagraphProps",
     "PicturePlaceholder",
     "Placeholder",
@@ -66,20 +65,20 @@ __all__ = [
     "PlaceholderFormat",
     "Run",
     "RunHyperlink",
-    "Slide",
     "ShapeCollection",
-    "ShapeProxy",
-    "ShapeTextFrame",
     "ShapeParagraphCollection",
     "ShapeParagraphProxy",
+    "ShapeProxy",
     "ShapeRunCollection",
     "ShapeRunProxy",
+    "ShapeTextFrame",
+    "Slide",
     "Table",
     "TableColumn",
     "TableColumns",
+    "TablePlaceholder",
     "TableRow",
     "TableRows",
-    "TablePlaceholder",
     "TextFrameProps",
     "TitlePlaceholder",
     "XyChartData",

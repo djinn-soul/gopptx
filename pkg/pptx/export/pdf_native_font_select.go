@@ -8,11 +8,14 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+//nolint:gochecknoglobals // Alias values are runtime-configurable for renderer-level font fallback tuning.
 var (
 	pdfSansAlias  = fontFamilySans
 	pdfSerifAlias = fontFamilySans
 	pdfMonoAlias  = fontFamilySans
 )
+
+const codeTokenHintThreshold = 2
 
 func setPDFFontAliases(sansAlias, serifAlias, monoAlias string) {
 	pdfSansAlias = fallbackAlias(sansAlias, fontFamilySans)
@@ -77,7 +80,7 @@ func inferCodeFontHint(textValue string) string {
 			tokenHits++
 		}
 	}
-	if tokenHits < 2 {
+	if tokenHits < codeTokenHintThreshold {
 		return ""
 	}
 	punct := 0

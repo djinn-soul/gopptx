@@ -1,20 +1,17 @@
-import os
 import pathlib
 
 import pytest
 from gopptx import SHAPE_RECTANGLE, Presentation
 
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+input_deck = project_root / "examples/assets/01/01_basic_pptx.pptx"
 
 
 def test_presentation_content_basic() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         slide = prs.add_slide("Content Test")
 
         # Add shape with text and properties
@@ -51,10 +48,10 @@ def test_presentation_content_basic() -> None:
 
 
 def test_comments_and_authors() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         # Authors
         author_id = prs.add_author("Test Author", "TA")
         assert author_id >= 0
@@ -76,10 +73,10 @@ def test_comments_and_authors() -> None:
 
 
 def test_charts_basic() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         slide = prs.add_slide("Chart Test")
         # Basic add_chart
         slide.add_chart("bar", ["A", "B"], [10, 20], title="Test Chart")
@@ -94,10 +91,10 @@ def test_charts_basic() -> None:
 
 
 def test_notes() -> None:
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         slide = prs.slides[0]
         slide.notes = "New Notes"
         assert slide.notes == "New Notes"

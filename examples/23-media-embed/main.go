@@ -23,6 +23,7 @@ func main() {
 	}
 }
 
+//nolint:gocognit,funlen // Example flow intentionally keeps scenario setup in one place for readability.
 func run() error {
 	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
@@ -79,7 +80,9 @@ func run() error {
 		}
 		log.Printf("Added video fixture: %s\n", videoFixturePath)
 	} else {
-		log.Printf("Video fixtures missing (need sample.mp4 + poster.png in examples/assets/23); skipping video insertion.")
+		log.Printf(
+			"Video fixtures missing (need sample.mp4 + poster.png in examples/assets/23); skipping video insertion.",
+		)
 	}
 
 	audioMP3FixturePath := filepath.Join("examples", "assets", "23", "sample.mp3")
@@ -105,7 +108,9 @@ func run() error {
 		}
 		log.Printf("Added audio fixture: %s\n", audioMP3FixturePath)
 	case fileExists(audioWAVFixturePath):
-		audioOpts := editor.NewAudioPlaybackOptions().WithVolume(85).WithAltText("Background soundtrack")
+		audioOpts := editor.NewAudioPlaybackOptions().
+			WithVolume(85).
+			WithAltText("Background soundtrack")
 		if _, err := ed.AddAudioFromFileWithPlaybackOptions(
 			0,
 			audioWAVFixturePath,
@@ -120,10 +125,21 @@ func run() error {
 		}
 		log.Printf("Added audio fixture: %s\n", audioWAVFixturePath)
 	default:
-		if _, err := ed.AddAudioWithIcon(0, tinyWAV(), tinyPNG(), "audio/wav", 4500000, 1500000, 1800000, 900000); err != nil {
+		if _, err := ed.AddAudioWithIcon(
+			0,
+			tinyWAV(),
+			tinyPNG(),
+			"audio/wav",
+			4500000,
+			1500000,
+			1800000,
+			900000,
+		); err != nil {
 			return fmt.Errorf("add fallback audio with icon: %w", err)
 		}
-		log.Printf("Audio fixtures missing (sample.mp3/sample.wav); inserted fallback tiny WAV with generated icon.")
+		log.Printf(
+			"Audio fixtures missing (sample.mp3/sample.wav); inserted fallback tiny WAV with generated icon.",
+		)
 	}
 
 	oleFixturePath := filepath.Join("examples", "assets", "23", "sample_ole.bin")
@@ -132,12 +148,23 @@ func run() error {
 		if readErr != nil {
 			return fmt.Errorf("read ole fixture: %w", readErr)
 		}
-		if _, err := ed.AddOLEObject(0, oleData, tinyPNG(), "Excel.Sheet.12", 4500000, 2800000, 2100000, 1400000); err != nil {
+		if _, err := ed.AddOLEObject(
+			0,
+			oleData,
+			tinyPNG(),
+			"Excel.Sheet.12",
+			4500000,
+			2800000,
+			2100000,
+			1400000,
+		); err != nil {
 			return fmt.Errorf("add ole object: %w", err)
 		}
 		log.Printf("Added OLE fixture: %s\n", oleFixturePath)
 	} else {
-		log.Printf("OLE fixtures missing (need sample_ole.bin + poster.png in examples/assets/23); skipping OLE insertion.")
+		log.Printf(
+			"OLE fixtures missing (need sample_ole.bin + poster.png in examples/assets/23); skipping OLE insertion.",
+		)
 	}
 
 	if err := ed.Save(outPath); err != nil {

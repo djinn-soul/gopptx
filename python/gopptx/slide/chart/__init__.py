@@ -1,9 +1,9 @@
 """Chart proxy model package for slide APIs."""
 
 from .axis_series import ChartAxis, ChartSeries, ChartSeriesCollection
-from .model import (
-    Chart,
-    ChartCollection,
+from .collection import ChartCollection
+from .model import Chart
+from .model_proxies import (
     ChartLegend,
     ChartPlot,
     ChartPlots,

@@ -7,31 +7,40 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-var standardThemePresets = map[string]styling.Theme{
-	"office2013": styling.ThemeCorporate,
-	"office":     styling.ThemeCorporate,
-	"facet":      styling.ThemeModern,
-	"integral":   styling.ThemeTech,
-	"ion":        styling.ThemeDark,
-	"retrospect": styling.ThemeVibrant,
-	"slice":      styling.ThemeNature,
-	"wisp":       styling.ThemeCarbon,
-}
-
 // StandardThemePresets returns common preset names mapped to theme payloads.
 func StandardThemePresets() map[string]styling.Theme {
-	out := make(map[string]styling.Theme, len(standardThemePresets))
-	for k, v := range standardThemePresets {
-		out[k] = v
+	return map[string]styling.Theme{
+		"office2013": styling.ThemeCorporate,
+		"office":     styling.ThemeCorporate,
+		"facet":      styling.ThemeModern,
+		"integral":   styling.ThemeTech,
+		"ion":        styling.ThemeDark,
+		"retrospect": styling.ThemeVibrant,
+		"slice":      styling.ThemeNature,
+		"wisp":       styling.ThemeCarbon,
 	}
-	return out
 }
 
 // ResolveThemePreset resolves a preset name to a concrete theme.
 func ResolveThemePreset(name string) (styling.Theme, bool) {
-	key := normalizeThemePresetName(name)
-	theme, ok := standardThemePresets[key]
-	return theme, ok
+	switch normalizeThemePresetName(name) {
+	case "office2013", "office":
+		return styling.ThemeCorporate, true
+	case "facet":
+		return styling.ThemeModern, true
+	case "integral":
+		return styling.ThemeTech, true
+	case "ion":
+		return styling.ThemeDark, true
+	case "retrospect":
+		return styling.ThemeVibrant, true
+	case "slice":
+		return styling.ThemeNature, true
+	case "wisp":
+		return styling.ThemeCarbon, true
+	default:
+		return styling.Theme{}, false
+	}
 }
 
 // SetGlobalThemePreset applies a preset to the package theme part.

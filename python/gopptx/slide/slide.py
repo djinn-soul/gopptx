@@ -6,14 +6,17 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
-from .chart_model import Chart, ChartCollection
-from .notes_slide import NotesSlide
-from .placeholder_mixin import SlidePlaceholderMixin
-from .shape_proxy import ShapeCollection, ShapeProxy
-from .slide_mixins import SlideChartMixin, SlideShapeMixin, SlideTableMixin
-from .slide_shape_batch_mixin import SlideShapeBatchMixin
-from .slide_text_cache_mixin import SlideTextCacheMixin
-from .slide_text_mixin import SlideTextMixin
+from .chart import Chart, ChartCollection
+from .chart.chart_mixin import SlideChartMixin
+from .notes.notes_slide import NotesSlide
+from .placeholders.placeholder_mixin import SlidePlaceholderMixin
+from .shapes.shape_batch_mixin import SlideShapeBatchMixin
+from .shapes.shape_mixin import SlideShapeMixin
+from .shapes.shape_proxy import ShapeCollection, ShapeProxy
+from .shapes.smartart_anim_mixin import SlideSmartArtAnimMixin
+from .tables.table_mixin import SlideTableMixin
+from .text.text_cache_mixin import SlideTextCacheMixin
+from .text.text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
     from ..presentation.presentation import Presentation
@@ -26,6 +29,11 @@ class SlideBase:
     if TYPE_CHECKING:
         _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
         _metadata: SlideMetadata  # pyright: ignore[reportUninitializedInstanceVariable]
+
+    @property
+    def presentation(self) -> Presentation:
+        """Return the owning presentation proxy."""
+        return self._presentation
 
     @property
     def index(self) -> int:
@@ -75,6 +83,7 @@ class Slide(
     SlideTextCacheMixin,
     SlideTextMixin,
     SlideShapeBatchMixin,
+    SlideSmartArtAnimMixin,
     SlideShapeMixin,
 ):
     """Proxy object for a slide within a presentation."""

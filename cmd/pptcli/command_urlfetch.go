@@ -71,7 +71,11 @@ func runURLFetchCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func printURLFetchUsage(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "Usage: pptcli urlfetch -url https://example.com [-out file.pptx] [-title TITLE] [-author NAME] [-source-url=true|false]")
+	_, _ = fmt.Fprintln(
+		w,
+		"Usage: pptcli urlfetch -url https://example.com "+
+			"[-out file.pptx] [-title TITLE] [-author NAME] [-source-url=true|false]",
+	)
 }
 
 func defaultOutputPathFromURL(rawURL string) string {

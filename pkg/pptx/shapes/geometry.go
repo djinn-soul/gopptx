@@ -127,7 +127,7 @@ func IsShapeType(shapeType string) bool {
 
 func NormalizeDrawingLineDash(dash string) string {
 	switch strings.ToLower(strings.TrimSpace(dash)) {
-	case "", "solid":
+	case "", LineDashSolid:
 		return LineDashSolid
 	case "dash":
 		return LineDashDash

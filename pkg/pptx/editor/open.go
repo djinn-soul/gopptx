@@ -129,6 +129,7 @@ func NewPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 
 	editor.chartEmbeddings, editor.nextChartNum, editor.nextExcelNum = editorslide.ParseChartInventory(ps, partKeys)
 	editor.notesInventory, editor.nextNotesNum = editorslide.ParseNotesInventory(ps, partKeys)
+	editor.nextDiagramNum = editorslide.ParseDiagramInventory(partKeys)
 
 	editor.metadata.CustomXML = editorslide.ParseCustomXMLInventory(ps, partKeys)
 

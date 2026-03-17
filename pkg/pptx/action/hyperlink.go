@@ -33,6 +33,14 @@ const (
 	HyperlinkActionProgram HyperlinkActionType = "program"
 )
 
+const (
+	actionShowJumpFirstSlide    = "ppaction://hlinkshowjump?jump=firstslide"
+	actionShowJumpLastSlide     = "ppaction://hlinkshowjump?jump=lastslide"
+	actionShowJumpNextSlide     = "ppaction://hlinkshowjump?jump=nextslide"
+	actionShowJumpPreviousSlide = "ppaction://hlinkshowjump?jump=previousslide"
+	actionShowJumpEndShow       = "ppaction://hlinkshowjump?jump=endshow"
+)
+
 // HyperlinkAction defines the target of a hyperlink.
 type HyperlinkAction struct {
 	Type         HyperlinkActionType
@@ -122,15 +130,15 @@ func (a HyperlinkAction) RelationshipTarget() string {
 	case HyperlinkActionSlide:
 		return fmt.Sprintf("slide%d.xml", a.SlideNumber)
 	case HyperlinkActionFirstSlide:
-		return "ppaction://hlinkshowjump?jump=firstslide"
+		return actionShowJumpFirstSlide
 	case HyperlinkActionLastSlide:
-		return "ppaction://hlinkshowjump?jump=lastslide"
+		return actionShowJumpLastSlide
 	case HyperlinkActionNextSlide:
-		return "ppaction://hlinkshowjump?jump=nextslide"
+		return actionShowJumpNextSlide
 	case HyperlinkActionPreviousSlide:
-		return "ppaction://hlinkshowjump?jump=previousslide"
+		return actionShowJumpPreviousSlide
 	case HyperlinkActionEndShow:
-		return "ppaction://hlinkshowjump?jump=endshow"
+		return actionShowJumpEndShow
 	case HyperlinkActionEmail:
 		mailto := "mailto:" + a.EmailAddress
 		if a.EmailSubject != "" {
@@ -172,15 +180,15 @@ func (a HyperlinkAction) ActionType() string {
 	case HyperlinkActionSlide:
 		return "ppaction://hlinksldjump"
 	case HyperlinkActionFirstSlide:
-		return "ppaction://hlinkshowjump?jump=firstslide"
+		return actionShowJumpFirstSlide
 	case HyperlinkActionLastSlide:
-		return "ppaction://hlinkshowjump?jump=lastslide"
+		return actionShowJumpLastSlide
 	case HyperlinkActionNextSlide:
-		return "ppaction://hlinkshowjump?jump=nextslide"
+		return actionShowJumpNextSlide
 	case HyperlinkActionPreviousSlide:
-		return "ppaction://hlinkshowjump?jump=previousslide"
+		return actionShowJumpPreviousSlide
 	case HyperlinkActionEndShow:
-		return "ppaction://hlinkshowjump?jump=endshow"
+		return actionShowJumpEndShow
 	default:
 		return ""
 	}

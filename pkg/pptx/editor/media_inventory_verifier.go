@@ -21,12 +21,7 @@ func (e *PresentationEditor) verifyMediaInventoryChecksumsParallel() error {
 	}
 
 	workerCount := runtime.GOMAXPROCS(0)
-	if workerCount < 1 {
-		workerCount = 1
-	}
-	if workerCount > len(entries) {
-		workerCount = len(entries)
-	}
+	workerCount = min(max(workerCount, 1), len(entries))
 
 	jobs := make(chan mediaInventoryEntry)
 	errCh := make(chan error, 1)
@@ -59,7 +54,7 @@ func (e *PresentationEditor) verifyMediaInventoryChecksumsParallel() error {
 	}
 
 	wg.Add(workerCount)
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		go startWorker()
 	}
 

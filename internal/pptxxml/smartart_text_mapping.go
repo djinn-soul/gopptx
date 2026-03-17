@@ -1,3 +1,4 @@
+//nolint:mnd // Heuristic score constants are tuned weights for SmartArt text-node ranking.
 package pptxxml
 
 import "strings"
@@ -9,6 +10,7 @@ type smartArtPresOfLink struct {
 	destModelID string
 }
 
+//nolint:gocognit // Mapping prioritizes readable staged heuristics for SmartArt node association.
 func buildDrawingTextMapFromData(data string) map[string]string {
 	textByDataModelID := parseSmartArtDataPointTexts(data)
 	if len(textByDataModelID) == 0 {

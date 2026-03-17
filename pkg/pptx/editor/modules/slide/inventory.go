@@ -90,6 +90,26 @@ func ParseNotesInventory(ps PartLookup, partKeys []string) (map[string]string, i
 	return inventory, maxNotes + 1
 }
 
+// ParseDiagramInventory scans part keys for SmartArt data files and returns
+// the next available diagram number (max existing + 1, at least 1).
+func ParseDiagramInventory(partKeys []string) int {
+	maxNum := 0
+	for _, p := range partKeys {
+		if !strings.HasPrefix(p, "ppt/diagrams/data") || !strings.HasSuffix(p, ".xml") {
+			continue
+		}
+		base := strings.TrimSuffix(strings.TrimPrefix(p, "ppt/diagrams/data"), ".xml")
+		num, err := strconv.Atoi(base)
+		if err != nil {
+			continue
+		}
+		if num > maxNum {
+			maxNum = num
+		}
+	}
+	return maxNum + 1
+}
+
 func parseImagePartNumber(partPath string) (int, bool) {
 	base := path.Base(partPath)
 	if !strings.HasPrefix(base, "image") {

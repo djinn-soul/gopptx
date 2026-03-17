@@ -202,13 +202,22 @@ func TestSmartArtDataXMLHorizontalBulletMapsAcrossPrimaryColumns(t *testing.T) {
 
 	xml := pptxxml.SmartArtDataXML(spec)
 
-	if segment := pointSegmentByModelID(xml, "{40A0009A-D31E-4203-8A68-5BC7235C8A6B}"); !strings.Contains(segment, "<a:t>Col A</a:t>") {
+	if segment := pointSegmentByModelID(xml, "{40A0009A-D31E-4203-8A68-5BC7235C8A6B}"); !strings.Contains(
+		segment,
+		"<a:t>Col A</a:t>",
+	) {
 		t.Fatal("expected first horizontal-bullet text in first primary column node")
 	}
-	if segment := pointSegmentByModelID(xml, "{366D710F-3C7C-4530-80E1-1F49B4505CB6}"); !strings.Contains(segment, "<a:t>Col B</a:t>") {
+	if segment := pointSegmentByModelID(xml, "{366D710F-3C7C-4530-80E1-1F49B4505CB6}"); !strings.Contains(
+		segment,
+		"<a:t>Col B</a:t>",
+	) {
 		t.Fatal("expected second horizontal-bullet text in second primary column node")
 	}
-	if segment := pointSegmentByModelID(xml, "{38041CF9-B0F0-4D98-8547-E9C385390400}"); !strings.Contains(segment, "<a:t>Col C</a:t>") {
+	if segment := pointSegmentByModelID(xml, "{38041CF9-B0F0-4D98-8547-E9C385390400}"); !strings.Contains(
+		segment,
+		"<a:t>Col C</a:t>",
+	) {
 		t.Fatal("expected third horizontal-bullet text in third primary column node")
 	}
 }

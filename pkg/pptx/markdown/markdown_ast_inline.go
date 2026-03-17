@@ -3,10 +3,11 @@ package markdown
 import (
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx/action"
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/yuin/goldmark/ast"
 	extast "github.com/yuin/goldmark/extension/ast"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type inlineStyleState struct {
@@ -21,6 +22,11 @@ type markdownImage struct {
 }
 
 const markdownTableRowsCapacity = 4
+const (
+	markdownStrongEmphasisLevel = 2
+	markdownTableCellsCapacity  = 4
+	markdownParagraphImageCap   = 2
+)
 
 type markdownRunLinkResolver func(destination string) (action.Hyperlink, bool)
 
@@ -53,10 +59,10 @@ func extractInlineRunsFromNode(
 	case *ast.String:
 		return []elements.Run{styledTextRun(string(typed.Value), state)}
 	case *ast.CodeSpan:
-		return []elements.Run{styledCodeRun(string(typed.Text(source)), state)}
+		return []elements.Run{styledCodeRun(codeSpanText(typed, source), state)}
 	case *ast.Emphasis:
 		next := state
-		if typed.Level == 2 {
+		if typed.Level == markdownStrongEmphasisLevel {
 			next.bold = true
 		} else {
 			next.italic = true
@@ -67,7 +73,11 @@ func extractInlineRunsFromNode(
 		next.strikethrough = true
 		return extractInlineRuns(typed, source, next, resolveLink)
 	case *ast.Link:
-		return applyMarkdownLinkRuns(extractInlineRuns(typed, source, state, resolveLink), string(typed.Destination), resolveLink)
+		return applyMarkdownLinkRuns(
+			extractInlineRuns(typed, source, state, resolveLink),
+			string(typed.Destination),
+			resolveLink,
+		)
 	case *ast.AutoLink:
 		run := styledTextRun(string(typed.Label(source)), state)
 		return applyMarkdownLinkRuns([]elements.Run{run}, string(typed.URL(source)), resolveLink)
@@ -76,6 +86,19 @@ func extractInlineRunsFromNode(
 	default:
 		return extractInlineRuns(node, source, state, resolveLink)
 	}
+}
+
+func codeSpanText(span *ast.CodeSpan, source []byte) string {
+	var b strings.Builder
+	for child := span.FirstChild(); child != nil; child = child.NextSibling() {
+		switch typed := child.(type) {
+		case *ast.Text:
+			b.Write(typed.Segment.Value(source))
+		case *ast.String:
+			b.Write(typed.Value)
+		}
+	}
+	return b.String()
 }
 
 func styledTextRun(text string, state inlineStyleState) elements.Run {
@@ -101,7 +124,7 @@ func extractPlainText(node ast.Node, source []byte) string {
 func extractTableRows(table *extast.Table, source []byte) [][]string {
 	rows := make([][]string, 0, markdownTableRowsCapacity)
 	for row := table.FirstChild(); row != nil; row = row.NextSibling() {
-		cells := make([]string, 0, 4)
+		cells := make([]string, 0, markdownTableCellsCapacity)
 		for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
 			cells = append(cells, extractPlainText(cell, source))
 		}
@@ -127,7 +150,7 @@ func taskCheckboxState(node ast.Node) (bool, bool) {
 }
 
 func collectParagraphImages(node ast.Node, source []byte) ([]markdownImage, bool) {
-	images := make([]markdownImage, 0, 2)
+	images := make([]markdownImage, 0, markdownParagraphImageCap)
 	onlyImages := true
 	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
 		image, ok := child.(*ast.Image)

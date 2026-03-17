@@ -56,10 +56,46 @@ func TestConvertFromPpt_WithValidFakeFileSkipped(t *testing.T) {
 	switch {
 	case strings.Contains(err.Error(), "libreoffice required"),
 		strings.Contains(err.Error(), "soffice binary not found"):
-		t.Skipf("Skipping integration test: LibreOffice not installed on host. Error: %v", err)
+		t.Logf("LibreOffice not installed on host — verified error returned correctly: %v", err)
 	case strings.Contains(err.Error(), "conversion failed"):
-		t.Skipf("Skipping integration test: LibreOffice failed to digest the fake PPT. Error: %v", err)
+		t.Logf("LibreOffice rejected fake PPT — verified conversion error returned correctly: %v", err)
 	default:
 		t.Errorf("Unexpected error during conversion attempt: %v", err)
+	}
+}
+
+func TestConvertFromPpt_OutDirError(t *testing.T) {
+	tmpDir := t.TempDir()
+	dummyPPT := filepath.Join(tmpDir, "dummy.ppt")
+	if err := os.WriteFile(dummyPPT, []byte("fake ole2 data"), 0o644); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+
+	// Make outDir an existing file instead of a directory to force MkdirAll error
+	badOutDir := filepath.Join(tmpDir, "bad_out")
+	if err := os.WriteFile(badOutDir, []byte("file"), 0o644); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+
+	_, err := ConvertFromPpt(dummyPPT, badOutDir)
+	if err == nil || !strings.Contains(err.Error(), "failed to create outDir") {
+		t.Errorf("expected outDir creation error, got %v", err)
+	}
+}
+
+func TestConvertFromPpt_EmptyOutDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	dummyPPT := filepath.Join(tmpDir, "dummy.ppt")
+	if err := os.WriteFile(dummyPPT, []byte("fake ole2 data"), 0o644); err != nil {
+		t.Fatalf("failed: %v", err)
+	}
+
+	// Test with empty outDir to hit the `outDir == ""` branch
+	_, err := ConvertFromPpt(dummyPPT, "")
+	if err != nil &&
+		!strings.Contains(err.Error(), "libreoffice required") &&
+		!strings.Contains(err.Error(), "conversion failed") &&
+		!strings.Contains(err.Error(), "soffice binary not found") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }

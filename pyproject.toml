@@ -125,6 +125,8 @@ convention = "google"
 "python/gopptx/**/*.pyi" = ["ANN401", "ANN001"]
 "python/gopptx/presentation/**/*.py" = ["TID252"]
 "python/gopptx/slide/**/*.py" = ["TID252"]
+"python/gopptx/shapes/**/*.py" = ["TID252", "PLR0904"]
+"python/gopptx/text/**/*.py" = ["TID252"]
 "python/gopptx/ops.py" = ["S105"]
 "python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
 

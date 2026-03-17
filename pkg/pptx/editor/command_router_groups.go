@@ -14,17 +14,24 @@ func commandHandlerForSlides(op string) (commandHandler, bool) {
 		return handleMoveSlide, true
 	case OpDuplicateSlide:
 		return handleDuplicateSlide, true
+	case OpDuplicateSlideAfter:
+		return handleDuplicateSlideAfter, true
 	case OpListSlides:
 		return handleListSlides, true
 	case OpSetSlideTitle:
 		return handleSetSlideTitle, true
 	case OpUpdateSlide:
 		return handleUpdateSlide, true
+	case OpValidate:
+		return handleValidate, true
+	case OpRepair:
+		return handleRepair, true
 	default:
 		return nil, false
 	}
 }
 
+//nolint:funlen // Op routing table is intentionally explicit to keep command coverage and discoverability straightforward.
 func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 	switch op {
 	case OpGetMetadata:
@@ -76,6 +83,29 @@ func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
 	case OpSetPlaceholderContent:
 		return handleSetPlaceholderContent, true
 	default:
+		return commandHandlerForThemeLayout(op)
+	}
+}
+
+func commandHandlerForThemeLayout(op string) (commandHandler, bool) {
+	switch op {
+	case OpGetLayoutShapes:
+		return handleGetLayoutShapes, true
+	case OpGetMasterShapes:
+		return handleGetMasterShapes, true
+	case OpGetLayoutPlaceholders:
+		return handleGetLayoutPlaceholders, true
+	case OpGetMasterPlaceholders:
+		return handleGetMasterPlaceholders, true
+	case OpSetGlobalThemePreset:
+		return handleSetGlobalThemePreset, true
+	case OpSetThemeFontScheme:
+		return handleSetThemeFontScheme, true
+	case OpSetThemeColorScheme:
+		return handleSetThemeColorScheme, true
+	case OpGetThemeInventory:
+		return handleGetThemeInventory, true
+	default:
 		return nil, false
 	}
 }
@@ -106,6 +136,26 @@ func commandHandlerForContent(op string) (commandHandler, bool) {
 		return handleRemoveCustomXML, true
 	case OpAddVba:
 		return handleAddVba, true
+	case OpMarkdownToSlides:
+		return handleMarkdownToSlides, true
+	case OpURLFetchToSlides:
+		return handleURLFetchToSlides, true
+	case OpAddMermaidShape:
+		return handleAddMermaidShape, true
+	case OpAddSmartArt:
+		return handleAddSmartArt, true
+	case OpUpdateSmartArt:
+		return handleUpdateSmartArt, true
+	case OpSetSlideBackground:
+		return handleSetSlideBackground, true
+	case OpSetSlideHeaderFooter:
+		return handleSetSlideHeaderFooter, true
+	case OpAddAnimation:
+		return handleAddAnimation, true
+	case OpSetSlideTransition:
+		return handleSetSlideTransition, true
+	case OpMergeFromEditor:
+		return handleMergeFromEditor, true
 	default:
 		return nil, false
 	}
@@ -180,6 +230,8 @@ func commandHandlerForShapeMutations(op string) (commandHandler, bool) {
 		return handleMoveShapeToFront, true
 	case OpMoveShapeToBack:
 		return handleMoveShapeToBack, true
+	case OpMoveShapeToIndex:
+		return handleMoveShapeToIndex, true
 	case OpGetImageMetadata:
 		return handleGetImageMetadata, true
 	case OpAddVideo:
@@ -188,6 +240,12 @@ func commandHandlerForShapeMutations(op string) (commandHandler, bool) {
 		return handleAddAudio, true
 	case OpAddOLEObject:
 		return handleAddOLEObject, true
+	case OpListSlideImages:
+		return handleListSlideImages, true
+	case OpSwapImageByIndex:
+		return handleSwapImageByIndex, true
+	case OpSwapImageByRelID:
+		return handleSwapImageByRelID, true
 	default:
 		return nil, false
 	}
@@ -227,7 +285,13 @@ func commandHandlerForNotesTables(op string) (commandHandler, bool) {
 		return handleSetTableRowHeight, true
 	case OpSetTableColumnWidth:
 		return handleSetTableColumnWidth, true
+	case OpListNotesShapes:
+		return handleListNotesShapes, true
+	case OpListNotesPlaceholders:
+		return handleListNotesPlaceholders, true
+	case OpUpdateNotesMaster:
+		return handleUpdateNotesMaster, true
 	default:
-		return nil, false
+		return commandHandlerForHandoutSig(op)
 	}
 }

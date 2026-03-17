@@ -19,6 +19,7 @@ const (
 	powerPointEncryptTimeout = 90 * time.Second
 )
 
+//nolint:gochecknoglobals // COM availability probe result is cached process-wide via sync.Once for deterministic behavior.
 var (
 	agileAvailabilityOnce sync.Once
 	agileAvailable        bool
@@ -54,7 +55,11 @@ func encryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 	script := buildPowerPointEncryptScript(inPath, outPath, password)
 	output, err := runPowerShellScript(script, powerPointEncryptTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("powerpoint agile encryption failed: %w; output: %s", err, strings.TrimSpace(string(output)))
+		return nil, fmt.Errorf(
+			"powerpoint agile encryption failed: %w; output: %s",
+			err,
+			strings.TrimSpace(string(output)),
+		)
 	}
 
 	encrypted, err := os.ReadFile(outPath)
@@ -74,7 +79,7 @@ func buildPowerPointEncryptScript(inPath, outPath, password string) string {
 		"$pw=" + pwQ + ";" +
 		"$app=New-Object -ComObject PowerPoint.Application;" +
 		"try {" +
-		"$pres=$app.Presentations.Open($in,0,0,-1);" +
+		"$pres=$app.Presentations.Open($in,0,0,0);" +
 		"$pres.Password=$pw;" +
 		"$pres.SaveAs($out);" +
 		"$pres.Close();" +

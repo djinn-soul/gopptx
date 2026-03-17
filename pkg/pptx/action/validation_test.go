@@ -19,6 +19,11 @@ func TestValidateHyperlinkAction_FileAndProgramSchemeChecks(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "valid windows drive path accepted cross platform",
+			action:  HyperlinkFile(`D:\docs\report.xlsx`),
+			wantErr: false,
+		},
+		{
 			name:    "invalid non-file scheme",
 			action:  HyperlinkFile("https://example.com/report.xlsx"),
 			wantErr: true,
@@ -44,4 +49,3 @@ func TestValidateHyperlinkAction_FileAndProgramSchemeChecks(t *testing.T) {
 		})
 	}
 }
-

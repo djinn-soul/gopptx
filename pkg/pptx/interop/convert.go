@@ -65,6 +65,7 @@ func ConvertFromPpt(inputPath string, outDir string) (string, error) {
 		absInput,
 	}
 
+	// nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command
 	cmd := exec.CommandContext(context.Background(), soffice, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

@@ -1,21 +1,18 @@
-import os
 import pathlib
 
 import pytest
 from gopptx import GopptxError, Presentation
 
-project_root = pathlib.Path(
-    os.path.join(pathlib.Path(__file__).parent, "../..")  # noqa: PTH118
-).resolve()
-input_deck = os.path.join(project_root, "examples/assets/01/01_basic_pptx.pptx")  # noqa: PTH118
+project_root = (pathlib.Path(__file__).parent / "../..").resolve()
+input_deck = project_root / "examples/assets/01/01_basic_pptx.pptx"
 
 
 @pytest.fixture
 def table_shape():
-    if not pathlib.Path(input_deck).exists():
+    if not input_deck.exists():
         pytest.skip("smoke sample missing")
 
-    with Presentation(input_deck) as prs:
+    with Presentation(str(input_deck)) as prs:
         slide = prs.add_slide("Table Coverage Test")
         shape_id = slide.add_table(4, 4, bounds=(1000, 1000, 5000, 2000))
         yield prs, slide, shape_id

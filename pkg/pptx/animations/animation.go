@@ -12,6 +12,9 @@ type AnimationEffect string
 const (
 	// AnimationEntranceAppear starts the entrance-effects group.
 	classEntr                                    = "entr"
+	classExit                                    = "exit"
+	classEmph                                    = "emph"
+	classPath                                    = "path"
 	AnimationEntranceAppear      AnimationEffect = "entr_appear"
 	AnimationEntranceFade        AnimationEffect = "entr_fade"
 	AnimationEntranceFlyIn       AnimationEffect = "entr_flyIn"
@@ -96,9 +99,8 @@ type Animation struct {
 	AutoReverse bool
 }
 
-const defaultAnimationDurationMS = 500
-
 const (
+	defaultAnimationDurationMS   uint32 = 500
 	presetIDAppear               uint32 = 1
 	presetIDFly                  uint32 = 2
 	presetIDFade                 uint32 = 10
@@ -136,8 +138,6 @@ const (
 	presetSubtypeFromBottomRight        = 6
 	presetSubtypeFromBottomLeft         = 7
 	presetSubtypeFromBottom             = 8
-	presetSubtypeSplitIn                = 1
-	presetSubtypeSplitOut               = 2
 )
 
 // NewAnimation creates a new animation with default settings (500ms duration, OnClick).
@@ -221,11 +221,11 @@ func (t AnimationTrigger) Validate() error {
 func (a Animation) PresetID() uint32 {
 	// NOTE: This switch statement avoids high-frequency map allocation. Do not convert to a map lookup.
 	switch a.PresetClass() {
-	case "entr", "exit":
+	case classEntr, classExit:
 		return a.presetIDEntranceExit()
-	case "emph":
+	case classEmph:
 		return a.presetIDEmphasis()
-	case "path":
+	case classPath:
 		return a.presetIDPath()
 	}
 	return 0
@@ -315,11 +315,11 @@ func (a Animation) PresetClass() string {
 	case strings.HasPrefix(string(a.Effect), "entr_"):
 		return classEntr
 	case strings.HasPrefix(string(a.Effect), "exit_"):
-		return "exit"
+		return classExit
 	case strings.HasPrefix(string(a.Effect), "emph_"):
-		return "emph"
+		return classEmph
 	case strings.HasPrefix(string(a.Effect), "path_"):
-		return "path"
+		return classPath
 	default:
 		return classEntr
 	}
@@ -328,8 +328,7 @@ func (a Animation) PresetClass() string {
 func (a Animation) XML(seqID int, actualShapeID int) string {
 	repeatAttr := ""
 	if a.RepeatCount > 0 {
-		const repeatMultiplier = 1000
-		repeatAttr = fmt.Sprintf(` repeatCount="%d"`, a.RepeatCount*repeatMultiplier)
+		repeatAttr = fmt.Sprintf(` repeatCount="%d"`, a.RepeatCount*1000) //nolint:mnd // OOXML scale
 	}
 	reverseAttr := ""
 	if a.AutoReverse {
@@ -410,11 +409,11 @@ func (a Animation) PresetSubtype() int {
 	case AnimationEntranceSplit:
 		switch a.Direction {
 		case AnimationDirIn:
-			return presetSubtypeSplitIn
+			return presetSubtypeFromTop
 		case AnimationDirOut:
-			return presetSubtypeSplitOut
+			return presetSubtypeFromRight
 		default:
-			return presetSubtypeSplitOut
+			return presetSubtypeFromRight
 		}
 	default:
 		return 0
