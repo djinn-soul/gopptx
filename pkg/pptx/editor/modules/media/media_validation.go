@@ -7,7 +7,17 @@ import (
 	"strings"
 )
 
-const maxMediaPayloadBytes = 512 * 1024 * 1024 // 512 MiB
+const (
+	maxMediaPayloadBytes = 512 * 1024 * 1024 // 512 MiB
+
+	extWebm = "webm"
+	extWmv  = "wmv"
+	extMov  = "mov"
+	extMkv  = "mkv"
+	extM4a  = "m4a"
+	extOgg  = "ogg"
+	extFlac = "flac"
+)
 
 func ResolveVideoExtension(mimeType string, filePath string, hasInlineData bool) (string, error) {
 	return resolveMediaExtension("video", mimeType, filePath, hasInlineData, videoExtForMIME, isAllowedVideoExt)
@@ -52,15 +62,15 @@ func videoExtForMIME(mimeType string) (string, bool) {
 	case "video/mp4":
 		return "mp4", true
 	case "video/webm":
-		return "webm", true
+		return extWebm, true
 	case "video/x-msvideo", "video/avi":
 		return "avi", true
 	case "video/x-ms-wmv", "video/wmv":
-		return "wmv", true
+		return extWmv, true
 	case "video/quicktime":
-		return "mov", true
+		return extMov, true
 	case "video/x-matroska", "video/mkv":
-		return "mkv", true
+		return extMkv, true
 	case "video/x-m4v", "video/m4v":
 		return "m4v", true
 	default:
@@ -75,13 +85,13 @@ func audioExtForMIME(mimeType string) (string, bool) {
 	case "audio/wav", "audio/x-wav":
 		return "wav", true
 	case "audio/m4a", "audio/mp4":
-		return "m4a", true
+		return extM4a, true
 	case "audio/x-ms-wma", "audio/wma":
 		return "wma", true
 	case "audio/ogg":
-		return "ogg", true
+		return extOgg, true
 	case "audio/flac":
-		return "flac", true
+		return extFlac, true
 	case "audio/aac":
 		return "aac", true
 	default:
@@ -91,7 +101,7 @@ func audioExtForMIME(mimeType string) (string, bool) {
 
 func isAllowedVideoExt(ext string) bool {
 	switch ext {
-	case "mp4", "webm", "avi", "wmv", "mov", "mkv", "m4v":
+	case "mp4", extWebm, "avi", extWmv, extMov, extMkv, "m4v":
 		return true
 	default:
 		return false
@@ -100,7 +110,7 @@ func isAllowedVideoExt(ext string) bool {
 
 func isAllowedAudioExt(ext string) bool {
 	switch ext {
-	case "mp3", "wav", "m4a", "wma", "ogg", "flac", "aac":
+	case "mp3", "wav", extM4a, "wma", extOgg, extFlac, "aac":
 		return true
 	default:
 		return false

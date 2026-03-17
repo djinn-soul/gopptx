@@ -50,7 +50,7 @@ func deck_global_error() *C.char {
 }
 
 // main is required for cgo build but not used for library.
-func init() {
+func init() { //nolint:gochecknoinits // required for cgo shared library registration
 	editorexport.Register()
 	editorurlfetch.Register()
 	editor.RegisterEditorLookupFn(func(h int64) (*editor.PresentationEditor, bool) {

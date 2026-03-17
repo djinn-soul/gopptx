@@ -8,10 +8,9 @@ import (
 )
 
 func (r *Repairer) repairInvalidContentType(p string) error {
-	ctPath := "[Content_Types].xml"
-	data, ok := r.modifier.Get(ctPath)
+	data, ok := r.modifier.Get(contentTypesPath)
 	if !ok {
-		return r.repairMissingPart(ctPath)
+		return r.repairMissingPart(contentTypesPath)
 	}
 
 	ext := path.Ext(p)
@@ -35,7 +34,7 @@ func (r *Repairer) repairInvalidContentType(p string) error {
 	}
 
 	repaired := content[:closingTagIdx] + newEntry + "\n" + content[closingTagIdx:]
-	r.modifier.Set(ctPath, []byte(repaired))
+	r.modifier.Set(contentTypesPath, []byte(repaired))
 	return nil
 }
 
