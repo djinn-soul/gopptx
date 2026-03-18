@@ -44,31 +44,44 @@ func (e *PresentationEditor) FindAndReplaceInShapes(findText, replaceText string
 }
 
 func replaceTextRuns(content []byte, findText, replaceText string) ([]byte, int) {
+	// Single-pass: FindAllSubmatchIndex locates all <a:t> runs in one regex scan.
+	// The previous approach called ReplaceAllFunc + FindSubmatch, scanning twice.
+	indices := textRunPattern.FindAllSubmatchIndex(content, -1)
+	if len(indices) == 0 {
+		return content, 0
+	}
+
 	total := 0
-	replaced := textRunPattern.ReplaceAllFunc(content, func(match []byte) []byte {
-		sub := textRunPattern.FindSubmatch(match)
-		if len(sub) < textRunPatternSubmatchSize {
-			return match
-		}
-		openTag := string(sub[1])
-		raw := string(sub[2])
-		closeTag := string(sub[3])
-		unescaped := html.UnescapeString(raw)
+	var buf bytes.Buffer
+	buf.Grow(len(content))
+	pos := 0
+
+	for _, idx := range indices {
+		// idx layout: [fullStart, fullEnd, openStart, openEnd, textStart, textEnd, closeStart, closeEnd]
+		fullStart, fullEnd := idx[0], idx[1]
+		textStart, textEnd := idx[4], idx[5]
+
+		raw := content[textStart:textEnd]
+		unescaped := html.UnescapeString(string(raw))
 		count := strings.Count(unescaped, findText)
+
+		buf.Write(content[pos:fullStart])
+		pos = fullEnd
+
 		if count == 0 {
-			return match
+			buf.Write(content[fullStart:fullEnd])
+			continue
 		}
+
 		total += count
 		updated := strings.ReplaceAll(unescaped, findText, replaceText)
-		return []byte(openTag + escapeXMLText(updated) + closeTag)
-	})
-	return replaced, total
-}
+		buf.Write(content[idx[2]:idx[3]])           // openTag
+		_ = xml.EscapeText(&buf, []byte(updated))   // escaped text, direct to buf
+		buf.Write(content[idx[6]:idx[7]])           // closeTag
+	}
 
-func escapeXMLText(value string) string {
-	var b bytes.Buffer
-	_ = xml.EscapeText(&b, []byte(value))
-	return b.String()
+	buf.Write(content[pos:])
+	return buf.Bytes(), total
 }
 
 // SearchShapes scans all slides and returns shapes matching the query.
@@ -77,14 +90,56 @@ func (e *PresentationEditor) SearchShapes(query common.ShapeSearchQuery) ([]comm
 		return nil, errors.New("editor cannot be nil")
 	}
 
+	// Capture original-case needle before lowercasing for two-phase pre-screen.
+	// Phase 1 uses a fast SIMD bytes.Contains with the original case; when that
+	// hits (the common case) the slower fold scan is never reached.
+	var textNeedleOrig []byte
+	if query.TextContains != "" && !query.CaseSensitive {
+		textNeedleOrig = []byte(query.TextContains)
+	}
+
 	if !query.CaseSensitive {
 		query.NameContains = strings.ToLower(query.NameContains)
 		query.TypeEquals = strings.ToLower(query.TypeEquals)
 		query.TextContains = strings.ToLower(query.TextContains)
 	}
 
+	// Pre-compute lowercased needle for the fold-scan fallback path.
+	var textNeedle []byte
+	if query.TextContains != "" {
+		textNeedle = []byte(query.TextContains)
+	}
+
 	results := make([]common.ShapeSearchResult, 0)
 	for slideIndex := range e.slides {
+		partPath := e.slides[slideIndex].Part
+		content, ok := e.parts.Get(partPath)
+		if !ok {
+			return nil, fmt.Errorf("read slide part %s: not found", partPath)
+		}
+
+		// Two-phase pre-screen — zero allocs in both phases.
+		//
+		// Case-sensitive: single SIMD bytes.Contains, done.
+		//
+		// Case-insensitive:
+		//   Phase 1 — SIMD bytes.Contains with the original-case needle.
+		//             When the stored text case matches the query (the common
+		//             case) this succeeds immediately and the fold scan is
+		//             skipped entirely, keeping all-match overhead near zero.
+		//   Phase 2 — asciiContainsFold fallback only when Phase 1 misses
+		//             (e.g. slide has "HELLO", query is "hello").
+		if textNeedle != nil {
+			if query.CaseSensitive {
+				if !bytes.Contains(content, textNeedle) {
+					continue
+				}
+			} else if !bytes.Contains(content, textNeedleOrig) &&
+				!asciiContainsFold(content, textNeedle) {
+				continue
+			}
+		}
+
 		shapes, err := e.GetShapes(slideIndex)
 		if err != nil {
 			return nil, err
@@ -100,6 +155,46 @@ func (e *PresentationEditor) SearchShapes(query common.ShapeSearchQuery) ([]comm
 		}
 	}
 	return results, nil
+}
+
+// asciiContainsFold reports whether b contains s using zero-allocation ASCII
+// case-insensitive comparison. s must already be lowercased. Non-ASCII bytes
+// are compared as-is (safe: PPTX text content is UTF-8 but search needles
+// are typically ASCII).
+func asciiContainsFold(b, s []byte) bool {
+	n := len(s)
+	if n == 0 {
+		return true
+	}
+	bLen := len(b)
+	if bLen < n {
+		return false
+	}
+	first := s[0]
+	for i := 0; i <= bLen-n; i++ {
+		bc := b[i]
+		if bc >= 'A' && bc <= 'Z' {
+			bc += 'a' - 'A'
+		}
+		if bc != first {
+			continue
+		}
+		match := true
+		for j := 1; j < n; j++ {
+			c := b[i+j]
+			if c >= 'A' && c <= 'Z' {
+				c += 'a' - 'A'
+			}
+			if c != s[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
 }
 
 func shapeMatchesQuery(shape common.Shape, query common.ShapeSearchQuery) bool {

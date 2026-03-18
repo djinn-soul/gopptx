@@ -52,9 +52,15 @@ const slideHeaderStart = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?
 	`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
 <p:cSld>`
 
-func slideHeaderEndBodyXML(width, height int64) string {
-	wStr := strconv.FormatInt(width, 10)
-	hStr := strconv.FormatInt(height, 10)
+// Precomputed header bodies for the two most common slide dimensions (zero allocs).
+//
+//nolint:gochecknoglobals // read-only precomputed constants, never mutated
+var (
+	slideHeaderEndBodyXML169  = slideHeaderEndBodyXMLFor("9144000", "6858000")
+	slideHeaderEndBodyXML1610 = slideHeaderEndBodyXMLFor("12192000", "6858000")
+)
+
+func slideHeaderEndBodyXMLFor(wStr, hStr string) string {
 	return `
 <p:spTree>
 <p:nvGrpSpPr>
@@ -70,6 +76,19 @@ func slideHeaderEndBodyXML(width, height int64) string {
 <a:chExt cx="` + wStr + `" cy="` + hStr + `"/>
 </a:xfrm>
 </p:grpSpPr>`
+}
+
+func slideHeaderEndBodyXML(width, height int64) string {
+	// Fast paths for the two most common slide dimensions — zero allocs.
+	if width == 9144000 && height == 6858000 {
+		return slideHeaderEndBodyXML169
+	}
+	if width == 12192000 && height == 6858000 {
+		return slideHeaderEndBodyXML1610
+	}
+	wStr := strconv.FormatInt(width, 10)
+	hStr := strconv.FormatInt(height, 10)
+	return slideHeaderEndBodyXMLFor(wStr, hStr)
 }
 
 const slideContentFooter = `
@@ -177,6 +196,9 @@ func SlideWithLayout(
 	width, height int64,
 ) string {
 	var b strings.Builder
+	// Pre-allocate ~3KB: covers header (~500) + title (~600) + 3-bullet content (~700) + footer (~100).
+	// Avoids 2-3 reallocs for the common case; oversized slides will still realloc once.
+	b.Grow(3072)
 	layoutMode := normalizeSlideLayoutMode(layout)
 
 	b.WriteString(slideHeaderStart)

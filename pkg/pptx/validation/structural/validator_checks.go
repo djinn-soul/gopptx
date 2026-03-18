@@ -35,7 +35,7 @@ func (v *Validator) checkSlideReferences() {
 	}
 
 	// Find actual slide files
-	for _, p := range v.provider.Keys() {
+	for _, p := range v.keys {
 		if strings.HasPrefix(p, "ppt/slides/slide") && strings.HasSuffix(p, ".xml") && !strings.Contains(p, "_rels") {
 			if !referencedSlides[p] {
 				v.issues = append(v.issues, Issue{
@@ -85,7 +85,7 @@ func (v *Validator) checkContentTypes() {
 		defaults[strings.ToLower(d.Extension)] = true
 	}
 
-	for _, p := range v.provider.Keys() {
+	for _, p := range v.keys {
 		if p == contentTypesPath || strings.HasSuffix(p, ".rels") {
 			continue
 		}
@@ -110,7 +110,7 @@ func (v *Validator) checkContentTypes() {
 }
 
 func (v *Validator) checkNamespaces() {
-	paths := v.provider.Keys()
+	paths := v.keys
 	issuesChan := make(chan []Issue, len(paths))
 	var wg sync.WaitGroup
 
@@ -137,7 +137,7 @@ func (v *Validator) checkEmptyElements() {
 	// A basic implementation to catch some known fragile elements
 	// that shouldn't be empty self-closing (like p:sldIdLst)
 	// unless they are explicitly handled correctly by a reader.
-	paths := v.provider.Keys()
+	paths := v.keys
 	issuesChan := make(chan []Issue, len(paths))
 	var wg sync.WaitGroup
 
@@ -160,37 +160,42 @@ func (v *Validator) checkEmptyElements() {
 	}
 }
 
+var (
+	xmlDeclEnd  = []byte("?>")
+	xmlTagOpen  = []byte("<")
+	xmlTagClose = []byte(">")
+)
+
 func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 	data, ok := v.provider.Get(partPath)
 	if !ok {
 		return nil
 	}
 
-	content := string(data)
-	xmlDeclIdx := strings.Index(content, "?>")
-	startIdx := xmlDeclIdx + xmlDeclSuffixLength
-	if xmlDeclIdx == -1 {
-		startIdx = 0
+	// Operate on []byte directly to avoid string(data) copy.
+	startIdx := 0
+	if idx := bytes.Index(data, xmlDeclEnd); idx != -1 {
+		startIdx = idx + xmlDeclSuffixLength
 	}
 
-	firstTagStart := strings.Index(content[startIdx:], "<")
+	firstTagStart := bytes.Index(data[startIdx:], xmlTagOpen)
 	if firstTagStart == -1 {
 		return nil
 	}
 
-	firstTagEnd := strings.Index(content[startIdx+firstTagStart:], ">")
+	firstTagEnd := bytes.Index(data[startIdx+firstTagStart:], xmlTagClose)
 	if firstTagEnd == -1 {
 		return nil
 	}
 
-	openingTag := content[startIdx+firstTagStart : startIdx+firstTagStart+firstTagEnd+1]
+	openingTag := data[startIdx+firstTagStart : startIdx+firstTagStart+firstTagEnd+1]
 	if !isPresentationNamespacePart(partPath) {
 		return nil
 	}
 
 	issues := make([]Issue, 0, namespaceIssueCap)
-	if !strings.Contains(openingTag, "xmlns:p=") &&
-		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"`) {
+	if !bytes.Contains(openingTag, []byte("xmlns:p=")) &&
+		!bytes.Contains(openingTag, []byte(`xmlns="http://schemas.openxmlformats.org/presentationml/2006/main"`)) {
 		issues = append(issues, Issue{
 			Code:        CodeMissingNamespace,
 			Severity:    SeverityWarning,
@@ -200,8 +205,8 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 			Context:     map[string]string{"ns": "p"},
 		})
 	}
-	if !strings.Contains(openingTag, "xmlns:a=") &&
-		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/drawingml/2006/main"`) {
+	if !bytes.Contains(openingTag, []byte("xmlns:a=")) &&
+		!bytes.Contains(openingTag, []byte(`xmlns="http://schemas.openxmlformats.org/drawingml/2006/main"`)) {
 		issues = append(issues, Issue{
 			Code:        CodeMissingNamespace,
 			Severity:    SeverityWarning,
@@ -211,8 +216,8 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 			Context:     map[string]string{"ns": "a"},
 		})
 	}
-	if !strings.Contains(openingTag, "xmlns:r=") &&
-		!strings.Contains(openingTag, `xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`) {
+	if !bytes.Contains(openingTag, []byte("xmlns:r=")) &&
+		!bytes.Contains(openingTag, []byte(`xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`)) {
 		issues = append(issues, Issue{
 			Code:        CodeMissingNamespace,
 			Severity:    SeverityWarning,
@@ -225,13 +230,14 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 	return issues
 }
 
+var emptySldIdLst = []byte("<p:sldIdLst/>")
+
 func (v *Validator) checkEmptyElementsForPart(partPath string) []Issue {
 	data, ok := v.provider.Get(partPath)
 	if !ok {
 		return nil
 	}
-	content := string(data)
-	if !strings.Contains(content, "<p:sldIdLst/>") {
+	if !bytes.Contains(data, emptySldIdLst) {
 		return nil
 	}
 	return []Issue{{

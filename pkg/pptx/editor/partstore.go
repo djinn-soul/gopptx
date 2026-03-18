@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -221,13 +222,43 @@ func (ps *PartStore) getPriorityDataLocked(name string) ([]byte, bool, *inflight
 }
 
 // KeysWithPrefix returns part names that start with the given prefix.
+// It operates directly on the sorted keysCache — no full-copy allocation.
+// Binary search locates the first candidate; linear scan stops at the first non-match.
+// Fast path (clean cache) uses RLock so concurrent readers are not blocked.
 func (ps *PartStore) KeysWithPrefix(prefix string) []string {
-	all := ps.Keys()
-	out := make([]string, 0)
-	for _, name := range all {
-		if len(name) >= len(prefix) && name[:len(prefix)] == prefix {
+	// Fast path: cache is clean, use shared read lock.
+	ps.mu.RLock()
+	if !ps.keysDirty {
+		result := prefixSearchSorted(ps.keysCache, prefix)
+		ps.mu.RUnlock()
+		return result
+	}
+	ps.mu.RUnlock()
+
+	// Slow path: rebuild cache under exclusive write lock, then search.
+	ps.mu.Lock()
+	if ps.keysDirty {
+		out := make([]string, 0, len(ps.allKeys))
+		for name := range ps.allKeys {
 			out = append(out, name)
 		}
+		sort.Strings(out)
+		ps.keysCache = out
+		ps.keysDirty = false
+	}
+	result := prefixSearchSorted(ps.keysCache, prefix)
+	ps.mu.Unlock()
+	return result
+}
+
+func prefixSearchSorted(cache []string, prefix string) []string {
+	start := sort.SearchStrings(cache, prefix)
+	out := make([]string, 0, 8)
+	for i := start; i < len(cache); i++ {
+		if !strings.HasPrefix(cache[i], prefix) {
+			break
+		}
+		out = append(out, cache[i])
 	}
 	return out
 }

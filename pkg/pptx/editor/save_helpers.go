@@ -2,7 +2,7 @@ package editor
 
 import (
 	"fmt"
-	"sync"
+	"unsafe"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
@@ -16,7 +16,7 @@ type manifestParts struct {
 	contentTypesXML     []byte
 }
 
-func (e *PresentationEditor) buildManifestPartsParallel(
+func (e *PresentationEditor) buildManifestParts(
 	hasSections bool,
 	hasNotesMaster bool,
 	hasCommentAuthors bool,
@@ -24,77 +24,43 @@ func (e *PresentationEditor) buildManifestPartsParallel(
 	hasHandoutMaster bool,
 	customXMLPropsPaths []string,
 ) (manifestParts, error) {
-	var (
-		wg      sync.WaitGroup
-		errOnce sync.Once
-		outErr  error
+	// Run the four manifest-building tasks sequentially.
+	// All tasks are CPU-bound string/map operations; zip writing dominates total
+	// latency, so goroutine+sync overhead (~83 allocs/save) outweighs any parallel speedup.
 
-		parts manifestParts
+	presentationXML, err := e.renderPresentationXMLWithSections()
+	if err != nil {
+		return manifestParts{}, err
+	}
+
+	presentationRelsXML, err := editorslide.RenderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
+	if err != nil {
+		return manifestParts{}, err
+	}
+
+	corePropsXML, err := renderCoreProperties(e.metadata.CoreProperties)
+	if err != nil {
+		return manifestParts{}, fmt.Errorf("render core properties: %w", err)
+	}
+
+	contentTypesXML, err := e.renderContentTypesPart(
+		hasSections,
+		hasNotesMaster,
+		hasCommentAuthors,
+		hasVBA,
+		hasHandoutMaster,
+		customXMLPropsPaths,
 	)
-
-	setErr := func(err error) {
-		if err == nil {
-			return
-		}
-		errOnce.Do(func() {
-			outErr = err
-		})
+	if err != nil {
+		return manifestParts{}, err
 	}
 
-	wg.Add(manifestBuildWorkers)
-
-	go func() {
-		defer wg.Done()
-		presentationXML, err := e.renderPresentationXMLWithSections()
-		if err != nil {
-			setErr(err)
-			return
-		}
-		parts.presentationXML = []byte(presentationXML)
-	}()
-
-	go func() {
-		defer wg.Done()
-		presentationRelsXML, err := editorslide.RenderPresentationRelsXML(e.nonSlideRels, e.slides, hasSections, hasVBA)
-		if err != nil {
-			setErr(err)
-			return
-		}
-		parts.presentationRelsXML = []byte(presentationRelsXML)
-	}()
-
-	go func() {
-		defer wg.Done()
-		corePropsXML, err := renderCoreProperties(e.metadata.CoreProperties)
-		if err != nil {
-			setErr(fmt.Errorf("render core properties: %w", err))
-			return
-		}
-		parts.corePropsXML = corePropsXML
-	}()
-
-	go func() {
-		defer wg.Done()
-		contentTypesXML, err := e.renderContentTypesPart(
-			hasSections,
-			hasNotesMaster,
-			hasCommentAuthors,
-			hasVBA,
-			hasHandoutMaster,
-			customXMLPropsPaths,
-		)
-		if err != nil {
-			setErr(err)
-			return
-		}
-		parts.contentTypesXML = contentTypesXML
-	}()
-
-	wg.Wait()
-	if outErr != nil {
-		return manifestParts{}, outErr
-	}
-	return parts, nil
+	return manifestParts{
+		presentationXML:     []byte(presentationXML),
+		presentationRelsXML: []byte(presentationRelsXML),
+		corePropsXML:        corePropsXML,
+		contentTypesXML:     contentTypesXML,
+	}, nil
 }
 
 func (e *PresentationEditor) renderContentTypesPart(
@@ -116,23 +82,65 @@ func (e *PresentationEditor) renderContentTypesPart(
 	filteredCommentPaths := editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/comments/comment"))
 
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
-	contentTypesXML, err := editorslide.RewriteContentTypes(
-		contentTypesData,
-		e.slides,
-		mediaPaths,
-		hasSections,
-		filteredChartPaths,
-		notesPaths,
-		themePaths,
-		layoutPaths,
-		masterPaths,
-		hasNotesMaster,
-		hasCommentAuthors,
-		filteredCommentPaths,
-		hasVBA,
-		hasHandoutMaster,
-		customXMLPropsPaths,
-	)
+
+	// Use a cached parse of [Content_Types].xml to avoid xml.Unmarshal on every save.
+	// The cache is keyed by the backing-array pointer of the content-types bytes.
+	// PartStore.Set() always creates a new slice, so a changed pointer means a cache miss.
+	var base editorslide.ContentTypesBase
+	if len(contentTypesData) > 0 {
+		ptr := uintptr(unsafe.Pointer(&contentTypesData[0])) //nolint:gosec // intentional: staleness token, not dereferenced
+		if e.ctBasePtr == ptr && e.ctBase != nil {
+			base = e.ctBase
+		} else {
+			parsed, err := editorslide.ParseContentTypesBase(contentTypesData)
+			if err != nil {
+				return nil, fmt.Errorf("parse content types: %w", err)
+			}
+			e.ctBase = parsed
+			e.ctBasePtr = ptr
+			base = parsed
+		}
+	}
+
+	var contentTypesXML string
+	var err error
+	if base != nil {
+		contentTypesXML, err = editorslide.RewriteContentTypesFromBase(
+			base,
+			e.slides,
+			mediaPaths,
+			hasSections,
+			filteredChartPaths,
+			notesPaths,
+			themePaths,
+			layoutPaths,
+			masterPaths,
+			hasNotesMaster,
+			hasCommentAuthors,
+			filteredCommentPaths,
+			hasVBA,
+			hasHandoutMaster,
+			customXMLPropsPaths,
+		)
+	} else {
+		contentTypesXML, err = editorslide.RewriteContentTypes(
+			contentTypesData,
+			e.slides,
+			mediaPaths,
+			hasSections,
+			filteredChartPaths,
+			notesPaths,
+			themePaths,
+			layoutPaths,
+			masterPaths,
+			hasNotesMaster,
+			hasCommentAuthors,
+			filteredCommentPaths,
+			hasVBA,
+			hasHandoutMaster,
+			customXMLPropsPaths,
+		)
+	}
 	if err != nil {
 		return nil, err
 	}

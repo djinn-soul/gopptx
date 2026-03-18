@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"unsafe"
 
 	editormodcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 )
@@ -139,7 +140,9 @@ func requireSlideIndex(
 // ExecuteCommand dispatches a JSON command to the appropriate editor method.
 func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
 	var req RequestEnvelope
-	if err := json.Unmarshal([]byte(jsonInput), &req); err != nil {
+	// unsafe.Slice gives a zero-copy read-only view of jsonInput — json.Unmarshal
+	// never writes to the slice, so this is safe and avoids allocating a full copy.
+	if err := json.Unmarshal(unsafe.Slice(unsafe.StringData(jsonInput), len(jsonInput)), &req); err != nil {
 		return errorResponse(ErrCodeInvalidJSON, err.Error(), "")
 	}
 
@@ -214,16 +217,8 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 }
 
 func commandHandlerFor(op string) (commandHandler, bool) {
-	for _, lookup := range []func(string) (commandHandler, bool){
-		commandHandlerForSlides,
-		commandHandlerForLayoutMetadata,
-		commandHandlerForContent,
-		commandHandlerForCommentsShapes,
-		commandHandlerForNotesTables,
-	} {
-		if h, ok := lookup(op); ok {
-			return h, true
-		}
+	if h, ok := staticHandlers[op]; ok {
+		return h, true
 	}
 	// Fallback: handlers registered by external packages (e.g. export) to avoid
 	// import cycles.

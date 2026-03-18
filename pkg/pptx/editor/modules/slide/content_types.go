@@ -13,6 +13,73 @@ import (
 
 const commentsPartType = "application/vnd.openxmlformats-officedocument.presentationml.comments+xml"
 
+// contentTypesEscaper escapes XML attribute values for content types output.
+// Package-level to avoid per-call allocation (strings.NewReplacer allocates).
+//
+//nolint:gochecknoglobals // read-only package-level replacer, never mutated
+var contentTypesEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+)
+
+// ContentTypesBase is an opaque pre-parsed [Content_Types].xml representation.
+// Callers obtain it via ParseContentTypesBase and pass it to RewriteContentTypesFromBase
+// to skip xml.Unmarshal on repeated saves when the bytes have not changed.
+type ContentTypesBase interface {
+	// unexported method keeps the interface opaque; only this package can implement it.
+	contentTypesBase() contentTypesDocument
+}
+
+type contentTypesBaseImpl struct {
+	doc contentTypesDocument
+}
+
+func (c contentTypesBaseImpl) contentTypesBase() contentTypesDocument { return c.doc }
+
+// ParseContentTypesBase parses [Content_Types].xml and returns an opaque value
+// suitable for caching and passing to RewriteContentTypesFromBase.
+func ParseContentTypesBase(current []byte) (ContentTypesBase, error) {
+	doc, err := parseContentTypesDocument(current)
+	if err != nil {
+		return nil, err
+	}
+	return contentTypesBaseImpl{doc}, nil
+}
+
+// RewriteContentTypesFromBase is identical to RewriteContentTypes but accepts a
+// pre-parsed base (from ParseContentTypesBase) to avoid re-parsing on each call.
+func RewriteContentTypesFromBase(
+	base ContentTypesBase,
+	slides []common.EditorSlideRef,
+	mediaPaths []string,
+	hasSections bool,
+	chartPaths []string,
+	notesPaths []string,
+	themePaths []string,
+	layoutPaths []string,
+	masterPaths []string,
+	hasNotesMaster bool,
+	hasCommentAuthors bool,
+	commentPaths []string,
+	hasVBA bool,
+	hasHandoutMaster bool,
+	customXMLPropsPaths []string,
+) (string, error) {
+	doc := base.contentTypesBase()
+	// Copy Defaults slice before passing to ensureContentTypeDefaults, which may
+	// append to it.  This prevents the cached base from growing across saves.
+	if len(mediaPaths) > 0 || hasVBA {
+		cp := make([]contentTypeDefault, len(doc.Defaults))
+		copy(cp, doc.Defaults)
+		doc.Defaults = cp
+	}
+	return rewriteContentTypesFromDoc(doc, slides, mediaPaths, hasSections, chartPaths,
+		notesPaths, themePaths, layoutPaths, masterPaths, hasNotesMaster, hasCommentAuthors,
+		commentPaths, hasVBA, hasHandoutMaster, customXMLPropsPaths)
+}
+
 func RewriteContentTypes(
 	current []byte,
 	slides []common.EditorSlideRef,
@@ -34,6 +101,28 @@ func RewriteContentTypes(
 	if err != nil {
 		return "", err
 	}
+	return rewriteContentTypesFromDoc(doc, slides, mediaPaths, hasSections, chartPaths,
+		notesPaths, themePaths, layoutPaths, masterPaths, hasNotesMaster, hasCommentAuthors,
+		commentPaths, hasVBA, hasHandoutMaster, customXMLPropsPaths)
+}
+
+func rewriteContentTypesFromDoc(
+	doc contentTypesDocument,
+	slides []common.EditorSlideRef,
+	mediaPaths []string,
+	hasSections bool,
+	chartPaths []string,
+	notesPaths []string,
+	themePaths []string,
+	layoutPaths []string,
+	masterPaths []string,
+	hasNotesMaster bool,
+	hasCommentAuthors bool,
+	commentPaths []string,
+	hasVBA bool,
+	hasHandoutMaster bool,
+	customXMLPropsPaths []string,
+) (string, error) {
 	ensureContentTypeDefaults(&doc, mediaPaths, hasVBA)
 
 	overrides := filterDynamicOverrides(doc.Overrides, len(slides))
@@ -234,35 +323,85 @@ func appendOptionalContentTypeOverride(
 	})
 }
 
+// normalizeOverridePartName returns the canonical "/ppt/..." form.
+// Fast path: if partName is already in that form (starts with "/" and the
+// rest is already canonical), return partName directly without allocating.
+func normalizeOverridePartName(partName string) string {
+	trimmed := strings.TrimSpace(partName)
+	canonical := common.CanonicalPartPath(strings.TrimPrefix(trimmed, "/"))
+	// Check if trimmed == "/" + canonical without constructing the concatenation.
+	if len(trimmed) == len(canonical)+1 && trimmed[0] == '/' && trimmed[1:] == canonical {
+		return trimmed // already normalized — zero alloc
+	}
+	return "/" + canonical
+}
+
 func dedupeContentTypeOverrides(overrides []contentTypeOverride) []contentTypeOverride {
 	if len(overrides) == 0 {
 		return overrides
 	}
-	seen := make(map[string]contentTypeOverride, len(overrides))
+	// Fast path: scan for duplicates without building the full output.
+	// In the normal save flow the list is already unique; skip rebuilding it.
+	seen := make(map[string]struct{}, len(overrides))
+	hasDup := false
+	for _, o := range overrides {
+		key := normalizeOverridePartName(o.PartName)
+		if _, dup := seen[key]; dup {
+			hasDup = true
+			break
+		}
+		seen[key] = struct{}{}
+	}
+	if !hasDup {
+		return overrides // common case: no duplicates
+	}
+
+	// Slow path: rebuild with first-occurrence semantics.
+	clear(seen)
 	order := make([]string, 0, len(overrides))
-	for _, override := range overrides {
-		key := "/" + common.CanonicalPartPath(strings.TrimPrefix(strings.TrimSpace(override.PartName), "/"))
+	overrideByKey := make(map[string]contentTypeOverride, len(overrides))
+	for _, o := range overrides {
+		key := normalizeOverridePartName(o.PartName)
 		if _, exists := seen[key]; !exists {
+			seen[key] = struct{}{}
 			order = append(order, key)
 		}
-		seen[key] = contentTypeOverride{
+		overrideByKey[key] = contentTypeOverride{
 			PartName:    key,
-			ContentType: strings.TrimSpace(override.ContentType),
+			ContentType: strings.TrimSpace(o.ContentType),
 		}
 	}
 	deduped := make([]contentTypeOverride, 0, len(order))
 	for _, key := range order {
-		deduped = append(deduped, seen[key])
+		deduped = append(deduped, overrideByKey[key])
 	}
 	return deduped
 }
 
 func renderContentTypesDocument(doc contentTypesDocument) (string, error) {
-	rendered, err := xml.MarshalIndent(doc, "", "")
-	if err != nil {
-		return "", err
+	// Hand-rolled renderer replaces xml.MarshalIndent to eliminate reflection overhead.
+	// Each entry is ~100 bytes; pre-grow avoids builder reallocations.
+	var b strings.Builder
+	b.Grow(80 + (len(doc.Defaults)+len(doc.Overrides))*100)
+	b.WriteString(`<Types xmlns="`)
+	b.WriteString(contentTypesEscaper.Replace(doc.XMLNS))
+	b.WriteString(`">`)
+	for _, d := range doc.Defaults {
+		b.WriteString("\n<Default Extension=\"")
+		b.WriteString(contentTypesEscaper.Replace(d.Extension))
+		b.WriteString("\" ContentType=\"")
+		b.WriteString(contentTypesEscaper.Replace(d.ContentType))
+		b.WriteString("\"/>")
 	}
-	return xml.Header + strings.TrimSpace(string(rendered)), nil
+	for _, o := range doc.Overrides {
+		b.WriteString("\n<Override PartName=\"")
+		b.WriteString(contentTypesEscaper.Replace(o.PartName))
+		b.WriteString("\" ContentType=\"")
+		b.WriteString(contentTypesEscaper.Replace(o.ContentType))
+		b.WriteString("\"/>")
+	}
+	b.WriteString("\n</Types>")
+	return xml.Header + b.String(), nil
 }
 
 type contentTypesDocument struct {

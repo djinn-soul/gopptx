@@ -1,297 +1,151 @@
 package editor
 
-func commandHandlerForSlides(op string) (commandHandler, bool) {
-	switch op {
-	case OpBatchExecute:
-		return handleBatchExecute, true
-	case OpSlideCount:
-		return handleSlideCount, true
-	case OpAddSlide:
-		return handleAddSlide, true
-	case OpRemoveSlide:
-		return handleRemoveSlide, true
-	case OpMoveSlide:
-		return handleMoveSlide, true
-	case OpDuplicateSlide:
-		return handleDuplicateSlide, true
-	case OpDuplicateSlideAfter:
-		return handleDuplicateSlideAfter, true
-	case OpListSlides:
-		return handleListSlides, true
-	case OpSetSlideTitle:
-		return handleSetSlideTitle, true
-	case OpUpdateSlide:
-		return handleUpdateSlide, true
-	case OpValidate:
-		return handleValidate, true
-	case OpRepair:
-		return handleRepair, true
-	default:
-		return nil, false
-	}
-}
+//nolint:gochecknoglobals // package-level dispatch map for O(1) command routing
+var staticHandlers map[string]commandHandler
 
-//nolint:funlen // Op routing table is intentionally explicit to keep command coverage and discoverability straightforward.
-func commandHandlerForLayoutMetadata(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetMetadata:
-		return handleGetMetadata, true
-	case OpListSlideCharts:
-		return handleListSlideCharts, true
-	case OpUpdateChartData:
-		return handleUpdateChartData, true
-	case OpUpdateChartDataBatch:
-		return handleUpdateChartDataBatch, true
-	case OpUpdateChartFormatting:
-		return handleUpdateChartFormatting, true
-	case OpGetChartState:
-		return handleGetChartState, true
-	case OpAddChart:
-		return handleAddChart, true
-	case OpGetSlideLayoutRef:
-		return handleGetSlideLayoutRef, true
-	case OpListSlideLayouts:
-		return handleListSlideLayouts, true
-	case OpListSlideMasters:
-		return handleListSlideMasters, true
-	case OpListMasterLayouts:
-		return handleListMasterLayouts, true
-	case OpRebindSlideLayout:
-		return handleRebindSlideLayout, true
-	case OpCloneLayoutMasterFamily:
-		return handleCloneLayoutMasterFamily, true
-	case OpAddSlideMaster:
-		return handleAddSlideMaster, true
-	case OpRemoveSlideMaster:
-		return handleRemoveSlideMaster, true
-	case OpAddSlideLayout:
-		return handleAddSlideLayout, true
-	case OpRemoveSlideLayout:
-		return handleRemoveSlideLayout, true
-	case OpApplyTheme:
-		return handleApplyTheme, true
-	case OpSetSlideSize:
-		return handleSetSlideSize, true
-	case OpMergeFromFile:
-		return handleMergeFromFile, true
-	case OpGetCoreProperties:
-		return handleGetCoreProperties, true
-	case OpSetCoreProperties:
-		return handleSetCoreProperties, true
-	case OpListPlaceholders:
-		return handleListPlaceholders, true
-	case OpSetPlaceholderContent:
-		return handleSetPlaceholderContent, true
-	default:
-		return commandHandlerForThemeLayout(op)
-	}
-}
+//nolint:gochecknoinits // required to break the init cycle: handleBatchExecute → commandHandlerFor → staticHandlers
+func init() {
+	staticHandlers = map[string]commandHandler{
+	// Slides basic
+	OpBatchExecute:       handleBatchExecute,
+	OpSlideCount:         handleSlideCount,
+	OpAddSlide:           handleAddSlide,
+	OpRemoveSlide:        handleRemoveSlide,
+	OpMoveSlide:          handleMoveSlide,
+	OpDuplicateSlide:     handleDuplicateSlide,
+	OpDuplicateSlideAfter: handleDuplicateSlideAfter,
+	OpListSlides:         handleListSlides,
+	OpSetSlideTitle:      handleSetSlideTitle,
+	OpUpdateSlide:        handleUpdateSlide,
+	OpValidate:           handleValidate,
+	OpRepair:             handleRepair,
 
-func commandHandlerForThemeLayout(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetLayoutShapes:
-		return handleGetLayoutShapes, true
-	case OpGetMasterShapes:
-		return handleGetMasterShapes, true
-	case OpGetLayoutPlaceholders:
-		return handleGetLayoutPlaceholders, true
-	case OpGetMasterPlaceholders:
-		return handleGetMasterPlaceholders, true
-	case OpSetGlobalThemePreset:
-		return handleSetGlobalThemePreset, true
-	case OpSetThemeFontScheme:
-		return handleSetThemeFontScheme, true
-	case OpSetThemeColorScheme:
-		return handleSetThemeColorScheme, true
-	case OpGetThemeInventory:
-		return handleGetThemeInventory, true
-	default:
-		return nil, false
-	}
-}
+	// Layout & metadata
+	OpGetMetadata:             handleGetMetadata,
+	OpListSlideCharts:         handleListSlideCharts,
+	OpUpdateChartData:         handleUpdateChartData,
+	OpUpdateChartDataBatch:    handleUpdateChartDataBatch,
+	OpUpdateChartFormatting:   handleUpdateChartFormatting,
+	OpGetChartState:           handleGetChartState,
+	OpAddChart:                handleAddChart,
+	OpGetSlideLayoutRef:       handleGetSlideLayoutRef,
+	OpListSlideLayouts:        handleListSlideLayouts,
+	OpListSlideMasters:        handleListSlideMasters,
+	OpListMasterLayouts:       handleListMasterLayouts,
+	OpRebindSlideLayout:       handleRebindSlideLayout,
+	OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
+	OpAddSlideMaster:          handleAddSlideMaster,
+	OpRemoveSlideMaster:       handleRemoveSlideMaster,
+	OpAddSlideLayout:          handleAddSlideLayout,
+	OpRemoveSlideLayout:       handleRemoveSlideLayout,
+	OpApplyTheme:              handleApplyTheme,
+	OpSetSlideSize:            handleSetSlideSize,
+	OpMergeFromFile:           handleMergeFromFile,
+	OpGetCoreProperties:       handleGetCoreProperties,
+	OpSetCoreProperties:       handleSetCoreProperties,
+	OpListPlaceholders:        handleListPlaceholders,
+	OpSetPlaceholderContent:   handleSetPlaceholderContent,
 
-func commandHandlerForContent(op string) (commandHandler, bool) {
-	switch op {
-	case OpAddSection:
-		return handleAddSection, true
-	case OpRemoveSection:
-		return handleRemoveSection, true
-	case OpRenameSection:
-		return handleRenameSection, true
-	case OpGetSections:
-		return handleGetSections, true
-	case OpFindAndReplace:
-		return handleFindAndReplace, true
-	case OpSearchShapes:
-		return handleSearchShapes, true
-	case OpSetModifyPassword:
-		return handleSetModifyPassword, true
-	case OpSetMarkAsFinal:
-		return handleSetMarkAsFinal, true
-	case OpAddCustomXML:
-		return handleAddCustomXML, true
-	case OpListCustomXML:
-		return handleListCustomXML, true
-	case OpRemoveCustomXML:
-		return handleRemoveCustomXML, true
-	case OpAddVba:
-		return handleAddVba, true
-	case OpMarkdownToSlides:
-		return handleMarkdownToSlides, true
-	case OpURLFetchToSlides:
-		return handleURLFetchToSlides, true
-	case OpAddMermaidShape:
-		return handleAddMermaidShape, true
-	case OpAddSmartArt:
-		return handleAddSmartArt, true
-	case OpUpdateSmartArt:
-		return handleUpdateSmartArt, true
-	case OpSetSlideBackground:
-		return handleSetSlideBackground, true
-	case OpSetSlideHeaderFooter:
-		return handleSetSlideHeaderFooter, true
-	case OpAddAnimation:
-		return handleAddAnimation, true
-	case OpSetSlideTransition:
-		return handleSetSlideTransition, true
-	case OpMergeFromEditor:
-		return handleMergeFromEditor, true
-	default:
-		return nil, false
-	}
-}
+	// Theme & layout shapes
+	OpGetLayoutShapes:       handleGetLayoutShapes,
+	OpGetMasterShapes:       handleGetMasterShapes,
+	OpGetLayoutPlaceholders: handleGetLayoutPlaceholders,
+	OpGetMasterPlaceholders: handleGetMasterPlaceholders,
+	OpSetGlobalThemePreset:  handleSetGlobalThemePreset,
+	OpSetThemeFontScheme:    handleSetThemeFontScheme,
+	OpSetThemeColorScheme:   handleSetThemeColorScheme,
+	OpGetThemeInventory:     handleGetThemeInventory,
 
-func commandHandlerForCommentsShapes(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetAuthors:
-		return handleGetAuthors, true
-	case OpAddAuthor:
-		return handleAddAuthor, true
-	case OpGetComments:
-		return handleGetComments, true
-	case OpAddComment:
-		return handleAddComment, true
-	case OpRemoveComment:
-		return handleRemoveComment, true
-	case OpListShapes:
-		return handleListShapes, true
-	case OpGetSlideTextStates:
-		return handleGetSlideTextStates, true
-	case OpGetShapeTextState:
-		return handleGetShapeTextState, true
-	case OpGetShapeRuns:
-		return handleGetShapeRuns, true
-	case OpSetShapeRuns:
-		return handleSetShapeRuns, true
-	case OpSetSlideShapeRuns:
-		return handleSetSlideShapeRuns, true
-	case OpUpdateDeckRunTexts:
-		return handleUpdateDeckRunTexts, true
-	case OpUpdateSlideRunTexts:
-		return handleUpdateSlideRunTexts, true
-	case OpUpdateShapeRunText:
-		return handleUpdateShapeRunText, true
-	case OpAppendShapeRun:
-		return handleAppendShapeRun, true
-	default:
-		return commandHandlerForShapeMutations(op)
-	}
-}
+	// Content & sections
+	OpAddSection:         handleAddSection,
+	OpRemoveSection:      handleRemoveSection,
+	OpRenameSection:      handleRenameSection,
+	OpGetSections:        handleGetSections,
+	OpFindAndReplace:     handleFindAndReplace,
+	OpSearchShapes:       handleSearchShapes,
+	OpSetModifyPassword:  handleSetModifyPassword,
+	OpSetMarkAsFinal:     handleSetMarkAsFinal,
+	OpAddCustomXML:       handleAddCustomXML,
+	OpListCustomXML:      handleListCustomXML,
+	OpRemoveCustomXML:    handleRemoveCustomXML,
+	OpAddVba:             handleAddVba,
+	OpMarkdownToSlides:   handleMarkdownToSlides,
+	OpURLFetchToSlides:   handleURLFetchToSlides,
+	OpAddMermaidShape:    handleAddMermaidShape,
+	OpAddSmartArt:        handleAddSmartArt,
+	OpUpdateSmartArt:     handleUpdateSmartArt,
+	OpSetSlideBackground: handleSetSlideBackground,
+	OpSetSlideHeaderFooter: handleSetSlideHeaderFooter,
+	OpAddAnimation:       handleAddAnimation,
+	OpSetSlideTransition: handleSetSlideTransition,
+	OpMergeFromEditor:    handleMergeFromEditor,
 
-func commandHandlerForShapeMutations(op string) (commandHandler, bool) {
-	switch op {
-	case OpAddShape:
-		return handleAddShape, true
-	case OpAddTextbox:
-		return handleAddTextbox, true
-	case OpAddTextboxes:
-		return handleAddTextboxes, true
-	case OpAddConnectors:
-		return handleAddConnectors, true
-	case OpReserveShapeIDs:
-		return handleReserveShapeIDs, true
-	case OpAddConnector:
-		return handleAddConnector, true
-	case OpAddGroupShape:
-		return handleAddGroupShape, true
-	case OpBuildFreeform:
-		return handleBuildFreeform, true
-	case OpAddImage:
-		return handleAddImage, true
-	case OpRemoveShape:
-		return handleRemoveShape, true
-	case OpGroupShapes:
-		return handleGroupShapes, true
-	case OpUngroupShapes:
-		return handleUngroupShapes, true
-	case OpUpdateShape:
-		return handleUpdateShape, true
-	case OpMoveShapeToFront:
-		return handleMoveShapeToFront, true
-	case OpMoveShapeToBack:
-		return handleMoveShapeToBack, true
-	case OpMoveShapeToIndex:
-		return handleMoveShapeToIndex, true
-	case OpGetImageMetadata:
-		return handleGetImageMetadata, true
-	case OpAddVideo:
-		return handleAddVideo, true
-	case OpAddAudio:
-		return handleAddAudio, true
-	case OpAddOLEObject:
-		return handleAddOLEObject, true
-	case OpListSlideImages:
-		return handleListSlideImages, true
-	case OpSwapImageByIndex:
-		return handleSwapImageByIndex, true
-	case OpSwapImageByRelID:
-		return handleSwapImageByRelID, true
-	default:
-		return nil, false
-	}
-}
+	// Comments & shapes (read)
+	OpGetAuthors:          handleGetAuthors,
+	OpAddAuthor:           handleAddAuthor,
+	OpGetComments:         handleGetComments,
+	OpAddComment:          handleAddComment,
+	OpRemoveComment:       handleRemoveComment,
+	OpListShapes:          handleListShapes,
+	OpGetSlideTextStates:  handleGetSlideTextStates,
+	OpGetShapeTextState:   handleGetShapeTextState,
+	OpGetShapeRuns:        handleGetShapeRuns,
+	OpSetShapeRuns:        handleSetShapeRuns,
+	OpSetSlideShapeRuns:   handleSetSlideShapeRuns,
+	OpUpdateDeckRunTexts:  handleUpdateDeckRunTexts,
+	OpUpdateSlideRunTexts: handleUpdateSlideRunTexts,
+	OpUpdateShapeRunText:  handleUpdateShapeRunText,
+	OpAppendShapeRun:      handleAppendShapeRun,
 
-func commandHandlerForNotesTables(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetNotes:
-		return handleGetNotes, true
-	case OpNotesSlideExists:
-		return handleNotesSlideExists, true
-	case OpSetNotes:
-		return handleSetNotes, true
-	case OpSetNotesShapeText:
-		return handleSetNotesShapeText, true
-	case OpSetNotesShapeProps:
-		return handleSetNotesShapeProps, true
-	case OpAddTable:
-		return handleAddTable, true
-	case OpGetTable:
-		return handleGetTable, true
-	case OpMergeTableCells:
-		return handleMergeTableCells, true
-	case OpSplitTableCell:
-		return handleSplitTableCell, true
-	case OpUpdateTableFlags:
-		return handleUpdateTableFlags, true
-	case OpUpdateTableCell:
-		return handleUpdateTableCell, true
-	case OpSetTableStyle:
-		return handleSetTableStyle, true
-	case OpDefineTableStyle:
-		return handleDefineTableStyle, true
-	case OpListTableStyles:
-		return handleListTableStyles, true
-	case OpSetTableRowHeight:
-		return handleSetTableRowHeight, true
-	case OpSetTableColumnWidth:
-		return handleSetTableColumnWidth, true
-	case OpListNotesShapes:
-		return handleListNotesShapes, true
-	case OpListNotesPlaceholders:
-		return handleListNotesPlaceholders, true
-	case OpUpdateNotesMaster:
-		return handleUpdateNotesMaster, true
-	default:
-		return commandHandlerForHandoutSig(op)
+	// Shape mutations
+	OpAddShape:          handleAddShape,
+	OpAddTextbox:        handleAddTextbox,
+	OpAddTextboxes:      handleAddTextboxes,
+	OpAddConnectors:     handleAddConnectors,
+	OpReserveShapeIDs:   handleReserveShapeIDs,
+	OpAddConnector:      handleAddConnector,
+	OpAddGroupShape:     handleAddGroupShape,
+	OpBuildFreeform:     handleBuildFreeform,
+	OpAddImage:          handleAddImage,
+	OpRemoveShape:       handleRemoveShape,
+	OpGroupShapes:       handleGroupShapes,
+	OpUngroupShapes:     handleUngroupShapes,
+	OpUpdateShape:       handleUpdateShape,
+	OpMoveShapeToFront:  handleMoveShapeToFront,
+	OpMoveShapeToBack:   handleMoveShapeToBack,
+	OpMoveShapeToIndex:  handleMoveShapeToIndex,
+	OpGetImageMetadata:  handleGetImageMetadata,
+	OpAddVideo:          handleAddVideo,
+	OpAddAudio:          handleAddAudio,
+	OpAddOLEObject:      handleAddOLEObject,
+	OpListSlideImages:   handleListSlideImages,
+	OpSwapImageByIndex:  handleSwapImageByIndex,
+	OpSwapImageByRelID:  handleSwapImageByRelID,
+
+	// Notes & tables
+	OpGetNotes:              handleGetNotes,
+	OpNotesSlideExists:      handleNotesSlideExists,
+	OpSetNotes:              handleSetNotes,
+	OpSetNotesShapeText:     handleSetNotesShapeText,
+	OpSetNotesShapeProps:    handleSetNotesShapeProps,
+	OpAddTable:              handleAddTable,
+	OpGetTable:              handleGetTable,
+	OpMergeTableCells:       handleMergeTableCells,
+	OpSplitTableCell:        handleSplitTableCell,
+	OpUpdateTableFlags:      handleUpdateTableFlags,
+	OpUpdateTableCell:       handleUpdateTableCell,
+	OpSetTableStyle:         handleSetTableStyle,
+	OpDefineTableStyle:      handleDefineTableStyle,
+	OpListTableStyles:       handleListTableStyles,
+	OpSetTableRowHeight:     handleSetTableRowHeight,
+	OpSetTableColumnWidth:   handleSetTableColumnWidth,
+	OpListNotesShapes:       handleListNotesShapes,
+	OpListNotesPlaceholders: handleListNotesPlaceholders,
+	OpUpdateNotesMaster:     handleUpdateNotesMaster,
+
+	// Handout master & digital signature
+	OpGetHandoutMaster:    handleGetHandoutMaster,
+	OpUpdateHandoutMaster: handleUpdateHandoutMaster,
+	OpHasDigitalSignature: handleHasDigitalSignature,
 	}
 }

@@ -50,7 +50,7 @@ func collectNonSlideRelationships(
 	slideCapacity int,
 ) ([]common.EditorRelationship, map[string]struct{}, bool, error) {
 	rels := make([]common.EditorRelationship, 0, len(nonSlide)+slideCapacity+1)
-	used := map[string]struct{}{}
+	used := make(map[string]struct{}, len(nonSlide)+slideCapacity)
 	hasSectionRel := false
 	for _, rel := range nonSlide {
 		id := strings.TrimSpace(rel.ID)
@@ -139,6 +139,8 @@ func sortRelationshipsByID(rels []common.EditorRelationship) {
 
 func relationshipsXMLDocument(rels []common.EditorRelationship) string {
 	var b strings.Builder
+	// Header ~65 bytes + footer ~20 bytes + each rel ~140 bytes.
+	b.Grow(90 + len(rels)*140)
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
 	b.WriteString("\n")
 	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)

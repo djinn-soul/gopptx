@@ -9,9 +9,15 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
+
+//nolint:gochecknoglobals // pool reduces bytes.Reader allocs in hot XML parsing paths
+var bytesReaderPool = sync.Pool{
+	New: func() any { return new(bytes.Reader) },
+}
 
 type ParsedSlideIDRef struct {
 	SlideID int64
@@ -24,7 +30,9 @@ const (
 )
 
 func ParseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) {
-	decoder := xml.NewDecoder(bytes.NewReader(content))
+	r := bytesReaderPool.Get().(*bytes.Reader) //nolint:forcetypeassert
+	r.Reset(content)
+	decoder := xml.NewDecoder(r)
 	out := make([]common.EditorRelationship, 0, defaultRelsCapacity)
 
 	for {
@@ -33,6 +41,7 @@ func ParseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) 
 			if errors.Is(err, io.EOF) {
 				break
 			}
+			bytesReaderPool.Put(r)
 			return nil, err
 		}
 		start, ok := token.(xml.StartElement)
@@ -54,20 +63,25 @@ func ParseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) 
 			}
 		}
 		if rel.ID == "" || rel.Type == "" || rel.Target == "" {
+			bytesReaderPool.Put(r)
 			return nil, errors.New("relationship with missing Id/Type/Target")
 		}
 		out = append(out, rel)
 	}
+	bytesReaderPool.Put(r)
 	return out, nil
 }
 
 func ParsePresentationSlideIDs(content []byte) ([]ParsedSlideIDRef, error) {
-	decoder := xml.NewDecoder(bytes.NewReader(content))
+	r := bytesReaderPool.Get().(*bytes.Reader) //nolint:forcetypeassert
+	r.Reset(content)
+	decoder := xml.NewDecoder(r)
 	out := make([]ParsedSlideIDRef, 0, defaultSlideIDsCapacity)
 
 	for {
 		start, ok, err := nextSlideIDStartElement(decoder)
 		if err != nil {
+			bytesReaderPool.Put(r)
 			return nil, err
 		}
 		if !ok {
@@ -79,13 +93,16 @@ func ParsePresentationSlideIDs(content []byte) ([]ParsedSlideIDRef, error) {
 
 		ref, err := parseSlideIDRef(start)
 		if err != nil {
+			bytesReaderPool.Put(r)
 			return nil, err
 		}
 		if ref.SlideID == 0 || ref.RelID == "" {
+			bytesReaderPool.Put(r)
 			return nil, errors.New("slide id entry missing id or r:id")
 		}
 		out = append(out, ref)
 	}
+	bytesReaderPool.Put(r)
 	return out, nil
 }
 

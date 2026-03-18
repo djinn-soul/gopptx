@@ -15,7 +15,48 @@ const (
 	contentShapeGrowCap = 2048
 )
 
+// Precomputed title shape XML segments for the standard 16:9 slide (9144000 wide)
+// with default TitleSpec (no custom size/color/font/bold/italic/underline/align).
+// Avoids 5 strconv allocs + 2 builder allocs per slide in the common case.
+//
+//nolint:gochecknoglobals // read-only precomputed constants, never mutated
+var (
+	defaultTitleShapePrefix = `
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="2" name="Title"/>
+<p:cNvSpPr/>
+<p:nvPr><p:ph type="title" idx="0"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr>
+<a:xfrm>
+<a:off x="457200" y="274638"/>
+<a:ext cx="8229600" cy="1143000"/>
+</a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+<a:noFill/>
+</p:spPr>
+<p:txBody>
+<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+<a:lstStyle/>
+<a:p>
+      <a:pPr algn="l"/>
+      <a:r>
+        <a:rPr lang="en-US" sz="4400" b="0" i="0" u="none" dirty="0"></a:rPr>
+        <a:t>`
+	defaultTitleShapeSuffix = `</a:t>
+      </a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`
+)
+
 func titleShape(title TitleSpec, width, _ int64) string {
+	// Fast path: standard 16:9 width + default title styling → zero strconv/builder allocs.
+	if width == 9144000 && title.SizePt == 0 && title.Color == "" && title.Font == "" &&
+		!title.Bold && !title.Italic && !title.Underline && title.Align == "" {
+		return defaultTitleShapePrefix + Escape(title.Text) + defaultTitleShapeSuffix
+	}
 	// Standard margin is 0.5 inches (457200 EMU)
 	margin := defaultMargin
 	x := int64(margin)
@@ -325,7 +366,21 @@ func splitBulletRunsForTwoColumns(runs [][]TextRunSpec, leftCount int) ([][]Text
 	return left, right
 }
 
+// defaultBulletParagraphPrefix is the precomputed XML before the bullet text
+// for zero-value BulletParagraphSpec and ContentStyleSpec (sz=2800, no color, no bold/italic).
+// Avoids strconv + concat allocs (~3 allocs) in the common case.
+const defaultBulletParagraphPrefix = "\n<a:p>\n" + defaultBulletParagraphProps + "\n<a:r>\n" +
+	`<a:rPr lang="en-US" sz="2800" b="0" i="0" u="none" dirty="0"></a:rPr>` + "\n<a:t>"
+
+const defaultBulletParagraphSuffix = "</a:t>\n</a:r>\n</a:p>"
+
 func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyleSpec) string {
+	// Fast path: both specs are zero-value → return precomputed prefix + text + suffix.
+	// This is a single 3-string concat (1 alloc) vs ~9 allocs for the slow path.
+	if pStyle == (BulletParagraphSpec{}) && style == (ContentStyleSpec{}) {
+		return defaultBulletParagraphPrefix + Escape(text) + defaultBulletParagraphSuffix
+	}
+
 	escaped := Escape(text)
 	sz := 2800
 	if style.SizePt > 0 {
