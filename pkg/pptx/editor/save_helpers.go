@@ -38,10 +38,7 @@ func (e *PresentationEditor) buildManifestParts(
 		return manifestParts{}, err
 	}
 
-	corePropsXML, err := renderCoreProperties(e.metadata.CoreProperties)
-	if err != nil {
-		return manifestParts{}, fmt.Errorf("render core properties: %w", err)
-	}
+	corePropsXML := renderCoreProperties(e.metadata.CoreProperties)
 
 	contentTypesXML, err := e.renderContentTypesPart(
 		hasSections,
@@ -88,7 +85,8 @@ func (e *PresentationEditor) renderContentTypesPart(
 	// PartStore.Set() always creates a new slice, so a changed pointer means a cache miss.
 	var base editorslide.ContentTypesBase
 	if len(contentTypesData) > 0 {
-		ptr := uintptr(unsafe.Pointer(&contentTypesData[0])) //nolint:gosec // intentional: staleness token, not dereferenced
+		// Pointer is used only as a staleness token for cache invalidation.
+		ptr := uintptr(unsafe.Pointer(&contentTypesData[0]))
 		if e.ctBasePtr == ptr && e.ctBase != nil {
 			base = e.ctBase
 		} else {

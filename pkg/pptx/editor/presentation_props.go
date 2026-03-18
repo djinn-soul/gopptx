@@ -17,6 +17,7 @@ import (
 )
 
 const themePartPath = "ppt/theme/theme1.xml"
+const corePropertiesBuilderCap = 700
 
 var sldSzPattern = regexp.MustCompile(`(?s)<p:sldSz\b[^>]*/>`)
 
@@ -188,7 +189,7 @@ func parseCoreProperties(content []byte) (common.CoreProperties, error) {
 	return props, nil
 }
 
-func renderCoreProperties(props common.CoreProperties) ([]byte, error) {
+func renderCoreProperties(props common.CoreProperties) []byte {
 	created := strings.TrimSpace(props.Created)
 	if created == "" {
 		created = time.Now().UTC().Format("2006-01-02T15:04:05Z")
@@ -207,7 +208,7 @@ func renderCoreProperties(props common.CoreProperties) ([]byte, error) {
 	// from xml.(*printer).marshalAttr (5 namespace attrs + reflection overhead).
 	var b strings.Builder
 	// Header ~65 bytes + root open ~350 bytes + up to 10 optional fields ~150 bytes + 2 dates ~100 bytes + close ~20 bytes.
-	b.Grow(700)
+	b.Grow(corePropertiesBuilderCap)
 	b.WriteString(xml.Header)
 	b.WriteString(`<cp:coreProperties`)
 	b.WriteString(` xmlns:cp="` + common.CPNamespace + `"`)
@@ -250,5 +251,5 @@ func renderCoreProperties(props common.CoreProperties) ([]byte, error) {
 
 	b.WriteString(`</cp:coreProperties>`)
 
-	return []byte(b.String()), nil
+	return []byte(b.String())
 }

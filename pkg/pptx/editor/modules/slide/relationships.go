@@ -30,7 +30,11 @@ const (
 )
 
 func ParseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) {
-	r := bytesReaderPool.Get().(*bytes.Reader) //nolint:forcetypeassert
+	reader, ok := bytesReaderPool.Get().(*bytes.Reader)
+	if !ok || reader == nil {
+		return nil, errors.New("bytes reader pool returned invalid reader")
+	}
+	r := reader
 	r.Reset(content)
 	decoder := xml.NewDecoder(r)
 	out := make([]common.EditorRelationship, 0, defaultRelsCapacity)
@@ -73,7 +77,11 @@ func ParseRelationshipsXML(content []byte) ([]common.EditorRelationship, error) 
 }
 
 func ParsePresentationSlideIDs(content []byte) ([]ParsedSlideIDRef, error) {
-	r := bytesReaderPool.Get().(*bytes.Reader) //nolint:forcetypeassert
+	reader, ok := bytesReaderPool.Get().(*bytes.Reader)
+	if !ok || reader == nil {
+		return nil, errors.New("bytes reader pool returned invalid reader")
+	}
+	r := reader
 	r.Reset(content)
 	decoder := xml.NewDecoder(r)
 	out := make([]ParsedSlideIDRef, 0, defaultSlideIDsCapacity)

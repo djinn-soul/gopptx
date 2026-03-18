@@ -12,6 +12,7 @@ import (
 const (
 	maxUnknownZipEntryBytes = 256 * 1024 * 1024
 	zipReadChunkBytes       = 32 * 1024
+	defaultPrefixKeysCap    = 8
 )
 
 //nolint:gochecknoglobals // Shared reusable buffers reduce allocations in zip reads.
@@ -253,7 +254,7 @@ func (ps *PartStore) KeysWithPrefix(prefix string) []string {
 
 func prefixSearchSorted(cache []string, prefix string) []string {
 	start := sort.SearchStrings(cache, prefix)
-	out := make([]string, 0, 8)
+	out := make([]string, 0, defaultPrefixKeysCap)
 	for i := start; i < len(cache); i++ {
 		if !strings.HasPrefix(cache[i], prefix) {
 			break

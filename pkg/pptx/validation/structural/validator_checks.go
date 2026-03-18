@@ -160,6 +160,7 @@ func (v *Validator) checkEmptyElements() {
 	}
 }
 
+//nolint:gochecknoglobals // shared immutable byte markers to avoid repeated []byte allocations
 var (
 	xmlDeclEnd  = []byte("?>")
 	xmlTagOpen  = []byte("<")
@@ -216,8 +217,12 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 			Context:     map[string]string{"ns": "a"},
 		})
 	}
-	if !bytes.Contains(openingTag, []byte("xmlns:r=")) &&
-		!bytes.Contains(openingTag, []byte(`xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`)) {
+	hasRNS := bytes.Contains(openingTag, []byte("xmlns:r="))
+	hasDefaultRelNS := bytes.Contains(
+		openingTag,
+		[]byte(`xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`),
+	)
+	if !hasRNS && !hasDefaultRelNS {
 		issues = append(issues, Issue{
 			Code:        CodeMissingNamespace,
 			Severity:    SeverityWarning,
@@ -230,14 +235,15 @@ func (v *Validator) checkNamespacesForPart(partPath string) []Issue {
 	return issues
 }
 
-var emptySldIdLst = []byte("<p:sldIdLst/>")
+//nolint:gochecknoglobals // shared immutable marker reused across validations
+var emptySldIDLst = []byte("<p:sldIdLst/>")
 
 func (v *Validator) checkEmptyElementsForPart(partPath string) []Issue {
 	data, ok := v.provider.Get(partPath)
 	if !ok {
 		return nil
 	}
-	if !bytes.Contains(data, emptySldIdLst) {
+	if !bytes.Contains(data, emptySldIDLst) {
 		return nil
 	}
 	return []Issue{{

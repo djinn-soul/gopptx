@@ -105,7 +105,7 @@ func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]b
 	}
 
 	if len(packageRelsData) > 0 {
-		ptr := uintptr(unsafe.Pointer(&packageRelsData[0])) //nolint:gosec // staleness token only, never dereferenced
+		ptr := uintptr(unsafe.Pointer(&packageRelsData[0]))
 		if e.packageRelsPtr == ptr {
 			if e.packageRelsNeedsFilter {
 				out["_rels/.rels"] = e.packageRelsFilteredXML

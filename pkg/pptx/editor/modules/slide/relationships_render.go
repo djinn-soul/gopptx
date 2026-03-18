@@ -10,6 +10,10 @@ import (
 )
 
 const vbaProjectRelType = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
+const (
+	relationshipsXMLBaseGrowCap = 90
+	relationshipItemGrowCap     = 140
+)
 
 func RenderPresentationRelsXML(
 	nonSlide []common.EditorRelationship,
@@ -140,7 +144,7 @@ func sortRelationshipsByID(rels []common.EditorRelationship) {
 func relationshipsXMLDocument(rels []common.EditorRelationship) string {
 	var b strings.Builder
 	// Header ~65 bytes + footer ~20 bytes + each rel ~140 bytes.
-	b.Grow(90 + len(rels)*140)
+	b.Grow(relationshipsXMLBaseGrowCap + len(rels)*relationshipItemGrowCap)
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
 	b.WriteString("\n")
 	b.WriteString(`<Relationships xmlns="` + common.RelationshipsXMLNS + `">`)

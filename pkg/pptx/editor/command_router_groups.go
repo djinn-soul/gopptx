@@ -1,151 +1,191 @@
 package editor
 
+import "maps"
+
 //nolint:gochecknoglobals // package-level dispatch map for O(1) command routing
 var staticHandlers map[string]commandHandler
 
-//nolint:gochecknoinits // required to break the init cycle: handleBatchExecute → commandHandlerFor → staticHandlers
+const staticHandlersInitCap = 128
+
+//nolint:gochecknoinits // required to break the init cycle: handleBatchExecute -> commandHandlerFor -> staticHandlers
 func init() {
-	staticHandlers = map[string]commandHandler{
-	// Slides basic
-	OpBatchExecute:       handleBatchExecute,
-	OpSlideCount:         handleSlideCount,
-	OpAddSlide:           handleAddSlide,
-	OpRemoveSlide:        handleRemoveSlide,
-	OpMoveSlide:          handleMoveSlide,
-	OpDuplicateSlide:     handleDuplicateSlide,
-	OpDuplicateSlideAfter: handleDuplicateSlideAfter,
-	OpListSlides:         handleListSlides,
-	OpSetSlideTitle:      handleSetSlideTitle,
-	OpUpdateSlide:        handleUpdateSlide,
-	OpValidate:           handleValidate,
-	OpRepair:             handleRepair,
+	staticHandlers = make(map[string]commandHandler, staticHandlersInitCap)
+	registerHandlers(staticHandlers, slideBasicHandlers())
+	registerHandlers(staticHandlers, layoutMetadataHandlers())
+	registerHandlers(staticHandlers, themeLayoutHandlers())
+	registerHandlers(staticHandlers, contentSectionHandlers())
+	registerHandlers(staticHandlers, commentsShapesReadHandlers())
+	registerHandlers(staticHandlers, shapeMutationHandlers())
+	registerHandlers(staticHandlers, notesTableHandlers())
+	registerHandlers(staticHandlers, handoutSignatureHandlers())
+}
 
-	// Layout & metadata
-	OpGetMetadata:             handleGetMetadata,
-	OpListSlideCharts:         handleListSlideCharts,
-	OpUpdateChartData:         handleUpdateChartData,
-	OpUpdateChartDataBatch:    handleUpdateChartDataBatch,
-	OpUpdateChartFormatting:   handleUpdateChartFormatting,
-	OpGetChartState:           handleGetChartState,
-	OpAddChart:                handleAddChart,
-	OpGetSlideLayoutRef:       handleGetSlideLayoutRef,
-	OpListSlideLayouts:        handleListSlideLayouts,
-	OpListSlideMasters:        handleListSlideMasters,
-	OpListMasterLayouts:       handleListMasterLayouts,
-	OpRebindSlideLayout:       handleRebindSlideLayout,
-	OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
-	OpAddSlideMaster:          handleAddSlideMaster,
-	OpRemoveSlideMaster:       handleRemoveSlideMaster,
-	OpAddSlideLayout:          handleAddSlideLayout,
-	OpRemoveSlideLayout:       handleRemoveSlideLayout,
-	OpApplyTheme:              handleApplyTheme,
-	OpSetSlideSize:            handleSetSlideSize,
-	OpMergeFromFile:           handleMergeFromFile,
-	OpGetCoreProperties:       handleGetCoreProperties,
-	OpSetCoreProperties:       handleSetCoreProperties,
-	OpListPlaceholders:        handleListPlaceholders,
-	OpSetPlaceholderContent:   handleSetPlaceholderContent,
+func registerHandlers(dst map[string]commandHandler, src map[string]commandHandler) {
+	maps.Copy(dst, src)
+}
 
-	// Theme & layout shapes
-	OpGetLayoutShapes:       handleGetLayoutShapes,
-	OpGetMasterShapes:       handleGetMasterShapes,
-	OpGetLayoutPlaceholders: handleGetLayoutPlaceholders,
-	OpGetMasterPlaceholders: handleGetMasterPlaceholders,
-	OpSetGlobalThemePreset:  handleSetGlobalThemePreset,
-	OpSetThemeFontScheme:    handleSetThemeFontScheme,
-	OpSetThemeColorScheme:   handleSetThemeColorScheme,
-	OpGetThemeInventory:     handleGetThemeInventory,
+func slideBasicHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpBatchExecute:        handleBatchExecute,
+		OpSlideCount:          handleSlideCount,
+		OpAddSlide:            handleAddSlide,
+		OpRemoveSlide:         handleRemoveSlide,
+		OpMoveSlide:           handleMoveSlide,
+		OpDuplicateSlide:      handleDuplicateSlide,
+		OpDuplicateSlideAfter: handleDuplicateSlideAfter,
+		OpListSlides:          handleListSlides,
+		OpSetSlideTitle:       handleSetSlideTitle,
+		OpUpdateSlide:         handleUpdateSlide,
+		OpValidate:            handleValidate,
+		OpRepair:              handleRepair,
+	}
+}
 
-	// Content & sections
-	OpAddSection:         handleAddSection,
-	OpRemoveSection:      handleRemoveSection,
-	OpRenameSection:      handleRenameSection,
-	OpGetSections:        handleGetSections,
-	OpFindAndReplace:     handleFindAndReplace,
-	OpSearchShapes:       handleSearchShapes,
-	OpSetModifyPassword:  handleSetModifyPassword,
-	OpSetMarkAsFinal:     handleSetMarkAsFinal,
-	OpAddCustomXML:       handleAddCustomXML,
-	OpListCustomXML:      handleListCustomXML,
-	OpRemoveCustomXML:    handleRemoveCustomXML,
-	OpAddVba:             handleAddVba,
-	OpMarkdownToSlides:   handleMarkdownToSlides,
-	OpURLFetchToSlides:   handleURLFetchToSlides,
-	OpAddMermaidShape:    handleAddMermaidShape,
-	OpAddSmartArt:        handleAddSmartArt,
-	OpUpdateSmartArt:     handleUpdateSmartArt,
-	OpSetSlideBackground: handleSetSlideBackground,
-	OpSetSlideHeaderFooter: handleSetSlideHeaderFooter,
-	OpAddAnimation:       handleAddAnimation,
-	OpSetSlideTransition: handleSetSlideTransition,
-	OpMergeFromEditor:    handleMergeFromEditor,
+func layoutMetadataHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpGetMetadata:             handleGetMetadata,
+		OpListSlideCharts:         handleListSlideCharts,
+		OpUpdateChartData:         handleUpdateChartData,
+		OpUpdateChartDataBatch:    handleUpdateChartDataBatch,
+		OpUpdateChartFormatting:   handleUpdateChartFormatting,
+		OpGetChartState:           handleGetChartState,
+		OpAddChart:                handleAddChart,
+		OpGetSlideLayoutRef:       handleGetSlideLayoutRef,
+		OpListSlideLayouts:        handleListSlideLayouts,
+		OpListSlideMasters:        handleListSlideMasters,
+		OpListMasterLayouts:       handleListMasterLayouts,
+		OpRebindSlideLayout:       handleRebindSlideLayout,
+		OpCloneLayoutMasterFamily: handleCloneLayoutMasterFamily,
+		OpAddSlideMaster:          handleAddSlideMaster,
+		OpRemoveSlideMaster:       handleRemoveSlideMaster,
+		OpAddSlideLayout:          handleAddSlideLayout,
+		OpRemoveSlideLayout:       handleRemoveSlideLayout,
+		OpApplyTheme:              handleApplyTheme,
+		OpSetSlideSize:            handleSetSlideSize,
+		OpMergeFromFile:           handleMergeFromFile,
+		OpGetCoreProperties:       handleGetCoreProperties,
+		OpSetCoreProperties:       handleSetCoreProperties,
+		OpListPlaceholders:        handleListPlaceholders,
+		OpSetPlaceholderContent:   handleSetPlaceholderContent,
+	}
+}
 
-	// Comments & shapes (read)
-	OpGetAuthors:          handleGetAuthors,
-	OpAddAuthor:           handleAddAuthor,
-	OpGetComments:         handleGetComments,
-	OpAddComment:          handleAddComment,
-	OpRemoveComment:       handleRemoveComment,
-	OpListShapes:          handleListShapes,
-	OpGetSlideTextStates:  handleGetSlideTextStates,
-	OpGetShapeTextState:   handleGetShapeTextState,
-	OpGetShapeRuns:        handleGetShapeRuns,
-	OpSetShapeRuns:        handleSetShapeRuns,
-	OpSetSlideShapeRuns:   handleSetSlideShapeRuns,
-	OpUpdateDeckRunTexts:  handleUpdateDeckRunTexts,
-	OpUpdateSlideRunTexts: handleUpdateSlideRunTexts,
-	OpUpdateShapeRunText:  handleUpdateShapeRunText,
-	OpAppendShapeRun:      handleAppendShapeRun,
+func themeLayoutHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpGetLayoutShapes:       handleGetLayoutShapes,
+		OpGetMasterShapes:       handleGetMasterShapes,
+		OpGetLayoutPlaceholders: handleGetLayoutPlaceholders,
+		OpGetMasterPlaceholders: handleGetMasterPlaceholders,
+		OpSetGlobalThemePreset:  handleSetGlobalThemePreset,
+		OpSetThemeFontScheme:    handleSetThemeFontScheme,
+		OpSetThemeColorScheme:   handleSetThemeColorScheme,
+		OpGetThemeInventory:     handleGetThemeInventory,
+	}
+}
 
-	// Shape mutations
-	OpAddShape:          handleAddShape,
-	OpAddTextbox:        handleAddTextbox,
-	OpAddTextboxes:      handleAddTextboxes,
-	OpAddConnectors:     handleAddConnectors,
-	OpReserveShapeIDs:   handleReserveShapeIDs,
-	OpAddConnector:      handleAddConnector,
-	OpAddGroupShape:     handleAddGroupShape,
-	OpBuildFreeform:     handleBuildFreeform,
-	OpAddImage:          handleAddImage,
-	OpRemoveShape:       handleRemoveShape,
-	OpGroupShapes:       handleGroupShapes,
-	OpUngroupShapes:     handleUngroupShapes,
-	OpUpdateShape:       handleUpdateShape,
-	OpMoveShapeToFront:  handleMoveShapeToFront,
-	OpMoveShapeToBack:   handleMoveShapeToBack,
-	OpMoveShapeToIndex:  handleMoveShapeToIndex,
-	OpGetImageMetadata:  handleGetImageMetadata,
-	OpAddVideo:          handleAddVideo,
-	OpAddAudio:          handleAddAudio,
-	OpAddOLEObject:      handleAddOLEObject,
-	OpListSlideImages:   handleListSlideImages,
-	OpSwapImageByIndex:  handleSwapImageByIndex,
-	OpSwapImageByRelID:  handleSwapImageByRelID,
+func contentSectionHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpAddSection:           handleAddSection,
+		OpRemoveSection:        handleRemoveSection,
+		OpRenameSection:        handleRenameSection,
+		OpGetSections:          handleGetSections,
+		OpFindAndReplace:       handleFindAndReplace,
+		OpSearchShapes:         handleSearchShapes,
+		OpSetModifyPassword:    handleSetModifyPassword,
+		OpSetMarkAsFinal:       handleSetMarkAsFinal,
+		OpAddCustomXML:         handleAddCustomXML,
+		OpListCustomXML:        handleListCustomXML,
+		OpRemoveCustomXML:      handleRemoveCustomXML,
+		OpAddVba:               handleAddVba,
+		OpMarkdownToSlides:     handleMarkdownToSlides,
+		OpURLFetchToSlides:     handleURLFetchToSlides,
+		OpAddMermaidShape:      handleAddMermaidShape,
+		OpAddSmartArt:          handleAddSmartArt,
+		OpUpdateSmartArt:       handleUpdateSmartArt,
+		OpSetSlideBackground:   handleSetSlideBackground,
+		OpSetSlideHeaderFooter: handleSetSlideHeaderFooter,
+		OpAddAnimation:         handleAddAnimation,
+		OpSetSlideTransition:   handleSetSlideTransition,
+		OpMergeFromEditor:      handleMergeFromEditor,
+	}
+}
 
-	// Notes & tables
-	OpGetNotes:              handleGetNotes,
-	OpNotesSlideExists:      handleNotesSlideExists,
-	OpSetNotes:              handleSetNotes,
-	OpSetNotesShapeText:     handleSetNotesShapeText,
-	OpSetNotesShapeProps:    handleSetNotesShapeProps,
-	OpAddTable:              handleAddTable,
-	OpGetTable:              handleGetTable,
-	OpMergeTableCells:       handleMergeTableCells,
-	OpSplitTableCell:        handleSplitTableCell,
-	OpUpdateTableFlags:      handleUpdateTableFlags,
-	OpUpdateTableCell:       handleUpdateTableCell,
-	OpSetTableStyle:         handleSetTableStyle,
-	OpDefineTableStyle:      handleDefineTableStyle,
-	OpListTableStyles:       handleListTableStyles,
-	OpSetTableRowHeight:     handleSetTableRowHeight,
-	OpSetTableColumnWidth:   handleSetTableColumnWidth,
-	OpListNotesShapes:       handleListNotesShapes,
-	OpListNotesPlaceholders: handleListNotesPlaceholders,
-	OpUpdateNotesMaster:     handleUpdateNotesMaster,
+func commentsShapesReadHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpGetAuthors:          handleGetAuthors,
+		OpAddAuthor:           handleAddAuthor,
+		OpGetComments:         handleGetComments,
+		OpAddComment:          handleAddComment,
+		OpRemoveComment:       handleRemoveComment,
+		OpListShapes:          handleListShapes,
+		OpGetSlideTextStates:  handleGetSlideTextStates,
+		OpGetShapeTextState:   handleGetShapeTextState,
+		OpGetShapeRuns:        handleGetShapeRuns,
+		OpSetShapeRuns:        handleSetShapeRuns,
+		OpSetSlideShapeRuns:   handleSetSlideShapeRuns,
+		OpUpdateDeckRunTexts:  handleUpdateDeckRunTexts,
+		OpUpdateSlideRunTexts: handleUpdateSlideRunTexts,
+		OpUpdateShapeRunText:  handleUpdateShapeRunText,
+		OpAppendShapeRun:      handleAppendShapeRun,
+	}
+}
 
-	// Handout master & digital signature
-	OpGetHandoutMaster:    handleGetHandoutMaster,
-	OpUpdateHandoutMaster: handleUpdateHandoutMaster,
-	OpHasDigitalSignature: handleHasDigitalSignature,
+func shapeMutationHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpAddShape:         handleAddShape,
+		OpAddTextbox:       handleAddTextbox,
+		OpAddTextboxes:     handleAddTextboxes,
+		OpAddConnectors:    handleAddConnectors,
+		OpReserveShapeIDs:  handleReserveShapeIDs,
+		OpAddConnector:     handleAddConnector,
+		OpAddGroupShape:    handleAddGroupShape,
+		OpBuildFreeform:    handleBuildFreeform,
+		OpAddImage:         handleAddImage,
+		OpRemoveShape:      handleRemoveShape,
+		OpGroupShapes:      handleGroupShapes,
+		OpUngroupShapes:    handleUngroupShapes,
+		OpUpdateShape:      handleUpdateShape,
+		OpMoveShapeToFront: handleMoveShapeToFront,
+		OpMoveShapeToBack:  handleMoveShapeToBack,
+		OpMoveShapeToIndex: handleMoveShapeToIndex,
+		OpGetImageMetadata: handleGetImageMetadata,
+		OpAddVideo:         handleAddVideo,
+		OpAddAudio:         handleAddAudio,
+		OpAddOLEObject:     handleAddOLEObject,
+		OpListSlideImages:  handleListSlideImages,
+		OpSwapImageByIndex: handleSwapImageByIndex,
+		OpSwapImageByRelID: handleSwapImageByRelID,
+	}
+}
+
+func notesTableHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpGetNotes:              handleGetNotes,
+		OpNotesSlideExists:      handleNotesSlideExists,
+		OpSetNotes:              handleSetNotes,
+		OpSetNotesShapeText:     handleSetNotesShapeText,
+		OpSetNotesShapeProps:    handleSetNotesShapeProps,
+		OpAddTable:              handleAddTable,
+		OpGetTable:              handleGetTable,
+		OpMergeTableCells:       handleMergeTableCells,
+		OpSplitTableCell:        handleSplitTableCell,
+		OpUpdateTableFlags:      handleUpdateTableFlags,
+		OpUpdateTableCell:       handleUpdateTableCell,
+		OpSetTableStyle:         handleSetTableStyle,
+		OpDefineTableStyle:      handleDefineTableStyle,
+		OpListTableStyles:       handleListTableStyles,
+		OpSetTableRowHeight:     handleSetTableRowHeight,
+		OpSetTableColumnWidth:   handleSetTableColumnWidth,
+		OpListNotesShapes:       handleListNotesShapes,
+		OpListNotesPlaceholders: handleListNotesPlaceholders,
+		OpUpdateNotesMaster:     handleUpdateNotesMaster,
+	}
+}
+
+func handoutSignatureHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpGetHandoutMaster:    handleGetHandoutMaster,
+		OpUpdateHandoutMaster: handleUpdateHandoutMaster,
+		OpHasDigitalSignature: handleHasDigitalSignature,
 	}
 }

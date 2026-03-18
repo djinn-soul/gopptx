@@ -43,7 +43,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 	// cheap staleness token — PartStore always stores a new slice on Set(), so a
 	// different pointer means the content changed and we must re-parse.
 	if len(content) > 0 {
-		dataPtr := uintptr(unsafe.Pointer(&content[0])) //nolint:gosec // intentional: staleness token, not dereferenced
+		dataPtr := uintptr(unsafe.Pointer(&content[0]))
 		if entry, hit := e.shapeCache[partPath]; hit && entry.dataPtr == dataPtr {
 			out := make([]common.Shape, len(entry.shapes))
 			copy(out, entry.shapes)
@@ -80,7 +80,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			e.shapeCache = make(map[string]shapeCacheEntry)
 		}
 		e.shapeCache[partPath] = shapeCacheEntry{
-			dataPtr: uintptr(unsafe.Pointer(&content[0])), //nolint:gosec // intentional staleness token
+			dataPtr: uintptr(unsafe.Pointer(&content[0])),
 			shapes:  shapes,
 		}
 	}

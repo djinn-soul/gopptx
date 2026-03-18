@@ -16,6 +16,7 @@ const (
 	protectionSaltBytesEditor = 16
 	protectionSpinCountEditor = 100000
 	protectionHashAlgSID      = 14
+	selfClosingTagSuffixLen   = 2
 )
 
 func rewritePresentationModifyVerifier(current string, password string) (string, error) {
@@ -38,7 +39,7 @@ func rewritePresentationModifyVerifier(current string, password string) (string,
 
 	if notesStart := strings.Index(source, "<p:notesSz"); notesStart >= 0 {
 		if endRel := strings.Index(source[notesStart:], "/>"); endRel >= 0 {
-			insertAt := notesStart + endRel + 2
+			insertAt := notesStart + endRel + selfClosingTagSuffixLen
 			return source[:insertAt] + "\n" + verifier + source[insertAt:], nil
 		}
 	}
@@ -64,7 +65,7 @@ func removeSelfClosingTagByPrefix(source, tagPrefix string) string {
 		if endRel < 0 {
 			return source
 		}
-		end := start + endRel + 2
+		end := start + endRel + selfClosingTagSuffixLen
 		source = source[:start] + source[end:]
 		searchFrom = start
 	}

@@ -45,7 +45,10 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 
 func renderSmartArtLayoutFromTemplate(layoutURI string) string {
 	if v, ok := renderedLayoutCache.Load(layoutURI); ok {
-		return v.(string) //nolint:forcetypeassert // only strings stored
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("renderedLayoutCache contained non-string value")
 	}
 	layout := mustTemplate(templatePathForLayout(layoutURI, "layout.xml"))
 	s := strings.Replace(layout,
@@ -59,7 +62,10 @@ func renderSmartArtLayoutFromTemplate(layoutURI string) string {
 
 func renderSmartArtStyleFromTemplate(quickStyleID string) string {
 	if v, ok := renderedStyleCache.Load(quickStyleID); ok {
-		return v.(string) //nolint:forcetypeassert // only strings stored
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("renderedStyleCache contained non-string value")
 	}
 	style := mustTemplate("templates/smartart/quickStyle.xml")
 	s := strings.Replace(style,
@@ -73,7 +79,10 @@ func renderSmartArtStyleFromTemplate(quickStyleID string) string {
 
 func renderSmartArtColorsFromTemplate(colorStyleID string) string {
 	if v, ok := renderedColorsCache.Load(colorStyleID); ok {
-		return v.(string) //nolint:forcetypeassert // only strings stored
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("renderedColorsCache contained non-string value")
 	}
 	colors := mustTemplate("templates/smartart/colors.xml")
 	s := strings.Replace(colors,
@@ -152,7 +161,10 @@ var (
 
 func mustTemplate(path string) string {
 	if v, ok := templateCache.Load(path); ok {
-		return v.(string) //nolint:forcetypeassert // only strings are stored
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("templateCache contained non-string value")
 	}
 	b, err := smartArtTemplateFS.ReadFile(path)
 	if err != nil {
