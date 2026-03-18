@@ -13,17 +13,6 @@ import (
 
 const commentsPartType = "application/vnd.openxmlformats-officedocument.presentationml.comments+xml"
 
-// contentTypesEscaper escapes XML attribute values for content types output.
-// Package-level to avoid per-call allocation (strings.NewReplacer allocates).
-//
-//nolint:gochecknoglobals // read-only package-level replacer, never mutated
-var contentTypesEscaper = strings.NewReplacer(
-	"&", "&amp;",
-	"<", "&lt;",
-	">", "&gt;",
-	`"`, "&quot;",
-)
-
 // ContentTypesBase is an opaque pre-parsed [Content_Types].xml representation.
 // Callers obtain it via ParseContentTypesBase and pass it to RewriteContentTypesFromBase
 // to skip xml.Unmarshal on repeated saves when the bytes have not changed.
@@ -125,7 +114,31 @@ func rewriteContentTypesFromDoc(
 ) (string, error) {
 	ensureContentTypeDefaults(&doc, mediaPaths, hasVBA)
 
-	overrides := filterDynamicOverrides(doc.Overrides, len(slides))
+	extraOverrides := len(slides) +
+		len(chartPaths) +
+		len(notesPaths) +
+		len(themePaths) +
+		len(layoutPaths) +
+		len(masterPaths) +
+		len(commentPaths) +
+		len(customXMLPropsPaths)
+	if hasSections {
+		extraOverrides++
+	}
+	if hasNotesMaster {
+		extraOverrides++
+	}
+	if hasHandoutMaster {
+		extraOverrides++
+	}
+	if hasCommentAuthors {
+		extraOverrides++
+	}
+	if hasVBA {
+		extraOverrides++
+	}
+
+	overrides := filterDynamicOverrides(doc.Overrides, extraOverrides)
 	overrides = appendSlideOverrides(overrides, slides)
 	overrides = appendOptionalContentTypeOverride(overrides, hasSections, "/ppt/sectionList.xml",
 		"application/vnd.microsoft.powerpoint.sectionList+xml")
@@ -254,8 +267,8 @@ func contentTypeForExtension(ext string) string {
 	}
 }
 
-func filterDynamicOverrides(existing []contentTypeOverride, slideCapacity int) []contentTypeOverride {
-	filtered := make([]contentTypeOverride, 0, len(existing)+slideCapacity+1)
+func filterDynamicOverrides(existing []contentTypeOverride, extraCapacity int) []contentTypeOverride {
+	filtered := make([]contentTypeOverride, 0, len(existing)+extraCapacity)
 	for _, override := range existing {
 		part := common.CanonicalPartPath(override.PartName)
 		if shouldSkipOverridePart(part) {
@@ -384,24 +397,55 @@ func renderContentTypesDocument(doc contentTypesDocument) (string, error) {
 	var b strings.Builder
 	b.Grow(80 + (len(doc.Defaults)+len(doc.Overrides))*100)
 	b.WriteString(`<Types xmlns="`)
-	b.WriteString(contentTypesEscaper.Replace(doc.XMLNS))
+	writeEscapedXMLAttr(&b, doc.XMLNS)
 	b.WriteString(`">`)
 	for _, d := range doc.Defaults {
 		b.WriteString("\n<Default Extension=\"")
-		b.WriteString(contentTypesEscaper.Replace(d.Extension))
+		writeEscapedXMLAttr(&b, d.Extension)
 		b.WriteString("\" ContentType=\"")
-		b.WriteString(contentTypesEscaper.Replace(d.ContentType))
+		writeEscapedXMLAttr(&b, d.ContentType)
 		b.WriteString("\"/>")
 	}
 	for _, o := range doc.Overrides {
 		b.WriteString("\n<Override PartName=\"")
-		b.WriteString(contentTypesEscaper.Replace(o.PartName))
+		writeEscapedXMLAttr(&b, o.PartName)
 		b.WriteString("\" ContentType=\"")
-		b.WriteString(contentTypesEscaper.Replace(o.ContentType))
+		writeEscapedXMLAttr(&b, o.ContentType)
 		b.WriteString("\"/>")
 	}
 	b.WriteString("\n</Types>")
 	return xml.Header + b.String(), nil
+}
+
+func writeEscapedXMLAttr(b *strings.Builder, value string) {
+	start := 0
+	for i := 0; i < len(value); i++ {
+		var replacement string
+		switch value[i] {
+		case '&':
+			replacement = "&amp;"
+		case '<':
+			replacement = "&lt;"
+		case '>':
+			replacement = "&gt;"
+		case '"':
+			replacement = "&quot;"
+		default:
+			continue
+		}
+		if start < i {
+			b.WriteString(value[start:i])
+		}
+		b.WriteString(replacement)
+		start = i + 1
+	}
+	if start == 0 {
+		b.WriteString(value)
+		return
+	}
+	if start < len(value) {
+		b.WriteString(value[start:])
+	}
 }
 
 type contentTypesDocument struct {

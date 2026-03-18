@@ -204,7 +204,7 @@ func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error)
 		return "", err
 	}
 	presentationXML, err = rewritePresentationModifyVerifier(
-		[]byte(presentationXML),
+		presentationXML,
 		e.metadata.Protection.ModifyPassword,
 	)
 	if err != nil {
