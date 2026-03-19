@@ -7,9 +7,15 @@ if (!(Test-Path $outDir)) {
 $dllPath = Join-Path $outDir "gopptx.dll"
 $headerPath = Join-Path $outDir "gopptx.h"
 $pythonDllPath = "python/gopptx/gopptx.dll"
+$releaseBuild = $env:GOPPTX_RELEASE_BUILD
+$isReleaseBuild = $releaseBuild -eq "1" -or $releaseBuild -ieq "true"
 
 Write-Host "Building gopptx shared library..."
-go build -o $dllPath -buildmode=c-shared bindings/c/bridge.go
+if ($isReleaseBuild) {
+    go build -trimpath -buildvcs=false -ldflags "-s -w" -o $dllPath -buildmode=c-shared bindings/c/bridge.go
+} else {
+    go build -o $dllPath -buildmode=c-shared bindings/c/bridge.go
+}
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Build successful!"

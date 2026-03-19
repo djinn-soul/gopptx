@@ -54,21 +54,39 @@ func rewritePresentationModifyVerifier(current string, password string) (string,
 }
 
 func removeSelfClosingTagByPrefix(source, tagPrefix string) string {
+	var b strings.Builder
+	b.Grow(len(source))
+
+	lastWrite := 0
 	searchFrom := 0
+	found := false
+
 	for {
 		startRel := strings.Index(source[searchFrom:], tagPrefix)
 		if startRel < 0 {
-			return source
+			break
 		}
+
 		start := searchFrom + startRel
 		endRel := strings.Index(source[start:], "/>")
 		if endRel < 0 {
-			return source
+			break
 		}
+
 		end := start + endRel + selfClosingTagSuffixLen
-		source = source[:start] + source[end:]
-		searchFrom = start
+		b.WriteString(source[lastWrite:start])
+
+		found = true
+		lastWrite = end
+		searchFrom = end
 	}
+
+	if !found {
+		return source
+	}
+
+	b.WriteString(source[lastWrite:])
+	return b.String()
 }
 
 func buildModifyVerifierXML(saltData, hashData string) string {

@@ -159,14 +159,12 @@ func dedupeContentTypeOverrides(overrides []contentTypeOverride) []contentTypeOv
 		return overrides // common case: no duplicates
 	}
 
-	// Slow path: rebuild with first-occurrence semantics.
-	clear(seen)
+	// Slow path: rebuild with first-order, last-value semantics.
 	order := make([]string, 0, len(overrides))
 	overrideByKey := make(map[string]contentTypeOverride, len(overrides))
 	for _, o := range overrides {
 		key := normalizeOverridePartName(o.PartName)
-		if _, exists := seen[key]; !exists {
-			seen[key] = struct{}{}
+		if _, exists := overrideByKey[key]; !exists {
 			order = append(order, key)
 		}
 		overrideByKey[key] = contentTypeOverride{

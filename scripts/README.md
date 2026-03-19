@@ -1,71 +1,43 @@
-# Scripts Layout
+# Scripts
 
-This repository groups scripts by intent:
+## What These Scripts Do
 
-- `scripts/smoke/`: smoke/demo generators for gopptx features
-- `scripts/parity/`: parity checks against `ppt-rs` fixtures/signatures
-- `scripts/tasks/`: batch task sample generators
+- `build_python.*`
+  - Builds the Go shared library and copies it into `python/gopptx/`.
+  - Use this for local Python package development/testing.
+- `build_cbridge.*`
+  - Builds the same C-shared bridge into `bindings/c/build/`.
+  - Also syncs the produced library into `python/gopptx/`.
+- `architectural_guardrails.py`
+  - Enforces project structural limits/rules used in CI.
+- `architectural_guardrails.json`
+  - Baseline/config consumed by the guardrails script.
 
-## Smoke Scripts
+## Python Bridge Build
 
-Smoke generators are now in `examples/smoke/*` (canonical).
-Under `scripts/smoke/`, only the validator remains.
+- Dev build (default, debug-friendly size):
+  - Windows: `./scripts/build_python.ps1`
+  - Linux/macOS: `./scripts/build_python.sh`
 
-### Actions
+- Release build (smaller binary):
+  - PowerShell: `$env:GOPPTX_RELEASE_BUILD="1"; ./scripts/build_python.ps1`
+  - Bash: `GOPPTX_RELEASE_BUILD=1 ./scripts/build_python.sh`
 
-- `go run ./examples/smoke/actions/generate_action_api_smoke`
-- `go run ./examples/smoke/actions/generate_action_smoke`
+Release mode enables:
+- `-trimpath`
+- `-buildvcs=false`
+- `-ldflags "-s -w"`
 
-### Charts
+Expected Python artifact names:
+- Windows: `python/gopptx/gopptx.dll`
+- Linux: `python/gopptx/libgopptx.so`
+- macOS: `python/gopptx/libgopptx.dylib`
 
-- `go run ./examples/smoke/charts/generate_chart_smoke_samples`
-
-### Core
-
-- `go run ./examples/smoke/core/generate_animation_smoke`
-- `go run ./examples/smoke/core/generate_background_smoke`
-- `go run ./examples/smoke/core/generate_feature_showcase`
-- `go run ./examples/smoke/core/generate_slide_props_smoke`
-- `go run ./examples/smoke/core/generate_text_enhancements_smoke`
-- `go run ./examples/smoke/core/generate_text_frame_smoke`
-- `go run ./examples/smoke/core/generate_theme_master_smoke`
-
-### Editor
-
-- `go run ./examples/smoke/editor/generate_complex_duplication_smoke`
-- `go run ./examples/smoke/editor/generate_editor_chart_smoke`
-- `go run ./examples/smoke/editor/generate_editor_image_smoke`
-- `go run ./examples/smoke/editor/generate_editor_notes_smoke`
-- `go run ./examples/smoke/editor/generate_editor_overwrite_smoke`
-- `go run ./examples/smoke/editor/generate_editor_smoke`
-- `go run ./examples/smoke/editor/generate_modular_sections_smoke`
-- `go run ./examples/smoke/editor/generate_multi_template_smoke`
-- `go run ./examples/smoke/editor/generate_slide_duplication_smoke`
-
-### Validation
-
-- `go run ./scripts/smoke/validate_smoke_outputs` (scan `smoke_samples/` for `.pptx` and validate package structure)
-- `go run ./scripts/smoke/validate_smoke_outputs -file examples/assets/01/01_basic_pptx.pptx`
-- `go run ./scripts/smoke/validate_multi_master_against_powerpoint -baseline examples/output/pp_multi_master_reference.pptx -candidate examples/output/36_multi_master_smoke.pptx`
-- `./scripts/smoke/validate_with_powerpoint.ps1 -Files smartart_smoke.pptx,examples/output/01_hello_world.pptx`
-- `./scripts/smoke/validate_with_powerpoint.ps1 -Dir examples/output -Recurse`
-- `uv run python scripts/smoke/python_batch_latency_benchmark.py`
-
-## Parity Scripts
-
-- `go run ./scripts/parity/compare_chart_parity_with_ppt_rs`
-- `go run ./scripts/parity/compare_table_parity_with_ppt_rs`
-
-## Task Samples
-
-- `go run ./scripts/tasks/generate_task_samples`
+Tip:
+- Use dev build for debugging/local iteration.
+- Use release build for packaging/publishing.
 
 ## CI Guardrails
 
 - `uv run python scripts/ci/architectural_guardrails.py`
 - `uv run python scripts/ci/architectural_guardrails.py --write-current-baseline`
-
-## Python Bindings
-
-- Windows (PowerShell): `./scripts/build_python.ps1`
-- Linux/macOS (bash): `./scripts/build_python.sh`
