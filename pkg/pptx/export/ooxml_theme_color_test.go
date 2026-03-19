@@ -23,11 +23,11 @@ func TestResolveOOXMLColorToken_SchemeAlias(t *testing.T) {
 }
 
 func TestResolveOOXMLColorToken_WithTransforms(t *testing.T) {
-	baseR, baseG, baseB, ok := resolveOOXMLColorToken("accent1")
+	baseR, baseG, baseB, ok := resolveOOXMLColorToken(themeColorAccent1)
 	if !ok {
 		t.Fatal("expected accent1 to resolve")
 	}
-	r, g, b, ok := resolveOOXMLColorToken("accent1|tint=40000|lumMod=65000|lumOff=35000")
+	r, g, b, ok := resolveOOXMLColorToken(themeColorAccent1 + "|tint=40000|lumMod=65000|lumOff=35000")
 	if !ok {
 		t.Fatal("expected transformed accent1 to resolve")
 	}
@@ -79,7 +79,7 @@ func TestResolveColorAlias(t *testing.T) {
 }
 
 func TestResolveThemeBaseColor(t *testing.T) {
-	res, ok := resolveThemeBaseColor("accent1")
+	res, ok := resolveThemeBaseColor(themeColorAccent1)
 	if !ok || res.r != 0x4F || res.g != 0x81 || res.b != 0xBD {
 		t.Errorf("expected accent1 default, got %v, %v", res, ok)
 	}
@@ -90,10 +90,10 @@ func TestResolveThemeBaseColor(t *testing.T) {
 }
 
 func TestNormalizeColorName(t *testing.T) {
-	if got := normalizeColorName("  scheme:accent1  "); got != "accent1" {
+	if got := normalizeColorName("  scheme:accent1  "); got != themeColorAccent1 {
 		t.Errorf("expected accent1, got %q", got)
 	}
-	if got := normalizeColorName("ACCENT1"); got != "accent1" {
+	if got := normalizeColorName("ACCENT1"); got != themeColorAccent1 {
 		t.Errorf("expected accent1, got %q", got)
 	}
 }

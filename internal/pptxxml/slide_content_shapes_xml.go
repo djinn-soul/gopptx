@@ -3,7 +3,6 @@ package pptxxml
 import (
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -15,7 +14,48 @@ const (
 	contentShapeGrowCap = 2048
 )
 
+// Precomputed title shape XML segments for the standard 16:9 slide (9144000 wide)
+// with default TitleSpec (no custom size/color/font/bold/italic/underline/align).
+// Avoids 5 strconv allocs + 2 builder allocs per slide in the common case.
+//
+//nolint:gochecknoglobals // read-only precomputed constants, never mutated
+var (
+	defaultTitleShapePrefix = `
+<p:sp>
+<p:nvSpPr>
+<p:cNvPr id="2" name="Title"/>
+<p:cNvSpPr/>
+<p:nvPr><p:ph type="title" idx="0"/></p:nvPr>
+</p:nvSpPr>
+<p:spPr>
+<a:xfrm>
+<a:off x="457200" y="274638"/>
+<a:ext cx="8229600" cy="1143000"/>
+</a:xfrm>
+<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+<a:noFill/>
+</p:spPr>
+<p:txBody>
+<a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+<a:lstStyle/>
+<a:p>
+      <a:pPr algn="l"/>
+      <a:r>
+        <a:rPr lang="en-US" sz="4400" b="0" i="0" u="none" dirty="0"></a:rPr>
+        <a:t>`
+	defaultTitleShapeSuffix = `</a:t>
+      </a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`
+)
+
 func titleShape(title TitleSpec, width, _ int64) string {
+	// Fast path: standard 16:9 width + default title styling → zero strconv/builder allocs.
+	if width == 9144000 && title.SizePt == 0 && title.Color == "" && title.Font == "" &&
+		!title.Bold && !title.Italic && !title.Underline && title.Align == "" {
+		return defaultTitleShapePrefix + Escape(title.Text) + defaultTitleShapeSuffix
+	}
 	// Standard margin is 0.5 inches (457200 EMU)
 	margin := defaultMargin
 	x := int64(margin)
@@ -325,7 +365,21 @@ func splitBulletRunsForTwoColumns(runs [][]TextRunSpec, leftCount int) ([][]Text
 	return left, right
 }
 
+// defaultBulletParagraphPrefix is the precomputed XML before the bullet text
+// for zero-value BulletParagraphSpec and ContentStyleSpec (sz=2800, no color, no bold/italic).
+// Avoids strconv + concat allocs (~3 allocs) in the common case.
+const defaultBulletParagraphPrefix = "\n<a:p>\n" + defaultBulletParagraphProps + "\n<a:r>\n" +
+	`<a:rPr lang="en-US" sz="2800" b="0" i="0" u="none" dirty="0"></a:rPr>` + "\n<a:t>"
+
+const defaultBulletParagraphSuffix = "</a:t>\n</a:r>\n</a:p>"
+
 func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyleSpec) string {
+	// Fast path: both specs are zero-value → return precomputed prefix + text + suffix.
+	// This is a single 3-string concat (1 alloc) vs ~9 allocs for the slow path.
+	if pStyle == (BulletParagraphSpec{}) && style == (ContentStyleSpec{}) {
+		return defaultBulletParagraphPrefix + Escape(text) + defaultBulletParagraphSuffix
+	}
+
 	escaped := Escape(text)
 	sz := 2800
 	if style.SizePt > 0 {
@@ -346,127 +400,4 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 <a:t>` + escaped + `</a:t>
 </a:r>
 </a:p>`
-}
-
-//nolint:mnd // Layout constants from OOXML spec
-func slideNumberShape(width, height int64, shapeID int) string {
-	// Standard bottom right position for slide numbers
-	cx := int64(548640)
-	cy := int64(396240)
-	x := width - cx - int64(457200)  // margin
-	y := height - cy - int64(274320) // lower margin
-
-	return `
-<p:sp>
-  <p:nvSpPr>
-    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Slide Number Placeholder"/>
-    <p:cNvSpPr>
-      <a:spLocks noGrp="1"/>
-    </p:cNvSpPr>
-    <p:nvPr>
-      <p:ph type="sldNum" sz="quarter" idx="12"/>
-    </p:nvPr>
-  </p:nvSpPr>
-  <p:spPr>
-    <a:xfrm>
-      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
-      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
-    </a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-    <a:noFill/>
-  </p:spPr>
-  <p:txBody>
-    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
-    <a:lstStyle/>
-    <a:p>
-      <a:pPr algn="r"/>
-      <a:fld type="slidenum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
-        <a:rPr lang="en-US" smtClean="0"/>
-        <a:t>‹#›</a:t>
-      </a:fld>
-      <a:endParaRPr lang="en-US" smtClean="0"/>
-    </a:p>
-  </p:txBody>
-</p:sp>`
-}
-
-//nolint:mnd // Layout constants from OOXML spec
-func footerShape(text string, width, height int64, shapeID int) string {
-	cx := int64(2133600)
-	cy := int64(396240)
-	x := (width - cx) / 2
-	y := height - cy - int64(274320)
-
-	return `
-<p:sp>
-  <p:nvSpPr>
-    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Footer Placeholder"/>
-    <p:cNvSpPr>
-      <a:spLocks noGrp="1"/>
-    </p:cNvSpPr>
-    <p:nvPr>
-      <p:ph type="ftr" sz="quarter" idx="11"/>
-    </p:nvPr>
-  </p:nvSpPr>
-  <p:spPr>
-    <a:xfrm>
-      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
-      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
-    </a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-    <a:noFill/>
-  </p:spPr>
-  <p:txBody>
-    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
-    <a:lstStyle/>
-    <a:p>
-      <a:pPr algn="ctr"/>
-      <a:r>
-        <a:rPr lang="en-US" sz="1200" dirty="0"/>
-        <a:t>` + Escape(text) + `</a:t>
-      </a:r>
-    </a:p>
-  </p:txBody>
-</p:sp>`
-}
-
-//nolint:mnd // Layout constants from OOXML spec
-func dateTimeShape(_ int64, height int64, shapeID int) string {
-	cx := int64(2133600)
-	cy := int64(396240)
-	x := int64(457200)
-	y := height - cy - int64(274320)
-
-	return `
-<p:sp>
-  <p:nvSpPr>
-    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Date Placeholder"/>
-    <p:cNvSpPr>
-      <a:spLocks noGrp="1"/>
-    </p:cNvSpPr>
-    <p:nvPr>
-      <p:ph type="dt" sz="quarter" idx="10"/>
-    </p:nvPr>
-  </p:nvSpPr>
-  <p:spPr>
-    <a:xfrm>
-      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
-      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
-    </a:xfrm>
-    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
-    <a:noFill/>
-  </p:spPr>
-  <p:txBody>
-    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
-    <a:lstStyle/>
-    <a:p>
-      <a:pPr algn="l"/>
-      <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
-        <a:rPr lang="en-US" dirty="0"/>
-        <a:t>` + time.Now().Format("2006-01-02") + `</a:t>
-      </a:fld>
-      <a:endParaRPr lang="en-US" dirty="0"/>
-    </a:p>
-  </p:txBody>
-</p:sp>`
 }

@@ -17,6 +17,7 @@ import (
 )
 
 const themePartPath = "ppt/theme/theme1.xml"
+const corePropertiesBuilderCap = 700
 
 var sldSzPattern = regexp.MustCompile(`(?s)<p:sldSz\b[^>]*/>`)
 
@@ -188,7 +189,7 @@ func parseCoreProperties(content []byte) (common.CoreProperties, error) {
 	return props, nil
 }
 
-func renderCoreProperties(props common.CoreProperties) ([]byte, error) {
+func renderCoreProperties(props common.CoreProperties) []byte {
 	created := strings.TrimSpace(props.Created)
 	if created == "" {
 		created = time.Now().UTC().Format("2006-01-02T15:04:05Z")
@@ -203,61 +204,52 @@ func renderCoreProperties(props common.CoreProperties) ([]byte, error) {
 		lastModifiedBy = strings.TrimSpace(props.Creator)
 	}
 
-	type dctermsDate struct {
-		XSIType string `xml:"xsi:type,attr"`
-		Value   string `xml:",chardata"`
-	}
-	type corePropertiesXML struct {
-		XMLName xml.Name `xml:"cp:coreProperties"`
+	// Hand-rolled renderer replaces xml.Marshal to eliminate ~73 allocs/save
+	// from xml.(*printer).marshalAttr (5 namespace attrs + reflection overhead).
+	var b strings.Builder
+	// Header ~65 bytes + root open ~350 bytes + up to 10 optional fields ~150 bytes + 2 dates ~100 bytes + close ~20 bytes.
+	b.Grow(corePropertiesBuilderCap)
+	b.WriteString(xml.Header)
+	b.WriteString(`<cp:coreProperties`)
+	b.WriteString(` xmlns:cp="` + common.CPNamespace + `"`)
+	b.WriteString(` xmlns:dc="` + common.DCNamespace + `"`)
+	b.WriteString(` xmlns:dcterms="` + common.DCTermsNamespace + `"`)
+	b.WriteString(` xmlns:dcmitype="` + common.DCMITypeNamespace + `"`)
+	b.WriteString(` xmlns:xsi="` + common.XSINamespace + `"`)
+	b.WriteByte('>')
 
-		XMLNSCP       string `xml:"xmlns:cp,attr"`
-		XMLNSDC       string `xml:"xmlns:dc,attr"`
-		XMLNSDCTerms  string `xml:"xmlns:dcterms,attr"`
-		XMLNSDCMITYpe string `xml:"xmlns:dcmitype,attr"`
-		XMLNSXSI      string `xml:"xmlns:xsi,attr"`
-
-		Title          string      `xml:"dc:title,omitempty"`
-		Subject        string      `xml:"dc:subject,omitempty"`
-		Creator        string      `xml:"dc:creator,omitempty"`
-		Keywords       string      `xml:"cp:keywords,omitempty"`
-		Description    string      `xml:"dc:description,omitempty"`
-		LastModifiedBy string      `xml:"cp:lastModifiedBy,omitempty"`
-		Revision       string      `xml:"cp:revision,omitempty"`
-		Created        dctermsDate `xml:"dcterms:created"`
-		Modified       dctermsDate `xml:"dcterms:modified"`
-		Category       string      `xml:"cp:category,omitempty"`
-		ContentStatus  string      `xml:"cp:contentStatus,omitempty"`
-	}
-
-	doc := corePropertiesXML{
-		XMLNSCP:       common.CPNamespace,
-		XMLNSDC:       common.DCNamespace,
-		XMLNSDCTerms:  common.DCTermsNamespace,
-		XMLNSDCMITYpe: common.DCMITypeNamespace,
-		XMLNSXSI:      common.XSINamespace,
-
-		Title:          strings.TrimSpace(props.Title),
-		Subject:        strings.TrimSpace(props.Subject),
-		Creator:        strings.TrimSpace(props.Creator),
-		Keywords:       strings.TrimSpace(props.Keywords),
-		Description:    strings.TrimSpace(props.Description),
-		LastModifiedBy: lastModifiedBy,
-		Revision:       strings.TrimSpace(props.Revision),
-		Created: dctermsDate{
-			XSIType: "dcterms:W3CDTF",
-			Value:   created,
-		},
-		Modified: dctermsDate{
-			XSIType: "dcterms:W3CDTF",
-			Value:   modified,
-		},
-		Category:      strings.TrimSpace(props.Category),
-		ContentStatus: strings.TrimSpace(props.ContentStatus),
+	writeCorePropsField := func(tag, value string) {
+		if value == "" {
+			return
+		}
+		b.WriteByte('<')
+		b.WriteString(tag)
+		b.WriteByte('>')
+		b.WriteString(common.XMLEscape(value))
+		b.WriteString("</")
+		b.WriteString(tag)
+		b.WriteByte('>')
 	}
 
-	data, err := xml.Marshal(doc)
-	if err != nil {
-		return nil, err
-	}
-	return append([]byte(xml.Header), data...), nil
+	writeCorePropsField("dc:title", strings.TrimSpace(props.Title))
+	writeCorePropsField("dc:subject", strings.TrimSpace(props.Subject))
+	writeCorePropsField("dc:creator", strings.TrimSpace(props.Creator))
+	writeCorePropsField("cp:keywords", strings.TrimSpace(props.Keywords))
+	writeCorePropsField("dc:description", strings.TrimSpace(props.Description))
+	writeCorePropsField("cp:lastModifiedBy", lastModifiedBy)
+	writeCorePropsField("cp:revision", strings.TrimSpace(props.Revision))
+
+	b.WriteString(`<dcterms:created xsi:type="dcterms:W3CDTF">`)
+	b.WriteString(common.XMLEscape(created))
+	b.WriteString(`</dcterms:created>`)
+	b.WriteString(`<dcterms:modified xsi:type="dcterms:W3CDTF">`)
+	b.WriteString(common.XMLEscape(modified))
+	b.WriteString(`</dcterms:modified>`)
+
+	writeCorePropsField("cp:category", strings.TrimSpace(props.Category))
+	writeCorePropsField("cp:contentStatus", strings.TrimSpace(props.ContentStatus))
+
+	b.WriteString(`</cp:coreProperties>`)
+
+	return []byte(b.String())
 }

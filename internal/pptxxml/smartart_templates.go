@@ -3,6 +3,7 @@ package pptxxml
 import (
 	"embed"
 	"strings"
+	"sync"
 )
 
 //go:embed templates/smartart/*.xml templates/smartart/layouts/*/*.xml
@@ -43,30 +44,54 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 }
 
 func renderSmartArtLayoutFromTemplate(layoutURI string) string {
+	if v, ok := renderedLayoutCache.Load(layoutURI); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("renderedLayoutCache contained non-string value")
+	}
 	layout := mustTemplate(templatePathForLayout(layoutURI, "layout.xml"))
-	return strings.Replace(layout,
+	s := strings.Replace(layout,
 		`uniqueId="urn:microsoft.com/office/officeart/2005/8/layout/default"`,
 		`uniqueId="`+Escape(layoutURIOrDefault(layoutURI))+`"`,
 		1,
 	)
+	renderedLayoutCache.Store(layoutURI, s)
+	return s
 }
 
 func renderSmartArtStyleFromTemplate(quickStyleID string) string {
+	if v, ok := renderedStyleCache.Load(quickStyleID); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("renderedStyleCache contained non-string value")
+	}
 	style := mustTemplate("templates/smartart/quickStyle.xml")
-	return strings.Replace(style,
+	s := strings.Replace(style,
 		`uniqueId="urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1"`,
 		`uniqueId="`+Escape(defaultQuickStyleID(quickStyleID))+`"`,
 		1,
 	)
+	renderedStyleCache.Store(quickStyleID, s)
+	return s
 }
 
 func renderSmartArtColorsFromTemplate(colorStyleID string) string {
+	if v, ok := renderedColorsCache.Load(colorStyleID); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("renderedColorsCache contained non-string value")
+	}
 	colors := mustTemplate("templates/smartart/colors.xml")
-	return strings.Replace(colors,
+	s := strings.Replace(colors,
 		`uniqueId="urn:microsoft.com/office/officeart/2005/8/colors/accent1_2"`,
 		`uniqueId="`+Escape(defaultColorStyleID(colorStyleID))+`"`,
 		1,
 	)
+	renderedColorsCache.Store(colorStyleID, s)
+	return s
 }
 
 func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
@@ -119,12 +144,35 @@ func layoutURIOrDefault(uri string) string {
 	return "urn:microsoft.com/office/officeart/2005/8/layout/default"
 }
 
+//nolint:gochecknoglobals // package-level cache for embedded template strings
+var templateCache sync.Map
+
+// renderedLayoutCache / renderedStyleCache / renderedColorsCache cache the final
+// rendered XML for layout, style, and colors — keyed by URI/ID string.
+// These renders are pure functions of their input, so caching is safe and
+// eliminates repeated strings.Replace + allocs on repeated SmartArt insertions.
+//
+//nolint:gochecknoglobals // package-level render caches, never mutated after first Store
+var (
+	renderedLayoutCache sync.Map
+	renderedStyleCache  sync.Map
+	renderedColorsCache sync.Map
+)
+
 func mustTemplate(path string) string {
+	if v, ok := templateCache.Load(path); ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+		panic("templateCache contained non-string value")
+	}
 	b, err := smartArtTemplateFS.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
-	return string(b)
+	s := string(b)
+	templateCache.Store(path, s)
+	return s
 }
 
 func templatePathForLayout(layoutURI, fileName string) string {

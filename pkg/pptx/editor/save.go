@@ -18,7 +18,7 @@ import (
 )
 
 const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
-const manifestBuildWorkers = 4
+const rawZipCopyBufferSize = 32 * 1024
 
 // Save writes the edited presentation back to a PPTX file.
 //
@@ -35,9 +35,12 @@ func (e *PresentationEditor) Save(filePath string) error {
 		}
 	}
 
-	// Materialize all lazy parts into memory and release the source file handle.
-	if err := e.parts.Materialize(); err != nil {
-		return fmt.Errorf("failed to materialize lazy PPTX parts from source archive: %w", err)
+	// Saving in-place to the source path requires closing the source file handle first.
+	// Keep the old materialize behavior for this path to preserve editor usability.
+	if e.parts.IsBackedByPath(filePath) {
+		if err := e.parts.Materialize(); err != nil {
+			return fmt.Errorf("failed to materialize lazy PPTX parts from source archive: %w", err)
+		}
 	}
 
 	updatedParts, err := e.collectUpdatedParts(vbaProject, hasVBA)
@@ -45,47 +48,78 @@ func (e *PresentationEditor) Save(filePath string) error {
 		return fmt.Errorf("prepare updated parts: %w", err)
 	}
 
-	// Pre-verification: Ensure all required parts are available before we start writing to disk.
-	// This prevents truncated/corrupt files if a lazy-read fails mid-save.
 	keys := e.parts.Keys()
-	for _, name := range keys {
-		if _, updatedOK := updatedParts[name]; !updatedOK {
-			if _, ok := e.parts.Get(name); !ok {
-				return fmt.Errorf("critical failure: part %q missing from store during pre-save scan", name)
-			}
-		}
-	}
 
 	var zipBuf bytes.Buffer
 	zw := zip.NewWriter(&zipBuf)
+	rawZipCopyBuffer := make([]byte, rawZipCopyBufferSize)
 
-	// Iterate over ALL unique part names from both existing state and updates
-	allNamesSet := make(map[string]struct{})
-	for _, k := range keys {
-		allNamesSet[k] = struct{}{}
-	}
+	// Merge existing sorted keys with updatedParts keys.
+	// keys is already sorted; updatedParts typically contains only a handful of entries
+	// (presentationXML, presentationRels, coreProps, contentTypes, …), nearly all of
+	// which already exist in keys.  Binary-search for each updatedParts key avoids
+	// building a full N-entry set map just to deduplicate a tiny delta.
+	var extraKeys []string
 	for k := range updatedParts {
-		allNamesSet[k] = struct{}{}
+		if i := sort.SearchStrings(keys, k); i >= len(keys) || keys[i] != k {
+			extraKeys = append(extraKeys, k)
+		}
 	}
-
-	allNames := make([]string, 0, len(allNamesSet))
-	for k := range allNamesSet {
-		allNames = append(allNames, k)
+	var allNames []string
+	if len(extraKeys) == 0 {
+		// Common case: no new part names — reuse the sorted slice directly (zero allocs).
+		allNames = keys
+	} else {
+		sort.Strings(extraKeys)
+		allNames = make([]string, 0, len(keys)+len(extraKeys))
+		ki, ei := 0, 0
+		for ki < len(keys) && ei < len(extraKeys) {
+			if keys[ki] <= extraKeys[ei] {
+				allNames = append(allNames, keys[ki])
+				ki++
+			} else {
+				allNames = append(allNames, extraKeys[ei])
+				ei++
+			}
+		}
+		allNames = append(allNames, keys[ki:]...)
+		allNames = append(allNames, extraKeys[ei:]...)
 	}
-	sort.Strings(allNames)
 
 	for _, name := range allNames {
-		var content []byte
 		if updated, updatedOK := updatedParts[name]; updatedOK {
-			content = updated
-		} else {
-			data, partOK := e.parts.Get(name)
-			if !partOK {
-				return fmt.Errorf("failed to retrieve part %q during save", name)
+			var (
+				w         io.Writer
+				createErr error
+			)
+			if editorslide.SaveZipMethod(name) == zip.Store {
+				header := &zip.FileHeader{Name: name, Method: zip.Store}
+				w, createErr = zw.CreateHeader(header)
+			} else {
+				w, createErr = zw.Create(name)
 			}
-			content = data
+			if createErr != nil {
+				return fmt.Errorf("create zip entry %q: %w", name, createErr)
+			}
+			if _, writeErr := w.Write(updated); writeErr != nil {
+				return fmt.Errorf("write zip entry %q: %w", name, writeErr)
+			}
+			continue
 		}
 
+		// Fast path: unchanged part from original archive can be copied raw.
+		if sourceEntry, sourceOK := e.parts.SourceZipEntry(name); sourceOK {
+			if err := copyZipEntryRaw(zw, sourceEntry, rawZipCopyBuffer); err != nil {
+				return fmt.Errorf("copy source zip entry %q: %w", name, err)
+			}
+			continue
+		}
+
+		// Fallback for in-memory or already materialized parts.
+		content, partOK := e.parts.Get(name)
+		if !partOK {
+			return fmt.Errorf("failed to retrieve part %q during save", name)
+		}
 		var (
 			w         io.Writer
 			createErr error
@@ -119,6 +153,22 @@ func (e *PresentationEditor) Save(filePath string) error {
 
 	if err := os.WriteFile(filePath, output, 0o600); err != nil {
 		return fmt.Errorf("write %s: %w", filePath, err)
+	}
+	return nil
+}
+
+func copyZipEntryRaw(zw *zip.Writer, sourceEntry *zip.File, copyBuffer []byte) error {
+	header := sourceEntry.FileHeader
+	writer, err := zw.CreateRaw(&header)
+	if err != nil {
+		return err
+	}
+	reader, err := sourceEntry.OpenRaw()
+	if err != nil {
+		return err
+	}
+	if _, err := io.CopyBuffer(writer, reader, copyBuffer); err != nil {
+		return err
 	}
 	return nil
 }
@@ -161,7 +211,7 @@ func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, has
 	hasSections := len(e.sections) > 0
 	hasNotesMaster := e.parts.Has("ppt/notesMasters/notesMaster1.xml")
 	hasHandoutMaster := e.parts.Has("ppt/handoutMasters/handoutMaster1.xml")
-	manifestParts, err := e.buildManifestPartsParallel(
+	manifestParts, err := e.buildManifestParts(
 		hasSections,
 		hasNotesMaster,
 		hasCommentAuthors,

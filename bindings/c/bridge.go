@@ -10,7 +10,6 @@ import "C"
 
 import (
 	"fmt"
-	"os"
 	"runtime/debug"
 	"sync"
 	"unsafe"
@@ -101,35 +100,16 @@ func deck_new(title *C.char) C.DeckHandle {
 		return 0
 	}
 
-	// We need to write it to a temp file to open it with the editor
-	// (Current editor requires a file path)
-	tmpFile, err := os.CreateTemp("", "gopptx-new-*.pptx")
+	// Open directly from bytes — no temp file write/read round-trip.
+	// This also works on read-only filesystems where os.CreateTemp would fail.
+	e, err := editor.OpenPresentationEditorFromBytes(data)
 	if err != nil {
 		setGlobalError(err)
 		return 0
 	}
-	tmpPath := tmpFile.Name()
-	_ = tmpFile.Close()
-
-	if err := os.WriteFile(tmpPath, data, 0o600); err != nil {
-		_ = os.Remove(tmpPath)
-		setGlobalError(err)
-		return 0
-	}
-
-	e, err := editor.OpenPresentationEditor(tmpPath)
-	if err != nil {
-		_ = os.Remove(tmpPath)
-		setGlobalError(err)
-		return 0
-	}
-	e.SetCleanupOnClose(func() {
-		_ = os.Remove(tmpPath)
-	})
 
 	h := editor.RegisterEditor(deckRegistry, e)
 	if h == 0 {
-		_ = os.Remove(tmpPath)
 		return 0
 	}
 	return C.DeckHandle(h)

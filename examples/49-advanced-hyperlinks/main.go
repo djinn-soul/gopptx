@@ -41,8 +41,8 @@ func run() error {
 	// Slide 2: Program Link
 	slide2 := pptx.NewSlide("Program Link")
 	rect2 := pptx.NewRectangle(1, 2, 4, 1).
-		WithText("Launch Calculator").
-		WithClickAction(action.NewHyperlink(action.HyperlinkProgram("C:\\Windows\\System32\\calc.exe")))
+		WithText("Launch App").
+		WithClickAction(action.NewHyperlink(action.HyperlinkProgram("C:\\Program Files\\MyApp\\app.exe")))
 	slide2 = slide2.AddShape(rect2)
 	deck.AddSlide(slide2)
 
@@ -68,7 +68,7 @@ func verifyRelationships(pptxPath string) (retErr error) {
 	// Map of slide index to expected partial target
 	expected := map[int]string{
 		0: "file:///C:/Temp/test.txt",
-		1: "file:///C:/Windows/System32/calc.exe",
+		1: "file:///C:/Program Files/MyApp/app.exe",
 	}
 
 	for i, target := range expected {
