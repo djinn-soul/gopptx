@@ -22,7 +22,6 @@ func main() {
 	}
 
 	slide := pptx.NewSlide("Placeholder Override Smoke").
-		WithPlaceholderText(0, "Placeholder override smoke").
 		WithPlaceholderText(1, "Original body placeholder text").
 		WithPlaceholderOverride(
 			shapes.PlaceholderTarget{Type: "body", Index: 1},

@@ -1,6 +1,8 @@
 package mermaid
 
 import (
+	"strings"
+
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -115,13 +117,13 @@ func quadrantLabelShape(
 ) shapes.Shape {
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		x,
+		x+styling.Inches(0.08),
 		y+styling.Inches(0.08),
-		quadSize,
-		styling.Inches(0.36),
+		quadSize-styling.Inches(0.16),
+		styling.Inches(0.30),
 	).WithText(label).
-		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
-		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.Background, styling.Emu(0))).
 		WithAutoFit(shapes.TextAutoFitNormal)
 }
 
@@ -170,17 +172,19 @@ func quadrantXAxisLabelShape(label string, layout quadrantLayout, theme Theme) s
 }
 
 func quadrantYAxisLabelShape(label string, layout quadrantLayout, theme Theme) shapes.Shape {
+	label = strings.TrimSpace(strings.ReplaceAll(label, "-->", " -> "))
 	centerY := layout.startY + (layout.chartSize / 2)
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		layout.startX-styling.Inches(1.9),
-		centerY-styling.Inches(0.18),
-		styling.Inches(1.7),
-		styling.Inches(0.36),
+		layout.startX-styling.Inches(0.8),
+		centerY-styling.Inches(1.6),
+		styling.Inches(0.32),
+		styling.Inches(3.2),
 	).WithText(label).
 		WithFill(shapes.NewShapeFill(theme.Background)).
-		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithLine(shapes.NewShapeLine(theme.Background, styling.Emu(0))).
 		WithRotation(-90).
+		WithTextMargins(styling.Inches(0.02), styling.Inches(0.04), styling.Inches(0.02), styling.Inches(0.04)).
 		WithAutoFit(shapes.TextAutoFitNormal)
 }
 
@@ -208,14 +212,22 @@ func quadrantPointShape(px styling.Length, py styling.Length, theme Theme) shape
 }
 
 func quadrantPointLabelShape(px styling.Length, py styling.Length, label string, theme Theme) shapes.Shape {
+	labelX := px + styling.Inches(0.14)
+	if px > styling.Inches(4.7) {
+		labelX = px - styling.Inches(1.35)
+	}
+	labelY := py - styling.Inches(0.34)
+	if py < styling.Inches(2.1) {
+		labelY = py + styling.Inches(0.10)
+	}
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		px+styling.Inches(0.1),
-		py-styling.Inches(0.18),
-		styling.Inches(2.0),
-		styling.Inches(0.38),
+		labelX,
+		labelY,
+		styling.Inches(1.2),
+		styling.Inches(0.28),
 	).WithText(label).
 		WithFill(shapes.NewShapeFill(theme.Background)).
-		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithLine(shapes.NewShapeLine(theme.Background, styling.Emu(0))).
 		WithAutoFit(shapes.TextAutoFitNormal)
 }

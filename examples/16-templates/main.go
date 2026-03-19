@@ -34,11 +34,20 @@ func run() error {
 	// Step 1: build a visual .pptx template with {{variable}} tokens.
 	slides := buildTemplateSlides()
 
-	templatePath := filepath.Join(outputDir, "16_invoice_template.pptx")
+	tmpTemplate, err := os.CreateTemp("", "gopptx-16-invoice-template-*.pptx")
+	if err != nil {
+		return fmt.Errorf("create temp template path: %w", err)
+	}
+	templatePath := tmpTemplate.Name()
+	if err = tmpTemplate.Close(); err != nil {
+		return fmt.Errorf("close temp template file: %w", err)
+	}
+	defer func() { _ = os.Remove(templatePath) }()
+
 	if err := pptx.WriteFile(templatePath, "Invoice Template", slides); err != nil {
 		return fmt.Errorf("save template: %w", err)
 	}
-	log.Println("Template written:", templatePath)
+	log.Println("Template prepared:", templatePath)
 
 	// ── Step 2: render the template with data ──────────────────────────────────
 	result, err := tplx.Render(templatePath, tplx.Context{

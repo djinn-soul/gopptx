@@ -39,13 +39,13 @@ func main() {
 func buildAdvancedHyperlinkSlide() pptx.SlideContent {
 	return pptx.NewSlide("Advanced Hyperlinks").
 		AddShape(shapes.NewShape("rect", styling.Inches(0.5), styling.Inches(1.5), styling.Inches(4), styling.Inches(1)).
-			WithFill(shapes.NewShapeFill("455A64")).
-			WithText("Open README.md (Relative)").
+			WithFill(shapes.NewShapeFill("DDE7F0")).
 			WithClickAction(action.NewHyperlink(action.HyperlinkFile("README.md")).
 				WithTooltip("Open project README"))).
+		AddShape(shapes.NewTextBox("Open README.md (Relative)", 0.75, 1.8, 3.5, 0.35)).
 		AddShape(shapes.NewShape("rect", styling.Inches(5), styling.Inches(1.5), styling.Inches(4), styling.Inches(1)).
-			WithFill(shapes.NewShapeFill("37474F")).
-			WithText("Open Notepad (Program)").
-			WithClickAction(action.NewHyperlink(action.HyperlinkProgram("C:\\Windows\\System32\\notepad.exe")).
-				WithTooltip("Launch Notepad application")))
+			WithFill(shapes.NewShapeFill("E8F1E6")).
+			WithClickAction(action.NewHyperlink(action.HyperlinkProgram("notepad.exe")).
+				WithTooltip("Launch Notepad application"))).
+		AddShape(shapes.NewTextBox("Open Notepad (Program)", 5.25, 1.8, 3.5, 0.35))
 }

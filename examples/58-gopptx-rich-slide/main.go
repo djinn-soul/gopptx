@@ -34,19 +34,18 @@ func main() {
 			AddRun(elements.NewRun("Use these speaker notes to describe how the slide should feel.")),
 	})
 
-	slide.AddPlaceholderText(0, "Title placeholder override")
 	slide.AddPlaceholderOverride(shapes.PlaceholderContent{
 		Index: 1,
-		Type:  "body",
+		Type:  "obj",
 		Text:  "Body placeholder text with layout overrides and custom styling.",
 		Override: &shapes.PlaceholderOverrideOptions{
 			X:  ptrLength(styling.Inches(0.7)),
-			Y:  ptrLength(styling.Inches(3.2)),
+			Y:  ptrLength(styling.Inches(4.35)),
 			CX: ptrLength(styling.Inches(6.8)),
-			CY: ptrLength(styling.Inches(2.4)),
+			CY: ptrLength(styling.Inches(1.5)),
 			TextStyle: &shapes.PlaceholderTextStyle{
 				Font:   strPtr("Segoe UI"),
-				SizePt: intPtr(28),
+				SizePt: intPtr(24),
 				Bold:   boolPtr(true),
 				Color:  strPtr("1F4E79"),
 			},

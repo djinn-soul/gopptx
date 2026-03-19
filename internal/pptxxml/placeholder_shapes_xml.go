@@ -157,7 +157,7 @@ func renderPlaceholderDefault(ph PlaceholderOverrideSpec, id int, phAttr string)
 <p:sp>
   <p:nvSpPr>
     <p:cNvPr id="%d" name="Placeholder %d"/>
-    <p:cNvSpPr txBox="1"/>
+    <p:cNvSpPr/>
     <p:nvPr>
       <p:ph%s/>
     </p:nvPr>
