@@ -1,4 +1,4 @@
-//nolint:mnd,goconst // OOXML color math uses spec-defined numeric ranges (e.g., 0..100000, 0..255); color name strings are OOXML spec identifiers.
+//nolint:mnd // OOXML color math uses spec-defined numeric ranges (e.g., 0..100000, 0..255).
 package export
 
 import (
@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+const themeColorAccent1 = "accent1"
 
 type rgbColor struct {
 	r uint8
@@ -61,7 +63,7 @@ func resolveThemeBaseColor(name string) (rgbColor, bool) {
 		return rgbColor{r: 0x1F, g: 0x49, b: 0x7D}, true
 	case "lt2":
 		return rgbColor{r: 0xEE, g: 0xEC, b: 0xE1}, true
-	case "accent1":
+	case themeColorAccent1:
 		return rgbColor{r: 0x4F, g: 0x81, b: 0xBD}, true
 	case "accent2":
 		return rgbColor{r: 0xC0, g: 0x50, b: 0x4D}, true

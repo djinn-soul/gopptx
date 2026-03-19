@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import threading
-import uuid
 from typing import TYPE_CHECKING, cast
 
 from typing_extensions import Self
@@ -50,6 +49,7 @@ class PresentationRuntimeMixin:
         self._slides_metadata_cache: list[SlideMetadata] | None = None
         self._metadata_cache: PresentationMetadata | None = None
         self._comment_ref_cache: dict[int, tuple[int, int, int]] = {}
+        self._request_counter: int = 0
 
     def execute(
         self, op: str, payload: dict[str, object] | None = None
@@ -68,9 +68,10 @@ class PresentationRuntimeMixin:
                 self._batch_commands.append({"op": op, "payload": payload or {}})
                 return {"_batched": True}
 
+            self._request_counter += 1
             envelope = {
                 "api_version": 1,
-                "request_id": str(uuid.uuid4()),
+                "request_id": str(self._request_counter),
                 "op": op,
                 "payload": payload or {},
             }

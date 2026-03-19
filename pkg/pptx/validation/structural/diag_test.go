@@ -46,7 +46,7 @@ func TestValidator_MissingParts(t *testing.T) {
 			missingCount++
 		}
 	}
-	parts := requiredParts()
+	parts := requiredParts
 	if missingCount != len(parts) {
 		t.Errorf("expected %d missing part issues, got %d", len(parts), missingCount)
 	}

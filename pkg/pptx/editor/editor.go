@@ -58,6 +58,26 @@ type PresentationEditor struct {
 	nextAuthorID  int64
 	authorCacheMu sync.RWMutex
 
+	// shapeCache memoizes GetShapes results per slide part path.
+	// Each entry stores the parsed shapes plus the backing-array pointer of the
+	// content slice used to produce them. The cache automatically misses when the
+	// slide part is modified (PartStore.Set returns a new slice with a different
+	// backing address), so no explicit invalidation is required.
+	shapeCache map[string]shapeCacheEntry
+
+	// ctBase caches the expensive xml.Unmarshal result for [Content_Types].xml.
+	// ctBasePtr is the backing-array address of the content-types bytes when the
+	// cache was last populated — same pointer-as-staleness-token pattern as shapeCache.
+	// The cache is valid as long as [Content_Types].xml is not replaced in PartStore.
+	ctBase    editorslide.ContentTypesBase
+	ctBasePtr uintptr
+
+	// packageRels* cache stores root relationship filtering result for _rels/.rels.
+	// It avoids reparsing/rendering when the package relationships part bytes are unchanged.
+	packageRelsPtr         uintptr
+	packageRelsNeedsFilter bool
+	packageRelsFilteredXML []byte
+
 	// cleanupOnClose is an optional function called during Close().
 	cleanupOnClose func()
 }

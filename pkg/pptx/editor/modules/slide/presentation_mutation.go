@@ -48,6 +48,8 @@ func RewritePresentationSlideList(current []byte, slides []common.EditorSlideRef
 
 func BuildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 	var b strings.Builder
+	// Each entry: "\n<p:sldId id="NNN" r:id="rIdNNN"/>" ≈ 50 bytes.
+	b.Grow(len("<p:sldIdLst></p:sldIdLst>") + len(slides)*50)
 	b.WriteString("<p:sldIdLst>")
 	for _, slide := range slides {
 		b.WriteString("\n<p:sldId id=\"")

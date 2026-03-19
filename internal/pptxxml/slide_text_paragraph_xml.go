@@ -12,6 +12,11 @@ const (
 	ptFactor   = 100
 )
 
+// defaultBulletParagraphProps is the precomputed output of bulletParagraphPropsXML
+// for a zero-value BulletParagraphSpec (level=0, default indent, bullet char).
+// Returning a constant avoids ~6 allocations per bullet in the common case.
+const defaultBulletParagraphProps = `<a:pPr lvl="0" marL="457200" indent="-457200"><a:buChar char="•"/></a:pPr>`
+
 // BulletParagraphSpec describes paragraph formatting for one bullet line.
 type BulletParagraphSpec struct {
 	Align          string
@@ -37,6 +42,10 @@ func bulletStyleAt(all []BulletParagraphSpec, index int) BulletParagraphSpec {
 }
 
 func bulletParagraphPropsXML(style BulletParagraphSpec) string {
+	// Fast path: zero-value spec → precomputed constant (zero allocs).
+	if style == (BulletParagraphSpec{}) {
+		return defaultBulletParagraphProps
+	}
 	marL, indent := bulletIndent(style.Level)
 	if style.LeftIndent != 0 {
 		marL = int(style.LeftIndent)

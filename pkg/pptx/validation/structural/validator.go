@@ -38,6 +38,7 @@ type Validator struct {
 	provider PartProvider
 	issues   []Issue
 	checkers []Checker
+	keys     []string // computed once per Validate() call, shared across check functions
 }
 
 // NewValidator creates a new validator using the given part provider.
@@ -52,19 +53,20 @@ func (v *Validator) AddChecker(c Checker) {
 	v.checkers = append(v.checkers, c)
 }
 
-// requiredParts identifies the minimum set of parts for a valid PPTX.
-func requiredParts() map[string]string {
-	return map[string]string{
-		contentTypesPath:       "Content types definition",
-		"_rels/.rels":          "Package relationships",
-		"ppt/presentation.xml": "Presentation document",
-		presentationRelsPath:   "Presentation relationships",
-	}
+// requiredParts is the minimum set of parts for a valid PPTX.
+//
+//nolint:gochecknoglobals // read-only lookup table, never mutated
+var requiredParts = map[string]string{
+	contentTypesPath:       "Content types definition",
+	"_rels/.rels":          "Package relationships",
+	"ppt/presentation.xml": "Presentation document",
+	presentationRelsPath:   "Presentation relationships",
 }
 
 // Validate performs a comprehensive validation check on the package.
 func (v *Validator) Validate() []Issue {
 	v.issues = nil
+	v.keys = v.provider.Keys() // computed once; shared by all check functions below
 	v.checkRequiredParts()
 	v.checkXMLValidity()
 	v.checkRelationships()
@@ -81,7 +83,7 @@ func (v *Validator) Validate() []Issue {
 }
 
 func (v *Validator) checkRequiredParts() {
-	for p, desc := range requiredParts() {
+	for p, desc := range requiredParts {
 		if !v.provider.Has(p) {
 			v.issues = append(v.issues, Issue{
 				Code:        CodeMissingPart,
@@ -95,7 +97,7 @@ func (v *Validator) checkRequiredParts() {
 }
 
 func (v *Validator) checkXMLValidity() {
-	paths := v.provider.Keys()
+	paths := v.keys
 	issuesChan := make(chan Issue, len(paths))
 	var wg sync.WaitGroup
 
@@ -150,7 +152,7 @@ func (v *Validator) validateXML(data []byte) error {
 }
 
 func (v *Validator) checkRelationships() {
-	paths := v.provider.Keys()
+	paths := v.keys
 	issuesChan := make(chan []Issue, len(paths))
 	var wg sync.WaitGroup
 

@@ -1,7 +1,7 @@
 package editorcommon
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -59,15 +59,20 @@ type EditorSlideRef struct {
 	Title   string
 }
 
+// xmlEscaper is a package-level replacer so XMLEscape never allocates.
+//
+//nolint:gochecknoglobals // read-only package-level replacer, never mutated
+var xmlEscaper = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+	"'", "&apos;",
+)
+
 // XMLEscape provides basic XML attribute escaping.
 func XMLEscape(value string) string {
-	return strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		`"`, "&quot;",
-		"'", "&apos;",
-	).Replace(value)
+	return xmlEscaper.Replace(value)
 }
 
 // CanonicalPartPath cleans a path to use forward slashes and removes leading slash.
@@ -110,12 +115,12 @@ func RelsPathFor(partPath string) string {
 }
 
 // ParseRelationshipNumber extracts the numeric part of an rId string.
+// Uses strconv.Atoi (zero-alloc) instead of fmt.Sscanf to avoid scanner allocation.
 func ParseRelationshipNumber(id string) (int, bool) {
 	if !strings.HasPrefix(id, "rId") {
 		return 0, false
 	}
-	var num int
-	_, err := fmt.Sscanf(id, "rId%d", &num)
+	num, err := strconv.Atoi(id[3:])
 	if err != nil {
 		return 0, false
 	}
@@ -135,18 +140,21 @@ func NextRelationshipNumber(rels []EditorRelationship) int {
 }
 
 // ParseSlidePartNumber extracts the numeric part of a slide part name (e.g., slide1.xml).
+// Uses strconv.Atoi (zero-alloc) instead of fmt.Sscanf to avoid scanner allocation.
 func ParseSlidePartNumber(partPath string) (int, bool) {
 	lastSlash := strings.LastIndex(partPath, "/")
 	base := partPath
 	if lastSlash >= 0 {
 		base = partPath[lastSlash+1:]
 	}
-	if !strings.HasPrefix(base, "slide") || !strings.HasSuffix(base, ".xml") {
+	const prefix = "slide"
+	const suffix = ".xml"
+	if !strings.HasPrefix(base, prefix) || !strings.HasSuffix(base, suffix) {
 		return 0, false
 	}
-	var num int
-	_, err := fmt.Sscanf(base, "slide%d.xml", &num)
-	if err != nil {
+	numStr := base[len(prefix) : len(base)-len(suffix)]
+	num, err := strconv.Atoi(numStr)
+	if err != nil || num <= 0 {
 		return 0, false
 	}
 	return num, true

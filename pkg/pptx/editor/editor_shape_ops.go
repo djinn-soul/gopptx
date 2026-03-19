@@ -4,10 +4,21 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"unsafe"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
+
+// shapeCacheEntry caches the parsed shapes for one slide part.
+// dataPtr is the backing-array address of the content slice at the time of caching.
+// It acts as a staleness token: if PartStore returns a different slice (after a Set),
+// the pointer changes and the cache automatically misses — no explicit invalidation needed.
+// uintptr is intentional (not unsafe.Pointer) so it does NOT prevent GC of old data.
+type shapeCacheEntry struct {
+	dataPtr uintptr
+	shapes  []common.Shape
+}
 
 const (
 	shapeTypePicture = "pic"
@@ -25,6 +36,19 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 	content, ok := e.parts.Get(partPath)
 	if !ok {
 		return nil, fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	// Fast path: return a shallow copy from the shape cache if the slide data
+	// hasn't changed since it was last parsed.  The backing-array pointer is a
+	// cheap staleness token — PartStore always stores a new slice on Set(), so a
+	// different pointer means the content changed and we must re-parse.
+	if len(content) > 0 {
+		dataPtr := uintptr(unsafe.Pointer(&content[0]))
+		if entry, hit := e.shapeCache[partPath]; hit && entry.dataPtr == dataPtr {
+			out := make([]common.Shape, len(entry.shapes))
+			copy(out, entry.shapes)
+			return out, nil
+		}
 	}
 
 	parsed, err := parseSlideShapes(content)
@@ -49,7 +73,21 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			Adjustments: p.Adjustments,
 		}
 	}
-	return shapes, nil
+
+	// Populate cache for next call on the same unmodified slide.
+	if len(content) > 0 {
+		if e.shapeCache == nil {
+			e.shapeCache = make(map[string]shapeCacheEntry)
+		}
+		e.shapeCache[partPath] = shapeCacheEntry{
+			dataPtr: uintptr(unsafe.Pointer(&content[0])),
+			shapes:  shapes,
+		}
+	}
+
+	out := make([]common.Shape, len(shapes))
+	copy(out, shapes)
+	return out, nil
 }
 
 // RemoveShapeByIndex removes a shape from the slide by its index.

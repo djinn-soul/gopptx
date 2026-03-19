@@ -232,18 +232,3 @@ func handleHasDigitalSignature(e *PresentationEditor, _ json.RawMessage) (any, e
 	}
 	return map[string]bool{"has_digital_signature": has}, nil
 }
-
-// commandHandlerForHandoutSig routes handout master and digital signature ops.
-// Kept here to avoid bloating command_router_groups.go past the 300-line ceiling.
-func commandHandlerForHandoutSig(op string) (commandHandler, bool) {
-	switch op {
-	case OpGetHandoutMaster:
-		return handleGetHandoutMaster, true
-	case OpUpdateHandoutMaster:
-		return handleUpdateHandoutMaster, true
-	case OpHasDigitalSignature:
-		return handleHasDigitalSignature, true
-	default:
-		return nil, false
-	}
-}
