@@ -115,8 +115,18 @@ func buildShowcaseSlides() ([]pptx.SlideContent, error) {
 }
 
 func layoutHelpersGridSlide() pptx.SlideContent {
-	slide := pptx.NewSlide("Layout Helpers (2x3 Grid)")
-	boxes, _ := pptx.Grid(2, 3, pptx.Inches(0.5))
+	slide := pptx.NewSlide("Layout Helpers (2x3 Grid)").WithTitleOnlyLayout()
+	boxes, _ := pptx.GridInBox(
+		2,
+		3,
+		pptx.Inches(0.4),
+		pptx.Box{
+			X:  pptx.Inches(0.5),
+			Y:  pptx.Inches(1.8),
+			CX: pptx.Inches(8.5),
+			CY: pptx.Inches(4.7),
+		},
+	)
 	for i, box := range boxes {
 		slide = slide.AddShape(
 			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, box.X, box.Y, box.CX, box.CY).
@@ -134,11 +144,12 @@ func flowDiagramSlide() pptx.SlideContent {
 			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(0.9), pptx.Inches(1.8), pptx.Inches(2.6), pptx.Inches(1.1)).
 				WithText("Input").
 				WithFill(pptx.NewShapeFill("D9E1F2")).
-				WithLine(pptx.NewShapeLine("5B9BD5", pptx.Points(1.5))),
+				WithLine(pptx.NewShapeLine("5B9BD5", pptx.Points(1.5))).
+				WithAutoFit(pptx.TextAutoFitNormal),
 		).
 		AddShape(
-			pptx.NewShape(pptx.ShapeTypeFlowChartDecision, pptx.Inches(4.1), pptx.Inches(1.6), pptx.Inches(2.8), pptx.Inches(1.6)).
-				WithText("Validate").
+			pptx.NewShape(pptx.ShapeTypeDiamond, pptx.Inches(3.9), pptx.Inches(1.45), pptx.Inches(3.6), pptx.Inches(2.0)).
+				WithText("Check").
 				WithGradientFill(
 					pptx.NewShapeGradientFill(
 						pptx.ShapeGradientTypeLinear,
@@ -148,7 +159,9 @@ func flowDiagramSlide() pptx.SlideContent {
 						},
 					).WithLinearAngle(35),
 				).
-				WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.5))),
+				WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.5))).
+				WithAutoFit(pptx.TextAutoFitNone).
+				WithTextWrap(pptx.TextWrapNone),
 		).
 		AddConnector(
 			pptx.NewElbowConnector(pptx.Inches(3.5), pptx.Inches(2.35), pptx.Inches(4.1), pptx.Inches(2.35)).
@@ -156,8 +169,7 @@ func flowDiagramSlide() pptx.SlideContent {
 				WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle).
 				WithArrowSize(pptx.ArrowSizeLarge).
 				ConnectStartAuto(1).
-				ConnectEndAuto(2).
-				WithLabel("next"),
+				ConnectEndAuto(2),
 		)
 }
 

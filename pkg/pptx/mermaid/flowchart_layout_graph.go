@@ -50,13 +50,44 @@ func (s *flowchartRenderState) layoutByConnections(connections []FlowConnection)
 			continue
 		}
 		sort.Strings(buckets[d])
+	}
+
+	colMaxWidth := make(map[int]styling.Length, maxDepth+1)
+	for d := range maxDepth + 1 {
+		for _, nodeID := range buckets[d] {
+			node, ok := s.nodeLookup[nodeID]
+			if !ok {
+				continue
+			}
+			width := s.calculateWidth(node.Label)
+			if node.Shape == NodeShapeDiamond && width < styling.Inches(3.2) {
+				width = styling.Inches(3.2)
+			}
+			if width > colMaxWidth[d] {
+				colMaxWidth[d] = width
+			}
+		}
+	}
+
+	colX := make(map[int]styling.Length, maxDepth+1)
+	nextX := s.layout.gridStartX
+	for d := range maxDepth + 1 {
+		colX[d] = nextX
+		colWidth := colMaxWidth[d]
+		if colWidth == 0 {
+			colWidth = s.layout.baseNodeWidth
+		}
+		nextX += colWidth + s.layout.hSpacing
+	}
+
+	for d := range maxDepth + 1 {
 		for row, nodeID := range buckets[d] {
 			node, ok := s.nodeLookup[nodeID]
 			if !ok {
 				continue
 			}
 			width := s.calculateWidth(node.Label)
-			x := s.layout.gridStartX + (stylingLengthFromInt(d) * s.layout.hSpacing)
+			x := colX[d]
 			y := s.layout.gridStartY + (stylingLengthFromInt(row) * s.layout.vSpacing)
 			s.addNodeShape(node, x, y, width)
 		}

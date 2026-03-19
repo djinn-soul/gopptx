@@ -14,25 +14,23 @@ func main() {
 	// Master 1: Blue theme with Arial
 	master1 := pptx.NewMaster().
 		WithBackground(pptx.SlideBackground{Type: pptx.SlideBackgroundSolid, SolidFill: &pptx.ShapeFill{Color: "E3F2FD"}}).
-		WithFooter("Master 1: Professional Blue").
 		WithTitleStyle([]pptx.TextLevelStyle{
 			{Level: 0, Font: "Arial", SizePt: 44, Bold: true, Color: "0D47A1"},
 		}).
 		WithBodyStyle([]pptx.TextLevelStyle{
-			{Level: 0, SizePt: 28, Color: "1A237E"},
-			{Level: 1, SizePt: 24, Color: "3949AB", BulletChar: "•"},
+			{Level: 0, SizePt: 28, Color: "1A237E", IndentEMU: 342900},
+			{Level: 1, SizePt: 24, Color: "3949AB", IndentEMU: 685800},
 		})
 
 	// Master 2: Warm theme with Calibri
 	master2 := pptx.NewMaster().
 		WithBackground(pptx.SlideBackground{Type: pptx.SlideBackgroundSolid, SolidFill: &pptx.ShapeFill{Color: "FFF3E0"}}).
-		WithFooter("Master 2: Warm Orange").
 		WithTitleStyle([]pptx.TextLevelStyle{
 			{Level: 0, Font: "Calibri", SizePt: 44, Bold: true, Color: "BF360C"},
 		}).
 		WithBodyStyle([]pptx.TextLevelStyle{
-			{Level: 0, SizePt: 28, Color: "E65100"},
-			{Level: 1, SizePt: 24, Color: "EF6C00", BulletChar: "•"},
+			{Level: 0, SizePt: 28, Color: "E65100", IndentEMU: 342900},
+			{Level: 1, SizePt: 24, Color: "EF6C00", IndentEMU: 685800},
 		})
 
 	meta := pptx.Metadata{

@@ -1,106 +1,106 @@
 [
-    {
-        "chart": "area",
-        "fingerprint": "737dfcebd25be8cb45b3c01e1d03e0b00eee050127c8e92ec7701c9012bd77de"
-    },
-    {
-        "chart": "areaStacked",
-        "fingerprint": "a3470f9b18eb0366efdfd86689c0ef4279c0d906cfdd84fa109eb56964ca6372"
-    },
-    {
-        "chart": "areaStacked100",
-        "fingerprint": "ca0e0476d1496f33d53717d349b3442dbf52acb3126d64e6c9838c944d92f7a2"
-    },
-    {
-        "chart": "bar",
-        "fingerprint": "f8096bbdc5603d8bfe94b47d84229ec00706807f80c5bb5ac1acff2b01c43829"
-    },
-    {
-        "chart": "barHorizontal",
-        "fingerprint": "a66e8875da4af5251ca7f7fc3bfb3307700eed2ecff166a5cce6433e617ddba8"
-    },
-    {
-        "chart": "barStacked",
-        "fingerprint": "e0083e9bd317e1d287749bbd837338462d0b2f2443e0ddb86cf6adb07067575a"
-    },
-    {
-        "chart": "barStacked100",
-        "fingerprint": "dea67d2a5fd0ad298ad816b6725658d05d24ecbf3c28029d843c972b452198f9"
-    },
-    {
-        "chart": "barStyled",
-        "fingerprint": "a38c40e92e3b5160850d28f92a97ecd00a0340841266deea381eca8f0bf7597a"
-    },
-    {
-        "chart": "bubble",
-        "fingerprint": "4e703cf9640adcf06b831c2ab46ec1c593c8e45f5d098ba8a7f660aeb42bb1e5"
-    },
-    {
-        "chart": "combo",
-        "fingerprint": "713ca1fbd5b8679c425c226101d62d67155ed6be158a4cf96bc058f2ee306881"
-    },
-    {
-        "chart": "comboStyled",
-        "fingerprint": "74e1d23c86e9a6d760999d7c4359d1cea7649691287a5bbb5bac0b62d83c1efe"
-    },
-    {
-        "chart": "doughnut",
-        "fingerprint": "1d37f3df0454cd5833e6ff723513d24c852c6f1901f705cad9c709c7de16b4ca"
-    },
-    {
-        "chart": "line",
-        "fingerprint": "59725a86b043bb7aed7f387aebe1ca8ee6a402830f376e229e37a0422e0248d6"
-    },
-    {
-        "chart": "lineMarkers",
-        "fingerprint": "ef136cd27da2c240c098ff58a412fc9c282c507eae72c794bbf9a65c4f5981ff"
-    },
-    {
-        "chart": "lineStacked",
-        "fingerprint": "edb41cb1d5d772bc0ece0e9fa9352b8fecc8eb000ab4ad93063c05ef5330b873"
-    },
-    {
-        "chart": "lineStyled",
-        "fingerprint": "aa08df2e8ec290476b0b1815d2c60494b5b87dab45c1af316dd07c8f6da454b5"
-    },
-    {
-        "chart": "pie",
-        "fingerprint": "61969dc947e2c453e9edcd914e78e113aec22a972ad992c06b3ab9a408abf732"
-    },
-    {
-        "chart": "pieStyled",
-        "fingerprint": "6ec9185c777e0f60e8826ab2c0b43f7853cce3d02b21f0b40cc843ea7735419b"
-    },
-    {
-        "chart": "radar",
-        "fingerprint": "10fd67cb07e722ad6ea5e96dfba43e637c945be987c9728a7e64b295bc3afd69"
-    },
-    {
-        "chart": "radarFilled",
-        "fingerprint": "28e9a90f2f8aa77718964744db94c0c3123d02fd7dc6f9bdbc2ba3d217d6695f"
-    },
-    {
-        "chart": "scatter",
-        "fingerprint": "a5eed27e94caa1151d062df3c9888a3af9fcacf2920c0cce3d766b4cf1b0b06a"
-    },
-    {
-        "chart": "scatterLines",
-        "fingerprint": "65f6440b0f21b76ac2226e7f50a96cae608c7c6a1ee8bebdadbf3d8823c87d75"
-    },
-    {
-        "chart": "scatterSmooth",
-        "fingerprint": "a96b51bfbb39188b5c4b8ac3781b665ddfeec06072bff6a47cf543463f5a60d3"
-    },
-    {
-        "chart": "scatterStyled",
-        "fingerprint": "ad85cc2d4cd0a44b5b14b4054a7a4d5e59f677919eb5a6032a9b22cac92d3165"
-    },
-    {
-        "chart": "stockHLC",
-        "fingerprint": "381e09cdcc62d7b0094a70ae431033d243ff91dccf153fe63ae5198187890dec"
-    },
-    {
-        "chart": "stockOHLC",
-        "fingerprint": "a5cec8eefe9dd48b3d3989e94843bb3e08eb96efd66a8262140ff665708aa90c"
-    }
+  {
+    "chart": "area",
+    "fingerprint": "737dfcebd25be8cb45b3c01e1d03e0b00eee050127c8e92ec7701c9012bd77de"
+  },
+  {
+    "chart": "areaStacked",
+    "fingerprint": "a3470f9b18eb0366efdfd86689c0ef4279c0d906cfdd84fa109eb56964ca6372"
+  },
+  {
+    "chart": "areaStacked100",
+    "fingerprint": "ca0e0476d1496f33d53717d349b3442dbf52acb3126d64e6c9838c944d92f7a2"
+  },
+  {
+    "chart": "bar",
+    "fingerprint": "f8096bbdc5603d8bfe94b47d84229ec00706807f80c5bb5ac1acff2b01c43829"
+  },
+  {
+    "chart": "barHorizontal",
+    "fingerprint": "a66e8875da4af5251ca7f7fc3bfb3307700eed2ecff166a5cce6433e617ddba8"
+  },
+  {
+    "chart": "barStacked",
+    "fingerprint": "c33e30bb530310ce522a8a30739ad8fab32021ec1e0f2fef07d24a630b2664c4"
+  },
+  {
+    "chart": "barStacked100",
+    "fingerprint": "edac4f395e24e5f68f7dee2f2674bb8ea37bf66a3edfcb420b12395d59f1155b"
+  },
+  {
+    "chart": "barStyled",
+    "fingerprint": "a38c40e92e3b5160850d28f92a97ecd00a0340841266deea381eca8f0bf7597a"
+  },
+  {
+    "chart": "bubble",
+    "fingerprint": "4e703cf9640adcf06b831c2ab46ec1c593c8e45f5d098ba8a7f660aeb42bb1e5"
+  },
+  {
+    "chart": "combo",
+    "fingerprint": "713ca1fbd5b8679c425c226101d62d67155ed6be158a4cf96bc058f2ee306881"
+  },
+  {
+    "chart": "comboStyled",
+    "fingerprint": "74e1d23c86e9a6d760999d7c4359d1cea7649691287a5bbb5bac0b62d83c1efe"
+  },
+  {
+    "chart": "doughnut",
+    "fingerprint": "1d37f3df0454cd5833e6ff723513d24c852c6f1901f705cad9c709c7de16b4ca"
+  },
+  {
+    "chart": "line",
+    "fingerprint": "a8e92dacdc8eadb065b84ff9ea59ea68ed02e66132e43350b02b92cd1091eeb3"
+  },
+  {
+    "chart": "lineMarkers",
+    "fingerprint": "ef136cd27da2c240c098ff58a412fc9c282c507eae72c794bbf9a65c4f5981ff"
+  },
+  {
+    "chart": "lineStacked",
+    "fingerprint": "6fcbe2959e265aa3846602ce37cda2bf2fccfad0699d85ee0b0d9d5eb1a24931"
+  },
+  {
+    "chart": "lineStyled",
+    "fingerprint": "485695645344050bf83666542eaead301c251b3097bdd66759cef9f57e859f4c"
+  },
+  {
+    "chart": "pie",
+    "fingerprint": "61969dc947e2c453e9edcd914e78e113aec22a972ad992c06b3ab9a408abf732"
+  },
+  {
+    "chart": "pieStyled",
+    "fingerprint": "6ec9185c777e0f60e8826ab2c0b43f7853cce3d02b21f0b40cc843ea7735419b"
+  },
+  {
+    "chart": "radar",
+    "fingerprint": "62371d86b8e1ea164c605434e2e7e78d606d124e84000a15cbc8ee16e4fa6b21"
+  },
+  {
+    "chart": "radarFilled",
+    "fingerprint": "9020ecf66955c4b4b4abb480923b5d5428198cc4f8363ed8439e81987bc447e1"
+  },
+  {
+    "chart": "scatter",
+    "fingerprint": "a5eed27e94caa1151d062df3c9888a3af9fcacf2920c0cce3d766b4cf1b0b06a"
+  },
+  {
+    "chart": "scatterLines",
+    "fingerprint": "65f6440b0f21b76ac2226e7f50a96cae608c7c6a1ee8bebdadbf3d8823c87d75"
+  },
+  {
+    "chart": "scatterSmooth",
+    "fingerprint": "a96b51bfbb39188b5c4b8ac3781b665ddfeec06072bff6a47cf543463f5a60d3"
+  },
+  {
+    "chart": "scatterStyled",
+    "fingerprint": "ad85cc2d4cd0a44b5b14b4054a7a4d5e59f677919eb5a6032a9b22cac92d3165"
+  },
+  {
+    "chart": "stockHLC",
+    "fingerprint": "5256316e18150e58d211588f62d1b586cecba60f78ad8a5e2d86b25dc919ac34"
+  },
+  {
+    "chart": "stockOHLC",
+    "fingerprint": "efa3a4d44b4845d46960027e7eb7326eaeafd73665263dadfd40b63fe15d2d1f"
+  }
 ]

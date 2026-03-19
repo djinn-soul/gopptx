@@ -61,6 +61,10 @@ func chartSeriesWithValues(chart *ChartSpec, seriesName string, values []float64
 <c:tx><c:v>`)
 	b.WriteString(Escape(seriesName))
 	b.WriteString(`</c:v></c:tx>
+<c:spPr>
+<a:ln><a:noFill/></a:ln>
+</c:spPr>
+<c:marker><c:symbol val="none"/></c:marker>
 <c:cat><c:strLit>
 <c:ptCount val="`)
 	b.WriteString(strconv.Itoa(len(chart.Categories)))
@@ -103,8 +107,8 @@ func stockVisualsXML(chart *ChartSpec) string {
 		b.WriteString(`
 <c:upDownBars>
 <c:gapWidth val="150"/>
-<c:upBars/>
-<c:downBars/>
+<c:upBars><c:spPr><a:solidFill><a:srgbClr val="00B050"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr></c:upBars>
+<c:downBars><c:spPr><a:solidFill><a:srgbClr val="C0504D"/></a:solidFill><a:ln><a:noFill/></a:ln></c:spPr></c:downBars>
 </c:upDownBars>`)
 	}
 	return b.String()
