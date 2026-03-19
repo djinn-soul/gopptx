@@ -3,25 +3,14 @@ package slide
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-var (
-	sldIDLstPattern          = regexp.MustCompile(`(?s)<p:sldIdLst>.*?</p:sldIdLst>|<p:sldIdLst\s*/>`)
-	notesMasterIDListPattern = regexp.MustCompile(
-		`(?s)<p:notesMasterIdLst>.*?</p:notesMasterIdLst>|<p:notesMasterIdLst\s*/>`,
-	)
-	slideMasterIDListPattern = regexp.MustCompile(`(?s)<p:sldMasterIdLst>.*?</p:sldMasterIdLst>|<p:sldMasterIdLst\s*/>`)
-	slideMasterIDPattern     = regexp.MustCompile(`id="(\d+)"`)
-)
-
 const (
 	initialSlideMasterID int64 = 2147483648
-	patternSubmatchLen   int   = 2
 )
 
 func RewritePresentationSlideList(current []byte, slides []common.EditorSlideRef) (string, error) {
@@ -31,18 +20,10 @@ func RewritePresentationSlideList(current []byte, slides []common.EditorSlideRef
 	source := string(current)
 
 	replacement := BuildPresentationSlideListXML(slides)
-	if !sldIDLstPattern.MatchString(source) {
+	result, found := replaceFirstXMLTagBlock(source, "p:sldIdLst", replacement)
+	if !found {
 		return "", errors.New("presentation XML does not contain <p:sldIdLst>")
 	}
-
-	found := false
-	result := sldIDLstPattern.ReplaceAllStringFunc(source, func(match string) string {
-		if found {
-			return match
-		}
-		found = true
-		return replacement
-	})
 	return result, nil
 }
 
@@ -72,8 +53,8 @@ func RewritePresentationNotesMasterList(current []byte, relID string, enable boo
 	source := string(current)
 
 	if !enable {
-		if notesMasterIDListPattern.MatchString(source) {
-			return notesMasterIDListPattern.ReplaceAllString(source, ""), nil
+		if result, found := replaceAllXMLTagBlocks(source, "p:notesMasterIdLst", ""); found {
+			return result, nil
 		}
 		return source, nil
 	}
@@ -84,8 +65,8 @@ func RewritePresentationNotesMasterList(current []byte, relID string, enable boo
 	replacement := "<p:notesMasterIdLst>\n<p:notesMasterId r:id=\"" + common.XMLEscape(
 		relID,
 	) + "\"/>\n</p:notesMasterIdLst>"
-	if notesMasterIDListPattern.MatchString(source) {
-		return notesMasterIDListPattern.ReplaceAllString(source, replacement), nil
+	if result, found := replaceAllXMLTagBlocks(source, "p:notesMasterIdLst", replacement); found {
+		return result, nil
 	}
 
 	if idx := strings.Index(source, "</p:sldMasterIdLst>"); idx >= 0 {
@@ -107,32 +88,13 @@ func RewritePresentationSlideMasterList(current []byte, relID string) (string, e
 	}
 	source := string(current)
 
-	matches := slideMasterIDPattern.FindAllStringSubmatch(source, -1)
-	nextMasterID := initialSlideMasterID
-	for _, m := range matches {
-		if len(m) != patternSubmatchLen {
-			continue
-		}
-		val, err := strconv.ParseInt(m[1], 10, 64)
-		if err != nil {
-			continue
-		}
-		if val >= nextMasterID {
-			nextMasterID = val + 1
-		}
-	}
+	nextMasterID := scanNextIDAttribute(source, initialSlideMasterID)
 
 	newEntry := fmt.Sprintf(`<p:sldMasterId id="%d" r:id="%s"/>`, nextMasterID, common.XMLEscape(relID))
-	if slideMasterIDListPattern.MatchString(source) {
-		return slideMasterIDListPattern.ReplaceAllStringFunc(source, func(match string) string {
-			if strings.Contains(match, "</p:sldMasterIdLst>") {
-				if strings.Contains(match, "<p:sldMasterId") {
-					return strings.Replace(match, "</p:sldMasterIdLst>", "\n"+newEntry+"\n</p:sldMasterIdLst>", 1)
-				}
-				return "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>"
-			}
-			return "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>"
-		}), nil
+	if result, found := replaceAllXMLTagBlocksFunc(source, "p:sldMasterIdLst", func(match string) string {
+		return rewriteSlideMasterListBlock(match, newEntry)
+	}); found {
+		return result, nil
 	}
 
 	insertAfter := "</p:notesMasterIdLst>"
@@ -146,4 +108,35 @@ func RewritePresentationSlideMasterList(current []byte, relID string) (string, e
 		return source[:idx] + replacement + source[idx:], nil
 	}
 	return "", errors.New("presentation XML does not contain insertion point for sldMasterIdLst")
+}
+
+func scanNextIDAttribute(source string, initial int64) int64 {
+	nextID := initial
+	remaining := source
+
+	for {
+		idx := strings.Index(remaining, `id="`)
+		if idx < 0 {
+			return nextID
+		}
+		start := idx + len(`id="`)
+		end := start
+		for end < len(remaining) && remaining[end] >= '0' && remaining[end] <= '9' {
+			end++
+		}
+		if end > start && end < len(remaining) && remaining[end] == '"' {
+			if val, err := strconv.ParseInt(remaining[start:end], 10, 64); err == nil && val >= nextID {
+				nextID = val + 1
+			}
+		}
+		remaining = remaining[end:]
+	}
+}
+
+func rewriteSlideMasterListBlock(match, newEntry string) string {
+	const closeTag = "</p:sldMasterIdLst>"
+	if strings.Contains(match, closeTag) && strings.Contains(match, "<p:sldMasterId") {
+		return strings.Replace(match, closeTag, "\n"+newEntry+"\n"+closeTag, 1)
+	}
+	return "<p:sldMasterIdLst>\n" + newEntry + "\n</p:sldMasterIdLst>"
 }

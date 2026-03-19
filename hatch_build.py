@@ -1,5 +1,6 @@
 """Custom build hook for building Go bridge during wheel build."""
 
+import os
 import pathlib
 import subprocess  # noqa: S404
 import sys
@@ -10,6 +11,11 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 class CustomBuildHook(BuildHookInterface):
     """Build hook to compile Go shared library for Python bindings."""
+
+    @staticmethod
+    def _release_build_enabled() -> bool:
+        raw = os.getenv("GOPPTX_RELEASE_BUILD", "").strip().lower()
+        return raw in {"1", "true", "yes", "on"}
 
     def initialize(self, version: str, build_data: dict[str, Any]) -> None:
         """Initialize the build hook and compile Go shared library.
@@ -43,6 +49,8 @@ class CustomBuildHook(BuildHookInterface):
             "-buildmode=c-shared",
             str(go_bridge_src),
         ]
+        if self._release_build_enabled():
+            cmd[2:2] = ["-trimpath", "-buildvcs=false", "-ldflags=-s -w"]
 
         try:
             subprocess.run(cmd, check=True, capture_output=True, text=True)

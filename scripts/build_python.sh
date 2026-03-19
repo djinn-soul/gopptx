@@ -12,7 +12,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 echo "Building Go engine for Python..."
-go build -o "$outDir/$libName" -buildmode=c-shared bindings/c/bridge.go
+if [[ "${GOPPTX_RELEASE_BUILD:-}" == "1" || "${GOPPTX_RELEASE_BUILD:-}" == "true" ]]; then
+    go build -trimpath -buildvcs=false -ldflags="-s -w" -o "$outDir/$libName" -buildmode=c-shared bindings/c/bridge.go
+else
+    go build -o "$outDir/$libName" -buildmode=c-shared bindings/c/bridge.go
+fi
 
 echo "Build successful!"
 echo "Copying $libName to Python package directory..."
