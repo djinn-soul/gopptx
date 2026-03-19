@@ -217,8 +217,12 @@ func buildPropsDemoSlides() []pptx.SlideContent {
 				WithLine(pptx.NewShapeLine("E6B17A", pptx.Points(1.2))).
 				WithText("NPS\n61"),
 		).
-		AddBullet("Cards make theme color changes easy to inspect.").
-		AddBullet("This sample is intentionally shape-heavy for visual validation.")
+		AddShape(
+			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, pptx.Inches(0.8), pptx.Inches(4.35), pptx.Inches(11.8), pptx.Inches(1.2)).
+				WithFill(pptx.NewShapeFill("F3F8FF")).
+				WithLine(pptx.NewShapeLine("BFD2EA", pptx.Points(1))).
+				WithText("• Cards make theme color changes easy to inspect.\n• This sample is intentionally shape-heavy for visual validation."),
+		)
 
 	table := pptx.NewSlide("Delivery Plan").WithTable(
 		pptx.NewTable([]pptx.Length{pptx.Inches(2.8), pptx.Inches(2.3), pptx.Inches(2.7), pptx.Inches(2.7)}).

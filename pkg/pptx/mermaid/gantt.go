@@ -133,6 +133,7 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 	chartWidth := styling.Inches(6)
 	rowHeight := styling.Inches(0.5)
 	sectionHeight := styling.Inches(0.6)
+	axisHeight := styling.Inches(0.35)
 
 	currentY := startY
 
@@ -151,6 +152,43 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 			WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
 		shapesList = append(shapesList, titleShape)
 	}
+
+	// Timeline axis and coarse tick labels so bars have temporal context.
+	axisY := currentY
+	axisLine := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		startX+labelWidth,
+		axisY+axisHeight/2,
+		chartWidth,
+		styling.Emu(19050),
+	).WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
+	shapesList = append(shapesList, axisLine)
+	taskStarts := collectGanttStartLabels(gantt)
+	if len(taskStarts) == 0 {
+		taskStarts = []string{"T1", "T2", "T3"}
+	}
+	for i, tick := range taskStarts {
+		tickX := startX + labelWidth + (styling.Length(i) * chartWidth / styling.Length(max(1, len(taskStarts)-1)))
+		tickShape := shapes.NewShape(
+			shapes.ShapeTypeRectangle,
+			tickX-styling.Emu(9525),
+			axisY+axisHeight/2-styling.Inches(0.06),
+			styling.Emu(19050),
+			styling.Inches(0.12),
+		).WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
+		tickLabel := shapes.NewShape(
+			shapes.ShapeTypeRectangle,
+			tickX-styling.Inches(0.42),
+			axisY,
+			styling.Inches(0.84),
+			styling.Inches(0.22),
+		).WithText(tick).
+			WithFill(shapes.NewShapeFill(theme.Background)).
+			WithLine(shapes.NewShapeLine(theme.Background, styling.Emu(0))).
+			WithAutoFit(shapes.TextAutoFitNormal)
+		shapesList = append(shapesList, tickShape, tickLabel)
+	}
+	currentY += axisHeight + styling.Inches(0.1)
 
 	for _, section := range gantt.Sections {
 		// Section header
@@ -180,12 +218,17 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 				WithFill(shapes.NewShapeFill(theme.Background)).
 				WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
 				WithAutoFit(shapes.TextAutoFitNormal).
+				WithVerticalAnchor(shapes.TextAnchorMiddle).
 				WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
 			shapesList = append(shapesList, labelShape)
 
-			// Task bar (simplified layout: all tasks same width for now as we don't parse dates fully)
-			barWidth := styling.Inches(2)
+			// Task bar with duration text shown in-bar.
+			barWidth := styling.Inches(2.2)
 			barX := startX + labelWidth + styling.Inches(0.5)
+			barText := task.Duration
+			if barText == "" {
+				barText = task.Start
+			}
 
 			barShape := shapes.NewShape(
 				shapes.ShapeTypeRoundedRectangle,
@@ -195,6 +238,8 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 				rowHeight-styling.Inches(0.1),
 			).WithFill(shapes.NewShapeFill(theme.PrimaryFill)).
 				WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+				WithText(barText).
+				WithVerticalAnchor(shapes.TextAnchorMiddle).
 				WithAutoFit(shapes.TextAutoFitNormal)
 			shapesList = append(shapesList, barShape)
 
@@ -213,4 +258,25 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 			CY: currentY - (startY - styling.Inches(0.8)),
 		},
 	}
+}
+
+func collectGanttStartLabels(gantt *GanttDiagram) []string {
+	seen := make(map[string]struct{})
+	labels := make([]string, 0, 6)
+	for _, section := range gantt.Sections {
+		for _, task := range section.Tasks {
+			if task.Start == "" {
+				continue
+			}
+			if _, ok := seen[task.Start]; ok {
+				continue
+			}
+			seen[task.Start] = struct{}{}
+			labels = append(labels, task.Start)
+			if len(labels) >= 6 {
+				return labels
+			}
+		}
+	}
+	return labels
 }

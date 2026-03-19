@@ -52,13 +52,7 @@ func createNodeShape(node *FlowNode, x, y, width, height styling.Length, theme T
 		fillColor = theme.SecondaryFill
 	}
 
-	// Diamond shapes need more height for text to avoid clipping
-	nodeHeight := height
-	if node.Shape == NodeShapeDiamond {
-		nodeHeight = height * 2
-	}
-
-	return shapes.NewShape(shapeType, x, y, width, nodeHeight).
+	return shapes.NewShape(shapeType, x, y, width, height).
 		WithFill(shapes.NewShapeFill(fillColor)).
 		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
 		WithText(node.Label).

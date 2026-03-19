@@ -30,7 +30,7 @@ func TestCreateWithSlidesEmbedsBarStackedChart(t *testing.T) {
 	chart := charts.NewBarStackedChart([]string{"A", "B"}, []float64{1, 2})
 	xml := chartXMLForSlide(t, pptx.NewSlide("S").WithBarStackedChart(chart))
 	assertXMLContainsAll(t, xml, []string{
-		`<c:barDir val="col"/>`,
+		`<c:barDir val="bar"/>`,
 		`<c:grouping val="stacked"/>`,
 	})
 }
@@ -47,7 +47,7 @@ func TestCreateWithSlidesEmbedsBarStacked100Chart(t *testing.T) {
 	chart := charts.NewBarStacked100Chart([]string{"A", "B"}, []float64{1, 2})
 	xml := chartXMLForSlide(t, pptx.NewSlide("S").WithBarStacked100Chart(chart))
 	assertXMLContainsAll(t, xml, []string{
-		`<c:barDir val="col"/>`,
+		`<c:barDir val="bar"/>`,
 		`<c:grouping val="percentStacked"/>`,
 	})
 }

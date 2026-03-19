@@ -1,6 +1,7 @@
 package mermaid
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -37,6 +38,8 @@ func parseState(code string) *StateDiagram {
 	lines := ParseLines(code)
 	states := make(map[string]*StateNode)
 	var transitions []StateTransition
+	startMarkerCount := 0
+	endMarkerCount := 0
 
 	for _, line := range lines {
 		if strings.HasPrefix(line, "stateDiagram") {
@@ -44,6 +47,8 @@ func parseState(code string) *StateDiagram {
 		}
 
 		if from, to, label, found := splitStateTransition(line); found {
+			from = resolveStateEndpoint(from, &startMarkerCount, true)
+			to = resolveStateEndpoint(to, &endMarkerCount, false)
 			transitions = append(transitions, StateTransition{
 				From:  from,
 				To:    to,
@@ -97,12 +102,27 @@ func ensureState(states map[string]*StateNode, id string) {
 	if _, ok := states[id]; !ok {
 		stateType := "normal"
 		label := id
-		if id == "[*]" {
-			stateType = "start" // Can be start or end depending on context, but we'll handle it in rendering
+		if strings.HasPrefix(id, "__start_") {
+			stateType = "start"
+			label = ""
+		}
+		if strings.HasPrefix(id, "__end_") {
+			stateType = "end"
 			label = ""
 		}
 		states[id] = &StateNode{ID: id, Label: label, Type: stateType}
 	}
+}
+
+func resolveStateEndpoint(id string, counter *int, isFrom bool) string {
+	if id != "[*]" {
+		return id
+	}
+	(*counter)++
+	if isFrom {
+		return fmt.Sprintf("__start_%d", *counter)
+	}
+	return fmt.Sprintf("__end_%d", *counter)
 }
 
 func splitStateTransition(line string) (string, string, string, bool) {
@@ -139,21 +159,22 @@ func generateStateElements(diagram *StateDiagram, theme Theme) DiagramElements {
 	}
 
 	statePositions := make(map[string]struct{ x, y styling.Length })
+	stateSizes := make(map[string]struct{ w, h styling.Length })
 	stateShapeIndices := make(map[string]int)
 	bounds := newStateBounds()
 
 	for i, state := range diagram.States {
 		x, y := stateGridPosition(i, layout)
-		statePositions[state.ID] = struct{ x, y styling.Length }{x, y}
-
 		shape := stateNodeShape(state, x, y, layout, theme)
+		statePositions[state.ID] = struct{ x, y styling.Length }{shape.X, shape.Y}
+		stateSizes[state.ID] = struct{ w, h styling.Length }{shape.CX, shape.CY}
 		shapesList = append(shapesList, shape)
 		bounds.includeShape(shape)
 		stateShapeIndices[state.ID] = len(shapesList)
 	}
 
 	for _, trans := range diagram.Transitions {
-		connector, label, ok := stateTransitionShapes(trans, statePositions, stateShapeIndices, layout, theme)
+		connector, label, ok := stateTransitionShapes(trans, statePositions, stateSizes, stateShapeIndices, theme)
 		if !ok {
 			continue
 		}
@@ -232,15 +253,23 @@ func stateGridPosition(index int, layout stateLayout) (styling.Length, styling.L
 }
 
 func stateNodeShape(state StateNode, x styling.Length, y styling.Length, layout stateLayout, theme Theme) shapes.Shape {
-	if state.ID == "[*]" {
-		circleSize := styling.Inches(0.3)
+	if state.Type == "start" || state.Type == "end" {
+		circleSize := styling.Inches(0.36)
+		lineColor := theme.PrimaryStroke
+		lineWeight := theme.LineWeight
+		fillColor := theme.PrimaryStroke
+		if state.Type == "end" {
+			fillColor = theme.Background
+			lineWeight = theme.LineWeight * 2
+		}
 		return shapes.NewShape(
 			shapes.ShapeTypeEllipse,
 			x+(layout.stateWidth-circleSize)/2,
 			y+(layout.stateHeight-circleSize)/2,
 			circleSize,
 			circleSize,
-		).WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
+		).WithFill(shapes.NewShapeFill(fillColor)).
+			WithLine(shapes.NewShapeLine(lineColor, lineWeight))
 	}
 	return shapes.NewShape(
 		shapes.ShapeTypeRoundedRectangle,
@@ -267,17 +296,19 @@ type stateTransitionGeometry struct {
 func stateTransitionShapes(
 	trans StateTransition,
 	statePositions map[string]struct{ x, y styling.Length },
+	stateSizes map[string]struct{ w, h styling.Length },
 	stateShapeIndices map[string]int,
-	layout stateLayout,
 	theme Theme,
 ) (shapes.Connector, *shapes.Shape, bool) {
 	fromPos, fromExists := statePositions[trans.From]
 	toPos, toExists := statePositions[trans.To]
-	if !fromExists || !toExists {
+	fromSize, fromSizeOK := stateSizes[trans.From]
+	toSize, toSizeOK := stateSizes[trans.To]
+	if !fromExists || !toExists || !fromSizeOK || !toSizeOK {
 		return shapes.Connector{}, nil, false
 	}
 
-	geom := stateTransitionEndpoints(fromPos, toPos, layout.stateWidth, layout.stateHeight)
+	geom := stateTransitionEndpoints(fromPos, toPos, fromSize.w, toSize.w, fromSize.h, toSize.h)
 	connector := shapes.NewConnector(shapes.ConnectorTypeElbow, geom.startX, geom.startY, geom.endX, geom.endY).
 		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
 		WithArrows(shapes.ArrowTypeNone, shapes.ArrowTypeTriangle)
@@ -299,43 +330,45 @@ func stateTransitionShapes(
 func stateTransitionEndpoints(
 	fromPos struct{ x, y styling.Length },
 	toPos struct{ x, y styling.Length },
-	stateWidth styling.Length,
-	stateHeight styling.Length,
+	fromWidth styling.Length,
+	toWidth styling.Length,
+	fromHeight styling.Length,
+	toHeight styling.Length,
 ) stateTransitionGeometry {
 	switch {
 	case fromPos.x < toPos.x:
 		return stateTransitionGeometry{
-			startX:    fromPos.x + stateWidth,
-			startY:    fromPos.y + stateHeight/2,
+			startX:    fromPos.x + fromWidth,
+			startY:    fromPos.y + fromHeight/2,
 			endX:      toPos.x,
-			endY:      toPos.y + stateHeight/2,
+			endY:      toPos.y + toHeight/2,
 			startSite: shapes.ConnectionSiteRight,
 			endSite:   shapes.ConnectionSiteLeft,
 		}
 	case fromPos.x > toPos.x:
 		return stateTransitionGeometry{
 			startX:    fromPos.x,
-			startY:    fromPos.y + stateHeight/2,
-			endX:      toPos.x + stateWidth,
-			endY:      toPos.y + stateHeight/2,
+			startY:    fromPos.y + fromHeight/2,
+			endX:      toPos.x + toWidth,
+			endY:      toPos.y + toHeight/2,
 			startSite: shapes.ConnectionSiteLeft,
 			endSite:   shapes.ConnectionSiteRight,
 		}
 	case fromPos.y < toPos.y:
 		return stateTransitionGeometry{
-			startX:    fromPos.x + stateWidth/2,
-			startY:    fromPos.y + stateHeight,
-			endX:      toPos.x + stateWidth/2,
+			startX:    fromPos.x + fromWidth/2,
+			startY:    fromPos.y + fromHeight,
+			endX:      toPos.x + toWidth/2,
 			endY:      toPos.y,
 			startSite: shapes.ConnectionSiteBottom,
 			endSite:   shapes.ConnectionSiteTop,
 		}
 	default:
 		return stateTransitionGeometry{
-			startX:    fromPos.x + stateWidth/2,
+			startX:    fromPos.x + fromWidth/2,
 			startY:    fromPos.y,
-			endX:      toPos.x + stateWidth/2,
-			endY:      toPos.y + stateHeight,
+			endX:      toPos.x + toWidth/2,
+			endY:      toPos.y + toHeight,
 			startSite: shapes.ConnectionSiteTop,
 			endSite:   shapes.ConnectionSiteBottom,
 		}
@@ -360,8 +393,8 @@ func stateTransitionLabelShape(
 		midY-labelHeight/2,
 		labelWidth,
 		labelHeight,
-	).WithFill(shapes.NewShapeFill(theme.Background)).
-		WithText(label).
+	).WithText(label).
+		WithFill(shapes.NewShapeFill(theme.Background)).
 		WithAutoFit(shapes.TextAutoFitNormal).
 		WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
 }

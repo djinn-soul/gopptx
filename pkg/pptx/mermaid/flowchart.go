@@ -384,21 +384,25 @@ func (s *flowchartRenderState) calculateWidth(label string) styling.Length {
 }
 
 func (s *flowchartRenderState) addNodeShape(node FlowNode, x, y, width styling.Length) {
-	if node.Shape == NodeShapeDiamond && width < styling.Inches(2.6) {
-		width = styling.Inches(2.6)
+	if node.Shape == NodeShapeDiamond && width < styling.Inches(3.2) {
+		width = styling.Inches(3.2)
 	}
+	nodeHeight := s.renderedNodeHeight(node.Shape)
 	s.nodePositions[node.ID] = flowchartPoint{x: x, y: y}
 	s.nodeWidths[node.ID] = width
-	shape := createNodeShape(&node, x, y, width, s.layout.nodeHeight, s.theme)
+	shape := createNodeShape(&node, x, y, width, nodeHeight, s.theme)
 	s.shapes = append(s.shapes, shape)
 	s.nodeShapeIndex[node.ID] = len(s.shapes)
-	// Track the actual height of the shape (diamonds are taller)
-	height := s.layout.nodeHeight
-	if node.Shape == NodeShapeDiamond {
-		height = (s.layout.nodeHeight * 3) / 2
+	// Track the exact rendered dimensions so connector anchors match visual geometry.
+	s.nodeHeights[node.ID] = nodeHeight
+	s.bounds.include(x, y, width, nodeHeight)
+}
+
+func (s *flowchartRenderState) renderedNodeHeight(shape NodeShape) styling.Length {
+	if shape == NodeShapeDiamond {
+		return s.layout.nodeHeight * 2
 	}
-	s.nodeHeights[node.ID] = height
-	s.bounds.include(x, y, width, height)
+	return s.layout.nodeHeight
 }
 
 func (s *flowchartRenderState) addConnectors(connections []FlowConnection) {
@@ -517,9 +521,12 @@ func (s *flowchartRenderState) connectorLabelShape(
 	label string,
 	geometry flowConnectorGeometry,
 ) shapes.Shape {
-	labelX := (geometry.startX*2 + geometry.endX) / 3
+	labelX := (geometry.startX + geometry.endX) / 2
 	labelY := (geometry.startY + geometry.endY) / 2
-	if geometry.endY >= geometry.startY {
+	if s.isHorizontal {
+		// Keep LR labels off the connector stroke to improve legibility.
+		labelY -= styling.Inches(0.16)
+	} else if geometry.endY >= geometry.startY {
 		labelY += styling.Inches(0.18)
 	} else {
 		labelY -= styling.Inches(0.18)
@@ -530,9 +537,9 @@ func (s *flowchartRenderState) connectorLabelShape(
 		labelY-s.layout.labelHeight/2,
 		s.layout.labelWidth,
 		s.layout.labelHeight,
-	).WithFill(shapes.NewShapeFill(s.theme.Background)).
-		WithText(label).
+	).WithText(label).
 		WithAutoFit(shapes.TextAutoFitNormal)
+	labelShape.Fill = nil
 	labelShape.Line = nil
 	return labelShape
 }
