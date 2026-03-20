@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ...presentation.presentation import Presentation
+    from ...presentation.charts.chart_types import ChartType
     from ...schemas import SlideChartRef
     from .data import CategoryChartData, XyChartData
 
@@ -27,14 +28,48 @@ class SlideChartMixin:
 
     def add_chart(
         self,
-        chart_type: str,
+        chart_type: str | ChartType,
         categories: list[str] | CategoryChartData | XyChartData,
         values_or_series: list[float]
         | list[dict[str, str | list[float]]]
         | None = None,
         **kwargs: str | tuple[float, float, float, float],
     ) -> int:
-        """Add a chart and invalidate shape/text caches when available."""
+        """Add a chart to this slide.
+
+        Args:
+            chart_type: Chart type constant (ChartType enum value).
+                Must be one of: ChartType.COLUMN, ChartType.LINE,
+                ChartType.PIE, ChartType.SCATTER, ChartType.AREA,
+                ChartType.RADAR, ChartType.BUBBLE, etc.
+            categories: List of category labels or ChartData builder.
+            values_or_series: List of values or list of series dicts.
+            **kwargs: Additional options (bounds, title, etc.)
+
+        Returns:
+            Shape ID of the created chart.
+
+        Examples:
+            # Using ChartType constants (required)
+            from gopptx.presentation.charts import ChartType
+
+            chart_id = slide.add_chart(
+                ChartType.COLUMN,
+                ["Q1", "Q2", "Q3"],
+                [100, 200, 150],
+                title="Sales",
+                bounds=(100, 100, 400, 300),
+            )
+
+            # Other chart types
+            chart_id = slide.add_chart(
+                ChartType.PIE,
+                ["A", "B", "C"],
+                [30.0, 40.0, 30.0],
+                title="Distribution",
+                bounds=(100, 100, 400, 300),
+            )
+        """
         chart_id = self._presentation.add_chart(
             self.index, chart_type, categories, values_or_series, **kwargs
         )

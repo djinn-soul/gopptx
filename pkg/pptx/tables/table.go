@@ -143,6 +143,40 @@ func (t Table) WithRowHeights(heights []styling.Length) Table {
 	return t
 }
 
+// WithData populates the table with plain-text rows.
+// Clears any previously added rows.
+func (t Table) WithData(data [][]string) Table {
+	t.Rows = make([][]string, 0, len(data))
+	t.renderRows = make([][]TableCell, 0, len(data))
+	t.StyledRows = make([][]TableCell, 0)
+	for _, srcRow := range data {
+		row := make([]string, len(srcRow))
+		copy(row, srcRow)
+		t.Rows = append(t.Rows, row)
+		t.renderRows = append(t.renderRows, plainRowToCells(row))
+	}
+	return t
+}
+
+// WithStyledData populates the table with styled rows.
+// Clears any previously added rows.
+func (t Table) WithStyledData(data [][]TableCell) Table {
+	t.StyledRows = make([][]TableCell, 0, len(data))
+	t.Rows = make([][]string, 0, len(data))
+	t.renderRows = make([][]TableCell, 0, len(data))
+	for _, row := range data {
+		row := copyTableCells(row)
+		t.StyledRows = append(t.StyledRows, row)
+		t.renderRows = append(t.renderRows, row)
+		textRow := make([]string, len(row))
+		for i, cell := range row {
+			textRow[i] = cell.Text
+		}
+		t.Rows = append(t.Rows, textRow)
+	}
+	return t
+}
+
 // Validate checks the table content for common constraints.
 func (t Table) Validate(slideIndex int) error {
 	return validateTable(t, slideIndex)

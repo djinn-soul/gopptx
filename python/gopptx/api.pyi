@@ -4,6 +4,7 @@ from types import TracebackType
 
 from typing_extensions import Self
 
+from .constants import ConnectorType, ShapeType
 from .schemas import (
     Author,
     BatchCommand,
@@ -297,7 +298,7 @@ class Slide:
     def get_placeholder(self, idx: int) -> Placeholder | None: ...
     def add_shape(
         self,
-        shape_type: str,
+        shape_type: ShapeType,
         bounds: tuple[float, float, float, float],
         *,
         text: str = "",
@@ -316,13 +317,20 @@ class Slide:
         text: str = "",
         **kwargs: str | ShapeProps,
     ) -> int: ...
+    def add_paragraph(
+        self,
+        paragraph: str,
+        *,
+        bounds: tuple[float, float, float, float] | None = None,
+        gap_emu: int | None = None,
+    ) -> int: ...
     def add_textboxes(
         self,
         textboxes: list[dict[str, float | str]],
     ) -> list[int]: ...
     def add_connector(
         self,
-        connector_type: str,
+        connector_type: ConnectorType,
         begin_x: float,
         begin_y: float,
         end_x: float,
@@ -848,6 +856,14 @@ class Presentation:
     def version(self, value: str) -> None: ...
     def add_title_slide(self, title: str) -> Slide: ...
     def add_bullet_slide(self, title: str, bullets: list[str]) -> Slide: ...
+    def add_paragraph_slide(
+        self,
+        title: str,
+        paragraph: str,
+        *,
+        bounds: tuple[float, float, float, float] | None = None,
+        layout: str | None = None,
+    ) -> Slide: ...
     def add_slide_from_markdown(self, markdown: str, *, layout: str = "") -> int: ...
     def add_slide_from_url(self, url: str, *, layout: str = "") -> int: ...
     def __getitem__(self, index: int | slice) -> Slide | list[Slide]: ...
@@ -864,7 +880,7 @@ class Presentation:
     def add_shape(
         self,
         slide_index: int,
-        shape_type: str,
+        shape_type: ShapeType,
         bounds: tuple[float, float, float, float],
         **kwargs: str | ShapeProps,
     ) -> int: ...
@@ -887,7 +903,7 @@ class Presentation:
     def add_connector(
         self,
         slide_index: int,
-        connector_type: str,
+        connector_type: ConnectorType,
         begin_x: float,
         begin_y: float,
         end_x: float,
@@ -1073,11 +1089,11 @@ class Presentation:
 
 class ShapeBuilder:
     def __init__(
-        self, shape_type: str, x: float, y: float, w: float, h: float
+        self, shape_type: ShapeType, x: float, y: float, w: float, h: float
     ) -> None: ...
     @classmethod
     def of(
-        cls, shape_type: str, x: float, y: float, w: float, h: float
+        cls, shape_type: ShapeType, x: float, y: float, w: float, h: float
     ) -> ShapeBuilder: ...
     @classmethod
     def rectangle(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder: ...

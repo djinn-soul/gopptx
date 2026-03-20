@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...api_errors import GopptxError
+from .chart_types import ChartType
 from .state_mixin import PresentationChartStateMixin
 
 if TYPE_CHECKING:
@@ -34,7 +35,67 @@ class PresentationChartMixin(PresentationChartStateMixin):
         | None = None,
         **kwargs: str | tuple[float, float, float, float],
     ) -> int:
-        """Add a chart to a slide."""
+        """Add a chart to a slide.
+
+        Args:
+            slide_index: Zero-based slide index.
+            chart_type: Chart type constant (ChartType enum value).
+                Must be one of: ChartType.COLUMN, ChartType.LINE,
+                ChartType.PIE, ChartType.SCATTER, ChartType.AREA,
+                ChartType.RADAR, ChartType.BUBBLE, etc.
+            categories: List of category labels or ChartData builder.
+            values_or_series: List of values or list of series dicts.
+            **kwargs: Additional options including:
+                - bounds: (x, y, width, height) tuple
+                - title: Chart title string
+
+        Returns:
+            Shape ID of the created chart.
+
+        Raises:
+            ValueError: If chart_type is invalid or bounds format is wrong.
+
+        Examples:
+            # Using ChartType enum constants (required)
+            from gopptx.presentation.charts import ChartType
+
+            chart_id = prs.add_chart(
+                0,
+                ChartType.COLUMN,
+                ["Q1", "Q2", "Q3"],
+                [100, 200, 150],
+                title="Sales",
+                bounds=(100, 100, 400, 300),
+            )
+
+            # Other chart types
+            chart_id = prs.add_chart(
+                0,
+                ChartType.PIE,
+                ["Product A", "Product B", "Product C"],
+                [25.0, 35.0, 40.0],
+                title="Sales by Product",
+                bounds=(100, 100, 400, 300),
+            )
+        """
+        # Validate chart type - only enum values accepted
+        if not isinstance(chart_type, str) or not chart_type:
+            raise ValueError(
+                f"chart_type must be a ChartType constant (e.g., ChartType.COLUMN). "
+                f"Got: {chart_type!r}. Use ChartType.get_all() to see available options."
+            )
+
+        # Check if it's a valid chart type value
+        valid_types = set(ChartType.get_all().values())
+        if chart_type not in valid_types:
+            raise ValueError(
+                f"Invalid chart_type '{chart_type}'. "
+                f"Use ChartType constants like: ChartType.COLUMN, ChartType.LINE, ChartType.PIE. "
+                f"Available raw values: {', '.join(sorted(valid_types))}"
+            )
+
+        normalized_chart_type = chart_type
+
         if hasattr(categories, "to_add_chart_args"):
             chart_builder = cast("CategoryChartData | XyChartData", categories)
             builder_categories, builder_values = chart_builder.to_add_chart_args()
@@ -61,7 +122,7 @@ class PresentationChartMixin(PresentationChartStateMixin):
             ops.OP_ADD_CHART,
             {
                 "slide_index": slide_index,
-                "chart_type": chart_type,
+                "chart_type": normalized_chart_type,
                 "title": title,
                 "categories": categories,
                 "values": values,

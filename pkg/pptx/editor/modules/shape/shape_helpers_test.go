@@ -145,6 +145,15 @@ func TestShapeXMLMutationHelpers(t *testing.T) {
 	if !strings.Contains(updated, "<a:noFill/>") {
 		t.Fatalf("ReplaceStyleInSpPr should inject styleXML: %s", updated)
 	}
+	if strings.Index(updated, "<a:prstGeom") > strings.Index(updated, "<a:noFill/>") {
+		t.Fatalf("ReplaceStyleInSpPr should place style after preset geometry: %s", updated)
+	}
+	normalized := normalizeStyleAfterPresetGeometry(
+		`<a:xfrm/><a:solidFill/><a:ln/><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`,
+	)
+	if strings.Index(normalized, "<a:prstGeom") > strings.Index(normalized, "<a:solidFill/>") {
+		t.Fatalf("normalizeStyleAfterPresetGeometry should move style after geometry: %s", normalized)
+	}
 
 	inner := `<a:solidFill/><a:ln/><a:effectLst/>`
 	stripped := stripSelectiveStyleBlocks(inner, false, true, true)
@@ -183,5 +192,8 @@ func TestPresetShapeRenderingHelpers(t *testing.T) {
 	if !strings.Contains(xml, `prst="ellipse"`) || !strings.Contains(xml, `<a:noFill/>`) ||
 		!strings.Contains(xml, `<p:txBody/>`) {
 		t.Fatalf("BuildPresetShapeXML missing expected blocks: %s", xml)
+	}
+	if strings.Index(xml, `<a:prstGeom prst="ellipse">`) > strings.Index(xml, `<a:noFill/>`) {
+		t.Fatalf("BuildPresetShapeXML should place style after preset geometry: %s", xml)
 	}
 }
