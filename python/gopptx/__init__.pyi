@@ -90,6 +90,16 @@ from .slide import (
     XySeries,
 )
 from .slide.tables.table import Cell, Table
+from .templates import (
+    Milestone,
+    PricingTier,
+    ProposalTemplate,
+    SimpleTemplate,
+    StatusTemplate,
+    TechnicalTemplate,
+    Template,
+    TrainingTemplate,
+)
 from .text import RunBuilder
 
 __all__ = (
@@ -170,6 +180,12 @@ __all__ = (
     "SlideMasters",
     "SlideMetadata",
     "SlideSize",
+    "StatusTemplate",
+    "SimpleTemplate",
+    "ProposalTemplate",
+    "TrainingTemplate",
+    "TechnicalTemplate",
+    "Template",
     "Table",
     "TableCellInfo",
     "TableColumn",
@@ -178,6 +194,8 @@ __all__ = (
     "TableRow",
     "TableRows",
     "TextFrameProps",
+    "Milestone",
+    "PricingTier",
     "XyChartData",
     "XySeries",
 )

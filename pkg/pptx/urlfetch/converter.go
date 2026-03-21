@@ -16,7 +16,6 @@ const (
 	maxListLen    = 180
 	maxQuoteLen   = 180
 	maxCodeBullet = 150
-	utf8ContMask  = 0x80
 	// defaultImageWidthEMU is the default width for embedded images (3 inches).
 	defaultImageWidthEMU int64 = 2743200
 )
@@ -352,7 +351,15 @@ func (c *Converter) appendParagraph(
 	bulletCount int,
 	imageCount int,
 ) (elements.SlideContent, int, int) {
-	return slide.AddBullet(truncateText(block.Text, maxParaLen)), bulletCount + 1, imageCount
+	added := 0
+	for _, chunk := range splitTextIntoChunks(block.Text, maxParaLen) {
+		slide = slide.AddBullet(chunk)
+		added++
+	}
+	if added == 0 {
+		return slide, bulletCount, imageCount
+	}
+	return slide, bulletCount + added, imageCount
 }
 
 func (c *Converter) appendListItem(
@@ -361,7 +368,15 @@ func (c *Converter) appendListItem(
 	bulletCount int,
 	imageCount int,
 ) (elements.SlideContent, int, int) {
-	return slide.AddBullet("• " + truncateText(block.Text, maxListLen)), bulletCount + 1, imageCount
+	added := 0
+	for _, chunk := range splitTextIntoChunks(block.Text, maxListLen) {
+		slide = slide.AddBullet("• " + chunk)
+		added++
+	}
+	if added == 0 {
+		return slide, bulletCount, imageCount
+	}
+	return slide, bulletCount + added, imageCount
 }
 
 func (c *Converter) appendQuote(
@@ -430,7 +445,15 @@ func (c *Converter) appendLink(
 	if block.LinkHref != "" && block.LinkHref != block.Text {
 		linkText = linkText + " (" + block.LinkHref + ")"
 	}
-	return slide.AddBullet("[Link] " + truncateText(linkText, maxListLen)), bulletCount + 1, imageCount
+	added := 0
+	for _, chunk := range splitTextIntoChunks(linkText, maxListLen) {
+		slide = slide.AddBullet("[Link] " + chunk)
+		added++
+	}
+	if added == 0 {
+		return slide, bulletCount, imageCount
+	}
+	return slide, bulletCount + added, imageCount
 }
 
 // buildTable converts raw HTML table rows to a table with a bold header row.
@@ -471,21 +494,44 @@ func buildTable(rows [][]string) tables.Table {
 	return tbl
 }
 
-// truncateText safely shortens text to maxLen chars, breaking at a word boundary.
-func truncateText(text string, maxLen int) string {
-	if len(text) <= maxLen {
-		return text
-	}
-	end := maxLen
-	for end > 0 && !isRuneStart(text[end]) {
-		end--
-	}
-	if idx := strings.LastIndex(text[:end], " "); idx > maxLen/2 {
-		end = idx
-	}
-	return strings.TrimRight(text[:end], " ") + "..."
+// truncateText preserves full extracted text for slide conversion.
+// maxLen is intentionally ignored to avoid silent content loss in URL fetch decks.
+func truncateText(text string, _ int) string {
+	return strings.TrimSpace(text)
 }
 
-func isRuneStart(b byte) bool {
-	return b&0xC0 != utf8ContMask
+func splitTextIntoChunks(text string, maxLen int) []string {
+	normalized := strings.TrimSpace(text)
+	if normalized == "" {
+		return nil
+	}
+	if len(normalized) <= maxLen {
+		return []string{normalized}
+	}
+
+	words := strings.Fields(normalized)
+	if len(words) == 0 {
+		return nil
+	}
+
+	chunks := make([]string, 0, len(words)/8+1)
+	var current strings.Builder
+	for _, word := range words {
+		if current.Len() == 0 {
+			current.WriteString(word)
+			continue
+		}
+		if current.Len()+1+len(word) <= maxLen {
+			current.WriteByte(' ')
+			current.WriteString(word)
+			continue
+		}
+		chunks = append(chunks, current.String())
+		current.Reset()
+		current.WriteString(word)
+	}
+	if current.Len() > 0 {
+		chunks = append(chunks, current.String())
+	}
+	return chunks
 }

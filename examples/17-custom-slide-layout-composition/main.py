@@ -4,9 +4,11 @@ This example demonstrates building structured slide layouts using:
 - Reusable layout functions
 - Consistent positioning and styling
 - Multiple shape types (textbox, rounded rectangles, images)
+- SlideLayoutType enum for type-safe layout specification
 """
 
 from gopptx import Presentation, ShapeType
+from gopptx.presentation.slides import SlideLayoutType
 from gopptx.schemas import Inches
 
 
@@ -105,7 +107,7 @@ def main():
     """Create presentation with custom slide layouts."""
     with Presentation.new("I06 Custom Slide Layout Composition") as prs:
         # ===== Slide 1: Overview =====
-        prs.update_slide(0, layout="blank")
+        prs.update_slide(0, layout=SlideLayoutType.BLANK)
         build_structured_slide(
             prs.slides[0],
             "Custom Slide Layout Composition",
@@ -119,7 +121,9 @@ def main():
         )
 
         # ===== Slide 2: Execution =====
-        slide2 = prs.add_slide("Custom Slide Layout Composition", layout="blank")
+        slide2 = prs.add_slide(
+            "Custom Slide Layout Composition", layout=SlideLayoutType.BLANK
+        )
         build_structured_slide(
             slide2,
             "Custom Slide Layout Composition",

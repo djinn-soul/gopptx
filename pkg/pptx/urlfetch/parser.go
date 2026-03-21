@@ -133,10 +133,6 @@ func isNoRecurseTag(tag string) bool {
 
 const (
 	minTextLen     = 10
-	maxHeadingLen  = 300
-	maxListItemLen = 500
-	maxCodeLen     = 1000
-	maxTableRows   = 30
 	minMainTextLen = 100
 )
 
@@ -263,11 +259,11 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 
 	switch tag {
 	case "h1":
-		if t := cleanText(sel); t != "" && len(t) < maxHeadingLen {
+		if t := cleanText(sel); t != "" {
 			wc.Blocks = append(wc.Blocks, ContentBlock{Kind: KindTitle, Text: t, HeadingLevel: 1})
 		}
 	case "h2", "h3", "h4", "h5", "h6":
-		if t := cleanText(sel); t != "" && len(t) < maxHeadingLen {
+		if t := cleanText(sel); t != "" {
 			lvl := int(tag[1] - '0')
 			wc.Blocks = append(wc.Blocks, ContentBlock{Kind: KindHeading, Text: t, HeadingLevel: lvl})
 		}
@@ -276,7 +272,7 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 			wc.Blocks = append(wc.Blocks, ContentBlock{Kind: KindParagraph, Text: t})
 		}
 	case "li":
-		if t := cleanText(sel); t != "" && len(t) < maxListItemLen {
+		if t := cleanText(sel); t != "" {
 			wc.Blocks = append(wc.Blocks, ContentBlock{Kind: KindListItem, Text: t, Level: depth})
 		}
 	case "blockquote":
@@ -286,7 +282,7 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 	case "pre", "code":
 		if p.cfg.IncludeCode {
 			t := strings.TrimSpace(sel.Text())
-			if t != "" && len(t) <= maxCodeLen {
+			if t != "" {
 				wc.Blocks = append(wc.Blocks, ContentBlock{Kind: KindCode, Text: t})
 			}
 		}
@@ -319,7 +315,7 @@ func (p *WebParser) walkSelection(sel *goquery.Selection, wc *WebContent, depth 
 	case "table":
 		if p.cfg.IncludeTables {
 			rows := extractTableRows(sel)
-			if len(rows) > 0 && len(rows) <= maxTableRows {
+			if len(rows) > 0 {
 				wc.Blocks = append(wc.Blocks, ContentBlock{Kind: KindTable, TableRows: rows})
 			}
 		}
