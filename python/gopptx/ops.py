@@ -29,6 +29,11 @@ OP_APPEND_SHAPE_RUN = "append_shape_run"
 OP_APPLY_THEME = "apply_theme"
 OP_BATCH_EXECUTE = "batch_execute"
 OP_BUILD_FREEFORM = "build_freeform"
+OP_BUILD_PROPOSAL_TEMPLATE = "build_proposal_template"
+OP_BUILD_SIMPLE_TEMPLATE = "build_simple_template"
+OP_BUILD_STATUS_TEMPLATE = "build_status_template"
+OP_BUILD_TECHNICAL_TEMPLATE = "build_technical_template"
+OP_BUILD_TRAINING_TEMPLATE = "build_training_template"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
 OP_DEFINE_TABLE_STYLE = "define_table_style"
 OP_DUPLICATE_SLIDE = "duplicate_slide"
@@ -88,8 +93,7 @@ OP_REMOVE_SLIDE_LAYOUT = "remove_slide_layout"
 OP_REMOVE_SLIDE_MASTER = "remove_slide_master"
 OP_RENAME_SECTION = "rename_section"
 OP_REPAIR = "repair"
-OP_RESERVE_SHAPE_I_DS = "reserve_shape_ids"
-OP_RESERVE_SHAPE_IDS = OP_RESERVE_SHAPE_I_DS
+OP_RESERVE_SHAPE_IDS = "reserve_shape_ids"
 OP_SEARCH_SHAPES = "search_shapes"
 OP_SET_CORE_PROPERTIES = "set_core_properties"
 OP_SET_GLOBAL_THEME_PRESET = "set_global_theme_preset"
@@ -160,6 +164,11 @@ SUPPORTED_OPS = (
     OP_APPLY_THEME,
     OP_BATCH_EXECUTE,
     OP_BUILD_FREEFORM,
+    OP_BUILD_PROPOSAL_TEMPLATE,
+    OP_BUILD_SIMPLE_TEMPLATE,
+    OP_BUILD_STATUS_TEMPLATE,
+    OP_BUILD_TECHNICAL_TEMPLATE,
+    OP_BUILD_TRAINING_TEMPLATE,
     OP_CLONE_LAYOUT_MASTER_FAMILY,
     OP_DEFINE_TABLE_STYLE,
     OP_DUPLICATE_SLIDE,
@@ -219,7 +228,7 @@ SUPPORTED_OPS = (
     OP_REMOVE_SLIDE_MASTER,
     OP_RENAME_SECTION,
     OP_REPAIR,
-    OP_RESERVE_SHAPE_I_DS,
+    OP_RESERVE_SHAPE_IDS,
     OP_SEARCH_SHAPES,
     OP_SET_CORE_PROPERTIES,
     OP_SET_GLOBAL_THEME_PRESET,

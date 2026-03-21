@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // ---------------------------------------------------------------------------
@@ -31,7 +33,15 @@ func (e *PresentationEditor) SetSlideHeaderFooter(slideIndex int, hf SlideHeader
 		return fmt.Errorf("slide part %q not found", slideRef.Part)
 	}
 	hfXML := buildHeaderFooterXML(hf)
-	e.parts.Set(slideRef.Part, []byte(injectSlideHF(string(slideXML), hfXML)))
+	slideXMLStr := injectSlideHF(string(slideXML), hfXML)
+	slideXMLStr = injectVisibleHeaderFooterShapes(
+		slideXMLStr,
+		hf,
+		e.metadata.SlideSize.Width,
+		e.metadata.SlideSize.Height,
+		slideIndex+1,
+	)
+	e.parts.Set(slideRef.Part, []byte(slideXMLStr))
 	return nil
 }
 
@@ -65,6 +75,167 @@ func injectSlideHF(slideXML, hfXML string) string {
 	reHF := regexp.MustCompile(`<p:hf[^>]*/?>(?:.*?</p:hf>)?`)
 	slideXML = reHF.ReplaceAllString(slideXML, "")
 	return strings.ReplaceAll(slideXML, "</p:sld>", hfXML+"</p:sld>")
+}
+
+func injectVisibleHeaderFooterShapes(slideXML string, hf SlideHeaderFooter, width, height int64, slideNumber int) string {
+	overlayXML := buildVisibleHeaderFooterShapes(slideXML, hf, width, height, slideNumber)
+	if overlayXML == "" {
+		return slideXML
+	}
+	return strings.Replace(slideXML, "</p:spTree>", overlayXML+"</p:spTree>", 1)
+}
+
+func buildVisibleHeaderFooterShapes(slideXML string, hf SlideHeaderFooter, width, height int64, slideNumber int) string {
+	nextID := maxShapeID(slideXML) + 1
+	var b strings.Builder
+	if hf.ShowSlideNum {
+		b.WriteString(slideNumberOverlayShape(width, height, nextID))
+		nextID++
+	}
+	if hf.ShowFooter && hf.Footer != "" {
+		b.WriteString(footerOverlayShape(hf.Footer, width, height, nextID))
+		nextID++
+	}
+	if hf.ShowDateTime {
+		text := strings.TrimSpace(hf.DateTimeText)
+		if text == "" {
+			text = time.Now().Format("2006-01-02")
+		}
+		b.WriteString(dateTimeOverlayShape(text, width, height, nextID))
+	}
+	return b.String()
+}
+
+func maxShapeID(slideXML string) int {
+	re := regexp.MustCompile(`<p:cNvPr[^>]*\bid="(\d+)"`)
+	matches := re.FindAllStringSubmatch(slideXML, -1)
+	maxID := 1
+	for _, match := range matches {
+		if len(match) != 2 {
+			continue
+		}
+		if id, err := strconv.Atoi(match[1]); err == nil && id > maxID {
+			maxID = id
+		}
+	}
+	return maxID
+}
+
+func slideNumberOverlayShape(width, height int64, shapeID int) string {
+	cx := int64(548640)
+	cy := int64(396240)
+	x := width - cx - int64(457200)
+	y := height - cy - int64(274320)
+	return `
+<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Slide Number Visible"/>
+    <p:cNvSpPr>
+      <a:spLocks noGrp="1"/>
+    </p:cNvSpPr>
+    <p:nvPr>
+      <p:ph type="sldNum" sz="quarter" idx="12"/>
+    </p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
+      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    <a:noFill/>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr algn="r"/>
+      <a:fld type="slidenum" id="{282E2E67-0C23-4552-87C9-2C764654F79F}">
+        <a:rPr lang="en-US" smtClean="0"/>
+        <a:t>‹#›</a:t>
+      </a:fld>
+      <a:endParaRPr lang="en-US" smtClean="0"/>
+    </a:p>
+  </p:txBody>
+</p:sp>`
+}
+
+func footerOverlayShape(text string, width, height int64, shapeID int) string {
+	cx := int64(2133600)
+	cy := int64(396240)
+	x := (width - cx) / 2
+	y := height - cy - int64(274320)
+	return `
+<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Footer Visible"/>
+    <p:cNvSpPr>
+      <a:spLocks noGrp="1"/>
+    </p:cNvSpPr>
+    <p:nvPr>
+      <p:ph type="ftr" sz="quarter" idx="11"/>
+    </p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
+      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    <a:noFill/>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr algn="ctr"/>
+      <a:r>
+        <a:rPr lang="en-US" sz="1200" dirty="0"/>
+        <a:t>` + xmlEscapeSimple(text) + `</a:t>
+      </a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`
+}
+
+func dateTimeOverlayShape(text string, width, height int64, shapeID int) string {
+	cx := int64(2133600)
+	cy := int64(396240)
+	x := int64(457200)
+	y := height - cy - int64(274320)
+	_ = width
+	return `
+<p:sp>
+  <p:nvSpPr>
+    <p:cNvPr id="` + strconv.Itoa(shapeID) + `" name="Date Visible"/>
+    <p:cNvSpPr>
+      <a:spLocks noGrp="1"/>
+    </p:cNvSpPr>
+    <p:nvPr>
+      <p:ph type="dt" sz="quarter" idx="10"/>
+    </p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="` + strconv.FormatInt(x, 10) + `" y="` + strconv.FormatInt(y, 10) + `"/>
+      <a:ext cx="` + strconv.FormatInt(cx, 10) + `" cy="` + strconv.FormatInt(cy, 10) + `"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    <a:noFill/>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr wrap="square" rtlCol="0" anchor="ctr"/>
+    <a:lstStyle/>
+    <a:p>
+      <a:pPr algn="l"/>
+      <a:fld type="datetime1" id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}">
+        <a:rPr lang="en-US" dirty="0"/>
+        <a:t>` + xmlEscapeSimple(text) + `</a:t>
+      </a:fld>
+      <a:endParaRPr lang="en-US" dirty="0"/>
+    </a:p>
+  </p:txBody>
+</p:sp>`
 }
 
 // handleSetSlideHeaderFooter sets header/footer on a slide.
