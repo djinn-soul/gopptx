@@ -58,24 +58,20 @@ class RunHyperlink:
     def to_payload(self) -> dict[str, object]:
         """Convert this hyperlink facade to bridge payload format."""
         payload: dict[str, object] = {}
-        if self.address is not None:
-            payload["address"] = self.address
-        if self.action is not None:
-            payload["action"] = self.action
-        if self.tooltip is not None:
-            payload["tooltip"] = self.tooltip
-        if self.target_slide is not None:
-            payload["target_slide"] = self.target_slide
-        if self.jump is not None:
-            payload["jump"] = self.jump
-        if self.macro is not None:
-            payload["macro"] = self.macro
-        if self.history is not None:
-            payload["history"] = self.history
-        if self.highlight_click is not None:
-            payload["highlight_click"] = self.highlight_click
-        if self.end_sound is not None:
-            payload["end_sound"] = self.end_sound
+        for key in (
+            "address",
+            "action",
+            "tooltip",
+            "target_slide",
+            "jump",
+            "macro",
+            "history",
+            "highlight_click",
+            "end_sound",
+        ):
+            val = getattr(self, key)
+            if val is not None:
+                payload[key] = val
         return payload
 
     @property
@@ -127,7 +123,9 @@ class Run:
             cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hyperlink"))
         )
         self._hover_action = RunHyperlink.from_payload(
-            cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hover_action"))
+            cast(
+                "Mapping[str, object] | RunHyperlink | None", kwargs.get("hover_action")
+            )
         )
 
     @property
@@ -154,9 +152,19 @@ class Run:
         """Convert this run facade to bridge payload format."""
         payload: dict[str, object] = {"text": self.text}
         for key in (
-            "bold", "italic", "underline", "strikethrough", "subscript",
-            "superscript", "color", "highlight", "font", "size_pt",
-            "code", "all_caps", "small_caps",
+            "bold",
+            "italic",
+            "underline",
+            "strikethrough",
+            "subscript",
+            "superscript",
+            "color",
+            "highlight",
+            "font",
+            "size_pt",
+            "code",
+            "all_caps",
+            "small_caps",
         ):
             val = getattr(self, key)
             if val is not None:
@@ -204,6 +212,8 @@ def _as_optional_int(value: object) -> int | None:
         return None
     if isinstance(value, int):
         return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
     return None
 
 

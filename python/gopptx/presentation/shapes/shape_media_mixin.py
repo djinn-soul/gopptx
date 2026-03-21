@@ -24,46 +24,55 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         **kwargs: object,
     ) -> int:
         """Add an image to a slide and return the created shape ID."""
+        payload = self._init_bounds_payload(slide_index, bounds)
+        self._resolve_image_source(payload, source, kwargs)
+        self._resolve_image_options(payload, kwargs)
+
+        result = self.execute(ops.OP_ADD_IMAGE, payload)
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
+
+    def _resolve_image_source(
+        self,
+        payload: dict[str, object],
+        source: str | bytes | None,
+        kwargs: dict[str, object],
+    ) -> None:
         path = kwargs.get("path")
         data = kwargs.get("data")
-        image_format = kwargs.get("image_format")
-        img_format = kwargs.get("img_format")
-        crop = kwargs.get("crop")
-        rotation = kwargs.get("rotation")
-        flip_h = kwargs.get("flip_h")
-        flip_v = kwargs.get("flip_v")
-        payload = self._init_bounds_payload(slide_index, bounds)
         if source:
             self._set_source_payload(payload, source)
         elif isinstance(path, str):
             self._set_source_payload(payload, path)
         elif isinstance(data, bytes):
             self._set_source_payload(payload, data)
-            resolved_format = (
-                image_format
-                if isinstance(image_format, str)
-                else img_format
-                if isinstance(img_format, str)
-                else None
-            )
-            if resolved_format:
-                payload["format"] = resolved_format
+            fmt = kwargs.get("image_format") or kwargs.get("img_format")
+            if isinstance(fmt, str):
+                payload["format"] = fmt
 
+    @staticmethod
+    def _resolve_image_options(
+        payload: dict[str, object], kwargs: dict[str, object]
+    ) -> None:
         options: dict[str, object] = {}
+        crop = kwargs.get("crop")
         if isinstance(crop, dict):
             options["crop"] = cast("dict[str, object]", crop)
-        if isinstance(rotation, int | float):
-            options["rotation"] = rotation
-        if isinstance(flip_h, bool):
-            options["flip_h"] = flip_h
-        if isinstance(flip_v, bool):
-            options["flip_v"] = flip_v
+
+        rot = kwargs.get("rotation")
+        if isinstance(rot, (int, float)):
+            options["rotation"] = rot
+
+        for key in ("flip_h", "flip_v"):
+            val = kwargs.get(key)
+            if isinstance(val, bool):
+                options[key] = val
 
         if options:
             payload["options"] = options
-
-        result = self.execute(ops.OP_ADD_IMAGE, payload)
-        return int(cast("int", result.get("shape_id", -1)))
 
     def get_image_metadata(self, slide_index: int, shape_id: int) -> ImageMetadata:
         """Get dimensions and format metadata for an image shape."""
@@ -102,7 +111,11 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             )
 
         result = self.execute(ops.OP_ADD_VIDEO, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def add_audio(
         self,
@@ -133,7 +146,11 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             )
 
         result = self.execute(ops.OP_ADD_AUDIO, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def add_ole_object(
         self,
@@ -164,7 +181,11 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             )
 
         result = self.execute(ops.OP_ADD_OLE_OBJECT, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def list_slide_images(self, slide_index: int) -> list[SlideImageRef]:
         """List all images embedded in a slide.

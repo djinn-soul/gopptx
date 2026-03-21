@@ -65,6 +65,23 @@ def test_add_table_with_flags():
         assert table.banded_rows_enabled is True
 
 
+def test_add_table_with_explicit_false_flags():
+    """Explicit False flags should still be sent and applied."""
+    with Presentation.new("Test") as prs:
+        table_id = prs.add_table(
+            slide=0,
+            rows=2,
+            cols=2,
+            bounds=(Inches(1), Inches(1), Inches(5), Inches(3)),
+            first_row=False,
+            band_row=False,
+        )
+
+        table = prs.slides[0].table(table_id)
+        assert table.header_row_enabled is False
+        assert table.banded_rows_enabled is False
+
+
 def test_add_table_with_all_flags():
     """Test add_table with all flag parameters."""
     with Presentation.new("Test") as prs:
