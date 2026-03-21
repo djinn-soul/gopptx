@@ -9,6 +9,7 @@ from ... import ops
 from ...utils import normalize_table_index
 from .table_cells import Cell, CellRange
 from .table_collections import TableColumn, TableColumns, TableRow, TableRows
+from .table_flags_mixin import _TableFlagsMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -65,7 +66,7 @@ class _TableBandingMixin:
         self._update_flags({"band_row": value})
 
 
-class Table(_TableBandingMixin):
+class Table(_TableBandingMixin, _TableFlagsMixin):
     """Pythonic Table API supporting ``table[row, col]`` and slices."""
 
     def __init__(self, prs: Presentation, slide_index: int, shape_id: int) -> None:
@@ -193,137 +194,8 @@ class Table(_TableBandingMixin):
             for col in range(self.col_count):
                 yield Cell(self, row, col)
 
-    def _update_flags(self, flags: dict[str, bool]) -> None:
-        self.prs.execute(
-            ops.OP_UPDATE_TABLE_FLAGS,
-            {
-                "slide_index": self.slide_index,
-                "shape_id": self.shape_id,
-                "flags": flags,
-            },
-        )
-        if not getattr(self.prs, "_batch_active", False):
-            self.invalidate_cache()
-
-    @property
-    def first_row(self) -> bool:
-        """Compatibility alias for ``header_row_enabled``."""
-        return self.header_row_enabled
-
-    @first_row.setter
-    def first_row(self, value: bool) -> None:
-        self.header_row_enabled = value
-
-    @property
-    def horz_banding(self) -> bool:
-        """Compatibility alias for ``banded_rows_enabled``."""
-        return self.banded_rows_enabled
-
-    @horz_banding.setter
-    def horz_banding(self, value: bool) -> None:
-        self.banded_rows_enabled = value
-
-    @property
-    def first_col(self) -> bool:
-        """Whether first-column emphasis is enabled."""
-        self._ensure_cache()
-        return self._cache.get("first_col", False) is True if self._cache else False
-
-    @first_col.setter
-    def first_col(self, value: bool) -> None:
-        self._update_flags({"first_col": value})
-
-    @property
-    def last_col(self) -> bool:
-        """Whether last-column emphasis is enabled."""
-        self._ensure_cache()
-        return self._cache.get("last_col", False) is True if self._cache else False
-
-    @last_col.setter
-    def last_col(self, value: bool) -> None:
-        self._update_flags({"last_col": value})
-
-    @property
-    def last_row(self) -> bool:
-        """Whether last-row emphasis is enabled."""
-        self._ensure_cache()
-        return self._cache.get("last_row", False) is True if self._cache else False
-
-    @last_row.setter
-    def last_row(self, value: bool) -> None:
-        self._update_flags({"last_row": value})
-
-    @property
-    def vert_banding(self) -> bool:
-        """Whether alternating column banding is enabled."""
-        self._ensure_cache()
-        return self._cache.get("band_col", False) is True if self._cache else False
-
-    @vert_banding.setter
-    def vert_banding(self, value: bool) -> None:
-        self._update_flags({"band_col": value})
-
-    def apply_style(self, style: str | int) -> None:
-        """Apply a table style by name or GUID.
-
-        Args:
-            style: Style name (e.g., "MEDIUM_STYLE_2") or GUID string.
-                   Use TableStyle constants for easy style selection.
-
-        Example:
-            from gopptx.presentation.tables import TableStyle
-
-            # Apply by named constant
-            table.apply_style(TableStyle.MEDIUM_STYLE_2)
-
-            # Or apply by name string
-            table.apply_style("MEDIUM_STYLE_2")
-
-            # Or apply by full GUID
-            table.apply_style("{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}")
-        """
-        from ...presentation.tables.table_styles import TableStyle
-
-        # Handle style name lookup
-        style_guid = style
-        if isinstance(style, str) and not style.startswith("{"):
-            # It's a style name, look it up
-            styles = TableStyle.get_all()
-            if style not in styles:
-                available = ", ".join(sorted(styles.keys()))
-                raise ValueError(
-                    f"Unknown style name '{style}'. Available: {available}"
-                )
-            style_guid = styles[style]
-
-        self.prs.execute(
-            ops.OP_SET_TABLE_STYLE,
-            {
-                "slide_index": self.slide_index,
-                "shape_id": self.shape_id,
-                "style_guid": style_guid,
-            },
-        )
-        if not getattr(self.prs, "_batch_active", False):
-            self.invalidate_cache()
-
     def set_data(self, rows: list[list[str]]) -> None:
-        """Replace all cell text in the table with new data.
-
-        Args:
-            rows: 2D list of strings, dimensions must match table (row_count, col_count).
-
-        Raises:
-            ValueError: If shape doesn't match table dimensions.
-            GopptxError: If called during batch context (structural changes not allowed).
-
-        Example:
-            table.set_data([
-                ["Item", "Qty"],
-                ["Widgets", "50"],
-                ["Gadgets", "30"],
-            ])
-        """
+        """Replace all cell text in the table with new data."""
         from ... import api_errors
 
         if getattr(self.prs, "_batch_active", False):
@@ -346,7 +218,6 @@ class Table(_TableBandingMixin):
             for col_idx, text in enumerate(row):
                 self[row_idx, col_idx].text = text
 
-        # Clear cache after bulk update
         if not getattr(self.prs, "_batch_active", False):
             self.invalidate_cache()
 

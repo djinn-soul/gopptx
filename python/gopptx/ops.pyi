@@ -1,4 +1,3 @@
-
 OP_ADD_ANIMATION: str
 OP_ADD_AUDIO: str
 OP_ADD_AUTHOR: str

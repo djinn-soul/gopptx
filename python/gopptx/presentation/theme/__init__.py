@@ -1,9 +1,7 @@
 """Theme definition and management for presentations."""
 
-from .theme import (
-    ColorScheme,
-    FontScheme,
-    Theme,
+from .theme import ColorScheme, FontScheme, Theme
+from .theme_presets import (
     create_aurora_theme,
     create_forest_theme,
     create_ocean_theme,
