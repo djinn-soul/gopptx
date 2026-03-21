@@ -87,3 +87,10 @@ func slideMediaRelationshipType(target string) string {
 		return "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 	}
 }
+
+func boolToOneZero(value bool) string {
+	if value {
+		return "1"
+	}
+	return "0"
+}
