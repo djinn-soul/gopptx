@@ -18,8 +18,8 @@ __all__ = [
     "PresentationSlidesMixin",
     "PresentationThemeMixin",
     "SlideLayout",
+    "SlideLayoutType",
     "SlideLayouts",
     "SlideMaster",
     "SlideMasters",
-    "SlideLayoutType",
 ]

@@ -17,7 +17,6 @@ class Template(ABC):
     @abstractmethod
     def build(self) -> Presentation:
         """Build and return a Presentation with template slides."""
-        pass
 
 
 def _apply_slides(prs: Presentation, slides: list[dict]) -> None:
@@ -187,7 +186,8 @@ class ProposalTemplate(Template):
                 for p in self.pricing
             ]
             timeline_data = [
-                {"date": m.date, "task": m.task, "status": m.status} for m in self.timeline
+                {"date": m.date, "task": m.task, "status": m.status}
+                for m in self.timeline
             ]
 
             result = prs.execute(
@@ -303,12 +303,12 @@ class TechnicalTemplate(Template):
 
 
 __all__ = [
-    "Template",
-    "StatusTemplate",
-    "SimpleTemplate",
-    "ProposalTemplate",
-    "TrainingTemplate",
-    "TechnicalTemplate",
-    "PricingTier",
     "Milestone",
+    "PricingTier",
+    "ProposalTemplate",
+    "SimpleTemplate",
+    "StatusTemplate",
+    "TechnicalTemplate",
+    "Template",
+    "TrainingTemplate",
 ]

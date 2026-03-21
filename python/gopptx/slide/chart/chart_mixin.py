@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
     from ...presentation.charts.chart_types import ChartType
+    from ...presentation.presentation import Presentation
     from ...schemas import SlideChartRef
     from .data import CategoryChartData, XyChartData
 

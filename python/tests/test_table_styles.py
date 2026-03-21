@@ -1,7 +1,6 @@
 """Tests for improved table styling system."""
 
 import pytest
-
 from gopptx import Presentation
 from gopptx.presentation.tables.table_styles import TableStyle
 from gopptx.schemas import Inches

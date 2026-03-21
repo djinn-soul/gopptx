@@ -108,10 +108,10 @@ def main():
             ],
             first_row=True,  # Header row formatting
             first_col=True,  # First column emphasis
-            last_row=True,   # Last row emphasis
-            last_col=True,   # Last column emphasis
-            band_row=True,   # Alternating row colors
-            band_col=True,   # Alternating column colors
+            last_row=True,  # Last row emphasis
+            last_col=True,  # Last column emphasis
+            band_row=True,  # Alternating row colors
+            band_col=True,  # Alternating column colors
         )
 
         # =======================================================================
