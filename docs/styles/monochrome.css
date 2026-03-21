@@ -1,0 +1,153 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --md-primary-fg-color: #18222f;
+  --md-primary-fg-color--light: #26384d;
+  --md-primary-fg-color--dark: #000000;
+  --md-accent-fg-color: #2f4f6e;
+  --md-default-bg-color: #f6f5f2;
+  --md-default-fg-color: #101010;
+  --md-default-fg-color--light: #333333;
+  --md-typeset-a-color: #1e3a56;
+  --md-code-bg-color: #ece9e4;
+  --md-code-fg-color: #111111;
+}
+
+body,
+input {
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+code,
+pre,
+kbd {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.md-main {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(24, 34, 47, 0.09) 1px, transparent 0) 0 0/18px 18px,
+    linear-gradient(#f6f5f2, #f6f5f2);
+}
+
+.md-content {
+  background: #ffffff;
+  border: 1px solid #d7d3cc;
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+
+.md-typeset h1 {
+  color: #101822;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  border-bottom: 3px solid #2f4f6e;
+  padding-bottom: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.md-typeset h2 {
+  color: #18222f;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-top: 1.6rem;
+}
+
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  color: #101010;
+  font-weight: 600;
+}
+
+.md-typeset a {
+  color: #1f3f5d;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+.md-typeset a:hover {
+  background: #e8edf3;
+}
+
+.md-typeset ul li,
+.md-typeset ol li {
+  margin-bottom: 0.25rem;
+}
+
+.md-typeset table:not([class]) {
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: #1f3347;
+  color: #fff;
+}
+
+.md-typeset img {
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.md-typeset pre > code {
+  border: 1px solid #cfcfcf;
+  border-radius: 10px;
+}
+
+.md-header,
+.md-tabs {
+  background: linear-gradient(90deg, #18222f, #2b4159);
+}
+
+.md-tabs__link--active,
+.md-nav__link--active {
+  font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #11161c;
+  --md-default-fg-color: #f4f6f8;
+  --md-default-fg-color--light: #cfd7df;
+  --md-typeset-a-color: #9cc3ea;
+  --md-code-bg-color: #1c232c;
+  --md-code-fg-color: #f0f4f8;
+}
+
+[data-md-color-scheme="slate"] .md-main {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(156, 195, 234, 0.15) 1px, transparent 0) 0 0/18px 18px,
+    linear-gradient(#11161c, #11161c);
+}
+
+[data-md-color-scheme="slate"] .md-content {
+  background: #1a2029;
+  border-color: #2f3945;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1,
+[data-md-color-scheme="slate"] .md-typeset h2,
+[data-md-color-scheme="slate"] .md-typeset h3,
+[data-md-color-scheme="slate"] .md-typeset h4,
+[data-md-color-scheme="slate"] .md-typeset h5,
+[data-md-color-scheme="slate"] .md-typeset h6 {
+  color: #f4f6f8;
+}
+
+[data-md-color-scheme="slate"] .md-typeset a:hover {
+  background: rgba(156, 195, 234, 0.14);
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background: #31475e;
+}
+
+[data-md-color-scheme="slate"] .md-typeset img,
+[data-md-color-scheme="slate"] .md-typeset pre > code {
+  border-color: #33404e;
+}
