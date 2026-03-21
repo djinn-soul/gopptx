@@ -1,14 +1,14 @@
-# Dynamic Brand Reskinning
+# Brand Reskinning
 
-Apply different brand themes to the same presentation content without rebuilding slides manually.
+Apply different brand themes to the same presentation content.
 
-## Typical Use Case
+## Workflow
 
-- agency creates one base deck template
-- same content is exported for multiple client brands
-- theme, logo, and accent colors are swapped programmatically
+1. Create one base deck template.
+2. Swap theme, logo, and accent colors.
+3. Export the same content for each brand.
 
-## Go Example Entry Point
+## Go Example
 
 ```bash
 go run ./examples/43-presentation-props-editor/main.go
@@ -18,6 +18,4 @@ go run ./examples/43-presentation-props-editor/main.go
 
 - Source: `examples/43-presentation-props-editor/main.go`
 - PPTX: [brand-reskin.pptx](../assets/pptx/brand-reskin.pptx)
-- Screenshot:
-
-![Brand reskin screenshot](../assets/images/showcase/reskin-result.png)
+- Screenshot: ![Brand reskin screenshot](../assets/images/showcase/reskin-result.png)

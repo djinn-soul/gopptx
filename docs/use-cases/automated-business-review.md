@@ -1,12 +1,12 @@
-# Automated Business Review (QBR)
+# Automated Reports
 
-Generate repeatable QBR decks from business data instead of manual slide editing.
+Generate recurring review decks from business data.
 
 ## Workflow
 
-1. Pull quarter/department KPI data from your source system.
-2. Build slides with `Presentation` helpers.
-3. Export one deck per team/region.
+1. Pull quarter or department KPI data.
+2. Build slides with `Presentation`.
+3. Export one deck per team or region.
 
 ## Python Example
 
@@ -33,6 +33,6 @@ with Presentation.new() as pres:
     pres.save("qbr_engineering_q1.pptx")
 ```
 
-## Result Screenshot
+## Screenshot
 
 ![QBR result](../assets/images/showcase/qbr-result.png)

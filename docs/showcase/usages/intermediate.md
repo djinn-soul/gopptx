@@ -1256,11 +1256,11 @@ func main() {
 	pres.AddSlide().Title = "Analysis 1"
 	pres.AddSlide().Title = "Analysis 2"
 	pres.AddSlide().Title = "Summary"
-	
+
 	_ = pres.AddSection("Introduction", []int{0})
 	_ = pres.AddSection("Core Analysis", []int{1, 2})
 	_ = pres.AddSection("Conclusion", []int{3})
-	
+
 	_ = pres.Save("i09-go.pptx")
 }
 ```
@@ -1275,11 +1275,11 @@ with Presentation.new("I09 Section Management") as p:
     p.add_slide("Analysis 1")
     p.add_slide("Analysis 2")
     p.add_slide("Summary")
-    
+
     p.add_section("Introduction", [0])
     p.add_section("Core Analysis", [1, 2])
     p.add_section("Conclusion", [3])
-    
+
     p.save("docs/assets/pptx/usage/i09-python.pptx")
 ```
 
@@ -1307,13 +1307,13 @@ func main() {
 	pres := &gopptx.Presentation{Title: "I10 Animation Effects"}
 	slide := pres.AddSlide()
 	slide.Title = "Animation Effects"
-	
+
 	id1 := slide.AddShape("rect", 1.0, 2.0, 3.0, 1.0, "Fade In")
 	id2 := slide.AddShape("ellipse", 4.5, 2.0, 2.0, 2.0, "Fly In")
-	
+
 	slide.AddAnimation(id1, pptx.AnimationEntranceFade, pptx.AnimationOnClick)
 	slide.AddAnimation(id2, pptx.AnimationEntranceFlyIn, pptx.AnimationAfterPrevious)
-	
+
 	_ = pres.Save("i10-go.pptx")
 }
 ```
@@ -1329,10 +1329,10 @@ with Presentation.new("I10 Animation Effects") as p:
     slide = p.add_slide("Animation Effects")
     id1 = slide.add_textbox(Inches(1.0), Inches(2.0), Inches(3.0), Inches(1.0), text="Fade In")
     id2 = slide.add_shape(0, "ellipse", (Inches(4.5), Inches(2.0), Inches(2.0), Inches(2.0)), text="Fly In")
-    
+
     slide.add_animation(id1, ANIMATION_ENTRANCE_FADE, trigger=ANIMATION_ON_CLICK)
     slide.add_animation(id2, ANIMATION_ENTRANCE_FLY_IN, trigger=ANIMATION_AFTER_PREVIOUS)
-    
+
     p.save("docs/assets/pptx/usage/i10-python.pptx")
 ```
 
@@ -1341,4 +1341,3 @@ with Presentation.new("I10 Animation Effects") as p:
 Screenshot generated from the Python code above using `export_pptx_png.ps1`.
 
 ![Animation Effects](../../assets/images/usage/i10-python.png)
-
