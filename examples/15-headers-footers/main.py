@@ -33,20 +33,32 @@ def main():
         # Add slides - they all inherit the presentation-level footer
         prs.add_slide("Slide 1", layout="title_only")
         prs.add_textbox(
-            0, Inches(1), Inches(2), Inches(8), Inches(1),
-            text="All slides have the same footer"
+            0,
+            Inches(1),
+            Inches(2),
+            Inches(8),
+            Inches(1),
+            text="All slides have the same footer",
         )
 
         prs.add_slide("Slide 2", layout="title_only")
         prs.add_textbox(
-            1, Inches(1), Inches(2), Inches(8), Inches(1),
-            text="This slide also has the footer"
+            1,
+            Inches(1),
+            Inches(2),
+            Inches(8),
+            Inches(1),
+            text="This slide also has the footer",
         )
 
         prs.add_slide("Slide 3", layout="title_only")
         prs.add_textbox(
-            2, Inches(1), Inches(2), Inches(8), Inches(1),
-            text="And this one too!"
+            2,
+            Inches(1),
+            Inches(2),
+            Inches(8),
+            Inches(1),
+            text="And this one too!",
         )
 
         print("\nResult: Slides 1, 2, 3 all have 'Confidential' footer + slide #")

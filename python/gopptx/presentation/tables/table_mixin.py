@@ -134,7 +134,9 @@ class PresentationTableMixin(PresentationMixinBase):
         if data is not None:
             for row_idx, row in enumerate(data):
                 for col_idx, text in enumerate(row):
-                    self.set_table_cell_text(slide_idx, shape_id, row_idx, col_idx, text)
+                    self.set_table_cell_text(
+                        slide_idx, shape_id, row_idx, col_idx, text
+                    )
 
         # 3. Set column widths if provided
         if column_widths is not None:

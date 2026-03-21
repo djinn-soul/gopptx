@@ -138,7 +138,9 @@ def main():
 
         # Save presentation
         prs.save("examples/output/17-custom-slide-layout-composition.pptx")
-        print("Presentation created: examples/output/17-custom-slide-layout-composition.pptx")
+        print(
+            "Presentation created: examples/output/17-custom-slide-layout-composition.pptx"
+        )
 
         # Print summary
         print("\n" + "=" * 70)

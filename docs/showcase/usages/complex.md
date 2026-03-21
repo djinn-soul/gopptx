@@ -1010,14 +1010,14 @@ func main() {
 	pres := &gopptx.Presentation{Title: "C09 SmartArt Layouts"}
 	slide := pres.AddSlide()
 	slide.Title = "SmartArt Process"
-	
+
 	sa := smartart.NewSmartArt(smartart.BasicProcess).
 		Position(1.0, 2.0).
 		Size(8.0, 3.0).
 		AddItems([]string{"Plan", "Build", "Ship"})
-	
+
 	slide.AddSmartArt(sa)
-	
+
 	_ = pres.Save("c09-go.pptx")
 }
 ```
@@ -1061,10 +1061,10 @@ import (
 func main() {
 	builder := pptx.NewPresentationBuilder("C10 Protected Presentation")
 	builder.AddTitleSlide("Confidential")
-	
+
 	builder.WithModifyPassword("secret").
 		WithMarkAsFinal(true)
-	
+
 	_ = builder.WriteToFile("c10-go.pptx")
 }
 ```
@@ -1086,4 +1086,3 @@ with PresentationBuilder("C10 Protected Presentation") as b:
 Screenshot generated from the Python code above using `export_pptx_png.ps1`.
 
 ![Presentation Protection](../../assets/images/usage/c10-python.png)
-
