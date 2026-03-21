@@ -12,11 +12,36 @@ def generate_text_frame_demo(out_path: Path) -> None:
 
     with Presentation.new("S02 Text Frame Demo") as pres:
         pres.add_slide("Text Frame Properties")
-        pres.add_shape(0, "rect", (Inches(0.5), Inches(1.25), Inches(2.5), Inches(1.5)), text="0.5in margins demo")
-        pres.add_shape(0, "rect", (Inches(3.5), Inches(1.25), Inches(2.5), Inches(2.0)), text="Top anchor")
-        pres.add_shape(0, "rect", (Inches(6.5), Inches(1.25), Inches(2.5), Inches(2.0)), text="Bottom anchor")
-        pres.add_shape(0, "rect", (Inches(0.5), Inches(3.5), Inches(2.5), Inches(1.0)), text="No wrap sample text")
-        pres.add_shape(0, "rect", (Inches(3.5), Inches(3.5), Inches(2.5), Inches(1.0)), text="Shrink-to-fit sample text")
+        pres.add_shape(
+            0,
+            "rect",
+            (Inches(0.5), Inches(1.25), Inches(2.5), Inches(1.5)),
+            text="0.5in margins demo",
+        )
+        pres.add_shape(
+            0,
+            "rect",
+            (Inches(3.5), Inches(1.25), Inches(2.5), Inches(2.0)),
+            text="Top anchor",
+        )
+        pres.add_shape(
+            0,
+            "rect",
+            (Inches(6.5), Inches(1.25), Inches(2.5), Inches(2.0)),
+            text="Bottom anchor",
+        )
+        pres.add_shape(
+            0,
+            "rect",
+            (Inches(0.5), Inches(3.5), Inches(2.5), Inches(1.0)),
+            text="No wrap sample text",
+        )
+        pres.add_shape(
+            0,
+            "rect",
+            (Inches(3.5), Inches(3.5), Inches(2.5), Inches(1.0)),
+            text="Shrink-to-fit sample text",
+        )
         pres.save(str(out_path))
 
 
@@ -41,4 +66,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

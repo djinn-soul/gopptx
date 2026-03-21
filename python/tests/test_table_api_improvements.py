@@ -1,10 +1,8 @@
 """Tests for improved table API with data loading and convenience builders."""
 
 import pytest
-
 from gopptx import Presentation
 from gopptx.schemas import Inches
-from gopptx.api_errors import GopptxError
 
 
 def test_add_table_new_named_parameters():

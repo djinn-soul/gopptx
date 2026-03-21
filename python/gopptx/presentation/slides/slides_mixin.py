@@ -172,13 +172,21 @@ class PresentationSlidesMixin(
         # Apply header/footer defaults if they exist
         if hasattr(self, "_header_footer_defaults"):
             defaults = cast("dict[str, object]", self._header_footer_defaults)
-            if any([defaults.get("show_footer"), defaults.get("show_slide_num"), defaults.get("show_date_time")]):
+            if any([
+                defaults.get("show_footer"),
+                defaults.get("show_slide_num"),
+                defaults.get("show_date_time"),
+            ]):
                 hf_payload: dict[str, object] = {
                     "slide_index": slide_index,
                     "footer": cast("str", defaults.get("footer", "")),
                     "show_footer": cast("bool", defaults.get("show_footer", False)),
-                    "show_slide_num": cast("bool", defaults.get("show_slide_num", False)),
-                    "show_date_time": cast("bool", defaults.get("show_date_time", False)),
+                    "show_slide_num": cast(
+                        "bool", defaults.get("show_slide_num", False)
+                    ),
+                    "show_date_time": cast(
+                        "bool", defaults.get("show_date_time", False)
+                    ),
                     "date_time_text": cast("str", defaults.get("date_time_text", "")),
                 }
                 self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, hf_payload)

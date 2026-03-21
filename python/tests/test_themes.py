@@ -1,7 +1,6 @@
 """Tests for theme system (ColorScheme, FontScheme, Theme classes)."""
 
 import pytest
-
 from gopptx.presentation.theme import (
     ColorScheme,
     FontScheme,
@@ -319,9 +318,7 @@ class TestThemeColorPalettes:
                 assert color_name in color_dict, (
                     f"{theme.name} missing color: {color_name}"
                 )
-                assert (
-                    color_dict[color_name]
-                ), f"{theme.name} {color_name} is empty"
+                assert color_dict[color_name], f"{theme.name} {color_name} is empty"
 
     def test_all_themes_have_fonts(self):
         """All built-in themes define fonts."""
@@ -354,9 +351,7 @@ class TestThemeColorPalettes:
                 assert len(color_value) == 6, (
                     f"{theme.name} {color_name} not 6-char hex: {color_value}"
                 )
-                assert all(
-                    c in "0123456789ABCDEFabcdef" for c in color_value
-                ), (
+                assert all(c in "0123456789ABCDEFabcdef" for c in color_value), (
                     f"{theme.name} {color_name} not valid hex: {color_value}"
                 )
 

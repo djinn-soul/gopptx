@@ -12,6 +12,7 @@ class PresentationTableBuilders:
     """Mixin providing convenience table builder methods."""
 
     if TYPE_CHECKING:
+
         def add_table(  # noqa: PLR0913, PLR0917
             self,
             slide: int | None = None,

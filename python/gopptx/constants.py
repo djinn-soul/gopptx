@@ -7,8 +7,10 @@ from enum import Enum
 try:
     from enum import StrEnum
 except ImportError:  # pragma: no cover
+
     class StrEnum(str, Enum):
         """Python 3.10 compatibility shim for ``enum.StrEnum``."""
+
 
 # Theme Presets
 THEME_CORPORATE = "Corporate"
@@ -126,6 +128,7 @@ class ConnectorType(StrEnum):
     BENT_CONNECTOR_3 = SHAPE_BENT_CONNECTOR_3
     BENT_CONNECTOR_4 = SHAPE_BENT_CONNECTOR_4
     BENT_CONNECTOR_5 = SHAPE_BENT_CONNECTOR_5
+
 
 # Alignment
 ALIGN_LEFT = "l"

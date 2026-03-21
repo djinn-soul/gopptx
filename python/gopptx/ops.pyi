@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 OP_ADD_ANIMATION: str
 OP_ADD_AUDIO: str
