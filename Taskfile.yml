@@ -27,7 +27,12 @@ tasks:
     generates:
       - '{{.PYTHON_PKG_DIR}}/{{.LIB_NAME}}'
     cmds:
-      - go build -o {{.PYTHON_PKG_DIR}}/{{.LIB_NAME}} -buildmode=c-shared {{.GO_BRIDGE_SRC}}
+      - |
+        if [ "${GOPPTX_RELEASE_BUILD}" = "1" ] || [ "${GOPPTX_RELEASE_BUILD}" = "true" ]; then
+          go build -trimpath -buildvcs=false -ldflags="-s -w" -o {{.PYTHON_PKG_DIR}}/{{.LIB_NAME}} -buildmode=c-shared {{.GO_BRIDGE_SRC}}
+        else
+          go build -o {{.PYTHON_PKG_DIR}}/{{.LIB_NAME}} -buildmode=c-shared {{.GO_BRIDGE_SRC}}
+        fi
 
   setup:python:
     desc: Setup Python environment using uv
@@ -59,3 +64,13 @@ tasks:
     cmds:
       - golangci-lint run ./...
       - uv run basedpyright
+
+  docs:serve:
+    desc: Serve MkDocs Material docs on http://localhost:8000 (Docker)
+    cmds:
+      - docker run --rm -it -p 8000:8000 -v "{{.USER_WORKING_DIR}}:/docs" squidfunk/mkdocs-material:9.7.5 serve -a 0.0.0.0:8000
+
+  docs:build:
+    desc: Build MkDocs Material docs strictly (Docker)
+    cmds:
+      - docker run --rm -v "{{.USER_WORKING_DIR}}:/docs" squidfunk/mkdocs-material:9.7.5 build --strict

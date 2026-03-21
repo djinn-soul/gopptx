@@ -1,0 +1,94 @@
+site_name: gopptx
+site_description: High-performance PowerPoint engine for Go and Python
+site_url: https://djinn-soul.github.io/gopptx
+repo_url: https://github.com/djinn-soul/gopptx
+repo_name: djinn-soul/gopptx
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+extra_css:
+  - styles/monochrome.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Start Here:
+      - What is gopptx?: index.md
+      - Installation: installation.md
+      - Quickstart: quickstart.md
+      - Core Concepts: concepts.md
+  - Tutorials:
+      - First Presentation: quickstart.md
+      - Python Basics: showcase/basic-generation.md
+      - Go Basics: showcase/basic-usage.md
+      - Rich Slide: showcase/rich-slide.md
+      - Text Styling: showcase/text-styling.md
+      - Radar Chart: showcase/chart-radar.md
+  - Examples:
+      - Overview: showcase/index.md
+      - Python + Go Side-by-Side: showcase/python-go-usage.md
+      - Full Examples Map: examples-map.md
+      - Usage Catalog:
+          - Overview: showcase/usages/index.md
+          - Simple: showcase/usages/simple.md
+          - Intermediate: showcase/usages/intermediate.md
+          - Complex: showcase/usages/complex.md
+  - Use Cases:
+      - Overview: use-cases/index.md
+      - Automated Reports: use-cases/automated-business-review.md
+      - Brand Reskinning: use-cases/brand-reskinning.md
+  - Guides:
+      - Python Library Guide: guides/python-library.md
+      - Go Library Guide: guides/go-library.md
+      - Python Workflows: guides/python-workflows.md
+      - Go Workflows: guides/go-workflows.md
+      - Batch Execution: guides/batch-execution.md
+      - Screenshot Pipeline (PPTX -> PNG): guides/pptx-png-export.md
+  - Reference:
+      - API Overview: api-reference.md
+      - Python Presentation API: reference/python-presentation-api.md
+      - Go API Reference: reference/go-api.md
+      - Go Slides Reference: reference/go-slides.md
+      - Go Notes, Comments, and Sections Reference: reference/go-notes-comments-sections.md
+      - Go Tables Reference: reference/go-tables.md
+      - Go Metadata, Protection, and Export Reference: reference/go-metadata-export.md
+      - Go Templates Reference: reference/go-templates.md
+      - Go Charts Reference: reference/go-charts.md
+      - Go Shapes and Connectors Reference: reference/go-shapes.md
+      - JSON Bridge Operations: reference/bridge-operations.md
+  - Advanced:
+      - Architecture: architecture/cbridge-guidance.md
+      - C Bridge Guidance: architecture/cbridge-guidance.md
+  - Help:
+      - Troubleshooting: troubleshooting.md
+      - Documentation Maintenance: guides/pptx-png-export.md

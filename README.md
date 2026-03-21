@@ -45,7 +45,7 @@ with Presentation("input.pptx") as pres:
    pip install -e .
    ```
 
-More examples: [`python/README.md`](python/README.md)
+More examples: [`docs/guides/python-library.md`](docs/guides/python-library.md)
 
 ### Throughput tip: use batching
 
@@ -106,17 +106,8 @@ All bridge operations use a JSON envelope.
 
 41 operations are available across slides, metadata, shapes, images/charts, tables, sections, comments, notes, layouts/masters, placeholders, and utility commands.
 
-Operation reference: [`docs/architecture/bridge-phase1-ops.md`](docs/architecture/bridge-phase1-ops.md)  
+Operation reference: [`docs/architecture/bridge-phase1-ops.md`](docs/architecture/bridge-phase1-ops.md)
 C API reference: [`bindings/c/README.md`](bindings/c/README.md)
-
-## Benchmarks
-
-- Go bridge microbench:
-  `go test ./pkg/pptx/editor -run ^$ -bench "BenchmarkBridge(Execute|JSON)" -benchmem -count=3`
-- Python benchmark script:
-  `uv run python scripts/smoke/python_batch_latency_benchmark.py`
-- JSON profile and transport decision record:
-  [`docs/benchmarks/json_bridge_profile_2026-02-21.md`](docs/benchmarks/json_bridge_profile_2026-02-21.md)
 
 ## Contributing
 
