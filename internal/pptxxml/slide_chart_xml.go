@@ -370,10 +370,3 @@ func resolvedDataLabelBool(value *bool, fallback bool) bool {
 	}
 	return *value
 }
-
-func boolToOneZero(value bool) string {
-	if value {
-		return "1"
-	}
-	return "0"
-}

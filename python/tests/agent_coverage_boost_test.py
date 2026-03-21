@@ -80,7 +80,7 @@ def test_slide_extra(prs):
     slide = prs.add_slide("S1")
     assert len(prs.slides) == 2
     # update
-    slide.update(title="New Title", layout="title_content")
+    slide.update(title="New Title", layout="title_and_content")
     assert slide.title == "New Title"
     # duplicate
     new_slide = slide.duplicate()
