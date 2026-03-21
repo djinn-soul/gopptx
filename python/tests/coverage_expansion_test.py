@@ -179,6 +179,7 @@ class TestCoverageExpansion(unittest.TestCase):
 
             # Apply theme
             from gopptx.presentation.theme import get_theme
+
             pres.apply_theme(get_theme("aurora"))  # Apply a built-in theme
 
     def test_remove_comment_errors(self) -> None:

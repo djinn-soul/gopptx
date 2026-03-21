@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from ... import ops
 from ...utils import is_four_number_bounds
@@ -10,9 +10,6 @@ from ..placeholders import (
     build_placeholder_chart_payload,
     build_placeholder_table_payload,
 )
-
-if TYPE_CHECKING:
-    pass
 
 
 class PresentationPlaceholderMixin:

@@ -2,18 +2,41 @@ package pptxxml
 
 import "fmt"
 
-func richInnerShadowXML(shadow RichShapeShadowSpec) string {
-	attrs := fmt.Sprintf(`blurRad="%d" dist="%d" dir="%d"`,
-		shadow.BlurRadius, shadow.Distance, int(shadow.Angle*emusPerDegree))
+func shadowDirEMU(angle float64) int {
+	return int(angle * emusPerDegree)
+}
 
-	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
+func shadowAlphaValue(transparency float64) int {
+	return alphaFromNormalizedTransparency(transparency)
+}
+
+func shadowBlurDistDirAttrs(shadow RichShapeShadowSpec) string {
+	return fmt.Sprintf(
+		`blurRad="%d" dist="%d" dir="%d"`,
+		shadow.BlurRadius,
+		shadow.Distance,
+		shadowDirEMU(shadow.Angle),
+	)
+}
+
+func shadowDistDirAttrs(shadow RichShapeShadowSpec) string {
+	return fmt.Sprintf(
+		`dist="%d" dir="%d"`,
+		shadow.Distance,
+		shadowDirEMU(shadow.Angle),
+	)
+}
+
+func richInnerShadowXML(shadow RichShapeShadowSpec) string {
+	attrs := shadowBlurDistDirAttrs(shadow)
+	alphaVal := shadowAlphaValue(shadow.Transparency)
 
 	return fmt.Sprintf(`<a:innerShdw %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:innerShdw>`,
 		attrs, Escape(shadow.Color), alphaVal)
 }
 
 func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
-	attrs := fmt.Sprintf(`dist="%d" dir="%d"`, shadow.Distance, int(shadow.Angle*emusPerDegree))
+	attrs := shadowDistDirAttrs(shadow)
 
 	if shadow.SkewX != 0 || shadow.SkewY != 0 {
 		attrs += fmt.Sprintf(` sx="%d" sy="%d"`,
@@ -29,7 +52,7 @@ func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
 		attrs += fmt.Sprintf(` algn="%s"`, Escape(shadow.Alignment))
 	}
 
-	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
+	alphaVal := shadowAlphaValue(shadow.Transparency)
 
 	return fmt.Sprintf(
 		`<a:prstShdw prst="shdw1" %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:prstShdw>`,

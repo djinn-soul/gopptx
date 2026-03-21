@@ -70,11 +70,14 @@ func boolAttr(b bool) string {
 	return "0"
 }
 
-// injectSlideHF removes any existing <p:hf> and inserts the new one before </p:sld>.
+// injectSlideHF removes any existing <p:hf> and inserts the new one near slide content.
 func injectSlideHF(slideXML, hfXML string) string {
-	reHF := regexp.MustCompile(`<p:hf[^>]*/?>(?:.*?</p:hf>)?`)
+	reHF := regexp.MustCompile(`(?s)<p:hf\b[^>]*>.*?</p:hf>|<p:hf\b[^>]*/>`)
 	slideXML = reHF.ReplaceAllString(slideXML, "")
-	return strings.ReplaceAll(slideXML, "</p:sld>", hfXML+"</p:sld>")
+	if strings.Contains(slideXML, "</p:cSld>") {
+		return strings.Replace(slideXML, "</p:cSld>", "</p:cSld>"+hfXML, 1)
+	}
+	return strings.Replace(slideXML, "</p:sld>", hfXML+"</p:sld>", 1)
 }
 
 func injectVisibleHeaderFooterShapes(slideXML string, hf SlideHeaderFooter, width, height int64, slideNumber int) string {
