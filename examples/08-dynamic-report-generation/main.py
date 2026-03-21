@@ -97,10 +97,10 @@ def add_card(
 
 # Load data
 meta, rows = load_rows()
-total_revenue = sum(float(row["revenue"]) for row in rows)
-total_orders = sum(int(row["orders"]) for row in rows)
-average_attainment = sum(float(row["attainment"]) for row in rows) / len(rows)
-max_region = max(rows, key=lambda row: float(row["revenue"]))
+total_revenue = sum(row["revenue"] for row in rows)
+total_orders = sum(row["orders"] for row in rows)
+average_attainment = sum(row["attainment"] for row in rows) / len(rows)
+max_region = max(rows, key=lambda row: row["revenue"])
 
 # Create presentation
 with Presentation.new(str(meta["title"])) as p:
@@ -172,7 +172,6 @@ with Presentation.new(str(meta["title"])) as p:
 
     # ===== Slide 2: Detail table =====
     p.add_slide("Regional Detail Table", layout=SlideLayoutType.BLANK)
-    p.update_slide(1, layout=SlideLayoutType.BLANK)
     detail = p.slides[1]
 
     # Title and description
@@ -197,10 +196,10 @@ with Presentation.new(str(meta["title"])) as p:
     for row in rows:
         detail_rows.append([
             str(row["region"]),
-            format_currency(float(row["revenue"])),
+            format_currency(row["revenue"]),
             str(row["orders"]),
-            format_currency(float(row["target"])),
-            format_percent(float(row["attainment"])),
+            format_currency(row["target"]),
+            format_percent(row["attainment"]),
         ])
 
     # Add table

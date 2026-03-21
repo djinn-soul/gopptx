@@ -23,7 +23,7 @@ qbr_data = {
     ],
 }
 
-with Presentation.new() as pres:
+with Presentation.new(f"{qbr_data['quarter']} Review: {qbr_data['department']}") as pres:
     pres.add_slide(f"{qbr_data['quarter']} Review: {qbr_data['department']}")
     perf = pres.add_slide("Performance Summary")
     for i, kpi in enumerate(qbr_data["kpis"]):

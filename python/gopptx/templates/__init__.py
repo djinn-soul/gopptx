@@ -24,13 +24,28 @@ def _apply_slides(prs: Presentation, slides: list[dict]) -> None:
     """Remove the default blank slide and add template slides."""
     # Presentation.new() always starts with 1 blank slide — remove it
     prs.remove_slide(0)
-    for slide_data in slides:
+    for i, slide_data in enumerate(slides):
         title_text = slide_data.get("title", "")
+        layout = slide_data.get("layout") or None
         bullets = slide_data.get("bullets") or []
-        if bullets:
-            prs.add_bullet_slide(title_text, bullets)
-        else:
-            prs.add_title_slide(title_text)
+        notes = slide_data.get("notes") or ""
+        table_data = slide_data.get("table")
+
+        prs.add_slide(title_text, layout=layout, bullets=bullets or None)
+
+        if notes:
+            prs.set_notes(i, notes)
+
+        if table_data:
+            rows = table_data.get("rows") or []
+            if rows:
+                bounds = (
+                    table_data.get("x", 457200),
+                    table_data.get("y", 1600200),
+                    table_data.get("cx", 8230200),
+                    table_data.get("cy", 3200400),
+                )
+                prs.add_table_from_rows(i, rows, bounds, first_row=True, band_row=True)
 
 
 @dataclass

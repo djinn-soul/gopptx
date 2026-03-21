@@ -1,6 +1,5 @@
 """Example showcasing improved table API with data loading and convenience builders."""
 
-import os
 from pathlib import Path
 
 from gopptx import Presentation
@@ -142,16 +141,16 @@ def main():
 
         # Old way (still works - backward compatible)
         x, y, cx, cy = Inches(0.8), Inches(1.5), Inches(4), Inches(2.5)
-        old_table_id = prs.add_table(0, 2, 2, (x, y, cx, cy))
-        prs.set_table_cell_text(0, old_table_id, 0, 0, "Old API")
-        prs.set_table_cell_text(0, old_table_id, 0, 1, "Still Works")
-        prs.set_table_cell_text(0, old_table_id, 1, 0, "A")
-        prs.set_table_cell_text(0, old_table_id, 1, 1, "B")
-        prs.set_table_flags(0, old_table_id, {"first_row": True})
+        old_table_id = prs.add_table(7, 2, 2, (x, y, cx, cy))
+        prs.set_table_cell_text(7, old_table_id, 0, 0, "Old API")
+        prs.set_table_cell_text(7, old_table_id, 0, 1, "Still Works")
+        prs.set_table_cell_text(7, old_table_id, 1, 0, "A")
+        prs.set_table_cell_text(7, old_table_id, 1, 1, "B")
+        prs.set_table_flags(7, old_table_id, {"first_row": True})
 
         # New way (recommended)
         new_table_id = prs.add_table(
-            slide=6,
+            slide=7,
             rows=2,
             cols=2,
             bounds=(Inches(5), Inches(1.5), Inches(4), Inches(2.5)),

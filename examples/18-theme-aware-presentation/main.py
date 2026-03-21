@@ -12,14 +12,13 @@ from gopptx.presentation.theme import (
     ColorScheme,
     FontScheme,
     Theme,
-    create_aurora_theme,
     get_theme,
     list_themes,
 )
 from gopptx.schemas import Inches
 
 
-def add_theme_slide(prs, title, description, points):
+def add_theme_slide(prs, title, points):
     """Add a themed slide with title and bullet points."""
     slide = prs.add_slide(
         title,
@@ -96,7 +95,6 @@ def main():
         add_theme_slide(
             prs,
             "What are Themes?",
-            "Theme Basics",
             [
                 "Unified color palette across all slides",
                 "Consistent font families and sizes",
@@ -108,7 +106,6 @@ def main():
         add_theme_slide(
             prs,
             "Aurora Theme",
-            "Cool Blues and Teals",
             [
                 "Dark navy text on light backgrounds",
                 "Blue and teal accent colors",
@@ -120,7 +117,6 @@ def main():
         add_theme_slide(
             prs,
             "Theme Components",
-            "Color and Font Schemes",
             [
                 "Color Scheme: dk1, lt1, dk2, lt2, accent1-6, hyperlinks",
                 "Font Scheme: major (heading) and minor (body) fonts",
@@ -145,7 +141,6 @@ def main():
         add_theme_slide(
             prs,
             "Professional & Calm",
-            "Ocean Colors",
             [
                 "Deep ocean blues for depth",
                 "Teal and emerald accents",
@@ -169,7 +164,6 @@ def main():
         add_theme_slide(
             prs,
             "Energetic & Vibrant",
-            "Sunset Colors",
             [
                 "Warm sunset colors",
                 "Orange, red, and gold accents",
@@ -193,7 +187,6 @@ def main():
         add_theme_slide(
             prs,
             "Calm & Organic",
-            "Forest Colors",
             [
                 "Natural green palette",
                 "Earth tones and sage accents",
@@ -217,7 +210,6 @@ def main():
         add_theme_slide(
             prs,
             "Creating Custom Themes",
-            "Brand Your Presentations",
             [
                 "Define custom color schemes with your brand colors",
                 "Choose fonts that match your brand identity",
@@ -229,7 +221,6 @@ def main():
         add_theme_slide(
             prs,
             "Custom Theme Features",
-            "Corporate Blue",
             [
                 f"Primary Color: {corporate_theme.colors.accent1}",
                 f"Secondary Color: {corporate_theme.colors.accent2}",

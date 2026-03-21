@@ -27,6 +27,16 @@ func slideDataForJSON(slide elements.SlideContent) map[string]any {
 		"title":   slide.Title,
 		"layout":  slide.Layout,
 		"bullets": slide.Bullets,
+		"notes":   slide.Notes,
+	}
+	if slide.Table != nil {
+		data["table"] = map[string]any{
+			"rows": slide.Table.Rows,
+			"x":    int64(slide.Table.X),
+			"y":    int64(slide.Table.Y),
+			"cx":   int64(slide.Table.CX),
+			"cy":   int64(slide.Table.CY),
+		}
 	}
 	return data
 }
@@ -240,7 +250,7 @@ func handleRenderTemplate(e *PresentationEditor, payload json.RawMessage) (any, 
 
 	ctx := gonja.Context(req.Context)
 	total := 0
-	seen := make(map[string]string) // raw line -> rendered line
+	seen := make(map[string]string) // raw shape text -> rendered text
 
 	for slideIdx := 0; slideIdx < e.SlideCount(); slideIdx++ {
 		shapes, err := e.GetShapes(slideIdx)
@@ -251,30 +261,43 @@ func handleRenderTemplate(e *PresentationEditor, payload json.RawMessage) (any, 
 			if !strings.Contains(shape.Text, "{{") && !strings.Contains(shape.Text, "{%") {
 				continue
 			}
-			for _, line := range strings.Split(shape.Text, "\n") {
-				if !strings.Contains(line, "{{") && !strings.Contains(line, "{%") {
-					continue
-				}
-				if _, already := seen[line]; already {
-					continue
-				}
-				tpl, err := gonja.FromString(line)
-				if err != nil {
-					seen[line] = line // keep on parse error
-					continue
-				}
-				rendered, err := tpl.Execute(ctx)
-				if err != nil {
-					seen[line] = line // keep on render error
-					continue
-				}
-				seen[line] = rendered
+			if _, already := seen[shape.Text]; already {
+				continue
 			}
+			// Render the entire shape text as one template so that
+			// multi-line blocks ({% for %}, {% if %}) are processed correctly.
+			tpl, err := gonja.FromString(shape.Text)
+			if err != nil {
+				seen[shape.Text] = shape.Text // keep on parse error
+				continue
+			}
+			rendered, err := tpl.Execute(ctx)
+			if err != nil {
+				seen[shape.Text] = shape.Text // keep on render error
+				continue
+			}
+			seen[shape.Text] = rendered
 		}
 	}
 
 	for raw, rendered := range seen {
-		if raw != rendered {
+		if raw == rendered {
+			continue
+		}
+		// When the line count is unchanged, replace line-by-line to preserve
+		// per-run XML formatting (bold, colour, etc.) as much as possible.
+		rawLines := strings.Split(raw, "\n")
+		renderedLines := strings.Split(rendered, "\n")
+		if len(rawLines) == len(renderedLines) {
+			for i, rawLine := range rawLines {
+				if rawLine != renderedLines[i] {
+					n, _ := e.FindAndReplaceInShapes(rawLine, renderedLines[i])
+					total += n
+				}
+			}
+		} else {
+			// Line count changed (e.g. a loop expanded); attempt whole-text
+			// replacement, which works when all text lives in a single XML run.
 			n, _ := e.FindAndReplaceInShapes(raw, rendered)
 			total += n
 		}

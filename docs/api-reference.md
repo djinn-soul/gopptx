@@ -2,22 +2,22 @@
 
 `gopptx` exposes three API surfaces.
 
-## 1) Python Presentation API
+## 1. Python API
 
 - Entry point: `gopptx.Presentation`
 - Location: `python/gopptx/presentation/*`
 - Best for: application developers who want typed, ergonomic APIs
 
-Use this page next:
+See: [Python Presentation API](reference/python-presentation-api.md)
 
-- [Python Presentation API](reference/python-presentation-api.md)
+## 2. Go API
 
-## 1b) Go API Reference
+- Best for: direct Go integrations, fluent deck construction, and core engine development.
+- The Go API has two layers:
+  - **High-level API**: `pkg/pptx`, `pkg/pptx/templates`, `pkg/pptx/charts` for fluent deck construction
+  - **Engine API**: `pkg/pptx/editor` for direct engine integrations and core development
 
-- Entry points: `pkg/pptx`, `pkg/pptx/templates`, `pkg/pptx/charts`
-- Best for: direct Go integrations and fluent deck construction
-
-Use this page next:
+See:
 
 - [Go API Reference](reference/go-api.md)
 - [Go Slides Reference](reference/go-slides.md)
@@ -28,20 +28,12 @@ Use this page next:
 - [Go Charts Reference](reference/go-charts.md)
 - [Go Shapes and Connectors Reference](reference/go-shapes.md)
 
-## 2) JSON Bridge Operations
+## 3. JSON Bridge API
 
 - Operation identifiers: `add_slide`, `set_notes`, `update_chart_data`, etc.
 - Source of truth:
   - `pkg/pptx/editor/opspec.go`
   - `python/gopptx/ops.py`
-- Best for: C/Python bridge clients and non-Python integrations
+- Best for: C/Python bridge clients and non-Python/Go integrations
 
-Use this page next:
-
-- [JSON Bridge Operations](reference/bridge-operations.md)
-
-## 3) Go API
-
-Go APIs live primarily under `pkg/pptx` and `pkg/pptx/editor`.
-
-This surface is best for direct engine integrations and core development.
+See: [JSON Bridge Operations](reference/bridge-operations.md)

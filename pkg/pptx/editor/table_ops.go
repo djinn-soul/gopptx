@@ -223,17 +223,22 @@ func (e *PresentationEditor) AddTableWithData(
 		}
 	}
 
-	// 5. Set flags if any are true
-	flags := map[string]any{
-		"first_row": spec.FirstRow,
-		"first_col": spec.FirstCol,
-		"last_row":  spec.LastRow,
-		"last_col":  spec.LastCol,
-		"band_row":  spec.BandRow,
-		"band_col":  spec.BandCol,
-	}
-	if err := e.UpdateTableFlags(slideIndex, shapeID, flags); err != nil {
-		return shapeID, fmt.Errorf("update flags: %w", err)
+	// 5. Set flags only when the caller explicitly enables at least one.
+	// Skipping this call preserves the firstRow="1" bandRow="1" defaults
+	// that RenderTable writes, so AddTableWithData(..., &TableInitSpec{Data: ...})
+	// does not silently strip the default header-row/banded-row styling.
+	if spec.FirstRow || spec.FirstCol || spec.LastRow || spec.LastCol || spec.BandRow || spec.BandCol {
+		flags := map[string]any{
+			"first_row": spec.FirstRow,
+			"first_col": spec.FirstCol,
+			"last_row":  spec.LastRow,
+			"last_col":  spec.LastCol,
+			"band_row":  spec.BandRow,
+			"band_col":  spec.BandCol,
+		}
+		if err := e.UpdateTableFlags(slideIndex, shapeID, flags); err != nil {
+			return shapeID, fmt.Errorf("update flags: %w", err)
+		}
 	}
 
 	return shapeID, nil

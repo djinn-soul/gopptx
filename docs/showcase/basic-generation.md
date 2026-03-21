@@ -7,7 +7,7 @@ Build a deck from scratch with one slide and one shape.
 ```python
 from gopptx import Presentation
 
-with Presentation.new() as pres:
+with Presentation.new("Basic Generation") as pres:
     pres.add_slide("Hello World")
     pres.add_shape(0, "rect", (1, 1, 2, 1), text="Basic Shape")
     pres.save("basic_generation.pptx")
