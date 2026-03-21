@@ -13,15 +13,12 @@ class PresentationTableBuilders:
 
     if TYPE_CHECKING:
 
-        def add_table(  # noqa: PLR0913, PLR0917
+        def add_table(
             self,
             slide: int | None = None,
             rows: int | None = None,
             cols: int | None = None,
             bounds: tuple[int, int, int, int] | None = None,
-            data: list[list[str]] | None = None,
-            first_row: bool = False,
-            band_row: bool = False,
             **kwargs: object,
         ) -> int:
             """Add a table (signature for type hints)."""
@@ -35,7 +32,6 @@ class PresentationTableBuilders:
         *,
         first_row: bool = True,
         band_row: bool = True,
-        column_widths: list[int] | None = None,
         **kwargs: object,
     ) -> int:
         """Create a table from a list of row data.
@@ -78,7 +74,6 @@ class PresentationTableBuilders:
             data=rows,
             first_row=first_row,
             band_row=band_row,
-            column_widths=column_widths,
             **kwargs,
         )
 
@@ -86,11 +81,9 @@ class PresentationTableBuilders:
         self: Presentation,
         slide: int,
         rows: list[dict[str, str]],
-        column_names: list[str] | None = None,
         bounds: tuple[int, int, int, int] | None = None,
         *,
-        first_row: bool = True,
-        band_row: bool = True,
+        column_names: list[str] | None = None,
         **kwargs: object,
     ) -> int:
         """Create a table from a list of dictionaries.
@@ -130,15 +123,12 @@ class PresentationTableBuilders:
 
         # Build 2D array with header row
         data: list[list[str]] = [column_names]  # Header
-        for row_dict in rows:
-            data.append([row_dict.get(col, "") for col in column_names])
+        data.extend([row_dict.get(col, "") for col in column_names] for row_dict in rows)
 
         return self.add_table_from_rows(
             slide=slide,
             rows=data,
             bounds=bounds,
-            first_row=first_row,
-            band_row=band_row,
             **kwargs,
         )
 

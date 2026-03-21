@@ -42,7 +42,7 @@ def test_shape_dml_style_xml_ordering_fixture(tmp_path: Path) -> None:
     idx_line = shape_xml.index('<a:ln w="25400"><a:prstDash val="dash"/>')
     idx_effect = shape_xml.index("<a:effectLst><a:outerShdw")
     idx_geom = shape_xml.index("<a:prstGeom")
-    assert idx_fill < idx_line < idx_effect < idx_geom
+    assert idx_geom < idx_fill < idx_line < idx_effect
 
 
 def test_shape_line_defaults_emit_without_solid_fill_fixture(tmp_path: Path) -> None:

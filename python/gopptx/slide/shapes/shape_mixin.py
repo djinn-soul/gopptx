@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ... import ops
-from ...constants import ConnectorType, ShapeType
 
 if TYPE_CHECKING:
+    from ...constants import ConnectorType, ShapeType
     from ...presentation.presentation import Presentation
     from ...schemas import ImageMetadata, Shape, ShapeProps, ShapeUpdate
     from .freeform_builder import FreeformBuilder

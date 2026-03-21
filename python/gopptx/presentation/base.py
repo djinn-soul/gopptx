@@ -9,13 +9,49 @@ import sys
 import threading
 from typing import cast
 
+from .. import ops as _ops
 from ..api_errors import GopptxError
 from .helpers import PresentationProtocol
 from .runtime import PresentationRuntimeMixin
+
+try:
+    from jinja2 import (
+        DebugUndefined,
+        Environment,
+        StrictUndefined,
+        Undefined,
+        select_autoescape,
+    )
+
+    _JINJA2_AVAILABLE = True
+except ImportError:
+    _JINJA2_AVAILABLE = False
+
 from .shapes.shape_write_buffer_mixin import PresentationShapeWriteBufferMixin
 from .slides.slide_lookup_mixin import PresentationSlideLookupMixin
 from .slides.slide_proxy_mixin import PresentationSlideProxyMixin
 from .text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
+
+
+def _collect_jinja_tokens(
+    state: dict[str, object],
+    env: object,
+    context: dict[str, object],
+    seen: dict[str, str],
+) -> None:
+    """Collect Jinja2 tokens from a single text state into ``seen``."""
+    full_text = str(state.get("text", ""))
+    if not full_text:
+        return
+    # Jinja2 vars may span a single run or a whole paragraph.
+    # Split on paragraph boundaries (\n) so each token matches
+    # what find_and_replace will see in the XML text node.
+    for token in full_text.split("\n"):
+        if not token or ("{{" not in token and "{%" not in token):
+            continue
+        if token in seen:
+            continue
+        seen[token] = env.from_string(token).render(**context)  # type: ignore[union-attr]
 
 
 class PresentationBase(
@@ -102,9 +138,9 @@ class PresentationBase(
             path: Path to the .pptx template file containing Jinja2 tags.
             context: Variable mapping passed to the Jinja2 renderer.
             undefined: How to handle missing variables.
-                ``"keep"``   – leave unresolved tags as-is (default).
-                ``"empty"``  – replace unresolved tags with an empty string.
-                ``"strict"`` – raise ``UndefinedError`` on missing variables.
+                ``"keep"``   - leave unresolved tags as-is (default).
+                ``"empty"``  - replace unresolved tags with an empty string.
+                ``"strict"`` - raise ``UndefinedError`` on missing variables.
 
         Returns:
             A :class:`Presentation` with all Jinja2 tags replaced by their values.
@@ -121,22 +157,21 @@ class PresentationBase(
             )
             prs.save("output.pptx")
         """
-        try:
-            from jinja2 import DebugUndefined, Environment, StrictUndefined, Undefined
-        except ImportError as exc:
+        if not _JINJA2_AVAILABLE:
             raise ImportError(
                 "jinja2 is required for from_template(). "
                 "Install it with: pip install jinja2"
-            ) from exc
+            )
 
-        _undefined_map = {
+        undefined_map = {
             "keep": DebugUndefined,
             "empty": Undefined,
             "strict": StrictUndefined,
         }
-        env = Environment(undefined=_undefined_map.get(undefined, DebugUndefined))  # type: ignore[arg-type]
-
-        from .. import ops as _ops
+        env = Environment(  # type: ignore[arg-type]
+            undefined=undefined_map.get(undefined, DebugUndefined),
+            autoescape=select_autoescape(enabled_extensions=(), default=False, default_for_string=False),
+        )
 
         pres = cls(path)
 
@@ -154,19 +189,7 @@ class PresentationBase(
                 ).get("states", []),  # type: ignore[attr-defined]
             )
             for state in states:
-                full_text = str(state.get("text", ""))
-                if not full_text:
-                    continue
-                # Jinja2 vars may span a single run or a whole paragraph.
-                # Split on paragraph boundaries (\n) so each token matches
-                # what find_and_replace will see in the XML text node.
-                for token in full_text.split("\n"):
-                    if not token or ("{{" not in token and "{%" not in token):
-                        continue
-                    if token in seen:
-                        continue
-                    rendered = env.from_string(token).render(**context)
-                    seen[token] = rendered
+                _collect_jinja_tokens(state, env, context, seen)
 
         # Apply all replacements in a single pass.
         for raw, rendered in seen.items():
@@ -190,8 +213,6 @@ class PresentationBase(
         Returns:
             Number of text-run replacements performed.
         """
-        from .. import ops as _ops
-
         result = self.execute(_ops.OP_RENDER_TEMPLATE, {"context": context})  # type: ignore[attr-defined]
         return int(result.get("replacements", 0))
 

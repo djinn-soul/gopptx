@@ -6,7 +6,7 @@ from gopptx import Presentation
 from gopptx.schemas import Inches
 
 
-def main():
+def main() -> None:
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 
@@ -149,7 +149,7 @@ def main():
         prs.set_table_flags(7, old_table_id, {"first_row": True})
 
         # New way (recommended)
-        new_table_id = prs.add_table(
+        prs.add_table(
             slide=7,
             rows=2,
             cols=2,

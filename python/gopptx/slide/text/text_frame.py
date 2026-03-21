@@ -94,49 +94,36 @@ class TextFrameProps:
         "word_wrap",
     )
 
-    def __init__(  # noqa: PLR0913, D107
-        self,
-        *,
-        margin_top: int | None = None,
-        margin_bottom: int | None = None,
-        margin_left: int | None = None,
-        margin_right: int | None = None,
-        word_wrap: bool | None = None,
-        auto_fit: bool | None = None,
-        auto_fit_type: str | None = None,
-        vertical_align: str | None = None,
-        orientation: str | None = None,
-        columns: int | None = None,
-        rotation: float | None = None,
-        vertical_anchor: str | None = None,
-        auto_size: str | None = None,
-        text_direction: str | None = None,
-        column_count: int | None = None,
-        text_rotation: float | None = None,
-    ) -> None:
+    def __init__(self, **kwargs: object) -> None:
+        """Initialize text frame properties from keyword arguments."""
         super().__init__()
-        self.margin_top = margin_top
-        self.margin_bottom = margin_bottom
-        self.margin_left = margin_left
-        self.margin_right = margin_right
-        self.word_wrap = word_wrap
-        self.auto_fit = auto_fit
-        self.auto_fit_type = auto_fit_type
-        self.vertical_align = vertical_align
-        self.orientation = orientation
-        self.columns = columns
-        self.rotation = rotation
+        self.margin_top = _as_optional_int(kwargs.get("margin_top"))
+        self.margin_bottom = _as_optional_int(kwargs.get("margin_bottom"))
+        self.margin_left = _as_optional_int(kwargs.get("margin_left"))
+        self.margin_right = _as_optional_int(kwargs.get("margin_right"))
+        self.word_wrap = _as_optional_bool(kwargs.get("word_wrap"))
+        self.auto_fit = _as_optional_bool(kwargs.get("auto_fit"))
+        self.auto_fit_type = _as_optional_string(kwargs.get("auto_fit_type"))
+        self.vertical_align = _as_optional_string(kwargs.get("vertical_align"))
+        self.orientation = _as_optional_string(kwargs.get("orientation"))
+        self.columns = _as_optional_int(kwargs.get("columns"))
+        self.rotation = _as_optional_float(kwargs.get("rotation"))
 
+        vertical_anchor = kwargs.get("vertical_anchor")
         if vertical_anchor is not None:
-            self.vertical_align = _normalize_vertical_align(vertical_anchor)
+            self.vertical_align = _normalize_vertical_align(str(vertical_anchor))
+        auto_size = kwargs.get("auto_size")
         if auto_size is not None:
-            self.auto_fit_type = _normalize_auto_fit_type(auto_size)
+            self.auto_fit_type = _normalize_auto_fit_type(str(auto_size))
+        text_direction = kwargs.get("text_direction")
         if text_direction is not None:
-            self.orientation = _normalize_orientation(text_direction)
+            self.orientation = _normalize_orientation(str(text_direction))
+        column_count = kwargs.get("column_count")
         if column_count is not None:
-            self.columns = column_count
+            self.columns = _as_optional_int(column_count)
+        text_rotation = kwargs.get("text_rotation")
         if text_rotation is not None:
-            self.rotation = text_rotation
+            self.rotation = _as_optional_float(text_rotation)
 
     @classmethod
     def from_payload(
