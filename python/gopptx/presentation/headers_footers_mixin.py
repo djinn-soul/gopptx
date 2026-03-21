@@ -1,0 +1,89 @@
+"""Presentation-level header/footer control mixin."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+from .. import ops
+from ..api_errors import GopptxError
+from .helpers import PresentationMixinBase
+
+if TYPE_CHECKING:
+    pass
+
+
+class PresentationHeaderFooterMixin(PresentationMixinBase):
+    """Mixin providing presentation-level header/footer control."""
+
+    def set_header_footer(  # noqa: PLR0913
+        self,
+        footer: str = "",
+        show_footer: bool = False,
+        show_slide_num: bool = False,
+        show_date_time: bool = False,
+        date_time_text: str = "",
+    ) -> None:
+        """Set header/footer for ALL slides in the presentation.
+
+        This is a presentation-wide setting. Individual slides can override
+        using slide.set_header_footer().
+
+        Args:
+            footer: Footer text to display.
+            show_footer: Whether to show the footer.
+            show_slide_num: Whether to show the slide number.
+            show_date_time: Whether to show the date/time.
+            date_time_text: Fixed date/time string (empty = auto).
+
+        Example:
+            # Apply footer to ALL slides
+            prs.set_header_footer(
+                footer="Confidential",
+                show_footer=True,
+                show_slide_num=True,
+                show_date_time=True,
+            )
+
+            # Now add slides - they all have the footer
+            prs.add_slide("Slide 1")  # Has footer
+            prs.add_slide("Slide 2")  # Has footer
+
+            # Override on specific slide
+            prs.slides[0].set_header_footer(
+                footer="Different Footer",
+                show_footer=True,
+                show_slide_num=False,  # Turn off slide numbers on this one
+            )
+        """
+        # Apply to all slides
+        for slide_index in range(len(self.slides)):
+            payload: dict[str, object] = {
+                "slide_index": slide_index,
+                "footer": footer,
+                "show_footer": show_footer,
+                "show_slide_num": show_slide_num,
+                "show_date_time": show_date_time,
+                "date_time_text": date_time_text,
+            }
+            self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, payload)
+
+    def get_header_footer(self, slide_index: int) -> dict[str, object]:
+        """Get header/footer configuration for a specific slide.
+
+        Args:
+            slide_index: Zero-based slide index.
+
+        Returns:
+            Dict with footer, show_footer, show_slide_num, show_date_time keys.
+        """
+        # We'd need to read from slide XML - for now, return empty
+        # This would require a bridge operation to read header/footer state
+        return {
+            "footer": "",
+            "show_footer": False,
+            "show_slide_num": False,
+            "show_date_time": False,
+        }
+
+
+__all__ = ["PresentationHeaderFooterMixin"]

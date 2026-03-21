@@ -21,26 +21,29 @@ func main() {
 
 	// 1. Large Margin
 	slide = slide.AddShape(
-		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(0.5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1.5)).
-			WithText("Large internal margins (0.5 in)").
+		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(0.5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(2.2)).
+			WithText("0.5in margins demo").
 			WithFill(pptx.NewShapeFill("FFC000")).
-			WithTextMargins(pptx.Inches(0.5), pptx.Inches(0.5), pptx.Inches(0.5), pptx.Inches(0.5)),
+			WithTextMargins(pptx.Inches(0.5), pptx.Inches(0.5), pptx.Inches(0.5), pptx.Inches(0.5)).
+			WithAutoFit(pptx.TextAutoFitNone),
 	)
 
 	// 2. Top Anchor
 	slide = slide.AddShape(
-		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1.5)).
-			WithText("Top Anchored Text").
+		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(3), pptx.Inches(2), pptx.Inches(2), pptx.Inches(3)).
+			WithText("Top anchor").
 			WithFill(pptx.NewShapeFill("5B9BD5")).
-			WithVerticalAnchor(pptx.TextAnchorTop),
+			WithVerticalAnchor(pptx.TextAnchorTop).
+			WithAutoFit(pptx.TextAutoFitNone),
 	)
 
 	// 3. Bottom Anchor
 	slide = slide.AddShape(
-		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5.5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(1.5)).
-			WithText("Bottom Anchored Text").
+		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(5.5), pptx.Inches(2), pptx.Inches(2), pptx.Inches(3)).
+			WithText("Bottom anchor").
 			WithFill(pptx.NewShapeFill("70AD47")).
-			WithVerticalAnchor(pptx.TextAnchorBottom),
+			WithVerticalAnchor(pptx.TextAnchorBottom).
+			WithAutoFit(pptx.TextAutoFitNone),
 	)
 
 	// 4. No Wrap
@@ -48,7 +51,8 @@ func main() {
 		pptx.NewShape(pptx.ShapeTypeRectangle, pptx.Inches(0.5), pptx.Inches(4), pptx.Inches(2), pptx.Inches(0.5)).
 			WithText("This text should NOT wrap and spill out").
 			WithFill(pptx.NewShapeFill("ED7D31")).
-			WithTextWrap(pptx.TextWrapNone),
+			WithTextWrap(pptx.TextWrapNone).
+			WithAutoFit(pptx.TextAutoFitNone),
 	)
 
 	// 5. Shrink Text (normAutoFit)

@@ -271,9 +271,10 @@ func (b *slidePartBuilder) mapPlaceholders(
 	overrides []shapes.PlaceholderContent,
 	placeholderChartRels []pptxxml.ChartRel,
 ) ([]pptxxml.PlaceholderOverrideSpec, error) {
-	specs := make([]pptxxml.PlaceholderOverrideSpec, 0, len(overrides))
+	merged := mergePlaceholderOverrides(overrides)
+	specs := make([]pptxxml.PlaceholderOverrideSpec, 0, len(merged))
 	chartIdx := 0
-	for _, o := range overrides {
+	for _, o := range merged {
 		spec, nextChartIdx, err := b.mapPlaceholderOverrideSpec(o, placeholderChartRels, chartIdx)
 		if err != nil {
 			return nil, err

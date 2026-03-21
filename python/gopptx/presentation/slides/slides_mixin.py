@@ -16,6 +16,7 @@ from .layout_theme_mixin import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideMasters
 from .properties_mixin import PresentationPropertiesMixin
 from .sections_mixin import PresentationSectionMixin
+from .slide_layout_enum import SlideLayoutType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -36,6 +37,7 @@ class PresentationSlidesMixin(
     """Mixin providing slide-related methods for Presentation."""
 
     _BOUNDS_COMPONENTS = 4
+    _EMU_PER_INCH = 914400
 
     if TYPE_CHECKING:
 
@@ -125,10 +127,28 @@ class PresentationSlidesMixin(
     def add_slide(
         self, title: str, layout: str | None = None, bullets: list[str] | None = None
     ) -> Slide:
-        """Add a new slide to the presentation."""
+        """Add a new slide to the presentation.
+
+        Args:
+            title: Title for the slide.
+            layout: Slide layout type (use SlideLayoutType constants).
+                   Examples: SlideLayoutType.BLANK, SlideLayoutType.TITLE_AND_CONTENT
+            bullets: Optional list of bullet points for content.
+
+        Returns:
+            The newly created Slide object.
+
+        Raises:
+            ValueError: If layout is invalid.
+        """
         payload: dict[str, object] = {"title": title}
         if layout:
-            payload["layout"] = layout
+            # Validate layout using enum
+            try:
+                validated_layout = SlideLayoutType.validate(layout)
+                payload["layout"] = validated_layout
+            except ValueError as e:
+                raise ValueError(f"Invalid slide layout: {e}") from e
         if bullets:
             payload["bullets"] = bullets
         result = self.execute(ops.OP_ADD_SLIDE, payload)
@@ -185,12 +205,28 @@ class PresentationSlidesMixin(
         layout: str | None = None,
         bullets: list[str] | None = None,
     ) -> None:
-        """Update slide properties."""
+        """Update slide properties.
+
+        Args:
+            index: Zero-based slide index.
+            title: New title for the slide.
+            layout: New slide layout type (use SlideLayoutType constants).
+                   Examples: SlideLayoutType.BLANK, SlideLayoutType.TITLE_AND_CONTENT
+            bullets: New bullet points for content.
+
+        Raises:
+            ValueError: If layout is invalid.
+        """
         payload: dict[str, object] = {"slide_index": index}
         if title is not None:
             payload["title"] = title
         if layout is not None:
-            payload["layout"] = layout
+            # Validate layout using enum
+            try:
+                validated_layout = SlideLayoutType.validate(layout)
+                payload["layout"] = validated_layout
+            except ValueError as e:
+                raise ValueError(f"Invalid slide layout: {e}") from e
         if bullets is not None:
             payload["bullets"] = bullets
         self.execute(ops.OP_UPDATE_SLIDE, payload)
@@ -242,6 +278,30 @@ class PresentationSlidesMixin(
             The newly created slide.
         """
         return self.add_slide(title, layout="title_and_content", bullets=bullets)
+
+    def add_paragraph_slide(
+        self,
+        title: str,
+        paragraph: str,
+        *,
+        bounds: tuple[float, float, float, float] | None = None,
+        layout: str | None = None,
+    ) -> Slide:
+        """Add a slide with one paragraph textbox using sensible default bounds.
+
+        Args:
+            title: Slide title text.
+            paragraph: Paragraph body content.
+            bounds: Optional textbox bounds in EMU (left, top, width, height).
+                Defaults to a readable content region when omitted.
+            layout: Optional slide layout name.
+
+        Returns:
+            The newly created slide.
+        """
+        slide = self.add_slide(title, layout=layout)
+        slide.add_paragraph(paragraph, bounds=bounds)
+        return slide
 
     def add_slide_from_markdown(self, markdown: str, *, layout: str = "") -> int:
         """Append slides generated from a Markdown string.

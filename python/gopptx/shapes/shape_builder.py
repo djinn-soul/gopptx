@@ -4,21 +4,7 @@ from __future__ import annotations
 
 from typing_extensions import override
 
-from gopptx.constants import (
-    SHAPE_CLOUD,
-    SHAPE_DIAMOND,
-    SHAPE_ELLIPSE,
-    SHAPE_HEART,
-    SHAPE_HEXAGON,
-    SHAPE_PARALLELOGRAM,
-    SHAPE_PENTAGON,
-    SHAPE_RECTANGLE,
-    SHAPE_RIGHT_TRIANGLE,
-    SHAPE_ROUNDED_RECTANGLE,
-    SHAPE_STAR_5,
-    SHAPE_STAR_6,
-    SHAPE_TRIANGLE,
-)
+from gopptx.constants import ShapeType
 
 
 class ShapeBuilder:
@@ -45,7 +31,7 @@ class ShapeBuilder:
 
     def __init__(
         self,
-        shape_type: str,
+        shape_type: ShapeType,
         x: float,
         y: float,
         w: float,
@@ -65,7 +51,7 @@ class ShapeBuilder:
 
     @classmethod
     def of(
-        cls, shape_type: str, x: float, y: float, w: float, h: float
+        cls, shape_type: ShapeType, x: float, y: float, w: float, h: float
     ) -> ShapeBuilder:
         """Generic factory — use any OOXML preset geometry token."""
         return cls(shape_type, x, y, w, h)
@@ -73,67 +59,67 @@ class ShapeBuilder:
     @classmethod
     def rectangle(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a rectangle builder."""
-        return cls(SHAPE_RECTANGLE, x, y, w, h)
+        return cls(ShapeType.RECTANGLE, x, y, w, h)
 
     @classmethod
     def rounded_rectangle(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a rounded-rectangle builder."""
-        return cls(SHAPE_ROUNDED_RECTANGLE, x, y, w, h)
+        return cls(ShapeType.ROUNDED_RECTANGLE, x, y, w, h)
 
     @classmethod
     def ellipse(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create an ellipse (or circle) builder."""
-        return cls(SHAPE_ELLIPSE, x, y, w, h)
+        return cls(ShapeType.ELLIPSE, x, y, w, h)
 
     @classmethod
     def triangle(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create an isosceles-triangle builder."""
-        return cls(SHAPE_TRIANGLE, x, y, w, h)
+        return cls(ShapeType.TRIANGLE, x, y, w, h)
 
     @classmethod
     def right_triangle(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a right-triangle builder."""
-        return cls(SHAPE_RIGHT_TRIANGLE, x, y, w, h)
+        return cls(ShapeType.RIGHT_TRIANGLE, x, y, w, h)
 
     @classmethod
     def diamond(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a diamond builder."""
-        return cls(SHAPE_DIAMOND, x, y, w, h)
+        return cls(ShapeType.DIAMOND, x, y, w, h)
 
     @classmethod
     def pentagon(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a pentagon builder."""
-        return cls(SHAPE_PENTAGON, x, y, w, h)
+        return cls(ShapeType.PENTAGON, x, y, w, h)
 
     @classmethod
     def hexagon(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a hexagon builder."""
-        return cls(SHAPE_HEXAGON, x, y, w, h)
+        return cls(ShapeType.HEXAGON, x, y, w, h)
 
     @classmethod
     def parallelogram(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a parallelogram builder."""
-        return cls(SHAPE_PARALLELOGRAM, x, y, w, h)
+        return cls(ShapeType.PARALLELOGRAM, x, y, w, h)
 
     @classmethod
     def cloud(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a cloud builder."""
-        return cls(SHAPE_CLOUD, x, y, w, h)
+        return cls(ShapeType.CLOUD, x, y, w, h)
 
     @classmethod
     def heart(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a heart builder."""
-        return cls(SHAPE_HEART, x, y, w, h)
+        return cls(ShapeType.HEART, x, y, w, h)
 
     @classmethod
     def star5(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a 5-point star builder."""
-        return cls(SHAPE_STAR_5, x, y, w, h)
+        return cls(ShapeType.STAR_5, x, y, w, h)
 
     @classmethod
     def star6(cls, x: float, y: float, w: float, h: float) -> ShapeBuilder:
         """Create a 6-point star builder."""
-        return cls(SHAPE_STAR_6, x, y, w, h)
+        return cls(ShapeType.STAR_6, x, y, w, h)
 
     # ── Text ────────────────────────────────────────────────────────────────
 
@@ -230,7 +216,7 @@ class ShapeBuilder:
     # ── Internal helpers ─────────────────────────────────────────────────────
 
     @property
-    def shape_type(self) -> str:
+    def shape_type(self) -> ShapeType:
         """The OOXML preset geometry token."""
         return self._shape_type
 

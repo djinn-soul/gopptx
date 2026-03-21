@@ -171,3 +171,70 @@ func (e *PresentationEditor) SetTableColumnWidth(slideIndex, shapeID, col int, w
 	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
 	return nil
 }
+
+// AddTableWithData creates a table with optional data population and configuration.
+// This is a convenience method that batches all table setup operations.
+// Returns the shape ID of the created table.
+func (e *PresentationEditor) AddTableWithData(
+	slideIndex, rowCount, colCount int,
+	x, y, cx, cy int64,
+	spec *TableInitSpec,
+) (int, error) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return 0, fmt.Errorf("slide index %d out of range", slideIndex)
+	}
+
+	// 1. Create empty table
+	shapeID, err := e.AddTable(slideIndex, rowCount, colCount, x, y, cx, cy)
+	if err != nil {
+		return 0, fmt.Errorf("add table: %w", err)
+	}
+
+	if spec == nil {
+		return shapeID, nil
+	}
+
+	// 2. Populate cells if data provided
+	if len(spec.Data) > 0 {
+		for rowIdx, row := range spec.Data {
+			for colIdx, text := range row {
+				if err := e.UpdateTableCellText(slideIndex, shapeID, rowIdx, colIdx, text); err != nil {
+					return shapeID, fmt.Errorf("set cell [%d,%d]: %w", rowIdx, colIdx, err)
+				}
+			}
+		}
+	}
+
+	// 3. Set column widths if provided
+	if len(spec.ColumnWidths) > 0 {
+		for colIdx, width := range spec.ColumnWidths {
+			if err := e.SetTableColumnWidth(slideIndex, shapeID, colIdx, width); err != nil {
+				return shapeID, fmt.Errorf("set column width %d: %w", colIdx, err)
+			}
+		}
+	}
+
+	// 4. Set row heights if provided
+	if len(spec.RowHeights) > 0 {
+		for rowIdx, height := range spec.RowHeights {
+			if err := e.SetTableRowHeight(slideIndex, shapeID, rowIdx, height); err != nil {
+				return shapeID, fmt.Errorf("set row height %d: %w", rowIdx, err)
+			}
+		}
+	}
+
+	// 5. Set flags if any are true
+	flags := map[string]any{
+		"first_row": spec.FirstRow,
+		"first_col": spec.FirstCol,
+		"last_row":  spec.LastRow,
+		"last_col":  spec.LastCol,
+		"band_row":  spec.BandRow,
+		"band_col":  spec.BandCol,
+	}
+	if err := e.UpdateTableFlags(slideIndex, shapeID, flags); err != nil {
+		return shapeID, fmt.Errorf("update flags: %w", err)
+	}
+
+	return shapeID, nil
+}

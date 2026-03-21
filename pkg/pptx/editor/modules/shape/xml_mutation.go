@@ -34,15 +34,30 @@ func ReplaceStyleInSpPr(
 	inner := string(xmlData[match[4]:match[5]])
 	inner = stripSelectiveStyleBlocks(inner, applyFill, applyLine, applyEffects)
 	if styleXML != "" {
-		if idx := strings.Index(inner, "<a:prstGeom"); idx >= 0 {
-			inner = inner[:idx] + styleXML + inner[idx:]
-		} else {
-			inner = styleXML + inner
-		}
+		inner = insertStyleAfterPresetGeometry(inner, styleXML)
 	}
+	inner = normalizeStyleAfterPresetGeometry(inner)
 	replacement := fmt.Sprintf(`<p:spPr%s>%s</p:spPr>`, string(xmlData[match[2]:match[3]]), inner)
 	updated := string(xmlData[:match[0]]) + replacement + string(xmlData[match[1]:])
 	return []byte(updated)
+}
+
+func insertStyleAfterPresetGeometry(inner string, styleXML string) string {
+	startIdx := strings.Index(inner, "<a:prstGeom")
+	if startIdx < 0 {
+		return styleXML + inner
+	}
+
+	search := inner[startIdx:]
+	if closeRel := strings.Index(search, "</a:prstGeom>"); closeRel >= 0 {
+		insertAt := startIdx + closeRel + len("</a:prstGeom>")
+		return inner[:insertAt] + styleXML + inner[insertAt:]
+	}
+	if selfCloseRel := strings.Index(search, "/>"); selfCloseRel >= 0 {
+		insertAt := startIdx + selfCloseRel + len("/>")
+		return inner[:insertAt] + styleXML + inner[insertAt:]
+	}
+	return styleXML + inner
 }
 
 func stripSelectiveStyleBlocks(
@@ -94,4 +109,34 @@ func removeFillBlocks(inner string) string {
 	inner = blipPattern.ReplaceAllString(inner, "")
 	inner = groupPattern.ReplaceAllString(inner, "")
 	return inner
+}
+
+func normalizeStyleAfterPresetGeometry(inner string) string {
+	geomPattern := regexp.MustCompile(`(?s)<a:prstGeom\b[^>]*(?:/>|>.*?</a:prstGeom>)`)
+	geomLoc := geomPattern.FindStringIndex(inner)
+	if geomLoc == nil {
+		return inner
+	}
+
+	stylePattern := regexp.MustCompile(
+		`(?s)` +
+			`<a:solidFill\b[^>]*>.*?</a:solidFill>|<a:solidFill\b[^>]*/>|` +
+			`<a:noFill\b[^>]*>.*?</a:noFill>|<a:noFill\b[^>]*/>|` +
+			`<a:gradFill\b[^>]*>.*?</a:gradFill>|<a:gradFill\b[^>]*/>|` +
+			`<a:pattFill\b[^>]*>.*?</a:pattFill>|<a:pattFill\b[^>]*/>|` +
+			`<a:blipFill\b[^>]*>.*?</a:blipFill>|<a:blipFill\b[^>]*/>|` +
+			`<a:grpFill\b[^>]*>.*?</a:grpFill>|<a:grpFill\b[^>]*/>|` +
+			`<a:ln\b[^>]*>.*?</a:ln>|<a:ln\b[^>]*/>|` +
+			`<a:effectLst\b[^>]*>.*?</a:effectLst>|<a:effectLst\b[^>]*/>`,
+	)
+
+	before := inner[:geomLoc[0]]
+	styles := stylePattern.FindAllString(before, -1)
+	if len(styles) == 0 {
+		return inner
+	}
+	beforeWithoutStyles := stylePattern.ReplaceAllString(before, "")
+	geom := inner[geomLoc[0]:geomLoc[1]]
+	after := inner[geomLoc[1]:]
+	return beforeWithoutStyles + geom + strings.Join(styles, "") + after
 }

@@ -183,11 +183,14 @@ func generateClassElements(diagram *ClassDiagram, theme Theme) DiagramElements {
 		state.addClass(class.ID, classShapes)
 	}
 	for _, rel := range diagram.Relationships {
-		connector, ok := classRelationshipConnector(rel, state, layout, theme)
+		connector, marker, ok := classRelationshipConnector(rel, state, layout, theme)
 		if !ok {
 			continue
 		}
 		state.connectors = append(state.connectors, connector)
+		if marker != nil {
+			state.shapes = append(state.shapes, *marker)
+		}
 	}
 	return state.diagramElements()
 }
@@ -276,15 +279,9 @@ func classPositionForIndex(index int, layout classLayout) classPosition {
 func classHeights(class ClassNode, layout classLayout) (styling.Length, styling.Length, styling.Length) {
 	attrCount := len(class.Attributes)
 	methodCount := len(class.Methods)
-	if attrCount == 0 {
-		attrCount = 1
-	}
-	if methodCount == 0 {
-		methodCount = 1
-	}
 	attrHeight := styling.Length(attrCount) * layout.itemHeight
 	methodHeight := styling.Length(methodCount) * layout.itemHeight
-	total := layout.headerHeight + attrHeight + methodHeight + styling.Inches(0.1)
+	total := layout.headerHeight + attrHeight + methodHeight
 	return attrHeight, methodHeight, total
 }
 
@@ -304,9 +301,6 @@ func classShapesForNode(class ClassNode, index int, layout classLayout, theme Th
 		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
 
 	attrText := strings.Join(class.Attributes, "\n")
-	if attrText == "" {
-		attrText = " "
-	}
 	attrY := position.y + layout.headerHeight
 	attrBox := shapes.NewShape(
 		shapes.ShapeTypeRectangle,
@@ -322,9 +316,6 @@ func classShapesForNode(class ClassNode, index int, layout classLayout, theme Th
 		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
 
 	methodText := strings.Join(class.Methods, "\n")
-	if methodText == "" {
-		methodText = " "
-	}
 	methodY := attrY + attrHeight
 	methodBox := shapes.NewShape(
 		shapes.ShapeTypeRectangle,
@@ -353,7 +344,12 @@ func (s *classRenderState) addClass(classID string, nodeShapes classNodeShapes) 
 	s.shapes = append(s.shapes, nodeShapes.header)
 	s.shapeIndices[classID] = len(s.shapes)
 	s.bounds.include(nodeShapes.position.x, nodeShapes.position.y, s.layout.classWidth, nodeShapes.totalHeight)
-	s.shapes = append(s.shapes, nodeShapes.attrBox, nodeShapes.methodBox)
+	if nodeShapes.attrBox.CY > 0 {
+		s.shapes = append(s.shapes, nodeShapes.attrBox)
+	}
+	if nodeShapes.methodBox.CY > 0 {
+		s.shapes = append(s.shapes, nodeShapes.methodBox)
+	}
 }
 
 func classRelationshipConnector(
@@ -361,11 +357,18 @@ func classRelationshipConnector(
 	state *classRenderState,
 	layout classLayout,
 	theme Theme,
-) (shapes.Connector, bool) {
-	fromPos, fromExists := state.positions[rel.From]
-	toPos, toExists := state.positions[rel.To]
+) (shapes.Connector, *shapes.Shape, bool) {
+	fromID := rel.From
+	toID := rel.To
+	// Mermaid inheritance arrows point toward the parent class.
+	if strings.HasPrefix(rel.Type, "<|") {
+		fromID, toID = rel.To, rel.From
+	}
+
+	fromPos, fromExists := state.positions[fromID]
+	toPos, toExists := state.positions[toID]
 	if !fromExists || !toExists {
-		return shapes.Connector{}, false
+		return shapes.Connector{}, nil, false
 	}
 	geometry := classConnectorPoints(fromPos, toPos, layout)
 	line := shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)
@@ -373,6 +376,11 @@ func classRelationshipConnector(
 		line = line.WithDash(shapes.LineDashDash)
 	}
 	startArrow, endArrow := classArrowTypes(rel.Type)
+	var marker *shapes.Shape
+	if classNeedsHollowInheritanceMarker(rel.Type) {
+		endArrow = shapes.ArrowTypeNone
+		marker = classInheritanceMarker(geometry, theme)
+	}
 	connector := shapes.NewConnector(
 		shapes.ConnectorTypeElbow,
 		geometry.startX,
@@ -380,16 +388,74 @@ func classRelationshipConnector(
 		geometry.endX,
 		geometry.endY,
 	).WithLine(line).WithArrows(startArrow, endArrow)
-	if idx, ok := state.shapeIndices[rel.From]; ok {
+	if idx, ok := state.shapeIndices[fromID]; ok {
 		connector = connector.ConnectStart(idx, geometry.startSite)
 	}
-	if idx, ok := state.shapeIndices[rel.To]; ok {
+	if idx, ok := state.shapeIndices[toID]; ok {
 		connector = connector.ConnectEnd(idx, geometry.endSite)
 	}
-	return connector, true
+	return connector, marker, true
+}
+
+func classNeedsHollowInheritanceMarker(relType string) bool {
+	return relType == "<|--" || relType == "<|.."
+}
+
+func classInheritanceMarker(geometry classConnectorGeometry, theme Theme) *shapes.Shape {
+	size := styling.Inches(0.2)
+	x, y, rotation := classInheritanceMarkerPlacement(geometry, size)
+	shape := shapes.NewShape(shapes.ShapeTypeTriangle, x, y, size, size).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+		WithRotation(rotation)
+	return &shape
+}
+
+func classInheritanceMarkerPlacement(
+	geometry classConnectorGeometry,
+	size styling.Length,
+) (styling.Length, styling.Length, int) {
+	switch geometry.endSite {
+	case shapes.ConnectionSiteLeft:
+		return geometry.endX, geometry.endY - size/2, -90
+	case shapes.ConnectionSiteRight:
+		return geometry.endX - size, geometry.endY - size/2, 90
+	case shapes.ConnectionSiteBottom:
+		return geometry.endX - size/2, geometry.endY - size, 180
+	default:
+		return geometry.endX - size/2, geometry.endY, 0
+	}
 }
 
 func classConnectorPoints(fromPos, toPos classPosition, layout classLayout) classConnectorGeometry {
+	dx := fromPos.x - toPos.x
+	if dx < 0 {
+		dx = -dx
+	}
+	dy := fromPos.y - toPos.y
+	if dy < 0 {
+		dy = -dy
+	}
+	if dx > dy {
+		if fromPos.x < toPos.x {
+			return classConnectorGeometry{
+				startX:    fromPos.x + layout.classWidth,
+				startY:    fromPos.y + layout.headerHeight/2,
+				endX:      toPos.x,
+				endY:      toPos.y + layout.headerHeight/2,
+				startSite: shapes.ConnectionSiteRight,
+				endSite:   shapes.ConnectionSiteLeft,
+			}
+		}
+		return classConnectorGeometry{
+			startX:    fromPos.x,
+			startY:    fromPos.y + layout.headerHeight/2,
+			endX:      toPos.x + layout.classWidth,
+			endY:      toPos.y + layout.headerHeight/2,
+			startSite: shapes.ConnectionSiteLeft,
+			endSite:   shapes.ConnectionSiteRight,
+		}
+	}
 	if fromPos.y < toPos.y {
 		return classConnectorGeometry{
 			startX:    fromPos.x + layout.classWidth/2,
@@ -415,7 +481,7 @@ func classArrowTypes(relType string) (string, string) {
 	endArrow := shapes.ArrowTypeTriangle
 	switch relType {
 	case "<|--", "<|..":
-		endArrow = shapes.ArrowTypeStealth
+		endArrow = shapes.ArrowTypeOpen
 	case "*--", "*..":
 		startArrow = shapes.ArrowTypeDiamond
 	case "o--", "o..":

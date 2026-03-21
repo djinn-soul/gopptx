@@ -88,6 +88,13 @@ class Slide(
 ):
     """Proxy object for a slide within a presentation."""
 
+    _EMU_PER_INCH = 914400
+    _PARAGRAPH_DEFAULT_LEFT_EMU = int(0.8 * _EMU_PER_INCH)
+    _PARAGRAPH_DEFAULT_TOP_EMU = int(2.0 * _EMU_PER_INCH)
+    _PARAGRAPH_DEFAULT_WIDTH_EMU = int(8.0 * _EMU_PER_INCH)
+    _PARAGRAPH_DEFAULT_HEIGHT_EMU = int(1.1 * _EMU_PER_INCH)
+    _PARAGRAPH_DEFAULT_GAP_EMU = int(0.35 * _EMU_PER_INCH)
+
     def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:
         """Initialize the slide proxy."""
         super().__init__()
@@ -99,6 +106,7 @@ class Slide(
         self._shape_records_cache: list[Shape] | None = None
         self._shape_record_map: dict[int, Shape] | None = None
         self._shape_text_state_cache: dict[int, dict[str, object]] | None = None
+        self._next_paragraph_top_emu: int | None = None
 
     def _shape_records(self) -> list[Shape]:
         self._flush_pending_textbox_adds_if_present()
@@ -239,6 +247,42 @@ class Slide(
         )
         if title:
             self._metadata["Title"] = title
+
+    def add_paragraph(
+        self,
+        paragraph: str,
+        *,
+        bounds: tuple[float, float, float, float] | None = None,
+        gap_emu: int | None = None,
+    ) -> int:
+        """Add one paragraph textbox and auto-stack subsequent calls.
+
+        Args:
+            paragraph: Paragraph text content.
+            bounds: Optional textbox bounds in EMU (left, top, width, height).
+                When omitted, defaults are used and each additional paragraph
+                is placed beneath the previous one.
+            gap_emu: Optional vertical gap used between auto-stacked paragraphs.
+
+        Returns:
+            The created textbox shape ID.
+        """
+        if bounds is None:
+            left = self._PARAGRAPH_DEFAULT_LEFT_EMU
+            top = (
+                self._next_paragraph_top_emu
+                if self._next_paragraph_top_emu is not None
+                else self._PARAGRAPH_DEFAULT_TOP_EMU
+            )
+            width = self._PARAGRAPH_DEFAULT_WIDTH_EMU
+            height = self._PARAGRAPH_DEFAULT_HEIGHT_EMU
+            bounds = (left, top, width, height)
+        shape_id = self.add_textbox(*bounds, text=paragraph)
+
+        _, top, _, height = [int(v) for v in bounds]
+        gap = self._PARAGRAPH_DEFAULT_GAP_EMU if gap_emu is None else int(gap_emu)
+        self._next_paragraph_top_emu = top + height + gap
+        return shape_id
 
     def remove(self) -> None:
         """Remove this slide from the presentation."""
