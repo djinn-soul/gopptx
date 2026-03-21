@@ -33,14 +33,8 @@ class SlideLayoutType:
     TITLE_AND_CONTENT = "title_and_content"
     """Slide with title and content (bullets) placeholders."""
 
-    TWO_CONTENT = "two_content"
-    """Slide with title and two content placeholders side by side."""
-
     CENTERED_TITLE = "centered_title"
     """Slide with centered title layout."""
-
-    SECTION_HEADER = "section_header"
-    """Slide with section header layout."""
 
     @staticmethod
     def get_all() -> dict[str, str]:
@@ -61,9 +55,7 @@ class SlideLayoutType:
             "BLANK": SlideLayoutType.BLANK,
             "TITLE_ONLY": SlideLayoutType.TITLE_ONLY,
             "TITLE_AND_CONTENT": SlideLayoutType.TITLE_AND_CONTENT,
-            "TWO_CONTENT": SlideLayoutType.TWO_CONTENT,
             "CENTERED_TITLE": SlideLayoutType.CENTERED_TITLE,
-            "SECTION_HEADER": SlideLayoutType.SECTION_HEADER,
         }
 
     @staticmethod

@@ -33,13 +33,14 @@ go get github.com/djinn-soul/gopptx
 ```go
 package main
 
-import "github.com/djinn-soul/gopptx/pkg/pptx"
+import "github.com/djinn-soul/gopptx/pkg/gopptx"
 
 func main() {
-	p := pptx.NewPresentation()
-	slide := p.AddSlide()
-	slide.AddTextBox("Hello from gopptx")
-	_ = p.Save("quickstart_go.pptx")
+	pres := &gopptx.Presentation{Title: "Hello from gopptx"}
+	slide := pres.AddSlide()
+	slide.Title = "Hello from gopptx"
+	slide.AddBullet("Created with gopptx")
+	_ = pres.Save("quickstart_go.pptx")
 }
 ```
 
