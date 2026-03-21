@@ -13,7 +13,6 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/gopptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const outFile = "docs/assets/pptx/basic_usage.pptx"
@@ -36,9 +35,6 @@ func main() {
 		WithText("Open-source • High-performance • Go + Python").
 		WithFill(shapes.NewShapeFill("2E4057"))
 	slide.AddShape(box)
-
-	// Tint the box text white
-	_ = styling.Inches(0) // keep import used
 
 	if err := pres.Save(outFile); err != nil {
 		log.Fatalf("save: %v", err)
