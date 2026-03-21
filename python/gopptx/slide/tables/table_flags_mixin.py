@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ... import ops
+from ...presentation.tables.table_styles import TableStyle
 
 
 class _TableFlagsMixin:
@@ -80,8 +81,6 @@ class _TableFlagsMixin:
 
     def apply_style(self, style: str | int) -> None:
         """Apply a table style by name or GUID."""
-        from ...presentation.tables.table_styles import TableStyle
-
         style_guid = style
         if isinstance(style, str) and not style.startswith("{"):
             styles = TableStyle.get_all()

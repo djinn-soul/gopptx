@@ -6,6 +6,10 @@ import pathlib
 import sys
 import zipfile
 
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[3] / "python"))
+
+from gopptx import Presentation
+
 
 def project_root_from_here() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[3]
@@ -13,9 +17,6 @@ def project_root_from_here() -> pathlib.Path:
 
 def run() -> None:
     root = project_root_from_here()
-    sys.path.append(str(root / "python"))
-
-    from gopptx import Presentation  # noqa: PLC0415
 
     output_dir = root / "examples" / "output"
     output_dir.mkdir(parents=True, exist_ok=True)

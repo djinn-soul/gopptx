@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ... import ops
+from ... import api_errors, ops
 from ...utils import normalize_table_index
 from .table_cells import Cell, CellRange
 from .table_collections import TableColumn, TableColumns, TableRow, TableRows
@@ -196,8 +196,6 @@ class Table(_TableBandingMixin, _TableFlagsMixin):
 
     def set_data(self, rows: list[list[str]]) -> None:
         """Replace all cell text in the table with new data."""
-        from ... import api_errors
-
         if getattr(self.prs, "_batch_active", False):
             raise api_errors.GopptxError(
                 "Cannot bulk-replace table data in batch context",

@@ -1,5 +1,8 @@
+"""Build usage catalog PPTX files and documentation pages."""
+
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,6 +13,8 @@ from gopptx.schemas import Inches
 
 @dataclass(frozen=True)
 class UsageEntry:
+    """Metadata for a single usage catalog entry."""
+
     id: str
     level: str
     title: str
@@ -201,18 +206,21 @@ USAGE_DIR = ROOT / "docs" / "showcase" / "usages"
 
 
 def entry_pptx_name(entry: UsageEntry) -> str:
+    """Return the PPTX output filename for an entry."""
     return f"{entry.id.lower()}-python.pptx"
 
 
 def entry_png_name(entry: UsageEntry) -> str:
+    """Return the PNG output filename for an entry."""
     return f"{entry.id.lower()}-python.png"
 
 
 def entry_pdf_name(entry: UsageEntry) -> str:
+    """Return the PDF output filename for an entry."""
     return f"{entry.id.lower()}-python.pdf"
 
 
-def _build_c07_pipeline_slide(slide) -> None:
+def _build_c07_pipeline_slide(slide: object) -> None:
     cards = [
         (
             0.75,
@@ -262,7 +270,7 @@ def _build_c07_pipeline_slide(slide) -> None:
     )
 
 
-def _build_c07_targets_slide(slide) -> None:
+def _build_c07_targets_slide(slide: object) -> None:
     targets = [
         (
             0.8,
@@ -323,6 +331,7 @@ def _build_c07_presentation(pres: Presentation) -> None:
 
 
 def generate_pptx(entry: UsageEntry) -> None:
+    """Generate a PPTX file for one usage catalog entry."""
     out_path = PPTX_DIR / entry_pptx_name(entry)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -341,6 +350,7 @@ def generate_pptx(entry: UsageEntry) -> None:
 
 
 def go_code(entry: UsageEntry) -> str:
+    """Return the Go code snippet for a usage entry."""
     if entry.id == "C07":
         return (
             "package main\n\n"
@@ -423,6 +433,7 @@ def go_code(entry: UsageEntry) -> str:
 
 
 def python_code(entry: UsageEntry) -> str:
+    """Return the Python code snippet for a usage entry."""
     if entry.id == "C07":
         return (
             "from pathlib import Path\n"
@@ -507,6 +518,7 @@ def python_code(entry: UsageEntry) -> str:
 
 
 def render_level_page(level: str) -> str:
+    """Render a Markdown page listing all entries for one difficulty level."""
     level_entries = [e for e in ENTRIES if e.level == level]
     title = f"{level} Usages ({len(level_entries)})"
     intro = {
@@ -559,29 +571,28 @@ def render_level_page(level: str) -> str:
 
 
 def render_index_page() -> str:
+    """Render the Markdown index page for the usage catalog."""
     return (
-        "\n".join([
-            "# Usage Catalog (24)",
-            "",
-            "Organized from easiest to most advanced, with both Python and Go code in every entry.",
-            "",
-            "## Levels",
-            "",
-            "1. [Simple (8)](simple.md): quick wins and first workflows.",
-            "2. [Intermediate (8)](intermediate.md): production-ready features.",
-            "3. [Complex (8)](complex.md): advanced integrations and template-heavy pipelines.",
-            "",
-            "## Generation Contract",
-            "",
-            "- PPTX is generated from Python snippets in this catalog.",
-            "- PNG screenshots are exported from those generated PPTX files.",
-            "- Markdown, code snippets, PPTX names, and PNG names are produced from one source list.",
-        ])
-        + "\n"
+        "# Usage Catalog (24)\n"
+        "\n"
+        "Organized from easiest to most advanced, with both Python and Go code in every entry.\n"
+        "\n"
+        "## Levels\n"
+        "\n"
+        "1. [Simple (8)](simple.md): quick wins and first workflows.\n"
+        "2. [Intermediate (8)](intermediate.md): production-ready features.\n"
+        "3. [Complex (8)](complex.md): advanced integrations and template-heavy pipelines.\n"
+        "\n"
+        "## Generation Contract\n"
+        "\n"
+        "- PPTX is generated from Python snippets in this catalog.\n"
+        "- PNG screenshots are exported from those generated PPTX files.\n"
+        "- Markdown, code snippets, PPTX names, and PNG names are produced from one source list.\n"
     )
 
 
 def main() -> None:
+    """Generate all usage catalog PPTX files and Markdown pages."""
     PPTX_DIR.mkdir(parents=True, exist_ok=True)
     PDF_DIR.mkdir(parents=True, exist_ok=True)
     PNG_DIR.mkdir(parents=True, exist_ok=True)
@@ -599,7 +610,7 @@ def main() -> None:
         render_level_page("Complex"), encoding="utf-8"
     )
 
-    print(f"Generated {len(ENTRIES)} PPTX files and usage markdown pages.")
+    sys.stdout.write(f"Generated {len(ENTRIES)} PPTX files and usage markdown pages.\n")
 
 
 if __name__ == "__main__":

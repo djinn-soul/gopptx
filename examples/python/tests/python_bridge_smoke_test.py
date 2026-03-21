@@ -1,4 +1,3 @@
-# ruff: noqa: PLR6301
 """
 Smoke tests for the Python bridge command API.
 
@@ -513,6 +512,7 @@ class TestBridgeThemeAndSizeOperations(unittest.TestCase):
     def test_apply_theme(self) -> None:
         """Test apply_theme operation."""
         pres = gopptx.Presentation.new("Test Deck")
+        self.assertIsNotNone(pres)
         try:
             pres.apply_theme("office")
         except gopptx.GopptxError:
@@ -539,6 +539,7 @@ class TestBridgeShapeAdvancedOperations(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             shape_id = pres.add_shape(0, "rect", (100, 100, 200, 100))
+            self.assertIsInstance(shape_id, int)
             pres.remove_shape(0, shape_id)
         finally:
             pres.close()
@@ -548,6 +549,7 @@ class TestBridgeShapeAdvancedOperations(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             shape_id = pres.add_shape(0, "rect", (100, 100, 200, 100))
+            self.assertIsInstance(shape_id, int)
             pres.update_shape(0, shape_id, {"text": "Updated Text"})
         finally:
             pres.close()
@@ -662,6 +664,7 @@ class TestBridgeChartOperations(unittest.TestCase):
                 [{"name": "Sales", "values": [100, 200]}],
                 bounds=(100, 100, 400, 300),
             )
+            self.assertIsInstance(chart_id, int)
             pres.update_chart_data(
                 chart_id,
                 ["Q1", "Q2", "Q3"],
@@ -692,6 +695,7 @@ class TestBridgeSectionAdvancedOperations(unittest.TestCase):
             pres.add_slide("Slide 2")
             pres.add_section("Section to Remove", [1, 2])
             sections = pres.get_sections()
+            self.assertIsInstance(sections, list)
             if len(sections) > 0:
                 pres.remove_section(sections[0].get("id", 0))
         finally:
@@ -741,6 +745,7 @@ class TestBridgeCommentAdvancedOperations(unittest.TestCase):
         try:
             author_id = pres.add_author("Test User", "TU")
             comment_id = pres.add_comment(0, author_id, "Comment to remove")
+            self.assertIsInstance(comment_id, int)
             pres.remove_comment(comment_id)
         finally:
             pres.close()
@@ -764,6 +769,7 @@ class TestBridgeLayoutAdvancedOperations(unittest.TestCase):
         pres = gopptx.Presentation.new("Test Deck")
         try:
             layouts = pres.list_slide_layouts()
+            self.assertIsInstance(layouts, list)
             if len(layouts) > 0:
                 pres.rebind_slide_layout(0, layouts[0].get("name", ""))
         except gopptx.GopptxError:
@@ -820,6 +826,7 @@ class TestBridgeProtectionOperations(unittest.TestCase):
     def test_set_modify_password(self) -> None:
         """Test set_modify_password operation."""
         pres = gopptx.Presentation.new("Test Deck")
+        self.assertIsNotNone(pres)
         try:
             pres.set_modify_password("testpassword123")
         finally:
@@ -828,6 +835,7 @@ class TestBridgeProtectionOperations(unittest.TestCase):
     def test_set_mark_as_final(self) -> None:
         """Test set_mark_as_final operation."""
         pres = gopptx.Presentation.new("Test Deck")
+        self.assertIsNotNone(pres)
         try:
             pres.set_mark_as_final()
         finally:
