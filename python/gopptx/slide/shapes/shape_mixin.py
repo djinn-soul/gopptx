@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ... import ops
+from ...constants import ConnectorType, ShapeType
 
 if TYPE_CHECKING:
     from ...presentation.presentation import Presentation
@@ -33,7 +34,7 @@ class SlideShapeMixin:
 
     def add_shape(
         self,
-        shape_type: str,
+        shape_type: ShapeType,
         bounds: tuple[float, float, float, float],
         **kwargs: str | ShapeProps,
     ) -> int:
@@ -65,7 +66,7 @@ class SlideShapeMixin:
 
     def add_connector(
         self,
-        connector_type: str,
+        connector_type: ConnectorType,
         begin_x: float,
         begin_y: float,
         end_x: float,

@@ -182,13 +182,18 @@ func chartSeriesXML(chart *ChartSpec) string {
 
 func chartLineSeriesXML(chart *ChartSpec) string {
 	base := chartSeriesXML(chart)
-	if !chart.ShowMarkers {
-		return base
+	if chart.ShowMarkers {
+		return strings.Replace(
+			base,
+			"</c:spPr>",
+			"</c:spPr><c:marker><c:symbol val=\"circle\"/></c:marker>",
+			1,
+		)
 	}
 	return strings.Replace(
 		base,
 		"</c:spPr>",
-		"</c:spPr><c:marker><c:symbol val=\"circle\"/></c:marker>",
+		"</c:spPr><c:marker><c:symbol val=\"none\"/></c:marker>",
 		1,
 	)
 }

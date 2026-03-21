@@ -432,6 +432,8 @@ func customShapeTextBody(shape ShapeSpec) string {
 			autoFitXML = `<a:spAutoFit/>`
 		case normAutoFitToken:
 			autoFitXML = `<a:normAutofit/>`
+		case "none":
+			autoFitXML = `<a:noAutofit/>`
 		default:
 			autoFitXML = ""
 		}

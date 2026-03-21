@@ -4,6 +4,7 @@ from .layout_theme_mixin import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
 from .properties_mixin import PresentationPropertiesMixin
 from .sections_mixin import PresentationSectionMixin
+from .slide_layout_enum import SlideLayoutType
 from .slide_lookup_mixin import PresentationSlideLookupMixin
 from .slide_proxy_mixin import PresentationSlideProxyMixin
 from .slides_mixin import PresentationSlidesMixin
@@ -20,4 +21,5 @@ __all__ = [
     "SlideLayouts",
     "SlideMaster",
     "SlideMasters",
+    "SlideLayoutType",
 ]

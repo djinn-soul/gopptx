@@ -33,17 +33,21 @@ func run() error {
 	// Slide 1: Local File Link
 	slide1 := pptx.NewSlide("Local File Link")
 	rect1 := pptx.NewRectangle(1, 2, 4, 1).
-		WithText("Open 'test.txt'").
+		WithFill(pptx.NewShapeFill("DDE7F0")).
 		WithClickAction(action.NewHyperlink(action.HyperlinkFile("C:\\Temp\\test.txt")))
-	slide1 = slide1.AddShape(rect1)
+	slide1 = slide1.
+		AddShape(rect1).
+		AddShape(pptx.NewTextBox("Open 'test.txt'", 1.35, 2.35, 3.2, 0.35))
 	deck.AddSlide(slide1)
 
 	// Slide 2: Program Link
 	slide2 := pptx.NewSlide("Program Link")
 	rect2 := pptx.NewRectangle(1, 2, 4, 1).
-		WithText("Launch App").
+		WithFill(pptx.NewShapeFill("E8F1E6")).
 		WithClickAction(action.NewHyperlink(action.HyperlinkProgram("C:\\Program Files\\MyApp\\app.exe")))
-	slide2 = slide2.AddShape(rect2)
+	slide2 = slide2.
+		AddShape(rect2).
+		AddShape(pptx.NewTextBox("Launch App", 1.35, 2.35, 3.2, 0.35))
 	deck.AddSlide(slide2)
 
 	if err := deck.WriteToFile(outFile); err != nil {

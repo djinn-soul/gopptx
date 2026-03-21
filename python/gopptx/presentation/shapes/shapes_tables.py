@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
+from ...constants import ConnectorType, ShapeType
 from ...slide.shapes.freeform_builder import FreeformBuilder
 from ..helpers import PresentationMixinBase
 from .shape_media_mixin import PresentationShapeMediaMixin
@@ -43,7 +44,7 @@ class PresentationShapeMixin(
     def add_shape(
         self,
         slide_index: int,
-        shape_type: str,
+        shape_type: ShapeType,
         bounds: tuple[float, float, float, float],
         **kwargs: object,
     ) -> int:
@@ -51,7 +52,7 @@ class PresentationShapeMixin(
         x, y, w, h = bounds
         payload: dict[str, object] = {
             "slide_index": slide_index,
-            "type": shape_type,
+            "type": str(shape_type),
             "x": x,
             "y": y,
             "w": w,
@@ -93,7 +94,7 @@ class PresentationShapeMixin(
     def add_connector(
         self,
         slide_index: int,
-        connector_type: str,
+        connector_type: ConnectorType,
         *points: float,
         **kwargs: object,
     ) -> int:
@@ -104,7 +105,7 @@ class PresentationShapeMixin(
         begin_x, begin_y, end_x, end_y = points
         payload: dict[str, object] = {
             "slide_index": slide_index,
-            "connector_type": connector_type,
+            "connector_type": str(connector_type),
             "begin_x": begin_x,
             "begin_y": begin_y,
             "end_x": end_x,

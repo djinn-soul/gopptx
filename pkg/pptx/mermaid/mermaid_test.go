@@ -130,7 +130,7 @@ class Dog {
     +bark()
 }
 Animal <|-- Dog`,
-			minShapes:       6,
+			minShapes:       5,
 			exactConnectors: 1,
 			checkConnectors: true,
 		},

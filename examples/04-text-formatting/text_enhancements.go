@@ -32,12 +32,12 @@ func main() {
 	// Note: Inches helper is available in root pptx package via styling_compat.go
 	slide2 := pptx.NewSlide("Paragraph Indents").
 		AddBullet("Default indentation for comparison (Level 0).").
-		AddBulletWithStyle("Custom Left Indent (2 inches)",
-			pptx.DefaultTextParagraphStyle().WithLeftIndent(pptx.Inches(2))).
-		AddBulletWithStyle("Hanging Indent (0.5 inch offset)",
+		AddBulletWithStyle("Custom Left Indent (2.5 inches)",
+			pptx.DefaultTextParagraphStyle().WithLeftIndent(pptx.Inches(2.5))).
+		AddBulletWithStyle("Hanging indent example: first line shifts right while wrapped lines hang back to the bullet text start.",
 			pptx.DefaultTextParagraphStyle().
-				WithLeftIndent(pptx.Inches(1)).
-				WithHangingIndent(pptx.Inches(-0.5)))
+				WithLeftIndent(pptx.Inches(1.5)).
+				WithHangingIndent(pptx.Inches(-0.8)))
 
 	builder.AddSlide(slide2)
 

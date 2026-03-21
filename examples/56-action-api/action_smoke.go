@@ -84,26 +84,20 @@ func buildTextRunHyperlinkSlide() pptx.SlideContent {
 			text.NewRun("Click "),
 			text.NewRun("this link").
 				WithHyperlink(action.NewHyperlink(action.HyperlinkURL("https://example.com")).
-					WithTooltip("External link")).
-				WithColor("1565C0").
-				WithUnderline(true),
+					WithTooltip("External link")),
 			text.NewRun(" to visit example.com"),
 		}).
 		AddBulletRuns([]text.Run{
 			text.NewRun("Jump to "),
 			text.NewRun("slide 1").
-				WithHyperlink(action.NewHyperlink(action.HyperlinkSlide(1))).
-				WithColor("2E7D32").
-				WithUnderline(true),
+				WithHyperlink(action.NewHyperlink(action.HyperlinkSlide(1))),
 			text.NewRun(" (internal navigation)"),
 		}).
 		AddBulletRuns([]text.Run{
 			text.NewRun("Hover over "),
 			text.NewRun("this text").
 				WithHoverAction(action.NewHyperlink(action.HyperlinkNextSlide()).
-					WithTooltip("Hover tooltip on text")).
-				WithColor("E65100").
-				WithBold(true),
+					WithTooltip("Hover tooltip on text")),
 			text.NewRun(" to see a tooltip"),
 		})
 }

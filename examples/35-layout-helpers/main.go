@@ -71,14 +71,26 @@ func run() error {
 		distSlide = distSlide.AddShape(
 			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, x, bounds.Y, elemW, bounds.CY).
 				WithFill(pptx.NewShapeFill(distColors[i])).
-				WithText(distLabels[i]),
+				WithText(distLabels[i]).
+				WithTextWrap(pptx.TextWrapNone).
+				WithAutoFit(pptx.TextAutoFitNone),
 		)
 	}
 	slides = append(slides, distSlide)
 
 	// 3. Grid - 2×3 grid of shapes.
-	gridSlide := pptx.NewSlide("Grid Layout (2×3)")
-	boxes, err := pptx.Grid(2, 3, pptx.Inches(0.2))
+	gridSlide := pptx.NewSlide("Grid Layout (2×3)").WithTitleOnlyLayout()
+	boxes, err := pptx.GridInBox(
+		2,
+		3,
+		pptx.Inches(0.2),
+		pptx.Box{
+			X:  pptx.Inches(0.5),
+			Y:  pptx.Inches(1.9),
+			CX: pptx.Inches(9),
+			CY: pptx.Inches(4.9),
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("grid: %w", err)
 	}

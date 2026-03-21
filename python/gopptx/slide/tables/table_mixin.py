@@ -22,9 +22,29 @@ class SlideTableMixin:
             """Slide index."""
             ...
 
-    def add_table(self, rows: int, cols: int, bounds: tuple[int, int, int, int]) -> int:
-        """Add a table and invalidate shape/text caches when available."""
-        shape_id = self._presentation.add_table(self.index, rows, cols, bounds)
+    def add_table(
+        self,
+        rows: int,
+        cols: int,
+        bounds: tuple[int, int, int, int],
+        data: list[list[str]] | None = None,
+        **kwargs: object,
+    ) -> int:
+        """Add a table and invalidate shape/text caches when available.
+
+        Args:
+            rows: Number of rows.
+            cols: Number of columns.
+            bounds: (x, y, cx, cy) table position and size in EMU.
+            data: Optional 2D array of cell text.
+            **kwargs: Additional options (first_row, band_row, column_widths, etc).
+
+        Returns:
+            Shape ID of the created table.
+        """
+        shape_id = self._presentation.add_table(
+            slide=self.index, rows=rows, cols=cols, bounds=bounds, data=data, **kwargs
+        )
         invalidate = getattr(self, "_invalidate_shape_cache", None)
         if callable(invalidate):
             invalidate()

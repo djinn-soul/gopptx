@@ -263,8 +263,39 @@ class Table(_TableBandingMixin):
     def vert_banding(self, value: bool) -> None:
         self._update_flags({"band_col": value})
 
-    def apply_style(self, style_guid: str) -> None:
-        """Apply a table style by GUID."""
+    def apply_style(self, style: str | int) -> None:
+        """Apply a table style by name or GUID.
+
+        Args:
+            style: Style name (e.g., "MEDIUM_STYLE_2") or GUID string.
+                   Use TableStyle constants for easy style selection.
+
+        Example:
+            from gopptx.presentation.tables import TableStyle
+
+            # Apply by named constant
+            table.apply_style(TableStyle.MEDIUM_STYLE_2)
+
+            # Or apply by name string
+            table.apply_style("MEDIUM_STYLE_2")
+
+            # Or apply by full GUID
+            table.apply_style("{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}")
+        """
+        from ...presentation.tables.table_styles import TableStyle
+
+        # Handle style name lookup
+        style_guid = style
+        if isinstance(style, str) and not style.startswith("{"):
+            # It's a style name, look it up
+            styles = TableStyle.get_all()
+            if style not in styles:
+                available = ", ".join(sorted(styles.keys()))
+                raise ValueError(
+                    f"Unknown style name '{style}'. Available: {available}"
+                )
+            style_guid = styles[style]
+
         self.prs.execute(
             ops.OP_SET_TABLE_STYLE,
             {
@@ -273,6 +304,49 @@ class Table(_TableBandingMixin):
                 "style_guid": style_guid,
             },
         )
+        if not getattr(self.prs, "_batch_active", False):
+            self.invalidate_cache()
+
+    def set_data(self, rows: list[list[str]]) -> None:
+        """Replace all cell text in the table with new data.
+
+        Args:
+            rows: 2D list of strings, dimensions must match table (row_count, col_count).
+
+        Raises:
+            ValueError: If shape doesn't match table dimensions.
+            GopptxError: If called during batch context (structural changes not allowed).
+
+        Example:
+            table.set_data([
+                ["Item", "Qty"],
+                ["Widgets", "50"],
+                ["Gadgets", "30"],
+            ])
+        """
+        from ... import api_errors
+
+        if getattr(self.prs, "_batch_active", False):
+            raise api_errors.GopptxError(
+                "Cannot bulk-replace table data in batch context",
+                code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
+            )
+
+        if len(rows) != self.row_count:
+            raise ValueError(
+                f"Row count mismatch: expected {self.row_count}, got {len(rows)}"
+            )
+
+        for row_idx, row in enumerate(rows):
+            if len(row) != self.col_count:
+                raise ValueError(
+                    f"Row {row_idx}: column count mismatch: "
+                    f"expected {self.col_count}, got {len(row)}"
+                )
+            for col_idx, text in enumerate(row):
+                self[row_idx, col_idx].text = text
+
+        # Clear cache after bulk update
         if not getattr(self.prs, "_batch_active", False):
             self.invalidate_cache()
 

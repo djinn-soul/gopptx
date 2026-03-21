@@ -68,17 +68,17 @@ func findXMLTagBlock(source, tagName string, offset int) (int, int, bool) {
 		if gtRel < 0 {
 			return 0, 0, false
 		}
-		openEnd := nameEnd + gtRel
-		if isSelfClosingTag(source[start : openEnd+1]) {
-			return start, openEnd + 1, true
+		openTagEnd := nameEnd + gtRel
+		if isSelfClosingTag(source[start : openTagEnd+1]) {
+			return start, openTagEnd + 1, true
 		}
 
-		closeRel := strings.Index(source[openEnd+1:], closeTag)
+		closeRel := strings.Index(source[openTagEnd+1:], closeTag)
 		if closeRel < 0 {
-			searchFrom = openEnd + 1
+			searchFrom = openTagEnd + 1
 			continue
 		}
-		end := openEnd + 1 + closeRel + len(closeTag)
+		end := openTagEnd + 1 + closeRel + len(closeTag)
 		return start, end, true
 	}
 }
