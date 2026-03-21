@@ -32,9 +32,6 @@ go.work.sum
 .idea/
 # .vscode/
 ppt-rs
-C*.md
-A*.md
-!CONTRIBUTING.md
 .gemini/
 gha-creds-*.json
 tasks/
@@ -304,3 +301,4 @@ go.work.sum
 .task
 scripts/tools/*
 tmp/
+examples/output/*

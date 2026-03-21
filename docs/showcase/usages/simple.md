@@ -560,11 +560,11 @@ import (
 func main() {
 	pres := &gopptx.Presentation{Title: "S10 Slide Transitions"}
 	pres.AddSlide().Title = "Slide 1: Start"
-	
+
 	slide2 := pres.AddSlide()
 	slide2.Title = "Slide 2: Fade Entry"
 	slide2.SetTransition(pptx.TransitionFade, 1000)
-	
+
 	_ = pres.Save("s10-go.pptx")
 }
 ```
@@ -587,4 +587,3 @@ with Presentation.new("S10 Slide Transitions") as p:
 Screenshot generated from the Python code above using `export_pptx_png.ps1`.
 
 ![Slide Transitions](../../assets/images/usage/s10-python.png)
-
