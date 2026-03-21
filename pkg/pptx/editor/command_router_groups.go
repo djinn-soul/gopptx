@@ -18,6 +18,7 @@ func init() {
 	registerHandlers(staticHandlers, shapeMutationHandlers())
 	registerHandlers(staticHandlers, notesTableHandlers())
 	registerHandlers(staticHandlers, handoutSignatureHandlers())
+	registerHandlers(staticHandlers, templateBuildHandlers())
 }
 
 func registerHandlers(dst map[string]commandHandler, src map[string]commandHandler) {
@@ -187,5 +188,16 @@ func handoutSignatureHandlers() map[string]commandHandler {
 		OpGetHandoutMaster:    handleGetHandoutMaster,
 		OpUpdateHandoutMaster: handleUpdateHandoutMaster,
 		OpHasDigitalSignature: handleHasDigitalSignature,
+	}
+}
+
+func templateBuildHandlers() map[string]commandHandler {
+	return map[string]commandHandler{
+		OpBuildStatusTemplate:    handleBuildStatusTemplate,
+		OpBuildSimpleTemplate:    handleBuildSimpleTemplate,
+		OpBuildProposalTemplate:  handleBuildProposalTemplate,
+		OpBuildTrainingTemplate:  handleBuildTrainingTemplate,
+		OpBuildTechnicalTemplate: handleBuildTechnicalTemplate,
+		OpRenderTemplate:         handleRenderTemplate,
 	}
 }

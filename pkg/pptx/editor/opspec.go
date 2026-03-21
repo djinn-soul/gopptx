@@ -107,6 +107,12 @@ const (
 	OpAddSmartArt             = "add_smartart"
 	OpAddAnimation            = "add_animation"
 	OpSetSlideTransition      = "set_slide_transition"
+	OpBuildStatusTemplate     = "build_status_template"
+	OpBuildSimpleTemplate     = "build_simple_template"
+	OpBuildProposalTemplate   = "build_proposal_template"
+	OpBuildTrainingTemplate   = "build_training_template"
+	OpBuildTechnicalTemplate  = "build_technical_template"
+	OpRenderTemplate          = "render_template"
 
 	// OpUpdateSmartArt, OpSetSlideBackground, OpSetSlideHeaderFooter, OpGetHandoutMaster,
 	// OpUpdateHandoutMaster, and OpHasDigitalSignature extend parity with the Go API.
@@ -189,6 +195,12 @@ func supportedSlideAndMetaOps() []string {
 		OpSetThemeColorScheme,
 		OpSetThemeFontScheme,
 		OpGetThemeInventory,
+		OpBuildStatusTemplate,
+		OpBuildSimpleTemplate,
+		OpBuildProposalTemplate,
+		OpBuildTrainingTemplate,
+		OpBuildTechnicalTemplate,
+		OpRenderTemplate,
 	}
 }
 
