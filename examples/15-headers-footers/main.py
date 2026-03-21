@@ -53,7 +53,12 @@ def main():
 
         prs.add_slide("Slide 3", layout="title_only")
         prs.add_textbox(
-            2, Inches(1), Inches(2), Inches(8), Inches(1), text="And this one too!"
+            2,
+            Inches(1),
+            Inches(2),
+            Inches(8),
+            Inches(1),
+            text="And this one too!",
         )
 
         print("\nResult: Slides 1, 2, 3 all have 'Confidential' footer + slide #")
