@@ -136,7 +136,6 @@ class PresentationBase(
         }
         env = Environment(undefined=_undefined_map.get(undefined, DebugUndefined))  # type: ignore[arg-type]
 
-        import re
         from .. import ops as _ops
 
         pres = cls(path)
@@ -145,12 +144,14 @@ class PresentationBase(
         # Multi-paragraph shape text is joined with "\n" in the state, but
         # find_and_replace works on individual XML run text. We therefore split
         # on newlines and process each line (run-level token) separately.
-        seen: dict[str, str] = {}   # raw_token -> rendered_token
+        seen: dict[str, str] = {}  # raw_token -> rendered_token
 
         for slide_index in range(pres.slide_count):  # type: ignore[attr-defined]
             states: list[dict[str, object]] = cast(
                 "list[dict[str, object]]",
-                pres.execute(_ops.OP_GET_SLIDE_TEXT_STATES, {"slide_index": slide_index}).get("states", []),  # type: ignore[attr-defined]
+                pres.execute(
+                    _ops.OP_GET_SLIDE_TEXT_STATES, {"slide_index": slide_index}
+                ).get("states", []),  # type: ignore[attr-defined]
             )
             for state in states:
                 full_text = str(state.get("text", ""))
@@ -170,7 +171,9 @@ class PresentationBase(
         # Apply all replacements in a single pass.
         for raw, rendered in seen.items():
             if raw != rendered:
-                pres.execute(_ops.OP_FIND_AND_REPLACE, {"find": raw, "replace": rendered})  # type: ignore[attr-defined]
+                pres.execute(
+                    _ops.OP_FIND_AND_REPLACE, {"find": raw, "replace": rendered}
+                )  # type: ignore[attr-defined]
 
         return pres
 

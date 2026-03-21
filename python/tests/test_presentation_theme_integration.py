@@ -1,7 +1,6 @@
 """Integration tests for Presentation.apply_theme() method."""
 
 import pytest
-
 from gopptx import Presentation
 from gopptx.presentation.theme import (
     ColorScheme,
@@ -193,11 +192,15 @@ class TestThemeApplicationFlow:
             prs.slides[0].title = "Aurora Theme"
             prs.slides[0].body = "Cool blues and teals"
 
-            prs.add_slide("Benefits", layout="title_and_content", bullets=[
-                "Consistent visual identity",
-                "Professional appearance",
-                "Easy theme switching",
-            ])
+            prs.add_slide(
+                "Benefits",
+                layout="title_and_content",
+                bullets=[
+                    "Consistent visual identity",
+                    "Professional appearance",
+                    "Easy theme switching",
+                ],
+            )
 
             prs.add_slide("Colors", layout="title_only")
 

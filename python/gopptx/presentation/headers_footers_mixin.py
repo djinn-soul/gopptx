@@ -2,14 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
-
 from .. import ops
-from ..api_errors import GopptxError
 from .helpers import PresentationMixinBase
-
-if TYPE_CHECKING:
-    pass
 
 
 class PresentationHeaderFooterMixin(PresentationMixinBase):
@@ -26,7 +20,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
             "date_time_text": "",
         }
 
-    def set_header_footer(  # noqa: PLR0913
+    def set_header_footer(
         self,
         footer: str = "",
         show_footer: bool = False,

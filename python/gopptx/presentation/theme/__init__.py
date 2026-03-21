@@ -17,9 +17,9 @@ __all__ = [
     "FontScheme",
     "Theme",
     "create_aurora_theme",
+    "create_forest_theme",
     "create_ocean_theme",
     "create_sunset_theme",
-    "create_forest_theme",
     "get_theme",
     "list_themes",
 ]

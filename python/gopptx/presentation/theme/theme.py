@@ -343,8 +343,7 @@ def get_theme(name: str) -> Theme:
     if name.lower() not in BUILT_IN_THEMES:
         available = ", ".join(BUILT_IN_THEMES.keys())
         raise ValueError(
-            f"Unknown theme '{name}'. "
-            f"Available built-in themes: {available}"
+            f"Unknown theme '{name}'. Available built-in themes: {available}"
         )
     return BUILT_IN_THEMES[name.lower()]()
 
@@ -366,9 +365,9 @@ __all__ = [
     "FontScheme",
     "Theme",
     "create_aurora_theme",
+    "create_forest_theme",
     "create_ocean_theme",
     "create_sunset_theme",
-    "create_forest_theme",
     "get_theme",
     "list_themes",
 ]

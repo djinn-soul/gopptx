@@ -15,7 +15,6 @@ from gopptx.presentation.theme import (
     get_theme,
     list_themes,
 )
-from gopptx.schemas import Inches
 
 
 def add_theme_slide(prs, title, points):
