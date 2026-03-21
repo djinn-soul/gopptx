@@ -101,7 +101,7 @@ func buildVisibleHeaderFooterShapes(slideXML string, hf SlideHeaderFooter, width
 		if text == "" {
 			text = time.Now().Format("2006-01-02")
 		}
-		b.WriteString(dateTimeOverlayShape(text, width, height, nextID))
+		b.WriteString(dateTimeOverlayShape(text, height, nextID))
 	}
 	return b.String()
 }
@@ -198,12 +198,11 @@ func footerOverlayShape(text string, width, height int64, shapeID int) string {
 </p:sp>`
 }
 
-func dateTimeOverlayShape(text string, width, height int64, shapeID int) string {
+func dateTimeOverlayShape(text string, height int64, shapeID int) string {
 	cx := int64(2133600)
 	cy := int64(396240)
 	x := int64(457200)
 	y := height - cy - int64(274320)
-	_ = width
 	return `
 <p:sp>
   <p:nvSpPr>

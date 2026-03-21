@@ -71,7 +71,7 @@ def main():
         )
 
         # Apply by style name string
-        prs.set_table_style(0, table_id, "MEDIUM_STYLE_1")
+        prs.set_table_style(2, table_id, "MEDIUM_STYLE_1")
 
         # =======================================================================
         # NEW WAY #3 - Backward Compat: Raw GUID Still Works
