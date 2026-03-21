@@ -5,8 +5,31 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+try:
+    from typing import NotRequired, TypedDict
+except ImportError:
+    from typing_extensions import NotRequired, TypedDict  # type: ignore[assignment]
+
 if TYPE_CHECKING:
     from gopptx.presentation.presentation import Presentation
+
+
+class _TableData(TypedDict, total=False):
+    rows: list[list[str]]
+    x: int
+    y: int
+    cx: int
+    cy: int
+
+
+class SlideData(TypedDict, total=False):
+    """Typed structure for a single slide definition in a template."""
+
+    title: str
+    layout: NotRequired[str | None]
+    bullets: NotRequired[list[str] | None]
+    notes: NotRequired[str]
+    table: NotRequired[_TableData | None]
 
 
 class Template(ABC):
@@ -17,7 +40,7 @@ class Template(ABC):
         """Build and return a Presentation with template slides."""
 
 
-def _apply_slides(prs: Presentation, slides: list[dict]) -> None:
+def _apply_slides(prs: Presentation, slides: list[SlideData]) -> None:
     """Remove the default blank slide and add template slides."""
     prs.remove_slide(0)
     for i, slide_data in enumerate(slides):

@@ -22,7 +22,11 @@ class PresentationCommentMixin(PresentationMixinBase):
     def add_author(self, name: str, initials: str) -> int:
         """Add a comment author to the presentation."""
         result = self.execute(ops.OP_ADD_AUTHOR, {"name": name, "initials": initials})
-        return int(cast("int", result.get("author_id", -1)))
+        author_id = result.get("author_id")
+        if not isinstance(author_id, int):
+            msg = "bridge response author_id must be an int"
+            raise TypeError(msg)
+        return author_id
 
     def get_comments(self, slide_index: int) -> list[Comment]:
         """Get all comments on a slide."""

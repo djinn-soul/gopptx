@@ -103,15 +103,27 @@ class TextFrameProps:
         self.margin_right = _as_optional_int(kwargs.get("margin_right"))
         self.word_wrap = _as_optional_bool(kwargs.get("word_wrap"))
         self.auto_fit = _as_optional_bool(kwargs.get("auto_fit"))
+
         self.auto_fit_type = _as_optional_string(kwargs.get("auto_fit_type"))
+        if self.auto_fit_type is not None:
+            self.auto_fit_type = _normalize_auto_fit_type(self.auto_fit_type)
+
         self.vertical_align = _as_optional_string(kwargs.get("vertical_align"))
+        if self.vertical_align is not None:
+            self.vertical_align = _normalize_vertical_align(self.vertical_align)
+
         self.orientation = _as_optional_string(kwargs.get("orientation"))
+        if self.orientation is not None:
+            self.orientation = _normalize_orientation(self.orientation)
+
         self.columns = _as_optional_int(kwargs.get("columns"))
         self.rotation = _as_optional_float(kwargs.get("rotation"))
 
         vertical_anchor = kwargs.get("vertical_anchor")
         if vertical_anchor is not None:
             self.vertical_align = _normalize_vertical_align(str(vertical_anchor))
+        # Legacy alias handling - auto_size overrides auto_fit_type for backwards compatibility.
+        # See _ALIAS_MAP for parameter name mappings.
         auto_size = kwargs.get("auto_size")
         if auto_size is not None:
             self.auto_fit_type = _normalize_auto_fit_type(str(auto_size))
@@ -251,6 +263,8 @@ def _as_optional_int(value: object) -> int | None:
         return None
     if isinstance(value, int):
         return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
     return None
 
 

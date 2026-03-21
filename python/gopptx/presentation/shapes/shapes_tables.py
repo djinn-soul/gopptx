@@ -60,7 +60,11 @@ class PresentationShapeMixin(
         }
         self._apply_shape_payload_options(payload, kwargs, include_text=True)
         result = self.execute(ops.OP_ADD_SHAPE, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def add_textbox(
         self,
@@ -89,7 +93,11 @@ class PresentationShapeMixin(
             include_text=False,
         )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def add_connector(
         self,
@@ -117,7 +125,11 @@ class PresentationShapeMixin(
             include_text=True,
         )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def add_group_shape(
         self,
@@ -129,7 +141,11 @@ class PresentationShapeMixin(
         if shapes is not None:
             payload["shapes"] = shapes
         result = self.execute(ops.OP_ADD_GROUP_SHAPE, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def build_freeform(
         self,
@@ -164,7 +180,11 @@ class PresentationShapeMixin(
         opt = options or {}
         self._apply_shape_payload_options(payload, opt, include_text=True)
         result = self.execute(ops.OP_BUILD_FREEFORM, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
+        return shape_id
 
     def remove_shape(self, slide_index: int, shape_id: int) -> None:
         """Remove a shape from a slide."""
@@ -181,7 +201,11 @@ class PresentationShapeMixin(
             ops.OP_GROUP_SHAPES,
             {"slide_index": slide_index, "shape_ids": shape_ids},
         )
-        return int(cast("int", result.get("group_id", -1)))
+        group_id = result.get("group_id")
+        if not isinstance(group_id, int):
+            msg = "bridge response group_id must be an int"
+            raise TypeError(msg)
+        return group_id
 
     def ungroup_shapes(self, slide_index: int, shape_id: int) -> int:
         """Ungroup a group shape, returning the ID of the first member shape."""
@@ -189,7 +213,11 @@ class PresentationShapeMixin(
             ops.OP_UNGROUP_SHAPES,
             {"slide_index": slide_index, "shape_id": shape_id},
         )
-        return int(cast("int", result.get("group_id", -1)))
+        group_id = result.get("group_id")
+        if not isinstance(group_id, int):
+            msg = "bridge response group_id must be an int"
+            raise TypeError(msg)
+        return group_id
 
     def move_shape_to_front(self, slide_index: int, shape_id: int) -> None:
         """Move a shape to the front of the z-order."""

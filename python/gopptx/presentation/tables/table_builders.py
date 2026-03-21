@@ -123,7 +123,9 @@ class PresentationTableBuilders:
 
         # Build 2D array with header row
         data: list[list[str]] = [column_names]  # Header
-        data.extend([row_dict.get(col, "") for col in column_names] for row_dict in rows)
+        data.extend(
+            [row_dict.get(col, "") for col in column_names] for row_dict in rows
+        )
 
         return self.add_table_from_rows(
             slide=slide,

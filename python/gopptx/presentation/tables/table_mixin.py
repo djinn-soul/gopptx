@@ -87,7 +87,13 @@ def _populate_table(
     content: tuple[list[list[str]] | None, list[int] | None],
     flags: dict[str, bool],
 ) -> None:
-    """Populate table data, column widths, and style flags."""
+    """Populate table data, column widths, and style flags.
+
+    Note: Unlike the previous implementation using `any(flags.values())`,
+    this now sends all flag values to the bridge, including explicit False.
+    This allows users to disable features like header_row or banded_rows
+    by explicitly passing first_row=False or band_row=False.
+    """
     data, column_widths = content
     if data is not None:
         for row_idx, row in enumerate(data):
@@ -96,7 +102,7 @@ def _populate_table(
     if column_widths is not None:
         for col_idx, width in enumerate(column_widths):
             mixin.set_table_column_width(slide_idx, shape_id, col_idx, width)  # type: ignore[union-attr]
-    if any(flags.values()):
+    if flags:
         mixin.set_table_flags(slide_idx, shape_id, flags)  # type: ignore[union-attr]
 
 
@@ -121,31 +127,54 @@ class PresentationTableMixin(
         Keyword options: bounds, x, y, cx, cy, data, first_row, first_col,
         last_row, last_col, band_row, band_col, column_widths.
         """
-        bounds_kwarg = cast("tuple[int, int, int, int] | None", kwargs.get("bounds"))
         slide_idx, rows_val, cols_val, resolved_bounds = _resolve_table_identity(
             slide, slide_index, rows, cols
         )
-        if resolved_bounds is not None:
-            bounds_kwarg = resolved_bounds
-        x, y, cx, cy = _resolve_bounds(bounds_kwarg, kwargs)
+        x, y, cx, cy = _resolve_bounds(
+            resolved_bounds
+            or cast("tuple[int, int, int, int] | None", kwargs.get("bounds")),
+            kwargs,
+        )
 
         result = self.execute(
             ops.OP_ADD_TABLE,
-            {"slide_index": slide_idx, "rows": rows_val, "cols": cols_val, "x": x, "y": y, "cx": cx, "cy": cy},
+            {
+                "slide_index": slide_idx,
+                "rows": rows_val,
+                "cols": cols_val,
+                "x": x,
+                "y": y,
+                "cx": cx,
+                "cy": cy,
+            },
         )
-        shape_id = int(cast("int", result.get("shape_id", 0)))
+        shape_id = result.get("shape_id")
+        if not isinstance(shape_id, int):
+            msg = "bridge response shape_id must be an int"
+            raise TypeError(msg)
 
-        data = cast("list[list[str]] | None", kwargs.get("data"))
-        column_widths = cast("list[int] | None", kwargs.get("column_widths"))
         flags: dict[str, bool] = {
-            "first_row": bool(kwargs.get("first_row")),
-            "first_col": bool(kwargs.get("first_col")),
-            "last_row": bool(kwargs.get("last_row")),
-            "last_col": bool(kwargs.get("last_col")),
-            "band_row": bool(kwargs.get("band_row")),
-            "band_col": bool(kwargs.get("band_col")),
+            k: bool(kwargs[k])
+            for k in (
+                "first_row",
+                "first_col",
+                "last_row",
+                "last_col",
+                "band_row",
+                "band_col",
+            )
+            if k in kwargs
         }
-        _populate_table(self, slide_idx, shape_id, (data, column_widths), flags)
+        _populate_table(
+            self,
+            slide_idx,
+            shape_id,
+            (
+                cast("list[list[str]] | None", kwargs.get("data")),
+                cast("list[int] | None", kwargs.get("column_widths")),
+            ),
+            flags,
+        )
         return shape_id
 
     def get_table(self, slide_index: int, shape_id: int) -> TableInfo:

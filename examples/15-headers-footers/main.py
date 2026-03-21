@@ -15,11 +15,27 @@ def _build_demo_slides(prs: Presentation) -> None:
         show_date_time=True,
     )
     prs.add_slide("Slide 1", layout="title_only")
-    prs.add_textbox(0, Inches(1), Inches(2), Inches(8), Inches(1), text="All slides have the same footer")
+    prs.add_textbox(
+        0,
+        Inches(1),
+        Inches(2),
+        Inches(8),
+        Inches(1),
+        text="All slides have the same footer",
+    )
     prs.add_slide("Slide 2", layout="title_only")
-    prs.add_textbox(1, Inches(1), Inches(2), Inches(8), Inches(1), text="This slide also has the footer")
+    prs.add_textbox(
+        1,
+        Inches(1),
+        Inches(2),
+        Inches(8),
+        Inches(1),
+        text="This slide also has the footer",
+    )
     prs.add_slide("Slide 3", layout="title_only")
-    prs.add_textbox(2, Inches(1), Inches(2), Inches(8), Inches(1), text="And this one too!")
+    prs.add_textbox(
+        2, Inches(1), Inches(2), Inches(8), Inches(1), text="And this one too!"
+    )
     prs.slides[1].set_header_footer(
         footer="Internal Use Only",
         show_footer=True,

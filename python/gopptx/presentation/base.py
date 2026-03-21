@@ -170,7 +170,9 @@ class PresentationBase(
         }
         env = Environment(  # type: ignore[arg-type]
             undefined=undefined_map.get(undefined, DebugUndefined),
-            autoescape=select_autoescape(enabled_extensions=(), default=False, default_for_string=False),
+            autoescape=select_autoescape(
+                enabled_extensions=(), default=False, default_for_string=False
+            ),
         )
 
         pres = cls(path)

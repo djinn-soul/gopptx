@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from gopptx import Presentation, TextFrameProps
+from gopptx.slide.text.text_frame import _as_optional_int  # noqa: PLC2701
 
 
 def test_text_frame_props_aliases_round_trip(tmp_path: Path) -> None:
@@ -48,3 +49,22 @@ def test_text_frame_props_rejects_out_of_range_rotation() -> None:
                 text="unsupported",
                 text_frame={"rotation": 720},
             )
+
+
+def test_text_frame_props_init_validation() -> None:
+    """Ensure TextFrameProps validates values in __init__."""
+    with pytest.raises(ValueError, match="unsupported vertical alignment"):
+        TextFrameProps(vertical_align="invalid")
+
+    with pytest.raises(ValueError, match="unsupported auto_fit_type"):
+        TextFrameProps(auto_fit_type="invalid")
+
+    with pytest.raises(ValueError, match="unsupported orientation"):
+        TextFrameProps(orientation="invalid")
+
+
+def test_as_optional_int_with_floats() -> None:
+    """Ensure _as_optional_int handles integer-like floats."""
+    assert _as_optional_int(1.0) == 1
+    assert _as_optional_int(1.5) is None
+    assert _as_optional_int("1") is None

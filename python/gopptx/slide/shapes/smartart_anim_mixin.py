@@ -13,6 +13,13 @@ if TYPE_CHECKING:
 _INCHES_TO_EMU = 914400
 
 
+def _optional_payload_str(value: object) -> str:
+    """Return empty string for None, string form otherwise."""
+    if value is None:
+        return ""
+    return str(value)
+
+
 class SlideSmartArtAnimMixin:
     """Mixin adding add_smartart, add_animation, and set_transition to Slide."""
 
@@ -186,12 +193,12 @@ class SlideSmartArtAnimMixin:
         payload: dict[str, object] = {
             "slide_index": self.index,
             "type": bg_type,
-            "color": str(kwargs.get("color", "")),
+            "color": _optional_payload_str(kwargs.get("color")),
             "colors": list(kwargs.get("colors") or []),  # type: ignore[arg-type]
-            "angle": int(kwargs.get("angle", 0)),  # type: ignore[arg-type]
-            "image_path": str(kwargs.get("image_path", "")),
-            "image_data": str(kwargs.get("image_data", "")),
-            "color_ref": str(kwargs.get("color_ref", "")),
+            "angle": int(kwargs.get("angle") or 0),  # type: ignore[arg-type]
+            "image_path": _optional_payload_str(kwargs.get("image_path")),
+            "image_data": _optional_payload_str(kwargs.get("image_data")),
+            "color_ref": _optional_payload_str(kwargs.get("color_ref")),
         }
         self._presentation.execute(ops.OP_SET_SLIDE_BACKGROUND, payload)
 

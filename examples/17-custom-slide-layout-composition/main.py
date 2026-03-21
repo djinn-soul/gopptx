@@ -12,7 +12,9 @@ from gopptx.presentation.slides import SlideLayoutType
 from gopptx.schemas import Inches
 
 
-def build_structured_slide(slide: object, title: str, tag: str, points: list[str], image_path: str) -> object:
+def build_structured_slide(
+    slide: object, title: str, tag: str, points: list[str], image_path: str
+) -> object:
     """Build a structured slide with reusable layout components.
 
     Layout structure:

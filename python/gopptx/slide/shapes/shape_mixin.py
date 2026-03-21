@@ -248,12 +248,10 @@ class SlideShapeMixin:
         self._invalidate_shape_cache_if_present()
         shape_count = result.get("shape_count")
         if not isinstance(shape_count, int):
-            msg = "bridge response shape_count must be an int"
-            raise TypeError(msg)
+            raise TypeError("bridge response shape_count must be an int")
         connector_count = result.get("connector_count")
         if not isinstance(connector_count, int):
-            msg = "bridge response connector_count must be an int"
-            raise TypeError(msg)
+            raise TypeError("bridge response connector_count must be an int")
         return shape_count, connector_count
 
     def list_shapes(self) -> list[Shape]:
