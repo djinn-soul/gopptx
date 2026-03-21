@@ -528,8 +528,9 @@ func TestRenderShapeXMLStyleOrderingBeforePresetGeometry(t *testing.T) {
 	if idxFill == -1 || idxLine == -1 || idxEffect == -1 || idxGeom == -1 {
 		t.Fatalf("missing expected style/geom tokens: %s", xmlStr)
 	}
-	if idxFill >= idxLine || idxLine >= idxEffect || idxEffect >= idxGeom {
-		t.Fatalf("unexpected style ordering fill/line/effect/geom: %s", xmlStr)
+	// Correct OOXML order in <p:spPr>: geom → fill → line → effectLst
+	if idxGeom >= idxFill || idxFill >= idxLine || idxLine >= idxEffect {
+		t.Fatalf("unexpected style ordering geom/fill/line/effect: %s", xmlStr)
 	}
 }
 
@@ -825,7 +826,8 @@ func TestReplaceShapeStyleRemovesOldStyleNodesAndKeepsOrdering(t *testing.T) {
 	if idxFill == -1 || idxLine == -1 || idxGeom == -1 {
 		t.Fatalf("expected fill+line+geom after replace, got: %s", out)
 	}
-	if idxFill >= idxLine || idxLine >= idxGeom {
+	// Correct OOXML order in <p:spPr>: geom → fill → line
+	if idxGeom >= idxFill || idxFill >= idxLine {
 		t.Fatalf("unexpected ordering after replace: %s", out)
 	}
 }

@@ -165,6 +165,7 @@ func flowDiagramSlide() pptx.SlideContent {
 		).
 		AddConnector(
 			pptx.NewElbowConnector(pptx.Inches(3.5), pptx.Inches(2.35), pptx.Inches(4.1), pptx.Inches(2.35)).
+				WithLabel("next").
 				WithLine(pptx.NewShapeLine("1F4E78", pptx.Points(1.1)).WithDash(pptx.LineDashDashDot)).
 				WithArrows(pptx.ArrowTypeNone, pptx.ArrowTypeTriangle).
 				WithArrowSize(pptx.ArrowSizeLarge).

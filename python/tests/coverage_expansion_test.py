@@ -145,11 +145,11 @@ class TestCoverageExpansion(unittest.TestCase):
         with Presentation(self.test_pptx) as pres:
             initial_count = pres.slide_count
             # Add with layout
-            s2 = pres.add_slide("Layout Slide", layout="Title Slide")
+            s2 = pres.add_slide("Layout Slide", layout="title_and_content")
             self.assertEqual(s2.title, "Layout Slide")
 
             # Update with layout
-            pres.update_slide(1, title="Updated Title", layout="Blank")
+            pres.update_slide(1, title="Updated Title", layout="blank")
 
             # Add title/bullet slides
             pres.add_title_slide("Title Only")
@@ -178,8 +178,9 @@ class TestCoverageExpansion(unittest.TestCase):
                 pres.rebind_slide_layout(0, name)
 
             # Apply theme
-            pres.apply_theme("Office")  # Tests the "office" -> "Corporate" mapping
-            # "Default" might not be supported by engine, skip it or use another known one
+            from gopptx.presentation.theme import get_theme
+
+            pres.apply_theme(get_theme("aurora"))  # Apply a built-in theme
 
     def test_remove_comment_errors(self) -> None:
         """Comment removal validates index and selector arguments."""
