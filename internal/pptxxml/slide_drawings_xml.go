@@ -803,8 +803,7 @@ func richShapeShadowXML(shadow RichShapeShadowSpec) string {
 }
 
 func richOuterShadowXML(shadow RichShapeShadowSpec) string {
-	attrs := fmt.Sprintf(`blurRad="%d" dist="%d" dir="%d"`,
-		shadow.BlurRadius, shadow.Distance, int(shadow.Angle*emusPerDegree))
+	attrs := shadowBlurDistDirAttrs(shadow)
 
 	if shadow.Alignment != "" {
 		attrs += fmt.Sprintf(` algn="%s"`, Escape(shadow.Alignment))
@@ -814,7 +813,7 @@ func richOuterShadowXML(shadow RichShapeShadowSpec) string {
 		attrs += ` rotWithShape="0"`
 	}
 
-	alphaVal := int((1.0 - shadow.Transparency) * transparencyBase)
+	alphaVal := shadowAlphaValue(shadow.Transparency)
 
 	return fmt.Sprintf(`<a:outerShdw %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
 		attrs, Escape(shadow.Color), alphaVal)

@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...slide.slide import Slide
-    from ..presentation import Presentation
 
 
 class PresentationSlidesExtrasMixin:

@@ -326,4 +326,3 @@ func stateTransitionShapes(
 	label := stateTransitionLabelShape(trans.Label, geom.startX, geom.startY, geom.endX, geom.endY, theme)
 	return connector, &label, true
 }
-
