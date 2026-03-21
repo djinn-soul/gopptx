@@ -193,10 +193,11 @@ func handoutSignatureHandlers() map[string]commandHandler {
 
 func templateBuildHandlers() map[string]commandHandler {
 	return map[string]commandHandler{
-		OpBuildStatusTemplate:     handleBuildStatusTemplate,
-		OpBuildSimpleTemplate:     handleBuildSimpleTemplate,
-		OpBuildProposalTemplate:   handleBuildProposalTemplate,
-		OpBuildTrainingTemplate:   handleBuildTrainingTemplate,
-		OpBuildTechnicalTemplate:  handleBuildTechnicalTemplate,
+		OpBuildStatusTemplate:    handleBuildStatusTemplate,
+		OpBuildSimpleTemplate:    handleBuildSimpleTemplate,
+		OpBuildProposalTemplate:  handleBuildProposalTemplate,
+		OpBuildTrainingTemplate:  handleBuildTrainingTemplate,
+		OpBuildTechnicalTemplate: handleBuildTechnicalTemplate,
+		OpRenderTemplate:         handleRenderTemplate,
 	}
 }

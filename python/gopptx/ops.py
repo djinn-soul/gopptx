@@ -92,6 +92,7 @@ OP_REMOVE_SLIDE = "remove_slide"
 OP_REMOVE_SLIDE_LAYOUT = "remove_slide_layout"
 OP_REMOVE_SLIDE_MASTER = "remove_slide_master"
 OP_RENAME_SECTION = "rename_section"
+OP_RENDER_TEMPLATE = "render_template"
 OP_REPAIR = "repair"
 OP_RESERVE_SHAPE_IDS = "reserve_shape_ids"
 OP_SEARCH_SHAPES = "search_shapes"
@@ -227,6 +228,7 @@ SUPPORTED_OPS = (
     OP_REMOVE_SLIDE_LAYOUT,
     OP_REMOVE_SLIDE_MASTER,
     OP_RENAME_SECTION,
+    OP_RENDER_TEMPLATE,
     OP_REPAIR,
     OP_RESERVE_SHAPE_IDS,
     OP_SEARCH_SHAPES,

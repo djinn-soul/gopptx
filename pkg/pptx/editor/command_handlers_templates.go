@@ -3,9 +3,11 @@ package editor
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/templates"
+	"github.com/noirbizarre/gonja"
 )
 
 // toString safely converts an interface{} to string.
@@ -216,4 +218,67 @@ func handleBuildTechnicalTemplate(_ *PresentationEditor, payload json.RawMessage
 	}
 
 	return map[string]any{"slides": slidesData}, nil
+}
+
+// handleRenderTemplate renders all Jinja2 template expressions across every
+// slide shape using the provided context map.  It supports the full Jinja2
+// syntax (variables, filters, blocks, loops) via the gonja library.
+//
+// Each line of shape text that contains a Jinja2 expression is rendered
+// independently so that run-level formatting (bold, colour, etc.) is
+// preserved via find-and-replace.
+func handleRenderTemplate(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	var req struct {
+		Context map[string]any `json:"context"`
+	}
+	if err := json.Unmarshal(payload, &req); err != nil {
+		return nil, errors.New("invalid render_template payload: expected {\"context\": {...}}")
+	}
+	if len(req.Context) == 0 {
+		return map[string]any{"replacements": 0}, nil
+	}
+
+	ctx := gonja.Context(req.Context)
+	total := 0
+	seen := make(map[string]string) // raw line -> rendered line
+
+	for slideIdx := 0; slideIdx < e.SlideCount(); slideIdx++ {
+		shapes, err := e.GetShapes(slideIdx)
+		if err != nil {
+			continue
+		}
+		for _, shape := range shapes {
+			if !strings.Contains(shape.Text, "{{") && !strings.Contains(shape.Text, "{%") {
+				continue
+			}
+			for _, line := range strings.Split(shape.Text, "\n") {
+				if !strings.Contains(line, "{{") && !strings.Contains(line, "{%") {
+					continue
+				}
+				if _, already := seen[line]; already {
+					continue
+				}
+				tpl, err := gonja.FromString(line)
+				if err != nil {
+					seen[line] = line // keep on parse error
+					continue
+				}
+				rendered, err := tpl.Execute(ctx)
+				if err != nil {
+					seen[line] = line // keep on render error
+					continue
+				}
+				seen[line] = rendered
+			}
+		}
+	}
+
+	for raw, rendered := range seen {
+		if raw != rendered {
+			n, _ := e.FindAndReplaceInShapes(raw, rendered)
+			total += n
+		}
+	}
+
+	return map[string]any{"replacements": total}, nil
 }
