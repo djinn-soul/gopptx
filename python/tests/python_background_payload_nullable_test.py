@@ -24,6 +24,10 @@ class _DummySlide(SlideSmartArtAnimMixin):
     def index(self) -> int:
         return self._index
 
+    @property
+    def presentation(self) -> _DummyPresentation:
+        return self._presentation
+
     def _invalidate_shape_cache_if_present(self) -> None:
         return None
 
@@ -39,7 +43,7 @@ def test_set_background_none_optionals_are_not_stringified() -> None:
         color_ref=None,
     )
 
-    calls = slide._presentation.calls  # noqa: SLF001
+    calls = slide.presentation.calls
     assert len(calls) == 1
     op, payload = calls[0]
     assert op == ops.OP_SET_SLIDE_BACKGROUND
@@ -54,5 +58,5 @@ def test_set_background_falsey_non_none_values_are_preserved() -> None:
     slide = _DummySlide()
     slide.set_background("theme", color_ref=0)
 
-    _, payload = slide._presentation.calls[0]  # noqa: SLF001
+    _, payload = slide.presentation.calls[0]
     assert payload["color_ref"] == "0"
