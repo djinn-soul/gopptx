@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     class _JinjaEnv(Protocol):
         def from_string(self, source: str) -> _JinjaTemplate: ...
 
+
 from .shapes.shape_write_buffer_mixin import PresentationShapeWriteBufferMixin
 from .slides.slide_lookup_mixin import PresentationSlideLookupMixin
 from .slides.slide_proxy_mixin import PresentationSlideProxyMixin
@@ -136,7 +137,7 @@ class PresentationBase(
                     f"Could not find shared library {lib_name}. Please build it first."
                 )
 
-            lib = cast(_RawGopptxLibProtocol, ctypes.CDLL(lib_path))
+            lib = cast("_RawGopptxLibProtocol", ctypes.CDLL(lib_path))
             lib.deck_open.argtypes = [ctypes.c_char_p]
             lib.deck_open.restype = ctypes.c_void_p
             lib.deck_new.argtypes = [ctypes.c_char_p]
@@ -254,7 +255,7 @@ class PresentationBase(
             Number of text-run replacements performed.
         """
         result = self.execute(_ops.OP_RENDER_TEMPLATE, {"context": context})
-        return cast(int, result.get("replacements", 0))
+        return cast("int", result.get("replacements", 0))
 
     @classmethod
     def new(cls, title: str) -> Self:
@@ -262,7 +263,7 @@ class PresentationBase(
         pres = cls()
         if cls._lib is None:
             raise GopptxError("Presentation library is not loaded")
-        lib = cast(_GopptxLibProtocol, cls._lib)
+        lib = cast("_GopptxLibProtocol", cls._lib)
         handle = lib.deck_new(title.encode("utf-8"))
         if not handle:
             err_ptr = lib.deck_global_error()

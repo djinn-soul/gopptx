@@ -8,20 +8,21 @@ from typing_extensions import Protocol
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+
     from ..constants import ConnectorType, ShapeType
     from ..presentation.slides.master import SlideMaster
     from ..schemas import (
-        Shape,
+        ChartState,
         ImageMetadata,
+        Shape,
         ShapeUpdate,
         SlideChartRef,
         TableCellInfo,
         TableInfo,
         TextRun,
-        ChartState,
     )
-    from .shapes.freeform_builder import FreeformBuilder
     from ..slide.chart.data import CategoryChartData, XyChartData
+    from .shapes.freeform_builder import FreeformBuilder
     from .slide import Slide
 
 
@@ -116,7 +117,9 @@ class TextOperationsProtocol(Protocol):
 
     def has_pending_textbox_adds(self, slide_index: int) -> bool: ...
 
-    def queue_textbox_add(self, slide_index: int, payload: dict[str, object]) -> int: ...
+    def queue_textbox_add(
+        self, slide_index: int, payload: dict[str, object]
+    ) -> int: ...
 
     def flush_pending_slide_run_text_updates(self, slide_index: int) -> None: ...
 
@@ -130,9 +133,13 @@ class TextOperationsProtocol(Protocol):
         self, slide_index: int, shape_id: int, run_index: int, text: str
     ) -> None: ...
 
-    def flush_pending_shape_runs_replacements(self, slide_index: int, shape_id: int) -> None: ...
+    def flush_pending_shape_runs_replacements(
+        self, slide_index: int, shape_id: int
+    ) -> None: ...
 
-    def has_pending_shape_runs_replace(self, slide_index: int, shape_id: int) -> bool: ...
+    def has_pending_shape_runs_replace(
+        self, slide_index: int, shape_id: int
+    ) -> bool: ...
 
 
 class ShapeOperationsProtocol(Protocol):
@@ -163,7 +170,9 @@ class ShapeOperationsProtocol(Protocol):
         self, slide_index: int, connectors: Sequence[Mapping[str, object]]
     ) -> list[int]: ...
 
-    def add_group_shape(self, slide_index: int, shapes: list[int] | None = None) -> int: ...
+    def add_group_shape(
+        self, slide_index: int, shapes: list[int] | None = None
+    ) -> int: ...
 
     def build_freeform(
         self,
@@ -245,7 +254,9 @@ class MediaOperationsProtocol(Protocol):
         icon: str | bytes | None = None,
     ) -> int: ...
 
-    def add_mermaid(self, slide_index: int, diagram: str, *, theme: str = "") -> tuple[int, int]: ...
+    def add_mermaid(
+        self, slide_index: int, diagram: str, *, theme: str = ""
+    ) -> tuple[int, int]: ...
 
 
 class ChartOperationsProtocol(Protocol):
@@ -256,17 +267,19 @@ class ChartOperationsProtocol(Protocol):
         slide_index: int,
         chart_type: str,
         categories: Sequence[str] | CategoryChartData | XyChartData,
-        values_or_series: Sequence[float]
-        | Sequence[dict[str, object]]
-        | None = None,
+        values_or_series: Sequence[float] | Sequence[dict[str, object]] | None = None,
         **kwargs: object,
     ) -> int: ...
 
     def list_slide_charts(self, slide_index: int) -> list[SlideChartRef]: ...
 
-    def get_chart_state_by_index(self, slide_index: int, chart_index: int) -> ChartState: ...
+    def get_chart_state_by_index(
+        self, slide_index: int, chart_index: int
+    ) -> ChartState: ...
 
-    def get_chart_state_by_rel_id(self, slide_index: int, rel_id: str) -> ChartState: ...
+    def get_chart_state_by_rel_id(
+        self, slide_index: int, rel_id: str
+    ) -> ChartState: ...
 
     def update_chart_data(
         self,
@@ -297,7 +310,9 @@ class TableOperationsProtocol(Protocol):
 
     def get_table(self, slide_index: int, shape_id: int) -> TableInfo: ...
 
-    def set_table_flags(self, slide_index: int, shape_id: int, flags: dict[str, bool]) -> None: ...
+    def set_table_flags(
+        self, slide_index: int, shape_id: int, flags: dict[str, bool]
+    ) -> None: ...
 
     def set_table_cell_text(
         self, slide_index: int, shape_id: int, row: int, col: int, text: str
@@ -307,13 +322,17 @@ class TableOperationsProtocol(Protocol):
         self, slide_index: int, shape_id: int, row: int, col: int
     ) -> TableCellInfo: ...
 
-    def set_table_style(self, slide_index: int, shape_id: int, style_guid: str) -> None: ...
+    def set_table_style(
+        self, slide_index: int, shape_id: int, style_guid: str
+    ) -> None: ...
 
     def merge_table_cells(
         self, slide_index: int, shape_id: int, cell_range: tuple[int, int, int, int]
     ) -> None: ...
 
-    def split_table_cell(self, slide_index: int, shape_id: int, row: int, col: int) -> None: ...
+    def split_table_cell(
+        self, slide_index: int, shape_id: int, row: int, col: int
+    ) -> None: ...
 
     def set_table_row_height(
         self, slide_index: int, shape_id: int, row: int, height: int
@@ -333,7 +352,9 @@ class NotesOperationsProtocol(Protocol):
 
     def set_notes(self, slide_index: int, text: str) -> None: ...
 
-    def set_notes_shape_text(self, slide_index: int, shape_id: int, text: str) -> None: ...
+    def set_notes_shape_text(
+        self, slide_index: int, shape_id: int, text: str
+    ) -> None: ...
 
     def set_notes_shape_props(
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
