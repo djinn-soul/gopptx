@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     import threading
 
     from ...schemas import SlideMetadata
-    from ..presentation import Presentation
+    from ...slide.contracts import SlidePresentationProtocol
 
 
 class PresentationSlideProxyMixin(PresentationMixinBase):
@@ -36,7 +36,7 @@ class PresentationSlideProxyMixin(PresentationMixinBase):
         with self._lock:
             if self._slides_cache is None:
                 self._slides_cache = [
-                    Slide(cast("Presentation", self), metadata)
+                    Slide(cast("SlidePresentationProtocol", self), metadata)
                     for metadata in self.slides_metadata
                 ]
             return list(self._slides_cache)

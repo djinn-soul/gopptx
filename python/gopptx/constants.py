@@ -4,12 +4,9 @@ from __future__ import annotations
 
 from enum import Enum
 
-try:
-    from enum import StrEnum
-except ImportError:  # pragma: no cover
 
-    class StrEnum(str, Enum):
-        """Python 3.10 compatibility shim for ``enum.StrEnum``."""
+class StrEnum(str, Enum):
+    """Python 3.10 compatibility shim for ``enum.StrEnum``."""
 
 
 # Theme Presets

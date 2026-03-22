@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from ...presentation.presentation import Presentation
+    from ..contracts import SlidePresentationProtocol
 
 
 class SlideShapeBatchMixin:
     """Mixin exposing high-throughput batch shape inserts on Slide objects."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:

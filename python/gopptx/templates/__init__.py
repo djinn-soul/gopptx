@@ -10,7 +10,7 @@ from ._advanced_templates import (
     TrainingTemplate,
 )
 from ._builtin_templates import SimpleTemplate, StatusTemplate
-from ._template_utils import Template, _apply_slides
+from ._template_utils import Template, apply_slides
 
 __all__ = [
     "Milestone",
@@ -21,5 +21,5 @@ __all__ = [
     "TechnicalTemplate",
     "Template",
     "TrainingTemplate",
-    "_apply_slides",
+    "apply_slides",
 ]

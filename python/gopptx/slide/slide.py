@@ -19,19 +19,19 @@ from .text.text_cache_mixin import SlideTextCacheMixin
 from .text.text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
-    from ..presentation.presentation import Presentation
     from ..schemas import Shape, ShapeProps, ShapeUpdate, SlideMetadata
+    from .contracts import SlidePresentationProtocol
 
 
 class SlideBase:
     """Base class providing core slide properties (index, title, notes)."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
         _metadata: SlideMetadata  # pyright: ignore[reportUninitializedInstanceVariable]
 
     @property
-    def presentation(self) -> Presentation:
+    def presentation(self) -> SlidePresentationProtocol:
         """Return the owning presentation proxy."""
         return self._presentation
 
@@ -95,7 +95,9 @@ class Slide(
     _PARAGRAPH_DEFAULT_HEIGHT_EMU = int(1.1 * _EMU_PER_INCH)
     _PARAGRAPH_DEFAULT_GAP_EMU = int(0.35 * _EMU_PER_INCH)
 
-    def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:
+    def __init__(
+        self, presentation: SlidePresentationProtocol, metadata: SlideMetadata
+    ) -> None:
         """Initialize the slide proxy."""
         super().__init__()
         self._presentation = presentation

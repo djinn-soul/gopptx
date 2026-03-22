@@ -108,10 +108,11 @@ class ChartType:
             return chart_type
 
         # Not found - provide helpful error message
+        valid_values = ", ".join(sorted(valid_types))
         raise ValueError(
-            f"Invalid chart_type '{chart_type}'. "
-            f"Use ChartType constants like: ChartType.COLUMN, ChartType.LINE, ChartType.PIE. "
-            f"Valid internal values: {', '.join(sorted(valid_types))}"
+            "Invalid chart_type "
+            + f"{chart_type!r}. Use ChartType constants like ChartType.COLUMN, "
+            + f"ChartType.LINE, ChartType.PIE. Valid internal values: {valid_values}"
         )
 
     @staticmethod

@@ -90,10 +90,11 @@ class SlideLayoutType:
             return layout
 
         # Not found - provide helpful error message
+        valid_values = ", ".join(sorted(valid_layouts))
         raise ValueError(
-            f"Invalid layout '{layout}'. "
-            f"Use SlideLayoutType constants like: SlideLayoutType.BLANK, SlideLayoutType.TITLE_ONLY. "
-            f"Valid internal values: {', '.join(sorted(valid_layouts))}"
+            f"Invalid layout {layout!r}. Use SlideLayoutType constants like "
+            + "SlideLayoutType.BLANK, SlideLayoutType.TITLE_ONLY. Valid internal "
+            + f"values: {valid_values}"
         )
 
     @staticmethod

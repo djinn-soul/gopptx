@@ -7,6 +7,7 @@ import os
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
+from ..helpers import get_required_int
 from .shape_payload_mixin import PresentationShapePayloadMixin
 
 if TYPE_CHECKING:
@@ -29,11 +30,7 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         self._resolve_image_options(payload, kwargs)
 
         result = self.execute(ops.OP_ADD_IMAGE, payload)
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
-        return shape_id
+        return get_required_int(result, "shape_id")
 
     def _resolve_image_source(
         self,
@@ -111,11 +108,7 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             )
 
         result = self.execute(ops.OP_ADD_VIDEO, payload)
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
-        return shape_id
+        return get_required_int(result, "shape_id")
 
     def add_audio(
         self,
@@ -146,11 +139,7 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             )
 
         result = self.execute(ops.OP_ADD_AUDIO, payload)
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
-        return shape_id
+        return get_required_int(result, "shape_id")
 
     def add_ole_object(
         self,
@@ -181,11 +170,7 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             )
 
         result = self.execute(ops.OP_ADD_OLE_OBJECT, payload)
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
-        return shape_id
+        return get_required_int(result, "shape_id")
 
     def list_slide_images(self, slide_index: int) -> list[SlideImageRef]:
         """List all images embedded in a slide.

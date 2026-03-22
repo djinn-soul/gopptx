@@ -6,13 +6,14 @@ from typing import cast
 
 from ... import ops
 from ...utils import is_four_number_bounds
+from ..helpers import PresentationMixinBase
 from ..placeholders import (
     build_placeholder_chart_payload,
     build_placeholder_table_payload,
 )
 
 
-class PresentationPlaceholderMixin:
+class PresentationPlaceholderMixin(PresentationMixinBase):
     """Mixin providing placeholder operations for Presentation."""
 
     def list_placeholders(self, slide_index: int) -> list[dict[str, object]]:

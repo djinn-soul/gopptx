@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...presentation.charts.chart_types import ChartType
-    from ...presentation.presentation import Presentation
+    from collections.abc import Sequence
+
     from ...schemas import SlideChartRef
+    from ..contracts import SlidePresentationProtocol
     from .data import CategoryChartData, XyChartData
 
 
@@ -15,7 +16,7 @@ class SlideChartMixin:
     """Mixin providing chart-related methods for Slide objects."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:
@@ -28,11 +29,9 @@ class SlideChartMixin:
 
     def add_chart(
         self,
-        chart_type: str | ChartType,
-        categories: list[str] | CategoryChartData | XyChartData,
-        values_or_series: list[float]
-        | list[dict[str, str | list[float]]]
-        | None = None,
+        chart_type: str,
+        categories: Sequence[str] | CategoryChartData | XyChartData,
+        values_or_series: Sequence[float] | Sequence[dict[str, object]] | None = None,
         **kwargs: str | tuple[float, float, float, float],
     ) -> int:
         """Add a chart to this slide.

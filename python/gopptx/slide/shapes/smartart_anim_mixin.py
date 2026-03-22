@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ... import ops
+from ...presentation.helpers import get_required_int
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
+    from ..contracts import SlidePresentationProtocol
 
 # EMU conversions: 914400 EMU = 1 inch
 _INCHES_TO_EMU = 914400
@@ -24,7 +25,7 @@ class SlideSmartArtAnimMixin:
     """Mixin adding add_smartart, add_animation, and set_transition to Slide."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:
@@ -77,11 +78,7 @@ class SlideSmartArtAnimMixin:
         }
         result = self._presentation.execute(ops.OP_ADD_SMART_ART, payload)
         self._invalidate_shape_cache_if_present()
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
-        return shape_id
+        return get_required_int(result, "shape_id")
 
     def update_smartart(
         self,
