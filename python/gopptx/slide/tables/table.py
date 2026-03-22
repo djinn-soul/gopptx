@@ -3,19 +3,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, overload
 
 from ... import api_errors, ops
 from ...utils import normalize_table_index
 from .table_cells import Cell, CellRange
 from .table_collections import TableColumn, TableColumns, TableRow, TableRows
-from .table_flags_mixin import _TableFlagsMixin
+from .table_flags_mixin import TableFlagsMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import Protocol
 
-    from ...presentation.presentation import Presentation
+    from ..contracts import SlidePresentationProtocol
 
     class _TableBandingProto(Protocol):
         _cache: dict[str, object] | None
@@ -66,10 +66,12 @@ class _TableBandingMixin:
         self._update_flags({"band_row": value})
 
 
-class Table(_TableBandingMixin, _TableFlagsMixin):
+class Table(_TableBandingMixin, TableFlagsMixin):
     """Pythonic Table API supporting ``table[row, col]`` and slices."""
 
-    def __init__(self, prs: Presentation, slide_index: int, shape_id: int) -> None:
+    def __init__(
+        self, prs: SlidePresentationProtocol, slide_index: int, shape_id: int
+    ) -> None:
         """Initialize a table proxy bound to a slide shape."""
         self.prs = prs
         self.slide_index = slide_index
@@ -80,6 +82,12 @@ class Table(_TableBandingMixin, _TableFlagsMixin):
         self._col_count: int | None = None
         if not getattr(self.prs, "_batch_active", False):
             self._ensure_cache()
+
+    @overload
+    def __getitem__(self, idx: tuple[int, int]) -> Cell: ...
+
+    @overload
+    def __getitem__(self, idx: tuple[int | slice, int | slice]) -> Cell | CellRange: ...
 
     def _ensure_cache(self) -> None:
         if self._cache is not None:
@@ -186,7 +194,7 @@ class Table(_TableBandingMixin, _TableFlagsMixin):
 
     def cell(self, row: int, col: int) -> Cell:
         """Return the cell at the given zero-based row and column."""
-        return self[row, col]  # type: ignore[return-value]
+        return self[row, col]
 
     def iter_cells(self) -> Iterator[Cell]:
         """Iterate all cells row-major."""
@@ -210,8 +218,7 @@ class Table(_TableBandingMixin, _TableFlagsMixin):
         for row_idx, row in enumerate(rows):
             if len(row) != self.col_count:
                 raise ValueError(
-                    f"Row {row_idx}: column count mismatch: "
-                    f"expected {self.col_count}, got {len(row)}"
+                    f"Row {row_idx}: column count mismatch: expected {self.col_count}, got {len(row)}"
                 )
             for col_idx, text in enumerate(row):
                 self[row_idx, col_idx].text = text

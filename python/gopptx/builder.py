@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import cast
 
 from .presentation.presentation import Presentation
 
@@ -133,7 +132,7 @@ class PresentationBuilder:
         The returned object has a handle to the Go engine and can be further
         edited with any ``Presentation`` method before calling ``save_as()``.
         """
-        prs = cast("Presentation", Presentation.new(self._title))
+        prs = Presentation.new(self._title)
         self._apply_core_properties(prs)
         if self._theme:
             prs.apply_theme(self._theme)

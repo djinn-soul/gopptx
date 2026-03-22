@@ -5,10 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from typing_extensions import override
+
 from gopptx import ops
 from gopptx.presentation.presentation import Presentation
 
-from ._template_utils import Template, _apply_slides
+from ._template_utils import Template, apply_slides
 
 if TYPE_CHECKING:
     from gopptx.presentation.theme.theme import Theme
@@ -44,6 +46,7 @@ class ProposalTemplate(Template):
     timeline: list[Milestone] = field(default_factory=list)
     theme: Theme | None = None
 
+    @override
     def build(self) -> Presentation:
         """Build the proposal template presentation."""
         if not self.title:
@@ -76,7 +79,7 @@ class ProposalTemplate(Template):
             if self.theme:
                 prs.apply_theme(self.theme)
 
-            _apply_slides(prs, result.get("slides", []))
+            apply_slides(prs, result.get("slides", []))
             return prs
         except Exception:
             prs.close()
@@ -93,6 +96,7 @@ class TrainingTemplate(Template):
     summary: str = ""
     theme: Theme | None = None
 
+    @override
     def build(self) -> Presentation:
         """Build the training template presentation."""
         if not self.title:
@@ -114,7 +118,7 @@ class TrainingTemplate(Template):
             if self.theme:
                 prs.apply_theme(self.theme)
 
-            _apply_slides(prs, result.get("slides", []))
+            apply_slides(prs, result.get("slides", []))
             return prs
         except Exception:
             prs.close()
@@ -131,6 +135,7 @@ class TechnicalTemplate(Template):
     benchmarks: str = ""
     theme: Theme | None = None
 
+    @override
     def build(self) -> Presentation:
         """Build the technical template presentation."""
         if not self.title:
@@ -152,7 +157,7 @@ class TechnicalTemplate(Template):
             if self.theme:
                 prs.apply_theme(self.theme)
 
-            _apply_slides(prs, result.get("slides", []))
+            apply_slides(prs, result.get("slides", []))
             return prs
         except Exception:
             prs.close()

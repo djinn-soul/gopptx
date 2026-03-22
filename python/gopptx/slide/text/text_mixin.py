@@ -5,15 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
     from ...schemas import TextRun
+    from ..contracts import SlidePresentationProtocol
 
 
 class SlideTextMixin:
     """Mixin providing text-state operations for slide shapes."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:

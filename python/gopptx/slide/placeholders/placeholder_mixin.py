@@ -8,7 +8,7 @@ from ...utils import is_four_number_bounds
 from .placeholder_collection import PlaceholderCollection
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
+    from ..contracts import SlidePresentationProtocol
     from .placeholder import Placeholder
 
 
@@ -16,7 +16,7 @@ class SlidePlaceholderMixin:
     """Mixin providing placeholder access methods for Slide objects."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:

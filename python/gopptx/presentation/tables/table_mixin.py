@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
-from ..helpers import PresentationMixinBase
+from ..helpers import PresentationMixinBase, get_required_int
 from .table_cell_mixin import PresentationTableCellMixin
 from .table_style_mixin import PresentationTableStyleMixin
 
@@ -31,7 +31,7 @@ def _is_legacy_positional_call(
         and isinstance(rows, int)
         and cols is not None
         and isinstance(cols, tuple)
-        and len(cast("tuple", cols)) == _BOUNDS_TUPLE_LEN
+        and len(cast("tuple[object, ...]", cols)) == _BOUNDS_TUPLE_LEN
     )
 
 
@@ -148,10 +148,7 @@ class PresentationTableMixin(
                 "cy": cy,
             },
         )
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
+        shape_id = get_required_int(result, "shape_id")
 
         flags: dict[str, bool] = {
             k: bool(kwargs[k])

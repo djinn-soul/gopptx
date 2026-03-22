@@ -7,7 +7,9 @@ import os
 import pathlib
 import sys
 import threading
-from typing import cast
+from typing import TYPE_CHECKING, Protocol, cast
+
+from typing_extensions import Self
 
 from .. import ops as _ops
 from ..api_errors import GopptxError
@@ -15,17 +17,25 @@ from .helpers import PresentationProtocol
 from .runtime import PresentationRuntimeMixin
 
 try:
-    from jinja2 import (
-        DebugUndefined,
-        Environment,
-        StrictUndefined,
-        Undefined,
-        select_autoescape,
-    )
-
-    _JINJA2_AVAILABLE = True
+    import jinja2 as _jinja2
 except ImportError:
-    _JINJA2_AVAILABLE = False
+    _jinja2 = None
+
+if TYPE_CHECKING:
+
+    class _PresentationTemplateProtocol(Protocol):
+        @property
+        def slide_count(self) -> int: ...
+
+        def execute(
+            self, op: str, payload: dict[str, object] | None = None
+        ) -> dict[str, object]: ...
+
+    class _JinjaTemplate(Protocol):
+        def render(self, **kwargs: object) -> str: ...
+
+    class _JinjaEnv(Protocol):
+        def from_string(self, source: str) -> _JinjaTemplate: ...
 
 from .shapes.shape_write_buffer_mixin import PresentationShapeWriteBufferMixin
 from .slides.slide_lookup_mixin import PresentationSlideLookupMixin
@@ -33,9 +43,33 @@ from .slides.slide_proxy_mixin import PresentationSlideProxyMixin
 from .text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 
+class _GopptxLibProtocol(Protocol):
+    def deck_new(self, title: bytes) -> int: ...
+
+    def deck_global_error(self) -> int: ...
+
+    def deck_free_string(self, ptr: int) -> None: ...
+
+
+class _CtypesFuncProtocol(Protocol):
+    argtypes: list[object]
+    restype: object
+
+
+class _RawGopptxLibProtocol(Protocol):
+    deck_open: _CtypesFuncProtocol
+    deck_new: _CtypesFuncProtocol
+    deck_execute_json: _CtypesFuncProtocol
+    deck_save: _CtypesFuncProtocol
+    deck_last_error: _CtypesFuncProtocol
+    deck_global_error: _CtypesFuncProtocol
+    deck_free_string: _CtypesFuncProtocol
+    deck_close: _CtypesFuncProtocol
+
+
 def _collect_jinja_tokens(
     state: dict[str, object],
-    env: object,
+    env: _JinjaEnv,
     context: dict[str, object],
     seen: dict[str, str],
 ) -> None:
@@ -51,7 +85,7 @@ def _collect_jinja_tokens(
             continue
         if token in seen:
             continue
-        seen[token] = env.from_string(token).render(**context)  # type: ignore[union-attr]
+        seen[token] = env.from_string(token).render(**context)
 
 
 class PresentationBase(
@@ -63,7 +97,7 @@ class PresentationBase(
 ):
     """Base class for Presentation with core library loading and execution."""
 
-    _lib = None
+    _lib: object | None = None
     _lib_lock = threading.Lock()
 
     def __init__(self, path: str | None = None) -> None:
@@ -102,23 +136,24 @@ class PresentationBase(
                     f"Could not find shared library {lib_name}. Please build it first."
                 )
 
-            cls._lib = ctypes.CDLL(lib_path)
-            cls._lib.deck_open.argtypes = [ctypes.c_char_p]
-            cls._lib.deck_open.restype = ctypes.c_void_p
-            cls._lib.deck_new.argtypes = [ctypes.c_char_p]
-            cls._lib.deck_new.restype = ctypes.c_void_p
-            cls._lib.deck_execute_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
-            cls._lib.deck_execute_json.restype = ctypes.c_void_p
-            cls._lib.deck_save.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
-            cls._lib.deck_save.restype = ctypes.c_int
-            cls._lib.deck_last_error.argtypes = [ctypes.c_void_p]
-            cls._lib.deck_last_error.restype = ctypes.c_void_p
-            cls._lib.deck_global_error.argtypes = []
-            cls._lib.deck_global_error.restype = ctypes.c_void_p
-            cls._lib.deck_free_string.argtypes = [ctypes.c_void_p]
-            cls._lib.deck_free_string.restype = None
-            cls._lib.deck_close.argtypes = [ctypes.c_void_p]
-            cls._lib.deck_close.restype = None
+            lib = cast(_RawGopptxLibProtocol, ctypes.CDLL(lib_path))
+            lib.deck_open.argtypes = [ctypes.c_char_p]
+            lib.deck_open.restype = ctypes.c_void_p
+            lib.deck_new.argtypes = [ctypes.c_char_p]
+            lib.deck_new.restype = ctypes.c_void_p
+            lib.deck_execute_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+            lib.deck_execute_json.restype = ctypes.c_void_p
+            lib.deck_save.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+            lib.deck_save.restype = ctypes.c_int
+            lib.deck_last_error.argtypes = [ctypes.c_void_p]
+            lib.deck_last_error.restype = ctypes.c_void_p
+            lib.deck_global_error.argtypes = []
+            lib.deck_global_error.restype = ctypes.c_void_p
+            lib.deck_free_string.argtypes = [ctypes.c_void_p]
+            lib.deck_free_string.restype = None
+            lib.deck_close.argtypes = [ctypes.c_void_p]
+            lib.deck_close.restype = None
+            cls._lib = lib
 
     @classmethod
     def from_template(
@@ -127,7 +162,7 @@ class PresentationBase(
         context: dict[str, object],
         *,
         undefined: str = "keep",
-    ) -> PresentationBase:
+    ) -> Self:
         """Open a .pptx file as a Jinja2 template and render tags with context data.
 
         Finds all Jinja2 expressions (``{{ var }}``, ``{{ var | filter }}``, etc.)
@@ -157,25 +192,27 @@ class PresentationBase(
             )
             prs.save("output.pptx")
         """
-        if not _JINJA2_AVAILABLE:
+        if _jinja2 is None:
             raise ImportError(
-                "jinja2 is required for from_template(). "
-                "Install it with: pip install jinja2"
+                "jinja2 is required for from_template(). Install it with: pip install jinja2"
             )
 
+        assert _jinja2 is not None
+        jinja2 = _jinja2
         undefined_map = {
-            "keep": DebugUndefined,
-            "empty": Undefined,
-            "strict": StrictUndefined,
+            "keep": jinja2.DebugUndefined,
+            "empty": jinja2.Undefined,
+            "strict": jinja2.StrictUndefined,
         }
-        env = Environment(  # type: ignore[arg-type]
-            undefined=undefined_map.get(undefined, DebugUndefined),
-            autoescape=select_autoescape(
+        env = jinja2.Environment(
+            undefined=undefined_map.get(undefined, jinja2.DebugUndefined),
+            autoescape=jinja2.select_autoescape(
                 enabled_extensions=(), default=False, default_for_string=False
             ),
         )
 
         pres = cls(path)
+        pres_api = cast("_PresentationTemplateProtocol", pres)
 
         # Collect all raw text tokens that contain Jinja2 expressions.
         # Multi-paragraph shape text is joined with "\n" in the state, but
@@ -183,12 +220,12 @@ class PresentationBase(
         # on newlines and process each line (run-level token) separately.
         seen: dict[str, str] = {}  # raw_token -> rendered_token
 
-        for slide_index in range(pres.slide_count):  # type: ignore[attr-defined]
+        for slide_index in range(pres_api.slide_count):
             states: list[dict[str, object]] = cast(
                 "list[dict[str, object]]",
-                pres.execute(
+                pres_api.execute(
                     _ops.OP_GET_SLIDE_TEXT_STATES, {"slide_index": slide_index}
-                ).get("states", []),  # type: ignore[attr-defined]
+                ).get("states", []),
             )
             for state in states:
                 _collect_jinja_tokens(state, env, context, seen)
@@ -196,9 +233,9 @@ class PresentationBase(
         # Apply all replacements in a single pass.
         for raw, rendered in seen.items():
             if raw != rendered:
-                pres.execute(
+                pres_api.execute(
                     _ops.OP_FIND_AND_REPLACE, {"find": raw, "replace": rendered}
-                )  # type: ignore[attr-defined]
+                )
 
         return pres
 
@@ -215,23 +252,26 @@ class PresentationBase(
         Returns:
             Number of text-run replacements performed.
         """
-        result = self.execute(_ops.OP_RENDER_TEMPLATE, {"context": context})  # type: ignore[attr-defined]
-        return int(result.get("replacements", 0))
+        result = self.execute(_ops.OP_RENDER_TEMPLATE, {"context": context})
+        return cast(int, result.get("replacements", 0))
 
     @classmethod
-    def new(cls, title: str) -> PresentationBase:
+    def new(cls, title: str) -> Self:
         """Create a new presentation with the given title."""
         pres = cls()
-        handle = cast("int", cls._lib.deck_new(title.encode("utf-8")))  # type: ignore[attr-defined]
+        if cls._lib is None:
+            raise GopptxError("Presentation library is not loaded")
+        lib = cast(_GopptxLibProtocol, cls._lib)
+        handle = lib.deck_new(title.encode("utf-8"))
         if not handle:
-            err_ptr = cls._lib.deck_global_error()  # type: ignore[attr-defined]
+            err_ptr = lib.deck_global_error()
             msg = (
-                ctypes.string_at(cast("int", err_ptr)).decode("utf-8")
+                ctypes.string_at(err_ptr).decode("utf-8")
                 if err_ptr
                 else "Unknown error"
             )
             if err_ptr:
-                cls._lib.deck_free_string(err_ptr)  # type: ignore[attr-defined]
+                lib.deck_free_string(err_ptr)
             raise GopptxError(f"Failed to create new deck: {msg}")
         pres._handle = int(handle)
         return pres

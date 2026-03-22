@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
-from ..helpers import PresentationMixinBase
+from ..helpers import PresentationMixinBase, get_required_int
 
 if TYPE_CHECKING:
     from ...schemas import Author, Comment
@@ -22,11 +22,7 @@ class PresentationCommentMixin(PresentationMixinBase):
     def add_author(self, name: str, initials: str) -> int:
         """Add a comment author to the presentation."""
         result = self.execute(ops.OP_ADD_AUTHOR, {"name": name, "initials": initials})
-        author_id = result.get("author_id")
-        if not isinstance(author_id, int):
-            msg = "bridge response author_id must be an int"
-            raise TypeError(msg)
-        return author_id
+        return get_required_int(result, "author_id")
 
     def get_comments(self, slide_index: int) -> list[Comment]:
         """Get all comments on a slide."""

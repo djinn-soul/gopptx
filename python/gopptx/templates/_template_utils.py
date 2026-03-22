@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 try:
     from typing import NotRequired, TypedDict
 except ImportError:
-    from typing_extensions import NotRequired, TypedDict  # type: ignore[assignment]
+    from typing_extensions import NotRequired, TypedDict
 
 if TYPE_CHECKING:
     from gopptx.presentation.presentation import Presentation
@@ -40,10 +40,11 @@ class Template(ABC):
         """Build and return a Presentation with template slides."""
 
 
-def _apply_slides(prs: Presentation, slides: list[SlideData]) -> None:
+def apply_slides(prs: Presentation, slides: object) -> None:
     """Remove the default blank slide and add template slides."""
+    slide_items = cast("list[SlideData]", slides if isinstance(slides, list) else [])
     prs.remove_slide(0)
-    for i, slide_data in enumerate(slides):
+    for i, slide_data in enumerate(slide_items):
         title_text = slide_data.get("title", "")
         layout = slide_data.get("layout") or None
         bullets = slide_data.get("bullets") or []

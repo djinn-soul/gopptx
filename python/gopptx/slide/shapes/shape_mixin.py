@@ -8,8 +8,8 @@ from ... import ops
 
 if TYPE_CHECKING:
     from ...constants import ConnectorType, ShapeType
-    from ...presentation.presentation import Presentation
     from ...schemas import ImageMetadata, Shape, ShapeProps, ShapeUpdate
+    from ..contracts import SlidePresentationProtocol
     from .freeform_builder import FreeformBuilder
 
 
@@ -17,7 +17,7 @@ class SlideShapeMixin:
     """Mixin providing shape manipulation methods for Slide objects."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:
