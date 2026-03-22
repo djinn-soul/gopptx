@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from .table import Table
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from ...schemas import TableCellInfo, TableInfo
     from ..contracts import SlidePresentationProtocol
 
