@@ -1,6 +1,9 @@
+"""Generate the S02 text-frame usage PPTX from Python docs code."""
+
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from gopptx import Presentation
@@ -8,6 +11,7 @@ from gopptx.schemas import Inches
 
 
 def generate_text_frame_demo(out_path: Path) -> None:
+    """Build and save the S02 text-frame demo presentation."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     with Presentation.new("S02 Text Frame Demo") as pres:
@@ -46,6 +50,7 @@ def generate_text_frame_demo(out_path: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Generate S02 text-frame usage PPTX from Python docs code."
     )
@@ -59,9 +64,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Entry point: parse args and generate the demo PPTX."""
     args = parse_args()
     generate_text_frame_demo(args.out)
-    print(f"Generated: {args.out}")
+    sys.stdout.write(f"Generated: {args.out}\n")
 
 
 if __name__ == "__main__":

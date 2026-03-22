@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from gopptx import GopptxError, Presentation, ops
 from gopptx.presentation import helpers
+from gopptx.presentation.theme import get_theme
 from gopptx.utils import normalize_table_index
 
 
@@ -178,8 +179,6 @@ class TestCoverageExpansion(unittest.TestCase):
                 pres.rebind_slide_layout(0, name)
 
             # Apply theme
-            from gopptx.presentation.theme import get_theme
-
             pres.apply_theme(get_theme("aurora"))  # Apply a built-in theme
 
     def test_remove_comment_errors(self) -> None:

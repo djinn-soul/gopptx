@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
-from ...constants import ConnectorType, ShapeType
 from ...slide.shapes.freeform_builder import FreeformBuilder
 from ..helpers import PresentationMixinBase
 from .shape_media_mixin import PresentationShapeMediaMixin
@@ -13,6 +12,7 @@ from .shape_payload_mixin import PresentationShapePayloadMixin
 from .shape_text_runs_mixin import PresentationShapeTextRunMixin
 
 if TYPE_CHECKING:
+    from ...constants import ConnectorType, ShapeType
     from ...schemas import (
         Shape,
         ShapeSearchQuery,

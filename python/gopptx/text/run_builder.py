@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from typing_extensions import override
 
-if TYPE_CHECKING:
-    from ..schemas_shape_types import TextRun
+from ..schemas_shape_types import TextRun
 
 
 class RunBuilder:
@@ -138,8 +135,6 @@ class RunBuilder:
 
     def build(self) -> TextRun:
         """Return the accumulated :class:`~gopptx.schemas_shape_types.TextRun` dict."""
-        from ..schemas_shape_types import TextRun  # noqa: PLC0415
-
         return TextRun(**dict(self._payload))  # type: ignore[misc]
 
     def to_payload(self) -> dict[str, object]:

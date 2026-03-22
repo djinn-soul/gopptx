@@ -21,29 +21,18 @@ class RunHyperlink:
         "tooltip",
     )
 
-    def __init__(  # noqa: PLR0913, D107
-        self,
-        *,
-        address: str | None = None,
-        action: str | None = None,
-        tooltip: str | None = None,
-        target_slide: int | None = None,
-        jump: str | None = None,
-        macro: str | None = None,
-        history: bool | None = None,
-        highlight_click: bool | None = None,
-        end_sound: bool | None = None,
-    ) -> None:
+    def __init__(self, **kwargs: object) -> None:
+        """Initialize with optional hyperlink attributes."""
         super().__init__()
-        self.address = address
-        self.action = action
-        self.tooltip = tooltip
-        self.target_slide = target_slide
-        self.jump = jump
-        self.macro = macro
-        self.history = history
-        self.highlight_click = highlight_click
-        self.end_sound = end_sound
+        self.address = _as_optional_string(kwargs.get("address"))
+        self.action = _as_optional_string(kwargs.get("action"))
+        self.tooltip = _as_optional_string(kwargs.get("tooltip"))
+        self.target_slide = _as_optional_int(kwargs.get("target_slide"))
+        self.jump = _as_optional_string(kwargs.get("jump"))
+        self.macro = _as_optional_string(kwargs.get("macro"))
+        self.history = _as_optional_bool(kwargs.get("history"))
+        self.highlight_click = _as_optional_bool(kwargs.get("highlight_click"))
+        self.end_sound = _as_optional_bool(kwargs.get("end_sound"))
 
     @classmethod
     def from_payload(
@@ -117,43 +106,29 @@ class Run:
         "underline",
     )
 
-    def __init__(  # noqa: PLR0913, D107
-        self,
-        text: str = "",
-        *,
-        bold: bool | None = None,
-        italic: bool | None = None,
-        underline: str | None = None,
-        strikethrough: bool | None = None,
-        subscript: bool | None = None,
-        superscript: bool | None = None,
-        color: str | None = None,
-        highlight: str | None = None,
-        font: str | None = None,
-        size_pt: int | None = None,
-        code: bool | None = None,
-        all_caps: bool | None = None,
-        small_caps: bool | None = None,
-        hyperlink: Mapping[str, object] | RunHyperlink | None = None,
-        hover_action: Mapping[str, object] | RunHyperlink | None = None,
-    ) -> None:
+    def __init__(self, text: str = "", **kwargs: object) -> None:
+        """Initialize with optional run formatting attributes."""
         super().__init__()
         self.text = text
-        self.bold = bold
-        self.italic = italic
-        self.underline = underline
-        self.strikethrough = strikethrough
-        self.subscript = subscript
-        self.superscript = superscript
-        self.color = color
-        self.highlight = highlight
-        self.font = font
-        self.size_pt = size_pt
-        self.code = code
-        self.all_caps = all_caps
-        self.small_caps = small_caps
-        self._hyperlink = RunHyperlink.from_payload(hyperlink)
-        self._hover_action = RunHyperlink.from_payload(hover_action)
+        self.bold = _as_optional_bool(kwargs.get("bold"))
+        self.italic = _as_optional_bool(kwargs.get("italic"))
+        self.underline = _as_optional_string(kwargs.get("underline"))
+        self.strikethrough = _as_optional_bool(kwargs.get("strikethrough"))
+        self.subscript = _as_optional_bool(kwargs.get("subscript"))
+        self.superscript = _as_optional_bool(kwargs.get("superscript"))
+        self.color = _as_optional_string(kwargs.get("color"))
+        self.highlight = _as_optional_string(kwargs.get("highlight"))
+        self.font = _as_optional_string(kwargs.get("font"))
+        self.size_pt = _as_optional_int(kwargs.get("size_pt"))
+        self.code = _as_optional_bool(kwargs.get("code"))
+        self.all_caps = _as_optional_bool(kwargs.get("all_caps"))
+        self.small_caps = _as_optional_bool(kwargs.get("small_caps"))
+        self._hyperlink = RunHyperlink.from_payload(
+            cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hyperlink"))
+        )
+        self._hover_action = RunHyperlink.from_payload(
+            cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hover_action"))
+        )
 
     @property
     def hyperlink(self) -> RunHyperlink:
@@ -175,35 +150,17 @@ class Run:
     def hover_action(self, value: Mapping[str, object] | RunHyperlink | None) -> None:  # type: ignore[reportPropertyTypeMismatch]
         self._hover_action = RunHyperlink.from_payload(value)
 
-    def to_payload(self) -> dict[str, object]:  # noqa: C901, PLR0912
+    def to_payload(self) -> dict[str, object]:
         """Convert this run facade to bridge payload format."""
         payload: dict[str, object] = {"text": self.text}
-        if self.bold is not None:
-            payload["bold"] = self.bold
-        if self.italic is not None:
-            payload["italic"] = self.italic
-        if self.underline is not None:
-            payload["underline"] = self.underline
-        if self.strikethrough is not None:
-            payload["strikethrough"] = self.strikethrough
-        if self.subscript is not None:
-            payload["subscript"] = self.subscript
-        if self.superscript is not None:
-            payload["superscript"] = self.superscript
-        if self.color is not None:
-            payload["color"] = self.color
-        if self.highlight is not None:
-            payload["highlight"] = self.highlight
-        if self.font is not None:
-            payload["font"] = self.font
-        if self.size_pt is not None:
-            payload["size_pt"] = self.size_pt
-        if self.code is not None:
-            payload["code"] = self.code
-        if self.all_caps is not None:
-            payload["all_caps"] = self.all_caps
-        if self.small_caps is not None:
-            payload["small_caps"] = self.small_caps
+        for key in (
+            "bold", "italic", "underline", "strikethrough", "subscript",
+            "superscript", "color", "highlight", "font", "size_pt",
+            "code", "all_caps", "small_caps",
+        ):
+            val = getattr(self, key)
+            if val is not None:
+                payload[key] = val
         if self._hyperlink is not None and not self._hyperlink.is_empty:
             payload["hyperlink"] = self._hyperlink.to_payload()
         if self._hover_action is not None and not self._hover_action.is_empty:

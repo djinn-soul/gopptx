@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
-if TYPE_CHECKING:
-    from .presentation.presentation import Presentation
+from .presentation.presentation import Presentation
 
 
 @dataclass
@@ -134,9 +133,6 @@ class PresentationBuilder:
         The returned object has a handle to the Go engine and can be further
         edited with any ``Presentation`` method before calling ``save_as()``.
         """
-        # Avoid circular import — Presentation imports from here indirectly.
-        from .presentation.presentation import Presentation  # noqa: PLC0415
-
         prs = cast("Presentation", Presentation.new(self._title))
         self._apply_core_properties(prs)
         if self._theme:

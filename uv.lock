@@ -337,6 +337,25 @@ wheels = [
 ]
 
 [[package]]
+name = "cytoscnpy"
+version = "1.2.17"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/e2/32c40d4056252f084f629870b8a926cc8cd1bbe075416cb76b781bbc5a57/cytoscnpy-1.2.17-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:48511683d1e711ade4ad1680066a8db9b76a87e145192cd3e504ed6dd590c0ff", size = 2308690, upload-time = "2026-03-19T02:24:51.175Z" },
+    { url = "https://files.pythonhosted.org/packages/25/53/76e3671d5e5525e1067b046824ffedd34c58bca80430ee5ca9c298d8e4ce/cytoscnpy-1.2.17-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:36f12383657cd356deb079e0078291a7c6d7de5bc70deeccf54e4e6d77bded04", size = 2563709, upload-time = "2026-03-19T02:24:52.609Z" },
+    { url = "https://files.pythonhosted.org/packages/99/16/3cc755b3e32f9759a8b197dffac7fda90c47dc2c7d53f658d74809f1abd0/cytoscnpy-1.2.17-cp310-cp310-win_amd64.whl", hash = "sha256:a689ba855cdae39a3236631c4379c8d41d38cb18498cb5611f01463c2e7ecbc4", size = 2303407, upload-time = "2026-03-19T02:24:54.036Z" },
+    { url = "https://files.pythonhosted.org/packages/03/ce/8916e3884e567f2af89105ab3b2819f476bfa0a9c93a9c4076f1d484eb2e/cytoscnpy-1.2.17-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:681603b7c5be25d3fad91f97ce6d048c6089921ef5fc687987e49bade81d078d", size = 2308439, upload-time = "2026-03-19T02:24:55.454Z" },
+    { url = "https://files.pythonhosted.org/packages/be/9f/e05e6ea44c66ef7518e494f36c8353a926326232801d83be813ab3d48534/cytoscnpy-1.2.17-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:929353ba19ade1a889508e11636845bc1539366d9fbca59965f06d407a76b40a", size = 2563672, upload-time = "2026-03-19T02:24:56.5Z" },
+    { url = "https://files.pythonhosted.org/packages/45/87/98140bb765a896e1674f54113c19ca8cfc2ac1d816dfe2022604e6bd9cb4/cytoscnpy-1.2.17-cp311-cp311-win_amd64.whl", hash = "sha256:36e1f2ac35845ae7a35ac505b610be311f46cca25e252c7be359059a75d0de81", size = 2303282, upload-time = "2026-03-19T02:24:57.66Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/3d/5c4a5b699c47fcb0bc26521ed967da256f52f406fc46aeeaec6f8dde1adc/cytoscnpy-1.2.17-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:62445b6ea15a4a4cef4f022e793bcd955c52c2f241897be886917da6eef121ff", size = 2306146, upload-time = "2026-03-19T02:24:58.934Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/4d/3d632b37790ddf9372249734acedbd652085723c30f737df9cf95320cde2/cytoscnpy-1.2.17-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:126d13d14d39841929b0179cd31ade73ab886d68344190993be5bdf98e9e5eef", size = 2563511, upload-time = "2026-03-19T02:25:00.111Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/c4/8f6573397c3c64e6a37cc76da1ee4de16dbf4cd36f23c15cb77f0971eceb/cytoscnpy-1.2.17-cp312-cp312-win_amd64.whl", hash = "sha256:3d98da38bb066f87cb7e1c19dec9f981e83c022e1e35f4265333cef80340dc3e", size = 2303115, upload-time = "2026-03-19T02:25:01.529Z" },
+    { url = "https://files.pythonhosted.org/packages/26/65/322ec0a974a6c5d1ced29bc277af9c48f3032a752ba5b6c5d249edf642c4/cytoscnpy-1.2.17-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:9de7a609bfec18abf293db15c541408d6f632df60243315bef201b505bdf4a76", size = 2306565, upload-time = "2026-03-19T02:25:02.815Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/4d/b17d655af05e03cefc2fd58db81f9d25f02d3dd22ac1fa74655239fd0c52/cytoscnpy-1.2.17-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8a9dd765755f51286ef3cdf41f9e0b92713ddfa1a9fae530eb863539669de762", size = 2563694, upload-time = "2026-03-19T02:25:03.85Z" },
+    { url = "https://files.pythonhosted.org/packages/39/88/3c8f793fba843bd3d612c2120741b2b1153325c4329d5270880f19968df8/cytoscnpy-1.2.17-cp313-cp313-win_amd64.whl", hash = "sha256:824fce31d2eb6dcdf2e6840479684c448eaaddbbae5cc243a7ece14c6e0167a0", size = 2303110, upload-time = "2026-03-19T02:25:05.049Z" },
+]
+
+[[package]]
 name = "defusedxml"
 version = "0.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -428,6 +447,11 @@ dev = [
     { name = "vulture" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "cytoscnpy" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.9.4" },
@@ -449,6 +473,9 @@ requires-dist = [
     { name = "vulture", marker = "extra == 'dev'", specifier = ">=2.15" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "cytoscnpy", specifier = ">=1.2.17" }]
 
 [[package]]
 name = "h11"

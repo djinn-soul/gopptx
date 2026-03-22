@@ -19,7 +19,7 @@ dependencies = ["orjson>=3.11.7", "Jinja2>=3.1.6"]
 [project.optional-dependencies]
 dev = [
     # Linting & Formatting
-    "ruff>=0.14.13",
+    "ruff>=0.15.7",
     # Testing
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
@@ -29,15 +29,16 @@ dev = [
     "pip-audit>=2.10.0",
     "detect-secrets>=1.5.0",
     # CI/Automation
-    "prek>=0.3.4",
+    "prek>=0.3.6",
     "poethepoet>=0.42.1",
     # Advanced Static Analysis
-    "basedpyright>=1.38.2",
+    "basedpyright>=1.38.3",
     "vulture>=2.15",
     "gitingest",
     "pillow==12.1.1",
-    "pypdfium2==5.5.0",
+    "pypdfium2==5.6.0",
     "numpy>=2.2.6",
+
 
 ]
 
@@ -60,7 +61,7 @@ include = [
 target-version = "py39"
 line-length = 88
 src = ["python/gopptx", "tests", "examples"]
-exclude = ["vulture_whitelist.py"]
+exclude = ["vulture_whitelist.py", "hatch_build.py"]
 preview = true
 
 [tool.ruff.lint]
@@ -117,6 +118,7 @@ max-complexity = 10
 
 [tool.ruff.lint.pylint]
 max-nested-blocks = 3
+max-args = 6
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
