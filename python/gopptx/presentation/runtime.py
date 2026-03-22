@@ -96,6 +96,11 @@ class PresentationRuntimeMixin:
             finally:
                 self._lib.deck_free_string(res_ptr)  # type: ignore[attr-defined]
 
+    @property
+    def batch_active(self) -> bool:
+        """Return whether the presentation is currently buffering a batch."""
+        return self._batch_active
+
     def execute_batch(
         self, commands: list[dict[str, object]], *, stop_on_error: bool = False
     ) -> list[BatchItemResult]:

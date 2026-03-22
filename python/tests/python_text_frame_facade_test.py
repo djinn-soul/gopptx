@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from gopptx import Presentation, TextFrameProps
-from gopptx.slide.text.text_frame import _as_optional_int  # noqa: PLC2701
+from gopptx.slide.text._utils import as_optional_int
 
 
 def test_text_frame_props_aliases_round_trip(tmp_path: Path) -> None:
@@ -64,7 +64,7 @@ def test_text_frame_props_init_validation() -> None:
 
 
 def test_as_optional_int_with_floats() -> None:
-    """Ensure _as_optional_int handles integer-like floats."""
-    assert _as_optional_int(1.0) == 1
-    assert _as_optional_int(1.5) is None
-    assert _as_optional_int("1") is None
+    """Ensure as_optional_int handles integer-like floats."""
+    assert as_optional_int(1.0) == 1
+    assert as_optional_int(1.5) is None
+    assert as_optional_int("1") is None

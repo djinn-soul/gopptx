@@ -12,11 +12,6 @@ from ._utils import (
     as_optional_string,
 )
 
-_as_optional_int = as_optional_int
-_as_optional_bool = as_optional_bool
-_as_optional_string = as_optional_string
-_as_optional_float = as_optional_float
-
 _SUPPORTED_KEYS = {
     "margin_top",
     "margin_bottom",
@@ -109,6 +104,24 @@ class TextFrameProps:
     def __init__(self, **kwargs: object) -> None:
         """Initialize text frame properties from keyword arguments."""
         super().__init__()
+        self._init_defaults()
+        self._resolve_kwargs(kwargs)
+
+    def _init_defaults(self) -> None:
+        self.margin_top = None
+        self.margin_bottom = None
+        self.margin_left = None
+        self.margin_right = None
+        self.word_wrap = None
+        self.auto_fit = None
+        self.auto_fit_type = None
+        self.vertical_align = None
+        self.orientation = None
+        self.columns = None
+        self.rotation = None
+
+    def _resolve_kwargs(self, kwargs: dict[str, object]) -> None:
+        """Apply keyword arguments with alias support and normalization."""
         self.margin_top = as_optional_int(kwargs.get("margin_top"))
         self.margin_bottom = as_optional_int(kwargs.get("margin_bottom"))
         self.margin_left = as_optional_int(kwargs.get("margin_left"))
@@ -123,24 +136,22 @@ class TextFrameProps:
         self.columns = as_optional_int(kwargs.get("columns"))
         self.rotation = as_optional_float(kwargs.get("rotation"))
 
-        vertical_anchor = kwargs.get("vertical_anchor")
-        if vertical_anchor is not None:
-            self.vertical_align = str(vertical_anchor)
-        # Legacy alias handling - auto_size overrides auto_fit_type for backwards compatibility.
-        # See _ALIAS_MAP for parameter name mappings.
-        auto_size = kwargs.get("auto_size")
-        if auto_size is not None:
-            self.auto_fit_type = str(auto_size)
-        text_direction = kwargs.get("text_direction")
-        if text_direction is not None:
-            self.orientation = str(text_direction)
-        column_count = kwargs.get("column_count")
-        if column_count is not None:
-            self.columns = as_optional_int(column_count)
-        text_rotation = kwargs.get("text_rotation")
-        if text_rotation is not None:
-            self.rotation = as_optional_float(text_rotation)
+        # Legacy alias handling
+        if (v := kwargs.get("vertical_anchor")) is not None:
+            self.vertical_align = str(v)
+        if (v := kwargs.get("auto_size")) is not None:
+            self.auto_fit_type = str(v)
+        if (v := kwargs.get("text_direction")) is not None:
+            self.orientation = str(v)
+        if (v := kwargs.get("column_count")) is not None:
+            self.columns = as_optional_int(v)
+        if (v := kwargs.get("text_rotation")) is not None:
+            self.rotation = as_optional_float(v)
 
+        self._normalize_props()
+
+    def _normalize_props(self) -> None:
+        """Normalize property values to standard forms."""
         if self.auto_fit_type is not None:
             self.auto_fit_type = _normalize_auto_fit_type(self.auto_fit_type)
         if self.vertical_align is not None:
