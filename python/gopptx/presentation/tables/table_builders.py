@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING, cast
 
 from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from typing_extensions import Protocol
 
     class _TableBuilderProto(PresentationMixinBase, Protocol):

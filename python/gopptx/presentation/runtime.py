@@ -12,12 +12,7 @@ from typing_extensions import Self
 from .. import ops
 from ..api_errors import GopptxError
 from .batch import BatchContext
-from .helpers import (
-    PresentationProtocol,
-    json_dumps,
-    json_loads,
-    with_key_aliases,
-)
+from .helpers import PresentationProtocol, json_dumps, json_loads, with_key_aliases
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -50,51 +45,6 @@ class PresentationRuntimeMixin:
         self._metadata_cache: PresentationMetadata | None = None
         self._comment_ref_cache: dict[int, tuple[int, int, int]] = {}
         self._request_counter: int = 0
-
-    def execute(
-        self, op: str, payload: dict[str, object] | None = None
-    ) -> dict[str, object]:
-        """Execute a bridge operation."""
-        with self._lock:
-            if not self._handle:
-                raise GopptxError("Presentation is not open.")
-
-            if self._batch_active and op != ops.OP_BATCH_EXECUTE:
-                if op in BatchContext.READ_OPS:
-                    raise GopptxError(
-                        f"read operation {op!r} is not allowed inside batch()",
-                        code="BATCH_READ_OP_NOT_ALLOWED",
-                    )
-                self._batch_commands.append({"op": op, "payload": payload or {}})
-                return {"_batched": True}
-
-            self._request_counter += 1
-            envelope = {
-                "api_version": 1,
-                "request_id": str(self._request_counter),
-                "op": op,
-                "payload": payload or {},
-            }
-            res_ptr = self._lib.deck_execute_json(self._handle, json_dumps(envelope))  # type: ignore[attr-defined]
-            if not res_ptr:
-                raise GopptxError("Received null response from Go engine")
-            try:
-                response = json_loads(ctypes.string_at(cast("int", res_ptr)))
-                response_dict = cast("dict[str, object]", response)
-                if not response_dict.get("ok", False):
-                    err = cast("dict[str, object]", response_dict.get("error", {}))
-                    raise GopptxError(
-                        str(err.get("message", "Unknown error")),
-                        code=str(err.get("code", "UNKNOWN")),
-                    )
-                result = response_dict.get("result")
-                if result is None:
-                    return {}
-                if not isinstance(result, dict):
-                    raise GopptxError("Invalid response payload type")
-                return cast("dict[str, object]", result)
-            finally:
-                self._lib.deck_free_string(res_ptr)  # type: ignore[attr-defined]
 
     @property
     def batch_active(self) -> bool:
@@ -151,6 +101,51 @@ class PresentationRuntimeMixin:
             if commands
             else []
         )
+
+    def execute(
+        self, op: str, payload: dict[str, object] | None = None
+    ) -> dict[str, object]:
+        """Execute a bridge operation."""
+        with self._lock:
+            if not self._handle:
+                raise GopptxError("Presentation is not open.")
+
+            if self._batch_active and op != ops.OP_BATCH_EXECUTE:
+                if op in BatchContext.READ_OPS:
+                    raise GopptxError(
+                        f"read operation {op!r} is not allowed inside batch()",
+                        code="BATCH_READ_OP_NOT_ALLOWED",
+                    )
+                self._batch_commands.append({"op": op, "payload": payload or {}})
+                return {"_batched": True}
+
+            self._request_counter += 1
+            envelope = {
+                "api_version": 1,
+                "request_id": str(self._request_counter),
+                "op": op,
+                "payload": payload or {},
+            }
+            res_ptr = self._lib.deck_execute_json(self._handle, json_dumps(envelope))  # type: ignore[attr-defined]
+            if not res_ptr:
+                raise GopptxError("Received null response from Go engine")
+            try:
+                response = json_loads(ctypes.string_at(cast("int", res_ptr)))
+                response_dict = cast("dict[str, object]", response)
+                if not response_dict.get("ok", False):
+                    err = cast("dict[str, object]", response_dict.get("error", {}))
+                    raise GopptxError(
+                        str(err.get("message", "Unknown error")),
+                        code=str(err.get("code", "UNKNOWN")),
+                    )
+                result = response_dict.get("result")
+                if result is None:
+                    return {}
+                if not isinstance(result, dict):
+                    raise GopptxError("Invalid response payload type")
+                return cast("dict[str, object]", result)
+            finally:
+                self._lib.deck_free_string(res_ptr)  # type: ignore[attr-defined]
 
     @property
     def slide_count(self) -> int:

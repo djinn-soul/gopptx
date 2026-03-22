@@ -80,13 +80,17 @@ class PresentationChartMixin(PresentationChartStateMixin):
         """
         # Validate chart type - only constant string values accepted
         if not chart_type:
-            raise ValueError(f"chart_type must be a ChartType constant (e.g., ChartType.COLUMN). Got: {chart_type!r}. Use ChartType.get_all() to see available options.")
+            raise ValueError(
+                f"chart_type must be a ChartType constant (e.g., ChartType.COLUMN). Got: {chart_type!r}. Use ChartType.get_all() to see available options."
+            )
 
         # Check if it's a valid chart type value
         valid_types = set(ChartType.get_all().values())
         if chart_type not in valid_types:
             valid_values = ", ".join(sorted(valid_types))
-            raise ValueError(f"Invalid chart_type {chart_type!r}. Use ChartType constants like ChartType.COLUMN, ChartType.LINE, ChartType.PIE. Available raw values: {valid_values}")
+            raise ValueError(
+                f"Invalid chart_type {chart_type!r}. Use ChartType constants like ChartType.COLUMN, ChartType.LINE, ChartType.PIE. Available raw values: {valid_values}"
+            )
 
         if hasattr(categories, "to_add_chart_args"):
             categories, values_or_series = cast(

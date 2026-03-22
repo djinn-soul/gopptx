@@ -198,7 +198,6 @@ class PresentationBase(
                 "jinja2 is required for from_template(). Install it with: pip install jinja2"
             )
 
-        assert _jinja2 is not None
         jinja2 = _jinja2
         undefined_map = {
             "keep": jinja2.DebugUndefined,
