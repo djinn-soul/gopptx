@@ -5,15 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
     from ...schemas import TextRun
+    from ..contracts import SlidePresentationProtocol
 
 
 class SlideTextMixin:
     """Mixin providing text-state operations for slide shapes."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:
@@ -53,29 +53,16 @@ class SlideTextMixin:
 
     def _flush_pending_text_updates_if_present(self) -> None:
         """Flush deferred run-text updates queued at presentation layer."""
-        flush = getattr(
-            self._presentation, "flush_pending_slide_run_text_updates", None
-        )
-        has_pending = getattr(
-            self._presentation, "has_pending_slide_run_text_updates", None
-        )
-        if not callable(flush) or not callable(has_pending):
-            return
-        if has_pending(self.index):
-            flush(self.index)
+        if self._presentation.has_pending_slide_run_text_updates(self.index):
+            self._presentation.flush_pending_slide_run_text_updates(self.index)
 
     def _flush_pending_shape_runs_replace_if_present(self, shape_id: int) -> None:
         """Flush pending whole-run replacement queued for a specific shape."""
-        flush = getattr(
-            self._presentation, "flush_pending_shape_runs_replacements", None
-        )
-        has_pending = getattr(
-            self._presentation, "has_pending_shape_runs_replace", None
-        )
-        if not callable(flush) or not callable(has_pending):
-            return
-        if has_pending(self.index, shape_id):
-            flush(slide_index=self.index, shape_id=shape_id)
+        if self._presentation.has_pending_shape_runs_replace(self.index, shape_id):
+            self._presentation.flush_pending_shape_runs_replacements(
+                slide_index=self.index,
+                shape_id=shape_id,
+            )
 
     def get_shape_text_state(self, shape_id: int) -> dict[str, object]:
         """Return text state payload for a shape."""
@@ -92,27 +79,17 @@ class SlideTextMixin:
     def set_shape_runs(self, shape_id: int, runs: list[TextRun]) -> None:
         """Replace all runs for a shape, using queueing when available."""
         self._flush_pending_text_updates_if_present()
-        queue = getattr(self._presentation, "queue_shape_runs_replace", None)
         normalized = [dict(run) for run in runs]
-        if not callable(queue):
-            self._presentation.set_shape_runs(self.index, shape_id, runs)
-        else:
-            queue(self.index, shape_id, normalized)
+        self._presentation.queue_shape_runs_replace(self.index, shape_id, normalized)
         self._replace_cached_runs(shape_id, normalized)
 
     def update_shape_run_text(self, shape_id: int, run_index: int, text: str) -> None:
         """Update one run's text by index, preserving cache coherence."""
         self._flush_pending_shape_runs_replace_if_present(shape_id)
-        queue = getattr(self._presentation, "queue_shape_run_text_update", None)
-        if not callable(queue):
-            self._presentation.update_shape_run_text(
-                self.index, shape_id, run_index, text
-            )
-            self._invalidate_shape_cache_if_present()
-            self._invalidate_text_state_cache_if_present()
-        else:
-            queue(self.index, shape_id, run_index, text)
-            self._apply_cached_run_text_update(shape_id, run_index, text)
+        self._presentation.queue_shape_run_text_update(
+            self.index, shape_id, run_index, text
+        )
+        self._apply_cached_run_text_update(shape_id, run_index, text)
 
     def update_shape_run_texts(
         self,
@@ -120,17 +97,7 @@ class SlideTextMixin:
     ) -> None:
         """Apply multiple run-text updates on the current slide."""
         self._flush_pending_text_updates_if_present()
-        normalized: list[dict[str, object]] = []
-        for update in updates:
-            if isinstance(update, tuple):
-                shape_id, run_index, text = update
-                normalized.append({
-                    "shape_id": shape_id,
-                    "run_index": run_index,
-                    "text": text,
-                })
-                continue
-            normalized.append(dict(update))
+        normalized = _normalize_run_text_updates(updates)
         self._presentation.update_slide_run_texts(self.index, normalized)
         for update in normalized:
             shape_id = update.get("shape_id")
@@ -155,3 +122,21 @@ class SlideTextMixin:
         invalidate = getattr(self, "_invalidate_shape_cache", None)
         if callable(invalidate):
             invalidate()
+
+
+def _normalize_run_text_updates(
+    updates: list[tuple[int, int, str]] | list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Convert mixed update formats into a standard list of update dictionaries."""
+    normalized: list[dict[str, object]] = []
+    for update in updates:
+        if isinstance(update, tuple):
+            shape_id, run_index, text = update
+            normalized.append({
+                "shape_id": shape_id,
+                "run_index": run_index,
+                "text": text,
+            })
+            continue
+        normalized.append(dict(update))
+    return normalized

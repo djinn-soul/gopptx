@@ -5,12 +5,11 @@ from __future__ import annotations
 import json
 import pathlib
 import re
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
 
-if TYPE_CHECKING:
-    from typing_extensions import Protocol
+from typing_extensions import Protocol
 
+if TYPE_CHECKING:
     from ..schemas import BatchItemResult
 
 try:
@@ -19,41 +18,35 @@ except ImportError:  # pragma: no cover - optional dependency
     _orjson = None
 
 
-class PresentationProtocol(ABC):
-    """Abstract base class defining behavior required by presentation mixins."""
+class PresentationProtocol(Protocol):
+    """Typed contract for presentation runtime methods."""
 
     _handle: int | None
-    _lock: object  # threading.RLock at runtime
     _comment_ref_cache: dict[int, tuple[int, int, int]]
 
     @property
     def handle(self) -> int | None:
         """Return the opaque integer handle for this presentation instance."""
-        return self._handle
+        ...
 
-    @abstractmethod
     def execute(
         self, op: str, payload: dict[str, object] | None = None
     ) -> dict[str, object]:
         """Execute a bridge operation and return the decoded response payload."""
         ...
 
-    @abstractmethod
     def invalidate_cache(self) -> None:
         """Invalidate cached presentation-derived state."""
         ...
 
-    @abstractmethod
     def begin_batch(self, *, stop_on_error: bool = False) -> None:
         """Start buffering operations into a batch."""
         ...
 
-    @abstractmethod
     def end_batch(self) -> list[BatchItemResult]:
         """Flush the active batch and return per-item execution results."""
         ...
 
-    @abstractmethod
     def abort_batch(self) -> None:
         """Discard buffered batch operations without executing them."""
         ...
@@ -61,32 +54,8 @@ class PresentationProtocol(ABC):
 
 if TYPE_CHECKING:
 
-    class PresentationMixinBase(Protocol):
+    class PresentationMixinBase(PresentationProtocol, Protocol):
         """Typed contract for mixins without altering runtime MRO behavior."""
-
-        _comment_ref_cache: dict[int, tuple[int, int, int]]
-
-        def execute(
-            self, op: str, payload: dict[str, object] | None = None
-        ) -> dict[str, object]:
-            """Execute a bridge operation and return the decoded response payload."""
-            ...
-
-        def invalidate_cache(self) -> None:
-            """Invalidate cached presentation-derived state."""
-            ...
-
-        def begin_batch(self, *, stop_on_error: bool = False) -> None:
-            """Start buffering operations into a batch."""
-            ...
-
-        def end_batch(self) -> list[BatchItemResult]:
-            """Flush the active batch and return per-item execution results."""
-            ...
-
-        def abort_batch(self) -> None:
-            """Discard buffered batch operations without executing them."""
-            ...
 
 else:
 
@@ -118,6 +87,14 @@ def snake_case(name: str) -> str:
     """Convert CamelCase to snake_case."""
     s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
+def get_required_int(result: dict[str, object], key: str) -> int:
+    """Get an integer value from the result dict, raising TypeError if it's not an int."""
+    value = result.get(key)
+    if not isinstance(value, int):
+        raise TypeError(f"bridge response {key} must be an int")
+    return value
 
 
 def with_key_aliases(obj: object) -> object:

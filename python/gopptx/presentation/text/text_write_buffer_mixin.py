@@ -80,6 +80,8 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
         slide_updates = self._pending_slide_run_text_updates.get(slide_index)
         if not slide_updates:
             return
+        # Full shape-run replacements must be flushed before incremental text updates
+        # to ensure that updates are applied to the correct (newly replaced) runs.
         self.flush_pending_shape_runs_replacements(slide_index=slide_index)
         updates = cast(
             "list[dict[str, object]]",

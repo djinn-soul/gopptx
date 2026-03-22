@@ -2,13 +2,37 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, cast
+
+from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
+    from typing_extensions import Protocol
+
+    class _TableBuilderProto(PresentationMixinBase, Protocol):
+        def add_table(
+            self,
+            slide: int | None = None,
+            slide_index: int | None = None,
+            rows: int | None = None,
+            cols: int | None = None,
+            **kwargs: object,
+        ) -> int: ...
+
+        def add_table_from_rows(
+            self,
+            slide: int,
+            rows: list[list[str]],
+            bounds: tuple[int, int, int, int] | None = None,
+            *,
+            first_row: bool = True,
+            band_row: bool = True,
+            **kwargs: object,
+        ) -> int: ...
 
 
-class PresentationTableBuilders:
+class PresentationTableBuilders(PresentationMixinBase):
     """Mixin providing convenience table builder methods."""
 
     if TYPE_CHECKING:
@@ -16,19 +40,19 @@ class PresentationTableBuilders:
         def add_table(
             self,
             slide: int | None = None,
+            slide_index: int | None = None,
             rows: int | None = None,
             cols: int | None = None,
-            bounds: tuple[int, int, int, int] | None = None,
             **kwargs: object,
         ) -> int:
             """Add a table (signature for type hints)."""
             ...
 
     def add_table_from_rows(
-        self: Presentation,
+        self,
         slide: int,
         rows: list[list[str]],
-        bounds: tuple[int, int, int, int],
+        bounds: tuple[int, int, int, int] | None = None,
         *,
         first_row: bool = True,
         band_row: bool = True,
@@ -63,10 +87,15 @@ class PresentationTableBuilders:
                 band_row=True,
             )
         """
+        prs = cast("_TableBuilderProto", self)
         row_count = len(rows)
         col_count = max(len(row) for row in rows) if rows else 0
+        extra_kwargs: dict[str, object] = dict(kwargs)
+        extra_kwargs.pop("first_row", None)
+        extra_kwargs.pop("band_row", None)
+        add_table: Callable[..., int] = prs.add_table
 
-        return self.add_table(
+        return add_table(
             slide=slide,
             rows=row_count,
             cols=col_count,
@@ -74,11 +103,11 @@ class PresentationTableBuilders:
             data=rows,
             first_row=first_row,
             band_row=band_row,
-            **kwargs,
+            **extra_kwargs,
         )
 
     def add_table_from_dicts(
-        self: Presentation,
+        self,
         slide: int,
         rows: list[dict[str, str]],
         bounds: tuple[int, int, int, int] | None = None,
@@ -123,13 +152,17 @@ class PresentationTableBuilders:
 
         # Build 2D array with header row
         data: list[list[str]] = [column_names]  # Header
-        data.extend([row_dict.get(col, "") for col in column_names] for row_dict in rows)
+        data.extend(
+            [row_dict.get(col, "") for col in column_names] for row_dict in rows
+        )
 
-        return self.add_table_from_rows(
-            slide=slide,
-            rows=data,
-            bounds=bounds,
-            **kwargs,
+        prs = cast("_TableBuilderProto", self)
+        extra_kwargs: dict[str, object] = dict(kwargs)
+        extra_kwargs.pop("first_row", None)
+        extra_kwargs.pop("band_row", None)
+        add_table_from_rows: Callable[..., int] = prs.add_table_from_rows
+        return add_table_from_rows(
+            slide=slide, rows=data, bounds=bounds, **extra_kwargs
         )
 
 

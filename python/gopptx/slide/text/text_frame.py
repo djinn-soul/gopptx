@@ -5,6 +5,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from ._utils import (
+    as_optional_bool,
+    as_optional_float,
+    as_optional_int,
+    as_optional_string,
+)
+
 _SUPPORTED_KEYS = {
     "margin_top",
     "margin_bottom",
@@ -97,33 +104,60 @@ class TextFrameProps:
     def __init__(self, **kwargs: object) -> None:
         """Initialize text frame properties from keyword arguments."""
         super().__init__()
-        self.margin_top = _as_optional_int(kwargs.get("margin_top"))
-        self.margin_bottom = _as_optional_int(kwargs.get("margin_bottom"))
-        self.margin_left = _as_optional_int(kwargs.get("margin_left"))
-        self.margin_right = _as_optional_int(kwargs.get("margin_right"))
-        self.word_wrap = _as_optional_bool(kwargs.get("word_wrap"))
-        self.auto_fit = _as_optional_bool(kwargs.get("auto_fit"))
-        self.auto_fit_type = _as_optional_string(kwargs.get("auto_fit_type"))
-        self.vertical_align = _as_optional_string(kwargs.get("vertical_align"))
-        self.orientation = _as_optional_string(kwargs.get("orientation"))
-        self.columns = _as_optional_int(kwargs.get("columns"))
-        self.rotation = _as_optional_float(kwargs.get("rotation"))
+        self._init_defaults()
+        self._resolve_kwargs(kwargs)
 
-        vertical_anchor = kwargs.get("vertical_anchor")
-        if vertical_anchor is not None:
-            self.vertical_align = _normalize_vertical_align(str(vertical_anchor))
-        auto_size = kwargs.get("auto_size")
-        if auto_size is not None:
-            self.auto_fit_type = _normalize_auto_fit_type(str(auto_size))
-        text_direction = kwargs.get("text_direction")
-        if text_direction is not None:
-            self.orientation = _normalize_orientation(str(text_direction))
-        column_count = kwargs.get("column_count")
-        if column_count is not None:
-            self.columns = _as_optional_int(column_count)
-        text_rotation = kwargs.get("text_rotation")
-        if text_rotation is not None:
-            self.rotation = _as_optional_float(text_rotation)
+    def _init_defaults(self) -> None:
+        self.margin_top = None
+        self.margin_bottom = None
+        self.margin_left = None
+        self.margin_right = None
+        self.word_wrap = None
+        self.auto_fit = None
+        self.auto_fit_type = None
+        self.vertical_align = None
+        self.orientation = None
+        self.columns = None
+        self.rotation = None
+
+    def _resolve_kwargs(self, kwargs: dict[str, object]) -> None:
+        """Apply keyword arguments with alias support and normalization."""
+        self.margin_top = as_optional_int(kwargs.get("margin_top"))
+        self.margin_bottom = as_optional_int(kwargs.get("margin_bottom"))
+        self.margin_left = as_optional_int(kwargs.get("margin_left"))
+        self.margin_right = as_optional_int(kwargs.get("margin_right"))
+        self.word_wrap = as_optional_bool(kwargs.get("word_wrap"))
+        self.auto_fit = as_optional_bool(kwargs.get("auto_fit"))
+
+        self.auto_fit_type = as_optional_string(kwargs.get("auto_fit_type"))
+        self.vertical_align = as_optional_string(kwargs.get("vertical_align"))
+        self.orientation = as_optional_string(kwargs.get("orientation"))
+
+        self.columns = as_optional_int(kwargs.get("columns"))
+        self.rotation = as_optional_float(kwargs.get("rotation"))
+
+        # Legacy alias handling
+        if (v := kwargs.get("vertical_anchor")) is not None:
+            self.vertical_align = str(v)
+        if (v := kwargs.get("auto_size")) is not None:
+            self.auto_fit_type = str(v)
+        if (v := kwargs.get("text_direction")) is not None:
+            self.orientation = str(v)
+        if (v := kwargs.get("column_count")) is not None:
+            self.columns = as_optional_int(v)
+        if (v := kwargs.get("text_rotation")) is not None:
+            self.rotation = as_optional_float(v)
+
+        self._normalize_props()
+
+    def _normalize_props(self) -> None:
+        """Normalize property values to standard forms."""
+        if self.auto_fit_type is not None:
+            self.auto_fit_type = _normalize_auto_fit_type(self.auto_fit_type)
+        if self.vertical_align is not None:
+            self.vertical_align = _normalize_vertical_align(self.vertical_align)
+        if self.orientation is not None:
+            self.orientation = _normalize_orientation(self.orientation)
 
     @classmethod
     def from_payload(
@@ -134,17 +168,17 @@ class TextFrameProps:
             return payload
         normalized = _normalize_text_frame_mapping(payload)
         return cls(
-            margin_top=_as_optional_int(normalized.get("margin_top")),
-            margin_bottom=_as_optional_int(normalized.get("margin_bottom")),
-            margin_left=_as_optional_int(normalized.get("margin_left")),
-            margin_right=_as_optional_int(normalized.get("margin_right")),
-            word_wrap=_as_optional_bool(normalized.get("word_wrap")),
-            auto_fit=_as_optional_bool(normalized.get("auto_fit")),
-            auto_fit_type=_as_optional_string(normalized.get("auto_fit_type")),
-            vertical_align=_as_optional_string(normalized.get("vertical_align")),
-            orientation=_as_optional_string(normalized.get("orientation")),
-            columns=_as_optional_int(normalized.get("columns")),
-            rotation=_as_optional_float(normalized.get("rotation")),
+            margin_top=as_optional_int(normalized.get("margin_top")),
+            margin_bottom=as_optional_int(normalized.get("margin_bottom")),
+            margin_left=as_optional_int(normalized.get("margin_left")),
+            margin_right=as_optional_int(normalized.get("margin_right")),
+            word_wrap=as_optional_bool(normalized.get("word_wrap")),
+            auto_fit=as_optional_bool(normalized.get("auto_fit")),
+            auto_fit_type=as_optional_string(normalized.get("auto_fit_type")),
+            vertical_align=as_optional_string(normalized.get("vertical_align")),
+            orientation=as_optional_string(normalized.get("orientation")),
+            columns=as_optional_int(normalized.get("columns")),
+            rotation=as_optional_float(normalized.get("rotation")),
         )
 
     def to_payload(self) -> dict[str, object]:
@@ -244,35 +278,3 @@ def _normalize_orientation(value: str) -> str:
     if mapped is None:
         raise ValueError(f"unsupported orientation '{value}'")
     return mapped
-
-
-def _as_optional_int(value: object) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, int):
-        return value
-    return None
-
-
-def _as_optional_bool(value: object) -> bool | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    return None
-
-
-def _as_optional_string(value: object) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value
-    return None
-
-
-def _as_optional_float(value: object) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    return None

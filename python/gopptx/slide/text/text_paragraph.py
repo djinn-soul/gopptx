@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from ._utils import as_optional_int, as_optional_string
+
 _MAX_PARAGRAPH_LEVEL = 8
 _ALLOWED_PARAGRAPH_FIELDS = frozenset({
     "alignment",
@@ -43,19 +45,19 @@ class ParagraphProps:
     def __init__(self, **kwargs: object) -> None:
         """Initialize paragraph controls with alias support."""
         super().__init__()
-        self.indent = _as_optional_int(kwargs.get("indent", kwargs.get("left_margin")))
-        self.hanging = _as_optional_int(
+        self.indent = as_optional_int(kwargs.get("indent", kwargs.get("left_margin")))
+        self.hanging = as_optional_int(
             kwargs.get("hanging", kwargs.get("hanging_indent"))
         )
         self.tab_stops = _coerce_optional_int_list(
             kwargs.get("tab_stops", kwargs.get("tabs"))
         )
-        self.alignment = _as_optional_string(kwargs.get("alignment"))
-        self.level = _as_optional_int(kwargs.get("level"))
-        self.line_spacing_pct = _as_optional_int(kwargs.get("line_spacing_pct"))
-        self.line_spacing_pts = _as_optional_int(kwargs.get("line_spacing_pts"))
-        self.space_before_pts = _as_optional_int(kwargs.get("space_before_pts"))
-        self.space_after_pts = _as_optional_int(kwargs.get("space_after_pts"))
+        self.alignment = as_optional_string(kwargs.get("alignment"))
+        self.level = as_optional_int(kwargs.get("level"))
+        self.line_spacing_pct = as_optional_int(kwargs.get("line_spacing_pct"))
+        self.line_spacing_pts = as_optional_int(kwargs.get("line_spacing_pts"))
+        self.space_before_pts = as_optional_int(kwargs.get("space_before_pts"))
+        self.space_after_pts = as_optional_int(kwargs.get("space_after_pts"))
 
     @classmethod
     def from_payload(
@@ -154,22 +156,6 @@ def _append_non_negative(
     if value < 0:
         raise ValueError(f"paragraph.{key} must be >= 0")
     payload[key] = value
-
-
-def _as_optional_int(value: object) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, int):
-        return value
-    return None
-
-
-def _as_optional_string(value: object) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value
-    return None
 
 
 def _as_optional_int_list(value: object) -> list[int] | None:

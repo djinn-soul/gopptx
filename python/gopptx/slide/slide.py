@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from typing_extensions import override
 
@@ -19,19 +19,19 @@ from .text.text_cache_mixin import SlideTextCacheMixin
 from .text.text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
-    from ..presentation.presentation import Presentation
     from ..schemas import Shape, ShapeProps, ShapeUpdate, SlideMetadata
+    from .contracts import SlidePresentationProtocol
 
 
 class SlideBase:
     """Base class providing core slide properties (index, title, notes)."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
         _metadata: SlideMetadata  # pyright: ignore[reportUninitializedInstanceVariable]
 
     @property
-    def presentation(self) -> Presentation:
+    def presentation(self) -> SlidePresentationProtocol:
         """Return the owning presentation proxy."""
         return self._presentation
 
@@ -95,7 +95,9 @@ class Slide(
     _PARAGRAPH_DEFAULT_HEIGHT_EMU = int(1.1 * _EMU_PER_INCH)
     _PARAGRAPH_DEFAULT_GAP_EMU = int(0.35 * _EMU_PER_INCH)
 
-    def __init__(self, presentation: Presentation, metadata: SlideMetadata) -> None:
+    def __init__(
+        self, presentation: SlidePresentationProtocol, metadata: SlideMetadata
+    ) -> None:
         """Initialize the slide proxy."""
         super().__init__()
         self._presentation = presentation
@@ -138,12 +140,8 @@ class Slide(
         return proxy
 
     def _flush_pending_textbox_adds_if_present(self) -> None:
-        has_pending = getattr(self._presentation, "has_pending_textbox_adds", None)
-        flush_pending = getattr(self._presentation, "flush_pending_textbox_adds", None)
-        if not callable(has_pending) or not callable(flush_pending):
-            return
-        if has_pending(self.index):
-            flush_pending(self.index)
+        if self._presentation.has_pending_textbox_adds(self.index):
+            self._presentation.flush_pending_textbox_adds(self.index)
 
     def _shape_text_states(self) -> dict[int, dict[str, object]]:
         self._flush_pending_textbox_adds_if_present()
@@ -198,12 +196,10 @@ class Slide(
         **kwargs: str | ShapeProps,
     ) -> int:
         """Queue simple textbox inserts and flush them in bulk at slide boundaries."""
-        if kwargs or bool(getattr(self._presentation, "_batch_active", False)):
+        if kwargs or self._presentation.batch_active:
             return super().add_textbox(left, top, width, height, text=text, **kwargs)
-        queue = getattr(self._presentation, "queue_textbox_add", None)
-        if not callable(queue):
-            return super().add_textbox(left, top, width, height, text=text, **kwargs)
-        shape_id = queue(
+
+        shape_id = self._presentation.queue_textbox_add(
             self.index,
             {
                 "left": left,
@@ -215,7 +211,7 @@ class Slide(
         )
         self._invalidate_shape_cache()
         self._invalidate_text_state_cache()
-        return int(cast("int", shape_id))
+        return shape_id
 
     @property
     def charts(self) -> ChartCollection:

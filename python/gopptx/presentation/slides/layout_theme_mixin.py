@@ -8,7 +8,21 @@ from ... import ops
 from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
+    from typing_extensions import Protocol
+
+    from ...presentation.theme.theme import Theme
     from ...schemas import SlideLayoutInfo, SlideMasterCloneResult
+
+    class _PresentationThemeOps(Protocol):
+        def execute(
+            self, op: str, payload: dict[str, object] | None = None
+        ) -> dict[str, object]: ...
+
+        def invalidate_cache(self) -> None: ...
+
+        def set_theme_color_scheme(self, **colors: str) -> None: ...
+
+        def set_theme_font_scheme(self, major: str, minor: str) -> None: ...
 
 
 class PresentationLayoutMixin(PresentationMixinBase):
@@ -53,13 +67,18 @@ class PresentationLayoutMixin(PresentationMixinBase):
 class PresentationThemeMixin(PresentationMixinBase):
     """Mixin providing theme and slide size configuration methods."""
 
-    def apply_theme(self, theme_name: str) -> None:
+    def apply_theme(self: _PresentationThemeOps, theme: str | Theme) -> None:
         """Apply a theme to the presentation."""
-        theme = theme_name
-        if theme_name.lower() == "office":
-            theme = "Corporate"
-        self.execute(ops.OP_APPLY_THEME, {"theme_name": theme})
-        self.invalidate_cache()
+        if isinstance(theme, str):
+            theme_name = "Corporate" if theme.lower() == "office" else theme
+            self.execute(ops.OP_APPLY_THEME, {"theme_name": theme_name})
+            self.invalidate_cache()
+            return
+
+        color_dict = theme.colors.to_dict()
+        self.set_theme_color_scheme(**color_dict)
+        font_dict = theme.fonts.to_dict()
+        self.set_theme_font_scheme(font_dict["major_font"], font_dict["minor_font"])
 
     def set_slide_size(self, width: int, height: int) -> None:
         """Set the slide size."""
