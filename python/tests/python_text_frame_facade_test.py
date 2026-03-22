@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from gopptx import Presentation, TextFrameProps
-from gopptx.slide.text._utils import as_optional_int
+from gopptx.slide.text import as_optional_int
 
 
 def test_text_frame_props_aliases_round_trip(tmp_path: Path) -> None:

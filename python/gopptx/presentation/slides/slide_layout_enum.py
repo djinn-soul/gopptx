@@ -91,7 +91,9 @@ class SlideLayoutType:
 
         # Not found - provide helpful error message
         valid_values = ", ".join(sorted(valid_layouts))
-        raise ValueError(f"Invalid layout {layout!r}. Use SlideLayoutType constants like SlideLayoutType.BLANK, SlideLayoutType.TITLE_ONLY. Valid internal values: {valid_values}")
+        raise ValueError(
+            f"Invalid layout {layout!r}. Use SlideLayoutType constants like SlideLayoutType.BLANK, SlideLayoutType.TITLE_ONLY. Valid internal values: {valid_values}"
+        )
 
     @staticmethod
     def get_by_name(name: str) -> str | None:

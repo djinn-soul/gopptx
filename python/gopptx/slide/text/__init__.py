@@ -1,5 +1,6 @@
 """Text-domain package for slide object-model helpers."""
 
+from ._utils import as_optional_int
 from .text_frame import TextFrameProps, serialize_text_frame_for_payload
 from .text_model import (
     ShapeParagraphCollection,
@@ -21,6 +22,7 @@ __all__ = [
     "ShapeRunProxy",
     "ShapeTextFrame",
     "TextFrameProps",
+    "as_optional_int",
     "serialize_paragraph_for_payload",
     "serialize_runs_for_payload",
     "serialize_text_frame_for_payload",
