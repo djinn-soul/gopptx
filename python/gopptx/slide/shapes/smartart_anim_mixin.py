@@ -164,29 +164,19 @@ class SlideSmartArtAnimMixin:
         }
         self._presentation.execute(ops.OP_SET_SLIDE_TRANSITION, payload)
 
-    def set_background(  # noqa: PLR0913
-        self,
-        bg_type: str,
-        *,
-        color: str = "",
-        colors: list[str] | None = None,
-        angle: int = 0,
-        image_path: str = "",
-        image_data: str = "",
-        color_ref: str = "",
-    ) -> None:
+    def set_background(self, bg_type: str, **kwargs: object) -> None:
         """Set the slide background.
 
         Args:
             bg_type: Background type: ``"solid"``, ``"gradient"``,
                 ``"image"``, or ``"theme"``.
-            color: Hex RGB color for solid backgrounds, e.g. ``"FF0000"``.
-            colors: List of hex RGB colors for gradient backgrounds.
-            angle: Gradient angle in degrees (0-360).
-            image_path: Local file path for an image background.
-            image_data: Base64-encoded image data for an image background.
-            color_ref: Theme color token for theme backgrounds, e.g.
-                ``"accent1"``.
+            **kwargs: Optional background settings:
+                ``color`` - Hex RGB color for solid backgrounds, e.g. ``"FF0000"``.
+                ``colors`` - List of hex RGB colors for gradient backgrounds.
+                ``angle`` - Gradient angle in degrees (0-360).
+                ``image_path`` - Local file path for an image background.
+                ``image_data`` - Base64-encoded image data for an image background.
+                ``color_ref`` - Theme color token for theme backgrounds, e.g. ``"accent1"``.
 
         Example::
 
@@ -196,12 +186,12 @@ class SlideSmartArtAnimMixin:
         payload: dict[str, object] = {
             "slide_index": self.index,
             "type": bg_type,
-            "color": color,
-            "colors": colors or [],
-            "angle": angle,
-            "image_path": image_path,
-            "image_data": image_data,
-            "color_ref": color_ref,
+            "color": str(kwargs.get("color", "")),
+            "colors": list(kwargs.get("colors") or []),  # type: ignore[arg-type]
+            "angle": int(kwargs.get("angle", 0)),  # type: ignore[arg-type]
+            "image_path": str(kwargs.get("image_path", "")),
+            "image_data": str(kwargs.get("image_data", "")),
+            "color_ref": str(kwargs.get("color_ref", "")),
         }
         self._presentation.execute(ops.OP_SET_SLIDE_BACKGROUND, payload)
 

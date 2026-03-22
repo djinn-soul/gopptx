@@ -7,7 +7,7 @@ from gopptx.presentation.tables.table_styles import TableStyle
 from gopptx.schemas import Inches
 
 
-def main():
+def main() -> None:
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 
@@ -51,11 +51,6 @@ def main():
 
         # NEW: Using named constants (clear and readable!)
         table.apply_style(TableStyle.MEDIUM_STYLE_2)
-
-        # Other style options:
-        # table.apply_style(TableStyle.LIGHT_STYLE_1)
-        # table.apply_style(TableStyle.DARK_STYLE_1)
-        # table.apply_style(TableStyle.MEDIUM_STYLE_1_ACCENT_1)
 
         # =======================================================================
         # NEW WAY #2 - Using Style Name String

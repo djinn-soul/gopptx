@@ -23,6 +23,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
     def set_header_footer(
         self,
         footer: str = "",
+        *,
         show_footer: bool = False,
         show_slide_num: bool = False,
         show_date_time: bool = False,
@@ -82,7 +83,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
             }
             self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, payload)
 
-    def get_header_footer(self, slide_index: int) -> dict[str, object]:
+    def get_header_footer(self, _slide_index: int) -> dict[str, object]:
         """Get header/footer configuration for a specific slide.
 
         Args:
@@ -91,14 +92,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
         Returns:
             Dict with footer, show_footer, show_slide_num, show_date_time keys.
         """
-        # We'd need to read from slide XML - for now, return empty
-        # This would require a bridge operation to read header/footer state
-        return {
-            "footer": "",
-            "show_footer": False,
-            "show_slide_num": False,
-            "show_date_time": False,
-        }
+        return dict(self._header_footer_defaults)
 
 
 __all__ = ["PresentationHeaderFooterMixin"]

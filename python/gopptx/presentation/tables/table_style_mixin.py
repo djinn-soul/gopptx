@@ -6,6 +6,7 @@ from typing import cast
 
 from ... import ops
 from ..helpers import PresentationMixinBase
+from .table_styles import TableStyle
 
 
 class PresentationTableStyleMixin(PresentationMixinBase):
@@ -13,8 +14,6 @@ class PresentationTableStyleMixin(PresentationMixinBase):
 
     def set_table_style(self, slide_index: int, shape_id: int, style: str) -> None:
         """Apply a table style by name or GUID."""
-        from .table_styles import TableStyle
-
         style_guid = style
         if isinstance(style, str) and not style.startswith("{"):
             styles = TableStyle.get_all()

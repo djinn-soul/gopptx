@@ -94,15 +94,10 @@ class PresentationChartMixin(PresentationChartStateMixin):
                 f"Available raw values: {', '.join(sorted(valid_types))}"
             )
 
-        normalized_chart_type = chart_type
-
         if hasattr(categories, "to_add_chart_args"):
-            chart_builder = cast("CategoryChartData | XyChartData", categories)
-            builder_categories, builder_values = chart_builder.to_add_chart_args()
-            categories = builder_categories
-            values_or_series = cast(
-                "list[float] | list[dict[str, str | list[float]]]", builder_values
-            )
+            categories, values_or_series = cast(
+                "CategoryChartData | XyChartData", categories
+            ).to_add_chart_args()
         if values_or_series is None:
             values_or_series = []
         bounds = kwargs.get("bounds", (0, 0, 0, 0))
@@ -122,7 +117,7 @@ class PresentationChartMixin(PresentationChartStateMixin):
             ops.OP_ADD_CHART,
             {
                 "slide_index": slide_index,
-                "chart_type": normalized_chart_type,
+                "chart_type": chart_type,
                 "title": title,
                 "categories": categories,
                 "values": values,

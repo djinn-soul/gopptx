@@ -52,14 +52,6 @@ class ChartType:
     """Pie chart - shows data as slices of a circle."""
 
     # Reserved for future use (not yet supported by Go bridge)
-    # COLUMN_STACKED = "barstacked"
-    # AREA = "area"
-    # SCATTER = "scatter"
-    # DOUGHNUT = "doughnut"
-    # RADAR = "radar"
-    # BUBBLE = "bubble"
-    # STOCK_HLC = "stockhlc"
-    # COMBO = "combo"
 
     @staticmethod
     def get_all() -> dict[str, str]:

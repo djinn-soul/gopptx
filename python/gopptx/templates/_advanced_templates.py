@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from gopptx import ops
 from gopptx.presentation.presentation import Presentation
-from gopptx.presentation.theme.theme import Theme
 
 from ._template_utils import Template, _apply_slides
+
+if TYPE_CHECKING:
+    from gopptx.presentation.theme.theme import Theme
 
 
 @dataclass
