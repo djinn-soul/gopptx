@@ -117,10 +117,30 @@ with Presentation.new(str(meta["title"])) as p:
     )
 
     # Metric cards
-    add_card(slide, (0.8, 1.35, 1.8, 1.0), f"Revenue\n{format_currency(total_revenue)}", "EEF4FB", "A9C4E2")
-    add_card(slide, (2.75, 1.35, 1.8, 1.0), f"Orders\n{total_orders}", "E8F5E9", "B8D5B8")
-    add_card(slide, (0.8, 2.55, 1.8, 1.0), f"Avg attainment\n{format_percent(average_attainment)}", "FCE4D6", "E8B89C")
-    add_card(slide, (2.75, 2.55, 1.8, 1.0), f"Top region\n{max_region['region']}", "FFF2CC", "E0C75C")
+    add_card(
+        slide,
+        (0.8, 1.35, 1.8, 1.0),
+        f"Revenue\n{format_currency(total_revenue)}",
+        "EEF4FB",
+        "A9C4E2",
+    )
+    add_card(
+        slide, (2.75, 1.35, 1.8, 1.0), f"Orders\n{total_orders}", "E8F5E9", "B8D5B8"
+    )
+    add_card(
+        slide,
+        (0.8, 2.55, 1.8, 1.0),
+        f"Avg attainment\n{format_percent(average_attainment)}",
+        "FCE4D6",
+        "E8B89C",
+    )
+    add_card(
+        slide,
+        (2.75, 2.55, 1.8, 1.0),
+        f"Top region\n{max_region['region']}",
+        "FFF2CC",
+        "E0C75C",
+    )
 
     # Chart container background
     slide.add_shape(
@@ -174,13 +194,16 @@ with Presentation.new(str(meta["title"])) as p:
 
     # Build table data
     detail_rows = [["Region", "Revenue", "Orders", "Target", "Attainment"]]
-    detail_rows.extend([
-        str(row["region"]),
-        format_currency(row["revenue"]),
-        str(row["orders"]),
-        format_currency(row["target"]),
-        format_percent(row["attainment"]),
-    ] for row in rows)
+    detail_rows.extend(
+        [
+            str(row["region"]),
+            format_currency(row["revenue"]),
+            str(row["orders"]),
+            format_currency(row["target"]),
+            format_percent(row["attainment"]),
+        ]
+        for row in rows
+    )
 
     # Add table
     p.add_table_from_rows(

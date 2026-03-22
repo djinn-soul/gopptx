@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from .table import Table
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
     from ...schemas import TableCellInfo, TableInfo
+    from ..contracts import SlidePresentationProtocol
 
 
 class SlideTableMixin:
     """Mixin providing table manipulation methods for Slide objects."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:
@@ -42,8 +43,10 @@ class SlideTableMixin:
         Returns:
             Shape ID of the created table.
         """
-        shape_id = self._presentation.add_table(
-            slide=self.index, rows=rows, cols=cols, bounds=bounds, data=data, **kwargs
+        slide_index = int(self.index)
+        add_table: Callable[..., int] = self._presentation.add_table
+        shape_id = add_table(
+            slide=slide_index, rows=rows, cols=cols, bounds=bounds, data=data, **kwargs
         )
         invalidate = getattr(self, "_invalidate_shape_cache", None)
         if callable(invalidate):

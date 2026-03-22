@@ -11,6 +11,8 @@ from .chart_types import ChartType
 from .state_mixin import PresentationChartStateMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from ...schemas import (
         ChartDataUpdate,
         ChartFormatUpdate,
@@ -29,10 +31,8 @@ class PresentationChartMixin(PresentationChartStateMixin):
         self,
         slide_index: int,
         chart_type: str,
-        categories: list[str] | CategoryChartData | XyChartData,
-        values_or_series: list[float]
-        | list[dict[str, str | list[float]]]
-        | None = None,
+        categories: Sequence[str] | CategoryChartData | XyChartData,
+        values_or_series: Sequence[float] | Sequence[dict[str, object]] | None = None,
         **kwargs: str | tuple[float, float, float, float],
     ) -> int:
         """Add a chart to a slide.
@@ -78,21 +78,15 @@ class PresentationChartMixin(PresentationChartStateMixin):
                 bounds=(100, 100, 400, 300),
             )
         """
-        # Validate chart type - only enum values accepted
-        if not isinstance(chart_type, str) or not chart_type:
-            raise ValueError(
-                f"chart_type must be a ChartType constant (e.g., ChartType.COLUMN). "
-                f"Got: {chart_type!r}. Use ChartType.get_all() to see available options."
-            )
+        # Validate chart type - only constant string values accepted
+        if not chart_type:
+            raise ValueError(f"chart_type must be a ChartType constant (e.g., ChartType.COLUMN). Got: {chart_type!r}. Use ChartType.get_all() to see available options.")
 
         # Check if it's a valid chart type value
         valid_types = set(ChartType.get_all().values())
         if chart_type not in valid_types:
-            raise ValueError(
-                f"Invalid chart_type '{chart_type}'. "
-                f"Use ChartType constants like: ChartType.COLUMN, ChartType.LINE, ChartType.PIE. "
-                f"Available raw values: {', '.join(sorted(valid_types))}"
-            )
+            valid_values = ", ".join(sorted(valid_types))
+            raise ValueError(f"Invalid chart_type {chart_type!r}. Use ChartType constants like ChartType.COLUMN, ChartType.LINE, ChartType.PIE. Available raw values: {valid_values}")
 
         if hasattr(categories, "to_add_chart_args"):
             categories, values_or_series = cast(
@@ -100,7 +94,9 @@ class PresentationChartMixin(PresentationChartStateMixin):
             ).to_add_chart_args()
         if values_or_series is None:
             values_or_series = []
-        bounds = kwargs.get("bounds", (0, 0, 0, 0))
+        bounds = cast(
+            "tuple[float, float, float, float]", kwargs.get("bounds", (0, 0, 0, 0))
+        )
         if len(bounds) != self._BOUNDS_LEN:
             raise ValueError("bounds must be a tuple of (x, y, w, h)")
         x, y, w, h = bounds
@@ -108,7 +104,8 @@ class PresentationChartMixin(PresentationChartStateMixin):
 
         values: list[float]
         if values_or_series and isinstance(values_or_series[0], dict):
-            first = cast("dict[str, object]", values_or_series[0])
+            series_items = cast("list[dict[str, str | list[float]]]", values_or_series)
+            first = series_items[0]
             values = cast("list[float]", first.get("values", []))
             title = str(first.get("name", title))
         else:

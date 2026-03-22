@@ -2,8 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 from .. import ops
 from .helpers import PresentationMixinBase
+
+if TYPE_CHECKING:
+    from ..slide.slide import Slide
+
+    class _PresentationSlidesProto(PresentationMixinBase):
+        header_footer_defaults: dict[str, object]
+
+        @property
+        def slides(self) -> list[Slide]: ...
 
 
 class PresentationHeaderFooterMixin(PresentationMixinBase):
@@ -12,7 +23,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
     def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize header/footer defaults."""
         super().__init__(*args, **kwargs)
-        self._header_footer_defaults: dict[str, object] = {
+        self.header_footer_defaults: dict[str, object] = {
             "footer": "",
             "show_footer": False,
             "show_slide_num": False,
@@ -62,8 +73,9 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
                 show_slide_num=False,  # Turn off slide numbers on this one
             )
         """
+        prs = cast("_PresentationSlidesProto", self)
         # Store as defaults for future slides
-        self._header_footer_defaults = {
+        prs.header_footer_defaults = {
             "footer": footer,
             "show_footer": show_footer,
             "show_slide_num": show_slide_num,
@@ -72,7 +84,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
         }
 
         # Apply to all existing slides
-        for slide_index in range(len(self.slides)):
+        for slide_index in range(len(prs.slides)):
             payload: dict[str, object] = {
                 "slide_index": slide_index,
                 "footer": footer,
@@ -81,7 +93,7 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
                 "show_date_time": show_date_time,
                 "date_time_text": date_time_text,
             }
-            self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, payload)
+            prs.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, payload)
 
     def get_header_footer(self, _slide_index: int) -> dict[str, object]:
         """Get header/footer configuration for a specific slide.
@@ -92,7 +104,8 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
         Returns:
             Dict with footer, show_footer, show_slide_num, show_date_time keys.
         """
-        return dict(self._header_footer_defaults)
+        prs = cast("_PresentationSlidesProto", self)
+        return dict(prs.header_footer_defaults)
 
 
 __all__ = ["PresentationHeaderFooterMixin"]

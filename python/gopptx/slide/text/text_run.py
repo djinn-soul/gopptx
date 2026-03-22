@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import cast
 
+from ._utils import as_optional_bool, as_optional_int, as_optional_string
+
 
 class RunHyperlink:
     """Mutable hyperlink object used by `Run`."""
@@ -24,15 +26,15 @@ class RunHyperlink:
     def __init__(self, **kwargs: object) -> None:
         """Initialize with optional hyperlink attributes."""
         super().__init__()
-        self.address = _as_optional_string(kwargs.get("address"))
-        self.action = _as_optional_string(kwargs.get("action"))
-        self.tooltip = _as_optional_string(kwargs.get("tooltip"))
-        self.target_slide = _as_optional_int(kwargs.get("target_slide"))
-        self.jump = _as_optional_string(kwargs.get("jump"))
-        self.macro = _as_optional_string(kwargs.get("macro"))
-        self.history = _as_optional_bool(kwargs.get("history"))
-        self.highlight_click = _as_optional_bool(kwargs.get("highlight_click"))
-        self.end_sound = _as_optional_bool(kwargs.get("end_sound"))
+        self.address = as_optional_string(kwargs.get("address"))
+        self.action = as_optional_string(kwargs.get("action"))
+        self.tooltip = as_optional_string(kwargs.get("tooltip"))
+        self.target_slide = as_optional_int(kwargs.get("target_slide"))
+        self.jump = as_optional_string(kwargs.get("jump"))
+        self.macro = as_optional_string(kwargs.get("macro"))
+        self.history = as_optional_bool(kwargs.get("history"))
+        self.highlight_click = as_optional_bool(kwargs.get("highlight_click"))
+        self.end_sound = as_optional_bool(kwargs.get("end_sound"))
 
     @classmethod
     def from_payload(
@@ -44,38 +46,34 @@ class RunHyperlink:
         if isinstance(payload, RunHyperlink):
             return payload
         return cls(
-            address=_as_optional_string(payload.get("address")),
-            action=_as_optional_string(payload.get("action")),
-            tooltip=_as_optional_string(payload.get("tooltip")),
-            target_slide=_as_optional_int(payload.get("target_slide")),
-            jump=_as_optional_string(payload.get("jump")),
-            macro=_as_optional_string(payload.get("macro")),
-            history=_as_optional_bool(payload.get("history")),
-            highlight_click=_as_optional_bool(payload.get("highlight_click")),
-            end_sound=_as_optional_bool(payload.get("end_sound")),
+            address=as_optional_string(payload.get("address")),
+            action=as_optional_string(payload.get("action")),
+            tooltip=as_optional_string(payload.get("tooltip")),
+            target_slide=as_optional_int(payload.get("target_slide")),
+            jump=as_optional_string(payload.get("jump")),
+            macro=as_optional_string(payload.get("macro")),
+            history=as_optional_bool(payload.get("history")),
+            highlight_click=as_optional_bool(payload.get("highlight_click")),
+            end_sound=as_optional_bool(payload.get("end_sound")),
         )
 
     def to_payload(self) -> dict[str, object]:
         """Convert this hyperlink facade to bridge payload format."""
         payload: dict[str, object] = {}
-        if self.address is not None:
-            payload["address"] = self.address
-        if self.action is not None:
-            payload["action"] = self.action
-        if self.tooltip is not None:
-            payload["tooltip"] = self.tooltip
-        if self.target_slide is not None:
-            payload["target_slide"] = self.target_slide
-        if self.jump is not None:
-            payload["jump"] = self.jump
-        if self.macro is not None:
-            payload["macro"] = self.macro
-        if self.history is not None:
-            payload["history"] = self.history
-        if self.highlight_click is not None:
-            payload["highlight_click"] = self.highlight_click
-        if self.end_sound is not None:
-            payload["end_sound"] = self.end_sound
+        for key in (
+            "address",
+            "action",
+            "tooltip",
+            "target_slide",
+            "jump",
+            "macro",
+            "history",
+            "highlight_click",
+            "end_sound",
+        ):
+            val = cast("object", getattr(self, key))
+            if val is not None:
+                payload[key] = val
         return payload
 
     @property
@@ -110,24 +108,26 @@ class Run:
         """Initialize with optional run formatting attributes."""
         super().__init__()
         self.text = text
-        self.bold = _as_optional_bool(kwargs.get("bold"))
-        self.italic = _as_optional_bool(kwargs.get("italic"))
-        self.underline = _as_optional_string(kwargs.get("underline"))
-        self.strikethrough = _as_optional_bool(kwargs.get("strikethrough"))
-        self.subscript = _as_optional_bool(kwargs.get("subscript"))
-        self.superscript = _as_optional_bool(kwargs.get("superscript"))
-        self.color = _as_optional_string(kwargs.get("color"))
-        self.highlight = _as_optional_string(kwargs.get("highlight"))
-        self.font = _as_optional_string(kwargs.get("font"))
-        self.size_pt = _as_optional_int(kwargs.get("size_pt"))
-        self.code = _as_optional_bool(kwargs.get("code"))
-        self.all_caps = _as_optional_bool(kwargs.get("all_caps"))
-        self.small_caps = _as_optional_bool(kwargs.get("small_caps"))
+        self.bold = as_optional_bool(kwargs.get("bold"))
+        self.italic = as_optional_bool(kwargs.get("italic"))
+        self.underline = as_optional_string(kwargs.get("underline"))
+        self.strikethrough = as_optional_bool(kwargs.get("strikethrough"))
+        self.subscript = as_optional_bool(kwargs.get("subscript"))
+        self.superscript = as_optional_bool(kwargs.get("superscript"))
+        self.color = as_optional_string(kwargs.get("color"))
+        self.highlight = as_optional_string(kwargs.get("highlight"))
+        self.font = as_optional_string(kwargs.get("font"))
+        self.size_pt = as_optional_int(kwargs.get("size_pt"))
+        self.code = as_optional_bool(kwargs.get("code"))
+        self.all_caps = as_optional_bool(kwargs.get("all_caps"))
+        self.small_caps = as_optional_bool(kwargs.get("small_caps"))
         self._hyperlink = RunHyperlink.from_payload(
             cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hyperlink"))
         )
         self._hover_action = RunHyperlink.from_payload(
-            cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hover_action"))
+            cast(
+                "Mapping[str, object] | RunHyperlink | None", kwargs.get("hover_action")
+            )
         )
 
     @property
@@ -154,11 +154,21 @@ class Run:
         """Convert this run facade to bridge payload format."""
         payload: dict[str, object] = {"text": self.text}
         for key in (
-            "bold", "italic", "underline", "strikethrough", "subscript",
-            "superscript", "color", "highlight", "font", "size_pt",
-            "code", "all_caps", "small_caps",
+            "bold",
+            "italic",
+            "underline",
+            "strikethrough",
+            "subscript",
+            "superscript",
+            "color",
+            "highlight",
+            "font",
+            "size_pt",
+            "code",
+            "all_caps",
+            "small_caps",
         ):
-            val = getattr(self, key)
+            val = cast("object", getattr(self, key))
             if val is not None:
                 payload[key] = val
         if self._hyperlink is not None and not self._hyperlink.is_empty:
@@ -189,27 +199,3 @@ def serialize_runs_for_payload(runs: object) -> object:
             continue
         serialized.append(item)
     return serialized
-
-
-def _as_optional_string(value: object) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value
-    return str(value)
-
-
-def _as_optional_int(value: object) -> int | None:
-    if value is None:
-        return None
-    if isinstance(value, int):
-        return value
-    return None
-
-
-def _as_optional_bool(value: object) -> bool | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    return None

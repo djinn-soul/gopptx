@@ -15,7 +15,7 @@ class PresentationTableStyleMixin(PresentationMixinBase):
     def set_table_style(self, slide_index: int, shape_id: int, style: str) -> None:
         """Apply a table style by name or GUID."""
         style_guid = style
-        if isinstance(style, str) and not style.startswith("{"):
+        if not style.startswith("{"):
             styles = TableStyle.get_all()
             if style not in styles:
                 available = ", ".join(sorted(styles.keys()))

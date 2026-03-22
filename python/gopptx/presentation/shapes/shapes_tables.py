@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...slide.shapes.freeform_builder import FreeformBuilder
-from ..helpers import PresentationMixinBase
+from ..helpers import PresentationMixinBase, get_required_int
 from .shape_media_mixin import PresentationShapeMediaMixin
 from .shape_payload_mixin import PresentationShapePayloadMixin
 from .shape_text_runs_mixin import PresentationShapeTextRunMixin
@@ -60,7 +60,7 @@ class PresentationShapeMixin(
         }
         self._apply_shape_payload_options(payload, kwargs, include_text=True)
         result = self.execute(ops.OP_ADD_SHAPE, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        return get_required_int(result, "shape_id")
 
     def add_textbox(
         self,
@@ -89,7 +89,7 @@ class PresentationShapeMixin(
             include_text=False,
         )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        return get_required_int(result, "shape_id")
 
     def add_connector(
         self,
@@ -117,7 +117,7 @@ class PresentationShapeMixin(
             include_text=True,
         )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        return get_required_int(result, "shape_id")
 
     def add_group_shape(
         self,
@@ -129,7 +129,7 @@ class PresentationShapeMixin(
         if shapes is not None:
             payload["shapes"] = shapes
         result = self.execute(ops.OP_ADD_GROUP_SHAPE, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        return get_required_int(result, "shape_id")
 
     def build_freeform(
         self,
@@ -164,7 +164,7 @@ class PresentationShapeMixin(
         opt = options or {}
         self._apply_shape_payload_options(payload, opt, include_text=True)
         result = self.execute(ops.OP_BUILD_FREEFORM, payload)
-        return int(cast("int", result.get("shape_id", -1)))
+        return get_required_int(result, "shape_id")
 
     def remove_shape(self, slide_index: int, shape_id: int) -> None:
         """Remove a shape from a slide."""
@@ -181,7 +181,7 @@ class PresentationShapeMixin(
             ops.OP_GROUP_SHAPES,
             {"slide_index": slide_index, "shape_ids": shape_ids},
         )
-        return int(cast("int", result.get("group_id", -1)))
+        return get_required_int(result, "group_id")
 
     def ungroup_shapes(self, slide_index: int, shape_id: int) -> int:
         """Ungroup a group shape, returning the ID of the first member shape."""
@@ -189,7 +189,7 @@ class PresentationShapeMixin(
             ops.OP_UNGROUP_SHAPES,
             {"slide_index": slide_index, "shape_id": shape_id},
         )
-        return int(cast("int", result.get("group_id", -1)))
+        return get_required_int(result, "group_id")
 
     def move_shape_to_front(self, slide_index: int, shape_id: int) -> None:
         """Move a shape to the front of the z-order."""

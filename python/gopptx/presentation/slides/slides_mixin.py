@@ -17,8 +17,8 @@ from .slides_placeholder_mixin import PresentationPlaceholderMixin
 
 if TYPE_CHECKING:
     from ...schemas import SlideMetadata
+    from ...slide.contracts import SlidePresentationProtocol
     from ..helpers import PresentationProtocol
-    from ..presentation import Presentation
 
 
 class PresentationSlidesMixin(
@@ -35,6 +35,7 @@ class PresentationSlidesMixin(
     _EMU_PER_INCH = 914400
 
     if TYPE_CHECKING:
+        header_footer_defaults: dict[str, object]
 
         @property
         def slides(self) -> list[Slide]:
@@ -78,14 +79,14 @@ class PresentationSlidesMixin(
                 "Index": -1,
             }
             return Slide(
-                cast("Presentation", self),
+                cast("SlidePresentationProtocol", self),
                 cast("SlideMetadata", placeholder_metadata),
             )
         self.invalidate_cache()
         slide_index = int(cast("int", result.get("index", -1)))
 
-        if hasattr(self, "_header_footer_defaults"):
-            defaults = cast("dict[str, object]", self._header_footer_defaults)
+        if hasattr(self, "header_footer_defaults"):
+            defaults = self.header_footer_defaults
             if any([
                 defaults.get("show_footer"),
                 defaults.get("show_slide_num"),

@@ -57,7 +57,8 @@ repos:
         name: ruff-format (commit)
       - id: ruff
         name: ruff check --fix (commit)
-        args: ["--fix", "--ignore-noqa", "--exit-non-zero-on-fix"]
+        args:
+          ["--fix", "--ignore-noqa", "--unsafe-fixes", "--exit-non-zero-on-fix"]
   # ==========================================================================
   # Local Hooks - Environment Consistent Scans & Go Checks
   # ==========================================================================

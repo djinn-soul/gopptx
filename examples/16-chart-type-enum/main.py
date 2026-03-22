@@ -65,11 +65,32 @@ def _add_chart_slides(prs: Presentation) -> None:
     data_categories = ["A", "B", "C", "D"]
     data_values = [30.0, 40.0, 20.0, 10.0]
     print("\nColumn view of data")
-    prs.add_chart(3, ChartType.COLUMN, data_categories, data_values, title="Column View", bounds=(Inches(0.45), Inches(1.2), Inches(3.0), Inches(2.5)))
+    prs.add_chart(
+        3,
+        ChartType.COLUMN,
+        data_categories,
+        data_values,
+        title="Column View",
+        bounds=(Inches(0.45), Inches(1.2), Inches(3.0), Inches(2.5)),
+    )
     print("Line view of data")
-    prs.add_chart(3, ChartType.LINE, data_categories, data_values, title="Line View", bounds=(Inches(3.55), Inches(1.2), Inches(3.0), Inches(2.5)))
+    prs.add_chart(
+        3,
+        ChartType.LINE,
+        data_categories,
+        data_values,
+        title="Line View",
+        bounds=(Inches(3.55), Inches(1.2), Inches(3.0), Inches(2.5)),
+    )
     print("Pie view of data")
-    prs.add_chart(3, ChartType.PIE, data_categories, data_values, title="Pie View", bounds=(Inches(6.65), Inches(1.2), Inches(3.0), Inches(2.5)))
+    prs.add_chart(
+        3,
+        ChartType.PIE,
+        data_categories,
+        data_values,
+        title="Pie View",
+        bounds=(Inches(6.65), Inches(1.2), Inches(3.0), Inches(2.5)),
+    )
 
 
 def _add_discovery_and_errors(prs: Presentation) -> None:
@@ -90,7 +111,9 @@ def _add_discovery_and_errors(prs: Presentation) -> None:
         print(f"Caught error (as expected): {str(e)[:80]}...")
     try:
         print("Trying invalid type: 'scatter' (not yet supported)")
-        prs.add_chart(5, "scatter", [1.0, 2.0, 3.0], [2.0, 4.0, 5.0], bounds=(100, 100, 400, 300))
+        prs.add_chart(
+            5, "scatter", [1.0, 2.0, 3.0], [2.0, 4.0, 5.0], bounds=(100, 100, 400, 300)
+        )
     except ValueError as e:
         print(f"Caught error (as expected): {str(e)[:80]}...")
 

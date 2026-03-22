@@ -5,19 +5,27 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ... import ops
+from ...presentation.helpers import get_required_int
 
 if TYPE_CHECKING:
-    from ...presentation.presentation import Presentation
+    from ..contracts import SlidePresentationProtocol
 
 # EMU conversions: 914400 EMU = 1 inch
 _INCHES_TO_EMU = 914400
+
+
+def _optional_payload_str(value: object) -> str:
+    """Return empty string for None, string form otherwise."""
+    if value is None:
+        return ""
+    return str(value)
 
 
 class SlideSmartArtAnimMixin:
     """Mixin adding add_smartart, add_animation, and set_transition to Slide."""
 
     if TYPE_CHECKING:
-        _presentation: Presentation  # pyright: ignore[reportUninitializedInstanceVariable]
+        _presentation: SlidePresentationProtocol  # pyright: ignore[reportUninitializedInstanceVariable]
 
         @property
         def index(self) -> int:
@@ -70,11 +78,7 @@ class SlideSmartArtAnimMixin:
         }
         result = self._presentation.execute(ops.OP_ADD_SMART_ART, payload)
         self._invalidate_shape_cache_if_present()
-        shape_id = result.get("shape_id")
-        if not isinstance(shape_id, int):
-            msg = "bridge response shape_id must be an int"
-            raise TypeError(msg)
-        return shape_id
+        return get_required_int(result, "shape_id")
 
     def update_smartart(
         self,
@@ -186,12 +190,12 @@ class SlideSmartArtAnimMixin:
         payload: dict[str, object] = {
             "slide_index": self.index,
             "type": bg_type,
-            "color": str(kwargs.get("color", "")),
+            "color": _optional_payload_str(kwargs.get("color")),
             "colors": list(kwargs.get("colors") or []),  # type: ignore[arg-type]
-            "angle": int(kwargs.get("angle", 0)),  # type: ignore[arg-type]
-            "image_path": str(kwargs.get("image_path", "")),
-            "image_data": str(kwargs.get("image_data", "")),
-            "color_ref": str(kwargs.get("color_ref", "")),
+            "angle": int(kwargs.get("angle") or 0),  # type: ignore[arg-type]
+            "image_path": _optional_payload_str(kwargs.get("image_path")),
+            "image_data": _optional_payload_str(kwargs.get("image_data")),
+            "color_ref": _optional_payload_str(kwargs.get("color_ref")),
         }
         self._presentation.execute(ops.OP_SET_SLIDE_BACKGROUND, payload)
 

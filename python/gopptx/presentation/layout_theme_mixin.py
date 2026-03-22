@@ -4,14 +4,31 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .helpers import PresentationMixinBase
+
 if TYPE_CHECKING:
+    from typing_extensions import Protocol
+
     from .theme.theme import Theme
 
+    class _PresentationThemeOps(Protocol):
+        def execute(
+            self, op: str, payload: dict[str, object] | None = None
+        ) -> dict[str, object]: ...
 
-class PresentationThemeMixin:
+        def invalidate_cache(self) -> None: ...
+
+        def set_global_theme_preset(self, name: str) -> None: ...
+
+        def set_theme_color_scheme(self, **colors: str) -> None: ...
+
+        def set_theme_font_scheme(self, major: str, minor: str) -> None: ...
+
+
+class PresentationThemeMixin(PresentationMixinBase):
     """Mixin providing theme application methods for Presentation."""
 
-    def apply_theme(self, theme: Theme) -> None:
+    def apply_theme(self: _PresentationThemeOps, theme: Theme | str) -> None:
         """Apply a theme to the presentation.
 
         Applies both the color scheme and font scheme from the theme to all
@@ -55,6 +72,10 @@ class PresentationThemeMixin:
             )
             prs.apply_theme(custom_theme)
         """
+        if isinstance(theme, str):
+            self.set_global_theme_preset(theme)
+            return
+
         # Apply color scheme
         color_dict = theme.colors.to_dict()
         self.set_theme_color_scheme(**color_dict)
