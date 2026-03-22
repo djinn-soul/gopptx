@@ -204,6 +204,7 @@ class PresentationBase(
             "empty": jinja2.Undefined,
             "strict": jinja2.StrictUndefined,
         }
+        # Autoescape disabled for all extensions and strings to match original behavior
         env = jinja2.Environment(
             undefined=undefined_map.get(undefined, jinja2.DebugUndefined),
             autoescape=jinja2.select_autoescape(

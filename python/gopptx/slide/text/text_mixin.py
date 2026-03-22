@@ -120,17 +120,7 @@ class SlideTextMixin:
     ) -> None:
         """Apply multiple run-text updates on the current slide."""
         self._flush_pending_text_updates_if_present()
-        normalized: list[dict[str, object]] = []
-        for update in updates:
-            if isinstance(update, tuple):
-                shape_id, run_index, text = update
-                normalized.append({
-                    "shape_id": shape_id,
-                    "run_index": run_index,
-                    "text": text,
-                })
-                continue
-            normalized.append(dict(update))
+        normalized = _normalize_run_text_updates(updates)
         self._presentation.update_slide_run_texts(self.index, normalized)
         for update in normalized:
             shape_id = update.get("shape_id")
@@ -155,3 +145,21 @@ class SlideTextMixin:
         invalidate = getattr(self, "_invalidate_shape_cache", None)
         if callable(invalidate):
             invalidate()
+
+
+def _normalize_run_text_updates(
+    updates: list[tuple[int, int, str]] | list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Convert mixed update formats into a standard list of update dictionaries."""
+    normalized: list[dict[str, object]] = []
+    for update in updates:
+        if isinstance(update, tuple):
+            shape_id, run_index, text = update
+            normalized.append({
+                "shape_id": shape_id,
+                "run_index": run_index,
+                "text": text,
+            })
+            continue
+        normalized.append(dict(update))
+    return normalized

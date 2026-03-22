@@ -25,16 +25,23 @@ if TYPE_CHECKING:
     from .slide import Slide
 
 
-class SlidePresentationProtocol(Protocol):
-    """Operations exposed by the presentation bridge to slide proxies."""
+class BaseEngineProtocol(Protocol):
+    """Core engine and cache operations."""
 
     _batch_active: bool
+
+    @property
+    def batch_active(self) -> bool: ...
 
     def execute(
         self, op: str, payload: dict[str, object] | None = None
     ) -> dict[str, object]: ...
 
     def invalidate_cache(self) -> None: ...
+
+
+class SlideLifecycleProtocol(Protocol):
+    """Slide lifecycle management."""
 
     def slide_index_for_id(self, slide_id: int) -> int: ...
 
@@ -44,7 +51,26 @@ class SlidePresentationProtocol(Protocol):
     @property
     def slide_masters(self) -> list[SlideMaster]: ...
 
-    def list_shapes(self, slide_index: int) -> list[Shape]: ...
+    def remove_slide(self, index: int) -> None: ...
+
+    def update_slide(
+        self,
+        index: int,
+        *,
+        title: str | None = None,
+        layout: str | None = None,
+        bullets: list[str] | None = None,
+    ) -> None: ...
+
+    def set_slide_title(self, index: int, title: str) -> None: ...
+
+    def duplicate_slide(self, index: int, insert_at: int | None = None) -> int: ...
+
+    def get_slide_layout_ref(self, slide_index: int) -> tuple[str, str]: ...
+
+
+class TextOperationsProtocol(Protocol):
+    """Text and run management."""
 
     def get_slide_text_states(self, slide_index: int) -> list[dict[str, object]]: ...
 
@@ -70,14 +96,6 @@ class SlidePresentationProtocol(Protocol):
         self, slide_index: int, shape_id: int, run: TextRun
     ) -> None: ...
 
-    def add_shape(
-        self,
-        slide_index: int,
-        shape_type: ShapeType,
-        bounds: tuple[float, float, float, float],
-        **kwargs: object,
-    ) -> int: ...
-
     def add_textbox(
         self,
         slide_index: int,
@@ -93,6 +111,42 @@ class SlidePresentationProtocol(Protocol):
     def add_textboxes(
         self, slide_index: int, textboxes: Sequence[Mapping[str, object]]
     ) -> list[int]: ...
+
+    def flush_pending_textbox_adds(self, slide_index: int) -> list[int]: ...
+
+    def has_pending_textbox_adds(self, slide_index: int) -> bool: ...
+
+    def queue_textbox_add(self, slide_index: int, payload: dict[str, object]) -> int: ...
+
+    def flush_pending_slide_run_text_updates(self, slide_index: int) -> None: ...
+
+    def has_pending_slide_run_text_updates(self, slide_index: int) -> bool: ...
+
+    def queue_shape_runs_replace(
+        self, slide_index: int, shape_id: int, runs: list[dict[str, object]]
+    ) -> None: ...
+
+    def queue_shape_run_text_update(
+        self, slide_index: int, shape_id: int, run_index: int, text: str
+    ) -> None: ...
+
+    def flush_pending_shape_runs_replacements(self, slide_index: int, shape_id: int) -> None: ...
+
+    def has_pending_shape_runs_replace(self, slide_index: int, shape_id: int) -> bool: ...
+
+
+class ShapeOperationsProtocol(Protocol):
+    """Shape management operations."""
+
+    def list_shapes(self, slide_index: int) -> list[Shape]: ...
+
+    def add_shape(
+        self,
+        slide_index: int,
+        shape_type: ShapeType,
+        bounds: tuple[float, float, float, float],
+        **kwargs: object,
+    ) -> int: ...
 
     def add_connector(
         self,
@@ -119,6 +173,34 @@ class SlidePresentationProtocol(Protocol):
         start_y: float = 0,
         scale: tuple[float, float] | float = 1.0,
     ) -> FreeformBuilder: ...
+
+    def remove_shape(self, slide_index: int, shape_id: int) -> None: ...
+
+    def group_shapes(self, slide_index: int, shape_ids: list[int]) -> int: ...
+
+    def ungroup_shapes(self, slide_index: int, shape_id: int) -> int: ...
+
+    def move_shape_to_front(self, slide_index: int, shape_id: int) -> None: ...
+
+    def move_shape_to_back(self, slide_index: int, shape_id: int) -> None: ...
+
+    def update_shape(
+        self, slide_index: int, shape_id: int, updates: ShapeUpdate
+    ) -> None: ...
+
+    def list_placeholders(self, slide_index: int) -> list[dict[str, object]]: ...
+
+    def set_placeholder_content(
+        self,
+        slide_index: int,
+        ph_index: int,
+        ph_type: str = "",
+        **kwargs: object,
+    ) -> None: ...
+
+
+class MediaOperationsProtocol(Protocol):
+    """Image and media management."""
 
     def add_image(
         self,
@@ -163,33 +245,11 @@ class SlidePresentationProtocol(Protocol):
         icon: str | bytes | None = None,
     ) -> int: ...
 
-    def remove_shape(self, slide_index: int, shape_id: int) -> None: ...
-
-    def group_shapes(self, slide_index: int, shape_ids: list[int]) -> int: ...
-
-    def ungroup_shapes(self, slide_index: int, shape_id: int) -> int: ...
-
-    def move_shape_to_front(self, slide_index: int, shape_id: int) -> None: ...
-
-    def move_shape_to_back(self, slide_index: int, shape_id: int) -> None: ...
-
-    def update_shape(
-        self, slide_index: int, shape_id: int, updates: ShapeUpdate
-    ) -> None: ...
-
     def add_mermaid(self, slide_index: int, diagram: str, *, theme: str = "") -> tuple[int, int]: ...
 
-    def list_placeholders(self, slide_index: int) -> list[dict[str, object]]: ...
 
-    def get_slide_layout_ref(self, slide_index: int) -> tuple[str, str]: ...
-
-    def set_placeholder_content(
-        self,
-        slide_index: int,
-        ph_index: int,
-        ph_type: str = "",
-        **kwargs: object,
-    ) -> None: ...
+class ChartOperationsProtocol(Protocol):
+    """Chart management operations."""
 
     def add_chart(
         self,
@@ -221,6 +281,10 @@ class SlidePresentationProtocol(Protocol):
         chart_selector: dict[str, object],
         fmt: dict[str, object],
     ) -> None: ...
+
+
+class TableOperationsProtocol(Protocol):
+    """Table management operations."""
 
     def add_table(
         self,
@@ -259,6 +323,10 @@ class SlidePresentationProtocol(Protocol):
         self, slide_index: int, shape_id: int, col: int, width: int
     ) -> None: ...
 
+
+class NotesOperationsProtocol(Protocol):
+    """Speaker notes management."""
+
     def get_notes(self, slide_index: int) -> str: ...
 
     def get_notes_payload(self, slide_index: int) -> dict[str, object]: ...
@@ -271,39 +339,16 @@ class SlidePresentationProtocol(Protocol):
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None: ...
 
-    def remove_slide(self, index: int) -> None: ...
 
-    def update_slide(
-        self,
-        index: int,
-        *,
-        title: str | None = None,
-        layout: str | None = None,
-        bullets: list[str] | None = None,
-    ) -> None: ...
-
-    def set_slide_title(self, index: int, title: str) -> None: ...
-
-    def duplicate_slide(self, index: int, insert_at: int | None = None) -> int: ...
-
-    def flush_pending_textbox_adds(self) -> None: ...
-
-    def has_pending_textbox_adds(self, slide_index: int) -> bool: ...
-
-    def queue_textbox_add(self, slide_index: int, payload: dict[str, object]) -> int: ...
-
-    def flush_pending_slide_run_text_updates(self, slide_index: int) -> None: ...
-
-    def has_pending_slide_run_text_updates(self, slide_index: int) -> bool: ...
-
-    def queue_shape_runs_replace(
-        self, slide_index: int, shape_id: int, runs: list[dict[str, object]]
-    ) -> None: ...
-
-    def queue_shape_run_text_update(
-        self, slide_index: int, shape_id: int, run_index: int, text: str
-    ) -> None: ...
-
-    def flush_pending_shape_runs_replacements(self, slide_index: int, shape_id: int) -> None: ...
-
-    def has_pending_shape_runs_replace(self, slide_index: int, shape_id: int) -> bool: ...
+class SlidePresentationProtocol(
+    BaseEngineProtocol,
+    SlideLifecycleProtocol,
+    TextOperationsProtocol,
+    ShapeOperationsProtocol,
+    MediaOperationsProtocol,
+    ChartOperationsProtocol,
+    TableOperationsProtocol,
+    NotesOperationsProtocol,
+    Protocol,
+):
+    """Composite protocol for the full presentation bridge."""
