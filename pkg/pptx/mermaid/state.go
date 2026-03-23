@@ -8,6 +8,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const stateTypeEnd = "end"
+
 // StateNode represents a state in a state diagram.
 type StateNode struct {
 	ID    string
@@ -107,7 +109,7 @@ func ensureState(states map[string]*StateNode, id string) {
 			label = ""
 		}
 		if strings.HasPrefix(id, "__end_") {
-			stateType = "end"
+			stateType = stateTypeEnd
 			label = ""
 		}
 		states[id] = &StateNode{ID: id, Label: label, Type: stateType}
@@ -253,12 +255,12 @@ func stateGridPosition(index int, layout stateLayout) (styling.Length, styling.L
 }
 
 func stateNodeShape(state StateNode, x styling.Length, y styling.Length, layout stateLayout, theme Theme) shapes.Shape {
-	if state.Type == "start" || state.Type == "end" {
+	if state.Type == "start" || state.Type == stateTypeEnd {
 		circleSize := styling.Inches(0.36)
 		lineColor := theme.PrimaryStroke
 		lineWeight := theme.LineWeight
 		fillColor := theme.PrimaryStroke
-		if state.Type == "end" {
+		if state.Type == stateTypeEnd {
 			fillColor = theme.Background
 			lineWeight = theme.LineWeight * 2
 		}

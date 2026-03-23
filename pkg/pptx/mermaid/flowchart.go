@@ -523,12 +523,13 @@ func (s *flowchartRenderState) connectorLabelShape(
 ) shapes.Shape {
 	labelX := (geometry.startX + geometry.endX) / 2
 	labelY := (geometry.startY + geometry.endY) / 2
-	if s.isHorizontal {
+	switch {
+	case s.isHorizontal:
 		// Keep LR labels off the connector stroke to improve legibility.
 		labelY -= styling.Inches(0.16)
-	} else if geometry.endY >= geometry.startY {
+	case geometry.endY >= geometry.startY:
 		labelY += styling.Inches(0.18)
-	} else {
+	default:
 		labelY -= styling.Inches(0.18)
 	}
 	labelShape := shapes.NewShape(

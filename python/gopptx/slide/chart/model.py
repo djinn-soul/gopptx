@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from typing import Protocol
 
     from ...schemas import ChartDataUpdate, ChartFormatUpdate, ChartState
-    from ..slide import Slide
+    from ._protocols import ChartSlideProto
     from .data import CategoryChartData, XyChartData
 
     class _ChartAxisBulkOpsProto(Protocol):
@@ -70,7 +70,7 @@ class Chart(_ChartStateMixin, _ChartAxisBulkOpsMixin):
 
     def __init__(
         self,
-        slide: Slide,
+        slide: ChartSlideProto,
         index: int,
         rel_id: str,
         chart_part: str,

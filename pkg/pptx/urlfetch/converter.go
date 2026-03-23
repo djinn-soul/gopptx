@@ -104,7 +104,6 @@ func (c *Converter) buildSlides(content *WebContent, opts *ConversionOptions) ([
 	return slides, nil
 }
 
-
 func (c *Converter) appendBlock(
 	slide elements.SlideContent,
 	block ContentBlock,

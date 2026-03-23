@@ -11,13 +11,13 @@ from .table_cells import Cell
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .table import Table
+    from ._protocols import TableWriteProto
 
 
 class TableRow:
     """Row proxy with height accessor."""
 
-    def __init__(self, table: Table, index: int) -> None:
+    def __init__(self, table: TableWriteProto, index: int) -> None:
         """Initialize a row proxy for a table row index."""
         self._table = table
         self.index = index
@@ -56,7 +56,7 @@ class TableRow:
 class TableRows:
     """Row collection proxy."""
 
-    def __init__(self, table: Table) -> None:
+    def __init__(self, table: TableWriteProto) -> None:
         """Initialize a row collection for a table."""
         self._table = table
 
@@ -81,7 +81,7 @@ class TableRows:
 class TableColumn:
     """Column proxy with width accessor."""
 
-    def __init__(self, table: Table, index: int) -> None:
+    def __init__(self, table: TableWriteProto, index: int) -> None:
         """Initialize a column proxy for a table column index."""
         self._table = table
         self.index = index
@@ -120,7 +120,7 @@ class TableColumn:
 class TableColumns:
     """Column collection proxy."""
 
-    def __init__(self, table: Table) -> None:
+    def __init__(self, table: TableWriteProto) -> None:
         """Initialize a column collection for a table."""
         self._table = table
 

@@ -194,52 +194,75 @@ func (e *PresentationEditor) AddTableWithData(
 		return shapeID, nil
 	}
 
-	// 2. Populate cells if data provided
-	if len(spec.Data) > 0 {
-		for rowIdx, row := range spec.Data {
-			for colIdx, text := range row {
-				if err := e.UpdateTableCellText(slideIndex, shapeID, rowIdx, colIdx, text); err != nil {
-					return shapeID, fmt.Errorf("set cell [%d,%d]: %w", rowIdx, colIdx, err)
-				}
-			}
-		}
+	if err := e.populateTableData(slideIndex, shapeID, spec.Data); err != nil {
+		return shapeID, err
 	}
 
-	// 3. Set column widths if provided
-	if len(spec.ColumnWidths) > 0 {
-		for colIdx, width := range spec.ColumnWidths {
-			if err := e.SetTableColumnWidth(slideIndex, shapeID, colIdx, width); err != nil {
-				return shapeID, fmt.Errorf("set column width %d: %w", colIdx, err)
-			}
-		}
+	if err := e.applyTableColumnWidths(slideIndex, shapeID, spec.ColumnWidths); err != nil {
+		return shapeID, err
 	}
 
-	// 4. Set row heights if provided
-	if len(spec.RowHeights) > 0 {
-		for rowIdx, height := range spec.RowHeights {
-			if err := e.SetTableRowHeight(slideIndex, shapeID, rowIdx, height); err != nil {
-				return shapeID, fmt.Errorf("set row height %d: %w", rowIdx, err)
-			}
-		}
+	if err := e.applyTableRowHeights(slideIndex, shapeID, spec.RowHeights); err != nil {
+		return shapeID, err
 	}
 
-	// 5. Set flags only when the caller explicitly enables at least one.
-	// Skipping this call preserves the firstRow="1" bandRow="1" defaults
-	// that RenderTable writes, so AddTableWithData(..., &TableInitSpec{Data: ...})
-	// does not silently strip the default header-row/banded-row styling.
-	if spec.FirstRow || spec.FirstCol || spec.LastRow || spec.LastCol || spec.BandRow || spec.BandCol {
-		flags := map[string]any{
-			"first_row": spec.FirstRow,
-			"first_col": spec.FirstCol,
-			"last_row":  spec.LastRow,
-			"last_col":  spec.LastCol,
-			"band_row":  spec.BandRow,
-			"band_col":  spec.BandCol,
-		}
-		if err := e.UpdateTableFlags(slideIndex, shapeID, flags); err != nil {
-			return shapeID, fmt.Errorf("update flags: %w", err)
-		}
+	if err := e.applyExplicitTableFlags(slideIndex, shapeID, spec); err != nil {
+		return shapeID, err
 	}
 
 	return shapeID, nil
+}
+
+func (e *PresentationEditor) populateTableData(slideIndex, shapeID int, data [][]string) error {
+	for rowIdx, row := range data {
+		for colIdx, text := range row {
+			if err := e.UpdateTableCellText(slideIndex, shapeID, rowIdx, colIdx, text); err != nil {
+				return fmt.Errorf("set cell [%d,%d]: %w", rowIdx, colIdx, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (e *PresentationEditor) applyTableColumnWidths(slideIndex, shapeID int, widths []int64) error {
+	for colIdx, width := range widths {
+		if err := e.SetTableColumnWidth(slideIndex, shapeID, colIdx, width); err != nil {
+			return fmt.Errorf("set column width %d: %w", colIdx, err)
+		}
+	}
+	return nil
+}
+
+func (e *PresentationEditor) applyTableRowHeights(slideIndex, shapeID int, heights []int64) error {
+	for rowIdx, height := range heights {
+		if err := e.SetTableRowHeight(slideIndex, shapeID, rowIdx, height); err != nil {
+			return fmt.Errorf("set row height %d: %w", rowIdx, err)
+		}
+	}
+	return nil
+}
+
+func (e *PresentationEditor) applyExplicitTableFlags(
+	slideIndex, shapeID int,
+	spec *TableInitSpec,
+) error {
+	// Set flags only when the caller explicitly enables at least one.
+	// Skipping this call preserves the firstRow="1" bandRow="1" defaults
+	// that RenderTable writes, so AddTableWithData(..., &TableInitSpec{Data: ...})
+	// does not silently strip the default header-row/banded-row styling.
+	if !spec.FirstRow && !spec.FirstCol && !spec.LastRow && !spec.LastCol && !spec.BandRow && !spec.BandCol {
+		return nil
+	}
+	flags := map[string]any{
+		"first_row": spec.FirstRow,
+		"first_col": spec.FirstCol,
+		"last_row":  spec.LastRow,
+		"last_col":  spec.LastCol,
+		"band_row":  spec.BandRow,
+		"band_col":  spec.BandCol,
+	}
+	if err := e.UpdateTableFlags(slideIndex, shapeID, flags); err != nil {
+		return fmt.Errorf("update flags: %w", err)
+	}
+	return nil
 }

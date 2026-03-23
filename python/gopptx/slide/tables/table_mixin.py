@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from .table import Table
+from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ...schemas import TableCellInfo, TableInfo
     from ..contracts import SlidePresentationProtocol
+
+
+class _TableFactoryProto(Protocol):
+    def __call__(
+        self,
+        prs: SlidePresentationProtocol,
+        slide_index: int,
+        shape_id: int,
+    ) -> object: ...
 
 
 class SlideTableMixin:
@@ -61,9 +69,11 @@ class SlideTableMixin:
         """Fetch raw table payload by shape id."""
         return self._presentation.get_table(self.index, shape_id)
 
-    def table(self, shape_id: int) -> Table:
+    def table(self, shape_id: int) -> object:
         """Return table proxy object by shape id."""
-        return Table(self._presentation, self.index, shape_id)
+        table_module = import_module(".table", __package__)
+        table_factory = cast("_TableFactoryProto", table_module.Table)
+        return table_factory(self._presentation, self.index, shape_id)
 
     def set_table_flags(self, shape_id: int, flags: dict[str, bool]) -> None:
         """Set table style flags (first_row, banded_rows, etc.)."""

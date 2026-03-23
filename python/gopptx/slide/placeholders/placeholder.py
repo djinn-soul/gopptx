@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ...presentation.slides.master import SlideLayout, SlideMaster
     from ...schemas import PlaceholderInfo
     from ..chart.data import CategoryChartData, XyChartData
-    from ..slide import Slide
+    from .placeholder_protocols import PlaceholderSlideProto
 
 
 class PlaceholderFormat(UserString):
@@ -39,7 +39,9 @@ class PlaceholderFormat(UserString):
 class Placeholder:
     """Proxy object for a placeholder within a slide."""
 
-    def __init__(self, slide: Slide, index: int, ph_type: str, name: str) -> None:
+    def __init__(
+        self, slide: PlaceholderSlideProto, index: int, ph_type: str, name: str
+    ) -> None:
         """Initialize the placeholder proxy.
 
         Args:
@@ -85,12 +87,16 @@ class Placeholder:
     def _find_layout_and_master(
         masters: Iterable[SlideMaster],
         layout_part: str,
-        master_part: str,
+        master_part: str | None,
     ) -> tuple[SlideLayout | None, SlideMaster | None]:
         layout_obj: SlideLayout | None = None
         master_obj: SlideMaster | None = None
         for master in masters:
-            if master_obj is None and master.part == master_part:
+            if (
+                master_obj is None
+                and master_part is not None
+                and master.part == master_part
+            ):
                 master_obj = master
             matched_layout = next(
                 (
@@ -278,7 +284,7 @@ _PLACEHOLDER_TYPE_TO_CLASS: dict[str, type[Placeholder]] = {
 
 
 def create_placeholder(
-    slide: Slide, index: int, ph_type: str, name: str
+    slide: PlaceholderSlideProto, index: int, ph_type: str, name: str
 ) -> Placeholder:
     """Create a placeholder proxy using the most-specific subtype mapping."""
     cls = _PLACEHOLDER_TYPE_TO_CLASS.get(ph_type, Placeholder)

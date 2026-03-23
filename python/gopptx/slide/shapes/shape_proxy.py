@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
@@ -16,16 +16,38 @@ from .shape_format_proxies import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from ...constants import ShapeType
     from ...schemas import Shape, ShapeProps, ShapeUpdate
     from ...shapes import ShapeBuilder
     from ...text.run_builder import RunBuilder
-    from ..slide import Slide
+    from ..contracts import SlidePresentationProtocol
+
+
+class _ShapeProxySlideProto(Protocol):
+    @property
+    def presentation(self) -> SlidePresentationProtocol: ...
+
+    @property
+    def index(self) -> int: ...
+
+    def list_shapes(self) -> list[Shape]: ...
+
+    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None: ...
+
+    def add_shape(
+        self,
+        shape_type: ShapeType,
+        bounds: tuple[float, float, float, float],
+        **kwargs: str | ShapeProps,
+    ) -> int: ...
+
+    def shape(self, shape_id: int) -> ShapeProxy: ...
 
 
 class ShapeProxy:
     """Live shape proxy object."""
 
-    def __init__(self, slide: Slide, shape_id: int) -> None:
+    def __init__(self, slide: _ShapeProxySlideProto, shape_id: int) -> None:
         """Create a proxy around the specified slide shape."""
         self._slide = slide
         self._shape_id = shape_id
@@ -176,7 +198,7 @@ class ShapeProxy:
 class ShapeCollection:
     """python-pptx-style slide shapes collection."""
 
-    def __init__(self, slide: Slide) -> None:
+    def __init__(self, slide: _ShapeProxySlideProto) -> None:
         """Create a shape collection for a slide."""
         self._slide = slide
 

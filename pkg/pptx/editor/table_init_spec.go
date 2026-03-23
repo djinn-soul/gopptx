@@ -9,7 +9,7 @@ type TableInitSpec struct {
 
 	// StyledData is an alternative to Data with per-cell styling.
 	// Not currently used by AddTableWithData (reserved for future).
-	StyledData [][]interface{}
+	StyledData [][]any
 
 	// ColumnWidths specifies width in EMU for each column (optional).
 	ColumnWidths []int64

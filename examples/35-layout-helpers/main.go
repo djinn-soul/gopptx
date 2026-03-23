@@ -25,95 +25,21 @@ func run() error {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	var slides []pptx.SlideContent
-
-	// 1. Stack - vertically stacked shapes with gap.
-	stackSlide := pptx.NewSlide("Stack Layout")
-	h := pptx.Inches(0.6)
-	w := pptx.Inches(8)
-	pts, err := pptx.Stack(
-		pptx.OrientationVertical,
-		pptx.Point{X: pptx.Inches(1), Y: pptx.Inches(1.2)},
-		pptx.Inches(0.12),
-		pptx.Size{CX: w, CY: h},
-		pptx.Size{CX: w, CY: h},
-		pptx.Size{CX: w, CY: h},
-		pptx.Size{CX: w, CY: h},
-	)
+	stackSlide, err := buildStackSlide()
 	if err != nil {
-		return fmt.Errorf("stack: %w", err)
+		return err
 	}
-	stackColors := []string{"4472C4", "ED7D31", "A9D18E", "FF0000"}
-	stackLabels := []string{"Init", "Build", "Validate", "Export"}
-	for i, pt := range pts {
-		stackSlide = stackSlide.AddShape(
-			pptx.NewShape(pptx.ShapeTypeRectangle, pt.X, pt.Y, w, h).
-				WithFill(pptx.NewShapeFill(stackColors[i])).
-				WithText(stackLabels[i]),
-		)
-	}
-	slides = append(slides, stackSlide)
-
-	// 2. DistributeUniform - evenly spaced horizontal row.
-	distSlide := pptx.NewSlide("Distribute Uniform")
-	bounds := pptx.Box{
-		X: pptx.Inches(0.5), Y: pptx.Inches(2),
-		CX: pptx.Inches(9), CY: pptx.Inches(1.5),
-	}
-	elemW := pptx.Inches(1.5)
-	coords, err := pptx.DistributeUniform(pptx.OrientationHorizontal, bounds, 5, elemW)
+	distSlide, err := buildDistributeSlide()
 	if err != nil {
-		return fmt.Errorf("distribute: %w", err)
+		return err
 	}
-	distColors := []string{"4472C4", "ED7D31", "A9D18E", "FF0000", "FFC000"}
-	distLabels := []string{"Alpha", "Beta", "Gamma", "Delta", "Epsilon"}
-	for i, x := range coords {
-		distSlide = distSlide.AddShape(
-			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, x, bounds.Y, elemW, bounds.CY).
-				WithFill(pptx.NewShapeFill(distColors[i])).
-				WithText(distLabels[i]).
-				WithTextWrap(pptx.TextWrapNone).
-				WithAutoFit(pptx.TextAutoFitNone),
-		)
-	}
-	slides = append(slides, distSlide)
-
-	// 3. Grid - 2×3 grid of shapes.
-	gridSlide := pptx.NewSlide("Grid Layout (2×3)").WithTitleOnlyLayout()
-	boxes, err := pptx.GridInBox(
-		2,
-		3,
-		pptx.Inches(0.2),
-		pptx.Box{
-			X:  pptx.Inches(0.5),
-			Y:  pptx.Inches(1.9),
-			CX: pptx.Inches(9),
-			CY: pptx.Inches(4.9),
-		},
-	)
+	gridSlide, err := buildGridSlide()
 	if err != nil {
-		return fmt.Errorf("grid: %w", err)
+		return err
 	}
-	gridColors := []string{"5B9BD5", "ED7D31", "A9D18E", "FF0000", "FFC000", "7030A0"}
-	for i, b := range boxes {
-		gridSlide = gridSlide.AddShape(
-			pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
-				WithFill(pptx.NewShapeFill(gridColors[i])).
-				WithText(fmt.Sprintf("Cell %d", i+1)),
-		)
-	}
-	slides = append(slides, gridSlide)
+	centerSlide := buildCenterSlide()
 
-	// 4. Center - centered single shape.
-	centerSlide := pptx.NewSlide("Center Helper")
-	cx, cy := pptx.Inches(4), pptx.Inches(2)
-	x, y := pptx.Center(cx, cy)
-	centerSlide = centerSlide.AddShape(
-		pptx.NewShape(pptx.ShapeTypeEllipse, x, y, cx, cy).
-			WithFill(pptx.NewShapeFill("1B6CA8")).
-			WithText("Centered Ellipse"),
-	)
-	slides = append(slides, centerSlide)
+	slides := []pptx.SlideContent{stackSlide, distSlide, gridSlide, centerSlide}
 
 	data, err := pptx.CreateWithSlides("Task 35: Layout Helpers", slides)
 	if err != nil {
@@ -127,4 +53,95 @@ func run() error {
 
 	log.Printf("Generated %s\n", outputPath)
 	return nil
+}
+
+func buildStackSlide() (pptx.SlideContent, error) {
+	slide := pptx.NewSlide("Stack Layout")
+	h := pptx.Inches(0.6)
+	w := pptx.Inches(8)
+	pts, err := pptx.Stack(
+		pptx.OrientationVertical,
+		pptx.Point{X: pptx.Inches(1), Y: pptx.Inches(1.2)},
+		pptx.Inches(0.12),
+		pptx.Size{CX: w, CY: h},
+		pptx.Size{CX: w, CY: h},
+		pptx.Size{CX: w, CY: h},
+		pptx.Size{CX: w, CY: h},
+	)
+	if err != nil {
+		return slide, fmt.Errorf("stack: %w", err)
+	}
+	colors := []string{"4472C4", "ED7D31", "A9D18E", "FF0000"}
+	labels := []string{"Init", "Build", "Validate", "Export"}
+	for i, pt := range pts {
+		slide = slide.AddShape(
+			pptx.NewShape(pptx.ShapeTypeRectangle, pt.X, pt.Y, w, h).
+				WithFill(pptx.NewShapeFill(colors[i])).
+				WithText(labels[i]),
+		)
+	}
+	return slide, nil
+}
+
+func buildDistributeSlide() (pptx.SlideContent, error) {
+	slide := pptx.NewSlide("Distribute Uniform")
+	bounds := pptx.Box{
+		X: pptx.Inches(0.5), Y: pptx.Inches(2),
+		CX: pptx.Inches(9), CY: pptx.Inches(1.5),
+	}
+	elemW := pptx.Inches(1.5)
+	coords, err := pptx.DistributeUniform(pptx.OrientationHorizontal, bounds, 5, elemW)
+	if err != nil {
+		return slide, fmt.Errorf("distribute: %w", err)
+	}
+	colors := []string{"4472C4", "ED7D31", "A9D18E", "FF0000", "FFC000"}
+	labels := []string{"Alpha", "Beta", "Gamma", "Delta", "Epsilon"}
+	for i, x := range coords {
+		slide = slide.AddShape(
+			pptx.NewShape(pptx.ShapeTypeRoundedRectangle, x, bounds.Y, elemW, bounds.CY).
+				WithFill(pptx.NewShapeFill(colors[i])).
+				WithText(labels[i]).
+				WithTextWrap(pptx.TextWrapNone).
+				WithAutoFit(pptx.TextAutoFitNone),
+		)
+	}
+	return slide, nil
+}
+
+func buildGridSlide() (pptx.SlideContent, error) {
+	slide := pptx.NewSlide("Grid Layout (2×3)").WithTitleOnlyLayout()
+	boxes, err := pptx.GridInBox(
+		2,
+		3,
+		pptx.Inches(0.2),
+		pptx.Box{
+			X:  pptx.Inches(0.5),
+			Y:  pptx.Inches(1.9),
+			CX: pptx.Inches(9),
+			CY: pptx.Inches(4.9),
+		},
+	)
+	if err != nil {
+		return slide, fmt.Errorf("grid: %w", err)
+	}
+	colors := []string{"5B9BD5", "ED7D31", "A9D18E", "FF0000", "FFC000", "7030A0"}
+	for i, b := range boxes {
+		slide = slide.AddShape(
+			pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).
+				WithFill(pptx.NewShapeFill(colors[i])).
+				WithText(fmt.Sprintf("Cell %d", i+1)),
+		)
+	}
+	return slide, nil
+}
+
+func buildCenterSlide() pptx.SlideContent {
+	slide := pptx.NewSlide("Center Helper")
+	cx, cy := pptx.Inches(4), pptx.Inches(2)
+	x, y := pptx.Center(cx, cy)
+	return slide.AddShape(
+		pptx.NewShape(pptx.ShapeTypeEllipse, x, y, cx, cy).
+			WithFill(pptx.NewShapeFill("1B6CA8")).
+			WithText("Centered Ellipse"),
+	)
 }

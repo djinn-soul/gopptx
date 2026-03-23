@@ -8,7 +8,6 @@ from typing_extensions import Protocol
 
 if TYPE_CHECKING:
     from ...presentation.slides.master import SlideMaster
-    from ...slide.slide import Slide
 
 
 class SlideLifecycleProtocol(Protocol):
@@ -19,7 +18,7 @@ class SlideLifecycleProtocol(Protocol):
         ...
 
     @property
-    def slides(self) -> list[Slide]:
+    def slides(self) -> list[object]:
         """Protocol member."""
         ...
 

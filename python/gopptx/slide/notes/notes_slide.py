@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from typing_extensions import override
 
@@ -13,17 +13,43 @@ from .notes_slide_style_mixin import NotesSlideStyleMixin
 
 if TYPE_CHECKING:
     from ...schemas import ShapeUpdate
-    from ..slide import SlideBase
+    from ._protocols import NotesSlideProto
     from .notes_text_model import NotesTextFrame
+
+
+class _NotesBackingPresentationProto(Protocol):
+    def get_notes_payload(self, slide_index: int) -> dict[str, object]: ...
+
+    def set_notes_shape_text(
+        self, slide_index: int, shape_id: int, text: str
+    ) -> None: ...
+
+    def set_notes_shape_props(
+        self, slide_index: int, shape_id: int, updates: ShapeUpdate
+    ) -> None: ...
+
+
+class _NotesBackingSlideProto(Protocol):
+    @property
+    def notes(self) -> str: ...
+
+    @notes.setter
+    def notes(self, value: str) -> None: ...
+
+    @property
+    def presentation(self) -> _NotesBackingPresentationProto: ...
+
+    @property
+    def index(self) -> int: ...
 
 
 class NotesSlide(NotesSlideStyleMixin):
     """Proxy for slide notes content."""
 
-    def __init__(self, slide: SlideBase) -> None:
+    def __init__(self, slide: _NotesBackingSlideProto) -> None:
         """Initialize notes proxy bound to a slide."""
         super().__init__()
-        self._slide = slide
+        self._slide: _NotesBackingSlideProto = slide
 
     @property
     def text(self) -> str:
@@ -72,7 +98,7 @@ class NotesSlide(NotesSlideStyleMixin):
     @property
     def shapes(self) -> NotesShapeCollection:
         """Typed notes shape collection for object-model traversal."""
-        return NotesShapeCollection(self)
+        return NotesShapeCollection(cast("NotesSlideProto", self))
 
     def shape(self, shape_id: int) -> NotesShape | None:
         """Return one notes shape by id, if present."""

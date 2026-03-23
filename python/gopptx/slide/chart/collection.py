@@ -9,13 +9,13 @@ from .model import Chart
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ..slide import Slide
+    from ._protocols import ChartSlideProto
 
 
 class ChartCollection:
     """Collection facade for slide chart proxies."""
 
-    def __init__(self, slide: Slide) -> None:
+    def __init__(self, slide: ChartSlideProto) -> None:
         """Bind a chart collection to a slide proxy."""
         super().__init__()
         self._slide = slide

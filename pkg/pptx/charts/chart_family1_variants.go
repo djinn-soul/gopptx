@@ -5,6 +5,7 @@ import "github.com/djinn-soul/gopptx/internal/pptxxml"
 const (
 	chartGroupingStacked        = "stacked"
 	chartGroupingPercentStacked = "percentStacked"
+	chartBarDirection           = "bar"
 )
 
 // BarHorizontalChart is a horizontal clustered bar chart variant.
@@ -20,7 +21,7 @@ func NewBarHorizontalChart(categories []string, values []float64) BarHorizontalC
 func (c BarHorizontalChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarHorizontal
-	spec.BarDir = "bar"
+	spec.BarDir = chartBarDirection
 	return spec
 }
 
@@ -42,7 +43,7 @@ func NewBarStackedChart(categories []string, values []float64) BarStackedChart {
 func (c BarStackedChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarStacked
-	spec.BarDir = "bar"
+	spec.BarDir = chartBarDirection
 	spec.Grouping = chartGroupingStacked
 	return spec
 }
@@ -65,7 +66,7 @@ func NewBarStacked100Chart(categories []string, values []float64) BarStacked100C
 func (c BarStacked100Chart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarStacked100
-	spec.BarDir = "bar"
+	spec.BarDir = chartBarDirection
 	spec.Grouping = chartGroupingPercentStacked
 	return spec
 }
