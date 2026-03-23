@@ -8,13 +8,13 @@ from ... import ops
 from ...api_errors import GopptxError
 
 if TYPE_CHECKING:
-    from .table import Table
+    from ._protocols import TableWriteProto
 
 
 class Cell:
     """Proxy object for a table cell."""
 
-    def __init__(self, table: Table, row: int, col: int) -> None:
+    def __init__(self, table: TableWriteProto, row: int, col: int) -> None:
         """Initialize the cell proxy."""
         super().__init__()
         self._table = table
@@ -101,7 +101,12 @@ class CellRange:
     """Represents a 2D slice of cells in a table for bulk operations."""
 
     def __init__(
-        self, table: Table, row_start: int, row_end: int, col_start: int, col_end: int
+        self,
+        table: TableWriteProto,
+        row_start: int,
+        row_end: int,
+        col_start: int,
+        col_end: int,
     ) -> None:
         """Initialize the cell range with bounds."""
         super().__init__()

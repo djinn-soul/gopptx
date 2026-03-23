@@ -2,20 +2,36 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import Protocol, cast
 
 from ... import ops
 from ...presentation.tables.table_styles import TableStyle
+from ._protocols import TableWriteProto
 
-if TYPE_CHECKING:
-    from .table import Table
+
+class _TableProto(TableWriteProto, Protocol):
+    def _ensure_cache(self) -> None: ...
+
+    _cache: dict[str, object] | None
+
+    @property
+    def header_row_enabled(self) -> bool: ...
+
+    @header_row_enabled.setter
+    def header_row_enabled(self, value: bool) -> None: ...
+
+    @property
+    def banded_rows_enabled(self) -> bool: ...
+
+    @banded_rows_enabled.setter
+    def banded_rows_enabled(self, value: bool) -> None: ...
 
 
 class TableFlagsMixin:
     """Mixin providing flag properties and style application for Table."""
 
     def _update_flags(self, flags: dict[str, bool]) -> None:
-        table = cast("Table", self)
+        table = cast("_TableProto", self)
         table.prs.execute(
             ops.OP_UPDATE_TABLE_FLAGS,
             {
@@ -30,25 +46,25 @@ class TableFlagsMixin:
     @property
     def first_row(self) -> bool:
         """Compatibility alias for ``header_row_enabled``."""
-        return cast("Table", self).header_row_enabled
+        return cast("_TableProto", self).header_row_enabled
 
     @first_row.setter
     def first_row(self, value: bool) -> None:
-        cast("Table", self).header_row_enabled = value
+        cast("_TableProto", self).header_row_enabled = value
 
     @property
     def horz_banding(self) -> bool:
         """Compatibility alias for ``banded_rows_enabled``."""
-        return cast("Table", self).banded_rows_enabled
+        return cast("_TableProto", self).banded_rows_enabled
 
     @horz_banding.setter
     def horz_banding(self, value: bool) -> None:
-        cast("Table", self).banded_rows_enabled = value
+        cast("_TableProto", self).banded_rows_enabled = value
 
     @property
     def first_col(self) -> bool:
         """Whether first-column emphasis is enabled."""
-        table = cast("Table", self)
+        table = cast("_TableProto", self)
         ensure_cache = getattr(table, "_ensure_cache", None)
         cache = getattr(table, "_cache", None)
         if callable(ensure_cache):
@@ -66,7 +82,7 @@ class TableFlagsMixin:
     @property
     def last_col(self) -> bool:
         """Whether last-column emphasis is enabled."""
-        table = cast("Table", self)
+        table = cast("_TableProto", self)
         ensure_cache = getattr(table, "_ensure_cache", None)
         cache = getattr(table, "_cache", None)
         if callable(ensure_cache):
@@ -84,7 +100,7 @@ class TableFlagsMixin:
     @property
     def last_row(self) -> bool:
         """Whether last-row emphasis is enabled."""
-        table = cast("Table", self)
+        table = cast("_TableProto", self)
         ensure_cache = getattr(table, "_ensure_cache", None)
         cache = getattr(table, "_cache", None)
         if callable(ensure_cache):
@@ -102,7 +118,7 @@ class TableFlagsMixin:
     @property
     def vert_banding(self) -> bool:
         """Whether alternating column banding is enabled."""
-        table = cast("Table", self)
+        table = cast("_TableProto", self)
         ensure_cache = getattr(table, "_ensure_cache", None)
         cache = getattr(table, "_cache", None)
         if callable(ensure_cache):
@@ -129,7 +145,7 @@ class TableFlagsMixin:
                 )
             style_guid = styles[style]
 
-        table = cast("Table", self)
+        table = cast("_TableProto", self)
         table.prs.execute(
             ops.OP_SET_TABLE_STYLE,
             {

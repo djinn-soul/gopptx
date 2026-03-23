@@ -3,11 +3,24 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 if TYPE_CHECKING:
     from ...schemas import ShapeUpdate, TextRun
-    from ..slide import Slide
+
+
+class _ShapeTextSlideProto(Protocol):
+    def get_shape_text_state(self, shape_id: int) -> dict[str, object]: ...
+
+    def set_shape_runs(self, shape_id: int, runs: list[TextRun]) -> None: ...
+
+    def append_shape_run(self, shape_id: int, run: TextRun) -> None: ...
+
+    def update_shape_run_text(
+        self, shape_id: int, run_index: int, text: str
+    ) -> None: ...
+
+    def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None: ...
 
 
 class ShapeTextFrame:
@@ -15,7 +28,7 @@ class ShapeTextFrame:
 
     def __init__(
         self,
-        slide: Slide,
+        slide: _ShapeTextSlideProto,
         shape_id: int,
     ) -> None:
         """Initialize a cache-backed text-frame facade for one shape."""
