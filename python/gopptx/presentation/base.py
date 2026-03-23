@@ -18,8 +18,10 @@ from .runtime import PresentationRuntimeMixin
 
 try:
     import jinja2 as _jinja2
+    from jinja2.sandbox import SandboxedEnvironment as _JinjaSandboxEnv
 except ImportError:
     _jinja2 = None
+    _JinjaSandboxEnv = None
 
 if TYPE_CHECKING:
 
@@ -199,13 +201,18 @@ class PresentationBase(
             )
 
         jinja2 = _jinja2
-        undefined_map = {
+        undefined_map: dict[str, type[object]] = {
             "keep": jinja2.DebugUndefined,
             "empty": jinja2.Undefined,
             "strict": jinja2.StrictUndefined,
         }
-        # Autoescape disabled for all extensions and strings to match original behavior
-        env = jinja2.Environment(
+        if _JinjaSandboxEnv is None:
+            raise ImportError(
+                "jinja2 sandbox support is unavailable. Reinstall jinja2 to use from_template()."
+            )
+        # Autoescape disabled for all extensions and strings to match original behavior.
+        # SandboxedEnvironment limits template capabilities when rendering untrusted input.
+        env = _JinjaSandboxEnv(
             undefined=undefined_map.get(undefined, jinja2.DebugUndefined),
             autoescape=jinja2.select_autoescape(
                 enabled_extensions=(), default=False, default_for_string=False
