@@ -15,7 +15,13 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-const outFile = "docs/assets/pptx/basic_usage.pptx"
+const (
+	outFile = "docs/assets/pptx/basic_usage.pptx"
+	boxX    = 0.5
+	boxY    = 4.5
+	boxW    = 9.0
+	boxH    = 0.9
+)
 
 func main() {
 	if err := os.MkdirAll(filepath.Dir(outFile), 0o750); err != nil {
@@ -31,7 +37,7 @@ func main() {
 	slide.AddBullet("Export to .pptx in milliseconds.")
 
 	// Add a coloured call-out box
-	box := shapes.NewRectangle(0.5, 4.5, 9.0, 0.9).
+	box := shapes.NewRectangle(boxX, boxY, boxW, boxH).
 		WithText("Open-source • High-performance • Go + Python").
 		WithFill(shapes.NewShapeFill("2E4057"))
 	slide.AddShape(box)

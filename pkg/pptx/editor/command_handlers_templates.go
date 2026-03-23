@@ -3,10 +3,8 @@ package editor
 import (
 	"encoding/json"
 	"errors"
-	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/templates"
-	"github.com/noirbizarre/gonja"
 )
 
 // handleBuildStatusTemplate builds a StatusTemplate and returns the slides as JSON.
@@ -72,11 +70,11 @@ func handleBuildSimpleTemplate(_ *PresentationEditor, payload json.RawMessage) (
 // handleBuildProposalTemplate builds a ProposalTemplate and returns the slides as JSON.
 func handleBuildProposalTemplate(_ *PresentationEditor, payload json.RawMessage) (any, error) {
 	var req struct {
-		Title    string   `json:"title"`
-		Subtitle string   `json:"subtitle"`
-		Context  string   `json:"context"`
-		Solution string   `json:"solution"`
-		Pricing  []map[string]any `json:"pricing"`
+		Title    string              `json:"title"`
+		Subtitle string              `json:"subtitle"`
+		Context  string              `json:"context"`
+		Solution string              `json:"solution"`
+		Pricing  []map[string]any    `json:"pricing"`
 		Timeline []map[string]string `json:"timeline"`
 	}
 	if err := json.Unmarshal(payload, &req); err != nil {
@@ -88,7 +86,7 @@ func handleBuildProposalTemplate(_ *PresentationEditor, payload json.RawMessage)
 	for i, p := range req.Pricing {
 		features := []string{}
 		if f, ok := p["features"]; ok {
-			if flist, ok := f.([]interface{}); ok {
+			if flist, ok := f.([]any); ok {
 				for _, fi := range flist {
 					if fs, ok := fi.(string); ok {
 						features = append(features, fs)
@@ -196,80 +194,4 @@ func handleBuildTechnicalTemplate(_ *PresentationEditor, payload json.RawMessage
 	}
 
 	return map[string]any{"slides": slidesData}, nil
-}
-
-// handleRenderTemplate renders all Jinja2 template expressions across every
-// slide shape using the provided context map.  It supports the full Jinja2
-// syntax (variables, filters, blocks, loops) via the gonja library.
-//
-// Each line of shape text that contains a Jinja2 expression is rendered
-// independently so that run-level formatting (bold, colour, etc.) is
-// preserved via find-and-replace.
-func handleRenderTemplate(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	var req struct {
-		Context map[string]any `json:"context"`
-	}
-	if err := json.Unmarshal(payload, &req); err != nil {
-		return nil, errors.New("invalid render_template payload: expected {\"context\": {...}}")
-	}
-	if len(req.Context) == 0 {
-		return map[string]any{"replacements": 0}, nil
-	}
-
-	ctx := gonja.Context(req.Context)
-	total := 0
-	seen := make(map[string]string) // raw shape text -> rendered text
-
-	for slideIdx := 0; slideIdx < e.SlideCount(); slideIdx++ {
-		shapes, err := e.GetShapes(slideIdx)
-		if err != nil {
-			continue
-		}
-		for _, shape := range shapes {
-			if !strings.Contains(shape.Text, "{{") && !strings.Contains(shape.Text, "{%") {
-				continue
-			}
-			if _, already := seen[shape.Text]; already {
-				continue
-			}
-			// Render the entire shape text as one template so that
-			// multi-line blocks ({% for %}, {% if %}) are processed correctly.
-			tpl, err := gonja.FromString(shape.Text)
-			if err != nil {
-				seen[shape.Text] = shape.Text // keep on parse error
-				continue
-			}
-			rendered, err := tpl.Execute(ctx)
-			if err != nil {
-				seen[shape.Text] = shape.Text // keep on render error
-				continue
-			}
-			seen[shape.Text] = rendered
-		}
-	}
-
-	for raw, rendered := range seen {
-		if raw == rendered {
-			continue
-		}
-		// When the line count is unchanged, replace line-by-line to preserve
-		// per-run XML formatting (bold, colour, etc.) as much as possible.
-		rawLines := strings.Split(raw, "\n")
-		renderedLines := strings.Split(rendered, "\n")
-		if len(rawLines) == len(renderedLines) {
-			for i, rawLine := range rawLines {
-				if rawLine != renderedLines[i] {
-					n, _ := e.FindAndReplaceInShapes(rawLine, renderedLines[i])
-					total += n
-				}
-			}
-		} else {
-			// Line count changed (e.g. a loop expanded); attempt whole-text
-			// replacement, which works when all text lives in a single XML run.
-			n, _ := e.FindAndReplaceInShapes(raw, rendered)
-			total += n
-		}
-	}
-
-	return map[string]any{"replacements": total}, nil
 }

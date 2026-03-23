@@ -9,7 +9,7 @@ from .placeholder import Placeholder, create_placeholder
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ..slide import Slide
+    from .placeholder_protocols import PlaceholderCollectionSlideProto
 
 
 class PlaceholderCollection:
@@ -21,7 +21,7 @@ class PlaceholderCollection:
     - idx lookup (`slide.placeholders[idx]`)
     """
 
-    def __init__(self, slide: Slide) -> None:
+    def __init__(self, slide: PlaceholderCollectionSlideProto) -> None:
         """Bind collection to a single slide proxy."""
         super().__init__()
         self._slide = slide

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
@@ -287,7 +287,7 @@ class Slide(
     def duplicate(self, insert_at: int | None = None) -> Slide:
         """Duplicate this slide."""
         new_idx = self._presentation.duplicate_slide(self.index, insert_at=insert_at)
-        return self._presentation.slides[new_idx]
+        return cast("Slide", self._presentation.slides[new_idx])
 
     @override
     def __repr__(self) -> str:

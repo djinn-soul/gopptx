@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ...schemas import SlideChartRef
-    from ..contracts import SlidePresentationProtocol
+    from ..contracts.presentation import SlidePresentationProtocol
     from .data import CategoryChartData, XyChartData
 
 
