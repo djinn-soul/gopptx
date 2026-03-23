@@ -9,13 +9,13 @@ from .notes_shape import NotesShape
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .notes_slide import NotesSlide
+    from ._protocols import NotesSlideProto
 
 
 class NotesShapeCollection:
     """Collection facade for notes placeholder/shape entries."""
 
-    def __init__(self, notes_slide: NotesSlide) -> None:
+    def __init__(self, notes_slide: NotesSlideProto) -> None:
         """Initialize the collection for a notes slide."""
         super().__init__()
         self._notes_slide = notes_slide

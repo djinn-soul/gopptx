@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+const (
+	cNvPrSubmatchCount = 2
+	centerDivisor      = 2
+
+	slideNumOverlayCX       int64 = 548640
+	footerDateOverlayCX     int64 = 2133600
+	overlayCY               int64 = 396240
+	overlayHorizontalMargin int64 = 457200
+	overlayBottomMargin     int64 = 274320
+)
+
 // ---------------------------------------------------------------------------
 // Feature 3 – Slide header/footer
 // ---------------------------------------------------------------------------
@@ -39,7 +50,6 @@ func (e *PresentationEditor) SetSlideHeaderFooter(slideIndex int, hf SlideHeader
 		hf,
 		e.metadata.SlideSize.Width,
 		e.metadata.SlideSize.Height,
-		slideIndex+1,
 	)
 	e.parts.Set(slideRef.Part, []byte(slideXMLStr))
 	return nil
@@ -80,15 +90,23 @@ func injectSlideHF(slideXML, hfXML string) string {
 	return strings.Replace(slideXML, "</p:sld>", hfXML+"</p:sld>", 1)
 }
 
-func injectVisibleHeaderFooterShapes(slideXML string, hf SlideHeaderFooter, width, height int64, slideNumber int) string {
-	overlayXML := buildVisibleHeaderFooterShapes(slideXML, hf, width, height, slideNumber)
+func injectVisibleHeaderFooterShapes(
+	slideXML string,
+	hf SlideHeaderFooter,
+	width, height int64,
+) string {
+	overlayXML := buildVisibleHeaderFooterShapes(slideXML, hf, width, height)
 	if overlayXML == "" {
 		return slideXML
 	}
 	return strings.Replace(slideXML, "</p:spTree>", overlayXML+"</p:spTree>", 1)
 }
 
-func buildVisibleHeaderFooterShapes(slideXML string, hf SlideHeaderFooter, width, height int64, slideNumber int) string {
+func buildVisibleHeaderFooterShapes(
+	slideXML string,
+	hf SlideHeaderFooter,
+	width, height int64,
+) string {
 	nextID := maxShapeID(slideXML) + 1
 	var b strings.Builder
 	if hf.ShowSlideNum {
@@ -114,7 +132,7 @@ func maxShapeID(slideXML string) int {
 	matches := re.FindAllStringSubmatch(slideXML, -1)
 	maxID := 1
 	for _, match := range matches {
-		if len(match) != 2 {
+		if len(match) != cNvPrSubmatchCount {
 			continue
 		}
 		if id, err := strconv.Atoi(match[1]); err == nil && id > maxID {
@@ -125,10 +143,10 @@ func maxShapeID(slideXML string) int {
 }
 
 func slideNumberOverlayShape(width, height int64, shapeID int) string {
-	cx := int64(548640)
-	cy := int64(396240)
-	x := width - cx - int64(457200)
-	y := height - cy - int64(274320)
+	cx := slideNumOverlayCX
+	cy := overlayCY
+	x := width - cx - overlayHorizontalMargin
+	y := height - cy - overlayBottomMargin
 	return `
 <p:sp>
   <p:nvSpPr>
@@ -164,10 +182,10 @@ func slideNumberOverlayShape(width, height int64, shapeID int) string {
 }
 
 func footerOverlayShape(text string, width, height int64, shapeID int) string {
-	cx := int64(2133600)
-	cy := int64(396240)
-	x := (width - cx) / 2
-	y := height - cy - int64(274320)
+	cx := footerDateOverlayCX
+	cy := overlayCY
+	x := (width - cx) / centerDivisor
+	y := height - cy - overlayBottomMargin
 	return `
 <p:sp>
   <p:nvSpPr>
@@ -202,10 +220,10 @@ func footerOverlayShape(text string, width, height int64, shapeID int) string {
 }
 
 func dateTimeOverlayShape(text string, height int64, shapeID int) string {
-	cx := int64(2133600)
-	cy := int64(396240)
-	x := int64(457200)
-	y := height - cy - int64(274320)
+	cx := footerDateOverlayCX
+	cy := overlayCY
+	x := overlayHorizontalMargin
+	y := height - cy - overlayBottomMargin
 	return `
 <p:sp>
   <p:nvSpPr>

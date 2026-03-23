@@ -75,7 +75,12 @@ func radarSeriesXML(chart *ChartSpec) string {
 
 func radarAxesXML(chart *ChartSpec) string {
 	axes := chartAxesXML(chart)
-	axes = strings.Replace(axes, `<c:tickLblPos val="nextTo"/>`, `<c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>`, 1)
+	axes = strings.Replace(
+		axes,
+		`<c:tickLblPos val="nextTo"/>`,
+		`<c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>`,
+		1,
+	)
 	return strings.Replace(
 		axes,
 		`<c:crossBetween val="between"/>`,

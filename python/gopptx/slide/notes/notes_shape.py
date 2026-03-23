@@ -12,7 +12,7 @@ from .notes_text_model import NotesTextFrame
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from .notes_slide import NotesSlide
+    from ._protocols import NotesSlideProto
 
 
 _TEXT_PLACEHOLDER_TYPES = {"body", "title", "ctrTitle", "subTitle"}
@@ -47,7 +47,9 @@ class NotesShape(_NotesShapeStyleMixin):
     _SHAPE_PROPS_WRITER_NAME = "_set_shape_props"
     _SHAPE_TEXT_WRITER_NAME = "_set_shape_text"
 
-    def __init__(self, notes_slide: NotesSlide, payload: dict[str, object]) -> None:
+    def __init__(
+        self, notes_slide: NotesSlideProto, payload: dict[str, object]
+    ) -> None:
         """Initialize a notes-shape proxy with source payload."""
         super().__init__()
         self._notes_slide = notes_slide

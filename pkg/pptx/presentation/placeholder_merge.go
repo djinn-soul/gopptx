@@ -7,8 +7,10 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
+const minPlaceholderOverridesForMerge = 2
+
 func mergePlaceholderOverrides(overrides []shapes.PlaceholderContent) []shapes.PlaceholderContent {
-	if len(overrides) < 2 {
+	if len(overrides) < minPlaceholderOverridesForMerge {
 		return overrides
 	}
 
