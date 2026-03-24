@@ -138,12 +138,19 @@ func RenderFillXML(fill *common.ShapeFill) (string, error) {
 	if modeCount > 1 {
 		return "", errors.New("fill.solid, fill.gradient, fill.pattern, and fill.background are mutually exclusive")
 	}
+	if fill.Transparency != nil && fill.Solid == nil {
+		return "", errors.New("fill.transparency requires fill.solid")
+	}
 	if fill.Solid != nil {
 		color, err := NormalizeHexColor(*fill.Solid)
 		if err != nil {
 			return "", fmt.Errorf("fill.solid: %w", err)
 		}
-		return `<a:solidFill><a:srgbClr val="` + color + `"/></a:solidFill>`, nil
+		colorXML, err := renderFillSolidColorXML(color, fill.Transparency)
+		if err != nil {
+			return "", err
+		}
+		return `<a:solidFill>` + colorXML + `</a:solidFill>`, nil
 	}
 	if fill.Background != nil {
 		if !*fill.Background {
@@ -158,6 +165,17 @@ func RenderFillXML(fill *common.ShapeFill) (string, error) {
 		return renderPatternFillXML(fill.Pattern)
 	}
 	return "", nil
+}
+
+func renderFillSolidColorXML(color string, transparency *float64) (string, error) {
+	if transparency == nil {
+		return `<a:srgbClr val="` + color + `"/>`, nil
+	}
+	if *transparency < 0 || *transparency > 1 {
+		return "", errors.New("fill.transparency must be between 0.0 and 1.0")
+	}
+	alpha := int(math.Round((1.0 - *transparency) * float64(ooxmlPercentScale)))
+	return fmt.Sprintf(`<a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr>`, color, alpha), nil
 }
 
 func renderGradientFillXML(gradient *common.GradientFill) (string, error) {

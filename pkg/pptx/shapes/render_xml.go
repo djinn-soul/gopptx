@@ -1,6 +1,7 @@
 package shapes
 
 import (
+	"math"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -164,6 +165,11 @@ func toXMLRichShadowSpec(shadow *RichShapeShadow) *pptxxml.RichShapeShadowSpec {
 }
 
 func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
+	var rotation *int64
+	if tf.RotationDeg != nil {
+		value := int64(math.Round(*tf.RotationDeg * float64(ooxmlAngleUnitsPerDegree)))
+		rotation = &value
+	}
 	return &pptxxml.TextFrameSpec{
 		MarginLeft:   tf.MarginLeft.Emu(),
 		MarginRight:  tf.MarginRight.Emu(),
@@ -172,6 +178,7 @@ func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
 		Anchor:       string(tf.Anchor),
 		Wrap:         string(tf.Wrap),
 		AutoFit:      string(tf.AutoFit),
+		Rotation:     rotation,
 	}
 }
 

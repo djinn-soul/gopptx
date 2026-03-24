@@ -9,6 +9,7 @@ Primary source files:
 - `pkg/pptx/connector.go`
 - `pkg/pptx/shapes/macros.go`
 - `pkg/pptx/shapes/connector.go`
+- `pkg/pptx/shapes/shape_fill_rich.go`
 
 ## Common shape constructors
 
@@ -32,6 +33,8 @@ Primary source files:
 - `NewFreeformInches(points [][2]float64) (Freeform, error)`
 - `NewFreeformClosed(points []FreeformPoint) Freeform`
 - `NewFreeformOpen(points []FreeformPoint) Freeform`
+- `(*RichShapeFill).WithTransparency(value float64) *RichShapeFill`
+- `(*TextFrame).WithRotation(degrees float64) TextFrame`
 
 ## Inches-based shape helpers
 

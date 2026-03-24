@@ -188,6 +188,21 @@ class SlideShapeMixin:
         self._invalidate_shape_cache_if_present()
         self._invalidate_text_state_cache_if_present()
 
+    def clear_shapes(self) -> int:
+        """Remove all shapes from the slide and return count removed."""
+        shape_ids: list[int] = []
+        for shape in self.list_shapes():
+            shape_id = shape.get("ID")
+            if not isinstance(shape_id, int):
+                raise TypeError("shape record is missing required integer ID")
+            shape_ids.append(shape_id)
+        for shape_id in shape_ids:
+            self._presentation.remove_shape(self.index, shape_id)
+        if shape_ids:
+            self._invalidate_shape_cache_if_present()
+            self._invalidate_text_state_cache_if_present()
+        return len(shape_ids)
+
     def group_shapes(self, shape_ids: list[int]) -> int:
         """Group existing shapes and return the new group shape id."""
         shape_id = self._presentation.group_shapes(self.index, shape_ids)

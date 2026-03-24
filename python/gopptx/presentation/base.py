@@ -15,6 +15,7 @@ from .. import ops as _ops
 from ..api_errors import GopptxError
 from .helpers import PresentationProtocol
 from .runtime import PresentationRuntimeMixin
+from .runtime_lifecycle import PresentationRuntimeLifecycleMixin
 
 try:
     import jinja2 as _jinja2
@@ -97,6 +98,7 @@ class PresentationBase(
     PresentationShapeWriteBufferMixin,
     PresentationTextWriteBufferMixin,
     PresentationRuntimeMixin,
+    PresentationRuntimeLifecycleMixin,
 ):
     """Base class for Presentation with core library loading and execution."""
 

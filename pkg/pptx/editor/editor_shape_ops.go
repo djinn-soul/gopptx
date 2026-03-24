@@ -146,6 +146,25 @@ func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 	return e.applyShapeRemoval(partPath, content, shapes, shapeIndex)
 }
 
+// ClearShapes removes all shapes from the given slide.
+func (e *PresentationEditor) ClearShapes(slideIndex int) error {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return errors.New("slide index out of range")
+	}
+
+	shapes, err := e.GetShapes(slideIndex)
+	if err != nil {
+		return err
+	}
+
+	for shapeIndex := len(shapes) - 1; shapeIndex >= 0; shapeIndex-- {
+		if err := e.RemoveShapeByIndex(slideIndex, shapeIndex); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // GroupShapes groups the specified shapes on a slide into a group shape.
 // Returns the ID of the created group shape.
 func (e *PresentationEditor) GroupShapes(slideIndex int, shapeIDs []int) (int, error) {

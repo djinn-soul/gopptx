@@ -419,6 +419,69 @@ func TestRenderShapeXMLWithParagraphInvalidLevel(t *testing.T) {
 	}
 }
 
+func TestRenderShapeXMLWithParagraphBullets(t *testing.T) {
+	style := "roman_upper"
+	bulletColor := "00AAFF"
+	bulletSizePct := 90
+	s := &parsedShape{
+		ID:   175,
+		Name: "Paragraph Bullets",
+		Type: "sp",
+		Text: "Bulleted",
+		X:    10,
+		Y:    20,
+		W:    300,
+		H:    200,
+		Paragraph: &common.Paragraph{
+			BulletStyle:   &style,
+			BulletColor:   &bulletColor,
+			BulletSizePct: &bulletSizePct,
+		},
+	}
+	e := &PresentationEditor{nextRelIDNum: 1}
+
+	xmlBytes, err := e.renderShapeXML("ppt/slides/slide1.xml", s)
+	if err != nil {
+		t.Fatalf("renderShapeXML failed: %v", err)
+	}
+	xmlStr := string(xmlBytes)
+	if !strings.Contains(xmlStr, `<a:buAutoNum type="romanUcPeriod"/>`) {
+		t.Fatalf("expected roman bullet style in XML, got: %s", xmlStr)
+	}
+	if !strings.Contains(xmlStr, `<a:buClr><a:srgbClr val="00AAFF"/></a:buClr>`) {
+		t.Fatalf("expected bullet color in XML, got: %s", xmlStr)
+	}
+	if !strings.Contains(xmlStr, `<a:buSzPct val="90000"/>`) {
+		t.Fatalf("expected bullet size pct in XML, got: %s", xmlStr)
+	}
+}
+
+func TestRenderShapeXMLWithParagraphCustomBulletRequiresChar(t *testing.T) {
+	style := "custom"
+	s := &parsedShape{
+		ID:   176,
+		Name: "Paragraph Bullet Invalid",
+		Type: "sp",
+		Text: "Invalid",
+		X:    10,
+		Y:    20,
+		W:    300,
+		H:    200,
+		Paragraph: &common.Paragraph{
+			BulletStyle: &style,
+		},
+	}
+	e := &PresentationEditor{nextRelIDNum: 1}
+
+	_, err := e.renderShapeXML("ppt/slides/slide1.xml", s)
+	if err == nil {
+		t.Fatal("expected missing custom bullet char to fail")
+	}
+	if !strings.Contains(err.Error(), "paragraph.bullet_char") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestRenderShapeXMLWithHoverAction(t *testing.T) {
 	macro := "HoverMacro"
 	s := &parsedShape{

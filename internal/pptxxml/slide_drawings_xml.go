@@ -189,6 +189,7 @@ type TextFrameSpec struct {
 	Anchor       string
 	Wrap         string
 	AutoFit      string
+	Rotation     *int64
 }
 
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.
@@ -427,6 +428,9 @@ func customShapeTextBody(shape ShapeSpec) string {
 			shape.TextFrame.MarginBottom,
 			10,
 		) + `"`
+		if shape.TextFrame.Rotation != nil {
+			bodyPrAttr += ` rot="` + strconv.FormatInt(*shape.TextFrame.Rotation, 10) + `"`
+		}
 		switch shape.TextFrame.AutoFit {
 		case "spAutoFit":
 			autoFitXML = `<a:spAutoFit/>`
