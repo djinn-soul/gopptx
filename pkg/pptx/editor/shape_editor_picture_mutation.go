@@ -214,6 +214,37 @@ func (e *PresentationEditor) AppendShapeRun(slideIndex, shapeID int, run common.
 	return e.SetShapeRuns(slideIndex, shapeID, runs)
 }
 
+// RemoveShapeRun removes one run by index from a shape's run list.
+func (e *PresentationEditor) RemoveShapeRun(slideIndex, shapeID, runIndex int) error {
+	runs, err := e.GetShapeRuns(slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	if runIndex < 0 || runIndex >= len(runs) {
+		return fmt.Errorf("run index %d out of range", runIndex)
+	}
+	updated := append([]common.TextRun{}, runs[:runIndex]...)
+	updated = append(updated, runs[runIndex+1:]...)
+	if len(updated) == 0 {
+		empty := ""
+		updates := common.ShapeUpdate{Text: &empty, Runs: &updated}
+		return e.UpdateShape(slideIndex, shapeID, updates)
+	}
+	return e.SetShapeRuns(slideIndex, shapeID, updated)
+}
+
+// RemoveShapeParagraph removes one paragraph by index.
+// The current text model normalizes one paragraph per shape, so only index 0 is valid.
+func (e *PresentationEditor) RemoveShapeParagraph(slideIndex, shapeID, paragraphIndex int) error {
+	if paragraphIndex != 0 {
+		return fmt.Errorf("paragraph index %d out of range", paragraphIndex)
+	}
+	empty := ""
+	emptyRuns := []common.TextRun{}
+	updates := common.ShapeUpdate{Text: &empty, Runs: &emptyRuns}
+	return e.UpdateShape(slideIndex, shapeID, updates)
+}
+
 func (e *PresentationEditor) getShapeForTextOps(slideIndex, shapeID int) (parsedShape, error) {
 	shapes, err := e.getShapesForTextOps(slideIndex)
 	if err != nil {

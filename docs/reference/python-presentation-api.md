@@ -253,6 +253,7 @@ Add multiple connectors.
 ### Shape mutation
 
 - `remove_shape(slide_index: int, shape_id: int) -> None`
+- `clear_shapes(slide_index: int) -> int`
 - `update_shape(slide_index: int, shape_id: int, updates: ShapeUpdate) -> None`
 - `move_shape_to_front(slide_index: int, shape_id: int) -> None`
 - `move_shape_to_back(slide_index: int, shape_id: int) -> None`

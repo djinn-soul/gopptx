@@ -56,6 +56,11 @@ func TestShape_Builders(t *testing.T) {
 		t.Errorf("expected autofit normal, got %s", s.TextFrame.AutoFit)
 	}
 
+	textFrame := NewTextFrame().WithRotation(45)
+	if textFrame.RotationDeg == nil || *textFrame.RotationDeg != 45 {
+		t.Errorf("expected text-frame rotation 45, got %#v", textFrame.RotationDeg)
+	}
+
 	// Action builders
 	link := action.NewHyperlink(action.HyperlinkURL("https://example.com"))
 	s = s.WithClickAction(link).WithHoverAction(link)

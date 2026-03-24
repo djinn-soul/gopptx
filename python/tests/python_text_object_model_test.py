@@ -66,6 +66,30 @@ def test_shape_paragraph_advanced_controls(tmp_path: Path) -> None:
     assert '<a:spcAft><a:spcPts val="100"/></a:spcAft>' in xml
 
 
+def test_shape_paragraph_bullet_controls(tmp_path: Path) -> None:
+    out_path = tmp_path / "text_object_model_paragraph_bullets.pptx"
+
+    with Presentation.new("Text Model Bullets") as prs:
+        slide = prs.add_slide("Text")
+        slide_number = slide.index + 1
+        shape_id = slide.add_shape(
+            "rect",
+            (1000000, 1000000, 5000000, 1000000),
+            runs=[Run("Bulleted").to_payload()],
+        )
+        para = slide.shape(shape_id).text_frame.paragraphs[0]
+        para.bullet = True
+        para.bullet_style = "roman_lower"
+        para.bullet_char = "*"
+        prs.save(str(out_path))
+
+    with zipfile.ZipFile(out_path) as zf:
+        slide_path = f"ppt/slides/slide{slide_number}.xml"
+        xml = zf.read(slide_path).decode("utf-8")
+    assert '<a:buAutoNum type="romanLcPeriod"/>' in xml
+    assert "<a:buChar" not in xml
+
+
 def test_slide_bulk_run_text_updates() -> None:
     with Presentation.new("Bulk Text") as prs:
         slide = prs.add_slide("Bulk")
@@ -214,3 +238,40 @@ def test_shape_run_hyperlink_updates_buffer_and_persist_final_state(
     with zipfile.ZipFile(out_path) as zf:
         slide_xml = zf.read(f"ppt/slides/slide{slide_number}.xml").decode("utf-8")
     assert "hlinkClick" not in slide_xml
+
+
+def test_shape_run_remove_updates_live_collection() -> None:
+    with Presentation.new("Run Removal") as prs:
+        slide = prs.add_slide("Text")
+        shape_id = slide.add_shape(
+            "rect",
+            (1000000, 1000000, 5000000, 1000000),
+            runs=[
+                Run("Alpha").to_payload(),
+                Run("Beta").to_payload(),
+                Run("Gamma").to_payload(),
+            ],
+        )
+        runs = slide.shape(shape_id).text_frame.paragraphs[0].runs
+        runs[1].remove()
+
+        assert len(runs) == 2
+        assert runs[0].text == "Alpha"
+        assert runs[1].text == "Gamma"
+
+
+def test_shape_paragraph_remove_clears_runs() -> None:
+    with Presentation.new("Paragraph Removal") as prs:
+        slide = prs.add_slide("Text")
+        shape_id = slide.add_shape(
+            "rect",
+            (1000000, 1000000, 5000000, 1000000),
+            runs=[Run("Only").to_payload()],
+        )
+        paragraph = slide.shape(shape_id).text_frame.paragraphs[0]
+        paragraph.remove()
+
+        assert len(paragraph.runs) in {0, 1}
+        if len(paragraph.runs) == 1:
+            assert not paragraph.runs[0].text
+        assert not paragraph.text

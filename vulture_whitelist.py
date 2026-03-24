@@ -417,6 +417,7 @@ _.set_header_footer  # unused method (python\gopptx\slide\shapes\smartart_anim_m
 _.get_handout_master  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.update_handout_master  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.has_digital_signature  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
+_.clear_shapes  # unused method (python\gopptx\presentation\shapes\shapes_tables.py / python\gopptx\slide\shapes\shape_mixin.py)
 
 # Notes text model formatting properties and alignment methods
 _.font_size  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)

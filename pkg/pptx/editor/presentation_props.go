@@ -18,6 +18,7 @@ import (
 
 const themePartPath = "ppt/theme/theme1.xml"
 const corePropertiesBuilderCap = 700
+const slideSizeTypeCustom = "custom"
 
 var sldSzPattern = regexp.MustCompile(`(?s)<p:sldSz\b[^>]*/>`)
 
@@ -145,7 +146,7 @@ func slideSizeType(size common.SlideSize) string {
 	} else if size.Width == common.SlideSize16x9().Width && size.Height == common.SlideSize16x9().Height {
 		return "screen16x9"
 	}
-	return "custom"
+	return slideSizeTypeCustom
 }
 
 func mapEditorThemeToSpec(theme *styling.Theme) *pptxxml.ThemeSpec {

@@ -47,7 +47,29 @@ class _ShapeFillProxy:
         if value is None:
             self._apply(cast("FillFormat", {"background": True}))
             return
-        self._apply(cast("FillFormat", {"solid": value}))
+        payload = dict(cast("dict[str, object]", self._payload()))
+        payload.pop("background", None)
+        payload["solid"] = value
+        self._apply(cast("FillFormat", payload))
+
+    @property
+    def transparency(self) -> float | None:
+        value = self._payload().get("transparency")
+        return float(value) if isinstance(value, int | float) else None
+
+    @transparency.setter
+    def transparency(self, value: float | None) -> None:
+        payload = dict(cast("dict[str, object]", self._payload()))
+        if value is None:
+            payload.pop("transparency", None)
+            self._apply(cast("FillFormat", payload))
+            return
+        if value < 0.0 or value > 1.0:
+            raise ValueError("fill.transparency must be between 0.0 and 1.0")
+        if not isinstance(payload.get("solid"), str):
+            raise ValueError("fill.transparency requires a solid fill color")
+        payload["transparency"] = float(value)
+        self._apply(cast("FillFormat", payload))
 
     def background(self) -> None:
         self._apply(cast("FillFormat", {"background": True}))

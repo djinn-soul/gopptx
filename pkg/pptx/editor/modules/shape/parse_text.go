@@ -32,6 +32,7 @@ func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *paragraphPr
 	applyParagraphTabStops(paragraph, pPr)
 	applyParagraphAlignmentLevel(paragraph, pPr)
 	applyParagraphSpacing(paragraph, pPr)
+	applyParagraphBullets(paragraph, pPr)
 	if hasParagraphProps(paragraph) {
 		ps.Paragraph = paragraph
 	}
@@ -89,6 +90,51 @@ func applyParagraphSpacing(paragraph *common.Paragraph, pPr *paragraphPropsXML) 
 	}
 }
 
+func applyParagraphBullets(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
+	if pPr.BuNone != nil {
+		style := "none"
+		paragraph.BulletStyle = &style
+	}
+	if pPr.BuChar != nil {
+		style := "custom"
+		if pPr.BuChar.Char == nil || *pPr.BuChar.Char == "" || *pPr.BuChar.Char == "•" {
+			style = "bullet"
+		}
+		paragraph.BulletStyle = &style
+		if pPr.BuChar.Char != nil && *pPr.BuChar.Char != "" {
+			char := *pPr.BuChar.Char
+			paragraph.BulletChar = &char
+		}
+	}
+	if pPr.BuAutoNum != nil && pPr.BuAutoNum.Type != nil {
+		style := parseBulletStyleFromAutoNum(*pPr.BuAutoNum.Type)
+		paragraph.BulletStyle = &style
+	}
+	if pPr.BuClr != nil && pPr.BuClr.SrgbClr != nil && pPr.BuClr.SrgbClr.Val != "" {
+		color := pPr.BuClr.SrgbClr.Val
+		paragraph.BulletColor = &color
+	}
+	if pPr.BuSzPct != nil && pPr.BuSzPct.Val != nil {
+		sizePct := *pPr.BuSzPct.Val / int(gradientPositionScale)
+		paragraph.BulletSizePct = &sizePct
+	}
+}
+
+func parseBulletStyleFromAutoNum(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case "alphaLcPeriod", "alphaLcParenR":
+		return "letter_lower"
+	case "alphaUcPeriod", "alphaUcParenR":
+		return "letter_upper"
+	case "romanLcPeriod", "romanLcParenR":
+		return "roman_lower"
+	case "romanUcPeriod", "romanUcParenR":
+		return "roman_upper"
+	default:
+		return "number"
+	}
+}
+
 func hasParagraphProps(paragraph *common.Paragraph) bool {
 	return paragraph.Indent != nil ||
 		paragraph.Hanging != nil ||
@@ -98,7 +144,11 @@ func hasParagraphProps(paragraph *common.Paragraph) bool {
 		paragraph.LineSpacingPct != nil ||
 		paragraph.LineSpacingPts != nil ||
 		paragraph.SpaceBeforePts != nil ||
-		paragraph.SpaceAfterPts != nil
+		paragraph.SpaceAfterPts != nil ||
+		paragraph.BulletStyle != nil ||
+		paragraph.BulletChar != nil ||
+		paragraph.BulletColor != nil ||
+		paragraph.BulletSizePct != nil
 }
 
 func parseTextRun(runXML struct {

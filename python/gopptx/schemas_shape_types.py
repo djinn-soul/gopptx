@@ -32,6 +32,10 @@ class Paragraph(TypedDict, total=False):
     tab_stops: list[int]
     alignment: str
     level: int
+    bullet_style: str
+    bullet_char: str
+    bullet_color: str
+    bullet_size_pct: int
     line_spacing_pct: int
     line_spacing_pts: int
     space_before_pts: int
@@ -64,6 +68,7 @@ class FillFormat(TypedDict, total=False):
     """Shape fill settings."""
 
     solid: str
+    transparency: float
     background: bool
     gradient: GradientFill
     pattern: PatternFill

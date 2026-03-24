@@ -10,6 +10,10 @@ from ._utils import as_optional_int, as_optional_string
 _MAX_PARAGRAPH_LEVEL = 8
 _ALLOWED_PARAGRAPH_FIELDS = frozenset({
     "alignment",
+    "bullet_char",
+    "bullet_color",
+    "bullet_size_pct",
+    "bullet_style",
     "hanging",
     "indent",
     "level",
@@ -32,6 +36,10 @@ class ParagraphProps:
 
     __slots__ = (
         "alignment",
+        "bullet_char",
+        "bullet_color",
+        "bullet_size_pct",
+        "bullet_style",
         "hanging",
         "indent",
         "level",
@@ -53,6 +61,10 @@ class ParagraphProps:
             kwargs.get("tab_stops", kwargs.get("tabs"))
         )
         self.alignment = as_optional_string(kwargs.get("alignment"))
+        self.bullet_style = as_optional_string(kwargs.get("bullet_style"))
+        self.bullet_char = as_optional_string(kwargs.get("bullet_char"))
+        self.bullet_color = as_optional_string(kwargs.get("bullet_color"))
+        self.bullet_size_pct = as_optional_int(kwargs.get("bullet_size_pct"))
         self.level = as_optional_int(kwargs.get("level"))
         self.line_spacing_pct = as_optional_int(kwargs.get("line_spacing_pct"))
         self.line_spacing_pts = as_optional_int(kwargs.get("line_spacing_pts"))
@@ -76,6 +88,13 @@ class ParagraphProps:
         _append_hanging(payload, self.hanging)
         _append_tab_stops(payload, self.tab_stops)
         _append_string_field(payload, "alignment", self.alignment)
+        _append_bullet_fields(
+            payload,
+            self.bullet_style,
+            self.bullet_char,
+            self.bullet_color,
+            self.bullet_size_pct,
+        )
         _append_level(payload, self.level)
         _append_line_spacing(payload, self.line_spacing_pct, self.line_spacing_pts)
         _append_non_negative(payload, "space_before_pts", self.space_before_pts)
@@ -135,6 +154,36 @@ def _append_level(payload: dict[str, object], level: int | None) -> None:
     if level < 0 or level > _MAX_PARAGRAPH_LEVEL:
         raise ValueError("paragraph.level must be between 0 and 8")
     payload["level"] = level
+
+
+def _append_bullet_fields(
+    payload: dict[str, object],
+    bullet_style: str | None,
+    bullet_char: str | None,
+    bullet_color: str | None,
+    bullet_size_pct: int | None,
+) -> None:
+    if bullet_style is None:
+        return
+    normalized = bullet_style.strip().lower()
+    supported = {
+        "none",
+        "bullet",
+        "number",
+        "letter_lower",
+        "letter_upper",
+        "roman_lower",
+        "roman_upper",
+        "custom",
+    }
+    if normalized not in supported:
+        raise ValueError(f"unsupported paragraph.bullet_style '{bullet_style}'")
+    if normalized == "custom" and (bullet_char is None or not bullet_char.strip()):
+        raise ValueError("paragraph.bullet_char is required when bullet_style='custom'")
+    payload["bullet_style"] = normalized
+    _append_string_field(payload, "bullet_char", bullet_char)
+    _append_string_field(payload, "bullet_color", bullet_color)
+    _append_non_negative(payload, "bullet_size_pct", bullet_size_pct)
 
 
 def _append_line_spacing(

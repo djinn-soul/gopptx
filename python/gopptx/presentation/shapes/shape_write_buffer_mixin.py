@@ -9,6 +9,7 @@ from typing_extensions import override
 from ... import ops
 from ..helpers import PresentationMixinBase
 from ..runtime import PresentationRuntimeMixin
+from ..runtime_lifecycle import PresentationRuntimeLifecycleMixin
 from ..text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 if TYPE_CHECKING:
@@ -93,8 +94,8 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
     def open(self, path: str) -> None:
         """Discard pending textbox state before opening another deck."""
         self._reset_shape_write_buffer()
-        runtime_self = cast("PresentationRuntimeMixin", self)
-        PresentationRuntimeMixin.open(runtime_self, path)
+        runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
+        PresentationRuntimeLifecycleMixin.open(runtime_self, path)
 
     def save(self, path: str) -> None:
         """Flush queued textboxes before the regular save pipeline runs."""
@@ -105,8 +106,8 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
     def close(self) -> None:
         """Discard queued textbox state when closing the deck."""
         self._reset_shape_write_buffer()
-        runtime_self = cast("PresentationRuntimeMixin", self)
-        PresentationRuntimeMixin.close(runtime_self)
+        runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
+        PresentationRuntimeLifecycleMixin.close(runtime_self)
 
     def _next_reserved_shape_id(self, slide_index: int) -> int:
         reserved_ids = self._reserved_shape_ids.get(slide_index)

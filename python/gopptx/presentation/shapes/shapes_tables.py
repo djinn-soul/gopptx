@@ -172,6 +172,18 @@ class PresentationShapeMixin(
             ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id}
         )
 
+    def clear_shapes(self, slide_index: int) -> int:
+        """Remove all shapes from a slide and return count removed."""
+        shape_ids: list[int] = []
+        for shape in self.list_shapes(slide_index):
+            shape_id = shape.get("ID")
+            if not isinstance(shape_id, int):
+                raise TypeError("shape record is missing required integer ID")
+            shape_ids.append(shape_id)
+        for shape_id in shape_ids:
+            self.remove_shape(slide_index, shape_id)
+        return len(shape_ids)
+
     def group_shapes(self, slide_index: int, shape_ids: list[int]) -> int:
         """Group multiple shapes on a slide into a group shape.
 

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 from ... import ops
 from ..helpers import PresentationMixinBase
 from ..runtime import PresentationRuntimeMixin
+from ..runtime_lifecycle import PresentationRuntimeLifecycleMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -164,5 +165,5 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
     def save(self, path: str) -> None:
         """Flush buffered text writes before saving the deck."""
         self.flush_all_pending_slide_run_text_updates()
-        runtime_self = cast("PresentationRuntimeMixin", self)
-        PresentationRuntimeMixin.save(runtime_self, path)
+        runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
+        PresentationRuntimeLifecycleMixin.save(runtime_self, path)

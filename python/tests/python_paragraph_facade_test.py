@@ -50,3 +50,26 @@ def test_paragraph_props_rejects_negative_tab_stop() -> None:
     """Negative tab-stop positions should fail fast."""
     with pytest.raises(ValueError, match=r"paragraph\.tab_stops values must be >= 0"):
         ParagraphProps(tab_stops=[-1]).to_payload()
+
+
+def test_paragraph_props_bullet_payload() -> None:
+    """Bullet properties should serialize in normalized payload."""
+    payload = ParagraphProps(
+        bullet_style="roman_upper",
+        bullet_char="*",
+        bullet_color="00AAFF",
+        bullet_size_pct=90,
+    ).to_payload()
+    assert payload["bullet_style"] == "roman_upper"
+    assert payload["bullet_char"] == "*"
+    assert payload["bullet_color"] == "00AAFF"
+    assert payload["bullet_size_pct"] == 90
+
+
+def test_paragraph_props_custom_bullet_requires_char() -> None:
+    """Custom bullet style must provide bullet char."""
+    with pytest.raises(
+        ValueError,
+        match=r"paragraph\.bullet_char is required when bullet_style='custom'",
+    ):
+        ParagraphProps(bullet_style="custom").to_payload()
