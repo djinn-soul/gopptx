@@ -146,22 +146,31 @@ func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 	return e.applyShapeRemoval(partPath, content, shapes, shapeIndex)
 }
 
-// ClearShapes removes all shapes from the given slide.
+// ClearShapes removes all shapes from the given slide in a single XML pass.
 func (e *PresentationEditor) ClearShapes(slideIndex int) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
 	}
 
-	shapes, err := e.GetShapes(slideIndex)
-	if err != nil {
-		return err
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
-	for shapeIndex := len(shapes) - 1; shapeIndex >= 0; shapeIndex-- {
-		if err := e.RemoveShapeByIndex(slideIndex, shapeIndex); err != nil {
-			return err
-		}
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return fmt.Errorf("parse shapes: %w", err)
 	}
+
+	if len(shapes) == 0 {
+		return nil
+	}
+
+	newContent := replaceShapeNodes(content, shapes, func(_ int, _ *parsedShape) ([]byte, bool) {
+		return []byte{}, true
+	})
+	e.parts.Set(partPath, newContent)
 	return nil
 }
 

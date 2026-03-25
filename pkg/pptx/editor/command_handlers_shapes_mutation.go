@@ -140,6 +140,22 @@ func handleRemoveShape(e *PresentationEditor, payload json.RawMessage) (any, err
 	)
 }
 
+func handleClearShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleSlideIndexRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
+		v.Error,
+		func(slideIndex int) (any, error) {
+			if err := e.ClearShapes(slideIndex); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"cleared": true}, nil
+		},
+	)
+}
+
 func handleGroupShapes(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleSlideShapeIDsRequest(
