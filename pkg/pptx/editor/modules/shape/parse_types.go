@@ -5,11 +5,15 @@ import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 const (
 	rotationDegreeToOOXML = 60000.0
 	gradientPositionScale = 1000.0
+	ooxmlPercentScale     = 100000
 )
 
 type solidFillXML struct {
 	SrgbClr struct {
-		Val string `xml:"val,attr"`
+		Val   string `xml:"val,attr"`
+		Alpha *struct {
+			Val *int `xml:"val,attr"`
+		} `xml:"alpha"`
 	} `xml:"srgbClr"`
 }
 
@@ -63,10 +67,25 @@ type spacingNodeXML struct {
 }
 
 type paragraphPropsXML struct {
-	MarL   *int    `xml:"marL,attr"`
-	Indent *int    `xml:"indent,attr"`
-	Algn   *string `xml:"algn,attr"`
-	Lvl    *int    `xml:"lvl,attr"`
+	MarL   *int      `xml:"marL,attr"`
+	Indent *int      `xml:"indent,attr"`
+	Algn   *string   `xml:"algn,attr"`
+	Lvl    *int      `xml:"lvl,attr"`
+	BuNone *struct{} `xml:"buNone"`
+	BuChar *struct {
+		Char *string `xml:"char,attr"`
+	} `xml:"buChar"`
+	BuAutoNum *struct {
+		Type *string `xml:"type,attr"`
+	} `xml:"buAutoNum"`
+	BuClr *struct {
+		SrgbClr *struct {
+			Val string `xml:"val,attr"`
+		} `xml:"srgbClr"`
+	} `xml:"buClr"`
+	BuSzPct *struct {
+		Val *int `xml:"val,attr"`
+	} `xml:"buSzPct"`
 	TabLst *struct {
 		Tabs []struct {
 			Pos *int `xml:"pos,attr"`

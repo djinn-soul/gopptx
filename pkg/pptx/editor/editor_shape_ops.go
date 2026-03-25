@@ -146,6 +146,34 @@ func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 	return e.applyShapeRemoval(partPath, content, shapes, shapeIndex)
 }
 
+// ClearShapes removes all shapes from the given slide in a single XML pass.
+func (e *PresentationEditor) ClearShapes(slideIndex int) error {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return errors.New("slide index out of range")
+	}
+
+	partPath := e.slides[slideIndex].Part
+	content, ok := e.parts.Get(partPath)
+	if !ok {
+		return fmt.Errorf("read slide part %s: not found", partPath)
+	}
+
+	shapes, err := parseSlideShapes(content)
+	if err != nil {
+		return fmt.Errorf("parse shapes: %w", err)
+	}
+
+	if len(shapes) == 0 {
+		return nil
+	}
+
+	newContent := replaceShapeNodes(content, shapes, func(_ int, _ *parsedShape) ([]byte, bool) {
+		return []byte{}, true
+	})
+	e.parts.Set(partPath, newContent)
+	return nil
+}
+
 // GroupShapes groups the specified shapes on a slide into a group shape.
 // Returns the ID of the created group shape.
 func (e *PresentationEditor) GroupShapes(slideIndex int, shapeIDs []int) (int, error) {

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from ... import ops
 
 if TYPE_CHECKING:
     from ...constants import ConnectorType, ShapeType
     from ...schemas import ImageMetadata, Shape, ShapeProps, ShapeUpdate
-    from ..contracts import SlidePresentationProtocol
+    from ..contracts import ShapeOperationsProtocol, SlidePresentationProtocol
     from .freeform_builder import FreeformBuilder
 
 
@@ -187,6 +187,15 @@ class SlideShapeMixin:
         self._presentation.remove_shape(self.index, shape_id)
         self._invalidate_shape_cache_if_present()
         self._invalidate_text_state_cache_if_present()
+
+    def clear_shapes(self) -> int:
+        """Remove all shapes from the slide and return count removed."""
+        presentation = cast("ShapeOperationsProtocol", self._presentation)
+        count = presentation.clear_shapes(self.index)
+        if count:
+            self._invalidate_shape_cache_if_present()
+            self._invalidate_text_state_cache_if_present()
+        return count
 
     def group_shapes(self, shape_ids: list[int]) -> int:
         """Group existing shapes and return the new group shape id."""

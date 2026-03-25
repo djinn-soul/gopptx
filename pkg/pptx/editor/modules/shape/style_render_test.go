@@ -39,6 +39,27 @@ func TestRenderLineAndFillXML(t *testing.T) {
 	if err != nil || !strings.Contains(fillXML, `srgbClr val="AABBCC"`) {
 		t.Fatalf("solid fill render failed: xml=%q err=%v", fillXML, err)
 	}
+	transparency := 0.25
+	fillXML, err = RenderFillXML(&common.ShapeFill{
+		Solid:        strPtrSR("AABBCC"),
+		Transparency: &transparency,
+	})
+	if err != nil || !strings.Contains(fillXML, `<a:alpha val="75000"/>`) {
+		t.Fatalf("solid fill transparency render failed: xml=%q err=%v", fillXML, err)
+	}
+	invalidTransparency := 1.1
+	if _, err = RenderFillXML(&common.ShapeFill{
+		Solid:        strPtrSR("AABBCC"),
+		Transparency: &invalidTransparency,
+	}); err == nil {
+		t.Fatal("expected out-of-range transparency error")
+	}
+	if _, err = RenderFillXML(&common.ShapeFill{
+		Background:   boolPtrSR(true),
+		Transparency: &transparency,
+	}); err == nil {
+		t.Fatal("expected transparency without solid fill error")
+	}
 	noFillXML, err := RenderFillXML(&common.ShapeFill{Background: boolPtrSR(true)})
 	if err != nil || noFillXML != `<a:noFill/>` {
 		t.Fatalf("background fill render failed: xml=%q err=%v", noFillXML, err)

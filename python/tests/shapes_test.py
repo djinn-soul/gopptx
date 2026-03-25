@@ -1,6 +1,7 @@
 """python-pptx compatibility smoke checks for shape APIs."""
 
 import pathlib
+import zipfile
 
 import pytest
 from gopptx import Presentation
@@ -158,6 +159,23 @@ def test_group_and_freeform_creation() -> None:
             raise AssertionError("expected created group/freeform ids in shape list")
 
 
+def test_clear_shapes_removes_all_shapes() -> None:
+    """Slide clear helper removes all shapes from the slide."""
+    if not input_deck.exists():
+        pytest.skip("smoke sample missing")
+
+    with Presentation(input_deck) as prs:
+        slide = prs.add_slide("python-pptx parity clear shapes")
+        _ = slide.add_shape("rect", (914400, 914400, 914400, 914400))
+        _ = slide.add_shape("ellipse", (2743200, 914400, 914400, 914400))
+        removed = slide.clear_shapes()
+
+        if removed < 2:
+            raise AssertionError(f"expected at least two removed shapes, got {removed}")
+        if slide.list_shapes():
+            raise AssertionError("expected slide to have zero shapes after clear")
+
+
 def test_group_creation_with_members() -> None:
     """Grouping existing members yields a new group with stable topology."""
     if not input_deck.exists():
@@ -225,3 +243,21 @@ def test_freeform_builder_move_to_and_validation() -> None:
         builder2 = slide.build_freeform(0, 0).add_line_to(10, 10)
         with pytest.raises(ValueError, match="only allowed before line segments"):
             builder2.move_to(20, 20)
+
+
+def test_shape_fill_transparency_roundtrip(tmp_path: pathlib.Path) -> None:
+    """Shape fill transparency emits alpha under solid fill."""
+    out_path = tmp_path / "shape_fill_transparency.pptx"
+    with Presentation.new("Fill Transparency") as prs:
+        slide = prs.add_slide("Fill")
+        slide_number = slide.index + 1
+        shape_id = slide.add_shape("rect", (914400, 914400, 1828800, 914400))
+        shape = slide.shape(shape_id)
+        shape.fill.solid_color = "FF0000"
+        shape.fill.transparency = 0.25
+        assert shape.fill.transparency == pytest.approx(0.25)
+        prs.save(str(out_path))
+
+    with zipfile.ZipFile(out_path) as zf:
+        xml = zf.read(f"ppt/slides/slide{slide_number}.xml").decode("utf-8")
+    assert '<a:srgbClr val="FF0000"><a:alpha val="75000"/></a:srgbClr>' in xml
