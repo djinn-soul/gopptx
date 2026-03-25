@@ -87,6 +87,7 @@ OP_REBIND_SLIDE_LAYOUT = "rebind_slide_layout"
 OP_REMOVE_COMMENT = "remove_comment"
 OP_REMOVE_CUSTOM_XML = "remove_custom_xml"
 OP_REMOVE_SECTION = "remove_section"
+OP_CLEAR_SHAPES = "clear_shapes"
 OP_REMOVE_SHAPE = "remove_shape"
 OP_REMOVE_SLIDE = "remove_slide"
 OP_REMOVE_SLIDE_LAYOUT = "remove_slide_layout"
@@ -223,6 +224,7 @@ SUPPORTED_OPS = (
     OP_REMOVE_COMMENT,
     OP_REMOVE_CUSTOM_XML,
     OP_REMOVE_SECTION,
+    OP_CLEAR_SHAPES,
     OP_REMOVE_SHAPE,
     OP_REMOVE_SLIDE,
     OP_REMOVE_SLIDE_LAYOUT,
