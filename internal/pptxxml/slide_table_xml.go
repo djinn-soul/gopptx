@@ -84,14 +84,6 @@ func RenderTable(table *TableSpec, shapeID int) string {
 </p:graphicFrame>`
 }
 
-func makeCNvPrAttrs(altText string, isDecorative bool) string {
-	if isDecorative || altText == "" {
-		return ` descr=""`
-	}
-	escaped := Escape(altText)
-	return ` descr="` + escaped + `" title="` + escaped + `"`
-}
-
 func tableGraphicXML(table *TableSpec) string {
 	var b strings.Builder
 	columnWidths := tableColumnWidthsForRender(table)
@@ -246,36 +238,6 @@ func tableCellRunPropsXML(cell TableCellSpec) string {
 	return b.String()
 }
 
-func tableCellParagraphPropsXML(align string) string {
-	if strings.TrimSpace(align) == "" {
-		return ""
-	}
-	return `<a:pPr algn="` + Escape(align) + `"/>`
-}
-
-func tableCellOpenTag(cell TableCellSpec) string {
-	var b strings.Builder
-	b.WriteString("<a:tc")
-	if cell.RowSpan > 1 {
-		b.WriteString(` rowSpan="`)
-		b.WriteString(strconv.Itoa(cell.RowSpan))
-		b.WriteString(`"`)
-	}
-	if cell.ColSpan > 1 {
-		b.WriteString(` gridSpan="`)
-		b.WriteString(strconv.Itoa(cell.ColSpan))
-		b.WriteString(`"`)
-	}
-	if cell.VMerge {
-		b.WriteString(` vMerge="1"`)
-	}
-	if cell.HMerge {
-		b.WriteString(` hMerge="1"`)
-	}
-	b.WriteString(">")
-	return b.String()
-}
-
 func tableCellPropsXML(cell TableCellSpec) string {
 	borders := tableCellBordersForRender(cell)
 	hasFill := strings.TrimSpace(cell.BackgroundColor) != ""
@@ -318,56 +280,4 @@ func tableCellPropsXML(cell TableCellSpec) string {
 
 	b.WriteString("</a:tcPr>")
 	return b.String()
-}
-
-func tableCellBordersForRender(cell TableCellSpec) tableCellBorderSet {
-	borders := tableCellBorderSet{
-		Left:   cloneTableCellBorderSpec(cell.BorderLeft),
-		Right:  cloneTableCellBorderSpec(cell.BorderRight),
-		Top:    cloneTableCellBorderSpec(cell.BorderTop),
-		Bottom: cloneTableCellBorderSpec(cell.BorderBottom),
-	}
-	if borders.Left == nil && borders.Right == nil && borders.Top == nil && borders.Bottom == nil {
-		if cell.BorderWidth > 0 && strings.TrimSpace(cell.BorderColor) != "" {
-			legacy := &TableCellBorderSpec{Width: cell.BorderWidth, Color: cell.BorderColor, Dash: "solid"}
-			borders.Left = cloneTableCellBorderSpec(legacy)
-			borders.Right = cloneTableCellBorderSpec(legacy)
-			borders.Top = cloneTableCellBorderSpec(legacy)
-			borders.Bottom = cloneTableCellBorderSpec(legacy)
-		}
-	}
-	return borders
-}
-
-func cloneTableCellBorderSpec(border *TableCellBorderSpec) *TableCellBorderSpec {
-	if border == nil {
-		return nil
-	}
-	clone := *border
-	return &clone
-}
-
-func tableCellBorderXML(side string, border TableCellBorderSpec) string {
-	dash := tableCellBorderDash(border.Dash)
-	return `<a:` + side +
-		` w="` + strconv.FormatInt(border.Width, 10) +
-		`"><a:solidFill><a:srgbClr val="` + Escape(border.Color) +
-		`"/></a:solidFill><a:prstDash val="` + Escape(dash) + `"/></a:` + side + `>`
-}
-
-func tableCellBorderDash(dash string) string {
-	switch strings.ToLower(strings.TrimSpace(dash)) {
-	case "", strokeDashSolid:
-		return strokeDashSolid
-	case "dash":
-		return "dash"
-	case "dot":
-		return "dot"
-	case "dashdot", "dash-dot", "dash_dot":
-		return "dashDot"
-	case "lgdash", "lg-dash", "longdash", "long-dash", "long_dash":
-		return "lgDash"
-	default:
-		return strings.TrimSpace(dash)
-	}
 }
