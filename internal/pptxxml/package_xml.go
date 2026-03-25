@@ -258,6 +258,12 @@ func imageContentType(ext string) (string, bool) {
 		return "image/bmp", true
 	case "tif", "tiff":
 		return "image/tiff", true
+	case "emf":
+		return "image/x-emf", true
+	case "wmf":
+		return "image/x-wmf", true
+	case "wdp", "hdp":
+		return "image/vnd.ms-photo", true
 	case "wav":
 		return "audio/wav", true
 	case "mp3":

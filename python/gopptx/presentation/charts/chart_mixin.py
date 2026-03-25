@@ -130,6 +130,58 @@ class PresentationChartMixin(PresentationChartStateMixin):
         )
         return int(cast("int", result.get("shape_id") or result.get("chart_id", 0)))
 
+    def add_combo_chart(
+        self,
+        slide_index: int,
+        categories: list[str],
+        bar_series: list[dict[str, object]],
+        line_series: list[dict[str, object]],
+        *,
+        title: str = "Chart",
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
+    ) -> int:
+        """Add a combo (bar + line) chart to a slide.
+
+        Args:
+            slide_index: Zero-based slide index.
+            categories: List of category labels.
+            bar_series: List of bar series dicts with "name" and "values" keys.
+            line_series: List of line series dicts with "name" and "values" keys.
+            title: Chart title.
+            bounds: (x, y, width, height) in EMU.
+
+        Returns:
+            Shape ID of the created chart.
+
+        Example:
+            chart_id = prs.add_combo_chart(
+                0,
+                ["Q1", "Q2", "Q3"],
+                bar_series=[{"name": "Revenue", "values": [100, 200, 150]}],
+                line_series=[{"name": "Growth %", "values": [10, 15, 12]}],
+                title="Sales Overview",
+                bounds=(Inches(1), Inches(1), Inches(8), Inches(5)),
+            )
+        """
+        x, y, w, h = bounds
+        result = self.execute(
+            ops.OP_ADD_CHART,
+            {
+                "slide_index": slide_index,
+                "chart_type": ChartType.COMBO,
+                "title": title,
+                "categories": categories,
+                "values": [],
+                "bar_series": [dict(s) for s in bar_series],
+                "line_series": [dict(s) for s in line_series],
+                "x": x,
+                "y": y,
+                "w": w,
+                "h": h,
+            },
+        )
+        return int(cast("int", result.get("shape_id") or result.get("chart_id", 0)))
+
     def list_slide_charts(self, slide_index: int) -> list[SlideChartRef]:
         """List all charts on a slide."""
         result = self.execute(ops.OP_LIST_SLIDE_CHARTS, {"slide_index": slide_index})

@@ -21,22 +21,24 @@ const (
 
 // Run describes a single piece of text with uniform styling.
 type Run struct {
-	Text          string
-	Bold          bool
-	Italic        bool
-	Underline     string // "none", "sng", "dbl", "dotted", etc.
-	Strikethrough string // "none", "sng", "dbl"
-	Subscript     bool
-	Superscript   bool
-	Color         string
-	Highlight     string
-	Font          string
-	SizePt        int
-	Code          bool
-	AllCaps       bool
-	SmallCaps     bool
-	Hyperlink     *action.Hyperlink // Click behavior
-	HoverAction   *action.Hyperlink // Hover behavior
+	Text           string
+	Bold           bool
+	Italic         bool
+	Underline      string // "none", "sng", "dbl", "dotted", etc.
+	Strikethrough  string // "none", "sng", "dbl"
+	Subscript      bool
+	Superscript    bool
+	Color          string
+	Highlight      string
+	Font           string
+	SizePt         int
+	Code           bool
+	AllCaps        bool
+	SmallCaps      bool
+	OutlineColor   string            // Character stroke/outline color hex
+	OutlineWidthPt float64           // Character stroke/outline width in points (default 1pt when OutlineColor is set)
+	Hyperlink      *action.Hyperlink // Click behavior
+	HoverAction    *action.Hyperlink // Hover behavior
 }
 
 // NewRun creates a simple text run.
@@ -150,6 +152,16 @@ func (r Run) WithSmallCaps(smallCaps bool) Run {
 	r.SmallCaps = smallCaps
 	if smallCaps {
 		r.AllCaps = false
+	}
+	return r
+}
+
+// WithOutline sets a character stroke/outline using the given hex color.
+// An optional width in points can be provided; defaults to 1pt if omitted.
+func (r Run) WithOutline(color string, widthPt ...float64) Run {
+	r.OutlineColor = common.NormalizeHexColor(color)
+	if len(widthPt) > 0 && widthPt[0] > 0 {
+		r.OutlineWidthPt = widthPt[0]
 	}
 	return r
 }

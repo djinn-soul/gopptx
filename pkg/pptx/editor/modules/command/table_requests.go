@@ -213,3 +213,36 @@ func ParseOptionalTextUpdate(updates map[string]any) (string, bool, error) {
 	}
 	return textValue, true, nil
 }
+
+// CellStyleUpdate holds optional style fields parsed from an update_table_cell payload.
+type CellStyleUpdate struct {
+	SizePt   float64
+	FontName string
+	HasStyle bool
+}
+
+// ParseOptionalCellStyleUpdate reads size_pt and font_name from an updates map.
+func ParseOptionalCellStyleUpdate(updates map[string]any) (CellStyleUpdate, error) {
+	var out CellStyleUpdate
+	if raw, ok := updates["size_pt"]; ok {
+		switch v := raw.(type) {
+		case float64:
+			out.SizePt = v
+			out.HasStyle = true
+		case int:
+			out.SizePt = float64(v)
+			out.HasStyle = true
+		default:
+			return CellStyleUpdate{}, fmt.Errorf("size_pt must be a number, got %T", raw)
+		}
+	}
+	if raw, ok := updates["font_name"]; ok {
+		s, ok := raw.(string)
+		if !ok {
+			return CellStyleUpdate{}, fmt.Errorf("font_name must be a string, got %T", raw)
+		}
+		out.FontName = s
+		out.HasStyle = true
+	}
+	return out, nil
+}

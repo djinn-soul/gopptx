@@ -120,6 +120,22 @@ func (e *PresentationEditor) UpdateTableCellText(slideIndex, shapeID, rowIdx, co
 	return nil
 }
 
+func (e *PresentationEditor) UpdateTableCellContent(
+	slideIndex, shapeID, rowIdx, colIdx int,
+	update tablemod.CellContentUpdate,
+) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.UpdateTableCellContentInFrame(frame, rowIdx, colIdx, update)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
 func (e *PresentationEditor) MergeTableCells(slideIndex, shapeID, row1, col1, row2, col2 int) error {
 	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
 	if err != nil {
@@ -165,6 +181,56 @@ func (e *PresentationEditor) SetTableColumnWidth(slideIndex, shapeID, col int, w
 		return err
 	}
 	updatedFrame, err := tablemod.UpdateTableColumnWidthInFrame(frame, col, width)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// AddTableRow appends a new empty row to an existing table.
+// height is in EMU; pass 0 to let PowerPoint auto-size.
+func (e *PresentationEditor) AddTableRow(slideIndex, shapeID int, height int64) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.AddTableRowInFrame(frame, height)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// UpdateTableCellBorder sets or clears a border on a single cell side.
+// side must be "left", "right", "top", or "bottom".
+// update=nil removes the border; a non-nil update sets width/color/dash.
+func (e *PresentationEditor) UpdateTableCellBorder(
+	slideIndex, shapeID, row, col int,
+	side string,
+	update *tablemod.CellBorderSideUpdate,
+) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.UpdateTableCellBordersInFrame(frame, row, col, side, update)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// AddTableColumn appends a new empty column to an existing table.
+// width is in EMU.
+func (e *PresentationEditor) AddTableColumn(slideIndex, shapeID int, width int64) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.AddTableColumnInFrame(frame, width)
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,9 @@ import (
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
+// ptToEMU converts points to English Metric Units (1 pt = 12700 EMU).
+const ptToEMU = 12700
+
 func replaceShapeNodes(
 	content []byte,
 	shapes []parsedShape,
@@ -200,6 +203,14 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 			}
 			if r.Font != nil && *r.Font != "" {
 				rPr += fmt.Sprintf(`<a:latin typeface="%s"/><a:cs typeface="%s"/>`, escape(*r.Font), escape(*r.Font))
+			}
+			if r.OutlineColor != nil && *r.OutlineColor != "" {
+				widthEMU := int64(ptToEMU) // default 1pt
+				if r.OutlineWidthPt != nil && *r.OutlineWidthPt > 0 {
+					widthEMU = int64(*r.OutlineWidthPt * ptToEMU)
+				}
+				rPr += fmt.Sprintf(`<a:ln w="%d"><a:solidFill><a:srgbClr val="%s"/></a:solidFill></a:ln>`,
+					widthEMU, escape(*r.OutlineColor))
 			}
 
 			if r.Hyperlink != nil && e != nil && partPath != "" {

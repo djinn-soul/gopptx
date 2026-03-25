@@ -27,6 +27,19 @@ class ChartOperationsProtocol(Protocol):
         """Protocol member."""
         ...
 
+    def add_combo_chart(
+        self,
+        slide_index: int,
+        categories: list[str],
+        bar_series: list[dict[str, object]],
+        line_series: list[dict[str, object]],
+        *,
+        title: str = "Chart",
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
+    ) -> int:
+        """Protocol member."""
+        ...
+
     def list_slide_charts(self, slide_index: int) -> list[SlideChartRef]:
         """Protocol member."""
         ...

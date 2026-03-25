@@ -166,6 +166,36 @@ class PresentationShapeMixin(
         result = self.execute(ops.OP_BUILD_FREEFORM, payload)
         return get_required_int(result, "shape_id")
 
+    def get_shape_center(self, slide_index: int, shape_id: int) -> tuple[float, float]:
+        """Return the absolute center (cx, cy) of a shape in EMU.
+
+        Looks up *shape_id* in the shape list for *slide_index* and returns its
+        center point in slide-coordinate EMU.  For shapes that are direct
+        children of the slide this is the true absolute center.  For shapes
+        nested inside a group, pass the group's shape ID to get the group's
+        center, or use :func:`resolve_group_child_center` for child-level
+        resolution.
+
+        Args:
+            slide_index: Zero-based slide index.
+            shape_id: The ID of the shape to locate.
+
+        Returns:
+            A ``(cx, cy)`` tuple in EMU.
+
+        Raises:
+            ValueError: If no shape with *shape_id* exists on the slide.
+        """
+        shapes = self.list_shapes(slide_index)
+        for shape in shapes:
+            if shape.get("ID") == shape_id or shape.get("id") == shape_id:
+                x = float(shape.get("X") or shape.get("x") or 0)
+                y = float(shape.get("Y") or shape.get("y") or 0)
+                w = float(shape.get("W") or shape.get("w") or 0)
+                h = float(shape.get("H") or shape.get("h") or 0)
+                return x + w / 2, y + h / 2
+        raise ValueError(f"shape {shape_id} not found on slide {slide_index}")
+
     def remove_shape(self, slide_index: int, shape_id: int) -> None:
         """Remove a shape from a slide."""
         self.execute(

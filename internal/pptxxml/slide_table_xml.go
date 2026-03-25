@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-const defaultTableColumnWidthEmu = int64(1828800)
+const (
+	defaultTableColumnWidthEmu = int64(1828800)
+	// fontSzScale converts font size in points to OOXML hundredths-of-points.
+	fontSzScale = 100
+)
 
 // TableSpec describes one table in a slide.
 type TableSpec struct {
@@ -27,6 +31,8 @@ type TableSpec struct {
 type TableCellSpec struct {
 	Text            string
 	Bold            bool
+	SizePt          float64
+	FontName        string
 	BackgroundColor string
 	Color           string
 	Align           string
@@ -220,11 +226,21 @@ func tableCellRunPropsXML(cell TableCellSpec) string {
 	if cell.Bold {
 		b.WriteString(` b="1"`)
 	}
+	if cell.SizePt > 0 {
+		b.WriteString(` sz="`)
+		b.WriteString(strconv.Itoa(int(cell.SizePt * fontSzScale)))
+		b.WriteString(`"`)
+	}
 	b.WriteString(`>`)
 	if strings.TrimSpace(cell.Color) != "" {
 		b.WriteString(`<a:solidFill><a:srgbClr val="`)
 		b.WriteString(Escape(cell.Color))
 		b.WriteString(`"/></a:solidFill>`)
+	}
+	if strings.TrimSpace(cell.FontName) != "" {
+		b.WriteString(`<a:latin typeface="`)
+		b.WriteString(Escape(cell.FontName))
+		b.WriteString(`"/>`)
 	}
 	b.WriteString(`</a:rPr>`)
 	return b.String()

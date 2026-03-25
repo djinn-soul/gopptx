@@ -39,6 +39,21 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 				Position(styling.Emu(request.X), styling.Emu(request.Y))
 		}
 		return chart, nil
+	case "combo":
+		barSeries := make([]charts.Series, len(request.BarSeries))
+		for i, s := range request.BarSeries {
+			barSeries[i] = charts.Series{Name: s.Name, Values: s.Values}
+		}
+		lineSeries := make([]charts.Series, len(request.LineSeries))
+		for i, s := range request.LineSeries {
+			lineSeries[i] = charts.Series{Name: s.Name, Values: s.Values}
+		}
+		chart := charts.NewComboChart(request.Categories, barSeries, lineSeries).WithTitle(request.Title)
+		if request.W > 0 {
+			chart = chart.Size(styling.Emu(request.W), styling.Emu(request.H)).
+				Position(styling.Emu(request.X), styling.Emu(request.Y))
+		}
+		return chart, nil
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrUnsupportedChartType, request.ChartType)
 	}
