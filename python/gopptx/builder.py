@@ -168,3 +168,8 @@ class PresentationBuilder:
         """Build the presentation and save it to *path* in one step."""
         prs = self.build()
         prs.save(path)
+
+    def to_bytes(self) -> bytes:
+        """Build the presentation and return it as a byte string."""
+        prs = self.build()
+        return prs.to_bytes()

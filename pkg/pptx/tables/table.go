@@ -94,6 +94,21 @@ func (t Table) WithDecorative(enabled bool) Table {
 	return t
 }
 
+// AddColumn appends a new column with the given width and pads every existing row with an empty cell.
+func (t Table) AddColumn(width styling.Length) Table {
+	t.ColumnWidths = append(t.ColumnWidths, width)
+	for i := range t.Rows {
+		t.Rows[i] = append(t.Rows[i], "")
+	}
+	for i := range t.StyledRows {
+		t.StyledRows[i] = append(t.StyledRows[i], TableCell{})
+	}
+	for i := range t.renderRows {
+		t.renderRows[i] = append(t.renderRows[i], TableCell{})
+	}
+	return t
+}
+
 // AddRow appends one plain-text row and returns the updated table.
 func (t Table) AddRow(cells []string) Table {
 	row := make([]string, len(cells))
@@ -199,6 +214,8 @@ func (t Table) ToTableSpec(slideNumber int) (*pptxxml.TableSpec, error) {
 			specRow[i] = pptxxml.TableCellSpec{
 				Text:            cell.Text,
 				Bold:            cell.Bold,
+				SizePt:          cell.SizePt,
+				FontName:        cell.FontName,
 				BackgroundColor: cell.BackgroundColor,
 				Color:           cell.Color,
 				Align:           cell.Align,

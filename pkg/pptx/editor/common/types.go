@@ -211,22 +211,24 @@ type Hyperlink struct {
 
 // TextRun represents a single formatted text segment.
 type TextRun struct {
-	Text          string     `json:"text"`
-	Bold          *bool      `json:"bold,omitempty"`
-	Italic        *bool      `json:"italic,omitempty"`
-	Underline     *string    `json:"underline,omitempty"`
-	Strikethrough *string    `json:"strikethrough,omitempty"`
-	Subscript     *bool      `json:"subscript,omitempty"`
-	Superscript   *bool      `json:"superscript,omitempty"`
-	Color         *string    `json:"color,omitempty"`
-	Highlight     *string    `json:"highlight,omitempty"`
-	Font          *string    `json:"font,omitempty"`
-	SizePt        *int       `json:"size_pt,omitempty"`
-	Code          *bool      `json:"code,omitempty"`
-	AllCaps       *bool      `json:"all_caps,omitempty"`
-	SmallCaps     *bool      `json:"small_caps,omitempty"`
-	Hyperlink     *Hyperlink `json:"hyperlink,omitempty"`
-	HoverAction   *Hyperlink `json:"hover_action,omitempty"`
+	Text           string     `json:"text"`
+	Bold           *bool      `json:"bold,omitempty"`
+	Italic         *bool      `json:"italic,omitempty"`
+	Underline      *string    `json:"underline,omitempty"`
+	Strikethrough  *string    `json:"strikethrough,omitempty"`
+	Subscript      *bool      `json:"subscript,omitempty"`
+	Superscript    *bool      `json:"superscript,omitempty"`
+	Color          *string    `json:"color,omitempty"`
+	Highlight      *string    `json:"highlight,omitempty"`
+	Font           *string    `json:"font,omitempty"`
+	SizePt         *int       `json:"size_pt,omitempty"`
+	Code           *bool      `json:"code,omitempty"`
+	AllCaps        *bool      `json:"all_caps,omitempty"`
+	SmallCaps      *bool      `json:"small_caps,omitempty"`
+	OutlineColor   *string    `json:"outline_color,omitempty"`
+	OutlineWidthPt *float64   `json:"outline_width_pt,omitempty"`
+	Hyperlink      *Hyperlink `json:"hyperlink,omitempty"`
+	HoverAction    *Hyperlink `json:"hover_action,omitempty"`
 }
 
 // ShapeProps defines optional properties when creating a shape.

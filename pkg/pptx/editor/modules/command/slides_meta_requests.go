@@ -179,12 +179,19 @@ func ParseUpdateSlideRequest(
 	}, true
 }
 
+type ChartSeriesRequest struct {
+	Name   string
+	Values []float64
+}
+
 type AddChartRequest struct {
 	SlideIndex int
 	ChartType  string
 	Title      string
 	Categories []string
 	Values     []float64
+	BarSeries  []ChartSeriesRequest
+	LineSeries []ChartSeriesRequest
 	X          int64
 	Y          int64
 	W          int64
@@ -220,15 +227,52 @@ func ParseAddChartRequest(
 	y, _ := optionalInt64(payload, "y")
 	w, _ := optionalInt64(payload, "w")
 	h, _ := optionalInt64(payload, "h")
+	barSeries := parseChartSeriesList(payload, "bar_series")
+	lineSeries := parseChartSeriesList(payload, "line_series")
+
 	return AddChartRequest{
 		SlideIndex: slideIndex,
 		ChartType:  chartType,
 		Title:      optionalString(payload, "title"),
 		Categories: categories,
 		Values:     values,
+		BarSeries:  barSeries,
+		LineSeries: lineSeries,
 		X:          x,
 		Y:          y,
 		W:          w,
 		H:          h,
 	}, true
+}
+
+func parseChartSeriesList(payload map[string]any, key string) []ChartSeriesRequest {
+	raw, ok := payload[key]
+	if !ok {
+		return nil
+	}
+	items, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]ChartSeriesRequest, 0, len(items))
+	for _, item := range items {
+		m, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := m["name"].(string)
+		var vals []float64
+		if rawVals, ok := m["values"].([]any); ok {
+			for _, v := range rawVals {
+				switch n := v.(type) {
+				case float64:
+					vals = append(vals, n)
+				case int:
+					vals = append(vals, float64(n))
+				}
+			}
+		}
+		out = append(out, ChartSeriesRequest{Name: name, Values: vals})
+	}
+	return out
 }

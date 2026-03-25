@@ -115,6 +115,43 @@ func deck_new(title *C.char) C.DeckHandle {
 	return C.DeckHandle(h)
 }
 
+//export deck_open_bytes
+func deck_open_bytes(data *C.char, length C.int) C.DeckHandle {
+	defer recoverPanic(0)
+	setGlobalError(nil)
+
+	goBytes := C.GoBytes(unsafe.Pointer(data), length)
+	e, err := editor.OpenPresentationEditorFromBytes(goBytes)
+	if err != nil {
+		setGlobalError(err)
+		return 0
+	}
+
+	h := editor.RegisterEditor(deckRegistry, e)
+	return C.DeckHandle(h)
+}
+
+//export deck_save_bytes
+func deck_save_bytes(h C.DeckHandle, outLen *C.int) *C.char {
+	handle := editor.Handle(h)
+	defer recoverPanic(handle)
+
+	e, ok := editor.GetEditor(deckRegistry, handle)
+	if !ok {
+		return nil
+	}
+
+	data, err := e.SaveToBytes()
+	if err != nil {
+		editor.SetHandleError(deckRegistry, handle, err)
+		return nil
+	}
+
+	*outLen = C.int(len(data))
+	buf := C.CBytes(data)
+	return (*C.char)(buf)
+}
+
 //export deck_execute_json
 func deck_execute_json(h C.DeckHandle, jsonInput *C.char) *C.char {
 	handle := editor.Handle(h)

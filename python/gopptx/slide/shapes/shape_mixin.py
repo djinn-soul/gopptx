@@ -266,3 +266,32 @@ class SlideShapeMixin:
     def list_shapes(self) -> list[Shape]:
         """List shapes on the slide."""
         return self._presentation.list_shapes(self.index)
+
+    def shape_center(self, shape_id: int) -> tuple[float, float]:
+        """Return the absolute center (cx, cy) of a shape in EMU.
+
+        Looks up the shape by ID from this slide's shape list and computes
+        its center point.  For top-level shapes the coordinates are in slide
+        space.  For shapes nested inside a group shape, the returned values
+        are the group's own center — pass the group's shape ID to get its
+        center, then use ``resolve_group_child_center`` to map a child's
+        group-relative bounds to absolute slide space.
+
+        Args:
+            shape_id: The ID of the shape to locate.
+
+        Returns:
+            A ``(cx, cy)`` tuple in EMU.
+
+        Raises:
+            ValueError: If no shape with *shape_id* exists on this slide.
+        """
+        shapes = self._presentation.list_shapes(self.index)
+        for shape in shapes:
+            if shape.get("ID") == shape_id or shape.get("id") == shape_id:
+                x = float(shape.get("X") or shape.get("x") or 0)
+                y = float(shape.get("Y") or shape.get("y") or 0)
+                w = float(shape.get("W") or shape.get("w") or 0)
+                h = float(shape.get("H") or shape.get("h") or 0)
+                return x + w / 2, y + h / 2
+        raise ValueError(f"shape {shape_id} not found on slide {self.index}")

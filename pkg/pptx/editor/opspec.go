@@ -90,6 +90,9 @@ const (
 	OpListTableStyles         = "list_table_styles"
 	OpSetTableRowHeight       = "set_table_row_height"
 	OpSetTableColumnWidth     = "set_table_column_width"
+	OpAddTableRow             = "add_table_row"
+	OpAddTableColumn          = "add_table_column"
+	OpUpdateTableCellBorder   = "update_table_cell_border"
 	OpAddCustomXML            = "add_custom_xml"
 	OpListCustomXML           = "list_custom_xml"
 	OpRemoveCustomXML         = "remove_custom_xml"
@@ -259,6 +262,9 @@ func supportedContentOps() []string {
 		OpListTableStyles,
 		OpSetTableRowHeight,
 		OpSetTableColumnWidth,
+		OpAddTableRow,
+		OpAddTableColumn,
+		OpUpdateTableCellBorder,
 		OpAddCustomXML,
 		OpListCustomXML,
 		OpRemoveCustomXML,

@@ -114,6 +114,8 @@ class Table(_TableBandingMixin, TableFlagsMixin):
             return
         self._cache = None
         self._cell_map = {}
+        self._row_count = None
+        self._col_count = None
 
     def table_state(self) -> dict[str, object]:
         """Return cached table state, loading it if needed."""
