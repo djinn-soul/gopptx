@@ -254,6 +254,10 @@ class ParagraphProps:
     hanging: int | None
     tab_stops: list[int] | None
     alignment: str | None
+    bullet_style: str | None
+    bullet_char: str | None
+    bullet_color: str | None
+    bullet_size_pct: int | None
     level: int | None
     line_spacing_pct: int | None
     line_spacing_pts: int | None
@@ -268,6 +272,10 @@ class ParagraphProps:
         left_margin: int | None = None,
         hanging_indent: int | None = None,
         alignment: str | None = None,
+        bullet_style: str | None = None,
+        bullet_char: str | None = None,
+        bullet_color: str | None = None,
+        bullet_size_pct: int | None = None,
         level: int | None = None,
         line_spacing_pct: int | None = None,
         line_spacing_pts: int | None = None,
@@ -363,6 +371,7 @@ class Slide:
         self, path: str, bounds: tuple[float, float, float, float]
     ) -> int: ...
     def remove_shape(self, shape_id: int) -> None: ...
+    def clear_shapes(self) -> int: ...
     def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None: ...
     def update_shape_run_texts(
         self,
@@ -960,6 +969,7 @@ class Presentation:
         shape_id: int,
     ) -> ImageMetadata: ...
     def remove_shape(self, slide_index: int, shape_id: int) -> None: ...
+    def clear_shapes(self, slide_index: int) -> int: ...
     def update_shape(
         self, slide_index: int, shape_id: int, updates: ShapeUpdate
     ) -> None: ...

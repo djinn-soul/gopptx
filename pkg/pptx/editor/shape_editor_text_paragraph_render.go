@@ -6,13 +6,18 @@ import (
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 const (
-	alignCenter = "center"
-	alignCtr    = "ctr"
-	alignJust   = "just"
-	alignDist   = "dist"
+	alignCenter       = "center"
+	alignCtr          = "ctr"
+	alignJust         = "just"
+	alignDist         = "dist"
+	bulletDot         = "•"
+	bulletStyleNone   = "none"
+	bulletStyleCustom = "custom"
+	bulletSizeScale   = 1000
 )
 
 func renderParagraphPropsXML(paragraph *common.Paragraph) (string, error) {
@@ -65,6 +70,9 @@ func buildParagraphAttributes(paragraph *common.Paragraph) (string, error) {
 
 func renderParagraphChildren(paragraph *common.Paragraph) (string, error) {
 	var out strings.Builder
+	if err := writeParagraphBulletNodes(&out, paragraph); err != nil {
+		return "", err
+	}
 	if len(paragraph.TabStops) > 0 {
 		if err := writeTabStops(&out, paragraph.TabStops); err != nil {
 			return "", err
@@ -107,6 +115,57 @@ func writeParagraphSpacingNodes(out *strings.Builder, paragraph *common.Paragrap
 	}
 	out.WriteString(spcAft)
 	return nil
+}
+
+func writeParagraphBulletNodes(out *strings.Builder, paragraph *common.Paragraph) error {
+	if paragraph.BulletStyle == nil {
+		return nil
+	}
+	bulletXML, err := renderParagraphBulletStyleXML(*paragraph.BulletStyle, paragraph.BulletChar)
+	if err != nil {
+		return err
+	}
+	out.WriteString(bulletXML)
+	if paragraph.BulletColor != nil {
+		color, err := editorshape.NormalizeHexColor(*paragraph.BulletColor)
+		if err != nil {
+			return fmt.Errorf("paragraph.bullet_color: %w", err)
+		}
+		_, _ = fmt.Fprintf(out, `<a:buClr><a:srgbClr val="%s"/></a:buClr>`, color)
+	}
+	if paragraph.BulletSizePct != nil {
+		if *paragraph.BulletSizePct < 0 {
+			return errors.New("paragraph.bullet_size_pct must be >= 0")
+		}
+		_, _ = fmt.Fprintf(out, `<a:buSzPct val="%d"/>`, *paragraph.BulletSizePct*bulletSizeScale)
+	}
+	return nil
+}
+
+func renderParagraphBulletStyleXML(rawStyle string, bulletChar *string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(rawStyle)) {
+	case bulletStyleNone:
+		return `<a:buNone/>`, nil
+	case "bullet":
+		return fmt.Sprintf(`<a:buChar char="%s"/>`, common.XMLEscape(bulletDot)), nil
+	case bulletStyleCustom:
+		if bulletChar == nil || strings.TrimSpace(*bulletChar) == "" {
+			return "", errors.New("paragraph.bullet_char is required when paragraph.bullet_style=custom")
+		}
+		return fmt.Sprintf(`<a:buChar char="%s"/>`, common.XMLEscape(*bulletChar)), nil
+	case "number":
+		return `<a:buAutoNum type="arabicPeriod"/>`, nil
+	case "letter_lower":
+		return `<a:buAutoNum type="alphaLcPeriod"/>`, nil
+	case "letter_upper":
+		return `<a:buAutoNum type="alphaUcPeriod"/>`, nil
+	case "roman_lower":
+		return `<a:buAutoNum type="romanLcPeriod"/>`, nil
+	case "roman_upper":
+		return `<a:buAutoNum type="romanUcPeriod"/>`, nil
+	default:
+		return "", fmt.Errorf("unsupported paragraph.bullet_style %q", rawStyle)
+	}
 }
 
 func renderParagraphSpacingNode(tag string, pct *int, pts *int) (string, error) {

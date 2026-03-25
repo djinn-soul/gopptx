@@ -262,14 +262,19 @@ type Paragraph struct {
 	LineSpacingPts *int    `json:"line_spacing_pts,omitempty"` // <a:lnSp><a:spcPts val="..."/> in centipoints.
 	SpaceBeforePts *int    `json:"space_before_pts,omitempty"` // <a:spcBef><a:spcPts val="..."/> in centipoints.
 	SpaceAfterPts  *int    `json:"space_after_pts,omitempty"`  // <a:spcAft><a:spcPts val="..."/> in centipoints.
+	BulletStyle    *string `json:"bullet_style,omitempty"`     // bullet|number|letter_lower|letter_upper|roman_lower|roman_upper|custom|none
+	BulletChar     *string `json:"bullet_char,omitempty"`      // Custom bullet character when bullet_style=custom.
+	BulletColor    *string `json:"bullet_color,omitempty"`     // RGB hex bullet color.
+	BulletSizePct  *int    `json:"bullet_size_pct,omitempty"`  // Bullet size as percent (100 == 100%).
 }
 
 // ShapeFill defines generic shape fill controls.
 type ShapeFill struct {
-	Solid      *string        `json:"solid,omitempty"`      // RGB hex (e.g., "FF0000")
-	Gradient   *GradientFill  `json:"gradient,omitempty"`   // Linear gradient fill controls.
-	Pattern    *PatternedFill `json:"pattern,omitempty"`    // Pattern fill controls.
-	Background *bool          `json:"background,omitempty"` // True emits <a:noFill/> (python-pptx fill.background()).
+	Solid        *string        `json:"solid,omitempty"`        // RGB hex (e.g., "FF0000")
+	Transparency *float64       `json:"transparency,omitempty"` // 0.0 opaque .. 1.0 transparent (solid fill).
+	Gradient     *GradientFill  `json:"gradient,omitempty"`     // Linear gradient fill controls.
+	Pattern      *PatternedFill `json:"pattern,omitempty"`      // Pattern fill controls.
+	Background   *bool          `json:"background,omitempty"`   // True emits <a:noFill/> (python-pptx fill.background()).
 }
 
 // ShapeLine defines generic shape line controls.

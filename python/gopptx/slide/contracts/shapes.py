@@ -69,6 +69,10 @@ class ShapeOperationsProtocol(Protocol):
         """Protocol member."""
         ...
 
+    def clear_shapes(self, slide_index: int) -> int:
+        """Protocol member."""
+        ...
+
     def group_shapes(self, slide_index: int, shape_ids: list[int]) -> int:
         """Protocol member."""
         ...

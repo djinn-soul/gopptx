@@ -143,6 +143,7 @@ func shapeMutationHandlers() map[string]commandHandler {
 		OpBuildFreeform:    handleBuildFreeform,
 		OpAddImage:         handleAddImage,
 		OpRemoveShape:      handleRemoveShape,
+		OpClearShapes:      handleClearShapes,
 		OpGroupShapes:      handleGroupShapes,
 		OpUngroupShapes:    handleUngroupShapes,
 		OpUpdateShape:      handleUpdateShape,

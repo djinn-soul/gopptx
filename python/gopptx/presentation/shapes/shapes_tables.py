@@ -172,6 +172,14 @@ class PresentationShapeMixin(
             ops.OP_REMOVE_SHAPE, {"slide_index": slide_index, "shape_id": shape_id}
         )
 
+    def clear_shapes(self, slide_index: int) -> int:
+        """Remove all shapes from a slide and return count removed."""
+        shapes = self.list_shapes(slide_index)
+        count = len(shapes)
+        if count:
+            self.execute(ops.OP_CLEAR_SHAPES, {"slide_index": slide_index})
+        return count
+
     def group_shapes(self, slide_index: int, shape_ids: list[int]) -> int:
         """Group multiple shapes on a slide into a group shape.
 

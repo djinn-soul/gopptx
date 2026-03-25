@@ -313,3 +313,74 @@ func TestShapeTextAPI_GetShapeRunsRejectsMissingShape(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestShapeTextAPI_RemoveShapeRun(t *testing.T) {
+	basePath := writeDeckFixture(t, "shape-text-api-remove-run.pptx", []elements.SlideContent{
+		elements.NewSlide("Text API"),
+	})
+
+	ed, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	shapeID, err := ed.AddShape(0, "rect", 120, 120, 2000, 1000)
+	if err != nil {
+		t.Fatalf("add shape: %v", err)
+	}
+	if err := ed.SetShapeRuns(0, shapeID, []common.TextRun{
+		{Text: "Alpha"},
+		{Text: "Beta"},
+		{Text: "Gamma"},
+	}); err != nil {
+		t.Fatalf("set shape runs: %v", err)
+	}
+
+	if err := ed.RemoveShapeRun(0, shapeID, 1); err != nil {
+		t.Fatalf("remove shape run: %v", err)
+	}
+
+	runs, err := ed.GetShapeRuns(0, shapeID)
+	if err != nil {
+		t.Fatalf("get shape runs: %v", err)
+	}
+	if len(runs) != 2 || runs[0].Text != "Alpha" || runs[1].Text != "Gamma" {
+		t.Fatalf("unexpected runs after removal: %#v", runs)
+	}
+}
+
+func TestShapeTextAPI_RemoveShapeParagraph(t *testing.T) {
+	basePath := writeDeckFixture(t, "shape-text-api-remove-paragraph.pptx", []elements.SlideContent{
+		elements.NewSlide("Text API"),
+	})
+
+	ed, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	shapeID, err := ed.AddShape(0, "rect", 120, 120, 2000, 1000)
+	if err != nil {
+		t.Fatalf("add shape: %v", err)
+	}
+	if err := ed.SetShapeRuns(0, shapeID, []common.TextRun{{Text: "Only"}}); err != nil {
+		t.Fatalf("set shape runs: %v", err)
+	}
+
+	if err := ed.RemoveShapeParagraph(0, shapeID, 0); err != nil {
+		t.Fatalf("remove shape paragraph: %v", err)
+	}
+
+	runs, err := ed.GetShapeRuns(0, shapeID)
+	if err != nil {
+		t.Fatalf("get shape runs: %v", err)
+	}
+	if len(runs) > 1 {
+		t.Fatalf("expected at most one normalized empty run after paragraph removal, got %#v", runs)
+	}
+	if len(runs) == 1 && runs[0].Text != "" {
+		t.Fatalf("expected normalized empty run, got %#v", runs)
+	}
+}

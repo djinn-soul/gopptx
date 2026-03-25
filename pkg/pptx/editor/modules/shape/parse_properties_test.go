@@ -22,7 +22,7 @@ func TestParseShapeProperties_ParsesPresetGeometryAndAdjustments(t *testing.T) {
         <a:gd name="adj2" fmla="val 17155555"/>
       </a:avLst>
     </a:prstGeom>
-    <a:solidFill><a:srgbClr val="ECECFF"/></a:solidFill>
+    <a:solidFill><a:srgbClr val="ECECFF"><a:alpha val="65000"/></a:srgbClr></a:solidFill>
     <a:ln w="12700"><a:solidFill><a:srgbClr val="9370DB"/></a:solidFill></a:ln>
   </p:spPr>
   <p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody>
@@ -43,6 +43,9 @@ func TestParseShapeProperties_ParsesPresetGeometryAndAdjustments(t *testing.T) {
 	}
 	if props.Fill == nil || props.Fill.Solid == nil || *props.Fill.Solid != "ECECFF" {
 		t.Fatalf("unexpected fill: %#v", props.Fill)
+	}
+	if props.Fill.Transparency == nil || *props.Fill.Transparency != 0.35 {
+		t.Fatalf("expected transparency 0.35, got %#v", props.Fill.Transparency)
 	}
 	if props.Line == nil || props.Line.Color == nil || *props.Line.Color != "9370DB" {
 		t.Fatalf("unexpected line: %#v", props.Line)
@@ -78,6 +81,9 @@ func TestParseShapeProperties_ParsesTextAndEffects(t *testing.T) {
     <a:lstStyle/>
     <a:p>
       <a:pPr marL="91440" indent="-45720" lvl="1" algn="ctr">
+        <a:buAutoNum type="romanLcPeriod"/>
+        <a:buClr><a:srgbClr val="ABCDEF"/></a:buClr>
+        <a:buSzPct val="85000"/>
         <a:lnSp><a:spcPct val="120000"/></a:lnSp>
         <a:spcBef><a:spcPts val="600"/></a:spcBef>
         <a:spcAft><a:spcPts val="400"/></a:spcAft>
@@ -125,5 +131,14 @@ func TestParseShapeProperties_ParsesTextAndEffects(t *testing.T) {
 	if props.Paragraph == nil || props.Paragraph.Alignment == nil ||
 		*props.Paragraph.Alignment != "ctr" {
 		t.Fatalf("unexpected paragraph parse: %+v", props.Paragraph)
+	}
+	if props.Paragraph.BulletStyle == nil || *props.Paragraph.BulletStyle != "roman_lower" {
+		t.Fatalf("expected roman_lower bullet style, got %+v", props.Paragraph)
+	}
+	if props.Paragraph.BulletColor == nil || *props.Paragraph.BulletColor != "ABCDEF" {
+		t.Fatalf("expected bullet color ABCDEF, got %+v", props.Paragraph)
+	}
+	if props.Paragraph.BulletSizePct == nil || *props.Paragraph.BulletSizePct != 85 {
+		t.Fatalf("expected bullet_size_pct 85, got %+v", props.Paragraph)
 	}
 }

@@ -53,7 +53,11 @@ func applyParsedShapeFill(ps *ParsedShapeProperties, s *shapeXML) {
 	}
 	if s.SpPr.SolidFill != nil && s.SpPr.SolidFill.SrgbClr.Val != "" {
 		fillColor := s.SpPr.SolidFill.SrgbClr.Val
-		ps.Fill = &common.ShapeFill{Solid: &fillColor}
+		fill := &common.ShapeFill{Solid: &fillColor}
+		if transparency, ok := parseSolidFillTransparency(s.SpPr.SolidFill); ok {
+			fill.Transparency = &transparency
+		}
+		ps.Fill = fill
 	}
 	if s.SpPr.GradFill != nil {
 		ps.Fill = &common.ShapeFill{Gradient: parseGradientFill(s.SpPr.GradFill)}
@@ -61,6 +65,16 @@ func applyParsedShapeFill(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.SpPr.PattFill != nil {
 		ps.Fill = &common.ShapeFill{Pattern: parsePatternFill(s.SpPr.PattFill)}
 	}
+}
+
+func parseSolidFillTransparency(src *solidFillXML) (float64, bool) {
+	if src == nil || src.SrgbClr.Alpha == nil || src.SrgbClr.Alpha.Val == nil {
+		return 0, false
+	}
+	alpha := *src.SrgbClr.Alpha.Val
+	alpha = max(alpha, 0)
+	alpha = min(alpha, ooxmlPercentScale)
+	return 1.0 - (float64(alpha) / float64(ooxmlPercentScale)), true
 }
 
 func parseGradientFill(src *gradientFillXML) *common.GradientFill {

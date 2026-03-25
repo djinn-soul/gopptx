@@ -95,6 +95,24 @@ func TestCustomShapeXML(t *testing.T) {
 				"anchor=\"ctr\"",
 			},
 		},
+		{
+			name: "shape with text frame rotation",
+			shape: ShapeSpec{
+				Type: "rect",
+				Text: "Rotated text frame",
+				TextFrame: &TextFrameSpec{
+					AutoFit:  "spAutoFit",
+					Wrap:     "square",
+					Anchor:   "ctr",
+					Rotation: int64Ptr(2700000),
+				},
+			},
+			shapeID: 1,
+			contains: []string{
+				"rot=\"2700000\"",
+				"Rotated text frame",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -203,3 +221,4 @@ func TestAlphaFromNormalizedTransparency(t *testing.T) {
 
 func floatPtr(f float64) *float64 { return &f }
 func intPtr(i int) *int           { return &i }
+func int64Ptr(i int64) *int64     { return &i }

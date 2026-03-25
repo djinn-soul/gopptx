@@ -68,6 +68,7 @@ const (
 	OpBuildFreeform           = "build_freeform"
 	OpAddImage                = "add_image"
 	OpRemoveShape             = "remove_shape"
+	OpClearShapes             = "clear_shapes"
 	OpUpdateShape             = "update_shape"
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
@@ -236,6 +237,7 @@ func supportedContentOps() []string {
 		OpBuildFreeform,
 		OpAddImage,
 		OpRemoveShape,
+		OpClearShapes,
 		OpUpdateShape,
 		OpMoveShapeToFront,
 		OpMoveShapeToBack,
@@ -290,11 +292,4 @@ func supportedContentOps() []string {
 		OpUpdateHandoutMaster,
 		OpHasDigitalSignature,
 	}
-}
-
-// SupportedOps returns the full list of operation codes handled by the bridge.
-func SupportedOps() []string {
-	ops := supportedSlideAndMetaOps()
-	ops = append(ops, supportedContentOps()...)
-	return ops
 }
