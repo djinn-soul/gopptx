@@ -1,7 +1,6 @@
 package goppt
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -268,131 +267,6 @@ func readTextFromSlidePersistAtom(
 		return err
 	}
 	return extractTextFromDrawing(drawing, out, utf16Decoder)
-}
-
-func extractTextFromDrawing(drawing record, out *strings.Builder, utf16Decoder *encoding.Decoder) error {
-	const headerRecordTypeOffset = 2
-	drawingBytes := drawing.Data()
-	from := 0
-	for {
-		pocketIdx := matchPocket(drawingBytes, from)
-		if pocketIdx == -1 {
-			break
-		}
-		if pocketIdx >= 2 && bytes.Equal(drawingBytes[pocketIdx-headerRecordTypeOffset:pocketIdx], []byte{0x00, 0x00}) {
-			if err := processTextRecord(drawing, pocketIdx, out, utf16Decoder); err != nil {
-				return err
-			}
-		}
-		from = pocketIdx + recordTypeOffset
-	}
-	return nil
-}
-
-func processTextRecord(drawing record, pocketIdx int, out *strings.Builder, utf16Decoder *encoding.Decoder) error {
-	const headerRecordTypeOffset = 2
-	data := drawing.Data()
-	if pocketIdx+headerSize-headerRecordTypeOffset > len(data) {
-		return nil
-	}
-	recType := recordType(
-		binary.LittleEndian.Uint16(data[pocketIdx-headerRecordTypeOffset+2 : pocketIdx-headerRecordTypeOffset+4]),
-	)
-	recLen := binary.LittleEndian.Uint32(data[pocketIdx-headerRecordTypeOffset+4 : pocketIdx-headerRecordTypeOffset+8])
-
-	if pocketIdx-headerRecordTypeOffset+headerSize+int(recLen) > len(data) {
-		return nil
-	}
-	blockData := data[pocketIdx-headerRecordTypeOffset+headerSize : pocketIdx-headerRecordTypeOffset+headerSize+int(recLen)]
-
-	var header [headerSize]byte
-	copy(header[:], data[pocketIdx-headerRecordTypeOffset:pocketIdx-headerRecordTypeOffset+headerSize])
-	block := record{
-		recordData: blockData,
-		header:     header,
-	}
-
-	if recType == recordTypeTextCharsAtom {
-		return readTextFromTextCharsAtom(block, out, utf16Decoder)
-	}
-	if recType == recordTypeTextBytesAtom {
-		return readTextFromTextBytesAtom(block, out, utf16Decoder)
-	}
-	return nil
-}
-
-func matchPocket(data []byte, from int) int {
-	data = data[from:]
-	n := len(data)
-	for i := range n {
-		switch data[i] {
-		case recordTypeTextCharsAtom.LowerPart(), recordTypeTextBytesAtom.LowerPart():
-			if i < n-1 && data[i+1] == 0x0F {
-				return i + from
-			}
-		}
-	}
-	return -1
-}
-
-// readTextFromTextCharsAtom simply transforms UTF-16LE data into UTF-8 data.
-func readTextFromTextCharsAtom(atom record, out *strings.Builder, dec *encoding.Decoder) error {
-	dec.Reset()
-	transformed, err := dec.Bytes(atom.Data())
-	if err != nil {
-		return err
-	}
-	out.Write(transformed)
-	out.WriteByte(' ')
-	return nil
-}
-
-func readTextFromTextBytesAtom(atom record, out *strings.Builder, dec *encoding.Decoder) error {
-	dec.Reset()
-	transformed, err := decodeTextBytesAtom(atom.Data(), dec)
-	if err != nil {
-		return err
-	}
-	out.Write(transformed)
-	out.WriteByte(' ')
-	return nil
-}
-
-// decodeTextBytesAtom transforms text from TextBytesAtom, which is an array of bytes representing lower parts of UTF-16
-// characters into UTF-8 data.
-func decodeTextBytesAtom(data []byte, dec *encoding.Decoder) ([]byte, error) {
-	// 	var (
-	// 	// buffer for UTF-16 char
-	// 	buf [2]byte
-	// 	err error
-	// )
-	// result := make([]byte, 0, len(data))
-	// for i := range data {
-	// 	// filling upper part of character with zero
-	// 	// buf[1] remains 0
-	// 	buf[0] = data[i]
-
-	// 	// transform single UTF-16 char into UTF-8 rune and append it into result
-	// 	result, _, err = transform.Append(dec, result, buf[:])
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-	// return result, nil
-	// TextBytesAtom contains 1-byte characters effectively acting as the lower byte of a UTF-16 word.
-	// We expand this to full UTF-16 (little-endian) by interleaving zeros.
-	//
-	// Optimization: Allocate one buffer for the expanded UTF-16 data and decode in one pass
-	// instead of calling transform.Append for every single byte.
-
-	utf16Data := make([]byte, len(data)*utf16WordBytes)
-	for i, b := range data {
-		// Little-endian: [byte, 0]
-		utf16Data[i*utf16WordBytes] = b
-		utf16Data[i*utf16WordBytes+1] = 0
-	}
-
-	return dec.Bytes(utf16Data)
 }
 
 // skipRecords reads headers and skips data of records of provided types.
