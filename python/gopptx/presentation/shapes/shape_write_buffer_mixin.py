@@ -97,11 +97,23 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
         runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
         PresentationRuntimeLifecycleMixin.open(runtime_self, path)
 
+    def open_bytes(self, data: bytes) -> None:
+        """Discard pending textbox state before opening a deck from bytes."""
+        self._reset_shape_write_buffer()
+        runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
+        PresentationRuntimeLifecycleMixin.open_bytes(runtime_self, data)
+
     def save(self, path: str) -> None:
         """Flush queued textboxes before the regular save pipeline runs."""
         self.flush_all_pending_textbox_adds()
         text_self = cast("PresentationTextWriteBufferMixin", self)
         PresentationTextWriteBufferMixin.save(text_self, path)
+
+    def to_bytes(self) -> bytes:
+        """Flush queued textboxes then serialize the deck to bytes."""
+        self.flush_all_pending_textbox_adds()
+        text_self = cast("PresentationTextWriteBufferMixin", self)
+        return PresentationTextWriteBufferMixin.to_bytes(text_self)
 
     def close(self) -> None:
         """Discard queued textbox state when closing the deck."""

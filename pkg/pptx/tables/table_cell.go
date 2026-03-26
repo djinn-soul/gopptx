@@ -11,6 +11,8 @@ type TableCellBorder struct {
 type TableCell struct {
 	Text            string
 	Bold            bool
+	SizePt          float64
+	FontName        string
 	BackgroundColor string
 	Color           string // Text color
 	Align           string
@@ -52,6 +54,18 @@ func NewTableCell(text string) TableCell {
 // WithBold sets bold text for this cell.
 func (c TableCell) WithBold(enabled bool) TableCell {
 	c.Bold = enabled
+	return c
+}
+
+// WithSizePt sets the font size in points for this cell.
+func (c TableCell) WithSizePt(pt float64) TableCell {
+	c.SizePt = pt
+	return c
+}
+
+// WithFontName sets the font family name for this cell.
+func (c TableCell) WithFontName(name string) TableCell {
+	c.FontName = name
 	return c
 }
 

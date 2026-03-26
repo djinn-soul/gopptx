@@ -112,6 +112,9 @@ OP_SET_SLIDE_SHAPE_RUNS = "set_slide_shape_runs"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SET_SLIDE_TRANSITION = "set_slide_transition"
+OP_ADD_TABLE_ROW = "add_table_row"
+OP_ADD_TABLE_COLUMN = "add_table_column"
+OP_UPDATE_TABLE_CELL_BORDER = "update_table_cell_border"
 OP_SET_TABLE_COLUMN_WIDTH = "set_table_column_width"
 OP_SET_TABLE_ROW_HEIGHT = "set_table_row_height"
 OP_SET_TABLE_STYLE = "set_table_style"
@@ -249,6 +252,9 @@ SUPPORTED_OPS = (
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
     OP_SET_SLIDE_TRANSITION,
+    OP_ADD_TABLE_ROW,
+    OP_ADD_TABLE_COLUMN,
+    OP_UPDATE_TABLE_CELL_BORDER,
     OP_SET_TABLE_COLUMN_WIDTH,
     OP_SET_TABLE_ROW_HEIGHT,
     OP_SET_TABLE_STYLE,

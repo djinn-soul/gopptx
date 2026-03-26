@@ -1,27 +1,58 @@
 # Organized Pre-commit Configuration
 # Run `uv run prek auto-update` periodically to update hook versions
+#
+# Priority groups (prek runs same-priority hooks in parallel):
+#   0  - File formatters (modify files, must run first)
+#   10 - Fast linters & dependency sync (after formatting)
+#   20 - Slow independent checks (Python + Go, run in parallel)
+#   30 - Finalizers (depend on earlier stages completing)
 
 default_stages: [commit]
 
 repos:
-  # --- Standard Hygiene ---
+  # --- Standard Hygiene (priority 0 - formatters/fixers) ---
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: check-yaml
+        priority: 0
       - id: check-json
+        priority: 0
       - id: check-toml
+        priority: 0
       - id: check-added-large-files
+        priority: 0
       - id: end-of-file-fixer
+        priority: 0
       - id: trailing-whitespace
+        priority: 0
       - id: requirements-txt-fixer
+        priority: 0
       - id: detect-private-key
+        priority: 0
       - id: pretty-format-json
         args: [--autofix, --indent=4, --no-sort-keys]
+        priority: 0
       - id: debug-statements
+        priority: 0
       - id: mixed-line-ending
         args: ["--fix=lf"]
+        priority: 0
 
+  # --- Ruff Format (priority 0 - modifies files) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.13
+    hooks:
+      - id: ruff-format
+        name: ruff-format (commit)
+        priority: 0
+      - id: ruff
+        name: ruff check --fix (commit)
+        args:
+          ["--fix", "--ignore-noqa", "--unsafe-fixes", "--exit-non-zero-on-fix"]
+        priority: 10
+
+  # --- Codespell (priority 10 - fast, read-only) ---
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
@@ -32,38 +63,31 @@ repos:
             "--skip=./.venv,./uv.lock,./.git,./internal/pptxxml/templates/smartart",
           ]
         exclude: ^uv\.lock$
+        priority: 10
 
-  # --- Dependency Management (uv) ---
+  # --- Dependency Management (priority 10 - after formatters) ---
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.26
     hooks:
       - id: uv-lock
+        priority: 10
       - id: uv-export
         name: Export requirements.txt
         args: ["--output-file", "requirements.txt", "--no-hashes"]
         always_run: true
+        priority: 10
       - id: uv-export
         name: Export requirements-dev.txt
         args: ["--extra", "dev", "--output-file", "requirements-dev.txt"]
         always_run: true
+        priority: 10
 
   # ==========================================================================
-  # Ruff - Linting & Formatting
-  # ==========================================================================
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.13
-    hooks:
-      - id: ruff-format
-        name: ruff-format (commit)
-      - id: ruff
-        name: ruff check --fix (commit)
-        args:
-          ["--fix", "--ignore-noqa", "--unsafe-fixes", "--exit-non-zero-on-fix"]
-  # ==========================================================================
-  # Local Hooks - Environment Consistent Scans & Go Checks
+  # Local Hooks
   # ==========================================================================
   - repo: local
     hooks:
+      # --- Priority 20: slow independent checks (all parallel) ---
       - id: basedpyright
         name: basedpyright strict type-check (push)
         entry: uv run basedpyright --level error
@@ -71,6 +95,7 @@ repos:
         types: [python]
         pass_filenames: false
         stages: [commit, push]
+        priority: 20
 
       - id: architectural-guardrails
         name: architectural guardrails (LOC + import cycles)
@@ -78,12 +103,7 @@ repos:
         language: system
         pass_filenames: false
         stages: [commit, push]
-
-      - id: pip-audit
-        name: pip-audit dependency scan
-        entry: uv run pip-audit -r requirements.txt --skip-editable
-        language: system
-        pass_filenames: false
+        priority: 20
 
       - id: bandit
         name: bandit security scan
@@ -91,6 +111,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+        priority: 20
 
       - id: vulture
         name: vulture dead code detection
@@ -98,6 +119,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+        priority: 20
 
       - id: go-vet
         name: go vet
@@ -106,7 +128,17 @@ repos:
         pass_filenames: false
         args:
           ["vet", "./cmd/...", "./internal/...", "./pkg/...", "./examples/..."]
+        priority: 20
 
+      - id: go-mod-tidy
+        name: go mod tidy
+        entry: go
+        language: system
+        pass_filenames: false
+        args: ["mod", "tidy"]
+        priority: 0
+
+      # --- Priority 30: finalizers (depend on earlier stages) ---
       - id: golangci-lint
         name: golangci-lint
         entry: golangci-lint
@@ -122,10 +154,11 @@ repos:
             "./pkg/...",
             "./examples/...",
           ]
+        priority: 0
 
-      - id: go-mod-tidy
-        name: go mod tidy
-        entry: go
+      - id: pip-audit
+        name: pip-audit dependency scan
+        entry: uv run pip-audit -r requirements.txt --skip-editable
         language: system
         pass_filenames: false
-        args: ["mod", "tidy"]
+        priority: 30

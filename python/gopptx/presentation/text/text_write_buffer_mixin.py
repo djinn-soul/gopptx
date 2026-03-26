@@ -167,3 +167,9 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
         self.flush_all_pending_slide_run_text_updates()
         runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
         PresentationRuntimeLifecycleMixin.save(runtime_self, path)
+
+    def to_bytes(self) -> bytes:
+        """Flush buffered text writes then serialize the deck to bytes."""
+        self.flush_all_pending_slide_run_text_updates()
+        runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
+        return PresentationRuntimeLifecycleMixin.to_bytes(runtime_self)

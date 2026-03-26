@@ -77,6 +77,23 @@ class TableRows:
         for i in range(len(self)):
             yield TableRow(self._table, i)
 
+    def add(self, height: int = 0) -> TableRow:
+        """Append a new empty row to the table and return a proxy for it.
+
+        Args:
+            height: Row height in EMUs. Pass 0 to let PowerPoint auto-size.
+        """
+        self._table.prs.execute(
+            ops.OP_ADD_TABLE_ROW,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "height": int(height),
+            },
+        )
+        self._table.invalidate_cache()
+        return TableRow(self._table, len(self) - 1)
+
 
 class TableColumn:
     """Column proxy with width accessor."""
@@ -140,6 +157,23 @@ class TableColumns:
         """Iterate column proxies in order."""
         for i in range(len(self)):
             yield TableColumn(self._table, i)
+
+    def add(self, width: int) -> TableColumn:
+        """Append a new empty column to the table and return a proxy for it.
+
+        Args:
+            width: Column width in EMUs (must be > 0).
+        """
+        self._table.prs.execute(
+            ops.OP_ADD_TABLE_COLUMN,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "width": int(width),
+            },
+        )
+        self._table.invalidate_cache()
+        return TableColumn(self._table, len(self) - 1)
 
 
 def _as_int(value: object) -> int:
