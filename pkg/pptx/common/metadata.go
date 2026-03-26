@@ -60,6 +60,25 @@ type Metadata struct {
 	CustomXML      []CustomXMLPart
 	CoreProperties CoreProperties
 	Protection     Protection
+	ShowSettings   ShowSettings
+}
+
+// ShowMode defines the slide show presentation mode.
+type ShowMode int
+
+const (
+	ShowModePresent ShowMode = iota // Standard presenter view (default)
+	ShowModeBrowse                  // Browse in window
+	ShowModeKiosk                   // Kiosk: full-screen, no controls
+)
+
+// ShowSettings controls how a presentation is shown (maps to p:showPr in presentation.xml).
+type ShowSettings struct {
+	Loop           bool     // Loop presentation continuously when finished
+	Mode           ShowMode // Present (default), Browse, or Kiosk
+	ShowScrollbar  bool     // Show scrollbar in browse mode
+	DisableTimings bool     // Ignore slide timings (useTimings="0")
+	HideAnimation  bool     // Suppress animations (showAnimation="0")
 }
 
 // Protection defines write-protection and suggested read-only settings.

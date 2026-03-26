@@ -318,15 +318,6 @@ func convertNotesStyle(s text.ParagraphStyle) BulletParagraphSpec {
 }
 
 func convertNotesRun(r text.Run) TextRunSpec {
-	// Map internal Action Hyperlink to XML spec if needed,
-	// for now treating as no-op or basic mapping if TextRunSpec supports it.
-	// TextRunSpec has *HyperlinkSpec.
-	// We'd need to manually map action.Hyperlink fields.
-	// Ignoring for this pass as it requires importing 'action' which creates cycle?
-	// 'text' imports 'action'. 'pptxxml' does NOT import 'action' yet.
-	// 'action' is in pkg/pptx/action.
-	// If I import 'action', 'pptxxml' imports 'action'. 'action' doesn't import 'pptxxml'. Safe.
-
 	return TextRunSpec{
 		Text:          r.Text,
 		Bold:          r.Bold,
@@ -342,6 +333,6 @@ func convertNotesRun(r text.Run) TextRunSpec {
 		Code:          r.Code,
 		AllCaps:       r.AllCaps,
 		SmallCaps:     r.SmallCaps,
-		// Hyperlinks omitted to avoid dependency cycle risk for now, standard notes usually just text/bold/italic
+		Lang:          r.Lang,
 	}
 }

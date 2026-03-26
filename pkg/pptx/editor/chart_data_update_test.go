@@ -164,6 +164,25 @@ func TestListSlideCharts(t *testing.T) {
 	}
 }
 
+func TestListSlideChartsChartEx(t *testing.T) {
+	e := newChartUpdateEditorFixture()
+	e.parts.Set(
+		"ppt/slides/slide1.xml",
+		[]byte(
+			`<p:sld><p:spTree><p:graphicFrame><a:graphic><a:graphicData uri="http://schemas.microsoft.com/office/drawing/2014/chartex">`+
+				`<cx:chart xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" r:id="rIdChart"/>`+
+				`</a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:sld>`,
+		),
+	)
+	refs, err := e.ListSlideCharts(0)
+	if err != nil {
+		t.Fatalf("ListSlideCharts failed: %v", err)
+	}
+	if len(refs) != 1 || refs[0].RelID != "rIdChart" || refs[0].ChartPart != "ppt/charts/chart1.xml" {
+		t.Fatalf("unexpected chart refs for chartex: %+v", refs)
+	}
+}
+
 func TestUpdateChartDataSuccessWhenEmbeddingMissingButRelExists(t *testing.T) {
 	e := newChartUpdateEditorFixture()
 	e.parts.Set("ppt/charts/chart1.xml", []byte(categoryChartXML()))

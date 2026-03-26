@@ -34,6 +34,9 @@ def test_shape_fill_and_line_round_trip_fixture(tmp_path: Path) -> None:
                     "color": "334455",
                     "width_emu": 38100,
                     "dash_style": "long_dash_dot",
+                    "end_arrow": "arrow",
+                    "end_arrow_width": "lg",
+                    "end_arrow_length": "sm",
                 },
             },
         )
@@ -45,4 +48,5 @@ def test_shape_fill_and_line_round_trip_fixture(tmp_path: Path) -> None:
     assert 'val="112233"' in slide_xml
     assert 'a:ln w="38100"' in slide_xml
     assert '<a:prstDash val="lgDashDot"/>' in slide_xml
+    assert '<a:tailEnd type="arrow" w="lg" len="sm"/>' in slide_xml
     assert 'val="334455"' in slide_xml

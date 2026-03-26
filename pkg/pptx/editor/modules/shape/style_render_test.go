@@ -34,6 +34,29 @@ func TestRenderLineAndFillXML(t *testing.T) {
 	if _, err = RenderLineXML(&common.ShapeLine{DashStyle: strPtrSR("bogus")}); err == nil {
 		t.Fatal("expected dash style validation error")
 	}
+	lineXML, err = RenderLineXML(&common.ShapeLine{
+		EndArrow:       strPtrSR("open"),
+		EndArrowWidth:  strPtrSR("large"),
+		EndArrowLength: strPtrSR("small"),
+	})
+	if err != nil {
+		t.Fatalf("RenderLineXML arrowheads failed: %v", err)
+	}
+	if !strings.Contains(lineXML, `<a:tailEnd type="arrow" w="lg" len="sm"/>`) {
+		t.Fatalf("unexpected arrowhead xml: %s", lineXML)
+	}
+	if _, err = RenderLineXML(&common.ShapeLine{EndArrowWidth: strPtrSR("lg")}); err == nil {
+		t.Fatal("expected missing arrow type validation error")
+	}
+	if _, err = RenderLineXML(&common.ShapeLine{EndArrow: strPtrSR("bad")}); err == nil {
+		t.Fatal("expected invalid arrow type validation error")
+	}
+	if _, err = RenderLineXML(&common.ShapeLine{
+		EndArrow:      strPtrSR("arrow"),
+		EndArrowWidth: strPtrSR("huge"),
+	}); err == nil {
+		t.Fatal("expected invalid arrow size validation error")
+	}
 
 	fillXML, err := RenderFillXML(&common.ShapeFill{Solid: strPtrSR("AABBCC")})
 	if err != nil || !strings.Contains(fillXML, `srgbClr val="AABBCC"`) {

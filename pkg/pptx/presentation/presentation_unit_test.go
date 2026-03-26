@@ -45,10 +45,10 @@ func TestPresentation_EffectiveMasters(t *testing.T) {
 }
 
 func TestPresentation_NotesThemeIndex(t *testing.T) {
-	if getNotesThemeIndex(false, 1) != 0 {
+	if getNotesThemeIndex(false) != 0 {
 		t.Error("expected 0")
 	}
-	if getNotesThemeIndex(true, 1) != 2 {
+	if getNotesThemeIndex(true) != 2 {
 		t.Error("expected 2")
 	}
 }

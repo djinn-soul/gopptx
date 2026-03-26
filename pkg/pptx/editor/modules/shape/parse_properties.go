@@ -11,7 +11,6 @@ func ParseShapeProperties(content []byte) (ParsedShapeProperties, error) {
 	if err := xml.Unmarshal(content, &s); err != nil {
 		return ParsedShapeProperties{}, err
 	}
-
 	ps := ParsedShapeProperties{PhIndex: -1}
 	applyParsedShapeFill(&ps, &s)
 	applyParsedShapeLine(&ps, &s)
@@ -22,7 +21,6 @@ func ParseShapeProperties(content []byte) (ParsedShapeProperties, error) {
 	applyParsedShapeText(&ps, &s)
 	return ps, nil
 }
-
 func applyParsedShapeGeometry(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.SpPr.PrstGeom == nil || s.SpPr.PrstGeom.Prst == "" {
 		return
@@ -45,7 +43,6 @@ func applyParsedShapeGeometry(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Adjustments = adjustments
 	}
 }
-
 func applyParsedShapeFill(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.SpPr.NoFill != nil {
 		background := true
@@ -66,7 +63,6 @@ func applyParsedShapeFill(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Fill = &common.ShapeFill{Pattern: parsePatternFill(s.SpPr.PattFill)}
 	}
 }
-
 func parseSolidFillTransparency(src *solidFillXML) (float64, bool) {
 	if src == nil || src.SrgbClr.Alpha == nil || src.SrgbClr.Alpha.Val == nil {
 		return 0, false
@@ -76,7 +72,6 @@ func parseSolidFillTransparency(src *solidFillXML) (float64, bool) {
 	alpha = min(alpha, ooxmlPercentScale)
 	return 1.0 - (float64(alpha) / float64(ooxmlPercentScale)), true
 }
-
 func parseGradientFill(src *gradientFillXML) *common.GradientFill {
 	grad := &common.GradientFill{}
 	if src.Lin != nil && src.Lin.Ang != nil {
@@ -96,7 +91,6 @@ func parseGradientFill(src *gradientFillXML) *common.GradientFill {
 	}
 	return grad
 }
-
 func parsePatternFill(src *patternFillXML) *common.PatternedFill {
 	pattern := &common.PatternedFill{}
 	if src.Prst != nil {
@@ -110,25 +104,20 @@ func parsePatternFill(src *patternFillXML) *common.PatternedFill {
 	}
 	return pattern
 }
-
-func parseColorRef(src *struct {
-	SrgbClr *struct {
-		Val string `xml:"val,attr"`
-	} `xml:"srgbClr"`
-}) (string, bool) {
-	if src == nil || src.SrgbClr == nil || src.SrgbClr.Val == "" {
-		return "", false
-	}
-	return src.SrgbClr.Val, true
-}
-
 func applyParsedShapeLine(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.SpPr.Ln == nil {
 		return
 	}
-	line := &common.ShapeLine{}
-	if s.SpPr.Ln.SolidFill != nil && s.SpPr.Ln.SolidFill.SrgbClr.Val != "" {
-		lineColor := s.SpPr.Ln.SolidFill.SrgbClr.Val
+	line := &common.ShapeLine{
+		StartArrow:       nil,
+		StartArrowWidth:  nil,
+		StartArrowLength: nil,
+		EndArrow:         nil,
+		EndArrowWidth:    nil,
+		EndArrowLength:   nil,
+	}
+	if color := parseLineColor(s); color != nil {
+		lineColor := *color
 		line.Color = &lineColor
 	}
 	if s.SpPr.Ln.W != nil {
@@ -138,7 +127,17 @@ func applyParsedShapeLine(ps *ParsedShapeProperties, s *shapeXML) {
 		dash := s.SpPr.Ln.PrstDash.Val
 		line.DashStyle = &dash
 	}
-	if line.Color != nil || line.WidthEmu != nil || line.DashStyle != nil {
+	if s.SpPr.Ln.HeadEnd != nil {
+		line.StartArrow, line.StartArrowWidth, line.StartArrowLength = parseLineEnd(
+			s.SpPr.Ln.HeadEnd.Type, s.SpPr.Ln.HeadEnd.W, s.SpPr.Ln.HeadEnd.Len,
+		)
+	}
+	if s.SpPr.Ln.TailEnd != nil {
+		line.EndArrow, line.EndArrowWidth, line.EndArrowLength = parseLineEnd(
+			s.SpPr.Ln.TailEnd.Type, s.SpPr.Ln.TailEnd.W, s.SpPr.Ln.TailEnd.Len,
+		)
+	}
+	if hasLineStyle(line) {
 		ps.Line = line
 	}
 }
@@ -161,7 +160,6 @@ func applyParsedShapeEffects(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Reflection = parseReflectionEffect(s)
 	}
 }
-
 func applyParsedShadow(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.SpPr.EffectLst.OuterShdw == nil &&
 		s.SpPr.EffectLst.Glow == nil &&
@@ -193,7 +191,6 @@ func applyParsedShadow(ps *ParsedShapeProperties, s *shapeXML) {
 	}
 	ps.Shadow = shadow
 }
-
 func parseGlowEffect(s *shapeXML) *common.ShapeGlow {
 	glow := &common.ShapeGlow{}
 	if s.SpPr.EffectLst.Glow.SrgbClr != nil && s.SpPr.EffectLst.Glow.SrgbClr.Val != "" {
@@ -205,7 +202,6 @@ func parseGlowEffect(s *shapeXML) *common.ShapeGlow {
 	}
 	return glow
 }
-
 func parseBlurEffect(s *shapeXML) *common.ShapeBlur {
 	blur := &common.ShapeBlur{}
 	if s.SpPr.EffectLst.Blur.Rad != nil {
@@ -213,7 +209,6 @@ func parseBlurEffect(s *shapeXML) *common.ShapeBlur {
 	}
 	return blur
 }
-
 func parseSoftEdgeEffect(s *shapeXML) *common.ShapeSoftEdge {
 	softEdge := &common.ShapeSoftEdge{}
 	if s.SpPr.EffectLst.SoftEdge.Rad != nil {
@@ -221,7 +216,6 @@ func parseSoftEdgeEffect(s *shapeXML) *common.ShapeSoftEdge {
 	}
 	return softEdge
 }
-
 func parseReflectionEffect(s *shapeXML) *common.ShapeReflection {
 	reflection := &common.ShapeReflection{}
 	if s.SpPr.EffectLst.Reflection.BlurRad != nil {
@@ -232,7 +226,6 @@ func parseReflectionEffect(s *shapeXML) *common.ShapeReflection {
 	}
 	return reflection
 }
-
 func applyParsedShapeIdentity(ps *ParsedShapeProperties, s *shapeXML) {
 	switch {
 	case s.NvSpPr.CNvPr.ID != 0:
@@ -251,7 +244,6 @@ func applyParsedShapeIdentity(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Name = s.NvGraphicFramePr.CNvPr.Name
 	}
 }
-
 func applyPlaceholderInfo(ps *ParsedShapeProperties, ph *struct {
 	Idx  *int   `xml:"idx,attr"`
 	Type string `xml:"type,attr"`
@@ -266,7 +258,6 @@ func applyPlaceholderInfo(ps *ParsedShapeProperties, ph *struct {
 	}
 	ps.PhIndex = 0
 }
-
 func applyParsedShapeTransform(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.SpPr.Xfrm.Ext.Cx != 0 || s.SpPr.Xfrm.Ext.Cy != 0 || s.SpPr.Xfrm.Off.X != 0 || s.SpPr.Xfrm.Off.Y != 0 {
 		ps.X = s.SpPr.Xfrm.Off.X

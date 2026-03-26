@@ -1,5 +1,6 @@
 """Slide-domain mixins for presentation APIs."""
 
+from .collection import Slides
 from .layout_theme_mixin import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideLayout, SlideLayouts, SlideMaster, SlideMasters
 from .properties_mixin import PresentationPropertiesMixin
@@ -22,4 +23,5 @@ __all__ = [
     "SlideLayouts",
     "SlideMaster",
     "SlideMasters",
+    "Slides",
 ]
