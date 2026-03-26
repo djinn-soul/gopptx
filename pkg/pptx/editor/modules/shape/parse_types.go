@@ -163,6 +163,16 @@ type shapeXML struct {
 			PrstDash  *struct {
 				Val string `xml:"val,attr"`
 			} `xml:"prstDash"`
+			HeadEnd *struct {
+				Type *string `xml:"type,attr"`
+				W    *string `xml:"w,attr"`
+				Len  *string `xml:"len,attr"`
+			} `xml:"headEnd"`
+			TailEnd *struct {
+				Type *string `xml:"type,attr"`
+				W    *string `xml:"w,attr"`
+				Len  *string `xml:"len,attr"`
+			} `xml:"tailEnd"`
 		} `xml:"ln"`
 		EffectLst *struct {
 			OuterShdw *struct {

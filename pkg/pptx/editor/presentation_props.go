@@ -72,6 +72,39 @@ func (e *PresentationEditor) SetCoreProperties(p common.CoreProperties) {
 	e.metadata.Title = p.Title
 }
 
+// SetShowSettings injects or replaces the <p:showPr> element in the presentation XML.
+// Use this to configure loop, kiosk mode, browse mode, and animation/timing settings.
+func (e *PresentationEditor) SetShowSettings(s common.ShowSettings) error {
+	if e == nil {
+		return errors.New("editor cannot be nil")
+	}
+	xmlSpec := pptxxml.ShowSettings{
+		Loop:           s.Loop,
+		Mode:           pptxxml.ShowMode(s.Mode),
+		ShowScrollbar:  s.ShowScrollbar,
+		DisableTimings: s.DisableTimings,
+		HideAnimation:  s.HideAnimation,
+	}
+	newElement := pptxxml.ShowPrXML(xmlSpec)
+	current := e.presentationXML
+
+	// Remove any existing <p:showPr>...</p:showPr> or <p:showPr ... />
+	showPrPattern := regexp.MustCompile(`(?s)<p:showPr\b[^>]*(?:/>|>.*?</p:showPr>)`)
+	current = showPrPattern.ReplaceAllString(current, "")
+
+	if newElement == "" {
+		e.presentationXML = current
+		return nil
+	}
+
+	// Inject before </p:presentation>
+	if idx := strings.LastIndex(current, "</p:presentation>"); idx >= 0 {
+		e.presentationXML = current[:idx] + "\n" + newElement + "\n" + current[idx:]
+		return nil
+	}
+	return errors.New("presentation XML does not contain </p:presentation>")
+}
+
 func parsePresentationSlideSize(content []byte) (common.SlideSize, error) {
 	decoder := xml.NewDecoder(bytes.NewReader(content))
 	for {

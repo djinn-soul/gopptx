@@ -37,7 +37,6 @@ const (
 	customXMLRelationshipPairCount     = 2
 )
 
-// Metadata defines non-content properties of a PPTX.
 type Metadata struct {
 	common.Metadata
 
@@ -52,21 +51,17 @@ type Metadata struct {
 	EmbeddedFonts []fonts.EmbeddedFont
 }
 
-// Section describes a PowerPoint section for newly created presentations.
 type Section struct {
 	Name         string
 	SlideIndices []int // 0-based indices of slides in this section
 }
 
-// SlideSize defines presentation dimensions in EMUs.
 type SlideSize = common.SlideSize
 
-// GetSlideSize4x3 returns the standard 4:3 slide size.
 func GetSlideSize4x3() SlideSize {
 	return common.GetSlideSize4x3()
 }
 
-// GetSlideSize16x9 returns the standard 16:9 widescreen slide size.
 func GetSlideSize16x9() SlideSize {
 	return common.GetSlideSize16x9()
 }
@@ -89,7 +84,7 @@ func WritePresentationPackage(
 	notesParts := notes.BuildRenderedNotesParts(slides)
 	effectiveMasters := getEffectiveMasters(meta)
 	masterCount := len(effectiveMasters)
-	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0, masterCount)
+	notesThemeIndex := getNotesThemeIndex(len(notesParts) > 0)
 
 	authors, commentsBySlide, commentSlideIndices := prepareComments(meta, slides)
 
@@ -157,7 +152,6 @@ func WritePresentationPackage(
 	return pw.WriteTo(zw)
 }
 
-// WritePackageFiles is kept for backward compatibility. Use [WritePresentationPackage].
 func WritePackageFiles(
 	zw *zip.Writer,
 	meta Metadata,
@@ -167,22 +161,17 @@ func WritePackageFiles(
 	return WritePresentationPackage(zw, meta, slides, slideCount)
 }
 
-func getEffectiveMasters(meta Metadata) []*elements.SlideMaster {
-	if len(meta.Masters) > 0 {
-		return meta.Masters
+func convertShowSettings(s common.ShowSettings) *pptxxml.ShowSettings {
+	if !s.Loop && s.Mode == common.ShowModePresent && !s.DisableTimings && !s.HideAnimation {
+		return nil
 	}
-	if meta.Master != nil {
-		return []*elements.SlideMaster{meta.Master}
+	return &pptxxml.ShowSettings{
+		Loop:           s.Loop,
+		Mode:           pptxxml.ShowMode(s.Mode),
+		ShowScrollbar:  s.ShowScrollbar,
+		DisableTimings: s.DisableTimings,
+		HideAnimation:  s.HideAnimation,
 	}
-	return []*elements.SlideMaster{elements.NewMaster()}
-}
-
-func getNotesThemeIndex(hasNotes bool, masterCount int) int {
-	if !hasNotes {
-		return 0
-	}
-	_ = masterCount
-	return minMasterCountWithNativeNotesTheme
 }
 
 //nolint:funlen // OPC manifest assembly is intentionally centralized to keep package shape explicit.
@@ -287,6 +276,7 @@ func addBasicPropertyFiles(
 			meta.Title, slideCount, hasNotes,
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
 			protInfo, xSections, meta.RTL, xmlFonts,
+			convertShowSettings(meta.ShowSettings),
 		),
 	)
 
@@ -348,7 +338,7 @@ func generateGUID() (string, error) {
 	return fmt.Sprintf("{%08X-%04X-%04X-%04X-%012X}", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
-//nolint:gocognit // Comment-author normalization and per-slide indexing is intentionally explicit for deterministic IDs.
+//nolint:gocognit // Per-slide comment author/index normalization is intentionally explicit.
 func prepareComments(
 	meta Metadata,
 	slides []elements.SlideContent,
@@ -500,8 +490,6 @@ func addNotesMasterFiles(
 	}
 }
 
-// addHandoutMasterFiles writes ppt/handoutMasters/handoutMaster1.xml and its
-// relationships file when the presentation metadata includes a HandoutMaster.
 func addHandoutMasterFiles(pw *pptxxml.PackageWriter, meta Metadata, masterCount int) {
 	if meta.HandoutMaster == nil {
 		return

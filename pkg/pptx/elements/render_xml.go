@@ -103,6 +103,7 @@ func ToXMLTextRunRows(rows [][]Run, hyperlinkRIDs map[*action.Hyperlink]string) 
 				SmallCaps:      run.SmallCaps,
 				OutlineColor:   common.NormalizeHexColor(run.OutlineColor),
 				OutlineWidthPt: run.OutlineWidthPt,
+				Lang:           run.Lang,
 			}
 			if run.Hyperlink != nil {
 				if rid, ok := hyperlinkRIDs[run.Hyperlink]; ok {

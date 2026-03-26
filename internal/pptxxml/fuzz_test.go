@@ -128,6 +128,7 @@ func FuzzPresentation(f *testing.F) {
 			nil,
 			false,
 			nil,
+			nil,
 		)
 	})
 }

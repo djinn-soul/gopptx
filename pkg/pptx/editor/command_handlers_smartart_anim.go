@@ -125,7 +125,8 @@ func handleAddAnimation(e *PresentationEditor, payload json.RawMessage) (any, er
 //	  "slide_index": N,
 //	  "transition_type": "fade",    // required; use "none" to remove
 //	  "duration_ms": 0,             // optional (0 = default)
-//	  "advance_ms": -1              // optional (-1 = click-advance only)
+//	  "advance_ms": -1,             // optional (-1 = click-advance only)
+//	  "disable_advance_on_click": false // optional (true emits advClick="0")
 //	}
 //
 // Response: {"updated": true}.
@@ -147,8 +148,15 @@ func handleSetSlideTransition(e *PresentationEditor, payload json.RawMessage) (a
 
 	durationMS, _ := v.OptionalInt(p, "duration_ms")
 	advanceMS := optionalIntOrDefault(p, "advance_ms", -1)
+	disableAdvanceOnClick, _ := v.OptionalBool(p, "disable_advance_on_click")
 
-	if setErr := e.SetSlideTransition(slideIndex, transitionType, durationMS, advanceMS); setErr != nil {
+	if setErr := e.SetSlideTransition(
+		slideIndex,
+		transitionType,
+		durationMS,
+		advanceMS,
+		disableAdvanceOnClick,
+	); setErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
 	}
 	return map[string]bool{"updated": true}, nil

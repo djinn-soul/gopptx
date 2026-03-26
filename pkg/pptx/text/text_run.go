@@ -37,6 +37,7 @@ type Run struct {
 	SmallCaps      bool
 	OutlineColor   string            // Character stroke/outline color hex
 	OutlineWidthPt float64           // Character stroke/outline width in points (default 1pt when OutlineColor is set)
+	Lang           string            // BCP-47 language tag, e.g. "ar-SA", "fr-FR" (defaults to "en-US")
 	Hyperlink      *action.Hyperlink // Click behavior
 	HoverAction    *action.Hyperlink // Hover behavior
 }
@@ -153,6 +154,13 @@ func (r Run) WithSmallCaps(smallCaps bool) Run {
 	if smallCaps {
 		r.AllCaps = false
 	}
+	return r
+}
+
+// WithLang sets the BCP-47 language tag for this run (e.g. "ar-SA", "fr-FR", "zh-CN").
+// PowerPoint uses this for spell-checking and hyphenation. Defaults to "en-US" when empty.
+func (r Run) WithLang(lang string) Run {
+	r.Lang = strings.TrimSpace(lang)
 	return r
 }
 

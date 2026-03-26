@@ -72,9 +72,13 @@ def test_shape_fill_line_shadow_proxies() -> None:
         shape.line.color = "00FF00"
         shape.line.width = 25400
         shape.line.dash_style = "dash"
+        shape.line.end_arrow = "arrow"
+        shape.line.end_arrow_width = "lg"
+        shape.line.end_arrow_length = "sm"
         shape.shadow.color = "333333"
         shape.shadow.blur_radius = 38100
         shape.shadow.distance = 25400
         shape.shadow.angle = 45.0
 
         _refreshed = slide.shape(shape_id)
+        assert shape.line.end_arrow == "arrow"
