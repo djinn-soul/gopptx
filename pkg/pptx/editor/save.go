@@ -1,14 +1,10 @@
 package editor
 
 import (
-	"archive/zip"
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -21,8 +17,6 @@ const commentAuthorsRelType = "http://schemas.openxmlformats.org/officeDocument/
 const rawZipCopyBufferSize = 32 * 1024
 
 // Save writes the edited presentation back to a PPTX file.
-//
-//nolint:gocognit,funlen // Save flow intentionally sequences materialize/validate/write/cleanup steps with explicit guards.
 func (e *PresentationEditor) Save(filePath string) error {
 	if e == nil {
 		return errors.New("nil editor")
@@ -48,101 +42,12 @@ func (e *PresentationEditor) Save(filePath string) error {
 		return fmt.Errorf("prepare updated parts: %w", err)
 	}
 
-	keys := e.parts.Keys()
-
-	var zipBuf bytes.Buffer
-	zw := zip.NewWriter(&zipBuf)
-	rawZipCopyBuffer := make([]byte, rawZipCopyBufferSize)
-
-	// Merge existing sorted keys with updatedParts keys.
-	// keys is already sorted; updatedParts typically contains only a handful of entries
-	// (presentationXML, presentationRels, coreProps, contentTypes, …), nearly all of
-	// which already exist in keys.  Binary-search for each updatedParts key avoids
-	// building a full N-entry set map just to deduplicate a tiny delta.
-	var extraKeys []string
-	for k := range updatedParts {
-		if i := sort.SearchStrings(keys, k); i >= len(keys) || keys[i] != k {
-			extraKeys = append(extraKeys, k)
-		}
-	}
-	var allNames []string
-	if len(extraKeys) == 0 {
-		// Common case: no new part names — reuse the sorted slice directly (zero allocs).
-		allNames = keys
-	} else {
-		sort.Strings(extraKeys)
-		allNames = make([]string, 0, len(keys)+len(extraKeys))
-		ki, ei := 0, 0
-		for ki < len(keys) && ei < len(extraKeys) {
-			if keys[ki] <= extraKeys[ei] {
-				allNames = append(allNames, keys[ki])
-				ki++
-			} else {
-				allNames = append(allNames, extraKeys[ei])
-				ei++
-			}
-		}
-		allNames = append(allNames, keys[ki:]...)
-		allNames = append(allNames, extraKeys[ei:]...)
+	allNames := mergedPartNames(e.parts.Keys(), updatedParts)
+	output, err := e.buildZipStream(allNames, updatedParts)
+	if err != nil {
+		return err
 	}
 
-	for _, name := range allNames {
-		if updated, updatedOK := updatedParts[name]; updatedOK {
-			var (
-				w         io.Writer
-				createErr error
-			)
-			if editorslide.SaveZipMethod(name) == zip.Store {
-				header := &zip.FileHeader{Name: name, Method: zip.Store}
-				w, createErr = zw.CreateHeader(header)
-			} else {
-				w, createErr = zw.Create(name)
-			}
-			if createErr != nil {
-				return fmt.Errorf("create zip entry %q: %w", name, createErr)
-			}
-			if _, writeErr := w.Write(updated); writeErr != nil {
-				return fmt.Errorf("write zip entry %q: %w", name, writeErr)
-			}
-			continue
-		}
-
-		// Fast path: unchanged part from original archive can be copied raw.
-		if sourceEntry, sourceOK := e.parts.SourceZipEntry(name); sourceOK {
-			if err := copyZipEntryRaw(zw, sourceEntry, rawZipCopyBuffer); err != nil {
-				return fmt.Errorf("copy source zip entry %q: %w", name, err)
-			}
-			continue
-		}
-
-		// Fallback for in-memory or already materialized parts.
-		content, partOK := e.parts.Get(name)
-		if !partOK {
-			return fmt.Errorf("failed to retrieve part %q during save", name)
-		}
-		var (
-			w         io.Writer
-			createErr error
-		)
-		if editorslide.SaveZipMethod(name) == zip.Store {
-			header := &zip.FileHeader{Name: name, Method: zip.Store}
-			w, createErr = zw.CreateHeader(header)
-		} else {
-			w, createErr = zw.Create(name)
-		}
-		if createErr != nil {
-			return fmt.Errorf("create zip entry %q: %w", name, createErr)
-		}
-		if _, writeErr := w.Write(content); writeErr != nil {
-			return fmt.Errorf("write zip entry %q: %w", name, writeErr)
-		}
-	}
-
-	if err := zw.Close(); err != nil {
-		return fmt.Errorf("finalize zip stream: %w", err)
-	}
-
-	output := zipBuf.Bytes()
 	if password := strings.TrimSpace(e.metadata.Protection.EncryptPassword); password != "" {
 		encrypted, err := protection.EncryptAgilePackage(output, password)
 		if err != nil {
@@ -157,20 +62,33 @@ func (e *PresentationEditor) Save(filePath string) error {
 	return nil
 }
 
-func copyZipEntryRaw(zw *zip.Writer, sourceEntry *zip.File, copyBuffer []byte) error {
-	header := sourceEntry.FileHeader
-	writer, err := zw.CreateRaw(&header)
+// SaveToBytes serializes the presentation to a byte slice without writing to disk.
+func (e *PresentationEditor) SaveToBytes() ([]byte, error) {
+	if e == nil {
+		return nil, errors.New("nil editor")
+	}
+	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
+
+	updatedParts, err := e.collectUpdatedParts(vbaProject, hasVBA)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("prepare updated parts: %w", err)
 	}
-	reader, err := sourceEntry.OpenRaw()
+
+	allNames := mergedPartNames(e.parts.Keys(), updatedParts)
+
+	output, err := e.buildZipStream(allNames, updatedParts)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if _, err := io.CopyBuffer(writer, reader, copyBuffer); err != nil {
-		return err
+
+	if password := strings.TrimSpace(e.metadata.Protection.EncryptPassword); password != "" {
+		encrypted, encErr := protection.EncryptAgilePackage(output, password)
+		if encErr != nil {
+			return nil, fmt.Errorf("encrypt presentation package: %w", encErr)
+		}
+		output = encrypted
 	}
-	return nil
+	return output, nil
 }
 
 func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, hasVBA bool) (map[string][]byte, error) {

@@ -79,3 +79,49 @@ class SlideChartMixin:
         if callable(invalidate_text):
             invalidate_text()
         return chart_id
+
+    def add_combo_chart(
+        self,
+        categories: list[str],
+        bar_series: list[dict[str, object]],
+        line_series: list[dict[str, object]],
+        *,
+        title: str = "Chart",
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
+    ) -> int:
+        """Add a combo (bar + line) chart to this slide.
+
+        Args:
+            categories: List of category labels.
+            bar_series: List of bar series dicts with "name" and "values" keys.
+            line_series: List of line series dicts with "name" and "values" keys.
+            title: Chart title.
+            bounds: (x, y, width, height) in EMU.
+
+        Returns:
+            Shape ID of the created chart.
+
+        Example:
+            chart_id = slide.add_combo_chart(
+                ["Q1", "Q2", "Q3"],
+                bar_series=[{"name": "Revenue", "values": [100, 200, 150]}],
+                line_series=[{"name": "Growth %", "values": [10, 15, 12]}],
+                title="Sales Overview",
+                bounds=(Inches(1), Inches(1), Inches(8), Inches(5)),
+            )
+        """
+        chart_id = self._presentation.add_combo_chart(
+            self.index,
+            categories,
+            bar_series,
+            line_series,
+            title=title,
+            bounds=bounds,
+        )
+        invalidate = getattr(self, "_invalidate_shape_cache", None)
+        if callable(invalidate):
+            invalidate()
+        invalidate_text = getattr(self, "_invalidate_text_state_cache", None)
+        if callable(invalidate_text):
+            invalidate_text()
+        return chart_id

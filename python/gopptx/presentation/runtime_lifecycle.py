@@ -49,6 +49,29 @@ class PresentationRuntimeLifecycleMixin:
             self._handle = int(handle)
             self.invalidate_cache()
 
+    def open_bytes(self, data: bytes) -> None:
+        """Open a presentation from an in-memory byte string."""
+        with self._lock:
+            if self._handle:
+                self.close()
+            buf = (ctypes.c_char * len(data)).from_buffer_copy(data)
+            handle = cast(
+                "int",
+                self._lib.deck_open_bytes(buf, ctypes.c_int(len(data))),  # type: ignore[attr-defined]
+            )
+            if not handle:
+                err_ptr = self._lib.deck_global_error()  # type: ignore[attr-defined]
+                msg = (
+                    ctypes.string_at(cast("int", err_ptr)).decode("utf-8")
+                    if err_ptr
+                    else "Unknown error"
+                )
+                if err_ptr:
+                    self._lib.deck_free_string(err_ptr)  # type: ignore[attr-defined]
+                raise GopptxError(f"Failed to open deck from bytes: {msg}")
+            self._handle = int(handle)
+            self.invalidate_cache()
+
     def save(self, path: str) -> None:
         """Save the presentation to a file."""
         with self._lock:
@@ -57,6 +80,20 @@ class PresentationRuntimeLifecycleMixin:
             status = self._lib.deck_save(self._handle, str(path).encode("utf-8"))  # type: ignore[attr-defined]
             if status != 0:
                 raise GopptxError(f"Failed to save deck: {self._get_last_error()}")
+
+    def to_bytes(self) -> bytes:
+        """Serialize the presentation to bytes without writing to disk."""
+        with self._lock:
+            if not self._handle:
+                raise GopptxError("Presentation is not open.")
+            out_len = ctypes.c_int(0)
+            ptr = self._lib.deck_save_bytes(self._handle, ctypes.byref(out_len))  # type: ignore[attr-defined]
+            if not ptr:
+                raise GopptxError(f"Failed to serialize deck: {self._get_last_error()}")
+            try:
+                return bytes(ctypes.string_at(ptr, out_len.value))  # type: ignore[arg-type]
+            finally:
+                self._lib.deck_free_string(ptr)  # type: ignore[attr-defined]
 
     def close(self) -> None:
         """Close the presentation and release resources."""

@@ -5,26 +5,32 @@ import (
 	"strings"
 )
 
-const defaultBulletRunSize = 2800
+const (
+	defaultBulletRunSize = 2800
+	// ptToEMU converts points to English Metric Units (1 pt = 12700 EMU).
+	ptToEMU = emuPerPoint
+)
 
 // TextRunSpec describes one rich text run in a bullet paragraph.
 type TextRunSpec struct {
-	Text          string
-	Bold          bool
-	Italic        bool
-	Underline     string
-	Strikethrough string
-	Subscript     bool
-	Superscript   bool
-	Color         string
-	Highlight     string
-	Font          string
-	SizePt        int
-	Code          bool
-	AllCaps       bool
-	SmallCaps     bool
-	Hyperlink     *HyperlinkSpec // Click action
-	HoverAction   *HyperlinkSpec // Hover action
+	Text           string
+	Bold           bool
+	Italic         bool
+	Underline      string
+	Strikethrough  string
+	Subscript      bool
+	Superscript    bool
+	Color          string
+	Highlight      string
+	Font           string
+	SizePt         int
+	Code           bool
+	AllCaps        bool
+	SmallCaps      bool
+	OutlineColor   string         // Character outline (stroke) color hex
+	OutlineWidthPt float64        // Character outline width in points
+	Hyperlink      *HyperlinkSpec // Click action
+	HoverAction    *HyperlinkSpec // Hover action
 }
 
 func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
@@ -96,6 +102,7 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 		b.WriteString(Escape(font))
 		b.WriteString(`"/>`)
 	}
+	b.WriteString(richTextRunOutlineXML(run))
 	if run.Hyperlink != nil {
 		b.WriteString(HyperlinkXML(*run.Hyperlink, "a:hlinkClick"))
 	}
@@ -106,6 +113,24 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	b.WriteString(`</a:rPr><a:t>`)
 	b.WriteString(Escape(run.Text))
 	b.WriteString(`</a:t></a:r>`)
+	return b.String()
+}
+
+func richTextRunOutlineXML(run TextRunSpec) string {
+	outlineColor := strings.TrimSpace(run.OutlineColor)
+	if outlineColor == "" {
+		return ""
+	}
+	widthEMU := int64(ptToEMU) // default 1pt
+	if run.OutlineWidthPt > 0 {
+		widthEMU = int64(run.OutlineWidthPt * ptToEMU)
+	}
+	var b strings.Builder
+	b.WriteString(`<a:ln w="`)
+	b.WriteString(strconv.FormatInt(widthEMU, 10))
+	b.WriteString(`"><a:solidFill><a:srgbClr val="`)
+	b.WriteString(Escape(outlineColor))
+	b.WriteString(`"/></a:solidFill></a:ln>`)
 	return b.String()
 }
 

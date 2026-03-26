@@ -74,6 +74,80 @@ class Cell:
     def text(self, value: str) -> None:
         self._table.update_cell(self.row, self.col, {"text": str(value)})
 
+    @property
+    def size_pt(self) -> float | None:
+        """Get the font size in points for this cell, or None if not set."""
+        val = self._table.get_cell_info(self.row, self.col).get("size_pt")
+        return float(val) if val is not None else None  # type: ignore[arg-type]
+
+    @size_pt.setter
+    def size_pt(self, value: float) -> None:
+        self._table.update_cell(self.row, self.col, {"size_pt": float(value)})
+
+    @property
+    def font_name(self) -> str | None:
+        """Get the font family name for this cell, or None if not set."""
+        val = self._table.get_cell_info(self.row, self.col).get("font_name")
+        return str(val) if val is not None else None
+
+    @font_name.setter
+    def font_name(self, value: str) -> None:
+        self._table.update_cell(self.row, self.col, {"font_name": str(value)})
+
+    def _get_border(self, side: str) -> dict[str, object] | None:
+        val = self._table.get_cell_info(self.row, self.col).get(f"border_{side}")
+        return cast("dict[str, object]", val) if isinstance(val, dict) else None
+
+    def _set_border(self, side: str, value: dict[str, object] | None) -> None:
+        self._table.prs.execute(
+            ops.OP_UPDATE_TABLE_CELL_BORDER,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "row": self.row,
+                "col": self.col,
+                "side": side,
+                "border": value,
+            },
+        )
+        self._table.invalidate_cache()
+
+    @property
+    def border_left(self) -> dict[str, object] | None:
+        """Get the left border properties dict (width, color, dash) or None if unset."""
+        return self._get_border("left")
+
+    @border_left.setter
+    def border_left(self, value: dict[str, object] | None) -> None:
+        self._set_border("left", value)
+
+    @property
+    def border_right(self) -> dict[str, object] | None:
+        """Get the right border properties dict (width, color, dash) or None if unset."""
+        return self._get_border("right")
+
+    @border_right.setter
+    def border_right(self, value: dict[str, object] | None) -> None:
+        self._set_border("right", value)
+
+    @property
+    def border_top(self) -> dict[str, object] | None:
+        """Get the top border properties dict (width, color, dash) or None if unset."""
+        return self._get_border("top")
+
+    @border_top.setter
+    def border_top(self, value: dict[str, object] | None) -> None:
+        self._set_border("top", value)
+
+    @property
+    def border_bottom(self) -> dict[str, object] | None:
+        """Get the bottom border properties dict (width, color, dash) or None if unset."""
+        return self._get_border("bottom")
+
+    @border_bottom.setter
+    def border_bottom(self, value: dict[str, object] | None) -> None:
+        self._set_border("bottom", value)
+
     def split(self) -> None:
         """Split a merged cell back into a 1x1 cell."""
         if getattr(self._table.prs, "_batch_active", False):

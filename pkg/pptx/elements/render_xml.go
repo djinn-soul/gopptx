@@ -87,20 +87,22 @@ func ToXMLTextRunRows(rows [][]Run, hyperlinkRIDs map[*action.Hyperlink]string) 
 		runs := make([]pptxxml.TextRunSpec, 0, len(rows[i]))
 		for _, run := range rows[i] {
 			spec := pptxxml.TextRunSpec{
-				Text:          run.Text,
-				Bold:          run.Bold,
-				Italic:        run.Italic,
-				Underline:     run.Underline,
-				Strikethrough: run.Strikethrough,
-				Subscript:     run.Subscript,
-				Superscript:   run.Superscript,
-				Color:         common.NormalizeHexColor(run.Color),
-				Highlight:     common.NormalizeHexColor(run.Highlight),
-				Font:          run.Font,
-				SizePt:        run.SizePt,
-				Code:          run.Code,
-				AllCaps:       run.AllCaps,
-				SmallCaps:     run.SmallCaps,
+				Text:           run.Text,
+				Bold:           run.Bold,
+				Italic:         run.Italic,
+				Underline:      run.Underline,
+				Strikethrough:  run.Strikethrough,
+				Subscript:      run.Subscript,
+				Superscript:    run.Superscript,
+				Color:          common.NormalizeHexColor(run.Color),
+				Highlight:      common.NormalizeHexColor(run.Highlight),
+				Font:           run.Font,
+				SizePt:         run.SizePt,
+				Code:           run.Code,
+				AllCaps:        run.AllCaps,
+				SmallCaps:      run.SmallCaps,
+				OutlineColor:   common.NormalizeHexColor(run.OutlineColor),
+				OutlineWidthPt: run.OutlineWidthPt,
 			}
 			if run.Hyperlink != nil {
 				if rid, ok := hyperlinkRIDs[run.Hyperlink]; ok {

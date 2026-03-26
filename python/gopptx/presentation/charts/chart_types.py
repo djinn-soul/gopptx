@@ -51,7 +51,8 @@ class ChartType:
     PIE = "pie"
     """Pie chart - shows data as slices of a circle."""
 
-    # Reserved for future use (not yet supported by Go bridge)
+    COMBO = "combo"
+    """Combo chart - mixes bar and line series on one category axis."""
 
     @staticmethod
     def get_all() -> dict[str, str]:
@@ -73,6 +74,7 @@ class ChartType:
             "BAR": ChartType.BAR,
             "LINE": ChartType.LINE,
             "PIE": ChartType.PIE,
+            "COMBO": ChartType.COMBO,
         }
 
     @staticmethod
