@@ -18,6 +18,8 @@ type grayscaleTargets struct {
 	text   map[string]map[int]struct{}
 }
 
+const bgEmbedRelIDSubmatchGroup = 1
+
 // ConvertToGrayscale applies grayscale conversion to selected slide content.
 func (e *PresentationEditor) ConvertToGrayscale(opts GrayscaleOptions) error {
 	if e == nil {
@@ -113,7 +115,7 @@ func (e *PresentationEditor) convertSlideShapeColors(slideIndex int, targets gra
 		if !wholeShape && !hasRunSelection {
 			return nil, false
 		}
-		if s.Type == shapeTypePicture || s.IsGroup || s.Type == "graphicFrame" {
+		if s.Type == shapeTypePicture || s.IsGroup || s.Type == shapeTypeGraphicFrame {
 			return nil, false
 		}
 		if !applyGrayscaleToShape(s, wholeShape, runSelection) {
@@ -167,19 +169,16 @@ func (e *PresentationEditor) convertSlideBackground(slideIndex int) error {
 	if !ok {
 		return fmt.Errorf("slide part %q not found", slideRef.Part)
 	}
-	updated, changed, err := grayscaleBackgroundXML(content)
-	if err != nil {
-		return err
-	}
+	updated, changed := grayscaleBackgroundXML(content)
 	if changed {
 		e.parts.Set(slideRef.Part, updated)
 		content = updated
 	}
 	match := bgEmbedPattern.FindSubmatch(content)
-	if len(match) < 2 {
+	if len(match) <= bgEmbedRelIDSubmatchGroup {
 		return nil
 	}
-	return e.grayscaleImageRelationship(slideIndex, string(match[1]))
+	return e.grayscaleImageRelationship(slideIndex, string(match[bgEmbedRelIDSubmatchGroup]))
 }
 
 func (e *PresentationEditor) grayscaleImageRelationship(slideIndex int, relID string) error {

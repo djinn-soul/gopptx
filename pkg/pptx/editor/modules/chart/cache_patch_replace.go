@@ -5,28 +5,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-var (
-	fieldPatternMu    sync.RWMutex
-	fieldPatternCache = make(map[string]*regexp.Regexp)
-)
-
 func getFieldPattern(tag string) *regexp.Regexp {
-	fieldPatternMu.RLock()
-	p, ok := fieldPatternCache[tag]
-	fieldPatternMu.RUnlock()
-	if ok {
-		return p
-	}
-	p = regexp.MustCompile(`(?s)<c:` + tag + `>.*?</c:` + tag + `>`)
-	fieldPatternMu.Lock()
-	fieldPatternCache[tag] = p
-	fieldPatternMu.Unlock()
-	return p
+	return regexp.MustCompile(`(?s)<c:` + tag + `>.*?</c:` + tag + `>`)
 }
 
 func replaceFieldContent(

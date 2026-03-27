@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	editorgrayscale "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/grayscale"
@@ -78,5 +79,5 @@ func formatGrayscalePlaceholderIndex(index *int) string {
 	if index == nil {
 		return "*"
 	}
-	return fmt.Sprintf("%d", *index)
+	return strconv.Itoa(*index)
 }

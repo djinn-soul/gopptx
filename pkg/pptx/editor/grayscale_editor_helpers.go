@@ -14,15 +14,17 @@ var (
 	jpegExtPattern   = regexp.MustCompile(`(?i)\.jpe?g$`)
 )
 
-func grayscaleBackgroundXML(content []byte) ([]byte, bool, error) {
+const backgroundColorSubmatchCount = 4
+
+func grayscaleBackgroundXML(content []byte) ([]byte, bool) {
 	match := bgSectionPattern.Find(content)
 	if len(match) == 0 {
-		return content, false, nil
+		return content, false
 	}
 	changed := false
 	replaced := bgColorPattern.ReplaceAllFunc(match, func(segment []byte) []byte {
 		submatches := bgColorPattern.FindSubmatch(segment)
-		if len(submatches) != 4 {
+		if len(submatches) != backgroundColorSubmatchCount {
 			return segment
 		}
 		gray, err := editorgrayscale.HexColor(string(submatches[2]))
@@ -33,14 +35,14 @@ func grayscaleBackgroundXML(content []byte) ([]byte, bool, error) {
 		return bytes.Replace(segment, submatches[2], []byte(gray), 1)
 	})
 	if !changed {
-		return content, false, nil
+		return content, false
 	}
-	return bytes.Replace(content, match, replaced, 1), true, nil
+	return bytes.Replace(content, match, replaced, 1), true
 }
 
 func imageFormatFromTarget(target string) string {
 	if jpegExtPattern.MatchString(target) {
-		return "jpeg"
+		return formatJPEG
 	}
-	return "png"
+	return formatPNG
 }

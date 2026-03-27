@@ -21,9 +21,10 @@ type shapeCacheEntry struct {
 }
 
 const (
-	shapeTypePicture = "pic"
-	minGroupShapes   = 2
-	groupShapeTag    = "grpSp"
+	shapeTypePicture      = "pic"
+	shapeTypeGraphicFrame = "graphicFrame"
+	minGroupShapes        = 2
+	groupShapeTag         = "grpSp"
 )
 
 // GetShapes returns a list of shapes found on the specified slide (0-based index).

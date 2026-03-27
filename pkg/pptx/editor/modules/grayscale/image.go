@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+const jpegQuality = 100
+
 // ImageBytes converts image bytes to grayscale and returns the encoded output.
 func ImageBytes(data []byte, format string) ([]byte, string, error) {
 	img, _, err := image.Decode(bytes.NewReader(data))
@@ -21,9 +23,16 @@ func ImageBytes(data []byte, format string) ([]byte, string, error) {
 	dst := image.NewNRGBA(bounds)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			luma := uint8((299*int(r>>8) + 587*int(g>>8) + 114*int(b>>8) + 500) / 1000)
-			dst.Set(x, y, color.NRGBA{R: luma, G: luma, B: luma, A: uint8(a >> 8)})
+			pixel := img.At(x, y)
+			gray, ok := color.GrayModel.Convert(pixel).(color.Gray)
+			if !ok {
+				continue
+			}
+			alpha, ok := color.AlphaModel.Convert(pixel).(color.Alpha)
+			if !ok {
+				continue
+			}
+			dst.Set(x, y, color.NRGBA{R: gray.Y, G: gray.Y, B: gray.Y, A: alpha.A})
 		}
 	}
 
@@ -31,7 +40,7 @@ func ImageBytes(data []byte, format string) ([]byte, string, error) {
 	var out bytes.Buffer
 	switch normalized {
 	case "jpg", "jpeg":
-		if err := jpeg.Encode(&out, dst, &jpeg.Options{Quality: 100}); err != nil {
+		if err := jpeg.Encode(&out, dst, &jpeg.Options{Quality: jpegQuality}); err != nil {
 			return nil, "", fmt.Errorf("encode jpeg: %w", err)
 		}
 		return out.Bytes(), "jpeg", nil

@@ -22,7 +22,9 @@ var (
 	chartRelIDAttrPattern    = regexp.MustCompile(`r:id="[^"]*"`)
 	extLstPattern            = regexp.MustCompile(`(?s)<p:extLst>.*?</p:extLst>|<p:extLst\s*/>`)
 	embeddedFontLstPattern   = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
-	sectionExtPattern        = regexp.MustCompile(`(?s)<p:ext uri="` + regexp.QuoteMeta(sectionExtURI) + `">.*?</p:ext>`)
+	sectionExtPattern        = regexp.MustCompile(
+		`(?s)<p:ext uri="` + regexp.QuoteMeta(sectionExtURI) + `">.*?</p:ext>`,
+	)
 )
 
 func BuildSectionListXML(sections []SectionData) string {

@@ -93,7 +93,7 @@ func scanShapesWithOffsets(content []byte, skipProperties bool) ([]parsedShape, 
 			continue
 		}
 
-		if se.Name.Local == "sp" || se.Name.Local == shapeTypePicture || se.Name.Local == "graphicFrame" ||
+		if se.Name.Local == "sp" || se.Name.Local == shapeTypePicture || se.Name.Local == shapeTypeGraphicFrame ||
 			se.Name.Local == groupShapeTag ||
 			se.Name.Local == "cxnSp" {
 			// Found a shape start.
@@ -209,7 +209,7 @@ func buildParsedShapeFromRange(
 	if parseErr != nil {
 		return parsedShape{}, parseErr
 	}
-	if stopTag == shapeTypePicture || stopTag == "graphicFrame" || stopTag == groupShapeTag {
+	if stopTag == shapeTypePicture || stopTag == shapeTypeGraphicFrame || stopTag == groupShapeTag {
 		pShape.Type = stopTag
 	} else if pShape.Type == "" {
 		pShape.Type = stopTag

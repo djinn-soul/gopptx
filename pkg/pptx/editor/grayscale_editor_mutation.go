@@ -66,19 +66,16 @@ func grayscaleFill(fill *common.ShapeFill) bool {
 			changed = true
 		}
 	}
-	if fill.Pattern != nil {
-		if fill.Pattern.FgColor != nil {
-			if gray, err := editorgrayscale.HexColor(*fill.Pattern.FgColor); err == nil {
-				fill.Pattern.FgColor = &gray
-				changed = true
-			}
-		}
-		if fill.Pattern.BgColor != nil {
-			if gray, err := editorgrayscale.HexColor(*fill.Pattern.BgColor); err == nil {
-				fill.Pattern.BgColor = &gray
-				changed = true
-			}
-		}
+	if fill.Pattern == nil {
+		return changed
+	}
+	if gray, ok := grayscaleColorPtr(fill.Pattern.FgColor); ok {
+		fill.Pattern.FgColor = &gray
+		changed = true
+	}
+	if gray, ok := grayscaleColorPtr(fill.Pattern.BgColor); ok {
+		fill.Pattern.BgColor = &gray
+		changed = true
 	}
 	if fill.Gradient != nil {
 		for i := range fill.Gradient.Stops {
@@ -151,8 +148,19 @@ func runSelected(runSet map[int]struct{}, runIndex int) bool {
 
 func extractEmbedRelID(shapeXML []byte) string {
 	match := embeddedImageRelPattern.FindSubmatch(shapeXML)
-	if len(match) < 2 {
+	if len(match) <= bgEmbedRelIDSubmatchGroup {
 		return ""
 	}
-	return string(match[1])
+	return string(match[bgEmbedRelIDSubmatchGroup])
+}
+
+func grayscaleColorPtr(value *string) (string, bool) {
+	if value == nil {
+		return "", false
+	}
+	gray, err := editorgrayscale.HexColor(*value)
+	if err != nil {
+		return "", false
+	}
+	return gray, true
 }
