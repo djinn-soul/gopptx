@@ -56,6 +56,7 @@ Use the following commands to run the examples:
 
 - Scripts: `examples/python/scripts/`
 - Tests/verification scripts: `examples/python/tests/`
+- Grayscale targeting demo: `uv run python examples/python/scripts/61_grayscale_targeted.py` -> `61_grayscale_targeted_source.pptx`, `61_grayscale_targeted_result.pptx` (prints slide indices, shape IDs, and placeholder types; uses `PlaceholderType.TITLE` / `PlaceholderType.FOOTER`)
 - Run script examples via `python examples/python/scripts/<script>.py` (from root).
 - Run verification scripts via `python examples/python/tests/<script>.py` (from root).
 

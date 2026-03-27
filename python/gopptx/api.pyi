@@ -4,7 +4,7 @@ from types import TracebackType
 
 from typing_extensions import Self
 
-from .constants import ConnectorType, ShapeType
+from .constants import ConnectorType, PlaceholderType, ShapeType
 from .schemas import (
     Author,
     BatchCommand,
@@ -1048,6 +1048,17 @@ class Presentation:
     def merge_from_editor(self, other: Presentation) -> None: ...
     def validate(self) -> list[dict[str, object]]: ...
     def repair(self) -> dict[str, object]: ...
+    def convert_to_grayscale(
+        self,
+        *,
+        slides: list[int] | None = ...,
+        shapes: list[dict[str, int]] | None = ...,
+        text: list[dict[str, object]] | None = ...,
+        placeholders: list[dict[str, int | PlaceholderType]] | None = ...,
+        colors: bool = ...,
+        images: bool = ...,
+        backgrounds: bool = ...,
+    ) -> None: ...
     def list_slide_images(self, slide_index: int) -> list[SlideImageRef]: ...
     def swap_image_by_index(
         self, slide_index: int, image_index: int, data: bytes, img_format: str

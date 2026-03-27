@@ -44,3 +44,35 @@ func TestClearShapesRemovesAllShapes(t *testing.T) {
 		t.Fatalf("expected zero shapes after clear, got %d", len(after))
 	}
 }
+
+func TestGetShapesIncludesPlaceholderMetadata(t *testing.T) {
+	basePath := writeDeckFixture(t, "shape-placeholder-metadata.pptx", []elements.SlideContent{
+		elements.NewSlide("Placeholder Metadata"),
+	})
+
+	ed, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	ed.parts.Set("ppt/slides/slide1.xml", []byte(
+		slideWithBodyAndTitlePlaceholderXML("Body Placeholder", "Title Placeholder"),
+	))
+
+	shapes, err := ed.GetShapes(0)
+	if err != nil {
+		t.Fatalf("get shapes: %v", err)
+	}
+
+	for _, shape := range shapes {
+		if shape.PlaceholderType != "title" {
+			continue
+		}
+		if shape.PlaceholderIndex == nil || *shape.PlaceholderIndex != 0 {
+			t.Fatalf("expected title placeholder index 0, got %#v", shape.PlaceholderIndex)
+		}
+		return
+	}
+	t.Fatalf("expected title placeholder metadata in shape listing")
+}
