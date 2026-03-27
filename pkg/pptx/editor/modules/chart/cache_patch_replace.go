@@ -5,9 +5,29 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
+
+var (
+	fieldPatternMu    sync.RWMutex
+	fieldPatternCache = make(map[string]*regexp.Regexp)
+)
+
+func getFieldPattern(tag string) *regexp.Regexp {
+	fieldPatternMu.RLock()
+	p, ok := fieldPatternCache[tag]
+	fieldPatternMu.RUnlock()
+	if ok {
+		return p
+	}
+	p = regexp.MustCompile(`(?s)<c:` + tag + `>.*?</c:` + tag + `>`)
+	fieldPatternMu.Lock()
+	fieldPatternCache[tag] = p
+	fieldPatternMu.Unlock()
+	return p
+}
 
 func replaceFieldContent(
 	seriesXML string,
@@ -17,8 +37,7 @@ func replaceFieldContent(
 	numVals []float64,
 	multiLevelVals [][]string,
 ) (string, error) {
-	fieldPattern := regexp.MustCompile(`(?s)<c:` + fieldTag + `>.*?</c:` + fieldTag + `>`)
-	field := fieldPattern.FindString(seriesXML)
+	field := getFieldPattern(fieldTag).FindString(seriesXML)
 	if field == "" {
 		return "", fmt.Errorf("missing %s node", fieldTag)
 	}
@@ -117,40 +136,68 @@ func convertStringsToFloats(strVals []string, dest string) ([]float64, error) {
 
 func buildStringData(tag string, vals []string) string {
 	var b strings.Builder
-	b.WriteString("<c:" + tag + ">")
-	b.WriteString(fmt.Sprintf("<c:ptCount val=\"%d\"/>", len(vals)))
+	b.WriteString("<c:")
+	b.WriteString(tag)
+	b.WriteString("><c:ptCount val=\"")
+	b.WriteString(strconv.Itoa(len(vals)))
+	b.WriteString("\"/>")
 	for i, v := range vals {
-		b.WriteString(fmt.Sprintf("<c:pt idx=\"%d\"><c:v>%s</c:v></c:pt>", i, common.XMLEscape(v)))
+		b.WriteString("<c:pt idx=\"")
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString("\"><c:v>")
+		b.WriteString(common.XMLEscape(v))
+		b.WriteString("</c:v></c:pt>")
 	}
-	b.WriteString("</c:" + tag + ">")
+	b.WriteString("</c:")
+	b.WriteString(tag)
+	b.WriteString(">")
 	return b.String()
 }
 
 func buildNumberData(tag string, formatCode string, vals []float64) string {
 	var b strings.Builder
-	b.WriteString("<c:" + tag + ">")
-	b.WriteString("<c:formatCode>" + common.XMLEscape(formatCode) + "</c:formatCode>")
-	b.WriteString(fmt.Sprintf("<c:ptCount val=\"%d\"/>", len(vals)))
+	b.WriteString("<c:")
+	b.WriteString(tag)
+	b.WriteString("><c:formatCode>")
+	b.WriteString(common.XMLEscape(formatCode))
+	b.WriteString("</c:formatCode><c:ptCount val=\"")
+	b.WriteString(strconv.Itoa(len(vals)))
+	b.WriteString("\"/>")
 	for i, v := range vals {
-		b.WriteString(fmt.Sprintf("<c:pt idx=\"%d\"><c:v>%s</c:v></c:pt>", i, strconv.FormatFloat(v, 'f', -1, 64)))
+		b.WriteString("<c:pt idx=\"")
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString("\"><c:v>")
+		b.WriteString(strconv.FormatFloat(v, 'f', -1, 64))
+		b.WriteString("</c:v></c:pt>")
 	}
-	b.WriteString("</c:" + tag + ">")
+	b.WriteString("</c:")
+	b.WriteString(tag)
+	b.WriteString(">")
 	return b.String()
 }
 
 func buildMultiLevelData(tag string, levels [][]string) string {
 	leafCount := len(levels[0])
 	var b strings.Builder
-	b.WriteString("<c:" + tag + ">")
-	b.WriteString(fmt.Sprintf("<c:ptCount val=\"%d\"/>", leafCount))
+	b.WriteString("<c:")
+	b.WriteString(tag)
+	b.WriteString("><c:ptCount val=\"")
+	b.WriteString(strconv.Itoa(leafCount))
+	b.WriteString("\"/>")
 	for _, lvl := range levels {
 		b.WriteString("<c:lvl>")
 		for i, v := range lvl {
-			b.WriteString(fmt.Sprintf("<c:pt idx=\"%d\"><c:v>%s</c:v></c:pt>", i, common.XMLEscape(v)))
+			b.WriteString("<c:pt idx=\"")
+			b.WriteString(strconv.Itoa(i))
+			b.WriteString("\"><c:v>")
+			b.WriteString(common.XMLEscape(v))
+			b.WriteString("</c:v></c:pt>")
 		}
 		b.WriteString("</c:lvl>")
 	}
-	b.WriteString("</c:" + tag + ">")
+	b.WriteString("</c:")
+	b.WriteString(tag)
+	b.WriteString(">")
 	return b.String()
 }
 

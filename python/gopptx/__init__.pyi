@@ -24,6 +24,7 @@ from .constants import (
     VALIGN_CENTER,
     VALIGN_TOP,
     ConnectorType,
+    PlaceholderType,
     ShapeType,
 )
 from .ops import (
@@ -155,6 +156,7 @@ __all__ = (
     "GopptxError",
     "Milestone",
     "ParagraphProps",
+    "PlaceholderType",
     "Presentation",
     "PresentationBuilder",
     "PresentationMetadata",

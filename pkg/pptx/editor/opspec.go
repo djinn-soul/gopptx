@@ -117,6 +117,7 @@ const (
 	OpBuildTrainingTemplate   = "build_training_template"
 	OpBuildTechnicalTemplate  = "build_technical_template"
 	OpRenderTemplate          = "render_template"
+	OpConvertToGrayscale      = "convert_to_grayscale"
 
 	// OpUpdateSmartArt, OpSetSlideBackground, OpSetSlideHeaderFooter, OpGetHandoutMaster,
 	// OpUpdateHandoutMaster, and OpHasDigitalSignature extend parity with the Go API.
@@ -205,5 +206,6 @@ func supportedSlideAndMetaOps() []string {
 		OpBuildTrainingTemplate,
 		OpBuildTechnicalTemplate,
 		OpRenderTemplate,
+		OpConvertToGrayscale,
 	}
 }
