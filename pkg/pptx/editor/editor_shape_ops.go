@@ -58,19 +58,26 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 
 	shapes := make([]common.Shape, len(parsed))
 	for i, p := range parsed {
+		var placeholderIndex *int
+		if p.PhType != "" {
+			idx := p.PhIndex
+			placeholderIndex = &idx
+		}
 		shapes[i] = common.Shape{
-			ID:          p.ID,
-			Name:        p.Name,
-			Type:        p.Type,
-			Text:        p.Text,
-			X:           p.X,
-			Y:           p.Y,
-			W:           p.W,
-			H:           p.H,
-			Fill:        p.Fill,
-			Line:        p.Line,
-			Shadow:      p.Shadow,
-			Adjustments: p.Adjustments,
+			ID:               p.ID,
+			Name:             p.Name,
+			Type:             p.Type,
+			Text:             p.Text,
+			X:                p.X,
+			Y:                p.Y,
+			W:                p.W,
+			H:                p.H,
+			PlaceholderIndex: placeholderIndex,
+			PlaceholderType:  p.PhType,
+			Fill:             p.Fill,
+			Line:             p.Line,
+			Shadow:           p.Shadow,
+			Adjustments:      p.Adjustments,
 		}
 	}
 

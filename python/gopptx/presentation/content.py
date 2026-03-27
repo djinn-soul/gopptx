@@ -6,6 +6,7 @@ from .charts import PresentationChartMixin
 from .comments import PresentationCommentMixin
 from .custom_xml import PresentationCustomXMLMixin
 from .export import PresentationExportMixin
+from .grayscale import PresentationGrayscaleMixin
 from .headers_footers_mixin import PresentationHeaderFooterMixin
 from .layout_theme_mixin import PresentationThemeMixin
 from .notes import PresentationNotesMixin
@@ -29,6 +30,7 @@ class PresentationContentMixin(
     PresentationNotesMixin,
     PresentationChartMixin,
     PresentationCommentMixin,
+    PresentationGrayscaleMixin,
     PresentationVBAMixin,
     PresentationCustomXMLMixin,
     PresentationExportMixin,

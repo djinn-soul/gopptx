@@ -108,6 +108,7 @@ func contentSectionHandlers() map[string]commandHandler {
 		OpAddAnimation:         handleAddAnimation,
 		OpSetSlideTransition:   handleSetSlideTransition,
 		OpMergeFromEditor:      handleMergeFromEditor,
+		OpConvertToGrayscale:   handleConvertToGrayscale,
 	}
 }
 
