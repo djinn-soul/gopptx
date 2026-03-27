@@ -2,37 +2,20 @@ package pptx
 
 import (
 	"errors"
+	"io"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
 
-// Presentation provides a high-level API for opening, modifying, and saving
-// existing PPTX presentations. It wraps a PresentationEditor and simplifies
-// common operations like metadata access and saving.
-//
-// This API is designed to be similar to python-pptx's Presentation(pptx_path)
-// constructor, providing a straightforward interface for working with existing
-// presentations.
+// Presentation provides a high-level API for opening/modifying existing PPTX presentations.
 type Presentation struct {
 	editor *editor.PresentationEditor
 	path   string // Original path used when opening
 }
 
 // Open opens an existing PPTX file for reading and modification.
-// This is the primary entry point for working with existing presentations.
-//
-// The path parameter should be the path to an existing .pptx file.
-// Returns an error if the file cannot be opened or is not a valid PPTX.
-//
-// Example:
-//
-//	prs, err := pptx.Open("existing.pptx")
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//	defer prs.Close()
 func Open(path string) (*Presentation, error) {
 	ed, err := editor.OpenPresentationEditor(path)
 	if err != nil {
@@ -44,11 +27,25 @@ func Open(path string) (*Presentation, error) {
 	}, nil
 }
 
-// Close releases any resources held by the presentation.
-// It is important to call Close when done with a Presentation to avoid
-// leaking file handles or other resources.
-//
-// After Close is called, the Presentation should not be used further.
+// OpenFromReader opens a PPTX presentation from an io.Reader.
+func OpenFromReader(r io.Reader) (*Presentation, error) {
+	ed, err := editor.OpenPresentationEditorFromReader(r)
+	if err != nil {
+		return nil, err
+	}
+	return &Presentation{editor: ed}, nil
+}
+
+// OpenFromBytes opens a PPTX presentation from a byte slice.
+func OpenFromBytes(data []byte) (*Presentation, error) {
+	ed, err := editor.OpenPresentationEditorFromBytes(data)
+	if err != nil {
+		return nil, err
+	}
+	return &Presentation{editor: ed}, nil
+}
+
+// Close releases resources held by the presentation.
 func (p *Presentation) Close() error {
 	if p == nil || p.editor == nil {
 		return nil
@@ -57,9 +54,6 @@ func (p *Presentation) Close() error {
 }
 
 // Save writes the presentation back to its original path.
-// This method modifies the file that was opened with Open.
-//
-// Returns an error if the file cannot be written.
 func (p *Presentation) Save() error {
 	if p == nil {
 		return errors.New("presentation is nil")
@@ -71,10 +65,6 @@ func (p *Presentation) Save() error {
 }
 
 // SaveAs writes the presentation to a new file path.
-// This method creates a new file without modifying the original.
-//
-// The path parameter specifies where to save the presentation.
-// Returns an error if the file cannot be written.
 func (p *Presentation) SaveAs(path string) error {
 	if p == nil {
 		return errors.New("presentation is nil")
@@ -83,6 +73,28 @@ func (p *Presentation) SaveAs(path string) error {
 		return errors.New("presentation editor is not initialized")
 	}
 	return p.editor.Save(path)
+}
+
+// SaveToBytes serializes the presentation to a byte slice without writing to disk.
+func (p *Presentation) SaveToBytes() ([]byte, error) {
+	if p == nil {
+		return nil, errors.New("presentation is nil")
+	}
+	if p.editor == nil {
+		return nil, errors.New("presentation editor is not initialized")
+	}
+	return p.editor.SaveToBytes()
+}
+
+// SaveToWriter serializes the presentation and writes it to the provided io.Writer.
+func (p *Presentation) SaveToWriter(w io.Writer) error {
+	if p == nil {
+		return errors.New("presentation is nil")
+	}
+	if p.editor == nil {
+		return errors.New("presentation editor is not initialized")
+	}
+	return p.editor.SaveToWriter(w)
 }
 
 // SlideCount returns the number of slides in the presentation.
@@ -103,8 +115,7 @@ func (p *Presentation) Validate() []structural.Issue {
 	return p.editor.Validate()
 }
 
-// CoreProperties returns the presentation's core properties (Dublin Core metadata).
-// This provides direct access to all metadata fields in the CoreProperties struct.
+// CoreProperties returns the presentation's core properties.
 func (p *Presentation) CoreProperties() common.CoreProperties {
 	if p == nil || p.editor == nil {
 		return common.CoreProperties{}
@@ -192,8 +203,7 @@ func (p *Presentation) SetDescription(description string) {
 	p.SetCoreProperties(props)
 }
 
-// LastModifiedBy returns the name of the person who last modified the
-// presentation.
+// LastModifiedBy returns the name of the person who last modified the presentation.
 func (p *Presentation) LastModifiedBy() string {
 	return p.CoreProperties().LastModifiedBy
 }
@@ -218,13 +228,11 @@ func (p *Presentation) SetRevision(revision string) {
 }
 
 // Created returns the timestamp when the presentation was created.
-// The format is an ISO 8601 date-time string.
 func (p *Presentation) Created() string {
 	return p.CoreProperties().Created
 }
 
 // SetCreated updates the created timestamp.
-// The format should be an ISO 8601 date-time string.
 func (p *Presentation) SetCreated(created string) {
 	props := p.CoreProperties()
 	props.Created = created
@@ -232,13 +240,11 @@ func (p *Presentation) SetCreated(created string) {
 }
 
 // Modified returns the timestamp when the presentation was last modified.
-// The format is an ISO 8601 date-time string.
 func (p *Presentation) Modified() string {
 	return p.CoreProperties().Modified
 }
 
 // SetModified updates the modified timestamp.
-// The format should be an ISO 8601 date-time string.
 func (p *Presentation) SetModified(modified string) {
 	props := p.CoreProperties()
 	props.Modified = modified

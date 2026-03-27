@@ -80,6 +80,12 @@ class LineFormat(TypedDict, total=False):
     color: str
     width_emu: int
     dash_style: str
+    start_arrow: str
+    start_arrow_width: str
+    start_arrow_length: str
+    end_arrow: str
+    end_arrow_width: str
+    end_arrow_length: str
 
 
 class ShadowFormat(TypedDict, total=False):

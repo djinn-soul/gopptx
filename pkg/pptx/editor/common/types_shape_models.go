@@ -120,9 +120,15 @@ type ShapeFill struct {
 
 // ShapeLine defines generic shape line controls.
 type ShapeLine struct {
-	Color     *string `json:"color,omitempty"`
-	WidthEmu  *int    `json:"width_emu,omitempty"`
-	DashStyle *string `json:"dash_style,omitempty"`
+	Color            *string `json:"color,omitempty"`
+	WidthEmu         *int    `json:"width_emu,omitempty"`
+	DashStyle        *string `json:"dash_style,omitempty"`
+	StartArrow       *string `json:"start_arrow,omitempty"`
+	StartArrowWidth  *string `json:"start_arrow_width,omitempty"`
+	StartArrowLength *string `json:"start_arrow_length,omitempty"`
+	EndArrow         *string `json:"end_arrow,omitempty"`
+	EndArrowWidth    *string `json:"end_arrow_width,omitempty"`
+	EndArrowLength   *string `json:"end_arrow_length,omitempty"`
 }
 
 // ShapeShadow defines generic shape shadow controls.

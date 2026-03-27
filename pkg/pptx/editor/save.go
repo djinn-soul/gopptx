@@ -3,6 +3,7 @@ package editor
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,6 +90,16 @@ func (e *PresentationEditor) SaveToBytes() ([]byte, error) {
 		output = encrypted
 	}
 	return output, nil
+}
+
+// SaveToWriter serializes the presentation and writes it to the provided io.Writer.
+func (e *PresentationEditor) SaveToWriter(w io.Writer) error {
+	data, err := e.SaveToBytes()
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
 }
 
 func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, hasVBA bool) (map[string][]byte, error) {

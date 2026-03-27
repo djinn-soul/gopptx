@@ -30,13 +30,11 @@ func RenderShapeStyleXML(
 		return "", err
 	}
 	style.WriteString(fillXML)
-
 	lineXML, err := RenderLineXML(line)
 	if err != nil {
 		return "", err
 	}
 	style.WriteString(lineXML)
-
 	effectsXML, err := RenderEffectsXML(shadow, glow, blur, softEdge, reflection)
 	if err != nil {
 		return "", err
@@ -44,7 +42,6 @@ func RenderShapeStyleXML(
 	style.WriteString(effectsXML)
 	return style.String(), nil
 }
-
 func RenderLineXML(line *common.ShapeLine) (string, error) {
 	if line == nil {
 		return "", nil
@@ -61,12 +58,15 @@ func RenderLineXML(line *common.ShapeLine) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if lineColor == "" && lineDash == "" {
+	lineArrows, err := renderLineArrows(line)
+	if err != nil {
+		return "", err
+	}
+	if lineColor == "" && lineDash == "" && lineArrows == "" {
 		return `<a:ln` + lnAttrs + `/>`, nil
 	}
-	return renderLineElement(lnAttrs, lineDash, lineColor), nil
+	return renderLineElement(lnAttrs, lineDash, lineColor, lineArrows), nil
 }
-
 func renderLineAttrs(line *common.ShapeLine) (string, error) {
 	if line.WidthEmu == nil {
 		return "", nil
@@ -76,7 +76,6 @@ func renderLineAttrs(line *common.ShapeLine) (string, error) {
 	}
 	return fmt.Sprintf(` w="%d"`, *line.WidthEmu), nil
 }
-
 func renderLineColor(line *common.ShapeLine) (string, error) {
 	if line.Color == nil {
 		return "", nil
@@ -87,7 +86,6 @@ func renderLineColor(line *common.ShapeLine) (string, error) {
 	}
 	return color, nil
 }
-
 func renderLineDash(line *common.ShapeLine) (string, error) {
 	if line.DashStyle == nil {
 		return "", nil
@@ -98,8 +96,75 @@ func renderLineDash(line *common.ShapeLine) (string, error) {
 	}
 	return dash, nil
 }
-
-func renderLineElement(lnAttrs, lineDash, lineColor string) string {
+func renderLineArrows(line *common.ShapeLine) (string, error) {
+	var b strings.Builder
+	head, err := renderLineArrowEnd(
+		line.StartArrow,
+		line.StartArrowWidth,
+		line.StartArrowLength,
+		"headEnd",
+		"line.start_arrow",
+		"line.start_arrow_width",
+		"line.start_arrow_length",
+	)
+	if err != nil {
+		return "", err
+	}
+	tail, err := renderLineArrowEnd(
+		line.EndArrow,
+		line.EndArrowWidth,
+		line.EndArrowLength,
+		"tailEnd",
+		"line.end_arrow",
+		"line.end_arrow_width",
+		"line.end_arrow_length",
+	)
+	if err != nil {
+		return "", err
+	}
+	b.WriteString(head)
+	b.WriteString(tail)
+	return b.String(), nil
+}
+func renderLineArrowEnd(
+	arrowRaw, widthRaw, lengthRaw *string,
+	tagName, arrowField, widthField, lengthField string,
+) (string, error) {
+	if arrowRaw == nil && widthRaw == nil && lengthRaw == nil {
+		return "", nil
+	}
+	if arrowRaw == nil {
+		return "", fmt.Errorf("%s is required when %s or %s is set", arrowField, widthField, lengthField)
+	}
+	arrow, err := NormalizeArrowType(*arrowRaw)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", arrowField, err)
+	}
+	var attrs strings.Builder
+	attrs.WriteString(` type="`)
+	attrs.WriteString(arrow)
+	attrs.WriteString(`"`)
+	if widthRaw != nil {
+		width, widthErr := NormalizeArrowSize(*widthRaw)
+		if widthErr != nil {
+			return "", fmt.Errorf("%s: %w", widthField, widthErr)
+		}
+		attrs.WriteString(` w="`)
+		attrs.WriteString(width)
+		attrs.WriteString(`"`)
+	}
+	if lengthRaw != nil {
+		length, lengthErr := NormalizeArrowSize(*lengthRaw)
+		if lengthErr != nil {
+			return "", fmt.Errorf("%s: %w", lengthField, lengthErr)
+		}
+		attrs.WriteString(` len="`)
+		attrs.WriteString(length)
+		attrs.WriteString(`"`)
+	}
+	return `<a:` + tagName + attrs.String() + `/>`, nil
+}
+func renderLineElement(lnAttrs, lineDash, lineColor, lineArrows string) string {
 	var style strings.Builder
 	style.WriteString(`<a:ln`)
 	style.WriteString(lnAttrs)
@@ -114,10 +179,10 @@ func renderLineElement(lnAttrs, lineDash, lineColor string) string {
 		style.WriteString(lineColor)
 		style.WriteString(`"/></a:solidFill>`)
 	}
+	style.WriteString(lineArrows)
 	style.WriteString(`</a:ln>`)
 	return style.String()
 }
-
 func RenderFillXML(fill *common.ShapeFill) (string, error) {
 	if fill == nil {
 		return "", nil
@@ -166,7 +231,6 @@ func RenderFillXML(fill *common.ShapeFill) (string, error) {
 	}
 	return "", nil
 }
-
 func renderFillSolidColorXML(color string, transparency *float64) (string, error) {
 	if transparency == nil {
 		return `<a:srgbClr val="` + color + `"/>`, nil
@@ -177,7 +241,6 @@ func renderFillSolidColorXML(color string, transparency *float64) (string, error
 	alpha := int(math.Round((1.0 - *transparency) * float64(ooxmlPercentScale)))
 	return fmt.Sprintf(`<a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr>`, color, alpha), nil
 }
-
 func renderGradientFillXML(gradient *common.GradientFill) (string, error) {
 	if gradient == nil {
 		return "", nil
@@ -221,36 +284,4 @@ func renderGradientFillXML(gradient *common.GradientFill) (string, error) {
 	}
 	b.WriteString(`</a:gradFill>`)
 	return b.String(), nil
-}
-
-func renderPatternFillXML(pattern *common.PatternedFill) (string, error) {
-	if pattern == nil {
-		return "", nil
-	}
-	prst := "pct5"
-	if pattern.Preset != nil && strings.TrimSpace(*pattern.Preset) != "" {
-		prst = strings.TrimSpace(*pattern.Preset)
-	}
-	fg := "000000"
-	if pattern.FgColor != nil {
-		color, err := NormalizeHexColor(*pattern.FgColor)
-		if err != nil {
-			return "", fmt.Errorf("fill.pattern.fg_color: %w", err)
-		}
-		fg = color
-	}
-	bg := "FFFFFF"
-	if pattern.BgColor != nil {
-		color, err := NormalizeHexColor(*pattern.BgColor)
-		if err != nil {
-			return "", fmt.Errorf("fill.pattern.bg_color: %w", err)
-		}
-		bg = color
-	}
-	return fmt.Sprintf(
-		`<a:pattFill prst="%s"><a:fgClr><a:srgbClr val="%s"/></a:fgClr><a:bgClr><a:srgbClr val="%s"/></a:bgClr></a:pattFill>`,
-		XMLEscape(prst),
-		fg,
-		bg,
-	), nil
 }

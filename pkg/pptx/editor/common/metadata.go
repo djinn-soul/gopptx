@@ -34,6 +34,18 @@ type SlideMetadata struct {
 // CoreProperties describes the docProps/core.xml metadata.
 type CoreProperties = common.CoreProperties
 
+// ShowSettings controls how a presentation is shown (maps to p:showPr in presentation.xml).
+type ShowSettings = common.ShowSettings
+
+// ShowMode defines the slide show presentation mode.
+type ShowMode = common.ShowMode
+
+const (
+	ShowModePresent = common.ShowModePresent
+	ShowModeBrowse  = common.ShowModeBrowse
+	ShowModeKiosk   = common.ShowModeKiosk
+)
+
 // CustomXMLPart describes a Custom XML part exposed to the editor.
 type CustomXMLPart = common.CustomXMLPart
 

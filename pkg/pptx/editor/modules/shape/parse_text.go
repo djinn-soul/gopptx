@@ -6,6 +6,8 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+const bulletStyleNone = "none"
+
 func applyParsedShapeText(ps *ParsedShapeProperties, s *shapeXML) {
 	var txt strings.Builder
 	for pIdx, paragraph := range s.TxBody.P {
@@ -92,7 +94,7 @@ func applyParagraphSpacing(paragraph *common.Paragraph, pPr *paragraphPropsXML) 
 
 func applyParagraphBullets(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
 	if pPr.BuNone != nil {
-		style := "none"
+		style := bulletStyleNone
 		paragraph.BulletStyle = &style
 	}
 	if pPr.BuChar != nil {

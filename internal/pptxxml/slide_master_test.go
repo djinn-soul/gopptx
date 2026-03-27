@@ -88,7 +88,7 @@ func TestSlideMasterWithoutTxStyles(t *testing.T) {
 }
 
 func TestPresentationMultiMaster(t *testing.T) {
-	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil)
+	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil, nil)
 
 	// Should have 3 master IDs
 	if count := strings.Count(xml, "sldMasterId"); count != 2+3 {
@@ -151,6 +151,7 @@ func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
 		},
 		nil,
 		false,
+		nil,
 		nil,
 	)
 

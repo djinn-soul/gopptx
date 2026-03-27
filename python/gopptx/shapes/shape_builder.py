@@ -2,9 +2,27 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from typing_extensions import override
 
 from gopptx.constants import ShapeType
+
+
+@dataclass
+class ArrowConfig:
+    """Arrow head configuration for a line endpoint.
+
+    Args:
+        type: Arrow head type — ``"triangle"``, ``"stealth"``, ``"diamond"``,
+            ``"oval"``, ``"arrow"``, or ``"none"``.
+        width: Width token — ``"sm"``, ``"med"`` (default), or ``"lg"``.
+        length: Length token — ``"sm"``, ``"med"`` (default), or ``"lg"``.
+    """
+
+    type: str
+    width: str = "med"
+    length: str = "med"
 
 
 class ShapeBuilder:
@@ -148,6 +166,8 @@ class ShapeBuilder:
         *,
         width_emu: int | None = None,
         dash_style: str | None = None,
+        start_arrow: ArrowConfig | None = None,
+        end_arrow: ArrowConfig | None = None,
     ) -> ShapeBuilder:
         """Style the shape border.
 
@@ -156,12 +176,22 @@ class ShapeBuilder:
             width_emu: Line width in EMU (1 pt = 12700 EMU).
             dash_style: OOXML dash token such as ``"dash"``, ``"dot"``,
                 ``"dashDot"``, ``"lgDash"``, ``"lgDashDot"``, ``"solid"``.
+            start_arrow: Start arrowhead configuration as an :class:`ArrowConfig`.
+            end_arrow: End arrowhead configuration as an :class:`ArrowConfig`.
         """
         line: dict[str, object] = {"color": color}
         if width_emu is not None:
             line["width_emu"] = width_emu
         if dash_style is not None:
             line["dash_style"] = dash_style
+        if start_arrow is not None:
+            line["start_arrow"] = start_arrow.type
+            line["start_arrow_width"] = start_arrow.width
+            line["start_arrow_length"] = start_arrow.length
+        if end_arrow is not None:
+            line["end_arrow"] = end_arrow.type
+            line["end_arrow_width"] = end_arrow.width
+            line["end_arrow_length"] = end_arrow.length
         self._properties["line"] = line
         return self
 

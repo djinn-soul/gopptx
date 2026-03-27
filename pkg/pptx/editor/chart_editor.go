@@ -164,7 +164,7 @@ func (e *PresentationEditor) ReplaceChartData(
 }
 
 func extractChartRelIDs(content []byte) []string {
-	re := regexp.MustCompile(`<(?:c:chart|chart)[^>]*r:id="([^"]+)"`)
+	re := regexp.MustCompile(`<(?:c:chart|cx:chart|chart)[^>]*r:id="([^"]+)"`)
 	matches := re.FindAllSubmatch(content, -1)
 	ids := make([]string, 0, len(matches))
 	for _, m := range matches {

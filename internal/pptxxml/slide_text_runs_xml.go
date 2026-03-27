@@ -29,6 +29,7 @@ type TextRunSpec struct {
 	SmallCaps      bool
 	OutlineColor   string         // Character outline (stroke) color hex
 	OutlineWidthPt float64        // Character outline width in points
+	Lang           string         // BCP-47 language tag, e.g. "ar-SA", "fr-FR" (defaults to "en-US")
 	Hyperlink      *HyperlinkSpec // Click action
 	HoverAction    *HyperlinkSpec // Hover action
 }
@@ -53,9 +54,18 @@ func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec, contentS
 	return b.String()
 }
 
+func richTextRunLang(run TextRunSpec) string {
+	if lang := strings.TrimSpace(run.Lang); lang != "" {
+		return lang
+	}
+	return "en-US"
+}
+
 func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	var b strings.Builder
-	b.WriteString(`<a:r><a:rPr lang="en-US" sz="`)
+	b.WriteString(`<a:r><a:rPr lang="`)
+	b.WriteString(Escape(richTextRunLang(run)))
+	b.WriteString(`" sz="`)
 	b.WriteString(runSizeValueWithDefault(run.SizePt, contentStyle.SizePt))
 	b.WriteString(`" b="`)
 	b.WriteString(boolToFlag(run.Bold || contentStyle.Bold))

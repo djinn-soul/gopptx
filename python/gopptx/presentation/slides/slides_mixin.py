@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from ...schemas import SlideMetadata
     from ...slide.contracts import SlidePresentationProtocol
     from ..helpers import PresentationProtocol
+    from .collection import Slides
 
 
 class PresentationSlidesMixin(
@@ -38,7 +39,7 @@ class PresentationSlidesMixin(
         header_footer_defaults: dict[str, object]
 
         @property
-        def slides(self) -> list[Slide]:
+        def slides(self) -> Slides:
             """Return materialized slide objects for the current presentation."""
             ...
 

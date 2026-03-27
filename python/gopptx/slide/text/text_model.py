@@ -3,14 +3,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
+from ...text.run_builder import RunBuilder
 from ..shapes.shape_text_frame import ShapeTextFrame as BaseShapeTextFrame
 from .text_paragraph_model import _ShapeParagraphCollection, _ShapeParagraphProxy
 from .text_run_model import _ShapeRunCollection, _ShapeRunProxy
-
-if TYPE_CHECKING:
-    from ...text.run_builder import RunBuilder
 
 
 class ShapeTextFrame(BaseShapeTextFrame):
@@ -27,6 +23,16 @@ class ShapeTextFrame(BaseShapeTextFrame):
         if self._paragraphs is None:
             self._paragraphs = _ShapeParagraphCollection(self)
         return self._paragraphs
+
+    @property
+    def text(self) -> str:
+        """Return full text content of the frame."""
+        return "\n".join(p.text for p in self.paragraphs)
+
+    @text.setter
+    def text(self, value: str) -> None:
+        """Replace all text in the frame with a single paragraph."""
+        self.set_runs([RunBuilder(value)])
 
     def set_runs(self, builders: list[RunBuilder]) -> None:
         """Replace all runs from a list of :class:`~gopptx.text.RunBuilder` instances.

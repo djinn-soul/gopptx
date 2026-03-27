@@ -14,6 +14,7 @@ func (e *PresentationEditor) SetSlideTransition(
 	transitionType string,
 	durationMS int,
 	advanceMS int,
+	disableAdvanceOnClick bool,
 ) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range", slideIndex)
@@ -25,7 +26,12 @@ func (e *PresentationEditor) SetSlideTransition(
 		return fmt.Errorf("slide part %s not found", slideRef.Part)
 	}
 
-	tXML := buildTransitionXML(transitionType, durationMS, advanceMS)
+	tXML := buildTransitionXML(
+		transitionType,
+		durationMS,
+		advanceMS,
+		disableAdvanceOnClick,
+	)
 	slideXML := removeExistingTransitionXML(string(data))
 
 	const closeSld = "</p:sld>"
@@ -38,9 +44,11 @@ func (e *PresentationEditor) SetSlideTransition(
 }
 
 // buildTransitionXML generates a minimal p:transition element for the given type.
-//
-//nolint:cyclop,funlen // Transition type switch is a flat 25-branch lookup; complexity is inherent.
-func buildTransitionXML(transitionType string, durationMS, advanceMS int) string {
+func buildTransitionXML(
+	transitionType string,
+	durationMS, advanceMS int,
+	disableAdvanceOnClick bool,
+) string {
 	var b strings.Builder
 	b.WriteString("<p:transition")
 	if durationMS > 0 {
@@ -53,69 +61,53 @@ func buildTransitionXML(transitionType string, durationMS, advanceMS int) string
 	if advanceMS >= 0 {
 		fmt.Fprintf(&b, ` advTm="%d"`, advanceMS)
 	}
+	if disableAdvanceOnClick {
+		b.WriteString(` advClick="0"`)
+	}
 	b.WriteString(">")
 
-	switch transitionType {
-	case "none", "cut", "":
+	if transitionType == "none" || transitionType == "cut" || transitionType == "" {
 		b.WriteString("</p:transition>")
 		return b.String()
-	case "fade":
-		b.WriteString("<p:fade/>")
-	case "push":
-		b.WriteString(`<p:push dir="r"/>`)
-	case "wipe":
-		b.WriteString(`<p:wipe dir="r"/>`)
-	case "split":
-		b.WriteString(`<p:split dir="out" orient="horz"/>`)
-	case "zoom":
-		b.WriteString(`<p:zoom dir="in"/>`)
-	case "reveal":
-		b.WriteString(`<p:reveal dir="r"/>`)
-	case "cover":
-		b.WriteString(`<p:cover dir="r"/>`)
-	case "pull":
-		b.WriteString(`<p:pull dir="r"/>`)
-	case "randomBar":
-		b.WriteString("<p:randomBar/>")
-	case "wheel":
-		b.WriteString(`<p:wheel spokes="4"/>`)
-	case "flash":
-		b.WriteString("<p:flash/>")
-	case "strips":
-		b.WriteString(`<p:strips dir="ld"/>`)
-	case "blinds":
-		b.WriteString(`<p:blinds dir="horz"/>`)
-	case "circle":
-		b.WriteString("<p:circle/>")
-	case "ripple":
-		b.WriteString("<p:ripple/>")
-	case "honeycomb":
-		b.WriteString("<p:honeycomb/>")
-	case "glitter":
-		b.WriteString("<p:glitter/>")
-	case "vortex":
-		b.WriteString("<p:vortex/>")
-	case "shred":
-		b.WriteString("<p:shred/>")
-	case "switch":
-		b.WriteString("<p:switch/>")
-	case "flip":
-		b.WriteString("<p:flip/>")
-	case "gallery":
-		b.WriteString("<p:gallery/>")
-	case "cube":
-		b.WriteString("<p:cube/>")
-	case "doors":
-		b.WriteString("<p:doors/>")
-	case "box":
-		b.WriteString("<p:box/>")
-	case "random":
-		b.WriteString("<p:random/>")
-	default:
-		fmt.Fprintf(&b, "<p:%s/>", transitionType)
 	}
+	b.WriteString(resolveTransitionElement(transitionType))
 	b.WriteString("</p:transition>")
 	return b.String()
+}
+
+func resolveTransitionElement(transitionType string) string {
+	elementByType := map[string]string{
+		"fade":      "<p:fade/>",
+		"push":      `<p:push dir="r"/>`,
+		"wipe":      `<p:wipe dir="r"/>`,
+		"split":     `<p:split dir="out" orient="horz"/>`,
+		"zoom":      `<p:zoom dir="in"/>`,
+		"reveal":    `<p:reveal dir="r"/>`,
+		"cover":     `<p:cover dir="r"/>`,
+		"pull":      `<p:pull dir="r"/>`,
+		"randomBar": "<p:randomBar/>",
+		"wheel":     `<p:wheel spokes="4"/>`,
+		"flash":     "<p:flash/>",
+		"strips":    `<p:strips dir="ld"/>`,
+		"blinds":    `<p:blinds dir="horz"/>`,
+		"circle":    "<p:circle/>",
+		"ripple":    "<p:ripple/>",
+		"honeycomb": "<p:honeycomb/>",
+		"glitter":   "<p:glitter/>",
+		"vortex":    "<p:vortex/>",
+		"shred":     "<p:shred/>",
+		"switch":    "<p:switch/>",
+		"flip":      "<p:flip/>",
+		"gallery":   "<p:gallery/>",
+		"cube":      "<p:cube/>",
+		"doors":     "<p:doors/>",
+		"box":       "<p:box/>",
+		"random":    "<p:random/>",
+	}
+	if element, ok := elementByType[transitionType]; ok {
+		return element
+	}
+	return "<p:" + transitionType + "/>"
 }
 
 // removeExistingTransitionXML strips any existing <p:transition>...</p:transition> block.
