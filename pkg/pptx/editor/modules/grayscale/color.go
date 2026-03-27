@@ -7,6 +7,13 @@ import (
 )
 
 const rgbHexLen = 6
+const (
+	grayscaleRedWeight   = 299
+	grayscaleGreenWeight = 587
+	grayscaleBlueWeight  = 114
+	grayscaleBias        = 500
+	grayscaleDivisor     = 1000
+)
 
 // HexColor converts an RGB hex string into its grayscale equivalent.
 func HexColor(raw string) (string, error) {
@@ -26,6 +33,6 @@ func HexColor(raw string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse blue channel: %w", err)
 	}
-	luma := int((299*int(r) + 587*int(g) + 114*int(b) + 500) / 1000)
+	luma := (grayscaleRedWeight*int(r) + grayscaleGreenWeight*int(g) + grayscaleBlueWeight*int(b) + grayscaleBias) / grayscaleDivisor
 	return fmt.Sprintf("%02X%02X%02X", luma, luma, luma), nil
 }
