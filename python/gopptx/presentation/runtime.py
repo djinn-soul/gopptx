@@ -14,6 +14,7 @@ from .helpers import PresentationProtocol, json_dumps, json_loads, with_key_alia
 if TYPE_CHECKING:
     from ..schemas import BatchItemResult, PresentationMetadata, SlideMetadata
     from ..slide.slide import Slide
+    from .slides.collection import Slides
 
 
 class PresentationRuntimeMixin:
@@ -24,7 +25,7 @@ class PresentationRuntimeMixin:
     if TYPE_CHECKING:
 
         @property
-        def slides(self) -> list[Slide]:
+        def slides(self) -> Slides:
             """Cached slide proxy list."""
             ...
 

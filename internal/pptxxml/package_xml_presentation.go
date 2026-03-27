@@ -67,6 +67,62 @@ func sectionListBody(prefix, namespace string, sections []Section) string {
 	return b.String()
 }
 
+// ShowMode defines the slide show presentation mode.
+type ShowMode int
+
+const (
+	ShowModePresent ShowMode = iota // Standard presenter view (default)
+	ShowModeBrowse                  // Browse in window
+	ShowModeKiosk                   // Kiosk: full-screen, no controls
+)
+
+// ShowSettings controls how the presentation is shown (p:showPr in presentation.xml).
+type ShowSettings struct {
+	Loop           bool     // Loop presentation continuously when finished
+	Mode           ShowMode // Present (default), Browse, or Kiosk
+	ShowScrollbar  bool     // Show scrollbar in browse mode
+	DisableTimings bool     // Ignore slide timings (useTimings="0")
+	HideAnimation  bool     // Suppress animations (showAnimation="0")
+}
+
+// IsZero reports whether all fields are at their default values (no showPr needed).
+func (s ShowSettings) IsZero() bool {
+	return !s.Loop && s.Mode == ShowModePresent && !s.DisableTimings && !s.HideAnimation
+}
+
+// ShowPrXML renders the <p:showPr> element, or empty string if all defaults.
+func ShowPrXML(s ShowSettings) string {
+	if s.IsZero() {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<p:showPr")
+	if s.Loop {
+		b.WriteString(` loop="1"`)
+	}
+	if s.DisableTimings {
+		b.WriteString(` useTimings="0"`)
+	}
+	if s.HideAnimation {
+		b.WriteString(` showAnimation="0"`)
+	}
+	b.WriteString(">")
+	switch s.Mode {
+	case ShowModeKiosk:
+		b.WriteString("<p:kiosk/>")
+	case ShowModeBrowse:
+		if !s.ShowScrollbar {
+			b.WriteString(`<p:browse showScrollbar="0"/>`)
+		} else {
+			b.WriteString("<p:browse/>")
+		}
+	default:
+		b.WriteString("<p:present/>")
+	}
+	b.WriteString("</p:showPr>")
+	return b.String()
+}
+
 // ProtectionInfo defines the XML attributes for p:modifyVerifier.
 type ProtectionInfo struct {
 	HashAlgSID int
@@ -88,6 +144,7 @@ func Presentation(
 	sections []Section,
 	rtl bool, // Note: rtl="1" only enables UI direction; content elements (text, etc.) may need individual alignment.
 	embeddedFonts []EmbeddedFontRef,
+	show *ShowSettings,
 ) string {
 	_ = title
 	if masterCount < 1 {
@@ -189,6 +246,13 @@ func Presentation(
 		b.WriteString(`
 </p:ext>
 </p:extLst>`)
+	}
+
+	if show != nil {
+		if xml := ShowPrXML(*show); xml != "" {
+			b.WriteString("\n")
+			b.WriteString(xml)
+		}
 	}
 
 	b.WriteString(`

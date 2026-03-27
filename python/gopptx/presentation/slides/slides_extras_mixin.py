@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...slide.slide import Slide
+    from .collection import Slides
 
     class _SlideExtrasProto(PresentationMixinBase):
         def add_slide(
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
         ) -> Slide: ...
 
         @property
-        def slides(self) -> list[Slide]: ...
+        def slides(self) -> Slides: ...
 
         @property
         def slide_count(self) -> int: ...

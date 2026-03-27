@@ -23,7 +23,11 @@ func TestParseShapeProperties_ParsesPresetGeometryAndAdjustments(t *testing.T) {
       </a:avLst>
     </a:prstGeom>
     <a:solidFill><a:srgbClr val="ECECFF"><a:alpha val="65000"/></a:srgbClr></a:solidFill>
-    <a:ln w="12700"><a:solidFill><a:srgbClr val="9370DB"/></a:solidFill></a:ln>
+    <a:ln w="12700">
+      <a:solidFill><a:srgbClr val="9370DB"/></a:solidFill>
+      <a:headEnd type="triangle" w="lg" len="sm"/>
+      <a:tailEnd type="arrow"/>
+    </a:ln>
   </p:spPr>
   <p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody>
 </p:sp>`)
@@ -49,6 +53,18 @@ func TestParseShapeProperties_ParsesPresetGeometryAndAdjustments(t *testing.T) {
 	}
 	if props.Line == nil || props.Line.Color == nil || *props.Line.Color != "9370DB" {
 		t.Fatalf("unexpected line: %#v", props.Line)
+	}
+	if props.Line.StartArrow == nil || *props.Line.StartArrow != "triangle" {
+		t.Fatalf("expected start arrow triangle, got %#v", props.Line)
+	}
+	if props.Line.StartArrowWidth == nil || *props.Line.StartArrowWidth != "lg" {
+		t.Fatalf("expected start arrow width lg, got %#v", props.Line)
+	}
+	if props.Line.StartArrowLength == nil || *props.Line.StartArrowLength != "sm" {
+		t.Fatalf("expected start arrow length sm, got %#v", props.Line)
+	}
+	if props.Line.EndArrow == nil || *props.Line.EndArrow != "arrow" {
+		t.Fatalf("expected end arrow arrow, got %#v", props.Line)
 	}
 }
 

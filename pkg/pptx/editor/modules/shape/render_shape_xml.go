@@ -9,6 +9,7 @@ import (
 
 const (
 	prstEllipse  = "ellipse"
+	prstOval     = "oval"
 	prstTriangle = "triangle"
 )
 
@@ -22,7 +23,7 @@ func escapeXMLText(value string) string {
 
 func presetGeometry(shapeType string) string {
 	switch strings.ToLower(shapeType) {
-	case prstEllipse, "oval":
+	case prstEllipse, prstOval:
 		return prstEllipse
 	case prstTriangle:
 		return prstTriangle

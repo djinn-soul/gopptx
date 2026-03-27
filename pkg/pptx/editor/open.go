@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 
@@ -44,6 +45,16 @@ func OpenPresentationEditorFromBytes(data []byte) (*PresentationEditor, error) {
 		return nil, err
 	}
 	return editor, nil
+}
+
+// OpenPresentationEditorFromReader opens a PPTX package from an io.Reader for in-place slide editing.
+// The entire reader is read into memory before processing.
+func OpenPresentationEditorFromReader(r io.Reader) (*PresentationEditor, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("read presentation: %w", err)
+	}
+	return OpenPresentationEditorFromBytes(data)
 }
 
 // OpenPartStoreFromBytes opens a part store from a byte slice.

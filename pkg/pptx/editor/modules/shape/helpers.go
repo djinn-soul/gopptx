@@ -10,6 +10,12 @@ import (
 )
 
 const colorHexLength = 6
+const (
+	arrowTypeNone    = "none"
+	arrowTypeStealth = "stealth"
+	arrowTypeDiamond = "diamond"
+	arrowTypeOval    = "oval"
+)
 
 func GetStr(s *string) string {
 	if s == nil {
@@ -102,4 +108,55 @@ func NormalizeLineDashStyle(raw string) (string, error) {
 		return normalized, nil
 	}
 	return "", fmt.Errorf("unsupported value %q", raw)
+}
+
+func NormalizeArrowType(raw string) (string, error) {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return "", errors.New("must be non-empty")
+	}
+	switch s {
+	case arrowTypeNone, "triangle", arrowTypeStealth, arrowTypeDiamond, arrowTypeOval, "arrow":
+		return s, nil
+	}
+	key := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(s, "-", "_"), " ", "_"))
+	key = strings.ReplaceAll(key, "__", "_")
+	switch key {
+	case "n":
+		return arrowTypeNone, nil
+	case "t", "triangle":
+		return "triangle", nil
+	case "s", "stealth":
+		return arrowTypeStealth, nil
+	case "d", "diamond":
+		return arrowTypeDiamond, nil
+	case "o", "oval":
+		return arrowTypeOval, nil
+	case "a", "open", "arrow":
+		return "arrow", nil
+	default:
+		return "", fmt.Errorf("unsupported value %q", raw)
+	}
+}
+
+func NormalizeArrowSize(raw string) (string, error) {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return "", errors.New("must be non-empty")
+	}
+	switch s {
+	case "sm", "med", "lg":
+		return s, nil
+	}
+	key := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(s, "-", "_"), " ", "_"))
+	switch key {
+	case "s", "small":
+		return "sm", nil
+	case "m", "medium":
+		return "med", nil
+	case "l", "large":
+		return "lg", nil
+	default:
+		return "", fmt.Errorf("unsupported value %q", raw)
+	}
 }

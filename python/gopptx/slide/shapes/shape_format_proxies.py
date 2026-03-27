@@ -118,6 +118,60 @@ class _ShapeLineProxy:
     def dash_style(self, value: str) -> None:
         self._apply({"dash_style": value})
 
+    @property
+    def start_arrow(self) -> str | None:
+        value = self._payload().get("start_arrow")
+        return str(value) if isinstance(value, str) else None
+
+    @start_arrow.setter
+    def start_arrow(self, value: str) -> None:
+        self._apply({"start_arrow": value})
+
+    @property
+    def start_arrow_width(self) -> str | None:
+        value = self._payload().get("start_arrow_width")
+        return str(value) if isinstance(value, str) else None
+
+    @start_arrow_width.setter
+    def start_arrow_width(self, value: str) -> None:
+        self._apply({"start_arrow_width": value})
+
+    @property
+    def start_arrow_length(self) -> str | None:
+        value = self._payload().get("start_arrow_length")
+        return str(value) if isinstance(value, str) else None
+
+    @start_arrow_length.setter
+    def start_arrow_length(self, value: str) -> None:
+        self._apply({"start_arrow_length": value})
+
+    @property
+    def end_arrow(self) -> str | None:
+        value = self._payload().get("end_arrow")
+        return str(value) if isinstance(value, str) else None
+
+    @end_arrow.setter
+    def end_arrow(self, value: str) -> None:
+        self._apply({"end_arrow": value})
+
+    @property
+    def end_arrow_width(self) -> str | None:
+        value = self._payload().get("end_arrow_width")
+        return str(value) if isinstance(value, str) else None
+
+    @end_arrow_width.setter
+    def end_arrow_width(self, value: str) -> None:
+        self._apply({"end_arrow_width": value})
+
+    @property
+    def end_arrow_length(self) -> str | None:
+        value = self._payload().get("end_arrow_length")
+        return str(value) if isinstance(value, str) else None
+
+    @end_arrow_length.setter
+    def end_arrow_length(self, value: str) -> None:
+        self._apply({"end_arrow_length": value})
+
 
 class _ShapeShadowProxy:
     """Live shadow proxy."""

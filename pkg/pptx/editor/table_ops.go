@@ -54,7 +54,12 @@ func (e *PresentationEditor) SetTableStyle(slideIndex, shapeID int, styleGUID st
 }
 
 // AddTable adds a new graphic frame containing a table.
-func (e *PresentationEditor) AddTable(slideIndex, rowCount, colCount int, x, y, cx, cy int64) (int, error) {
+// Use styleGUID to specify a PowerPoint table style GUID; pass "" to use the default style.
+func (e *PresentationEditor) AddTable(
+	slideIndex, rowCount, colCount int,
+	x, y, cx, cy int64,
+	styleGUID ...string,
+) (int, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return 0, fmt.Errorf("slide index %d out of range", slideIndex)
 	}
@@ -67,6 +72,9 @@ func (e *PresentationEditor) AddTable(slideIndex, rowCount, colCount int, x, y, 
 		CY:         cy,
 		Rows:       make([][]string, rowCount),
 		StyledRows: make([][]pptxxml.TableCellSpec, rowCount),
+	}
+	if len(styleGUID) > 0 && styleGUID[0] != "" {
+		spec.StyleGUID = styleGUID[0]
 	}
 	for i := range rowCount {
 		spec.Rows[i] = make([]string, colCount)

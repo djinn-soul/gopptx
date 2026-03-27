@@ -489,3 +489,4 @@ _TableFactoryProto  # unused class (python\gopptx\slide\tables\table_mixin.py)
 SlideData  # unused class (python\gopptx\templates\_template_utils.py)
 _.get_shape_center  # unused method (python\gopptx\presentation\shapes\shapes_tables.py)
 _.shape_center  # unused method (python\gopptx\slide\shapes\shape_mixin.py)
+_.find_by_slide_id  # unused method (python\gopptx\presentation\slides\collection.py) — tested via python_slide_objects_test.py

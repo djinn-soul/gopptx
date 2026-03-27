@@ -21,7 +21,14 @@ type TableSpec struct {
 	RowHeights   []int64
 	Rows         [][]string
 	StyledRows   [][]TableCellSpec
-
+	// StyleGUID is an optional PowerPoint table style GUID.
+	// If empty, the default "Medium Style 2 - Accent 1" style is used.
+	// Example GUIDs:
+	//   "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" - Medium Style 2 - Accent 1 (default)
+	//   "{B9AC3A68-259E-4EED-9050-4AE35E7F2B2D}" - Light Style 1
+	//   "{5940675A-B579-460E-94D1-54222C63F5DA}" - Medium Style 1 - Accent 1
+	//   "{2D5ABB26-0587-4C30-8999-92F81FD0307C}" - No Style, No Grid
+	StyleGUID string
 	// Accessibility
 	AltText      string
 	IsDecorative bool
@@ -60,7 +67,6 @@ type TableCellBorderSpec struct {
 	Color string
 	Dash  string
 }
-
 type tableCellBorderSet struct {
 	Left   *TableCellBorderSpec
 	Right  *TableCellBorderSpec
@@ -83,7 +89,6 @@ func RenderTable(table *TableSpec, shapeID int) string {
 ` + tableGraphicXML(table) + `
 </p:graphicFrame>`
 }
-
 func tableGraphicXML(table *TableSpec) string {
 	var b strings.Builder
 	columnWidths := tableColumnWidthsForRender(table)
@@ -92,20 +97,17 @@ func tableGraphicXML(table *TableSpec) string {
 <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
 <a:tbl>
 <a:tblPr firstRow="1" bandRow="1">
-<a:tableStyleId>{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}</a:tableStyleId>
+<a:tableStyleId>` + tableStyleGUID(table) + `</a:tableStyleId>
 </a:tblPr>
 <a:tblGrid>`)
-
 	for _, width := range columnWidths {
 		b.WriteString(`
 <a:gridCol w="`)
 		b.WriteString(strconv.FormatInt(width, 10))
 		b.WriteString(`"/>`)
 	}
-
 	b.WriteString(`
 </a:tblGrid>`)
-
 	rows := tableStyledRows(table)
 	rowHeights := tableRowHeightsForRender(table, len(rows))
 	for rowIndex, row := range rows {
@@ -135,6 +137,9 @@ func tableGraphicXML(table *TableSpec) string {
 			b.WriteString(Escape(cell.Text))
 			b.WriteString(`</a:t>
 </a:r>
+`)
+			b.WriteString(tableCellEndParaRPrXML(cell))
+			b.WriteString(`
 </a:p>
 </a:txBody>
 `)
@@ -145,7 +150,6 @@ func tableGraphicXML(table *TableSpec) string {
 		b.WriteString(`
 </a:tr>`)
 	}
-
 	b.WriteString(`
 </a:tbl>
 </a:graphicData>
@@ -153,13 +157,20 @@ func tableGraphicXML(table *TableSpec) string {
 	return b.String()
 }
 
+const defaultTableStyleGUID = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
+
+func tableStyleGUID(table *TableSpec) string {
+	if table.StyleGUID != "" {
+		return table.StyleGUID
+	}
+	return defaultTableStyleGUID
+}
 func tableColumnWidthsForRender(table *TableSpec) []int64 {
 	if len(table.ColumnWidths) > 0 {
 		widths := make([]int64, len(table.ColumnWidths))
 		copy(widths, table.ColumnWidths)
 		return widths
 	}
-
 	columnCount := 0
 	for _, row := range table.Rows {
 		if len(row) > columnCount {
@@ -174,7 +185,6 @@ func tableColumnWidthsForRender(table *TableSpec) []int64 {
 	if columnCount == 0 {
 		columnCount = 1
 	}
-
 	defaultWidth := defaultTableColumnWidthEmu
 	if table.CX > 0 {
 		defaultWidth = table.CX / int64(columnCount)
@@ -182,14 +192,12 @@ func tableColumnWidthsForRender(table *TableSpec) []int64 {
 			defaultWidth = defaultTableColumnWidthEmu
 		}
 	}
-
 	widths := make([]int64, 0, columnCount)
 	for range columnCount {
 		widths = append(widths, defaultWidth)
 	}
 	return widths
 }
-
 func tableStyledRows(table *TableSpec) [][]TableCellSpec {
 	if len(table.StyledRows) > 0 {
 		rows := make([][]TableCellSpec, len(table.StyledRows))
@@ -200,7 +208,6 @@ func tableStyledRows(table *TableSpec) [][]TableCellSpec {
 		}
 		return rows
 	}
-
 	rows := make([][]TableCellSpec, len(table.Rows))
 	for i := range table.Rows {
 		cells := make([]TableCellSpec, len(table.Rows[i]))
@@ -211,7 +218,6 @@ func tableStyledRows(table *TableSpec) [][]TableCellSpec {
 	}
 	return rows
 }
-
 func tableCellRunPropsXML(cell TableCellSpec) string {
 	var b strings.Builder
 	b.WriteString(`<a:rPr lang="en-US" dirty="0"`)
@@ -247,7 +253,6 @@ func tableCellPropsXML(cell TableCellSpec) string {
 	if !hasFill && !hasVAlign && !hasMargins && !hasBorder {
 		return "<a:tcPr/>"
 	}
-
 	var b strings.Builder
 	b.WriteString("<a:tcPr")
 	if hasVAlign {
@@ -257,7 +262,6 @@ func tableCellPropsXML(cell TableCellSpec) string {
 	}
 	appendTableCellMarginAttrs(&b, cell)
 	b.WriteString(">")
-
 	if hasFill {
 		b.WriteString(`<a:solidFill><a:srgbClr val="`)
 		b.WriteString(Escape(cell.BackgroundColor))
@@ -277,7 +281,6 @@ func tableCellPropsXML(cell TableCellSpec) string {
 			b.WriteString(tableCellBorderXML("lnB", *borders.Bottom))
 		}
 	}
-
 	b.WriteString("</a:tcPr>")
 	return b.String()
 }

@@ -145,6 +145,7 @@ class SlideSmartArtAnimMixin:
         *,
         duration_ms: int = 0,
         advance_ms: int | None = None,
+        disable_advance_on_click: bool = False,
     ) -> None:
         """Set the slide transition.
 
@@ -154,6 +155,8 @@ class SlideSmartArtAnimMixin:
             duration_ms: Transition duration in milliseconds (0 = default).
             advance_ms: Auto-advance after this many milliseconds.  ``None``
                 means click-advance only (the default).
+            disable_advance_on_click: When ``True``, disable click-to-advance
+                for this slide transition (writes ``advClick="0"``).
 
         Example::
 
@@ -165,6 +168,7 @@ class SlideSmartArtAnimMixin:
             "transition_type": transition_type,
             "duration_ms": duration_ms,
             "advance_ms": advance_ms if advance_ms is not None else -1,
+            "disable_advance_on_click": disable_advance_on_click,
         }
         self._presentation.execute(ops.OP_SET_SLIDE_TRANSITION, payload)
 
