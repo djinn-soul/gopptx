@@ -35,6 +35,7 @@ OP_BUILD_STATUS_TEMPLATE = "build_status_template"
 OP_BUILD_TECHNICAL_TEMPLATE = "build_technical_template"
 OP_BUILD_TRAINING_TEMPLATE = "build_training_template"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
+OP_CONVERT_TO_GRAYSCALE = "convert_to_grayscale"
 OP_DEFINE_TABLE_STYLE = "define_table_style"
 OP_DUPLICATE_SLIDE = "duplicate_slide"
 OP_DUPLICATE_SLIDE_AFTER = "duplicate_slide_after"
@@ -175,6 +176,7 @@ SUPPORTED_OPS = (
     OP_BUILD_TECHNICAL_TEMPLATE,
     OP_BUILD_TRAINING_TEMPLATE,
     OP_CLONE_LAYOUT_MASTER_FAMILY,
+    OP_CONVERT_TO_GRAYSCALE,
     OP_DEFINE_TABLE_STYLE,
     OP_DUPLICATE_SLIDE,
     OP_DUPLICATE_SLIDE_AFTER,

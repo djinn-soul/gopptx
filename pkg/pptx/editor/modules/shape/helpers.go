@@ -11,10 +11,12 @@ import (
 
 const colorHexLength = 6
 const (
-	arrowTypeNone    = "none"
-	arrowTypeStealth = "stealth"
-	arrowTypeDiamond = "diamond"
-	arrowTypeOval    = "oval"
+	arrowTypeNone     = "none"
+	arrowTypeTriangle = "triangle"
+	arrowTypeStealth  = "stealth"
+	arrowTypeDiamond  = "diamond"
+	arrowTypeOval     = "oval"
+	arrowTypeArrow    = "arrow"
 )
 
 func GetStr(s *string) string {
@@ -116,7 +118,7 @@ func NormalizeArrowType(raw string) (string, error) {
 		return "", errors.New("must be non-empty")
 	}
 	switch s {
-	case arrowTypeNone, "triangle", arrowTypeStealth, arrowTypeDiamond, arrowTypeOval, "arrow":
+	case arrowTypeNone, arrowTypeTriangle, arrowTypeStealth, arrowTypeDiamond, arrowTypeOval, arrowTypeArrow:
 		return s, nil
 	}
 	key := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(s, "-", "_"), " ", "_"))
@@ -124,16 +126,16 @@ func NormalizeArrowType(raw string) (string, error) {
 	switch key {
 	case "n":
 		return arrowTypeNone, nil
-	case "t", "triangle":
-		return "triangle", nil
+	case "t", arrowTypeTriangle:
+		return arrowTypeTriangle, nil
 	case "s", "stealth":
 		return arrowTypeStealth, nil
 	case "d", "diamond":
 		return arrowTypeDiamond, nil
 	case "o", "oval":
 		return arrowTypeOval, nil
-	case "a", "open", "arrow":
-		return "arrow", nil
+	case "a", "open", arrowTypeArrow:
+		return arrowTypeArrow, nil
 	default:
 		return "", fmt.Errorf("unsupported value %q", raw)
 	}

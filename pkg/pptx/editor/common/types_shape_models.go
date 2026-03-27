@@ -9,6 +9,9 @@ type Shape struct {
 	X, Y int
 	W, H int
 
+	PlaceholderIndex *int   `json:"PlaceholderIndex,omitempty"`
+	PlaceholderType  string `json:"PlaceholderType,omitempty"`
+
 	Fill   *ShapeFill
 	Line   *ShapeLine
 	Shadow *ShapeShadow

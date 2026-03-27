@@ -2,8 +2,8 @@ package slide
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -15,11 +15,16 @@ type SectionData struct {
 	SlideIDs []int64
 }
 
+const sectionExtURI = "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
+
 var (
 	chartExternalDataPattern = regexp.MustCompile(`<c:externalData[^>]*r:id="([^"]*)"[^>]*/>`)
 	chartRelIDAttrPattern    = regexp.MustCompile(`r:id="[^"]*"`)
 	extLstPattern            = regexp.MustCompile(`(?s)<p:extLst>.*?</p:extLst>|<p:extLst\s*/>`)
 	embeddedFontLstPattern   = regexp.MustCompile(`(?s)<p:embeddedFontLst>.*?</p:embeddedFontLst>`)
+	sectionExtPattern        = regexp.MustCompile(
+		`(?s)<p:ext uri="` + regexp.QuoteMeta(sectionExtURI) + `">.*?</p:ext>`,
+	)
 )
 
 func BuildSectionListXML(sections []SectionData) string {
@@ -35,7 +40,9 @@ func BuildSectionListXML(sections []SectionData) string {
 		b.WriteString("\">")
 		b.WriteString("\n    <s:sldIdLst>")
 		for _, slideID := range s.SlideIDs {
-			b.WriteString(fmt.Sprintf("\n      <s:sldId id=\"%d\"/>", slideID))
+			b.WriteString("\n      <s:sldId id=\"")
+			b.WriteString(strconv.FormatInt(slideID, 10))
+			b.WriteString("\"/>")
 		}
 		b.WriteString("\n    </s:sldIdLst>")
 		b.WriteString("\n  </s:section>")
@@ -50,7 +57,7 @@ func RewriteChartExternalData(current []byte, newRelID string) []byte {
 		return current
 	}
 	res := chartExternalDataPattern.ReplaceAllStringFunc(source, func(match string) string {
-		return chartRelIDAttrPattern.ReplaceAllString(match, fmt.Sprintf(`r:id="%s"`, newRelID))
+		return chartRelIDAttrPattern.ReplaceAllString(match, `r:id="`+newRelID+`"`)
 	})
 	return []byte(res)
 }
@@ -62,17 +69,16 @@ func RewritePresentationSections(current []byte, sections []SectionData) (string
 	source := string(current)
 
 	sectionXML := buildPresentationSectionExtensionXML(sections)
-	extURI := "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
-	fullExtBlock := fmt.Sprintf(`<p:ext uri="%s">%s</p:ext>`, extURI, sectionXML)
+	fullExtBlock := `<p:ext uri="` + sectionExtURI + `">` + sectionXML + `</p:ext>`
 
 	if extLstPattern.MatchString(source) {
 		rewritten := extLstPattern.ReplaceAllStringFunc(source, func(match string) string {
-			return rewriteExtListMatch(match, extURI, fullExtBlock)
+			return rewriteExtListMatch(match, fullExtBlock)
 		})
 		return rewritten, nil
 	}
 
-	newExtLst := fmt.Sprintf("<p:extLst>\n%s\n</p:extLst>", fullExtBlock)
+	newExtLst := "<p:extLst>\n" + fullExtBlock + "\n</p:extLst>"
 	if idx := strings.LastIndex(source, "</p:presentation>"); idx >= 0 {
 		return source[:idx] + newExtLst + source[idx:], nil
 	}
@@ -110,17 +116,16 @@ func ExtractEmbeddedFontList(xmlData []byte) string {
 	return string(match)
 }
 
-func rewriteExtListMatch(match, extURI, fullExtBlock string) string {
-	if strings.Contains(match, extURI) {
-		return replaceSectionExtension(match, extURI, fullExtBlock)
+func rewriteExtListMatch(match, fullExtBlock string) string {
+	if strings.Contains(match, sectionExtURI) {
+		return replaceSectionExtension(match, fullExtBlock)
 	}
 	return appendSectionExtension(match, fullExtBlock)
 }
 
-func replaceSectionExtension(match, extURI, fullExtBlock string) string {
-	pExtPattern := regexp.MustCompile(fmt.Sprintf(`(?s)<p:ext uri="%s">.*?</p:ext>`, regexp.QuoteMeta(extURI)))
-	if pExtPattern.MatchString(match) {
-		return pExtPattern.ReplaceAllString(match, fullExtBlock)
+func replaceSectionExtension(match, fullExtBlock string) string {
+	if sectionExtPattern.MatchString(match) {
+		return sectionExtPattern.ReplaceAllString(match, fullExtBlock)
 	}
 	return appendSectionExtension(match, fullExtBlock)
 }
@@ -139,10 +144,16 @@ func buildPresentationSectionExtensionXML(sections []SectionData) string {
 	var b strings.Builder
 	b.WriteString(`<p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main">`)
 	for _, s := range sections {
-		b.WriteString(fmt.Sprintf("\n<p14:section name=\"%s\" id=\"%s\">", common.XMLEscape(s.Name), s.GUID))
+		b.WriteString("\n<p14:section name=\"")
+		b.WriteString(common.XMLEscape(s.Name))
+		b.WriteString("\" id=\"")
+		b.WriteString(s.GUID)
+		b.WriteString("\">")
 		b.WriteString("\n<p14:sldIdLst>")
 		for _, sid := range s.SlideIDs {
-			b.WriteString(fmt.Sprintf("\n<p14:sldId id=\"%d\"/>", sid))
+			b.WriteString("\n<p14:sldId id=\"")
+			b.WriteString(strconv.FormatInt(sid, 10))
+			b.WriteString("\"/>")
 		}
 		b.WriteString("\n</p14:sldIdLst>")
 		b.WriteString("\n</p14:section>")

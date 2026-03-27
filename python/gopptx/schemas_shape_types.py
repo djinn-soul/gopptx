@@ -241,6 +241,8 @@ class Shape(TypedDict, total=False):
     Y: int
     W: int
     H: int
+    PlaceholderIndex: int
+    PlaceholderType: str
     fill: FillFormat
     line: LineFormat
     shadow: ShadowFormat
