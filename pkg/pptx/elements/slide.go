@@ -94,6 +94,7 @@ type SlideContent struct {
 	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
 	Comments             []SlideComment
+	Hidden               bool
 }
 
 // SlideComment describes an author's comment on a slide.

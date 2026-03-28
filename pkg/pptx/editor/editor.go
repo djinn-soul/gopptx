@@ -128,6 +128,7 @@ func (e *PresentationEditor) Slides() []common.SlideMetadata {
 			RelationshipID: slide.RelID,
 			PartName:       slide.Part,
 			Title:          slide.Title,
+			Hidden:         slide.Hidden,
 		})
 	}
 	return out

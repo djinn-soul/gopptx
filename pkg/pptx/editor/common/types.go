@@ -57,6 +57,7 @@ type EditorSlideRef struct {
 	Target  string
 	Part    string
 	Title   string
+	Hidden  bool
 }
 
 // xmlEscaper is a package-level replacer so XMLEscape never allocates.

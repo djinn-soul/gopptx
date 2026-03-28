@@ -73,11 +73,11 @@
     },
     {
         "chart": "radar",
-        "fingerprint": "7035748c508371a8fb9da856067ca18bd1308548fffc5fcb59a5cb0a1738ea82"
+        "fingerprint": "a40e09199e711174e3908351434ed9a8544d30450113d17b006915f81ee699db"
     },
     {
         "chart": "radarFilled",
-        "fingerprint": "d5173a399e7b3e1b99a843cfcc876e95ce64684f02bf993ddd0380b4c14d8ef1"
+        "fingerprint": "0d876ea4ee844073c17d0fcb902a9e05d4643bdc83705fe6a526bd6a422a5696"
     },
     {
         "chart": "scatter",

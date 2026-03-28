@@ -50,6 +50,33 @@ func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, e
 	)
 }
 
+// handleSetSlideHidden marks or unmarks a slide as hidden.
+//
+// Payload: {"slide_index": N, "hidden": bool}.
+// Response: {"updated": true}.
+func handleSetSlideHidden(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+	hidden, ok := v.OptionalBool(p, "hidden")
+	if !ok {
+		if v.HasErrors() {
+			return nil, v.Error()
+		}
+		return nil, NewBridgeError(ErrCodeMissingField, `field "hidden" is required`)
+	}
+	if setErr := e.SetSlideHidden(slideIndex, hidden); setErr != nil {
+		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
+	}
+	return map[string]bool{"updated": true}, nil
+}
+
 func handleMergeFromFile(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	v := NewPayloadValidator()
 	return editorcommand.HandleParsedRequest(

@@ -137,6 +137,11 @@ const (
 	OpMoveShapeToIndex      = "move_shape_to_index"
 	OpValidate              = "validate"
 	OpRepair                = "repair"
+	OpSetSlideHidden        = "set_slide_hidden"
+	OpDeleteSmartArt        = "delete_smartart"
+	OpChangeSmartArtLayout  = "change_smartart_layout"
+	OpSetSmartArtStyle      = "set_smartart_style"
+	OpSetSmartArtNodes      = "set_smartart_nodes"
 	OpListSlideImages       = "list_slide_images"
 	OpSwapImageByIndex      = "swap_image_by_index"
 	OpSwapImageByRelID      = "swap_image_by_rel_id"
@@ -211,5 +216,6 @@ func supportedSlideAndMetaOps() []string {
 		OpBuildTechnicalTemplate,
 		OpRenderTemplate,
 		OpConvertToGrayscale,
+		OpSetSlideHidden,
 	}
 }

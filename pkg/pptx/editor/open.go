@@ -233,6 +233,7 @@ func resolveSlideReferences(
 			RelID:   rel.ID,
 			Target:  target,
 			Part:    partName,
+			Hidden:  item.Hidden,
 		})
 	}
 	return out, nonSlide, nil
