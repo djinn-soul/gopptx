@@ -2,6 +2,7 @@ package editor
 
 import (
 	"errors"
+	"fmt"
 
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -219,7 +220,18 @@ func (e *PresentationEditor) recalculateNextRelIDNum() {
 	e.nextRelIDNum = editorslide.NextRelationshipIDNum(e.slides, e.nonSlideRels)
 }
 
-// SetSlideTitle replaces title placeholder text runs with the provided title.
+// SetSlideHidden marks or unmarks a slide as hidden (show="0" in presentation.xml).
+func (e *PresentationEditor) SetSlideHidden(index int, hidden bool) error {
+	if e == nil {
+		return errors.New("editor cannot be nil")
+	}
+	if index < 0 || index >= len(e.slides) {
+		return fmt.Errorf("slide index %d out of range", index)
+	}
+	e.slides[index].Hidden = hidden
+	return nil
+}
+
 func (e *PresentationEditor) SetSlideTitle(index int, title string) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")

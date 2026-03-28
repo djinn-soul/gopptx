@@ -145,6 +145,7 @@ func Presentation(
 	rtl bool, // Note: rtl="1" only enables UI direction; content elements (text, etc.) may need individual alignment.
 	embeddedFonts []EmbeddedFontRef,
 	show *ShowSettings,
+	hiddenSlides []bool,
 ) string {
 	_ = title
 	if masterCount < 1 {
@@ -196,7 +197,11 @@ func Presentation(
 		b.WriteString(strconv.Itoa(slideID))
 		b.WriteString("\" r:id=\"rId")
 		b.WriteString(strconv.Itoa(rid))
-		b.WriteString("\"/>")
+		b.WriteString("\"")
+		if i-1 < len(hiddenSlides) && hiddenSlides[i-1] {
+			b.WriteString(` show="0"`)
+		}
+		b.WriteString("/>")
 	}
 
 	typeAttr := "custom"

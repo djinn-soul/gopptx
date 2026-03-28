@@ -22,6 +22,7 @@ var bytesReaderPool = sync.Pool{
 type ParsedSlideIDRef struct {
 	SlideID int64
 	RelID   string
+	Hidden  bool
 }
 
 const (
@@ -151,19 +152,17 @@ func isPresentationSlideIDElement(start xml.StartElement) bool {
 func parseSlideIDRef(start xml.StartElement) (ParsedSlideIDRef, error) {
 	ref := ParsedSlideIDRef{}
 	for _, attr := range start.Attr {
-		if attr.Name.Local != "id" {
-			continue
-		}
-		if attr.Name.Space == "" {
+		switch {
+		case attr.Name.Local == "id" && attr.Name.Space == "":
 			slideID, parseErr := strconv.ParseInt(strings.TrimSpace(attr.Value), 10, 64)
 			if parseErr != nil {
 				return ParsedSlideIDRef{}, fmt.Errorf("invalid slide id %q", attr.Value)
 			}
 			ref.SlideID = slideID
-			continue
-		}
-		if attr.Name.Space == "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ||
-			attr.Name.Space == "r" {
+		case attr.Name.Local == "show" && attr.Name.Space == "":
+			ref.Hidden = strings.TrimSpace(attr.Value) == "0"
+		case attr.Name.Space == "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ||
+			attr.Name.Space == "r":
 			ref.RelID = strings.TrimSpace(attr.Value)
 		}
 	}

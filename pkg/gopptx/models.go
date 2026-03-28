@@ -81,6 +81,7 @@ type Slide struct {
 	Table                *tables.Table               `xml:"-"`
 	BarChart             *charts.BarChart            `xml:"-"`
 	SmartArt             []smartart.SmartArt         `xml:"-"`
+	Hidden               bool                        `xml:"-"`
 }
 
 func (s *Slide) AddBullet(text string) {
@@ -257,5 +258,6 @@ func (s *Slide) toSlideContent(index int) elements.SlideContent {
 	if len(s.SmartArt) > 0 {
 		slide.SmartArtDiagrams = append(slide.SmartArtDiagrams, s.SmartArt...)
 	}
+	slide.Hidden = s.Hidden
 	return slide
 }

@@ -109,6 +109,7 @@ OP_SET_PLACEHOLDER_CONTENT = "set_placeholder_content"
 OP_SET_SHAPE_RUNS = "set_shape_runs"
 OP_SET_SLIDE_BACKGROUND = "set_slide_background"
 OP_SET_SLIDE_HEADER_FOOTER = "set_slide_header_footer"
+OP_SET_SLIDE_HIDDEN = "set_slide_hidden"
 OP_SET_SLIDE_SHAPE_RUNS = "set_slide_shape_runs"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
@@ -141,6 +142,10 @@ OP_UPDATE_SHAPE_RUN_TEXT = "update_shape_run_text"
 OP_UPDATE_SLIDE = "update_slide"
 OP_UPDATE_SLIDE_RUN_TEXTS = "update_slide_run_texts"
 OP_UPDATE_SMART_ART = "update_smartart"
+OP_DELETE_SMART_ART = "delete_smartart"
+OP_CHANGE_SMART_ART_LAYOUT = "change_smartart_layout"
+OP_SET_SMART_ART_STYLE = "set_smartart_style"
+OP_SET_SMART_ART_NODES = "set_smartart_nodes"
 OP_UPDATE_TABLE_CELL = "update_table_cell"
 OP_UPDATE_TABLE_FLAGS = "update_table_flags"
 OP_URL_FETCH_TO_SLIDES = "url_fetch_to_slides"
@@ -254,6 +259,7 @@ SUPPORTED_OPS = (
     OP_SET_SHAPE_RUNS,
     OP_SET_SLIDE_BACKGROUND,
     OP_SET_SLIDE_HEADER_FOOTER,
+    OP_SET_SLIDE_HIDDEN,
     OP_SET_SLIDE_SHAPE_RUNS,
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
@@ -286,6 +292,10 @@ SUPPORTED_OPS = (
     OP_UPDATE_SLIDE,
     OP_UPDATE_SLIDE_RUN_TEXTS,
     OP_UPDATE_SMART_ART,
+    OP_DELETE_SMART_ART,
+    OP_CHANGE_SMART_ART_LAYOUT,
+    OP_SET_SMART_ART_STYLE,
+    OP_SET_SMART_ART_NODES,
     OP_UPDATE_TABLE_CELL,
     OP_UPDATE_TABLE_FLAGS,
     OP_URL_FETCH_TO_SLIDES,
