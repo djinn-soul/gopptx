@@ -180,6 +180,21 @@ func (v *PayloadValidator) OptionalFloat64(payload map[string]any, field string)
 	return num, true
 }
 
+// RequireBool validates that a field exists and is a boolean.
+func (v *PayloadValidator) RequireBool(payload map[string]any, field string) (bool, bool) {
+	val, ok := payload[field]
+	if !ok {
+		v.missingField(field)
+		return false, false
+	}
+	b, ok := val.(bool)
+	if !ok {
+		v.invalidType(field, "a boolean", val)
+		return false, false
+	}
+	return b, true
+}
+
 // OptionalBool returns a bool if present, or false with false.
 func (v *PayloadValidator) OptionalBool(payload map[string]any, field string) (bool, bool) {
 	val, ok := payload[field]

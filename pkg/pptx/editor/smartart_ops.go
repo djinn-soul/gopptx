@@ -10,6 +10,8 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
 
+var reSmartArtRelIDs = regexp.MustCompile(`r:(dm|lo|qs|cs)=["']([^"']+)["']`)
+
 // smartArtPartRefs holds all resolved part paths and relationship IDs for a SmartArt diagram.
 type smartArtPartRefs struct {
 	DataPath    string
@@ -101,8 +103,7 @@ func extractAllSmartArtRelIDs(slideXML string, shapeID int) (string, string, str
 	fragment = fragment[:end]
 
 	var dm, lo, qs, cs string
-	re := regexp.MustCompile(`r:(dm|lo|qs|cs)=["']([^"']+)["']`)
-	for _, m := range re.FindAllStringSubmatch(fragment, -1) {
+	for _, m := range reSmartArtRelIDs.FindAllStringSubmatch(fragment, -1) {
 		switch m[1] {
 		case "dm":
 			dm = m[2]
@@ -150,7 +151,7 @@ func (e *PresentationEditor) removeContentTypeOverride(partPath string) {
 	}
 	partNameRooted := "/" + partPath
 	// Find and remove the Override element for this part.
-	re := regexp.MustCompile(`<Override\s+PartName="` + regexp.QuoteMeta(partNameRooted) + `"[^/]*/?>`)
+	re := regexp.MustCompile(`<Override\s+PartName="` + regexp.QuoteMeta(partNameRooted) + `"[^>]*/>`)
 	updated := re.ReplaceAll(data, nil)
 	if len(updated) != len(data) {
 		e.parts.Set(ctPath, updated)

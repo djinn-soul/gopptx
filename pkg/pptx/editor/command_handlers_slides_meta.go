@@ -64,12 +64,9 @@ func handleSetSlideHidden(e *PresentationEditor, payload json.RawMessage) (any, 
 	if !ok {
 		return nil, v.Error()
 	}
-	hidden, ok := v.OptionalBool(p, "hidden")
+	hidden, ok := v.RequireBool(p, "hidden")
 	if !ok {
-		if v.HasErrors() {
-			return nil, v.Error()
-		}
-		return nil, NewBridgeError(ErrCodeMissingField, `field "hidden" is required`)
+		return nil, v.Error()
 	}
 	if setErr := e.SetSlideHidden(slideIndex, hidden); setErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())

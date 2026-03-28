@@ -8,10 +8,15 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
 
+var (
+	reSmartArtNodeText      = regexp.MustCompile(`<a:t>([^<]*)</a:t>`)
+	reSmartArtLayoutURI     = regexp.MustCompile(`uniqueId\s*=\s*["']([^"']+)["']`)
+	reSmartArtLayoutURIFull = regexp.MustCompile(`dgm:layoutDef[^>]*uniqueId\s*=\s*["']([^"']+)["']`)
+)
+
 // extractSmartArtTexts extracts node text strings in order from a SmartArt data XML.
 func extractSmartArtTexts(dataXML string) []string {
-	re := regexp.MustCompile(`<a:t>([^<]*)</a:t>`)
-	matches := re.FindAllStringSubmatch(dataXML, -1)
+	matches := reSmartArtNodeText.FindAllStringSubmatch(dataXML, -1)
 	texts := make([]string, 0, len(matches))
 	for _, m := range matches {
 		text := strings.TrimSpace(m[1])
@@ -25,13 +30,11 @@ func extractSmartArtTexts(dataXML string) []string {
 
 // extractSmartArtLayoutURI extracts the layout URI from a SmartArt layout XML part.
 func extractSmartArtLayoutURI(layoutXML string) string {
-	re := regexp.MustCompile(`uniqueId\s*=\s*["']([^"']+)["']`)
-	if m := re.FindStringSubmatch(layoutXML); m != nil {
+	if m := reSmartArtLayoutURI.FindStringSubmatch(layoutXML); m != nil {
 		return m[1]
 	}
 	// Fall back to xmlns or other URI patterns.
-	re2 := regexp.MustCompile(`dgm:layoutDef[^>]*uniqueId\s*=\s*["']([^"']+)["']`)
-	if m := re2.FindStringSubmatch(layoutXML); m != nil {
+	if m := reSmartArtLayoutURIFull.FindStringSubmatch(layoutXML); m != nil {
 		return m[1]
 	}
 	return ""
