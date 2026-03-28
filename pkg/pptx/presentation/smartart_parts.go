@@ -17,13 +17,12 @@ type SmartArtPart struct {
 }
 
 const (
-	smartArtRenderedFilesPerPart = 5
+	smartArtRenderedFilesPerPart = 5 // data, layout, colors, quickStyle, drawing (no diagram rels file)
 	smartArtOrderData            = 0
 	smartArtOrderLayout          = 1
 	smartArtOrderColors          = 2
 	smartArtOrderQuickStyle      = 3
 	smartArtOrderDrawing         = 4
-	smartArtOrderDataRels        = 5
 )
 
 func SmartArtPartCount(parts []SmartArtPart) int {
@@ -135,20 +134,7 @@ func renderSmartArtPart(part SmartArtPart) []smartArtRenderedPart {
 			path:       fmt.Sprintf("ppt/diagrams/drawing%d.xml", num),
 			content:    pptxxml.SmartArtDrawingXML(part.spec),
 		},
-		{
-			partNumber: num,
-			order:      smartArtOrderDataRels,
-			path:       fmt.Sprintf("ppt/diagrams/_rels/data%d.xml.rels", num),
-			content:    smartArtDataRelsXML(num),
-		},
 	}
-}
-
-func smartArtDataRelsXML(partNumber int) string {
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId6" Type="http://schemas.microsoft.com/office/2007/relationships/diagramDrawing" Target="drawing%d.xml"/>
-</Relationships>`, partNumber)
 }
 
 func categoryFromURI(uri string) string {

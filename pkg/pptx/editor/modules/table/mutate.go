@@ -157,3 +157,44 @@ func MutateTableElements(
 
 	return out.Bytes(), nil
 }
+
+// insertBeforeNthElement inserts newElement immediately before the element at targetIdx.
+func insertBeforeNthElement(content, openTag, closeTag, newElement []byte, targetIdx int) ([]byte, error) {
+	var out bytes.Buffer
+	cursor := 0
+	index := 0
+
+	for {
+		rel := bytes.Index(content[cursor:], openTag)
+		if rel == -1 {
+			out.Write(content[cursor:])
+			break
+		}
+		elementStart := cursor + rel
+
+		nextCharIdx := elementStart + len(openTag)
+		if nextCharIdx < len(content) {
+			nextChar := content[nextCharIdx]
+			if nextChar != ' ' && nextChar != '>' && nextChar != '/' {
+				out.Write(content[cursor:nextCharIdx])
+				cursor = nextCharIdx
+				continue
+			}
+		}
+
+		elementEndRel := bytes.Index(content[elementStart:], closeTag)
+		if elementEndRel == -1 {
+			return nil, fmt.Errorf("invalid element at index %d", index)
+		}
+		elementEnd := elementStart + elementEndRel + len(closeTag)
+
+		out.Write(content[cursor:elementStart])
+		if index == targetIdx {
+			out.Write(newElement)
+		}
+		out.Write(content[elementStart:elementEnd])
+		cursor = elementEnd
+		index++
+	}
+	return out.Bytes(), nil
+}

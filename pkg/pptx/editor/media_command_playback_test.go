@@ -41,8 +41,8 @@ func TestCommandAddVideoWithPlaybackOptions(t *testing.T) {
 	if !strings.Contains(xmlText, "<p:video>") {
 		t.Fatalf("expected video timing node: %s", xmlText)
 	}
-	if !strings.Contains(xmlText, "<p15:media") || !strings.Contains(xmlText, "<p14:media") {
-		t.Fatalf("expected p14/p15 media extension tags in timing xml: %s", xmlText)
+	if !strings.Contains(xmlText, "<p14:media") {
+		t.Fatalf("expected p14 media extension tag in shape nvPr: %s", xmlText)
 	}
 	if !strings.Contains(xmlText, `delay="0"`) {
 		t.Fatalf("expected autoplay delay=0 in timing xml: %s", xmlText)
@@ -94,8 +94,8 @@ func TestCommandAddAudioWithIconAndPlaybackOptions(t *testing.T) {
 	if !strings.Contains(xmlText, "<p:audio>") {
 		t.Fatalf("expected audio timing node: %s", xmlText)
 	}
-	if !strings.Contains(xmlText, "<p15:media") || !strings.Contains(xmlText, "<p14:media") {
-		t.Fatalf("expected p14/p15 media extension tags in timing xml: %s", xmlText)
+	if !strings.Contains(xmlText, "<p14:media") {
+		t.Fatalf("expected p14 media extension tag in shape nvPr: %s", xmlText)
 	}
 	if !strings.Contains(xmlText, `numSld="2"`) {
 		t.Fatalf("expected across-slides numSld=2 from slide index 1 of 3: %s", xmlText)

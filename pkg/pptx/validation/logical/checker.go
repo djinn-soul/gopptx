@@ -42,11 +42,12 @@ func (c *Checker) checkSlide(ps structural.PartProvider, slidePart string, index
 
 	// Extract slide content
 	title := extractFirstAText(data)
-	shapes := parseSlideShapes(data)
+	parsedShapes := parseSlideShapes(data)
+	parsedImages := parseSlideImages(data)
 
 	// Infer layout from slide content - if no title and no shapes, likely a blank layout
 	layout := elements.SlideLayoutTitleAndContent
-	if title == "" && len(shapes) == 0 {
+	if title == "" && len(parsedShapes) == 0 && len(parsedImages) == 0 {
 		layout = elements.SlideLayoutBlank
 	} else if title == "" {
 		// If there's content but no title, could be title-only or custom layout
@@ -57,7 +58,8 @@ func (c *Checker) checkSlide(ps structural.PartProvider, slidePart string, index
 	slide := elements.SlideContent{
 		Title:  title,
 		Layout: layout,
-		Shapes: shapes,
+		Shapes: parsedShapes,
+		Images: parsedImages,
 	}
 
 	if err := slide.Validate(index); err != nil {
@@ -111,6 +113,11 @@ type shapeNode struct {
 			Name string `xml:"name,attr"`
 		} `xml:"cNvPr"`
 	} `xml:"nvPicPr"`
+	BlipFill struct {
+		Blip struct {
+			Embed string `xml:"embed,attr"`
+		} `xml:"blip"`
+	} `xml:"blipFill"`
 	SpPr struct {
 		PrstGeom struct {
 			Prst string `xml:"prst,attr"`
@@ -149,7 +156,7 @@ func parseSlideShapes(content []byte) []shapes.Shape {
 		}
 
 		start, ok := token.(xml.StartElement)
-		if !ok || (start.Name.Local != "sp" && start.Name.Local != "pic") {
+		if !ok || start.Name.Local != "sp" {
 			continue
 		}
 
@@ -158,13 +165,8 @@ func parseSlideShapes(content []byte) []shapes.Shape {
 			continue
 		}
 
-		shapeType := start.Name.Local
-		if shapeType == "sp" {
-			shapeType = node.SpPr.PrstGeom.Prst
-		}
-
 		shape := shapes.Shape{
-			Type: shapeType,
+			Type: node.SpPr.PrstGeom.Prst,
 			X:    styling.Emu(node.SpPr.Xfrm.Off.X),
 			Y:    styling.Emu(node.SpPr.Xfrm.Off.Y),
 			CX:   styling.Emu(node.SpPr.Xfrm.Ext.Cx),
@@ -173,6 +175,44 @@ func parseSlideShapes(content []byte) []shapes.Shape {
 			Text: extractShapeText(node),
 		}
 		result = append(result, shape)
+	}
+}
+
+func parseSlideImages(content []byte) []shapes.Image {
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	result := make([]shapes.Image, 0)
+
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return result
+			}
+			return result
+		}
+
+		start, ok := token.(xml.StartElement)
+		if !ok || start.Name.Local != "pic" {
+			continue
+		}
+
+		var node shapeNode
+		if decodeErr := decoder.DecodeElement(&node, &start); decodeErr != nil {
+			continue
+		}
+
+		relID := node.BlipFill.Blip.Embed
+		if relID == "" {
+			relID = "embedded"
+		}
+		img := shapes.Image{
+			RelID: relID,
+			X:     styling.Emu(node.SpPr.Xfrm.Off.X),
+			Y:     styling.Emu(node.SpPr.Xfrm.Off.Y),
+			CX:    styling.Emu(node.SpPr.Xfrm.Ext.Cx),
+			CY:    styling.Emu(node.SpPr.Xfrm.Ext.Cy),
+		}
+		result = append(result, img)
 	}
 }
 

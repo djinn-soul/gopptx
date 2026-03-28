@@ -2,8 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ... import ops
 from ..helpers import PresentationMixinBase
+
+if TYPE_CHECKING:
+    from ...schemas import (
+        GrayscalePlaceholderRef,
+        GrayscaleScope,
+        GrayscaleShapeRef,
+        GrayscaleTextRef,
+    )
 
 
 class PresentationGrayscaleMixin(PresentationMixinBase):
@@ -13,18 +23,17 @@ class PresentationGrayscaleMixin(PresentationMixinBase):
         self,
         *,
         slides: list[int] | None = None,
-        shapes: list[dict[str, int]] | None = None,
-        text: list[dict[str, object]] | None = None,
-        placeholders: list[dict[str, object]] | None = None,
-        colors: bool = True,
-        images: bool = True,
-        backgrounds: bool = True,
+        shapes: list[GrayscaleShapeRef] | None = None,
+        text: list[GrayscaleTextRef] | None = None,
+        placeholders: list[GrayscalePlaceholderRef] | None = None,
+        scope: GrayscaleScope | None = None,
     ) -> None:
         """Convert selected slides, shapes, placeholders, runs, images, and backgrounds to grayscale."""
+        resolved = scope or {}
         payload: dict[str, object] = {
-            "colors": colors,
-            "images": images,
-            "backgrounds": backgrounds,
+            "colors": resolved.get("colors", True),
+            "images": resolved.get("images", True),
+            "backgrounds": resolved.get("backgrounds", True),
         }
         if slides is not None:
             payload["slides"] = slides

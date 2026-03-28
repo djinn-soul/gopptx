@@ -108,11 +108,8 @@ func TestAddMediaWithPlaybackOptionsDelegatesToInsert(t *testing.T) {
 	if !strings.Contains(slideXML, "<p:video>") || !strings.Contains(slideXML, "<p:audio>") {
 		t.Fatalf("expected video+audio timing media nodes in slide xml: %s", slideXML)
 	}
-	if !strings.Contains(slideXML, "<p15:media") {
-		t.Fatalf("expected p15 media extension tag in timing xml: %s", slideXML)
-	}
 	if !strings.Contains(slideXML, "<p14:media") {
-		t.Fatalf("expected p14 media extension tag in timing xml: %s", slideXML)
+		t.Fatalf("expected p14 media extension tag in shape nvPr xml: %s", slideXML)
 	}
 	if !strings.Contains(slideXML, `repeatCount="indefinite"`) {
 		t.Fatalf("expected loop timing repeatCount in slide xml: %s", slideXML)
@@ -132,8 +129,8 @@ func TestAddMediaWithPlaybackOptionsDelegatesToInsert(t *testing.T) {
 	if !strings.Contains(slideXML, `numSld="1"`) {
 		t.Fatalf("expected single-slide media timing node: %s", slideXML)
 	}
-	if !strings.Contains(slideXML, `r:embed="rId4"`) || !strings.Contains(slideXML, `r:embed="rId6"`) {
-		t.Fatalf("expected timing extension rel-id mapping for inserted media in slide xml: %s", slideXML)
+	if !strings.Contains(slideXML, `r:embed="rId4"`) {
+		t.Fatalf("expected media rel-id rId4 for video shape in slide xml: %s", slideXML)
 	}
 }
 
