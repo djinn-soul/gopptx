@@ -1,4 +1,4 @@
-"""Operation constants shared by gopptx Python runtime."""
+"""Operation name constants for gopptx."""
 
 from __future__ import annotations
 
@@ -150,7 +150,6 @@ OP_UPDATE_TABLE_CELL = "update_table_cell"
 OP_UPDATE_TABLE_FLAGS = "update_table_flags"
 OP_URL_FETCH_TO_SLIDES = "url_fetch_to_slides"
 OP_VALIDATE = "validate"
-
 SUPPORTED_OPS = (
     OP_ADD_ANIMATION,
     OP_ADD_AUDIO,
@@ -301,5 +300,4 @@ SUPPORTED_OPS = (
     OP_URL_FETCH_TO_SLIDES,
     OP_VALIDATE,
 )
-
 SUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)
