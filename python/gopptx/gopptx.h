@@ -93,6 +93,8 @@ extern "C" {
 extern __declspec(dllexport) char* deck_global_error(void);
 extern __declspec(dllexport) DeckHandle deck_open(char* path);
 extern __declspec(dllexport) DeckHandle deck_new(char* title);
+extern __declspec(dllexport) DeckHandle deck_open_bytes(char* data, int length);
+extern __declspec(dllexport) char* deck_save_bytes(DeckHandle h, int* outLen);
 extern __declspec(dllexport) char* deck_execute_json(DeckHandle h, char* jsonInput);
 extern __declspec(dllexport) int deck_save(DeckHandle h, char* path);
 extern __declspec(dllexport) char* deck_last_error(DeckHandle h);

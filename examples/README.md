@@ -9,23 +9,39 @@ Use the following commands to run the examples:
 ### Core Presentation Generation
 
 - `01-basic-pptx-generation`: `go run ./examples/01-basic-pptx-generation/basic_gen.go` -> `01_hello_world.pptx`
+- `02-slide-layouts`: `go run ./examples/02-slide-layouts/main.go` -> `02_slide_layouts.pptx` (all layout types: title-content, title-only, blank, centered-title, two-column)
 - `04-text-formatting` (Enhancements): `go run ./examples/04-text-formatting/text_enhancements.go` -> `04_text_enhancements.pptx`
 - `04-text-formatting` (Text Frame): `go run ./examples/04-text-formatting/text_frame.go` -> `04_text_frame_smoke.pptx`
+- `05-bullet-styles`: `go run ./examples/05-bullet-styles/main.go` -> `05_bullet_styles.pptx` (standard, numbered, lettered, sub-bullets)
+- `06-text-enhancements`: `go run ./examples/06-text-enhancements/main.go` -> `06_text_enhancements.pptx` (strikethrough, highlight, all-caps, subscript/superscript)
+- `07-tables`: `go run ./examples/07-tables/main.go` -> `07_tables.pptx` (table creation with styled cells)
+- `08-table-cell-merge`: `go run ./examples/08-table-cell-merge/main.go` -> `08_table_cell_merge.pptx` (colspan and rowspan)
 - `09-charts`: `go run ./examples/09-charts/chart_smoke.go` -> `09_charts_*.pptx`
+- `10-images`: `go run ./examples/10-images/main.go` -> `10_images.pptx` (image embedding from file and bytes)
+- `11-image-advanced-sources`: `go run ./examples/11-image-advanced-sources/main.go` -> `11_image_advanced_sources.pptx` (base64 and bytes sources)
 - `12-shapes`: `go run ./examples/12-shapes/feature_showcase.go` -> `12_feature_showcase.pptx`
+- `13-connectors`: `go run ./examples/13-connectors/main.go` -> `13_connectors.pptx` (straight, elbow, curved connectors)
+- `14-transitions`: `go run ./examples/14-transitions/main.go` -> `14_transitions.pptx` (fade, push, wipe, zoom transitions)
+- `15-cli-commands`: `go run ./examples/15-cli-commands/main.go` -> `15_cli_commands.pptx` (CLI subcommand reference)
 - `16-templates`: `go run ./examples/16-templates/main.go` -> `16_invoice_template.pptx`, `16_template_invoice.pptx`
 - `17-themes`: `go run ./examples/17-themes/theme_master_smoke.go` -> `17_theme_master_smoke.pptx`
 - `28-animations`: `go run ./examples/28-animations/main.go` -> `28_animations.pptx`
 - `31-hyperlinks`: `go run ./examples/31-hyperlinks/main.go` -> `31_advanced_hyperlink_smoke.pptx`
+- `48-accessibility-alt-text`: `go run ./examples/48-accessibility-alt-text/main.go` -> `48_accessibility_alt_text.pptx` (alt text and decorative flags)
+- `51-language-localization`: `go run ./examples/51-language-localization/main.go` -> `51_language_localization.pptx` (per-run lang tags, RTL paragraphs)
 - `53-slide-properties`: `go run ./examples/53-slide-properties/slide_props_smoke.go` -> `53_slide_properties.pptx`
+- `54-theme-master`: `go run ./examples/54-theme-master/main.go` -> `54_theme_master.pptx` (built-in themes via PresentationBuilder)
 - `55-background-fills`: `go run ./examples/55-background-fills/background_smoke.go` -> `55_background_fills.pptx`
 - `57-placeholder-overrides`: `go run ./examples/57-placeholder-overrides/placeholder_override_smoke.go` -> `57_placeholder_override_smoke.pptx`
 - `58-gopptx-rich-slide`: `go run ./examples/58-gopptx-rich-slide/main.go` -> `58_gopptx_rich_slide.pptx`
 
 ### Masters & Layouts
 
+- `18-layout-helpers`: `go run ./examples/18-layout-helpers/main.go` -> `18_layout_helpers.pptx` (styling.Inches, Emu, unit conversions)
 - `33-notes-master`: `go run ./examples/33-notes-master/notes_master_smoke.go` -> `33_notes_master_smoke.pptx`
 - `34-urlfetch`: `go run ./examples/34-urlfetch/main.go` -> `34_urlfetch_*.pptx` (HTML to PPTX with custom CSS selectors and image embedding)
+- `34-web2ppt`: `go run ./examples/34-web2ppt/main.go` -> `34_web2ppt.pptx` (web2ppt feature overview)
+- `35-prelude-helpers`: `go run ./examples/35-prelude-helpers/main.go` -> `35_prelude_helpers.pptx` (PresentationBuilder fluent API)
 - `36-slide-master`: `go run ./examples/36-slide-master/multi_master_smoke.go` -> `36_multi_master_smoke.pptx`
 
 ### Editor & Modification
@@ -38,10 +54,15 @@ Use the following commands to run the examples:
 - `37-slide-duplication` (Complex): `go run ./examples/37-slide-duplication/complex_duplication.go` -> `37_complex_duplication.pptx`
 - `38-editor-image-support`: `go run ./examples/38-editor-image-support/editor_image_smoke.go` -> `38_editor_image_smoke.pptx`
 - `39-editor-chart-support`: `go run ./examples/39-editor-chart-support/smoke_main.go`
+- `40-editor-notes-support`: `go run ./examples/40-editor-notes-support/main.go` -> `40_editor_notes_support.pptx` (SetNotes, WithNotes via editor)
+- `43-advanced-theme-management`: `go run ./examples/43-advanced-theme-management/main.go` -> `43_advanced_theme_management.pptx` (SetGlobalThemePreset, ApplyTheme)
 - `44-section-management`: `go run ./examples/44-section-management/smoke_main.go`
+- `52-legacy-ppt-interop`: `go run ./examples/52-legacy-ppt-interop/main.go` -> `52_legacy_ppt_interop.pptx` (legacy .ppt detection and LibreOffice bridge)
 
-### Advanced APIS
+### Advanced APIs
 
+- `32-mermaid`: `go run ./examples/32-mermaid/main.go` -> `32_mermaid.pptx`
+- `32-mermaid-diagrams`: `go run ./examples/32-mermaid-diagrams/main.go` -> `32_mermaid_diagrams.pptx` (flowchart, sequence, pie chart)
 - `40-metadata-writer`: `go run ./examples/40-metadata-writer/main.go`
 - `41-deep-shape-editing`: `go run ./examples/41-deep-shape-editing/main.go`
 - `42-smart-merge-assets`: `go run ./examples/42-smart-merge-assets/main.go`
@@ -50,6 +71,8 @@ Use the following commands to run the examples:
 - `49-advanced-hyperlinks`: `go run ./examples/49-advanced-hyperlinks/main.go`
 - `56-action-api` (Smoke): `go run ./examples/56-action-api/action_smoke.go` -> `56_action_smoke.pptx`
 - `56-action-api` (API): `go run ./examples/56-action-api/action_api_smoke.go` -> `56_action_api_smoke.pptx`
+- `57-bridge-command-api`: `go run ./examples/57-bridge-command-api/main.go` -> `57_bridge_command_api.pptx` (JSON bridge commands: get_slide_count, set_slide_title)
+- `58-bridge-performance`: `go run ./examples/58-bridge-performance/main.go` -> `58_bridge_performance.pptx` (batch command execution vs individual round-trips)
 - `60-presentation-api-metadata`: `go run ./examples/60-presentation-api-metadata/main.go`
 
 ### Python Examples

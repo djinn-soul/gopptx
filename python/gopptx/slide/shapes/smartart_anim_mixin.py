@@ -37,8 +37,10 @@ class SlideSmartArtAnimMixin:
     def add_smartart(
         self,
         layout: str,
-        items: list[str],
-        bounds: tuple[float, float, float, float],
+        items: list[str] | None = None,
+        bounds: tuple[float, float, float, float] | None = None,
+        *,
+        nodes: list[dict[str, object]] | None = None,
     ) -> int:
         """Add a SmartArt diagram to the slide.
 
@@ -46,21 +48,43 @@ class SlideSmartArtAnimMixin:
             layout: SmartArt layout URI.  Use constants from
                 ``gopptx.smartart`` (e.g. ``SMARTART_BASIC_LIST``) or pass a
                 raw OOXML URN.
-            items: List of text items to populate the diagram.
+            items: Flat list of text items (for list/process/cycle layouts).
+                Ignored when ``nodes`` is provided.
             bounds: ``(left, top, width, height)`` in inches.
+            nodes: Nested node tree for hierarchy layouts (org chart, hierarchy).
+                Each node is a dict with ``"text"`` (str) and optional
+                ``"children"`` (list of the same shape).
 
         Returns:
             The shape ID of the inserted graphic frame.
 
-        Example::
+        Examples::
 
-            from gopptx.smartart import SMARTART_BASIC_PROCESS
+            from gopptx.smartart import SMARTART_BASIC_PROCESS, SMARTART_ORG_CHART
+
+            # Flat items for process/list layouts
             shape_id = slide.add_smartart(
                 SMARTART_BASIC_PROCESS,
                 ["Plan", "Execute", "Review"],
                 (1.0, 2.0, 8.0, 4.0),
             )
+
+            # Nested nodes for org chart / hierarchy
+            shape_id = slide.add_smartart(
+                SMARTART_ORG_CHART,
+                bounds=(1.0, 2.0, 8.0, 4.0),
+                nodes=[
+                    {"text": "CEO", "children": [
+                        {"text": "VP Engineering", "children": [
+                            {"text": "Engineer"},
+                        ]},
+                        {"text": "VP Sales"},
+                    ]},
+                ],
+            )
         """
+        if bounds is None:
+            bounds = (1.0, 2.0, 8.0, 4.0)
         left, top, width, height = bounds
         x = int(left * _INCHES_TO_EMU)
         y = int(top * _INCHES_TO_EMU)
@@ -70,12 +94,16 @@ class SlideSmartArtAnimMixin:
         payload: dict[str, object] = {
             "slide_index": self.index,
             "layout": layout,
-            "items": items,
             "x": x,
             "y": y,
             "cx": cx,
             "cy": cy,
         }
+        if nodes is not None:
+            payload["nodes"] = nodes
+        else:
+            payload["items"] = items or []
+
         result = self._presentation.execute(ops.OP_ADD_SMART_ART, payload)
         self._invalidate_shape_cache_if_present()
         return get_required_int(result, "shape_id")

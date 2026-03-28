@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gopptx import PlaceholderType, Presentation
+from gopptx import GrayscaleScope, PlaceholderType, Presentation, Slide
 
 
-def find_shape_by_placeholder(slide, placeholder_type: str | PlaceholderType) -> int:
+def find_shape_by_placeholder(
+    slide: Slide, placeholder_type: str | PlaceholderType
+) -> int:
     for shape in slide.list_shapes():
         if shape.get("PlaceholderType") == placeholder_type:
             return int(shape["ID"])
@@ -54,7 +56,6 @@ def main() -> None:
 
     source_path = output_dir / "61_grayscale_targeted_source.pptx"
     result_path = output_dir / "61_grayscale_targeted_result.pptx"
-    image_path = root / "examples" / "assets" / "test_image.png"
 
     with Presentation.new("Grayscale Targeted Example") as prs:
         # Slide 0: title placeholder lookup by enum-style placeholder type.
@@ -123,7 +124,7 @@ def main() -> None:
         image_slide = prs.add_slide("Image Target")
         image_slide.set_background("solid", color="EFEFEF")
         image_shape_id = image_slide.add_image(
-            str(image_path),
+            str(root / "examples" / "assets" / "test_image.png"),
             (1828800, 1371600, 2743200, 2057400),
         )
         image_slide.add_shape(
@@ -134,7 +135,9 @@ def main() -> None:
         )
 
         title_shape_id = find_shape_by_placeholder(title_slide, PlaceholderType.TITLE)
-        footer_shape_id = find_shape_by_placeholder(footer_slide, PlaceholderType.FOOTER)
+        footer_shape_id = find_shape_by_placeholder(
+            footer_slide, PlaceholderType.FOOTER
+        )
         title_slide.set_shape_runs(
             title_shape_id,
             [
@@ -156,17 +159,13 @@ def main() -> None:
             placeholders=[
                 {"slide_index": title_slide.index, "type": PlaceholderType.TITLE}
             ],
-            colors=True,
-            images=False,
-            backgrounds=False,
+            scope=GrayscaleScope(colors=True, images=False, backgrounds=False),
         )
         prs.convert_to_grayscale(
             placeholders=[
                 {"slide_index": footer_slide.index, "type": PlaceholderType.FOOTER}
             ],
-            colors=True,
-            images=False,
-            backgrounds=False,
+            scope=GrayscaleScope(colors=True, images=False, backgrounds=False),
         )
         prs.convert_to_grayscale(
             text=[
@@ -176,27 +175,19 @@ def main() -> None:
                     "run_indices": [0],
                 }
             ],
-            colors=True,
-            images=False,
-            backgrounds=False,
+            scope=GrayscaleScope(colors=True, images=False, backgrounds=False),
         )
         prs.convert_to_grayscale(
             shapes=[{"slide_index": shape_slide.index, "shape_id": accent_shape_id}],
-            colors=True,
-            images=False,
-            backgrounds=False,
+            scope=GrayscaleScope(colors=True, images=False, backgrounds=False),
         )
         prs.convert_to_grayscale(
             slides=[background_slide.index],
-            colors=False,
-            images=False,
-            backgrounds=True,
+            scope=GrayscaleScope(colors=False, images=False, backgrounds=True),
         )
         prs.convert_to_grayscale(
             shapes=[{"slide_index": image_slide.index, "shape_id": image_shape_id}],
-            colors=False,
-            images=True,
-            backgrounds=False,
+            scope=GrayscaleScope(colors=False, images=True, backgrounds=False),
         )
         prs.save(str(result_path))
 

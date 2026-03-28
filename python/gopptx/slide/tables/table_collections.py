@@ -94,6 +94,41 @@ class TableRows:
         self._table.invalidate_cache()
         return TableRow(self._table, len(self) - 1)
 
+    def insert(self, at_index: int, height: int = 0) -> TableRow:
+        """Insert a new empty row before at_index and return a proxy for it.
+
+        Args:
+            at_index: Position to insert before. Use len(rows) to append.
+            height: Row height in EMUs. Pass 0 to let PowerPoint auto-size.
+        """
+        self._table.prs.execute(
+            ops.OP_INSERT_TABLE_ROW,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "at_index": int(at_index),
+                "height": int(height),
+            },
+        )
+        self._table.invalidate_cache()
+        return TableRow(self._table, at_index)
+
+    def remove(self, at_index: int) -> None:
+        """Remove the row at at_index.
+
+        Args:
+            at_index: Zero-based row index to remove.
+        """
+        self._table.prs.execute(
+            ops.OP_REMOVE_TABLE_ROW,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "at_index": int(at_index),
+            },
+        )
+        self._table.invalidate_cache()
+
 
 class TableColumn:
     """Column proxy with width accessor."""
@@ -174,6 +209,41 @@ class TableColumns:
         )
         self._table.invalidate_cache()
         return TableColumn(self._table, len(self) - 1)
+
+    def insert(self, at_index: int, width: int) -> TableColumn:
+        """Insert a new empty column before at_index and return a proxy for it.
+
+        Args:
+            at_index: Position to insert before. Use len(columns) to append.
+            width: Column width in EMUs (must be > 0).
+        """
+        self._table.prs.execute(
+            ops.OP_INSERT_TABLE_COLUMN,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "at_index": int(at_index),
+                "width": int(width),
+            },
+        )
+        self._table.invalidate_cache()
+        return TableColumn(self._table, at_index)
+
+    def remove(self, at_index: int) -> None:
+        """Remove the column at at_index.
+
+        Args:
+            at_index: Zero-based column index to remove.
+        """
+        self._table.prs.execute(
+            ops.OP_REMOVE_TABLE_COLUMN,
+            {
+                "slide_index": self._table.slide_index,
+                "shape_id": self._table.shape_id,
+                "at_index": int(at_index),
+            },
+        )
+        self._table.invalidate_cache()
 
 
 def _as_int(value: object) -> int:
