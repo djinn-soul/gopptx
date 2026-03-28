@@ -2,10 +2,38 @@ package editor
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
 	tablemod "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/table"
 )
+
+func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
+	string,
+	[]byte,
+	int,
+	int,
+	[]byte,
+	error,
+) {
+	if slideIndex < 0 || slideIndex >= len(e.slides) {
+		return "", nil, 0, 0, nil, fmt.Errorf("slide index %d out of range", slideIndex)
+	}
+	partPath := e.slides[slideIndex].Part
+	var ok bool
+	var slideContent []byte
+	slideContent, ok = e.parts.Get(partPath)
+	if !ok {
+		return "", nil, 0, 0, nil, errors.New("slide part not found")
+	}
+	frameStart, frameEnd, frame, err := tablemod.FindTableFrame(slideContent, shapeID)
+	if err != nil {
+		return "", nil, 0, 0, nil, err
+	}
+	return partPath, slideContent, frameStart, frameEnd, frame, nil
+}
 
 const (
 	maxTableDimension = 1000
@@ -190,4 +218,61 @@ func handleUpdateTableCell(e *PresentationEditor, payload json.RawMessage) (any,
 			return map[string]bool{"success": true}, nil
 		},
 	)
+}
+
+func handleSetTableStyle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleParsedRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (editorcommand.TableStyleRequest, bool) {
+			return editorcommand.ParseTableStyleRequest(p, v.RequireInt, v.RequireString)
+		},
+		v.Error,
+		func(request editorcommand.TableStyleRequest) (any, error) {
+			if err := e.SetTableStyle(request.SlideIndex, request.ShapeID, request.StyleGUID); err != nil {
+				return nil, err
+			}
+			return map[string]bool{"success": true}, nil
+		},
+	)
+}
+
+func handleDefineTableStyle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	v := NewPayloadValidator()
+	name, ok := v.RequireString(p, "name")
+	if !ok {
+		return nil, v.Error()
+	}
+	styleID := v.OptionalString(p, "style_id")
+	id, err := e.DefineTableStyle(common.TableStyleDefinition{
+		StyleID: styleID,
+		Name:    name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"style_id": id,
+		"name":     name,
+	}, nil
+}
+
+func handleListTableStyles(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	styles, err := e.ListTableStyles()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]map[string]string, 0, len(styles))
+	for _, style := range styles {
+		out = append(out, map[string]string{
+			"style_id": style.StyleID,
+			"name":     style.Name,
+		})
+	}
+	return map[string]any{"styles": out}, nil
 }

@@ -32,6 +32,23 @@ theme:
 extra_css:
   - styles/monochrome.css
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [python]
+          options:
+            show_source: false
+            show_signature_annotations: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            inherited_members: true
+            show_bases: true
+            merge_init_into_class: true
+            docstring_style: google
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight:

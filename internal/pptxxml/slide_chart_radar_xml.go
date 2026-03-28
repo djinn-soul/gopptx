@@ -18,7 +18,6 @@ func radarChartPartXML(chart *ChartSpec) string {
 		fmt.Sprintf(`
 <c:radarChart>
 <c:radarStyle val="%s"/>%s
-<c:varyColors val="0"/>
 %s
 <c:axId val="48650112"/>
 <c:axId val="48672768"/>
@@ -75,16 +74,9 @@ func radarSeriesXML(chart *ChartSpec) string {
 
 func radarAxesXML(chart *ChartSpec) string {
 	axes := chartAxesXML(chart)
-	axes = strings.Replace(
+	return strings.ReplaceAll(
 		axes,
 		`<c:tickLblPos val="nextTo"/>`,
 		`<c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>`,
-		1,
-	)
-	return strings.Replace(
-		axes,
-		`<c:crossBetween val="between"/>`,
-		`<c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:crossBetween val="between"/>`,
-		1,
 	)
 }

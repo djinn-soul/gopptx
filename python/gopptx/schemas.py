@@ -48,6 +48,10 @@ Hyperlink = _schemas_shape_types.Hyperlink
 TextRun = _schemas_shape_types.TextRun
 ShapeUpdate = _schemas_shape_types.ShapeUpdate
 Shape = _schemas_shape_types.Shape
+GrayscaleShapeRef = _schemas_shape_types.GrayscaleShapeRef
+GrayscaleTextRef = _schemas_shape_types.GrayscaleTextRef
+GrayscalePlaceholderRef = _schemas_shape_types.GrayscalePlaceholderRef
+GrayscaleScope = _schemas_shape_types.GrayscaleScope
 
 ChartDataUpdate = _schemas_chart_layout.ChartDataUpdate
 ChartAxisState = _schemas_chart_layout.ChartAxisState

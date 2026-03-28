@@ -122,8 +122,8 @@ func (img Image) Validate(slideIndex, imageIndex int) error {
 		)
 	}
 
-	if img.Path == "" && len(img.Data) == 0 && img.SourceURL == "" {
-		return fmt.Errorf("slide %d image %d has no source (Path, Data, or SourceURL)", slideIndex, imageIndex)
+	if img.Path == "" && len(img.Data) == 0 && img.SourceURL == "" && img.RelID == "" {
+		return fmt.Errorf("slide %d image %d has no source (Path, Data, SourceURL, or RelID)", slideIndex, imageIndex)
 	}
 	if len(img.Data) > 0 && img.Format == "" {
 		return fmt.Errorf("slide %d image %d has Data but no Format", slideIndex, imageIndex)
