@@ -43,51 +43,14 @@ func (e *PresentationEditor) SetSlideHeaderFooter(slideIndex int, hf SlideHeader
 	if !ok {
 		return fmt.Errorf("slide part %q not found", slideRef.Part)
 	}
-	hfXML := buildHeaderFooterXML(hf)
-	slideXMLStr := injectSlideHF(string(slideXML), hfXML)
-	slideXMLStr = injectVisibleHeaderFooterShapes(
-		slideXMLStr,
+	slideXMLStr := injectVisibleHeaderFooterShapes(
+		string(slideXML),
 		hf,
 		e.metadata.SlideSize.Width,
 		e.metadata.SlideSize.Height,
 	)
 	e.parts.Set(slideRef.Part, []byte(slideXMLStr))
 	return nil
-}
-
-// buildHeaderFooterXML creates the <p:hf> XML snippet.
-func buildHeaderFooterXML(hf SlideHeaderFooter) string {
-	sn := boolAttr(hf.ShowSlideNum)
-	dt := boolAttr(hf.ShowDateTime)
-	ftr := boolAttr(hf.ShowFooter)
-	var b strings.Builder
-	fmt.Fprintf(&b, `<p:hf sldNum="%s" dt="%s" ftr="%s">`, sn, dt, ftr)
-	if hf.ShowFooter && hf.Footer != "" {
-		fmt.Fprintf(&b, `<p:ftr><a:r><a:t>%s</a:t></a:r></p:ftr>`, xmlEscapeSimple(hf.Footer))
-	}
-	if hf.ShowDateTime && hf.DateTimeText != "" {
-		fmt.Fprintf(&b, `<p:dt><a:r><a:t>%s</a:t></a:r></p:dt>`, xmlEscapeSimple(hf.DateTimeText))
-	}
-	b.WriteString(`</p:hf>`)
-	return b.String()
-}
-
-// boolAttr converts bool to OOXML attribute string ("1"/"0").
-func boolAttr(b bool) string {
-	if b {
-		return "1"
-	}
-	return "0"
-}
-
-// injectSlideHF removes any existing <p:hf> and inserts the new one near slide content.
-func injectSlideHF(slideXML, hfXML string) string {
-	reHF := regexp.MustCompile(`(?s)<p:hf\b[^>]*>.*?</p:hf>|<p:hf\b[^>]*/>`)
-	slideXML = reHF.ReplaceAllString(slideXML, "")
-	if strings.Contains(slideXML, "</p:cSld>") {
-		return strings.Replace(slideXML, "</p:cSld>", "</p:cSld>"+hfXML, 1)
-	}
-	return strings.Replace(slideXML, "</p:sld>", hfXML+"</p:sld>", 1)
 }
 
 func injectVisibleHeaderFooterShapes(

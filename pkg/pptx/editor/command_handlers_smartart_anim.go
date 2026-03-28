@@ -36,7 +36,7 @@ func handleAddSmartArt(e *PresentationEditor, payload json.RawMessage) (any, err
 		return nil, v.Error()
 	}
 
-	// Items list (optional, defaults to empty).
+	// Items list (optional, defaults to empty). Used when "nodes" is absent.
 	items, _ := v.OptionalStringSlice(p, "items")
 
 	// Optional bounds in EMU. Use Go default sizes if omitted.
@@ -52,7 +52,16 @@ func handleAddSmartArt(e *PresentationEditor, payload json.RawMessage) (any, err
 	cy := optionalInt64OrDefault(p, "cy", defaultCY)
 
 	layout := smartart.CustomLayout(layoutURI)
-	sa := smartart.NewSmartArt(layout).AddItems(items)
+	var sa smartart.SmartArt
+	if rawNodes, hasNodes := p["nodes"]; hasNodes {
+		nodes := parseSmartArtNodeList(rawNodes)
+		sa = smartart.NewSmartArt(layout)
+		for _, n := range nodes {
+			sa = sa.AddNode(n)
+		}
+	} else {
+		sa = smartart.NewSmartArt(layout).AddItems(items)
+	}
 
 	// Override position/size from payload.
 	sa.X = styling.Length(x)
@@ -160,6 +169,31 @@ func handleSetSlideTransition(e *PresentationEditor, payload json.RawMessage) (a
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
 	}
 	return map[string]bool{"updated": true}, nil
+}
+
+// parseSmartArtNodeList converts a JSON-decoded value ([]any of node maps) into []smartart.Node.
+// Each node map must have a "text" string key and may have a "children" list of the same shape.
+func parseSmartArtNodeList(raw any) []smartart.Node {
+	list, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	nodes := make([]smartart.Node, 0, len(list))
+	for _, item := range list {
+		m, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		text, _ := m["text"].(string)
+		node := smartart.NewNode(text)
+		if children, hasChildren := m["children"]; hasChildren {
+			for _, child := range parseSmartArtNodeList(children) {
+				node = node.WithChild(child)
+			}
+		}
+		nodes = append(nodes, node)
+	}
+	return nodes
 }
 
 // optionalInt64OrDefault returns the int64 value of a map key, or the default if missing/invalid.

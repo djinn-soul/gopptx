@@ -1,37 +1,11 @@
 package editor
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	tablemod "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/table"
 )
-
-func getSlideTableFrame(e *PresentationEditor, slideIndex, shapeID int) (
-	string,
-	[]byte,
-	int,
-	int,
-	[]byte,
-	error,
-) {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return "", nil, 0, 0, nil, fmt.Errorf("slide index %d out of range", slideIndex)
-	}
-	partPath := e.slides[slideIndex].Part
-	var ok bool
-	var slideContent []byte
-	slideContent, ok = e.parts.Get(partPath)
-	if !ok {
-		return "", nil, 0, 0, nil, errors.New("slide part not found")
-	}
-	frameStart, frameEnd, frame, err := tablemod.FindTableFrame(slideContent, shapeID)
-	if err != nil {
-		return "", nil, 0, 0, nil, err
-	}
-	return partPath, slideContent, frameStart, frameEnd, frame, nil
-}
 
 // SetTableStyle sets the table style for the specified table on a slide.
 // The styleGUID must be a valid PowerPoint table style GUID, e.g.:
@@ -239,6 +213,66 @@ func (e *PresentationEditor) AddTableColumn(slideIndex, shapeID int, width int64
 		return err
 	}
 	updatedFrame, err := tablemod.AddTableColumnInFrame(frame, width)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// InsertTableRow inserts a new empty row before the row at atIndex.
+// Use atIndex == current row count to append at the end.
+// height is in EMU; pass 0 to let PowerPoint auto-size.
+func (e *PresentationEditor) InsertTableRow(slideIndex, shapeID, atIndex int, height int64) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.InsertTableRowInFrame(frame, atIndex, height)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// RemoveTableRow removes the row at atIndex from an existing table.
+func (e *PresentationEditor) RemoveTableRow(slideIndex, shapeID, atIndex int) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.RemoveTableRowInFrame(frame, atIndex)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// InsertTableColumn inserts a new empty column before the column at atIndex.
+// Use atIndex == current column count to append at the end.
+// width is in EMU.
+func (e *PresentationEditor) InsertTableColumn(slideIndex, shapeID, atIndex int, width int64) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.InsertTableColumnInFrame(frame, atIndex, width)
+	if err != nil {
+		return err
+	}
+	e.parts.Set(partPath, tablemod.ReplaceTableFrame(slideContent, frameStart, frameEnd, updatedFrame))
+	return nil
+}
+
+// RemoveTableColumn removes the column at atIndex from an existing table.
+func (e *PresentationEditor) RemoveTableColumn(slideIndex, shapeID, atIndex int) error {
+	partPath, slideContent, frameStart, frameEnd, frame, err := getSlideTableFrame(e, slideIndex, shapeID)
+	if err != nil {
+		return err
+	}
+	updatedFrame, err := tablemod.RemoveTableColumnInFrame(frame, atIndex)
 	if err != nil {
 		return err
 	}

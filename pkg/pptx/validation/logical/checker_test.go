@@ -134,8 +134,8 @@ func TestParseSlideShapes(t *testing.T) {
 </p:sld>`
 
 	shapes := parseSlideShapes([]byte(slideXML))
-	if len(shapes) != 2 {
-		t.Errorf("expected 2 shapes, got %d", len(shapes))
+	if len(shapes) != 1 {
+		t.Errorf("expected 1 shape, got %d", len(shapes))
 	}
 
 	if shapes[0].Name != "Shape 1" || shapes[0].Type != "rect" || shapes[0].Text != "Text 1" {
@@ -145,8 +145,15 @@ func TestParseSlideShapes(t *testing.T) {
 		t.Errorf("shape 0 position mismatch: (%d, %d)", shapes[0].X.Emu(), shapes[0].Y.Emu())
 	}
 
-	if shapes[1].Name != "Picture 1" || shapes[1].Type != "pic" {
-		t.Errorf("shape 1 mismatch: %+v", shapes[1])
+	images := parseSlideImages([]byte(slideXML))
+	if len(images) != 1 {
+		t.Errorf("expected 1 image, got %d", len(images))
+	}
+	if images[0].X.Emu() != 500 || images[0].Y.Emu() != 600 {
+		t.Errorf("image 0 position mismatch: (%d, %d)", images[0].X.Emu(), images[0].Y.Emu())
+	}
+	if images[0].CX.Emu() != 700 || images[0].CY.Emu() != 800 {
+		t.Errorf("image 0 size mismatch: (%d, %d)", images[0].CX.Emu(), images[0].CY.Emu())
 	}
 }
 

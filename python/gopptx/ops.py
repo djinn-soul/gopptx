@@ -115,6 +115,10 @@ OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SET_SLIDE_TRANSITION = "set_slide_transition"
 OP_ADD_TABLE_ROW = "add_table_row"
 OP_ADD_TABLE_COLUMN = "add_table_column"
+OP_INSERT_TABLE_ROW = "insert_table_row"
+OP_REMOVE_TABLE_ROW = "remove_table_row"
+OP_INSERT_TABLE_COLUMN = "insert_table_column"
+OP_REMOVE_TABLE_COLUMN = "remove_table_column"
 OP_UPDATE_TABLE_CELL_BORDER = "update_table_cell_border"
 OP_SET_TABLE_COLUMN_WIDTH = "set_table_column_width"
 OP_SET_TABLE_ROW_HEIGHT = "set_table_row_height"
@@ -256,6 +260,10 @@ SUPPORTED_OPS = (
     OP_SET_SLIDE_TRANSITION,
     OP_ADD_TABLE_ROW,
     OP_ADD_TABLE_COLUMN,
+    OP_INSERT_TABLE_ROW,
+    OP_REMOVE_TABLE_ROW,
+    OP_INSERT_TABLE_COLUMN,
+    OP_REMOVE_TABLE_COLUMN,
     OP_UPDATE_TABLE_CELL_BORDER,
     OP_SET_TABLE_COLUMN_WIDTH,
     OP_SET_TABLE_ROW_HEIGHT,

@@ -7,6 +7,11 @@ try:
 except ImportError:  # pragma: no cover
     from typing_extensions import NotRequired, TypedDict
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .constants import PlaceholderType
+
 
 class TextFrame(TypedDict, total=False):
     """Text frame settings."""
@@ -241,8 +246,39 @@ class Shape(TypedDict, total=False):
     Y: int
     W: int
     H: int
-    PlaceholderIndex: int
+    PlaceholderIndex: int | None
     PlaceholderType: str
     fill: FillFormat
     line: LineFormat
     shadow: ShadowFormat
+
+
+class GrayscaleShapeRef(TypedDict):
+    """Shape target for grayscale conversion."""
+
+    slide_index: int
+    shape_id: int
+
+
+class GrayscaleTextRef(TypedDict):
+    """Text target for grayscale conversion."""
+
+    slide_index: int
+    shape_id: int
+    run_indices: NotRequired[list[int]]
+
+
+class GrayscalePlaceholderRef(TypedDict):
+    """Placeholder target for grayscale conversion."""
+
+    slide_index: int
+    type: NotRequired[PlaceholderType]
+    index: NotRequired[int | None]
+
+
+class GrayscaleScope(TypedDict, total=False):
+    """Which content types to convert to grayscale."""
+
+    colors: bool
+    images: bool
+    backgrounds: bool
