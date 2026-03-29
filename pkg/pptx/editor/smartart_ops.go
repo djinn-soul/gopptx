@@ -11,6 +11,7 @@ import (
 )
 
 var reSmartArtRelIDs = regexp.MustCompile(`r:(dm|lo|qs|cs)=["']([^"']+)["']`)
+var reSmartArtRelTag = regexp.MustCompile(`<dgm:relIds\b[^>]*>`)
 
 // smartArtPartRefs holds all resolved part paths and relationship IDs for a SmartArt diagram.
 type smartArtPartRefs struct {
@@ -84,38 +85,47 @@ func (e *PresentationEditor) resolveSmartArtParts(
 
 // extractAllSmartArtRelIDs extracts r:dm, r:lo, r:qs, r:cs from dgm:relIds for the given shapeID.
 func extractAllSmartArtRelIDs(slideXML string, shapeID int) (string, string, string, string) {
-	idPattern := fmt.Sprintf(`id="%d"`, shapeID)
-	idx := strings.Index(slideXML, idPattern)
-	if idx < 0 {
-		return "", "", "", ""
-	}
-	// Find dgm:relIds element after the shape's id attribute.
-	relIDsIdx := strings.Index(slideXML[idx:], "dgm:relIds")
-	if relIDsIdx < 0 {
-		return "", "", "", ""
-	}
-	fragment := slideXML[idx+relIDsIdx:]
-	// Extract end of the element (up to "/>").
-	end := strings.Index(fragment, "/>")
-	if end < 0 {
-		return "", "", "", ""
-	}
-	fragment = fragment[:end]
-
-	var dm, lo, qs, cs string
-	for _, m := range reSmartArtRelIDs.FindAllStringSubmatch(fragment, -1) {
-		switch m[1] {
-		case "dm":
-			dm = m[2]
-		case "lo":
-			lo = m[2]
-		case "qs":
-			qs = m[2]
-		case "cs":
-			cs = m[2]
+	idPattern := regexp.MustCompile(fmt.Sprintf(`<p:cNvPr\b[^>]*\bid=["']%d["']`, shapeID))
+	searchFrom := 0
+	for {
+		frameStartRel := strings.Index(slideXML[searchFrom:], "<p:graphicFrame")
+		if frameStartRel < 0 {
+			return "", "", "", ""
 		}
+		frameStart := searchFrom + frameStartRel
+
+		frameEndRel := strings.Index(slideXML[frameStart:], "</p:graphicFrame>")
+		if frameEndRel < 0 {
+			return "", "", "", ""
+		}
+		frameEnd := frameStart + frameEndRel + len("</p:graphicFrame>")
+		frameFragment := slideXML[frameStart:frameEnd]
+		searchFrom = frameEnd
+
+		if !idPattern.MatchString(frameFragment) {
+			continue
+		}
+
+		relTag := reSmartArtRelTag.FindString(frameFragment)
+		if relTag == "" {
+			return "", "", "", ""
+		}
+
+		var dm, lo, qs, cs string
+		for _, m := range reSmartArtRelIDs.FindAllStringSubmatch(relTag, -1) {
+			switch m[1] {
+			case "dm":
+				dm = m[2]
+			case "lo":
+				lo = m[2]
+			case "qs":
+				qs = m[2]
+			case "cs":
+				cs = m[2]
+			}
+		}
+		return dm, lo, qs, cs
 	}
-	return dm, lo, qs, cs
 }
 
 // removeSlideRelationships removes relationships by ID from a slide's .rels file.
