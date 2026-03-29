@@ -39,6 +39,7 @@ func slideBasicHandlers() map[string]commandHandler {
 		OpUpdateSlide:         handleUpdateSlide,
 		OpValidate:            handleValidate,
 		OpRepair:              handleRepair,
+		OpSetSlideHidden:      handleSetSlideHidden,
 	}
 }
 
@@ -103,6 +104,10 @@ func contentSectionHandlers() map[string]commandHandler {
 		OpAddMermaidShape:      handleAddMermaidShape,
 		OpAddSmartArt:          handleAddSmartArt,
 		OpUpdateSmartArt:       handleUpdateSmartArt,
+		OpDeleteSmartArt:       handleDeleteSmartArt,
+		OpChangeSmartArtLayout: handleChangeSmartArtLayout,
+		OpSetSmartArtStyle:     handleSetSmartArtStyle,
+		OpSetSmartArtNodes:     handleSetSmartArtNodes,
 		OpSetSlideBackground:   handleSetSlideBackground,
 		OpSetSlideHeaderFooter: handleSetSlideHeaderFooter,
 		OpAddAnimation:         handleAddAnimation,

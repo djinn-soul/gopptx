@@ -53,7 +53,8 @@ func ApplyMediaTiming(
 	timingXML := slideXML[timingStart:timingEnd]
 
 	nextID := nextTimingCTnID(timingXML)
-	mediaNode := buildMediaTimingNode(mediaKind, shapeID, nextID, options)
+	mediaRelID := mediaRelIDForShape(slideXML, shapeID)
+	mediaNode := buildMediaTimingNode(mediaKind, shapeID, nextID, mediaRelID, options)
 
 	updatedTiming, err := insertMediaNodeIntoMainSeq(timingXML, mediaNode)
 	if err != nil {
@@ -129,6 +130,7 @@ func insertMediaNodeIntoMainSeq(timingXML, mediaNode string) (string, error) {
 func buildMediaTimingNode(
 	mediaKind string,
 	shapeID, cTnID int,
+	mediaRelID string,
 	options MediaTimingOptions,
 ) string {
 	startDelay := "indefinite"
@@ -154,6 +156,22 @@ func buildMediaTimingNode(
 		numSldAttr = fmt.Sprintf(` numSld="%d"`, numSlides)
 	}
 
+	extXML := ""
+	if strings.TrimSpace(mediaRelID) != "" {
+		extXML = fmt.Sprintf(`
+                  <p:extLst>
+                    <p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}">
+                      <p14:media xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="%s"/>
+                    </p:ext>
+                    <p:ext uri="{EFAFB233-063F-42B5-8137-9DF3F51BA10A}">
+                      <p15:media xmlns:p15="http://schemas.microsoft.com/office/powerpoint/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="%s"/>
+                    </p:ext>
+                  </p:extLst>`,
+			escapeXMLAttr(mediaRelID),
+			escapeXMLAttr(mediaRelID),
+		)
+	}
+
 	return fmt.Sprintf(`
               <p:%s>
                 <p:cMediaNode%s%s%s showWhenStopped="%s">
@@ -165,6 +183,7 @@ func buildMediaTimingNode(
                   <p:tgtEl>
                     <p:spTgt spid="%d"/>
                   </p:tgtEl>
+%s
                 </p:cMediaNode>
               </p:%s>`,
 		mediaKind,
@@ -176,6 +195,7 @@ func buildMediaTimingNode(
 		repeatAttr,
 		startDelay,
 		shapeID,
+		extXML,
 		mediaKind,
 	)
 }

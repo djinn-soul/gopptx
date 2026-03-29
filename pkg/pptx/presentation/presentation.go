@@ -91,7 +91,7 @@ func WritePresentationPackage(
 	hasVBA := meta.VBA.IsMacroEnabled()
 
 	if err := addBasicPropertyFiles(
-		pw, meta, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
+		pw, meta, slides, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
 		authors, commentSlideIndices, hasVBA,
 	); err != nil {
@@ -178,6 +178,7 @@ func convertShowSettings(s common.ShowSettings) *pptxxml.ShowSettings {
 func addBasicPropertyFiles(
 	pw *pptxxml.PackageWriter,
 	meta Metadata,
+	slides []elements.SlideContent,
 	slideCount, notesPartCount, chartPartCount, smartArtPartCount int,
 	notesParts []notes.RenderedNotesPart,
 	masterCount, notesThemeIndex int,
@@ -270,6 +271,11 @@ func addBasicPropertyFiles(
 		nextRid++
 	}
 
+	hiddenSlides := make([]bool, len(slides))
+	for i, s := range slides {
+		hiddenSlides[i] = s.Hidden
+	}
+
 	pw.AddPart(
 		"ppt/presentation.xml",
 		pptxxml.Presentation(
@@ -277,6 +283,7 @@ func addBasicPropertyFiles(
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
 			protInfo, xSections, meta.RTL, xmlFonts,
 			convertShowSettings(meta.ShowSettings),
+			hiddenSlides,
 		),
 	)
 

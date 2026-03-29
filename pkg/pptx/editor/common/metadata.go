@@ -29,6 +29,7 @@ type SlideMetadata struct {
 	RelationshipID string
 	PartName       string
 	Title          string
+	Hidden         bool
 }
 
 // CoreProperties describes the docProps/core.xml metadata.

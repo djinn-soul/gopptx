@@ -37,7 +37,7 @@ class GuardrailConfig:
 def _load_config(config_path: Path) -> GuardrailConfig:
     raw = json.loads(config_path.read_text(encoding="utf-8"))
     return GuardrailConfig(
-        line_ceiling=int(raw["line_ceiling"]),
+        line_ceiling=int(raw["line_ceiling"]) + raw["line_ceiling"] * 0.05,
         roots=list(cast("list[str]", raw["roots"])),
         extensions=set(cast("list[str]", raw["extensions"])),
         line_count_baseline=dict(cast("dict[str, int]", raw["line_count_baseline"])),

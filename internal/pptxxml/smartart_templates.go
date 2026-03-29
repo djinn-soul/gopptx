@@ -37,9 +37,7 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 	} else {
 		data = injectSmartArtNodeTexts(data, orderedTexts)
 	}
-	if strings.Contains(spec.LayoutURI, "/orgChart1") {
-		data = pruneUnusedOrgChartPlaceholderBranches(data)
-	}
+	data = pruneUnusedOrgChartPlaceholderBranches(data)
 	return data
 }
 
@@ -100,10 +98,7 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 	orderedTexts := flattenSmartArtNodeTexts(spec.Nodes)
 	textByModelID := buildDrawingTextMapFromData(data)
 	hiddenPlaceholderModels := unfilledPlaceholderPresModelIDs(data)
-	var allowedDrawingModels map[string]struct{}
-	if strings.Contains(spec.LayoutURI, "/orgChart1") {
-		allowedDrawingModels = existingPresModelIDs(data)
-	}
+	allowedDrawingModels := existingPresModelIDs(data)
 	if preferOrderedNodeMapping(spec.LayoutURI) {
 		preferred := mapOrderedTextsToPreferredPresNodes(data, orderedTexts)
 		if len(preferred) >= len(orderedTexts) && len(preferred) > 0 {
