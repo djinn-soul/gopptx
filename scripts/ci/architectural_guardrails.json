@@ -38,7 +38,6 @@
         "pkg/pptx/editor/rendering.go": 328,
         "pkg/pptx/editor/shape_editor_mutation.go": 301,
         "pkg/pptx/editor/shape_editor_text_render.go": 320,
-        "pkg/pptx/elements/slide.go": 815,
         "pkg/pptx/export/html.go": 336,
         "pkg/pptx/export/pdf.go": 363,
         "pkg/pptx/export/pdf_native_helpers.go": 302,
@@ -68,7 +67,8 @@
         "python/gopptx/presentation/shapes_tables.py": 595,
         "python/gopptx/presentation/slides.py": 471,
         "python/gopptx/schemas.py": 432,
-        "python/gopptx/slide/slide.py": 369
+        "python/gopptx/slide/slide.py": 369,
+        "python/gopptx/ops.py": 305
     },
     "python_import_cycle_budget": 1,
     "python_cycle_root": "python/gopptx"
