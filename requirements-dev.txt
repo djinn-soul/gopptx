@@ -144,7 +144,7 @@ pyyaml==6.0.3
     #   poethepoet
 regex==2026.2.19
     # via tiktoken
-requests==2.32.5
+requests==2.33.0
     # via
     #   cachecontrol
     #   detect-secrets
