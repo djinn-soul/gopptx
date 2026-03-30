@@ -1,10 +1,10 @@
-"""Demonstrate presentation protection: modify password and mark-as-final.
+"""Demonstrate presentation-protection concepts from Python.
 
 This example demonstrates:
-- Creating a presentation with confidential content
-- Adding password-to-modify protection
-- Marking a presentation as final (read-only banner in PowerPoint)
-- Protection metadata embedded in the PPTX file
+- Creating a presentation with confidential-content slides
+- Documenting protection features available in the Go API
+- Referencing password-to-modify / mark-as-final concepts
+- Preparing a deck you can use for manual follow-up validation
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from gopptx import Presentation
 
 
 def main() -> None:
-    """Create a protected presentation with password and mark-as-final."""
+    """Create a conceptual protection demo deck (no protection applied in Python)."""
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 
@@ -34,10 +34,10 @@ def main() -> None:
         prs.add_bullet_slide(
             "Protection Features",
             [
-                "WithModifyPassword — prevent edits without a password",
-                "WithMarkAsFinal — display read-only banner in PowerPoint",
-                "WithSignaturesEnabled — enable digital signature support",
-                "Protection is stored in presentation.xml and app.xml",
+                "Go API: WithModifyPassword - prevent edits without a password",
+                "Go API: WithMarkAsFinal - display read-only banner in PowerPoint",
+                "Go API: WithSignaturesEnabled - enable digital signature support",
+                "This Python example documents the feature set only",
             ],
         )
 
@@ -46,10 +46,9 @@ def main() -> None:
         print(f"Saved: {output_path}")
 
     print("\n=== SUMMARY ===")
-    print("Protected presentation with password='test' and mark-as-final.")
-    print("Verify in PowerPoint:")
-    print("  1. Should prompt for password 'test' to modify.")
-    print("  2. Should show a 'Marked as Final' banner.")
+    print("Conceptual presentation-protection overview generated.")
+    print("Note: this Python script does not apply protection flags.")
+    print("Use Go protection APIs for enforceable protection metadata.")
 
 
 if __name__ == "__main__":

@@ -104,7 +104,7 @@ Task-focused examples and smoke demos for `gopptx`.
 91. `76-notes-api` - What: Author rich notes and update notes via editor APIs - Run: `go run ./examples/76-notes-api/main.go`
 92. `77-background-api` - What: Configure slide backgrounds (solid/gradient/picture) - Run: `go run ./examples/77-background-api/main.go`
 93. `78-enum-api` - What: Reference and validate enum constants by category - Run: `go run ./examples/78-enum-api/main.go`
-94. `79-document-infra` - No runnable entrypoint in this checkout
+94. `79-document-infra` - What: Demonstrate document infrastructure APIs (sections/comments/reorder/z-order) - Run: `go run ./examples/79-document-infra/main.go`; `uv run python examples/79-document-infra/main.py`
 
 ## Python Examples
 
