@@ -325,31 +325,53 @@ func moveGeneratedPDF(generatedPDF, outputPath string) error {
 }
 
 func exportWithPowerPoint(pptxPath, pdfPath string) error {
-	// Use a script block with arguments to prevent command injection via file paths.
+	// Use a temporary script file so path arguments are bound predictably.
 	psScript := `
-param($pptxPath, $pdfPath)
+param(
+  [Parameter(Mandatory = $true)]
+  [string]$pptxPath,
+  [Parameter(Mandatory = $true)]
+  [string]$pdfPath
+)
 $ppt = New-Object -ComObject PowerPoint.Application
 $ppt.Visible = 1
 try {
-  $pres = $ppt.Presentations.Open($pptxPath)
+  $pres = $ppt.Presentations.Open($pptxPath, $false, $true, $false)
   $pres.SaveAs($pdfPath, 32)
   $pres.Close()
 } catch {
   Write-Error $_
   exit 1
 } finally {
-  $ppt.Quit()
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($ppt) | Out-Null
+  try { $ppt.Quit() } catch {}
+  try { [System.Runtime.Interopservices.Marshal]::ReleaseComObject($ppt) | Out-Null } catch {}
 }
 `
+	scriptFile, err := os.CreateTemp("", "gopptx-export-ppt-*.ps1")
+	if err != nil {
+		return fmt.Errorf("failed to create PowerShell temp script: %w", err)
+	}
+	scriptPath := scriptFile.Name()
+	if _, err := scriptFile.WriteString(psScript); err != nil {
+		scriptFile.Close()
+		_ = os.Remove(scriptPath)
+		return fmt.Errorf("failed to write PowerShell temp script: %w", err)
+	}
+	if err := scriptFile.Close(); err != nil {
+		_ = os.Remove(scriptPath)
+		return fmt.Errorf("failed to close PowerShell temp script: %w", err)
+	}
+	defer os.Remove(scriptPath)
 
 	cmd := exec.CommandContext(
 		context.Background(),
 		"powershell",
 		"-NoProfile",
 		"-NonInteractive",
-		"-Command",
-		psScript,
+		"-ExecutionPolicy",
+		"Bypass",
+		"-File",
+		scriptPath,
 		"-pptxPath",
 		pptxPath,
 		"-pdfPath",

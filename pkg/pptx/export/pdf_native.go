@@ -86,8 +86,11 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	_ = renderPDFBackground(pdf, slide.Background)
 	renderNativePDFSlideText(pdf, slide)
 	renderNativePDFSlideShapes(pdf, slide)
+	renderNativePDFSlideCharts(pdf, slide)
 	renderNativePDFSlideAssets(pdf, slide)
-	renderNativePDFSlideNumber(pdf, index, total)
+	if slide.ShowSlideNumber {
+		renderNativePDFSlideNumber(pdf, index, total)
+	}
 }
 
 func renderNativePDFSlideText(pdf *gopdf.GoPdf, slide elements.SlideContent) {
@@ -128,7 +131,12 @@ func renderNativePDFSlideNumber(pdf *gopdf.GoPdf, index, total int) {
 func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	titleSize := slide.TitleSize
 	if titleSize <= 0 {
-		titleSize = defaultFontSize
+		switch elements.NormalizeSlideLayout(slide.Layout) {
+		case elements.SlideLayoutTitleAndContent:
+			titleSize = 32
+		default:
+			titleSize = 44
+		}
 	}
 	titleMax := 44
 	if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutTitleAndContent {

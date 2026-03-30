@@ -42,12 +42,17 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 		// Best-effort image extraction; continue without images when parsing fails.
 		slideImages = nil
 	}
+	slideCharts, err := extractSlideCharts(pptxPath)
+	if err != nil {
+		// Best-effort chart extraction; continue without charts when parsing fails.
+		slideCharts = nil
+	}
 
 	slideMeta := ed.Slides()
 	slideContents := make([]elements.SlideContent, 0, len(slideMeta))
 
 	for _, sm := range slideMeta {
-		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages))
+		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages, slideCharts))
 	}
 
 	if presTitle == "" && len(slideContents) > 0 {
@@ -62,6 +67,7 @@ func extractSlideContent(
 	ed *editor.PresentationEditor,
 	sm editorcommon.SlideMetadata,
 	slideImages [][]SlideImage,
+	slideCharts [][]parsedChart,
 ) elements.SlideContent {
 	editorShapes, err := ed.GetShapes(sm.Index)
 	if err != nil {
@@ -88,6 +94,9 @@ func extractSlideContent(
 				sc.Title = es.Text
 			}
 		case placeholderBody, placeholderSubtitle, placeholderObject:
+			if consumeBodyPlaceholderAsBullets(&sc, es.Text) {
+				continue
+			}
 			sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
 		default:
 			switch {
@@ -96,6 +105,9 @@ func extractSlideContent(
 					sc.Title = es.Text
 				}
 			case isBodyPlaceholder(lowerType, lowerName):
+				if consumeBodyPlaceholderAsBullets(&sc, es.Text) {
+					continue
+				}
 				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
 			default:
 				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
@@ -115,6 +127,9 @@ func extractSlideContent(
 				CY:     styling.Emu(img.CY),
 			})
 		}
+	}
+	if sm.Index < len(slideCharts) {
+		applyParsedCharts(&sc, slideCharts[sm.Index])
 	}
 	return sc
 }
@@ -198,6 +213,28 @@ func isBodyPlaceholder(shapeType, shapeName string) bool {
 		shapeName == placeholderBody ||
 		strings.Contains(shapeName, "content placeholder") ||
 		strings.Contains(shapeName, "body placeholder")
+}
+
+func consumeBodyPlaceholderAsBullets(sc *elements.SlideContent, bodyText string) bool {
+	bodyText = strings.TrimSpace(bodyText)
+	if bodyText == "" {
+		return false
+	}
+	parts := strings.Split(bodyText, "\n")
+	normalized := make([]string, 0, len(parts))
+	for _, line := range parts {
+		line = strings.TrimSpace(strings.TrimPrefix(line, "•"))
+		if line == "" {
+			continue
+		}
+		normalized = append(normalized, line)
+	}
+	if len(normalized) == 0 {
+		return false
+	}
+	// Body placeholders on title+content layouts are usually bullet paragraphs.
+	sc.Bullets = append(sc.Bullets, normalized...)
+	return true
 }
 
 // editorTypeToPreset normalizes the editor shape type string to the OOXML
