@@ -37,8 +37,7 @@ def _parse_args() -> argparse.Namespace:
         default="pip-audit-ignore.txt",
         help="Path to newline-delimited vulnerability IDs to ignore.",
     )
-    args, _unknown = parser.parse_known_args()
-    return args
+    return parser.parse_args()
 
 
 def main() -> int:
