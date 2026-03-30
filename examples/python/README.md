@@ -1,0 +1,143 @@
+# Python Examples
+
+Python examples live under this folder and run against the local `gopptx` Python package in this repository.
+
+## Quick Start
+
+- Basic starter:
+  - `uv run python examples/01-basic-pptx-generation/main.py`
+- Slide layouts:
+  - `uv run python examples/02-slide-layouts/main.py`
+- Markdown to PPTX:
+  - `uv run python examples/03-markdown-to-pptx/main.py`
+- Text formatting:
+  - `uv run python examples/04-text-formatting/main.py`
+- Bullet styles:
+  - `uv run python examples/05-bullet-styles/main.py`
+- Text enhancements:
+  - `uv run python examples/06-text-enhancements/main.py`
+- Tables:
+  - `uv run python examples/07-tables/main.py`
+- Dynamic report generation:
+  - `uv run python examples/08-dynamic-report-generation/main.py`
+- Charts:
+  - `uv run python examples/09-charts/main.py`
+- Images:
+  - `uv run python examples/10-images/main.py`
+- Advanced image sources:
+  - `uv run python examples/11-image-advanced-sources/main.py`
+- Shapes:
+  - `uv run python examples/12-shapes/main.py`
+- Connectors:
+  - `uv run python examples/13-connectors/main.py`
+- Table API improvements:
+  - `uv run python examples/14-table-api-improvements/main.py`
+- Headers and footers:
+  - `uv run python examples/15-headers-footers/main.py`
+- ChartType enum:
+  - `uv run python examples/16-chart-type-enum/main.py`
+- Custom slide layout composition:
+  - `uv run python examples/17-custom-slide-layout-composition/main.py`
+- Theme-aware presentation:
+  - `uv run python examples/18-theme-aware-presentation/main.py`
+- Read/modify existing:
+  - `uv run python examples/19-read-modify-existing/main.py`
+- Validation and repair:
+  - `uv run python examples/20-validation-repair/main.py`
+- Export HTML/PDF:
+  - `uv run python examples/21-export-html-pdf/main.py`
+- Speaker notes:
+  - `uv run python examples/22-speaker-notes/main.py`
+- Media embed:
+  - `uv run python examples/23-media-embed/main.py`
+- SmartArt:
+  - `uv run python examples/24-smartart/main.py`
+- Export HTML:
+  - `uv run python examples/25-export-html/main.py`
+- VBA macros:
+  - `uv run python examples/26-vba-macros/main.py`
+- Custom XML:
+  - `uv run python examples/27-custom-xml/main.py`
+- Animations:
+  - `uv run python examples/28-animations/main.py`
+- Handout master:
+  - `uv run python examples/29-handout-master/main.py`
+- Embedded fonts:
+  - `uv run python examples/30-embedded-fonts/main.py`
+- Hyperlinks:
+  - `uv run python examples/31-hyperlinks/main.py`
+- Mermaid:
+  - `uv run python examples/32-mermaid/main.py`
+- Notes master:
+  - `uv run python examples/33-notes-master/main.py`
+- Layout helpers:
+  - `uv run python examples/35-layout-helpers/main.py`
+- Slide master:
+  - `uv run python examples/36-slide-master/main.py`
+- Slide duplication:
+  - `uv run python examples/37-slide-duplication/main.py`
+- Editor image support:
+  - `uv run python examples/38-editor-image-support/main.py`
+- Editor chart support:
+  - `uv run python examples/39-editor-chart-support/main.py`
+- Editor notes support:
+  - `uv run python examples/40-editor-notes-support/main.py`
+- Targeted grayscale demo:
+  - `uv run python examples/python/scripts/61_grayscale_targeted.py`
+- Smoke and benchmark checks:
+  - `uv run python examples/python/tests/python_bridge_smoke_test.py`
+  - `uv run python examples/python/tests/python_bridge_perf_benchmark.py`
+
+## Scripts
+
+- `examples/01-basic-pptx-generation/main.py` - create a small deck with title and content slide.
+- `examples/02-slide-layouts/main.py` - show title/content/blank/centered layout usage.
+- `examples/03-markdown-to-pptx/main.py` - convert markdown content into slide output.
+- `examples/04-text-formatting/main.py` - apply run-level formatting and text-frame settings.
+- `examples/05-bullet-styles/main.py` - demonstrate bullet, number, roman, and custom bullets.
+- `examples/06-text-enhancements/main.py` - apply run-level text effects and script formatting.
+- `examples/07-tables/main.py` - build a styled table from row data.
+- `examples/08-dynamic-report-generation/main.py` - create a small data-driven report deck.
+- `examples/09-charts/main.py` - add bar and line charts using chart enums.
+- `examples/10-images/main.py` - embed images from file path and raw bytes.
+- `examples/11-image-advanced-sources/main.py` - load image content from bytes and base64.
+- `examples/12-shapes/main.py` - create common shape types with styling.
+- `examples/13-connectors/main.py` - demonstrate straight, elbow, and curved connectors.
+- `examples/14-table-api-improvements/main.py` - compare table builders and data-loading helpers.
+- `examples/15-headers-footers/main.py` - apply global footer defaults and per-slide overrides.
+- `examples/16-chart-type-enum/main.py` - use ChartType constants for chart creation.
+- `examples/17-custom-slide-layout-composition/main.py` - compose reusable panel-based slide layouts.
+- `examples/18-theme-aware-presentation/main.py` - apply built-in/custom themes across decks.
+- `examples/19-read-modify-existing/main.py` - reopen a deck and update/remove/reorder slides.
+- `examples/20-validation-repair/main.py` - run structural validation and repair workflow.
+- `examples/21-export-html-pdf/main.py` - export a presentation to HTML and PDF.
+- `examples/22-speaker-notes/main.py` - create and mutate speaker notes per slide.
+- `examples/23-media-embed/main.py` - embed video/audio/OLE media fixtures.
+- `examples/24-smartart/main.py` - create list/process/hierarchy SmartArt diagrams.
+- `examples/25-export-html/main.py` - export deck content to HTML with PDF companion.
+- `examples/26-vba-macros/main.py` - embed a VBA project blob and save as `.pptm`.
+- `examples/27-custom-xml/main.py` - add/list/remove custom XML parts and round-trip.
+- `examples/28-animations/main.py` - add entrance/emphasis animations and transitions.
+- `examples/29-handout-master/main.py` - configure handout layout/orientation variants.
+- `examples/30-embedded-fonts/main.py` - apply explicit font-family run styling.
+- `examples/31-hyperlinks/main.py` - add shape and run-level hyperlink actions.
+- `examples/32-mermaid/main.py` - render Mermaid diagrams directly onto slides.
+- `examples/33-notes-master/main.py` - configure notes master and notes content.
+- `examples/35-layout-helpers/main.py` - demonstrate stack/distribute/grid/center helpers.
+- `examples/36-slide-master/main.py` - inspect and clone slide layout/master families.
+- `examples/37-slide-duplication/main.py` - duplicate and reorder slides programmatically.
+- `examples/38-editor-image-support/main.py` - update embedded image payloads by index.
+- `examples/39-editor-chart-support/main.py` - modify chart data/title after reopening deck.
+- `examples/40-editor-notes-support/main.py` - edit speaker notes in an existing deck.
+- `scripts/59_rich_text_advanced_images.py` - rich text and image composition flow.
+- `scripts/61_grayscale_targeted.py` - selective grayscale conversion by target.
+- `scripts/python_advanced_features.py` - advanced API feature sweep.
+- `scripts/python_comprehensive_test.py` - comprehensive integration-style verification.
+- `scripts/python_group_ungroup_validate.py` - group/ungroup behavior validation.
+- `scripts/python_library_test.py` - basic library behavior checks.
+- `scripts/python_new_deck.py` - create a deck from scratch using Python.
+
+## Notes
+
+- Run commands from repository root so relative paths resolve correctly.
+- Output decks are written to `examples/output/`.
