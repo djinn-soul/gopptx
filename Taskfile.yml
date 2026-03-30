@@ -3,6 +3,7 @@ version: '3'
 vars:
   GO_BRIDGE_SRC: bindings/c/bridge.go
   PYTHON_PKG_DIR: python/gopptx
+  GO_ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,MPL-2.0,ISC
   LIB_NAME:
     sh: |
       case "$(go env GOOS)" in
@@ -64,6 +65,12 @@ tasks:
     cmds:
       - golangci-lint run ./...
       - uv run basedpyright
+      - task check:go-licenses
+
+  check:go-licenses:
+    desc: Validate licenses for direct Go dependencies
+    cmds:
+      - go run github.com/google/go-licenses/v2@latest check ./... --allowed_licenses={{.GO_ALLOWED_LICENSES}}
 
   docs:serve:
     desc: Serve MkDocs Material docs on http://localhost:8000 (Docker)
