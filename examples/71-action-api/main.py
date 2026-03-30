@@ -1,11 +1,11 @@
-"""Demonstrate hyperlinks and click actions on shapes.
+"""Document hyperlinks and click-action patterns on shapes.
 
 This example demonstrates:
-- Adding shapes with add_shape() and linking text explaining action concepts
+- Adding shapes with add_shape() and labels explaining action concepts
 - Documenting URL hyperlinks, slide navigation, email links, and hover actions
-- Using add_bullet_slide() to describe each action type
-- Note: full click/hover action wiring is available in the Go API; Python slides
-  document the concepts and show shape placement that would carry those actions
+- Using add_bullet_slide() and add_textbox() to explain each action type
+- Full click/hover action wiring is available in the Go API
+- Python slides document concepts and show shape placement for those actions
 """
 
 from __future__ import annotations

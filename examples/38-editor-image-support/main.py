@@ -12,6 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from gopptx import Presentation
+from gopptx.presentation.slides import SlideLayoutType
 from gopptx.schemas import Inches
 
 # Minimal 1x1 red PNG for demonstration
@@ -115,13 +116,25 @@ def main() -> None:
     with Presentation.new("Editor Image Support") as prs:
         _add_stamped_slides(prs)
 
-        # Picture background slide
-        prs.add_bullet_slide(
-            "Picture Background Test",
-            [
-                "This slide uses an image as the background.",
-                "Same image as the stamped logo — deduplicated.",
-            ],
+        # Picture background slide (actual full-slide image background)
+        bg_slide_idx = prs.add_slide(
+            "Picture Background Test", layout=SlideLayoutType.TITLE_ONLY
+        )
+        prs.add_image_from_bytes(
+            bg_slide_idx,
+            _RED_PNG,
+            Inches(0),
+            Inches(0),
+            Inches(10),
+            Inches(7.5),
+        )
+        prs.add_textbox(
+            bg_slide_idx,
+            Inches(0.6),
+            Inches(1.5),
+            Inches(8.8),
+            Inches(0.8),
+            text="Full-slide background image added from bytes; reused image is deduplicated.",
         )
 
         # Explanation slide

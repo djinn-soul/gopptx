@@ -1,10 +1,11 @@
-"""Convert HTML content to PPTX presentations using the urlfetch workflow.
+"""Document urlfetch-style HTML-to-PPTX workflows in Python.
 
 This example demonstrates:
-- Creating presentations from structured HTML content
+- Python slides that represent typical urlfetch conversion output
 - Using bullet slides to represent HTML headings and lists
-- Multiple conversion configurations (default and custom)
+- Multiple presentation variants (default and custom narratives)
 - Table slides for technical documentation
+- Notes on where full URL fetch/conversion lives in the Go API
 """
 
 from __future__ import annotations
@@ -88,7 +89,7 @@ def _add_api_doc_slides(prs: Presentation) -> None:
 
 
 def main() -> None:
-    """Create presentations demonstrating HTML-to-PPTX conversion."""
+    """Create presentation outputs that mirror urlfetch conversion results."""
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 

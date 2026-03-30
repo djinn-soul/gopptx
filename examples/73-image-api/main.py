@@ -1,10 +1,10 @@
-"""Demonstrate image embedding in slides.
+"""Demonstrate basic image embedding and document advanced image options.
 
 This example demonstrates:
 - Embedding images from raw bytes with add_image_from_bytes()
 - Embedding images from a file path with add_image()
 - Image placement using Inches() for position and size
-- Documentation slides for rotation, flip, crop, shadow, reflection, and
+- Reference slides for rotation, flip, crop, shadow, reflection, and
   decorative-image options available in the Go API
 """
 

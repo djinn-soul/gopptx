@@ -1,9 +1,10 @@
-"""Demonstrate multiple slide masters for brand-consistent styling.
+"""Document multi-master slide styling concepts in Python.
 
 This example demonstrates:
-- Creating slides that reference two distinct visual themes (blue and warm)
-- Consistent title and body font styling per master
-- Multi-level bullet indentation
+- Slides that describe two visual theme families (blue and warm)
+- Conceptual title/body styling notes per master family
+- Multi-level bullet indentation patterns
+- Guidance on master assignment behavior in the Go API
 """
 
 from __future__ import annotations
@@ -54,7 +55,7 @@ def _add_warm_master_slides(prs: Presentation) -> None:
 
 
 def main() -> None:
-    """Create presentation demonstrating multi-master slide styling."""
+    """Create a conceptual presentation for multi-master styling patterns."""
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 

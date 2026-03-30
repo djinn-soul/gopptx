@@ -1,4 +1,4 @@
-"""Demonstrate slide background fills.
+"""Demonstrate and document slide background techniques.
 
 This example demonstrates:
 - Solid color backgrounds by embedding a full-slide colored shape

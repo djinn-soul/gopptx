@@ -1,10 +1,11 @@
-"""Convert web page HTML content into PPTX slide decks.
+"""Document Web2PPT concepts and expected outputs in Python.
 
 This example demonstrates:
-- Creating presentations from structured HTML/web content
-- Default and custom conversion configurations
-- Building a reference presentation documenting Web2PPT options
-- Limiting slide count and bullet count per slide
+- Python reference slides for Web2PPT concepts and options
+- Default and custom configuration narratives
+- A reference presentation documenting Web2PPT usage
+- Slide and bullet limit options as documented behavior
+- Notes for full HTML fetch/convert execution in the Go API
 """
 
 from __future__ import annotations
@@ -54,7 +55,7 @@ def _add_feature_overview(prs: Presentation) -> None:
 
 
 def main() -> None:
-    """Create presentations demonstrating Web2PPT HTML conversion."""
+    """Create documentation-focused Web2PPT example presentations."""
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 
