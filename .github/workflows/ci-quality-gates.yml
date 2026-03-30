@@ -40,6 +40,7 @@ jobs:
           cache: true
 
       - name: Setup Python
+        id: setup-python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -49,12 +50,12 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Cache pre-commit environments
+      - name: Cache prek home
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: pre-commit-${{ runner.os }}-
+          path: ~/.cache/prek
+          key: prek-home-${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: prek-home-${{ runner.os }}-
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
@@ -67,7 +68,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run full pre-commit gate
-        run: uv run prek run --all-files
+        uses: j178/prek-action@v1
 
   go-fuzz:
     needs: [guardrails]
@@ -108,6 +109,25 @@ jobs:
 
       - name: Run govulncheck
         run: govulncheck $(go list ./... | grep -v 'bindings/c')
+
+  # CI license gate is intentionally centralized in dependency-review to avoid duplicate
+  # failures/noise. Local explicit license validation is still available via:
+  # `task check:go-licenses` (google/go-licenses).
+  dependency-review:
+    # Enable only when repository support is confirmed.
+    # Set repository variable ENABLE_DEPENDENCY_REVIEW=true to turn this on.
+    if: github.event_name == 'pull_request' && vars.ENABLE_DEPENDENCY_REVIEW == 'true'
+    needs: [guardrails]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review (licenses + vulnerabilities)
+        uses: actions/dependency-review-action@v4
+        with:
+          config-file: ./.github/dependency-review-config.yml
 
   semgrep:
     needs: [guardrails]
