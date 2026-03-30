@@ -1,92 +1,157 @@
 # Examples
 
-This directory contains organized, task-focused examples and smoke tests, aligned with the project's task numbering system.
+Task-focused examples and smoke demos for `gopptx`.
 
-## Organized Examples
+## Quick Start
 
-Use the following commands to run the examples:
+- Run any example from repo root:
+  - `go run ./examples/<example-folder>/<file>.go`
+- Generated decks are written to:
+  - `examples/output/`
 
-### Core Presentation Generation
+## Sequential Index
 
-- `01-basic-pptx-generation`: `go run ./examples/01-basic-pptx-generation/basic_gen.go` -> `01_hello_world.pptx`
-- `02-slide-layouts`: `go run ./examples/02-slide-layouts/main.go` -> `02_slide_layouts.pptx` (all layout types: title-content, title-only, blank, centered-title, two-column)
-- `04-text-formatting` (Enhancements): `go run ./examples/04-text-formatting/text_enhancements.go` -> `04_text_enhancements.pptx`
-- `04-text-formatting` (Text Frame): `go run ./examples/04-text-formatting/text_frame.go` -> `04_text_frame_smoke.pptx`
-- `05-bullet-styles`: `go run ./examples/05-bullet-styles/main.go` -> `05_bullet_styles.pptx` (standard, numbered, lettered, sub-bullets)
-- `06-text-enhancements`: `go run ./examples/06-text-enhancements/main.go` -> `06_text_enhancements.pptx` (strikethrough, highlight, all-caps, subscript/superscript)
-- `07-tables`: `go run ./examples/07-tables/main.go` -> `07_tables.pptx` (table creation with styled cells)
-- `08-table-cell-merge`: `go run ./examples/08-table-cell-merge/main.go` -> `08_table_cell_merge.pptx` (colspan and rowspan)
-- `09-charts`: `go run ./examples/09-charts/chart_smoke.go` -> `09_charts_*.pptx`
-- `10-images`: `go run ./examples/10-images/main.go` -> `10_images.pptx` (image embedding from file and bytes)
-- `11-image-advanced-sources`: `go run ./examples/11-image-advanced-sources/main.go` -> `11_image_advanced_sources.pptx` (base64 and bytes sources)
-- `12-shapes`: `go run ./examples/12-shapes/feature_showcase.go` -> `12_feature_showcase.pptx`
-- `13-connectors`: `go run ./examples/13-connectors/main.go` -> `13_connectors.pptx` (straight, elbow, curved connectors)
-- `14-transitions`: `go run ./examples/14-transitions/main.go` -> `14_transitions.pptx` (fade, push, wipe, zoom transitions)
-- `15-cli-commands`: `go run ./examples/15-cli-commands/main.go` -> `15_cli_commands.pptx` (CLI subcommand reference)
-- `16-templates`: `go run ./examples/16-templates/main.go` -> `16_invoice_template.pptx`, `16_template_invoice.pptx`
-- `17-themes`: `go run ./examples/17-themes/theme_master_smoke.go` -> `17_theme_master_smoke.pptx`
-- `28-animations`: `go run ./examples/28-animations/main.go` -> `28_animations.pptx`
-- `31-hyperlinks`: `go run ./examples/31-hyperlinks/main.go` -> `31_advanced_hyperlink_smoke.pptx`
-- `48-accessibility-alt-text`: `go run ./examples/48-accessibility-alt-text/main.go` -> `48_accessibility_alt_text.pptx` (alt text and decorative flags)
-- `51-language-localization`: `go run ./examples/51-language-localization/main.go` -> `51_language_localization.pptx` (per-run lang tags, RTL paragraphs)
-- `53-slide-properties`: `go run ./examples/53-slide-properties/slide_props_smoke.go` -> `53_slide_properties.pptx`
-- `54-theme-master`: `go run ./examples/54-theme-master/main.go` -> `54_theme_master.pptx` (built-in themes via PresentationBuilder)
-- `55-background-fills`: `go run ./examples/55-background-fills/background_smoke.go` -> `55_background_fills.pptx`
-- `57-placeholder-overrides`: `go run ./examples/57-placeholder-overrides/placeholder_override_smoke.go` -> `57_placeholder_override_smoke.pptx`
-- `58-gopptx-rich-slide`: `go run ./examples/58-gopptx-rich-slide/main.go` -> `58_gopptx_rich_slide.pptx`
+1. `01-basic-pptx-generation` - What: Create a minimal hello-world deck - Run: `go run ./examples/01-basic-pptx-generation/basic_gen.go`
+2. `02-slide-layouts` - What: Show built-in slide layout choices - Run: `go run ./examples/02-slide-layouts/main.go`
+3. `03-markdown-to-pptx` - What: Generate slides from Markdown content - Run: `go run ./examples/03-markdown-to-pptx/main.go`
+4. `04-text-formatting` - What: Apply rich text formatting and text-frame settings - Run: `go run ./examples/04-text-formatting/text_enhancements.go`; `go run ./examples/04-text-formatting/text_frame.go`
+5. `04-text-styling` - What: Demonstrate title/body styling combinations - Run: `go run ./examples/04-text-styling/main.go`
+6. `05-bullet-styles` - What: Use bullet, numbered, and nested bullet styles - Run: `go run ./examples/05-bullet-styles/main.go`
+7. `06-text-enhancements` - What: Use advanced text effects like caps/highlight/superscript - Run: `go run ./examples/06-text-enhancements/main.go`
+8. `07-tables` - What: Create and style basic tables - Run: `go run ./examples/07-tables/main.go`
+9. `08-dynamic-report-generation` - What: Build a report deck from runtime data - Run: `python examples/08-dynamic-report-generation/main.py`
+10. `08-table-cell-merge` - What: Merge table cells with row/column spans - Run: `go run ./examples/08-table-cell-merge/main.go`
+11. `09-charts` - What: Generate standard chart types - Run: `go run ./examples/09-charts/chart_smoke.go`
+12. `10-images` - What: Embed images from file and bytes - Run: `go run ./examples/10-images/main.go`
+13. `11-image-advanced-sources` - What: Add images from bytes/base64/advanced sources - Run: `go run ./examples/11-image-advanced-sources/main.go`
+14. `12-shapes` - What: Showcase shape creation and styling - Run: `go run ./examples/12-shapes/feature_showcase.go`
+15. `13-connectors` - What: Draw straight/elbow/curved connectors - Run: `go run ./examples/13-connectors/main.go`
+16. `14-table-api-improvements` - What: Python table API coverage including styling variants - Run: `python examples/14-table-api-improvements/main.py`; `python examples/14-table-api-improvements/styling_example.py`
+17. `14-transitions` - What: Apply slide transition effects - Run: `go run ./examples/14-transitions/main.go`
+18. `15-headers-footers` - What: Manage headers/footers in Python flows - Run: `python examples/15-headers-footers/main.py`
+19. `15-cli-commands` - What: Reference and demo CLI command workflows - Run: `go run ./examples/15-cli-commands/main.go`
+20. `16-chart-type-enum` - What: Use chart type enums in Python - Run: `python examples/16-chart-type-enum/main.py`
+21. `16-templates` - What: Generate decks from reusable templates - Run: `go run ./examples/16-templates/main.go`
+22. `17-custom-slide-layout-composition` - What: Compose custom slide layouts in Python - Run: `python examples/17-custom-slide-layout-composition/main.py`
+23. `17-themes` - What: Apply theme and master-based styling - Run: `go run ./examples/17-themes/theme_master_smoke.go`
+24. `18-theme-aware-presentation` - What: Create theme-aware presentations in Python - Run: `python examples/18-theme-aware-presentation/main.py`
+25. `18-layout-helpers` - What: Use layout/unit helper utilities - Run: `go run ./examples/18-layout-helpers/main.go`
+26. `19-read-modify-existing` - What: Open and modify existing PPTX files - Run: `go run ./examples/19-read-modify-existing/editor_smoke.go`; `go run ./examples/19-read-modify-existing/editor_overwrite.go`
+27. `20-validation-repair` - What: Validate and repair malformed presentations - Run: `go run ./examples/20-validation-repair/main.go`
+28. `21-export-html-pdf` - What: Export presentation content to HTML/PDF - Run: `go run ./examples/21-export-html-pdf/main.go`
+29. `22-speaker-notes` - What: Read and write speaker notes - Run: `go run ./examples/22-speaker-notes/editor_notes_smoke.go`
+30. `23-media-embed` - What: Embed audio/video media into slides - Run: `go run ./examples/23-media-embed/main.go`
+31. `24-smartart` - What: Create SmartArt diagrams across layouts - Run: `go run ./examples/24-smartart/main.go`
+32. `25-export-html` - What: Export slides to HTML (and PDF when enabled) - Run: `go run ./examples/25-export-html/main.go`
+33. `26-vba-macros` - What: Create macro-enabled PPTM output - Run: `go run ./examples/26-vba-macros/main.go`
+34. `27-custom-xml` - What: Attach and round-trip custom XML parts - Run: `go run ./examples/27-custom-xml/main.go`
+35. `28-animations` - What: Add entrance/emphasis/exit animations - Run: `go run ./examples/28-animations/main.go`
+36. `29-handout-master` - What: Configure handout master print layouts - Run: `go run ./examples/29-handout-master/main.go`
+37. `30-embedded-fonts` - What: Embed fonts for consistent rendering - Run: `go run ./examples/30-embedded-fonts/main.go`
+38. `31-hyperlinks` - What: Add external and internal hyperlinks - Run: `go run ./examples/31-hyperlinks/main.go`
+39. `32-mermaid` - What: Render Mermaid diagrams into slides - Run: `go run ./examples/32-mermaid/main.go`
+40. `32-mermaid-diagrams` - What: Render multiple Mermaid diagram types - Run: `go run ./examples/32-mermaid-diagrams/main.go`
+41. `33-notes-master` - What: Work with notes master content - Run: `go run ./examples/33-notes-master/notes_master_smoke.go`
+42. `34-urlfetch` - What: Generate slides from fetched web content - Run: `go run ./examples/34-urlfetch/main.go`
+43. `34-web2ppt` - What: Convert webpage structures to PPTX slides - Run: `go run ./examples/34-web2ppt/main.go`
+44. `35-layout-helpers` - What: Apply layout helper APIs in real decks - Run: `go run ./examples/35-layout-helpers/main.go`
+45. `35-prelude-helpers` - What: Use presentation prelude helper patterns - Run: `go run ./examples/35-prelude-helpers/main.go`
+46. `36-slide-master` - What: Use multiple slide masters/layout families - Run: `go run ./examples/36-slide-master/multi_master_smoke.go`
+47. `37-slide-duplication` - What: Duplicate slides (simple and complex cases) - Run: `go run ./examples/37-slide-duplication/slide_duplication.go`; `go run ./examples/37-slide-duplication/complex_duplication.go`
+48. `38-editor-image-support` - What: Edit and replace images via editor APIs - Run: `go run ./examples/38-editor-image-support/editor_image_smoke.go`
+49. `39-editor-chart-support` - What: Edit chart data/formatting via editor APIs - Run: `go run ./examples/39-editor-chart-support/smoke_main.go`
+50. `40-editor-notes-support` - What: Set and update notes using editor APIs - Run: `go run ./examples/40-editor-notes-support/main.go`
+51. `40-metadata-writer` - What: Write and update presentation metadata - Run: `go run ./examples/40-metadata-writer/main.go`
+52. `41-deep-shape-editing` - What: Perform deep shape-level mutations - Run: `go run ./examples/41-deep-shape-editing/main.go`
+53. `42-smart-merge-assets` - What: Merge decks/assets with deduplication behavior - Run: `go run ./examples/42-smart-merge-assets/main.go`
+54. `43-advanced-theme-management` - What: Advanced theme swapping and preset workflows - Run: `go run ./examples/43-advanced-theme-management/main.go`
+55. `43-presentation-props-editor` - What: Edit presentation/core properties - Run: `go run ./examples/43-presentation-props-editor/main.go`
+56. `44-section-management` - What: Create, rename, and manage slide sections - Run: `go run ./examples/44-section-management/smoke_main.go`
+57. `45-commenting-api` - What: Add and manage comments - Run: `go run ./examples/45-commenting-api/comments_basic.go`
+58. `46-presentation-protection` - What: Apply document/presentation protection options - Run: `go run ./examples/46-presentation-protection/main.go`
+59. `47-morph-transitions` - What: Demonstrate morph-style transitions - Run: `go run ./examples/47-morph-transitions/main.go`
+60. `48-accessibility-alt-text` - What: Set alt text and decorative flags for accessibility - Run: `go run ./examples/48-accessibility-alt-text/main.go`
+61. `49-advanced-hyperlinks` - What: Use advanced hyperlink/action patterns - Run: `go run ./examples/49-advanced-hyperlinks/main.go`
+62. `50-interactive-elements` - What: Build clickable interactive slide elements - Run: `go run ./examples/50-interactive-elements/main.go`
+63. `51-language-localization` - What: Set language tags and localization metadata - Run: `go run ./examples/51-language-localization/main.go`
+64. `51-localization` - What: Localization helpers and language-specific content - Run: `go run ./examples/51-localization/main.go`
+65. `52-legacy-interop` - What: Interop flow for legacy formats and conversion - Run: `go run ./examples/52-legacy-interop/main.go`
+66. `52-legacy-ppt-interop` - What: Legacy .ppt compatibility workflow - Run: `go run ./examples/52-legacy-ppt-interop/main.go`
+67. `53-slide-properties` - What: Read/write per-slide properties - Run: `go run ./examples/53-slide-properties/slide_props_smoke.go`
+68. `54-theme-master` - What: Theme master API and defaults - Run: `go run ./examples/54-theme-master/main.go`
+69. `55-background-fills` - What: Solid/gradient/picture background fills - Run: `go run ./examples/55-background-fills/background_smoke.go`
+70. `56-action-api` - What: Shape/text action API examples - Run: `go run ./examples/56-action-api/action_smoke.go`; `go run ./examples/56-action-api/action_api_smoke.go`
+71. `57-bridge-command-api` - What: Execute editor actions via command bridge - Run: `go run ./examples/57-bridge-command-api/main.go`
+72. `57-placeholder-overrides` - What: Override placeholder text/content behavior - Run: `go run ./examples/57-placeholder-overrides/placeholder_override_smoke.go`
+73. `58-bridge-performance` - What: Benchmark bridge command throughput - Run: `go run ./examples/58-bridge-performance/main.go`
+74. `58-gopptx-rich-slide` - What: Compose a rich mixed-content showcase slide - Run: `go run ./examples/58-gopptx-rich-slide/main.go`
+75. `60-presentation-api-metadata` - What: Presentation API metadata read/write flow - Run: `go run ./examples/60-presentation-api-metadata/main.go`
+76. `61-smartart-edit-hidden` - What: Edit SmartArt and hidden-slide states - Run: `go run ./examples/61-smartart-edit-hidden/main.go`
+77. `62-smartart-edit-variations` - What: Apply many SmartArt mutation variations - Run: `go run ./examples/62-smartart-edit-variations/main.go`
+78. `63-presentation-api` - What: Manage presentation lifecycle (create/open/save/properties) - Run: `go run ./examples/63-presentation-api/main.go`
+79. `64-slides-api` - What: Manage slide layouts, ordering, numbering, and visibility - Run: `go run ./examples/64-slides-api/main.go`
+80. `65-shapes-api` - What: Build and style shapes with geometry and text options - Run: `go run ./examples/65-shapes-api/main.go`
+81. `66-placeholders-api` - What: Fill typed placeholders and override placeholder content - Run: `go run ./examples/66-placeholders-api/main.go`
+82. `67-table-api` - What: Build tables and control rows, cells, and styling - Run: `go run ./examples/67-table-api/main.go`
+83. `68-chart-data-api` - What: Build chart data sets and run data update flows - Run: `go run ./examples/68-chart-data-api/main.go`
+84. `69-chart-api` - What: Create and format chart variants - Run: `go run ./examples/69-chart-api/main.go`
+85. `70-text-api` - What: Compose text runs, bullets, and notes text - Run: `go run ./examples/70-text-api/main.go`
+86. `71-action-api` - What: Attach click/hover actions and hyperlink triggers - Run: `go run ./examples/71-action-api/main.go`
+87. `72-dml-api` - What: Apply DrawingML fills, lines, gradients, and effects - Run: `go run ./examples/72-dml-api/main.go`
+88. `73-image-api` - What: Transform images with crop/effects and accessibility metadata - Run: `go run ./examples/73-image-api/main.go`
+89. `74-util-api` - What: Convert units and use utility helpers - Run: `go run ./examples/74-util-api/main.go`
+90. `75-media-ole-api` - What: Embed media and OLE objects - Run: `go run ./examples/75-media-ole-api/main.go`
+91. `76-notes-api` - What: Author rich notes and update notes via editor APIs - Run: `go run ./examples/76-notes-api/main.go`
+92. `77-background-api` - What: Configure slide backgrounds (solid/gradient/picture) - Run: `go run ./examples/77-background-api/main.go`
+93. `78-enum-api` - What: Reference and validate enum constants by category - Run: `go run ./examples/78-enum-api/main.go`
+94. `79-document-infra` - No runnable entrypoint in this checkout
 
-### Masters & Layouts
+## Python Examples
 
-- `18-layout-helpers`: `go run ./examples/18-layout-helpers/main.go` -> `18_layout_helpers.pptx` (styling.Inches, Emu, unit conversions)
-- `33-notes-master`: `go run ./examples/33-notes-master/notes_master_smoke.go` -> `33_notes_master_smoke.pptx`
-- `34-urlfetch`: `go run ./examples/34-urlfetch/main.go` -> `34_urlfetch_*.pptx` (HTML to PPTX with custom CSS selectors and image embedding)
-- `34-web2ppt`: `go run ./examples/34-web2ppt/main.go` -> `34_web2ppt.pptx` (web2ppt feature overview)
-- `35-prelude-helpers`: `go run ./examples/35-prelude-helpers/main.go` -> `35_prelude_helpers.pptx` (PresentationBuilder fluent API)
-- `36-slide-master`: `go run ./examples/36-slide-master/multi_master_smoke.go` -> `36_multi_master_smoke.pptx`
-
-### Editor & Modification
-
-- `19-read-modify-existing` (Basic): `go run ./examples/19-read-modify-existing/editor_smoke.go` -> `19_editor_modified.pptx`
-- `19-read-modify-existing` (Overwrite): `go run ./examples/19-read-modify-existing/editor_overwrite.go` -> `19_editor_overwrite.pptx`
-- `22-speaker-notes`: `go run ./examples/22-speaker-notes/editor_notes_smoke.go` -> `22_editor_notes_smoke.pptx`
-- `23-media-embed`: `go run ./examples/23-media-embed/main.go` -> `23_media_embed_editor.pptx`
-- `37-slide-duplication` (Basic): `go run ./examples/37-slide-duplication/slide_duplication.go` -> `37_slide_duplication.pptx`
-- `37-slide-duplication` (Complex): `go run ./examples/37-slide-duplication/complex_duplication.go` -> `37_complex_duplication.pptx`
-- `38-editor-image-support`: `go run ./examples/38-editor-image-support/editor_image_smoke.go` -> `38_editor_image_smoke.pptx`
-- `39-editor-chart-support`: `go run ./examples/39-editor-chart-support/smoke_main.go`
-- `40-editor-notes-support`: `go run ./examples/40-editor-notes-support/main.go` -> `40_editor_notes_support.pptx` (SetNotes, WithNotes via editor)
-- `43-advanced-theme-management`: `go run ./examples/43-advanced-theme-management/main.go` -> `43_advanced_theme_management.pptx` (SetGlobalThemePreset, ApplyTheme)
-- `44-section-management`: `go run ./examples/44-section-management/smoke_main.go`
-- `52-legacy-ppt-interop`: `go run ./examples/52-legacy-ppt-interop/main.go` -> `52_legacy_ppt_interop.pptx` (legacy .ppt detection and LibreOffice bridge)
-
-### Advanced APIs
-
-- `32-mermaid`: `go run ./examples/32-mermaid/main.go` -> `32_mermaid.pptx`
-- `32-mermaid-diagrams`: `go run ./examples/32-mermaid-diagrams/main.go` -> `32_mermaid_diagrams.pptx` (flowchart, sequence, pie chart)
-- `40-metadata-writer`: `go run ./examples/40-metadata-writer/main.go`
-- `41-deep-shape-editing`: `go run ./examples/41-deep-shape-editing/main.go`
-- `42-smart-merge-assets`: `go run ./examples/42-smart-merge-assets/main.go`
-- `43-presentation-props-editor`: `go run ./examples/43-presentation-props-editor/main.go` -> `43_presentation_props_editor.pptx`, `43_brand_reskin_theme_swap.pptx`
-- `45-commenting-api`: `go run ./examples/45-commenting-api/comments_basic.go`
-- `49-advanced-hyperlinks`: `go run ./examples/49-advanced-hyperlinks/main.go`
-- `56-action-api` (Smoke): `go run ./examples/56-action-api/action_smoke.go` -> `56_action_smoke.pptx`
-- `56-action-api` (API): `go run ./examples/56-action-api/action_api_smoke.go` -> `56_action_api_smoke.pptx`
-- `57-bridge-command-api`: `go run ./examples/57-bridge-command-api/main.go` -> `57_bridge_command_api.pptx` (JSON bridge commands: get_slide_count, set_slide_title)
-- `58-bridge-performance`: `go run ./examples/58-bridge-performance/main.go` -> `58_bridge_performance.pptx` (batch command execution vs individual round-trips)
-- `60-presentation-api-metadata`: `go run ./examples/60-presentation-api-metadata/main.go`
-
-### Python Examples
-
-- Scripts: `examples/python/scripts/`
-- Tests/verification scripts: `examples/python/tests/`
-- Grayscale targeting demo: `uv run python examples/python/scripts/61_grayscale_targeted.py` -> `61_grayscale_targeted_source.pptx`, `61_grayscale_targeted_result.pptx` (prints slide indices, shape IDs, and placeholder types; uses `PlaceholderType.TITLE` / `PlaceholderType.FOOTER`)
-- Run script examples via `python examples/python/scripts/<script>.py` (from root).
-- Run verification scripts via `python examples/python/tests/<script>.py` (from root).
+- Python examples index: `examples/python/README.md`
+- Starter example: `uv run python examples/01-basic-pptx-generation/main.py`
+- Numbered examples:
+  - `uv run python examples/02-slide-layouts/main.py`
+  - `uv run python examples/03-markdown-to-pptx/main.py`
+  - `uv run python examples/04-text-formatting/main.py`
+  - `uv run python examples/05-bullet-styles/main.py`
+  - `uv run python examples/06-text-enhancements/main.py`
+  - `uv run python examples/07-tables/main.py`
+  - `uv run python examples/08-dynamic-report-generation/main.py`
+  - `uv run python examples/09-charts/main.py`
+  - `uv run python examples/10-images/main.py`
+  - `uv run python examples/11-image-advanced-sources/main.py`
+  - `uv run python examples/12-shapes/main.py`
+  - `uv run python examples/13-connectors/main.py`
+  - `uv run python examples/14-table-api-improvements/main.py`
+  - `uv run python examples/15-headers-footers/main.py`
+  - `uv run python examples/16-chart-type-enum/main.py`
+  - `uv run python examples/17-custom-slide-layout-composition/main.py`
+  - `uv run python examples/18-theme-aware-presentation/main.py`
+  - `uv run python examples/19-read-modify-existing/main.py`
+  - `uv run python examples/20-validation-repair/main.py`
+  - `uv run python examples/21-export-html-pdf/main.py`
+  - `uv run python examples/22-speaker-notes/main.py`
+  - `uv run python examples/23-media-embed/main.py`
+  - `uv run python examples/24-smartart/main.py`
+  - `uv run python examples/25-export-html/main.py`
+  - `uv run python examples/26-vba-macros/main.py`
+  - `uv run python examples/27-custom-xml/main.py`
+  - `uv run python examples/28-animations/main.py`
+  - `uv run python examples/29-handout-master/main.py`
+  - `uv run python examples/30-embedded-fonts/main.py`
+  - `uv run python examples/31-hyperlinks/main.py`
+  - `uv run python examples/32-mermaid/main.py`
+  - `uv run python examples/33-notes-master/main.py`
+  - `uv run python examples/35-layout-helpers/main.py`
+  - `uv run python examples/36-slide-master/main.py`
+  - `uv run python examples/37-slide-duplication/main.py`
+  - `uv run python examples/38-editor-image-support/main.py`
+  - `uv run python examples/39-editor-chart-support/main.py`
+  - `uv run python examples/40-editor-notes-support/main.py`
+- Grayscale demo: `uv run python examples/python/scripts/61_grayscale_targeted.py`
+- Tests and verification: `uv run python examples/python/tests/python_bridge_smoke_test.py`
 
 ## Example Assets
 
-Shared fixture assets live under: `examples/assets/[task-number]/`
-
-## Output Location
-
-All example generators write `.pptx` outputs to: `examples/output/`
+Shared fixtures live under: `examples/assets/[task-number]/`
