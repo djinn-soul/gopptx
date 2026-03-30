@@ -11,13 +11,16 @@ from pathlib import Path
 def _read_ignore_ids(path: Path) -> list[str]:
     if not path.exists():
         return []
-    ids: list[str] = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        ids.append(line)
-    return ids
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as e:
+        print(f"Error reading ignore file '{path}': {e}", file=sys.stderr)
+        sys.exit(1)
+    return [
+        line
+        for raw in lines
+        if (line := raw.strip()) and not line.startswith("#")
+    ]
 
 
 def _parse_args() -> argparse.Namespace:
