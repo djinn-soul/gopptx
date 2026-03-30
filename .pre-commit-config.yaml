@@ -71,12 +71,14 @@ repos:
         priority: 14
       - id: uv-export
         name: Export requirements.txt
-        args: ["--output-file", "requirements.txt", "--no-hashes"]
+        args:
+          ["--output-file", "requirements.txt", "--no-hashes", "--frozen", "--python", "3.10"]
         always_run: true
         priority: 15
       - id: uv-export
         name: Export requirements-dev.txt
-        args: ["--extra", "dev", "--output-file", "requirements-dev.txt"]
+        args:
+          ["--extra", "dev", "--output-file", "requirements-dev.txt", "--no-hashes", "--frozen", "--python", "3.10"]
         always_run: true
         priority: 16
 
@@ -123,6 +125,7 @@ repos:
         name: go vet
         entry: go
         language: system
+        files: (\.go$|^go\.mod$|^go\.sum$)
         pass_filenames: false
         args:
           ["vet", "./cmd/...", "./internal/...", "./pkg/...", "./examples/..."]
@@ -132,6 +135,7 @@ repos:
         name: go mod tidy
         entry: go
         language: system
+        files: (\.go$|^go\.mod$|^go\.sum$)
         pass_filenames: false
         args: ["mod", "tidy"]
         priority: 22
@@ -141,6 +145,7 @@ repos:
         name: golangci-lint
         entry: golangci-lint
         language: system
+        files: (\.go$|^go\.mod$|^go\.sum$)
         pass_filenames: false
         args:
           [

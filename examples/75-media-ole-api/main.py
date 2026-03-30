@@ -1,9 +1,9 @@
-"""Demonstrate media (audio/video) and OLE object embedding.
+"""Demonstrate media embedding and document OLE embedding patterns.
 
 This example demonstrates:
 - Embedding audio from raw bytes with add_audio()
 - Embedding video from a file path with add_video() (requires fixture)
-- Documentation slides covering OLE embedding concepts
+- Reference slides covering OLE embedding concepts
 - Graceful skip when optional fixture files are not present
 """
 

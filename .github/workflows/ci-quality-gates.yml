@@ -50,13 +50,12 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Restore pre-commit environments cache
-        id: precommit-cache-restore
-        uses: actions/cache/restore@v4
+      - name: Cache prek home
+        uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: pre-commit-${{ runner.os }}-
+          path: ~/.cache/prek
+          key: prek-home-${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: prek-home-${{ runner.os }}-
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
@@ -69,16 +68,7 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run full pre-commit gate
-        env:
-          PRE_COMMIT_HOME: ${{ github.workspace }}/.cache/pre-commit
-        run: uv run prek run --all-files
-
-      - name: Save pre-commit environments cache
-        if: always() && steps.precommit-cache-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ github.workspace }}/.cache/pre-commit
-          key: ${{ steps.precommit-cache-restore.outputs.cache-primary-key }}
+        uses: j178/prek-action@v1
 
   go-fuzz:
     needs: [guardrails]

@@ -1,10 +1,11 @@
-"""Demonstrate DrawingML fill, line, and color formatting concepts.
+"""Document DrawingML fill, line, and color formatting concepts.
 
 This example demonstrates:
 - Shape fill color via add_shape() properties
 - Contrasting solid fills across multiple shapes per slide
-- Documenting gradient, pattern, and shadow fill types (Go API reference)
+- Visual references for gradient and shadow concepts
 - Line style notes (solid, dashed, dotted) documented in bullets
+- Full advanced DML formatting hooks available in the Go API
 """
 
 from __future__ import annotations

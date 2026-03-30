@@ -53,10 +53,7 @@ _MARKDOWN_LINKS = """\
 def _build_from_markdown(prs: Presentation, markdown: str) -> None:
     """Add slides parsed from a Markdown string."""
     for line in markdown.strip().split("\n"):
-        if line.startswith("# "):
-            prs.add_slide_from_markdown(line)
-        else:
-            prs.add_slide_from_markdown(line)
+        prs.add_slide_from_markdown(line)
 
 
 def main() -> None:
