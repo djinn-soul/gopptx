@@ -56,6 +56,9 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse shapes: %w", err)
 	}
+	if err := e.enrichParsedShapeRelationships(partPath, parsed); err != nil {
+		return nil, fmt.Errorf("resolve shape relationships: %w", err)
+	}
 
 	shapes := make([]common.Shape, len(parsed))
 	for i, p := range parsed {
@@ -73,11 +76,25 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			Y:                p.Y,
 			W:                p.W,
 			H:                p.H,
+			Runs:             p.Runs,
+			Paragraphs:       p.Paragraphs,
+			TextFrame:        p.TextFrame,
+			Paragraph:        p.Paragraph,
+			Rotation:         p.Rotation,
 			PlaceholderIndex: placeholderIndex,
 			PlaceholderType:  p.PhType,
 			Fill:             p.Fill,
 			Line:             p.Line,
 			Shadow:           p.Shadow,
+			Glow:             p.Glow,
+			Blur:             p.Blur,
+			SoftEdge:         p.SoftEdge,
+			Reflection:       p.Reflection,
+			ClickAction:      p.ClickAction,
+			HoverAction:      p.HoverAction,
+			AltText:          p.AltText,
+			IsDecorative:     p.IsDecorative,
+			Connector:        p.Connector,
 			Adjustments:      p.Adjustments,
 		}
 	}

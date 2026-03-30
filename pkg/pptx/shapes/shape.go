@@ -8,6 +8,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
+	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
 // TextFrameAnchor specifies the vertical alignment of text within its shape.
@@ -253,25 +254,26 @@ type ShapeAdjustment struct {
 
 // Shape is one auto shape.
 type Shape struct {
-	Type         string
-	X            styling.Length
-	Y            styling.Length
-	CX           styling.Length
-	CY           styling.Length
-	Fill         *ShapeFill
-	Line         *ShapeLine
-	GradientFill *ShapeGradientFill
-	Text         string
-	RotationDeg  *int
-	Hyperlink    *action.Hyperlink // Legacy: mapped to ClickAction
-	ClickAction  *action.Hyperlink
-	HoverAction  *action.Hyperlink
-	AltText      string
-	IsDecorative bool
-	TextFrame    *TextFrame
-	Name         string
-	Adjustments  []ShapeAdjustment
-	Effects      *ShapeEffects
+	Type           string
+	X              styling.Length
+	Y              styling.Length
+	CX             styling.Length
+	CY             styling.Length
+	Fill           *ShapeFill
+	Line           *ShapeLine
+	GradientFill   *ShapeGradientFill
+	Text           string
+	RotationDeg    *int
+	Hyperlink      *action.Hyperlink // Legacy: mapped to ClickAction
+	ClickAction    *action.Hyperlink
+	HoverAction    *action.Hyperlink
+	AltText        string
+	IsDecorative   bool
+	TextFrame      *TextFrame
+	TextParagraphs []text.Paragraph
+	Name           string
+	Adjustments    []ShapeAdjustment
+	Effects        *ShapeEffects
 	// Rich formatting properties (new)
 	RichFill   *RichShapeFill
 	RichLine   *RichShapeLine

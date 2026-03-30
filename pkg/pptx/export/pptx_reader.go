@@ -47,12 +47,17 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 		// Best-effort chart extraction; continue without charts when parsing fails.
 		slideCharts = nil
 	}
+	slideSmartArt, err := extractSlideSmartArt(pptxPath)
+	if err != nil {
+		// Best-effort SmartArt extraction; continue without semantic diagrams when parsing fails.
+		slideSmartArt = nil
+	}
 
 	slideMeta := ed.Slides()
 	slideContents := make([]elements.SlideContent, 0, len(slideMeta))
 
 	for _, sm := range slideMeta {
-		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages, slideCharts))
+		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt))
 	}
 
 	if presTitle == "" && len(slideContents) > 0 {
@@ -68,6 +73,7 @@ func extractSlideContent(
 	sm editorcommon.SlideMetadata,
 	slideImages [][]SlideImage,
 	slideCharts [][]parsedChart,
+	slideSmartArt [][]parsedSmartArt,
 ) elements.SlideContent {
 	editorShapes, err := ed.GetShapes(sm.Index)
 	if err != nil {
@@ -77,27 +83,39 @@ func extractSlideContent(
 	sc := elements.SlideContent{
 		Title: sm.Title,
 	}
+	shapeIndexByID := make(map[int]int)
+	connectorShapes := make([]editorcommon.Shape, 0)
+	chartShapeIDs := chartShapeIDSet(slideCharts, sm.Index)
 
 	for _, es := range editorShapes {
 		lowerType := strings.ToLower(es.Type)
 		lowerName := strings.ToLower(strings.TrimSpace(es.Name))
+		if isEditorConnector(es) {
+			connectorShapes = append(connectorShapes, es)
+			continue
+		}
 
 		switch lowerType {
+		case "pic":
+			continue
 		case "graphicframe":
+			if _, ok := chartShapeIDs[es.ID]; ok {
+				continue
+			}
 			if tbl := extractTableContent(ed, sm.Index, es); tbl != nil {
 				sc.Table = tbl
 				continue
 			}
-			sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+			appendReaderShape(&sc, shapeIndexByID, es)
 		case placeholderTitle, placeholderCtrTitle:
 			if sc.Title == "" && es.Text != "" {
 				sc.Title = es.Text
 			}
 		case placeholderBody, placeholderSubtitle, placeholderObject:
-			if consumeBodyPlaceholderAsBullets(&sc, es.Text) {
+			if consumeBodyPlaceholderAsBullets(&sc, es) {
 				continue
 			}
-			sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+			appendReaderShape(&sc, shapeIndexByID, es)
 		default:
 			switch {
 			case isTitlePlaceholder(lowerType, lowerName):
@@ -105,95 +123,71 @@ func extractSlideContent(
 					sc.Title = es.Text
 				}
 			case isBodyPlaceholder(lowerType, lowerName):
-				if consumeBodyPlaceholderAsBullets(&sc, es.Text) {
+				if consumeBodyPlaceholderAsBullets(&sc, es) {
 					continue
 				}
-				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+				appendReaderShape(&sc, shapeIndexByID, es)
 			default:
-				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+				appendReaderShape(&sc, shapeIndexByID, es)
 			}
 		}
+	}
+	for _, es := range connectorShapes {
+		connector, ok := editorShapeToConnector(es, shapeIndexByID)
+		if !ok {
+			appendReaderShape(&sc, shapeIndexByID, es)
+			continue
+		}
+		sc.Connectors = append(sc.Connectors, connector)
 	}
 
 	// Attach images for this slide.
 	if sm.Index < len(slideImages) {
 		for _, img := range slideImages[sm.Index] {
 			sc.Images = append(sc.Images, shapes.Image{
-				Data:   img.Bytes,
-				Format: img.Format,
-				X:      styling.Emu(img.X),
-				Y:      styling.Emu(img.Y),
-				CX:     styling.Emu(img.CX),
-				CY:     styling.Emu(img.CY),
+				Data:         img.Bytes,
+				Format:       img.Format,
+				X:            styling.Emu(img.X),
+				Y:            styling.Emu(img.Y),
+				CX:           styling.Emu(img.CX),
+				CY:           styling.Emu(img.CY),
+				Rotation:     img.Rotation,
+				Crop:         shapes.ImageCrop{Left: img.CropLeft, Right: img.CropRight, Top: img.CropTop, Bottom: img.CropBottom},
+				FlipH:        img.FlipH,
+				FlipV:        img.FlipV,
+				Shadow:       img.Shadow,
+				Reflection:   img.Reflection,
+				AltText:      img.AltText,
+				IsDecorative: img.IsDecorative,
 			})
 		}
 	}
 	if sm.Index < len(slideCharts) {
 		applyParsedCharts(&sc, slideCharts[sm.Index])
 	}
+	if sm.Index < len(slideSmartArt) {
+		applyParsedSmartArt(&sc, slideSmartArt[sm.Index])
+	}
 	return sc
 }
 
-// editorShapeToShape maps an editor common.Shape to an export shapes.Shape.
-// X, Y, W, H from the editor are in EMU (int).
-func editorShapeToShape(es editorcommon.Shape) shapes.Shape {
-	shapeFill := editorFillToExportFill(es.Fill)
-	shapeLine := editorLineToExportLine(es.Line)
-	adjustments := editorAdjustmentsToExport(es.Adjustments)
-	return shapes.Shape{
-		// Map OOXML preset geometry name directly — pdf_native.go uses these strings.
-		Type:        editorTypeToPreset(es.Type),
-		X:           styling.Emu(int64(es.X)),
-		Y:           styling.Emu(int64(es.Y)),
-		CX:          styling.Emu(int64(es.W)),
-		CY:          styling.Emu(int64(es.H)),
-		Text:        es.Text,
-		Name:        es.Name,
-		Fill:        shapeFill,
-		Line:        shapeLine,
-		Adjustments: adjustments,
+func appendReaderShape(sc *elements.SlideContent, shapeIndexByID map[int]int, es editorcommon.Shape) {
+	sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+	if es.ID > 0 {
+		shapeIndexByID[es.ID] = len(sc.Shapes)
 	}
 }
 
-func editorFillToExportFill(fill *editorcommon.ShapeFill) *shapes.ShapeFill {
-	if fill == nil || fill.Solid == nil || *fill.Solid == "" {
-		return nil
+func chartShapeIDSet(slideCharts [][]parsedChart, slideIndex int) map[int]struct{} {
+	out := make(map[int]struct{})
+	if slideIndex < 0 || slideIndex >= len(slideCharts) {
+		return out
 	}
-	return &shapes.ShapeFill{Color: *fill.Solid}
-}
-
-func editorLineToExportLine(line *editorcommon.ShapeLine) *shapes.ShapeLine {
-	if line == nil || line.Color == nil || *line.Color == "" {
-		return nil
-	}
-	width := styling.Emu(0)
-	if line.WidthEmu != nil && *line.WidthEmu > 0 {
-		width = styling.Emu(int64(*line.WidthEmu))
-	}
-	return &shapes.ShapeLine{
-		Color: *line.Color,
-		Width: width,
-	}
-}
-
-func editorAdjustmentsToExport(
-	adjustments []editorcommon.ShapeAdjustment,
-) []shapes.ShapeAdjustment {
-	if len(adjustments) == 0 {
-		return nil
-	}
-	out := make([]shapes.ShapeAdjustment, 0, len(adjustments))
-	for _, adjustment := range adjustments {
-		if adjustment.Name == "" || adjustment.Formula == "" {
+	for _, chart := range slideCharts[slideIndex] {
+		if chart.ShapeID <= 0 {
 			continue
 		}
-		out = append(out, shapes.ShapeAdjustment{
-			Name:    adjustment.Name,
-			Formula: adjustment.Formula,
-		})
-	}
-	if len(out) == 0 {
-		return nil
+		out[chart.ShapeID] = struct{}{}
 	}
 	return out
 }
@@ -213,28 +207,6 @@ func isBodyPlaceholder(shapeType, shapeName string) bool {
 		shapeName == placeholderBody ||
 		strings.Contains(shapeName, "content placeholder") ||
 		strings.Contains(shapeName, "body placeholder")
-}
-
-func consumeBodyPlaceholderAsBullets(sc *elements.SlideContent, bodyText string) bool {
-	bodyText = strings.TrimSpace(bodyText)
-	if bodyText == "" {
-		return false
-	}
-	parts := strings.Split(bodyText, "\n")
-	normalized := make([]string, 0, len(parts))
-	for _, line := range parts {
-		line = strings.TrimSpace(strings.TrimPrefix(line, "•"))
-		if line == "" {
-			continue
-		}
-		normalized = append(normalized, line)
-	}
-	if len(normalized) == 0 {
-		return false
-	}
-	// Body placeholders on title+content layouts are usually bullet paragraphs.
-	sc.Bullets = append(sc.Bullets, normalized...)
-	return true
 }
 
 // editorTypeToPreset normalizes the editor shape type string to the OOXML

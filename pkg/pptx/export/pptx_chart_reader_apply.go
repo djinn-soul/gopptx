@@ -20,65 +20,103 @@ func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 		switch pc.Kind {
 		case "bar":
 			c := charts.NewBarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Chart = &c
 		case "barHorizontal":
 			c := charts.NewBarHorizontalChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.BarHorizontal = &c
 		case "barStacked":
 			c := charts.NewBarStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.BarStacked = &c
 		case "barStacked100":
 			c := charts.NewBarStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.BarStacked100 = &c
 		case "line":
 			c := charts.NewLineChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Line = &c
 		case "lineMarkers":
 			c := charts.NewLineMarkersChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.LineMarkers = &c
 		case "lineStacked":
 			c := charts.NewLineStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.LineStacked = &c
 		case "scatter":
 			xs, ys := scatterForChart(pc)
 			c := charts.NewScatterChart(xs, ys).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Scatter = &c
 		case "area":
 			c := charts.NewAreaChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Area = &c
 		case "areaStacked":
 			c := charts.NewAreaStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.AreaStacked = &c
 		case "areaStacked100":
 			c := charts.NewAreaStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.AreaStacked100 = &c
 		case "pie":
 			c := charts.NewPieChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Pie = &c
 		case "doughnut":
 			c := charts.NewDoughnutChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Doughnut = &c
 		case "bubble":
 			xs, ys, sizes := bubbleForChart(pc)
 			c := charts.NewBubbleChart(xs, ys, sizes).WithTitle(title).Position(int64(px), int64(py)).Size(int64(pw), int64(ph))
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Bubble = &c
 		case "radar":
 			c := charts.NewRadarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Radar = &c
 		case "radarFilled":
 			c := charts.NewRadarFilledChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.RadarFilled = &c
 		case "stockHLC":
 			high, low, closeVals := stockTriplet(pc)
 			c := charts.NewStockHLCChart(cats, high, low, closeVals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.StockHLC = &c
 		case "stockOHLC":
 			openVals, high, low, closeVals := stockQuad(pc)
 			c := charts.NewStockOHLCChart(cats, openVals, high, low, closeVals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.StockOHLC = &c
 		case "combo":
 			barSeries, lineSeries := comboSeries(pc)
 			c := charts.NewComboChart(cats, barSeries, lineSeries).WithTitle(title).Position(px, py).Size(pw, ph)
+			c.AltText = pc.AltText
+			c.IsDecorative = pc.IsDecorative
 			slide.Combo = &c
 		}
 	}

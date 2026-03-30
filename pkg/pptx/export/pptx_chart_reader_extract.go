@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 type parsedChartSeries struct {
@@ -17,28 +19,32 @@ type parsedChartSeries struct {
 }
 
 type parsedChart struct {
-	Kind   string
-	Title  string
-	X      int64
-	Y      int64
-	CX     int64
-	CY     int64
-	Series []parsedChartSeries
+	ShapeID      int
+	Kind         string
+	Title        string
+	X            int64
+	Y            int64
+	CX           int64
+	CY           int64
+	AltText      string
+	IsDecorative bool
+	Series       []parsedChartSeries
 }
 
 type chartFrameRef struct {
-	RelID string
-	X     int64
-	Y     int64
-	CX    int64
-	CY    int64
+	ShapeID      int
+	RelID        string
+	X            int64
+	Y            int64
+	CX           int64
+	CY           int64
+	AltText      string
+	IsDecorative bool
 }
 
 var (
 	reGraphicFrame = regexp.MustCompile(`(?s)<p:graphicFrame\b.*?</p:graphicFrame>`)
 	reChartRelID   = regexp.MustCompile(`\br:id="([^"]+)"`)
-	reOffsetTag    = regexp.MustCompile(`<a:off\b[^>]*\bx="([^"]+)"[^>]*\by="([^"]+)"[^>]*/?>`)
-	reExtentTag    = regexp.MustCompile(`<a:ext\b[^>]*\bcx="([^"]+)"[^>]*\bcy="([^"]+)"[^>]*/?>`)
 	reSeriesBlock  = regexp.MustCompile(`(?s)<c:ser\b.*?</c:ser>`)
 	reTextValue    = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
 	rePointValue   = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
@@ -82,7 +88,10 @@ func extractSlideCharts(pptxPath string) ([][]parsedChart, error) {
 				continue
 			}
 			pc := parseChartPart(chartXML)
+			pc.ShapeID = frame.ShapeID
 			pc.X, pc.Y, pc.CX, pc.CY = frame.X, frame.Y, frame.CX, frame.CY
+			pc.AltText = frame.AltText
+			pc.IsDecorative = frame.IsDecorative
 			row = append(row, pc)
 		}
 		out[idx] = row
@@ -98,21 +107,27 @@ func parseChartFrames(slideXML []byte) []chartFrameRef {
 		if !strings.Contains(frame, "<c:chart") && !strings.Contains(frame, "<cx:chart") {
 			continue
 		}
+		props, err := editorshape.ParseShapeProperties([]byte(frame))
+		if err != nil {
+			continue
+		}
+		meta, err := editorshape.ParseShapeReaderMetadata([]byte(frame))
+		if err != nil {
+			continue
+		}
 		idMatch := reChartRelID.FindStringSubmatch(frame)
 		if len(idMatch) < 2 {
 			continue
 		}
-		offMatch := reOffsetTag.FindStringSubmatch(frame)
-		extMatch := reExtentTag.FindStringSubmatch(frame)
-		if len(offMatch) < 3 || len(extMatch) < 3 {
-			continue
-		}
 		out = append(out, chartFrameRef{
-			RelID: idMatch[1],
-			X:     parseInt64(offMatch[1]),
-			Y:     parseInt64(offMatch[2]),
-			CX:    parseInt64(extMatch[1]),
-			CY:    parseInt64(extMatch[2]),
+			ShapeID:      props.ID,
+			RelID:        idMatch[1],
+			X:            int64(props.X),
+			Y:            int64(props.Y),
+			CX:           int64(props.W),
+			CY:           int64(props.H),
+			AltText:      meta.AltText,
+			IsDecorative: meta.IsDecorative,
 		})
 	}
 	return out

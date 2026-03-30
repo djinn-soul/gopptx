@@ -25,8 +25,12 @@ type runPropsXML struct {
 	Baseline      *string      `xml:"baseline,attr"`
 	Caps          *string      `xml:"caps,attr"`
 	SmallCaps     *string      `xml:"smCaps,attr"`
+	Size          *int         `xml:"sz,attr"`
 	SolidFill     solidFillXML `xml:"solidFill"`
 	Highlight     solidFillXML `xml:"highlight"`
+	Latin         *struct {
+		Typeface string `xml:"typeface,attr"`
+	} `xml:"latin"`
 }
 
 type gradientFillXML struct {
@@ -55,6 +59,21 @@ type patternFillXML struct {
 			Val string `xml:"val,attr"`
 		} `xml:"srgbClr"`
 	} `xml:"bgClr"`
+}
+
+type bodyPrXML struct {
+	LIns        *int      `xml:"lIns,attr"`
+	RIns        *int      `xml:"rIns,attr"`
+	TIns        *int      `xml:"tIns,attr"`
+	BIns        *int      `xml:"bIns,attr"`
+	Wrap        *string   `xml:"wrap,attr"`
+	Anchor      *string   `xml:"anchor,attr"`
+	Vert        *string   `xml:"vert,attr"`
+	NumCol      *int      `xml:"numCol,attr"`
+	Rot         *int      `xml:"rot,attr"`
+	NoAutofit   *struct{} `xml:"noAutofit"`
+	NormAutoFit *struct{} `xml:"normAutoFit"`
+	SpAutoFit   *struct{} `xml:"spAutoFit"`
 }
 
 type spacingNodeXML struct {
@@ -121,6 +140,22 @@ type shapeXML struct {
 			} `xml:"ph"`
 		} `xml:"nvPr"`
 	} `xml:"nvPicPr"`
+	NvCxnSpPr struct {
+		CNvPr struct {
+			ID   int    `xml:"id,attr"`
+			Name string `xml:"name,attr"`
+		} `xml:"cNvPr"`
+		CNvCxnSpPr struct {
+			StCxn *struct {
+				ID  *int `xml:"id,attr"`
+				Idx *int `xml:"idx,attr"`
+			} `xml:"stCxn"`
+			EndCxn *struct {
+				ID  *int `xml:"id,attr"`
+				Idx *int `xml:"idx,attr"`
+			} `xml:"endCxn"`
+		} `xml:"cNvCxnSpPr"`
+	} `xml:"nvCxnSpPr"`
 	NvGrpSpPr struct {
 		CNvPr struct {
 			ID   int    `xml:"id,attr"`
@@ -134,7 +169,10 @@ type shapeXML struct {
 		} `xml:"cNvPr"`
 	} `xml:"nvGraphicFramePr"`
 	Xfrm struct {
-		Off struct {
+		Rot   *int    `xml:"rot,attr"`
+		FlipH *string `xml:"flipH,attr"`
+		FlipV *string `xml:"flipV,attr"`
+		Off   struct {
 			X int `xml:"x,attr"`
 			Y int `xml:"y,attr"`
 		} `xml:"off"`
@@ -201,7 +239,10 @@ type shapeXML struct {
 			} `xml:"reflection"`
 		} `xml:"effectLst"`
 		Xfrm struct {
-			Off struct {
+			Rot   *int    `xml:"rot,attr"`
+			FlipH *string `xml:"flipH,attr"`
+			FlipV *string `xml:"flipV,attr"`
+			Off   struct {
 				X int `xml:"x,attr"`
 				Y int `xml:"y,attr"`
 			} `xml:"off"`
@@ -224,7 +265,8 @@ type shapeXML struct {
 		} `xml:"xfrm"`
 	} `xml:"grpSpPr"`
 	TxBody struct {
-		P []struct {
+		BodyPr *bodyPrXML `xml:"bodyPr"`
+		P      []struct {
 			PPr *paragraphPropsXML `xml:"pPr"`
 			R   []struct {
 				RPr *runPropsXML `xml:"rPr"`
@@ -240,6 +282,8 @@ type ParsedShapeProperties struct {
 	Type       string
 	Text       string
 	Runs       []common.TextRun
+	Paragraphs []common.ShapeTextParagraph
+	TextFrame  *common.TextFrame
 	Paragraph  *common.Paragraph
 	Fill       *common.ShapeFill
 	Line       *common.ShapeLine
@@ -248,6 +292,8 @@ type ParsedShapeProperties struct {
 	Blur       *common.ShapeBlur
 	SoftEdge   *common.ShapeSoftEdge
 	Reflection *common.ShapeReflection
+	Rotation   *float64
+	Connector  *common.ConnectorInfo
 	X, Y       int
 	W, H       int
 	PhIndex    int

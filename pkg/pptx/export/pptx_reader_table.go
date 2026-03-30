@@ -41,6 +41,12 @@ func extractTableContent(
 	table := tables.NewTable(colWidths)
 	table = table.Position(styling.Emu(int64(shape.X)), styling.Emu(int64(shape.Y)))
 	table = table.Size(styling.Emu(int64(shape.W)), styling.Emu(int64(shape.H)))
+	if shape.AltText != "" {
+		table = table.WithAltText(shape.AltText)
+	}
+	if shape.IsDecorative {
+		table = table.WithDecorative(true)
+	}
 	if len(rowHeights) > 0 {
 		table = table.WithRowHeights(rowHeights)
 	}
