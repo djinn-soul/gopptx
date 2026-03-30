@@ -2,8 +2,8 @@
 
 This example demonstrates:
 - Creating two slides where a shape moves and resizes between them
-- Shapes on both slides share the same name to enable PowerPoint Morph
-- The Morph transition animates position, size, and color changes
+- Shapes on both slides share the same name as a Morph prerequisite
+- How to manually apply Morph in PowerPoint on the destination slide
 """
 
 from __future__ import annotations
@@ -32,8 +32,8 @@ def main() -> None:
             properties={"fill_color": "FF0000", "name": "Morphed-Rect"},
         )
 
-        # Slide 2: same shape at end position (blue rectangle, bottom-right)
-        # Morph transition animates the change between slides
+        # Slide 2: same shape at end position (blue rectangle, bottom-right).
+        # This file prepares the slide pair; Morph is applied manually in PowerPoint.
         prs.add_slide("Slide 2: End", layout=SlideLayoutType.BLANK)
         idx2 = prs.slide_count - 1
         prs.add_shape(
@@ -49,8 +49,8 @@ def main() -> None:
             "Morph Transition Guide",
             [
                 "Both slides must have a shape with the same name",
-                "PowerPoint Morph animates position, size, and color",
-                "Set Morph transition on the destination slide (Slide 2)",
+                "This script sets up Morph prerequisites only",
+                "Apply Morph transition manually on the destination slide (Slide 2)",
                 "Works with rectangles, ellipses, text boxes, and images",
                 "Enable in PowerPoint: Transitions -> Morph",
             ],
