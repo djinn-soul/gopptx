@@ -40,6 +40,7 @@ jobs:
           cache: true
 
       - name: Setup Python
+        id: setup-python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -49,11 +50,12 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Cache pre-commit environments
-        uses: actions/cache@v4
+      - name: Restore pre-commit environments cache
+        id: precommit-cache-restore
+        uses: actions/cache/restore@v4
         with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          path: ${{ github.workspace }}/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: pre-commit-${{ runner.os }}-
 
       - name: Run golangci-lint
@@ -67,7 +69,16 @@ jobs:
         run: uv sync --extra dev
 
       - name: Run full pre-commit gate
+        env:
+          PRE_COMMIT_HOME: ${{ github.workspace }}/.cache/pre-commit
         run: uv run prek run --all-files
+
+      - name: Save pre-commit environments cache
+        if: always() && steps.precommit-cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.cache/pre-commit
+          key: ${{ steps.precommit-cache-restore.outputs.cache-primary-key }}
 
   go-fuzz:
     needs: [guardrails]
@@ -113,7 +124,9 @@ jobs:
   # failures/noise. Local explicit license validation is still available via:
   # `task check:go-licenses` (google/go-licenses).
   dependency-review:
-    if: github.event_name == 'pull_request'
+    # Enable only when repository support is confirmed.
+    # Set repository variable ENABLE_DEPENDENCY_REVIEW=true to turn this on.
+    if: github.event_name == 'pull_request' && vars.ENABLE_DEPENDENCY_REVIEW == 'true'
     needs: [guardrails]
     runs-on: ubuntu-latest
     timeout-minutes: 10
