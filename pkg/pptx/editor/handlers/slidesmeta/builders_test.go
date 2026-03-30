@@ -29,7 +29,25 @@ func TestBuildChartDefinition(t *testing.T) {
 		t.Fatal("expected non-nil chart definition")
 	}
 
-	for _, chartType := range []string{"line", "pie"} {
+	for _, chartType := range []string{
+		"line",
+		"pie",
+		"barHorizontal",
+		"barStacked",
+		"barStacked100",
+		"lineMarkers",
+		"lineStacked",
+		"scatter",
+		"area",
+		"areaStacked",
+		"areaStacked100",
+		"doughnut",
+		"bubble",
+		"radar",
+		"radarFilled",
+		"stockHLC",
+		"stockOHLC",
+	} {
 		req := base
 		req.ChartType = chartType
 		if _, err = BuildChartDefinition(req); err != nil {
@@ -37,8 +55,20 @@ func TestBuildChartDefinition(t *testing.T) {
 		}
 	}
 
+	comboReq := base
+	comboReq.ChartType = "combo"
+	comboReq.BarSeries = []editorcommand.ChartSeriesRequest{
+		{Name: "Revenue", Values: []float64{10, 20}},
+	}
+	comboReq.LineSeries = []editorcommand.ChartSeriesRequest{
+		{Name: "Growth", Values: []float64{2, 3}},
+	}
+	if _, err = BuildChartDefinition(comboReq); err != nil {
+		t.Fatalf("BuildChartDefinition(combo) failed: %v", err)
+	}
+
 	_, err = BuildChartDefinition(editorcommand.AddChartRequest{
-		ChartType:  "scatter",
+		ChartType:  "notAChart",
 		Categories: []string{"A"},
 		Values:     []float64{1},
 	})
@@ -48,7 +78,7 @@ func TestBuildChartDefinition(t *testing.T) {
 	if !errors.Is(err, ErrUnsupportedChartType) {
 		t.Fatalf("expected ErrUnsupportedChartType, got %v", err)
 	}
-	if !strings.Contains(err.Error(), `"scatter"`) {
+	if !strings.Contains(err.Error(), `"notAChart"`) {
 		t.Fatalf("expected chart type in wrapped error message, got %v", err)
 	}
 }

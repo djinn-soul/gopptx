@@ -96,6 +96,10 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)
 		prefix := bulletPrefix(style, i)
+		if prefix == "" {
+			// SlidesFromPPTX can lose explicit bullet-style metadata; preserve bullet intent.
+			prefix = "•"
+		}
 		renderedText := renderRunsPlain(runs)
 		if strings.TrimSpace(fontHint) == "" {
 			fontHint = inferCodeFontHint(renderedText)
