@@ -30,8 +30,8 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 		`csTypeId="`+Escape(defaultColorStyleID(spec.ColorStyleID))+`"`,
 		1,
 	)
-	orderedTexts := flattenSmartArtNodeTexts(spec.Nodes)
-	targetDataModelIDs := preferredDataModelIDsInOrder(data)
+	orderedTexts := smartArtOrderedTextsForLayout(spec.LayoutURI, spec.Nodes)
+	targetDataModelIDs := preferredDataModelIDsForLayout(spec.LayoutURI, data)
 	if len(targetDataModelIDs) > 0 {
 		data = injectSmartArtNodeTextsForModelIDs(data, targetDataModelIDs, orderedTexts)
 	} else {
@@ -95,7 +95,7 @@ func renderSmartArtColorsFromTemplate(colorStyleID string) string {
 func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 	drawing := mustTemplate(templatePathForLayout(spec.LayoutURI, "drawing.xml"))
 	data := renderSmartArtDataFromTemplate(spec)
-	orderedTexts := flattenSmartArtNodeTexts(spec.Nodes)
+	orderedTexts := smartArtOrderedTextsForLayout(spec.LayoutURI, spec.Nodes)
 	textByModelID := buildDrawingTextMapFromData(data)
 	hiddenPlaceholderModels := unfilledPlaceholderPresModelIDs(data)
 	allowedDrawingModels := existingPresModelIDs(data)
@@ -115,21 +115,6 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 
 func preferOrderedNodeMapping(layoutURI string) bool {
 	return strings.Contains(layoutURI, "/vList5")
-}
-
-func flattenSmartArtNodeTexts(nodes []SmartArtNodeSpec) []string {
-	out := make([]string, 0, flattenSmartArtTextsInitCap)
-	var walk func([]SmartArtNodeSpec)
-	walk = func(items []SmartArtNodeSpec) {
-		for _, n := range items {
-			out = append(out, n.Text)
-			if len(n.Children) > 0 {
-				walk(n.Children)
-			}
-		}
-	}
-	walk(nodes)
-	return out
 }
 
 func layoutURIOrDefault(uri string) string {

@@ -2,19 +2,34 @@ package editorcommon
 
 // Shape represents a simplified view of a slide shape for editing.
 type Shape struct {
-	ID   int
-	Name string
-	Type string
-	Text string
-	X, Y int
-	W, H int
+	ID         int
+	Name       string
+	Type       string
+	Text       string
+	X, Y       int
+	W, H       int
+	Runs       []TextRun
+	Paragraphs []ShapeTextParagraph
+
+	TextFrame *TextFrame
+	Paragraph *Paragraph
+	Rotation  *float64
 
 	PlaceholderIndex *int   `json:"PlaceholderIndex,omitempty"`
 	PlaceholderType  string `json:"PlaceholderType,omitempty"`
 
-	Fill   *ShapeFill
-	Line   *ShapeLine
-	Shadow *ShapeShadow
+	Fill         *ShapeFill
+	Line         *ShapeLine
+	Shadow       *ShapeShadow
+	Glow         *ShapeGlow
+	Blur         *ShapeBlur
+	SoftEdge     *ShapeSoftEdge
+	Reflection   *ShapeReflection
+	ClickAction  *Hyperlink
+	HoverAction  *Hyperlink
+	AltText      string
+	IsDecorative bool
+	Connector    *ConnectorInfo
 
 	Adjustments []ShapeAdjustment
 }
@@ -23,6 +38,16 @@ type Shape struct {
 type ShapeAdjustment struct {
 	Name    string
 	Formula string
+}
+
+// ConnectorInfo preserves connector-only metadata parsed from existing PPTX.
+type ConnectorInfo struct {
+	StartShapeID   *int `json:"start_shape_id,omitempty"`
+	StartSiteIndex *int `json:"start_site_index,omitempty"`
+	EndShapeID     *int `json:"end_shape_id,omitempty"`
+	EndSiteIndex   *int `json:"end_site_index,omitempty"`
+	FlipH          bool `json:"flip_h,omitempty"`
+	FlipV          bool `json:"flip_v,omitempty"`
 }
 
 // ShapeSearchQuery filters shapes for editor-wide search.
@@ -72,6 +97,12 @@ type TextRun struct {
 	OutlineWidthPt *float64   `json:"outline_width_pt,omitempty"`
 	Hyperlink      *Hyperlink `json:"hyperlink,omitempty"`
 	HoverAction    *Hyperlink `json:"hover_action,omitempty"`
+}
+
+// ShapeTextParagraph represents one paragraph of shape text with its own runs and style.
+type ShapeTextParagraph struct {
+	Runs      []TextRun  `json:"runs,omitempty"`
+	Paragraph *Paragraph `json:"paragraph,omitempty"`
 }
 
 // ShapeProps defines optional properties when creating a shape.

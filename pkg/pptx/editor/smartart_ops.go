@@ -218,17 +218,18 @@ func (e *PresentationEditor) ChangeSmartArtLayout(slideIndex, shapeID int, newLa
 		return fmt.Errorf("SmartArt data part %q not found", refs.DataPath)
 	}
 
-	// Extract current node texts and build a new spec with the new layout.
-	texts := extractSmartArtTexts(string(dataXML))
-	nodes := make([]pptxxml.SmartArtNodeSpec, len(texts))
-	for i, t := range texts {
-		nodes[i] = pptxxml.SmartArtNodeSpec{Text: t}
+	nodes, err := smartart.ParseDataModelNodes(dataXML)
+	if err != nil {
+		return fmt.Errorf("parse SmartArt nodes: %w", err)
 	}
 
-	// Validate new layout with the given nodes.
 	sa := smartart.NewSmartArt(newLayout)
-	for _, t := range texts {
-		sa = sa.AddNode(smartart.NewNode(t))
+	sa.Nodes = nodes
+	if quickStyle := e.readSmartArtUniqueID(refs.StylePath); quickStyle != "" {
+		sa = sa.WithQuickStyle(quickStyle)
+	}
+	if colorStyle := e.readSmartArtUniqueID(refs.ColorPath); colorStyle != "" {
+		sa = sa.WithColorStyle(colorStyle)
 	}
 	if err := sa.Validate(slideIndex); err != nil {
 		return err
@@ -284,7 +285,7 @@ func (e *PresentationEditor) SetSmartArtNodes(slideIndex, shapeID int, nodes []s
 	if !ok {
 		return fmt.Errorf("SmartArt layout part %q not found", refs.LayoutPath)
 	}
-	layoutURI := extractSmartArtLayoutURI(string(layoutXML))
+	layoutURI := smartart.ExtractLayoutURI(string(layoutXML))
 	if layoutURI == "" {
 		return fmt.Errorf("could not determine SmartArt layout URI from %q", refs.LayoutPath)
 	}
@@ -300,4 +301,15 @@ func (e *PresentationEditor) SetSmartArtNodes(slideIndex, shapeID int, nodes []s
 	e.parts.Set(refs.DataPath, []byte(pptxxml.SmartArtDataXML(spec)))
 	e.parts.Set(refs.DrawingPath, []byte(pptxxml.SmartArtDrawingXML(spec)))
 	return nil
+}
+
+func (e *PresentationEditor) readSmartArtUniqueID(partPath string) string {
+	if partPath == "" {
+		return ""
+	}
+	partXML, ok := e.parts.Get(partPath)
+	if !ok {
+		return ""
+	}
+	return smartart.ExtractUniqueID(string(partXML))
 }

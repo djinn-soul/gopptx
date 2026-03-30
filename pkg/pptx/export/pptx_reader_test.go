@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -100,6 +101,52 @@ func TestSlidesFromPPTX_RoundTrip(t *testing.T) {
 		if len(img.Data) == 0 {
 			t.Error("expected image data, got empty")
 		}
+	}
+}
+
+func TestSlidesFromPPTX_PreservesReaderMetadata(t *testing.T) {
+	deckPath := writeReaderMetadataPPTX(t)
+	_, slides, err := SlidesFromPPTX(deckPath)
+	if err != nil {
+		t.Fatalf("SlidesFromPPTX failed: %v", err)
+	}
+	if len(slides) != 2 {
+		t.Fatalf("expected 2 slides, got %d", len(slides))
+	}
+	if len(slides[0].Shapes) != 1 {
+		t.Fatalf("expected 1 shape on slide 1, got %d", len(slides[0].Shapes))
+	}
+	shape := slides[0].Shapes[0]
+	if shape.AltText != "Accessible rectangle" {
+		t.Fatalf("expected shape alt text, got %q", shape.AltText)
+	}
+	if shape.ClickAction == nil || shape.ClickAction.Action.Type != action.HyperlinkActionURL ||
+		shape.ClickAction.Action.URL != "https://example.com" {
+		t.Fatalf("expected shape click URL action, got %+v", shape.ClickAction)
+	}
+	if len(shape.TextParagraphs) != 1 || len(shape.TextParagraphs[0].Runs) != 1 {
+		t.Fatalf("expected one rich text run, got %+v", shape.TextParagraphs)
+	}
+	if shape.TextParagraphs[0].Runs[0].Hyperlink == nil ||
+		shape.TextParagraphs[0].Runs[0].Hyperlink.Action.Type != action.HyperlinkActionSlide ||
+		shape.TextParagraphs[0].Runs[0].Hyperlink.Action.SlideNumber != 2 {
+		t.Fatalf("expected run hyperlink to slide 2, got %+v", shape.TextParagraphs[0].Runs[0].Hyperlink)
+	}
+	if len(slides[0].Images) != 1 {
+		t.Fatalf("expected 1 image on slide 1, got %d", len(slides[0].Images))
+	}
+	image := slides[0].Images[0]
+	if image.AltText != "Accessible image" {
+		t.Fatalf("expected image alt text, got %q", image.AltText)
+	}
+	if image.Rotation != 90 {
+		t.Fatalf("expected image rotation 90, got %v", image.Rotation)
+	}
+	if image.Crop.Left != 0.1 || image.Crop.Right != 0.2 || image.Crop.Top != 0.05 || image.Crop.Bottom != 0.15 {
+		t.Fatalf("expected image crop to be preserved, got %+v", image.Crop)
+	}
+	if !image.FlipH || !image.Shadow || !image.Reflection {
+		t.Fatalf("expected image flip/shadow/reflection, got %+v", image)
 	}
 }
 
@@ -397,6 +444,104 @@ func writePieShapesPPTX(t *testing.T) string {
 			t.Fatalf("zip create %s: %v", name, werr)
 		}
 		if _, werr = fmt.Fprint(w, content); werr != nil {
+			t.Fatalf("zip write %s: %v", name, werr)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zip close: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("file close: %v", err)
+	}
+	return outPath
+}
+
+func writeReaderMetadataPPTX(t *testing.T) string {
+	t.Helper()
+
+	const (
+		nsA = `xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"`
+		nsR = `xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`
+		nsP = `xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"`
+	)
+
+	pngData := string([]byte{
+		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+		0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0x60, 0x00, 0x02, 0x00,
+		0x00, 0x05, 0x00, 0x01, 0x0D, 0x26, 0xE5, 0x2E, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44,
+		0xAE, 0x42, 0x60, 0x82,
+	})
+
+	slide1 := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld ` + nsA + ` ` + nsR + ` ` + nsP + `>` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`<p:sp><p:nvSpPr><p:cNvPr id="2" name="Action Shape" descr="Accessible rectangle">` +
+		`<a:hlinkClick r:id="rId5" tooltip="Visit"/>` +
+		`</p:cNvPr><p:cNvSpPr/><p:nvPr/></p:nvSpPr>` +
+		`<p:spPr><a:xfrm><a:off x="10" y="20"/><a:ext cx="300" cy="200"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>` +
+		`<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr><a:hlinkClick r:id="rId6" tooltip="Jump"/></a:rPr><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp>` +
+		`<p:pic><p:nvPicPr><p:cNvPr id="3" name="Picture 1" descr="Accessible image"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>` +
+		`<p:blipFill><a:blip r:embed="rId7"/><a:srcRect l="10000" r="20000" t="5000" b="15000"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
+		`<p:spPr><a:xfrm rot="5400000" flipH="1"><a:off x="100" y="200"/><a:ext cx="500" cy="400"/></a:xfrm>` +
+		`<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:effectLst><a:outerShdw/><a:reflection/></a:effectLst></p:spPr></p:pic>` +
+		`</p:spTree></p:cSld></p:sld>`
+
+	blankSlide := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld ` + nsA + ` ` + nsR + ` ` + nsP + `>` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`</p:spTree></p:cSld></p:sld>`
+
+	files := map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Default Extension="png" ContentType="image/png"/>` +
+			`<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>` +
+			`<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`<Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>` +
+			`</Relationships>`,
+		"ppt/presentation.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<p:presentation ` + nsA + ` ` + nsR + ` ` + nsP + `><p:sldIdLst>` +
+			`<p:sldId id="256" r:id="rId1"/><p:sldId id="257" r:id="rId2"/>` +
+			`</p:sldIdLst></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>` +
+			`<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>` +
+			`</Relationships>`,
+		"ppt/slides/slide1.xml": slide1,
+		"ppt/slides/slide2.xml": blankSlide,
+		"ppt/slides/_rels/slide1.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>` +
+			`<Relationship Id="rId6" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slide2.xml"/>` +
+			`<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/>` +
+			`</Relationships>`,
+		"ppt/slides/_rels/slide2.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`,
+		"ppt/media/image1.png": pngData,
+	}
+
+	outPath := filepath.Join(t.TempDir(), "reader_metadata.pptx")
+	f, err := os.Create(outPath)
+	if err != nil {
+		t.Fatalf("create reader metadata pptx: %v", err)
+	}
+	zw := zip.NewWriter(f)
+	for name, content := range files {
+		w, werr := zw.Create(name)
+		if werr != nil {
+			t.Fatalf("zip create %s: %v", name, werr)
+		}
+		if _, werr = w.Write([]byte(content)); werr != nil {
 			t.Fatalf("zip write %s: %v", name, werr)
 		}
 	}
