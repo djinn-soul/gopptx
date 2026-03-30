@@ -161,7 +161,14 @@ repos:
 
       - id: pip-audit
         name: pip-audit dependency scan
-        entry: uv run pip-audit -r requirements.txt --skip-editable
+        entry: uv run python scripts/ci/pip_audit_check.py
         language: system
         pass_filenames: false
+        args:
+          [
+            "--requirements",
+            "requirements-dev.txt",
+            "--ignore-file",
+            "pip-audit-ignore.txt",
+          ]
         priority: 24
