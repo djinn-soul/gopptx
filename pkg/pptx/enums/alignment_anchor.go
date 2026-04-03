@@ -26,13 +26,13 @@ func ParsePPAlign(value string) (PPAlign, error) {
 	switch normalizeKey(value) {
 	case "l", "left":
 		return PPAlignLeft, nil
-	case "ctr", "center", "centre":
+	case string(PPAlignCenter), "center", "centre":
 		return PPAlignCenter, nil
 	case "r", "right":
 		return PPAlignRight, nil
 	case "just", "justify":
 		return PPAlignJustify, nil
-	case "dist", "distribute":
+	case string(PPAlignDistribute), "distribute":
 		return PPAlignDistribute, nil
 	case "thaidist", "thai_distribute":
 		return PPAlignThaiDist, nil
@@ -76,13 +76,13 @@ func ParseMSOAnchor(value string) (MSOAnchor, error) {
 	switch normalizeKey(value) {
 	case "t", "top":
 		return MSOAnchorTop, nil
-	case "ctr", "center", "middle":
+	case string(MSOAnchorMiddle), "center", "middle":
 		return MSOAnchorMiddle, nil
 	case "b", "bottom":
 		return MSOAnchorBottom, nil
 	case "just", "justify":
 		return MSOAnchorJustify, nil
-	case "dist", "distribute":
+	case string(MSOAnchorDistribute), "distribute":
 		return MSOAnchorDistribute, nil
 	default:
 		return "", fmt.Errorf("invalid MSO_ANCHOR value %q", value)

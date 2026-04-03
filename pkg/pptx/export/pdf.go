@@ -153,38 +153,6 @@ func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
 	return compositeErr
 }
 
-func pdfViaPowerPointFromSlides(title string, slides []elements.SlideContent, outputPath string) error {
-	if runtime.GOOS != osWindows {
-		return errors.New("PowerPoint driver is only available on Windows")
-	}
-
-	tmpDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
-		tmpDir = os.TempDir()
-	}
-
-	safeTitle := sanitizeTitle(title)
-	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("gopptx_%s_temp_windows.pptx", safeTitle))
-	pptxBytes, err := pptx.CreateWithSlides(title, slides)
-	if err != nil {
-		return fmt.Errorf("PowerPoint driver (PPTX creation): %w", err)
-	}
-	if err := os.WriteFile(tmpFile, pptxBytes, 0o600); err != nil {
-		return fmt.Errorf("PowerPoint driver (PPTX write): %w", err)
-	}
-	defer os.Remove(tmpFile)
-
-	absPPTX, err := filepath.Abs(tmpFile)
-	if err != nil {
-		return fmt.Errorf("PowerPoint driver (PPTX path): %w", err)
-	}
-	absPDF, err := filepath.Abs(outputPath)
-	if err != nil {
-		return fmt.Errorf("PowerPoint driver (PDF path): %w", err)
-	}
-	return exportWithPowerPoint(absPPTX, absPDF)
-}
-
 // pdfFromFileViaLibreOffice converts an existing PPTX file via LibreOffice.
 func pdfFromFileViaLibreOffice(pptxPath, pdfPath string) error {
 	sofficeCmd := "soffice"
@@ -320,44 +288,6 @@ func moveGeneratedPDF(generatedPDF, outputPath string) error {
 	}
 	if err := os.Remove(generatedPDF); err != nil && !os.IsNotExist(err) {
 		return err
-	}
-	return nil
-}
-
-func exportWithPowerPoint(pptxPath, pdfPath string) error {
-	// Use a script block with arguments to prevent command injection via file paths.
-	psScript := `
-param($pptxPath, $pdfPath)
-$ppt = New-Object -ComObject PowerPoint.Application
-$ppt.Visible = 1
-try {
-  $pres = $ppt.Presentations.Open($pptxPath)
-  $pres.SaveAs($pdfPath, 32)
-  $pres.Close()
-} catch {
-  Write-Error $_
-  exit 1
-} finally {
-  $ppt.Quit()
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($ppt) | Out-Null
-}
-`
-
-	cmd := exec.CommandContext(
-		context.Background(),
-		"powershell",
-		"-NoProfile",
-		"-NonInteractive",
-		"-Command",
-		psScript,
-		"-pptxPath",
-		pptxPath,
-		"-pdfPath",
-		pdfPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, string(output))
 	}
 	return nil
 }

@@ -200,3 +200,16 @@ func TestRenderChart_Panic(t *testing.T) {
 	}()
 	RenderChart(&ChartSpec{Kind: "invalid"})
 }
+
+func TestRenderChart_RadarAxisTicksAreNotDuplicated(t *testing.T) {
+	spec := &ChartSpec{
+		Kind:       ChartKindRadar,
+		Title:      "Radar",
+		Categories: []string{"A", "B"},
+		Values:     []float64{1, 2},
+	}
+	xml := string(RenderChart(spec))
+	if strings.Contains(xml, `<c:crosses val="autoZero"/><c:majorTickMark`) {
+		t.Fatalf("unexpected duplicate majorTickMark after crosses in radar valAx: %s", xml)
+	}
+}

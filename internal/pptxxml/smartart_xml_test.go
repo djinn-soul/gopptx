@@ -222,6 +222,124 @@ func TestSmartArtDataXMLHorizontalBulletMapsAcrossPrimaryColumns(t *testing.T) {
 	}
 }
 
+func TestSmartArtDataXMLHierarchyMapsBreadthFirstAcrossSiblingSlots(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{
+				Text: "CEO",
+				Children: []pptxxml.SmartArtNodeSpec{
+					{
+						Text: "Finance",
+						Children: []pptxxml.SmartArtNodeSpec{
+							{Text: "Accounts"},
+						},
+					},
+					{Text: "Engineering"},
+				},
+			},
+		},
+	}
+
+	xml := pptxxml.SmartArtDataXML(spec)
+
+	if segment := pointSegmentByModelID(
+		xml,
+		"{C7401706-CA2B-4D1A-BA1C-F52A374534A6}",
+	); !strings.Contains(
+		segment,
+		"<a:t>CEO</a:t>",
+	) {
+		t.Fatal("expected hierarchy root text in root slot")
+	}
+	if segment := pointSegmentByModelID(
+		xml,
+		"{BF0DB955-A3BC-42E2-B6F3-76BB6EEF0C6E}",
+	); !strings.Contains(
+		segment,
+		"<a:t>Finance</a:t>",
+	) {
+		t.Fatal("expected first child text in first hierarchy child slot")
+	}
+	if segment := pointSegmentByModelID(
+		xml,
+		"{1D8E8D7D-7330-4A43-BF16-A35AFE48D68D}",
+	); !strings.Contains(
+		segment,
+		"<a:t>Engineering</a:t>",
+	) {
+		t.Fatal("expected second child text in second hierarchy child slot")
+	}
+	if segment := pointSegmentByModelID(
+		xml,
+		"{E0E6B85D-D97A-48D1-81DC-C8C26276ADC3}",
+	); !strings.Contains(
+		segment,
+		"<a:t>Accounts</a:t>",
+	) {
+		t.Fatal("expected grandchild text in first hierarchy grandchild slot")
+	}
+}
+
+func TestSmartArtDataXMLHorizontalHierarchyMapsBreadthFirstAcrossSiblingSlots(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy2",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{
+				Text: "CEO",
+				Children: []pptxxml.SmartArtNodeSpec{
+					{
+						Text: "Finance",
+						Children: []pptxxml.SmartArtNodeSpec{
+							{Text: "Accounts"},
+						},
+					},
+					{Text: "Engineering"},
+				},
+			},
+		},
+	}
+
+	xml := pptxxml.SmartArtDataXML(spec)
+
+	if segment := pointSegmentByModelID(
+		xml,
+		"{8426535C-54F3-46EA-A53B-BA4CC18FD7E0}",
+	); !strings.Contains(
+		segment,
+		"<a:t>CEO</a:t>",
+	) {
+		t.Fatal("expected horizontal hierarchy root text in root slot")
+	}
+	if segment := pointSegmentByModelID(
+		xml,
+		"{CE0AAF88-E00D-4698-B726-CFDB9A8B02FB}",
+	); !strings.Contains(
+		segment,
+		"<a:t>Engineering</a:t>",
+	) {
+		t.Fatal("expected first semantic child text in first horizontal hierarchy child slot")
+	}
+	if segment := pointSegmentByModelID(
+		xml,
+		"{1AEDA9FF-FEC4-4109-BC1E-C7FF7AA02EA0}",
+	); !strings.Contains(
+		segment,
+		"<a:t>Finance</a:t>",
+	) {
+		t.Fatal("expected second semantic child text in second horizontal hierarchy child slot")
+	}
+	if segment := pointSegmentByModelID(
+		xml,
+		"{C44EB3FF-9224-4653-9878-10CB48172BED}",
+	); !strings.Contains(
+		segment,
+		"<a:t>Accounts</a:t>",
+	) {
+		t.Fatal("expected grandchild text in first horizontal hierarchy grandchild slot")
+	}
+}
+
 func TestSmartArtDrawingXMLOrgChartHidesUnfilledPlaceholderShapes(t *testing.T) {
 	spec := pptxxml.SmartArtSpec{
 		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1",

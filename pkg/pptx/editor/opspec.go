@@ -128,6 +128,7 @@ const (
 	OpUpdateSmartArt       = "update_smartart"
 	OpSetSlideBackground   = "set_slide_background"
 	OpSetSlideHeaderFooter = "set_slide_header_footer"
+	OpGetSlideHeaderFooter = "get_slide_header_footer"
 	OpGetHandoutMaster     = "get_handout_master"
 	OpUpdateHandoutMaster  = "update_handout_master"
 	OpHasDigitalSignature  = "has_digital_signature"
