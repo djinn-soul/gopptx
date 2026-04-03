@@ -95,17 +95,18 @@ class PresentationHeaderFooterMixin(PresentationMixinBase):
             }
             prs.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, payload)
 
-    def get_header_footer(self, _slide_index: int) -> dict[str, object]:
+    def get_header_footer(self, slide_index: int) -> dict[str, object]:
         """Get header/footer configuration for a specific slide.
 
         Args:
             slide_index: Zero-based slide index.
 
         Returns:
-            Dict with footer, show_footer, show_slide_num, show_date_time keys.
+            Dict with footer, show_footer, show_slide_num, show_date_time,
+            and date_time_text keys reflecting the actual slide state.
         """
         prs = cast("_PresentationSlidesProto", self)
-        return dict(prs.header_footer_defaults)
+        return prs.execute(ops.OP_GET_SLIDE_HEADER_FOOTER, {"slide_index": slide_index})
 
 
 __all__ = ["PresentationHeaderFooterMixin"]
