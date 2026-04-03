@@ -154,7 +154,7 @@ func applyReaderRelationshipTarget(
 		if address == "" {
 			return
 		}
-		if decoded, err := url.QueryUnescape(address); err == nil {
+		if decoded, err := url.PathUnescape(address); err == nil {
 			address = decoded
 		}
 		hl.Address = &address

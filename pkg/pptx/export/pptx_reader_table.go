@@ -10,6 +10,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
+//nolint:gocognit
 func extractTableContent(
 	ed *editor.PresentationEditor,
 	slideIndex int,

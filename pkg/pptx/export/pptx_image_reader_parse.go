@@ -27,12 +27,42 @@ type picRef struct {
 	IsDecorative bool
 }
 
+// decorativeExtURI is the OOXML extension URI that Office uses to mark a
+// picture as intentionally decorative (accessibility flag).
+// Source: ECMA-376 / Microsoft Office Open XML extensions.
+const decorativeExtURI = "{C183D7F6-72BE-476a-BEBA-66C5E2CAE503}"
+
+type picCNvPrXML struct {
+	Descr  *string `xml:"descr,attr"`
+	Title  *string `xml:"title,attr"`
+	ExtLst *struct {
+		Exts []struct {
+			URI           string `xml:"uri,attr"`
+			DecorativeExt *struct {
+				Val *bool `xml:"val,attr"`
+			} `xml:"decorative"`
+		} `xml:"ext"`
+	} `xml:"extLst"`
+}
+
+// picCNvPrIsDecorative returns true only when the cNvPr element carries the
+// explicit OOXML decorative-image extension with val="1" (or val="true").
+// An absent or empty descr attribute is NOT sufficient on its own.
+func picCNvPrIsDecorative(c picCNvPrXML) bool {
+	if c.ExtLst == nil {
+		return false
+	}
+	for _, ext := range c.ExtLst.Exts {
+		if ext.URI == decorativeExtURI && ext.DecorativeExt != nil {
+			return ext.DecorativeExt.Val == nil || *ext.DecorativeExt.Val
+		}
+	}
+	return false
+}
+
 type picReaderXML struct {
 	NvPicPr struct {
-		CNvPr struct {
-			Descr *string `xml:"descr,attr"`
-			Title *string `xml:"title,attr"`
-		} `xml:"cNvPr"`
+		CNvPr picCNvPrXML `xml:"cNvPr"`
 	} `xml:"nvPicPr"`
 	BlipFill struct {
 		Blip struct {
@@ -136,17 +166,22 @@ func resolvePicRelID(src *picReaderXML) string {
 }
 
 func picAltText(src *picReaderXML) (string, bool) {
-	if src == nil || src.NvPicPr.CNvPr.Descr == nil {
-		if src != nil && src.NvPicPr.CNvPr.Title != nil {
-			return strings.TrimSpace(*src.NvPicPr.CNvPr.Title), false
-		}
+	if src == nil {
 		return "", false
 	}
-	descr := strings.TrimSpace(*src.NvPicPr.CNvPr.Descr)
-	if descr != "" {
-		return descr, false
+	c := src.NvPicPr.CNvPr
+	isDecorative := picCNvPrIsDecorative(c)
+	if c.Descr != nil {
+		if descr := strings.TrimSpace(*c.Descr); descr != "" {
+			return descr, isDecorative
+		}
 	}
-	return "", true
+	if !isDecorative && c.Title != nil {
+		if title := strings.TrimSpace(*c.Title); title != "" {
+			return title, false
+		}
+	}
+	return "", isDecorative
 }
 
 func cropFraction(value *int) float64 {

@@ -62,7 +62,7 @@ type patternFillXML struct {
 }
 
 type bodyPrXML struct {
-	LIns        *int      `xml:"lIns,attr"`
+	LeftInset   *int      `xml:"lIns,attr"`
 	RIns        *int      `xml:"rIns,attr"`
 	TIns        *int      `xml:"tIns,attr"`
 	BIns        *int      `xml:"bIns,attr"`

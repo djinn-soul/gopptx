@@ -2,43 +2,9 @@ package editor
 
 import (
 	"encoding/json"
-	"regexp"
-	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
-
-var (
-	reSmartArtNodeText      = regexp.MustCompile(`<a:t>([^<]*)</a:t>`)
-	reSmartArtLayoutURI     = regexp.MustCompile(`uniqueId\s*=\s*["']([^"']+)["']`)
-	reSmartArtLayoutURIFull = regexp.MustCompile(`dgm:layoutDef[^>]*uniqueId\s*=\s*["']([^"']+)["']`)
-)
-
-// extractSmartArtTexts extracts node text strings in order from a SmartArt data XML.
-func extractSmartArtTexts(dataXML string) []string {
-	matches := reSmartArtNodeText.FindAllStringSubmatch(dataXML, -1)
-	texts := make([]string, 0, len(matches))
-	for _, m := range matches {
-		text := strings.TrimSpace(m[1])
-		// Skip placeholder empty nodes.
-		if text != "" {
-			texts = append(texts, text)
-		}
-	}
-	return texts
-}
-
-// extractSmartArtLayoutURI extracts the layout URI from a SmartArt layout XML part.
-func extractSmartArtLayoutURI(layoutXML string) string {
-	if m := reSmartArtLayoutURI.FindStringSubmatch(layoutXML); m != nil {
-		return m[1]
-	}
-	// Fall back to xmlns or other URI patterns.
-	if m := reSmartArtLayoutURIFull.FindStringSubmatch(layoutXML); m != nil {
-		return m[1]
-	}
-	return ""
-}
 
 // handleDeleteSmartArt removes a SmartArt diagram by shape ID.
 //

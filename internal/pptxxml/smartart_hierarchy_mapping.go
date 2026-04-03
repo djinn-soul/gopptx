@@ -5,6 +5,10 @@ type smartArtTraversalNode struct {
 	children []SmartArtNodeSpec
 }
 
+const (
+	smartArtDataPointDoc = "doc"
+)
+
 func smartArtOrderedTextsForLayout(layoutURI string, nodes []SmartArtNodeSpec) []string {
 	if prefersBreadthFirstSmartArtTextOrder(layoutURI) {
 		return flattenSmartArtNodeTextsBreadthFirst(nodes)
@@ -66,6 +70,7 @@ func preferredDataModelIDsForLayout(layoutURI, data string) []string {
 	return preferredDataModelIDsInOrder(data)
 }
 
+//nolint:gocognit
 func semanticDataModelIDsInBreadthFirstOrder(data string) []string {
 	points := parseSmartArtDataPoints(data)
 	cxns := parseSmartArtDataConnections(data)
@@ -84,7 +89,7 @@ func semanticDataModelIDsInBreadthFirstOrder(data string) []string {
 	childrenByParent := make(map[string][]string)
 	rootDocID := ""
 	for _, point := range points {
-		if point.isPres || point.pointType != "doc" {
+		if point.isPres || point.pointType != smartArtDataPointDoc {
 			continue
 		}
 		rootDocID = point.modelID

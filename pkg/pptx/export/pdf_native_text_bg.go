@@ -13,6 +13,10 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
+const (
+	defaultBulletPrefix = "•"
+)
+
 //nolint:gocognit // Background rendering handles multiple media/fill modes with explicit branches.
 func renderPDFBackground(pdf *gopdf.GoPdf, bg *elements.SlideBackground) error {
 	if bg == nil {
@@ -73,14 +77,20 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		yPos = 108.0
 	}
 	maxY := slideHeightPt - 24
+	baseX := 54.0
+	maxWidth := slideWidthPt - 108
+	if b := slide.ContentBoundsEMU; b[2] > 0 || b[3] > 0 {
+		baseX = emuToPt(b[0])
+		yPos = emuToPt(b[1])
+		maxWidth = emuToPt(b[2])
+		maxY = yPos + emuToPt(b[3])
+	}
 	if slide.Table != nil {
 		tableTop := emuToPt(slide.Table.Y.Emu())
 		if tableTop > yPos {
 			maxY = tableTop - 12
 		}
 	}
-	baseX := 54.0
-	maxWidth := slideWidthPt - 108
 	prevSpaceAfter := 0.0
 	for i, bullet := range slide.Bullets {
 		style := bulletStyleForIndex(slide, i)
@@ -98,7 +108,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		prefix := bulletPrefix(style, i)
 		if prefix == "" {
 			// SlidesFromPPTX can lose explicit bullet-style metadata; preserve bullet intent.
-			prefix = "•"
+			prefix = defaultBulletPrefix
 		}
 		renderedText := renderRunsPlain(runs)
 		if strings.TrimSpace(fontHint) == "" {

@@ -6,6 +6,18 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const (
+	connSiteTop         = 0
+	connSiteRight       = 1
+	connSiteBottom      = 2
+	connSiteLeft        = 3
+	connSiteTopLeft     = 4
+	connSiteTopRight    = 5
+	connSiteBottomRight = 6
+	connSiteBottomLeft  = 7
+	connSiteCenter      = 8
+)
+
 func isEditorConnector(es editorcommon.Shape) bool {
 	return es.Connector != nil || shapes.IsConnectorType(es.Type)
 }
@@ -19,27 +31,7 @@ func editorShapeToConnector(es editorcommon.Shape, shapeIndexByID map[int]int) (
 	connector.AltText = es.AltText
 	connector.IsDecorative = es.IsDecorative
 	connector.Adjustments = editorAdjustmentsToExportConnector(es.Adjustments)
-	if es.Line != nil {
-		connector.Line = editorConnectorLine(es.Line, connector.Line)
-		if es.Line.StartArrow != nil {
-			connector.StartArrow = shapes.NormalizeArrowType(*es.Line.StartArrow)
-		}
-		if es.Line.StartArrowWidth != nil {
-			connector.StartArrowWidth = shapes.NormalizeArrowSize(*es.Line.StartArrowWidth)
-		}
-		if es.Line.StartArrowLength != nil {
-			connector.StartArrowLen = shapes.NormalizeArrowSize(*es.Line.StartArrowLength)
-		}
-		if es.Line.EndArrow != nil {
-			connector.EndArrow = shapes.NormalizeArrowType(*es.Line.EndArrow)
-		}
-		if es.Line.EndArrowWidth != nil {
-			connector.EndArrowWidth = shapes.NormalizeArrowSize(*es.Line.EndArrowWidth)
-		}
-		if es.Line.EndArrowLength != nil {
-			connector.EndArrowLen = shapes.NormalizeArrowSize(*es.Line.EndArrowLength)
-		}
-	}
+	connector = applyConnectorLineOptions(connector, es.Line)
 	if es.Connector != nil {
 		if es.Connector.StartShapeID != nil {
 			connector.StartShapeIndex = shapeIndexByID[*es.Connector.StartShapeID]
@@ -55,6 +47,32 @@ func editorShapeToConnector(es editorcommon.Shape, shapeIndexByID map[int]int) (
 		}
 	}
 	return connector, true
+}
+
+func applyConnectorLineOptions(connector shapes.Connector, line *editorcommon.ShapeLine) shapes.Connector {
+	if line == nil {
+		return connector
+	}
+	connector.Line = editorConnectorLine(line, connector.Line)
+	if line.StartArrow != nil {
+		connector.StartArrow = shapes.NormalizeArrowType(*line.StartArrow)
+	}
+	if line.StartArrowWidth != nil {
+		connector.StartArrowWidth = shapes.NormalizeArrowSize(*line.StartArrowWidth)
+	}
+	if line.StartArrowLength != nil {
+		connector.StartArrowLen = shapes.NormalizeArrowSize(*line.StartArrowLength)
+	}
+	if line.EndArrow != nil {
+		connector.EndArrow = shapes.NormalizeArrowType(*line.EndArrow)
+	}
+	if line.EndArrowWidth != nil {
+		connector.EndArrowWidth = shapes.NormalizeArrowSize(*line.EndArrowWidth)
+	}
+	if line.EndArrowLength != nil {
+		connector.EndArrowLen = shapes.NormalizeArrowSize(*line.EndArrowLength)
+	}
+	return connector
 }
 
 func editorConnectorEndpoints(es editorcommon.Shape) (
@@ -116,23 +134,23 @@ func editorAdjustmentsToExportConnector(
 
 func connectorSiteName(idx int) string {
 	switch idx {
-	case 0:
+	case connSiteTop:
 		return shapes.ConnectionSiteTop
-	case 1:
+	case connSiteRight:
 		return shapes.ConnectionSiteRight
-	case 2:
+	case connSiteBottom:
 		return shapes.ConnectionSiteBottom
-	case 3:
+	case connSiteLeft:
 		return shapes.ConnectionSiteLeft
-	case 4:
+	case connSiteTopLeft:
 		return shapes.ConnectionSiteTopLeft
-	case 5:
+	case connSiteTopRight:
 		return shapes.ConnectionSiteTopRight
-	case 6:
+	case connSiteBottomRight:
 		return shapes.ConnectionSiteBottomRight
-	case 7:
+	case connSiteBottomLeft:
 		return shapes.ConnectionSiteBottomLeft
-	case 8:
+	case connSiteCenter:
 		return shapes.ConnectionSiteCenter
 	default:
 		return ""

@@ -42,6 +42,9 @@ func TestSlidesFromPPTX_PreservesSmartArtReaderData(t *testing.T) {
 	if len(got[0].SmartArtDiagrams) != 1 {
 		t.Fatalf("expected 1 SmartArt diagram, got %d", len(got[0].SmartArtDiagrams))
 	}
+	if len(got[0].Shapes) != 0 {
+		t.Fatalf("expected SmartArt graphicFrame to stay out of generic shapes, got %d shapes", len(got[0].Shapes))
+	}
 	read := got[0].SmartArtDiagrams[0]
 	if read.AltText != "SmartArt Alt" {
 		t.Fatalf("expected SmartArt alt text, got %q", read.AltText)
@@ -88,7 +91,17 @@ func TestSlidesFromPPTX_PreservesSmartArtHierarchy(t *testing.T) {
 		t.Fatalf("SlidesFromPPTX failed: %v", err)
 	}
 	if len(got) != 1 || len(got[0].SmartArtDiagrams) != 1 {
-		t.Fatalf("expected one slide with one SmartArt diagram, got slides=%d diagrams=%d", len(got), len(got[0].SmartArtDiagrams))
+		t.Fatalf(
+			"expected one slide with one SmartArt diagram, got slides=%d diagrams=%d",
+			len(got),
+			len(got[0].SmartArtDiagrams),
+		)
+	}
+	if len(got[0].Shapes) != 0 {
+		t.Fatalf(
+			"expected hierarchy SmartArt graphicFrame to stay out of generic shapes, got %d shapes",
+			len(got[0].Shapes),
+		)
 	}
 
 	read := got[0].SmartArtDiagrams[0]

@@ -67,7 +67,11 @@ func TestChangeSmartArtLayoutPreservesHierarchyAndStyles(t *testing.T) {
 		t.Fatalf("SlidesFromPPTX failed: %v", err)
 	}
 	if len(slides) != 1 || len(slides[0].SmartArtDiagrams) != 1 {
-		t.Fatalf("expected one SmartArt diagram after save, got slides=%d diagrams=%d", len(slides), len(slides[0].SmartArtDiagrams))
+		t.Fatalf(
+			"expected one SmartArt diagram after save, got slides=%d diagrams=%d",
+			len(slides),
+			len(slides[0].SmartArtDiagrams),
+		)
 	}
 
 	read := slides[0].SmartArtDiagrams[0]

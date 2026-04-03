@@ -6,7 +6,10 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-const bulletStyleNone = "none"
+const (
+	bulletStyleNone = "none"
+	fontSizeScale   = 100
+)
 
 func applyParsedShapeText(ps *ParsedShapeProperties, s *shapeXML) {
 	var txt strings.Builder
@@ -194,7 +197,7 @@ func applyRunStyle(run *common.TextRun, rpr *runPropsXML) {
 		run.Strikethrough = rpr.Strikethrough
 	}
 	if rpr.Size != nil && *rpr.Size > 0 {
-		sizePt := *rpr.Size / 100
+		sizePt := *rpr.Size / fontSizeScale
 		run.SizePt = &sizePt
 	}
 	if rpr.Latin != nil && rpr.Latin.Typeface != "" {

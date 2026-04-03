@@ -68,6 +68,7 @@ func TestParseShapeProperties_ParsesPresetGeometryAndAdjustments(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo,cyclop // This regression test intentionally validates many parsed shape fields in one fixture.
 func TestParseShapeProperties_ParsesTextAndEffects(t *testing.T) {
 	xml := []byte(`
 <p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"

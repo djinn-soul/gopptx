@@ -3,6 +3,7 @@ package slidesmeta
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
@@ -15,49 +16,105 @@ var (
 	ErrUnknownThemeName     = errors.New("unknown theme name")
 )
 
+const (
+	chartTypeBar         = "bar"
+	chartTypeLine        = "line"
+	chartTypeScatter     = "scatter"
+	chartTypeArea        = "area"
+	chartTypePie         = "pie"
+	chartTypeDoughnut    = "doughnut"
+	chartTypeBubble      = "bubble"
+	chartTypeRadar       = "radar"
+	chartTypeStockDelta  = 2
+	defaultStockOpenDiff = 1
+)
+
+//nolint:funlen
 func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDefinition, error) {
 	switch canonicalChartType(request.ChartType) {
-	case "bar":
+	case chartTypeBar:
 		return withBounds(charts.NewBarChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
 	case "barHorizontal":
-		return withBounds(charts.NewBarHorizontalChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewBarHorizontalChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "barStacked":
-		return withBounds(charts.NewBarStackedChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewBarStackedChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "barStacked100":
-		return withBounds(charts.NewBarStacked100Chart(request.Categories, request.Values).WithTitle(request.Title), request), nil
-	case "line":
-		return withBounds(charts.NewLineChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewBarStacked100Chart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypeLine:
+		return withBounds(
+			charts.NewLineChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "lineMarkers":
-		return withBounds(charts.NewLineMarkersChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewLineMarkersChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "lineStacked":
-		return withBounds(charts.NewLineStackedChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
-	case "scatter":
+		return withBounds(
+			charts.NewLineStackedChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypeScatter:
 		xValues, yValues := syntheticXYSeries(request.Values)
 		return withBounds(charts.NewScatterChart(xValues, yValues).WithTitle(request.Title), request), nil
-	case "area":
-		return withBounds(charts.NewAreaChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+	case chartTypeArea:
+		return withBounds(
+			charts.NewAreaChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "areaStacked":
-		return withBounds(charts.NewAreaStackedChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewAreaStackedChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "areaStacked100":
-		return withBounds(charts.NewAreaStacked100Chart(request.Categories, request.Values).WithTitle(request.Title), request), nil
-	case "pie":
+		return withBounds(
+			charts.NewAreaStacked100Chart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypePie:
 		return withBounds(charts.NewPieChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
-	case "doughnut":
-		return withBounds(charts.NewDoughnutChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
-	case "bubble":
+	case chartTypeDoughnut:
+		return withBounds(
+			charts.NewDoughnutChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypeBubble:
 		xValues, yValues := syntheticXYSeries(request.Values)
 		sizes := syntheticBubbleSizes(request.Values)
 		return withBubbleBounds(charts.NewBubbleChart(xValues, yValues, sizes).WithTitle(request.Title), request), nil
-	case "radar":
-		return withBounds(charts.NewRadarChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+	case chartTypeRadar:
+		return withBounds(
+			charts.NewRadarChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "radarFilled":
-		return withBounds(charts.NewRadarFilledChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewRadarFilledChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case "stockHLC":
 		high, low, closeVals := syntheticStockTriplet(request.Values)
-		return withBounds(charts.NewStockHLCChart(request.Categories, high, low, closeVals).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewStockHLCChart(request.Categories, high, low, closeVals).WithTitle(request.Title),
+			request,
+		), nil
 	case "stockOHLC":
 		openVals, high, low, closeVals := syntheticStockQuad(request.Values)
-		return withBounds(charts.NewStockOHLCChart(request.Categories, openVals, high, low, closeVals).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewStockOHLCChart(request.Categories, openVals, high, low, closeVals).WithTitle(request.Title),
+			request,
+		), nil
 	case "combo":
 		barSeries := make([]charts.Series, len(request.BarSeries))
 		for i, s := range request.BarSeries {
@@ -67,51 +124,54 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 		for i, s := range request.LineSeries {
 			lineSeries[i] = charts.Series{Name: s.Name, Values: s.Values}
 		}
-		return withBounds(charts.NewComboChart(request.Categories, barSeries, lineSeries).WithTitle(request.Title), request), nil
+		return withBounds(
+			charts.NewComboChart(request.Categories, barSeries, lineSeries).WithTitle(request.Title),
+			request,
+		), nil
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrUnsupportedChartType, request.ChartType)
 	}
 }
 
 func canonicalChartType(value string) string {
-	switch value {
-	case "bar", "BAR", "column", "COLUMN":
-		return "bar"
-	case "barHorizontal", "bar_horizontal", "bar-horizontal", "BAR_HORIZONTAL":
+	switch strings.ToLower(value) {
+	case chartTypeBar, "column":
+		return chartTypeBar
+	case "barhorizontal", "bar_horizontal", "bar-horizontal":
 		return "barHorizontal"
-	case "barStacked", "bar_stacked", "bar-stacked", "BAR_STACKED":
+	case "barstacked", "bar_stacked", "bar-stacked":
 		return "barStacked"
-	case "barStacked100", "bar_stacked_100", "bar-stacked-100", "BAR_STACKED_100":
+	case "barstacked100", "bar_stacked_100", "bar-stacked-100":
 		return "barStacked100"
-	case "line", "LINE":
-		return "line"
-	case "lineMarkers", "line_markers", "line-markers", "LINE_MARKERS":
+	case chartTypeLine:
+		return chartTypeLine
+	case "linemarkers", "line_markers", "line-markers":
 		return "lineMarkers"
-	case "lineStacked", "line_stacked", "line-stacked", "LINE_STACKED":
+	case "linestacked", "line_stacked", "line-stacked":
 		return "lineStacked"
-	case "scatter", "SCATTER":
-		return "scatter"
-	case "area", "AREA":
-		return "area"
-	case "areaStacked", "area_stacked", "area-stacked", "AREA_STACKED":
+	case chartTypeScatter:
+		return chartTypeScatter
+	case chartTypeArea:
+		return chartTypeArea
+	case "areastacked", "area_stacked", "area-stacked":
 		return "areaStacked"
-	case "areaStacked100", "area_stacked_100", "area-stacked-100", "AREA_STACKED_100":
+	case "areastacked100", "area_stacked_100", "area-stacked-100":
 		return "areaStacked100"
-	case "pie", "PIE":
-		return "pie"
-	case "doughnut", "DOUGHNUT":
-		return "doughnut"
-	case "bubble", "BUBBLE":
-		return "bubble"
-	case "radar", "RADAR":
-		return "radar"
-	case "radarFilled", "radar_filled", "radar-filled", "RADAR_FILLED":
+	case chartTypePie:
+		return chartTypePie
+	case chartTypeDoughnut:
+		return chartTypeDoughnut
+	case chartTypeBubble:
+		return chartTypeBubble
+	case chartTypeRadar:
+		return chartTypeRadar
+	case "radarfilled", "radar_filled", "radar-filled":
 		return "radarFilled"
-	case "stockHLC", "stock_hlc", "stock-hlc", "STOCK_HLC":
+	case "stockhlc", "stock_hlc", "stock-hlc":
 		return "stockHLC"
-	case "stockOHLC", "stock_ohlc", "stock-ohlc", "STOCK_OHLC":
+	case "stockohlc", "stock_ohlc", "stock-ohlc":
 		return "stockOHLC"
-	case "combo", "COMBO":
+	case "combo":
 		return "combo"
 	default:
 		return value
@@ -165,8 +225,8 @@ func syntheticStockTriplet(values []float64) ([]float64, []float64, []float64) {
 	low := make([]float64, len(values))
 	closeVals := make([]float64, len(values))
 	for i, value := range values {
-		high[i] = value + 2
-		low[i] = value - 2
+		high[i] = value + chartTypeStockDelta
+		low[i] = value - chartTypeStockDelta
 		closeVals[i] = value
 	}
 	return high, low, closeVals
@@ -181,9 +241,9 @@ func syntheticStockQuad(values []float64) ([]float64, []float64, []float64, []fl
 	low := make([]float64, len(values))
 	closeVals := make([]float64, len(values))
 	for i, value := range values {
-		openVals[i] = value - 1
-		high[i] = value + 2
-		low[i] = value - 2
+		openVals[i] = value - defaultStockOpenDiff
+		high[i] = value + chartTypeStockDelta
+		low[i] = value - chartTypeStockDelta
 		closeVals[i] = value
 	}
 	return openVals, high, low, closeVals

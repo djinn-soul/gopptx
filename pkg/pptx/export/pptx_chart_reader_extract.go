@@ -2,6 +2,7 @@ package export
 
 import (
 	"archive/zip"
+	"html"
 	"regexp"
 	"strconv"
 	"strings"
@@ -48,6 +49,12 @@ var (
 	reSeriesBlock  = regexp.MustCompile(`(?s)<c:ser\b.*?</c:ser>`)
 	reTextValue    = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
 	rePointValue   = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
+)
+
+const (
+	minChartRelIDMatchGroups = 2
+	minPointMatchGroups      = 2
+	minTextMatchGroups       = 3
 )
 
 func extractSlideCharts(pptxPath string) ([][]parsedChart, error) {
@@ -100,8 +107,8 @@ func extractSlideCharts(pptxPath string) ([][]parsedChart, error) {
 }
 
 func parseChartFrames(slideXML []byte) []chartFrameRef {
-	xml := string(slideXML)
-	frames := reGraphicFrame.FindAllString(xml, -1)
+	raw := string(slideXML)
+	frames := reGraphicFrame.FindAllString(raw, -1)
 	out := make([]chartFrameRef, 0, len(frames))
 	for _, frame := range frames {
 		if !strings.Contains(frame, "<c:chart") && !strings.Contains(frame, "<cx:chart") {
@@ -116,7 +123,7 @@ func parseChartFrames(slideXML []byte) []chartFrameRef {
 			continue
 		}
 		idMatch := reChartRelID.FindStringSubmatch(frame)
-		if len(idMatch) < 2 {
+		if len(idMatch) < minChartRelIDMatchGroups {
 			continue
 		}
 		out = append(out, chartFrameRef{
@@ -134,12 +141,12 @@ func parseChartFrames(slideXML []byte) []chartFrameRef {
 }
 
 func parseChartPart(chartXML []byte) parsedChart {
-	xml := string(chartXML)
+	raw := string(chartXML)
 	result := parsedChart{
-		Kind:  detectChartKind(xml),
-		Title: firstText(xml, "<c:title", "</c:title>"),
+		Kind:  detectChartKind(raw),
+		Title: firstText(raw, "<c:title", "</c:title>"),
 	}
-	blocks := reSeriesBlock.FindAllString(xml, -1)
+	blocks := reSeriesBlock.FindAllString(raw, -1)
 	result.Series = make([]parsedChartSeries, 0, len(blocks))
 	for _, block := range blocks {
 		result.Series = append(result.Series, parseSeriesBlock(block))
@@ -180,65 +187,11 @@ func firstTagBlock(xml, tag string) string {
 	return xml[start : start+endRel+len(endTag)]
 }
 
-func detectChartKind(xml string) string {
-	switch {
-	case strings.Contains(xml, "<c:stockChart"):
-		if strings.Count(xml, "<c:ser") >= 4 {
-			return "stockOHLC"
-		}
-		return "stockHLC"
-	case strings.Contains(xml, "<c:barChart") && strings.Contains(xml, "<c:lineChart"):
-		return "combo"
-	case strings.Contains(xml, "<c:doughnutChart"):
-		return "doughnut"
-	case strings.Contains(xml, "<c:pieChart"):
-		return "pie"
-	case strings.Contains(xml, "<c:bubbleChart"):
-		return "bubble"
-	case strings.Contains(xml, "<c:scatterChart"):
-		return "scatter"
-	case strings.Contains(xml, "<c:radarChart"):
-		if strings.Contains(xml, `radarStyle val="filled"`) {
-			return "radarFilled"
-		}
-		return "radar"
-	case strings.Contains(xml, "<c:areaChart"):
-		if strings.Contains(xml, `grouping val="percentStacked"`) {
-			return "areaStacked100"
-		}
-		if strings.Contains(xml, `grouping val="stacked"`) {
-			return "areaStacked"
-		}
-		return "area"
-	case strings.Contains(xml, "<c:lineChart"):
-		if strings.Contains(xml, `grouping val="stacked"`) {
-			return "lineStacked"
-		}
-		if strings.Contains(xml, "<c:marker") {
-			return "lineMarkers"
-		}
-		return "line"
-	case strings.Contains(xml, "<c:barChart"):
-		if strings.Contains(xml, `grouping val="percentStacked"`) {
-			return "barStacked100"
-		}
-		if strings.Contains(xml, `grouping val="stacked"`) {
-			return "barStacked"
-		}
-		if strings.Contains(xml, `barDir val="bar"`) {
-			return "barHorizontal"
-		}
-		return "bar"
-	default:
-		return "bar"
-	}
-}
-
 func extractTextPoints(block string) []string {
 	matches := rePointValue.FindAllStringSubmatch(block, -1)
 	out := make([]string, 0, len(matches))
 	for _, m := range matches {
-		if len(m) < 2 {
+		if len(m) < minPointMatchGroups {
 			continue
 		}
 		out = append(out, htmlEntityDecode(strings.TrimSpace(m[1])))
@@ -272,7 +225,7 @@ func firstText(xml, startTag, endTag string) string {
 	}
 	segment := xml[start : start+endRel+len(endTag)]
 	match := reTextValue.FindStringSubmatch(segment)
-	if len(match) < 3 {
+	if len(match) < minTextMatchGroups {
 		return ""
 	}
 	if match[1] != "" {
@@ -282,12 +235,5 @@ func firstText(xml, startTag, endTag string) string {
 }
 
 func htmlEntityDecode(value string) string {
-	replacer := strings.NewReplacer(
-		"&amp;", "&",
-		"&lt;", "<",
-		"&gt;", ">",
-		"&quot;", `"`,
-		"&apos;", "'",
-	)
-	return replacer.Replace(value)
+	return html.UnescapeString(value)
 }

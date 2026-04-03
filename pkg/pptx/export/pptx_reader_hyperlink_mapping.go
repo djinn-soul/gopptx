@@ -1,6 +1,7 @@
 package export
 
 import (
+	"math"
 	"net/url"
 	"strings"
 
@@ -16,7 +17,11 @@ func editorHyperlinkToExportHyperlink(src *editorcommon.Hyperlink) *action.Hyper
 	var link action.Hyperlink
 	switch {
 	case src.TargetSlide != nil:
-		link = action.NewHyperlink(action.HyperlinkSlide(uint32(*src.TargetSlide + 1)))
+		slideNumber, ok := toHyperlinkSlideNumber(*src.TargetSlide)
+		if !ok {
+			return nil
+		}
+		link = action.NewHyperlink(action.HyperlinkSlide(slideNumber))
 	case src.TargetJump != nil:
 		jumpAction, ok := editorJumpToAction(*src.TargetJump)
 		if !ok {
@@ -24,7 +29,9 @@ func editorHyperlinkToExportHyperlink(src *editorcommon.Hyperlink) *action.Hyper
 		}
 		link = action.NewHyperlink(jumpAction)
 	case src.Address != nil:
-		link = action.NewHyperlink(editorAddressToAction(strings.TrimSpace(*src.Address), strings.TrimSpace(getStr(src.Action))))
+		link = action.NewHyperlink(
+			editorAddressToAction(strings.TrimSpace(*src.Address), strings.TrimSpace(getStr(src.Action))),
+		)
 	default:
 		return nil
 	}
@@ -97,4 +104,15 @@ func getStr(src *string) string {
 		return ""
 	}
 	return *src
+}
+
+func toHyperlinkSlideNumber(targetSlide int) (uint32, bool) {
+	if targetSlide < 0 {
+		return 0, false
+	}
+	slideNumber := uint64(targetSlide) + 1
+	if slideNumber > math.MaxUint32 {
+		return 0, false
+	}
+	return uint32(slideNumber), true
 }
