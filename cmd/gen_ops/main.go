@@ -161,18 +161,33 @@ func unquote(s string) (string, error) { return strconv.Unquote(s) }
 func toSnakeCase(s string) string {
 	var result strings.Builder
 	for i, r := range s {
-		if i > 0 && r >= 'A' && r <= 'Z' {
-			prev := rune(s[i-1])
-			if prev < 'A' || prev > 'Z' {
-				result.WriteRune('_')
-			} else if i+1 < len(s) {
-				next := rune(s[i+1])
-				if next >= 'a' && next <= 'z' {
-					result.WriteRune('_')
-				}
-			}
+		if needsUnderscore(s, i, r) {
+			result.WriteRune('_')
 		}
 		result.WriteRune(r)
 	}
 	return strings.ToUpper(result.String())
+}
+
+func isUpper(r rune) bool { return r >= 'A' && r <= 'Z' }
+func isLower(r rune) bool { return r >= 'a' && r <= 'z' }
+
+// needsUnderscore reports whether a '_' separator should be inserted before the
+// character r at position i in s. Rules:
+//   - lowercase → uppercase transition: always insert (e.g. shapeS → shape_S).
+//   - uppercase run ending before lowercase: insert only when run is ≥2 chars long,
+//     so "IDs" stays as "IDS" rather than splitting to "I_DS".
+func needsUnderscore(s string, i int, r rune) bool {
+	if i == 0 || !isUpper(r) {
+		return false
+	}
+	prev := rune(s[i-1])
+	if !isUpper(prev) {
+		return true // lowercase → uppercase
+	}
+	// prev is uppercase: only insert at end of a ≥2-char run before a lowercase
+	if i+1 >= len(s) || !isLower(rune(s[i+1])) {
+		return false
+	}
+	return i >= 2 && isUpper(rune(s[i-2]))
 }

@@ -57,6 +57,7 @@ class PresentationTableBuilders(PresentationMixinBase):
         *,
         first_row: bool = True,
         band_row: bool = True,
+        column_widths: list[int] | None = None,
         **kwargs: object,
     ) -> int:
         """Create a table from a list of row data.
@@ -94,6 +95,8 @@ class PresentationTableBuilders(PresentationMixinBase):
         extra_kwargs: dict[str, object] = dict(kwargs)
         extra_kwargs.pop("first_row", None)
         extra_kwargs.pop("band_row", None)
+        if column_widths is not None:
+            extra_kwargs["column_widths"] = column_widths
         add_table: Callable[..., int] = prs.add_table
 
         return add_table(
@@ -114,6 +117,8 @@ class PresentationTableBuilders(PresentationMixinBase):
         bounds: tuple[int, int, int, int] | None = None,
         *,
         column_names: list[str] | None = None,
+        first_row: bool = True,
+        band_row: bool = True,
         **kwargs: object,
     ) -> int:
         """Create a table from a list of dictionaries.
@@ -158,12 +163,14 @@ class PresentationTableBuilders(PresentationMixinBase):
         )
 
         prs = cast("_TableBuilderProto", self)
-        extra_kwargs: dict[str, object] = dict(kwargs)
-        extra_kwargs.pop("first_row", None)
-        extra_kwargs.pop("band_row", None)
         add_table_from_rows: Callable[..., int] = prs.add_table_from_rows
         return add_table_from_rows(
-            slide=slide, rows=data, bounds=bounds, **extra_kwargs
+            slide=slide,
+            rows=data,
+            bounds=bounds,
+            first_row=first_row,
+            band_row=band_row,
+            **kwargs,
         )
 
 

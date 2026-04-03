@@ -94,6 +94,7 @@ func supportedContentOps() []string {
 		OpSetSmartArtNodes,
 		OpSetSlideBackground,
 		OpSetSlideHeaderFooter,
+		OpGetSlideHeaderFooter,
 		OpGetHandoutMaster,
 		OpUpdateHandoutMaster,
 		OpHasDigitalSignature,

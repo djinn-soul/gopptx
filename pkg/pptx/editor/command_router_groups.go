@@ -110,6 +110,7 @@ func contentSectionHandlers() map[string]commandHandler {
 		OpSetSmartArtNodes:     handleSetSmartArtNodes,
 		OpSetSlideBackground:   handleSetSlideBackground,
 		OpSetSlideHeaderFooter: handleSetSlideHeaderFooter,
+		OpGetSlideHeaderFooter: handleGetSlideHeaderFooter,
 		OpAddAnimation:         handleAddAnimation,
 		OpSetSlideTransition:   handleSetSlideTransition,
 		OpMergeFromEditor:      handleMergeFromEditor,
