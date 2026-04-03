@@ -1,4 +1,4 @@
-"""Operation name constants for gopptx."""
+"""Operation constants shared by gopptx Python runtime."""
 
 from __future__ import annotations
 
@@ -21,6 +21,8 @@ OP_ADD_SLIDE_LAYOUT = "add_slide_layout"
 OP_ADD_SLIDE_MASTER = "add_slide_master"
 OP_ADD_SMART_ART = "add_smartart"
 OP_ADD_TABLE = "add_table"
+OP_ADD_TABLE_COLUMN = "add_table_column"
+OP_ADD_TABLE_ROW = "add_table_row"
 OP_ADD_TEXTBOX = "add_textbox"
 OP_ADD_TEXTBOXES = "add_textboxes"
 OP_ADD_VBA = "add_vba"
@@ -34,9 +36,12 @@ OP_BUILD_SIMPLE_TEMPLATE = "build_simple_template"
 OP_BUILD_STATUS_TEMPLATE = "build_status_template"
 OP_BUILD_TECHNICAL_TEMPLATE = "build_technical_template"
 OP_BUILD_TRAINING_TEMPLATE = "build_training_template"
+OP_CHANGE_SMART_ART_LAYOUT = "change_smartart_layout"
+OP_CLEAR_SHAPES = "clear_shapes"
 OP_CLONE_LAYOUT_MASTER_FAMILY = "clone_layout_master_family"
 OP_CONVERT_TO_GRAYSCALE = "convert_to_grayscale"
 OP_DEFINE_TABLE_STYLE = "define_table_style"
+OP_DELETE_SMART_ART = "delete_smartart"
 OP_DUPLICATE_SLIDE = "duplicate_slide"
 OP_DUPLICATE_SLIDE_AFTER = "duplicate_slide_after"
 OP_EXPORT_HTML = "export_html"
@@ -57,12 +62,15 @@ OP_GET_NOTES = "get_notes"
 OP_GET_SECTIONS = "get_sections"
 OP_GET_SHAPE_RUNS = "get_shape_runs"
 OP_GET_SHAPE_TEXT_STATE = "get_shape_text_state"
+OP_GET_SLIDE_HEADER_FOOTER = "get_slide_header_footer"
 OP_GET_SLIDE_LAYOUT_REF = "get_slide_layout_ref"
 OP_GET_SLIDE_TEXT_STATES = "get_slide_text_states"
 OP_GET_TABLE = "get_table"
 OP_GET_THEME_INVENTORY = "get_theme_inventory"
 OP_GROUP_SHAPES = "group_shapes"
 OP_HAS_DIGITAL_SIGNATURE = "has_digital_signature"
+OP_INSERT_TABLE_COLUMN = "insert_table_column"
+OP_INSERT_TABLE_ROW = "insert_table_row"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
 OP_LIST_NOTES_PLACEHOLDERS = "list_notes_placeholders"
@@ -88,11 +96,12 @@ OP_REBIND_SLIDE_LAYOUT = "rebind_slide_layout"
 OP_REMOVE_COMMENT = "remove_comment"
 OP_REMOVE_CUSTOM_XML = "remove_custom_xml"
 OP_REMOVE_SECTION = "remove_section"
-OP_CLEAR_SHAPES = "clear_shapes"
 OP_REMOVE_SHAPE = "remove_shape"
 OP_REMOVE_SLIDE = "remove_slide"
 OP_REMOVE_SLIDE_LAYOUT = "remove_slide_layout"
 OP_REMOVE_SLIDE_MASTER = "remove_slide_master"
+OP_REMOVE_TABLE_COLUMN = "remove_table_column"
+OP_REMOVE_TABLE_ROW = "remove_table_row"
 OP_RENAME_SECTION = "rename_section"
 OP_RENDER_TEMPLATE = "render_template"
 OP_REPAIR = "repair"
@@ -114,13 +123,8 @@ OP_SET_SLIDE_SHAPE_RUNS = "set_slide_shape_runs"
 OP_SET_SLIDE_SIZE = "set_slide_size"
 OP_SET_SLIDE_TITLE = "set_slide_title"
 OP_SET_SLIDE_TRANSITION = "set_slide_transition"
-OP_ADD_TABLE_ROW = "add_table_row"
-OP_ADD_TABLE_COLUMN = "add_table_column"
-OP_INSERT_TABLE_ROW = "insert_table_row"
-OP_REMOVE_TABLE_ROW = "remove_table_row"
-OP_INSERT_TABLE_COLUMN = "insert_table_column"
-OP_REMOVE_TABLE_COLUMN = "remove_table_column"
-OP_UPDATE_TABLE_CELL_BORDER = "update_table_cell_border"
+OP_SET_SMART_ART_NODES = "set_smartart_nodes"
+OP_SET_SMART_ART_STYLE = "set_smartart_style"
 OP_SET_TABLE_COLUMN_WIDTH = "set_table_column_width"
 OP_SET_TABLE_ROW_HEIGHT = "set_table_row_height"
 OP_SET_TABLE_STYLE = "set_table_style"
@@ -142,14 +146,12 @@ OP_UPDATE_SHAPE_RUN_TEXT = "update_shape_run_text"
 OP_UPDATE_SLIDE = "update_slide"
 OP_UPDATE_SLIDE_RUN_TEXTS = "update_slide_run_texts"
 OP_UPDATE_SMART_ART = "update_smartart"
-OP_DELETE_SMART_ART = "delete_smartart"
-OP_CHANGE_SMART_ART_LAYOUT = "change_smartart_layout"
-OP_SET_SMART_ART_STYLE = "set_smartart_style"
-OP_SET_SMART_ART_NODES = "set_smartart_nodes"
 OP_UPDATE_TABLE_CELL = "update_table_cell"
+OP_UPDATE_TABLE_CELL_BORDER = "update_table_cell_border"
 OP_UPDATE_TABLE_FLAGS = "update_table_flags"
 OP_URL_FETCH_TO_SLIDES = "url_fetch_to_slides"
 OP_VALIDATE = "validate"
+
 SUPPORTED_OPS = (
     OP_ADD_ANIMATION,
     OP_ADD_AUDIO,
@@ -170,6 +172,8 @@ SUPPORTED_OPS = (
     OP_ADD_SLIDE_MASTER,
     OP_ADD_SMART_ART,
     OP_ADD_TABLE,
+    OP_ADD_TABLE_COLUMN,
+    OP_ADD_TABLE_ROW,
     OP_ADD_TEXTBOX,
     OP_ADD_TEXTBOXES,
     OP_ADD_VBA,
@@ -183,9 +187,12 @@ SUPPORTED_OPS = (
     OP_BUILD_STATUS_TEMPLATE,
     OP_BUILD_TECHNICAL_TEMPLATE,
     OP_BUILD_TRAINING_TEMPLATE,
+    OP_CHANGE_SMART_ART_LAYOUT,
+    OP_CLEAR_SHAPES,
     OP_CLONE_LAYOUT_MASTER_FAMILY,
     OP_CONVERT_TO_GRAYSCALE,
     OP_DEFINE_TABLE_STYLE,
+    OP_DELETE_SMART_ART,
     OP_DUPLICATE_SLIDE,
     OP_DUPLICATE_SLIDE_AFTER,
     OP_EXPORT_HTML,
@@ -206,12 +213,15 @@ SUPPORTED_OPS = (
     OP_GET_SECTIONS,
     OP_GET_SHAPE_RUNS,
     OP_GET_SHAPE_TEXT_STATE,
+    OP_GET_SLIDE_HEADER_FOOTER,
     OP_GET_SLIDE_LAYOUT_REF,
     OP_GET_SLIDE_TEXT_STATES,
     OP_GET_TABLE,
     OP_GET_THEME_INVENTORY,
     OP_GROUP_SHAPES,
     OP_HAS_DIGITAL_SIGNATURE,
+    OP_INSERT_TABLE_COLUMN,
+    OP_INSERT_TABLE_ROW,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
     OP_LIST_NOTES_PLACEHOLDERS,
@@ -237,11 +247,12 @@ SUPPORTED_OPS = (
     OP_REMOVE_COMMENT,
     OP_REMOVE_CUSTOM_XML,
     OP_REMOVE_SECTION,
-    OP_CLEAR_SHAPES,
     OP_REMOVE_SHAPE,
     OP_REMOVE_SLIDE,
     OP_REMOVE_SLIDE_LAYOUT,
     OP_REMOVE_SLIDE_MASTER,
+    OP_REMOVE_TABLE_COLUMN,
+    OP_REMOVE_TABLE_ROW,
     OP_RENAME_SECTION,
     OP_RENDER_TEMPLATE,
     OP_REPAIR,
@@ -263,13 +274,8 @@ SUPPORTED_OPS = (
     OP_SET_SLIDE_SIZE,
     OP_SET_SLIDE_TITLE,
     OP_SET_SLIDE_TRANSITION,
-    OP_ADD_TABLE_ROW,
-    OP_ADD_TABLE_COLUMN,
-    OP_INSERT_TABLE_ROW,
-    OP_REMOVE_TABLE_ROW,
-    OP_INSERT_TABLE_COLUMN,
-    OP_REMOVE_TABLE_COLUMN,
-    OP_UPDATE_TABLE_CELL_BORDER,
+    OP_SET_SMART_ART_NODES,
+    OP_SET_SMART_ART_STYLE,
     OP_SET_TABLE_COLUMN_WIDTH,
     OP_SET_TABLE_ROW_HEIGHT,
     OP_SET_TABLE_STYLE,
@@ -291,13 +297,11 @@ SUPPORTED_OPS = (
     OP_UPDATE_SLIDE,
     OP_UPDATE_SLIDE_RUN_TEXTS,
     OP_UPDATE_SMART_ART,
-    OP_DELETE_SMART_ART,
-    OP_CHANGE_SMART_ART_LAYOUT,
-    OP_SET_SMART_ART_STYLE,
-    OP_SET_SMART_ART_NODES,
     OP_UPDATE_TABLE_CELL,
+    OP_UPDATE_TABLE_CELL_BORDER,
     OP_UPDATE_TABLE_FLAGS,
     OP_URL_FETCH_TO_SLIDES,
     OP_VALIDATE,
 )
+
 SUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)

@@ -35,21 +35,62 @@ class ChartType:
     # =========================================================================
     # Supported Chart Types
     # =========================================================================
-    # NOTE: Currently only these types are supported by the Go bridge.
-    # Additional chart types (scatter, area, radar, bubble, stock, combo, etc.)
-    # are planned for future versions.
-
     COLUMN = "bar"
     """Column/Vertical bar chart - displays data as vertical bars."""
 
     BAR = "bar"
     """Alias for COLUMN - vertical bar chart."""
 
+    BAR_HORIZONTAL = "barHorizontal"
+    """Horizontal bar chart."""
+
+    BAR_STACKED = "barStacked"
+    """Stacked bar chart."""
+
+    BAR_STACKED_100 = "barStacked100"
+    """100% stacked bar chart."""
+
     LINE = "line"
     """Line chart - connects data points with lines."""
 
+    LINE_MARKERS = "lineMarkers"
+    """Line chart with markers."""
+
+    LINE_STACKED = "lineStacked"
+    """Stacked line chart."""
+
+    SCATTER = "scatter"
+    """Scatter/XY chart."""
+
+    AREA = "area"
+    """Area chart."""
+
+    AREA_STACKED = "areaStacked"
+    """Stacked area chart."""
+
+    AREA_STACKED_100 = "areaStacked100"
+    """100% stacked area chart."""
+
     PIE = "pie"
     """Pie chart - shows data as slices of a circle."""
+
+    DOUGHNUT = "doughnut"
+    """Doughnut chart."""
+
+    BUBBLE = "bubble"
+    """Bubble chart."""
+
+    RADAR = "radar"
+    """Radar chart."""
+
+    RADAR_FILLED = "radarFilled"
+    """Filled radar chart."""
+
+    STOCK_HLC = "stockHLC"
+    """Stock high-low-close chart."""
+
+    STOCK_OHLC = "stockOHLC"
+    """Stock open-high-low-close chart."""
 
     COMBO = "combo"
     """Combo chart - mixes bar and line series on one category axis."""
@@ -64,7 +105,7 @@ class ChartType:
 
         Examples:
             all_types = ChartType.get_all()
-            # Returns: {'COLUMN': 'bar', 'BAR': 'bar', 'LINE': 'line', 'PIE': 'pie'}
+            # Returns a dictionary of all available named chart constants.
 
             for name, value in all_types.items():
                 print(f"ChartType.{name}")
@@ -72,8 +113,23 @@ class ChartType:
         return {
             "COLUMN": ChartType.COLUMN,
             "BAR": ChartType.BAR,
+            "BAR_HORIZONTAL": ChartType.BAR_HORIZONTAL,
+            "BAR_STACKED": ChartType.BAR_STACKED,
+            "BAR_STACKED_100": ChartType.BAR_STACKED_100,
             "LINE": ChartType.LINE,
+            "LINE_MARKERS": ChartType.LINE_MARKERS,
+            "LINE_STACKED": ChartType.LINE_STACKED,
+            "SCATTER": ChartType.SCATTER,
+            "AREA": ChartType.AREA,
+            "AREA_STACKED": ChartType.AREA_STACKED,
+            "AREA_STACKED_100": ChartType.AREA_STACKED_100,
             "PIE": ChartType.PIE,
+            "DOUGHNUT": ChartType.DOUGHNUT,
+            "BUBBLE": ChartType.BUBBLE,
+            "RADAR": ChartType.RADAR,
+            "RADAR_FILLED": ChartType.RADAR_FILLED,
+            "STOCK_HLC": ChartType.STOCK_HLC,
+            "STOCK_OHLC": ChartType.STOCK_OHLC,
             "COMBO": ChartType.COMBO,
         }
 
@@ -95,11 +151,10 @@ class ChartType:
             ValueError: If chart_type is not a valid chart type value.
 
         Examples:
-            ChartType.validate("bar")       # -> "bar" (valid - same as ChartType.COLUMN)
-            ChartType.validate("line")      # -> "line" (valid - same as ChartType.LINE)
-            ChartType.validate("pie")       # -> "pie" (valid - same as ChartType.PIE)
-            ChartType.validate("COLUMN")    # -> ValueError (use ChartType.COLUMN instead)
-            ChartType.validate("invalid")   # -> ValueError
+            ChartType.validate(ChartType.COLUMN)   # -> "bar"
+            ChartType.validate(ChartType.SCATTER)  # -> "scatter"
+            ChartType.validate("COLUMN")           # -> ValueError
+            ChartType.validate("invalid")          # -> ValueError
         """
         if not chart_type:
             raise ValueError("chart_type cannot be empty")
@@ -112,7 +167,7 @@ class ChartType:
         # Not found - provide helpful error message
         valid_values = ", ".join(sorted(valid_types))
         raise ValueError(
-            f"Invalid chart_type {chart_type!r}. Use ChartType constants like ChartType.COLUMN, ChartType.LINE, ChartType.PIE. Valid internal values: {valid_values}"
+            f"Invalid chart_type {chart_type!r}. Use ChartType constants like ChartType.COLUMN, ChartType.SCATTER, ChartType.PIE. Valid internal values: {valid_values}"
         )
 
     @staticmethod

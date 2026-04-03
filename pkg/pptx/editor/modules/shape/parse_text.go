@@ -6,28 +6,40 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
-const bulletStyleNone = "none"
+const (
+	bulletStyleNone = "none"
+	fontSizeScale   = 100
+)
 
 func applyParsedShapeText(ps *ParsedShapeProperties, s *shapeXML) {
 	var txt strings.Builder
 	for pIdx, paragraph := range s.TxBody.P {
-		applyParsedParagraph(ps, pIdx, paragraph.PPr)
+		parsedParagraph := parseParagraphProps(pIdx, paragraph.PPr)
+		paragraphRuns := make([]common.TextRun, 0, len(paragraph.R))
 		for _, runXML := range paragraph.R {
 			txt.WriteString(runXML.T)
 			if run, ok := parseTextRun(runXML); ok {
 				ps.Runs = append(ps.Runs, run)
+				paragraphRuns = append(paragraphRuns, run)
 			}
 		}
+		ps.Paragraphs = append(ps.Paragraphs, common.ShapeTextParagraph{
+			Runs:      paragraphRuns,
+			Paragraph: parsedParagraph,
+		})
 		if pIdx < len(s.TxBody.P)-1 {
 			txt.WriteString("\n")
 		}
 	}
 	ps.Text = txt.String()
+	if len(ps.Paragraphs) > 0 && ps.Paragraph == nil {
+		ps.Paragraph = ps.Paragraphs[0].Paragraph
+	}
 }
 
-func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *paragraphPropsXML) {
-	if index != 0 || pPr == nil {
-		return
+func parseParagraphProps(index int, pPr *paragraphPropsXML) *common.Paragraph {
+	if pPr == nil {
+		return nil
 	}
 	paragraph := &common.Paragraph{}
 	applyParagraphIndent(paragraph, pPr)
@@ -35,9 +47,13 @@ func applyParsedParagraph(ps *ParsedShapeProperties, index int, pPr *paragraphPr
 	applyParagraphAlignmentLevel(paragraph, pPr)
 	applyParagraphSpacing(paragraph, pPr)
 	applyParagraphBullets(paragraph, pPr)
-	if hasParagraphProps(paragraph) {
-		ps.Paragraph = paragraph
+	if !hasParagraphProps(paragraph) {
+		if index == 0 {
+			return nil
+		}
+		return &common.Paragraph{}
 	}
+	return paragraph
 }
 
 func applyParagraphIndent(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
@@ -179,6 +195,14 @@ func applyRunStyle(run *common.TextRun, rpr *runPropsXML) {
 	}
 	if rpr.Strikethrough != nil && *rpr.Strikethrough != "" {
 		run.Strikethrough = rpr.Strikethrough
+	}
+	if rpr.Size != nil && *rpr.Size > 0 {
+		sizePt := *rpr.Size / fontSizeScale
+		run.SizePt = &sizePt
+	}
+	if rpr.Latin != nil && rpr.Latin.Typeface != "" {
+		font := rpr.Latin.Typeface
+		run.Font = &font
 	}
 	applyRunBaseline(run, rpr)
 	applyRunCaps(run, rpr)

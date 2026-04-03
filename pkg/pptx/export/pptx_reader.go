@@ -42,12 +42,22 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 		// Best-effort image extraction; continue without images when parsing fails.
 		slideImages = nil
 	}
+	slideCharts, err := extractSlideCharts(pptxPath)
+	if err != nil {
+		// Best-effort chart extraction; continue without charts when parsing fails.
+		slideCharts = nil
+	}
+	slideSmartArt, err := extractSlideSmartArt(pptxPath)
+	if err != nil {
+		// Best-effort SmartArt extraction; continue without semantic diagrams when parsing fails.
+		slideSmartArt = nil
+	}
 
 	slideMeta := ed.Slides()
 	slideContents := make([]elements.SlideContent, 0, len(slideMeta))
 
 	for _, sm := range slideMeta {
-		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages))
+		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt))
 	}
 
 	if presTitle == "" && len(slideContents) > 0 {
@@ -57,11 +67,13 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 	return presTitle, slideContents, nil
 }
 
-//nolint:gocognit // Slide extraction maps multiple editor shape categories and image attachments in one pass.
+//nolint:gocognit,funlen // Slide extraction maps multiple editor shape categories and image attachments in one pass.
 func extractSlideContent(
 	ed *editor.PresentationEditor,
 	sm editorcommon.SlideMetadata,
 	slideImages [][]SlideImage,
+	slideCharts [][]parsedChart,
+	slideSmartArt [][]parsedSmartArt,
 ) elements.SlideContent {
 	editorShapes, err := ed.GetShapes(sm.Index)
 	if err != nil {
@@ -71,153 +83,122 @@ func extractSlideContent(
 	sc := elements.SlideContent{
 		Title: sm.Title,
 	}
+	shapeIndexByID := make(map[int]int)
+	connectorShapes := make([]editorcommon.Shape, 0)
+	chartShapeIDs := chartShapeIDSet(slideCharts, sm.Index)
+	smartArtShapeIDs := smartArtShapeIDSet(slideSmartArt, sm.Index)
 
 	for _, es := range editorShapes {
 		lowerType := strings.ToLower(es.Type)
 		lowerName := strings.ToLower(strings.TrimSpace(es.Name))
+		// For shapes that carry a placeholder type but no geometry preset (e.g.
+		// python-pptx generated shapes whose <p:spPr/> is empty), use the
+		// placeholder type as the effective classification type so that title and
+		// body placeholders are still handled correctly.
+		lowerPhType := strings.ToLower(es.PlaceholderType)
+		if lowerPhType != "" && (lowerType == "" || lowerType == "sp") {
+			lowerType = lowerPhType
+		}
+		if isEditorConnector(es) {
+			connectorShapes = append(connectorShapes, es)
+			continue
+		}
 
 		switch lowerType {
+		case "pic":
+			continue
 		case "graphicframe":
+			if _, ok := chartShapeIDs[es.ID]; ok {
+				continue
+			}
+			if _, ok := smartArtShapeIDs[es.ID]; ok {
+				continue
+			}
 			if tbl := extractTableContent(ed, sm.Index, es); tbl != nil {
 				sc.Table = tbl
 				continue
 			}
-			sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+			appendReaderShape(&sc, shapeIndexByID, es)
 		case placeholderTitle, placeholderCtrTitle:
 			if sc.Title == "" && es.Text != "" {
 				sc.Title = es.Text
 			}
+			applyTitleBounds(&sc, es)
+			applyTitleSizeFromRuns(&sc, es)
+			applyTitleAlignFromShape(&sc, es)
 		case placeholderBody, placeholderSubtitle, placeholderObject:
-			sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+			if consumeBodyPlaceholderAsBullets(&sc, es) {
+				applyContentBounds(&sc, es)
+				continue
+			}
+			appendReaderShape(&sc, shapeIndexByID, es)
 		default:
 			switch {
 			case isTitlePlaceholder(lowerType, lowerName):
 				if sc.Title == "" && es.Text != "" {
 					sc.Title = es.Text
 				}
+				applyTitleBounds(&sc, es)
+				applyTitleSizeFromRuns(&sc, es)
+				applyTitleAlignFromShape(&sc, es)
 			case isBodyPlaceholder(lowerType, lowerName):
-				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+				if consumeBodyPlaceholderAsBullets(&sc, es) {
+					applyContentBounds(&sc, es)
+					continue
+				}
+				appendReaderShape(&sc, shapeIndexByID, es)
 			default:
-				sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+				appendReaderShape(&sc, shapeIndexByID, es)
 			}
 		}
+	}
+	for _, es := range connectorShapes {
+		connector, ok := editorShapeToConnector(es, shapeIndexByID)
+		if !ok {
+			appendReaderShape(&sc, shapeIndexByID, es)
+			continue
+		}
+		sc.Connectors = append(sc.Connectors, connector)
 	}
 
 	// Attach images for this slide.
 	if sm.Index < len(slideImages) {
 		for _, img := range slideImages[sm.Index] {
 			sc.Images = append(sc.Images, shapes.Image{
-				Data:   img.Bytes,
-				Format: img.Format,
-				X:      styling.Emu(img.X),
-				Y:      styling.Emu(img.Y),
-				CX:     styling.Emu(img.CX),
-				CY:     styling.Emu(img.CY),
+				Data:     img.Bytes,
+				Format:   img.Format,
+				X:        styling.Emu(img.X),
+				Y:        styling.Emu(img.Y),
+				CX:       styling.Emu(img.CX),
+				CY:       styling.Emu(img.CY),
+				Rotation: img.Rotation,
+				Crop: shapes.ImageCrop{
+					Left:   img.CropLeft,
+					Right:  img.CropRight,
+					Top:    img.CropTop,
+					Bottom: img.CropBottom,
+				},
+				FlipH:        img.FlipH,
+				FlipV:        img.FlipV,
+				Shadow:       img.Shadow,
+				Reflection:   img.Reflection,
+				AltText:      img.AltText,
+				IsDecorative: img.IsDecorative,
 			})
 		}
+	}
+	if sm.Index < len(slideCharts) {
+		applyParsedCharts(&sc, slideCharts[sm.Index])
+	}
+	if sm.Index < len(slideSmartArt) {
+		applyParsedSmartArt(&sc, slideSmartArt[sm.Index])
 	}
 	return sc
 }
 
-// editorShapeToShape maps an editor common.Shape to an export shapes.Shape.
-// X, Y, W, H from the editor are in EMU (int).
-func editorShapeToShape(es editorcommon.Shape) shapes.Shape {
-	shapeFill := editorFillToExportFill(es.Fill)
-	shapeLine := editorLineToExportLine(es.Line)
-	adjustments := editorAdjustmentsToExport(es.Adjustments)
-	return shapes.Shape{
-		// Map OOXML preset geometry name directly — pdf_native.go uses these strings.
-		Type:        editorTypeToPreset(es.Type),
-		X:           styling.Emu(int64(es.X)),
-		Y:           styling.Emu(int64(es.Y)),
-		CX:          styling.Emu(int64(es.W)),
-		CY:          styling.Emu(int64(es.H)),
-		Text:        es.Text,
-		Name:        es.Name,
-		Fill:        shapeFill,
-		Line:        shapeLine,
-		Adjustments: adjustments,
-	}
-}
-
-func editorFillToExportFill(fill *editorcommon.ShapeFill) *shapes.ShapeFill {
-	if fill == nil || fill.Solid == nil || *fill.Solid == "" {
-		return nil
-	}
-	return &shapes.ShapeFill{Color: *fill.Solid}
-}
-
-func editorLineToExportLine(line *editorcommon.ShapeLine) *shapes.ShapeLine {
-	if line == nil || line.Color == nil || *line.Color == "" {
-		return nil
-	}
-	width := styling.Emu(0)
-	if line.WidthEmu != nil && *line.WidthEmu > 0 {
-		width = styling.Emu(int64(*line.WidthEmu))
-	}
-	return &shapes.ShapeLine{
-		Color: *line.Color,
-		Width: width,
-	}
-}
-
-func editorAdjustmentsToExport(
-	adjustments []editorcommon.ShapeAdjustment,
-) []shapes.ShapeAdjustment {
-	if len(adjustments) == 0 {
-		return nil
-	}
-	out := make([]shapes.ShapeAdjustment, 0, len(adjustments))
-	for _, adjustment := range adjustments {
-		if adjustment.Name == "" || adjustment.Formula == "" {
-			continue
-		}
-		out = append(out, shapes.ShapeAdjustment{
-			Name:    adjustment.Name,
-			Formula: adjustment.Formula,
-		})
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
-func isTitlePlaceholder(shapeType, shapeName string) bool {
-	return shapeType == placeholderTitle ||
-		shapeType == placeholderCtrTitle ||
-		shapeName == placeholderTitle ||
-		strings.Contains(shapeName, "title placeholder")
-}
-
-func isBodyPlaceholder(shapeType, shapeName string) bool {
-	if shapeType == placeholderBody || shapeType == placeholderSubtitle || shapeType == placeholderObject {
-		return true
-	}
-	return shapeName == "content" ||
-		shapeName == placeholderBody ||
-		strings.Contains(shapeName, "content placeholder") ||
-		strings.Contains(shapeName, "body placeholder")
-}
-
-// editorTypeToPreset normalizes the editor shape type string to the OOXML
-// preset geometry name used by our shape renderers.
-func editorTypeToPreset(t string) string {
-	switch strings.ToLower(t) {
-	case "rect", "rectangle":
-		return "rect"
-	case "roundrect", "roundedrectangle":
-		return "roundRect"
-	case "ellipse", "oval", "circle":
-		return "ellipse"
-	case "triangle", "rt_triangle":
-		return "triangle"
-	case "rightarrow":
-		return "rightArrow"
-	case "leftarrow":
-		return "leftArrow"
-	default:
-		// Pass through unknown presets as-is; renderers will fall back to rect.
-		return t
+func appendReaderShape(sc *elements.SlideContent, shapeIndexByID map[int]int, es editorcommon.Shape) {
+	sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+	if es.ID > 0 {
+		shapeIndexByID[es.ID] = len(sc.Shapes)
 	}
 }

@@ -13,10 +13,21 @@ const formatPNG = "png"
 
 // SlideImage holds image bytes and its position on the slide (in EMU).
 type SlideImage struct {
-	Bytes  []byte
-	Format string // "png", "jpeg", "gif", "emf", etc.
-	X, Y   int64  // EMU offset
-	CX, CY int64  // EMU size
+	Bytes        []byte
+	Format       string // "png", "jpeg", "gif", "emf", etc.
+	X, Y         int64  // EMU offset
+	CX, CY       int64  // EMU size
+	Rotation     float64
+	CropLeft     float64
+	CropRight    float64
+	CropTop      float64
+	CropBottom   float64
+	FlipH        bool
+	FlipV        bool
+	Shadow       bool
+	Reflection   bool
+	AltText      string
+	IsDecorative bool
 }
 
 // extractSlideImages reads a PPTX file and returns images per slide (0-based).
@@ -62,92 +73,29 @@ func extractSlideImages(pptxPath string) ([][]SlideImage, error) {
 				continue
 			}
 			images = append(images, SlideImage{
-				Bytes:  data,
-				Format: imageFormat(mediaPath),
-				X:      pic.X,
-				Y:      pic.Y,
-				CX:     pic.CX,
-				CY:     pic.CY,
+				Bytes:        data,
+				Format:       imageFormat(mediaPath),
+				X:            pic.X,
+				Y:            pic.Y,
+				CX:           pic.CX,
+				CY:           pic.CY,
+				Rotation:     pic.Rotation,
+				CropLeft:     pic.CropLeft,
+				CropRight:    pic.CropRight,
+				CropTop:      pic.CropTop,
+				CropBottom:   pic.CropBottom,
+				FlipH:        pic.FlipH,
+				FlipV:        pic.FlipV,
+				Shadow:       pic.Shadow,
+				Reflection:   pic.Reflection,
+				AltText:      pic.AltText,
+				IsDecorative: pic.IsDecorative,
 			})
 		}
 		result[i] = images
 	}
 
 	return result, nil
-}
-
-// picRef captures position and relID from a p:pic element.
-type picRef struct {
-	RelID  string
-	X, Y   int64
-	CX, CY int64
-}
-
-// parsePicElements uses an XML stream parser to find p:pic elements and extract
-// r:embed (relID) and a:xfrm coordinates (off x/y, ext cx/cy).
-//
-//nolint:gocognit // OOXML picture extraction performs explicit token/state handling for robustness.
-func parsePicElements(data []byte) []picRef {
-	var pics []picRef
-	dec := xml.NewDecoder(strings.NewReader(string(data)))
-	dec.AutoClose = xml.HTMLAutoClose
-
-	var depth int
-	var picDepth int
-	var inPic bool
-	var cur picRef
-
-	for {
-		tok, err := dec.Token()
-		if err != nil {
-			break
-		}
-		switch t := tok.(type) {
-		case xml.StartElement:
-			depth++
-			local := t.Name.Local
-			switch {
-			case local == "pic" && !inPic:
-				inPic = true
-				picDepth = depth
-				cur = picRef{}
-			case inPic && local == "blip":
-				for _, a := range t.Attr {
-					// r:embed — namespace Local is "embed", Space contains "relationships"
-					if a.Name.Local == "embed" {
-						cur.RelID = a.Value
-					}
-				}
-			case inPic && local == "off":
-				for _, a := range t.Attr {
-					switch a.Name.Local {
-					case "x":
-						cur.X = parseInt64(a.Value)
-					case "y":
-						cur.Y = parseInt64(a.Value)
-					}
-				}
-			case inPic && local == "ext":
-				for _, a := range t.Attr {
-					switch a.Name.Local {
-					case "cx":
-						cur.CX = parseInt64(a.Value)
-					case "cy":
-						cur.CY = parseInt64(a.Value)
-					}
-				}
-			}
-		case xml.EndElement:
-			if inPic && depth == picDepth && t.Name.Local == "pic" {
-				if cur.RelID != "" && cur.CX > 0 && cur.CY > 0 {
-					pics = append(pics, cur)
-				}
-				inPic = false
-			}
-			depth--
-		}
-	}
-	return pics
 }
 
 // resolveSlideOrder reads presentation.xml and its rels to get ordered slide part paths.

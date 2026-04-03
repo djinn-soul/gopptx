@@ -4,7 +4,6 @@ package export
 import (
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/signintech/gopdf"
 
@@ -86,8 +85,12 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	_ = renderPDFBackground(pdf, slide.Background)
 	renderNativePDFSlideText(pdf, slide)
 	renderNativePDFSlideShapes(pdf, slide)
+	renderNativePDFSlideSmartArt(pdf, slide)
+	renderNativePDFSlideCharts(pdf, slide)
 	renderNativePDFSlideAssets(pdf, slide)
-	renderNativePDFSlideNumber(pdf, index, total)
+	if slide.ShowSlideNumber {
+		renderNativePDFSlideNumber(pdf, index, total)
+	}
 }
 
 func renderNativePDFSlideText(pdf *gopdf.GoPdf, slide elements.SlideContent) {
@@ -128,19 +131,34 @@ func renderNativePDFSlideNumber(pdf *gopdf.GoPdf, index, total int) {
 func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	titleSize := slide.TitleSize
 	if titleSize <= 0 {
-		titleSize = defaultFontSize
+		switch elements.NormalizeSlideLayout(slide.Layout) {
+		case elements.SlideLayoutTitleAndContent:
+			titleSize = 32
+		default:
+			titleSize = 44
+		}
 	}
-	titleMax := 44
-	if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutTitleAndContent {
-		titleMax = 32
-	}
-	if titleSize > titleMax {
-		titleSize = titleMax
+	// Only apply the layout-based size cap when we used a layout default.
+	// When TitleSize was explicitly read from the PPTX we honour it as-is.
+	if slide.TitleSize <= 0 {
+		titleMax := 44
+		if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutTitleAndContent {
+			titleMax = 32
+		}
+		if titleSize > titleMax {
+			titleSize = titleMax
+		}
 	}
 	titleBoxX := 54.0
 	titleBoxY := 44.0
 	titleBoxW := slideWidthPt - 108
 	titleBoxH := 72.0
+	if b := slide.TitleBoundsEMU; b[2] > 0 || b[3] > 0 {
+		titleBoxX = emuToPt(b[0])
+		titleBoxY = emuToPt(b[1])
+		titleBoxW = emuToPt(b[2])
+		titleBoxH = emuToPt(b[3])
+	}
 	titleSize = fitPDFTitleSize(
 		pdf,
 		slide.Title,
@@ -249,51 +267,4 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 	pdf.SetFillColor(255, 255, 255)
 	pdf.SetStrokeColor(0, 0, 0)
 	pdf.SetLineWidth(1)
-}
-
-func getShapeBounds(s shapes.Shape) (float64, float64, float64, float64) {
-	return emuToPt(int64(s.X)), emuToPt(int64(s.Y)), emuToPt(int64(s.CX)), emuToPt(int64(s.CY))
-}
-
-func setPDFShapeFill(pdf *gopdf.GoPdf, s shapes.Shape, gradientRendered bool) {
-	if s.Fill != nil && s.Fill.Color != "" {
-		pdf.SetFillColor(hexToRGB(s.Fill.Color))
-	} else if !gradientRendered && s.GradientFill != nil && len(s.GradientFill.Stops) > 0 {
-		pdf.SetFillColor(hexToRGB(s.GradientFill.Stops[0].Color))
-	}
-}
-
-func setPDFShapeStroke(pdf *gopdf.GoPdf, s shapes.Shape) bool {
-	if s.Line != nil && s.Line.Width > 0 {
-		strokeW := emuToPt(int64(s.Line.Width))
-		if strokeW < minStrokeWidth {
-			strokeW = minStrokeWidth
-		}
-		pdf.SetLineWidth(strokeW)
-		pdf.SetStrokeColor(hexToRGB(s.Line.Color))
-		return true
-	}
-	return false
-}
-
-func drawPDFGeometry(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64, style string) {
-	switch s.Type {
-	case shapes.ShapeTypeRectangle:
-		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
-	case shapes.ShapeTypeRoundedRectangle:
-		radius := math.Min(w, h) * defaultRadiusFactor
-		_ = pdf.Rectangle(x, y, x+w, y+h, style, radius, 0)
-	case shapes.ShapeTypePie, shapes.ShapeTypePieWedge, shapes.ShapeTypeChord:
-		drawPieShape(pdf, s, x, y, w, h, style)
-	case shapes.ShapeTypeEllipse:
-		pdf.Oval(x, y, x+w, y+h)
-	case shapes.ShapeTypeTriangle:
-		pdf.Polygon([]gopdf.Point{{X: x + w/2, Y: y}, {X: x, Y: y + h}, {X: x + w, Y: y + h}}, style)
-	case shapes.ShapeTypeRightArrow:
-		pdf.Polygon(rightArrowPoints(x, y, w, h), style)
-	case shapes.ShapeTypeLeftArrow:
-		pdf.Polygon(leftArrowPoints(x, y, w, h), style)
-	default:
-		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
-	}
 }

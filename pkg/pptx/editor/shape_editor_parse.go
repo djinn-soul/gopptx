@@ -16,30 +16,38 @@ import (
 // parsedShape represents a shape found in the slide XML.
 // It contains the parsed properties and the byte range of the shape node.
 type parsedShape struct {
-	ID          int
-	Name        string
-	Type        string // "sp" or "pic"
-	Text        string
-	Runs        []common.TextRun
-	TextFrame   *common.TextFrame
-	Paragraph   *common.Paragraph
-	Fill        *common.ShapeFill
-	Line        *common.ShapeLine
-	Shadow      *common.ShapeShadow
-	Glow        *common.ShapeGlow
-	Blur        *common.ShapeBlur
-	SoftEdge    *common.ShapeSoftEdge
-	Reflection  *common.ShapeReflection
-	ClickAction *common.Hyperlink
-	HoverAction *common.Hyperlink
-	X, Y        int
-	W, H        int
-	PhIndex     int    // Placeholder index, -1 if not a placeholder
-	PhType      string // Placeholder type (e.g. "title", "body")
-	Adjustments []common.ShapeAdjustment
-	Start       int64 // Byte offset of the start of the node
-	End         int64 // Byte offset of the end of the node
-	IsGroup     bool
+	ID             int
+	Name           string
+	Type           string // "sp" or "pic"
+	Text           string
+	Runs           []common.TextRun
+	Paragraphs     []common.ShapeTextParagraph
+	TextFrame      *common.TextFrame
+	Paragraph      *common.Paragraph
+	Fill           *common.ShapeFill
+	Line           *common.ShapeLine
+	Shadow         *common.ShapeShadow
+	Glow           *common.ShapeGlow
+	Blur           *common.ShapeBlur
+	SoftEdge       *common.ShapeSoftEdge
+	Reflection     *common.ShapeReflection
+	ClickAction    *common.Hyperlink
+	HoverAction    *common.Hyperlink
+	ClickActionRef *editorshape.ReaderHyperlinkRef
+	HoverActionRef *editorshape.ReaderHyperlinkRef
+	RunActions     [][]editorshape.ReaderRunActions
+	AltText        string
+	IsDecorative   bool
+	Connector      *common.ConnectorInfo
+	Rotation       *float64
+	X, Y           int
+	W, H           int
+	PhIndex        int    // Placeholder index, -1 if not a placeholder
+	PhType         string // Placeholder type (e.g. "title", "body")
+	Adjustments    []common.ShapeAdjustment
+	Start          int64 // Byte offset of the start of the node
+	End            int64 // Byte offset of the end of the node
+	IsGroup        bool
 }
 
 func (p parsedShape) ToShape() shapes.Shape {
@@ -225,26 +233,39 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 	if err != nil {
 		return parsedShape{}, err
 	}
+	metadata, err := editorshape.ParseShapeReaderMetadata(content)
+	if err != nil {
+		return parsedShape{}, err
+	}
 	return parsedShape{
-		ID:          props.ID,
-		Name:        props.Name,
-		Type:        props.Type,
-		Text:        props.Text,
-		Runs:        props.Runs,
-		Paragraph:   props.Paragraph,
-		Fill:        props.Fill,
-		Line:        props.Line,
-		Shadow:      props.Shadow,
-		Glow:        props.Glow,
-		Blur:        props.Blur,
-		SoftEdge:    props.SoftEdge,
-		Reflection:  props.Reflection,
-		X:           props.X,
-		Y:           props.Y,
-		W:           props.W,
-		H:           props.H,
-		PhIndex:     props.PhIndex,
-		PhType:      props.PhType,
-		Adjustments: props.Adjustments,
+		ID:             props.ID,
+		Name:           props.Name,
+		Type:           props.Type,
+		Text:           props.Text,
+		Runs:           props.Runs,
+		Paragraphs:     props.Paragraphs,
+		TextFrame:      props.TextFrame,
+		Paragraph:      props.Paragraph,
+		Fill:           props.Fill,
+		Line:           props.Line,
+		Shadow:         props.Shadow,
+		Glow:           props.Glow,
+		Blur:           props.Blur,
+		SoftEdge:       props.SoftEdge,
+		Reflection:     props.Reflection,
+		ClickActionRef: metadata.ClickAction,
+		HoverActionRef: metadata.HoverAction,
+		RunActions:     metadata.RunActions,
+		AltText:        metadata.AltText,
+		IsDecorative:   metadata.IsDecorative,
+		Connector:      props.Connector,
+		Rotation:       props.Rotation,
+		X:              props.X,
+		Y:              props.Y,
+		W:              props.W,
+		H:              props.H,
+		PhIndex:        props.PhIndex,
+		PhType:         props.PhType,
+		Adjustments:    props.Adjustments,
 	}, nil
 }

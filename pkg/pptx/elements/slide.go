@@ -40,21 +40,30 @@ type ChartDefinition = charts.ChartDefinition
 
 // SlideContent describes the user-visible content of a slide.
 type SlideContent struct {
-	Title                string
-	TitleSize            int
-	TitleColor           string
-	TitleBold            bool
-	TitleItalic          bool
-	TitleUnderline       bool
-	TitleAlign           string
-	TitleFont            string
-	ContentSize          int
-	ContentColor         string
-	ContentBold          bool
-	ContentItalic        bool
-	ContentUnderline     bool
-	ContentVAlign        string
-	Layout               string
+	Title            string
+	TitleSize        int
+	TitleColor       string
+	TitleBold        bool
+	TitleItalic      bool
+	TitleUnderline   bool
+	TitleAlign       string
+	TitleFont        string
+	ContentSize      int
+	ContentColor     string
+	ContentBold      bool
+	ContentItalic    bool
+	ContentUnderline bool
+	ContentVAlign    string
+	Layout           string
+	// TitleBoundsEMU holds the actual title placeholder geometry read from an
+	// existing PPTX (x, y, cx, cy in EMU).  All four values are zero when the
+	// slide was constructed programmatically and the renderer should fall back
+	// to its built-in layout defaults.
+	TitleBoundsEMU [4]int64
+	// ContentBoundsEMU holds the actual body/content placeholder geometry read
+	// from an existing PPTX (x, y, cx, cy in EMU).  Same zero-means-default
+	// convention as TitleBoundsEMU.
+	ContentBoundsEMU     [4]int64
 	Background           *SlideBackground
 	Transition           transitions.SlideTransition
 	DefaultBulletStyle   ParagraphStyle

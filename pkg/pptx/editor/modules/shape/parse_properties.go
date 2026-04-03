@@ -18,6 +18,8 @@ func ParseShapeProperties(content []byte) (ParsedShapeProperties, error) {
 	applyParsedShapeIdentity(&ps, &s)
 	applyParsedShapeGeometry(&ps, &s)
 	applyParsedShapeTransform(&ps, &s)
+	applyParsedShapeConnector(&ps, &s)
+	applyParsedShapeTextFrame(&ps, &s)
 	applyParsedShapeText(&ps, &s)
 	return ps, nil
 }
@@ -236,6 +238,9 @@ func applyParsedShapeIdentity(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.ID = s.NvPicPr.CNvPr.ID
 		ps.Name = s.NvPicPr.CNvPr.Name
 		applyPlaceholderInfo(ps, s.NvPicPr.NvPr.Ph)
+	case s.NvCxnSpPr.CNvPr.ID != 0:
+		ps.ID = s.NvCxnSpPr.CNvPr.ID
+		ps.Name = s.NvCxnSpPr.CNvPr.Name
 	case s.NvGrpSpPr.CNvPr.ID != 0:
 		ps.ID = s.NvGrpSpPr.CNvPr.ID
 		ps.Name = s.NvGrpSpPr.CNvPr.Name
@@ -264,6 +269,10 @@ func applyParsedShapeTransform(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Y = s.SpPr.Xfrm.Off.Y
 		ps.W = s.SpPr.Xfrm.Ext.Cx
 		ps.H = s.SpPr.Xfrm.Ext.Cy
+		if s.SpPr.Xfrm.Rot != nil {
+			rotation := float64(*s.SpPr.Xfrm.Rot) / rotationDegreeToOOXML
+			ps.Rotation = &rotation
+		}
 		return
 	}
 	if s.Xfrm.Ext.Cx != 0 || s.Xfrm.Ext.Cy != 0 || s.Xfrm.Off.X != 0 || s.Xfrm.Off.Y != 0 {
@@ -271,6 +280,10 @@ func applyParsedShapeTransform(ps *ParsedShapeProperties, s *shapeXML) {
 		ps.Y = s.Xfrm.Off.Y
 		ps.W = s.Xfrm.Ext.Cx
 		ps.H = s.Xfrm.Ext.Cy
+		if s.Xfrm.Rot != nil {
+			rotation := float64(*s.Xfrm.Rot) / rotationDegreeToOOXML
+			ps.Rotation = &rotation
+		}
 		return
 	}
 	ps.X = s.GrpSpPr.Xfrm.Off.X
