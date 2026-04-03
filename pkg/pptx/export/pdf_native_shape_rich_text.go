@@ -1,3 +1,4 @@
+//nolint:mnd // Rich text layout uses fixed typographic spacing constants.
 package export
 
 import (
@@ -38,7 +39,14 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 		if elements.NormalizeTextAlign(line.align) == elements.TextAlignCenter ||
 			elements.NormalizeTextAlign(line.align) == elements.TextAlignRight {
 			lineText := styledLinePlain(line.runs)
-			lineX = alignedTextX(pdf, lineText, boxX+line.xOffset, line.availWidth, line.align, firstStyledFontHint(line.runs))
+			lineX = alignedTextX(
+				pdf,
+				lineText,
+				boxX+line.xOffset,
+				line.availWidth,
+				line.align,
+				firstStyledFontHint(line.runs),
+			)
 		}
 		renderStyledLine(pdf, line.runs, lineX, yPos)
 		yPos += line.lineHeight

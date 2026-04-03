@@ -11,6 +11,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/export"
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
+	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
@@ -69,6 +70,18 @@ func TestPDFIntegration(t *testing.T) {
 			WithTable(tables.NewTable([]styling.Length{styling.Inches(1), styling.Inches(1)}).
 				AddRow([]string{"Header 1", "Header 2"}).
 				AddRow([]string{"Cell 1-1", "Cell 1-2"})),
+
+		elements.NewSlide("SmartArt Slide").
+			AddSmartArt(
+				smartart.NewSmartArt(smartart.Hierarchy).
+					Position(styling.Inches(1), styling.Inches(1.2)).
+					Size(styling.Inches(6.5), styling.Inches(3.5)).
+					AddNode(
+						smartart.NewNode("CEO").
+							WithChild(smartart.NewNode("Finance")).
+							WithChild(smartart.NewNode("Engineering").WithChild(smartart.NewNode("Platform"))),
+					),
+			),
 	}
 
 	tmpDir := t.TempDir()

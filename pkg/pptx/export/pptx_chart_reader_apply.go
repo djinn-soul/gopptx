@@ -8,6 +8,16 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+const (
+	parsedChartKindBar = "bar"
+	parsedChartKindPie = "pie"
+	seriesIndex0       = 0
+	seriesIndex1       = 1
+	seriesIndex2       = 2
+	seriesIndex3       = 3
+)
+
+//nolint:funlen
 func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 	for _, pc := range chartList {
 		px := styling.Emu(pc.X)
@@ -18,7 +28,7 @@ func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 		cats := categoriesForChart(pc)
 		vals := valuesForChart(pc)
 		switch pc.Kind {
-		case "bar":
+		case parsedChartKindBar:
 			c := charts.NewBarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
@@ -74,7 +84,7 @@ func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.AreaStacked100 = &c
-		case "pie":
+		case parsedChartKindPie:
 			c := charts.NewPieChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
@@ -86,7 +96,10 @@ func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 			slide.Doughnut = &c
 		case "bubble":
 			xs, ys, sizes := bubbleForChart(pc)
-			c := charts.NewBubbleChart(xs, ys, sizes).WithTitle(title).Position(int64(px), int64(py)).Size(int64(pw), int64(ph))
+			c := charts.NewBubbleChart(xs, ys, sizes).
+				WithTitle(title).
+				Position(int64(px), int64(py)).
+				Size(int64(pw), int64(ph))
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.Bubble = &c
@@ -108,7 +121,10 @@ func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 			slide.StockHLC = &c
 		case "stockOHLC":
 			openVals, high, low, closeVals := stockQuad(pc)
-			c := charts.NewStockOHLCChart(cats, openVals, high, low, closeVals).WithTitle(title).Position(px, py).Size(pw, ph)
+			c := charts.NewStockOHLCChart(cats, openVals, high, low, closeVals).
+				WithTitle(title).
+				Position(px, py).
+				Size(pw, ph)
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.StockOHLC = &c
@@ -159,23 +175,23 @@ func bubbleForChart(c parsedChart) ([]float64, []float64, []float64) {
 }
 
 func stockTriplet(c parsedChart) ([]float64, []float64, []float64) {
-	high := pickSeriesValues(c, 0)
-	low := pickSeriesValues(c, 1)
-	closeVals := pickSeriesValues(c, 2)
+	high := pickSeriesValues(c, seriesIndex0)
+	low := pickSeriesValues(c, seriesIndex1)
+	closeVals := pickSeriesValues(c, seriesIndex2)
 	return high, low, closeVals
 }
 
 func stockQuad(c parsedChart) ([]float64, []float64, []float64, []float64) {
-	openVals := pickSeriesValues(c, 0)
-	high := pickSeriesValues(c, 1)
-	low := pickSeriesValues(c, 2)
-	closeVals := pickSeriesValues(c, 3)
+	openVals := pickSeriesValues(c, seriesIndex0)
+	high := pickSeriesValues(c, seriesIndex1)
+	low := pickSeriesValues(c, seriesIndex2)
+	closeVals := pickSeriesValues(c, seriesIndex3)
 	return openVals, high, low, closeVals
 }
 
 func comboSeries(c parsedChart) ([]charts.Series, []charts.Series) {
-	barVals := pickSeriesValues(c, 0)
-	lineVals := pickSeriesValues(c, 1)
+	barVals := pickSeriesValues(c, seriesIndex0)
+	lineVals := pickSeriesValues(c, seriesIndex1)
 	return []charts.Series{{Name: "Bar", Values: barVals}}, []charts.Series{{Name: "Line", Values: lineVals}}
 }
 

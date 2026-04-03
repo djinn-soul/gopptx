@@ -155,7 +155,8 @@ func TestGetShapesResolvesActionsAndAltText(t *testing.T) {
 	if shape.AltText != "Accessible rectangle" {
 		t.Fatalf("expected alt text, got %q", shape.AltText)
 	}
-	if shape.ClickAction == nil || shape.ClickAction.Address == nil || *shape.ClickAction.Address != "https://example.com" {
+	if shape.ClickAction == nil || shape.ClickAction.Address == nil ||
+		*shape.ClickAction.Address != "https://example.com" {
 		t.Fatalf("expected resolved click action address, got %+v", shape.ClickAction)
 	}
 	if shape.HoverAction == nil || shape.HoverAction.Macro == nil || *shape.HoverAction.Macro != "HoverMacro" {

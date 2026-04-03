@@ -15,8 +15,8 @@ func applyParsedShapeTextFrame(ps *ParsedShapeProperties, s *shapeXML) {
 	if bodyPr.BIns != nil {
 		frame.MarginBottom = bodyPr.BIns
 	}
-	if bodyPr.LIns != nil {
-		frame.MarginLeft = bodyPr.LIns
+	if bodyPr.LeftInset != nil {
+		frame.MarginLeft = bodyPr.LeftInset
 	}
 	if bodyPr.RIns != nil {
 		frame.MarginRight = bodyPr.RIns

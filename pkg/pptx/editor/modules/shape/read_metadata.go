@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+// decorativeExtURI is the OOXML extension URI that Office uses to mark a
+// shape as intentionally decorative (mirrored from export package).
+const decorativeExtURI = "{C183D7F6-72BE-476a-BEBA-66C5E2CAE503}"
+
 // ReaderHyperlinkRef captures the raw OOXML hyperlink/action reference before
 // relationship targets are resolved against the slide rels part.
 type ReaderHyperlinkRef struct {
@@ -42,12 +46,38 @@ type readerHyperlinkXML struct {
 	Attrs          []xml.Attr `xml:",any,attr"`
 }
 
+type cNvPrExtDecorativeXML struct {
+	Val *bool `xml:"val,attr"`
+}
+
+type cNvPrExtXML struct {
+	URI        string                 `xml:"uri,attr"`
+	Decorative *cNvPrExtDecorativeXML `xml:"decorative"`
+}
+
 type cNvPrReaderXML struct {
 	Descr          *string             `xml:"descr,attr"`
 	Title          *string             `xml:"title,attr"`
 	HlinkClick     *readerHyperlinkXML `xml:"hlinkClick"`
 	HlinkHover     *readerHyperlinkXML `xml:"hlinkHover"`
 	HlinkMouseOver *readerHyperlinkXML `xml:"hlinkMouseOver"`
+	ExtLst         *struct {
+		Exts []cNvPrExtXML `xml:"ext"`
+	} `xml:"extLst"`
+}
+
+// cNvPrIsDecorative returns true only when the cNvPr carries the explicit
+// OOXML decorative extension. An absent or empty descr is not sufficient.
+func cNvPrIsDecorative(c *cNvPrReaderXML) bool {
+	if c == nil || c.ExtLst == nil {
+		return false
+	}
+	for _, ext := range c.ExtLst.Exts {
+		if ext.URI == decorativeExtURI && ext.Decorative != nil {
+			return ext.Decorative.Val == nil || *ext.Decorative.Val
+		}
+	}
+	return false
 }
 
 type shapeReaderXML struct {
@@ -128,16 +158,18 @@ func applyReaderAltText(meta *ParsedShapeReaderMetadata, cNvPr *cNvPrReaderXML) 
 	if cNvPr == nil {
 		return
 	}
+	meta.IsDecorative = cNvPrIsDecorative(cNvPr)
 	if cNvPr.Descr != nil {
 		if descr := strings.TrimSpace(*cNvPr.Descr); descr != "" {
 			meta.AltText = descr
 			meta.HasAltText = true
 			return
 		}
-		meta.IsDecorative = true
+		// descr is present but empty — no alt text, but do NOT infer decorative;
+		// IsDecorative is already set from the explicit extension above.
 		return
 	}
-	if cNvPr.Title != nil {
+	if !meta.IsDecorative && cNvPr.Title != nil {
 		if title := strings.TrimSpace(*cNvPr.Title); title != "" {
 			meta.AltText = title
 			meta.HasAltText = true

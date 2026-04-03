@@ -3,9 +3,17 @@ package smartart
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
+)
+
+const (
+	defaultDataModelCapacity = 8
+	defaultTopLevelCapacity  = 4
+	minChildrenToSort        = 2
 )
 
 type dataModel struct {
@@ -57,15 +65,15 @@ func ParseDataModelNodes(dataXML []byte) ([]Node, error) {
 func parseDataModel(dataXML []byte) (dataModel, error) {
 	model := dataModel{
 		points:      make(map[string]dataPoint),
-		pointOrder:  make([]string, 0, 8),
-		connections: make([]dataConnection, 0, 8),
+		pointOrder:  make([]string, 0, defaultDataModelCapacity),
+		connections: make([]dataConnection, 0, defaultDataModelCapacity),
 	}
 
 	decoder := xml.NewDecoder(bytes.NewReader(dataXML))
 	for {
 		tok, err := decoder.Token()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return dataModel{}, err
@@ -131,7 +139,7 @@ func parseOrdinal(value string) int {
 func (m dataModel) semanticNodes() []Node {
 	childrenByParent := make(map[string][]orderedChild)
 	parentByChild := make(map[string]string)
-	topLevel := make([]orderedChild, 0, 4)
+	topLevel := make([]orderedChild, 0, defaultTopLevelCapacity)
 
 	for _, cxn := range m.connections {
 		if strings.HasPrefix(cxn.cxnType, "pres") {
@@ -213,7 +221,7 @@ func isSemanticPoint(point dataPoint) bool {
 }
 
 func sortChildren(children []orderedChild, pointOrder []string) []orderedChild {
-	if len(children) < 2 {
+	if len(children) < minChildrenToSort {
 		return children
 	}
 	orderIndex := make(map[string]int, len(pointOrder))
@@ -221,13 +229,9 @@ func sortChildren(children []orderedChild, pointOrder []string) []orderedChild {
 		orderIndex[id] = idx
 	}
 	out := append([]orderedChild(nil), children...)
-	for i := 1; i < len(out); i++ {
-		j := i
-		for j > 0 && compareChildren(out[j], out[j-1], orderIndex) < 0 {
-			out[j], out[j-1] = out[j-1], out[j]
-			j--
-		}
-	}
+	slices.SortFunc(out, func(a, b orderedChild) int {
+		return compareChildren(a, b, orderIndex)
+	})
 	return out
 }
 

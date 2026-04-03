@@ -45,6 +45,7 @@ var (
 	reSmartArtRelID        = regexp.MustCompile(`r:(dm|lo|qs|cs)=["']([^"']+)["']`)
 )
 
+//nolint:gocognit
 func extractSlideSmartArt(pptxPath string) ([][]parsedSmartArt, error) {
 	zr, err := zip.OpenReader(pptxPath)
 	if err != nil {
