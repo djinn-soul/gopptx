@@ -4,7 +4,7 @@ This example demonstrates:
 - add_section() to group slides into named sections
 - get_sections() to list sections after creation
 - add_comment() / add_author() for slide-level comments
-- set_metadata() / get_metadata() for document properties
+- set_core_properties() / get_core_properties() for document properties
 - Slide manipulation: duplicate_slide(), move_slide()
 """
 
@@ -40,7 +40,9 @@ def _build_section_slides(prs: Presentation) -> None:
 
 def _build_appendix_slide(prs: Presentation) -> int:
     """Add appendix slide with overlapping shapes for z-order demo."""
-    idx = prs.add_slide("Appendix - Shape Demo", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Appendix - Shape Demo", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_shape(
         idx,
         ShapeType.RECTANGLE,
@@ -66,7 +68,7 @@ def _add_comments_slide(prs: Presentation) -> int:
             "This slide has author comments attached.",
             "Comments reference author objects added via add_author().",
         ],
-    )
+    ).index
     author_id = prs.add_author("Alice", "A")
     prs.add_comment(idx, author_id, "Great point - add more data here.")
     author_id2 = prs.add_author("Bob", "B")
@@ -100,10 +102,10 @@ def main() -> None:
 
     with Presentation.new("Document Infrastructure Demo") as prs:
         # Set core metadata
-        prs.set_metadata(
-            title="Document Infrastructure Demo",
-            author="gopptx Python API",
-        )
+        props = prs.get_core_properties()
+        props["title"] = "Document Infrastructure Demo"
+        props["creator"] = "gopptx Python API"
+        prs.set_core_properties(props)
 
         # Build content slides (indices 0-3)
         _build_section_slides(prs)
@@ -126,15 +128,15 @@ def main() -> None:
         print(f"After remove_slide:       {prs.slide_count} slides")
 
         # Verify metadata
-        meta = prs.get_metadata()
+        meta = prs.get_core_properties()
         print(f"Title  : {meta.get('title', '')!r}")
-        print(f"Author : {meta.get('author', '')!r}")
+        print(f"Author : {meta.get('creator', '')!r}")
 
         prs.save(str(output_path))
         print(f"Saved: {output_path}")
 
     # Verify sections survive round-trip
-    with Presentation.open(str(output_path)) as prs2:
+    with Presentation(str(output_path)) as prs2:
         sections = prs2.get_sections()
         print(f"Round-trip sections: {len(sections)}")
         for sec in sections:
@@ -142,7 +144,7 @@ def main() -> None:
 
     print("\n=== SUMMARY ===")
     print("Demonstrated: add_section, get_sections, add_comment, add_author,")
-    print("  set_metadata, get_metadata, duplicate_slide, remove_slide")
+    print("  set_core_properties, get_core_properties, duplicate_slide, remove_slide")
 
 
 if __name__ == "__main__":

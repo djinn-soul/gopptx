@@ -9,13 +9,21 @@ import (
 type PDFDriver string
 
 const (
-	PDFDriverAuto        PDFDriver = "auto"
+	// PDFDriverAuto prefers external converters first and uses native as fallback.
+	PDFDriverAuto PDFDriver = "auto"
+	// PDFDriverNative uses the built-in renderer (experimental visual fidelity).
 	PDFDriverNative      PDFDriver = "native"
 	PDFDriverLibreOffice PDFDriver = "libreoffice"
 	PDFDriverPowerPoint  PDFDriver = "powerpoint"
 )
 
 // PDFOptions configures PDF export behavior.
+//
+// WARNING:
+//   - PDFDriverNative is experimental and may not match PowerPoint rendering
+//     fidelity for all decks/layouts.
+//   - PDFDriverAuto prefers LibreOffice/PowerPoint first and only falls back to
+//     native when those drivers are unavailable or fail.
 type PDFOptions struct {
 	Driver          PDFDriver
 	NativeFontPaths []string

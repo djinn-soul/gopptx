@@ -58,3 +58,7 @@ class CustomBuildHook(BuildHookInterface):
             sys.exit(1)
 
         build_data["artifacts"].append(f"python/gopptx/{lib_name}")
+        import sysconfig
+        plat = sysconfig.get_platform().replace("-", "_").replace(".", "_")
+        build_data["tag"] = f"py3-none-{plat}"
+        build_data["pure_python"] = False

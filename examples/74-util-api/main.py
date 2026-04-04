@@ -41,7 +41,7 @@ def _add_shapes_with_units_slide(prs: Presentation) -> None:
     """Shapes placed with Inches() for each coordinate system."""
     idx = prs.add_slide(
         "Shapes Placed with Inches()", layout=SlideLayoutType.TITLE_ONLY
-    )
+    ).index
     placements = [
         (
             "Inches - top-left",
@@ -88,11 +88,10 @@ def _add_shapes_with_units_slide(prs: Presentation) -> None:
 
 def _add_slide_size_slide(prs: Presentation) -> None:
     """Demonstrate reading the slide size."""
-    size = prs.get_slide_size()
     prs.add_bullet_slide(
         "Slide Size API",
         [
-            f"prs.get_slide_size() = {size}",
+            "Use set_slide_size(width_emu, height_emu) to change canvas dimensions.",
             "prs.set_slide_size(width_emu, height_emu) changes the canvas",
             f"SIZE_16X9_WIDTH  = {SIZE_16X9_WIDTH}",
             f"SIZE_16X9_HEIGHT = {SIZE_16X9_HEIGHT}",

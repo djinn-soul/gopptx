@@ -33,7 +33,9 @@ def _add_url_hyperlink_slide(prs: Presentation) -> None:
 
 def _add_navigation_slide(prs: Presentation) -> None:
     """Slide describing slide navigation actions."""
-    idx = prs.add_slide("Slide Navigation Actions", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Slide Navigation Actions", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     labels = [
         ("Next Slide", "4CAF50", Inches(0.5), Inches(1.5)),
         ("Prev Slide", "F44336", Inches(3.0), Inches(1.5)),
@@ -61,7 +63,9 @@ def _add_navigation_slide(prs: Presentation) -> None:
 
 def _add_jump_to_slide_slide(prs: Presentation) -> None:
     """Slide describing jump-to-specific-slide action."""
-    idx = prs.add_slide("Jump to Specific Slide", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Jump to Specific Slide", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_shape(
         idx,
         ShapeType.RECTANGLE,
@@ -81,7 +85,7 @@ def _add_jump_to_slide_slide(prs: Presentation) -> None:
 
 def _add_email_hyperlink_slide(prs: Presentation) -> None:
     """Slide describing email hyperlink action."""
-    idx = prs.add_slide("Email Hyperlink", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Email Hyperlink", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_shape(
         idx,
         ShapeType.ROUNDED_RECTANGLE,
@@ -101,7 +105,7 @@ def _add_email_hyperlink_slide(prs: Presentation) -> None:
 
 def _add_hover_action_slide(prs: Presentation) -> None:
     """Slide describing hover action."""
-    idx = prs.add_slide("Hover Action", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Hover Action", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_shape(
         idx,
         ShapeType.RECTANGLE,
