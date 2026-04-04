@@ -24,7 +24,7 @@ def _add_plain_notes_slide(prs: Presentation) -> int:
             "Open the notes panel in PowerPoint to read them.",
             "Notes are set with prs.set_notes(slide_idx, text).",
         ],
-    )
+    ).index
     prs.set_notes(
         idx,
         "These are plain-text speaker notes for slide 1.\n"
@@ -41,7 +41,7 @@ def _add_multi_paragraph_notes_slide(prs: Presentation) -> int:
             "This slide uses multi-line notes.",
             "Each line separated by \\n becomes a new paragraph.",
         ],
-    )
+    ).index
     prs.set_notes(
         idx,
         "Opening paragraph - introduce the topic.\n"
@@ -60,7 +60,7 @@ def _add_bullet_style_notes_slide(prs: Presentation) -> int:
             "Notes can contain bullet-style content via newlines.",
             "Each line is a separate paragraph in the notes pane.",
         ],
-    )
+    ).index
     prs.set_notes(
         idx,
         "First bullet note item.\n"
@@ -79,7 +79,7 @@ def _add_empty_notes_slide(prs: Presentation) -> int:
             "This slide has no speaker notes attached.",
             "get_notes() returns an empty string for this slide.",
         ],
-    )
+    ).index
 
 
 def _add_updated_notes_slide(prs: Presentation) -> int:
@@ -87,7 +87,7 @@ def _add_updated_notes_slide(prs: Presentation) -> int:
     idx = prs.add_bullet_slide(
         "Notes Overwrite Demo",
         ["This slide's notes are set, then overwritten."],
-    )
+    ).index
     prs.set_notes(idx, "Original notes - will be replaced.")
     return idx
 
@@ -125,7 +125,7 @@ def main() -> None:
         print(f"Saved: {output_path}")
 
     # Verify notes survive round-trip
-    with Presentation.open(str(output_path)) as prs2:
+    with Presentation(str(output_path)) as prs2:
         rt_notes = prs2.get_notes(plain_idx)
         print(f"Round-trip verify: {rt_notes[:45]!r}...")
         overwrite_rt = prs2.get_notes(overwrite_idx)

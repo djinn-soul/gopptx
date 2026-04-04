@@ -68,7 +68,10 @@ def main() -> None:
 
     # Example 2: custom config — limited slides and code blocks
     with Presentation.new("Web2PPT Feature Overview") as prs:
-        prs.set_metadata(title="Web2PPT Feature Overview", author="gopptx")
+        props = prs.get_core_properties()
+        props["title"] = "Web2PPT Feature Overview"
+        props["creator"] = "gopptx"
+        prs.set_core_properties(props)
         prs.add_bullet_slide(
             "Web2PPT: Webpage to Presentation",
             [

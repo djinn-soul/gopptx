@@ -3,7 +3,7 @@
 This example demonstrates:
 - Solid color backgrounds by embedding a full-slide colored shape
 - Gradient background concepts (Go API reference)
-- Picture (image) backgrounds via add_image_from_bytes() covering the full slide
+- Picture (image) backgrounds via add_image() covering the full slide
 - Theme-default background (no explicit background shape)
 - Background type constants via bullet slides
 """
@@ -99,7 +99,7 @@ def _add_solid_bg_slide(
     prs: Presentation, color: str, title: str, bullets: list[str]
 ) -> None:
     """Simulate a solid background by placing a full-slide colored rectangle."""
-    idx = prs.add_slide(title, layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(title, layout=SlideLayoutType.TITLE_ONLY).index
     # Full-slide background rectangle
     prs.add_shape(
         idx,
@@ -134,15 +134,14 @@ def _add_gradient_reference_slide(prs: Presentation) -> None:
 
 def _add_picture_bg_slide(prs: Presentation) -> None:
     """Picture background using a full-slide image."""
-    idx = prs.add_slide("Picture Background", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Picture Background", layout=SlideLayoutType.TITLE_ONLY).index
     # Full-slide image covers the background
-    prs.add_image_from_bytes(
+    prs.add_image(
         idx,
-        _BLUE_PNG,
-        Inches(0),
-        Inches(0),
-        _SLIDE_W,
-        _SLIDE_H,
+        None,
+        (Inches(0), Inches(0), _SLIDE_W, _SLIDE_H),
+        data=_BLUE_PNG,
+        image_format="png",
     )
     prs.add_textbox(
         idx,

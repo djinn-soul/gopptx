@@ -51,10 +51,13 @@ func run() error {
 		return fmt.Errorf("create output directory: %w", err)
 	}
 
-	slide2, err := buildImageFromFileSlide()
+	tmpPNG, cleanupTmpPNG, err := writeTempExamplePNG()
 	if err != nil {
 		return err
 	}
+	defer cleanupTmpPNG()
+
+	slide2 := buildImageFromFileSlide(tmpPNG)
 	slide3, err := buildImageFromBase64Slide()
 	if err != nil {
 		return err
@@ -79,6 +82,24 @@ func run() error {
 	return nil
 }
 
+func writeTempExamplePNG() (string, func(), error) {
+	tmpDir, err := os.MkdirTemp("", "gopptx-img-*")
+	if err != nil {
+		return "", nil, fmt.Errorf("create temp dir: %w", err)
+	}
+
+	tmpPNG := filepath.Join(tmpDir, "sample.png")
+	if err := os.WriteFile(tmpPNG, whitePNGBytes(), 0o600); err != nil {
+		_ = os.RemoveAll(tmpDir)
+		return "", nil, fmt.Errorf("write temp PNG: %w", err)
+	}
+
+	cleanup := func() {
+		_ = os.RemoveAll(tmpDir)
+	}
+	return tmpPNG, cleanup, nil
+}
+
 func buildImageFromBytesSlide() pptx.SlideContent {
 	imgFromBytes := pptx.NewImageFromBytes(
 		whitePNGBytes(), "png",
@@ -92,18 +113,7 @@ func buildImageFromBytesSlide() pptx.SlideContent {
 		AddImage(imgFromBytes)
 }
 
-func buildImageFromFileSlide() (pptx.SlideContent, error) {
-	tmpDir, err := os.MkdirTemp("", "gopptx-img-*")
-	if err != nil {
-		return pptx.SlideContent{}, fmt.Errorf("create temp dir: %w", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	tmpPNG := filepath.Join(tmpDir, "sample.png")
-	if err := os.WriteFile(tmpPNG, whitePNGBytes(), 0o600); err != nil {
-		return pptx.SlideContent{}, fmt.Errorf("write temp PNG: %w", err)
-	}
-
+func buildImageFromFileSlide(tmpPNG string) pptx.SlideContent {
 	imgFromFile := pptx.NewImage(
 		tmpPNG,
 		styling.Inches(1), styling.Inches(1.5),
@@ -114,7 +124,7 @@ func buildImageFromFileSlide() (pptx.SlideContent, error) {
 		AddBullet("pptx.NewImage(path, x, y, cx, cy)").
 		AddBullet("Reads the image from disk at creation time.").
 		AddImage(imgFromFile)
-	return slide, nil
+	return slide
 }
 
 func buildImageFromBase64Slide() (pptx.SlideContent, error) {

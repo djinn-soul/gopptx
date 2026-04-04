@@ -88,35 +88,51 @@ func PDFFromFileWithOptions(pptxPath, pdfPath string, opts PDFOptions) error {
 }
 
 func pdfWithAutoDriver(title string, slides []elements.SlideContent, outputPath string, opts PDFOptions) error {
-	// Attempt 1: Native gopdf engine
-	nativeErr := pdfViaNative(title, slides, outputPath, opts)
-	if nativeErr == nil {
-		return nil
-	}
-
-	// Attempt 2: LibreOffice
+	// Attempt 1: LibreOffice
 	libreErr := pdfViaLibreOffice(title, slides, outputPath)
 	if libreErr == nil {
 		return nil
 	}
 
-	// Attempt 3: PowerPoint COM (Windows only)
+	// Attempt 2: PowerPoint COM (Windows only)
 	pptErr := pdfViaPowerPointFromSlides(title, slides, outputPath)
-	if runtime.GOOS != osWindows {
-		return fmt.Errorf("native PDF driver: %w\nLibreOffice driver: %w", nativeErr, libreErr)
-	}
-	if pptErr == nil {
+	if runtime.GOOS == osWindows && pptErr == nil {
 		return nil
 	}
 
-	compositeErr := fmt.Errorf("native PDF driver: %w", nativeErr)
-	compositeErr = fmt.Errorf("%w\nLibreOffice driver: %w", compositeErr, libreErr)
+	// Attempt 3: Native gopdf engine (experimental fallback)
+	nativeErr := pdfViaNative(title, slides, outputPath, opts)
+	if nativeErr == nil {
+		return nil
+	}
+
+	if runtime.GOOS != osWindows {
+		return fmt.Errorf("LibreOffice driver: %w\nnative PDF driver (experimental): %w", libreErr, nativeErr)
+	}
+
+	compositeErr := fmt.Errorf("LibreOffice driver: %w", libreErr)
 	compositeErr = fmt.Errorf("%w\nPowerPoint driver: %w", compositeErr, pptErr)
+	compositeErr = fmt.Errorf("%w\nnative PDF driver (experimental): %w", compositeErr, nativeErr)
 	return compositeErr
 }
 
 func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
-	// Attempt 1: Native gopdf via PPTX reader
+	// Attempt 1: LibreOffice
+	libreErr := pdfFromFileViaLibreOffice(absPPTX, absPDF)
+	if libreErr == nil {
+		return nil
+	}
+
+	// Attempt 2: PowerPoint COM (Windows only)
+	var pptErr error
+	if runtime.GOOS == osWindows {
+		pptErr = exportWithPowerPoint(absPPTX, absPDF)
+		if pptErr == nil {
+			return nil
+		}
+	}
+
+	// Attempt 3: Native gopdf via PPTX reader (experimental fallback)
 	presTitle, slides, readErr := SlidesFromPPTX(absPPTX)
 	var nativeErr error
 	if readErr == nil {
@@ -126,29 +142,14 @@ func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
 		return nil
 	}
 
-	// Attempt 2: LibreOffice
-	libreErr := pdfFromFileViaLibreOffice(absPPTX, absPDF)
-	if libreErr == nil {
-		return nil
-	}
-
-	// Attempt 3: PowerPoint COM (Windows only)
-	var pptErr error
-	if runtime.GOOS == osWindows {
-		pptErr = exportWithPowerPoint(absPPTX, absPDF)
-		if pptErr == nil {
-			return nil
-		}
-	}
-
 	// All failed
-	compositeErr := fmt.Errorf("native: %w", nativeErr)
-	if readErr != nil {
-		compositeErr = fmt.Errorf("%w\nnative (PPTX reader): %w", compositeErr, readErr)
-	}
-	compositeErr = fmt.Errorf("%w\nLibreOffice: %w", compositeErr, libreErr)
+	compositeErr := fmt.Errorf("LibreOffice: %w", libreErr)
 	if pptErr != nil {
 		compositeErr = fmt.Errorf("%w\nPowerPoint: %w", compositeErr, pptErr)
+	}
+	compositeErr = fmt.Errorf("%w\nnative (experimental): %w", compositeErr, nativeErr)
+	if readErr != nil {
+		compositeErr = fmt.Errorf("%w\nnative (PPTX reader): %w", compositeErr, readErr)
 	}
 	return compositeErr
 }

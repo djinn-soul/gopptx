@@ -23,7 +23,7 @@ def _add_bar_chart_slide(prs: Presentation) -> None:
     """Quarterly revenue bar chart."""
     idx = prs.add_slide(
         "Bar Chart - Quarterly Revenue", layout=SlideLayoutType.TITLE_ONLY
-    )
+    ).index
     prs.add_chart(
         idx,
         ChartType.BAR,
@@ -38,7 +38,7 @@ def _add_column_chart_slide(prs: Presentation) -> None:
     """Quarterly costs column chart."""
     idx = prs.add_slide(
         "Column Chart - Quarterly Costs", layout=SlideLayoutType.TITLE_ONLY
-    )
+    ).index
     prs.add_chart(
         idx,
         ChartType.COLUMN,
@@ -51,7 +51,9 @@ def _add_column_chart_slide(prs: Presentation) -> None:
 
 def _add_line_chart_slide(prs: Presentation) -> None:
     """Units sold line chart."""
-    idx = prs.add_slide("Line Chart - Units Sold", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Line Chart - Units Sold", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_chart(
         idx,
         ChartType.LINE,
@@ -64,7 +66,9 @@ def _add_line_chart_slide(prs: Presentation) -> None:
 
 def _add_pie_chart_slide(prs: Presentation) -> None:
     """Market share pie chart."""
-    idx = prs.add_slide("Pie Chart - Market Share", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Pie Chart - Market Share", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_chart(
         idx,
         ChartType.PIE,

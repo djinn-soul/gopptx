@@ -25,8 +25,8 @@ def main() -> None:
         # Set widescreen 16:9 slide size
         prs.set_slide_size(SIZE_16X9_WIDTH, SIZE_16X9_HEIGHT)
 
-        # Apply built-in modern theme
-        prs.apply_theme(get_theme("modern"))
+        # Apply built-in theme preset
+        prs.apply_theme(get_theme("ocean"))
 
         # Slide 1: welcome / overview
         prs.add_bullet_slide(
@@ -68,7 +68,7 @@ def main() -> None:
             [
                 "set_slide_size(w, h) — widescreen or custom dimensions",
                 "apply_theme(theme) — apply a color+font palette",
-                "set_metadata(title, author) — core properties",
+                "set_core_properties({...}) — core properties",
                 "save(path) — build and persist in one call",
             ],
         )

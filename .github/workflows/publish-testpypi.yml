@@ -1,0 +1,253 @@
+name: Publish to TestPyPI
+
+on:
+  push:
+    tags:
+      - "v*-test*"    # e.g. v0.1.0-test1, v0.1.0-test.2
+      - "v*-rc*"      # e.g. v0.1.0-rc1
+      - "v*-alpha*"
+      - "v*-beta*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (without 'v', e.g. 0.1.0-test1)"
+        required: true
+
+# Cancel any in-progress run for the same tag/branch
+concurrency:
+  group: publish-testpypi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Extract version from tag (v0.1.0-test1 → 0.1.0-test1)
+  # or from workflow_dispatch input
+  # ─────────────────────────────────────────────────────────────
+  set-version:
+    name: Extract version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Extract version from tag or input
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"          # strip leading 'v'
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION"
+
+  # ─────────────────────────────────────────────────────────────
+  # Build platform wheels
+  # ─────────────────────────────────────────────────────────────
+  build-wheels:
+    name: Build wheel (${{ matrix.os }})
+    needs: set-version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest    # Linux x86_64  (manylinux2014 via Zig)
+          - windows-latest   # Windows x64
+          - macos-latest     # macOS arm64   (Apple Silicon)
+          # NOTE: macos-13 (Intel x86_64) was retired Dec 2025.
+          # For Intel macOS wheels use a paid runner: macos-13-xlarge
+          # or drop it if x86_64 macOS coverage is not needed yet.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Patch version in pyproject.toml before building
+      # Uses python3 (pre-installed on all runners) for cross-platform safety
+      - name: Set version in pyproject.toml
+        run: |
+          python3 -c "
+          import re, pathlib
+          v = '${{ needs.set-version.outputs.version }}'
+          p = pathlib.Path('pyproject.toml')
+          p.write_text(re.sub(r'(?m)^version = \"[^\"]*\"', f'version = \"{v}\"', p.read_text()))
+          print(f'Set version to: {v}')
+          "
+        shell: bash
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true            # caches Go module downloads + build cache
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          enable-cache: true     # caches uv's download cache
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"           # caches pip downloads
+
+      - name: Setup Zig (Linux cross-compile)
+        if: runner.os == 'Linux'
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+
+      - name: Install build deps
+        run: uv pip install --system build
+
+      - name: Install auditwheel (Linux only)
+        if: runner.os == 'Linux'
+        run: uv pip install --system auditwheel
+
+      - name: Build wheel
+        run: python -m build --wheel
+        env:
+          GOPPTX_RELEASE_BUILD: "1"
+          CGO_ENABLED: "1"
+          # On Linux, compile against glibc 2.17 (manylinux2014) via Zig
+          CC: ${{ runner.os == 'Linux' && 'zig cc -target x86_64-linux-gnu.2.17' || '' }}
+          CXX: ${{ runner.os == 'Linux' && 'zig c++ -target x86_64-linux-gnu.2.17' || '' }}
+
+      - name: Auditwheel repair (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          auditwheel repair dist/*linux*.whl --plat manylinux2014_x86_64 -w dist/repaired
+          rm dist/*linux*.whl
+          mv dist/repaired/*.whl dist/
+
+      - name: Show built wheel
+        run: ls -lh dist/
+        shell: bash
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-wheels-${{ matrix.os }}
+          path: dist/*.whl
+          retention-days: 7      # short retention for test builds
+
+  # ─────────────────────────────────────────────────────────────
+  # Build source distribution (sdist)
+  # ─────────────────────────────────────────────────────────────
+  build-sdist:
+    name: Build sdist
+    needs: set-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version in pyproject.toml
+        run: |
+          python3 -c "
+          import re, pathlib
+          v = '${{ needs.set-version.outputs.version }}'
+          p = pathlib.Path('pyproject.toml')
+          p.write_text(re.sub(r'(?m)^version = \"[^\"]*\"', f'version = \"{v}\"', p.read_text()))
+          print(f'Set version to: {v}')
+          "
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Build sdist
+        run: uv build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-sdist
+          path: dist/*.tar.gz
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────
+  # Publish all artifacts to TestPyPI
+  # ─────────────────────────────────────────────────────────────
+  publish:
+    name: Publish to TestPyPI
+    needs: [set-version, build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: package-*
+          path: dist
+          merge-multiple: true
+
+      - name: List packages to upload
+        run: ls -lh dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          skip-existing: true    # allow re-pushing same version without error
+          verbose: true
+          # To switch to OIDC Trusted Publishing (no secret needed):
+          # 1. Remove the password line above
+          # 2. Add `id-token: write` to permissions above
+          # 3. Register at https://test.pypi.org/manage/account/publishing/
+
+      - name: Summary
+        run: |
+          echo "## Published to TestPyPI" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.set-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Install with:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "pip install -i https://test.pypi.org/simple/ gopptx==${{ needs.set-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────
+  # Smoke test: verify the package installs from TestPyPI
+  # Runs on each major platform after publish settles
+  # ─────────────────────────────────────────────────────────────
+  smoke-test:
+    name: Smoke test (${{ matrix.os }})
+    needs: [set-version, publish]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # TestPyPI may need a few seconds to make the release available
+      - name: Wait for TestPyPI index to update
+        run: sleep 15
+        shell: bash
+
+      - name: Install from TestPyPI
+        run: |
+          uv pip install --system \
+            --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ \
+            "gopptx==${{ needs.set-version.outputs.version }}"
+        shell: bash
+
+      - name: Basic import check
+        run: python -c "import gopptx; print('gopptx imported OK:', gopptx.__version__)"
+        shell: bash

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // GetSlideHeaderFooter reads the <p:hf> element from a slide and returns the parsed settings.
@@ -59,13 +60,13 @@ func extractCombinedText(slideXML string, containerPattern *regexp.Regexp) strin
 	if len(textMatches) == 0 {
 		return ""
 	}
-	out := ""
+	var out strings.Builder
 	for _, match := range textMatches {
 		if len(match) > 1 {
-			out += match[1]
+			out.WriteString(match[1])
 		}
 	}
-	return out
+	return out.String()
 }
 
 // handleGetSlideHeaderFooter reads header/footer settings from a slide.

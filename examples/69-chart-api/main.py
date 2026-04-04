@@ -23,7 +23,9 @@ CHART_BOUNDS = (Inches(0.5), Inches(1.2), Inches(9), Inches(5.5))
 
 def _add_monthly_bar(prs: Presentation) -> None:
     """Monthly sales bar chart with full formatting options."""
-    idx = prs.add_slide("Bar Chart - Full Options", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Bar Chart - Full Options", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_chart(
         idx,
         ChartType.BAR,
@@ -38,7 +40,7 @@ def _add_monthly_column(prs: Presentation) -> None:
     """Monthly revenue column chart."""
     idx = prs.add_slide(
         "Column Chart - Monthly Revenue", layout=SlideLayoutType.TITLE_ONLY
-    )
+    ).index
     prs.add_chart(
         idx,
         ChartType.COLUMN,
@@ -51,7 +53,9 @@ def _add_monthly_column(prs: Presentation) -> None:
 
 def _add_monthly_line(prs: Presentation) -> None:
     """Monthly costs line chart."""
-    idx = prs.add_slide("Line Chart - Monthly Costs", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Line Chart - Monthly Costs", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_chart(
         idx,
         ChartType.LINE,
@@ -64,7 +68,9 @@ def _add_monthly_line(prs: Presentation) -> None:
 
 def _add_market_share_pie(prs: Presentation) -> None:
     """Market share pie chart."""
-    idx = prs.add_slide("Pie Chart - Market Share", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Pie Chart - Market Share", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     prs.add_chart(
         idx,
         ChartType.PIE,
@@ -79,7 +85,7 @@ def _add_quarterly_bar(prs: Presentation) -> None:
     """Quarterly units column chart."""
     idx = prs.add_slide(
         "Column Chart - Quarterly Units", layout=SlideLayoutType.TITLE_ONLY
-    )
+    ).index
     prs.add_chart(
         idx,
         ChartType.COLUMN,

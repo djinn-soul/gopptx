@@ -23,7 +23,9 @@ _SHAPE_COLORS = ["4472C4", "C0504D", "9BBB59", "F79646", "8064A2", "4BACC6"]
 
 def _add_core_shape_types_slide(prs: Presentation) -> None:
     """Gallery of core shape types."""
-    idx = prs.add_slide("Core Shape Type Constants", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Core Shape Type Constants", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     types = [
         (ShapeType.RECTANGLE, "Rect"),
         (ShapeType.ROUNDED_RECTANGLE, "RoundRect"),
@@ -49,7 +51,9 @@ def _add_core_shape_types_slide(prs: Presentation) -> None:
 
 def _add_connector_types_slide(prs: Presentation) -> None:
     """Enumerate connector type constants."""
-    idx = prs.add_slide("Connector Type Constants", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Connector Type Constants", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     connectors = [
         (ConnectorType.STRAIGHT, Inches(0.5), Inches(2.0), Inches(3.5), Inches(2.0)),
         (ConnectorType.ELBOW, Inches(0.5), Inches(3.0), Inches(4.5), Inches(4.5)),
@@ -75,7 +79,7 @@ def _add_layout_constants_slide(prs: Presentation) -> None:
         [
             f"BLANK          = {SlideLayoutType.BLANK!r}",
             f"TITLE_ONLY     = {SlideLayoutType.TITLE_ONLY!r}",
-            f"TITLE_CONTENT  = {SlideLayoutType.TITLE_CONTENT!r}",
+            f"TITLE_CONTENT  = {SlideLayoutType.TITLE_AND_CONTENT!r}",
             "Use layout= parameter in prs.add_slide(title, layout=...)",
         ],
     )
