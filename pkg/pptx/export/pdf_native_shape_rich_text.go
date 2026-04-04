@@ -59,21 +59,27 @@ func fitPDFShapeParagraphText(
 	paragraphs []text.Paragraph,
 	boxW, boxH float64,
 ) int {
-	size := defaultFontSize
+	maxSize := defaultFontSize
 	for _, paragraph := range paragraphs {
 		for _, run := range paragraph.Runs {
-			if run.SizePt > size {
-				size = run.SizePt
+			if run.SizePt > maxSize {
+				maxSize = run.SizePt
 			}
 		}
 	}
-	for ; size >= minTextAutoFitSize; size-- {
-		_, totalHeight := layoutShapeParagraphs(pdf, paragraphs, boxW, size)
+	low, high := minTextAutoFitSize, maxSize
+	bestSize := minTextAutoFitSize
+	for low <= high {
+		mid := (low + high) / 2
+		_, totalHeight := layoutShapeParagraphs(pdf, paragraphs, boxW, mid)
 		if totalHeight <= boxH {
-			return size
+			bestSize = mid
+			low = mid + 1
+		} else {
+			high = mid - 1
 		}
 	}
-	return minTextAutoFitSize
+	return bestSize
 }
 
 func layoutShapeParagraphs(

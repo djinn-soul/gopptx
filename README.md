@@ -65,6 +65,17 @@ with Presentation.new("Batch Demo") as pres:
 go get github.com/djinn-soul/gopptx
 ```
 
+## PDF Export Warning
+
+- PPTX to PDF export is currently **experimental** for visual fidelity.
+- The Go-native PDF renderer (`driver="native"`) is experimental and can differ from PowerPoint output.
+- For production output, prefer `auto` (default), which now tries `LibreOffice` / `PowerPoint` first and uses native only as fallback.
+- Use native explicitly only when you accept rendering differences (notably in advanced SmartArt/layout-heavy decks).
+- Windows prerequisites:
+  - `driver="powerpoint"` requires Microsoft PowerPoint desktop installation (COM automation) and PowerShell (`powershell` or `pwsh`).
+  - `driver="libreoffice"` requires LibreOffice and `soffice` available on `PATH`.
+  - If LibreOffice is installed but `soffice` is not recognized, add `C:\Program Files\LibreOffice\program` to your `PATH`.
+
 ---
 
 ## JSON Command Bridge

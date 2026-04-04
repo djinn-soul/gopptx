@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -15,8 +16,8 @@ class PDFOptions:
 
     Attributes:
         driver: Which PDF backend to use.
-            ``"auto"``  — try native, fall back to LibreOffice/PowerPoint
-            ``"native"`` — built-in Go PDF renderer
+            ``"auto"``  — try LibreOffice/PowerPoint first, then native fallback
+            ``"native"`` — built-in Go PDF renderer (experimental fidelity)
             ``"libreoffice"`` — requires LibreOffice on PATH
             ``"powerpoint"`` — requires Microsoft PowerPoint (Windows only)
         font_paths: Extra font directories for the native renderer.
@@ -48,25 +49,33 @@ class PresentationExportMixin(PresentationMixinBase):
 
     def save_as_pdf(
         self,
-        output_path: str,
+        output_path: str | None = None,
         options: PDFOptions | None = None,
     ) -> str:
         """Export the presentation to a PDF file.
 
         Args:
-            output_path: Destination path for the PDF file.
+            output_path: Destination path for the PDF file. If omitted,
+                defaults to ``presentation.pdf`` in the current working directory.
             options: Optional :class:`PDFOptions` controlling the export driver.
 
         Returns:
             Absolute path to the written PDF file.
         """
         opts = options or PDFOptions()
+        if opts.driver == "native":
+            warnings.warn(
+                "PDF driver 'native' is experimental and may not match PowerPoint rendering for all layouts.",
+                UserWarning,
+                stacklevel=2,
+            )
         payload: dict[str, object] = {
-            "output_path": output_path,
             "driver": opts.driver,
         }
+        if output_path is not None:
+            payload["output_path"] = output_path
         result = self.execute(ops.OP_EXPORT_PDF, payload)
-        return str(result.get("output_path", output_path))
+        return str(result.get("output_path", output_path or "presentation.pdf"))
 
     def export_html(
         self,

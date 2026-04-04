@@ -39,9 +39,6 @@ func renderBarLike(
 			bh := math.Max(8, slot*0.42)
 			by := py + slot*float64(i) + (slot-bh)/2
 			valueIndex := len(values) - 1 - i
-			if valueIndex < 0 || valueIndex >= len(values) {
-				valueIndex = i
-			}
 			bw := (values[valueIndex] / maxV) * (pw - 2)
 			pdf.RectFromUpperLeftWithStyle(px+1, by, bw, bh, "F")
 		} else {
