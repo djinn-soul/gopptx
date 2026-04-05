@@ -91,6 +91,17 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 			maxY = tableTop - 12
 		}
 	}
+
+	// Apply vertical alignment when ContentVAlign is "ctr" (middle) or "b" (bottom).
+	switch slide.ContentVAlign {
+	case "ctr":
+		totalH := measureBulletsHeight(pdf, slide, maxWidth, maxY-yPos)
+		yPos += math.Max(0, (maxY-yPos-totalH)/2)
+	case "b":
+		totalH := measureBulletsHeight(pdf, slide, maxWidth, maxY-yPos)
+		yPos += math.Max(0, maxY-yPos-totalH)
+	}
+
 	prevSpaceAfter := 0.0
 	for i, bullet := range slide.Bullets {
 		style := bulletStyleForIndex(slide, i)
@@ -132,22 +143,25 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		)
 		setPDFTextFontWithHint(pdf, fontSize, bold, italic, fontHint)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
-		prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
-		allRuns := append(append([]pdfStyledRun{}, prefixRuns...), styledRuns...)
-		lines := wrapStyledRuns(pdf, allRuns, availableWidth)
+		lines := wrapStyledRuns(pdf, styledRuns, availableWidth)
 		lineHeight := math.Max(pdfLineHeight(fontSize)*paragraphLineSpacingFactor(style), 12)
-		continuationIndent := continuationLineIndent(pdf, prefixRuns, style)
 		for li, line := range lines {
 			if yPos+lineHeight > maxY {
 				setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 				return
 			}
 			lineX := baseX + levelIndent + leftIndent
-			if li == 0 {
-				lineX += hangingIndent
-			} else {
-				lineX += continuationIndent
+
+			if li == 0 && prefix != "" {
+				prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
+				prefixX := lineX - hangingIndent
+				if hangingIndent == 0 {
+					// Fallback gap if no hanging indent is specified.
+					prefixX = lineX - 14
+				}
+				renderStyledLine(pdf, prefixRuns, prefixX, yPos)
 			}
+
 			align := elements.NormalizeTextAlign(style.Align)
 			if align == elements.TextAlignCenter || align == elements.TextAlignRight {
 				lineText := styledLinePlain(line)
@@ -267,7 +281,7 @@ func buildBulletPrefixRuns(
 	}
 	return []pdfStyledRun{
 		{
-			Text:     prefix + " ",
+			Text:     prefix,
 			Bold:     slide.ContentBold,
 			Italic:   slide.ContentItalic,
 			Color:    [3]uint8{cr, cg, cb},
@@ -277,12 +291,36 @@ func buildBulletPrefixRuns(
 	}
 }
 
-func continuationLineIndent(pdf *gopdf.GoPdf, prefixRuns []pdfStyledRun, style text.ParagraphStyle) float64 {
-	prefixWidth := measureStyledLineWidth(pdf, prefixRuns)
-	hanging := emuToPt(style.HangingIndent.Emu())
-	indent := prefixWidth + hanging
-	if indent < 0 {
-		return 0
-	}
-	return indent
+// measureBulletsHeight computes the total rendered height of all bullets
+// to support vertical alignment pre-positioning.
+func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidth, availH float64) float64 {
+	total := 0.0
+	prevSpaceAfter := 0.0
+	for i, bullet := range slide.Bullets {
+		style := bulletStyleForIndex(slide, i)
+		runs := bulletRunsForIndex(slide, i, bullet)
+		levelIndent := float64(style.Level * 14)
+		leftIndent := emuToPt(style.LeftIndent.Emu())
+		rightIndent := emuToPt(style.RightIndent.Emu())
+		fontSize := defaultFontSize
+		if sz := firstRunSize(runs); sz > 0 {
+			fontSize = sz
+		}
+		bold, italic := runTextStyle(runs, slide)
+		fontHint := firstRunFont(runs)
+		renderedText := renderRunsPlain(runs)
+		gap := paragraphStartGap(i, prevSpaceAfter, style)
+		total += gap
+		availableWidth := maxWidth - levelIndent - leftIndent - rightIndent
+		if availableWidth < 80 {
+			availableWidth = 80
+		}
+		fontSize = fitPDFTextToBoxWithMetrics(pdf, renderedText, fontSize, minTextAutoFitSize, bold, italic, availableWidth, availH-total, fontHint)
+		lineHeight := math.Max(pdfLineHeight(fontSize)*paragraphLineSpacingFactor(style), 12)
+		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
+		lines := wrapStyledRuns(pdf, styledRuns, availableWidth)
+		total += float64(len(lines)) * lineHeight
+		prevSpaceAfter = paragraphAfterGap(style)
+		}
+		return total
 }

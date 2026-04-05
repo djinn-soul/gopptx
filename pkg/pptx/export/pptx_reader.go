@@ -36,6 +36,11 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 		presTitle = meta.Title
 	}
 
+	// Read slide master's txStyles to resolve inherited title alignment/size.
+	// Slides with placeholder references (empty <p:spPr/>) inherit these defaults
+	// via the OOXML chain: slide → layout → master → txStyles.
+	masterStyle := extractMasterTitleStyle(pptxPath)
+
 	// Extract embedded images per slide via direct PPTX zip parsing.
 	slideImages, err := extractSlideImages(pptxPath)
 	if err != nil {
@@ -57,7 +62,9 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 	slideContents := make([]elements.SlideContent, 0, len(slideMeta))
 
 	for _, sm := range slideMeta {
-		slideContents = append(slideContents, extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt))
+		sc := extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt)
+		applyMasterTitleDefaults(&sc, masterStyle)
+		slideContents = append(slideContents, sc)
 	}
 
 	if presTitle == "" && len(slideContents) > 0 {
@@ -65,6 +72,17 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 	}
 
 	return presTitle, slideContents, nil
+}
+
+// applyMasterTitleDefaults fills in title alignment and size from master txStyles
+// when they were not explicitly set by the slide or layout XML.
+func applyMasterTitleDefaults(sc *elements.SlideContent, ms masterTitleStyle) {
+	if sc.TitleAlign == "" && ms.Align != "" {
+		sc.TitleAlign = ms.Align
+	}
+	if sc.TitleSize == 0 && ms.SizePt > 0 {
+		sc.TitleSize = ms.SizePt
+	}
 }
 
 //nolint:gocognit,funlen // Slide extraction maps multiple editor shape categories and image attachments in one pass.
@@ -81,7 +99,22 @@ func extractSlideContent(
 	}
 
 	sc := elements.SlideContent{
-		Title: sm.Title,
+		Title:  sm.Title,
+		Hidden: sm.Hidden,
+	}
+	if bg, bgErr := ed.GetSlideBackground(sm.Index); bgErr == nil && bg != nil {
+		sc.Background = bg
+	}
+	if hf, hfErr := ed.GetSlideHeaderFooter(sm.Index); hfErr == nil {
+		if hf.ShowFooter {
+			sc.FooterText = hf.Footer
+		}
+		if hf.ShowSlideNum {
+			sc.ShowSlideNumber = true
+		}
+	}
+	if notes, notesErr := ed.GetNotes(sm.Index); notesErr == nil && notes != "" {
+		sc.Notes = notes
 	}
 	shapeIndexByID := make(map[int]int)
 	connectorShapes := make([]editorcommon.Shape, 0)
@@ -126,6 +159,11 @@ func extractSlideContent(
 			applyTitleBounds(&sc, es)
 			applyTitleSizeFromRuns(&sc, es)
 			applyTitleAlignFromShape(&sc, es)
+			// Record that this is a centered-title slide so the renderer
+			// can apply the correct vertical centering position.
+			if lowerType == placeholderCtrTitle && sc.Layout == "" {
+				sc.Layout = elements.SlideLayoutCenteredTitle
+			}
 		case placeholderBody, placeholderSubtitle, placeholderObject:
 			if consumeBodyPlaceholderAsBullets(&sc, es) {
 				applyContentBounds(&sc, es)

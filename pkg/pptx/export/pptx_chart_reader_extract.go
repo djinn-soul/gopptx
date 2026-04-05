@@ -17,6 +17,7 @@ type parsedChartSeries struct {
 	XValues    []float64
 	YValues    []float64
 	Sizes      []float64
+	Color      string // hex RGB from <a:srgbClr> inside the series spPr
 }
 
 type parsedChart struct {
@@ -44,11 +45,12 @@ type chartFrameRef struct {
 }
 
 var (
-	reGraphicFrame = regexp.MustCompile(`(?s)<p:graphicFrame\b.*?</p:graphicFrame>`)
-	reChartRelID   = regexp.MustCompile(`\br:id="([^"]+)"`)
-	reSeriesBlock  = regexp.MustCompile(`(?s)<c:ser\b.*?</c:ser>`)
-	reTextValue    = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
-	rePointValue   = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
+	reGraphicFrame  = regexp.MustCompile(`(?s)<p:graphicFrame\b.*?</p:graphicFrame>`)
+	reChartRelID    = regexp.MustCompile(`\br:id="([^"]+)"`)
+	reSeriesBlock   = regexp.MustCompile(`(?s)<c:ser\b.*?</c:ser>`)
+	reTextValue     = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
+	rePointValue    = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
+	reSeriesSrgbClr = regexp.MustCompile(`<a:srgbClr val="([0-9A-Fa-f]{6})"`)
 )
 
 const (
@@ -170,6 +172,10 @@ func parseSeriesBlock(block string) parsedChartSeries {
 	}
 	if full := firstTagBlock(block, "c:bubbleSize"); full != "" {
 		series.Sizes = extractFloatPoints(full)
+	}
+	// Extract fill color from series shape properties.
+	if m := reSeriesSrgbClr.FindStringSubmatch(block); len(m) >= 2 { //nolint:mnd
+		series.Color = m[1]
 	}
 	return series
 }

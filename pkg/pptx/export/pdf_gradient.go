@@ -33,9 +33,58 @@ func renderPDFShapeGradient(
 	switch s.Type {
 	case shapes.ShapeTypeRectangle, shapes.ShapeTypeRoundedRectangle:
 		return renderPDFLinearGradientRect(pdf, s.GradientFill, x, y, w, h)
+	case shapes.ShapeTypeEllipse:
+		return renderPDFLinearGradientEllipse(pdf, s.GradientFill, x, y, w, h)
 	default:
 		return false
 	}
+}
+
+// renderPDFLinearGradientEllipse renders a linear gradient clipped to an ellipse
+// by drawing banded rectangles trimmed to the ellipse silhouette at each position.
+func renderPDFLinearGradientEllipse(
+	pdf *gopdf.GoPdf,
+	grad *shapes.ShapeGradientFill,
+	x, y, w, h float64,
+) bool {
+	stops := gradientStopsFromFill(grad)
+	if len(stops) == 0 {
+		return false
+	}
+	angleDeg := 0.0
+	if grad != nil && grad.AngleDeg != nil {
+		angleDeg = float64(*grad.AngleDeg)
+	}
+	vertical := isMostlyVerticalGradient(angleDeg)
+	bands := gradientBands
+	cx, cy := x+w/2, y+h/2
+	rx, ry := w/2, h/2
+
+	for i := range bands {
+		t0 := float64(i) / float64(bands)
+		t1 := float64(i+1) / float64(bands)
+		c := interpolateGradient(stops, (t0+t1)/2)
+		rgb := blendOverWhite(c, c.alpha)
+		pdf.SetFillColor(rgb.r, rgb.g, rgb.b)
+		if vertical {
+			yy0 := y + h*t0
+			yy1 := y + h*t1
+			ymid := (yy0 + yy1) / 2
+			xw := rx * math.Sqrt(math.Max(0, 1-math.Pow((ymid-cy)/ry, 2)))
+			if xw > 0 {
+				pdf.RectFromUpperLeftWithStyle(cx-xw, yy0, 2*xw, yy1-yy0, "F")
+			}
+		} else {
+			xx0 := x + w*t0
+			xx1 := x + w*t1
+			xmid := (xx0 + xx1) / 2
+			yw := ry * math.Sqrt(math.Max(0, 1-math.Pow((xmid-cx)/rx, 2)))
+			if yw > 0 {
+				pdf.RectFromUpperLeftWithStyle(xx0, cy-yw, xx1-xx0, 2*yw, "F")
+			}
+		}
+	}
+	return true
 }
 
 func renderPDFLinearGradientRect(

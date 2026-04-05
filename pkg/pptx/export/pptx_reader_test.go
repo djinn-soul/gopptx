@@ -104,6 +104,118 @@ func TestSlidesFromPPTX_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestSlidesFromPPTX_FooterText(t *testing.T) {
+	// gopptx renders footer as visual overlay shapes (not <p:hf>).
+	// To test GetSlideHeaderFooter wiring we need a hand-crafted PPTX that
+	// actually contains a <p:hf> element with the OOXML footer attributes.
+	const (
+		nsA = `xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"`
+		nsR = `xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`
+		nsP = `xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"`
+	)
+	// Slide XML containing <p:hf ftr="1" sldNum="1"> and a <p:ftr> text run.
+	slideXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<p:sld ` + nsA + ` ` + nsR + ` ` + nsP + `>` +
+		`<p:cSld><p:spTree>` +
+		`<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>` +
+		`</p:spTree></p:cSld>` +
+		`<p:hf ftr="1" sldNum="1">` +
+		`<p:ftr><a:r><a:t>My Footer</a:t></a:r></p:ftr>` +
+		`</p:hf>` +
+		`</p:sld>`
+
+	blankRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`
+
+	files := map[string]string{
+		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+			`<Default Extension="xml" ContentType="application/xml"/>` +
+			`<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>` +
+			`<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>` +
+			`</Types>`,
+		"_rels/.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>` +
+			`</Relationships>`,
+		"ppt/presentation.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<p:presentation ` + nsA + ` ` + nsR + ` ` + nsP + `><p:sldIdLst>` +
+			`<p:sldId id="256" r:id="rId1"/>` +
+			`</p:sldIdLst></p:presentation>`,
+		"ppt/_rels/presentation.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>` +
+			`</Relationships>`,
+		"ppt/slides/slide1.xml":            slideXML,
+		"ppt/slides/_rels/slide1.xml.rels": blankRels,
+	}
+
+	outPath := filepath.Join(t.TempDir(), "footer_hf.pptx")
+	f, err := os.Create(outPath)
+	if err != nil {
+		t.Fatalf("create pptx: %v", err)
+	}
+	zw := zip.NewWriter(f)
+	for name, content := range files {
+		w, werr := zw.Create(name)
+		if werr != nil {
+			t.Fatalf("zip create %s: %v", name, werr)
+		}
+		if _, werr = fmt.Fprint(w, content); werr != nil {
+			t.Fatalf("zip write %s: %v", name, werr)
+		}
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("zip close: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("file close: %v", err)
+	}
+
+	_, got, err := SlidesFromPPTX(outPath)
+	if err != nil {
+		t.Fatalf("SlidesFromPPTX: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 slide, got %d", len(got))
+	}
+	s := got[0]
+	if s.FooterText != "My Footer" {
+		t.Errorf("FooterText: got %q, want %q", s.FooterText, "My Footer")
+	}
+	if !s.ShowSlideNumber {
+		t.Error("ShowSlideNumber: expected true")
+	}
+}
+
+func TestSlidesFromPPTX_Notes(t *testing.T) {
+	const wantNotes = "Speaker notes for slide one"
+	slides := []elements.SlideContent{
+		elements.NewSlide("Notes Slide").WithNotes(wantNotes),
+	}
+
+	data, err := pptx.CreateWithSlides("Notes Test", slides)
+	if err != nil {
+		t.Fatalf("CreateWithSlides: %v", err)
+	}
+	deckPath := filepath.Join(t.TempDir(), "notes.pptx")
+	if err := os.WriteFile(deckPath, data, 0o600); err != nil {
+		t.Fatalf("write pptx: %v", err)
+	}
+
+	_, got, err := SlidesFromPPTX(deckPath)
+	if err != nil {
+		t.Fatalf("SlidesFromPPTX: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 slide, got %d", len(got))
+	}
+	if got[0].Notes != wantNotes {
+		t.Errorf("Notes: got %q, want %q", got[0].Notes, wantNotes)
+	}
+}
+
 func TestSlidesFromPPTX_PreservesReaderMetadata(t *testing.T) {
 	deckPath := writeReaderMetadataPPTX(t)
 	_, slides, err := SlidesFromPPTX(deckPath)
