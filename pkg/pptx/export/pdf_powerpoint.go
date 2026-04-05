@@ -93,26 +93,18 @@ try {
 	if err != nil {
 		return err
 	}
-	// Allowlist: findPowerShellExecutable only returns these two values, but
-	// make it explicit so static analysis does not flag a dynamic exec path.
-	if psExe != "powershell" && psExe != "pwsh" {
-		return fmt.Errorf("unexpected PowerShell executable %q: must be 'powershell' or 'pwsh'", psExe)
-	}
 
-	cmd := exec.CommandContext(
-		context.Background(),
-		psExe,
-		"-NoProfile",
-		"-NonInteractive",
-		"-ExecutionPolicy",
-		"Bypass",
-		"-File",
-		scriptPath,
-		"-pptxPath",
-		pptxPath,
-		"-pdfPath",
-		pdfPath,
-	)
+	// Use literal strings in exec.CommandContext so static analysis can verify
+	// no dynamic/user-controlled executable reaches this call site.
+	args := []string{"-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+		"-File", scriptPath, "-pptxPath", pptxPath, "-pdfPath", pdfPath}
+	var cmd *exec.Cmd
+	switch psExe {
+	case "pwsh":
+		cmd = exec.CommandContext(context.Background(), "pwsh", args...)
+	default: // "powershell"
+		cmd = exec.CommandContext(context.Background(), "powershell", args...)
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, normalizePowerShellOutput(string(output)))
