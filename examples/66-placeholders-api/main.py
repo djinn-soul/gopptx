@@ -55,14 +55,14 @@ def _add_layout_reference_slide(prs: Presentation) -> None:
         [
             f"BLANK          = {SlideLayoutType.BLANK!r}",
             f"TITLE_ONLY     = {SlideLayoutType.TITLE_ONLY!r}",
-            f"TITLE_CONTENT  = {SlideLayoutType.TITLE_CONTENT!r}",
+            f"TITLE_CONTENT  = {SlideLayoutType.TITLE_AND_CONTENT!r}",
         ],
     )
 
 
 def _add_table_placeholder_slide(prs: Presentation) -> None:
     """Demonstrate placing a table on a slide (placeholder-like content)."""
-    idx = prs.add_slide("Table in Slide Body", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Table in Slide Body", layout=SlideLayoutType.TITLE_ONLY).index
     rows = [
         ["Column A", "Column B", "Column C"],
         ["Value 1", "Value 2", "Value 3"],
@@ -94,7 +94,9 @@ def main() -> None:
 
     print("\n=== SUMMARY ===")
     print("Demonstrated: add_bullet_slide, add_title_slide, add_paragraph_slide,")
-    print("  BLANK / TITLE_ONLY / TITLE_CONTENT layouts, add_table_from_rows in body")
+    print(
+        "  BLANK / TITLE_ONLY / TITLE_AND_CONTENT layouts, add_table_from_rows in body"
+    )
 
 
 if __name__ == "__main__":

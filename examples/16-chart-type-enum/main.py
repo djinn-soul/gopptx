@@ -110,9 +110,13 @@ def _add_discovery_and_errors(prs: Presentation) -> None:
     except ValueError as e:
         print(f"Caught error (as expected): {str(e)[:80]}...")
     try:
-        print("Trying invalid type: 'scatter' (not yet supported)")
+        print("Trying invalid type: 'not_a_chart_type'")
         prs.add_chart(
-            5, "scatter", [1.0, 2.0, 3.0], [2.0, 4.0, 5.0], bounds=(100, 100, 400, 300)
+            5,
+            "not_a_chart_type",
+            [1.0, 2.0, 3.0],
+            [2.0, 4.0, 5.0],
+            bounds=(100, 100, 400, 300),
         )
     except ValueError as e:
         print(f"Caught error (as expected): {str(e)[:80]}...")

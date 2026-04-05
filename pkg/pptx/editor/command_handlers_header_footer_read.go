@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // GetSlideHeaderFooter reads the <p:hf> element from a slide and returns the parsed settings.
@@ -21,10 +22,11 @@ func (e *PresentationEditor) GetSlideHeaderFooter(slideIndex int) (SlideHeaderFo
 }
 
 var (
-	reHFTag    = regexp.MustCompile(`(?s)<p:hf\b([^>]*)>.*?</p:hf>|<p:hf\b([^>]*)/\s*>`)
-	reHFAttr   = regexp.MustCompile(`\b(sldNum|dt|ftr)="([^"]*)"`)
-	reHFText   = regexp.MustCompile(`(?s)<p:ftr>.*?<a:t>(.*?)</a:t>.*?</p:ftr>`)
-	reHFDTText = regexp.MustCompile(`(?s)<p:dt>.*?<a:t>(.*?)</a:t>.*?</p:dt>`)
+	reHFTag     = regexp.MustCompile(`(?s)<p:hf\b([^>]*)>.*?</p:hf>|<p:hf\b([^>]*)/\s*>`)
+	reHFAttr    = regexp.MustCompile(`\b(sldNum|dt|ftr)="([^"]*)"`)
+	reHFTextTag = regexp.MustCompile(`(?s)<p:ftr\b[^>]*>(.*?)</p:ftr>`)
+	reHFDTTag   = regexp.MustCompile(`(?s)<p:dt\b[^>]*>(.*?)</p:dt>`)
+	reATextTag  = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
 )
 
 func parseHeaderFooterXML(slideXML string) SlideHeaderFooter {
@@ -44,13 +46,27 @@ func parseHeaderFooterXML(slideXML string) SlideHeaderFooter {
 			hf.ShowFooter = a[2] == "1"
 		}
 	}
-	if tm := reHFText.FindStringSubmatch(slideXML); tm != nil {
-		hf.Footer = tm[1]
-	}
-	if dm := reHFDTText.FindStringSubmatch(slideXML); dm != nil {
-		hf.DateTimeText = dm[1]
-	}
+	hf.Footer = extractCombinedText(slideXML, reHFTextTag)
+	hf.DateTimeText = extractCombinedText(slideXML, reHFDTTag)
 	return hf
+}
+
+func extractCombinedText(slideXML string, containerPattern *regexp.Regexp) string {
+	container := containerPattern.FindStringSubmatch(slideXML)
+	if container == nil {
+		return ""
+	}
+	textMatches := reATextTag.FindAllStringSubmatch(container[1], -1)
+	if len(textMatches) == 0 {
+		return ""
+	}
+	var out strings.Builder
+	for _, match := range textMatches {
+		if len(match) > 1 {
+			out.WriteString(match[1])
+		}
+	}
+	return out.String()
 }
 
 // handleGetSlideHeaderFooter reads header/footer settings from a slide.

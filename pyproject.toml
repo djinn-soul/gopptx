@@ -45,6 +45,9 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["python/gopptx"]
 
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
+
 [tool.hatch.build.targets.sdist]
 include = [
     "/python/gopptx",

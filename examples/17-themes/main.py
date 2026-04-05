@@ -1,7 +1,7 @@
 """Demonstrate applying built-in color and font themes to a presentation.
 
 This example demonstrates:
-- Applying a built-in theme (aurora, corporate, ocean, forest) with apply_theme()
+- Applying a built-in theme (aurora, ocean, sunset, forest) with apply_theme()
 - Creating a multi-slide presentation with theme-aware styling
 - Using get_theme() to retrieve a named theme object
 """
@@ -53,7 +53,7 @@ def main() -> None:
     output_dir = Path("examples/output")
     output_dir.mkdir(exist_ok=True)
 
-    themes = ["aurora", "corporate", "ocean", "forest"]
+    themes = ["aurora", "ocean", "sunset", "forest"]
     for theme_name in themes:
         output_path = output_dir / f"17-themes-{theme_name}.pptx"
         _build_themed_presentation(theme_name, output_path)

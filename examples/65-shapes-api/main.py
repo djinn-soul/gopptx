@@ -114,15 +114,15 @@ def main() -> None:
 
     with Presentation.new("Shapes API Demo") as prs:
         # Slide 0: basic geometric shapes
-        idx = prs.add_slide("Basic Shapes", layout=SlideLayoutType.TITLE_ONLY)
+        idx = prs.add_slide("Basic Shapes", layout=SlideLayoutType.TITLE_ONLY).index
         _add_basic_shapes_slide(prs, idx)
 
         # Slide 1: textboxes
-        idx = prs.add_slide("Textboxes", layout=SlideLayoutType.TITLE_ONLY)
+        idx = prs.add_slide("Textboxes", layout=SlideLayoutType.TITLE_ONLY).index
         _add_textboxes_slide(prs, idx)
 
         # Slide 2: connectors
-        idx = prs.add_slide("Connectors", layout=SlideLayoutType.TITLE_ONLY)
+        idx = prs.add_slide("Connectors", layout=SlideLayoutType.TITLE_ONLY).index
         prs.add_textbox(
             idx,
             Inches(0.5),

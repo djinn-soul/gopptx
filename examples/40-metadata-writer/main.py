@@ -2,8 +2,8 @@
 
 This example demonstrates:
 - Creating a presentation with initial metadata
-- Reading title, author, and other core properties with get_metadata()
-- Updating all core properties via set_metadata()
+- Reading title, author, and other core properties with get_core_properties()
+- Updating all core properties via set_core_properties()
 - Verifying metadata persists after save
 """
 
@@ -20,18 +20,21 @@ def main() -> None:
     output_dir.mkdir(exist_ok=True)
 
     with Presentation.new("Initial Title") as prs:
-        prs.set_metadata(title="Initial Title", author="Initial Creator")
+        props = prs.get_core_properties()
+        props["title"] = "Initial Title"
+        props["creator"] = "Initial Creator"
+        prs.set_core_properties(props)
         prs.add_slide("Metadata Base")
 
         # Read initial metadata
-        meta = prs.get_metadata()
+        meta = prs.get_core_properties()
         print(f"Initial title: {meta.get('title', '')}")
 
         # Update all core properties
-        prs.set_metadata(
-            title="Updated Title",
-            author="Updated Creator",
-        )
+        props = prs.get_core_properties()
+        props["title"] = "Updated Title"
+        props["creator"] = "Updated Creator"
+        prs.set_core_properties(props)
 
         # Add an explanatory slide
         prs.add_bullet_slide(
@@ -50,7 +53,7 @@ def main() -> None:
         print(f"Saved: {output_path}")
 
         # Verify updated metadata
-        updated_meta = prs.get_metadata()
+        updated_meta = prs.get_core_properties()
         print(f"Updated title: {updated_meta.get('title', '')}")
 
     print("\n=== SUMMARY ===")

@@ -20,7 +20,9 @@ from gopptx.schemas import Inches
 
 def _add_solid_fill_slide(prs: Presentation) -> None:
     """Three rectangles with different solid fills."""
-    idx = prs.add_slide("Solid Fill & Transparency", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide(
+        "Solid Fill & Transparency", layout=SlideLayoutType.TITLE_ONLY
+    ).index
     fills = [
         ("Solid Fill", "4472C4", Inches(0.5)),
         ("Alternate Fill", "C0504D", Inches(3.5)),
@@ -46,7 +48,7 @@ def _add_solid_fill_slide(prs: Presentation) -> None:
 
 def _add_gradient_fill_slide(prs: Presentation) -> None:
     """Document gradient fills with reference shapes."""
-    idx = prs.add_slide("Gradient Fills", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Gradient Fills", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_shape(
         idx,
         ShapeType.RECTANGLE,
@@ -73,7 +75,7 @@ def _add_gradient_fill_slide(prs: Presentation) -> None:
 
 def _add_line_styles_slide(prs: Presentation) -> None:
     """Document line style variations."""
-    idx = prs.add_slide("Line Styles", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Line Styles", layout=SlideLayoutType.TITLE_ONLY).index
     styles = [
         ("Solid 3pt", "4472C4", Inches(0.5)),
         ("Dashed 2pt", "C0504D", Inches(3.5)),
@@ -99,7 +101,7 @@ def _add_line_styles_slide(prs: Presentation) -> None:
 
 def _add_shadow_effects_slide(prs: Presentation) -> None:
     """Document shadow effect types."""
-    idx = prs.add_slide("Shadow Effects", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Shadow Effects", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_shape(
         idx,
         ShapeType.RECTANGLE,
