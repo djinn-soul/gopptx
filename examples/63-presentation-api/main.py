@@ -30,7 +30,7 @@ def _add_overview_slides(prs: Presentation) -> None:
         [
             "Title, Subject, Author",
             "Keywords, Description, Category",
-            "get_metadata() / set_metadata()",
+            "get_core_properties() / set_core_properties()",
             "Metadata survives save/open round-trips",
         ],
     )
@@ -45,38 +45,39 @@ def main() -> None:
 
     # --- Part 1: Create and populate a presentation ---
     with Presentation.new("Presentation API Demo") as prs:
-        prs.set_metadata(
-            title="Presentation API Demo",
-            author="Python Developer",
-        )
+        props = prs.get_core_properties()
+        props["title"] = "Presentation API Demo"
+        props["creator"] = "Python Developer"
+        prs.set_core_properties(props)
         _add_overview_slides(prs)
         prs.save(str(output_path))
         print(f"Created initial presentation: {output_path}")
 
     # --- Part 2: Open, read, and update metadata ---
-    with Presentation.open(str(output_path)) as prs:
-        meta = prs.get_metadata()
+    with Presentation(str(output_path)) as prs:
+        meta = prs.get_core_properties()
         print(f"Slide count  : {prs.slide_count}")
         print(f"Title        : {meta.get('title', '')!r}")
-        print(f"Author       : {meta.get('author', '')!r}")
+        print(f"Author       : {meta.get('creator', '')!r}")
 
-        prs.set_metadata(
-            title="Updated Presentation API Demo",
-            author="Python Developer",
-        )
+        props = prs.get_core_properties()
+        props["title"] = "Updated Presentation API Demo"
+        props["creator"] = "Python Developer"
+        prs.set_core_properties(props)
         prs.save(str(output_path))
         print("Saved with updated metadata.")
 
     # --- Part 3: Verify round-trip ---
-    with Presentation.open(str(output_path)) as prs:
-        meta = prs.get_metadata()
+    with Presentation(str(output_path)) as prs:
+        meta = prs.get_core_properties()
         print(f"Verified title  : {meta.get('title', '')!r}")
-        print(f"Verified author : {meta.get('author', '')!r}")
-        size = prs.get_slide_size()
-        print(f"Slide size      : {size}")
+        print(f"Verified author : {meta.get('creator', '')!r}")
+        print("Slide size      : use SIZE_16X9_* constants with set_slide_size(...)")
 
     print("\n=== SUMMARY ===")
-    print("Demonstrated: new(), open(), save(), get_metadata(), set_metadata()")
+    print(
+        "Demonstrated: new(), open(), save(), get_core_properties(), set_core_properties()"
+    )
     print(f"Output: {output_path}")
 
 

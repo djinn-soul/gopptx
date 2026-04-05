@@ -78,12 +78,12 @@ def _add_overview_slide(prs: Presentation) -> int:
             "OLE objects       - available via PresentationEditor (Go API)",
             "Fixture files in  examples/assets/75/ for video/OLE demos",
         ],
-    )
+    ).index
 
 
 def _add_audio_slide(prs: Presentation, wav_path: Path) -> None:
     """Embed audio from a temp WAV file."""
-    idx = prs.add_slide("Audio Embedding", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Audio Embedding", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_textbox(
         idx,
         Inches(0.5),
@@ -95,10 +95,7 @@ def _add_audio_slide(prs: Presentation, wav_path: Path) -> None:
     prs.add_audio(
         idx,
         str(wav_path),
-        Inches(4.5),
-        Inches(1.5),
-        Inches(1.8),
-        Inches(0.9),
+        (Inches(4.5), Inches(1.5), Inches(1.8), Inches(0.9)),
     )
     print(f"  Inserted WAV audio from bytes (via temp file: {wav_path})")
 
@@ -118,14 +115,11 @@ def _add_video_slide(prs: Presentation) -> None:
         print(f"  Video fixture not found ({video_path}); skipping.")
         return
 
-    idx = prs.add_slide("Video Embedding", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Video Embedding", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_video(
         idx,
         str(video_path),
-        Inches(0.6),
-        Inches(1.4),
-        Inches(3.6),
-        Inches(2.1),
+        (Inches(0.6), Inches(1.4), Inches(3.6), Inches(2.1)),
     )
     print(f"  Inserted video from fixture: {video_path}")
 

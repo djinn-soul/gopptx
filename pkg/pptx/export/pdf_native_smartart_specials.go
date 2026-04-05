@@ -48,18 +48,45 @@ func renderPDFSmartArtSpecial(pdf *gopdf.GoPdf, diagram smartart.SmartArt) bool 
 
 func renderSmartArtBasicBlockList(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
 	nodes := smartArtNodes(diagram)
-	x, y, w, _ := smartArtBounds(diagram)
-	boxW, boxH, gap := 158.0, 106.0, 22.0
-	topY, bottomY := y+20, y+20+boxH+gap
-	topLeft := x + (w-(3*boxW+2*gap))/2 - 10
+	if len(nodes) == 0 {
+		return
+	}
+	x, y, w, h := smartArtBounds(diagram)
+	topCols := min(len(nodes), 3)
+	bottomCols := len(nodes) - topCols
+	rows := 1
+	if bottomCols > 0 {
+		rows = 2
+	}
+	usableW := math.Max(1, w-20)
+	usableH := math.Max(1, h-20)
+	gapX := math.Max(8, math.Min(22, usableW*0.05))
+	gapY := math.Max(8, math.Min(22, usableH*0.10))
+	boxW := math.Min(158, (usableW-gapX*float64(max(topCols-1, 0)))/float64(topCols))
+	if bottomCols > 0 {
+		bottomBoxW := (usableW - gapX*float64(max(bottomCols-1, 0))) / float64(bottomCols)
+		boxW = math.Min(boxW, bottomBoxW)
+	}
+	boxW = math.Max(1, boxW)
+	boxH := math.Max(1, math.Min(106, (usableH-gapY*float64(rows-1))/float64(rows)))
+	totalH := boxH * float64(rows)
+	if rows > 1 {
+		totalH += gapY
+	}
+	topY := y + (h-totalH)/2
+	bottomY := topY + boxH + gapY
+	topRowW := float64(topCols)*boxW + gapX*float64(max(topCols-1, 0))
+	topLeft := x + (w-topRowW)/2
+	bottomRowW := float64(bottomCols)*boxW + gapX*float64(max(bottomCols-1, 0))
+	bottomLeft := x + (w-bottomRowW)/2
 	for i, node := range nodes {
 		row, col := 0, i
 		if i >= 3 {
 			row, col = 1, i-3
 		}
-		left := topLeft + float64(col)*(boxW+gap)
+		left := topLeft + float64(col)*(boxW+gapX)
 		if row == 1 {
-			left = x + (w-(2*boxW+gap))/2 + float64(col)*(boxW+gap)
+			left = bottomLeft + float64(col)*(boxW+gapX)
 		}
 		top := topY
 		if row == 1 {
@@ -212,100 +239,61 @@ func renderSmartArtBasicRadial(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
 		return
 	}
 	x, y, w, h := smartArtBounds(diagram)
-	size := math.Min(w, h) * 0.72
-	left := x + (w-size)/2
-	top := y + (h-size)/2
-	drawSmartArtEllipse(pdf, left, top, size, size, smartArtBlueFill, smartArtBlueFill, 1)
-	drawSmartArtCenteredText(pdf, nodes[0].Text, left+42, top+80, size-84, size-160, smartArtBlueText, 40)
-}
-
-func renderSmartArtBasicMatrix(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
-	nodes := smartArtNodes(diagram)
-	x, y, w, h := smartArtBounds(diagram)
 	cx, cy := x+w/2, y+h/2
-	drawSmartArtPolygon(
+
+	centerSize := math.Max(32, math.Min(220, math.Min(w, h)*0.42))
+	centerLeft := cx - centerSize/2
+	centerTop := cy - centerSize/2
+
+	outerSize := math.Max(22, math.Min(110, math.Min(w, h)*0.22))
+	maxRadius := math.Max(0, math.Min((w-outerSize)/2, (h-outerSize)/2)-4)
+	radius := math.Min(maxRadius, math.Max(outerSize*1.3, math.Min(w, h)*0.32))
+	if radius < 0 {
+		radius = 0
+	}
+
+	if len(nodes) > 1 && radius > 0 {
+		orbit := nodes[1:]
+		for i, node := range orbit {
+			angle := -math.Pi/2 + (2*math.Pi*float64(i))/float64(len(orbit))
+			outerCX := cx + math.Cos(angle)*radius
+			outerCY := cy + math.Sin(angle)*radius
+			outerLeft := outerCX - outerSize/2
+			outerTop := outerCY - outerSize/2
+
+			drawSmartArtLine(pdf, cx, cy, outerCX, outerCY)
+			drawSmartArtEllipse(
+				pdf,
+				outerLeft,
+				outerTop,
+				outerSize,
+				outerSize,
+				smartArtLightFill,
+				smartArtWhiteStroke,
+				1,
+			)
+			drawSmartArtCenteredText(
+				pdf,
+				node.Text,
+				outerLeft+6,
+				outerTop+6,
+				outerSize-12,
+				outerSize-12,
+				smartArtInkText,
+				22,
+			)
+		}
+	}
+
+	drawSmartArtEllipse(pdf, centerLeft, centerTop, centerSize, centerSize, smartArtBlueFill, smartArtBlueFill, 1)
+	drawSmartArtCenteredText(
 		pdf,
-		[]gopdf.Point{{X: cx, Y: y + 12}, {X: x + w - 120, Y: cy}, {X: cx, Y: y + h - 12}, {X: x + 120, Y: cy}},
-		smartArtLightFill,
-		smartArtLightFill,
-		1,
+		nodes[0].Text,
+		centerLeft+12,
+		centerTop+12,
+		centerSize-24,
+		centerSize-24,
+		smartArtBlueText,
+		40,
 	)
-	boxW, boxH, gap := 124.0, 124.0, 10.0
-	for i := range min(len(nodes), 4) {
-		col, row := i%2, i/2
-		left := cx - boxW - gap/2 + float64(col)*(boxW+gap)
-		top := cy - boxH - gap/2 + float64(row)*(boxH+gap)
-		drawSmartArtRect(pdf, left, top, boxW, boxH, smartArtBlueFill, smartArtWhiteStroke, 20)
-		drawSmartArtCenteredText(pdf, nodes[i].Text, left, top, boxW, boxH, smartArtBlueText, 28)
-	}
-}
-
-func renderSmartArtTitledMatrix(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
-	nodes := smartArtNodes(diagram)
-	x, y, w, h := smartArtBounds(diagram)
-	drawSmartArtRect(pdf, x, y, w, h, smartArtBlueFill, smartArtWhiteStroke, 28)
-	drawSmartArtLine(pdf, x+w/2, y, x+w/2, y+h)
-	drawSmartArtLine(pdf, x, y+h/2, x+w, y+h/2)
-	if len(nodes) > 1 {
-		drawSmartArtCenteredText(pdf, nodes[1].Text, x+14, y+16, w/2-28, h/2-32, smartArtBlueText, 28)
-	}
-	if len(nodes) > 2 {
-		drawSmartArtCenteredText(pdf, nodes[2].Text, x+w/2+14, y+16, w/2-28, h/2-32, smartArtBlueText, 28)
-	}
-	if len(nodes) > 3 {
-		drawSmartArtCenteredText(pdf, nodes[3].Text, x+14, y+h/2+16, w/2-28, h/2-32, smartArtBlueText, 28)
-	}
-	centerW, centerH := 188.0, 92.0
-	centerX, centerY := x+(w-centerW)/2, y+(h-centerH)/2
-	drawSmartArtRect(pdf, centerX, centerY, centerW, centerH, "A6B8D9", smartArtWhiteStroke, 16)
-	if len(nodes) > 0 {
-		drawSmartArtCenteredText(pdf, nodes[0].Text, centerX, centerY, centerW, centerH, smartArtInkText, 30)
-	}
-}
-
-func renderSmartArtPyramid(pdf *gopdf.GoPdf, diagram smartart.SmartArt, inverted bool) {
-	nodes := smartArtNodes(diagram)
-	x, y, w, h := smartArtBounds(diagram)
-	for i := range nodes {
-		topRatio := float64(i) / float64(len(nodes))
-		bottomRatio := float64(i+1) / float64(len(nodes))
-		if inverted {
-			topRatio, bottomRatio = 1-bottomRatio, 1-topRatio
-		}
-		topY := y + float64(i)*(h/float64(len(nodes)))
-		bottomY := y + float64(i+1)*(h/float64(len(nodes)))
-		topHalf := (w / 2) * topRatio
-		bottomHalf := (w / 2) * bottomRatio
-		poly := []gopdf.Point{
-			{X: x + w/2 - topHalf, Y: topY},
-			{X: x + w/2 + topHalf, Y: topY},
-			{X: x + w/2 + bottomHalf, Y: bottomY},
-			{X: x + w/2 - bottomHalf, Y: bottomY},
-		}
-		drawSmartArtPolygon(pdf, poly, smartArtBlueFill, smartArtWhiteStroke, 1)
-		drawSmartArtCenteredText(
-			pdf,
-			nodes[i].Text,
-			x+w/2-bottomHalf+20,
-			topY+4,
-			bottomHalf*2-40,
-			bottomY-topY-8,
-			smartArtInkText,
-			32,
-		)
-	}
-}
-
-func renderSmartArtPictureGrid(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
-	nodes := smartArtNodes(diagram)
-	x, y, w, _ := smartArtBounds(diagram)
-	boxW, boxH, gapX, gapY := 132.0, 132.0, 18.0, 42.0
-	left := x + (w-(2*boxW+gapX))/2
-	for i := range min(len(nodes), 4) {
-		col, row := i%2, i/2
-		bx := left + float64(col)*(boxW+gapX)
-		by := y + 34 + float64(row)*(boxH+gapY+22)
-		drawSmartArtTopText(pdf, nodes[i].Text, bx, by-20, boxW, smartArtInkText, 20)
-		drawSmartArtRect(pdf, bx, by, boxW, boxH, smartArtLightFill, smartArtWhiteStroke, 0)
-	}
 }

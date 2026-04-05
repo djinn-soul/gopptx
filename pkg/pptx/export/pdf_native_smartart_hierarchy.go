@@ -36,8 +36,8 @@ func layoutSmartArtHierarchy(diagram smartart.SmartArt) ([]smartArtBox, []smartA
 	}
 	rowGap := 14.0
 	colGap := 12.0
-	boxW := math.Min(150, (w-colGap*float64(maxCols-1))/float64(maxCols))
-	boxH := math.Min(44, (h-rowGap*float64(len(levels)-1))/float64(len(levels)))
+	boxW := math.Max(1, math.Min(150, (w-colGap*float64(maxCols-1))/float64(maxCols)))
+	boxH := math.Max(1, math.Min(44, (h-rowGap*float64(len(levels)-1))/float64(len(levels))))
 	boxes := make([]smartArtBox, len(nodes))
 	links := make([]smartArtLink, 0, len(nodes)-1)
 	centers := make([][2]float64, len(nodes))

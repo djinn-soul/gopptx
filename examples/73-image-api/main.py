@@ -1,7 +1,7 @@
 """Demonstrate basic image embedding and document advanced image options.
 
 This example demonstrates:
-- Embedding images from raw bytes with add_image_from_bytes()
+- Embedding images from raw bytes with add_image()
 - Embedding images from a file path with add_image()
 - Image placement using Inches() for position and size
 - Reference slides for rotation, flip, crop, shadow, reflection, and
@@ -93,28 +93,27 @@ _WHITE_PNG = bytes([
 
 def _add_image_from_bytes_slide(prs: Presentation) -> None:
     """Embed the minimal PNG from raw bytes."""
-    idx = prs.add_slide("Image from Bytes", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Image from Bytes", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_textbox(
         idx,
         Inches(0.5),
         Inches(1.2),
         Inches(9),
         Inches(0.5),
-        text="add_image_from_bytes(slide_idx, data, x, y, w, h) - no file on disk required.",
+        text="add_image(slide_idx, data, bounds, image_format='png') - no file on disk required.",
     )
-    prs.add_image_from_bytes(
+    prs.add_image(
         idx,
-        _WHITE_PNG,
-        Inches(1),
-        Inches(1.8),
-        Inches(4),
-        Inches(3),
+        None,
+        (Inches(1), Inches(1.8), Inches(4), Inches(3)),
+        data=_WHITE_PNG,
+        image_format="png",
     )
 
 
 def _add_image_from_file_slide(prs: Presentation, tmp_png: str) -> None:
     """Embed image loaded from a file path."""
-    idx = prs.add_slide("Image from File Path", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Image from File Path", layout=SlideLayoutType.TITLE_ONLY).index
     prs.add_textbox(
         idx,
         Inches(0.5),
@@ -126,10 +125,7 @@ def _add_image_from_file_slide(prs: Presentation, tmp_png: str) -> None:
     prs.add_image(
         idx,
         tmp_png,
-        Inches(1),
-        Inches(1.8),
-        Inches(4),
-        Inches(3),
+        (Inches(1), Inches(1.8), Inches(4), Inches(3)),
     )
 
 
@@ -195,7 +191,7 @@ def main() -> None:
     Path(tmp_png).unlink(missing_ok=True)
 
     print("\n=== SUMMARY ===")
-    print("Demonstrated: add_image_from_bytes, add_image (from file),")
+    print("Demonstrated: add_image (from bytes), add_image (from file),")
     print("  documented: WithRotation, WithFlip, WithCrop, WithShadow, WithReflection")
 
 

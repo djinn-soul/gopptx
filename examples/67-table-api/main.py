@@ -18,7 +18,7 @@ from gopptx.schemas import Inches
 
 def _add_plain_table(prs: Presentation) -> None:
     """Plain text table: name / role / location."""
-    idx = prs.add_slide("Plain Text Table", layout=SlideLayoutType.TITLE_ONLY)
+    idx = prs.add_slide("Plain Text Table", layout=SlideLayoutType.TITLE_ONLY).index
     rows = [
         ["Name", "Role", "Location"],
         ["Alice", "Engineer", "New York"],
@@ -40,7 +40,7 @@ def _add_product_table(prs: Presentation) -> None:
     idx = prs.add_slide(
         "Product Table - Header + Banded Rows",
         layout=SlideLayoutType.TITLE_ONLY,
-    )
+    ).index
     rows = [
         ["Product", "Units", "Price"],
         ["Widget A", "150", "$12.50"],
@@ -62,7 +62,7 @@ def _add_status_table(prs: Presentation) -> None:
     idx = prs.add_slide(
         "Status Table - No Row Banding",
         layout=SlideLayoutType.TITLE_ONLY,
-    )
+    ).index
     rows = [
         ["Name", "Notes", "Status"],
         ["Alpha", "First entry in the system", "Active"],
@@ -83,7 +83,7 @@ def _add_wide_table(prs: Presentation) -> None:
     idx = prs.add_slide(
         "Wide Table - Full Width",
         layout=SlideLayoutType.TITLE_ONLY,
-    )
+    ).index
     rows = [
         ["Quarter", "Revenue ($k)", "Costs ($k)", "Profit ($k)", "Growth (%)"],
         ["Q1", "42", "18", "24", "+5%"],

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/export"
@@ -28,10 +29,10 @@ func handleExportPDF(e *editor.PresentationEditor, payload json.RawMessage) (any
 		return nil, err
 	}
 
-	v := editor.NewPayloadValidator()
-	outputPath, _ := v.RequireString(p, "output_path")
-	if v.HasErrors() {
-		return nil, v.Error()
+	outputPath, _ := p["output_path"].(string)
+	outputPath = strings.TrimSpace(outputPath)
+	if outputPath == "" {
+		outputPath = "presentation.pdf"
 	}
 
 	driver := export.PDFDriverAuto

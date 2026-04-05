@@ -119,14 +119,13 @@ def main() -> None:
         # Picture background slide (actual full-slide image background)
         bg_slide_idx = prs.add_slide(
             "Picture Background Test", layout=SlideLayoutType.TITLE_ONLY
-        )
-        prs.add_image_from_bytes(
+        ).index
+        prs.add_image(
             bg_slide_idx,
-            _RED_PNG,
-            Inches(0),
-            Inches(0),
-            Inches(10),
-            Inches(7.5),
+            None,
+            (Inches(0), Inches(0), Inches(10), Inches(7.5)),
+            data=_RED_PNG,
+            image_format="png",
         )
         prs.add_textbox(
             bg_slide_idx,

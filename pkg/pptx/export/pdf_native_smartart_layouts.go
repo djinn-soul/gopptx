@@ -28,7 +28,7 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 	boxes := make([]smartArtBox, 0, len(nodes))
 	links := make([]smartArtLink, 0, max(len(nodes)-1, 0))
 	if vertical {
-		boxH := math.Min(46, (h-gap*float64(len(nodes)-1))/float64(len(nodes)))
+		boxH := math.Max(1, math.Min(46, (h-gap*float64(len(nodes)-1))/float64(len(nodes))))
 		boxW := math.Min(w, 230.0)
 		left := x + (w-boxW)/2
 		for i, node := range nodes {

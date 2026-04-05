@@ -60,7 +60,7 @@ def _add_notes_slides(prs: Presentation) -> int:
             "Open the notes panel in PowerPoint to read them.",
             "Notes are set with prs.set_notes(slide_idx, text).",
         ],
-    )
+    ).index
     prs.set_notes(
         idx,
         "These are plain-text speaker notes for the demo slide.\n"
@@ -79,7 +79,7 @@ def _add_rich_notes_slide(prs: Presentation) -> int:
             "First talking point: introduce the topic.",
             "Second talking point: key concept overview.",
         ],
-    )
+    ).index
     prs.set_notes(
         idx,
         "Opening paragraph - introduce the topic.\n"
@@ -114,7 +114,7 @@ def main() -> None:
         print(f"Saved: {output_path}")
 
     # Verify notes survive round-trip
-    with Presentation.open(str(output_path)) as prs2:
+    with Presentation(str(output_path)) as prs2:
         notes = prs2.get_notes(notes_slide_idx)
         print(f"Round-trip notes verify: {notes[:40]!r}...")
 

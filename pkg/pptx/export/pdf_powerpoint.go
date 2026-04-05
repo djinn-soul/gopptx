@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -46,6 +47,10 @@ func pdfViaPowerPointFromSlides(title string, slides []elements.SlideContent, ou
 }
 
 func exportWithPowerPoint(pptxPath, pdfPath string) error {
+	if err := os.MkdirAll(filepath.Dir(pdfPath), 0o750); err != nil {
+		return fmt.Errorf("failed to create PDF output directory: %w", err)
+	}
+
 	// Use a temporary script file so path arguments are bound predictably.
 	psScript := `
 param(
@@ -84,23 +89,47 @@ try {
 	}
 	defer os.Remove(scriptPath)
 
-	cmd := exec.CommandContext(
-		context.Background(),
-		"powershell",
-		"-NoProfile",
-		"-NonInteractive",
-		"-ExecutionPolicy",
-		"Bypass",
-		"-File",
-		scriptPath,
-		"-pptxPath",
-		pptxPath,
-		"-pdfPath",
-		pdfPath,
-	)
+	psExe, err := findPowerShellExecutable()
+	if err != nil {
+		return err
+	}
+
+	// Use literal strings in exec.CommandContext so static analysis can verify
+	// no dynamic/user-controlled executable reaches this call site.
+	args := []string{"-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+		"-File", scriptPath, "-pptxPath", pptxPath, "-pdfPath", pdfPath}
+	var cmd *exec.Cmd
+	switch psExe {
+	case "pwsh":
+		cmd = exec.CommandContext(context.Background(), "pwsh", args...)
+	default: // "powershell"
+		cmd = exec.CommandContext(context.Background(), "powershell", args...)
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, string(output))
+		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, normalizePowerShellOutput(string(output)))
+	}
+	info, err := os.Stat(pdfPath)
+	if err != nil {
+		return fmt.Errorf("PowerPoint export completed but PDF not found at %q: %w", pdfPath, err)
+	}
+	if info.Size() == 0 {
+		return fmt.Errorf("PowerPoint export produced an empty PDF at %q", pdfPath)
 	}
 	return nil
+}
+
+func findPowerShellExecutable() (string, error) {
+	for _, candidate := range []string{"powershell", "pwsh"} {
+		if _, err := exec.LookPath(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+	return "", errors.New(
+		"PowerPoint driver requires PowerShell ('powershell' or 'pwsh') in PATH",
+	)
+}
+
+func normalizePowerShellOutput(out string) string {
+	return strings.TrimSpace(out)
 }

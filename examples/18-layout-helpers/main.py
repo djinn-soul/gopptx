@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from gopptx import Presentation
+from gopptx.constants import ShapeType
 from gopptx.presentation.slides import SlideLayoutType
 from gopptx.schemas import Inches
 
@@ -31,22 +32,23 @@ def _add_unit_conversion_slide(prs: Presentation) -> None:
 
 def _add_positioned_shapes_slide(prs: Presentation) -> None:
     """Add a slide with shapes placed at precise inch coordinates."""
-    prs.add_slide("Precise Positioning with Inches()", layout=SlideLayoutType.BLANK)
-    idx = prs.slide_count - 1
+    idx = prs.add_slide(
+        "Precise Positioning with Inches()", layout=SlideLayoutType.BLANK
+    ).index
 
     prs.add_shape(
         idx,
-        "RECTANGLE",
+        ShapeType.RECTANGLE,
         bounds=(Inches(1), Inches(1), Inches(2), Inches(1)),
         text="(1in, 1in) 2x1in",
-        properties={"fill": "4472C4"},
+        properties={"fill_color": "4472C4"},
     )
     prs.add_shape(
         idx,
-        "ROUNDED_RECTANGLE",
+        ShapeType.ROUNDED_RECTANGLE,
         bounds=(Inches(4), Inches(2), Inches(2), Inches(1)),
         text="(4in, 2in) 2x1in",
-        properties={"fill": "ED7D31"},
+        properties={"fill_color": "ED7D31"},
     )
 
 
