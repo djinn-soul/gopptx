@@ -109,6 +109,12 @@ func FuzzPresentation(f *testing.F) {
 		if masterCount < 0 || masterCount > 100 {
 			masterCount = 1
 		}
+		if len(hashData) > 256 {
+			hashData = hashData[:256]
+		}
+		if len(saltData) > 256 {
+			saltData = saltData[:256]
+		}
 
 		protection := &ProtectionInfo{
 			HashAlgSID: 14,

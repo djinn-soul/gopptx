@@ -93,6 +93,11 @@ try {
 	if err != nil {
 		return err
 	}
+	// Allowlist: findPowerShellExecutable only returns these two values, but
+	// make it explicit so static analysis does not flag a dynamic exec path.
+	if psExe != "powershell" && psExe != "pwsh" {
+		return fmt.Errorf("unexpected PowerShell executable %q: must be 'powershell' or 'pwsh'", psExe)
+	}
 
 	cmd := exec.CommandContext(
 		context.Background(),

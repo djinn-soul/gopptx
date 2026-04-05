@@ -87,7 +87,7 @@ jobs:
       - name: Run bounded fuzzing (internal/pptxxml)
         run: |
           for target in FuzzEscape FuzzContentTypes FuzzSectionListXML FuzzPresentation FuzzEmbeddedFontsXML FuzzRichTextRun; do
-            go test ./internal/pptxxml -run=^$ -fuzz="^${target}$" -fuzztime=5s
+            go test ./internal/pptxxml -run=^$ -fuzz="^${target}$" -fuzztime=8s
           done
 
   go-vulncheck:
