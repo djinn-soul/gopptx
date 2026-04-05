@@ -9,251 +9,306 @@ import (
 
 type chartRect struct{ x, y, w, h float64 }
 
-//nolint:funlen // Chart rendering enumerates all supported chart fields explicitly for deterministic output.
+//nolint:funlen,cyclop // Chart rendering enumerates all supported chart fields explicitly for deterministic output.
 func renderNativePDFSlideCharts(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	if slide.Chart != nil {
-		renderBarLike(
-			pdf,
-			slide.Chart.Title,
-			chartRectFromLength(slide.Chart.X.Emu(), slide.Chart.Y.Emu(), slide.Chart.CX.Emu(), slide.Chart.CY.Emu()),
-			slide.Chart.Values,
-			slide.Chart.Categories,
-			false,
+		c := slide.Chart
+		renderBarLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, false,
+			chartSeriesOpts{
+				color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.BarHorizontal != nil {
-		renderBarLike(
-			pdf,
-			slide.BarHorizontal.Title,
-			chartRectFromLength(
-				slide.BarHorizontal.X.Emu(),
-				slide.BarHorizontal.Y.Emu(),
-				slide.BarHorizontal.CX.Emu(),
-				slide.BarHorizontal.CY.Emu(),
-			),
-			slide.BarHorizontal.Values,
-			slide.BarHorizontal.Categories,
-			true,
+		c := slide.BarHorizontal
+		renderBarLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, true,
+			chartSeriesOpts{
+				color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.BarStacked != nil {
-		renderBarLike(
-			pdf,
-			slide.BarStacked.Title,
-			chartRectFromLength(
-				slide.BarStacked.X.Emu(),
-				slide.BarStacked.Y.Emu(),
-				slide.BarStacked.CX.Emu(),
-				slide.BarStacked.CY.Emu(),
-			),
-			slide.BarStacked.Values,
-			slide.BarStacked.Categories,
-			true,
+		c := slide.BarStacked
+		renderBarLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, false,
+			chartSeriesOpts{
+				color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.BarStacked100 != nil {
-		renderBarLike(
-			pdf,
-			slide.BarStacked100.Title,
-			chartRectFromLength(
-				slide.BarStacked100.X.Emu(),
-				slide.BarStacked100.Y.Emu(),
-				slide.BarStacked100.CX.Emu(),
-				slide.BarStacked100.CY.Emu(),
-			),
-			normalizePercentSeries(slide.BarStacked100.Values),
-			slide.BarStacked100.Categories,
-			true,
+		c := slide.BarStacked100
+		renderBarLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			normalizePercentSeries(c.Values), c.Categories, false,
+			chartSeriesOpts{
+				color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.Line != nil {
-		renderLineLike(
-			pdf,
-			slide.Line.Title,
-			chartRectFromLength(slide.Line.X.Emu(), slide.Line.Y.Emu(), slide.Line.CX.Emu(), slide.Line.CY.Emu()),
-			slide.Line.Values,
-			slide.Line.Categories,
-			false,
+		c := slide.Line
+		renderLineLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, false,
+			chartSeriesOpts{
+				color: c.LineColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+				smooth:             c.Smooth,
+			},
 		)
 	}
 	if slide.LineMarkers != nil {
-		renderLineLike(
-			pdf,
-			slide.LineMarkers.Title,
-			chartRectFromLength(
-				slide.LineMarkers.X.Emu(),
-				slide.LineMarkers.Y.Emu(),
-				slide.LineMarkers.CX.Emu(),
-				slide.LineMarkers.CY.Emu(),
-			),
-			slide.LineMarkers.Values,
-			slide.LineMarkers.Categories,
-			true,
+		c := slide.LineMarkers
+		renderLineLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, true,
+			chartSeriesOpts{
+				color: c.LineColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+				smooth:             c.Smooth,
+			},
 		)
 	}
 	if slide.LineStacked != nil {
-		renderLineLike(
-			pdf,
-			slide.LineStacked.Title,
-			chartRectFromLength(
-				slide.LineStacked.X.Emu(),
-				slide.LineStacked.Y.Emu(),
-				slide.LineStacked.CX.Emu(),
-				slide.LineStacked.CY.Emu(),
-			),
-			slide.LineStacked.Values,
-			slide.LineStacked.Categories,
-			true,
+		c := slide.LineStacked
+		renderLineLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, false,
+			chartSeriesOpts{
+				color: c.LineColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+				smooth:             c.Smooth,
+			},
 		)
 	}
 	if slide.Area != nil {
-		renderAreaLike(
-			pdf,
-			slide.Area.Title,
-			chartRectFromLength(slide.Area.X.Emu(), slide.Area.Y.Emu(), slide.Area.CX.Emu(), slide.Area.CY.Emu()),
-			slide.Area.Values,
-			slide.Area.Categories,
+		c := slide.Area
+		renderAreaLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories,
+			chartSeriesOpts{
+				color: c.AreaColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.AreaStacked != nil {
-		renderAreaLike(
-			pdf,
-			slide.AreaStacked.Title,
-			chartRectFromLength(
-				slide.AreaStacked.X.Emu(),
-				slide.AreaStacked.Y.Emu(),
-				slide.AreaStacked.CX.Emu(),
-				slide.AreaStacked.CY.Emu(),
-			),
-			slide.AreaStacked.Values,
-			slide.AreaStacked.Categories,
+		c := slide.AreaStacked
+		renderAreaLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories,
+			chartSeriesOpts{
+				color: c.AreaColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.AreaStacked100 != nil {
-		renderAreaLike(
-			pdf,
-			slide.AreaStacked100.Title,
-			chartRectFromLength(
-				slide.AreaStacked100.X.Emu(),
-				slide.AreaStacked100.Y.Emu(),
-				slide.AreaStacked100.CX.Emu(),
-				slide.AreaStacked100.CY.Emu(),
-			),
-			normalizePercentSeries(slide.AreaStacked100.Values),
-			slide.AreaStacked100.Categories,
+		c := slide.AreaStacked100
+		renderAreaLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			normalizePercentSeries(c.Values), c.Categories,
+			chartSeriesOpts{
+				color: c.AreaColor, minValue: c.MinValue, maxValue: c.MaxValue,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				showCatGridlines:   c.ShowCategoryMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.Pie != nil {
-		renderPieLike(
-			pdf,
-			slide.Pie.Title,
-			chartRectFromLength(slide.Pie.X.Emu(), slide.Pie.Y.Emu(), slide.Pie.CX.Emu(), slide.Pie.CY.Emu()),
-			slide.Pie.Values,
-			false,
+		c := slide.Pie
+		renderPieLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, 0, c.Categories,
+			chartSeriesOpts{
+				showDataLabels: c.ShowDataLabels,
+				showLegend:     c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				titleOverlay: c.TitleOverlay,
+			},
 		)
 	}
 	if slide.Doughnut != nil {
-		renderPieLike(
-			pdf,
-			slide.Doughnut.Title,
-			chartRectFromLength(
-				slide.Doughnut.X.Emu(),
-				slide.Doughnut.Y.Emu(),
-				slide.Doughnut.CX.Emu(),
-				slide.Doughnut.CY.Emu(),
-			),
-			slide.Doughnut.Values,
-			true,
+		c := slide.Doughnut
+		renderPieLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.HoleSize, c.Categories,
+			chartSeriesOpts{
+				showDataLabels: c.ShowDataLabels,
+				showLegend:     c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				titleOverlay: c.TitleOverlay,
+			},
 		)
 	}
 	if slide.Scatter != nil {
-		renderScatterLike(
-			pdf,
-			slide.Scatter.Title,
-			chartRectFromLength(
-				slide.Scatter.X.Emu(),
-				slide.Scatter.Y.Emu(),
-				slide.Scatter.CX.Emu(),
-				slide.Scatter.CY.Emu(),
-			),
-			slide.Scatter.XValues,
-			slide.Scatter.YValues,
-			nil,
+		c := slide.Scatter
+		renderScatterLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.XValues, c.YValues, nil,
+			chartSeriesOpts{
+				color: c.LineColor, scatterStyle: c.ScatterStyle,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				showDataLabels:     c.ShowDataLabels,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+			},
 		)
 	}
 	if slide.Bubble != nil {
-		renderScatterLike(
-			pdf,
-			slide.Bubble.Title,
-			chartRectFromLength(slide.Bubble.X, slide.Bubble.Y, slide.Bubble.CX, slide.Bubble.CY),
-			slide.Bubble.XValues,
-			slide.Bubble.YValues,
-			slide.Bubble.BubbleSizes,
+		c := slide.Bubble
+		renderScatterLike(pdf, c.Title,
+			chartRectFromLength(c.X, c.Y, c.CX, c.CY),
+			c.XValues, c.YValues, c.BubbleSizes,
+			chartSeriesOpts{
+				color: c.LineColor,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showMajorGridlines: c.ShowMajorGridlines,
+				titleOverlay:       c.TitleOverlay,
+				valueFormat:        c.ValueFormat,
+				bubbleScale:        c.BubbleScale,
+			},
 		)
 	}
 	if slide.Radar != nil {
-		renderRadarLike(
-			pdf,
-			slide.Radar.Title,
-			chartRectFromLength(slide.Radar.X.Emu(), slide.Radar.Y.Emu(), slide.Radar.CX.Emu(), slide.Radar.CY.Emu()),
-			slide.Radar.Values,
-			false,
+		c := slide.Radar
+		renderRadarLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, false,
+			chartSeriesOpts{
+				color:      c.LineColor,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				titleOverlay: c.TitleOverlay,
+			},
 		)
 	}
 	if slide.RadarFilled != nil {
-		renderRadarLike(
-			pdf,
-			slide.RadarFilled.Title,
-			chartRectFromLength(
-				slide.RadarFilled.X.Emu(),
-				slide.RadarFilled.Y.Emu(),
-				slide.RadarFilled.CX.Emu(),
-				slide.RadarFilled.CY.Emu(),
-			),
-			slide.RadarFilled.Values,
-			true,
+		c := slide.RadarFilled
+		renderRadarLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.Values, c.Categories, true,
+			chartSeriesOpts{
+				color:      c.LineColor,
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
+				titleOverlay: c.TitleOverlay,
+			},
 		)
 	}
 	if slide.StockHLC != nil {
-		renderStockLike(
-			pdf,
-			slide.StockHLC.Title,
-			chartRectFromLength(
-				slide.StockHLC.X.Emu(),
-				slide.StockHLC.Y.Emu(),
-				slide.StockHLC.CX.Emu(),
-				slide.StockHLC.CY.Emu(),
-			),
-			nil,
-			slide.StockHLC.HighValues,
-			slide.StockHLC.LowValues,
-			slide.StockHLC.CloseValues,
+		c := slide.StockHLC
+		renderStockLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			nil, c.HighValues, c.LowValues, c.CloseValues,
+			c.Categories,
+			chartSeriesOpts{
+				showMajorGridlines: c.ShowMajorGridlines,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showLegend:   c.ShowLegend, legendPosition: c.LegendPosition,
+				titleOverlay: c.TitleOverlay,
+				valueFormat:  c.ValueFormat,
+				minValue:     c.MinValue, maxValue: c.MaxValue,
+			},
 		)
 	}
 	if slide.StockOHLC != nil {
-		renderStockLike(
-			pdf,
-			slide.StockOHLC.Title,
-			chartRectFromLength(
-				slide.StockOHLC.X.Emu(),
-				slide.StockOHLC.Y.Emu(),
-				slide.StockOHLC.CX.Emu(),
-				slide.StockOHLC.CY.Emu(),
-			),
-			slide.StockOHLC.OpenValues,
-			slide.StockOHLC.HighValues,
-			slide.StockOHLC.LowValues,
-			slide.StockOHLC.CloseValues,
+		c := slide.StockOHLC
+		renderStockLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.OpenValues, c.HighValues, c.LowValues, c.CloseValues,
+			c.Categories,
+			chartSeriesOpts{
+				showMajorGridlines: c.ShowMajorGridlines,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				showLegend:   c.ShowLegend, legendPosition: c.LegendPosition,
+				titleOverlay: c.TitleOverlay,
+				valueFormat:  c.ValueFormat,
+				minValue:     c.MinValue, maxValue: c.MaxValue,
+			},
 		)
 	}
 	if slide.Combo != nil {
-		renderComboLike(
-			pdf,
-			slide.Combo.Title,
-			chartRectFromLength(slide.Combo.X.Emu(), slide.Combo.Y.Emu(), slide.Combo.CX.Emu(), slide.Combo.CY.Emu()),
-			slide.Combo.BarSeries,
-			slide.Combo.LineSeries,
-			slide.Combo.Categories,
+		c := slide.Combo
+		renderComboLike(pdf, c.Title,
+			chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
+			c.BarSeries, c.LineSeries, c.Categories,
+			chartSeriesOpts{
+				showLegend: c.ShowLegend, legendPosition: c.LegendPosition,
+				showMajorGridlines: c.ShowMajorGridlines,
+				catAxisTitle:       c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
+				titleOverlay: c.TitleOverlay,
+				valueFormat:  c.ValueFormat,
+				minValue:     c.MinValue, maxValue: c.MaxValue,
+			},
 		)
 	}
 }

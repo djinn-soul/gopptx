@@ -27,60 +27,97 @@ func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
 		title := nonEmpty(pc.Title, "Chart")
 		cats := categoriesForChart(pc)
 		vals := valuesForChart(pc)
+		seriesColor := ""
+		if len(pc.Series) > 0 {
+			seriesColor = pc.Series[0].Color
+		}
 		switch pc.Kind {
 		case parsedChartKindBar:
 			c := charts.NewBarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.BarColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.Chart = &c
 		case "barHorizontal":
 			c := charts.NewBarHorizontalChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.BarColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.BarHorizontal = &c
 		case "barStacked":
 			c := charts.NewBarStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.BarColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.BarStacked = &c
 		case "barStacked100":
 			c := charts.NewBarStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.BarColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.BarStacked100 = &c
 		case "line":
 			c := charts.NewLineChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.LineColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.Line = &c
 		case "lineMarkers":
 			c := charts.NewLineMarkersChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.LineColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.LineMarkers = &c
 		case "lineStacked":
 			c := charts.NewLineStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.LineColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.LineStacked = &c
 		case "scatter":
 			xs, ys := scatterForChart(pc)
 			c := charts.NewScatterChart(xs, ys).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.LineColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.Scatter = &c
 		case "area":
 			c := charts.NewAreaChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.AreaColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.Area = &c
 		case "areaStacked":
 			c := charts.NewAreaStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.AreaColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.AreaStacked = &c
 		case "areaStacked100":
 			c := charts.NewAreaStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
+			if seriesColor != "" {
+				c.AreaColor = seriesColor
+			}
 			c.AltText = pc.AltText
 			c.IsDecorative = pc.IsDecorative
 			slide.AreaStacked100 = &c

@@ -39,8 +39,19 @@ func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, o
 		return err
 	}
 
-	for i, slide := range slides {
-		renderNativePDFSlide(pdf, slide, i+1, len(slides))
+	totalVisible := 0
+	for _, slide := range slides {
+		if !slide.Hidden {
+			totalVisible++
+		}
+	}
+	visibleIndex := 0
+	for _, slide := range slides {
+		if slide.Hidden {
+			continue
+		}
+		visibleIndex++
+		renderNativePDFSlide(pdf, slide, visibleIndex, totalVisible)
 	}
 
 	return pdf.WritePdf(outputPath)
@@ -90,6 +101,37 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	renderNativePDFSlideAssets(pdf, slide)
 	if slide.ShowSlideNumber {
 		renderNativePDFSlideNumber(pdf, index, total)
+	}
+	if slide.FooterText != "" {
+		renderNativePDFFooter(pdf, slide.FooterText)
+	}
+	if len(slide.PlaceholderOverrides) > 0 {
+		renderNativePDFPlaceholderOverrides(pdf, slide)
+	}
+}
+
+func renderNativePDFFooter(pdf *gopdf.GoPdf, footerText string) {
+	pdf.SetTextColor(100, 100, 100)
+	pdf.SetX((slideWidthPt - float64(len(footerText))*4.5) / 2)
+	pdf.SetY(slideHeightPt - 15)
+	_ = pdf.Cell(nil, footerText)
+	pdf.SetTextColor(0, 0, 0)
+}
+
+func renderNativePDFPlaceholderOverrides(pdf *gopdf.GoPdf, slide elements.SlideContent) {
+	for _, ph := range slide.PlaceholderOverrides {
+		if ph.Text == "" || ph.Override == nil {
+			continue
+		}
+		if ph.Override.X == nil || ph.Override.Y == nil || ph.Override.CX == nil || ph.Override.CY == nil {
+			continue
+		}
+		x := emuToPt(ph.Override.X.Emu())
+		y := emuToPt(ph.Override.Y.Emu())
+		pdf.SetTextColor(0, 0, 0)
+		pdf.SetX(x)
+		pdf.SetY(y)
+		_ = pdf.Cell(nil, ph.Text)
 	}
 }
 
@@ -158,6 +200,14 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		titleBoxY = emuToPt(b[1])
 		titleBoxW = emuToPt(b[2])
 		titleBoxH = emuToPt(b[3])
+	} else if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutCenteredTitle {
+		// Default centered-title box: narrower, vertically centered per Office template defaults.
+		// These values approximate the default ctrTitle placeholder from a standard Office theme
+		// (x≈685800 EMU, y≈2130425 EMU, cx≈7772400 EMU, cy≈1470025 EMU on a 9144000×6858000 slide).
+		titleBoxX = 54.0
+		titleBoxY = 167.0
+		titleBoxW = slideWidthPt - 108
+		titleBoxH = 116.0
 	}
 	titleSize = fitPDFTitleSize(
 		pdf,
@@ -177,7 +227,8 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	}
 	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW, slide.TitleFont)
 	lineH := pdfLineHeight(titleSize)
-	yPos := titleBoxY
+	totalTextH := float64(len(lines)) * lineH
+	yPos := titleBoxY + max(0, (titleBoxH-totalTextH)/2)
 	for _, line := range lines {
 		if yPos+lineH > titleBoxY+titleBoxH {
 			break
