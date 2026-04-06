@@ -85,7 +85,6 @@ func applyMasterTitleDefaults(sc *elements.SlideContent, ms masterTitleStyle) {
 	}
 }
 
-//nolint:gocognit,funlen // Slide extraction maps multiple editor shape categories and image attachments in one pass.
 func extractSlideContent(
 	ed *editor.PresentationEditor,
 	sm editorcommon.SlideMetadata,
@@ -98,97 +97,20 @@ func extractSlideContent(
 		editorShapes = nil
 	}
 
-	sc := elements.SlideContent{
-		Title:  sm.Title,
-		Hidden: sm.Hidden,
-	}
-	if bg, bgErr := ed.GetSlideBackground(sm.Index); bgErr == nil && bg != nil {
-		sc.Background = bg
-	}
-	if hf, hfErr := ed.GetSlideHeaderFooter(sm.Index); hfErr == nil {
-		if hf.ShowFooter {
-			sc.FooterText = hf.Footer
-		}
-		if hf.ShowSlideNum {
-			sc.ShowSlideNumber = true
-		}
-	}
-	if notes, notesErr := ed.GetNotes(sm.Index); notesErr == nil && notes != "" {
-		sc.Notes = notes
-	}
+	sc := elements.SlideContent{Title: sm.Title, Hidden: sm.Hidden}
+	applySlideMetadata(&sc, ed, sm.Index)
+
 	shapeIndexByID := make(map[int]int)
 	connectorShapes := make([]editorcommon.Shape, 0)
 	chartShapeIDs := chartShapeIDSet(slideCharts, sm.Index)
 	smartArtShapeIDs := smartArtShapeIDSet(slideSmartArt, sm.Index)
 
 	for _, es := range editorShapes {
-		lowerType := strings.ToLower(es.Type)
-		lowerName := strings.ToLower(strings.TrimSpace(es.Name))
-		// For shapes that carry a placeholder type but no geometry preset (e.g.
-		// python-pptx generated shapes whose <p:spPr/> is empty), use the
-		// placeholder type as the effective classification type so that title and
-		// body placeholders are still handled correctly.
-		lowerPhType := strings.ToLower(es.PlaceholderType)
-		if lowerPhType != "" && (lowerType == "" || lowerType == "sp") {
-			lowerType = lowerPhType
-		}
 		if isEditorConnector(es) {
 			connectorShapes = append(connectorShapes, es)
 			continue
 		}
-
-		switch lowerType {
-		case "pic":
-			continue
-		case "graphicframe":
-			if _, ok := chartShapeIDs[es.ID]; ok {
-				continue
-			}
-			if _, ok := smartArtShapeIDs[es.ID]; ok {
-				continue
-			}
-			if tbl := extractTableContent(ed, sm.Index, es); tbl != nil {
-				sc.Table = tbl
-				continue
-			}
-			appendReaderShape(&sc, shapeIndexByID, es)
-		case placeholderTitle, placeholderCtrTitle:
-			if sc.Title == "" && es.Text != "" {
-				sc.Title = es.Text
-			}
-			applyTitleBounds(&sc, es)
-			applyTitleSizeFromRuns(&sc, es)
-			applyTitleAlignFromShape(&sc, es)
-			// Record that this is a centered-title slide so the renderer
-			// can apply the correct vertical centering position.
-			if lowerType == placeholderCtrTitle && sc.Layout == "" {
-				sc.Layout = elements.SlideLayoutCenteredTitle
-			}
-		case placeholderBody, placeholderSubtitle, placeholderObject:
-			if consumeBodyPlaceholderAsBullets(&sc, es) {
-				applyContentBounds(&sc, es)
-				continue
-			}
-			appendReaderShape(&sc, shapeIndexByID, es)
-		default:
-			switch {
-			case isTitlePlaceholder(lowerType, lowerName):
-				if sc.Title == "" && es.Text != "" {
-					sc.Title = es.Text
-				}
-				applyTitleBounds(&sc, es)
-				applyTitleSizeFromRuns(&sc, es)
-				applyTitleAlignFromShape(&sc, es)
-			case isBodyPlaceholder(lowerType, lowerName):
-				if consumeBodyPlaceholderAsBullets(&sc, es) {
-					applyContentBounds(&sc, es)
-					continue
-				}
-				appendReaderShape(&sc, shapeIndexByID, es)
-			default:
-				appendReaderShape(&sc, shapeIndexByID, es)
-			}
-		}
+		processEditorShape(&sc, es, shapeIndexByID, chartShapeIDs, smartArtShapeIDs, ed, sm.Index)
 	}
 	for _, es := range connectorShapes {
 		connector, ok := editorShapeToConnector(es, shapeIndexByID)
@@ -199,32 +121,7 @@ func extractSlideContent(
 		sc.Connectors = append(sc.Connectors, connector)
 	}
 
-	// Attach images for this slide.
-	if sm.Index < len(slideImages) {
-		for _, img := range slideImages[sm.Index] {
-			sc.Images = append(sc.Images, shapes.Image{
-				Data:     img.Bytes,
-				Format:   img.Format,
-				X:        styling.Emu(img.X),
-				Y:        styling.Emu(img.Y),
-				CX:       styling.Emu(img.CX),
-				CY:       styling.Emu(img.CY),
-				Rotation: img.Rotation,
-				Crop: shapes.ImageCrop{
-					Left:   img.CropLeft,
-					Right:  img.CropRight,
-					Top:    img.CropTop,
-					Bottom: img.CropBottom,
-				},
-				FlipH:        img.FlipH,
-				FlipV:        img.FlipV,
-				Shadow:       img.Shadow,
-				Reflection:   img.Reflection,
-				AltText:      img.AltText,
-				IsDecorative: img.IsDecorative,
-			})
-		}
-	}
+	attachSlideImages(&sc, slideImages, sm.Index)
 	if sm.Index < len(slideCharts) {
 		applyParsedCharts(&sc, slideCharts[sm.Index])
 	}
@@ -232,6 +129,146 @@ func extractSlideContent(
 		applyParsedSmartArt(&sc, slideSmartArt[sm.Index])
 	}
 	return sc
+}
+
+// applySlideMetadata reads background, header/footer, and notes from the editor.
+func applySlideMetadata(sc *elements.SlideContent, ed *editor.PresentationEditor, idx int) {
+	if bg, bgErr := ed.GetSlideBackground(idx); bgErr == nil && bg != nil {
+		sc.Background = bg
+	}
+	if hf, hfErr := ed.GetSlideHeaderFooter(idx); hfErr == nil {
+		if hf.ShowFooter {
+			sc.FooterText = hf.Footer
+		}
+		if hf.ShowSlideNum {
+			sc.ShowSlideNumber = true
+		}
+	}
+	if notes, notesErr := ed.GetNotes(idx); notesErr == nil && notes != "" {
+		sc.Notes = notes
+	}
+}
+
+// processEditorShape classifies a single editor shape and applies it to the slide content.
+func processEditorShape(
+	sc *elements.SlideContent,
+	es editorcommon.Shape,
+	shapeIndexByID map[int]int,
+	chartShapeIDs, smartArtShapeIDs map[int]struct{},
+	ed *editor.PresentationEditor,
+	slideIdx int,
+) {
+	lowerType := strings.ToLower(es.Type)
+	lowerName := strings.ToLower(strings.TrimSpace(es.Name))
+	// For shapes that carry a placeholder type but no geometry preset (e.g.
+	// python-pptx generated shapes whose <p:spPr/> is empty), use the
+	// placeholder type as the effective classification type so that title and
+	// body placeholders are still handled correctly.
+	if lowerPhType := strings.ToLower(es.PlaceholderType); lowerPhType != "" && (lowerType == "" || lowerType == "sp") {
+		lowerType = lowerPhType
+	}
+	switch lowerType {
+	case "pic":
+		return
+	case "graphicframe":
+		applyGraphicFrame(sc, es, shapeIndexByID, chartShapeIDs, smartArtShapeIDs, ed, slideIdx)
+	case placeholderTitle, placeholderCtrTitle:
+		applyTitleShape(sc, es, lowerType)
+	case placeholderBody, placeholderSubtitle, placeholderObject:
+		applyBodyShape(sc, es, shapeIndexByID)
+	default:
+		applyDefaultShape(sc, es, shapeIndexByID, lowerType, lowerName)
+	}
+}
+
+func applyGraphicFrame(
+	sc *elements.SlideContent,
+	es editorcommon.Shape,
+	shapeIndexByID map[int]int,
+	chartShapeIDs, smartArtShapeIDs map[int]struct{},
+	ed *editor.PresentationEditor,
+	slideIdx int,
+) {
+	if _, ok := chartShapeIDs[es.ID]; ok {
+		return
+	}
+	if _, ok := smartArtShapeIDs[es.ID]; ok {
+		return
+	}
+	if tbl := extractTableContent(ed, slideIdx, es); tbl != nil {
+		sc.Table = tbl
+		return
+	}
+	appendReaderShape(sc, shapeIndexByID, es)
+}
+
+func applyTitleShape(sc *elements.SlideContent, es editorcommon.Shape, lowerType string) {
+	if sc.Title == "" && es.Text != "" {
+		sc.Title = es.Text
+	}
+	applyTitleBounds(sc, es)
+	applyTitleSizeFromRuns(sc, es)
+	applyTitleAlignFromShape(sc, es)
+	if lowerType == placeholderCtrTitle && sc.Layout == "" {
+		sc.Layout = elements.SlideLayoutCenteredTitle
+	}
+}
+
+func applyBodyShape(sc *elements.SlideContent, es editorcommon.Shape, shapeIndexByID map[int]int) {
+	if consumeBodyPlaceholderAsBullets(sc, es) {
+		applyContentBounds(sc, es)
+		return
+	}
+	appendReaderShape(sc, shapeIndexByID, es)
+}
+
+func applyDefaultShape(
+	sc *elements.SlideContent, es editorcommon.Shape,
+	shapeIndexByID map[int]int, lowerType, lowerName string,
+) {
+	switch {
+	case isTitlePlaceholder(lowerType, lowerName):
+		if sc.Title == "" && es.Text != "" {
+			sc.Title = es.Text
+		}
+		applyTitleBounds(sc, es)
+		applyTitleSizeFromRuns(sc, es)
+		applyTitleAlignFromShape(sc, es)
+	case isBodyPlaceholder(lowerType, lowerName):
+		applyBodyShape(sc, es, shapeIndexByID)
+	default:
+		appendReaderShape(sc, shapeIndexByID, es)
+	}
+}
+
+// attachSlideImages appends all embedded images for the given slide index.
+func attachSlideImages(sc *elements.SlideContent, slideImages [][]SlideImage, idx int) {
+	if idx >= len(slideImages) {
+		return
+	}
+	for _, img := range slideImages[idx] {
+		sc.Images = append(sc.Images, shapes.Image{
+			Data:     img.Bytes,
+			Format:   img.Format,
+			X:        styling.Emu(img.X),
+			Y:        styling.Emu(img.Y),
+			CX:       styling.Emu(img.CX),
+			CY:       styling.Emu(img.CY),
+			Rotation: img.Rotation,
+			Crop: shapes.ImageCrop{
+				Left:   img.CropLeft,
+				Right:  img.CropRight,
+				Top:    img.CropTop,
+				Bottom: img.CropBottom,
+			},
+			FlipH:        img.FlipH,
+			FlipV:        img.FlipV,
+			Shadow:       img.Shadow,
+			Reflection:   img.Reflection,
+			AltText:      img.AltText,
+			IsDecorative: img.IsDecorative,
+		})
+	}
 }
 
 func appendReaderShape(sc *elements.SlideContent, shapeIndexByID map[int]int, es editorcommon.Shape) {

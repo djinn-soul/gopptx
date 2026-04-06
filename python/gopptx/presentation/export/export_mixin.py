@@ -74,6 +74,8 @@ class PresentationExportMixin(PresentationMixinBase):
         }
         if output_path is not None:
             payload["output_path"] = output_path
+        if opts.font_paths:
+            payload["font_paths"] = opts.font_paths
         result = self.execute(ops.OP_EXPORT_PDF, payload)
         return str(result.get("output_path", output_path or "presentation.pdf"))
 

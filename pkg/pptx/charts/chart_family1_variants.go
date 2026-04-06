@@ -43,7 +43,7 @@ func NewBarStackedChart(categories []string, values []float64) BarStackedChart {
 func (c BarStackedChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarStacked
-	spec.BarDir = chartBarDirection
+	spec.BarDir = "col"
 	spec.Grouping = chartGroupingStacked
 	return spec
 }
@@ -66,7 +66,7 @@ func NewBarStacked100Chart(categories []string, values []float64) BarStacked100C
 func (c BarStacked100Chart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.BarChart.ToChartSpec()
 	spec.Kind = pptxxml.ChartKindBarStacked100
-	spec.BarDir = chartBarDirection
+	spec.BarDir = "col"
 	spec.Grouping = chartGroupingPercentStacked
 	return spec
 }

@@ -36,68 +36,79 @@ func extractMasterTitleStyle(pptxPath string) masterTitleStyle {
 	return parseMasterTitleStyle(data)
 }
 
+// masterStyleParser holds incremental state while scanning the slide master XML.
+type masterStyleParser struct {
+	inTxStyles   bool
+	inTitleStyle bool
+	done         bool
+	result       masterTitleStyle
+}
+
+func (p *masterStyleParser) onStart(t xml.StartElement) {
+	name := t.Name.Local
+	switch {
+	case name == "txStyles":
+		p.inTxStyles = true
+	case p.inTxStyles && name == "titleStyle":
+		p.inTitleStyle = true
+	case p.inTitleStyle && name == "lvl1pPr":
+		p.result.Align = attrValue(t.Attr, "algn")
+	case p.inTitleStyle && name == "defRPr" && p.result.SizePt == 0:
+		p.result.SizePt = parseSzAttr(t.Attr)
+	}
+}
+
+func (p *masterStyleParser) onEnd(t xml.EndElement) {
+	switch t.Name.Local {
+	case "titleStyle":
+		if p.inTitleStyle {
+			p.done = true
+		}
+	case "txStyles":
+		p.done = true
+	}
+}
+
+// attrValue returns the value of the named attribute, or "" if absent.
+func attrValue(attrs []xml.Attr, name string) string {
+	for _, a := range attrs {
+		if a.Name.Local == name {
+			return a.Value
+		}
+	}
+	return ""
+}
+
+// parseSzAttr reads the "sz" attribute (OOXML hundredths-of-a-point) and converts to points.
+func parseSzAttr(attrs []xml.Attr) int {
+	const centiToPoints = 100
+	for _, a := range attrs {
+		if a.Name.Local == "sz" {
+			if sz, err := strconv.Atoi(a.Value); err == nil && sz > 0 {
+				return sz / centiToPoints
+			}
+		}
+	}
+	return 0
+}
+
 // parseMasterTitleStyle parses the slide master XML using a token scanner,
 // navigating to txStyles > titleStyle > lvl1pPr to read alignment and default font size.
 // This approach is namespace-safe for OOXML documents.
 func parseMasterTitleStyle(data []byte) masterTitleStyle {
 	dec := xml.NewDecoder(bytes.NewReader(data))
-
-	const (
-		elemTxStyles    = "txStyles"
-		elemTitleStyle  = "titleStyle"
-		elemLvl1pPr     = "lvl1pPr"
-		elemDefRPr      = "defRPr"
-		attrAlgn        = "algn"
-		attrSz          = "sz"
-		centiToPoints   = 100
-	)
-
-	inTxStyles   := false
-	inTitleStyle := false
-	result       := masterTitleStyle{}
-	done         := false
-
-	for !done {
+	p := &masterStyleParser{}
+	for !p.done {
 		tok, err := dec.Token()
 		if err != nil {
 			break
 		}
-
 		switch t := tok.(type) {
 		case xml.StartElement:
-			name := t.Name.Local
-			switch {
-			case name == elemTxStyles:
-				inTxStyles = true
-			case inTxStyles && name == elemTitleStyle:
-				inTitleStyle = true
-			case inTitleStyle && name == elemLvl1pPr:
-				// Read paragraph properties (alignment)
-				for _, a := range t.Attr {
-					if a.Name.Local == attrAlgn {
-						result.Align = a.Value
-					}
-				}
-			case inTitleStyle && name == elemDefRPr && result.SizePt == 0:
-				// Read default run properties (font size) — take first occurrence
-				for _, a := range t.Attr {
-					if a.Name.Local == attrSz {
-						if sz, err2 := strconv.Atoi(a.Value); err2 == nil && sz > 0 {
-							result.SizePt = sz / centiToPoints
-						}
-					}
-				}
-			}
+			p.onStart(t)
 		case xml.EndElement:
-			name := t.Name.Local
-			switch {
-			case name == elemTitleStyle && inTitleStyle:
-				// Finished reading titleStyle — we have what we need.
-				done = true
-			case name == elemTxStyles:
-				done = true
-			}
+			p.onEnd(t)
 		}
 	}
-	return result
+	return p.result
 }
