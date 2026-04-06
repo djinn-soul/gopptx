@@ -140,22 +140,6 @@ func fullBars(n int) []float64 {
 	return out
 }
 
-// normalizePercentSeries converts values to their percentage of the total (0–100).
-func normalizePercentSeries(values []float64) []float64 {
-	if len(values) == 0 {
-		return nil
-	}
-	total := sumFloat(values)
-	if total <= 0 {
-		return nil
-	}
-	out := make([]float64, len(values))
-	for i, v := range values {
-		out[i] = (v / total) * 100
-	}
-	return out
-}
-
 func niceAxisMax(value float64) float64 {
 	if value <= 0 {
 		return 1

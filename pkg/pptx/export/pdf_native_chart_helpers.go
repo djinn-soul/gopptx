@@ -24,7 +24,7 @@ type chartSeriesOpts struct {
 	legendPosition     string // "r","l","t","b"
 	seriesName         string
 	showDataLabels     bool
-	showCatName        bool   // explicitly show category names in data labels (Pie/Doughnut)
+	showCatName        bool // explicitly show category names in data labels (Pie/Doughnut)
 	catAxisTitle       string
 	valAxisTitle       string
 	scatterStyle       string // "marker" | "lineMarker" | "smoothMarker"

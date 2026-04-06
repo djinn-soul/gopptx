@@ -66,6 +66,7 @@ var (
 const (
 	minChartRelIDMatchGroups = 2
 	minPointMatchGroups      = 2
+	minRegexMatchGroups      = 2
 	minTextMatchGroups       = 3
 )
 
@@ -159,7 +160,7 @@ func parseChartPart(chartXML []byte) parsedChart {
 		Title:        firstText(raw, "<c:title", "</c:title>"),
 		ScatterStyle: "marker",
 	}
-	if styleMatch := reScatterStyle.FindStringSubmatch(raw); len(styleMatch) >= 2 {
+	if styleMatch := reScatterStyle.FindStringSubmatch(raw); len(styleMatch) >= minRegexMatchGroups {
 		result.ScatterStyle = styleMatch[1]
 	}
 	blocks := reSeriesBlock.FindAllString(raw, -1)
@@ -167,23 +168,39 @@ func parseChartPart(chartXML []byte) parsedChart {
 	for _, block := range blocks {
 		result.Series = append(result.Series, parseSeriesBlock(block))
 	}
+	applyChartAxisBounds(&result, raw)
+	return result
+}
+
+func applyChartAxisBounds(result *parsedChart, raw string) {
 	// Extract explicit axis bounds from <c:valAx><c:scaling><c:min>/<c:max>.
 	// When PowerPoint uses Auto scaling these elements are absent → fields stay nil.
-	if valAxStr := reValAxBlock.FindString(raw); valAxStr != "" {
-		if scalingStr := reScalingBlock.FindString(valAxStr); scalingStr != "" {
-			if m := reScalingMin.FindStringSubmatch(scalingStr); len(m) >= 2 { //nolint:mnd
-				if v, err := strconv.ParseFloat(m[1], 64); err == nil {
-					result.AxisMinValue = &v
-				}
-			}
-			if m := reScalingMax.FindStringSubmatch(scalingStr); len(m) >= 2 { //nolint:mnd
-				if v, err := strconv.ParseFloat(m[1], 64); err == nil {
-					result.AxisMaxValue = &v
-				}
-			}
-		}
+	valAxStr := reValAxBlock.FindString(raw)
+	if valAxStr == "" {
+		return
 	}
-	return result
+	scalingStr := reScalingBlock.FindString(valAxStr)
+	if scalingStr == "" {
+		return
+	}
+	if minValue, ok := parseScalingBound(scalingStr, reScalingMin); ok {
+		result.AxisMinValue = &minValue
+	}
+	if maxValue, ok := parseScalingBound(scalingStr, reScalingMax); ok {
+		result.AxisMaxValue = &maxValue
+	}
+}
+
+func parseScalingBound(raw string, re *regexp.Regexp) (float64, bool) {
+	m := re.FindStringSubmatch(raw)
+	if len(m) < minRegexMatchGroups {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(m[1], 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
 }
 
 func parseSeriesBlock(block string) parsedChartSeries {
@@ -204,7 +221,7 @@ func parseSeriesBlock(block string) parsedChartSeries {
 		series.Sizes = extractFloatPoints(full)
 	}
 	// Extract fill color from series shape properties.
-	if m := reSeriesSrgbClr.FindStringSubmatch(block); len(m) >= 2 { //nolint:mnd // [0]=full,[1]=capture
+	if m := reSeriesSrgbClr.FindStringSubmatch(block); len(m) >= minRegexMatchGroups {
 		series.Color = m[1]
 	}
 	return series

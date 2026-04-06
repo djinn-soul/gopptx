@@ -8,6 +8,29 @@ import (
 const (
 	chartGroupingStacked = "stacked"
 	stockOHLCSeriesMin   = 4
+	chartKindNone        = "none"
+	chartKindArea        = "area"
+	chartKindAreaStacked = "areaStacked"
+	chartKindArea100     = "areaStacked100"
+	chartKindLine        = "line"
+	chartKindLineMarkers = "lineMarkers"
+	chartKindLineStacked = "lineStacked"
+	chartKindBar         = "bar"
+	chartKindBarStacked  = "barStacked"
+	chartKindBar100      = "barStacked100"
+	chartKindBarHoriz    = "barHorizontal"
+	chartKindPie         = "pie"
+	chartKindDoughnut    = "doughnut"
+	chartKindBubble      = "bubble"
+	chartKindScatter     = "scatter"
+	chartKindRadar       = "radar"
+	chartKindRadarFilled = "radarFilled"
+	chartKindStockHLC    = "stockHLC"
+	chartKindStockOHLC   = "stockOHLC"
+	chartKindCombo       = "combo"
+	// xmlBarDirHoriz is the OOXML barDir attribute value for horizontal bars.
+	// Distinct from chartKindBar, which is the gopptx chart kind for column (vertical) charts.
+	xmlBarDirHoriz = chartKindBar
 )
 
 // chartXMLInfo holds structural facts extracted from a chart XML part.
@@ -39,20 +62,20 @@ func scanChartXMLInfo(rawXML string) chartXMLInfo {
 			"bubbleChart", "scatterChart", "radarChart", "areaChart":
 			info.chartTypes[start.Name.Local] = true
 		case "barDir":
-			info.barDir = xmlAttrVal(start, "val")
+			info.barDir = xmlAttrVal(start)
 		case "grouping":
 			if info.grouping == "" {
-				info.grouping = xmlAttrVal(start, "val")
+				info.grouping = xmlAttrVal(start)
 			}
 		case "radarStyle":
-			info.radarStyle = xmlAttrVal(start, "val")
+			info.radarStyle = xmlAttrVal(start)
 		case "scatterStyle":
-			info.scatterStyle = xmlAttrVal(start, "val")
+			info.scatterStyle = xmlAttrVal(start)
 		case "symbol":
 			// Only treat markers as visible when the symbol is not "none".
 			// Line charts emit <c:marker><c:symbol val="none"/> to explicitly
 			// suppress markers; lineMarkers charts use val="circle" (or similar).
-			if val := xmlAttrVal(start, "val"); val != "" && val != "none" {
+			if val := xmlAttrVal(start); val != "" && val != chartKindNone {
 				info.hasMarker = true
 			}
 		case "ser":
@@ -62,9 +85,9 @@ func scanChartXMLInfo(rawXML string) chartXMLInfo {
 	return info
 }
 
-func xmlAttrVal(start xml.StartElement, name string) string {
+func xmlAttrVal(start xml.StartElement) string {
 	for _, attr := range start.Attr {
-		if attr.Name.Local == name {
+		if attr.Name.Local == "val" {
 			return attr.Value
 		}
 	}
@@ -76,52 +99,52 @@ func detectChartKind(rawXML string) string {
 	switch {
 	case info.chartTypes["stockChart"]:
 		if info.seriesCount >= stockOHLCSeriesMin {
-			return "stockOHLC"
+			return chartKindStockOHLC
 		}
-		return "stockHLC"
+		return chartKindStockHLC
 	case info.chartTypes["barChart"] && info.chartTypes["lineChart"]:
-		return "combo"
+		return chartKindCombo
 	case info.chartTypes["doughnutChart"]:
-		return "doughnut"
+		return chartKindDoughnut
 	case info.chartTypes["pieChart"]:
-		return parsedChartKindPie
+		return chartKindPie
 	case info.chartTypes["bubbleChart"]:
-		return "bubble"
+		return chartKindBubble
 	case info.chartTypes["scatterChart"]:
-		return "scatter"
+		return chartKindScatter
 	case info.chartTypes["radarChart"]:
 		if info.radarStyle == "filled" {
-			return "radarFilled"
+			return chartKindRadarFilled
 		}
-		return "radar"
+		return chartKindRadar
 	case info.chartTypes["areaChart"]:
 		if info.grouping == "percentStacked" {
-			return "areaStacked100"
+			return chartKindArea100
 		}
 		if info.grouping == chartGroupingStacked {
-			return "areaStacked"
+			return chartKindAreaStacked
 		}
-		return "area"
+		return chartKindArea
 	case info.chartTypes["lineChart"]:
 		if info.grouping == chartGroupingStacked {
-			return "lineStacked"
+			return chartKindLineStacked
 		}
 		if info.hasMarker {
-			return "lineMarkers"
+			return chartKindLineMarkers
 		}
-		return "line"
+		return chartKindLine
 	case info.chartTypes["barChart"]:
 		if info.grouping == "percentStacked" {
-			return "barStacked100"
+			return chartKindBar100
 		}
 		if info.grouping == chartGroupingStacked {
-			return "barStacked"
+			return chartKindBarStacked
 		}
-		if info.barDir == parsedChartKindBar {
-			return "barHorizontal"
+		if info.barDir == xmlBarDirHoriz {
+			return chartKindBarHoriz
 		}
-		return parsedChartKindBar
+		return chartKindBar
 	default:
-		return parsedChartKindBar
+		return chartKindBar
 	}
 }
