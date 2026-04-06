@@ -8,6 +8,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
+//nolint:mnd // Footer placement and colors match the native PPT slide template.
 func renderNativePDFFooter(pdf *gopdf.GoPdf, footerText string) {
 	pdf.SetTextColor(100, 100, 100)
 	pdf.SetX((slideWidthPt - float64(len(footerText))*4.5) / 2)
@@ -60,6 +61,7 @@ func renderNativePDFSlideAssets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	}
 }
 
+//nolint:mnd // Slide number placement and colors match the native PPT slide template.
 func renderNativePDFSlideNumber(pdf *gopdf.GoPdf, index, total int) {
 	pdf.SetTextColor(150, 150, 150)
 	slideNum := fmt.Sprintf("%d / %d", index, total)

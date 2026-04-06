@@ -31,7 +31,13 @@ func drawHorizontalBarItem(
 }
 
 // drawVerticalBarItem draws a single bar in a vertical bar chart at column i.
-func drawVerticalBarItem(pdf *gopdf.GoPdf, i int, v, px, py, pw, ph, maxV, rangeV float64, nValues int, opts chartSeriesOpts) {
+func drawVerticalBarItem(
+	pdf *gopdf.GoPdf,
+	i int,
+	v, px, py, pw, ph, maxV, rangeV float64,
+	nValues int,
+	opts chartSeriesOpts,
+) {
 	slot := pw / float64(nValues)
 	bw := math.Max(8, slot*0.40)
 	bx := px + slot*float64(i) + (slot-bw)/2

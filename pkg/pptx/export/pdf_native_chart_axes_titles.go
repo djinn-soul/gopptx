@@ -2,7 +2,7 @@ package export
 
 import "github.com/signintech/gopdf"
 
-// drawCategoryAxisTitle draws the category (X) axis title below the category labels.
+//nolint:mnd // Axis title placement uses fixed offsets that match PPT defaults.
 func drawCategoryAxisTitle(pdf *gopdf.GoPdf, px, py, pw, ph float64, title string) {
 	pdf.SetTextColor(60, 60, 60)
 	pdf.SetX(px + pw/2 - float64(len(title))*3)
@@ -11,7 +11,7 @@ func drawCategoryAxisTitle(pdf *gopdf.GoPdf, px, py, pw, ph float64, title strin
 	pdf.SetTextColor(0, 0, 0)
 }
 
-// drawValueAxisTitle draws the value (Y) axis title rotated 90° to the left of the Y-axis.
+//nolint:mnd // Axis title placement uses fixed offsets that match PPT defaults.
 func drawValueAxisTitle(pdf *gopdf.GoPdf, px, py, _ float64, ph float64, title string) {
 	pdf.SetTextColor(60, 60, 60)
 	titleX := px - 42

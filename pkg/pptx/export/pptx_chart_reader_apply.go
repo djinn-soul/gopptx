@@ -9,12 +9,10 @@ import (
 )
 
 const (
-	parsedChartKindBar = "bar"
-	parsedChartKindPie = "pie"
-	seriesIndex0       = 0
-	seriesIndex1       = 1
-	seriesIndex2       = 2
-	seriesIndex3       = 3
+	seriesIndex0 = 0
+	seriesIndex1 = 1
+	seriesIndex2 = 2
+	seriesIndex3 = 3
 )
 
 func applyParsedCharts(slide *elements.SlideContent, chartList []parsedChart) {
@@ -65,14 +63,12 @@ func newChartApplyCtx(slide *elements.SlideContent, pc parsedChart) chartApplyCt
 
 func applyParsedChart(slide *elements.SlideContent, pc parsedChart) {
 	ctx := newChartApplyCtx(slide, pc)
-	switch {
-	case pc.Kind == parsedChartKindBar || pc.Kind == "barHorizontal" ||
-		pc.Kind == "barStacked" || pc.Kind == "barStacked100":
+	switch pc.Kind {
+	case chartKindBar, chartKindBarHoriz, chartKindBarStacked, chartKindBar100:
 		applyBarLikeChart(ctx)
-	case pc.Kind == "line" || pc.Kind == "lineMarkers" || pc.Kind == "lineStacked":
-		applyLineLikeChart(ctx)
-	case pc.Kind == "area" || pc.Kind == "areaStacked" || pc.Kind == "areaStacked100":
-		applyAreaLikeChart(ctx)
+	case chartKindLine, chartKindLineMarkers, chartKindLineStacked,
+		chartKindArea, chartKindAreaStacked, chartKindArea100:
+		applyLineAreaLikeChart(ctx)
 	default:
 		applyOtherChart(ctx)
 	}
@@ -82,25 +78,25 @@ func applyBarLikeChart(ctx chartApplyCtx) {
 	slide, pc, cats, vals, title, px, py, pw, ph, color :=
 		ctx.slide, ctx.pc, ctx.cats, ctx.vals, ctx.title, ctx.px, ctx.py, ctx.pw, ctx.ph, ctx.seriesColor
 	switch pc.Kind {
-	case parsedChartKindBar:
+	case chartKindBar:
 		c := charts.NewBarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Chart = &c
-	case "barHorizontal":
+	case chartKindBarHoriz:
 		c := charts.NewBarHorizontalChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.BarHorizontal = &c
-	case "barStacked":
+	case chartKindBarStacked:
 		c := charts.NewBarStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.BarStacked = &c
-	case "barStacked100":
+	case chartKindBar100:
 		c := charts.NewBarStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
@@ -109,48 +105,41 @@ func applyBarLikeChart(ctx chartApplyCtx) {
 	}
 }
 
-func applyLineLikeChart(ctx chartApplyCtx) {
+func applyLineAreaLikeChart(ctx chartApplyCtx) {
 	slide, pc, cats, vals, title, px, py, pw, ph, color :=
 		ctx.slide, ctx.pc, ctx.cats, ctx.vals, ctx.title, ctx.px, ctx.py, ctx.pw, ctx.ph, ctx.seriesColor
 	switch pc.Kind {
-	case "line":
+	case chartKindLine:
 		c := charts.NewLineChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Line = &c
-	case "lineMarkers":
+	case chartKindLineMarkers:
 		c := charts.NewLineMarkersChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.LineMarkers = &c
-	case "lineStacked":
+	case chartKindLineStacked:
 		c := charts.NewLineStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.LineStacked = &c
-	}
-}
-
-func applyAreaLikeChart(ctx chartApplyCtx) {
-	slide, pc, cats, vals, title, px, py, pw, ph, color :=
-		ctx.slide, ctx.pc, ctx.cats, ctx.vals, ctx.title, ctx.px, ctx.py, ctx.pw, ctx.ph, ctx.seriesColor
-	switch pc.Kind {
-	case "area":
+	case chartKindArea:
 		c := charts.NewAreaChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.AreaColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Area = &c
-	case "areaStacked":
+	case chartKindAreaStacked:
 		c := charts.NewAreaStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.AreaColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.AreaStacked = &c
-	case "areaStacked100":
+	case chartKindArea100:
 		c := charts.NewAreaStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.AreaColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
@@ -163,7 +152,7 @@ func applyOtherChart(ctx chartApplyCtx) {
 	slide, pc, cats, vals, title, px, py, pw, ph :=
 		ctx.slide, ctx.pc, ctx.cats, ctx.vals, ctx.title, ctx.px, ctx.py, ctx.pw, ctx.ph
 	switch pc.Kind {
-	case "scatter":
+	case chartKindScatter:
 		xs, ys := scatterForChart(pc)
 		c := charts.NewScatterChart(xs, ys).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, ctx.seriesColor)
@@ -171,43 +160,43 @@ func applyOtherChart(ctx chartApplyCtx) {
 		c.ScatterStyle = pc.ScatterStyle
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Scatter = &c
-	case parsedChartKindPie:
+	case chartKindPie:
 		c := charts.NewPieChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		slide.Pie = &c
-	case "doughnut":
+	case chartKindDoughnut:
 		c := charts.NewDoughnutChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		slide.Doughnut = &c
-	case "bubble":
+	case chartKindBubble:
 		xs, ys, sizes := bubbleForChart(pc)
 		c := charts.NewBubbleChart(xs, ys, sizes).
 			WithTitle(title).Position(px.Emu(), py.Emu()).Size(pw.Emu(), ph.Emu())
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Bubble = &c
-	case "radar":
+	case chartKindRadar:
 		c := charts.NewRadarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		slide.Radar = &c
-	case "radarFilled":
+	case chartKindRadarFilled:
 		c := charts.NewRadarFilledChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		slide.RadarFilled = &c
-	case "stockHLC":
+	case chartKindStockHLC:
 		high, low, closeVals := stockTriplet(pc)
 		c := charts.NewStockHLCChart(cats, high, low, closeVals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.StockHLC = &c
-	case "stockOHLC":
+	case chartKindStockOHLC:
 		openVals, high, low, closeVals := stockQuad(pc)
 		c := charts.NewStockOHLCChart(cats, openVals, high, low, closeVals).
 			WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.StockOHLC = &c
-	case "combo":
+	case chartKindCombo:
 		barSeries, lineSeries := comboSeries(pc)
 		c := charts.NewComboChart(cats, barSeries, lineSeries).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
