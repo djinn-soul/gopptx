@@ -43,7 +43,7 @@ func renderBarHorizontalChart(pdf *gopdf.GoPdf, c *charts.BarHorizontalChart) {
 func renderBarStackedChart(pdf *gopdf.GoPdf, c *charts.BarStackedChart) {
 	renderBarLike(pdf, c.Title,
 		chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
-		c.Values, c.Categories, false,
+		c.Values, c.Categories, true,
 		chartSeriesOpts{
 			color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
@@ -60,7 +60,7 @@ func renderBarStackedChart(pdf *gopdf.GoPdf, c *charts.BarStackedChart) {
 func renderBarStacked100Chart(pdf *gopdf.GoPdf, c *charts.BarStacked100Chart) {
 	renderBarLike(pdf, c.Title,
 		chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
-		fullBars(len(c.Values)), c.Categories, false,
+		fullBars(len(c.Values)), c.Categories, true,
 		chartSeriesOpts{
 			color:      c.BarColor,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
