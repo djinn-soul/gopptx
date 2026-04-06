@@ -113,7 +113,7 @@ func layoutShapeParagraphs(
 			xOffset := levelIndent + leftIndent
 
 			if lineIdx == 0 && len(prefixRuns) > 0 {
-				prefixX := xOffset - hangingIndent
+				prefixX := xOffset + hangingIndent
 				if hangingIndent == 0 {
 					prefixX = xOffset - 14
 				}

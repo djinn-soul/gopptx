@@ -38,3 +38,24 @@ func TestHorizontalBarGeometry_AllNegative(t *testing.T) {
 		t.Fatalf("width: got %.2f want 20.00", w)
 	}
 }
+
+func TestNiceStep(t *testing.T) {
+	cases := []struct {
+		rangeV float64
+		want   float64
+	}{
+		{30, 5},    // 0-30 → step=5 gives 6 ticks → match
+		{100, 20},  // 0-100 → step=20 gives 5 ticks
+		{6, 1},     // 0-6 → step=1 gives 6 ticks
+		{50, 10},   // 0-50 → step=10 gives 5 ticks
+		{250, 50},  // 0-250 → step=50 gives 5 ticks
+		{0.5, 0.1}, // 0-0.5 → step=0.1 gives 5 ticks
+		{27, 5},    // 0-27 → step=5 gives ceil(27/5)=6 ticks
+	}
+	for _, c := range cases {
+		got := niceStep(c.rangeV)
+		if math.Abs(got-c.want) > 1e-9 {
+			t.Errorf("niceStep(%.4g) = %.4g, want %.4g", c.rangeV, got, c.want)
+		}
+	}
+}

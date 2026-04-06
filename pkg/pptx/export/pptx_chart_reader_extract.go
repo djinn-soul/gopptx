@@ -30,7 +30,12 @@ type parsedChart struct {
 	CY           int64
 	AltText      string
 	IsDecorative bool
+	ScatterStyle string
 	Series       []parsedChartSeries
+	// AxisMinValue / AxisMaxValue are non-nil only when PowerPoint stored an
+	// explicit fixed axis bound in <c:scaling><c:min>/<c:max>. Nil means auto.
+	AxisMinValue *float64
+	AxisMaxValue *float64
 }
 
 type chartFrameRef struct {
@@ -51,6 +56,11 @@ var (
 	reTextValue     = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
 	rePointValue    = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
 	reSeriesSrgbClr = regexp.MustCompile(`<a:srgbClr val="([0-9A-Fa-f]{6})"`)
+	reScatterStyle  = regexp.MustCompile(`<c:scatterStyle val="([^"]+)"`)
+	reValAxBlock    = regexp.MustCompile(`(?s)<c:valAx\b.*?</c:valAx>`)
+	reScalingBlock  = regexp.MustCompile(`(?s)<c:scaling\b.*?</c:scaling>`)
+	reScalingMin    = regexp.MustCompile(`<c:min val="([^"]+)"`)
+	reScalingMax    = regexp.MustCompile(`<c:max val="([^"]+)"`)
 )
 
 const (
@@ -145,13 +155,33 @@ func parseChartFrames(slideXML []byte) []chartFrameRef {
 func parseChartPart(chartXML []byte) parsedChart {
 	raw := string(chartXML)
 	result := parsedChart{
-		Kind:  detectChartKind(raw),
-		Title: firstText(raw, "<c:title", "</c:title>"),
+		Kind:         detectChartKind(raw),
+		Title:        firstText(raw, "<c:title", "</c:title>"),
+		ScatterStyle: "marker",
+	}
+	if styleMatch := reScatterStyle.FindStringSubmatch(raw); len(styleMatch) >= 2 {
+		result.ScatterStyle = styleMatch[1]
 	}
 	blocks := reSeriesBlock.FindAllString(raw, -1)
 	result.Series = make([]parsedChartSeries, 0, len(blocks))
 	for _, block := range blocks {
 		result.Series = append(result.Series, parseSeriesBlock(block))
+	}
+	// Extract explicit axis bounds from <c:valAx><c:scaling><c:min>/<c:max>.
+	// When PowerPoint uses Auto scaling these elements are absent → fields stay nil.
+	if valAxStr := reValAxBlock.FindString(raw); valAxStr != "" {
+		if scalingStr := reScalingBlock.FindString(valAxStr); scalingStr != "" {
+			if m := reScalingMin.FindStringSubmatch(scalingStr); len(m) >= 2 { //nolint:mnd
+				if v, err := strconv.ParseFloat(m[1], 64); err == nil {
+					result.AxisMinValue = &v
+				}
+			}
+			if m := reScalingMax.FindStringSubmatch(scalingStr); len(m) >= 2 { //nolint:mnd
+				if v, err := strconv.ParseFloat(m[1], 64); err == nil {
+					result.AxisMaxValue = &v
+				}
+			}
+		}
 	}
 	return result
 }
@@ -174,7 +204,7 @@ func parseSeriesBlock(block string) parsedChartSeries {
 		series.Sizes = extractFloatPoints(full)
 	}
 	// Extract fill color from series shape properties.
-	if m := reSeriesSrgbClr.FindStringSubmatch(block); len(m) >= 2 { //nolint:mnd
+	if m := reSeriesSrgbClr.FindStringSubmatch(block); len(m) >= 2 { //nolint:mnd // [0]=full,[1]=capture
 		series.Color = m[1]
 	}
 	return series

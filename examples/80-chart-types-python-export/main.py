@@ -19,10 +19,39 @@ ALL_CHART_TYPES = ChartType.get_all()
 UNIQUE_CHART_VALUES = sorted(set(ALL_CHART_TYPES.values()))
 CATEGORY_CHART_VALUES = [ct for ct in UNIQUE_CHART_VALUES if ct != ChartType.COMBO]
 
+# Human-readable display names for each chart type value.
+_DISPLAY_NAMES: dict[str, str] = {
+    "bar": "Column / Bar",
+    "barHorizontal": "Bar Horizontal",
+    "barStacked": "Bar Stacked",
+    "barStacked100": "Bar Stacked 100%",
+    "line": "Line",
+    "lineMarkers": "Line with Markers",
+    "lineStacked": "Line Stacked",
+    "scatter": "Scatter",
+    "area": "Area",
+    "areaStacked": "Area Stacked",
+    "areaStacked100": "Area Stacked 100%",
+    "pie": "Pie",
+    "doughnut": "Doughnut",
+    "bubble": "Bubble",
+    "radar": "Radar",
+    "radarFilled": "Radar Filled",
+    "stockHLC": "Stock HLC",
+    "stockOHLC": "Stock OHLC",
+    "combo": "Combo",
+}
+
+
+def display_name(chart_type: str) -> str:
+    """Return a human-readable name for a chart type value."""
+    return _DISPLAY_NAMES.get(chart_type, chart_type)
+
 
 def add_chart_slide(prs: Presentation, chart_type: str) -> None:
     """Add one chart slide for a chart type."""
-    prs.add_slide(f"{chart_type} Chart", layout=SlideLayoutType.TITLE_ONLY)
+    name = display_name(chart_type)
+    prs.add_slide(f"{name} Chart", layout=SlideLayoutType.TITLE_ONLY)
     slide_index = prs.slide_count - 1
 
     prs.add_chart(
@@ -30,37 +59,46 @@ def add_chart_slide(prs: Presentation, chart_type: str) -> None:
         chart_type,
         ["Q1", "Q2", "Q3", "Q4"],
         [14, 21, 18, 27],
-        title=f"{chart_type} Demo",
+        title=f"{name} Demo",
         bounds=CHART_BOUNDS,
     )
 
 
 def add_combo_slide(prs: Presentation) -> None:
     """Add one combo chart slide."""
-    prs.add_slide("COMBO Chart", layout=SlideLayoutType.TITLE_ONLY)
+    prs.add_slide("Combo Chart", layout=SlideLayoutType.TITLE_ONLY)
     slide_index = prs.slide_count - 1
     prs.add_combo_chart(
         slide_index,
         ["Q1", "Q2", "Q3", "Q4"],
         bar_series=[{"name": "Revenue", "values": [180, 220, 210, 260]}],
         line_series=[{"name": "Growth %", "values": [8, 11, 10, 14]}],
-        title="COMBO Demo",
+        title="Combo Demo",
         bounds=CHART_BOUNDS,
     )
 
 
 def add_chart_surface_reference(prs: Presentation) -> None:
-    """Add a reference slide listing all chart constants exposed in Python."""
+    """Add reference slides listing all chart constants exposed in Python.
+
+    Splits across two slides to avoid overflow (20 constants + 2 summary lines).
+    """
     constant_lines = [
-        f"ChartType.{name} = {value}" for name, value in ALL_CHART_TYPES.items()
+        f"ChartType.{name} = {value!r}" for name, value in ALL_CHART_TYPES.items()
     ]
+    half = len(constant_lines) // 2
+
     prs.add_bullet_slide(
-        "Python ChartType Surface",
+        "Python ChartType Surface (1/2)",
         [
             f"Named constants: {len(ALL_CHART_TYPES)}",
             f"Unique chart kinds: {len(UNIQUE_CHART_VALUES)}",
-            *constant_lines,
+            *constant_lines[:half],
         ],
+    )
+    prs.add_bullet_slide(
+        "Python ChartType Surface (2/2)",
+        constant_lines[half:],
     )
 
 

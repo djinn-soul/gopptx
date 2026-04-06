@@ -139,7 +139,7 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		LineColor:                  "C0504D",
+		LineColor:                  "4F81BD",
 		SeriesName:                 "Series 1",
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,
@@ -152,7 +152,7 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		ValueAxisCrosses:           AxisCrossesAutoZero,
 		ValueFormat:                "General",
 		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
-		Smooth:                     false,
+		Smooth:                     true,
 	}
 }
 

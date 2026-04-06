@@ -70,7 +70,8 @@ func renderPDFLinearGradientEllipse(
 			yy0 := y + h*t0
 			yy1 := y + h*t1
 			ymid := (yy0 + yy1) / 2
-			xw := rx * math.Sqrt(math.Max(0, 1-math.Pow((ymid-cy)/ry, 2)))
+			t := (ymid - cy) / ry
+			xw := rx * math.Sqrt(math.Max(0, 1-t*t))
 			if xw > 0 {
 				pdf.RectFromUpperLeftWithStyle(cx-xw, yy0, 2*xw, yy1-yy0, "F")
 			}
@@ -78,7 +79,8 @@ func renderPDFLinearGradientEllipse(
 			xx0 := x + w*t0
 			xx1 := x + w*t1
 			xmid := (xx0 + xx1) / 2
-			yw := ry * math.Sqrt(math.Max(0, 1-math.Pow((xmid-cx)/rx, 2)))
+			t := (xmid - cx) / rx
+			yw := ry * math.Sqrt(math.Max(0, 1-t*t))
 			if yw > 0 {
 				pdf.RectFromUpperLeftWithStyle(xx0, cy-yw, xx1-xx0, 2*yw, "F")
 			}

@@ -12,12 +12,13 @@ const (
 
 // chartXMLInfo holds structural facts extracted from a chart XML part.
 type chartXMLInfo struct {
-	chartTypes  map[string]bool
-	barDir      string
-	grouping    string
-	radarStyle  string
-	hasMarker   bool
-	seriesCount int
+	chartTypes   map[string]bool
+	barDir       string
+	grouping     string
+	radarStyle   string
+	scatterStyle string
+	hasMarker    bool
+	seriesCount  int
 }
 
 // scanChartXMLInfo walks XML tokens to collect chart type and key settings.
@@ -45,8 +46,15 @@ func scanChartXMLInfo(rawXML string) chartXMLInfo {
 			}
 		case "radarStyle":
 			info.radarStyle = xmlAttrVal(start, "val")
-		case "marker":
-			info.hasMarker = true
+		case "scatterStyle":
+			info.scatterStyle = xmlAttrVal(start, "val")
+		case "symbol":
+			// Only treat markers as visible when the symbol is not "none".
+			// Line charts emit <c:marker><c:symbol val="none"/> to explicitly
+			// suppress markers; lineMarkers charts use val="circle" (or similar).
+			if val := xmlAttrVal(start, "val"); val != "" && val != "none" {
+				info.hasMarker = true
+			}
 		case "ser":
 			info.seriesCount++
 		}
