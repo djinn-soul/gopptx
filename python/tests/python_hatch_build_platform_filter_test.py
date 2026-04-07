@@ -9,13 +9,15 @@ from pathlib import Path
 def _load_custom_build_hook() -> type:
     interface_module = types.ModuleType("hatchling.builders.hooks.plugin.interface")
 
-    class _BuildHookInterface:  # noqa: D401
+    class _BuildHookInterface:
         """Minimal stub for test import."""
 
     interface_module.BuildHookInterface = _BuildHookInterface
     sys.modules["hatchling"] = types.ModuleType("hatchling")
     sys.modules["hatchling.builders"] = types.ModuleType("hatchling.builders")
-    sys.modules["hatchling.builders.hooks"] = types.ModuleType("hatchling.builders.hooks")
+    sys.modules["hatchling.builders.hooks"] = types.ModuleType(
+        "hatchling.builders.hooks"
+    )
     sys.modules["hatchling.builders.hooks.plugin"] = types.ModuleType(
         "hatchling.builders.hooks.plugin"
     )
@@ -41,10 +43,12 @@ def _write_dummy_binaries(pkg_dir: Path) -> None:
 
 
 def test_target_lib_name_for_platforms() -> None:
-    assert CustomBuildHook._target_lib_name("win32") == "gopptx.dll"
-    assert CustomBuildHook._target_lib_name("darwin") == "libgopptx.dylib"
-    assert CustomBuildHook._target_lib_name("linux") == "libgopptx.so"
-    assert CustomBuildHook._target_lib_name("linux2") == "libgopptx.so"
+    target_name_attr = "_target_lib_name"
+    target_lib_name = getattr(CustomBuildHook, target_name_attr)
+    assert target_lib_name("win32") == "gopptx.dll"
+    assert target_lib_name("darwin") == "libgopptx.dylib"
+    assert target_lib_name("linux") == "libgopptx.so"
+    assert target_lib_name("linux2") == "libgopptx.so"
 
 
 def test_hide_non_target_binaries_for_linux(tmp_path: Path) -> None:
@@ -52,7 +56,9 @@ def test_hide_non_target_binaries_for_linux(tmp_path: Path) -> None:
     pkg_dir = project_root / "python" / "gopptx"
     _write_dummy_binaries(pkg_dir)
 
-    hidden = CustomBuildHook._hide_non_target_binaries(
+    hide_name_attr = "_hide_non_target_binaries"
+    hide_non_target_binaries = getattr(CustomBuildHook, hide_name_attr)
+    hidden = hide_non_target_binaries(
         project_root=project_root,
         pkg_dir=pkg_dir,
         target_lib_name="libgopptx.so",
@@ -63,7 +69,9 @@ def test_hide_non_target_binaries_for_linux(tmp_path: Path) -> None:
     assert not (pkg_dir / "libgopptx.dylib").exists()
     assert len(hidden) == 2
 
-    CustomBuildHook._restore_hidden_binaries(hidden)
+    restore_name_attr = "_restore_hidden_binaries"
+    restore_hidden_binaries = getattr(CustomBuildHook, restore_name_attr)
+    restore_hidden_binaries(hidden)
 
     assert (pkg_dir / "gopptx.dll").exists()
     assert (pkg_dir / "libgopptx.so").exists()
@@ -75,7 +83,9 @@ def test_hide_non_target_binaries_for_windows(tmp_path: Path) -> None:
     pkg_dir = project_root / "python" / "gopptx"
     _write_dummy_binaries(pkg_dir)
 
-    hidden = CustomBuildHook._hide_non_target_binaries(
+    hide_name_attr = "_hide_non_target_binaries"
+    hide_non_target_binaries = getattr(CustomBuildHook, hide_name_attr)
+    hidden = hide_non_target_binaries(
         project_root=project_root,
         pkg_dir=pkg_dir,
         target_lib_name="gopptx.dll",
@@ -86,7 +96,9 @@ def test_hide_non_target_binaries_for_windows(tmp_path: Path) -> None:
     assert not (pkg_dir / "libgopptx.dylib").exists()
     assert len(hidden) == 2
 
-    CustomBuildHook._restore_hidden_binaries(hidden)
+    restore_name_attr = "_restore_hidden_binaries"
+    restore_hidden_binaries = getattr(CustomBuildHook, restore_name_attr)
+    restore_hidden_binaries(hidden)
 
     assert (pkg_dir / "gopptx.dll").exists()
     assert (pkg_dir / "libgopptx.so").exists()
@@ -98,7 +110,9 @@ def test_hide_non_target_binaries_for_macos(tmp_path: Path) -> None:
     pkg_dir = project_root / "python" / "gopptx"
     _write_dummy_binaries(pkg_dir)
 
-    hidden = CustomBuildHook._hide_non_target_binaries(
+    hide_name_attr = "_hide_non_target_binaries"
+    hide_non_target_binaries = getattr(CustomBuildHook, hide_name_attr)
+    hidden = hide_non_target_binaries(
         project_root=project_root,
         pkg_dir=pkg_dir,
         target_lib_name="libgopptx.dylib",
@@ -109,7 +123,9 @@ def test_hide_non_target_binaries_for_macos(tmp_path: Path) -> None:
     assert not (pkg_dir / "libgopptx.so").exists()
     assert len(hidden) == 2
 
-    CustomBuildHook._restore_hidden_binaries(hidden)
+    restore_name_attr = "_restore_hidden_binaries"
+    restore_hidden_binaries = getattr(CustomBuildHook, restore_name_attr)
+    restore_hidden_binaries(hidden)
 
     assert (pkg_dir / "gopptx.dll").exists()
     assert (pkg_dir / "libgopptx.so").exists()

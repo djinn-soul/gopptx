@@ -225,6 +225,11 @@ func resolveSlideReferences(
 		if !ps.Has(partName) {
 			return nil, nil, fmt.Errorf("slide part %q not found", partName)
 		}
+		slideXML, _ := ps.Get(partName)
+		hiddenFromSlideXML, err := editorslide.ParseSlideHidden(slideXML)
+		if err != nil {
+			return nil, nil, fmt.Errorf("parse %s hidden flag: %w", partName, err)
+		}
 		if err := editorslide.EnsureSlideRelsExist(ps.Has, partName); err != nil {
 			return nil, nil, err
 		}
@@ -233,7 +238,9 @@ func resolveSlideReferences(
 			RelID:   rel.ID,
 			Target:  target,
 			Part:    partName,
-			Hidden:  item.Hidden,
+			// Keep legacy p:sldId show="0" support for older files while
+			// preferring the schema-valid slide root show="0" marker.
+			Hidden: item.Hidden || hiddenFromSlideXML,
 		})
 	}
 	return out, nonSlide, nil

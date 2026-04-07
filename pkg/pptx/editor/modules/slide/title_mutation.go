@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+//nolint:gochecknoglobals // Precompiled patterns/tokens are immutable and hot-path.
 var (
 	titlePlaceholderPattern = regexp.MustCompile(
 		`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`,
@@ -134,22 +135,22 @@ func replaceAllTextRuns(content []byte, replaceFn func(match []byte) []byte) ([]
 	return out.Bytes(), true
 }
 
-func findNextATextRun(content []byte, searchFrom int) (start int, end int, next int, ok bool) {
+func findNextATextRun(content []byte, searchFrom int) (int, int, int, bool) {
 	openIdx := bytes.Index(content[searchFrom:], aTextOpenPrefix)
 	if openIdx < 0 {
 		return 0, 0, searchFrom, false
 	}
-	start = searchFrom + openIdx
+	start := searchFrom + openIdx
 	openEndRel := bytes.IndexByte(content[start:], '>')
 	if openEndRel < 0 {
 		return 0, 0, searchFrom, false
 	}
-	openEnd := start + openEndRel + 1
-	closeIdxRel := bytes.Index(content[openEnd:], aTextCloseTag)
+	opened := start + openEndRel + 1
+	closeIdxRel := bytes.Index(content[opened:], aTextCloseTag)
 	if closeIdxRel < 0 {
 		return 0, 0, searchFrom, false
 	}
-	end = openEnd + closeIdxRel + len(aTextCloseTag)
+	end := opened + closeIdxRel + len(aTextCloseTag)
 	return start, end, end, true
 }
 

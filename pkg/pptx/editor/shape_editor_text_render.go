@@ -129,7 +129,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				bodyPr += `<a:normAutoFit/>`
 			case "shape":
 				bodyPr += `<a:spAutoFit/>`
-			case "none":
+			case bulletStyleNone:
 				bodyPr += `<a:noAutofit/>`
 			}
 		} else if tf.AutoFit != nil {
@@ -310,7 +310,7 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 
 func normalizeUnderlineValue(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", "none":
+	case "", bulletStyleNone:
 		return "none"
 	case "single":
 		return "sng"

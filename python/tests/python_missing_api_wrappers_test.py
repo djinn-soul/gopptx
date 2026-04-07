@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-import pathlib
 import zipfile
+from typing import TYPE_CHECKING
 
 from gopptx import Presentation
 from gopptx.smartart import SMARTART_BASIC_LIST, SMARTART_BASIC_PROCESS
+
+if TYPE_CHECKING:
+    import pathlib
 
 
 def _shape_ids(slide: object) -> list[int]:
@@ -52,13 +55,15 @@ def test_set_slide_hidden_wrapper_writes_show_flag(tmp_path: pathlib.Path) -> No
     output_path = tmp_path / "slide_hidden_wrapper.pptx"
     with Presentation.new("Hide Wrapper Test") as pres:
         pres.add_slide("Second Slide")
-        pres.set_slide_hidden(1, True)
+        pres.set_slide_hidden(1, hidden=True)
         pres.save(output_path)
 
     with zipfile.ZipFile(output_path) as zf:
         presentation_xml = zf.read("ppt/presentation.xml").decode("utf-8")
     if 'show="0"' not in presentation_xml:
-        raise AssertionError("expected hidden slide marker show=\"0\" in presentation.xml")
+        raise AssertionError(
+            'expected hidden slide marker show="0" in presentation.xml'
+        )
 
 
 def test_smartart_wrapper_methods_cover_style_layout_nodes_delete() -> None:
