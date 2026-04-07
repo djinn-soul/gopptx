@@ -42,15 +42,19 @@ type BatchOptions struct {
 	OpFailedCode  string
 }
 
+type BatchExecuteResult struct {
+	Results []BatchResult `json:"results"`
+}
+
 func HandleBatchExecute(
 	payload json.RawMessage,
-	resolve func(op string) (func(json.RawMessage) (any, error), bool),
+	execute func(op string, payload json.RawMessage) (any, error, bool),
 	asBridgeError func(error) (BridgeErrorView, bool),
 	options BatchOptions,
-) (map[string]any, error) {
+) (BatchExecuteResult, error) {
 	var p BatchPayload
 	if err := json.Unmarshal(payload, &p); err != nil {
-		return nil, err
+		return BatchExecuteResult{}, err
 	}
 
 	results := make([]BatchResult, 0, len(p.Commands))
@@ -72,7 +76,7 @@ func HandleBatchExecute(
 			continue
 		}
 
-		handler, ok := resolve(cmd.Op)
+		result, err, ok := execute(cmd.Op, cmd.Payload)
 		if !ok {
 			results = append(results, BatchResult{
 				OK:        false,
@@ -90,7 +94,6 @@ func HandleBatchExecute(
 			continue
 		}
 
-		result, err := handler(cmd.Payload)
 		if err != nil {
 			code := options.OpFailedCode
 			details := any(map[string]any{"index": i})
@@ -122,7 +125,7 @@ func HandleBatchExecute(
 		})
 	}
 
-	return map[string]any{"results": results}, nil
+	return BatchExecuteResult{Results: results}, nil
 }
 
 func withBatchIndex(index int, details any) map[string]any {

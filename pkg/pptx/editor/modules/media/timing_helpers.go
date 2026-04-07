@@ -156,21 +156,10 @@ func buildMediaTimingNode(
 		numSldAttr = fmt.Sprintf(` numSld="%d"`, numSlides)
 	}
 
+	// The slide shape already carries media embed references through p14:media.
+	// Emitting extLst under p:cMediaNode is invalid per PresentationML schema.
 	extXML := ""
-	if strings.TrimSpace(mediaRelID) != "" {
-		extXML = fmt.Sprintf(`
-                  <p:extLst>
-                    <p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}">
-                      <p14:media xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="%s"/>
-                    </p:ext>
-                    <p:ext uri="{EFAFB233-063F-42B5-8137-9DF3F51BA10A}">
-                      <p15:media xmlns:p15="http://schemas.microsoft.com/office/powerpoint/2012/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="%s"/>
-                    </p:ext>
-                  </p:extLst>`,
-			escapeXMLAttr(mediaRelID),
-			escapeXMLAttr(mediaRelID),
-		)
-	}
+	_ = mediaRelID
 
 	return fmt.Sprintf(`
               <p:%s>

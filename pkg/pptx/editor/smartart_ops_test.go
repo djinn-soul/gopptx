@@ -66,3 +66,15 @@ func TestExtractAllSmartArtRelIDsDoesNotBorrowFromNeighborFrame(t *testing.T) {
 		t.Fatalf("expected empty rel IDs for non-SmartArt target, got: dm=%q lo=%q qs=%q cs=%q", dm, lo, qs, cs)
 	}
 }
+
+func TestIsDiagramDrawingRelTypeSupportsModernAndLegacyURIs(t *testing.T) {
+	if !isDiagramDrawingRelType(relTypeDiagramDrawing) {
+		t.Fatalf("expected modern diagramDrawing rel type to be recognized: %q", relTypeDiagramDrawing)
+	}
+	if !isDiagramDrawingRelType(relTypeDiagramDrawingLegacy) {
+		t.Fatalf("expected legacy diagramDrawing rel type to be recognized: %q", relTypeDiagramDrawingLegacy)
+	}
+	if isDiagramDrawingRelType(relTypeDiagramData) {
+		t.Fatalf("non-drawing rel type must not be recognized as diagramDrawing: %q", relTypeDiagramData)
+	}
+}

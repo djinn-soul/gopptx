@@ -12,6 +12,8 @@ from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 class CustomBuildHook(BuildHookInterface):
     """Build hook to compile Go shared library for Python bindings."""
 
+    _BINARY_NAMES = ("gopptx.dll", "libgopptx.so", "libgopptx.dylib")
+
     @staticmethod
     def _release_build_enabled() -> bool:
         raw = os.getenv("GOPPTX_RELEASE_BUILD", "").strip().lower()
@@ -39,6 +41,22 @@ class CustomBuildHook(BuildHookInterface):
         else:
             lib_name = "libgopptx.so"
 
+        hidden_dir = project_root / ".hatch_build_hidden_bins"
+        hidden_dir.mkdir(parents=True, exist_ok=True)
+        hidden: list[tuple[pathlib.Path, pathlib.Path]] = []
+        for candidate in self._BINARY_NAMES:
+            if candidate == lib_name:
+                continue
+            src = pkg_dir / candidate
+            if not src.exists():
+                continue
+            dst = hidden_dir / candidate
+            if dst.exists():
+                dst.unlink()
+            src.replace(dst)
+            hidden.append((dst, src))
+        build_data["gopptx_hidden_bins"] = [(str(dst), str(src)) for dst, src in hidden]
+
         out_path = pkg_dir / lib_name
 
         cmd = [
@@ -62,3 +80,22 @@ class CustomBuildHook(BuildHookInterface):
         plat = sysconfig.get_platform().replace("-", "_").replace(".", "_")
         build_data["tag"] = f"py3-none-{plat}"
         build_data["pure_python"] = False
+
+    def finalize(
+        self,
+        version: str,  # noqa: ARG002
+        build_data: dict[str, Any],
+        artifact_path: str,  # noqa: ARG002
+    ) -> None:
+        """Restore any non-target binaries hidden during wheel build."""
+        hidden = build_data.pop("gopptx_hidden_bins", [])
+        for dst_raw, src_raw in hidden:
+            dst = pathlib.Path(dst_raw)
+            src = pathlib.Path(src_raw)
+            if dst.exists():
+                if src.exists():
+                    src.unlink()
+                dst.replace(src)
+        hidden_dir = pathlib.Path(self.root) / ".hatch_build_hidden_bins"
+        if hidden_dir.exists() and not any(hidden_dir.iterdir()):
+            hidden_dir.rmdir()

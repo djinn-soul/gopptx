@@ -56,7 +56,8 @@ const (
 	// PatternTypeDiagCross is diagonal cross pattern.
 	PatternTypeDiagCross PatternType = "diagCross"
 	// PatternTypeDiagStripe is diagonal stripe pattern.
-	PatternTypeDiagStripe PatternType = "diagStripe"
+	// OOXML preset token is dashDnDiag (not diagStripe).
+	PatternTypeDiagStripe PatternType = "dashDnDiag"
 	// PatternTypeSmCheck is small checkerboard pattern.
 	PatternTypeSmCheck PatternType = "smCheck"
 	// PatternTypeDnDiag is down diagonal pattern.

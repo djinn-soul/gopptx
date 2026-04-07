@@ -8,7 +8,7 @@ import (
 )
 
 func handleSlideCount(e *PresentationEditor, _ json.RawMessage) (any, error) {
-	return map[string]int{"count": e.SlideCount()}, nil
+	return respCount(e.SlideCount()), nil
 }
 
 func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -32,7 +32,7 @@ func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"index": index}, nil
+			return respIndex(index), nil
 		},
 	)
 }
@@ -94,7 +94,7 @@ func handleDuplicateSlide(e *PresentationEditor, payload json.RawMessage) (any, 
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"new_index": newIdx}, nil
+			return respNewIndex(newIdx), nil
 		},
 	)
 }

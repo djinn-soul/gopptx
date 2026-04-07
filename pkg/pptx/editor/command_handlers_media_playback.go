@@ -94,7 +94,7 @@ func handleAddVideoWithPlaybackCommand(
 	if err != nil {
 		return nil, err
 	}
-	return map[string]int{"shape_id": shapeID}, nil
+	return respShapeID(shapeID), nil
 }
 
 //nolint:funlen // Handler keeps parse/validate/apply steps together for stable bridge error semantics.
@@ -209,7 +209,7 @@ func handleAddAudioWithPlaybackCommand(
 			return nil, timingErr
 		}
 	}
-	return map[string]int{"shape_id": shapeID}, nil
+	return respShapeID(shapeID), nil
 }
 
 func parseMediaInsertPayload(

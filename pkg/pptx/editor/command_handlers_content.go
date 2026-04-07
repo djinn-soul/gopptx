@@ -29,7 +29,7 @@ func handleFindAndReplace(e *PresentationEditor, payload json.RawMessage) (any, 
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"replacements": count}, nil
+			return respReplacements(count), nil
 		},
 	)
 }
@@ -70,7 +70,7 @@ func handleSetModifyPassword(e *PresentationEditor, payload json.RawMessage) (an
 		v.Error,
 		func(request editorcommand.SetModifyPasswordRequest) (any, error) {
 			e.Metadata().Protection.ModifyPassword = request.Password
-			return map[string]bool{"updated": true}, nil
+			return respUpdated, nil
 		},
 	)
 }
@@ -88,7 +88,7 @@ func handleSetMarkAsFinal(e *PresentationEditor, payload json.RawMessage) (any, 
 	}
 
 	e.Metadata().Protection.MarkAsFinal = final
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 func handleAddCustomXML(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -129,7 +129,7 @@ func handleAddCustomXML(e *PresentationEditor, payload json.RawMessage) (any, er
 	}
 
 	e.metadata.CustomXML = append(e.metadata.CustomXML, part)
-	return map[string]int{"index": len(e.metadata.CustomXML) - 1}, nil
+	return respIndex(len(e.metadata.CustomXML) - 1), nil
 }
 
 func handleListCustomXML(e *PresentationEditor, _ json.RawMessage) (any, error) {
@@ -179,7 +179,7 @@ func handleRemoveCustomXML(e *PresentationEditor, payload json.RawMessage) (any,
 		return nil, v.Error()
 	}
 	e.metadata.CustomXML = append(e.metadata.CustomXML[:index], e.metadata.CustomXML[index+1:]...)
-	return map[string]bool{"removed": true}, nil
+	return respRemoved, nil
 }
 
 func handleAddVba(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -215,5 +215,5 @@ func handleAddVba(e *PresentationEditor, payload json.RawMessage) (any, error) {
 		}
 	}
 	project.SetData(data)
-	return map[string]bool{"added": true}, nil
+	return respAdded, nil
 }

@@ -24,7 +24,7 @@ func handleDuplicateSlideAfter(e *PresentationEditor, payload json.RawMessage) (
 	if err != nil {
 		return nil, err
 	}
-	return map[string]int{"new_index": newIdx}, nil
+	return respNewIndex(newIdx), nil
 }
 
 // handleValidate runs structural validation and returns issues.

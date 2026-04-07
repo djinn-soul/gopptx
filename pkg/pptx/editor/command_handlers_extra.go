@@ -45,7 +45,7 @@ func handleMergeFromEditor(e *PresentationEditor, payload json.RawMessage) (any,
 	if mergeErr := e.MergeFromEditor(src); mergeErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, mergeErr.Error())
 	}
-	return map[string]bool{"merged": true}, nil
+	return respMerged, nil
 }
 
 // urlfetchHandlers holds optional handlers for URL-fetch ops registered by
@@ -103,9 +103,9 @@ func handleMarkdownToSlides(e *PresentationEditor, payload json.RawMessage) (any
 		}
 	}
 
-	return map[string]int{
-		"slide_count": len(slides),
-		"first_index": firstIndex,
+	return markdownSlidesResponse{
+		SlideCount: len(slides),
+		FirstIndex: firstIndex,
 	}, nil
 }
 
@@ -192,8 +192,8 @@ func handleAddMermaidShape(e *PresentationEditor, payload json.RawMessage) (any,
 		addedConnectors++
 	}
 
-	return map[string]int{
-		"shape_count":     addedShapes,
-		"connector_count": addedConnectors,
+	return mermaidAddResponse{
+		ShapeCount:     addedShapes,
+		ConnectorCount: addedConnectors,
 	}, nil
 }

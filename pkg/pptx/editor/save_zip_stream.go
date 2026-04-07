@@ -6,9 +6,18 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"sync"
 
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
+
+//nolint:gochecknoglobals // Shared reusable buffers reduce allocations on save hot paths.
+var rawZipCopyBufferPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, rawZipCopyBufferSize)
+		return &b
+	},
+}
 
 // mergedPartNames returns the sorted union of existing part keys and any extra
 // keys present in updatedParts that are not already in keys.
@@ -67,35 +76,52 @@ func (e *PresentationEditor) buildZipStream(
 	updatedParts map[string][]byte,
 ) ([]byte, error) {
 	var zipBuf bytes.Buffer
-	zw := zip.NewWriter(&zipBuf)
-	rawZipCopyBuffer := make([]byte, rawZipCopyBufferSize)
+	if err := e.buildZipToWriter(&zipBuf, allNames, updatedParts); err != nil {
+		return nil, err
+	}
+	return zipBuf.Bytes(), nil
+}
+
+func (e *PresentationEditor) buildZipToWriter(
+	w io.Writer,
+	allNames []string,
+	updatedParts map[string][]byte,
+) error {
+	zw := zip.NewWriter(w)
+	poolBuf, ok := rawZipCopyBufferPool.Get().(*[]byte)
+	if !ok || poolBuf == nil || cap(*poolBuf) < rawZipCopyBufferSize {
+		fresh := make([]byte, rawZipCopyBufferSize)
+		poolBuf = &fresh
+	}
+	rawZipCopyBuffer := (*poolBuf)[:rawZipCopyBufferSize]
+	defer rawZipCopyBufferPool.Put(poolBuf)
 
 	for _, name := range allNames {
 		if updated, updatedOK := updatedParts[name]; updatedOK {
 			if err := writeZipData(zw, name, updated); err != nil {
-				return nil, err
+				return err
 			}
 			continue
 		}
 		if sourceEntry, sourceOK := e.parts.SourceZipEntry(name); sourceOK {
 			if err := copyZipEntryRaw(zw, sourceEntry, rawZipCopyBuffer); err != nil {
-				return nil, fmt.Errorf("copy source zip entry %q: %w", name, err)
+				return fmt.Errorf("copy source zip entry %q: %w", name, err)
 			}
 			continue
 		}
 		content, partOK := e.parts.Get(name)
 		if !partOK {
-			return nil, fmt.Errorf("failed to retrieve part %q during save", name)
+			return fmt.Errorf("failed to retrieve part %q during save", name)
 		}
 		if err := writeZipData(zw, name, content); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if err := zw.Close(); err != nil {
-		return nil, fmt.Errorf("finalize zip stream: %w", err)
+		return fmt.Errorf("finalize zip stream: %w", err)
 	}
-	return zipBuf.Bytes(), nil
+	return nil
 }
 
 func copyZipEntryRaw(zw *zip.Writer, sourceEntry *zip.File, copyBuffer []byte) error {

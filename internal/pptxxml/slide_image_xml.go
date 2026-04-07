@@ -142,7 +142,7 @@ func imageEffectsXML(shadow, reflection bool) string {
 		b.WriteString(`"/></a:srgbClr></a:outerShdw>`)
 	}
 	if reflection {
-		b.WriteString(`<a:ref blurRad="`)
+		b.WriteString(`<a:reflection blurRad="`)
 		b.WriteString(strconv.Itoa(defaultReflectionBlur))
 		b.WriteString(`" stA="`)
 		b.WriteString(strconv.Itoa(defaultReflectionStA))

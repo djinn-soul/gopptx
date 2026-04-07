@@ -14,7 +14,11 @@ const (
 	relTypeDiagramLayout     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout"
 	relTypeDiagramQuickStyle = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle"
 	relTypeDiagramColors     = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors"
-	relTypeDiagramDrawing    = "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing"
+	// PowerPoint emits this Microsoft URI for slide-level and data-level diagramDrawing rels.
+	// Keep this as writer default for maximum COM-open compatibility.
+	relTypeDiagramDrawing = "http://schemas.microsoft.com/office/2007/relationships/diagramDrawing"
+	// Older generated decks may still carry the OpenXML URI variant; keep reader support.
+	relTypeDiagramDrawingLegacy = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramDrawing"
 
 	contentTypeDiagramData    = "application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"
 	contentTypeDiagramLayout  = "application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"
@@ -48,13 +52,11 @@ func (e *PresentationEditor) AddSmartArt(slideIndex int, sa smartart.SmartArt) (
 	colorsPath := fmt.Sprintf("ppt/diagrams/colors%d.xml", num)
 	stylePath := fmt.Sprintf("ppt/diagrams/quickStyle%d.xml", num)
 	drawingPath := fmt.Sprintf("ppt/diagrams/drawing%d.xml", num)
-	dataRelsPath := fmt.Sprintf("ppt/diagrams/_rels/data%d.xml.rels", num)
 	e.parts.Set(dataPath, []byte(pptxxml.SmartArtDataXML(spec)))
 	e.parts.Set(layoutPath, []byte(pptxxml.SmartArtLayoutXML(spec.LayoutURI, category)))
 	e.parts.Set(colorsPath, []byte(pptxxml.SmartArtColorsXML(spec.ColorStyleID)))
 	e.parts.Set(stylePath, []byte(pptxxml.SmartArtStyleXML(spec.QuickStyleID)))
 	e.parts.Set(drawingPath, []byte(pptxxml.SmartArtDrawingXML(spec)))
-	e.parts.Set(dataRelsPath, []byte(smartArtEditorDataRelsXML(num)))
 
 	// Register content types.
 	e.addContentTypeOverride(dataPath, contentTypeDiagramData)
@@ -135,17 +137,6 @@ func buildSmartArtGraphicFrameXML(frame pptxxml.SmartArtFrame, shapeID int) stri
 		shapeID, shapeID, altAttr,
 		frame.X, frame.Y, frame.CX, frame.CY,
 		frame.DataRelID, frame.LayoutRelID, frame.StyleRelID, frame.ColorRelID,
-	)
-}
-
-// smartArtEditorDataRelsXML builds the _rels/data%d.xml.rels pointing to drawing%d.xml.
-func smartArtEditorDataRelsXML(num int) string {
-	return fmt.Sprintf(
-		`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+"\n"+
-			`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+"\n"+
-			`  <Relationship Id="rId6" Type="http://schemas.microsoft.com/office/2007/relationships/diagramDrawing" Target="drawing%d.xml"/>`+"\n"+
-			`</Relationships>`,
-		num,
 	)
 }
 

@@ -73,7 +73,7 @@ func handleAddSmartArt(e *PresentationEditor, payload json.RawMessage) (any, err
 	if addErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, addErr.Error())
 	}
-	return map[string]int{"shape_id": shapeID}, nil
+	return respShapeID(shapeID), nil
 }
 
 // handleAddAnimation adds an animation effect to a shape on an existing slide.
@@ -123,7 +123,7 @@ func handleAddAnimation(e *PresentationEditor, payload json.RawMessage) (any, er
 	if addErr := e.AddSlideAnimation(slideIndex, shapeID, effect, trigger, durationMS, delayMS); addErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, addErr.Error())
 	}
-	return map[string]bool{"added": true}, nil
+	return respAdded, nil
 }
 
 // handleSetSlideTransition sets the transition for an existing slide.
@@ -168,7 +168,7 @@ func handleSetSlideTransition(e *PresentationEditor, payload json.RawMessage) (a
 	); setErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // parseSmartArtNodeList converts a JSON-decoded value ([]any of node maps) into []smartart.Node.

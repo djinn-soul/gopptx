@@ -121,14 +121,14 @@ func chartValueFormatXML(format string) string {
 func valueAxisScalingXML(minValue *float64, maxValue *float64) string {
 	var b strings.Builder
 	b.WriteString(`<c:scaling><c:orientation val="minMax"/>`)
-	if minValue != nil {
-		b.WriteString(`<c:min val="`)
-		b.WriteString(strconv.FormatFloat(*minValue, 'f', 6, 64))
-		b.WriteString(`"/>`)
-	}
 	if maxValue != nil {
 		b.WriteString(`<c:max val="`)
 		b.WriteString(strconv.FormatFloat(*maxValue, 'f', 6, 64))
+		b.WriteString(`"/>`)
+	}
+	if minValue != nil {
+		b.WriteString(`<c:min val="`)
+		b.WriteString(strconv.FormatFloat(*minValue, 'f', 6, 64))
 		b.WriteString(`"/>`)
 	}
 	b.WriteString(`</c:scaling>`)

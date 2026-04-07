@@ -171,11 +171,11 @@ func DefaultSlideMaster() string {
 
 // DefaultSlideMasterRelationships returns default relationships for a slide master.
 func DefaultSlideMasterRelationships() string {
-	// Link to first layout (slideLayout1.xml) - the first layout will be created automatically.
+	// New masters should only reference a theme by default.
+	// Layout relationships are added explicitly when AddSlideLayout is called.
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="slideLayout1.xml"/>
 </Relationships>`
 }
 
