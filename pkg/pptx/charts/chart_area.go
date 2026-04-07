@@ -57,7 +57,7 @@ func NewAreaChart(categories []string, values []float64) AreaChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		AreaColor:                  "9BBB59",
+		AreaColor:                  "4F81BD",
 		SeriesName:                 "Series 1",
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,

@@ -113,14 +113,6 @@ func measureStyledRunWidth(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
 	return measuredWidthWithMetrics(pdf, run.Text, run.FontHint)
 }
 
-func measureStyledLineWidth(pdf *gopdf.GoPdf, line []pdfStyledRun) float64 {
-	total := 0.0
-	for _, run := range line {
-		total += measureStyledRunWidth(pdf, run)
-	}
-	return total
-}
-
 func renderStyledLine(pdf *gopdf.GoPdf, line []pdfStyledRun, x, y float64) {
 	cursorX := x
 	for _, run := range line {

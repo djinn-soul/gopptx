@@ -17,6 +17,7 @@ type parsedChartSeries struct {
 	XValues    []float64
 	YValues    []float64
 	Sizes      []float64
+	Color      string // hex RGB from <a:srgbClr> inside the series spPr
 }
 
 type parsedChart struct {
@@ -29,7 +30,12 @@ type parsedChart struct {
 	CY           int64
 	AltText      string
 	IsDecorative bool
+	ScatterStyle string
 	Series       []parsedChartSeries
+	// AxisMinValue / AxisMaxValue are non-nil only when PowerPoint stored an
+	// explicit fixed axis bound in <c:scaling><c:min>/<c:max>. Nil means auto.
+	AxisMinValue *float64
+	AxisMaxValue *float64
 }
 
 type chartFrameRef struct {
@@ -44,16 +50,23 @@ type chartFrameRef struct {
 }
 
 var (
-	reGraphicFrame = regexp.MustCompile(`(?s)<p:graphicFrame\b.*?</p:graphicFrame>`)
-	reChartRelID   = regexp.MustCompile(`\br:id="([^"]+)"`)
-	reSeriesBlock  = regexp.MustCompile(`(?s)<c:ser\b.*?</c:ser>`)
-	reTextValue    = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
-	rePointValue   = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
+	reGraphicFrame  = regexp.MustCompile(`(?s)<p:graphicFrame\b.*?</p:graphicFrame>`)
+	reChartRelID    = regexp.MustCompile(`\br:id="([^"]+)"`)
+	reSeriesBlock   = regexp.MustCompile(`(?s)<c:ser\b.*?</c:ser>`)
+	reTextValue     = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>|<c:v>(.*?)</c:v>`)
+	rePointValue    = regexp.MustCompile(`(?s)<c:pt\b[^>]*>.*?<c:v>(.*?)</c:v>.*?</c:pt>`)
+	reSeriesSrgbClr = regexp.MustCompile(`<a:srgbClr val="([0-9A-Fa-f]{6})"`)
+	reScatterStyle  = regexp.MustCompile(`<c:scatterStyle val="([^"]+)"`)
+	reValAxBlock    = regexp.MustCompile(`(?s)<c:valAx\b.*?</c:valAx>`)
+	reScalingBlock  = regexp.MustCompile(`(?s)<c:scaling\b.*?</c:scaling>`)
+	reScalingMin    = regexp.MustCompile(`<c:min val="([^"]+)"`)
+	reScalingMax    = regexp.MustCompile(`<c:max val="([^"]+)"`)
 )
 
 const (
 	minChartRelIDMatchGroups = 2
 	minPointMatchGroups      = 2
+	minRegexMatchGroups      = 2
 	minTextMatchGroups       = 3
 )
 
@@ -143,15 +156,51 @@ func parseChartFrames(slideXML []byte) []chartFrameRef {
 func parseChartPart(chartXML []byte) parsedChart {
 	raw := string(chartXML)
 	result := parsedChart{
-		Kind:  detectChartKind(raw),
-		Title: firstText(raw, "<c:title", "</c:title>"),
+		Kind:         detectChartKind(raw),
+		Title:        firstText(raw, "<c:title", "</c:title>"),
+		ScatterStyle: "marker",
+	}
+	if styleMatch := reScatterStyle.FindStringSubmatch(raw); len(styleMatch) >= minRegexMatchGroups {
+		result.ScatterStyle = styleMatch[1]
 	}
 	blocks := reSeriesBlock.FindAllString(raw, -1)
 	result.Series = make([]parsedChartSeries, 0, len(blocks))
 	for _, block := range blocks {
 		result.Series = append(result.Series, parseSeriesBlock(block))
 	}
+	applyChartAxisBounds(&result, raw)
 	return result
+}
+
+func applyChartAxisBounds(result *parsedChart, raw string) {
+	// Extract explicit axis bounds from <c:valAx><c:scaling><c:min>/<c:max>.
+	// When PowerPoint uses Auto scaling these elements are absent → fields stay nil.
+	valAxStr := reValAxBlock.FindString(raw)
+	if valAxStr == "" {
+		return
+	}
+	scalingStr := reScalingBlock.FindString(valAxStr)
+	if scalingStr == "" {
+		return
+	}
+	if minValue, ok := parseScalingBound(scalingStr, reScalingMin); ok {
+		result.AxisMinValue = &minValue
+	}
+	if maxValue, ok := parseScalingBound(scalingStr, reScalingMax); ok {
+		result.AxisMaxValue = &maxValue
+	}
+}
+
+func parseScalingBound(raw string, re *regexp.Regexp) (float64, bool) {
+	m := re.FindStringSubmatch(raw)
+	if len(m) < minRegexMatchGroups {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(m[1], 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
 }
 
 func parseSeriesBlock(block string) parsedChartSeries {
@@ -170,6 +219,10 @@ func parseSeriesBlock(block string) parsedChartSeries {
 	}
 	if full := firstTagBlock(block, "c:bubbleSize"); full != "" {
 		series.Sizes = extractFloatPoints(full)
+	}
+	// Extract fill color from series shape properties.
+	if m := reSeriesSrgbClr.FindStringSubmatch(block); len(m) >= minRegexMatchGroups {
+		series.Color = m[1]
 	}
 	return series
 }

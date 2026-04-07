@@ -7,6 +7,60 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+// drawHorizontalBarItem draws a single bar in a horizontal bar chart at row i.
+func drawHorizontalBarItem(
+	pdf *gopdf.GoPdf, i int, values []float64,
+	px, py, pw, ph, minV, maxV float64, opts chartSeriesOpts,
+) {
+	slot := ph / float64(len(values))
+	bh := math.Max(8, slot*0.42)
+	by := py + slot*float64(i) + (slot-bh)/2
+	valueIndex := len(values) - 1 - i
+	bx, bw := horizontalBarGeometry(values[valueIndex], minV, maxV, px+1, pw-2)
+	if bw < 0.5 && values[valueIndex] != 0 {
+		bw = 0.5
+	}
+	pdf.RectFromUpperLeftWithStyle(bx, by, bw, bh, "F")
+	if opts.showDataLabels && bw > 0 {
+		labelX := bx + bw + 3
+		if values[valueIndex] < 0 {
+			labelX = bx - 3
+		}
+		drawBarDataLabel(pdf, labelX, by+bh/2-3, values[valueIndex])
+	}
+}
+
+// drawVerticalBarItem draws a single bar in a vertical bar chart at column i.
+func drawVerticalBarItem(
+	pdf *gopdf.GoPdf,
+	i int,
+	v, px, py, pw, ph, maxV, rangeV float64,
+	nValues int,
+	opts chartSeriesOpts,
+) {
+	slot := pw / float64(nValues)
+	bw := math.Max(8, slot*0.40)
+	bx := px + slot*float64(i) + (slot-bw)/2
+	zeroY := py + ph*maxV/rangeV
+	valueY := py + ph*(maxV-v)/rangeV
+	barTop := math.Min(zeroY, valueY)
+	barH := math.Abs(zeroY - valueY)
+	if barH < 0.5 {
+		barH = 0.5
+	}
+	pdf.RectFromUpperLeftWithStyle(bx, barTop, bw, barH, "F")
+	if opts.showDataLabels {
+		labelY := barTop - 5
+		if v < 0 {
+			labelY = barTop + barH + 3
+		}
+		drawBarDataLabel(pdf, bx+bw/2, labelY, v)
+	}
+}
+
+// renderBarLike renders a vertical or horizontal bar chart.
+// opts.color controls the bar fill (empty = default blue).
+// opts.minValue / opts.maxValue override the computed axis range.
 func renderBarLike(
 	pdf *gopdf.GoPdf,
 	title string,
@@ -14,46 +68,71 @@ func renderBarLike(
 	values []float64,
 	categories []string,
 	horizontal bool,
+	opts chartSeriesOpts,
 ) {
 	renderChartTitle(pdf, title, r)
 	if len(values) == 0 {
 		return
 	}
-	px, py, pw, ph := chartPlotRect(r)
-	if horizontal {
-		px, py, pw, ph = chartPlotRectHorizontal(r)
+
+	plotR := r
+	if opts.showLegend {
+		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	maxV := niceAxisMax(maxFloat(values))
-	if maxV <= 0 {
-		maxV = 1
-	}
+	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
 	if horizontal {
-		drawHorizontalChartFrame(pdf, px, py, pw, ph, maxV, categories)
+		px, py, pw, ph = chartPlotRectHorizontal(plotR, opts.titleOverlay)
+	}
+
+	minV, maxV := niceAxisRange(values)
+	if opts.minValue != nil {
+		minV = *opts.minValue
+	}
+	if opts.maxValue != nil {
+		maxV = *opts.maxValue
+	}
+	if maxV <= minV {
+		maxV = minV + 1
+	}
+	rangeV := maxV - minV
+
+	barR, barG, barB := uint8(79), uint8(129), uint8(189)
+	if opts.color != "" {
+		barR, barG, barB = hexToRGB(opts.color)
+	}
+
+	if horizontal {
+		drawHorizontalChartFrame(pdf, px, py, pw, ph, minV, maxV, categories, opts.showCatGridlines, opts.valueFormat)
 	} else {
-		drawChartFrame(pdf, px, py, pw, ph, maxV)
+		drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
 	}
-	pdf.SetFillColor(79, 129, 189)
+
+	pdf.SetFillColor(barR, barG, barB)
 	for i, v := range values {
 		if horizontal {
-			slot := ph / float64(len(values))
-			bh := math.Max(8, slot*0.42)
-			by := py + slot*float64(i) + (slot-bh)/2
-			valueIndex := len(values) - 1 - i
-			bw := (values[valueIndex] / maxV) * (pw - 2)
-			pdf.RectFromUpperLeftWithStyle(px+1, by, bw, bh, "F")
+			drawHorizontalBarItem(pdf, i, values, px, py, pw, ph, minV, maxV, opts)
 		} else {
-			slot := pw / float64(len(values))
-			bw := math.Max(8, slot*0.40)
-			bx := px + slot*float64(i) + (slot-bw)/2
-			bh := (v / maxV) * (ph - 4)
-			pdf.RectFromUpperLeftWithStyle(bx, py+ph-bh, bw, bh, "F")
+			drawVerticalBarItem(pdf, i, v, px, py, pw, ph, maxV, rangeV, len(values), opts)
 		}
 	}
+
 	if !horizontal {
 		drawCategoryLabels(pdf, px, py, pw, ph, categories)
+		if opts.catAxisTitle != "" {
+			drawCategoryAxisTitle(pdf, px, py, pw, ph, opts.catAxisTitle)
+		}
+		if opts.valAxisTitle != "" {
+			drawValueAxisTitle(pdf, px, py, pw, ph, opts.valAxisTitle)
+		}
+	}
+	if opts.showLegend {
+		drawChartLegend(pdf, r, opts.legendPosition, []legendEntry{
+			{Name: opts.seriesName, R: barR, G: barG, B: barB},
+		})
 	}
 }
 
+// renderLineLike renders a line chart with optional markers and smooth curves.
 func renderLineLike(
 	pdf *gopdf.GoPdf,
 	title string,
@@ -61,139 +140,149 @@ func renderLineLike(
 	values []float64,
 	categories []string,
 	markers bool,
+	opts chartSeriesOpts,
 ) {
 	renderChartTitle(pdf, title, r)
 	if len(values) < 2 {
 		return
 	}
-	px, py, pw, ph := chartPlotRect(r)
-	maxV := niceAxisMax(maxFloat(values))
-	if maxV <= 0 {
-		maxV = 1
+
+	plotR := r
+	if opts.showLegend {
+		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	drawChartFrame(pdf, px, py, pw, ph, maxV)
-	pdf.SetStrokeColor(192, 80, 77)
-	for i := 1; i < len(values); i++ {
-		x1 := px + (float64(i-1)*pw)/float64(len(values)-1)
-		y1 := py + ph - (values[i-1]/maxV)*(ph-4)
-		x2 := px + (float64(i)*pw)/float64(len(values)-1)
-		y2 := py + ph - (values[i]/maxV)*(ph-4)
-		pdf.Line(x1, y1, x2, y2)
-		if markers {
-			pdf.Oval(x2-2, y2-2, x2+2, y2+2)
+	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
+
+	minV, maxV := niceAxisRange(values)
+	if opts.minValue != nil {
+		minV = *opts.minValue
+	}
+	if opts.maxValue != nil {
+		maxV = *opts.maxValue
+	}
+	if maxV <= minV {
+		maxV = minV + 1
+	}
+	rangeV := maxV - minV
+
+	lineR, lineG, lineB := uint8(79), uint8(129), uint8(189)
+	if opts.color != "" {
+		lineR, lineG, lineB = hexToRGB(opts.color)
+	}
+
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	pdf.SetStrokeColor(lineR, lineG, lineB)
+	pdf.SetFillColor(lineR, lineG, lineB)
+
+	// Build the raw data points.
+	rawPts := make([]gopdf.Point, len(values))
+	for i, v := range values {
+		rawPts[i] = gopdf.Point{
+			X: px + (float64(i)*pw)/float64(len(values)-1),
+			Y: py + ph - ((v-minV)/rangeV)*(ph-4),
 		}
 	}
+
+	// Draw connecting lines: straight or Catmull-Rom smooth.
+	drawPts := rawPts
+	if opts.smooth && len(rawPts) >= 2 {
+		drawPts = catmullRomPoints(rawPts, 8)
+	}
+	for i := 1; i < len(drawPts); i++ {
+		pdf.Line(drawPts[i-1].X, drawPts[i-1].Y, drawPts[i].X, drawPts[i].Y)
+	}
+
+	// Draw markers and data labels at original data points.
+	for i, pt := range rawPts {
+		if markers {
+			drawFilledCircle(pdf, pt.X, pt.Y, 2.5, lineR, lineG, lineB)
+		}
+		if opts.showDataLabels {
+			drawBarDataLabel(pdf, pt.X, pt.Y-8, values[i])
+		}
+	}
+
 	drawCategoryLabels(pdf, px, py, pw, ph, categories)
+	if opts.catAxisTitle != "" {
+		drawCategoryAxisTitle(pdf, px, py, pw, ph, opts.catAxisTitle)
+	}
+	if opts.valAxisTitle != "" {
+		drawValueAxisTitle(pdf, px, py, pw, ph, opts.valAxisTitle)
+	}
+	if opts.showLegend {
+		drawChartLegend(pdf, r, opts.legendPosition, []legendEntry{
+			{Name: opts.seriesName, R: lineR, G: lineG, B: lineB},
+		})
+	}
 }
 
+// renderAreaLike renders a filled area chart with a stroke outline.
 func renderAreaLike(
 	pdf *gopdf.GoPdf,
 	title string,
 	r chartRect,
 	values []float64,
 	categories []string,
+	opts chartSeriesOpts,
 ) {
 	renderChartTitle(pdf, title, r)
 	if len(values) < 2 {
 		return
 	}
-	px, py, pw, ph := chartPlotRect(r)
-	maxV := niceAxisMax(maxFloat(values))
-	if maxV <= 0 {
-		maxV = 1
+
+	plotR := r
+	if opts.showLegend {
+		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	drawChartFrame(pdf, px, py, pw, ph, maxV)
+	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
+
+	minV, maxV := niceAxisRange(values)
+	if opts.minValue != nil {
+		minV = *opts.minValue
+	}
+	if opts.maxValue != nil {
+		maxV = *opts.maxValue
+	}
+	if maxV <= minV {
+		maxV = minV + 1
+	}
+	rangeV := maxV - minV
+
+	areaR, areaG, areaB := uint8(79), uint8(129), uint8(189)
+	if opts.color != "" {
+		areaR, areaG, areaB = hexToRGB(opts.color)
+	}
+
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+
+	zeroY := py + ph*maxV/rangeV
 	pts := make([]gopdf.Point, 0, len(values)+2)
-	pts = append(pts, gopdf.Point{X: px, Y: py + ph})
+	pts = append(pts, gopdf.Point{X: px, Y: zeroY})
 	for i, v := range values {
 		x := px + (float64(i)*pw)/float64(len(values)-1)
-		y := py + ph - (v/maxV)*(ph-4)
+		y := py + ph - ((v-minV)/rangeV)*(ph-4)
 		pts = append(pts, gopdf.Point{X: x, Y: y})
 	}
-	pts = append(pts, gopdf.Point{X: px + pw, Y: py + ph})
-	pdf.SetFillColor(155, 187, 89)
-	pdf.Polygon(pts, "F")
+	pts = append(pts, gopdf.Point{X: px + pw, Y: zeroY})
+
+	// Darken fill colour slightly for the stroke outline.
+	strokeR := uint8(math.Max(0, float64(areaR)*0.7))
+	strokeG := uint8(math.Max(0, float64(areaG)*0.7))
+	strokeB := uint8(math.Max(0, float64(areaB)*0.7))
+	pdf.SetStrokeColor(strokeR, strokeG, strokeB)
+	pdf.SetFillColor(areaR, areaG, areaB)
+	pdf.Polygon(pts, "FD")
+
 	drawCategoryLabels(pdf, px, py, pw, ph, categories)
-}
-
-func renderPieLike(pdf *gopdf.GoPdf, title string, r chartRect, values []float64, doughnut bool) {
-	renderChartTitle(pdf, title, r)
-	if len(values) == 0 {
-		return
+	if opts.catAxisTitle != "" {
+		drawCategoryAxisTitle(pdf, px, py, pw, ph, opts.catAxisTitle)
 	}
-	cx := r.x + r.w/2
-	cy := r.y + r.h/2 + 8
-	radius := math.Min(r.w, r.h) * 0.35
-	total := sumFloat(values)
-	if total <= 0 {
-		return
+	if opts.valAxisTitle != "" {
+		drawValueAxisTitle(pdf, px, py, pw, ph, opts.valAxisTitle)
 	}
-	start := -math.Pi / 2
-	for i, v := range values {
-		frac := v / total
-		end := start + frac*2*math.Pi
-		rC, gC, bC := pieColor(i)
-		drawWedge(pdf, cx, cy, radius, start, end, rC, gC, bC)
-		start = end
-	}
-	if doughnut {
-		pdf.SetFillColor(255, 255, 255)
-		inner := radius * 0.45
-		pdf.Oval(cx-inner, cy-inner, cx+inner, cy+inner)
-	}
-}
-
-func renderScatterLike(pdf *gopdf.GoPdf, title string, r chartRect, xs, ys, sizes []float64) {
-	renderChartTitle(pdf, title, r)
-	if len(xs) == 0 || len(ys) == 0 {
-		return
-	}
-	n := min(len(xs), len(ys))
-	px, py, pw, ph := r.x+8, r.y+24, r.w-16, r.h-32
-	minX, maxX := minMax(xs[:n])
-	minY, maxY := minMax(ys[:n])
-	if maxX <= minX {
-		maxX = minX + 1
-	}
-	if maxY <= minY {
-		maxY = minY + 1
-	}
-	pdf.RectFromUpperLeftWithStyle(px, py, pw, ph, "D")
-	for i := range n {
-		xf := (xs[i] - minX) / (maxX - minX)
-		yf := (ys[i] - minY) / (maxY - minY)
-		x := px + xf*(pw-6) + 3
-		y := py + ph - yf*(ph-6) - 3
-		rad := 3.0
-		if i < len(sizes) && sizes[i] > 0 {
-			rad = math.Min(8, 2+math.Sqrt(sizes[i])*0.8)
-		}
-		pdf.Oval(x-rad, y-rad, x+rad, y+rad)
-	}
-}
-
-func renderRadarLike(pdf *gopdf.GoPdf, title string, r chartRect, values []float64, filled bool) {
-	renderChartTitle(pdf, title, r)
-	if len(values) < 3 {
-		return
-	}
-	cx := r.x + r.w/2
-	cy := r.y + r.h/2 + 6
-	radius := math.Min(r.w, r.h) * 0.35
-	maxV := maxFloat(values)
-	if maxV <= 0 {
-		maxV = 1
-	}
-	pts := make([]gopdf.Point, 0, len(values))
-	for i, v := range values {
-		angle := -math.Pi/2 + (2*math.Pi*float64(i))/float64(len(values))
-		scale := v / maxV
-		pts = append(pts, gopdf.Point{X: cx + math.Cos(angle)*radius*scale, Y: cy + math.Sin(angle)*radius*scale})
-	}
-	if filled {
-		pdf.SetFillColor(155, 187, 89)
-		pdf.Polygon(pts, "FD")
-	} else {
-		pdf.Polygon(pts, "D")
+	if opts.showLegend {
+		drawChartLegend(pdf, r, opts.legendPosition, []legendEntry{
+			{Name: opts.seriesName, R: areaR, G: areaG, B: areaB},
+		})
 	}
 }

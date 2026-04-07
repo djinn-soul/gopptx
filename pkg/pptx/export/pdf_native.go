@@ -3,7 +3,6 @@ package export
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/signintech/gopdf"
 
@@ -39,8 +38,19 @@ func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, o
 		return err
 	}
 
-	for i, slide := range slides {
-		renderNativePDFSlide(pdf, slide, i+1, len(slides))
+	totalVisible := 0
+	for _, slide := range slides {
+		if !slide.Hidden {
+			totalVisible++
+		}
+	}
+	visibleIndex := 0
+	for _, slide := range slides {
+		if slide.Hidden {
+			continue
+		}
+		visibleIndex++
+		renderNativePDFSlide(pdf, slide, visibleIndex, totalVisible)
 	}
 
 	return pdf.WritePdf(outputPath)
@@ -91,41 +101,12 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	if slide.ShowSlideNumber {
 		renderNativePDFSlideNumber(pdf, index, total)
 	}
-}
-
-func renderNativePDFSlideText(pdf *gopdf.GoPdf, slide elements.SlideContent) {
-	if slide.Title != "" {
-		renderPDFTitle(pdf, slide)
+	if slide.FooterText != "" {
+		renderNativePDFFooter(pdf, slide.FooterText)
 	}
-	if len(slide.Bullets) > 0 {
-		renderPDFBullets(pdf, slide)
+	if len(slide.PlaceholderOverrides) > 0 {
+		renderNativePDFPlaceholderOverrides(pdf, slide)
 	}
-}
-
-func renderNativePDFSlideShapes(pdf *gopdf.GoPdf, slide elements.SlideContent) {
-	for _, shape := range slide.Shapes {
-		renderPDFShape(pdf, shape)
-	}
-	for _, connector := range slide.Connectors {
-		renderPDFConnector(pdf, connector)
-	}
-}
-
-func renderNativePDFSlideAssets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
-	for _, img := range slide.Images {
-		_ = renderPDFImageWithEffects(pdf, img)
-	}
-	if slide.Table != nil {
-		renderPDFTable(pdf, *slide.Table)
-	}
-}
-
-func renderNativePDFSlideNumber(pdf *gopdf.GoPdf, index, total int) {
-	pdf.SetTextColor(150, 150, 150)
-	slideNum := fmt.Sprintf("%d / %d", index, total)
-	pdf.SetX(slideWidthPt - 60)
-	pdf.SetY(slideHeightPt - 15)
-	_ = pdf.Cell(nil, slideNum)
 }
 
 func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
@@ -158,6 +139,14 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		titleBoxY = emuToPt(b[1])
 		titleBoxW = emuToPt(b[2])
 		titleBoxH = emuToPt(b[3])
+	} else if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutCenteredTitle {
+		// Default centered-title box: narrower, vertically centered per Office template defaults.
+		// These values approximate the default ctrTitle placeholder from a standard Office theme
+		// (x≈685800 EMU, y≈2130425 EMU, cx≈7772400 EMU, cy≈1470025 EMU on a 9144000×6858000 slide).
+		titleBoxX = 54.0
+		titleBoxY = 167.0
+		titleBoxW = slideWidthPt - 108
+		titleBoxH = 116.0
 	}
 	titleSize = fitPDFTitleSize(
 		pdf,
@@ -177,7 +166,8 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	}
 	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW, slide.TitleFont)
 	lineH := pdfLineHeight(titleSize)
-	yPos := titleBoxY
+	totalTextH := float64(len(lines)) * lineH
+	yPos := titleBoxY + max(0, (titleBoxH-totalTextH)/2)
 	for _, line := range lines {
 		if yPos+lineH > titleBoxY+titleBoxH {
 			break
