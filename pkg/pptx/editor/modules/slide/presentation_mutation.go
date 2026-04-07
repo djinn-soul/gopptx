@@ -38,6 +38,9 @@ func BuildPresentationSlideListXML(slides []common.EditorSlideRef) string {
 		b.WriteString("\" r:id=\"")
 		b.WriteString(slide.RelID)
 		b.WriteString("\"")
+		if slide.Hidden {
+			b.WriteString(` show="0"`)
+		}
 		b.WriteString("/>")
 	}
 	if len(slides) > 0 {

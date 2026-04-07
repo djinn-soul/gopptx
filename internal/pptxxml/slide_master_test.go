@@ -188,3 +188,27 @@ func TestContentTypesMultiMaster(t *testing.T) {
 		t.Error("unexpected slideMaster3 content-type override")
 	}
 }
+
+func TestPresentationHiddenSlidesEmitShowZeroOnSlideRefs(t *testing.T) {
+	xml := pptxxml.Presentation(
+		"Hidden",
+		2,
+		false,
+		12192000,
+		6858000,
+		1,
+		nil,
+		nil,
+		false,
+		nil,
+		nil,
+		[]bool{true, false},
+	)
+
+	if !strings.Contains(xml, `<p:sldId id="257" r:id="rId3" show="0"/>`) {
+		t.Error("expected first slide to emit show=0 when hidden")
+	}
+	if strings.Contains(xml, `<p:sldId id="258" r:id="rId4" show="0"/>`) {
+		t.Error("second slide should not emit show=0 when not hidden")
+	}
+}
