@@ -12,13 +12,16 @@ import (
 
 func TestPresentationMutationHelpers(t *testing.T) {
 	slides := []common.EditorSlideRef{
-		{SlideID: 256, RelID: "rId2"},
+		{SlideID: 256, RelID: "rId2", Hidden: true},
 		{SlideID: 300, RelID: "rId5"},
 	}
 	slideListXML := BuildPresentationSlideListXML(slides)
 	if !strings.Contains(slideListXML, `id="256"`) ||
 		!strings.Contains(slideListXML, `r:id="rId5"`) {
 		t.Fatalf("BuildPresentationSlideListXML unexpected output: %s", slideListXML)
+	}
+	if !strings.Contains(slideListXML, `id="256" r:id="rId2" show="0"`) {
+		t.Fatalf("BuildPresentationSlideListXML missing hidden show flag: %s", slideListXML)
 	}
 
 	source := `<p:presentation><p:sldIdLst><p:sldId id="1" r:id="rId1"/></p:sldIdLst></p:presentation>`
