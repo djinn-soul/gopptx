@@ -152,6 +152,9 @@ func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, has
 	if err != nil {
 		return nil, err
 	}
+	if err := e.rewriteSlideVisibilityParts(out); err != nil {
+		return nil, err
+	}
 	e.filterRootCustomXMLRelationships(out)
 
 	// Check for commentAuthors existence and relationship injection

@@ -186,6 +186,7 @@ func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, er
 		func(op string, itemPayload json.RawMessage) (any, error, bool) {
 			handler, ok := commandHandlerFor(op)
 			if !ok {
+				//nolint:nilnil // (nil,nil,false) is the dispatch contract for "handler not found".
 				return nil, nil, false
 			}
 			result, err := handler(e, itemPayload)

@@ -70,6 +70,7 @@ type mermaidAddResponse struct {
 	ConnectorCount int `json:"connector_count"`
 }
 
+//nolint:gochecknoglobals // Reusable immutable responses avoid repeat allocations in hot command handlers.
 var (
 	respUpdated = updatedResponse{Updated: true}
 	respAdded   = addedResponse{Added: true}

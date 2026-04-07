@@ -178,7 +178,7 @@ func convertShowSettings(s common.ShowSettings) *pptxxml.ShowSettings {
 func addBasicPropertyFiles(
 	pw *pptxxml.PackageWriter,
 	meta Metadata,
-	slides []elements.SlideContent,
+	_ []elements.SlideContent,
 	slideCount, notesPartCount, chartPartCount, smartArtPartCount int,
 	notesParts []notes.RenderedNotesPart,
 	masterCount, notesThemeIndex int,
@@ -271,11 +271,6 @@ func addBasicPropertyFiles(
 		nextRid++
 	}
 
-	hiddenSlides := make([]bool, len(slides))
-	for i, s := range slides {
-		hiddenSlides[i] = s.Hidden
-	}
-
 	pw.AddPart(
 		"ppt/presentation.xml",
 		pptxxml.Presentation(
@@ -283,7 +278,6 @@ func addBasicPropertyFiles(
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
 			protInfo, xSections, meta.RTL, xmlFonts,
 			convertShowSettings(meta.ShowSettings),
-			hiddenSlides,
 		),
 	)
 

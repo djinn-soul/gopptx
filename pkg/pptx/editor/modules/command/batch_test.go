@@ -50,6 +50,7 @@ func TestHandleBatchExecute_NestedBatchRejected(t *testing.T) {
 	got, err := HandleBatchExecute(
 		payload,
 		func(string, json.RawMessage) (any, error, bool) {
+			//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
 			return nil, nil, false
 		},
 		func(error) (BridgeErrorView, bool) { return BridgeErrorView{}, false },
@@ -83,6 +84,7 @@ func TestHandleBatchExecute_UnknownOp(t *testing.T) {
 	got, err := HandleBatchExecute(
 		payload,
 		func(string, json.RawMessage) (any, error, bool) {
+			//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
 			return nil, nil, false
 		},
 		func(error) (BridgeErrorView, bool) { return BridgeErrorView{}, false },
@@ -114,6 +116,7 @@ func TestHandleBatchExecute_BridgeErrorMappingAndDetailsMerge(t *testing.T) {
 		payload,
 		func(op string, _ json.RawMessage) (any, error, bool) {
 			if op != "set_text" {
+				//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
 				return nil, nil, false
 			}
 			return nil, bridgeErr, true
@@ -169,6 +172,7 @@ func TestHandleBatchExecute_PlainErrorFallbackAndStopOnError(t *testing.T) {
 			case "second_ok":
 				return map[string]any{"ran": true}, nil, true
 			default:
+				//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
 				return nil, nil, false
 			}
 		},
@@ -205,6 +209,7 @@ func TestHandleBatchExecute_SuccessResultPassThrough(t *testing.T) {
 		payload,
 		func(op string, _ json.RawMessage) (any, error, bool) {
 			if op != "ok_op" {
+				//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
 				return nil, nil, false
 			}
 			return expected, nil, true
