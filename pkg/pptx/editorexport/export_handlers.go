@@ -65,6 +65,13 @@ func handleExportPDF(e *editor.PresentationEditor, payload json.RawMessage) (any
 	}
 
 	opts := export.PDFOptions{Driver: driver}
+	if rawPaths, ok := p["font_paths"].([]any); ok {
+		for _, fp := range rawPaths {
+			if s, ok2 := fp.(string); ok2 && s != "" {
+				opts.NativeFontPaths = append(opts.NativeFontPaths, s)
+			}
+		}
+	}
 	if err = export.PDFFromFileWithOptions(tmpPath, outPath, opts); err != nil {
 		return nil, err
 	}

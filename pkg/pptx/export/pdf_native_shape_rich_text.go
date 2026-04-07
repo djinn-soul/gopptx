@@ -104,20 +104,28 @@ func layoutShapeParagraphs(
 		}
 		runs := buildShapeParagraphStyledRuns(paragraph.Runs, fittedSize)
 		prefixRuns := buildShapeParagraphPrefixRuns(style, idx, fittedSize, runs)
-		allRuns := append(append([]pdfStyledRun{}, prefixRuns...), runs...)
-		wrapped := wrapStyledRuns(pdf, allRuns, availWidth)
-		continuationIndent := continuationLineIndent(pdf, prefixRuns, style)
-		lineHeight := maxStyledRunsLineHeight(allRuns) * paragraphLineSpacingFactor(style)
+		wrapped := wrapStyledRuns(pdf, runs, availWidth)
+		lineHeight := maxStyledRunsLineHeight(runs) * paragraphLineSpacingFactor(style)
 		if lineHeight < 12 {
 			lineHeight = 12
 		}
 		for lineIdx, line := range wrapped {
 			xOffset := levelIndent + leftIndent
-			if lineIdx == 0 {
-				xOffset += hangingIndent
-			} else {
-				xOffset += continuationIndent
+
+			if lineIdx == 0 && len(prefixRuns) > 0 {
+				prefixX := xOffset + hangingIndent
+				if hangingIndent == 0 {
+					prefixX = xOffset - 14
+				}
+				lines = append(lines, shapeParagraphLayoutLine{
+					runs:       prefixRuns,
+					xOffset:    prefixX,
+					lineHeight: 0,
+					align:      elements.TextAlignLeft,
+					availWidth: availWidth,
+				})
 			}
+
 			lines = append(lines, shapeParagraphLayoutLine{
 				runs:       line,
 				xOffset:    xOffset,
@@ -193,7 +201,7 @@ func buildShapeParagraphPrefixRuns(
 		fontHint = runs[0].FontHint
 	}
 	return []pdfStyledRun{{
-		Text:     prefix + " ",
+		Text:     prefix,
 		Color:    color,
 		FontHint: fontHint,
 		SizePt:   fittedSize,
