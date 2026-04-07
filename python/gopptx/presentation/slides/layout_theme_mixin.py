@@ -63,6 +63,39 @@ class PresentationLayoutMixin(PresentationMixinBase):
         self.invalidate_cache()
         return cast("SlideMasterCloneResult", result)
 
+    def add_slide_master(self) -> str:
+        """Add a new slide master and return its part path."""
+        result = self.execute(ops.OP_ADD_SLIDE_MASTER, {})
+        self.invalidate_cache()
+        master_part = result.get("master_part")
+        if not isinstance(master_part, str):
+            raise TypeError("bridge response master_part must be a string")
+        return master_part
+
+    def remove_slide_master(self, master_part: str) -> None:
+        """Remove a slide master by part path."""
+        self.execute(ops.OP_REMOVE_SLIDE_MASTER, {"master_part": master_part})
+        self.invalidate_cache()
+
+    def add_slide_layout(
+        self, master_part: str, layout_name: str = "Custom Layout"
+    ) -> str:
+        """Add a slide layout under a slide master and return the layout part path."""
+        result = self.execute(
+            ops.OP_ADD_SLIDE_LAYOUT,
+            {"master_part": master_part, "layout_name": layout_name},
+        )
+        self.invalidate_cache()
+        layout_part = result.get("layout_part")
+        if not isinstance(layout_part, str):
+            raise TypeError("bridge response layout_part must be a string")
+        return layout_part
+
+    def remove_slide_layout(self, layout_part: str) -> None:
+        """Remove a slide layout by part path."""
+        self.execute(ops.OP_REMOVE_SLIDE_LAYOUT, {"layout_part": layout_part})
+        self.invalidate_cache()
+
 
 class PresentationThemeMixin(PresentationMixinBase):
     """Mixin providing theme and slide size configuration methods."""

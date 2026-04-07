@@ -29,7 +29,7 @@ func handleSetTableRowHeight(e *PresentationEditor, payload json.RawMessage) (an
 			if err := e.SetTableRowHeight(request.SlideIndex, request.ShapeID, row, int64(height)); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -55,7 +55,7 @@ func handleSetTableColumnWidth(e *PresentationEditor, payload json.RawMessage) (
 			if err := e.SetTableColumnWidth(request.SlideIndex, request.ShapeID, col, int64(width)); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -74,7 +74,7 @@ func handleAddTableRow(e *PresentationEditor, payload json.RawMessage) (any, err
 			if err := e.AddTableRow(request.SlideIndex, request.ShapeID, height); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -96,7 +96,7 @@ func handleAddTableColumn(e *PresentationEditor, payload json.RawMessage) (any, 
 			if err := e.AddTableColumn(request.SlideIndex, request.ShapeID, int64(width)); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -119,7 +119,7 @@ func handleInsertTableRow(e *PresentationEditor, payload json.RawMessage) (any, 
 			if err := e.InsertTableRow(request.SlideIndex, request.ShapeID, atIndex, height); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -141,7 +141,7 @@ func handleRemoveTableRow(e *PresentationEditor, payload json.RawMessage) (any, 
 			if err := e.RemoveTableRow(request.SlideIndex, request.ShapeID, atIndex); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -167,7 +167,7 @@ func handleInsertTableColumn(e *PresentationEditor, payload json.RawMessage) (an
 			if err := e.InsertTableColumn(request.SlideIndex, request.ShapeID, atIndex, int64(width)); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -189,7 +189,7 @@ func handleRemoveTableColumn(e *PresentationEditor, payload json.RawMessage) (an
 			if err := e.RemoveTableColumn(request.SlideIndex, request.ShapeID, atIndex); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -251,7 +251,7 @@ func handleUpdateTableCellBorder(e *PresentationEditor, payload json.RawMessage)
 			); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }

@@ -69,7 +69,7 @@ func handleAddTable(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"shape_id": shapeID}, nil
+			return respShapeID(shapeID), nil
 		},
 	)
 }
@@ -109,7 +109,7 @@ func handleMergeTableCells(e *PresentationEditor, payload json.RawMessage) (any,
 			); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -127,7 +127,7 @@ func handleSplitTableCell(e *PresentationEditor, payload json.RawMessage) (any, 
 			if err := e.SplitTableCell(request.SlideIndex, request.ShapeID, request.Row, request.Col); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -154,7 +154,7 @@ func handleUpdateTableFlags(e *PresentationEditor, payload json.RawMessage) (any
 			if err := e.UpdateTableFlags(request.SlideIndex, request.ShapeID, flags); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -215,7 +215,7 @@ func handleUpdateTableCell(e *PresentationEditor, payload json.RawMessage) (any,
 					return nil, err
 				}
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }
@@ -233,7 +233,7 @@ func handleSetTableStyle(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err := e.SetTableStyle(request.SlideIndex, request.ShapeID, request.StyleGUID); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"success": true}, nil
+			return respSuccess, nil
 		},
 	)
 }

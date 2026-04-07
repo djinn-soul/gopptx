@@ -168,7 +168,6 @@ func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
 		}
 		return errorResponse(ErrCodeOpFailed, err.Error(), req.RequestID)
 	}
-
 	resp := ResponseEnvelope{
 		OK:        true,
 		Result:    result,
@@ -178,20 +177,19 @@ func ExecuteCommand(e *PresentationEditor, jsonInput string) string {
 	if marshalErr != nil {
 		return errorResponse(ErrCodeMarshalError, marshalErr.Error(), req.RequestID)
 	}
-	return string(out)
+	return bytesToImmutableString(out)
 }
 
 func handleBatchExecute(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	result, err := editormodcommand.HandleBatchExecute(
 		payload,
-		func(op string) (func(json.RawMessage) (any, error), bool) {
+		func(op string, itemPayload json.RawMessage) (any, error, bool) {
 			handler, ok := commandHandlerFor(op)
 			if !ok {
-				return nil, false
+				return nil, nil, false
 			}
-			return func(itemPayload json.RawMessage) (any, error) {
-				return handler(e, itemPayload)
-			}, true
+			result, err := handler(e, itemPayload)
+			return result, err, true
 		},
 		func(err error) (editormodcommand.BridgeErrorView, bool) {
 			var bridgeErr *BridgeError
@@ -241,7 +239,7 @@ func errorResponse(code, message, reqID string) string {
 	if err != nil {
 		return `{"ok": false, "error": {"code": "INTERNAL_ERROR", "message": "Failed to marshal error response"}}`
 	}
-	return string(out)
+	return bytesToImmutableString(out)
 }
 
 func errorResponseWithDetails(code, message string, details any, reqID string) string {
@@ -258,5 +256,14 @@ func errorResponseWithDetails(code, message string, details any, reqID string) s
 	if err != nil {
 		return `{"ok": false, "error": {"code": "INTERNAL_ERROR", "message": "Failed to marshal error response"}}`
 	}
-	return string(out)
+	return bytesToImmutableString(out)
+}
+
+func bytesToImmutableString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	// json.Marshal returns a fresh byte slice that is never mutated afterward in this path.
+	// Converting without copy avoids one allocation on every bridge response.
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }

@@ -162,6 +162,11 @@ class PresentationSlidesMixin(
         self.execute(ops.OP_SET_SLIDE_TITLE, {"slide_index": index, "title": title})
         self.invalidate_cache()
 
+    def set_slide_hidden(self, index: int, hidden: bool) -> None:
+        """Mark or unmark a slide as hidden."""
+        self.execute(ops.OP_SET_SLIDE_HIDDEN, {"slide_index": index, "hidden": hidden})
+        self.invalidate_cache()
+
     def merge_from_file(self, path: str) -> None:
         """Merge slides from another presentation file."""
         self.execute(ops.OP_MERGE_FROM_FILE, {"path": path})

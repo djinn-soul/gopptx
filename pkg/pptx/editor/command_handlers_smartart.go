@@ -27,7 +27,7 @@ func handleDeleteSmartArt(e *PresentationEditor, payload json.RawMessage) (any, 
 	if delErr := e.DeleteSmartArt(slideIndex, shapeID); delErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, delErr.Error())
 	}
-	return map[string]bool{"deleted": true}, nil
+	return respDeleted, nil
 }
 
 // handleChangeSmartArtLayout changes the layout of an existing SmartArt.
@@ -56,7 +56,7 @@ func handleChangeSmartArtLayout(e *PresentationEditor, payload json.RawMessage) 
 	if updateErr := e.ChangeSmartArtLayout(slideIndex, shapeID, layout); updateErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, updateErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // handleSetSmartArtStyle sets the quick style and/or color style of a SmartArt.
@@ -85,7 +85,7 @@ func handleSetSmartArtStyle(e *PresentationEditor, payload json.RawMessage) (any
 	if updateErr := e.SetSmartArtStyle(slideIndex, shapeID, quickStyle, colorStyle); updateErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, updateErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // handleSetSmartArtNodes replaces the node tree of an existing SmartArt.
@@ -117,5 +117,5 @@ func handleSetSmartArtNodes(e *PresentationEditor, payload json.RawMessage) (any
 	if updateErr := e.SetSmartArtNodes(slideIndex, shapeID, nodes); updateErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, updateErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }

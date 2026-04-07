@@ -104,8 +104,9 @@ nav:
       - Go Shapes and Connectors Reference: reference/go-shapes.md
       - JSON Bridge Operations: reference/bridge-operations.md
   - Advanced:
-      - Architecture: architecture/cbridge-guidance.md
       - C Bridge Guidance: architecture/cbridge-guidance.md
+      - Bridge Phase 1 Ops: architecture/bridge-phase1-ops.md
+      - Batch Execute Envelope: architecture/batch_execute_envelope.md
   - Help:
       - Troubleshooting: troubleshooting.md
       - Documentation Maintenance: guides/pptx-png-export.md

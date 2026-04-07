@@ -16,5 +16,5 @@ func handleConvertToGrayscale(e *PresentationEditor, payload json.RawMessage) (a
 	if err := e.ConvertToGrayscale(opts); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }

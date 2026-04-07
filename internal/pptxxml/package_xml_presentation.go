@@ -198,9 +198,6 @@ func Presentation(
 		b.WriteString("\" r:id=\"rId")
 		b.WriteString(strconv.Itoa(rid))
 		b.WriteString("\"")
-		if i-1 < len(hiddenSlides) && hiddenSlides[i-1] {
-			b.WriteString(` show="0"`)
-		}
 		b.WriteString("/>")
 	}
 

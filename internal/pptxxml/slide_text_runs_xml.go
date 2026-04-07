@@ -168,7 +168,14 @@ const valNone = "none"
 
 func runUnderlineValue(underline string, defaultUnderline bool) string {
 	if underline != "" && underline != valNone {
-		return underline
+		switch strings.ToLower(strings.TrimSpace(underline)) {
+		case "single":
+			return "sng"
+		case "double":
+			return "dbl"
+		default:
+			return underline
+		}
 	}
 	if defaultUnderline {
 		return "sng"
