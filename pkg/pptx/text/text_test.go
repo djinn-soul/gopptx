@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func TestTextRunValidation(t *testing.T) {
@@ -67,6 +68,26 @@ func TestTextParagraphStyleValidation(t *testing.T) {
 		{
 			name:    "negative spacing",
 			style:   NewParagraphStyle().WithSpaceAfterPt(-1),
+			wantErr: true,
+		},
+		{
+			name:    "valid line spacing points",
+			style:   NewParagraphStyle().WithLineSpacingPts(18),
+			wantErr: false,
+		},
+		{
+			name:    "negative line spacing points",
+			style:   NewParagraphStyle().WithLineSpacingPts(-1),
+			wantErr: true,
+		},
+		{
+			name:    "line spacing pct and points mutually exclusive",
+			style:   NewParagraphStyle().WithLineSpacingPct(120).WithLineSpacingPts(18),
+			wantErr: true,
+		},
+		{
+			name:    "negative tab stop",
+			style:   NewParagraphStyle().WithTabStops(styling.Emu(-1)),
 			wantErr: true,
 		},
 	}

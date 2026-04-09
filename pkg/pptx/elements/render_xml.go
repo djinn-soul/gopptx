@@ -6,6 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
@@ -143,10 +144,12 @@ func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagra
 			SpaceBeforePt:  style.SpaceBeforePt,
 			SpaceAfterPt:   style.SpaceAfterPt,
 			LineSpacingPct: style.LineSpacingPct,
+			LineSpacingPts: style.LineSpacingPts,
 			BulletStyle:    text.NormalizeBulletStyle(style.BulletStyle),
 			BulletChar:     style.BulletChar,
 			BulletColor:    common.NormalizeHexColor(style.BulletColor),
 			BulletSize:     style.BulletSize,
+			TabStops:       convertTabStops(style.TabStops),
 			Level:          style.Level,
 			LeftIndent:     style.LeftIndent.Emu(),
 			RightIndent:    style.RightIndent.Emu(),
@@ -155,6 +158,17 @@ func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagra
 		}
 	}
 	return out
+}
+
+func convertTabStops(stops []styling.Length) []int64 {
+	if len(stops) == 0 {
+		return nil
+	}
+	converted := make([]int64, 0, len(stops))
+	for _, stop := range stops {
+		converted = append(converted, stop.Emu())
+	}
+	return converted
 }
 
 func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideBackgroundSpec {

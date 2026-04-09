@@ -197,56 +197,6 @@ func customShapeTextBody(shape ShapeSpec) string {
 </p:txBody>`
 	}
 
-	autoFitXML := `<a:spAutoFit/>`
-	var bodyPrChildren string
-	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(
-		defaultMargin,
-	) + `" tIns="` + strconv.Itoa(
-		defaultMargin,
-	) + `" rIns="` + strconv.Itoa(
-		defaultMargin,
-	) + `" bIns="` + strconv.Itoa(
-		defaultMargin,
-	) + `"`
-
-	if shape.TextFrame != nil {
-		bodyPrAttr = ` wrap="` + Escape(
-			shape.TextFrame.Wrap,
-		) + `" rtlCol="0" anchor="` + Escape(
-			shape.TextFrame.Anchor,
-		) + `" lIns="` + strconv.FormatInt(
-			shape.TextFrame.MarginLeft,
-			10,
-		) + `" tIns="` + strconv.FormatInt(
-			shape.TextFrame.MarginTop,
-			10,
-		) + `" rIns="` + strconv.FormatInt(
-			shape.TextFrame.MarginRight,
-			10,
-		) + `" bIns="` + strconv.FormatInt(
-			shape.TextFrame.MarginBottom,
-			10,
-		) + `"`
-		if shape.TextFrame.Rotation != nil {
-			bodyPrAttr += ` rot="` + strconv.FormatInt(*shape.TextFrame.Rotation, 10) + `"`
-		}
-		switch shape.TextFrame.AutoFit {
-		case "spAutoFit":
-			autoFitXML = `<a:spAutoFit/>`
-		case normAutoFitToken:
-			autoFitXML = `<a:normAutofit/>`
-		case "none":
-			autoFitXML = `<a:noAutofit/>`
-		default:
-			autoFitXML = ""
-		}
-	}
-	if shape.TextFrame != nil && shape.TextFrame.AutoFit == normAutoFitToken {
-		bodyPrChildren = `<a:prstTxWarp prst="textNoShape"><a:avLst/></a:prstTxWarp>` + "\n" + autoFitXML
-	} else {
-		bodyPrChildren = autoFitXML
-	}
-
 	hyperlinkXML := ""
 	if shape.ClickAction != nil {
 		hyperlinkXML = HyperlinkXML(*shape.ClickAction, "a:hlinkClick")
@@ -256,9 +206,7 @@ func customShapeTextBody(shape ShapeSpec) string {
 
 	return `
 <p:txBody>
-<a:bodyPr` + bodyPrAttr + `>
-` + bodyPrChildren + `
-</a:bodyPr>
+` + TextBodyPrXML(shape.TextFrame) + `
 <a:lstStyle/>
 <a:p>
 <a:pPr algn="l"/>

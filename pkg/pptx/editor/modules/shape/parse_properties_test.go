@@ -237,6 +237,48 @@ func TestParseShapeProperties_ParsesTextFrameAutoFitAndShapeRotation(t *testing.
 	}
 }
 
+func TestParseShapeProperties_ParsesRunOutline(t *testing.T) {
+	xml := []byte(`
+<p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+      xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:nvSpPr>
+    <p:cNvPr id="14" name="Outlined Text"/>
+    <p:cNvSpPr/>
+    <p:nvPr/>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm><a:off x="0" y="0"/><a:ext cx="300" cy="200"/></a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>
+  <p:txBody>
+    <a:bodyPr/>
+    <a:lstStyle/>
+    <a:p>
+      <a:r>
+        <a:rPr>
+          <a:ln w="38100"><a:solidFill><a:srgbClr val="112233"/></a:solidFill></a:ln>
+        </a:rPr>
+        <a:t>Outlined</a:t>
+      </a:r>
+    </a:p>
+  </p:txBody>
+</p:sp>`)
+
+	props, err := ParseShapeProperties(xml)
+	if err != nil {
+		t.Fatalf("ParseShapeProperties error: %v", err)
+	}
+	if len(props.Runs) != 1 {
+		t.Fatalf("expected one run, got %+v", props.Runs)
+	}
+	if props.Runs[0].OutlineColor == nil || *props.Runs[0].OutlineColor != "112233" {
+		t.Fatalf("expected outline color 112233, got %+v", props.Runs[0].OutlineColor)
+	}
+	if props.Runs[0].OutlineWidthPt == nil || *props.Runs[0].OutlineWidthPt != 3 {
+		t.Fatalf("expected outline width 3pt, got %+v", props.Runs[0].OutlineWidthPt)
+	}
+}
+
 func TestParseShapeProperties_ParsesMultipleTextParagraphs(t *testing.T) {
 	xml := []byte(`
 <p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"

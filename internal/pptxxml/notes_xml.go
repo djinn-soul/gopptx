@@ -301,15 +301,21 @@ func notesParagraphsXML(paragraphs []text.Paragraph) string {
 }
 
 func convertNotesStyle(s text.ParagraphStyle) BulletParagraphSpec {
+	tabStops := make([]int64, 0, len(s.TabStops))
+	for _, stop := range s.TabStops {
+		tabStops = append(tabStops, stop.Emu())
+	}
 	return BulletParagraphSpec{
 		Align:          s.Align,
 		SpaceBeforePt:  s.SpaceBeforePt,
 		SpaceAfterPt:   s.SpaceAfterPt,
 		LineSpacingPct: s.LineSpacingPct,
+		LineSpacingPts: s.LineSpacingPts,
 		BulletStyle:    s.BulletStyle,
 		BulletChar:     s.BulletChar,
 		BulletColor:    s.BulletColor,
 		BulletSize:     s.BulletSize,
+		TabStops:       tabStops,
 		Level:          s.Level,
 		LeftIndent:     int64(s.LeftIndent),
 		RightIndent:    int64(s.RightIndent),
