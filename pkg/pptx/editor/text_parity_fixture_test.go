@@ -81,7 +81,7 @@ func TestTextParityFixture_AdvancedFrameParagraphAndRunMappings(t *testing.T) {
 		`vert="vert270"`,
 		`numCol="2"`,
 		`rot="2700000"`,
-		`<a:normAutoFit`,
+		`<a:normAutofit`,
 		`marL="228600"`,
 		`indent="-114300"`,
 		`caps="all"`,

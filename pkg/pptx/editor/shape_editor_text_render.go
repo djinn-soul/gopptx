@@ -2,7 +2,6 @@ package editor
 
 import (
 	"bytes"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"math"
@@ -53,79 +52,6 @@ func replaceShapeNodes(
 	}
 
 	return buf.Bytes()
-}
-
-// renderTextBodyXML constructs the <p:txBody> node based on Text or Runs.
-// If a PresentationEditor is provided, it will register any hyperlink relationships.
-//
-//nolint:gocognit,gocyclo,cyclop,funlen,nestif // Text-body emission covers run/paragraph/hyperlink variants required for PPTX fidelity.
-func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) ([]byte, error) {
-	escape := func(str string) string {
-		var buf bytes.Buffer
-		_ = xml.EscapeText(&buf, []byte(str))
-		return buf.String()
-	}
-
-	var txBody bytes.Buffer
-	txBody.WriteString(
-		`<p:txBody xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`,
-	)
-
-	if s.TextFrame != nil {
-		tfSpec, err := editorTextFrameToSpec(s.TextFrame)
-		if err != nil {
-			return nil, err
-		}
-		txBody.WriteString(pptxxml.TextBodyPrXML(tfSpec))
-	} else {
-		txBody.WriteString(`<a:bodyPr/>`)
-	}
-	txBody.WriteString(`<a:lstStyle/>`)
-	if len(s.Runs) > 0 {
-		txBody.WriteString(`<a:p>`)
-		if s.Paragraph != nil {
-			paragraphXML, err := renderParagraphPropsXML(s.Paragraph)
-			if err != nil {
-				return nil, err
-			}
-			if paragraphXML != "" {
-				txBody.WriteString(paragraphXML)
-			}
-		}
-		for _, r := range s.Runs {
-			runSpec, err := e.editorRunToXMLSpec(partPath, r)
-			if err != nil {
-				return nil, err
-			}
-			runXML := pptxxml.RichTextRunXML(runSpec, pptxxml.ContentStyleSpec{})
-			// Preserve editor run-attribute parity when using shared run emitter.
-			runXML = strings.ReplaceAll(runXML, ` cap="all"`, ` caps="all"`)
-			runXML = strings.ReplaceAll(runXML, ` cap="small"`, ` smCaps="1"`)
-			txBody.WriteString(runXML)
-		}
-		txBody.WriteString(`</a:p>`)
-	} else {
-		if s.Paragraph != nil {
-			paragraphXML, err := renderParagraphPropsXML(s.Paragraph)
-			if err != nil {
-				return nil, err
-			}
-			if paragraphXML != "" {
-				txBody.WriteString(`<a:p>`)
-				txBody.WriteString(paragraphXML)
-				txBody.WriteString(fmt.Sprintf(`<a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)))
-			} else {
-				txBody.WriteString(
-					fmt.Sprintf(`<a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)),
-				)
-			}
-		} else {
-			txBody.WriteString(fmt.Sprintf(`<a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p>`, escape(s.Text)))
-		}
-	}
-	txBody.WriteString(`</p:txBody>`)
-
-	return txBody.Bytes(), nil
 }
 
 func normalizeTextFrameOrientation(raw string) (string, error) {
@@ -247,14 +173,19 @@ func (e *PresentationEditor) editorRunToXMLSpec(
 		spec.OutlineWidthPt = *run.OutlineWidthPt
 	}
 
-	var err error
-	spec.Hyperlink, err = e.editorHyperlinkToRunSpec(partPath, run.Hyperlink)
+	runHyperlink, ok, err := e.editorHyperlinkToRunSpec(partPath, run.Hyperlink)
 	if err != nil {
 		return pptxxml.TextRunSpec{}, err
 	}
-	spec.HoverAction, err = e.editorHyperlinkToRunSpec(partPath, run.HoverAction)
+	if ok {
+		spec.Hyperlink = &runHyperlink
+	}
+	hoverAction, ok, err := e.editorHyperlinkToRunSpec(partPath, run.HoverAction)
 	if err != nil {
 		return pptxxml.TextRunSpec{}, err
+	}
+	if ok {
+		spec.HoverAction = &hoverAction
 	}
 	return spec, nil
 }
@@ -262,12 +193,12 @@ func (e *PresentationEditor) editorRunToXMLSpec(
 func (e *PresentationEditor) editorHyperlinkToRunSpec(
 	partPath string,
 	hl *editorcommon.Hyperlink,
-) (*pptxxml.HyperlinkSpec, error) {
+) (pptxxml.HyperlinkSpec, bool, error) {
 	if hl == nil || e == nil || partPath == "" {
-		return nil, nil
+		return pptxxml.HyperlinkSpec{}, false, nil
 	}
 	if err := editorshape.ValidateHyperlinkAction(hl); err != nil {
-		return nil, err
+		return pptxxml.HyperlinkSpec{}, false, err
 	}
 
 	actionURL := strings.TrimSpace(editorshape.GetStr(hl.Action))
@@ -284,18 +215,18 @@ func (e *PresentationEditor) editorHyperlinkToRunSpec(
 	if hl.Address != nil && *hl.Address != "" {
 		relID, err := e.getOrCreateHyperlinkRelID(partPath, *hl.Address)
 		if err != nil {
-			return nil, fmt.Errorf("allocate hyperlink relationship id: %w", err)
+			return pptxxml.HyperlinkSpec{}, false, fmt.Errorf("allocate hyperlink relationship id: %w", err)
 		}
 		spec.RelID = relID
 	} else if hl.TargetSlide != nil {
 		relID, err := e.getOrCreateSlideJumpRelID(partPath, *hl.TargetSlide)
 		if err != nil {
-			return nil, err
+			return pptxxml.HyperlinkSpec{}, false, err
 		}
 		spec.RelID = relID
 	}
 	if spec.RelID == "" && spec.Action == "" && strings.TrimSpace(spec.Tooltip) == "" && !spec.HighlightClick {
-		return nil, nil
+		return pptxxml.HyperlinkSpec{}, false, nil
 	}
-	return spec, nil
+	return *spec, true, nil
 }

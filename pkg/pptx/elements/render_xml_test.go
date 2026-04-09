@@ -24,4 +24,3 @@ func TestToXMLBulletParagraphStyles_MapsLineSpacingPtsAndTabStops(t *testing.T) 
 		t.Fatalf("expected tab stop 914400, got %+v", specs[0].TabStops)
 	}
 }
-

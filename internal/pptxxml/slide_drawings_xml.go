@@ -76,68 +76,105 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 }
 
 func shapeEffectsXML(effects *ShapeEffectsSpec, richShadow *RichShapeShadowSpec) string {
-	// Check if we have rich shadow
-	hasRichShadow := richShadow != nil && richShadow.Type != ""
-
-	// Check if we have legacy effects
-	hasLegacyEffects := effects != nil && (effects.Shadow || effects.Glow || effects.SoftEdges || effects.Reflection ||
-		effects.GlowSpec != nil || effects.BlurSpec != nil || effects.SoftEdgeSpec != nil || effects.ReflectionSpec != nil)
-
-	if !hasRichShadow && !hasLegacyEffects {
+	if !hasRichShapeEffects(effects, richShadow) {
 		return ""
 	}
 
 	var b strings.Builder
 	b.WriteString("<a:effectLst>")
-
-	// Rich shadow takes precedence over legacy shadow
-	if hasRichShadow {
-		b.WriteString(richShapeShadowXML(*richShadow))
-	} else if effects != nil && effects.Shadow {
-		b.WriteString(`<a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0">`)
-		b.WriteString(`<a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr>`)
-		b.WriteString(`</a:outerShdw>`)
-	}
-
-	if effects != nil {
-		if effects.GlowSpec != nil {
-			b.WriteString(`<a:glow rad="`)
-			b.WriteString(strconv.Itoa(effects.GlowSpec.RadiusEmu))
-			b.WriteString(`">`)
-			b.WriteString(`<a:srgbClr val="`)
-			b.WriteString(Escape(effects.GlowSpec.Color))
-			b.WriteString(`"/></a:glow>`)
-		} else if effects.Glow {
-			b.WriteString(`<a:glow rad="6350">`)
-			b.WriteString(`<a:srgbClr val="4472C4"><a:alpha val="35000"/></a:srgbClr>`)
-			b.WriteString(`</a:glow>`)
-		}
-		if effects.BlurSpec != nil {
-			b.WriteString(`<a:blur rad="`)
-			b.WriteString(strconv.Itoa(effects.BlurSpec.RadiusEmu))
-			b.WriteString(`"/>`)
-		}
-		if effects.SoftEdgeSpec != nil {
-			b.WriteString(`<a:softEdge rad="`)
-			b.WriteString(strconv.Itoa(effects.SoftEdgeSpec.RadiusEmu))
-			b.WriteString(`"/>`)
-		} else if effects.SoftEdges {
-			b.WriteString(`<a:softEdge rad="38100"/>`)
-		}
-		if effects.ReflectionSpec != nil {
-			b.WriteString(`<a:reflection blurRad="`)
-			b.WriteString(strconv.Itoa(effects.ReflectionSpec.BlurEmu))
-			b.WriteString(`" dist="`)
-			b.WriteString(strconv.Itoa(effects.ReflectionSpec.DistanceEmu))
-			b.WriteString(`"/>`)
-		} else if effects.Reflection {
-			b.WriteString(`<a:reflection blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
-			b.WriteString(` dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`)
-		}
-	}
-
+	appendShapeShadowXML(&b, effects, richShadow)
+	appendShapeGlowXML(&b, effects)
+	appendShapeBlurXML(&b, effects)
+	appendShapeSoftEdgeXML(&b, effects)
+	appendShapeReflectionXML(&b, effects)
 	b.WriteString("</a:effectLst>")
 	return b.String()
+}
+
+func hasRichShapeEffects(effects *ShapeEffectsSpec, richShadow *RichShapeShadowSpec) bool {
+	hasRichShadow := richShadow != nil && richShadow.Type != ""
+	hasLegacyEffects := effects != nil && (effects.Shadow || effects.Glow || effects.SoftEdges || effects.Reflection ||
+		effects.GlowSpec != nil || effects.BlurSpec != nil || effects.SoftEdgeSpec != nil || effects.ReflectionSpec != nil)
+	return hasRichShadow || hasLegacyEffects
+}
+
+func appendShapeShadowXML(
+	b *strings.Builder,
+	effects *ShapeEffectsSpec,
+	richShadow *RichShapeShadowSpec,
+) {
+	if richShadow != nil && richShadow.Type != "" {
+		b.WriteString(richShapeShadowXML(*richShadow))
+		return
+	}
+	if effects == nil || !effects.Shadow {
+		return
+	}
+	b.WriteString(`<a:outerShdw blurRad="40000" dist="20000" dir="5400000" rotWithShape="0">`)
+	b.WriteString(`<a:srgbClr val="000000"><a:alpha val="40000"/></a:srgbClr>`)
+	b.WriteString(`</a:outerShdw>`)
+}
+
+func appendShapeGlowXML(b *strings.Builder, effects *ShapeEffectsSpec) {
+	if effects == nil {
+		return
+	}
+	if effects.GlowSpec != nil {
+		b.WriteString(`<a:glow rad="`)
+		b.WriteString(strconv.Itoa(effects.GlowSpec.RadiusEmu))
+		b.WriteString(`">`)
+		b.WriteString(`<a:srgbClr val="`)
+		b.WriteString(Escape(effects.GlowSpec.Color))
+		b.WriteString(`"/></a:glow>`)
+		return
+	}
+	if effects.Glow {
+		b.WriteString(`<a:glow rad="6350">`)
+		b.WriteString(`<a:srgbClr val="4472C4"><a:alpha val="35000"/></a:srgbClr>`)
+		b.WriteString(`</a:glow>`)
+	}
+}
+
+func appendShapeBlurXML(b *strings.Builder, effects *ShapeEffectsSpec) {
+	if effects == nil || effects.BlurSpec == nil {
+		return
+	}
+	b.WriteString(`<a:blur rad="`)
+	b.WriteString(strconv.Itoa(effects.BlurSpec.RadiusEmu))
+	b.WriteString(`"/>`)
+}
+
+func appendShapeSoftEdgeXML(b *strings.Builder, effects *ShapeEffectsSpec) {
+	if effects == nil {
+		return
+	}
+	if effects.SoftEdgeSpec != nil {
+		b.WriteString(`<a:softEdge rad="`)
+		b.WriteString(strconv.Itoa(effects.SoftEdgeSpec.RadiusEmu))
+		b.WriteString(`"/>`)
+		return
+	}
+	if effects.SoftEdges {
+		b.WriteString(`<a:softEdge rad="38100"/>`)
+	}
+}
+
+func appendShapeReflectionXML(b *strings.Builder, effects *ShapeEffectsSpec) {
+	if effects == nil {
+		return
+	}
+	if effects.ReflectionSpec != nil {
+		b.WriteString(`<a:reflection blurRad="`)
+		b.WriteString(strconv.Itoa(effects.ReflectionSpec.BlurEmu))
+		b.WriteString(`" dist="`)
+		b.WriteString(strconv.Itoa(effects.ReflectionSpec.DistanceEmu))
+		b.WriteString(`"/>`)
+		return
+	}
+	if effects.Reflection {
+		b.WriteString(`<a:reflection blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
+		b.WriteString(` dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`)
+	}
 }
 
 func shapeAdjustments(shape ShapeSpec) string {
