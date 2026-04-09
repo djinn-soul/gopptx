@@ -17,6 +17,7 @@ type shapeParagraphLayoutLine struct {
 	lineHeight float64
 	align      string
 	availWidth float64
+	tabStops   []float64
 }
 
 func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
@@ -24,6 +25,8 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 	if boxW <= 2 || boxH <= 2 {
 		return
 	}
+	boxX, boxY, boxW, boxH, restoreOrientation := beginShapeTextOrientation(pdf, s.TextFrame, boxX, boxY, boxW, boxH, x, y, w, h)
+	defer restoreOrientation()
 	paragraphs := normalizedShapeParagraphs(s)
 	fontSize := fitPDFShapeParagraphText(pdf, paragraphs, boxW, boxH)
 	layout, totalHeight := layoutShapeParagraphs(pdf, paragraphs, boxW, fontSize)
@@ -48,7 +51,10 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 				firstStyledFontHint(line.runs),
 			)
 		}
-		renderStyledLine(pdf, line.runs, lineX, yPos)
+		renderStyledLine(pdf, line.runs, lineX, yPos, pdfTextRenderOptions{
+			LineHeight: line.lineHeight,
+			TabStops:   line.tabStops,
+		})
 		yPos += line.lineHeight
 	}
 	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
@@ -98,14 +104,15 @@ func layoutShapeParagraphs(
 		leftIndent := emuToPt(style.LeftIndent.Emu())
 		rightIndent := emuToPt(style.RightIndent.Emu())
 		hangingIndent := emuToPt(style.HangingIndent.Emu())
+		tabStops := paragraphTabStopsPt(style)
 		availWidth := boxW - levelIndent - leftIndent - rightIndent
 		if availWidth < 40 {
 			availWidth = 40
 		}
 		runs := buildShapeParagraphStyledRuns(paragraph.Runs, fittedSize)
 		prefixRuns := buildShapeParagraphPrefixRuns(style, idx, fittedSize, runs)
-		wrapped := wrapStyledRuns(pdf, runs, availWidth)
-		lineHeight := maxStyledRunsLineHeight(runs) * paragraphLineSpacingFactor(style)
+		wrapped := wrapStyledRuns(pdf, runs, availWidth, tabStops)
+		lineHeight := paragraphRenderedLineHeight(style, maxStyledRunsLineHeight(runs))
 		if lineHeight < 12 {
 			lineHeight = 12
 		}
@@ -123,6 +130,7 @@ func layoutShapeParagraphs(
 					lineHeight: 0,
 					align:      elements.TextAlignLeft,
 					availWidth: availWidth,
+					tabStops:   nil,
 				})
 			}
 
@@ -132,6 +140,7 @@ func layoutShapeParagraphs(
 				lineHeight: lineHeight,
 				align:      style.Align,
 				availWidth: availWidth,
+				tabStops:   tabStops,
 			})
 			totalHeight += lineHeight
 		}
@@ -149,34 +158,7 @@ func normalizedShapeParagraphs(s shapes.Shape) []text.Paragraph {
 }
 
 func buildShapeParagraphStyledRuns(runs []text.Run, fittedSize int) []pdfStyledRun {
-	if len(runs) == 0 {
-		return []pdfStyledRun{{Text: "", Color: [3]uint8{0, 0, 0}, SizePt: fittedSize}}
-	}
-	out := make([]pdfStyledRun, 0, len(runs))
-	for _, run := range runs {
-		size := fittedSize
-		if run.SizePt > 0 && run.SizePt < size {
-			size = run.SizePt
-		}
-		color := [3]uint8{0, 0, 0}
-		if run.Color != "" {
-			r, g, b := hexToRGB(run.Color)
-			color = [3]uint8{r, g, b}
-		}
-		fontHint := run.Font
-		if strings.TrimSpace(fontHint) == "" {
-			fontHint = inferCodeFontHint(run.Text)
-		}
-		out = append(out, pdfStyledRun{
-			Text:     run.Text,
-			Bold:     run.Bold,
-			Italic:   run.Italic,
-			Color:    color,
-			FontHint: fontHint,
-			SizePt:   size,
-		})
-	}
-	return out
+	return buildPDFStyledRuns(runs, fittedSize, false, false)
 }
 
 func buildShapeParagraphPrefixRuns(

@@ -116,9 +116,10 @@ type paragraphPropsXML struct {
 			Pos *int `xml:"pos,attr"`
 		} `xml:"tab"`
 	} `xml:"tabLst"`
-	LnSp   *spacingNodeXML `xml:"lnSp"`
-	SpcBef *spacingNodeXML `xml:"spcBef"`
-	SpcAft *spacingNodeXML `xml:"spcAft"`
+	LnSpLegacy *spacingNodeXML `xml:"lnSp"`
+	LnSp       *spacingNodeXML `xml:"lnSpc"`
+	SpcBef     *spacingNodeXML `xml:"spcBef"`
+	SpcAft     *spacingNodeXML `xml:"spcAft"`
 }
 
 type shapeXML struct {
