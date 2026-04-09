@@ -66,15 +66,14 @@ type PresentationEditor struct {
 	shapeCache map[string]shapeCacheEntry
 
 	// ctBase caches the expensive xml.Unmarshal result for [Content_Types].xml.
-	// ctBasePtr is the backing-array address of the content-types bytes when the
-	// cache was last populated — same pointer-as-staleness-token pattern as shapeCache.
-	// The cache is valid as long as [Content_Types].xml is not replaced in PartStore.
-	ctBase    editorslide.ContentTypesBase
-	ctBasePtr uintptr
+	// ctBaseData is a copy of the content-types bytes used to populate the cache.
+	// The cache is valid as long as the stored bytes equal the current part bytes.
+	ctBase     editorslide.ContentTypesBase
+	ctBaseData []byte
 
 	// packageRels* cache stores root relationship filtering result for _rels/.rels.
 	// It avoids reparsing/rendering when the package relationships part bytes are unchanged.
-	packageRelsPtr         uintptr
+	packageRelsData        []byte
 	packageRelsNeedsFilter bool
 	packageRelsFilteredXML []byte
 

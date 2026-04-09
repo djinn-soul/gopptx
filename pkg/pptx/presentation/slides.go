@@ -1,13 +1,11 @@
 package presentation
 
 import (
-	"errors"
 	"fmt"
-	"regexp"
-	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
+	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/media"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -15,8 +13,6 @@ import (
 )
 
 const layoutsPerMaster = 6
-
-var slideShowAttrPattern = regexp.MustCompile(`\s+show\s*=\s*("[^"]*"|'[^']*')`)
 
 type slideParts struct {
 	title                pptxxml.TitleSpec
@@ -85,10 +81,11 @@ func renderSlides(
 			meta.SlideSize.Width,
 			meta.SlideSize.Height,
 		)
-		slideXML, err = rewriteSlideHiddenAttribute(slideXML, slide.Hidden)
+		slideXMLBytes, err := editorslide.RewriteSlideHidden([]byte(slideXML), slide.Hidden)
 		if err != nil {
 			return err
 		}
+		slideXML = string(slideXMLBytes)
 
 		layoutTarget := elements.SlideLayoutTarget(slide.Layout)
 		if masterCount > 1 {
@@ -116,37 +113,6 @@ func renderSlides(
 		))
 	}
 	return nil
-}
-
-func rewriteSlideHiddenAttribute(slideXML string, hidden bool) (string, error) {
-	start := strings.Index(slideXML, "<p:sld")
-	if start < 0 {
-		return "", errors.New("slide XML does not contain <p:sld> root")
-	}
-	nameEnd := start + len("<p:sld")
-	if nameEnd >= len(slideXML) {
-		return "", errors.New("slide XML has malformed <p:sld> root")
-	}
-	next := slideXML[nameEnd]
-	if next != ' ' && next != '\n' && next != '\r' && next != '\t' && next != '>' {
-		return "", errors.New("slide XML root element is not <p:sld>")
-	}
-	endRel := strings.IndexByte(slideXML[start:], '>')
-	if endRel < 0 {
-		return "", errors.New("slide XML has unterminated <p:sld> root")
-	}
-	end := start + endRel
-	tag := slideXML[start : end+1]
-	tag = slideShowAttrPattern.ReplaceAllString(tag, "")
-	if hidden {
-		if prefix, ok := strings.CutSuffix(tag, "/>"); ok {
-			tag = prefix + ` show="0"/>`
-		} else {
-			prefix, _ := strings.CutSuffix(tag, ">")
-			tag = prefix + ` show="0">`
-		}
-	}
-	return slideXML[:start] + tag + slideXML[end+1:], nil
 }
 
 func layoutTargetForMaster(target string, masterNum int) string {

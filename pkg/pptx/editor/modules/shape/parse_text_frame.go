@@ -2,6 +2,12 @@ package shape
 
 import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 
+const (
+	bodyPrAutoFitNormal = "normal"
+	bodyPrAutoFitShape  = "shape"
+	bodyPrAutoFitNone   = "none"
+)
+
 func applyParsedShapeTextFrame(ps *ParsedShapeProperties, s *shapeXML) {
 	if s.TxBody.BodyPr == nil {
 		return
@@ -55,15 +61,15 @@ func applyParsedShapeTextFrame(ps *ParsedShapeProperties, s *shapeXML) {
 func parseBodyPrAutoFit(bodyPr *bodyPrXML) (*string, *bool) {
 	switch {
 	case bodyPr.NormAutoFit != nil || bodyPr.NormAutofit != nil:
-		autoFitType := "normal"
+		autoFitType := bodyPrAutoFitNormal
 		autoFit := true
 		return &autoFitType, &autoFit
 	case bodyPr.SpAutoFit != nil:
-		autoFitType := "shape"
+		autoFitType := bodyPrAutoFitShape
 		autoFit := true
 		return &autoFitType, &autoFit
 	case bodyPr.NoAutofit != nil:
-		autoFitType := "none"
+		autoFitType := bodyPrAutoFitNone
 		autoFit := false
 		return &autoFitType, &autoFit
 	default:

@@ -6,6 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
@@ -80,6 +81,42 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 		Rotation: &shapeRotation,
 	})
 
+	assertShapeFillAndLine(t, shape, fillColor, fillTransparency, lineColor, lineDash)
+	assertShapeTextFrame(
+		t,
+		shape,
+		marginLeft,
+		marginTop,
+		orientation,
+		columns,
+	)
+	assertShapeEffects(
+		t,
+		shape,
+		shadowColor,
+		shadowBlur,
+		shadowDist,
+		glowColor,
+		glowRadius,
+		blurRadius,
+		softEdgeRadius,
+		reflectionBlur,
+		reflectionDistance,
+	)
+	if shape.RotationDeg == nil || *shape.RotationDeg != 33 {
+		t.Fatalf("expected rounded shape rotation 33, got %+v", shape.RotationDeg)
+	}
+}
+
+func assertShapeFillAndLine(
+	t *testing.T,
+	shape shapes.Shape,
+	fillColor string,
+	fillTransparency float64,
+	lineColor string,
+	lineDash string,
+) {
+	t.Helper()
 	if shape.Fill == nil || shape.Fill.Color != fillColor || shape.Fill.Transparency == nil ||
 		*shape.Fill.Transparency != fillTransparency {
 		t.Fatalf("expected solid fill with transparency, got %+v", shape.Fill)
@@ -87,6 +124,17 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 	if shape.Line == nil || shape.Line.Color != lineColor || shape.Line.Dash != lineDash {
 		t.Fatalf("expected line color/dash, got %+v", shape.Line)
 	}
+}
+
+func assertShapeTextFrame(
+	t *testing.T,
+	shape shapes.Shape,
+	marginLeft int,
+	marginTop int,
+	orientation string,
+	columns int,
+) {
+	t.Helper()
 	if shape.TextFrame == nil {
 		t.Fatalf("expected text frame, got nil")
 	}
@@ -111,6 +159,22 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 	if shape.TextFrame.Columns != columns {
 		t.Fatalf("expected columns %d, got %d", columns, shape.TextFrame.Columns)
 	}
+}
+
+func assertShapeEffects(
+	t *testing.T,
+	shape shapes.Shape,
+	shadowColor string,
+	shadowBlur int,
+	shadowDist int,
+	glowColor string,
+	glowRadius int,
+	blurRadius int,
+	softEdgeRadius int,
+	reflectionBlur int,
+	reflectionDistance int,
+) {
+	t.Helper()
 	if shape.RichShadow == nil || shape.RichShadow.Color != shadowColor ||
 		shape.RichShadow.BlurRadius != shadowBlur || shape.RichShadow.Distance != shadowDist {
 		t.Fatalf("expected rich shadow, got %+v", shape.RichShadow)
@@ -131,9 +195,6 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 	if shape.Effects.ReflectionSpec == nil || shape.Effects.ReflectionSpec.BlurEmu != reflectionBlur ||
 		shape.Effects.ReflectionSpec.DistanceEmu != reflectionDistance {
 		t.Fatalf("expected reflection detail, got %+v", shape.Effects.ReflectionSpec)
-	}
-	if shape.RotationDeg == nil || *shape.RotationDeg != 33 {
-		t.Fatalf("expected rounded shape rotation 33, got %+v", shape.RotationDeg)
 	}
 }
 

@@ -109,11 +109,15 @@ func BulletParagraphPropsXML(style BulletParagraphSpec) string {
 
 	base += bulletNodeXML(style)
 	if len(style.TabStops) > 0 {
-		base += `<a:tabLst>`
+		var tabs strings.Builder
+		tabs.WriteString(`<a:tabLst>`)
 		for _, pos := range style.TabStops {
-			base += `<a:tab pos="` + strconv.FormatInt(pos, 10) + `"/>`
+			tabs.WriteString(`<a:tab pos="`)
+			tabs.WriteString(strconv.FormatInt(pos, 10))
+			tabs.WriteString(`"/>`)
 		}
-		base += `</a:tabLst>`
+		tabs.WriteString(`</a:tabLst>`)
+		base += tabs.String()
 	}
 
 	return base + `</a:pPr>`

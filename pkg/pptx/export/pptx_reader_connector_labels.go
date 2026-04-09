@@ -12,6 +12,7 @@ const (
 	connectorLabelNamePrefix = "connector label "
 	connectorLabelWidthEMU   = 914400
 	connectorLabelHeightEMU  = 228600
+	connectorMidpointDivisor = 2
 )
 
 func foldGeneratedConnectorLabels(sc *elements.SlideContent) {
@@ -65,8 +66,8 @@ func isGeneratedConnectorLabelShape(shape shapes.Shape) bool {
 }
 
 func connectorIndexForGeneratedLabel(connectors []shapes.Connector, shape shapes.Shape) (int, bool) {
-	centerX := shape.X + shape.CX/2
-	centerY := shape.Y + shape.CY/2
+	centerX := shape.X + shape.CX/connectorMidpointDivisor
+	centerY := shape.Y + shape.CY/connectorMidpointDivisor
 	matchIndex := -1
 	for i, connector := range connectors {
 		if connectorMidpointX(connector) != centerX || connectorMidpointY(connector) != centerY {
@@ -84,9 +85,9 @@ func connectorIndexForGeneratedLabel(connectors []shapes.Connector, shape shapes
 }
 
 func connectorMidpointX(connector shapes.Connector) styling.Length {
-	return (connector.StartX + connector.EndX) / 2
+	return (connector.StartX + connector.EndX) / connectorMidpointDivisor
 }
 
 func connectorMidpointY(connector shapes.Connector) styling.Length {
-	return (connector.StartY + connector.EndY) / 2
+	return (connector.StartY + connector.EndY) / connectorMidpointDivisor
 }
