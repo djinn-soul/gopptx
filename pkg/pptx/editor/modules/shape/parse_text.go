@@ -207,6 +207,7 @@ func applyRunStyle(run *common.TextRun, rpr *runPropsXML) {
 	applyRunBaseline(run, rpr)
 	applyRunCaps(run, rpr)
 	applyRunColors(run, rpr)
+	applyRunOutline(run, rpr)
 }
 
 func applyRunBaseline(run *common.TextRun, rpr *runPropsXML) {
@@ -245,5 +246,19 @@ func applyRunColors(run *common.TextRun, rpr *runPropsXML) {
 	if rpr.Highlight.SrgbClr.Val != "" {
 		val := rpr.Highlight.SrgbClr.Val
 		run.Highlight = &val
+	}
+}
+
+func applyRunOutline(run *common.TextRun, rpr *runPropsXML) {
+	if rpr.Ln == nil {
+		return
+	}
+	if rpr.Ln.SolidFill != nil && rpr.Ln.SolidFill.SrgbClr.Val != "" {
+		val := rpr.Ln.SolidFill.SrgbClr.Val
+		run.OutlineColor = &val
+	}
+	if rpr.Ln.W != nil && *rpr.Ln.W > 0 {
+		widthPt := float64(*rpr.Ln.W) / ptToEMU
+		run.OutlineWidthPt = &widthPt
 	}
 }

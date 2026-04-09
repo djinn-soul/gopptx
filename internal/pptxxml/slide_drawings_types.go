@@ -169,6 +169,8 @@ type TextFrameSpec struct {
 	Anchor       string
 	Wrap         string
 	AutoFit      string
+	Orientation  string
+	NumCol       int
 	Rotation     *int64
 }
 

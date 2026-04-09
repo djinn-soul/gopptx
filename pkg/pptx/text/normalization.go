@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
+	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 // hyperlinksEqual compares two *action.Hyperlink values by content, not pointer identity.
@@ -56,10 +57,12 @@ func NormalizeParagraphStyle(style ParagraphStyle) ParagraphStyle {
 		SpaceBeforePt:  style.SpaceBeforePt,
 		SpaceAfterPt:   style.SpaceAfterPt,
 		LineSpacingPct: style.LineSpacingPct,
+		LineSpacingPts: style.LineSpacingPts,
 		BulletStyle:    normalizedBulletStyle,
 		BulletChar:     strings.TrimSpace(style.BulletChar),
 		BulletColor:    style.BulletColor,
 		BulletSize:     style.BulletSize,
+		TabStops:       append([]styling.Length(nil), style.TabStops...),
 		Level:          style.Level,
 	}
 }

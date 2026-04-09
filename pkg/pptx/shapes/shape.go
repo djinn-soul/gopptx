@@ -46,6 +46,7 @@ type TextFrame struct {
 	Anchor       TextFrameAnchor
 	Wrap         TextFrameWrap
 	AutoFit      TextFrameAutoFit
+	Orientation  string
 	RotationDeg  *float64
 }
 

@@ -382,7 +382,7 @@ func TestRenderShapeXMLWithParagraphAlignmentLevelAndSpacing(t *testing.T) {
 	if !strings.Contains(xmlStr, `lvl="2"`) {
 		t.Fatalf("expected paragraph level in XML, got: %s", xmlStr)
 	}
-	if !strings.Contains(xmlStr, `<a:lnSp><a:spcPct val="125000"/></a:lnSp>`) {
+	if !strings.Contains(xmlStr, `<a:lnSpc><a:spcPct val="125000"/></a:lnSpc>`) {
 		t.Fatalf("expected paragraph line spacing in XML, got: %s", xmlStr)
 	}
 	if !strings.Contains(xmlStr, `<a:spcBef><a:spcPts val="1200"/></a:spcBef>`) {

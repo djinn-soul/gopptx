@@ -43,7 +43,7 @@ func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
 
 func bulletParagraphRuns(runs []TextRunSpec, style BulletParagraphSpec, contentStyle ContentStyleSpec) string {
 	var b strings.Builder
-	b.WriteString(`<a:p>` + bulletParagraphPropsXML(style))
+	b.WriteString(`<a:p>` + BulletParagraphPropsXML(style))
 	for _, run := range runs {
 		if strings.TrimSpace(run.Text) == "" {
 			continue
@@ -124,6 +124,11 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	b.WriteString(Escape(run.Text))
 	b.WriteString(`</a:t></a:r>`)
 	return b.String()
+}
+
+// RichTextRunXML renders one <a:r> node for a text run.
+func RichTextRunXML(run TextRunSpec, contentStyle ContentStyleSpec) string {
+	return richTextRun(run, contentStyle)
 }
 
 func richTextRunOutlineXML(run TextRunSpec) string {
