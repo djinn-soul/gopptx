@@ -17,7 +17,9 @@ func TestToXMLShapeSpec_MapsShapeEffects(t *testing.T) {
 	if !spec.Effects.Shadow || !spec.Effects.Glow || !spec.Effects.SoftEdges || !spec.Effects.Reflection {
 		t.Fatalf("unexpected effects mapping: %+v", *spec.Effects)
 	}
-	if spec.Effects.GlowSpec == nil || spec.Effects.GlowSpec.Color != "AABBCC" || spec.Effects.GlowSpec.RadiusEmu != 1200 {
+	if spec.Effects.GlowSpec == nil ||
+		spec.Effects.GlowSpec.Color != "AABBCC" ||
+		spec.Effects.GlowSpec.RadiusEmu != 1200 {
 		t.Fatalf("unexpected glow mapping: %+v", spec.Effects.GlowSpec)
 	}
 	if spec.Effects.BlurSpec == nil || spec.Effects.BlurSpec.RadiusEmu != 1300 {
