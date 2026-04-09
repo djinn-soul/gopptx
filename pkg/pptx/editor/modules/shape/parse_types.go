@@ -78,6 +78,7 @@ type bodyPrXML struct {
 	Rot         *int      `xml:"rot,attr"`
 	NoAutofit   *struct{} `xml:"noAutofit"`
 	NormAutoFit *struct{} `xml:"normAutoFit"`
+	NormAutofit *struct{} `xml:"normAutofit"`
 	SpAutoFit   *struct{} `xml:"spAutoFit"`
 }
 

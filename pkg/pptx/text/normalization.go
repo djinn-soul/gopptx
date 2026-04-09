@@ -16,8 +16,21 @@ func hyperlinksEqual(a, b *action.Hyperlink) bool {
 		return false
 	}
 	return a.Action == b.Action &&
+		a.RawAction == b.RawAction &&
 		a.Tooltip == b.Tooltip &&
-		a.HighlightClick == b.HighlightClick
+		a.HighlightClick == b.HighlightClick &&
+		boolPointersEqual(a.History, b.History) &&
+		boolPointersEqual(a.EndSound, b.EndSound)
+}
+
+func boolPointersEqual(a, b *bool) bool {
+	if a == b {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }
 
 // NormalizeRuns removes empty runs and merges adjacent runs with identical styling.

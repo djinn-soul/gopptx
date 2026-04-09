@@ -46,7 +46,7 @@ func TextBodyPrXML(textFrame *TextFrameSpec) string {
 		case "spAutoFit":
 			autoFitXML = `<a:spAutoFit/>`
 		case normAutoFitToken:
-			autoFitXML = `<a:normAutofit/>`
+			autoFitXML = `<a:normAutoFit/>`
 		case "none":
 			autoFitXML = `<a:noAutofit/>`
 		default:

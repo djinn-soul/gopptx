@@ -57,10 +57,36 @@ type ShapeSpec struct {
 
 // ShapeEffectsSpec describes effects for one custom shape.
 type ShapeEffectsSpec struct {
-	Shadow     bool
-	Glow       bool
-	SoftEdges  bool
-	Reflection bool
+	Shadow         bool
+	Glow           bool
+	SoftEdges      bool
+	Reflection     bool
+	GlowSpec       *ShapeGlowSpec
+	BlurSpec       *ShapeBlurSpec
+	SoftEdgeSpec   *ShapeSoftEdgeSpec
+	ReflectionSpec *ShapeReflectionSpec
+}
+
+// ShapeGlowSpec describes detailed glow effect settings.
+type ShapeGlowSpec struct {
+	Color     string
+	RadiusEmu int
+}
+
+// ShapeBlurSpec describes detailed blur effect settings.
+type ShapeBlurSpec struct {
+	RadiusEmu int
+}
+
+// ShapeSoftEdgeSpec describes detailed soft-edge effect settings.
+type ShapeSoftEdgeSpec struct {
+	RadiusEmu int
+}
+
+// ShapeReflectionSpec describes detailed reflection effect settings.
+type ShapeReflectionSpec struct {
+	BlurEmu     int
+	DistanceEmu int
 }
 
 // FillType represents the type of shape fill.
@@ -191,6 +217,8 @@ type ConnectorSpec struct {
 	EndShapeIndex   int
 	EndSiteIndex    *int
 	Label           string
+	ClickAction     *HyperlinkSpec
+	HoverAction     *HyperlinkSpec
 	AltText         string
 	IsDecorative    bool
 	Adjustments     []ConnectorAdjustmentSpec

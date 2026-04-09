@@ -3,6 +3,7 @@ package shapes
 import (
 	"testing"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
@@ -47,10 +48,11 @@ func TestShapes_Connectors(t *testing.T) {
 	c := NewStraightConnector(0, 0, 1, 1).
 		WithArrows(ArrowTypeStealth, ArrowTypeTriangle).
 		WithLabel("L").
+		WithClickAction(action.NewHyperlink(action.HyperlinkNextSlide())).
 		ConnectStart(1, ConnectionSiteTop).
 		ConnectEnd(3, ConnectionSiteBottom)
 
-	if c.StartArrow != ArrowTypeStealth || c.Label != "L" {
+	if c.StartArrow != ArrowTypeStealth || c.Label != "L" || c.ClickAction == nil {
 		t.Error("Connector props failed")
 	}
 

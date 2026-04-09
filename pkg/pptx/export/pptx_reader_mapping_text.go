@@ -99,6 +99,9 @@ func editorParagraphToExportStyle(paragraph *editorcommon.Paragraph) elements.Pa
 	if paragraph.LineSpacingPct != nil {
 		style.LineSpacingPct = *paragraph.LineSpacingPct / textSpacingPctScale
 	}
+	if paragraph.LineSpacingPts != nil {
+		style.LineSpacingPts = *paragraph.LineSpacingPts / textSpacingPtsScale
+	}
 	if paragraph.BulletStyle != nil {
 		style.BulletStyle = *paragraph.BulletStyle
 	}
@@ -114,11 +117,17 @@ func editorParagraphToExportStyle(paragraph *editorcommon.Paragraph) elements.Pa
 	if paragraph.Level != nil {
 		style.Level = *paragraph.Level
 	}
+	if len(paragraph.TabStops) > 0 {
+		style.TabStops = make([]styling.Length, 0, len(paragraph.TabStops))
+		for _, stop := range paragraph.TabStops {
+			style.TabStops = append(style.TabStops, styling.Emu(int64(stop)))
+		}
+	}
 	if paragraph.Indent != nil {
 		style.LeftIndent = styling.Emu(int64(*paragraph.Indent))
 	}
 	if paragraph.Hanging != nil {
-		style.HangingIndent = styling.Emu(int64(*paragraph.Hanging))
+		style.HangingIndent = styling.Emu(-int64(*paragraph.Hanging))
 	}
 	return style
 }

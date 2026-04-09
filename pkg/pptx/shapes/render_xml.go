@@ -37,10 +37,14 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 	}
 	if shape.Effects != nil {
 		spec.Effects = &pptxxml.ShapeEffectsSpec{
-			Shadow:     shape.Effects.Shadow,
-			Glow:       shape.Effects.Glow,
-			SoftEdges:  shape.Effects.SoftEdges,
-			Reflection: shape.Effects.Reflection,
+			Shadow:         shape.Effects.Shadow,
+			Glow:           shape.Effects.Glow,
+			SoftEdges:      shape.Effects.SoftEdges,
+			Reflection:     shape.Effects.Reflection,
+			GlowSpec:       toXMLGlowSpec(shape.Effects.GlowSpec),
+			BlurSpec:       toXMLBlurSpec(shape.Effects.BlurSpec),
+			SoftEdgeSpec:   toXMLSoftEdgeSpec(shape.Effects.SoftEdgeSpec),
+			ReflectionSpec: toXMLReflectionSpec(shape.Effects.ReflectionSpec),
 		}
 	}
 
@@ -164,6 +168,40 @@ func toXMLRichShadowSpec(shadow *RichShapeShadow) *pptxxml.RichShapeShadowSpec {
 	}
 }
 
+func toXMLGlowSpec(glow *ShapeGlow) *pptxxml.ShapeGlowSpec {
+	if glow == nil {
+		return nil
+	}
+	return &pptxxml.ShapeGlowSpec{
+		Color:     common.NormalizeHexColor(glow.Color),
+		RadiusEmu: glow.RadiusEmu,
+	}
+}
+
+func toXMLBlurSpec(blur *ShapeBlur) *pptxxml.ShapeBlurSpec {
+	if blur == nil {
+		return nil
+	}
+	return &pptxxml.ShapeBlurSpec{RadiusEmu: blur.RadiusEmu}
+}
+
+func toXMLSoftEdgeSpec(softEdge *ShapeSoftEdge) *pptxxml.ShapeSoftEdgeSpec {
+	if softEdge == nil {
+		return nil
+	}
+	return &pptxxml.ShapeSoftEdgeSpec{RadiusEmu: softEdge.RadiusEmu}
+}
+
+func toXMLReflectionSpec(reflection *ShapeReflection) *pptxxml.ShapeReflectionSpec {
+	if reflection == nil {
+		return nil
+	}
+	return &pptxxml.ShapeReflectionSpec{
+		BlurEmu:     reflection.BlurEmu,
+		DistanceEmu: reflection.DistanceEmu,
+	}
+}
+
 func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
 	var rotation *int64
 	if tf.RotationDeg != nil {
@@ -179,6 +217,7 @@ func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
 		Wrap:         string(tf.Wrap),
 		AutoFit:      string(tf.AutoFit),
 		Orientation:  tf.Orientation,
+		NumCol:       tf.Columns,
 		Rotation:     rotation,
 	}
 }
@@ -192,31 +231,46 @@ func resolveActionSpec(primary, secondary *action.Hyperlink, rids map[*action.Hy
 		return nil
 	}
 
-	if rid, ok := rids[h]; ok {
-		return &pptxxml.HyperlinkSpec{
-			RelID:          rid,
-			Tooltip:        h.Tooltip,
-			HighlightClick: h.HighlightClick,
-			Action:         h.Action.ActionType(),
-		}
+	spec := &pptxxml.HyperlinkSpec{
+		Tooltip:        h.Tooltip,
+		HighlightClick: h.HighlightClick,
+		History:        h.History,
+		EndSound:       h.EndSound,
+		Action:         h.ActionType(),
 	}
-	return nil
+	if rid, ok := rids[h]; ok {
+		spec.RelID = rid
+	}
+	if spec.RelID == "" && strings.TrimSpace(spec.Tooltip) == "" && strings.TrimSpace(spec.Action) == "" &&
+		spec.History == nil && spec.EndSound == nil && !spec.HighlightClick {
+		return nil
+	}
+	return spec
 }
 
-func ToXMLConnectorSpecs(connectors []Connector, shapes []Shape) []pptxxml.ConnectorSpec {
+func ToXMLConnectorSpecs(
+	connectors []Connector,
+	shapes []Shape,
+	hyperlinkRIDs map[*action.Hyperlink]string,
+) []pptxxml.ConnectorSpec {
 	if len(connectors) == 0 {
 		return nil
 	}
 	specs := make([]pptxxml.ConnectorSpec, 0, len(connectors))
 	for _, connector := range connectors {
 		startSiteIndex, endSiteIndex := ResolveConnectorSiteIndices(connector, shapes)
-		spec := ToXMLConnectorSpec(connector, startSiteIndex, endSiteIndex)
+		spec := ToXMLConnectorSpec(connector, startSiteIndex, endSiteIndex, hyperlinkRIDs)
 		specs = append(specs, spec)
 	}
 	return specs
 }
 
-func ToXMLConnectorSpec(connector Connector, startSiteIndex *int, endSiteIndex *int) pptxxml.ConnectorSpec {
+func ToXMLConnectorSpec(
+	connector Connector,
+	startSiteIndex *int,
+	endSiteIndex *int,
+	hyperlinkRIDs map[*action.Hyperlink]string,
+) pptxxml.ConnectorSpec {
 	return pptxxml.ConnectorSpec{
 		Type:            NormalizeConnectorType(connector.Type),
 		StartX:          connector.StartX.Emu(),
@@ -235,6 +289,8 @@ func ToXMLConnectorSpec(connector Connector, startSiteIndex *int, endSiteIndex *
 		EndShapeIndex:   connector.EndShapeIndex,
 		EndSiteIndex:    endSiteIndex,
 		Label:           connector.Label,
+		ClickAction:     resolveActionSpec(connector.ClickAction, nil, hyperlinkRIDs),
+		HoverAction:     resolveActionSpec(connector.HoverAction, nil, hyperlinkRIDs),
 		AltText:         connector.AltText,
 		IsDecorative:    connector.IsDecorative,
 		Adjustments:     toXMLConnectorAdjustments(connector.Adjustments),

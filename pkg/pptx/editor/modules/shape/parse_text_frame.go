@@ -54,7 +54,7 @@ func applyParsedShapeTextFrame(ps *ParsedShapeProperties, s *shapeXML) {
 
 func parseBodyPrAutoFit(bodyPr *bodyPrXML) (*string, *bool) {
 	switch {
-	case bodyPr.NormAutoFit != nil:
+	case bodyPr.NormAutoFit != nil || bodyPr.NormAutofit != nil:
 		autoFitType := "normal"
 		autoFit := true
 		return &autoFitType, &autoFit

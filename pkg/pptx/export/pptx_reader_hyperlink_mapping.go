@@ -1,6 +1,7 @@
 package export
 
 import (
+	"fmt"
 	"math"
 	"net/url"
 	"strings"
@@ -32,6 +33,12 @@ func editorHyperlinkToExportHyperlink(src *editorcommon.Hyperlink) *action.Hyper
 		link = action.NewHyperlink(
 			editorAddressToAction(strings.TrimSpace(*src.Address), strings.TrimSpace(getStr(src.Action))),
 		)
+	case src.Macro != nil && strings.TrimSpace(*src.Macro) != "":
+		link = action.NewHyperlink(action.HyperlinkAction{}).
+			WithRawAction(fmt.Sprintf("ppaction://macro?name=%s", strings.TrimSpace(*src.Macro)))
+	case strings.TrimSpace(getStr(src.Action)) != "":
+		link = action.NewHyperlink(action.HyperlinkAction{}).
+			WithRawAction(strings.TrimSpace(*src.Action))
 	default:
 		return nil
 	}
@@ -41,6 +48,12 @@ func editorHyperlinkToExportHyperlink(src *editorcommon.Hyperlink) *action.Hyper
 	}
 	if src.HighlightClick != nil {
 		link = link.WithHighlightClick(*src.HighlightClick)
+	}
+	if src.History != nil {
+		link = link.WithHistory(*src.History)
+	}
+	if src.EndSound != nil {
+		link = link.WithEndSound(*src.EndSound)
 	}
 	return &link
 }
