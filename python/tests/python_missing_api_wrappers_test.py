@@ -51,7 +51,7 @@ def test_slide_master_and_layout_wrappers() -> None:
 
 
 def test_set_slide_hidden_wrapper_writes_show_flag(tmp_path: pathlib.Path) -> None:
-    """set_slide_hidden writes hidden slide flag in presentation XML."""
+    """set_slide_hidden writes the schema-valid hidden marker on the slide root."""
     output_path = tmp_path / "slide_hidden_wrapper.pptx"
     with Presentation.new("Hide Wrapper Test") as pres:
         pres.add_slide("Second Slide")
@@ -59,10 +59,10 @@ def test_set_slide_hidden_wrapper_writes_show_flag(tmp_path: pathlib.Path) -> No
         pres.save(output_path)
 
     with zipfile.ZipFile(output_path) as zf:
-        presentation_xml = zf.read("ppt/presentation.xml").decode("utf-8")
-    if 'show="0"' not in presentation_xml:
+        slide_xml = zf.read("ppt/slides/slide2.xml").decode("utf-8")
+    if 'show="0"' not in slide_xml:
         raise AssertionError(
-            'expected hidden slide marker show="0" in presentation.xml'
+            'expected hidden slide marker show="0" on slide root XML'
         )
 
 

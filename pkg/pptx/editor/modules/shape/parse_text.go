@@ -92,12 +92,16 @@ func applyParagraphAlignmentLevel(paragraph *common.Paragraph, pPr *paragraphPro
 }
 
 func applyParagraphSpacing(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
-	if pPr.LnSp != nil {
-		if pPr.LnSp.SpcPct != nil && pPr.LnSp.SpcPct.Val != nil {
-			paragraph.LineSpacingPct = pPr.LnSp.SpcPct.Val
+	lineSpacing := pPr.LnSp
+	if lineSpacing == nil {
+		lineSpacing = pPr.LnSpLegacy
+	}
+	if lineSpacing != nil {
+		if lineSpacing.SpcPct != nil && lineSpacing.SpcPct.Val != nil {
+			paragraph.LineSpacingPct = lineSpacing.SpcPct.Val
 		}
-		if pPr.LnSp.SpcPts != nil && pPr.LnSp.SpcPts.Val != nil {
-			paragraph.LineSpacingPts = pPr.LnSp.SpcPts.Val
+		if lineSpacing.SpcPts != nil && lineSpacing.SpcPts.Val != nil {
+			paragraph.LineSpacingPts = lineSpacing.SpcPts.Val
 		}
 	}
 	if pPr.SpcBef != nil && pPr.SpcBef.SpcPts != nil && pPr.SpcBef.SpcPts.Val != nil {
