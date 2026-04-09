@@ -120,6 +120,7 @@ func extractSlideContent(
 		}
 		sc.Connectors = append(sc.Connectors, connector)
 	}
+	foldGeneratedConnectorLabels(&sc)
 
 	attachSlideImages(&sc, slideImages, sm.Index)
 	if sm.Index < len(slideCharts) {

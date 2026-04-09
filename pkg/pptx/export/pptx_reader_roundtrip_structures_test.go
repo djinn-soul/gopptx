@@ -22,6 +22,7 @@ func TestSlidesFromPPTX_PreservesConnectorsAndFrameAccessibility(t *testing.T) {
 	connector := shapes.NewStraightConnector(styling.Inches(2.5), styling.Inches(2.4), styling.Inches(5), styling.Inches(2.4)).
 		ConnectStart(1, shapes.ConnectionSiteRight).
 		ConnectEnd(2, shapes.ConnectionSiteLeft).
+		WithLabel("Connector Label").
 		WithClickAction(action.NewHyperlink(action.HyperlinkAction{}).WithRawAction("ppaction://macro?name=ConnectorMacro")).
 		WithAltText("Connector Alt")
 	table := tables.NewTable([]styling.Length{styling.Inches(1.5), styling.Inches(1.5)}).
@@ -70,6 +71,9 @@ func TestSlidesFromPPTX_PreservesConnectorsAndFrameAccessibility(t *testing.T) {
 	readConnector := s.Connectors[0]
 	if readConnector.AltText != "Connector Alt" {
 		t.Fatalf("expected connector alt text, got %q", readConnector.AltText)
+	}
+	if readConnector.Label != "Connector Label" {
+		t.Fatalf("expected connector label, got %q", readConnector.Label)
 	}
 	if readConnector.ClickAction == nil || readConnector.ClickAction.ActionType() != "ppaction://macro?name=ConnectorMacro" {
 		t.Fatalf("expected connector raw click action, got %+v", readConnector.ClickAction)
