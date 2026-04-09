@@ -3,6 +3,7 @@ package export
 import (
 	"testing"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
@@ -16,12 +17,20 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 	marginLeft := 91440
 	marginTop := 45720
 	verticalAlign := "b"
+	orientation := "vert270"
+	columns := 2
 	wrap := false
 	autoFitType := "normal"
 	shadowColor := "778899"
 	shadowBlur := 32000
 	shadowDist := 21000
 	shapeRotation := 33.0
+	glowColor := "ABCDEF"
+	glowRadius := 50800
+	blurRadius := 12700
+	softEdgeRadius := 25400
+	reflectionBlur := 9000
+	reflectionDistance := 18000
 
 	shape := editorShapeToShape(editorcommon.Shape{
 		Type: "rect",
@@ -44,6 +53,8 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 			MarginLeft:    &marginLeft,
 			MarginTop:     &marginTop,
 			VerticalAlign: &verticalAlign,
+			Orientation:   &orientation,
+			Columns:       &columns,
 			WordWrap:      &wrap,
 			AutoFitType:   &autoFitType,
 		},
@@ -52,8 +63,20 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 			BlurEmu:     &shadowBlur,
 			DistanceEmu: &shadowDist,
 		},
-		Glow:     &editorcommon.ShapeGlow{},
-		SoftEdge: &editorcommon.ShapeSoftEdge{},
+		Glow: &editorcommon.ShapeGlow{
+			Color:     &glowColor,
+			RadiusEmu: &glowRadius,
+		},
+		Blur: &editorcommon.ShapeBlur{
+			RadiusEmu: &blurRadius,
+		},
+		SoftEdge: &editorcommon.ShapeSoftEdge{
+			RadiusEmu: &softEdgeRadius,
+		},
+		Reflection: &editorcommon.ShapeReflection{
+			BlurEmu:     &reflectionBlur,
+			DistanceEmu: &reflectionDistance,
+		},
 		Rotation: &shapeRotation,
 	})
 
@@ -82,6 +105,12 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 	if shape.TextFrame.AutoFit != "normAutoFit" {
 		t.Fatalf("expected normal autofit, got %s", shape.TextFrame.AutoFit)
 	}
+	if shape.TextFrame.Orientation != orientation {
+		t.Fatalf("expected orientation %s, got %s", orientation, shape.TextFrame.Orientation)
+	}
+	if shape.TextFrame.Columns != columns {
+		t.Fatalf("expected columns %d, got %d", columns, shape.TextFrame.Columns)
+	}
 	if shape.RichShadow == nil || shape.RichShadow.Color != shadowColor ||
 		shape.RichShadow.BlurRadius != shadowBlur || shape.RichShadow.Distance != shadowDist {
 		t.Fatalf("expected rich shadow, got %+v", shape.RichShadow)
@@ -89,8 +118,143 @@ func TestEditorShapeToShapePreservesSupportedFormatting(t *testing.T) {
 	if shape.Effects == nil || !shape.Effects.Shadow || !shape.Effects.Glow || !shape.Effects.SoftEdges {
 		t.Fatalf("expected effects flags, got %+v", shape.Effects)
 	}
+	if shape.Effects.BlurSpec == nil || shape.Effects.BlurSpec.RadiusEmu != blurRadius {
+		t.Fatalf("expected blur radius %d, got %+v", blurRadius, shape.Effects.BlurSpec)
+	}
+	if shape.Effects.GlowSpec == nil || shape.Effects.GlowSpec.Color != glowColor ||
+		shape.Effects.GlowSpec.RadiusEmu != glowRadius {
+		t.Fatalf("expected glow detail, got %+v", shape.Effects.GlowSpec)
+	}
+	if shape.Effects.SoftEdgeSpec == nil || shape.Effects.SoftEdgeSpec.RadiusEmu != softEdgeRadius {
+		t.Fatalf("expected soft edge radius %d, got %+v", softEdgeRadius, shape.Effects.SoftEdgeSpec)
+	}
+	if shape.Effects.ReflectionSpec == nil || shape.Effects.ReflectionSpec.BlurEmu != reflectionBlur ||
+		shape.Effects.ReflectionSpec.DistanceEmu != reflectionDistance {
+		t.Fatalf("expected reflection detail, got %+v", shape.Effects.ReflectionSpec)
+	}
 	if shape.RotationDeg == nil || *shape.RotationDeg != 33 {
 		t.Fatalf("expected rounded shape rotation 33, got %+v", shape.RotationDeg)
+	}
+}
+
+func TestEditorHyperlinkToExportHyperlinkPreservesActionOnlyMetadata(t *testing.T) {
+	tooltip := "Hover"
+	actionValue := "ppaction://macro?name=RunMacro"
+	history := false
+	endSound := true
+	highlight := false
+
+	got := editorHyperlinkToExportHyperlink(&editorcommon.Hyperlink{
+		Action:         &actionValue,
+		Tooltip:        &tooltip,
+		History:        &history,
+		EndSound:       &endSound,
+		HighlightClick: &highlight,
+	})
+	if got == nil {
+		t.Fatal("expected exported hyperlink")
+	}
+	if got.ActionType() != actionValue {
+		t.Fatalf("expected raw action %q, got %q", actionValue, got.ActionType())
+	}
+	if got.History == nil || *got.History != history {
+		t.Fatalf("expected history=%v, got %+v", history, got.History)
+	}
+	if got.EndSound == nil || *got.EndSound != endSound {
+		t.Fatalf("expected end_sound=%v, got %+v", endSound, got.EndSound)
+	}
+	if got.HighlightClick != highlight || got.Tooltip != tooltip {
+		t.Fatalf("expected tooltip/highlight preserved, got %+v", got)
+	}
+}
+
+func TestEditorShapeToConnectorPreservesLabelAndActions(t *testing.T) {
+	macroAction := "ppaction://macro?name=RunConnector"
+	shapeIndexByID := map[int]int{11: 1, 22: 2}
+	startID := 11
+	endID := 22
+	source := editorcommon.Shape{
+		Type: "straightConnector1",
+		Text: "Connector Label",
+		ClickAction: &editorcommon.Hyperlink{
+			Action: &macroAction,
+		},
+		Connector: &editorcommon.ConnectorInfo{
+			StartShapeID: &startID,
+			EndShapeID:   &endID,
+		},
+	}
+
+	connector, ok := editorShapeToConnector(source, shapeIndexByID)
+	if !ok {
+		t.Fatal("expected connector mapping")
+	}
+	if connector.Label != "Connector Label" {
+		t.Fatalf("expected label to round-trip, got %q", connector.Label)
+	}
+	if connector.ClickAction == nil || connector.ClickAction.ActionType() != macroAction {
+		t.Fatalf("expected connector click action to preserve raw action, got %+v", connector.ClickAction)
+	}
+	if connector.StartShapeIndex != 1 || connector.EndShapeIndex != 2 {
+		t.Fatalf("expected mapped connector anchors, got %+v", connector)
+	}
+}
+
+func TestEditorEffectsToExportEffectsNilWhenEmpty(t *testing.T) {
+	if got := editorEffectsToExportEffects(editorcommon.Shape{}); got != nil {
+		t.Fatalf("expected nil effects for empty shape, got %+v", got)
+	}
+}
+
+func TestEditorShapeToConnectorPreservesHyperlinkKinds(t *testing.T) {
+	address := "https://example.com"
+	connector, ok := editorShapeToConnector(editorcommon.Shape{
+		Type: "straightConnector1",
+		ClickAction: &editorcommon.Hyperlink{
+			Address: &address,
+		},
+	}, nil)
+	if !ok {
+		t.Fatal("expected connector mapping")
+	}
+	if connector.ClickAction == nil || connector.ClickAction.Action.Type != action.HyperlinkActionURL {
+		t.Fatalf("expected URL connector action, got %+v", connector.ClickAction)
+	}
+}
+
+func TestEditorEffectsToExportEffectsPreservesExplicitZeroReflection(t *testing.T) {
+	zero := 0
+	got := editorEffectsToExportEffects(editorcommon.Shape{
+		Reflection: &editorcommon.ShapeReflection{
+			BlurEmu:     &zero,
+			DistanceEmu: &zero,
+		},
+	})
+	if got == nil || got.ReflectionSpec == nil {
+		t.Fatalf("expected explicit reflection spec, got %+v", got)
+	}
+	if got.ReflectionSpec.BlurEmu != 0 || got.ReflectionSpec.DistanceEmu != 0 {
+		t.Fatalf("expected zero reflection values preserved, got %+v", got.ReflectionSpec)
+	}
+}
+
+func TestEditorShapeToShapePreservesActionOnlyHyperlinks(t *testing.T) {
+	actionValue := "ppaction://macro?name=ShapeMacro"
+	shape := editorShapeToShape(editorcommon.Shape{
+		Type: "rect",
+		X:    1,
+		Y:    2,
+		W:    3,
+		H:    4,
+		ClickAction: &editorcommon.Hyperlink{
+			Action: &actionValue,
+		},
+	})
+	if shape.ClickAction == nil || shape.ClickAction.ActionType() != actionValue {
+		t.Fatalf("expected action-only hyperlink preserved, got %+v", shape.ClickAction)
+	}
+	if shape.ClickAction.RequiresRelationship() {
+		t.Fatalf("expected raw action to skip relationship creation, got %+v", shape.ClickAction)
 	}
 }
 
@@ -99,11 +263,13 @@ func TestConsumeBodyPlaceholderAsBulletsPreservesParagraphStyle(t *testing.T) {
 	spaceBefore := 600
 	spaceAfter := 400
 	lineSpacing := 125000
+	lineSpacingPts := 1800
 	bulletStyle := "roman_lower"
 	bulletColor := "ABCDEF"
 	bulletSize := 90
 	indent := 228600
 	hanging := 114300
+	tabStops := []int{228600, 457200}
 	slide := elements.SlideContent{}
 
 	ok := consumeBodyPlaceholderAsBullets(&slide, editorcommon.Shape{
@@ -113,11 +279,13 @@ func TestConsumeBodyPlaceholderAsBulletsPreservesParagraphStyle(t *testing.T) {
 			SpaceBeforePts: &spaceBefore,
 			SpaceAfterPts:  &spaceAfter,
 			LineSpacingPct: &lineSpacing,
+			LineSpacingPts: &lineSpacingPts,
 			BulletStyle:    &bulletStyle,
 			BulletColor:    &bulletColor,
 			BulletSizePct:  &bulletSize,
 			Indent:         &indent,
 			Hanging:        &hanging,
+			TabStops:       tabStops,
 		},
 	})
 	if !ok {
@@ -135,7 +303,14 @@ func TestConsumeBodyPlaceholderAsBulletsPreservesParagraphStyle(t *testing.T) {
 		style.BulletColor != bulletColor || style.BulletSize != bulletSize {
 		t.Fatalf("unexpected bullet style: %+v", style)
 	}
-	if int(style.LeftIndent.Emu()) != indent || int(style.HangingIndent.Emu()) != hanging {
+	if style.LineSpacingPts != 18 {
+		t.Fatalf("expected line spacing points 18, got %+v", style)
+	}
+	if len(style.TabStops) != 2 || int(style.TabStops[0].Emu()) != tabStops[0] ||
+		int(style.TabStops[1].Emu()) != tabStops[1] {
+		t.Fatalf("unexpected tab stops: %+v", style.TabStops)
+	}
+	if int(style.LeftIndent.Emu()) != indent || int(style.HangingIndent.Emu()) != -hanging {
 		t.Fatalf("unexpected bullet indents: %+v", style)
 	}
 }

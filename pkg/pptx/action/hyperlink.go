@@ -55,8 +55,11 @@ type HyperlinkAction struct {
 // Hyperlink represents a clickable hyperlink on a shape or text run.
 type Hyperlink struct {
 	Action         HyperlinkAction
+	RawAction      string
 	Tooltip        string
 	HighlightClick bool
+	History        *bool
+	EndSound       *bool
 }
 
 // NewHyperlink creates a new hyperlink with the given action.
@@ -199,13 +202,48 @@ func (h Hyperlink) WithTooltip(tooltip string) Hyperlink {
 	return h
 }
 
+func (h Hyperlink) WithRawAction(actionValue string) Hyperlink {
+	h.RawAction = strings.TrimSpace(actionValue)
+	return h
+}
+
 func (h Hyperlink) WithHighlightClick(highlight bool) Hyperlink {
 	h.HighlightClick = highlight
 	return h
 }
 
+func (h Hyperlink) WithHistory(history bool) Hyperlink {
+	historyCopy := history
+	h.History = &historyCopy
+	return h
+}
+
+func (h Hyperlink) WithEndSound(endSound bool) Hyperlink {
+	endSoundCopy := endSound
+	h.EndSound = &endSoundCopy
+	return h
+}
+
+func (h Hyperlink) ActionType() string {
+	if strings.TrimSpace(h.RawAction) != "" {
+		return strings.TrimSpace(h.RawAction)
+	}
+	return h.Action.ActionType()
+}
+
+func (h Hyperlink) RelationshipTarget() string {
+	return h.Action.RelationshipTarget()
+}
+
+func (h Hyperlink) RequiresRelationship() bool {
+	return strings.TrimSpace(h.RelationshipTarget()) != ""
+}
+
 // Validate checks for invalid hyperlink properties.
 func (h Hyperlink) Validate() error {
+	if strings.TrimSpace(h.RawAction) != "" && h.Action.Type == "" {
+		return nil
+	}
 	switch h.Action.Type {
 	case HyperlinkActionURL:
 		if h.Action.URL == "" {
