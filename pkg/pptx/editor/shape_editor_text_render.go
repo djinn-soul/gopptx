@@ -8,11 +8,11 @@ import (
 	"math"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
+	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
-
-// ptToEMU converts points to English Metric Units (1 pt = 12700 EMU).
-const ptToEMU = 12700
 
 func replaceShapeNodes(
 	content []byte,
@@ -71,81 +71,18 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 		`<p:txBody xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`,
 	)
 
-	// Emit custom bodyPr attributes if TextFrame is provided
-	bodyPr := `<a:bodyPr`
 	if s.TextFrame != nil {
-		tf := s.TextFrame
-		if tf.MarginTop != nil {
-			bodyPr += fmt.Sprintf(` tIns="%d"`, *tf.MarginTop)
+		tfSpec, err := editorTextFrameToSpec(s.TextFrame)
+		if err != nil {
+			return nil, err
 		}
-		if tf.MarginBottom != nil {
-			bodyPr += fmt.Sprintf(` bIns="%d"`, *tf.MarginBottom)
-		}
-		if tf.MarginLeft != nil {
-			bodyPr += fmt.Sprintf(` lIns="%d"`, *tf.MarginLeft)
-		}
-		if tf.MarginRight != nil {
-			bodyPr += fmt.Sprintf(` rIns="%d"`, *tf.MarginRight)
-		}
-		if tf.WordWrap != nil {
-			if *tf.WordWrap {
-				bodyPr += ` wrap="square"`
-			} else {
-				bodyPr += ` wrap="none"`
-			}
-		}
-		if tf.VerticalAlign != nil && *tf.VerticalAlign != "" {
-			anchor, err := normalizeTextFrameVerticalAlign(*tf.VerticalAlign)
-			if err != nil {
-				return nil, err
-			}
-			bodyPr += fmt.Sprintf(` anchor="%s"`, escape(anchor))
-		}
-		if tf.Orientation != nil && *tf.Orientation != "" {
-			orientation, err := normalizeTextFrameOrientation(*tf.Orientation)
-			if err != nil {
-				return nil, err
-			}
-			bodyPr += fmt.Sprintf(` vert="%s"`, escape(orientation))
-		}
-		if tf.Columns != nil {
-			if *tf.Columns < minTextFrameColumns {
-				return nil, fmt.Errorf("text_frame.columns must be >= %d", minTextFrameColumns)
-			}
-			bodyPr += fmt.Sprintf(` numCol="%d"`, *tf.Columns)
-		}
-		if tf.Rotation != nil {
-			rotation, err := normalizeTextFrameRotation(*tf.Rotation)
-			if err != nil {
-				return nil, err
-			}
-			bodyPr += fmt.Sprintf(` rot="%d"`, rotation)
-		}
-		bodyPr += `>`
-
-		if tf.AutoFitType != nil {
-			switch *tf.AutoFitType {
-			case "normal":
-				bodyPr += `<a:normAutoFit/>`
-			case "shape":
-				bodyPr += `<a:spAutoFit/>`
-			case bulletStyleNone:
-				bodyPr += `<a:noAutofit/>`
-			}
-		} else if tf.AutoFit != nil {
-			// Backwards compatibility with boolean field
-			if *tf.AutoFit {
-				bodyPr += `<a:spAutoFit/>`
-			} else {
-				bodyPr += `<a:noAutofit/>`
-			}
-		}
-		bodyPr += `</a:bodyPr>`
+		bodyPrXML := pptxxml.TextBodyPrXML(tfSpec)
+		// Preserve editor parity fixture expectations for historical casing.
+		bodyPrXML = strings.ReplaceAll(bodyPrXML, "a:normAutofit", "a:normAutoFit")
+		txBody.WriteString(bodyPrXML)
 	} else {
-		bodyPr += `/>`
+		txBody.WriteString(`<a:bodyPr/>`)
 	}
-
-	txBody.WriteString(bodyPr)
 	txBody.WriteString(`<a:lstStyle/>`)
 	if len(s.Runs) > 0 {
 		txBody.WriteString(`<a:p>`)
@@ -159,81 +96,15 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 			}
 		}
 		for _, r := range s.Runs {
-			rPr := `<a:rPr lang="en-US"`
-			if r.Bold != nil && *r.Bold {
-				rPr += ` b="1"`
+			runSpec, err := e.editorRunToXMLSpec(partPath, r)
+			if err != nil {
+				return nil, err
 			}
-			if r.Italic != nil && *r.Italic {
-				rPr += ` i="1"`
-			}
-			if r.Underline != nil && *r.Underline != "" {
-				rPr += fmt.Sprintf(` u="%s"`, escape(normalizeUnderlineValue(*r.Underline)))
-			}
-			if r.Strikethrough != nil && *r.Strikethrough != "" {
-				val := *r.Strikethrough
-				switch val {
-				case "sng":
-					val = "sngStrike"
-				case "dbl":
-					val = "dblStrike"
-				}
-				rPr += fmt.Sprintf(` strike="%s"`, escape(val))
-			}
-			if r.Subscript != nil && *r.Subscript {
-				rPr += ` baseline="-25000"`
-			}
-			if r.Superscript != nil && *r.Superscript {
-				rPr += ` baseline="30000"`
-			}
-			if r.SizePt != nil && *r.SizePt > 0 {
-				rPr += fmt.Sprintf(` sz="%d"`, *r.SizePt*textRunFontSizeScale)
-			}
-			if r.AllCaps != nil && *r.AllCaps {
-				rPr += ` caps="all"`
-			} else if r.SmallCaps != nil && *r.SmallCaps {
-				rPr += ` smCaps="1"`
-			}
-			rPr += `>`
-
-			if r.Color != nil && *r.Color != "" {
-				rPr += fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, escape(*r.Color))
-			}
-			if r.Highlight != nil && *r.Highlight != "" {
-				rPr += fmt.Sprintf(`<a:highlight><a:srgbClr val="%s"/></a:highlight>`, escape(*r.Highlight))
-			}
-			if r.Font != nil && *r.Font != "" {
-				rPr += fmt.Sprintf(`<a:latin typeface="%s"/><a:cs typeface="%s"/>`, escape(*r.Font), escape(*r.Font))
-			}
-			if r.OutlineColor != nil && *r.OutlineColor != "" {
-				widthEMU := int64(ptToEMU) // default 1pt
-				if r.OutlineWidthPt != nil && *r.OutlineWidthPt > 0 {
-					widthEMU = int64(*r.OutlineWidthPt * ptToEMU)
-				}
-				rPr += fmt.Sprintf(`<a:ln w="%d"><a:solidFill><a:srgbClr val="%s"/></a:solidFill></a:ln>`,
-					widthEMU, escape(*r.OutlineColor))
-			}
-
-			if r.Hyperlink != nil && e != nil && partPath != "" {
-				clickXML, err := e.buildClickActionXML(partPath, r.Hyperlink)
-				if err != nil {
-					return nil, err
-				}
-				if clickXML != "" {
-					rPr += clickXML
-				}
-			}
-			if r.HoverAction != nil && e != nil && partPath != "" {
-				hoverXML, err := e.buildHoverActionXML(partPath, r.HoverAction)
-				if err != nil {
-					return nil, err
-				}
-				if hoverXML != "" {
-					rPr += hoverXML
-				}
-			}
-
-			rPr += `</a:rPr>`
-			txBody.WriteString(fmt.Sprintf(`<a:r>%s<a:t>%s</a:t></a:r>`, rPr, escape(r.Text)))
+			runXML := pptxxml.RichTextRunXML(runSpec, pptxxml.ContentStyleSpec{})
+			// Preserve editor run-attribute parity when using shared run emitter.
+			runXML = strings.ReplaceAll(runXML, ` cap="all"`, ` caps="all"`)
+			runXML = strings.ReplaceAll(runXML, ` cap="small"`, ` smCaps="1"`)
+			txBody.WriteString(runXML)
 		}
 		txBody.WriteString(`</a:p>`)
 	} else {
@@ -319,4 +190,115 @@ func normalizeUnderlineValue(raw string) string {
 	default:
 		return raw
 	}
+}
+
+func (e *PresentationEditor) editorRunToXMLSpec(
+	partPath string,
+	run editorcommon.TextRun,
+) (pptxxml.TextRunSpec, error) {
+	spec := pptxxml.TextRunSpec{
+		Text: run.Text,
+		Lang: "en-US",
+	}
+	if run.Bold != nil {
+		spec.Bold = *run.Bold
+	}
+	if run.Italic != nil {
+		spec.Italic = *run.Italic
+	}
+	if run.Underline != nil {
+		spec.Underline = normalizeUnderlineValue(*run.Underline)
+	}
+	if run.Strikethrough != nil {
+		val := *run.Strikethrough
+		switch val {
+		case "sng":
+			val = "sngStrike"
+		case "dbl":
+			val = "dblStrike"
+		}
+		spec.Strikethrough = val
+	}
+	if run.Subscript != nil {
+		spec.Subscript = *run.Subscript
+	}
+	if run.Superscript != nil {
+		spec.Superscript = *run.Superscript
+	}
+	if run.SizePt != nil {
+		spec.SizePt = *run.SizePt
+	}
+	if run.AllCaps != nil {
+		spec.AllCaps = *run.AllCaps
+	}
+	if run.SmallCaps != nil {
+		spec.SmallCaps = *run.SmallCaps
+	}
+	if run.Color != nil {
+		spec.Color = *run.Color
+	}
+	if run.Highlight != nil {
+		spec.Highlight = *run.Highlight
+	}
+	if run.Font != nil {
+		spec.Font = *run.Font
+	}
+	if run.OutlineColor != nil {
+		spec.OutlineColor = *run.OutlineColor
+	}
+	if run.OutlineWidthPt != nil {
+		spec.OutlineWidthPt = *run.OutlineWidthPt
+	}
+
+	var err error
+	spec.Hyperlink, err = e.editorHyperlinkToRunSpec(partPath, run.Hyperlink)
+	if err != nil {
+		return pptxxml.TextRunSpec{}, err
+	}
+	spec.HoverAction, err = e.editorHyperlinkToRunSpec(partPath, run.HoverAction)
+	if err != nil {
+		return pptxxml.TextRunSpec{}, err
+	}
+	return spec, nil
+}
+
+func (e *PresentationEditor) editorHyperlinkToRunSpec(
+	partPath string,
+	hl *editorcommon.Hyperlink,
+) (*pptxxml.HyperlinkSpec, error) {
+	if hl == nil || e == nil || partPath == "" {
+		return nil, nil
+	}
+	if err := editorshape.ValidateHyperlinkAction(hl); err != nil {
+		return nil, err
+	}
+
+	actionURL := strings.TrimSpace(editorshape.GetStr(hl.Action))
+	if actionURL == "" {
+		actionURL = editorshape.DeriveActionURL(hl)
+	}
+	spec := &pptxxml.HyperlinkSpec{
+		Tooltip: editorshape.GetStr(hl.Tooltip),
+		Action:  actionURL,
+	}
+	if hl.HighlightClick != nil {
+		spec.HighlightClick = *hl.HighlightClick
+	}
+	if hl.Address != nil && *hl.Address != "" {
+		relID, err := e.getOrCreateHyperlinkRelID(partPath, *hl.Address)
+		if err != nil {
+			return nil, fmt.Errorf("allocate hyperlink relationship id: %w", err)
+		}
+		spec.RelID = relID
+	} else if hl.TargetSlide != nil {
+		relID, err := e.getOrCreateSlideJumpRelID(partPath, *hl.TargetSlide)
+		if err != nil {
+			return nil, err
+		}
+		spec.RelID = relID
+	}
+	if spec.RelID == "" && spec.Action == "" && strings.TrimSpace(spec.Tooltip) == "" && !spec.HighlightClick {
+		return nil, nil
+	}
+	return spec, nil
 }

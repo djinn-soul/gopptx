@@ -178,6 +178,7 @@ func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
 		Anchor:       string(tf.Anchor),
 		Wrap:         string(tf.Wrap),
 		AutoFit:      string(tf.AutoFit),
+		Orientation:  tf.Orientation,
 		Rotation:     rotation,
 	}
 }
