@@ -298,12 +298,12 @@ func smartArtVariationsAdvancedRebuild() []smartArtVariation {
 			},
 		},
 		{
-			name: "Delete original and add PictureAccentList", seedCount: 5,
+			name: "Delete original and add BasicProcess replacement", seedCount: 5,
 			apply: func(e *editor.PresentationEditor, s, id int) error {
 				if err := e.DeleteSmartArt(s, id); err != nil {
 					return err
 				}
-				_, err := e.AddSmartArt(s, smartart.NewSmartArt(smartart.PictureAccentList).
+				_, err := e.AddSmartArt(s, smartart.NewSmartArt(smartart.BasicProcess).
 					Position(styling.Inches(smartArtXInch), styling.Inches(smartArtYInch)).
 					Size(styling.Inches(smartArtWInch), styling.Inches(smartArtHInch)).
 					WithAltText("Replacement SmartArt").

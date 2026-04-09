@@ -28,6 +28,10 @@ type smartArtPartRefs struct {
 	DrawingRelID string
 }
 
+func isDiagramDrawingRelType(relType string) bool {
+	return relType == relTypeDiagramDrawing || relType == relTypeDiagramDrawingLegacy
+}
+
 // resolveSmartArtParts finds all 5 diagram parts for the SmartArt graphic frame at shapeID.
 func (e *PresentationEditor) resolveSmartArtParts(
 	slideRef common.EditorSlideRef, shapeID int,
@@ -71,7 +75,7 @@ func (e *PresentationEditor) resolveSmartArtParts(
 		case csRelID:
 			refs.ColorPath = target
 		}
-		if rel.Type == relTypeDiagramDrawing && refs.DrawingPath == "" {
+		if isDiagramDrawingRelType(rel.Type) && refs.DrawingPath == "" {
 			refs.DrawingPath = target
 			refs.DrawingRelID = rel.ID
 		}
@@ -186,6 +190,12 @@ func (e *PresentationEditor) DeleteSmartArt(slideIndex, shapeID int) error {
 			e.parts.Delete(path)
 			e.removeContentTypeOverride(path)
 		}
+	}
+	// SmartArt data parts may carry a sidecar rels part that references drawingN.xml.
+	// Remove it as well so package validators don't see dangling diagram rel targets.
+	if refs.DataPath != "" {
+		dataRels := common.RelsPathFor(refs.DataPath)
+		e.parts.Delete(dataRels)
 	}
 
 	// Remove relationships from slide .rels.

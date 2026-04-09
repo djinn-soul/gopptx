@@ -12,13 +12,16 @@ import (
 
 func TestPresentationMutationHelpers(t *testing.T) {
 	slides := []common.EditorSlideRef{
-		{SlideID: 256, RelID: "rId2"},
+		{SlideID: 256, RelID: "rId2", Hidden: true},
 		{SlideID: 300, RelID: "rId5"},
 	}
 	slideListXML := BuildPresentationSlideListXML(slides)
 	if !strings.Contains(slideListXML, `id="256"`) ||
 		!strings.Contains(slideListXML, `r:id="rId5"`) {
 		t.Fatalf("BuildPresentationSlideListXML unexpected output: %s", slideListXML)
+	}
+	if strings.Contains(slideListXML, ` show="0"`) {
+		t.Fatalf("BuildPresentationSlideListXML should not emit hidden show flag on p:sldId: %s", slideListXML)
 	}
 
 	source := `<p:presentation><p:sldIdLst><p:sldId id="1" r:id="rId1"/></p:sldIdLst></p:presentation>`
@@ -63,6 +66,42 @@ func TestPresentationMutationHelpers(t *testing.T) {
 	}
 	if _, err = RewritePresentationSlideMasterList([]byte(`<p:presentation/>`), ""); err == nil {
 		t.Fatal("expected missing relID validation error")
+	}
+}
+
+func TestSlideHiddenMutationHelpers(t *testing.T) {
+	const visibleSlideXML = `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld/></p:sld>`
+	const hiddenSlidePrefix = `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="0">`
+	visibleXML := []byte(visibleSlideXML)
+	hiddenXML, err := RewriteSlideHidden(visibleXML, true)
+	if err != nil {
+		t.Fatalf("RewriteSlideHidden(hidden=true) failed: %v", err)
+	}
+	if !strings.Contains(string(hiddenXML), hiddenSlidePrefix) {
+		t.Fatalf("RewriteSlideHidden should add show=0 to p:sld root: %s", string(hiddenXML))
+	}
+
+	parsedHidden, err := ParseSlideHidden(hiddenXML)
+	if err != nil {
+		t.Fatalf("ParseSlideHidden(hidden) failed: %v", err)
+	}
+	if !parsedHidden {
+		t.Fatal("ParseSlideHidden should detect hidden slide")
+	}
+
+	restoredXML, err := RewriteSlideHidden(hiddenXML, false)
+	if err != nil {
+		t.Fatalf("RewriteSlideHidden(hidden=false) failed: %v", err)
+	}
+	if strings.Contains(string(restoredXML), `show="0"`) {
+		t.Fatalf("RewriteSlideHidden(hidden=false) should remove show attr: %s", string(restoredXML))
+	}
+	parsedVisible, err := ParseSlideHidden(restoredXML)
+	if err != nil {
+		t.Fatalf("ParseSlideHidden(visible) failed: %v", err)
+	}
+	if parsedVisible {
+		t.Fatal("ParseSlideHidden should report visible slide after show attr removal")
 	}
 }
 

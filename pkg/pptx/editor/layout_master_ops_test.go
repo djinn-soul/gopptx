@@ -220,6 +220,34 @@ func TestAddSlideMaster(t *testing.T) {
 	}
 }
 
+func TestRemoveFreshlyAddedSlideMaster(t *testing.T) {
+	editor := newLayoutFixtureEditor(t)
+
+	masterPart, err := editor.AddSlideMaster()
+	if err != nil {
+		t.Fatalf("AddSlideMaster failed: %v", err)
+	}
+
+	if err := editor.RemoveSlideMaster(masterPart); err != nil {
+		t.Fatalf("RemoveSlideMaster failed: %v", err)
+	}
+
+	if editor.parts.Has(masterPart) {
+		t.Fatalf("expected removed master part to be deleted: %s", masterPart)
+	}
+	if !editor.parts.Has("ppt/slideLayouts/slideLayout1.xml") {
+		t.Fatalf("expected existing layout to remain after removing unrelated master")
+	}
+
+	masters, err := editor.ListSlideMasters()
+	if err != nil {
+		t.Fatalf("ListSlideMasters failed: %v", err)
+	}
+	if len(masters) != 1 {
+		t.Fatalf("expected 1 master after removal, got %d", len(masters))
+	}
+}
+
 func TestAddSlideLayout(t *testing.T) {
 	editor := newLayoutFixtureEditor(t)
 

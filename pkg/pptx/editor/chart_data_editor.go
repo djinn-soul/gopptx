@@ -161,6 +161,9 @@ func (e *PresentationEditor) applyChartDataUpdateByRef(
 	if validateErr := editormodchart.ValidateChartUpdatePayload(kind, req); validateErr != nil {
 		return validateErr
 	}
+	if err := e.ensureChartEmbeddingRel(chartRef.ChartPart); err != nil {
+		return err
+	}
 
 	workbook, err := editormodchart.GenerateExcelForChartUpdate(kind, req)
 	if err != nil {
@@ -187,6 +190,24 @@ func (e *PresentationEditor) applyChartDataUpdateByRef(
 	}
 	e.parts.Set(chartRef.ChartPart, patchedChartXML)
 	return nil
+}
+
+func (e *PresentationEditor) ensureChartEmbeddingRel(chartPart string) error {
+	relsPath := common.RelsPathFor(chartPart)
+	relsData, ok := e.parts.Get(relsPath)
+	if !ok {
+		return fmt.Errorf("chart rels part not found: %s", relsPath)
+	}
+	rels, err := parseRelationshipsXML(relsData)
+	if err != nil {
+		return fmt.Errorf("parse chart rels: %w", err)
+	}
+	for _, rel := range rels {
+		if rel.Type == common.RelTypePackage {
+			return nil
+		}
+	}
+	return fmt.Errorf("chart embedding relationship not found: %s", relsPath)
 }
 
 // UpdateChartFormatting applies a partial formatting patch to an existing chart.

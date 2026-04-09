@@ -49,8 +49,9 @@ func TestHandleBatchExecute_NestedBatchRejected(t *testing.T) {
 
 	got, err := HandleBatchExecute(
 		payload,
-		func(string) (func(json.RawMessage) (any, error), bool) {
-			return nil, false
+		func(string, json.RawMessage) (any, error, bool) {
+			//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
+			return nil, nil, false
 		},
 		func(error) (BridgeErrorView, bool) { return BridgeErrorView{}, false },
 		testBatchOptions(),
@@ -59,7 +60,7 @@ func TestHandleBatchExecute_NestedBatchRejected(t *testing.T) {
 		t.Fatalf("HandleBatchExecute returned error: %v", err)
 	}
 
-	results := got["results"].([]BatchResult)
+	results := got.Results
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -82,8 +83,9 @@ func TestHandleBatchExecute_UnknownOp(t *testing.T) {
 
 	got, err := HandleBatchExecute(
 		payload,
-		func(string) (func(json.RawMessage) (any, error), bool) {
-			return nil, false
+		func(string, json.RawMessage) (any, error, bool) {
+			//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
+			return nil, nil, false
 		},
 		func(error) (BridgeErrorView, bool) { return BridgeErrorView{}, false },
 		testBatchOptions(),
@@ -92,7 +94,7 @@ func TestHandleBatchExecute_UnknownOp(t *testing.T) {
 		t.Fatalf("HandleBatchExecute returned error: %v", err)
 	}
 
-	results := got["results"].([]BatchResult)
+	results := got.Results
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -112,13 +114,12 @@ func TestHandleBatchExecute_BridgeErrorMappingAndDetailsMerge(t *testing.T) {
 
 	got, err := HandleBatchExecute(
 		payload,
-		func(op string) (func(json.RawMessage) (any, error), bool) {
+		func(op string, _ json.RawMessage) (any, error, bool) {
 			if op != "set_text" {
-				return nil, false
+				//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
+				return nil, nil, false
 			}
-			return func(json.RawMessage) (any, error) {
-				return nil, bridgeErr
-			}, true
+			return nil, bridgeErr, true
 		},
 		func(err error) (BridgeErrorView, bool) {
 			if errors.Is(err, bridgeErr) {
@@ -136,7 +137,7 @@ func TestHandleBatchExecute_BridgeErrorMappingAndDetailsMerge(t *testing.T) {
 		t.Fatalf("HandleBatchExecute returned error: %v", err)
 	}
 
-	results := got["results"].([]BatchResult)
+	results := got.Results
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
@@ -164,14 +165,15 @@ func TestHandleBatchExecute_PlainErrorFallbackAndStopOnError(t *testing.T) {
 
 	got, err := HandleBatchExecute(
 		payload,
-		func(op string) (func(json.RawMessage) (any, error), bool) {
+		func(op string, _ json.RawMessage) (any, error, bool) {
 			switch op {
 			case "first_fail":
-				return func(json.RawMessage) (any, error) { return nil, errors.New("plain failure") }, true
+				return nil, errors.New("plain failure"), true
 			case "second_ok":
-				return func(json.RawMessage) (any, error) { return map[string]any{"ran": true}, nil }, true
+				return map[string]any{"ran": true}, nil, true
 			default:
-				return nil, false
+				//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
+				return nil, nil, false
 			}
 		},
 		func(error) (BridgeErrorView, bool) { return BridgeErrorView{}, false },
@@ -181,7 +183,7 @@ func TestHandleBatchExecute_PlainErrorFallbackAndStopOnError(t *testing.T) {
 		t.Fatalf("HandleBatchExecute returned error: %v", err)
 	}
 
-	results := got["results"].([]BatchResult)
+	results := got.Results
 	if len(results) != 1 {
 		t.Fatalf("expected stop_on_error to keep 1 result, got %d", len(results))
 	}
@@ -205,11 +207,12 @@ func TestHandleBatchExecute_SuccessResultPassThrough(t *testing.T) {
 
 	got, err := HandleBatchExecute(
 		payload,
-		func(op string) (func(json.RawMessage) (any, error), bool) {
+		func(op string, _ json.RawMessage) (any, error, bool) {
 			if op != "ok_op" {
-				return nil, false
+				//nolint:nilnil // Test dispatcher contract uses (nil,nil,false) for unknown op.
+				return nil, nil, false
 			}
-			return func(json.RawMessage) (any, error) { return expected, nil }, true
+			return expected, nil, true
 		},
 		func(error) (BridgeErrorView, bool) { return BridgeErrorView{}, false },
 		testBatchOptions(),
@@ -218,7 +221,7 @@ func TestHandleBatchExecute_SuccessResultPassThrough(t *testing.T) {
 		t.Fatalf("HandleBatchExecute returned error: %v", err)
 	}
 
-	results := got["results"].([]BatchResult)
+	results := got.Results
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}

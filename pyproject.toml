@@ -29,17 +29,17 @@ dev = [
     "pip-audit>=2.10.0",
     "detect-secrets>=1.5.0",
     # CI/Automation
-    "prek>=0.3.6",
-    "poethepoet>=0.42.1",
+    "prek>=0.3.8",
+    "poethepoet>=0.44.0",
     # Advanced Static Analysis
-    "basedpyright>=1.38.3",
+    "basedpyright>=1.39.0",
     "vulture>=2.15",
     "gitingest",
     "pillow==12.1.1",
     "pypdfium2==5.6.0",
     "numpy>=2.2.6",
-
-
+    "mkdocs-material>=9.7.6",
+    "mkdocstrings[python]>=1.0.3",
 ]
 
 [tool.hatch.build.targets.wheel]

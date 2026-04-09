@@ -132,6 +132,54 @@ class SlideSmartArtAnimMixin:
         self._presentation.execute(ops.OP_UPDATE_SMART_ART, payload)
         self._invalidate_shape_cache_if_present()
 
+    def delete_smartart(self, shape_id: int) -> None:
+        """Delete a SmartArt diagram by shape ID."""
+        payload: dict[str, object] = {
+            "slide_index": self.index,
+            "shape_id": shape_id,
+        }
+        self._presentation.execute(ops.OP_DELETE_SMART_ART, payload)
+        self._invalidate_shape_cache_if_present()
+
+    def change_smartart_layout(self, shape_id: int, layout: str) -> None:
+        """Change the layout URI of an existing SmartArt diagram."""
+        payload: dict[str, object] = {
+            "slide_index": self.index,
+            "shape_id": shape_id,
+            "layout": layout,
+        }
+        self._presentation.execute(ops.OP_CHANGE_SMART_ART_LAYOUT, payload)
+        self._invalidate_shape_cache_if_present()
+
+    def set_smartart_style(
+        self,
+        shape_id: int,
+        *,
+        quick_style: str | None = None,
+        color_style: str | None = None,
+    ) -> None:
+        """Set SmartArt quick style and/or color style URIs."""
+        payload: dict[str, object] = {
+            "slide_index": self.index,
+            "shape_id": shape_id,
+        }
+        if quick_style is not None:
+            payload["quick_style"] = quick_style
+        if color_style is not None:
+            payload["color_style"] = color_style
+        self._presentation.execute(ops.OP_SET_SMART_ART_STYLE, payload)
+        self._invalidate_shape_cache_if_present()
+
+    def set_smartart_nodes(self, shape_id: int, items: list[str]) -> None:
+        """Replace SmartArt node text using a flat items list."""
+        payload: dict[str, object] = {
+            "slide_index": self.index,
+            "shape_id": shape_id,
+            "items": items,
+        }
+        self._presentation.execute(ops.OP_SET_SMART_ART_NODES, payload)
+        self._invalidate_shape_cache_if_present()
+
     def add_animation(
         self,
         shape_id: int,

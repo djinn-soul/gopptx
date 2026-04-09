@@ -58,7 +58,7 @@ func handleAddShape(e *PresentationEditor, payload json.RawMessage) (any, error)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]int{"shape_id": id}, nil
+	return respShapeID(id), nil
 }
 
 func handleGetImageMetadata(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -104,7 +104,7 @@ func handleAddImage(e *PresentationEditor, payload json.RawMessage) (any, error)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]int{"shape_id": newID}, nil
+	return respShapeID(newID), nil
 }
 
 func executeSlideShapeMutation(
@@ -151,7 +151,7 @@ func handleClearShapes(e *PresentationEditor, payload json.RawMessage) (any, err
 			if err := e.ClearShapes(slideIndex); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"cleared": true}, nil
+			return respCleared, nil
 		},
 	)
 }
@@ -169,7 +169,7 @@ func handleGroupShapes(e *PresentationEditor, payload json.RawMessage) (any, err
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"group_id": groupID}, nil
+			return respGroupID(groupID), nil
 		},
 	)
 }
@@ -187,7 +187,7 @@ func handleUngroupShapes(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"group_id": shapeID}, nil
+			return respGroupID(shapeID), nil
 		},
 	)
 }
@@ -230,7 +230,7 @@ func handleUpdateShape(e *PresentationEditor, payload json.RawMessage) (any, err
 			if err := e.UpdateShape(request.SlideIndex, request.ShapeID, updates); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"updated": true}, nil
+			return respUpdated, nil
 		},
 	)
 }
@@ -294,7 +294,7 @@ func handleMediaInsertCommand(
 		v.IndexBounds,
 		v.OptionalString,
 		v.Error,
-		func(shapeID int) any { return map[string]int{"shape_id": shapeID} },
+		func(shapeID int) any { return respShapeID(shapeID) },
 		spec,
 	)
 }

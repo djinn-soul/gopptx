@@ -44,21 +44,29 @@ func (e *PresentationEditor) Save(filePath string) error {
 	}
 
 	allNames := mergedPartNames(e.parts.Keys(), updatedParts)
-	output, err := e.buildZipStream(allNames, updatedParts)
-	if err != nil {
-		return err
-	}
-
 	if password := strings.TrimSpace(e.metadata.Protection.EncryptPassword); password != "" {
+		output, err := e.buildZipStream(allNames, updatedParts)
+		if err != nil {
+			return err
+		}
 		encrypted, err := protection.EncryptAgilePackage(output, password)
 		if err != nil {
 			return fmt.Errorf("encrypt presentation package: %w", err)
 		}
-		output = encrypted
+		if err := os.WriteFile(filePath, encrypted, 0o600); err != nil {
+			return fmt.Errorf("write %s: %w", filePath, err)
+		}
+		return nil
 	}
 
-	if err := os.WriteFile(filePath, output, 0o600); err != nil {
-		return fmt.Errorf("write %s: %w", filePath, err)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("open %s: %w", filePath, err)
+	}
+	defer func() { _ = file.Close() }()
+
+	if err := e.buildZipToWriter(file, allNames, updatedParts); err != nil {
+		return err
 	}
 	return nil
 }
@@ -94,11 +102,31 @@ func (e *PresentationEditor) SaveToBytes() ([]byte, error) {
 
 // SaveToWriter serializes the presentation and writes it to the provided io.Writer.
 func (e *PresentationEditor) SaveToWriter(w io.Writer) error {
-	data, err := e.SaveToBytes()
+	if e == nil {
+		return errors.New("nil editor")
+	}
+	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
+
+	updatedParts, err := e.collectUpdatedParts(vbaProject, hasVBA)
+	if err != nil {
+		return fmt.Errorf("prepare updated parts: %w", err)
+	}
+	allNames := mergedPartNames(e.parts.Keys(), updatedParts)
+
+	password := strings.TrimSpace(e.metadata.Protection.EncryptPassword)
+	if password == "" {
+		return e.buildZipToWriter(w, allNames, updatedParts)
+	}
+
+	output, err := e.buildZipStream(allNames, updatedParts)
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(data)
+	encrypted, err := protection.EncryptAgilePackage(output, password)
+	if err != nil {
+		return fmt.Errorf("encrypt presentation package: %w", err)
+	}
+	_, err = w.Write(encrypted)
 	return err
 }
 
@@ -122,6 +150,9 @@ func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, has
 
 	customXMLPropsPaths, err := e.processCustomXMLParts(out)
 	if err != nil {
+		return nil, err
+	}
+	if err := e.rewriteSlideVisibilityParts(out); err != nil {
 		return nil, err
 	}
 	e.filterRootCustomXMLRelationships(out)

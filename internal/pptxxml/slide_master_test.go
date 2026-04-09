@@ -88,7 +88,7 @@ func TestSlideMasterWithoutTxStyles(t *testing.T) {
 }
 
 func TestPresentationMultiMaster(t *testing.T) {
-	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil, nil, nil)
+	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil, nil)
 
 	// Should have 3 master IDs
 	if count := strings.Count(xml, "sldMasterId"); count != 2+3 {
@@ -153,7 +153,6 @@ func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
 		false,
 		nil,
 		nil,
-		nil,
 	)
 
 	if !strings.Contains(xml, `cryptProviderType="rsaAES"`) {
@@ -186,5 +185,25 @@ func TestContentTypesMultiMaster(t *testing.T) {
 	}
 	if strings.Contains(xml, `/ppt/slideMasters/slideMaster3.xml`) {
 		t.Error("unexpected slideMaster3 content-type override")
+	}
+}
+
+func TestPresentationHiddenSlidesDoNotEmitShowOnSlideRefs(t *testing.T) {
+	xml := pptxxml.Presentation(
+		"Hidden",
+		2,
+		false,
+		12192000,
+		6858000,
+		1,
+		nil,
+		nil,
+		false,
+		nil,
+		nil,
+	)
+
+	if strings.Contains(xml, ` show="0"`) {
+		t.Error("presentation.xml must not emit show attribute on p:sldId")
 	}
 }

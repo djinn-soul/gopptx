@@ -113,7 +113,7 @@ func handleUpdateHandoutMaster(e *PresentationEditor, payload json.RawMessage) (
 	if updateErr := e.UpdateHandoutMaster(p); updateErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, updateErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // ---------------------------------------------------------------------------

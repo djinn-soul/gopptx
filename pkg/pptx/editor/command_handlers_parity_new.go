@@ -123,7 +123,7 @@ func handleUpdateSmartArt(e *PresentationEditor, payload json.RawMessage) (any, 
 	if updateErr := e.UpdateSmartArt(slideIndex, shapeID, items); updateErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, updateErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // handleSetSlideBackground sets the background of a slide.
@@ -156,5 +156,5 @@ func handleSetSlideBackground(e *PresentationEditor, payload json.RawMessage) (a
 	if setErr := e.SetSlideBackground(slideIndex, bg); setErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }

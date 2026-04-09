@@ -9,6 +9,32 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
+func responseIndex(t *testing.T, res any) int {
+	t.Helper()
+	switch v := res.(type) {
+	case map[string]int:
+		return v["index"]
+	case indexResponse:
+		return v.Index
+	default:
+		t.Fatalf("unexpected index response type: %T", res)
+		return 0
+	}
+}
+
+func responseShapeID(t *testing.T, res any) int {
+	t.Helper()
+	switch v := res.(type) {
+	case map[string]int:
+		return v["shape_id"]
+	case shapeIDResponse:
+		return v.ShapeID
+	default:
+		t.Fatalf("unexpected shape_id response type: %T", res)
+		return 0
+	}
+}
+
 func TestCommandHandlers_Content(t *testing.T) {
 	fixturePath := writeDeckFixture(t, "simple.pptx", []elements.SlideContent{
 		elements.NewSlide("Simple Slide").AddBullet("Body text"),
@@ -56,8 +82,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 			t.Error("expected custom xml list")
 		}
 
-		resMap := res.(map[string]int)
-		idx := resMap["index"]
+		idx := responseIndex(t, res)
 
 		remPayload := []byte(`{"index": ` + strconv.Itoa(idx) + `}`)
 		_, err = handleRemoveCustomXML(e, remPayload)
@@ -106,8 +131,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 			t.Fatalf("handleAddShape failed: %v", err)
 		}
 
-		resMap := res.(map[string]int)
-		shapeID := resMap["shape_id"]
+		shapeID := responseShapeID(t, res)
 		if shapeID == 0 {
 			t.Error("expected valid shape_id")
 		}
@@ -199,8 +223,7 @@ func TestCommandHandlers_Content(t *testing.T) {
 			t.Fatalf("handleAddTable failed: %v", err)
 		}
 
-		resMap := res.(map[string]int)
-		tableID := resMap["shape_id"]
+		tableID := responseShapeID(t, res)
 
 		// Get Table
 		getPayload := []byte(`{"slide_index": 1, "shape_id": ` + strconv.Itoa(tableID) + `}`)
