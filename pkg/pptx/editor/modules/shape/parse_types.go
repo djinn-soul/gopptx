@@ -6,6 +6,7 @@ const (
 	rotationDegreeToOOXML = 60000.0
 	gradientPositionScale = 1000.0
 	ooxmlPercentScale     = 100000
+	ptToEMU               = 12700
 )
 
 type solidFillXML struct {
@@ -31,6 +32,10 @@ type runPropsXML struct {
 	Latin         *struct {
 		Typeface string `xml:"typeface,attr"`
 	} `xml:"latin"`
+	Ln *struct {
+		W         *int          `xml:"w,attr"`
+		SolidFill *solidFillXML `xml:"solidFill"`
+	} `xml:"ln"`
 }
 
 type gradientFillXML struct {

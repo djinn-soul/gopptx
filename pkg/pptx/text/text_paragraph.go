@@ -40,10 +40,12 @@ type ParagraphStyle struct {
 	SpaceBeforePt  int
 	SpaceAfterPt   int
 	LineSpacingPct int
+	LineSpacingPts int
 	BulletStyle    string
 	BulletChar     string
 	BulletColor    string
 	BulletSize     int
+	TabStops       []styling.Length // EMU
 	Level          int
 	LeftIndent     styling.Length // EMU
 	RightIndent    styling.Length // EMU
@@ -172,6 +174,22 @@ func (p ParagraphStyle) WithLineSpacingPct(pct int) ParagraphStyle {
 	return p
 }
 
+// WithLineSpacingPts sets line spacing as points (e.g. 18).
+func (p ParagraphStyle) WithLineSpacingPts(pt int) ParagraphStyle {
+	p.LineSpacingPts = pt
+	return p
+}
+
+// WithTabStops sets paragraph tab stops in EMU.
+func (p ParagraphStyle) WithTabStops(stops ...styling.Length) ParagraphStyle {
+	if len(stops) == 0 {
+		p.TabStops = nil
+		return p
+	}
+	p.TabStops = append(make([]styling.Length, 0, len(stops)), stops...)
+	return p
+}
+
 // WithLeftIndent sets the left margin for the paragraph in EMUs.
 func (p ParagraphStyle) WithLeftIndent(emu styling.Length) ParagraphStyle {
 	p.LeftIndent = emu
@@ -210,6 +228,17 @@ func (p ParagraphStyle) Validate() error {
 	}
 	if p.LineSpacingPct < 0 {
 		return errors.New("line-spacing must be >= 0")
+	}
+	if p.LineSpacingPts < 0 {
+		return errors.New("line-spacing points must be >= 0")
+	}
+	if p.LineSpacingPct > 0 && p.LineSpacingPts > 0 {
+		return errors.New("line-spacing percent and points are mutually exclusive")
+	}
+	for _, tabStop := range p.TabStops {
+		if tabStop.Emu() < 0 {
+			return errors.New("tab-stops must be >= 0")
+		}
 	}
 	switch p.Align {
 	case "", TextAlignLeft, TextAlignCenter, TextAlignRight, TextAlignJustify:

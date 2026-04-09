@@ -12,7 +12,7 @@ const (
 	ptFactor   = 100
 )
 
-// defaultBulletParagraphProps is the precomputed output of bulletParagraphPropsXML
+// defaultBulletParagraphProps is the precomputed output of BulletParagraphPropsXML
 // for a zero-value BulletParagraphSpec (level=0, default indent, bullet char).
 // Returning a constant avoids ~6 allocations per bullet in the common case.
 const defaultBulletParagraphProps = `<a:pPr lvl="0" marL="457200" indent="-457200"><a:buChar char="•"/></a:pPr>`
@@ -23,15 +23,36 @@ type BulletParagraphSpec struct {
 	SpaceBeforePt  int
 	SpaceAfterPt   int
 	LineSpacingPct int
+	LineSpacingPts int
 	BulletStyle    string
 	BulletChar     string
 	BulletColor    string
 	BulletSize     int
+	TabStops       []int64
 	Level          int
 	LeftIndent     int64
 	RightIndent    int64
 	HangingIndent  int64
 	RTL            bool
+}
+
+// IsZero reports whether this style has no explicit values set.
+func (s BulletParagraphSpec) IsZero() bool {
+	return s.Align == "" &&
+		s.SpaceBeforePt == 0 &&
+		s.SpaceAfterPt == 0 &&
+		s.LineSpacingPct == 0 &&
+		s.LineSpacingPts == 0 &&
+		s.BulletStyle == "" &&
+		s.BulletChar == "" &&
+		s.BulletColor == "" &&
+		s.BulletSize == 0 &&
+		len(s.TabStops) == 0 &&
+		s.Level == 0 &&
+		s.LeftIndent == 0 &&
+		s.RightIndent == 0 &&
+		s.HangingIndent == 0 &&
+		!s.RTL
 }
 
 func bulletStyleAt(all []BulletParagraphSpec, index int) BulletParagraphSpec {
@@ -41,9 +62,9 @@ func bulletStyleAt(all []BulletParagraphSpec, index int) BulletParagraphSpec {
 	return all[index]
 }
 
-func bulletParagraphPropsXML(style BulletParagraphSpec) string {
+func BulletParagraphPropsXML(style BulletParagraphSpec) string {
 	// Fast path: zero-value spec → precomputed constant (zero allocs).
-	if style == (BulletParagraphSpec{}) {
+	if style.IsZero() {
 		return defaultBulletParagraphProps
 	}
 	marL, indent := bulletIndent(style.Level)
@@ -76,6 +97,8 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 
 	if style.LineSpacingPct > 0 {
 		base += `<a:lnSpc><a:spcPct val="` + strconv.Itoa(style.LineSpacingPct*pctFactor) + `"/></a:lnSpc>`
+	} else if style.LineSpacingPts > 0 {
+		base += `<a:lnSpc><a:spcPts val="` + strconv.Itoa(style.LineSpacingPts*ptFactor) + `"/></a:lnSpc>`
 	}
 	if style.SpaceBeforePt > 0 {
 		base += `<a:spcBef><a:spcPts val="` + strconv.Itoa(style.SpaceBeforePt*ptFactor) + `"/></a:spcBef>`
@@ -85,6 +108,13 @@ func bulletParagraphPropsXML(style BulletParagraphSpec) string {
 	}
 
 	base += bulletNodeXML(style)
+	if len(style.TabStops) > 0 {
+		base += `<a:tabLst>`
+		for _, pos := range style.TabStops {
+			base += `<a:tab pos="` + strconv.FormatInt(pos, 10) + `"/>`
+		}
+		base += `</a:tabLst>`
+	}
 
 	return base + `</a:pPr>`
 }

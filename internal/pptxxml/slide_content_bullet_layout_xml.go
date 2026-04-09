@@ -41,7 +41,7 @@ const defaultBulletParagraphPrefix = "\n<a:p>\n" + defaultBulletParagraphProps +
 const defaultBulletParagraphSuffix = "</a:t>\n</a:r>\n</a:p>"
 
 func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyleSpec) string {
-	if pStyle == (BulletParagraphSpec{}) && style == (ContentStyleSpec{}) {
+	if pStyle.IsZero() && style == (ContentStyleSpec{}) {
 		return defaultBulletParagraphPrefix + Escape(text) + defaultBulletParagraphSuffix
 	}
 
@@ -57,7 +57,7 @@ func bulletParagraph(text string, pStyle BulletParagraphSpec, style ContentStyle
 
 	return `
 <a:p>
-` + bulletParagraphPropsXML(pStyle) + `
+` + BulletParagraphPropsXML(pStyle) + `
 <a:r>
 <a:rPr lang="en-US" sz="` + strconv.Itoa(sz) + `" b="` + boolToFlag(style.Bold) + `" i="` + boolToFlag(style.Italic) + `" u="` + runUnderlineValue("", style.Underline) + `" dirty="0">` + colorXML + `</a:rPr>
 <a:t>` + escaped + `</a:t>

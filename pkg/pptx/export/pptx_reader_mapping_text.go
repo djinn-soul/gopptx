@@ -1,6 +1,7 @@
 package export
 
 import (
+	"reflect"
 	"strings"
 
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -60,7 +61,7 @@ func editorParagraphsToExportParagraphs(es editorcommon.Shape) []text.Paragraph 
 		for _, paragraph := range es.Paragraphs {
 			runs := editorRunsToExportRuns(paragraph.Runs)
 			style := editorParagraphToExportStyle(paragraph.Paragraph)
-			if len(runs) == 0 && style == elements.DefaultParagraphStyle() {
+			if len(runs) == 0 && reflect.DeepEqual(style, elements.DefaultParagraphStyle()) {
 				continue
 			}
 			out = append(out, text.Paragraph{

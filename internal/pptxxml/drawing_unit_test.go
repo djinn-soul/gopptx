@@ -67,6 +67,36 @@ func TestCustomShapeTextBody_Internal(t *testing.T) {
 	if !strings.Contains(xml, "normAutofit") {
 		t.Error("NormAutoFit missing")
 	}
+	spec.TextFrame.Orientation = "vert"
+	xml = customShapeTextBody(spec)
+	if !strings.Contains(xml, `vert="vert"`) {
+		t.Error("Orientation missing")
+	}
+}
+
+func TestBulletParagraphSpecIsZero(t *testing.T) {
+	if !(BulletParagraphSpec{}).IsZero() {
+		t.Fatal("zero-value BulletParagraphSpec must be IsZero")
+	}
+	if (BulletParagraphSpec{LineSpacingPts: 1}).IsZero() {
+		t.Fatal("LineSpacingPts must make BulletParagraphSpec non-zero")
+	}
+	if (BulletParagraphSpec{TabStops: []int64{914400}}).IsZero() {
+		t.Fatal("TabStops must make BulletParagraphSpec non-zero")
+	}
+}
+
+func TestBulletParagraphPropsXML_WithLineSpacingPtsAndTabStops(t *testing.T) {
+	xml := BulletParagraphPropsXML(BulletParagraphSpec{
+		LineSpacingPts: 18,
+		TabStops:       []int64{914400},
+	})
+	if !strings.Contains(xml, `<a:lnSpc><a:spcPts val="1800"/></a:lnSpc>`) {
+		t.Fatalf("missing line spacing points xml: %s", xml)
+	}
+	if !strings.Contains(xml, `<a:tabLst><a:tab pos="914400"/></a:tabLst>`) {
+		t.Fatalf("missing tab stops xml: %s", xml)
+	}
 }
 
 func TestSlideRelationships_Internal(t *testing.T) {
