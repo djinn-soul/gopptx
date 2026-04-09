@@ -29,6 +29,18 @@ func TestCustomShapeXML_Internal(t *testing.T) {
 	}
 }
 
+func TestHyperlinkXML_ActionOnlyInternal(t *testing.T) {
+	xml := HyperlinkXML(HyperlinkSpec{
+		Action: "ppaction://macro?name=RunOnly",
+	}, "a:hlinkClick")
+	if strings.Contains(xml, `r:id=`) {
+		t.Fatalf("expected action-only hyperlink without relationship id, got %s", xml)
+	}
+	if !strings.Contains(xml, `action="ppaction://macro?name=RunOnly"`) {
+		t.Fatalf("expected action-only hyperlink to preserve action, got %s", xml)
+	}
+}
+
 func TestConnectorXML_Extra_Internal(t *testing.T) {
 	spec := ConnectorSpec{
 		Type:   "straightConnector1",
@@ -64,7 +76,7 @@ func TestCustomShapeTextBody_Internal(t *testing.T) {
 	// Test normAutoFit
 	spec.TextFrame.AutoFit = "normAutoFit"
 	xml = customShapeTextBody(spec)
-	if !strings.Contains(xml, "normAutofit") {
+	if !strings.Contains(xml, "normAutoFit") {
 		t.Error("NormAutoFit missing")
 	}
 	spec.TextFrame.Orientation = "vert"

@@ -76,10 +76,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 		if err != nil {
 			return nil, err
 		}
-		bodyPrXML := pptxxml.TextBodyPrXML(tfSpec)
-		// Preserve editor parity fixture expectations for historical casing.
-		bodyPrXML = strings.ReplaceAll(bodyPrXML, "a:normAutofit", "a:normAutoFit")
-		txBody.WriteString(bodyPrXML)
+		txBody.WriteString(pptxxml.TextBodyPrXML(tfSpec))
 	} else {
 		txBody.WriteString(`<a:bodyPr/>`)
 	}

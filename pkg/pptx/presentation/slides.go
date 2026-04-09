@@ -68,7 +68,7 @@ func renderSlides(
 			parts.chartFrame,
 			parts.imageRefs,
 			shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
-			shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
+			shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes, hyperlinkRIDs),
 			parts.placeholders,
 			parts.smartArtFrames,
 			elements.ToXMLBackgroundSpec(slide.Background, parts.backgroundRID),

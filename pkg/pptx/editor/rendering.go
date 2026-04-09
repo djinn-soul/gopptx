@@ -95,7 +95,7 @@ func renderEditorSlideParts(
 		nil, // chartFrame
 		imageRefs,
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
-		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes),
+		shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes, hyperlinkRIDs),
 		placeholderSpecs,
 		nil, // smartArtFrames
 		elements.ToXMLBackgroundSpec(slide.Background, backgroundRID),

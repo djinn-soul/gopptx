@@ -2,10 +2,14 @@ package shapes
 
 // ShapeEffects configures visual effects for one shape.
 type ShapeEffects struct {
-	Shadow     bool
-	Glow       bool
-	SoftEdges  bool
-	Reflection bool
+	Shadow         bool
+	Glow           bool
+	SoftEdges      bool
+	Reflection     bool
+	GlowSpec       *ShapeGlow
+	BlurSpec       *ShapeBlur
+	SoftEdgeSpec   *ShapeSoftEdge
+	ReflectionSpec *ShapeReflection
 }
 
 // WithShadow enables or disables shape outer shadow.

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -21,6 +22,7 @@ func TestSlidesFromPPTX_PreservesConnectorsAndFrameAccessibility(t *testing.T) {
 	connector := shapes.NewStraightConnector(styling.Inches(2.5), styling.Inches(2.4), styling.Inches(5), styling.Inches(2.4)).
 		ConnectStart(1, shapes.ConnectionSiteRight).
 		ConnectEnd(2, shapes.ConnectionSiteLeft).
+		WithClickAction(action.NewHyperlink(action.HyperlinkAction{}).WithRawAction("ppaction://macro?name=ConnectorMacro")).
 		WithAltText("Connector Alt")
 	table := tables.NewTable([]styling.Length{styling.Inches(1.5), styling.Inches(1.5)}).
 		WithAltText("Table Alt").
@@ -68,6 +70,9 @@ func TestSlidesFromPPTX_PreservesConnectorsAndFrameAccessibility(t *testing.T) {
 	readConnector := s.Connectors[0]
 	if readConnector.AltText != "Connector Alt" {
 		t.Fatalf("expected connector alt text, got %q", readConnector.AltText)
+	}
+	if readConnector.ClickAction == nil || readConnector.ClickAction.ActionType() != "ppaction://macro?name=ConnectorMacro" {
+		t.Fatalf("expected connector raw click action, got %+v", readConnector.ClickAction)
 	}
 	if readConnector.StartShapeIndex != 1 || readConnector.EndShapeIndex != 2 {
 		t.Fatalf("expected connector anchors to map back to shape indices, got %+v", readConnector)

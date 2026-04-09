@@ -80,7 +80,8 @@ func shapeEffectsXML(effects *ShapeEffectsSpec, richShadow *RichShapeShadowSpec)
 	hasRichShadow := richShadow != nil && richShadow.Type != ""
 
 	// Check if we have legacy effects
-	hasLegacyEffects := effects != nil && (effects.Shadow || effects.Glow || effects.SoftEdges || effects.Reflection)
+	hasLegacyEffects := effects != nil && (effects.Shadow || effects.Glow || effects.SoftEdges || effects.Reflection ||
+		effects.GlowSpec != nil || effects.BlurSpec != nil || effects.SoftEdgeSpec != nil || effects.ReflectionSpec != nil)
 
 	if !hasRichShadow && !hasLegacyEffects {
 		return ""
@@ -99,16 +100,38 @@ func shapeEffectsXML(effects *ShapeEffectsSpec, richShadow *RichShapeShadowSpec)
 	}
 
 	if effects != nil {
-		if effects.Glow {
+		if effects.GlowSpec != nil {
+			b.WriteString(`<a:glow rad="`)
+			b.WriteString(strconv.Itoa(effects.GlowSpec.RadiusEmu))
+			b.WriteString(`">`)
+			b.WriteString(`<a:srgbClr val="`)
+			b.WriteString(Escape(effects.GlowSpec.Color))
+			b.WriteString(`"/></a:glow>`)
+		} else if effects.Glow {
 			b.WriteString(`<a:glow rad="6350">`)
 			b.WriteString(`<a:srgbClr val="4472C4"><a:alpha val="35000"/></a:srgbClr>`)
 			b.WriteString(`</a:glow>`)
 		}
-		if effects.SoftEdges {
+		if effects.BlurSpec != nil {
+			b.WriteString(`<a:blur rad="`)
+			b.WriteString(strconv.Itoa(effects.BlurSpec.RadiusEmu))
+			b.WriteString(`"/>`)
+		}
+		if effects.SoftEdgeSpec != nil {
+			b.WriteString(`<a:softEdge rad="`)
+			b.WriteString(strconv.Itoa(effects.SoftEdgeSpec.RadiusEmu))
+			b.WriteString(`"/>`)
+		} else if effects.SoftEdges {
 			b.WriteString(`<a:softEdge rad="38100"/>`)
 		}
-		if effects.Reflection {
-			b.WriteString(`<a:ref blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
+		if effects.ReflectionSpec != nil {
+			b.WriteString(`<a:reflection blurRad="`)
+			b.WriteString(strconv.Itoa(effects.ReflectionSpec.BlurEmu))
+			b.WriteString(`" dist="`)
+			b.WriteString(strconv.Itoa(effects.ReflectionSpec.DistanceEmu))
+			b.WriteString(`"/>`)
+		} else if effects.Reflection {
+			b.WriteString(`<a:reflection blurRad="6350" stA="50000" endA="300" endPos="35000" dist="0"`)
 			b.WriteString(` dir="5400000" sy="-100000" algn="bl" rotWithShape="0"/>`)
 		}
 	}

@@ -72,7 +72,7 @@ func TestCustomShapeXML(t *testing.T) {
 				"<a:outerShdw",
 				"<a:glow",
 				"<a:softEdge",
-				"<a:ref",
+				"<a:reflection",
 			},
 		},
 		{
@@ -172,6 +172,24 @@ func TestConnectorXML(t *testing.T) {
 				"<a:prstDash val=\"dash\"/>",
 				"<a:headEnd type=\"triangle\"",
 				"<a:tailEnd type=\"stealth\"",
+			},
+		},
+		{
+			name: "connector with action-only links",
+			connector: ConnectorSpec{
+				Type: "straightConnector1",
+				Line: ShapeLineSpec{Color: "000000", Width: 9525},
+				ClickAction: &HyperlinkSpec{
+					Action: "ppaction://macro?name=RunConnector",
+				},
+				HoverAction: &HyperlinkSpec{
+					Action: "ppaction://hlinkshowjump?jump=nextslide",
+				},
+			},
+			shapeID: 9,
+			contains: []string{
+				`<a:hlinkClick action="ppaction://macro?name=RunConnector"/>`,
+				`<a:hlinkHover action="ppaction://hlinkshowjump?jump=nextslide"/>`,
 			},
 		},
 	}
