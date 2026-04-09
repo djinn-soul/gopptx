@@ -26,8 +26,21 @@ func connectorXML(connector ConnectorSpec, shapeID int, startShapeID int, endSha
 	b.WriteString(strconv.Itoa(shapeID))
 	b.WriteString(`"`)
 	b.WriteString(descrAttr)
-	b.WriteString(`/>
-<p:cNvCxnSpPr>`)
+	if connector.ClickAction != nil || connector.HoverAction != nil {
+		b.WriteString(`>`)
+		if connector.ClickAction != nil {
+			b.WriteString(HyperlinkXML(*connector.ClickAction, "a:hlinkClick"))
+		}
+		if connector.HoverAction != nil {
+			b.WriteString(HyperlinkXML(*connector.HoverAction, "a:hlinkHover"))
+		}
+		b.WriteString(`</p:cNvPr>
+`)
+	} else {
+		b.WriteString(`/>
+`)
+	}
+	b.WriteString(`<p:cNvCxnSpPr>`)
 	b.WriteString(connections)
 	b.WriteString(`</p:cNvCxnSpPr>
 <p:nvPr/>

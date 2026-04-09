@@ -234,6 +234,14 @@ func editorTextFrameToExportTextFrame(frame *editorcommon.TextFrame) *shapes.Tex
 		tf.RotationDeg = frame.Rotation
 		has = true
 	}
+	if frame.Orientation != nil && *frame.Orientation != "" {
+		tf.Orientation = strings.TrimSpace(*frame.Orientation)
+		has = true
+	}
+	if frame.Columns != nil {
+		tf.Columns = *frame.Columns
+		has = true
+	}
 	if !has {
 		return nil
 	}
@@ -271,12 +279,68 @@ func editorEffectsToExportEffects(es editorcommon.Shape) *shapes.ShapeEffects {
 		effects.Shadow = true
 	}
 	effects.Glow = es.Glow != nil
-	effects.SoftEdges = es.SoftEdge != nil || es.Blur != nil
+	effects.GlowSpec = editorGlowToExportGlow(es.Glow)
+	effects.BlurSpec = editorBlurToExportBlur(es.Blur)
+	effects.SoftEdges = es.SoftEdge != nil
+	effects.SoftEdgeSpec = editorSoftEdgeToExportSoftEdge(es.SoftEdge)
 	effects.Reflection = es.Reflection != nil
-	if !effects.Shadow && !effects.Glow && !effects.SoftEdges && !effects.Reflection {
+	effects.ReflectionSpec = editorReflectionToExportReflection(es.Reflection)
+	if !effects.Shadow && !effects.Glow && !effects.SoftEdges && !effects.Reflection &&
+		effects.GlowSpec == nil && effects.BlurSpec == nil && effects.SoftEdgeSpec == nil &&
+		effects.ReflectionSpec == nil {
 		return nil
 	}
 	return effects
+}
+
+func editorGlowToExportGlow(glow *editorcommon.ShapeGlow) *shapes.ShapeGlow {
+	if glow == nil {
+		return nil
+	}
+	exported := &shapes.ShapeGlow{}
+	if glow.Color != nil {
+		exported.Color = *glow.Color
+	}
+	if glow.RadiusEmu != nil {
+		exported.RadiusEmu = *glow.RadiusEmu
+	}
+	return exported
+}
+
+func editorBlurToExportBlur(blur *editorcommon.ShapeBlur) *shapes.ShapeBlur {
+	if blur == nil {
+		return nil
+	}
+	exported := &shapes.ShapeBlur{}
+	if blur.RadiusEmu != nil {
+		exported.RadiusEmu = *blur.RadiusEmu
+	}
+	return exported
+}
+
+func editorSoftEdgeToExportSoftEdge(softEdge *editorcommon.ShapeSoftEdge) *shapes.ShapeSoftEdge {
+	if softEdge == nil {
+		return nil
+	}
+	exported := &shapes.ShapeSoftEdge{}
+	if softEdge.RadiusEmu != nil {
+		exported.RadiusEmu = *softEdge.RadiusEmu
+	}
+	return exported
+}
+
+func editorReflectionToExportReflection(reflection *editorcommon.ShapeReflection) *shapes.ShapeReflection {
+	if reflection == nil {
+		return nil
+	}
+	exported := &shapes.ShapeReflection{}
+	if reflection.BlurEmu != nil {
+		exported.BlurEmu = *reflection.BlurEmu
+	}
+	if reflection.DistanceEmu != nil {
+		exported.DistanceEmu = *reflection.DistanceEmu
+	}
+	return exported
 }
 
 func positionPct(raw *float64) int {

@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
@@ -28,6 +29,8 @@ type Connector struct {
 	EndShapeIndex   int
 	EndSite         string
 	Label           string
+	ClickAction     *action.Hyperlink
+	HoverAction     *action.Hyperlink
 	AltText         string
 	IsDecorative    bool
 	Placeholder     *Placeholder
@@ -413,7 +416,10 @@ func (c Connector) Validate(shapeCount int, slideIndex int, connectorIndex int) 
 	if err := c.validateAnchors(shapeCount, slideIndex, connectorIndex); err != nil {
 		return err
 	}
-	return c.validateAdjustments(slideIndex, connectorIndex)
+	if err := c.validateAdjustments(slideIndex, connectorIndex); err != nil {
+		return err
+	}
+	return c.validateActions(slideIndex, connectorIndex)
 }
 
 func (c Connector) validateBasicProps(slideIndex, connectorIndex int) error {
@@ -504,6 +510,20 @@ func (c Connector) validateAdjustments(slideIndex, connectorIndex int) error {
 				"slide %d connector %d adjustments are only supported for elbow/curved connectors",
 				slideIndex, connectorIndex,
 			)
+		}
+	}
+	return nil
+}
+
+func (c Connector) validateActions(slideIndex, connectorIndex int) error {
+	if c.ClickAction != nil {
+		if err := c.ClickAction.Validate(); err != nil {
+			return fmt.Errorf("slide %d connector %d has invalid click action: %w", slideIndex, connectorIndex, err)
+		}
+	}
+	if c.HoverAction != nil {
+		if err := c.HoverAction.Validate(); err != nil {
+			return fmt.Errorf("slide %d connector %d has invalid hover action: %w", slideIndex, connectorIndex, err)
 		}
 	}
 	return nil

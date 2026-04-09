@@ -25,8 +25,11 @@ func BuildSlideHyperlinkRels(
 		if h == nil {
 			return
 		}
+		if !h.RequiresRelationship() {
+			return
+		}
 
-		valueKey := h.Action.RelationshipTarget() + "|" + string(h.Action.Type)
+		valueKey := h.RelationshipTarget() + "|" + string(h.Action.Type)
 		if rid, exists := seen[valueKey]; exists {
 			// Same value via a different pointer: reuse the existing RID.
 			hyperlinkRIDs[h] = rid
@@ -45,7 +48,7 @@ func BuildSlideHyperlinkRels(
 
 		hyperlinks = append(hyperlinks, pptxxml.HyperlinkRel{
 			RID:      rid,
-			Target:   h.Action.RelationshipTarget(),
+			Target:   h.RelationshipTarget(),
 			External: h.Action.IsExternal(),
 			Type:     hyperlinkRelationshipType(h.Action.Type),
 		})
@@ -58,6 +61,10 @@ func BuildSlideHyperlinkRels(
 			addHyperlink(shape.Hyperlink)
 		}
 		addHyperlink(shape.HoverAction)
+	}
+	for _, connector := range slide.Connectors {
+		addHyperlink(connector.ClickAction)
+		addHyperlink(connector.HoverAction)
 	}
 	for _, runRow := range slide.BulletRuns {
 		for _, run := range runRow {
@@ -107,30 +114,37 @@ func ToXMLTextRunRows(rows [][]Run, hyperlinkRIDs map[*action.Hyperlink]string) 
 				Lang:           run.Lang,
 			}
 			if run.Hyperlink != nil {
-				if rid, ok := hyperlinkRIDs[run.Hyperlink]; ok {
-					spec.Hyperlink = &pptxxml.HyperlinkSpec{
-						RelID:          rid,
-						Tooltip:        run.Hyperlink.Tooltip,
-						HighlightClick: run.Hyperlink.HighlightClick,
-						Action:         run.Hyperlink.Action.ActionType(),
-					}
-				}
+				spec.Hyperlink = toXMLHyperlinkSpec(run.Hyperlink, hyperlinkRIDs)
 			}
 			if run.HoverAction != nil {
-				if rid, ok := hyperlinkRIDs[run.HoverAction]; ok {
-					spec.HoverAction = &pptxxml.HyperlinkSpec{
-						RelID:          rid,
-						Tooltip:        run.HoverAction.Tooltip,
-						HighlightClick: run.HoverAction.HighlightClick,
-						Action:         run.HoverAction.Action.ActionType(),
-					}
-				}
+				spec.HoverAction = toXMLHyperlinkSpec(run.HoverAction, hyperlinkRIDs)
 			}
 			runs = append(runs, spec)
 		}
 		out[i] = runs
 	}
 	return out
+}
+
+func toXMLHyperlinkSpec(h *action.Hyperlink, hyperlinkRIDs map[*action.Hyperlink]string) *pptxxml.HyperlinkSpec {
+	if h == nil {
+		return nil
+	}
+	spec := &pptxxml.HyperlinkSpec{
+		Tooltip:        h.Tooltip,
+		HighlightClick: h.HighlightClick,
+		History:        h.History,
+		EndSound:       h.EndSound,
+		Action:         h.ActionType(),
+	}
+	if rid, ok := hyperlinkRIDs[h]; ok {
+		spec.RelID = rid
+	}
+	if spec.RelID == "" && spec.Tooltip == "" && spec.Action == "" && spec.History == nil && spec.EndSound == nil &&
+		!spec.HighlightClick {
+		return nil
+	}
+	return spec
 }
 
 func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagraphSpec {

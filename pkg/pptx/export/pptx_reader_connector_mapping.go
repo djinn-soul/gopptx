@@ -28,6 +28,9 @@ func editorShapeToConnector(es editorcommon.Shape, shapeIndexByID map[int]int) (
 	}
 	startX, startY, endX, endY := editorConnectorEndpoints(es)
 	connector := shapes.NewConnector(es.Type, startX, startY, endX, endY)
+	connector.Label = es.Text
+	connector.ClickAction = editorHyperlinkToExportHyperlink(es.ClickAction)
+	connector.HoverAction = editorHyperlinkToExportHyperlink(es.HoverAction)
 	connector.AltText = es.AltText
 	connector.IsDecorative = es.IsDecorative
 	connector.Adjustments = editorAdjustmentsToExportConnector(es.Adjustments)

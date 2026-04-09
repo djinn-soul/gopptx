@@ -47,6 +47,7 @@ type TextFrame struct {
 	Wrap         TextFrameWrap
 	AutoFit      TextFrameAutoFit
 	Orientation  string
+	Columns      int
 	RotationDeg  *float64
 }
 
@@ -73,6 +74,18 @@ func NewTextFrame() TextFrame {
 func (t TextFrame) WithRotation(degrees float64) TextFrame {
 	value := degrees
 	t.RotationDeg = &value
+	return t
+}
+
+// WithOrientation sets the OOXML text orientation token (for example, "vert270").
+func (t TextFrame) WithOrientation(orientation string) TextFrame {
+	t.Orientation = strings.TrimSpace(orientation)
+	return t
+}
+
+// WithColumns sets the number of text columns in the frame.
+func (t TextFrame) WithColumns(columns int) TextFrame {
+	t.Columns = columns
 	return t
 }
 
