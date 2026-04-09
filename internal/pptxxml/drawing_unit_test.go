@@ -76,7 +76,7 @@ func TestCustomShapeTextBody_Internal(t *testing.T) {
 	// Test normAutoFit
 	spec.TextFrame.AutoFit = "normAutoFit"
 	xml = customShapeTextBody(spec)
-	if !strings.Contains(xml, "normAutoFit") {
+	if !strings.Contains(xml, "normAutofit") {
 		t.Error("NormAutoFit missing")
 	}
 	spec.TextFrame.Orientation = "vert"

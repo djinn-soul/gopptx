@@ -1,8 +1,8 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
-	"unsafe"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
@@ -105,16 +105,15 @@ func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]b
 	}
 
 	if len(packageRelsData) > 0 {
-		ptr := uintptr(unsafe.Pointer(&packageRelsData[0]))
-		if e.packageRelsPtr == ptr {
+		if bytes.Equal(e.packageRelsData, packageRelsData) {
 			if e.packageRelsNeedsFilter {
 				out["_rels/.rels"] = e.packageRelsFilteredXML
 			}
 			return
 		}
-		e.packageRelsPtr = ptr
+		e.packageRelsData = bytes.Clone(packageRelsData)
 	} else {
-		e.packageRelsPtr = 0
+		e.packageRelsData = nil
 		e.packageRelsNeedsFilter = false
 		e.packageRelsFilteredXML = nil
 		return
