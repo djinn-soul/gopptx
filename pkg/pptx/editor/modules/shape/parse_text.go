@@ -226,8 +226,15 @@ func applyRunBaseline(run *common.TextRun, rpr *runPropsXML) {
 }
 
 func applyRunCaps(run *common.TextRun, rpr *runPropsXML) {
-	if rpr.Caps != nil {
-		switch strings.ToLower(strings.TrimSpace(*rpr.Caps)) {
+	capsValue := ""
+	switch {
+	case rpr.Cap != nil:
+		capsValue = *rpr.Cap
+	case rpr.Caps != nil:
+		capsValue = *rpr.Caps
+	}
+	if capsValue != "" {
+		switch strings.ToLower(strings.TrimSpace(capsValue)) {
 		case "all":
 			v := true
 			run.AllCaps = &v

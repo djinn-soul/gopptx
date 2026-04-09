@@ -61,9 +61,7 @@ def test_set_slide_hidden_wrapper_writes_show_flag(tmp_path: pathlib.Path) -> No
     with zipfile.ZipFile(output_path) as zf:
         slide_xml = zf.read("ppt/slides/slide2.xml").decode("utf-8")
     if 'show="0"' not in slide_xml:
-        raise AssertionError(
-            'expected hidden slide marker show="0" on slide root XML'
-        )
+        raise AssertionError('expected hidden slide marker show="0" on slide root XML')
 
 
 def test_smartart_wrapper_methods_cover_style_layout_nodes_delete() -> None:

@@ -84,8 +84,8 @@ func TestTextParityFixture_AdvancedFrameParagraphAndRunMappings(t *testing.T) {
 		`<a:normAutofit`,
 		`marL="228600"`,
 		`indent="-114300"`,
-		`caps="all"`,
-		`smCaps="1"`,
+		`cap="all"`,
+		`cap="small"`,
 		`hlinkClick`,
 	}
 	for _, token := range expectedTokens {
