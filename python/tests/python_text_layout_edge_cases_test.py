@@ -55,7 +55,7 @@ def test_complex_text_layout_fixture_emits_expected_tokens(tmp_path: Path) -> No
     assert 'numCol="2"' in slide_xml
     assert "<a:noAutofit/>" in slide_xml
     assert "hlinkClick" in slide_xml
-    assert 'smCaps="1"' in slide_xml
+    assert 'cap="small"' in slide_xml
     assert 'baseline="-25000"' in slide_xml
 
 

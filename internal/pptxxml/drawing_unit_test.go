@@ -111,6 +111,27 @@ func TestBulletParagraphPropsXML_WithLineSpacingPtsAndTabStops(t *testing.T) {
 	}
 }
 
+func TestBulletParagraphPropsXML_WithRawSpacingUnits(t *testing.T) {
+	xml := BulletParagraphPropsXML(BulletParagraphSpec{
+		LineSpacingPctRaw: 115500,
+		LineSpacingPtsRaw: 1850,
+		SpaceBeforeRaw:    250,
+		SpaceAfterRaw:     350,
+	})
+	if !strings.Contains(xml, `<a:lnSpc><a:spcPct val="115500"/></a:lnSpc>`) {
+		t.Fatalf("missing raw line spacing pct xml: %s", xml)
+	}
+	if strings.Contains(xml, `<a:spcPts val="185000"/>`) {
+		t.Fatalf("raw line spacing points should not be rescaled: %s", xml)
+	}
+	if !strings.Contains(xml, `<a:spcBef><a:spcPts val="250"/></a:spcBef>`) {
+		t.Fatalf("missing raw space before xml: %s", xml)
+	}
+	if !strings.Contains(xml, `<a:spcAft><a:spcPts val="350"/></a:spcAft>`) {
+		t.Fatalf("missing raw space after xml: %s", xml)
+	}
+}
+
 func TestSlideRelationships_Internal(t *testing.T) {
 	xml := SlideRelationshipsWithMultiCharts(
 		"../layout.xml",
