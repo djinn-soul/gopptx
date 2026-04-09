@@ -103,7 +103,7 @@ func handleSetGlobalThemePreset(e *PresentationEditor, payload json.RawMessage) 
 	if err := e.SetGlobalThemePreset(name); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"applied": true}, nil
+	return respApplied, nil
 }
 
 // handleSetThemeFontScheme updates major/minor font typefaces across all themes.
@@ -129,7 +129,7 @@ func handleSetThemeFontScheme(e *PresentationEditor, payload json.RawMessage) (a
 	if err := e.SetThemeFontScheme(major, minor); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // handleSetThemeColorScheme updates the 12 standard theme color slots.
@@ -164,7 +164,7 @@ func handleSetThemeColorScheme(e *PresentationEditor, payload json.RawMessage) (
 	if err := e.SetThemeColorScheme(scheme); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 // handleGetThemeInventory returns all theme part paths and owner bindings.

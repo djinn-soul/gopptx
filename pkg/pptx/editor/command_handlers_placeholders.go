@@ -94,7 +94,7 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	})
 
 	e.parts.Set(partPath, newContent)
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 func buildPlaceholderOverrideSpecForPayload(

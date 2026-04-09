@@ -6,11 +6,13 @@ import (
 	"strings"
 )
 
+//nolint:gochecknoglobals // Precompiled patterns/tokens are immutable and hot-path.
 var (
-	aTTitlePattern          = regexp.MustCompile(`(?s)<a:t(?:\s+[^>]*)?>(.*?)</a:t>`)
 	titlePlaceholderPattern = regexp.MustCompile(
 		`(?i)<p:ph\b[^>]*\btype\s*=\s*(?:"(?:title|ctrTitle)"|'(?:title|ctrTitle)')`,
 	)
+	aTextOpenPrefix = []byte("<a:t")
+	aTextCloseTag   = []byte("</a:t>")
 )
 
 func AppendCopySuffixToXML(content []byte) []byte {
@@ -83,34 +85,73 @@ func isTitlePlaceholderShape(shape []byte) bool {
 }
 
 func replaceLastTextRun(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
-	indexes := aTTitlePattern.FindAllIndex(content, -1)
-	if len(indexes) == 0 {
+	lastStart, lastEnd := -1, -1
+	searchFrom := 0
+	for {
+		start, end, next, ok := findNextATextRun(content, searchFrom)
+		if !ok {
+			break
+		}
+		lastStart, lastEnd = start, end
+		searchFrom = next
+	}
+	if lastStart < 0 {
 		return content, false
 	}
-	last := indexes[len(indexes)-1]
-	start, end := last[0], last[1]
-	match := content[start:end]
+	match := content[lastStart:lastEnd]
 	replacement := replaceFn(match)
 
 	out := make([]byte, 0, len(content)-len(match)+len(replacement))
-	out = append(out, content[:start]...)
+	out = append(out, content[:lastStart]...)
 	out = append(out, replacement...)
-	out = append(out, content[end:]...)
+	out = append(out, content[lastEnd:]...)
 	return out, true
 }
 
 func replaceAllTextRuns(content []byte, replaceFn func(match []byte) []byte) ([]byte, bool) {
-	modified := false
-	replacedFirst := false
-	res := aTTitlePattern.ReplaceAllFunc(content, func(match []byte) []byte {
-		modified = true
-		if !replacedFirst {
-			replacedFirst = true
-			return replaceFn(match)
+	start, end, next, ok := findNextATextRun(content, 0)
+	if !ok {
+		return content, false
+	}
+
+	var out bytes.Buffer
+	out.Grow(len(content))
+	out.Write(content[:start])
+	out.Write(replaceFn(content[start:end]))
+	pos := end
+
+	searchFrom := next
+	for {
+		runStart, runEnd, nextPos, found := findNextATextRun(content, searchFrom)
+		if !found {
+			break
 		}
-		return clearTextRun(match)
-	})
-	return res, modified
+		out.Write(content[pos:runStart])
+		out.Write(clearTextRun(content[runStart:runEnd]))
+		pos = runEnd
+		searchFrom = nextPos
+	}
+	out.Write(content[pos:])
+	return out.Bytes(), true
+}
+
+func findNextATextRun(content []byte, searchFrom int) (int, int, int, bool) {
+	openIdx := bytes.Index(content[searchFrom:], aTextOpenPrefix)
+	if openIdx < 0 {
+		return 0, 0, searchFrom, false
+	}
+	start := searchFrom + openIdx
+	openEndRel := bytes.IndexByte(content[start:], '>')
+	if openEndRel < 0 {
+		return 0, 0, searchFrom, false
+	}
+	opened := start + openEndRel + 1
+	closeIdxRel := bytes.Index(content[opened:], aTextCloseTag)
+	if closeIdxRel < 0 {
+		return 0, 0, searchFrom, false
+	}
+	end := opened + closeIdxRel + len(aTextCloseTag)
+	return start, end, end, true
 }
 
 func clearTextRun(match []byte) []byte {

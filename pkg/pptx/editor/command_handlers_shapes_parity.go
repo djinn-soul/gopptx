@@ -189,7 +189,7 @@ func handleAddGroupShape(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err != nil {
 				return nil, err
 			}
-			return map[string]int{"shape_id": newID}, nil
+			return respShapeID(newID), nil
 		},
 	)
 }
@@ -227,7 +227,7 @@ func handleBuildFreeform(e *PresentationEditor, payload json.RawMessage) (any, e
 			return nil, err
 		}
 	}
-	return map[string]int{"shape_id": shapeID}, nil
+	return respShapeID(shapeID), nil
 }
 
 func addShapeFromPayload(e *PresentationEditor, payload map[string]any) (any, error) {

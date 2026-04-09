@@ -86,5 +86,5 @@ func handleUpdateNotesMaster(e *PresentationEditor, payload json.RawMessage) (an
 	if err := e.UpdateNotesMaster(master); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }

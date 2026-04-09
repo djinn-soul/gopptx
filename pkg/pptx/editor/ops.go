@@ -220,7 +220,7 @@ func (e *PresentationEditor) recalculateNextRelIDNum() {
 	e.nextRelIDNum = editorslide.NextRelationshipIDNum(e.slides, e.nonSlideRels)
 }
 
-// SetSlideHidden marks or unmarks a slide as hidden (show="0" in presentation.xml).
+// SetSlideHidden marks or unmarks a slide as hidden (show="0" on p:sld root).
 func (e *PresentationEditor) SetSlideHidden(index int, hidden bool) error {
 	if e == nil {
 		return errors.New("editor cannot be nil")

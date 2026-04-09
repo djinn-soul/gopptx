@@ -289,5 +289,5 @@ func handleSetSlideHeaderFooter(e *PresentationEditor, payload json.RawMessage) 
 	if setErr := e.SetSlideHeaderFooter(slideIndex, hf); setErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }

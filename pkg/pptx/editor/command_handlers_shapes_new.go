@@ -96,7 +96,7 @@ func handleSwapImageByIndex(e *PresentationEditor, payload json.RawMessage) (any
 	if err := e.SwapImageByIndex(slideIndex, imageIndex, data, format); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"swapped": true}, nil
+	return respSwapped, nil
 }
 
 // handleSwapImageByRelID replaces an image identified by its relationship ID.
@@ -137,5 +137,5 @@ func handleSwapImageByRelID(e *PresentationEditor, payload json.RawMessage) (any
 	if err := e.SwapImageByRelID(slideIndex, relID, data, format); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"swapped": true}, nil
+	return respSwapped, nil
 }

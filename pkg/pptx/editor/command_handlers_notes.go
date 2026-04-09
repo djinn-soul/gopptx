@@ -84,7 +84,7 @@ func handleSetNotes(e *PresentationEditor, payload json.RawMessage) (any, error)
 	if err := e.SetNotes(slideIndex, text); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 func handleSetNotesShapeText(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -105,7 +105,7 @@ func handleSetNotesShapeText(e *PresentationEditor, payload json.RawMessage) (an
 			if err := e.SetNotesShapeText(request.SlideIndex, request.ShapeID, request.Text); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"updated": true}, nil
+			return respUpdated, nil
 		},
 	)
 }
@@ -126,7 +126,7 @@ func handleSetNotesShapeProps(e *PresentationEditor, payload json.RawMessage) (a
 			if err := e.SetNotesShapeProperties(request.SlideIndex, request.ShapeID, updates); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"updated": true}, nil
+			return respUpdated, nil
 		},
 	)
 }
@@ -199,7 +199,7 @@ func handleAddComment(e *PresentationEditor, payload json.RawMessage) (any, erro
 			); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"added": true}, nil
+			return respAdded, nil
 		},
 	)
 }
@@ -222,7 +222,7 @@ func handleRemoveComment(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err := e.RemoveComment(request.SlideIndex, request.AuthorID, request.AuthorIndex); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"removed": true}, nil
+			return respRemoved, nil
 		},
 	)
 }

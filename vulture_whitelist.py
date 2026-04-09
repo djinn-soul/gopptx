@@ -419,6 +419,17 @@ _.update_handout_master  # unused method (python\gopptx\presentation\notes\notes
 _.has_digital_signature  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.clear_shapes  # unused method (python\gopptx\presentation\shapes\shapes_tables.py / python\gopptx\slide\shapes\shape_mixin.py)
 
+# 2026-04-07: recently added bridge wrapper API methods (invoked dynamically by users/tests).
+_.add_slide_master  # unused method (python\gopptx\presentation\slides\layout_theme_mixin.py)
+_.remove_slide_master  # unused method (python\gopptx\presentation\slides\layout_theme_mixin.py)
+_.add_slide_layout  # unused method (python\gopptx\presentation\slides\layout_theme_mixin.py)
+_.remove_slide_layout  # unused method (python\gopptx\presentation\slides\layout_theme_mixin.py)
+_.set_slide_hidden  # unused method (python\gopptx\presentation\slides\slides_mixin.py)
+_.delete_smartart  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
+_.change_smartart_layout  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
+_.set_smartart_style  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
+_.set_smartart_nodes  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
+
 # Notes text model formatting properties and alignment methods
 _.font_size  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)
 _.bold  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)

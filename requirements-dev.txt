@@ -7,9 +7,13 @@ anyio==4.12.1
     # via
     #   httpx
     #   starlette
+babel==2.18.0
+    # via mkdocs-material
+backrefs==6.2
+    # via mkdocs-material
 bandit==1.9.4
     # via gopptx
-basedpyright==1.38.3
+basedpyright==1.39.0
     # via gopptx
 boolean-py==5.0
     # via license-expression
@@ -23,12 +27,16 @@ certifi==2026.1.4
 charset-normalizer==3.4.4
     # via requests
 click==8.3.1
-    # via gitingest
-colorama==0.4.6 ; sys_platform == 'win32'
+    # via
+    #   gitingest
+    #   mkdocs
+colorama==0.4.6
     # via
     #   bandit
     #   click
     #   loguru
+    #   mkdocs
+    #   mkdocs-material
     #   pytest
 coverage==7.13.4
     # via pytest-cov
@@ -45,8 +53,12 @@ exceptiongroup==1.3.1 ; python_full_version < '3.11'
     #   pytest
 filelock==3.24.3
     # via cachecontrol
+ghp-import==2.1.0
+    # via mkdocs
 gitingest==0.3.1
     # via gopptx
+griffelib==2.0.2
+    # via mkdocstrings-python
 h11==0.16.0
     # via httpcore
 httpcore==1.0.9
@@ -63,17 +75,57 @@ idna==3.11
 iniconfig==2.3.0
     # via pytest
 jinja2==3.1.6
-    # via gopptx
+    # via
+    #   gopptx
+    #   mkdocs
+    #   mkdocs-material
+    #   mkdocstrings
 license-expression==30.4.4
     # via cyclonedx-python-lib
 loguru==0.7.3
     # via gitingest
+markdown==3.10.2
+    # via
+    #   mkdocs
+    #   mkdocs-autorefs
+    #   mkdocs-material
+    #   mkdocstrings
+    #   pymdown-extensions
 markdown-it-py==4.0.0
     # via rich
 markupsafe==3.0.3
-    # via jinja2
+    # via
+    #   jinja2
+    #   mkdocs
+    #   mkdocs-autorefs
+    #   mkdocstrings
 mdurl==0.1.2
     # via markdown-it-py
+mergedeep==1.3.4
+    # via
+    #   mkdocs
+    #   mkdocs-get-deps
+mkdocs==1.6.1
+    # via
+    #   mkdocs-autorefs
+    #   mkdocs-material
+    #   mkdocstrings
+mkdocs-autorefs==1.4.4
+    # via
+    #   mkdocstrings
+    #   mkdocstrings-python
+mkdocs-get-deps==0.2.2
+    # via mkdocs
+mkdocs-material==9.7.6
+    # via gopptx
+mkdocs-material-extensions==1.3.1
+    # via mkdocs-material
+mkdocstrings==1.0.3
+    # via
+    #   gopptx
+    #   mkdocstrings-python
+mkdocstrings-python==2.0.3
+    # via mkdocstrings
 msgpack==1.1.2
     # via cachecontrol
 nodejs-wheel-binaries==24.13.1
@@ -88,13 +140,18 @@ packageurl-python==0.17.6
     # via cyclonedx-python-lib
 packaging==26.0
     # via
+    #   mkdocs
     #   pip-audit
     #   pip-requirements-parser
     #   pytest
+paginate==0.5.7
+    # via mkdocs-material
 pastel==0.2.1
     # via poethepoet
 pathspec==1.0.4
-    # via gitingest
+    # via
+    #   gitingest
+    #   mkdocs
 pillow==12.1.1
     # via gopptx
 pip==26.0.1
@@ -106,14 +163,16 @@ pip-audit==2.10.0
 pip-requirements-parser==32.0.1
     # via pip-audit
 platformdirs==4.9.2
-    # via pip-audit
+    # via
+    #   mkdocs-get-deps
+    #   pip-audit
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-poethepoet==0.42.1
+poethepoet==0.44.0
     # via gopptx
-prek==0.3.6
+prek==0.3.8
     # via gopptx
 py-serializable==2.1.0
     # via cyclonedx-python-lib
@@ -123,8 +182,13 @@ pydantic-core==2.41.5
     # via pydantic
 pygments==2.20.0
     # via
+    #   mkdocs-material
     #   pytest
     #   rich
+pymdown-extensions==10.21.2
+    # via
+    #   mkdocs-material
+    #   mkdocstrings
 pyparsing==3.3.2
     # via pip-requirements-parser
 pypdfium2==5.6.0
@@ -135,19 +199,28 @@ pytest==9.0.2
     #   pytest-cov
 pytest-cov==7.0.0
     # via gopptx
+python-dateutil==2.9.0.post0
+    # via ghp-import
 python-dotenv==1.2.1
     # via gitingest
 pyyaml==6.0.3
     # via
     #   bandit
     #   detect-secrets
+    #   mkdocs
+    #   mkdocs-get-deps
     #   poethepoet
+    #   pymdown-extensions
+    #   pyyaml-env-tag
+pyyaml-env-tag==1.1
+    # via mkdocs
 regex==2026.2.19
     # via tiktoken
 requests==2.33.0
     # via
     #   cachecontrol
     #   detect-secrets
+    #   mkdocs-material
     #   pip-audit
     #   tiktoken
 rich==14.3.3
@@ -156,6 +229,8 @@ rich==14.3.3
     #   pip-audit
 ruff==0.15.7
     # via gopptx
+six==1.17.0
+    # via python-dateutil
 sortedcontainers==2.4.0
     # via
     #   cyclonedx-python-lib
@@ -182,6 +257,7 @@ typing-extensions==4.15.0
     #   anyio
     #   cyclonedx-python-lib
     #   exceptiongroup
+    #   mkdocstrings-python
     #   pydantic
     #   pydantic-core
     #   starlette
@@ -192,5 +268,7 @@ urllib3==2.6.3
     # via requests
 vulture==2.15
     # via gopptx
+watchdog==6.0.0
+    # via mkdocs
 win32-setctime==1.2.0 ; sys_platform == 'win32'
     # via loguru

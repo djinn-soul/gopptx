@@ -225,3 +225,18 @@ func (e *PresentationEditor) renderPresentationXMLWithSections() (string, error)
 
 	return presentationXML, nil
 }
+
+func (e *PresentationEditor) rewriteSlideVisibilityParts(out map[string][]byte) error {
+	for _, slideRef := range e.slides {
+		slideXML, ok := e.parts.Get(slideRef.Part)
+		if !ok {
+			return fmt.Errorf("missing slide part %q", slideRef.Part)
+		}
+		rewritten, err := editorslide.RewriteSlideHidden(slideXML, slideRef.Hidden)
+		if err != nil {
+			return fmt.Errorf("rewrite hidden visibility for %q: %w", slideRef.Part, err)
+		}
+		out[slideRef.Part] = rewritten
+	}
+	return nil
+}

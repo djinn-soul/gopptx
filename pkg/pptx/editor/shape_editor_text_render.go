@@ -129,7 +129,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				bodyPr += `<a:normAutoFit/>`
 			case "shape":
 				bodyPr += `<a:spAutoFit/>`
-			case "none":
+			case bulletStyleNone:
 				bodyPr += `<a:noAutofit/>`
 			}
 		} else if tf.AutoFit != nil {
@@ -167,7 +167,7 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 				rPr += ` i="1"`
 			}
 			if r.Underline != nil && *r.Underline != "" {
-				rPr += fmt.Sprintf(` u="%s"`, escape(*r.Underline))
+				rPr += fmt.Sprintf(` u="%s"`, escape(normalizeUnderlineValue(*r.Underline)))
 			}
 			if r.Strikethrough != nil && *r.Strikethrough != "" {
 				val := *r.Strikethrough
@@ -306,4 +306,17 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 		return 0, errors.New("text_frame.rotation must be between -360 and 360 degrees")
 	}
 	return int64(math.Round(raw * editorslide.RotationDegreeToOOXML)), nil
+}
+
+func normalizeUnderlineValue(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", bulletStyleNone:
+		return "none"
+	case "single":
+		return "sng"
+	case "double":
+		return "dbl"
+	default:
+		return raw
+	}
 }

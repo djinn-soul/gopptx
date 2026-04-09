@@ -23,31 +23,101 @@ func handleSetSlideSize(e *PresentationEditor, payload json.RawMessage) (any, er
 			if err := e.SetSlideSize(common.SlideSize{Width: request.Width, Height: request.Height}); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"updated": true}, nil
+			return respUpdated, nil
 		},
 	)
 }
 
 func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	v := NewPayloadValidator()
-	return editorcommand.HandleParsedRequest(
-		payload,
-		parseRawPayloadBytes,
-		func(p map[string]any) (editorcommand.SlideTitleRequest, bool) {
-			return editorcommand.ParseSlideTitleRequest(
-				p,
-				func(payload map[string]any) (int, bool) { return requireSlideIndex(e, payload, v) },
-				v.RequireString,
+	request, err := parseSetSlideTitlePayload(payload, e.SlideCount())
+	if err != nil {
+		return nil, err
+	}
+	if err := e.SetSlideTitle(request.SlideIndex, request.Title); err != nil {
+		return nil, err
+	}
+	return respUpdated, nil
+}
+
+func parseSetSlideTitlePayload(payload json.RawMessage, slideCount int) (editorcommand.SlideTitleRequest, error) {
+	if len(payload) == 0 {
+		return editorcommand.SlideTitleRequest{}, NewBridgeError(ErrCodeInvalidPayload, "empty payload")
+	}
+
+	var fast struct {
+		SlideIndex *float64 `json:"slide_index"`
+		Title      *string  `json:"title"`
+	}
+	if err := json.Unmarshal(payload, &fast); err == nil {
+		if fast.SlideIndex == nil {
+			return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(
+				ErrCodeMissingField,
+				"missing required field: slide_index",
 			)
-		},
-		v.Error,
-		func(request editorcommand.SlideTitleRequest) (any, error) {
-			if err := e.SetSlideTitle(request.SlideIndex, request.Title); err != nil {
-				return nil, err
-			}
-			return map[string]bool{"updated": true}, nil
-		},
-	)
+		}
+		if fast.Title == nil {
+			return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(
+				ErrCodeMissingField,
+				"missing required field: title",
+			)
+		}
+		slideIndex := int(*fast.SlideIndex)
+		if slideIndex < 0 || slideIndex >= slideCount {
+			msg := fmt.Sprintf("slide_index %d out of bounds [%d, %d)", slideIndex, 0, slideCount)
+			return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(ErrCodeInvalidIndex, msg)
+		}
+		return editorcommand.SlideTitleRequest{SlideIndex: slideIndex, Title: *fast.Title}, nil
+	}
+	return parseSetSlideTitlePayloadSlow(payload, slideCount)
+}
+
+func parseSetSlideTitlePayloadSlow(payload json.RawMessage, slideCount int) (editorcommand.SlideTitleRequest, error) {
+	var raw struct {
+		SlideIndex json.RawMessage `json:"slide_index"`
+		Title      json.RawMessage `json:"title"`
+	}
+	if err := json.Unmarshal(payload, &raw); err != nil {
+		msg := fmt.Sprintf("invalid JSON payload: %v", err)
+		return editorcommand.SlideTitleRequest{}, NewBridgeError(ErrCodeInvalidPayload, msg)
+	}
+	if len(raw.SlideIndex) == 0 {
+		return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(
+			ErrCodeMissingField,
+			"missing required field: slide_index",
+		)
+	}
+	if len(raw.Title) == 0 {
+		return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(
+			ErrCodeMissingField,
+			"missing required field: title",
+		)
+	}
+
+	var slideNumber float64
+	if err := json.Unmarshal(raw.SlideIndex, &slideNumber); err != nil {
+		return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(
+			ErrCodeInvalidType,
+			"field slide_index must be an integer",
+		)
+	}
+	slideIndex := int(slideNumber)
+	if slideIndex < 0 || slideIndex >= slideCount {
+		msg := fmt.Sprintf("slide_index %d out of bounds [%d, %d)", slideIndex, 0, slideCount)
+		return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(ErrCodeInvalidIndex, msg)
+	}
+
+	var title string
+	if err := json.Unmarshal(raw.Title, &title); err != nil {
+		return editorcommand.SlideTitleRequest{}, newPayloadValidationBridgeError(
+			ErrCodeInvalidType,
+			"field title must be a string",
+		)
+	}
+	return editorcommand.SlideTitleRequest{SlideIndex: slideIndex, Title: title}, nil
+}
+
+func newPayloadValidationBridgeError(code, detail string) error {
+	return NewBridgeErrorWithDetails(code, "payload validation failed", []string{detail})
 }
 
 // handleSetSlideHidden marks or unmarks a slide as hidden.
@@ -55,23 +125,72 @@ func handleSetSlideTitle(e *PresentationEditor, payload json.RawMessage) (any, e
 // Payload: {"slide_index": N, "hidden": bool}.
 // Response: {"updated": true}.
 func handleSetSlideHidden(e *PresentationEditor, payload json.RawMessage) (any, error) {
-	p, err := ParseRawPayload(payload)
+	slideIndex, hidden, err := parseSetSlideHiddenPayload(payload, e.SlideCount())
 	if err != nil {
 		return nil, err
-	}
-	v := NewPayloadValidator()
-	slideIndex, ok := requireSlideIndex(e, p, v)
-	if !ok {
-		return nil, v.Error()
-	}
-	hidden, ok := v.RequireBool(p, "hidden")
-	if !ok {
-		return nil, v.Error()
 	}
 	if setErr := e.SetSlideHidden(slideIndex, hidden); setErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, setErr.Error())
 	}
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
+}
+
+func parseSetSlideHiddenPayload(payload json.RawMessage, slideCount int) (int, bool, error) {
+	if len(payload) == 0 {
+		return 0, false, NewBridgeError(ErrCodeInvalidPayload, "empty payload")
+	}
+	var fast struct {
+		SlideIndex *float64 `json:"slide_index"`
+		Hidden     *bool    `json:"hidden"`
+	}
+	if err := json.Unmarshal(payload, &fast); err == nil {
+		if fast.SlideIndex == nil {
+			return 0, false, newPayloadValidationBridgeError(ErrCodeMissingField, "missing required field: slide_index")
+		}
+		if fast.Hidden == nil {
+			return 0, false, newPayloadValidationBridgeError(ErrCodeMissingField, "missing required field: hidden")
+		}
+		slideIndex := int(*fast.SlideIndex)
+		if slideIndex < 0 || slideIndex >= slideCount {
+			msg := fmt.Sprintf("slide_index %d out of bounds [%d, %d)", slideIndex, 0, slideCount)
+			return 0, false, newPayloadValidationBridgeError(ErrCodeInvalidIndex, msg)
+		}
+		return slideIndex, *fast.Hidden, nil
+	}
+	return parseSetSlideHiddenPayloadSlow(payload, slideCount)
+}
+
+func parseSetSlideHiddenPayloadSlow(payload json.RawMessage, slideCount int) (int, bool, error) {
+	var raw struct {
+		SlideIndex json.RawMessage `json:"slide_index"`
+		Hidden     json.RawMessage `json:"hidden"`
+	}
+	if err := json.Unmarshal(payload, &raw); err != nil {
+		msg := fmt.Sprintf("invalid JSON payload: %v", err)
+		return 0, false, NewBridgeError(ErrCodeInvalidPayload, msg)
+	}
+	if len(raw.SlideIndex) == 0 {
+		return 0, false, newPayloadValidationBridgeError(ErrCodeMissingField, "missing required field: slide_index")
+	}
+	if len(raw.Hidden) == 0 {
+		return 0, false, newPayloadValidationBridgeError(ErrCodeMissingField, "missing required field: hidden")
+	}
+
+	var slideNumber float64
+	if err := json.Unmarshal(raw.SlideIndex, &slideNumber); err != nil {
+		return 0, false, newPayloadValidationBridgeError(ErrCodeInvalidType, "field slide_index must be an integer")
+	}
+	slideIndex := int(slideNumber)
+	if slideIndex < 0 || slideIndex >= slideCount {
+		msg := fmt.Sprintf("slide_index %d out of bounds [%d, %d)", slideIndex, 0, slideCount)
+		return 0, false, newPayloadValidationBridgeError(ErrCodeInvalidIndex, msg)
+	}
+
+	var hidden bool
+	if err := json.Unmarshal(raw.Hidden, &hidden); err != nil {
+		return 0, false, newPayloadValidationBridgeError(ErrCodeInvalidType, "field hidden must be a boolean")
+	}
+	return slideIndex, hidden, nil
 }
 
 func handleMergeFromFile(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -87,7 +206,7 @@ func handleMergeFromFile(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err := e.MergeFromFile(request.Path); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"merged": true}, nil
+			return respMerged, nil
 		},
 	)
 }
@@ -111,7 +230,7 @@ func handleUpdateSlide(e *PresentationEditor, payload json.RawMessage) (any, err
 			if err := e.UpdateSlide(request.SlideIndex, slide); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"updated": true}, nil
+			return respUpdated, nil
 		},
 	)
 }
@@ -146,7 +265,7 @@ func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error)
 			if err := e.AddChart(request.SlideIndex, chart); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"added": true}, nil
+			return respAdded, nil
 		},
 	)
 }
@@ -168,7 +287,7 @@ func handleSetCoreProperties(e *PresentationEditor, payload json.RawMessage) (an
 	}
 
 	e.SetCoreProperties(props)
-	return map[string]bool{"updated": true}, nil
+	return respUpdated, nil
 }
 
 func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -193,7 +312,7 @@ func handleApplyTheme(e *PresentationEditor, payload json.RawMessage) (any, erro
 	if err := e.ApplyTheme(theme); err != nil {
 		return nil, err
 	}
-	return map[string]bool{"applied": true}, nil
+	return respApplied, nil
 }
 
 func handleAddSection(e *PresentationEditor, payload json.RawMessage) (any, error) {
@@ -209,7 +328,7 @@ func handleAddSection(e *PresentationEditor, payload json.RawMessage) (any, erro
 			if err := e.AddSection(request.Name, request.SlideIndices); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"added": true}, nil
+			return respAdded, nil
 		},
 	)
 }
@@ -227,7 +346,7 @@ func handleRemoveSection(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err := e.RemoveSection(request.Name); err != nil {
 				return nil, err
 			}
-			return map[string]bool{"removed": true}, nil
+			return respRemoved, nil
 		},
 	)
 }
