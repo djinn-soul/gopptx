@@ -1,8 +1,8 @@
 package editor
 
 import (
+	"bytes"
 	"fmt"
-	"unsafe"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
@@ -81,13 +81,10 @@ func (e *PresentationEditor) renderContentTypesPart(
 	contentTypesData, _ := e.parts.Get(common.ContentTypesPath)
 
 	// Use a cached parse of [Content_Types].xml to avoid xml.Unmarshal on every save.
-	// The cache is keyed by the backing-array pointer of the content-types bytes.
-	// PartStore.Set() always creates a new slice, so a changed pointer means a cache miss.
+	// The cache is valid as long as the stored bytes equal the current part bytes.
 	var base editorslide.ContentTypesBase
 	if len(contentTypesData) > 0 {
-		// Pointer is used only as a staleness token for cache invalidation.
-		ptr := uintptr(unsafe.Pointer(&contentTypesData[0]))
-		if e.ctBasePtr == ptr && e.ctBase != nil {
+		if e.ctBase != nil && bytes.Equal(e.ctBaseData, contentTypesData) {
 			base = e.ctBase
 		} else {
 			parsed, err := editorslide.ParseContentTypesBase(contentTypesData)
@@ -95,7 +92,7 @@ func (e *PresentationEditor) renderContentTypesPart(
 				return nil, fmt.Errorf("parse content types: %w", err)
 			}
 			e.ctBase = parsed
-			e.ctBasePtr = ptr
+			e.ctBaseData = bytes.Clone(contentTypesData)
 			base = parsed
 		}
 	}

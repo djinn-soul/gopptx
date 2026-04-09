@@ -201,7 +201,7 @@ func TestParseShapeProperties_ParsesTextFrameAutoFitAndShapeRotation(t *testing.
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
   </p:spPr>
   <p:txBody>
-    <a:bodyPr wrap="none" vert="vert270" numCol="2" rot="-2700000"><a:normAutoFit/></a:bodyPr>
+    <a:bodyPr wrap="none" vert="vert270" numCol="2" rot="-2700000"><a:normAutofit/></a:bodyPr>
     <a:lstStyle/>
     <a:p><a:r><a:t>Rotated</a:t></a:r></a:p>
   </p:txBody>
