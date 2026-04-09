@@ -2,7 +2,6 @@ package export
 
 import (
 	"math"
-	"strings"
 
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -166,88 +165,6 @@ func editorAdjustmentsToExport(
 	return out
 }
 
-//nolint:gocognit
-func editorTextFrameToExportTextFrame(frame *editorcommon.TextFrame) *shapes.TextFrame {
-	if frame == nil {
-		return nil
-	}
-	tf := shapes.NewTextFrame()
-	has := false
-	if frame.MarginLeft != nil {
-		tf.MarginLeft = styling.Emu(int64(*frame.MarginLeft))
-		has = true
-	}
-	if frame.MarginRight != nil {
-		tf.MarginRight = styling.Emu(int64(*frame.MarginRight))
-		has = true
-	}
-	if frame.MarginTop != nil {
-		tf.MarginTop = styling.Emu(int64(*frame.MarginTop))
-		has = true
-	}
-	if frame.MarginBottom != nil {
-		tf.MarginBottom = styling.Emu(int64(*frame.MarginBottom))
-		has = true
-	}
-	if frame.VerticalAlign != nil {
-		switch strings.ToLower(strings.TrimSpace(*frame.VerticalAlign)) {
-		case "t", "top":
-			tf.Anchor = shapes.TextAnchorTop
-			has = true
-		case "b", "bottom":
-			tf.Anchor = shapes.TextAnchorBottom
-			has = true
-		case "ctr", "center", "middle":
-			tf.Anchor = shapes.TextAnchorMiddle
-			has = true
-		}
-	}
-	if frame.WordWrap != nil {
-		if *frame.WordWrap {
-			tf.Wrap = shapes.TextWrapSquare
-		} else {
-			tf.Wrap = shapes.TextWrapNone
-		}
-		has = true
-	}
-	if frame.AutoFitType != nil {
-		switch strings.ToLower(strings.TrimSpace(*frame.AutoFitType)) {
-		case "none":
-			tf.AutoFit = shapes.TextAutoFitNone
-			has = true
-		case "normal":
-			tf.AutoFit = shapes.TextAutoFitNormal
-			has = true
-		case "shape":
-			tf.AutoFit = shapes.TextAutoFitShape
-			has = true
-		}
-	} else if frame.AutoFit != nil {
-		if *frame.AutoFit {
-			tf.AutoFit = shapes.TextAutoFitShape
-		} else {
-			tf.AutoFit = shapes.TextAutoFitNone
-		}
-		has = true
-	}
-	if frame.Rotation != nil {
-		tf.RotationDeg = frame.Rotation
-		has = true
-	}
-	if frame.Orientation != nil && *frame.Orientation != "" {
-		tf.Orientation = strings.TrimSpace(*frame.Orientation)
-		has = true
-	}
-	if frame.Columns != nil {
-		tf.Columns = *frame.Columns
-		has = true
-	}
-	if !has {
-		return nil
-	}
-	return &tf
-}
-
 func editorShadowToExportShadow(shadow *editorcommon.ShapeShadow) *shapes.RichShapeShadow {
 	if shadow == nil {
 		return nil
@@ -270,77 +187,6 @@ func editorShadowToExportShadow(shadow *editorcommon.ShapeShadow) *shapes.RichSh
 		richShadow.Angle = *shadow.AngleDeg
 	}
 	return richShadow
-}
-
-func editorEffectsToExportEffects(es editorcommon.Shape) *shapes.ShapeEffects {
-	effects := &shapes.ShapeEffects{}
-	if es.Shadow != nil && (es.Shadow.Inherit == nil || *es.Shadow.Inherit || es.Shadow.Color != nil ||
-		es.Shadow.BlurEmu != nil || es.Shadow.DistanceEmu != nil || es.Shadow.AngleDeg != nil) {
-		effects.Shadow = true
-	}
-	effects.Glow = es.Glow != nil
-	effects.GlowSpec = editorGlowToExportGlow(es.Glow)
-	effects.BlurSpec = editorBlurToExportBlur(es.Blur)
-	effects.SoftEdges = es.SoftEdge != nil
-	effects.SoftEdgeSpec = editorSoftEdgeToExportSoftEdge(es.SoftEdge)
-	effects.Reflection = es.Reflection != nil
-	effects.ReflectionSpec = editorReflectionToExportReflection(es.Reflection)
-	if !effects.Shadow && !effects.Glow && !effects.SoftEdges && !effects.Reflection &&
-		effects.GlowSpec == nil && effects.BlurSpec == nil && effects.SoftEdgeSpec == nil &&
-		effects.ReflectionSpec == nil {
-		return nil
-	}
-	return effects
-}
-
-func editorGlowToExportGlow(glow *editorcommon.ShapeGlow) *shapes.ShapeGlow {
-	if glow == nil {
-		return nil
-	}
-	exported := &shapes.ShapeGlow{}
-	if glow.Color != nil {
-		exported.Color = *glow.Color
-	}
-	if glow.RadiusEmu != nil {
-		exported.RadiusEmu = *glow.RadiusEmu
-	}
-	return exported
-}
-
-func editorBlurToExportBlur(blur *editorcommon.ShapeBlur) *shapes.ShapeBlur {
-	if blur == nil {
-		return nil
-	}
-	exported := &shapes.ShapeBlur{}
-	if blur.RadiusEmu != nil {
-		exported.RadiusEmu = *blur.RadiusEmu
-	}
-	return exported
-}
-
-func editorSoftEdgeToExportSoftEdge(softEdge *editorcommon.ShapeSoftEdge) *shapes.ShapeSoftEdge {
-	if softEdge == nil {
-		return nil
-	}
-	exported := &shapes.ShapeSoftEdge{}
-	if softEdge.RadiusEmu != nil {
-		exported.RadiusEmu = *softEdge.RadiusEmu
-	}
-	return exported
-}
-
-func editorReflectionToExportReflection(reflection *editorcommon.ShapeReflection) *shapes.ShapeReflection {
-	if reflection == nil {
-		return nil
-	}
-	exported := &shapes.ShapeReflection{}
-	if reflection.BlurEmu != nil {
-		exported.BlurEmu = *reflection.BlurEmu
-	}
-	if reflection.DistanceEmu != nil {
-		exported.DistanceEmu = *reflection.DistanceEmu
-	}
-	return exported
 }
 
 func positionPct(raw *float64) int {

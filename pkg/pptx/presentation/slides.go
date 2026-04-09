@@ -5,8 +5,8 @@ import (
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/comments"
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
+	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/media"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -114,7 +114,6 @@ func renderSlides(
 	}
 	return nil
 }
-
 
 func layoutTargetForMaster(target string, masterNum int) string {
 	if masterNum <= 1 {

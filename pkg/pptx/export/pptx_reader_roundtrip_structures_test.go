@@ -75,7 +75,8 @@ func TestSlidesFromPPTX_PreservesConnectorsAndFrameAccessibility(t *testing.T) {
 	if readConnector.Label != "Connector Label" {
 		t.Fatalf("expected connector label, got %q", readConnector.Label)
 	}
-	if readConnector.ClickAction == nil || readConnector.ClickAction.ActionType() != "ppaction://macro?name=ConnectorMacro" {
+	if readConnector.ClickAction == nil ||
+		readConnector.ClickAction.ActionType() != "ppaction://macro?name=ConnectorMacro" {
 		t.Fatalf("expected connector raw click action, got %+v", readConnector.ClickAction)
 	}
 	if readConnector.StartShapeIndex != 1 || readConnector.EndShapeIndex != 2 {
