@@ -63,6 +63,7 @@ func pdfStyledRunFromTextRun(run text.Run, fittedSize int, defaultBold, defaultI
 		Italic:   run.Italic || defaultItalic,
 		Color:    color,
 		FontHint: fontHint,
+		Lang:     strings.TrimSpace(run.Lang),
 		SizePt:   size,
 	}
 	if run.Highlight != "" {

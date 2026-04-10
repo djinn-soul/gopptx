@@ -19,6 +19,10 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 		renderPDFShapeParagraphText(pdf, s, x, y, w, h)
 		return
 	}
+	if s.TextFrame != nil && isVerticalShapeText(s.TextFrame.Orientation) {
+		renderPDFShapePlainTextVertical(pdf, s, x, y, w, h)
+		return
+	}
 	boxX, boxY, boxW, boxH, anchor := shapeTextBox(s, x, y, w, h)
 	if boxW <= 2 || boxH <= 2 {
 		return

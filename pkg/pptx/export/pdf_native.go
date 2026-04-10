@@ -74,7 +74,12 @@ func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
 	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilyMono), fontFamilyMono) {
 		monoAlias = fontFamilyMono
 	}
+	cjkAlias := ""
+	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilyCJK), fontFamilyCJK) {
+		cjkAlias = fontFamilyCJK
+	}
 	setPDFFontAliases(sansAlias, serifAlias, monoAlias)
+	setPDFCJKAlias(cjkAlias)
 	return nil
 }
 

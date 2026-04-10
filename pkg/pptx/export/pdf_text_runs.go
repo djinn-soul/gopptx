@@ -14,6 +14,7 @@ type pdfStyledRun struct {
 	Italic         bool
 	Color          [3]uint8
 	FontHint       string
+	Lang           string
 	SizePt         int
 	HasHighlight   bool
 	HighlightColor [3]uint8
@@ -115,7 +116,7 @@ func measureStyledRunWidth(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
 	if size <= 0 {
 		size = defaultFontSize
 	}
-	setPDFTextFontWithHint(pdf, size, run.Bold, run.Italic, run.FontHint)
+	setPDFTextFontWithHintAndLang(pdf, size, run.Bold, run.Italic, run.FontHint, run.Lang)
 	return measuredWidthWithMetrics(pdf, run.Text, run.FontHint)
 }
 
@@ -157,7 +158,7 @@ func renderPDFStyledRunText(pdf *gopdf.GoPdf, run pdfStyledRun, x, y float64) {
 	if run.HasOutline {
 		renderPDFStyledRunOutline(pdf, run, x, y)
 	}
-	setPDFTextFontWithHint(pdf, runSizePt(run), run.Bold, run.Italic, run.FontHint)
+	setPDFTextFontWithHintAndLang(pdf, runSizePt(run), run.Bold, run.Italic, run.FontHint, run.Lang)
 	pdf.SetTextColor(run.Color[0], run.Color[1], run.Color[2])
 	pdf.SetX(x)
 	pdf.SetY(y + fontBaselineShift(run.FontHint, runSizePt(run)))
@@ -175,7 +176,14 @@ func renderPDFStyledRunOutline(pdf *gopdf.GoPdf, run pdfStyledRun, x, y float64)
 		{0, -offset},
 		{0, offset},
 	} {
-		setPDFTextFontWithHint(pdf, runSizePt(outlineRun), outlineRun.Bold, outlineRun.Italic, outlineRun.FontHint)
+		setPDFTextFontWithHintAndLang(
+			pdf,
+			runSizePt(outlineRun),
+			outlineRun.Bold,
+			outlineRun.Italic,
+			outlineRun.FontHint,
+			outlineRun.Lang,
+		)
 		pdf.SetTextColor(outlineRun.Color[0], outlineRun.Color[1], outlineRun.Color[2])
 		pdf.SetX(x + delta[0])
 		pdf.SetY(y + delta[1] + fontBaselineShift(outlineRun.FontHint, runSizePt(outlineRun)))

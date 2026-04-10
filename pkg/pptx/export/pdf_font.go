@@ -9,6 +9,7 @@ const (
 	fontFamilySans  = "sans"
 	fontFamilySerif = "serif"
 	fontFamilyMono  = "mono"
+	fontFamilyCJK   = "cjk"
 )
 
 func systemFontPathsForFamily(family string) []string {
@@ -40,6 +41,13 @@ func systemFontPathsForFamily(family string) []string {
 
 func windowsFontCandidates(fontsDir, family string) []string {
 	switch family {
+	case fontFamilyCJK:
+		return []string{
+			fontsDir + "msyh.ttc",
+			fontsDir + "msgothic.ttc",
+			fontsDir + "malgun.ttf",
+			fontsDir + "simsun.ttc",
+		}
 	case fontFamilyMono:
 		return []string{
 			fontsDir + "consola.ttf",
@@ -65,6 +73,12 @@ func windowsFontCandidates(fontsDir, family string) []string {
 
 func macFontCandidates(family string) []string {
 	switch family {
+	case fontFamilyCJK:
+		return []string{
+			"/System/Library/Fonts/PingFang.ttc",
+			"/System/Library/Fonts/Hiragino Sans GB.ttc",
+			"/System/Library/Fonts/AppleSDGothicNeo.ttc",
+		}
 	case fontFamilyMono:
 		return []string{
 			"/System/Library/Fonts/SFNSMono.ttf",
@@ -89,6 +103,12 @@ func macFontCandidates(family string) []string {
 
 func linuxFontCandidates(family string) []string {
 	switch family {
+	case fontFamilyCJK:
+		return []string{
+			"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+			"/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+			"/usr/share/fonts/opentype/noto/NotoSansCJKSC-Regular.otf",
+		}
 	case fontFamilyMono:
 		return []string{
 			"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
