@@ -76,6 +76,12 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	if slide.Title != "" {
 		yPos = 108.0
 	}
+	// For CenteredTitle layout the title box sits at y≈167pt with height≈116pt
+	// (matching the standard Office ctrTitle placeholder). Bullets/subtitle must
+	// start below it, not at the default 108pt which would overlap the title.
+	if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutCenteredTitle {
+		yPos = 294.0 // ≈ standard subtitle placeholder top (3737600 EMU → ~294pt)
+	}
 	maxY := slideHeightPt - 24
 	baseX := 36.0 // matches the standard PPT "Title and Content" content placeholder left edge (457200 EMU)
 	maxWidth := slideWidthPt - 108
@@ -111,6 +117,8 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		fontSize := defaultFontSize
 		if sz := firstRunSize(runs); sz > 0 {
 			fontSize = sz
+		} else if slide.ContentSize > 0 {
+			fontSize = slide.ContentSize
 		}
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)
@@ -124,6 +132,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 			fontHint = inferCodeFontHint(renderedText)
 		}
 		yPos += paragraphStartGap(i, prevSpaceAfter, style)
+		tabStops := paragraphTabStopsPt(style)
 		availableWidth := maxWidth - leftIndent - rightIndent
 		if availableWidth < 80 {
 			availableWidth = 80
@@ -141,8 +150,8 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		)
 		setPDFTextFontWithHint(pdf, fontSize, bold, italic, fontHint)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
-		lines := wrapStyledRuns(pdf, styledRuns, availableWidth)
-		lineHeight := math.Max(pdfLineHeight(fontSize)*paragraphLineSpacingFactor(style), 12)
+		lines := wrapStyledRuns(pdf, styledRuns, availableWidth, tabStops)
+		lineHeight := math.Max(paragraphRenderedLineHeight(style, pdfLineHeight(fontSize)), 12)
 		for li, line := range lines {
 			if yPos+lineHeight > maxY {
 				setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
@@ -153,7 +162,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 			if li == 0 && prefix != "" {
 				prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
 				prefixX := lineX + hangingIndent
-				renderStyledLine(pdf, prefixRuns, prefixX, yPos)
+				renderStyledLine(pdf, prefixRuns, prefixX, yPos, pdfTextRenderOptions{LineHeight: lineHeight})
 			}
 
 			align := elements.NormalizeTextAlign(style.Align)
@@ -161,7 +170,10 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 				lineText := styledLinePlain(line)
 				lineX = alignedTextX(pdf, lineText, baseX+leftIndent, availableWidth, style.Align, fontHint)
 			}
-			renderStyledLine(pdf, line, lineX, yPos)
+			renderStyledLine(pdf, line, lineX, yPos, pdfTextRenderOptions{
+				LineHeight: lineHeight,
+				TabStops:   tabStops,
+			})
 			yPos += lineHeight
 		}
 		prevSpaceAfter = paragraphAfterGap(style)

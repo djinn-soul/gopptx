@@ -54,6 +54,10 @@ func drawVerticalBarItem(
 		if v < 0 {
 			labelY = barTop + barH + 3
 		}
+		// Clamp: if the label would fall above the plot area, draw it inside the bar top.
+		if labelY < py {
+			labelY = barTop + 2
+		}
 		drawBarDataLabel(pdf, bx+bw/2, labelY, v)
 	}
 }
@@ -107,8 +111,11 @@ func renderBarLike(
 		drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
 	}
 
-	pdf.SetFillColor(barR, barG, barB)
 	for i, v := range values {
+		// Re-set fill colour every iteration: gopdf shares the fill/text colour
+		// register, so any pdf.SetTextColor call inside data-label helpers would
+		// clobber the bar colour for the next iteration.
+		pdf.SetFillColor(barR, barG, barB)
 		if horizontal {
 			drawHorizontalBarItem(pdf, i, values, px, py, pw, ph, minV, maxV, opts)
 		} else {

@@ -176,7 +176,6 @@ func Presentation(
 </p:sldMasterIdLst>`)
 
 	if includeNotesMaster {
-		//nolint:mnd // OOXML notes master relationship ID offset
 		rid := masterCount + slideCount + 2
 		b.WriteString(`
 <p:notesMasterIdLst>

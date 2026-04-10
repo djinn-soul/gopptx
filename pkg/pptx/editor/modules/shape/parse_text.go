@@ -92,12 +92,16 @@ func applyParagraphAlignmentLevel(paragraph *common.Paragraph, pPr *paragraphPro
 }
 
 func applyParagraphSpacing(paragraph *common.Paragraph, pPr *paragraphPropsXML) {
-	if pPr.LnSp != nil {
-		if pPr.LnSp.SpcPct != nil && pPr.LnSp.SpcPct.Val != nil {
-			paragraph.LineSpacingPct = pPr.LnSp.SpcPct.Val
+	lineSpacing := pPr.LnSp
+	if lineSpacing == nil {
+		lineSpacing = pPr.LnSpLegacy
+	}
+	if lineSpacing != nil {
+		if lineSpacing.SpcPct != nil && lineSpacing.SpcPct.Val != nil {
+			paragraph.LineSpacingPct = lineSpacing.SpcPct.Val
 		}
-		if pPr.LnSp.SpcPts != nil && pPr.LnSp.SpcPts.Val != nil {
-			paragraph.LineSpacingPts = pPr.LnSp.SpcPts.Val
+		if lineSpacing.SpcPts != nil && lineSpacing.SpcPts.Val != nil {
+			paragraph.LineSpacingPts = lineSpacing.SpcPts.Val
 		}
 	}
 	if pPr.SpcBef != nil && pPr.SpcBef.SpcPts != nil && pPr.SpcBef.SpcPts.Val != nil {
@@ -222,8 +226,15 @@ func applyRunBaseline(run *common.TextRun, rpr *runPropsXML) {
 }
 
 func applyRunCaps(run *common.TextRun, rpr *runPropsXML) {
-	if rpr.Caps != nil {
-		switch strings.ToLower(strings.TrimSpace(*rpr.Caps)) {
+	capsValue := ""
+	switch {
+	case rpr.Cap != nil:
+		capsValue = *rpr.Cap
+	case rpr.Caps != nil:
+		capsValue = *rpr.Caps
+	}
+	if capsValue != "" {
+		switch strings.ToLower(strings.TrimSpace(capsValue)) {
 		case "all":
 			v := true
 			run.AllCaps = &v
