@@ -13,6 +13,7 @@ var (
 	pdfSansAlias  = fontFamilySans
 	pdfSerifAlias = fontFamilySans
 	pdfMonoAlias  = fontFamilySans
+	pdfCJKAlias   = fontFamilySans
 )
 
 const codeTokenHintThreshold = 2
@@ -21,6 +22,11 @@ func setPDFFontAliases(sansAlias, serifAlias, monoAlias string) {
 	pdfSansAlias = fallbackAlias(sansAlias, fontFamilySans)
 	pdfSerifAlias = fallbackAlias(serifAlias, pdfSansAlias)
 	pdfMonoAlias = fallbackAlias(monoAlias, pdfSansAlias)
+	pdfCJKAlias = fallbackAlias(pdfCJKAlias, pdfSansAlias)
+}
+
+func setPDFCJKAlias(alias string) {
+	pdfCJKAlias = fallbackAlias(alias, pdfSansAlias)
 }
 
 func fallbackAlias(value, fallback string) string {
@@ -31,6 +37,17 @@ func fallbackAlias(value, fallback string) string {
 }
 
 func setPDFTextFontWithHint(pdf *gopdf.GoPdf, size int, bold bool, italic bool, fontHint string) {
+	setPDFTextFontWithHintAndLang(pdf, size, bold, italic, fontHint, "")
+}
+
+func setPDFTextFontWithHintAndLang(
+	pdf *gopdf.GoPdf,
+	size int,
+	bold bool,
+	italic bool,
+	fontHint string,
+	lang string,
+) {
 	style := ""
 	if bold {
 		style += "B"
@@ -41,7 +58,7 @@ func setPDFTextFontWithHint(pdf *gopdf.GoPdf, size int, bold bool, italic bool, 
 	if size <= 0 {
 		size = defaultFontSize
 	}
-	_ = pdf.SetFont(resolvePDFFontAlias(fontHint), style, size)
+	_ = pdf.SetFont(resolvePDFFontAliasForRun(fontHint, lang), style, size)
 }
 
 func resolvePDFFontAlias(fontHint string) string {
@@ -51,6 +68,21 @@ func resolvePDFFontAlias(fontHint string) string {
 		return pdfMonoAlias
 	case isSerifFontHint(hint):
 		return pdfSerifAlias
+	default:
+		return pdfSansAlias
+	}
+}
+
+func resolvePDFFontAliasForRun(fontHint, lang string) string {
+	if hint := strings.TrimSpace(fontHint); hint != "" {
+		return resolvePDFFontAlias(hint)
+	}
+	normalizedLang := strings.ToLower(strings.TrimSpace(lang))
+	switch {
+	case strings.HasPrefix(normalizedLang, "ja"),
+		strings.HasPrefix(normalizedLang, "zh"),
+		strings.HasPrefix(normalizedLang, "ko"):
+		return fallbackAlias(pdfCJKAlias, pdfSansAlias)
 	default:
 		return pdfSansAlias
 	}

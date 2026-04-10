@@ -24,11 +24,6 @@ func beginShapeTextOrientation(
 	centerX := shapeX + shapeW/2
 	centerY := shapeY + shapeH/2
 	pdf.Rotate(angle, centerX, centerY)
-	if isVerticalShapeText(frame.Orientation) {
-		boxW, boxH = boxH, boxW
-		boxX = centerX - boxW/2
-		boxY = centerY - boxH/2
-	}
 	return boxX, boxY, boxW, boxH, pdf.RotateReset
 }
 
@@ -39,12 +34,6 @@ func shapeTextRotationAngle(frame *shapes.TextFrame) (float64, bool) {
 	angle := 0.0
 	if frame.RotationDeg != nil {
 		angle += *frame.RotationDeg
-	}
-	switch strings.ToLower(strings.TrimSpace(frame.Orientation)) {
-	case "vert", "wordartvert", "eavert", "mongolianvert":
-		angle += 90
-	case "vert270", "wordartvertrtl":
-		angle -= 90
 	}
 	if math.Abs(angle) < 0.01 {
 		return 0, false
