@@ -35,7 +35,7 @@ func shapeTextRotationAngle(frame *shapes.TextFrame) (float64, bool) {
 	if frame.RotationDeg != nil {
 		angle += *frame.RotationDeg
 	}
-	if math.Abs(angle) < 0.01 {
+	if math.Abs(angle) < nearZeroEpsilon {
 		return 0, false
 	}
 	return angle, true

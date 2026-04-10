@@ -69,7 +69,7 @@ func extractSmartArtDataRelID(slideXML string, shapeID int) string {
 	}
 	re := regexp.MustCompile(`r:dm=["']([^"']+)["']`)
 	m := re.FindStringSubmatch(slideXML[idx+dmIdx:])
-	if len(m) < 2 { //nolint:mnd // index 1 is the capture group
+	if len(m) < 2 {
 		return ""
 	}
 	return m[1]

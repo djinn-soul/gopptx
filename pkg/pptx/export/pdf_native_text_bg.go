@@ -76,6 +76,12 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	if slide.Title != "" {
 		yPos = 108.0
 	}
+	// For CenteredTitle layout the title box sits at y≈167pt with height≈116pt
+	// (matching the standard Office ctrTitle placeholder). Bullets/subtitle must
+	// start below it, not at the default 108pt which would overlap the title.
+	if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutCenteredTitle {
+		yPos = 294.0 // ≈ standard subtitle placeholder top (3737600 EMU → ~294pt)
+	}
 	maxY := slideHeightPt - 24
 	baseX := 36.0 // matches the standard PPT "Title and Content" content placeholder left edge (457200 EMU)
 	maxWidth := slideWidthPt - 108
@@ -111,6 +117,8 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		fontSize := defaultFontSize
 		if sz := firstRunSize(runs); sz > 0 {
 			fontSize = sz
+		} else if slide.ContentSize > 0 {
+			fontSize = slide.ContentSize
 		}
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)

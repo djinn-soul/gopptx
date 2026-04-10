@@ -193,6 +193,8 @@ linters:
       skip-single-param: true
 
     mnd:
+      ignored-numbers:
+        - "2"
       ignored-functions:
         - args.Error
         - flag.Arg
