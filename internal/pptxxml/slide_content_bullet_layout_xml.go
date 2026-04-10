@@ -6,7 +6,7 @@ func splitBulletsForTwoColumns(bullets []string) ([]string, []string) {
 	if len(bullets) == 0 {
 		return nil, nil
 	}
-	mid := (len(bullets) + 1) / 2 //nolint:mnd // two-column balancing
+	mid := (len(bullets) + 1) / 2
 	return bullets[:mid], bullets[mid:]
 }
 

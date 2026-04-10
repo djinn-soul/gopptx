@@ -19,21 +19,25 @@ const defaultBulletParagraphProps = `<a:pPr lvl="0" marL="457200" indent="-45720
 
 // BulletParagraphSpec describes paragraph formatting for one bullet line.
 type BulletParagraphSpec struct {
-	Align          string
-	SpaceBeforePt  int
-	SpaceAfterPt   int
-	LineSpacingPct int
-	LineSpacingPts int
-	BulletStyle    string
-	BulletChar     string
-	BulletColor    string
-	BulletSize     int
-	TabStops       []int64
-	Level          int
-	LeftIndent     int64
-	RightIndent    int64
-	HangingIndent  int64
-	RTL            bool
+	Align             string
+	SpaceBeforePt     int
+	SpaceAfterPt      int
+	LineSpacingPct    int
+	LineSpacingPts    int
+	SpaceBeforeRaw    int
+	SpaceAfterRaw     int
+	LineSpacingPctRaw int
+	LineSpacingPtsRaw int
+	BulletStyle       string
+	BulletChar        string
+	BulletColor       string
+	BulletSize        int
+	TabStops          []int64
+	Level             int
+	LeftIndent        int64
+	RightIndent       int64
+	HangingIndent     int64
+	RTL               bool
 }
 
 // IsZero reports whether this style has no explicit values set.
@@ -43,6 +47,10 @@ func (s BulletParagraphSpec) IsZero() bool {
 		s.SpaceAfterPt == 0 &&
 		s.LineSpacingPct == 0 &&
 		s.LineSpacingPts == 0 &&
+		s.SpaceBeforeRaw == 0 &&
+		s.SpaceAfterRaw == 0 &&
+		s.LineSpacingPctRaw == 0 &&
+		s.LineSpacingPtsRaw == 0 &&
 		s.BulletStyle == "" &&
 		s.BulletChar == "" &&
 		s.BulletColor == "" &&
@@ -95,16 +103,16 @@ func BulletParagraphPropsXML(style BulletParagraphSpec) string {
 	}
 	base += ">"
 
-	if style.LineSpacingPct > 0 {
-		base += `<a:lnSpc><a:spcPct val="` + strconv.Itoa(style.LineSpacingPct*pctFactor) + `"/></a:lnSpc>`
-	} else if style.LineSpacingPts > 0 {
-		base += `<a:lnSpc><a:spcPts val="` + strconv.Itoa(style.LineSpacingPts*ptFactor) + `"/></a:lnSpc>`
+	if value, ok := paragraphPctValue(style); ok {
+		base += `<a:lnSpc><a:spcPct val="` + strconv.Itoa(value) + `"/></a:lnSpc>`
+	} else if value, ok := paragraphPtValue(style.LineSpacingPtsRaw, style.LineSpacingPts); ok {
+		base += `<a:lnSpc><a:spcPts val="` + strconv.Itoa(value) + `"/></a:lnSpc>`
 	}
-	if style.SpaceBeforePt > 0 {
-		base += `<a:spcBef><a:spcPts val="` + strconv.Itoa(style.SpaceBeforePt*ptFactor) + `"/></a:spcBef>`
+	if value, ok := paragraphPtValue(style.SpaceBeforeRaw, style.SpaceBeforePt); ok {
+		base += `<a:spcBef><a:spcPts val="` + strconv.Itoa(value) + `"/></a:spcBef>`
 	}
-	if style.SpaceAfterPt > 0 {
-		base += `<a:spcAft><a:spcPts val="` + strconv.Itoa(style.SpaceAfterPt*ptFactor) + `"/></a:spcAft>`
+	if value, ok := paragraphPtValue(style.SpaceAfterRaw, style.SpaceAfterPt); ok {
+		base += `<a:spcAft><a:spcPts val="` + strconv.Itoa(value) + `"/></a:spcAft>`
 	}
 
 	base += bulletNodeXML(style)
@@ -121,6 +129,26 @@ func BulletParagraphPropsXML(style BulletParagraphSpec) string {
 	}
 
 	return base + `</a:pPr>`
+}
+
+func paragraphPctValue(style BulletParagraphSpec) (int, bool) {
+	if style.LineSpacingPctRaw > 0 {
+		return style.LineSpacingPctRaw, true
+	}
+	if style.LineSpacingPct > 0 {
+		return style.LineSpacingPct * pctFactor, true
+	}
+	return 0, false
+}
+
+func paragraphPtValue(raw int, whole int) (int, bool) {
+	if raw > 0 {
+		return raw, true
+	}
+	if whole > 0 {
+		return whole * ptFactor, true
+	}
+	return 0, false
 }
 
 func bulletIndent(level int) (int, int) {

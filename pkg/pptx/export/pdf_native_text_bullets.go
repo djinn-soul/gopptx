@@ -70,24 +70,24 @@ func styledLinePlain(line []pdfStyledRun) string {
 }
 
 func buildBulletStyledRuns(runs []elements.Run, slide elements.SlideContent, fittedSize int) []pdfStyledRun {
-	out := make([]pdfStyledRun, 0, len(runs))
-	for _, run := range runs {
-		size := fittedSize
-		if run.SizePt > 0 && run.SizePt < size {
-			size = run.SizePt
+	out := buildPDFStyledRuns(runs, fittedSize, slide.ContentBold, slide.ContentItalic)
+	if len(out) > 0 {
+		// Default colour: ContentColor → slide default (60,60,60).
+		baseColor := [3]uint8{60, 60, 60}
+		if slide.ContentColor != "" {
+			r, g, b := hexToRGB(slide.ContentColor)
+			baseColor = [3]uint8{r, g, b}
 		}
-		cr, cg, cb := runTextColor(runs)
-		if run.Color != "" {
-			cr, cg, cb = hexToRGB(run.Color)
+		// Per-run colour overrides the slide default.
+		if len(runs) > 0 && runs[0].Color != "" {
+			r, g, b := hexToRGB(runs[0].Color)
+			baseColor = [3]uint8{r, g, b}
 		}
-		out = append(out, pdfStyledRun{
-			Text:     run.Text,
-			Bold:     run.Bold || slide.ContentBold,
-			Italic:   run.Italic || slide.ContentItalic,
-			Color:    [3]uint8{cr, cg, cb},
-			FontHint: run.Font,
-			SizePt:   size,
-		})
+		for i := range out {
+			if len(runs) > 0 && runs[min(i, len(runs)-1)].Color == "" {
+				out[i].Color = baseColor
+			}
+		}
 	}
 	if len(out) == 0 {
 		cr, cg, cb := runTextColor(runs)
@@ -140,6 +140,8 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		fontSize := defaultFontSize
 		if sz := firstRunSize(runs); sz > 0 {
 			fontSize = sz
+		} else if slide.ContentSize > 0 {
+			fontSize = slide.ContentSize
 		}
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)
@@ -153,9 +155,9 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		fontSize = fitPDFTextToBoxWithMetrics(
 			pdf, renderedText, fontSize, minTextAutoFitSize, bold, italic, availableWidth, availH-total, fontHint,
 		)
-		lineHeight := math.Max(pdfLineHeight(fontSize)*paragraphLineSpacingFactor(style), 12)
+		lineHeight := math.Max(paragraphRenderedLineHeight(style, pdfLineHeight(fontSize)), 12)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
-		lines := wrapStyledRuns(pdf, styledRuns, availableWidth)
+		lines := wrapStyledRuns(pdf, styledRuns, availableWidth, paragraphTabStopsPt(style))
 		total += float64(len(lines)) * lineHeight
 		prevSpaceAfter = paragraphAfterGap(style)
 	}

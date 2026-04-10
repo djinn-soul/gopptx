@@ -1,4 +1,3 @@
-//nolint:mnd // Shape text box fallback math uses fixed small offsets.
 package export
 
 import (
@@ -19,10 +18,18 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 		renderPDFShapeParagraphText(pdf, s, x, y, w, h)
 		return
 	}
+	if s.TextFrame != nil && isVerticalShapeText(s.TextFrame.Orientation) {
+		renderPDFShapePlainTextVertical(pdf, s, x, y, w, h)
+		return
+	}
 	boxX, boxY, boxW, boxH, anchor := shapeTextBox(s, x, y, w, h)
 	if boxW <= 2 || boxH <= 2 {
 		return
 	}
+	boxX, boxY, boxW, boxH, restoreOrientation := beginShapeTextOrientation(
+		pdf, s.TextFrame, boxX, boxY, boxW, boxH, x, y, w, h,
+	)
+	defer restoreOrientation()
 	fontHint := inferCodeFontHint(s.Text)
 	fontSize := fitPDFTextToBoxWithMetrics(
 		pdf,

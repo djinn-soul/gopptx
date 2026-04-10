@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 )
@@ -63,16 +62,10 @@ func writeRunParagraphXML(
 		if err != nil {
 			return err
 		}
-		txBody.WriteString(normalizeEditorRunXML(pptxxml.RichTextRunXML(runSpec, pptxxml.ContentStyleSpec{})))
+		txBody.WriteString(pptxxml.RichTextRunXML(runSpec, pptxxml.ContentStyleSpec{}))
 	}
 	txBody.WriteString(`</a:p>`)
 	return nil
-}
-
-func normalizeEditorRunXML(runXML string) string {
-	// Preserve editor run-attribute parity when using shared run emitter.
-	runXML = strings.ReplaceAll(runXML, ` cap="all"`, ` caps="all"`)
-	return strings.ReplaceAll(runXML, ` cap="small"`, ` smCaps="1"`)
 }
 
 func writePlainTextParagraphXML(txBody *bytes.Buffer, s *parsedShape) error {

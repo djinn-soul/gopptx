@@ -24,6 +24,7 @@ type runPropsXML struct {
 	Underline     *string      `xml:"u,attr"`
 	Strikethrough *string      `xml:"strike,attr"`
 	Baseline      *string      `xml:"baseline,attr"`
+	Cap           *string      `xml:"cap,attr"`
 	Caps          *string      `xml:"caps,attr"`
 	SmallCaps     *string      `xml:"smCaps,attr"`
 	Size          *int         `xml:"sz,attr"`
@@ -116,9 +117,10 @@ type paragraphPropsXML struct {
 			Pos *int `xml:"pos,attr"`
 		} `xml:"tab"`
 	} `xml:"tabLst"`
-	LnSp   *spacingNodeXML `xml:"lnSp"`
-	SpcBef *spacingNodeXML `xml:"spcBef"`
-	SpcAft *spacingNodeXML `xml:"spcAft"`
+	LnSpLegacy *spacingNodeXML `xml:"lnSp"`
+	LnSp       *spacingNodeXML `xml:"lnSpc"`
+	SpcBef     *spacingNodeXML `xml:"spcBef"`
+	SpcAft     *spacingNodeXML `xml:"spcAft"`
 }
 
 type shapeXML struct {

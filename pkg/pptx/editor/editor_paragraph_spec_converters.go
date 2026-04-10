@@ -94,10 +94,7 @@ func applyParagraphLineSpacing(spec *pptxxml.BulletParagraphSpec, p *common.Para
 		if *p.LineSpacingPct < 0 {
 			return errors.New("paragraph.line_spacing_pct must be >= 0")
 		}
-		if *p.LineSpacingPct%paragraphPct != 0 {
-			return errors.New("paragraph.line_spacing_pct must be divisible by 1000")
-		}
-		spec.LineSpacingPct = *p.LineSpacingPct / paragraphPct
+		spec.LineSpacingPctRaw = *p.LineSpacingPct
 	}
 	if p.LineSpacingPts == nil {
 		return nil
@@ -105,10 +102,7 @@ func applyParagraphLineSpacing(spec *pptxxml.BulletParagraphSpec, p *common.Para
 	if *p.LineSpacingPts < 0 {
 		return errors.New("paragraph.line_spacing_pts must be >= 0")
 	}
-	if *p.LineSpacingPts%paragraphPtUnit != 0 {
-		return errors.New("paragraph.line_spacing_pts must be divisible by 100")
-	}
-	spec.LineSpacingPts = *p.LineSpacingPts / paragraphPtUnit
+	spec.LineSpacingPtsRaw = *p.LineSpacingPts
 	return nil
 }
 
@@ -116,12 +110,12 @@ func applyParagraphSpacing(spec *pptxxml.BulletParagraphSpec, p *common.Paragrap
 	if value, ok, err := paragraphPointsValue(p.SpaceBeforePts, "paragraph.space_before_pts"); err != nil {
 		return err
 	} else if ok {
-		spec.SpaceBeforePt = value
+		spec.SpaceBeforeRaw = value
 	}
 	if value, ok, err := paragraphPointsValue(p.SpaceAfterPts, "paragraph.space_after_pts"); err != nil {
 		return err
 	} else if ok {
-		spec.SpaceAfterPt = value
+		spec.SpaceAfterRaw = value
 	}
 	return nil
 }
@@ -133,10 +127,7 @@ func paragraphPointsValue(raw *int, field string) (int, bool, error) {
 	if *raw < 0 {
 		return 0, false, fmt.Errorf("%s must be >= 0", field)
 	}
-	if *raw%paragraphPtUnit != 0 {
-		return 0, false, fmt.Errorf("%s must be divisible by 100", field)
-	}
-	return *raw / paragraphPtUnit, true, nil
+	return *raw, true, nil
 }
 
 func applyParagraphBullet(spec *pptxxml.BulletParagraphSpec, p *common.Paragraph) error {
