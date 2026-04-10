@@ -29,7 +29,9 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 	if boxW <= 2 || boxH <= 2 {
 		return
 	}
-	boxX, boxY, boxW, boxH, restoreOrientation := beginShapeTextOrientation(pdf, s.TextFrame, boxX, boxY, boxW, boxH, x, y, w, h)
+	boxX, boxY, boxW, boxH, restoreOrientation := beginShapeTextOrientation(
+		pdf, s.TextFrame, boxX, boxY, boxW, boxH, x, y, w, h,
+	)
 	defer restoreOrientation()
 	paragraphs := normalizedShapeParagraphs(s)
 	fontSize := fitPDFShapeParagraphText(pdf, paragraphs, boxW, boxH)

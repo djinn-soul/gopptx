@@ -82,7 +82,7 @@ func pdfStyledRunFromTextRun(run text.Run, fittedSize int, defaultBold, defaultI
 
 func nextPDFTabAdvance(cursorOffset float64, tabStops []float64) float64 {
 	for _, stop := range tabStops {
-		if stop > cursorOffset+0.01 {
+		if stop > cursorOffset+nearZeroEpsilon {
 			return stop - cursorOffset
 		}
 	}
@@ -91,7 +91,7 @@ func nextPDFTabAdvance(cursorOffset float64, tabStops []float64) float64 {
 
 func defaultPDFTabAdvance(cursorOffset float64) float64 {
 	remainder := math.Mod(cursorOffset, defaultPDFTabStepPt)
-	if math.Abs(remainder) < 0.01 {
+	if math.Abs(remainder) < nearZeroEpsilon {
 		return defaultPDFTabStepPt
 	}
 	return defaultPDFTabStepPt - remainder

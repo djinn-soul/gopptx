@@ -72,7 +72,13 @@ func styledLinePlain(line []pdfStyledRun) string {
 func buildBulletStyledRuns(runs []elements.Run, slide elements.SlideContent, fittedSize int) []pdfStyledRun {
 	out := buildPDFStyledRuns(runs, fittedSize, slide.ContentBold, slide.ContentItalic)
 	if len(out) > 0 {
+		// Default colour: ContentColor → slide default (60,60,60).
 		baseColor := [3]uint8{60, 60, 60}
+		if slide.ContentColor != "" {
+			r, g, b := hexToRGB(slide.ContentColor)
+			baseColor = [3]uint8{r, g, b}
+		}
+		// Per-run colour overrides the slide default.
 		if len(runs) > 0 && runs[0].Color != "" {
 			r, g, b := hexToRGB(runs[0].Color)
 			baseColor = [3]uint8{r, g, b}
@@ -134,6 +140,8 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		fontSize := defaultFontSize
 		if sz := firstRunSize(runs); sz > 0 {
 			fontSize = sz
+		} else if slide.ContentSize > 0 {
+			fontSize = slide.ContentSize
 		}
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)

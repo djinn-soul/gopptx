@@ -74,7 +74,7 @@ func parseBgXML(bgXML string, e *PresentationEditor, slidePart string) *elements
 
 func extractSolidBgColor(bgXML string) string {
 	m := reBgSrgbClr.FindStringSubmatch(bgXML)
-	if len(m) >= 2 { //nolint:mnd // 2: index 0 = full match, 1 = first capture group
+	if len(m) >= 2 {
 		return m[1]
 	}
 	return ""
@@ -82,7 +82,7 @@ func extractSolidBgColor(bgXML string) string {
 
 func extractGradientBgFill(bgXML string) *shapes.ShapeGradientFill {
 	matches := reBgGsStop.FindAllStringSubmatch(bgXML, -1)
-	if len(matches) < 2 { //nolint:mnd // need at least 2 gradient stops for a valid gradient
+	if len(matches) < 2 {
 		return nil
 	}
 	stops := make([]shapes.ShapeGradientStop, 0, len(matches))
@@ -95,11 +95,11 @@ func extractGradientBgFill(bgXML string) *shapes.ShapeGradientFill {
 		pct := int(math.Round(float64(posRaw) / 1000.0)) //nolint:mnd // scale: 1000 units per percent
 		stops = append(stops, shapes.NewShapeGradientStop(pct, m[2]))
 	}
-	if len(stops) < 2 { //nolint:mnd // need at least 2 valid stops after parsing
+	if len(stops) < 2 {
 		return nil
 	}
 	grad := shapes.NewShapeGradientFill("linear", stops)
-	if angM := reBgLinAngle.FindStringSubmatch(bgXML); len(angM) >= 2 { //nolint:mnd // [0]=full,[1]=capture
+	if angM := reBgLinAngle.FindStringSubmatch(bgXML); len(angM) >= 2 {
 		if angRaw, err := strconv.Atoi(angM[1]); err == nil {
 			grad = grad.WithLinearAngle(angRaw / 60000) //nolint:mnd // OOXML angle unit: 60000 units = 1 degree
 		}
@@ -109,7 +109,7 @@ func extractGradientBgFill(bgXML string) *shapes.ShapeGradientFill {
 
 func extractPictureBgFill(bgXML string, e *PresentationEditor, slidePart string) *shapes.Image {
 	m := reBgBlipEmbed.FindStringSubmatch(bgXML)
-	if len(m) < 2 { //nolint:mnd // 2: index 0 = full match, 1 = first capture group
+	if len(m) < 2 {
 		return nil
 	}
 	relID := m[1]

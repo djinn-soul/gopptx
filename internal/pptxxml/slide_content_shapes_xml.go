@@ -61,7 +61,6 @@ func contentShape(
 	margin := defaultMargin
 	x := int64(margin)
 	y := int64(contentTopOffset) // Fixed top offset
-	//nolint:mnd // Bi-lateral margin factor
 	cx := width - 2*int64(margin)
 	cy := int64(contentHeightEmu) // Fixed height
 	return contentShapeAt(
