@@ -107,12 +107,12 @@ func applyParagraphLineSpacing(spec *pptxxml.BulletParagraphSpec, p *common.Para
 }
 
 func applyParagraphSpacing(spec *pptxxml.BulletParagraphSpec, p *common.Paragraph) error {
-	if value, ok, err := paragraphPointsValue(p.SpaceBeforePts, "paragraph.space_before_pts"); err != nil {
+	if value, ok, err := paragraphRawIntValue(p.SpaceBeforePts, "paragraph.space_before_pts"); err != nil {
 		return err
 	} else if ok {
 		spec.SpaceBeforeRaw = value
 	}
-	if value, ok, err := paragraphPointsValue(p.SpaceAfterPts, "paragraph.space_after_pts"); err != nil {
+	if value, ok, err := paragraphRawIntValue(p.SpaceAfterPts, "paragraph.space_after_pts"); err != nil {
 		return err
 	} else if ok {
 		spec.SpaceAfterRaw = value
@@ -120,7 +120,7 @@ func applyParagraphSpacing(spec *pptxxml.BulletParagraphSpec, p *common.Paragrap
 	return nil
 }
 
-func paragraphPointsValue(raw *int, field string) (int, bool, error) {
+func paragraphRawIntValue(raw *int, field string) (int, bool, error) {
 	if raw == nil {
 		return 0, false, nil
 	}

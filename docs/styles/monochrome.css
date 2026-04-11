@@ -66,6 +66,7 @@ kbd {
   color: #1f3f5d;
   text-decoration-thickness: 2px;
   text-underline-offset: 2px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .md-typeset a:hover {
@@ -130,7 +131,11 @@ kbd {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
-[data-md-color-scheme="slate"] .md-typeset h1,
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  color: #f4f6f8;
+  border-bottom-color: #4a7fa8;
+}
+
 [data-md-color-scheme="slate"] .md-typeset h2,
 [data-md-color-scheme="slate"] .md-typeset h3,
 [data-md-color-scheme="slate"] .md-typeset h4,
@@ -139,8 +144,16 @@ kbd {
   color: #f4f6f8;
 }
 
+[data-md-color-scheme="slate"] .md-typeset a {
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
 [data-md-color-scheme="slate"] .md-typeset a:hover {
   background: rgba(156, 195, 234, 0.14);
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) {
+  border-color: #2f3945;
 }
 
 [data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
