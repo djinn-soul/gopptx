@@ -42,24 +42,29 @@ Append an indented bulleted notes paragraph.
 
 ### `AddComment(authorName, text string) SlideContent`
 
-Attach a slide comment in the slide model.
+Attach a slide comment during deck construction (builder path).
 
-### Presentation comment helpers
+### `PresentationEditor` comment helpers
 
-- `GetAuthors()`
-- `AddAuthor(name, initials)`
-- `GetComments(slideIndex)`
-- `AddComment(...)`
-- `RemoveComment(...)`
+The following methods exist on `*PresentationEditor` (the JSON-bridge / editor path), **not** on `*Presentation`:
+
+- `GetAuthors() ([]comments.Author, error)`
+- `GetComments(slideIndex int) ([]comments.Comment, error)`
+- `AddComment(slideIndex int, authorID int64, text string, x, y int64) error`
+- `RemoveComment(slideIndex int, authorID int64, authorIndex int) error`
+
+To open a `PresentationEditor` use `editor.Open(path)` from `pkg/pptx/editor`.
 
 ## Sections
 
-### Presentation section helpers
+### `PresentationEditor` section helpers
 
-- `GetSections()`
-- `AddSection(name, slideIndices)`
-- `RemoveSection(name)`
-- `RenameSection(oldName, newName)`
+The following methods exist on `*PresentationEditor`, **not** on `*Presentation`:
+
+- `GetSections() ([]SectionData, error)`
+- `AddSection(name string, slideIndices []int) error`
+- `RemoveSection(name string) error`
+- `RenameSection(oldName, newName string) error`
 
 ## See also
 

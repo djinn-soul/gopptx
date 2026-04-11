@@ -22,12 +22,16 @@ theme:
         icon: material/brightness-4
         name: Switch to system preference
   features:
+    - navigation.tabs
     - navigation.sections
+    - navigation.indexes
     - navigation.expand
     - navigation.top
+    - navigation.footer
     - content.code.copy
     - search.suggest
     - search.highlight
+    - toc.follow
 
 extra_css:
   - styles/monochrome.css
@@ -53,7 +57,13 @@ markdown_extensions:
   - admonition
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
   - tables
   - toc:
       permalink: true
@@ -65,7 +75,6 @@ nav:
       - Quickstart: quickstart.md
       - Core Concepts: concepts.md
   - Tutorials:
-      - First Presentation: quickstart.md
       - Python Basics: showcase/basic-generation.md
       - Go Basics: showcase/basic-usage.md
       - Rich Slide: showcase/rich-slide.md
@@ -77,9 +86,42 @@ nav:
       - Full Examples Map: examples-map.md
       - Usage Catalog:
           - Overview: showcase/usages/index.md
-          - Simple: showcase/usages/simple.md
-          - Intermediate: showcase/usages/intermediate.md
-          - Complex: showcase/usages/complex.md
+          - Simple:
+              - Overview: showcase/usages/simple/index.md
+              - Hello World Deck: showcase/usages/simple/s01-hello-world-deck.md
+              - Basic Text Frame: showcase/usages/simple/s02-basic-text-frame.md
+              - Paragraph Text: showcase/usages/simple/s03-paragraph-text.md
+              - Insert an Image: showcase/usages/simple/s04-insert-an-image.md
+              - Set Slide Background Color: showcase/usages/simple/s05-set-slide-background-color.md
+              - Add Basic Shapes: showcase/usages/simple/s06-add-basic-shapes.md
+              - Styled Text Formatting: showcase/usages/simple/s07-styled-text-formatting.md
+              - Create a Blank Presentation: showcase/usages/simple/s08-create-a-blank-presentation.md
+              - Image Positioning and Scaling: showcase/usages/simple/s09-image-positioning-and-scaling.md
+              - Slide Transitions: showcase/usages/simple/s10-slide-transitions.md
+          - Intermediate:
+              - Overview: showcase/usages/intermediate/index.md
+              - Project Status Table: showcase/usages/intermediate/i01-project-status-table.md
+              - Speaker Notes Support: showcase/usages/intermediate/i02-speaker-notes-support.md
+              - Headers and Footers: showcase/usages/intermediate/i03-headers-and-footers.md
+              - Grouped Content Slide: showcase/usages/intermediate/i04-grouped-content-slide.md
+              - Chart Slide Generation: showcase/usages/intermediate/i05-chart-slide-generation.md
+              - Custom Slide Layout Composition: showcase/usages/intermediate/i06-custom-slide-layout-composition.md
+              - Theme Aware Presentation: showcase/usages/intermediate/i07-theme-aware-presentation.md
+              - Dynamic Report Generation: showcase/usages/intermediate/i08-dynamic-report-generation.md
+              - Section Management: showcase/usages/intermediate/i09-section-management.md
+              - Animation Effects: showcase/usages/intermediate/i10-animation-effects.md
+          - Complex:
+              - Overview: showcase/usages/complex/index.md
+              - Markdown Mermaid Deck: showcase/usages/complex/c01-markdown-mermaid-deck.md
+              - URL Fetch to Slides: showcase/usages/complex/c02-url-fetch-to-slides.md
+              - Code to Slide Rendering: showcase/usages/complex/c03-code-to-slide-rendering.md
+              - Clone Duplicate Slide Content: showcase/usages/complex/c04-clone-duplicate-slide-content.md
+              - Template Data Injection System: showcase/usages/complex/c05-template-data-injection-system.md
+              - Jinja2 Template Rendering: showcase/usages/complex/c06-jinja2-template-rendering.md
+              - Export Distribution Pipeline: showcase/usages/complex/c07-export-distribution-pipeline.md
+              - Narrative Storyboard Generator: showcase/usages/complex/c08-narrative-storyboard-generator.md
+              - SmartArt Layouts: showcase/usages/complex/c09-smartart-layouts.md
+              - Presentation Protection: showcase/usages/complex/c10-presentation-protection.md
   - Use Cases:
       - Overview: use-cases/index.md
       - Automated Reports: use-cases/automated-business-review.md
@@ -102,6 +144,10 @@ nav:
       - Go Templates Reference: reference/go-templates.md
       - Go Charts Reference: reference/go-charts.md
       - Go Shapes and Connectors Reference: reference/go-shapes.md
+      - Go Text Reference: reference/go-text.md
+      - Go Hyperlinks Reference: reference/go-hyperlinks.md
+      - Go Layout Helpers Reference: reference/go-layout-helpers.md
+      - Go Export Reference: reference/go-export.md
       - JSON Bridge Operations: reference/bridge-operations.md
   - Advanced:
       - C Bridge Guidance: architecture/cbridge-guidance.md
@@ -109,4 +155,3 @@ nav:
       - Batch Execute Envelope: architecture/batch_execute_envelope.md
   - Help:
       - Troubleshooting: troubleshooting.md
-      - Documentation Maintenance: guides/pptx-png-export.md
