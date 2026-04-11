@@ -94,7 +94,7 @@ def _add_html_export_slide(prs: Presentation) -> None:
         "HTML Export Demo",
         [
             "This presentation was exported to HTML via gopptx.",
-            "It mimics the ppt-rs export style.",
+            "It mimics the ppt export style.",
         ],
     )
 
