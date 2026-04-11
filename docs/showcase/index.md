@@ -10,10 +10,10 @@ This page groups the docs by how people usually browse them:
 
 The catalog is the main guided path through the library.
 
-- [Overview (24)](usages/index.md)
-- [Simple (8)](usages/simple.md)
-- [Intermediate (8)](usages/intermediate.md)
-- [Complex (8)](usages/complex.md)
+- [Overview (30)](usages/index.md)
+- [Simple (10)](usages/simple/index.md)
+- [Intermediate (10)](usages/intermediate/index.md)
+- [Complex (10)](usages/complex/index.md)
 
 What to expect:
 

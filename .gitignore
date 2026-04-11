@@ -302,3 +302,4 @@ go.work.sum
 scripts/tools/*
 tmp/
 examples/output/*
+web*

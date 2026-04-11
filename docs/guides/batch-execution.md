@@ -28,6 +28,11 @@ with Presentation.new("Batch Context") as pres:
         batch.set_slide_title(0, "Updated")
 ```
 
+## Limitations
+
+- Read operations (e.g., `get_slide_title`) are blocked inside `batch()` contexts by design.
+- Move read operations outside the batch block or use direct `execute_batch` with mixed commands.
+
 ## Rules of Thumb
 
 - Batch write-heavy loops.

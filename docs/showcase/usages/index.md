@@ -4,9 +4,9 @@ Organized from easiest to most advanced, with both Python and Go code in every e
 
 ## Levels
 
-1. [Simple (10)](simple.md): quick wins and first workflows.
-2. [Intermediate (10)](intermediate.md): production-ready features.
-3. [Complex (10)](complex.md): advanced integrations and template-heavy pipelines.
+1. [Simple (10)](simple/index.md): quick wins and first workflows.
+2. [Intermediate (10)](intermediate/index.md): production-ready features.
+3. [Complex (10)](complex/index.md): advanced integrations and template-heavy pipelines.
 
 ## Generation Contract
 

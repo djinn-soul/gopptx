@@ -33,19 +33,30 @@ go get github.com/djinn-soul/gopptx
 ```go
 package main
 
-import "github.com/djinn-soul/gopptx/pkg/gopptx"
+import (
+	"os"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx"
+)
 
 func main() {
-	pres := &gopptx.Presentation{Title: "Hello from gopptx"}
-	slide := pres.AddSlide()
-	slide.Title = "Hello from gopptx"
-	slide.AddBullet("Created with gopptx")
-	_ = pres.Save("quickstart_go.pptx")
+	slides := []pptx.SlideContent{
+		pptx.NewSlide("Hello from gopptx").AddBullet("Created with gopptx"),
+	}
+
+	data, err := pptx.CreateWithSlides("Quickstart Deck", slides)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile("quickstart_go.pptx", data, 0o600); err != nil {
+		panic(err)
+	}
 }
 ```
 
-## Next Step
+## Next Steps
 
-1. Browse runnable examples with screenshots in [Examples](showcase/index.md).
-2. Read [Python Library](guides/python-library.md) or [Go Library](guides/go-library.md).
-3. Use [Reference](api-reference.md) for full method/operation coverage.
+  1. Browse runnable examples with screenshots in [Examples](examples-map.md).
+  2. Read [Python Library](guides/python-library.md) or [Go Library](guides/go-library.md).
+  3. Use [Reference](api-reference.md) for full method/operation coverage.
