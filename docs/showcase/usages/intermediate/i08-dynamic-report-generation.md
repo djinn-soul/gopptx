@@ -13,7 +13,7 @@ import (
 
 type Metrics struct {
 	Name  string
-	Value int
+	Value float64
 	Unit  string
 }
 
