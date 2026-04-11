@@ -18,7 +18,7 @@ func main() {
 
 	slide2 := pres.AddSlide()
 	slide2.Title = "Slide 2: Fade Entry"
-	slide2.SetTransition(transitions.TransitionOptions{Type: transitions.TransitionFade, DurationMS: 1000})
+	slide2.WithTransitionOptions(transitions.TransitionOptions{Type: transitions.TransitionFade, DurationMS: 1000})
 
 	_ = pres.Save("s10-go.pptx")
 }
