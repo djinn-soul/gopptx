@@ -7,7 +7,7 @@
 ```go
 package main
 
-import "github.com/djinn-soul/gopptx/pkg/gopptx"
+import "github.com/djinn-soul/gopptx/pkg/pptx"
 
 func main() {
 	pres := &gopptx.Presentation{Title: "S01 Hello World"}
