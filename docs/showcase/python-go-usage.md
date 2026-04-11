@@ -1,6 +1,6 @@
 # Python + Go Usage (Same Workflow)
 
-This page shows the same practical workflow in both Python and Go, with matching output screenshots.
+This page shows the same practical workflow in both Python and Go, producing equivalent output.
 
 ## Workflow
 
@@ -29,7 +29,7 @@ with Presentation.new("Team Weekly Update") as pres:
 
 Python source references:
 
-- `python/gopptx/presentation/runtime.py`
+- `python/gopptx/presentation/runtime_lifecycle.py`
 - `docs/guides/python-workflows.md`
 
 ## Go Usage
@@ -40,40 +40,30 @@ package main
 import "github.com/djinn-soul/gopptx/pkg/pptx"
 
 func main() {
-	p := pptx.NewPresentation()
-	s := p.AddSlide()
-	s.AddTextBox("Executive Summary")
-	s.AddTextBox("Revenue up 8% | Retention +4% | Faster delivery")
-	_ = p.Save("team_weekly_go.pptx")
+	err := pptx.NewPresentationBuilder("Team Weekly Update").
+		AddTitleSlide("Executive Summary").
+		AddBulletSlide("Highlights", []string{
+			"Revenue up 8%",
+			"Retention improved by 4%",
+			"Deployment lead time reduced",
+		}).
+		WriteToFile("team_weekly_go.pptx")
+	if err != nil {
+		panic(err)
+	}
 }
 ```
 
 Go source references:
 
-- `pkg/pptx`
+- `pkg/pptx/presentation_builder.go`
 - `docs/guides/go-workflows.md`
 
-## Output Screenshots
+## Output
 
-### Basic Deck Output
+Both examples produce a `.pptx` file with:
 
-![Basic generation](../assets/images/showcase/basic-gen.png)
+1. A title slide — **"Executive Summary"**
+2. A bullet slide — **"Highlights"** with three bullet points
 
-### Rich Slide Output
-
-![Rich slide](../assets/images/showcase/rich-slide.png)
-
-### Brand + Theme Output
-
-![Brand reskin](../assets/images/showcase/reskin-result.png)
-
-### Chart Output
-
-![Radar chart](../assets/images/showcase/chart-radar.png)
-
-## Download PPTX Samples
-
-- [basic-generation.pptx](../assets/pptx/basic-generation.pptx)
-- [rich-slide.pptx](../assets/pptx/rich-slide.pptx)
-- [brand-reskin.pptx](../assets/pptx/brand-reskin.pptx)
-- [chart-radar.pptx](../assets/pptx/chart-radar.pptx)
+The Go and Python APIs are equivalent in structure: both use a builder-style flow to compose slides and write a single file at the end.

@@ -88,6 +88,45 @@ Primary source files:
 - `NewFlowChartData(x, y, w, h float64) Shape`
 - `NewOctagon(x, y, w, h float64) Shape`
 - `NewTrapezoid(x, y, w, h float64) Shape`
+- `NewCube(x, y, w, h float64) Shape`
+
+## Callout shapes
+
+- `NewWedgeRectCallout(x, y, w, h float64) Shape`
+- `NewWedgeRRectCallout(x, y, w, h float64) Shape`
+- `NewWedgeEllipseCallout(x, y, w, h float64) Shape`
+
+## Extended flowchart shapes
+
+Source file: `pkg/pptx/shape_flowchart_more.go`
+
+- `NewFlowChartPredefinedProcess(x, y, w, h float64) Shape`
+- `NewFlowChartInternalStorage(x, y, w, h float64) Shape`
+- `NewFlowChartManualInput(x, y, w, h float64) Shape`
+- `NewFlowChartManualOperation(x, y, w, h float64) Shape`
+- `NewFlowChartConnector(x, y, w, h float64) Shape`
+- `NewFlowChartOffpageConnector(x, y, w, h float64) Shape`
+- `NewFlowChartPunchedCard(x, y, w, h float64) Shape`
+- `NewFlowChartPunchedTape(x, y, w, h float64) Shape`
+- `NewFlowChartSummingJunction(x, y, w, h float64) Shape`
+- `NewFlowChartOr(x, y, w, h float64) Shape`
+- `NewFlowChartCollate(x, y, w, h float64) Shape`
+- `NewFlowChartSort(x, y, w, h float64) Shape`
+- `NewFlowChartExtract(x, y, w, h float64) Shape`
+- `NewFlowChartMerge(x, y, w, h float64) Shape`
+- `NewFlowChartOnlineStorage(x, y, w, h float64) Shape`
+- `NewFlowChartDelay(x, y, w, h float64) Shape`
+- `NewFlowChartMagneticTape(x, y, w, h float64) Shape`
+- `NewFlowChartMagneticDisk(x, y, w, h float64) Shape`
+- `NewFlowChartMagneticDrum(x, y, w, h float64) Shape`
+- `NewFlowChartDisplay(x, y, w, h float64) Shape`
+- `NewFlowChartPreparation(x, y, w, h float64) Shape`
+
+## Badge shape
+
+- `NewBadge(text string, x, y float64, color string) Shape`
+
+Renders a pill-shaped label with centered text and a solid background color.
 
 ## Common constants
 
@@ -157,7 +196,19 @@ Primary source files:
 - `ConnectEndAuto(c Connector, shapeIndex int) Connector`
 - `AutoReroute(c Connector, shapes []Shape) Connector`
 
+## Images
+
+Source file: `pkg/pptx/image.go`
+
+- `NewImage(path string, x, y, cx, cy Length) shapes.Image`
+- `NewImageFromBytes(data []byte, format string, x, y, cx, cy Length) shapes.Image`
+- `NewImageFromBase64(b64 string, format string, x, y, cx, cy Length) (shapes.Image, error)`
+- `NewImageFromURL(url string, x, y, cx, cy Length) shapes.Image`
+
+Pass the returned `shapes.Image` to `SlideContent.AddImage(img)`.
+
 ## Related pages
 
 - [Go API Reference](go-api.md)
 - [Go Slides Reference](go-slides.md)
+- [Go Metadata, Protection, and Export Reference](go-metadata-export.md)
