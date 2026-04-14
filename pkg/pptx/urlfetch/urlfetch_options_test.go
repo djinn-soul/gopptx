@@ -50,7 +50,7 @@ func TestFetchWithURLReturnsCanonicalRedirectTarget(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	f := urlfetch.NewWebFetcherWithConfig(urlfetch.DefaultConfig())
+	f := urlfetch.NewWebFetcherWithConfig(urlfetch.DefaultConfig().WithAllowPrivateHosts(true))
 	finalURL, _, err := f.FetchWithURL(srv.URL + "/start")
 	if err != nil {
 		t.Fatalf("FetchWithURL: %v", err)
@@ -66,7 +66,7 @@ func TestFetchRejectsOversizeBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	cfg := urlfetch.DefaultConfig().WithMaxBodyBytes(32)
+	cfg := urlfetch.DefaultConfig().WithMaxBodyBytes(32).WithAllowPrivateHosts(true)
 	f := urlfetch.NewWebFetcherWithConfig(cfg)
 	_, err := f.Fetch(srv.URL)
 	if err == nil || !strings.Contains(err.Error(), "response too large") {
@@ -118,7 +118,7 @@ func TestURLToPPTXWithOptionsFollowsRedirects(t *testing.T) {
 
 	data, err := urlfetch.URLToPPTXWithOptions(
 		srv.URL+"/start",
-		urlfetch.DefaultConfig(),
+		urlfetch.DefaultConfig().WithAllowPrivateHosts(true),
 		urlfetch.DefaultConversionOptions(),
 	)
 	if err != nil {

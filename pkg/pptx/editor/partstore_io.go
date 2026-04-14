@@ -18,6 +18,11 @@ func readZipEntry(entry *zip.File) ([]byte, error) {
 	const maxInt = int(^uint(0) >> 1)
 	size64 := entry.UncompressedSize64
 	if size64 > 0 && size64 <= uint64(maxInt) {
+		// Enforce the same upper bound as the unknown-size path to prevent a
+		// crafted PPTX with a large declared size from triggering a huge allocation.
+		if size64 > uint64(maxUnknownZipEntryBytes) {
+			return nil, fmt.Errorf("zip entry %q declared size %d exceeds max %d bytes", entry.Name, size64, maxUnknownZipEntryBytes)
+		}
 		// Pre-allocate the exact size when available.
 		data := make([]byte, int(size64))
 		if _, err := io.ReadFull(rc, data); err != nil {

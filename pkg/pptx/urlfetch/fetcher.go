@@ -26,11 +26,15 @@ func NewWebFetcher() *WebFetcher {
 func NewWebFetcherWithConfig(cfg Config) *WebFetcher {
 	return &WebFetcher{
 		client: http.Client{
-			Timeout: time.Duration(cfg.TimeoutSecs) * time.Second,
+			// ssrfSafeTransport enforces the IP-range check at dial time (after DNS
+			// resolution), which closes the TOCTOU window in pre-request checks.
+			Transport: ssrfSafeTransport(cfg.AllowPrivateHosts),
+			Timeout:   time.Duration(cfg.TimeoutSecs) * time.Second,
 			CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 				if len(via) >= maxRedirects {
 					return fmt.Errorf("stopped after %d redirects", len(via))
 				}
+				// Redirect targets are checked by the transport dialer automatically.
 				return nil
 			},
 		},
@@ -55,6 +59,11 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return "", "", fmt.Errorf("unsupported scheme %q: only http and https are allowed", parsed.Scheme)
+	}
+	if !f.cfg.AllowPrivateHosts {
+		if err := denyPrivateHost(parsed.Host); err != nil {
+			return "", "", fmt.Errorf("SSRF guard: %w", err)
+		}
 	}
 	if f.cfg.MaxBodyBytes <= 0 {
 		return "", "", fmt.Errorf("invalid MaxBodyBytes: %d", f.cfg.MaxBodyBytes)

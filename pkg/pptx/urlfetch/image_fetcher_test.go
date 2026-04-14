@@ -37,7 +37,8 @@ func TestImageFetcher_FetchImage(t *testing.T) {
 
 	cfg := DefaultConfig().
 		WithMaxImageSizeBytes(1000).
-		WithMaxTotalImageSizeBytes(5000)
+		WithMaxTotalImageSizeBytes(5000).
+		WithAllowPrivateHosts(true) // test server binds to 127.0.0.1
 
 	fetcher := NewImageFetcher(http.DefaultClient, cfg, server.URL)
 
@@ -97,7 +98,9 @@ func TestImageFetcher_TotalSizeLimit(t *testing.T) {
 	defer server.Close()
 
 	// PNG data is about 67 bytes. Let's set limit to 100.
-	cfg := DefaultConfig().WithMaxTotalImageSizeBytes(100)
+	cfg := DefaultConfig().
+		WithMaxTotalImageSizeBytes(100).
+		WithAllowPrivateHosts(true) // test server binds to 127.0.0.1
 	fetcher := NewImageFetcher(http.DefaultClient, cfg, server.URL)
 
 	// First fetch should succeed

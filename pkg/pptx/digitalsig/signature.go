@@ -216,7 +216,7 @@ func (d DigitalSignature) ToSignatureXML() string {
 		d.HashAlgorithm.URI(),
 		d.CommitmentType.URI(),
 		d.CommitmentType.Label(),
-		date,
+		xmlEscape(date),
 	))
 	xml.WriteString("</Object>")
 	xml.WriteString(`</Signature>`)
