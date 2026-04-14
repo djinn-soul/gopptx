@@ -26,13 +26,21 @@ type ImageFetcher struct {
 }
 
 // NewImageFetcher creates an ImageFetcher with the given config and base URL.
+// The passed client's Timeout and CheckRedirect are preserved; its transport is
+// replaced with ssrfSafeTransport so IP-range checks happen at connection time.
 func NewImageFetcher(client *http.Client, cfg Config, baseURL string) *ImageFetcher {
 	var base *url.URL
 	if baseURL != "" {
 		base, _ = url.Parse(baseURL)
 	}
+	safeClient := &http.Client{
+		Timeout:       client.Timeout,
+		CheckRedirect: client.CheckRedirect,
+		Jar:           client.Jar,
+		Transport:     ssrfSafeTransport(cfg.AllowPrivateHosts),
+	}
 	return &ImageFetcher{
-		client:    client,
+		client:    safeClient,
 		cfg:       cfg,
 		baseURL:   base,
 		totalSize: 0,
