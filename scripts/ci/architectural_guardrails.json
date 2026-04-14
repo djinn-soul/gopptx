@@ -10,19 +10,7 @@
         ".go",
         ".py"
     ],
-    "line_count_baseline": {
-        "internal/pptxxml/notes_xml.go": 344,
-        "pkg/pptx/editor/chart_data_editor.go": 321,
-        "pkg/pptx/editor/command_handlers_slides_meta.go": 374,
-        "pkg/pptx/editor/modules/slide/workflow_ops.go": 318,
-        "pkg/pptx/editor/smartart_ops.go": 325,
-        "pkg/pptx/export/html.go": 336,
-        "pkg/pptx/markdown/syntax_highlight.go": 359,
-        "pkg/pptx/mermaid/gitgraph.go": 317,
-        "pkg/pptx/mermaid/state.go": 330,
-        "pkg/pptx/shapes/geometry.go": 356,
-        "pkg/pptx/tables/table_validation.go": 320
-    },
+    "line_count_baseline": {},
     "python_import_cycle_budget": 1,
     "python_cycle_root": "python/gopptx"
 }
