@@ -21,7 +21,7 @@ dev = [
     # Linting & Formatting
     "ruff>=0.15.7",
     # Testing
-    "pytest>=9.0.2",
+    "pytest>=9.0.3",
     "pytest-cov>=7.0.0",
     "hypothesis>=6.150.0",
     # Security
@@ -35,7 +35,7 @@ dev = [
     "basedpyright>=1.39.0",
     "vulture>=2.15",
     "gitingest",
-    "pillow==12.1.1",
+    "pillow==12.2.0",
     "pypdfium2==5.6.0",
     "numpy>=2.2.6",
     "mkdocs-material>=9.7.6",
