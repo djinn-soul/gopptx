@@ -59,3 +59,32 @@ func createNodeShape(node *FlowNode, x, y, width, height styling.Length, theme T
 		WithAutoFit(shapes.TextAutoFitNormal).
 		WithTextMargins(styling.Inches(0.1), styling.Inches(0.05), styling.Inches(0.1), styling.Inches(0.05))
 }
+
+func createSubgraphBackground(
+	_ string,
+	x, y, width, height styling.Length,
+	theme Theme,
+	_ flowchartLayout,
+) shapes.Shape {
+	return shapes.NewShape(shapes.ShapeTypeRoundedRectangle, x, y, width, height).
+		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, styling.Emu(12700)))
+}
+
+func createSubgraphTitle(
+	title string,
+	x, y, width styling.Length,
+	layout flowchartLayout,
+) shapes.Shape {
+	shape := shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		x+layout.titlePad,
+		y+layout.titlePad,
+		width-2*layout.titlePad,
+		layout.titleHeight,
+	).WithText(title).
+		WithAutoFit(shapes.TextAutoFitNormal)
+	shape.Fill = nil
+	shape.Line = nil
+	return shape
+}
