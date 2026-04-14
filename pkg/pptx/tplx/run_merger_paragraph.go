@@ -3,6 +3,7 @@ package tplx
 import (
 	"bytes"
 	"encoding/xml"
+	"sort"
 	"strings"
 )
 
@@ -64,10 +65,12 @@ func collectParaChildren(dec *xml.Decoder) ([]paraChild, error) {
 	return children, nil
 }
 
-// mergeTokenRuns merges all runs in the paragraph into one when their combined text
-// contains a Jinja token that spans multiple runs.
+// mergeTokenRuns merges only the minimal consecutive run ranges that are required to
+// make each cross-boundary Jinja token contiguous. Runs that do not participate in any
+// cross-boundary token are left untouched, preserving their original formatting.
 func mergeTokenRuns(children []paraChild) []paraChild {
-	runIdxs := make([]int, 0)
+	// Collect positions of run children within the children slice.
+	runIdxs := make([]int, 0, len(children))
 	for i, c := range children {
 		if c.isRun {
 			runIdxs = append(runIdxs, i)
@@ -77,68 +80,112 @@ func mergeTokenRuns(children []paraChild) []paraChild {
 		return children
 	}
 
+	// Concatenate all run texts and record where each run starts.
 	var sb strings.Builder
-	for _, ri := range runIdxs {
+	runStart := make([]int, len(runIdxs)) // byte offset of run[i] within the full string
+	for i, ri := range runIdxs {
+		runStart[i] = sb.Len()
 		sb.WriteString(children[ri].run.text)
 	}
 	full := sb.String()
-	if !needsMerge(full, children, runIdxs) {
+
+	if !tokenPattern.MatchString(full) {
 		return children
 	}
 
-	var combined strings.Builder
-	var firstRPr []byte
-	for i, ri := range runIdxs {
-		combined.WriteString(children[ri].run.text)
-		if i == 0 {
-			firstRPr = children[ri].run.rprBytes
+	// charToRunPos maps a byte offset in full to its run position index (within runIdxs).
+	charToRunPos := func(charPos int) int {
+		// Binary-search for the last run whose start <= charPos.
+		lo, hi := 0, len(runStart)-1
+		for lo < hi {
+			mid := (lo + hi + 1) / 2
+			if runStart[mid] <= charPos {
+				lo = mid
+			} else {
+				hi = mid - 1
+			}
+		}
+		return lo
+	}
+
+	// Find all token matches that cross a run boundary and record the run ranges.
+	type mergeRange struct{ start, end int } // inclusive positions within runIdxs
+	var ranges []mergeRange
+	for _, loc := range tokenPattern.FindAllStringIndex(full, -1) {
+		s := charToRunPos(loc[0])
+		e := charToRunPos(loc[1] - 1)
+		if s != e {
+			ranges = append(ranges, mergeRange{s, e})
 		}
 	}
-	mergedRun := paraChild{isRun: true, run: runData{rprBytes: firstRPr, text: combined.String()}}
-
-	runSet := make(map[int]bool, len(runIdxs))
-	for _, ri := range runIdxs {
-		runSet[ri] = true
+	if len(ranges) == 0 {
+		return children
 	}
+
+	// Sort and consolidate overlapping / adjacent ranges so each run belongs to at most one group.
+	sort.Slice(ranges, func(i, j int) bool { return ranges[i].start < ranges[j].start })
+	merged := []mergeRange{ranges[0]}
+	for _, r := range ranges[1:] {
+		last := &merged[len(merged)-1]
+		if r.start <= last.end+1 {
+			if r.end > last.end {
+				last.end = r.end
+			}
+		} else {
+			merged = append(merged, r)
+		}
+	}
+
+	// Pre-build one merged paraChild per consolidated range,
+	// using the first run's rPr so at least the opening style is preserved.
+	mergedRuns := make([]paraChild, len(merged))
+	for gi, mr := range merged {
+		var tb strings.Builder
+		for pos := mr.start; pos <= mr.end; pos++ {
+			tb.WriteString(children[runIdxs[pos]].run.text)
+		}
+		mergedRuns[gi] = paraChild{isRun: true, run: runData{
+			rprBytes: children[runIdxs[mr.start]].run.rprBytes,
+			text:     tb.String(),
+		}}
+	}
+
+	// Map each child-slice index to its run position for O(1) lookup.
+	childToRunPos := make(map[int]int, len(runIdxs))
+	for pos, ci := range runIdxs {
+		childToRunPos[ci] = pos
+	}
+
+	// Assign each run position to its merge group (-1 = not merged).
+	runGroup := make([]int, len(runIdxs))
+	for i := range runGroup {
+		runGroup[i] = -1
+	}
+	for gi, mr := range merged {
+		for pos := mr.start; pos <= mr.end; pos++ {
+			runGroup[pos] = gi
+		}
+	}
+
 	out := make([]paraChild, 0, len(children))
-	firstEmitted := false
+	emitted := make([]bool, len(merged))
 	for i, c := range children {
-		if !runSet[i] {
+		runPos, isRun := childToRunPos[i]
+		if !isRun {
 			out = append(out, c)
 			continue
 		}
-		if !firstEmitted {
-			out = append(out, mergedRun)
-			firstEmitted = true
+		gi := runGroup[runPos]
+		if gi < 0 {
+			// Not involved in any cross-boundary token: keep as-is.
+			out = append(out, c)
+			continue
 		}
+		if !emitted[gi] {
+			out = append(out, mergedRuns[gi])
+			emitted[gi] = true
+		}
+		// Subsequent runs within the same group are absorbed; skip them.
 	}
 	return out
-}
-
-// needsMerge returns true when a token crosses at least one run boundary.
-func needsMerge(full string, children []paraChild, runIdxs []int) bool {
-	if !tokenPattern.MatchString(full) {
-		return false
-	}
-	for _, loc := range tokenPattern.FindAllStringIndex(full, -1) {
-		startRun := charToRunIdx(loc[0], children, runIdxs)
-		endRun := charToRunIdx(loc[1]-1, children, runIdxs)
-		if startRun != endRun {
-			return true
-		}
-	}
-	return false
-}
-
-// charToRunIdx returns the run-position-index (within runIdxs) for a character offset in full.
-func charToRunIdx(charPos int, children []paraChild, runIdxs []int) int {
-	offset := 0
-	for ri, pos := range runIdxs {
-		l := len(children[pos].run.text)
-		if charPos < offset+l {
-			return ri
-		}
-		offset += l
-	}
-	return len(runIdxs) - 1
 }
