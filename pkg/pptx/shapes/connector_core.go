@@ -151,7 +151,9 @@ func (c Connector) WithLabel(label string) Connector {
 
 // WithAdjustment appends one geometry adjustment point for elbow/curved connectors.
 func (c Connector) WithAdjustment(name, formula string) Connector {
-	c.Adjustments = append(c.Adjustments, ConnectorAdjustment{
+	newAdj := make([]ConnectorAdjustment, len(c.Adjustments), len(c.Adjustments)+1)
+	copy(newAdj, c.Adjustments)
+	c.Adjustments = append(newAdj, ConnectorAdjustment{
 		Name:    strings.TrimSpace(name),
 		Formula: strings.TrimSpace(formula),
 	})

@@ -114,5 +114,6 @@ func isNonSlideTextPart(name string) bool {
 	return strings.HasSuffix(name, ".xml") &&
 		(strings.HasPrefix(name, "ppt/notesSlides/") ||
 			strings.HasPrefix(name, "ppt/slideLayouts/") ||
+			strings.HasPrefix(name, "ppt/slideMasters/") ||
 			name == "ppt/presentation.xml")
 }
