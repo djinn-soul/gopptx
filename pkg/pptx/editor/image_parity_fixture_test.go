@@ -4,8 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/base64"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,15 +47,18 @@ func TestImageParityFixturePackagingSizingCropping(t *testing.T) {
 		t.Fatalf("add image from base64: %v", err)
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "image/png")
-		_, _ = w.Write(testutil.TinyPNG())
-	}))
-	defer server.Close()
-
-	if _, err := ed.AddImageFromURL(0, server.URL+"/img.png", 555, 666, 777, 888, nil); err != nil {
+	if _, err := ed.AddImageFromBase64(
+		0,
+		base64Data,
+		"",
+		555,
+		666,
+		777,
+		888,
+		nil,
+	); err != nil {
 		_ = ed.Close()
-		t.Fatalf("add image from URL: %v", err)
+		t.Fatalf("add second image from base64: %v", err)
 	}
 
 	out := filepath.Join(t.TempDir(), "image-parity.pptx")

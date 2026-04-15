@@ -2,8 +2,6 @@ package editor
 
 import (
 	"encoding/base64"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -42,20 +40,35 @@ func TestAddImageFromURL(t *testing.T) {
 	}
 	defer func() { _ = ed.Close() }()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "image/png")
-		_, _ = w.Write(testutil.TinyPNG())
-	}))
-	defer server.Close()
+	if _, err := ed.AddImageFromURL(0, "http://127.0.0.1/pixel.png", 10, 20, 100, 80, nil); err == nil {
+		t.Fatal("expected private URL to be blocked")
+	}
+}
 
-	shapeID, err := ed.AddImageFromURL(0, server.URL+"/pixel", 10, 20, 100, 80, nil)
+func TestAddImageFromBase64_EmbedsBlip(t *testing.T) {
+	base := writeDeckFixture(t, "base.pptx", []elements.SlideContent{elements.NewSlide("Slide 1")})
+	ed, err := OpenPresentationEditor(base)
 	if err != nil {
-		t.Fatalf("add image from URL: %v", err)
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	shapeID, err := ed.AddImageFromBase64(
+		0,
+		"data:image/png;base64,"+base64.StdEncoding.EncodeToString(testutil.TinyPNG()),
+		"",
+		10,
+		20,
+		100,
+		80,
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("add image from base64: %v", err)
 	}
 	if shapeID == 0 {
 		t.Fatal("expected non-zero shape id")
 	}
-
 	slideXML, ok := ed.parts.Get("ppt/slides/slide1.xml")
 	if !ok {
 		t.Fatal("slide part missing")

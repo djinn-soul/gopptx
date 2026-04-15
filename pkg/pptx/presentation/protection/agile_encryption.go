@@ -9,6 +9,14 @@ import (
 
 // EncryptAgilePackage wraps a PPTX zip payload into an Office-compatible
 // Agile-encrypted package.
+//
+// Security note: zipPayload contains the unencrypted presentation in memory.
+// Callers handling sensitive content should zero it after this call returns:
+//
+//	clear(zipPayload)
+//
+// The password parameter is a Go string and cannot be zeroed by this function;
+// callers should avoid retaining long-lived references to it.
 func EncryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 	if len(zipPayload) == 0 {
 		return nil, errors.New("zip payload cannot be empty")

@@ -18,6 +18,12 @@ const (
 // 1. Convert password to UTF-16LE bytes (truncated to 255 chars).
 // 2. Initial hash = SHA-512(salt + password_bytes).
 // 3. Iterative hash = SHA-512(prev_hash + uint32LE(iteration_index)).
+//
+// Sensitive intermediate buffers (UTF-16LE password bytes, salt+password
+// concatenation, and the spin-count scratch buffer) are zeroed before return.
+// The caller is responsible for zeroing the salt slice if it is sensitive.
+// Note: the password parameter is a Go string (immutable) and cannot be zeroed
+// by this function; callers should avoid holding long-lived references to it.
 func HashModifyPassword(password string, salt []byte, spinCount int) string {
 	// 1. Password Encoding (UTF-16LE)
 	runes := []rune(password)
@@ -26,18 +32,21 @@ func HashModifyPassword(password string, salt []byte, spinCount int) string {
 	}
 	u16 := utf16.Encode(runes)
 	pwdBytes := make([]byte, len(u16)*utf16BytesPerUnit)
+	defer clear(pwdBytes)
 	for i, v := range u16 {
 		binary.LittleEndian.PutUint16(pwdBytes[i*2:], v)
 	}
 
 	// 2. Initial Hashing
 	initial := make([]byte, len(salt)+len(pwdBytes))
+	defer clear(initial)
 	copy(initial, salt)
 	copy(initial[len(salt):], pwdBytes)
 	hash := sha512.Sum512(initial)
 
 	// 3. Iterative Hashing (Spin Count)
 	var spinInput [sha512.Size + 4]byte
+	defer clear(spinInput[:])
 	if spinCount < 0 {
 		spinCount = 0
 	}
@@ -53,5 +62,7 @@ func HashModifyPassword(password string, salt []byte, spinCount int) string {
 		spinCount--
 	}
 
-	return base64.StdEncoding.EncodeToString(hash[:])
+	encoded := base64.StdEncoding.EncodeToString(hash[:])
+	clear(hash[:])
+	return encoded
 }
