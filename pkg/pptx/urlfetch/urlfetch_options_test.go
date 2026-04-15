@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -158,5 +159,39 @@ func TestParserExtractLinksToggle(t *testing.T) {
 		if b.Kind == urlfetch.KindLink {
 			t.Fatalf("did not expect link block when ExtractLinks=false")
 		}
+	}
+}
+
+func TestFetchRedactsCredentialsInRefererAndErrors(t *testing.T) {
+	var gotReferer string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotReferer = r.Referer()
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL + "/private")
+	if err != nil {
+		t.Fatalf("parse URL: %v", err)
+	}
+	u.User = url.UserPassword("alice", "secret")
+
+	f := urlfetch.NewWebFetcherWithConfig(urlfetch.DefaultConfig().WithAllowPrivateHosts(true))
+	_, err = f.Fetch(u.String())
+	if err == nil {
+		t.Fatalf("expected fetch error")
+	}
+	errText := err.Error()
+	if strings.Contains(errText, "secret") {
+		t.Fatalf("error leaked password: %q", errText)
+	}
+	if !strings.Contains(errText, "xxxxx") {
+		t.Fatalf("expected redacted URL in error, got %q", errText)
+	}
+	if strings.Contains(gotReferer, "secret") {
+		t.Fatalf("referer leaked password: %q", gotReferer)
+	}
+	if !strings.Contains(gotReferer, "xxxxx") {
+		t.Fatalf("expected redacted referer, got %q", gotReferer)
 	}
 }
