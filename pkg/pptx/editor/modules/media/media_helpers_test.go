@@ -59,7 +59,7 @@ func TestFetchImageFromURLAndFormatDetection(t *testing.T) {
 	}))
 	defer server.Close()
 
-	data, format, err := FetchImageFromURL(server.URL + "/ok")
+	data, format, err := fetchImageFromURL(server.URL+"/ok", true, maxImageURLBodyBytes)
 	if err != nil {
 		t.Fatalf("FetchImageFromURL(/ok) failed: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestFetchImageFromURLAndFormatDetection(t *testing.T) {
 		t.Fatalf("unexpected fetch result: format=%q len=%d", format, len(data))
 	}
 
-	data, format, err = FetchImageFromURL(server.URL + "/ext.jpg")
+	data, format, err = fetchImageFromURL(server.URL+"/ext.jpg", true, maxImageURLBodyBytes)
 	if err != nil {
 		t.Fatalf("FetchImageFromURL(/ext.jpg) failed: %v", err)
 	}
@@ -75,14 +75,20 @@ func TestFetchImageFromURLAndFormatDetection(t *testing.T) {
 		t.Fatalf("unexpected extension-derived format: format=%q len=%d", format, len(data))
 	}
 
-	if _, _, err = FetchImageFromURL(server.URL + "/missing"); err == nil {
+	if _, _, err = fetchImageFromURL(server.URL+"/missing", true, maxImageURLBodyBytes); err == nil {
 		t.Fatal("expected non-200 status error")
 	}
-	if _, _, err = FetchImageFromURL(server.URL + "/empty"); err == nil {
+	if _, _, err = fetchImageFromURL(server.URL+"/empty", true, maxImageURLBodyBytes); err == nil {
 		t.Fatal("expected empty body error")
 	}
 	if _, _, err = FetchImageFromURL("://bad-url"); err == nil {
 		t.Fatal("expected invalid url error")
+	}
+	if _, _, err = FetchImageFromURL("http://127.0.0.1/private.png"); err == nil {
+		t.Fatal("expected SSRF private-host rejection")
+	}
+	if _, _, err = fetchImageFromURL(server.URL+"/ok", true, 2); err == nil {
+		t.Fatal("expected response too large error")
 	}
 }
 

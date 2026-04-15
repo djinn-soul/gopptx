@@ -7,14 +7,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/netsec"
 )
 
 const (
 	imageURLFetchTimeout = 30 * time.Second
+	maxImageURLBodyBytes = 20 * 1024 * 1024
 	dataURIParts         = 2
 )
 
@@ -74,17 +76,25 @@ func splitDataURI(raw string) (string, string, error) {
 
 // FetchImageFromURL downloads image bytes and infers their format.
 func FetchImageFromURL(sourceURL string) ([]byte, string, error) {
-	parsed, err := url.ParseRequestURI(strings.TrimSpace(sourceURL))
+	return fetchImageFromURL(sourceURL, false, maxImageURLBodyBytes)
+}
+
+func fetchImageFromURL(sourceURL string, allowPrivateHosts bool, maxBodyBytes int64) ([]byte, string, error) {
+	trimmedURL := strings.TrimSpace(sourceURL)
+	parsed, err := netsec.ValidateURLForHTTPFetch(trimmedURL, allowPrivateHosts)
 	if err != nil {
-		return nil, "", fmt.Errorf("invalid image URL: %w", err)
+		return nil, "", fmt.Errorf("fetch image URL: %w", err)
+	}
+	if maxBodyBytes <= 0 {
+		return nil, "", fmt.Errorf("fetch image URL: invalid max body bytes: %d", maxBodyBytes)
 	}
 
-	client := &http.Client{Timeout: imageURLFetchTimeout}
+	client := netsec.NewRestrictedHTTPClient(imageURLFetchTimeout, allowPrivateHosts)
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, parsed.String(), nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("fetch image URL: build request: %w", err)
 	}
-	resp, err := client.Do(req) // #nosec G107: explicit URL validation above.
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, "", fmt.Errorf("fetch image URL: %w", err)
 	}
@@ -94,9 +104,13 @@ func FetchImageFromURL(sourceURL string) ([]byte, string, error) {
 		return nil, "", fmt.Errorf("fetch image URL: unexpected status %s", resp.Status)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	limited := io.LimitReader(resp.Body, maxBodyBytes+1)
+	data, err := io.ReadAll(limited)
 	if err != nil {
 		return nil, "", fmt.Errorf("read image URL body: %w", err)
+	}
+	if int64(len(data)) > maxBodyBytes {
+		return nil, "", fmt.Errorf("fetch image URL: response too large (>%d bytes)", maxBodyBytes)
 	}
 	if len(data) == 0 {
 		return nil, "", errors.New("fetch image URL: empty response body")

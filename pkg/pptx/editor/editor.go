@@ -29,7 +29,7 @@ type PresentationEditor struct {
 	presentationXML string
 	embeddedFontLst string
 
-	// Media inventory for deduplication (SHA1 -> PartPath)
+	// Media inventory for deduplication (SHA-256 hex digest -> PartPath)
 	mediaInventory map[string]string
 	nextMediaNum   int
 	mediaMu        sync.Mutex

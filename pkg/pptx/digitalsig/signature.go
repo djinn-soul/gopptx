@@ -23,7 +23,8 @@ const (
 	HashAlgorithmSha384
 	// HashAlgorithmSha512 uses SHA-512.
 	HashAlgorithmSha512
-	// HashAlgorithmSha1 uses SHA-1 (legacy).
+	// Deprecated: SHA-1 is cryptographically broken (SHAttered 2017, NIST SP 800-131A Rev. 2).
+	// Use HashAlgorithmSha256 or stronger. This constant will be removed in a future version.
 	HashAlgorithmSha1
 )
 
