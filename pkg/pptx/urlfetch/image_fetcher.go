@@ -80,7 +80,7 @@ func (f *ImageFetcher) FetchImage(imageURL string) (*FetchedImage, error) {
 	req.Header.Set("User-Agent", f.cfg.UserAgent)
 	req.Header.Set("Accept", "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
 	if f.baseURL != nil {
-		req.Header.Set("Referer", f.baseURL.String())
+		req.Header.Set("Referer", redactURL(f.baseURL))
 	}
 
 	// Execute request

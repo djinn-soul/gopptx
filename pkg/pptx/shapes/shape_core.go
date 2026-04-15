@@ -148,7 +148,7 @@ func (s Shape) WithTextFrame(frame TextFrame) Shape {
 
 // cloneTextFrame returns a copy of the shape's TextFrame (or a fresh one),
 // then points s.TextFrame at the copy so mutations never alias a shared instance.
-func (s *Shape) cloneTextFrame() TextFrame {
+func (s Shape) cloneTextFrame() TextFrame {
 	if s.TextFrame != nil {
 		return *s.TextFrame
 	}

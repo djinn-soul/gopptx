@@ -3,6 +3,8 @@ package urlfetch
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -141,5 +143,40 @@ func TestCalculateImageDimensions(t *testing.T) {
 				tt.wantH,
 			)
 		}
+	}
+}
+
+func TestImageFetcher_RedactsCredentialsInReferer(t *testing.T) {
+	var gotReferer string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotReferer = r.Referer()
+		w.Header().Set("Content-Type", "image/png")
+		pngData := []byte{
+			0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+			0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+			0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+			0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+			0x42, 0x60, 0x82,
+		}
+		_, _ = w.Write(pngData)
+	}))
+	defer server.Close()
+
+	baseURL, err := url.Parse(server.URL + "/origin")
+	if err != nil {
+		t.Fatalf("parse server URL: %v", err)
+	}
+	baseURL.User = url.UserPassword("alice", "secret")
+
+	fetcher := NewImageFetcher(http.DefaultClient, DefaultConfig().WithAllowPrivateHosts(true), baseURL.String())
+	if _, err := fetcher.FetchImage(server.URL + "/img.png"); err != nil {
+		t.Fatalf("FetchImage: %v", err)
+	}
+
+	if strings.Contains(gotReferer, "secret") {
+		t.Fatalf("referer leaked password: %q", gotReferer)
+	}
+	if !strings.Contains(gotReferer, "xxxxx") {
+		t.Fatalf("expected masked credentials in referer, got %q", gotReferer)
 	}
 }

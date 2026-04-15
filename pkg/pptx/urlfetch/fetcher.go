@@ -57,6 +57,7 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("invalid URL: %w", err)
 	}
+	redactedURL := parsed.Redacted()
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return "", "", fmt.Errorf("unsupported scheme %q: only http and https are allowed", parsed.Scheme)
 	}
@@ -78,16 +79,16 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Referer", rawURL)
+	req.Header.Set("Referer", redactedURL)
 
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return "", "", fmt.Errorf("fetch %q: %w", rawURL, err)
+		return "", "", fmt.Errorf("fetch %q: %w", redactedURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", "", fmt.Errorf("fetch %q: HTTP %d", rawURL, resp.StatusCode)
+		return "", "", fmt.Errorf("fetch %q: HTTP %d", redactedURL, resp.StatusCode)
 	}
 
 	limited := io.LimitReader(resp.Body, f.cfg.MaxBodyBytes+1)
