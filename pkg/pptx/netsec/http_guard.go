@@ -18,18 +18,22 @@ const (
 
 // NewRestrictedHTTPClient builds an HTTP client that blocks private/internal
 // IPs at dial time unless allowPrivateHosts is true.
+//
+// The SSRF guard is always applied regardless of whether http.DefaultTransport
+// has been replaced — if the type assertion fails a fresh transport is used so
+// the guard never silently falls back to an unrestricted client.
 func NewRestrictedHTTPClient(timeout time.Duration, allowPrivateHosts bool) *http.Client {
-	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
-	if !ok {
-		return &http.Client{Timeout: timeout}
-	}
-
 	baseDialer := &net.Dialer{
 		Timeout:   restrictedDialTimeout,
 		KeepAlive: restrictedDialKeepAlive,
 	}
 
-	transport := defaultTransport.Clone()
+	var transport *http.Transport
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport = t.Clone()
+	} else {
+		transport = &http.Transport{}
+	}
 	transport.DialContext = restrictedDialContext(baseDialer, allowPrivateHosts)
 
 	return &http.Client{
@@ -85,7 +89,7 @@ func restrictedDialContext(
 			return nil, fmt.Errorf("no addresses for %q", host)
 		}
 
-		chosen, err := choosePublicIP(resolvedIPs)
+		chosen, err := validateAllPublic(resolvedIPs)
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +127,7 @@ func validateHost(ctx context.Context, host string) error {
 	return nil
 }
 
-func choosePublicIP(ips []netip.Addr) (netip.Addr, error) {
+func validateAllPublic(ips []netip.Addr) (netip.Addr, error) {
 	for _, ip := range ips {
 		unmapped := ip.Unmap()
 		if blocked, reason := isBlockedAddr(unmapped); blocked {

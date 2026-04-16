@@ -27,20 +27,5 @@ func ensureParentDir(path string) error {
 }
 
 func defaultOutputPathFromMarkdown(markdownPath string) string {
-	cleanPath := strings.TrimSpace(markdownPath)
-	if cleanPath == "" {
-		return "output.pptx"
-	}
-	dir := filepath.Dir(cleanPath)
-	base := filepath.Base(cleanPath)
-	ext := filepath.Ext(base)
-	stem := strings.TrimSuffix(base, ext)
-	if stem == "" {
-		stem = "output"
-	}
-	out := stem + ".pptx"
-	if dir == "." || dir == "" {
-		return out
-	}
-	return filepath.Join(dir, out)
+	return defaultSiblingFilePath(markdownPath, "output", ".pptx")
 }

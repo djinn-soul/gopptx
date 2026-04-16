@@ -12,7 +12,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 const (
@@ -56,11 +55,12 @@ func encryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 	script := buildPowerPointEncryptScript(inPath, outPath)
 	// Pass the password via an environment variable so it never appears in the
 	// process command line or in script text visible to other processes.
-	// The env string is zeroed after the subprocess exits to limit the window
-	// during which the plaintext password sits on the heap.
-	envLine := "GOPPTX_PW=" + password
-	defer clear(unsafe.Slice(unsafe.StringData(envLine), len(envLine)))
-	output, err := runPowerShellScript(script, powerPointEncryptTimeout, envLine)
+	// Use a []byte so the backing memory can be legitimately zeroed via clear()
+	// after the subprocess exits, limiting the window during which the plaintext
+	// password sits on the heap.
+	envLineBytes := []byte("GOPPTX_PW=" + password)
+	defer clear(envLineBytes)
+	output, err := runPowerShellScript(script, powerPointEncryptTimeout, string(envLineBytes))
 	if err != nil {
 		// The output is safe to include: the password is only in the env var,
 		// not in the script string or in any PowerShell output.

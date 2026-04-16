@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1
+# Fuzzing image for gopptx.
+# Runs all Go fuzz targets for FUZZ_TIME each, then saves any crashes.
+#
+# Build:
+#   docker build -f Dockerfile.fuzz -t gopptx-fuzz .
+#
+# Run (30-second budget per target, corpus written to ./fuzz-out on host):
+#   Linux/Mac:
+#     docker run --rm -v "$(pwd)/fuzz-out:/workspace/fuzz-out" gopptx-fuzz
+#   Windows (Git Bash / PowerShell):
+#     docker run --rm -v "E:/Github/gopptx/fuzz-out:/workspace/fuzz-out" gopptx-fuzz
+#
+# Override budget (e.g. 2 minutes per target):
+#   docker run --rm -v "E:/Github/gopptx/fuzz-out:/workspace/fuzz-out" \
+#              -e FUZZ_TIME=2m gopptx-fuzz
+FROM golang:1.25.9
+
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /workspace
+
+# Pin all Go caches inside /workspace so appuser can write to them at runtime.
+ENV GOPATH=/workspace/.gopath
+ENV GOCACHE=/workspace/.gocache
+ENV GOMODCACHE=/workspace/.gopath/pkg/mod
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Pre-compile all fuzz test binaries so runtime doesn't need network/write access
+# to the module cache for compilation.  The || true keeps the build from failing
+# if any individual package has a problem (errors are surfaced at run time).
+RUN go test -c -fuzz=. ./internal/pptxxml/  -o /usr/local/bin/fuzz-pptxxml  || true && \
+    go test -c -fuzz=. ./pkg/pptx/markdown/ -o /usr/local/bin/fuzz-markdown  || true && \
+    go test -c -fuzz=. ./pkg/pptx/netsec/   -o /usr/local/bin/fuzz-netsec    || true && \
+    go test -c -fuzz=. ./pkg/pptx/urlfetch/ -o /usr/local/bin/fuzz-urlfetch  || true && \
+    go test -c -fuzz=. ./pkg/pptx/tplx/     -o /usr/local/bin/fuzz-tplx      || true
+
+COPY scripts/fuzz.sh /usr/local/bin/fuzz.sh
+RUN chmod +x /usr/local/bin/fuzz.sh
+
+RUN chown -R appuser:appuser /workspace
+USER appuser
+
+ENV FUZZ_TIME=30s
+ENV FUZZ_OUT=/workspace/fuzz-out
+
+CMD ["/usr/local/bin/fuzz.sh"]
