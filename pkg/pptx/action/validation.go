@@ -27,6 +27,12 @@ func ValidateHyperlinkAction(a HyperlinkAction, context string) error {
 		if parsed.Scheme == "" {
 			return fmt.Errorf("%s: hyperlink URL %q must have a scheme (e.g., https://)", context, a.URL)
 		}
+		switch strings.ToLower(parsed.Scheme) {
+		case "http", "https", "mailto", "ftp", "ftps":
+			// allowed
+		default:
+			return fmt.Errorf("%s: hyperlink URL scheme %q is not allowed", context, parsed.Scheme)
+		}
 
 	case HyperlinkActionSlide:
 		if a.SlideNumber == 0 {

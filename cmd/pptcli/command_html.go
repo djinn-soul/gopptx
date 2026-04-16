@@ -21,7 +21,7 @@ func runHTMLCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	var embedImages bool
 	var nav bool
 
-	fs.StringVar(&inPath, "in", "", "input markdown file")
+	fs.StringVar(&inPath, "in", "", "input file (.pptx/.pptm/.md)")
 	fs.StringVar(&outPath, "out", "", "output HTML file (default: built from input name)")
 	fs.StringVar(&title, "title", "Presentation", "presentation title")
 	fs.BoolVar(&embedImages, "embed", true, "embed images as base64 in HTML")
@@ -40,27 +40,27 @@ func runHTMLCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		return exitUsage
 	}
 
+	inputKind, err := detectPresentationInputKind(inPath)
+	if err != nil {
+		printErrorf(stderr, "%v", err)
+		printHTMLUsage(stderr)
+		return exitUsage
+	}
+
 	if strings.TrimSpace(outPath) == "" {
-		outPath = strings.TrimSuffix(inPath, ".md") + ".html"
+		outPath = defaultSiblingFilePath(inPath, "export", ".html")
 	}
 
-	markdown, err := os.ReadFile(inPath)
-	if err != nil {
-		printErrorf(stderr, "failed to read markdown %q: %v", inPath, err)
-		return exitIO
-	}
-
-	slides, err := pptx.SlidesFromMarkdown(string(markdown))
-	if err != nil {
-		printErrorf(stderr, "markdown parse failed: %v", err)
-		return exitParse
+	resolvedTitle, slides, exitCode := loadSlidesForHTML(inputKind, inPath, title, stderr)
+	if exitCode != exitOK {
+		return exitCode
 	}
 
 	opts := export.DefaultHTMLOptions()
 	opts.EmbedImages = embedImages
 	opts.IncludeNavigation = nav
 
-	htmlContent := export.HTMLWithOptions(strings.TrimSpace(title), slides, opts)
+	htmlContent := export.HTMLWithOptions(resolvedTitle, slides, opts)
 	if err := os.WriteFile(outPath, []byte(htmlContent), 0o600); err != nil {
 		printErrorf(stderr, "failed to write HTML to %q: %v", outPath, err)
 		return exitIO
@@ -70,6 +70,57 @@ func runHTMLCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	return exitOK
 }
 
+func loadSlidesForHTML(
+	inputKind presentationInputKind,
+	inPath string,
+	title string,
+	stderr io.Writer,
+) (string, []pptx.SlideContent, int) {
+	switch inputKind {
+	case inputKindMarkdown:
+		markdown, err := os.ReadFile(inPath)
+		if err != nil {
+			printErrorf(stderr, "failed to read markdown %q: %v", inPath, err)
+			return "", nil, exitIO
+		}
+
+		slides, err := pptx.SlidesFromMarkdown(string(markdown))
+		if err != nil {
+			printErrorf(stderr, "markdown parse failed: %v", err)
+			return "", nil, exitParse
+		}
+		return strings.TrimSpace(title), slides, exitOK
+	case inputKindPPTX:
+		presTitle, slides, err := export.SlidesFromPPTX(inPath)
+		if err != nil {
+			printErrorf(stderr, "failed to read PPTX %q: %v", inPath, err)
+			return "", nil, exitIO
+		}
+		return resolveHTMLTitle(title, presTitle), slides, exitOK
+	default:
+		printErrorf(stderr, "unsupported input type")
+		return "", nil, exitUsage
+	}
+}
+
+func resolveHTMLTitle(requestedTitle, detectedTitle string) string {
+	requestedTitle = strings.TrimSpace(requestedTitle)
+	detectedTitle = strings.TrimSpace(detectedTitle)
+	if requestedTitle != "" && requestedTitle != "Presentation" {
+		return requestedTitle
+	}
+	if detectedTitle != "" {
+		return detectedTitle
+	}
+	if requestedTitle != "" {
+		return requestedTitle
+	}
+	return "Presentation"
+}
+
 func printHTMLUsage(w io.Writer) {
-	_, _ = fmt.Fprintln(w, "Usage: pptcli html -in deck.md [-out deck.html] [-title TITLE] [-embed=true] [-nav=true]")
+	_, _ = fmt.Fprintln(
+		w,
+		"Usage: pptcli html -in <file.pptx|file.pptm|file.md> [-out deck.html] [-title TITLE] [-embed=true] [-nav=true]",
+	)
 }

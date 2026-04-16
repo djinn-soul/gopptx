@@ -39,13 +39,7 @@ func runPDFCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	if strings.TrimSpace(outPath) == "" {
-		ext := ".md"
-		if strings.HasSuffix(strings.ToLower(inPath), ".pptx") {
-			ext = ".pptx"
-		} else if strings.HasSuffix(strings.ToLower(inPath), ".pptm") {
-			ext = ".pptm"
-		}
-		outPath = strings.TrimSuffix(inPath, ext) + ".pdf"
+		outPath = defaultSiblingFilePath(inPath, "export", ".pdf")
 	}
 
 	pdfDriver, err := export.ParsePDFDriver(driver)
@@ -56,9 +50,14 @@ func runPDFCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 	opts := export.PDFOptions{Driver: pdfDriver}
 
-	// Route based on input file extension.
-	lower := strings.ToLower(inPath)
-	if strings.HasSuffix(lower, ".pptx") || strings.HasSuffix(lower, ".pptm") {
+	inputKind, err := detectPresentationInputKind(inPath)
+	if err != nil {
+		printErrorf(stderr, "%v", err)
+		printPDFUsage(stderr)
+		return exitUsage
+	}
+
+	if inputKind == inputKindPPTX {
 		return pdfFromPPTXFile(inPath, outPath, opts, stdout, stderr)
 	}
 	return pdfFromMarkdown(inPath, outPath, title, opts, stdout, stderr)
@@ -98,6 +97,6 @@ func pdfFromMarkdown(inPath, outPath, title string, opts export.PDFOptions, stdo
 func printPDFUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(
 		w,
-		"Usage: pptcli pdf -in <file.pptx|file.md> [-out file.pdf] [-title TITLE] [-driver auto|native|libreoffice|powerpoint]",
+		"Usage: pptcli pdf -in <file.pptx|file.pptm|file.md> [-out file.pdf] [-title TITLE] [-driver auto|native|libreoffice|powerpoint]",
 	)
 }

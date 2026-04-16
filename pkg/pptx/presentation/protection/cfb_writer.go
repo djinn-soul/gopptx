@@ -49,8 +49,12 @@ func buildCompoundFile(infoStream, pkgStream []byte, infoName, pkgName string) (
 	fatStart := baseSectors
 
 	fatEntries[dirSector] = cfbEndOfChain
-	linkChain(fatEntries, infoStart, infoSectors)
-	linkChain(fatEntries, pkgStart, pkgSectors)
+	if err := linkChain(fatEntries, infoStart, infoSectors); err != nil {
+		return nil, err
+	}
+	if err := linkChain(fatEntries, pkgStart, pkgSectors); err != nil {
+		return nil, err
+	}
 	for i := range fatSectors {
 		fatEntries[fatStart+i] = cfbFatSect
 	}
@@ -105,18 +109,19 @@ func calcFatSectors(base int) int {
 	}
 }
 
-func linkChain(fat []uint32, start, count int) {
+func linkChain(fat []uint32, start, count int) error {
 	if count <= 0 {
-		return
+		return nil
 	}
 	for i := range count - 1 {
 		nextSector, err := checkedUint32FromInt(start + i + 1)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		fat[start+i] = nextSector
 	}
 	fat[start+count-1] = cfbEndOfChain
+	return nil
 }
 
 func padToSector(data []byte) []byte {

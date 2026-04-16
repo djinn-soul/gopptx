@@ -57,7 +57,7 @@ func parseQuadrantAxis(trimmed string, lower string, key string) (string, bool) 
 	if !strings.HasPrefix(lower, key) {
 		return "", false
 	}
-	return strings.TrimSpace(trimmed[6:]), true
+	return strings.TrimSpace(trimmed[len(key):]), true
 }
 
 func parseQuadrantLabel(trimmed string, lower string) (int, string, bool) {

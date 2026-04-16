@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 func readZipParts(zr *zip.Reader) (map[string][]byte, error) {
@@ -12,6 +13,9 @@ func readZipParts(zr *zip.Reader) (map[string][]byte, error) {
 	for _, f := range zr.File {
 		if f.FileInfo().IsDir() {
 			continue
+		}
+		if strings.Contains(f.Name, "..") || strings.HasPrefix(f.Name, "/") {
+			return nil, fmt.Errorf("tplx: unsafe zip entry path %q", f.Name)
 		}
 		partData, err := readZipFileBytes(f)
 		if err != nil {
@@ -32,7 +36,9 @@ func readZipFileBytes(f *zip.File) ([]byte, error) {
 	}()
 
 	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(rc)
+	if _, err := buf.ReadFrom(rc); err != nil {
+		return nil, err
+	}
 	return buf.Bytes(), nil
 }
 

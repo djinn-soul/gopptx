@@ -1,6 +1,22 @@
 .git
 .gitignore
 ppt-rs
+# Python virtual environment — very large, not needed for Go builds
+.venv
+# Compiled extension binaries — rebuilt inside the image if needed
+python/gopptx/*.dll
+python/gopptx/*.so
+bindings/c/build/
+# .NET tooling
+scripts/tools/
+# Local fuzz outputs
+fuzz-out/
+fuzz-corpus/
+testdata/fuzz/
+# Misc build artifacts
+dist/
+site/
+**/__pycache__/
 **/*.pptx
 **/*.png
 **/*.jpg
