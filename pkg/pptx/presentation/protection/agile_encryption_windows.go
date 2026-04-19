@@ -52,9 +52,18 @@ func encryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 		return nil, fmt.Errorf("write agile input payload: %w", err)
 	}
 
-	script := buildPowerPointEncryptScript(inPath, outPath, password)
-	output, err := runPowerShellScript(script, powerPointEncryptTimeout)
+	script := buildPowerPointEncryptScript(inPath, outPath)
+	// Pass the password via an environment variable so it never appears in the
+	// process command line or in script text visible to other processes.
+	// Use a []byte so the backing memory can be legitimately zeroed via clear()
+	// after the subprocess exits, limiting the window during which the plaintext
+	// password sits on the heap.
+	envLineBytes := []byte("GOPPTX_PW=" + password)
+	defer clear(envLineBytes)
+	output, err := runPowerShellScript(script, powerPointEncryptTimeout, string(envLineBytes))
 	if err != nil {
+		// The output is safe to include: the password is only in the env var,
+		// not in the script string or in any PowerShell output.
 		return nil, fmt.Errorf(
 			"powerpoint agile encryption failed: %w; output: %s",
 			err,
@@ -69,14 +78,15 @@ func encryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 	return encrypted, nil
 }
 
-func buildPowerPointEncryptScript(inPath, outPath, password string) string {
+func buildPowerPointEncryptScript(inPath, outPath string) string {
 	inQ := quotePowerShellLiteral(inPath)
 	outQ := quotePowerShellLiteral(outPath)
-	pwQ := quotePowerShellLiteral(password)
+	// Password is read from the GOPPTX_PW environment variable so it never
+	// appears in the script string or in the process command line.
 	return "$ErrorActionPreference='Stop';" +
 		"$in=" + inQ + ";" +
 		"$out=" + outQ + ";" +
-		"$pw=" + pwQ + ";" +
+		"$pw=$env:GOPPTX_PW;" +
 		"$app=New-Object -ComObject PowerPoint.Application;" +
 		"try {" +
 		"$pres=$app.Presentations.Open($in,0,0,0);" +
@@ -97,11 +107,14 @@ func runPowerShellWithTimeout(script string, timeout time.Duration) error {
 	return err
 }
 
-func runPowerShellScript(script string, timeout time.Duration) ([]byte, error) {
+func runPowerShellScript(script string, timeout time.Duration, extraEnv ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	if len(extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), extraEnv...)
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return output, fmt.Errorf("powershell command timed out after %s", timeout)

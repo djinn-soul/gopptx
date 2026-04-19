@@ -146,46 +146,47 @@ func (s Shape) WithTextFrame(frame TextFrame) Shape {
 	return s
 }
 
+// cloneTextFrame returns a copy of the shape's TextFrame (or a fresh one),
+// then points s.TextFrame at the copy so mutations never alias a shared instance.
+func (s Shape) cloneTextFrame() TextFrame {
+	if s.TextFrame != nil {
+		return *s.TextFrame
+	}
+	return NewTextFrame()
+}
+
 // WithTextMargins sets EMU margins for the shape text frame.
 func (s Shape) WithTextMargins(left, top, right, bottom styling.Length) Shape {
-	if s.TextFrame == nil {
-		tf := NewTextFrame()
-		s.TextFrame = &tf
-	}
-	s.TextFrame.MarginLeft = left
-	s.TextFrame.MarginTop = top
-	s.TextFrame.MarginRight = right
-	s.TextFrame.MarginBottom = bottom
+	tf := s.cloneTextFrame()
+	tf.MarginLeft = left
+	tf.MarginTop = top
+	tf.MarginRight = right
+	tf.MarginBottom = bottom
+	s.TextFrame = &tf
 	return s
 }
 
 // WithVerticalAnchor sets the vertical alignment of text in the shape.
 func (s Shape) WithVerticalAnchor(anchor TextFrameAnchor) Shape {
-	if s.TextFrame == nil {
-		tf := NewTextFrame()
-		s.TextFrame = &tf
-	}
-	s.TextFrame.Anchor = anchor
+	tf := s.cloneTextFrame()
+	tf.Anchor = anchor
+	s.TextFrame = &tf
 	return s
 }
 
 // WithTextWrap sets the text wrapping mode.
 func (s Shape) WithTextWrap(wrap TextFrameWrap) Shape {
-	if s.TextFrame == nil {
-		tf := NewTextFrame()
-		s.TextFrame = &tf
-	}
-	s.TextFrame.Wrap = wrap
+	tf := s.cloneTextFrame()
+	tf.Wrap = wrap
+	s.TextFrame = &tf
 	return s
 }
 
 // WithAutoFit sets the auto-fit behavior for text within the shape.
 func (s Shape) WithAutoFit(autoFit TextFrameAutoFit) Shape {
-	if s.TextFrame == nil {
-		tf := NewTextFrame()
-		s.TextFrame = &tf
-	}
-	s.TextFrame.AutoFit = autoFit
+	tf := s.cloneTextFrame()
+	tf.AutoFit = autoFit
+	s.TextFrame = &tf
 	return s
 }
 

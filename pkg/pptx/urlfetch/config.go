@@ -52,6 +52,9 @@ type Config struct {
 	ContentSelectors []string
 	// ExcludeSelectors removes matching elements from content.
 	ExcludeSelectors []string
+	// AllowPrivateHosts disables the SSRF guard that blocks requests to
+	// loopback/private/link-local addresses. Must only be set to true in tests.
+	AllowPrivateHosts bool
 }
 
 // Web2PptConfig is a compatibility alias for Config.
@@ -181,6 +184,13 @@ func (c Config) WithContentSelectors(selectors []string) Config {
 // WithExcludeSelectors sets CSS selectors for elements to exclude from extraction.
 func (c Config) WithExcludeSelectors(selectors []string) Config {
 	c.ExcludeSelectors = selectors
+	return c
+}
+
+// WithAllowPrivateHosts disables the SSRF guard for testing against local servers.
+// Must not be used in production code.
+func (c Config) WithAllowPrivateHosts(v bool) Config {
+	c.AllowPrivateHosts = v
 	return c
 }
 

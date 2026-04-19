@@ -26,11 +26,15 @@ func NewWebFetcher() *WebFetcher {
 func NewWebFetcherWithConfig(cfg Config) *WebFetcher {
 	return &WebFetcher{
 		client: http.Client{
-			Timeout: time.Duration(cfg.TimeoutSecs) * time.Second,
+			// ssrfSafeTransport enforces the IP-range check at dial time (after DNS
+			// resolution), which closes the TOCTOU window in pre-request checks.
+			Transport: ssrfSafeTransport(cfg.AllowPrivateHosts),
+			Timeout:   time.Duration(cfg.TimeoutSecs) * time.Second,
 			CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 				if len(via) >= maxRedirects {
 					return fmt.Errorf("stopped after %d redirects", len(via))
 				}
+				// Redirect targets are checked by the transport dialer automatically.
 				return nil
 			},
 		},
@@ -53,8 +57,14 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("invalid URL: %w", err)
 	}
+	redactedURL := parsed.Redacted()
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return "", "", fmt.Errorf("unsupported scheme %q: only http and https are allowed", parsed.Scheme)
+	}
+	if !f.cfg.AllowPrivateHosts {
+		if err := denyPrivateHost(parsed.Host); err != nil {
+			return "", "", fmt.Errorf("SSRF guard: %w", err)
+		}
 	}
 	if f.cfg.MaxBodyBytes <= 0 {
 		return "", "", fmt.Errorf("invalid MaxBodyBytes: %d", f.cfg.MaxBodyBytes)
@@ -69,16 +79,16 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Set("Referer", rawURL)
+	req.Header.Set("Referer", redactedURL)
 
 	resp, err := f.client.Do(req)
 	if err != nil {
-		return "", "", fmt.Errorf("fetch %q: %w", rawURL, err)
+		return "", "", fmt.Errorf("fetch %q: %w", redactedURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", "", fmt.Errorf("fetch %q: HTTP %d", rawURL, resp.StatusCode)
+		return "", "", fmt.Errorf("fetch %q: HTTP %d", redactedURL, resp.StatusCode)
 	}
 
 	limited := io.LimitReader(resp.Body, f.cfg.MaxBodyBytes+1)
