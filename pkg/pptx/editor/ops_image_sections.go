@@ -10,7 +10,7 @@ import (
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
-// RegisterImage adds an image to the presentation or reuses an existing one based on SHA-1 hash.
+// RegisterImage adds an image to the presentation or reuses an existing one based on its SHA-256 hash.
 func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, error) {
 	if e == nil {
 		return "", errors.New("editor cannot be nil")

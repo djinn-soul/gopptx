@@ -57,10 +57,26 @@ func printRootUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage:")
 	_, _ = fmt.Fprintln(w, "  pptcli create   -out file.pptx [-title TITLE] [-slides N]")
 	_, _ = fmt.Fprintln(w, "  pptcli md2ppt   -in deck.md [-out file.pptx] [-title TITLE]")
-	_, _ = fmt.Fprintln(w, "  pptcli html     -in deck.md [-out deck.html] [-title TITLE] [-embed=true] [-nav=true]")
-	_, _ = fmt.Fprintln(w, "  pptcli pdf      -in deck.md [-out deck.pdf] [-title TITLE]")
-	_, _ = fmt.Fprintln(w, "  pptcli export   -in file.pptx|deck.md [-out path] [-format pdf|html|png]")
-	_, _ = fmt.Fprintln(w, "  pptcli urlfetch -url https://example.com [-out file.pptx] [-title TITLE] [-author NAME]")
+	_, _ = fmt.Fprintln(
+		w,
+		"  pptcli html     -in file.pptx|deck.md [-out deck.html] "+
+			"[-title TITLE] [-embed=true] [-nav=true]",
+	)
+	_, _ = fmt.Fprintln(
+		w,
+		"  pptcli pdf      -in file.pptx|file.pptm|deck.md "+
+			"[-out deck.pdf] [-title TITLE]",
+	)
+	_, _ = fmt.Fprintln(
+		w,
+		"  pptcli export   -in file.pptx|file.pptm|deck.md "+
+			"[-out path] [-format pdf|html|png]",
+	)
+	_, _ = fmt.Fprintln(
+		w,
+		"  pptcli urlfetch -url https://example.com "+
+			"[-out file.pptx] [-title TITLE] [-author NAME]",
+	)
 	_, _ = fmt.Fprintln(w, "  pptcli info     -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli validate -file file.pptx")
 	_, _ = fmt.Fprintln(w, "  pptcli repair   -file file.pptx [-out fixed.pptx]")

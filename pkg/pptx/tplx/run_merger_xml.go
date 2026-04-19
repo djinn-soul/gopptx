@@ -65,6 +65,18 @@ func namespacePrefix(space string) string {
 		return "mc"
 	case "http://schemas.microsoft.com/office/drawing/2010/main":
 		return "a14"
+	case "http://schemas.microsoft.com/office/drawing/2012/main":
+		return "a15"
+	case "http://schemas.openxmlformats.org/drawingml/2006/chart":
+		return "c"
+	case "http://schemas.openxmlformats.org/drawingml/2006/diagram":
+		return "dgm"
+	case "http://schemas.openxmlformats.org/drawingml/2006/picture":
+		return "pic"
+	case "http://schemas.microsoft.com/office/powerpoint/2010/main":
+		return "p14"
+	case "http://schemas.microsoft.com/office/powerpoint/2012/main":
+		return "p15"
 	case "http://schemas.openxmlformats.org/package/2006/relationships":
 		return "rel"
 	case "http://www.w3.org/XML/1998/namespace":

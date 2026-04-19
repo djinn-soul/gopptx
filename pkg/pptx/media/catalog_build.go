@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/netsec"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
@@ -23,9 +24,7 @@ func BuildMediaCatalog(slides []elements.SlideContent, notesMaster *elements.Not
 		byKey:   make(map[string]Asset),
 		ordered: make([]Asset, 0),
 	}
-	client := &http.Client{
-		Timeout: imageFetchTimeout,
-	}
+	client := netsec.NewRestrictedHTTPClient(imageFetchTimeout, false)
 
 	for slideIndex, slide := range slides {
 		if err := addSlideMedia(catalog, client, slide, slideIndex); err != nil {
@@ -134,7 +133,7 @@ func resolveImageAsset(client *http.Client, image shapes.Image) (string, string,
 		return key, ext, data, nil
 	}
 	if image.SourceURL != "" {
-		return loadImageFromURL(client, image.SourceURL)
+		return loadImageFromURL(client, image.SourceURL, false, maxCatalogImageURLBodyBytes)
 	}
 	return "", "", nil, errors.New("image has no path, data, or source URL")
 }
@@ -153,10 +152,25 @@ func loadImageFromBytes(data []byte, format string) (string, string, []byte) {
 	return "data:" + hex.EncodeToString(hash[:]), NormalizeExtension(format), data
 }
 
-func loadImageFromURL(client *http.Client, sourceURL string) (string, string, []byte, error) {
-	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, sourceURL, http.NoBody)
+func loadImageFromURL(
+	client *http.Client,
+	sourceURL string,
+	allowPrivateHosts bool,
+	maxBodyBytes int64,
+) (string, string, []byte, error) {
+	parsed, parseErr := netsec.ValidateURLForHTTPFetch(sourceURL, allowPrivateHosts)
+	if parseErr != nil {
+		return "", "", nil, fmt.Errorf("invalid image source URL: %w", parseErr)
+	}
+	if maxBodyBytes <= 0 {
+		return "", "", nil, fmt.Errorf("invalid max body bytes: %d", maxBodyBytes)
+	}
+	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, parsed.String(), http.NoBody)
 	if reqErr != nil {
 		return "", "", nil, fmt.Errorf("build request error: %w", reqErr)
+	}
+	if client == nil {
+		client = netsec.NewRestrictedHTTPClient(imageFetchTimeout, allowPrivateHosts)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -166,11 +180,15 @@ func loadImageFromURL(client *http.Client, sourceURL string) (string, string, []
 	if resp.StatusCode != http.StatusOK {
 		return "", "", nil, fmt.Errorf("fetch failed with status: %s", resp.Status)
 	}
-	data, readErr := io.ReadAll(resp.Body)
+	limited := io.LimitReader(resp.Body, maxBodyBytes+1)
+	data, readErr := io.ReadAll(limited)
 	if readErr != nil {
 		return "", "", nil, fmt.Errorf("read body error: %w", readErr)
 	}
-	ext := resolveURLExtension(sourceURL, resp.Header.Get("Content-Type"))
+	if int64(len(data)) > maxBodyBytes {
+		return "", "", nil, fmt.Errorf("response too large (>%d bytes)", maxBodyBytes)
+	}
+	ext := resolveURLExtension(parsed.String(), resp.Header.Get("Content-Type"))
 	return "url:" + sourceURL, ext, data, nil
 }
 

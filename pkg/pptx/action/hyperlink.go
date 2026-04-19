@@ -249,6 +249,14 @@ func (h Hyperlink) Validate() error {
 		if h.Action.URL == "" {
 			return errors.New("hyperlink URL cannot be empty")
 		}
+		if parsed, err := url.Parse(h.Action.URL); err == nil && parsed.Scheme != "" {
+			switch strings.ToLower(parsed.Scheme) {
+			case "http", "https", "mailto", "ftp", "ftps":
+				// allowed
+			default:
+				return fmt.Errorf("hyperlink URL scheme %q is not allowed", parsed.Scheme)
+			}
+		}
 	case HyperlinkActionFile:
 		if h.Action.FilePath == "" {
 			return errors.New("hyperlink file path cannot be empty")

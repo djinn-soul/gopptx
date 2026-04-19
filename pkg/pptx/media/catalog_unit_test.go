@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/netsec"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
@@ -50,13 +51,24 @@ func TestMedia_Loaders(t *testing.T) {
 		}))
 		defer server.Close()
 
-		client := &http.Client{}
-		key, ext, data, err := loadImageFromURL(client, server.URL+"/test.png")
+		client := netsec.NewRestrictedHTTPClient(imageFetchTimeout, true)
+		key, ext, data, err := loadImageFromURL(client, server.URL+"/test.png", true, maxCatalogImageURLBodyBytes)
 		if err != nil {
 			t.Fatalf("loadImageFromURL failed: %v", err)
 		}
 		if !strings.HasPrefix(key, "url:") || ext != "png" || len(data) != 4 {
 			t.Error("loadImageFromURL properties failed")
+		}
+		if _, _, _, err = loadImageFromURL(
+			client,
+			"http://127.0.0.1/private.png",
+			false,
+			maxCatalogImageURLBodyBytes,
+		); err == nil {
+			t.Fatal("expected SSRF private-host rejection")
+		}
+		if _, _, _, err = loadImageFromURL(client, server.URL+"/test.png", true, 2); err == nil {
+			t.Fatal("expected response too large error")
 		}
 	})
 }

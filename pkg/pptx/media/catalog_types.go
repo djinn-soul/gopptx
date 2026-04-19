@@ -29,6 +29,8 @@ const defaultImageExt = "png"
 
 const imageFetchTimeout = 30 * time.Second
 
+const maxCatalogImageURLBodyBytes = 20 * 1024 * 1024
+
 // MediaName returns the name of a media asset.
 func (a Asset) MediaName() string { return a.mediaName }
 

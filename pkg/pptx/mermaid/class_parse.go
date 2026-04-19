@@ -114,11 +114,11 @@ func parseClassInlineMember(line string) (string, string, bool) {
 }
 
 func parseClassRelationshipLine(line string) (ClassRelationship, bool) {
-	from, relType, to, found := splitClassRelationship(line)
+	from, relType, to, label, found := splitClassRelationship(line)
 	if !found {
 		return ClassRelationship{}, false
 	}
-	return ClassRelationship{From: from, To: to, Type: relType}, true
+	return ClassRelationship{From: from, To: to, Type: relType, Label: label}, true
 }
 
 func parseSimpleClassDefinition(line string) (string, bool) {
@@ -129,7 +129,7 @@ func parseSimpleClassDefinition(line string) (string, bool) {
 	return name, name != ""
 }
 
-func splitClassRelationship(line string) (string, string, string, bool) {
+func splitClassRelationship(line string) (string, string, string, string, bool) {
 	for _, relType := range classRelationshipTypes() {
 		before, after, ok := strings.Cut(line, relType)
 		if !ok {
@@ -138,10 +138,12 @@ func splitClassRelationship(line string) (string, string, string, bool) {
 		from := strings.TrimSpace(before)
 		rest := strings.TrimSpace(after)
 		to := rest
-		if beforeLabel, _, ok := strings.Cut(rest, ":"); ok {
+		label := ""
+		if beforeLabel, afterLabel, ok := strings.Cut(rest, ":"); ok {
 			to = strings.TrimSpace(beforeLabel)
+			label = strings.TrimSpace(afterLabel)
 		}
-		return from, relType, to, true
+		return from, relType, to, label, true
 	}
-	return "", "", "", false
+	return "", "", "", "", false
 }

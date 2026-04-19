@@ -31,6 +31,7 @@ func rewritePresentationModifyVerifier(current string, password string) (string,
 	}
 
 	salt := make([]byte, protectionSaltBytesEditor)
+	defer clear(salt)
 	if _, err := rand.Read(salt); err != nil {
 		return "", fmt.Errorf("generate protection salt: %w", err)
 	}

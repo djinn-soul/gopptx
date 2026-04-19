@@ -95,8 +95,12 @@ func runExportPNG(inPath, outPath, title string, stdout io.Writer, stderr io.Wri
 }
 
 func normalizeInputForPNG(inPath, title string) (string, func(), error) {
-	lower := strings.ToLower(strings.TrimSpace(inPath))
-	if strings.HasSuffix(lower, ".pptx") || strings.HasSuffix(lower, ".pptm") {
+	inputKind, err := detectPresentationInputKind(inPath)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if inputKind == inputKindPPTX {
 		return inPath, func() {}, nil
 	}
 
@@ -126,13 +130,7 @@ func normalizeInputForPNG(inPath, title string) (string, func(), error) {
 }
 
 func defaultPNGOutputDir(inPath string) string {
-	cleanedIn := strings.TrimSpace(inPath)
-	ext := strings.ToLower(filepath.Ext(cleanedIn))
-	base := strings.TrimSuffix(cleanedIn, ext)
-	if strings.TrimSpace(base) == "" {
-		base = "export"
-	}
-	return base + "_png"
+	return defaultSiblingDirPath(inPath, "export", "_png")
 }
 
 func buildPDFArgs(inPath, outPath, title, driver string) []string {
