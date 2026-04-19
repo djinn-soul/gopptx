@@ -21,8 +21,7 @@ var dotPattern = regexp.MustCompile(`\{\{\s*\.([a-zA-Z0-9_.\-]+)\s*\}\}`)
 
 // interpolateText replaces all {{key}} scalars in text using ctx.
 // Unresolved keys are left as-is. Values are XML-escaped for safe insertion into <a:t> elements.
-func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) {
-	changed := false
+func interpolateText(text string, ctx Context, item Row) string {
 	escape := xmlEscape
 
 	// First resolve item-scoped {{.field}} tokens.
@@ -34,7 +33,6 @@ func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) 
 			}
 			key := matches[1]
 			if val, ok := item[key]; ok {
-				changed = true
 				return escape(val)
 			}
 			return m
@@ -52,7 +50,6 @@ func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) 
 		if !ok {
 			return m // leave untouched in lenient mode
 		}
-		changed = true
 		switch v := val.(type) {
 		case string:
 			return escape(v)
@@ -62,7 +59,7 @@ func interpolateText(text string, ctx Context, item Row, _ bool) (string, bool) 
 			return escape(strings.TrimSpace(fmtSprint(v)))
 		}
 	})
-	return text, changed
+	return text
 }
 
 func xmlEscape(value string) string {
@@ -151,7 +148,7 @@ func interpolateXMLPart(xmlBytes []byte, ctx Context, item Row, strict bool) []b
 
 // replaceInTextElements walks the raw XML bytes finding <a:t>…</a:t> text and replaces tokens.
 // We do this with simple string scanning (not full re-parse) so we preserve all other bytes exactly.
-func replaceInTextElements(src []byte, ctx Context, item Row, strict bool) []byte {
+func replaceInTextElements(src []byte, ctx Context, item Row, _ bool) []byte {
 	result := make([]byte, 0, len(src))
 	s := string(src)
 	pos := 0
@@ -174,7 +171,7 @@ func replaceInTextElements(src []byte, ctx Context, item Row, strict bool) []byt
 
 		// The text content.
 		text := s[start+len(textElementOpenTag) : end]
-		replaced, _ := interpolateText(text, ctx, item, strict)
+		replaced := interpolateText(text, ctx, item)
 		result = append(result, replaced...)
 
 		// Append </a:t>.

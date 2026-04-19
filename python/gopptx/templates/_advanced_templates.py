@@ -10,7 +10,7 @@ from typing_extensions import override
 from gopptx import ops
 from gopptx.presentation.presentation import Presentation
 
-from ._template_utils import Template, apply_slides
+from ._template_utils import Template, apply_slides, require_template_slides
 
 if TYPE_CHECKING:
     from gopptx.presentation.theme.theme import Theme
@@ -79,7 +79,7 @@ class ProposalTemplate(Template):
             if self.theme:
                 prs.apply_theme(self.theme)
 
-            apply_slides(prs, result.get("slides", []))
+            apply_slides(prs, require_template_slides(result))
             return prs
         except Exception:
             prs.close()
@@ -118,7 +118,7 @@ class TrainingTemplate(Template):
             if self.theme:
                 prs.apply_theme(self.theme)
 
-            apply_slides(prs, result.get("slides", []))
+            apply_slides(prs, require_template_slides(result))
             return prs
         except Exception:
             prs.close()
@@ -157,7 +157,7 @@ class TechnicalTemplate(Template):
             if self.theme:
                 prs.apply_theme(self.theme)
 
-            apply_slides(prs, result.get("slides", []))
+            apply_slides(prs, require_template_slides(result))
             return prs
         except Exception:
             prs.close()

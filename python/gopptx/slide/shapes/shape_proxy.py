@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, cast
 
+from ...api_errors import GopptxError
 from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
 from .shape_format_proxies import (
@@ -55,6 +56,8 @@ class ShapeProxy:
         self._line = _ShapeLineProxy(self)
         self._shadow = _ShapeShadowProxy(self)
         self._text_frame: ShapeTextFrame | None = None
+        self._table_proxy: Table | None = None
+        self._has_table_cache: bool | None = None
 
     def shape_record(self) -> Shape:
         """Return the current shape payload from slide state."""
@@ -185,14 +188,46 @@ class ShapeProxy:
     @property
     def has_table(self) -> bool:
         """True if this shape is a table."""
-        return self.shape_type in {"tbl", "graphicFrame"}
+        if self._has_table_cache is not None:
+            return self._has_table_cache
+
+        shape_type = self.shape_type
+        if shape_type == "tbl":
+            self._has_table_cache = True
+            return True
+        if shape_type != "graphicFrame":
+            self._has_table_cache = False
+            return False
+
+        try:
+            self._ensure_table_proxy()
+        except AttributeError:
+            self._has_table_cache = False
+            return False
+
+        self._has_table_cache = True
+        return True
 
     @property
     def table(self) -> Table:
         """Return a table proxy if this shape is a table."""
         if not self.has_table:
             raise AttributeError(f"shape {self._shape_id} has no table")
-        return Table(self._slide.presentation, self._slide.index, self._shape_id)
+        return self._ensure_table_proxy()
+
+    def _ensure_table_proxy(self) -> Table:
+        """Return a validated table proxy or raise when this shape is not a table."""
+        if self._table_proxy is not None:
+            return self._table_proxy
+
+        try:
+            table = Table(self._slide.presentation, self._slide.index, self._shape_id)
+        except GopptxError as exc:
+            raise AttributeError(f"shape {self._shape_id} has no table") from exc
+
+        self._table_proxy = table
+        self._has_table_cache = True
+        return table
 
 
 class ShapeCollection:

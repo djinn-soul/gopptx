@@ -66,8 +66,11 @@ class SlidePlaceholderMixin:
             if is_four_number_bounds(bounds):
                 typed_bounds = bounds
             else:
-                msg = f"bounds must be a tuple of four numbers, got {bounds!r}"
+                msg = f"bounds must be a tuple of four finite numbers, got {bounds!r}"
                 raise ValueError(msg)
+
+        normalized_table_rows = _normalize_table_dimension(table_rows, "table_rows")
+        normalized_table_cols = _normalize_table_dimension(table_cols, "table_cols")
 
         self._presentation.set_placeholder_content(
             self.index,
@@ -79,8 +82,8 @@ class SlidePlaceholderMixin:
             text_style=cast("dict[str, object] | None", text_style)
             if isinstance(text_style, dict)
             else None,
-            table_rows=int(table_rows) if isinstance(table_rows, int) else None,
-            table_cols=int(table_cols) if isinstance(table_cols, int) else None,
+            table_rows=normalized_table_rows,
+            table_cols=normalized_table_cols,
             chart_type=chart_type if isinstance(chart_type, str) else None,
             chart_categories=cast("list[object]", chart_categories)
             if isinstance(chart_categories, list)
@@ -92,3 +95,13 @@ class SlidePlaceholderMixin:
             if isinstance(chart_options, dict)
             else None,
         )
+
+
+def _normalize_table_dimension(value: object, field: str) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field} must be a positive integer, got {value!r}")
+    if value <= 0:
+        raise ValueError(f"{field} must be a positive integer, got {value!r}")
+    return value

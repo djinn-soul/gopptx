@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -312,5 +313,43 @@ func TestCommandUpdateSlidePreservesTransitionWhenOmitted(t *testing.T) {
 	}
 	if !strings.Contains(string(slideXML), `<p15:morph`) {
 		t.Fatalf("expected preserved morph transition node in updated slide XML")
+	}
+}
+
+func TestCommandAddChartReturnsShapeID(t *testing.T) {
+	basePath := writeDeckFixture(t, "bridge-add-chart-shape-id.pptx", []elements.SlideContent{
+		elements.NewSlide("Chart Bridge").AddBullet("body"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	addReq := `{"api_version":1,"request_id":"chart1","op":"add_chart","payload":{"slide_index":0,"chart_type":"bar","categories":["A","B"],"values":[1,2],"x":100,"y":100,"w":1000,"h":800}}`
+	resp := ExecuteCommand(e, addReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("add_chart failed: %s", resp)
+	}
+
+	var addOut struct {
+		Result struct {
+			ShapeID int `json:"shape_id"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal([]byte(resp), &addOut); err != nil {
+		t.Fatalf("unmarshal add_chart response: %v", err)
+	}
+	if addOut.Result.ShapeID == 0 {
+		t.Fatalf("expected add_chart to return a non-zero shape_id, got response: %s", resp)
+	}
+
+	listReq := `{"api_version":1,"request_id":"chart2","op":"list_shapes","payload":{"slide_index":0}}`
+	listResp := ExecuteCommand(e, listReq)
+	if !strings.Contains(listResp, `"ok":true`) {
+		t.Fatalf("list_shapes failed: %s", listResp)
+	}
+	if !strings.Contains(listResp, `"ID":`+strconv.Itoa(addOut.Result.ShapeID)) {
+		t.Fatalf("expected list_shapes to contain returned chart shape_id %d: %s", addOut.Result.ShapeID, listResp)
 	}
 }
