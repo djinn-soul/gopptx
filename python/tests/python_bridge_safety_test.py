@@ -41,6 +41,19 @@ class _MockPresentation(
         pass
 
 
+class _CacheTrackingPresentation(_MockPresentation):
+    def __init__(self, response=None):
+        super().__init__(response=response)
+        self.shape_cache_invalidations = 0
+        self.text_cache_invalidations = 0
+
+    def _invalidate_shape_cache_if_present(self):
+        self.shape_cache_invalidations += 1
+
+    def _invalidate_text_state_cache_if_present(self):
+        self.text_cache_invalidations += 1
+
+
 def test_add_table_id_safety():
     """add_table should raise TypeError if shape_id is not an int."""
     prs = _MockPresentation({"shape_id": "not-an-int"})
@@ -130,6 +143,35 @@ def test_add_smartart_id_safety():
     prs = _MockPresentation({"shape_id": 1.1})
     with pytest.raises(TypeError, match="bridge response shape_id must be an int"):
         prs.add_smartart("layout", ["item"], (0, 0, 1, 1))
+
+
+def test_smartart_mutators_invalidate_shape_and_text_caches():
+    """SmartArt mutators should invalidate both shape and text-state caches."""
+    prs = _CacheTrackingPresentation({"shape_id": 7})
+
+    prs.add_smartart("layout", ["item"], (0, 0, 1, 1))
+    assert prs.shape_cache_invalidations == 1
+    assert prs.text_cache_invalidations == 1
+
+    prs.update_smartart(7, ["A"])
+    assert prs.shape_cache_invalidations == 2
+    assert prs.text_cache_invalidations == 2
+
+    prs.change_smartart_layout(7, "layout://next")
+    assert prs.shape_cache_invalidations == 3
+    assert prs.text_cache_invalidations == 3
+
+    prs.set_smartart_style(7, quick_style="qs", color_style="cs")
+    assert prs.shape_cache_invalidations == 4
+    assert prs.text_cache_invalidations == 4
+
+    prs.set_smartart_nodes(7, ["N1", "N2"])
+    assert prs.shape_cache_invalidations == 5
+    assert prs.text_cache_invalidations == 5
+
+    prs.delete_smartart(7)
+    assert prs.shape_cache_invalidations == 6
+    assert prs.text_cache_invalidations == 6
 
 
 def test_commit_freeform_id_safety():

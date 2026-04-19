@@ -262,10 +262,12 @@ func handleAddChart(e *PresentationEditor, payload json.RawMessage) (any, error)
 				return nil, err
 			}
 
+			slidePart := e.slides[request.SlideIndex].Part
+			shapeID := e.nextShapeID(slidePart)
 			if err := e.AddChart(request.SlideIndex, chart); err != nil {
 				return nil, err
 			}
-			return respAdded, nil
+			return respShapeID(shapeID), nil
 		},
 	)
 }

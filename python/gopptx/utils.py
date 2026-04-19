@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -22,13 +23,15 @@ def normalize_table_index(value: object) -> int:
 def is_four_number_bounds(
     value: object,
 ) -> TypeGuard[tuple[float, float, float, float]]:
-    """Check if value is a tuple of four numbers (bounds)."""
+    """Check if value is a tuple of four finite numbers (bounds)."""
     if not isinstance(value, tuple):
         return False
     components = cast("tuple[object, ...]", value)
     if len(components) != _FOUR_BOUNDS_COMPONENTS:
         return False
-    return all(
-        isinstance(component, int | float) and not isinstance(component, bool)
-        for component in components
-    )
+    for component in components:
+        if isinstance(component, bool) or not isinstance(component, int | float):
+            return False
+        if not math.isfinite(float(component)):
+            return False
+    return True
