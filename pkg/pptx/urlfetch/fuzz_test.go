@@ -3,6 +3,8 @@ package urlfetch
 import (
 	"net/netip"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/netsec"
 )
 
 func FuzzWebParserParse(f *testing.F) {
@@ -39,6 +41,6 @@ func FuzzCheckAddrBlocked(f *testing.F) {
 			return
 		}
 		// Fuzz the blocking predicate directly to avoid network calls.
-		_ = checkAddrBlocked(parsed.Unmap())
+		_ = netsec.IsBlockedAddr(parsed.Unmap())
 	})
 }

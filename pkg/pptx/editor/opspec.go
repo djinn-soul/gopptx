@@ -124,14 +124,14 @@ const (
 	OpConvertToGrayscale      = "convert_to_grayscale"
 
 	// OpUpdateSmartArt, OpSetSlideBackground, OpSetSlideHeaderFooter, OpGetHandoutMaster,
-	// OpUpdateHandoutMaster, and OpHasDigitalSignature extend parity with the Go API.
+	// OpUpdateHandoutMaster, and OpIsDigitallySigned extend parity with the Go API.
 	OpUpdateSmartArt       = "update_smartart"
 	OpSetSlideBackground   = "set_slide_background"
 	OpSetSlideHeaderFooter = "set_slide_header_footer"
 	OpGetSlideHeaderFooter = "get_slide_header_footer"
 	OpGetHandoutMaster     = "get_handout_master"
 	OpUpdateHandoutMaster  = "update_handout_master"
-	OpHasDigitalSignature  = "has_digital_signature"
+	OpIsDigitallySigned    = "is_digitally_signed"
 
 	// OpDuplicateSlideAfter and subsequent constants bridge PresentationEditor methods that had no JSON op.
 	OpDuplicateSlideAfter   = "duplicate_slide_after"

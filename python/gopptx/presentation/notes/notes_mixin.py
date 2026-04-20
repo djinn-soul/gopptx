@@ -92,10 +92,10 @@ class PresentationNotesMixin(PresentationMixinBase):
             payload["slides_per_page"] = slides_per_page
         self.execute(ops.OP_UPDATE_HANDOUT_MASTER, payload)
 
-    def has_digital_signature(self) -> bool:
-        """Return True if the presentation has a digital signature."""
-        result = self.execute(ops.OP_HAS_DIGITAL_SIGNATURE, {})
-        return bool(result.get("has_digital_signature", False))
+    def is_digitally_signed(self) -> bool:
+        """Return whether the presentation has a digital signature."""
+        result = self.execute(ops.OP_IS_DIGITALLY_SIGNED, {})
+        return bool(result.get("is_digitally_signed", False))
 
     def update_notes_master(
         self,

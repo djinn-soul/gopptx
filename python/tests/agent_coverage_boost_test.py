@@ -93,7 +93,8 @@ def test_slide_extra(prs):
 def test_table_collections_extra(prs):
     slide = prs.add_slide("S1")
     tid = slide.add_table(2, 2, (0, 0, 10, 10))
-    table = slide.shape(tid).table
+    table = slide.shape(tid).table()
+    assert table is not None
     row = table.rows[0]
     row.height = 100
     col = table.columns[0]

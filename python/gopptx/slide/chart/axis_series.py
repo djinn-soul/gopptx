@@ -113,15 +113,6 @@ class ChartAxis:
         self._chart.apply_format(cast("ChartFormatUpdate", {key: bool(value)}))
 
     @property
-    def has_major_gridlines(self) -> bool:
-        """Alias for `major_gridlines_visible`."""
-        return self.major_gridlines_visible
-
-    @has_major_gridlines.setter
-    def has_major_gridlines(self, value: bool) -> None:
-        self.major_gridlines_visible = value
-
-    @property
     def minor_gridlines_visible(self) -> bool:
         """Return whether minor gridlines are enabled."""
         payload = self._payload()
@@ -131,15 +122,6 @@ class ChartAxis:
     def minor_gridlines_visible(self, value: bool) -> None:
         key = self._minor_gridline_format_key(self._axis_name)
         self._chart.apply_format(cast("ChartFormatUpdate", {key: bool(value)}))
-
-    @property
-    def has_minor_gridlines(self) -> bool:
-        """Alias for `minor_gridlines_visible`."""
-        return self.minor_gridlines_visible
-
-    @has_minor_gridlines.setter
-    def has_minor_gridlines(self, value: bool) -> None:
-        self.minor_gridlines_visible = value
 
     @property
     def crosses(self) -> str | None:

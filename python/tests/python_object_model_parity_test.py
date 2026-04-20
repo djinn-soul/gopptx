@@ -90,8 +90,9 @@ def test_shape_table_proxy_distinguishes_tables_from_chart_graphic_frames() -> N
 
         table_id = slide.add_table(2, 2, (1000000, 1000000, 2000000, 1000000))
         table_shape = slide.shape(table_id)
-        assert table_shape.has_table is True
-        assert table_shape.table.row_count == 2
+        table = table_shape.table()
+        assert table is not None
+        assert table.row_count == 2
 
         data = CategoryChartData(categories=["A", "B"])
         data.add_series("S1", [1.0, 2.0])
@@ -100,10 +101,4 @@ def test_shape_table_proxy_distinguishes_tables_from_chart_graphic_frames() -> N
         chart_shape = slide.shape(chart_id)
 
         assert chart_shape.shape_type == "graphicFrame"
-        assert chart_shape.has_table is False
-        try:
-            _ = chart_shape.table
-        except AttributeError:
-            pass
-        else:
-            raise AssertionError("expected chart graphicFrame table access to fail")
+        assert chart_shape.table() is None

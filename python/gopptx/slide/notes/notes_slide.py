@@ -129,7 +129,7 @@ class NotesSlide(NotesSlideStyleMixin):
     @property
     def text_shapes(self) -> list[NotesShape]:
         """Return notes shapes that expose text-frame behavior."""
-        return self.shapes.find_all(has_text_frame=True)
+        return self.shapes.find_all(with_text_frame=True)
 
     @property
     def placeholder_shapes(self) -> list[NotesShape]:
@@ -142,7 +142,7 @@ class NotesSlide(NotesSlideStyleMixin):
         body = self.body_shape
         if body is None:
             return None
-        return body.text_frame
+        return body.text_frame()
 
     @override
     def __repr__(self) -> str:

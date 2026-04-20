@@ -97,6 +97,6 @@ func supportedContentOps() []string {
 		OpGetSlideHeaderFooter,
 		OpGetHandoutMaster,
 		OpUpdateHandoutMaster,
-		OpHasDigitalSignature,
+		OpIsDigitallySigned,
 	}
 }
