@@ -171,8 +171,8 @@ func TestCommandNotesOps(t *testing.T) {
 	var notesOut struct {
 		Result struct {
 			NotesShapes []struct {
-				ID           int  `json:"ID"`
-				HasTextFrame bool `json:"HasTextFrame"`
+				ID                int  `json:"ID"`
+				SupportsTextFrame bool `json:"supports_text_frame"`
 			} `json:"notes_shapes"`
 		} `json:"result"`
 	}
@@ -181,7 +181,7 @@ func TestCommandNotesOps(t *testing.T) {
 	}
 	targetShapeID := -1
 	for _, shape := range notesOut.Result.NotesShapes {
-		if shape.HasTextFrame && shape.ID > 0 {
+		if shape.SupportsTextFrame && shape.ID > 0 {
 			targetShapeID = shape.ID
 			break
 		}
@@ -221,6 +221,23 @@ func TestCommandNotesOps(t *testing.T) {
 	resp = ExecuteCommand(e, getReq)
 	if !strings.Contains(resp, "Updated notes") {
 		t.Fatalf("get_notes mismatch after update: %s", resp)
+	}
+}
+
+func TestCommandIsDigitallySigned(t *testing.T) {
+	basePath := writeDeckFixture(t, "bridge-digital-signature-test.pptx", []elements.SlideContent{
+		elements.NewSlide("Signature Test").AddBullet("body"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	req := `{"api_version":1,"request_id":"sig1","op":"is_digitally_signed","payload":{}}`
+	resp := ExecuteCommand(e, req)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"is_digitally_signed":false`) {
+		t.Fatalf("expected unsigned deck response from is_digitally_signed: %s", resp)
 	}
 }
 

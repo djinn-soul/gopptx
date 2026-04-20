@@ -158,7 +158,17 @@ func TestCLI_URLFetchSubcommand(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	outPath := filepath.Join(t.TempDir(), "urlfetch.pptx")
-	stdout, stderr, code := runCLI(t, "urlfetch", "-url", server.URL, "-out", outPath, "-title", "URL Deck")
+	stdout, stderr, code := runCLIWithEnv(
+		t,
+		[]string{urlfetchAllowPrivateHostsEnv + "=1"},
+		"urlfetch",
+		"-url",
+		server.URL,
+		"-out",
+		outPath,
+		"-title",
+		"URL Deck",
+	)
 	if code != exitOK {
 		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitOK, code, stdout, stderr)
 	}
@@ -172,6 +182,24 @@ func TestCLI_URLFetchSubcommand(t *testing.T) {
 		t.Fatalf("expected output file: %v", err)
 	} else if info.Size() == 0 {
 		t.Fatalf("expected non-empty pptx file")
+	}
+}
+
+func TestCLI_URLFetchSubcommand_RejectsPrivateHostsByDefault(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("<html><body>blocked</body></html>"))
+	}))
+	t.Cleanup(server.Close)
+
+	stdout, stderr, code := runCLI(t, "urlfetch", "-url", server.URL)
+	if code != exitInternal {
+		t.Fatalf("expected exit %d, got %d\nstdout=%s\nstderr=%s", exitInternal, code, stdout, stderr)
+	}
+	if strings.TrimSpace(stdout) != "" {
+		t.Fatalf("expected empty stdout, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "SSRF guard") {
+		t.Fatalf("expected SSRF guard error, got %q", stderr)
 	}
 }
 
@@ -251,8 +279,14 @@ func TestCLI_PDFSubcommand_InvalidDriver(t *testing.T) {
 
 func runCLI(t *testing.T, args ...string) (string, string, int) {
 	t.Helper()
+	return runCLIWithEnv(t, nil, args...)
+}
+
+func runCLIWithEnv(t *testing.T, env []string, args ...string) (string, string, int) {
+	t.Helper()
 
 	cmd := exec.Command(cliBinary(t), args...)
+	cmd.Env = append(os.Environ(), env...)
 
 	var outBuf bytes.Buffer
 	var errBuf bytes.Buffer

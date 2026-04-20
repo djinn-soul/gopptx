@@ -22,8 +22,8 @@ def test_chart_axis_aliases_and_crosses_helpers() -> None:
         assert axis.is_category_axis is True
         assert axis.is_value_axis is False
 
-        axis.has_major_gridlines = True
-        assert axis.has_major_gridlines is True
+        axis.major_gridlines_visible = True
+        assert axis.major_gridlines_visible is True
         chart.set_tick_labels_visibility(visible=False)
         assert chart.category_axis.tick_label_position == "none"
         assert chart.value_axis.tick_label_position == "none"
@@ -35,8 +35,8 @@ def test_chart_axis_aliases_and_crosses_helpers() -> None:
         assert len(chart.axes) == 2
         chart.set_axis_gridlines(major=True, axis="both")
         chart.set_axis_gridlines(minor=True, axis="value")
-        assert chart.category_axis.has_major_gridlines is True
-        assert chart.value_axis.has_major_gridlines is True
+        assert chart.category_axis.major_gridlines_visible is True
+        assert chart.value_axis.major_gridlines_visible is True
         chart.set_axis_crosses(crosses="max", axis="value")
         assert chart.value_axis.crosses_at_maximum is True
 

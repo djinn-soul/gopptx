@@ -47,7 +47,7 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
         self._pending_textboxes.setdefault(slide_index, []).append(payload)
         return shape_id
 
-    def has_pending_textbox_adds(self, slide_index: int) -> bool:
+    def pending_textbox_adds(self, slide_index: int) -> bool:
         """Return whether the slide has queued textbox inserts."""
         return bool(self._pending_textboxes.get(slide_index))
 
@@ -84,9 +84,7 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
             self.flush_all_pending_textbox_adds()
         elif op != ops.OP_RESERVE_SHAPE_IDS:
             slide_index = normalized_payload.get("slide_index")
-            if isinstance(slide_index, int) and self.has_pending_textbox_adds(
-                slide_index
-            ):
+            if isinstance(slide_index, int) and self.pending_textbox_adds(slide_index):
                 self.flush_pending_textbox_adds(slide_index)
         runtime_self = cast("PresentationRuntimeMixin", self)
         return PresentationRuntimeMixin.execute(runtime_self, op, normalized_payload)
@@ -124,7 +122,7 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
     def _next_reserved_shape_id(self, slide_index: int) -> int:
         reserved_ids = self._reserved_shape_ids.get(slide_index)
         if not reserved_ids:
-            if self.has_pending_textbox_adds(slide_index):
+            if self.pending_textbox_adds(slide_index):
                 self.flush_pending_textbox_adds(slide_index)
             reserved_ids = self._reserve_shape_ids(
                 slide_index,

@@ -65,14 +65,14 @@ class PresentationTextWriteBufferMixin(PresentationMixinBase):
         )
         slide_replacements[shape_id] = [dict(run) for run in runs]
 
-    def has_pending_shape_runs_replace(self, slide_index: int, shape_id: int) -> bool:
+    def pending_shape_run_replacement(self, slide_index: int, shape_id: int) -> bool:
         """Return whether one shape has a pending full run replacement."""
         slide_replacements = self._pending_shape_runs_replacements.get(slide_index)
         if not slide_replacements:
             return False
         return shape_id in slide_replacements
 
-    def has_pending_slide_run_text_updates(self, slide_index: int) -> bool:
+    def pending_slide_run_text_updates(self, slide_index: int) -> bool:
         """Return whether a slide has buffered run-text updates."""
         return bool(self._pending_slide_run_text_updates.get(slide_index))
 

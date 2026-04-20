@@ -75,7 +75,7 @@ class NotesShapeCollection:
         *,
         shape_type: str | None = None,
         placeholder_type: str | None = None,
-        has_text_frame: bool | None = None,
+        with_text_frame: bool | None = None,
     ) -> list[NotesShape]:
         """Return all notes shapes matching the provided filters."""
         out: list[NotesShape] = []
@@ -87,7 +87,10 @@ class NotesShapeCollection:
                 and item.placeholder_type != placeholder_type
             ):
                 continue
-            if has_text_frame is not None and item.has_text_frame != has_text_frame:
+            if (
+                with_text_frame is not None
+                and (item.text_frame() is not None) != with_text_frame
+            ):
                 continue
             out.append(item)
         return out

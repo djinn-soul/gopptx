@@ -105,23 +105,18 @@ func validateRenderableHyperlinkURL(urlValue string) error {
 	if urlValue == "" {
 		return errors.New("hyperlink URL cannot be empty")
 	}
-	parsed, ok := parseRenderableHyperlinkURL(urlValue)
-	if !ok || parsed.Scheme == "" {
-		return nil
+	parsed, err := url.Parse(urlValue)
+	if err != nil {
+		return fmt.Errorf("invalid hyperlink URL %q: %w", urlValue, err)
+	}
+	if parsed.Scheme == "" {
+		return fmt.Errorf("hyperlink URL %q must have a scheme (e.g., https://)", urlValue)
 	}
 	switch strings.ToLower(parsed.Scheme) {
 	case "http", "https", "mailto", "ftp", "ftps":
 		return nil
 	}
 	return fmt.Errorf("hyperlink URL scheme %q is not allowed", parsed.Scheme)
-}
-
-func parseRenderableHyperlinkURL(urlValue string) (*url.URL, bool) {
-	parsed, err := url.Parse(urlValue)
-	if err != nil {
-		return nil, false
-	}
-	return parsed, true
 }
 
 func validateRenderableHyperlinkPath(

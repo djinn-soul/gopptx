@@ -117,17 +117,17 @@ type PlaceholderInfo struct {
 
 // NotesShapeInfo describes one shape discovered on a notes slide.
 type NotesShapeInfo struct {
-	ID               int
-	Name             string
-	Type             string
-	Text             string
-	X                float64
-	Y                float64
-	CX               float64
-	CY               float64
-	PlaceholderIndex int
-	PlaceholderType  string
-	HasTextFrame     bool
+	ID                int
+	Name              string
+	Type              string
+	Text              string
+	X                 float64
+	Y                 float64
+	CX                float64
+	CY                float64
+	PlaceholderIndex  int
+	PlaceholderType   string
+	SupportsTextFrame bool `json:"supports_text_frame"`
 }
 
 // SlideMasterInfo describes one available slide master part.

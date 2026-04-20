@@ -18,7 +18,6 @@ def _assert_first_shape_contract(notes_slide: NotesSlide, first: NotesShape) -> 
     assert isinstance(first.shape_type, str)
     assert isinstance(first.placeholder_type, str)
     assert isinstance(first.is_placeholder, bool)
-    assert isinstance(first.has_text_frame, bool)
     assert isinstance(first.x, float)
     assert isinstance(first.y, float)
     assert isinstance(first.cx, float)
@@ -36,7 +35,7 @@ def _assert_first_shape_contract(notes_slide: NotesSlide, first: NotesShape) -> 
     assert notes_slide.shape_by_name(first.name) is not None
     assert isinstance(notes_slide.text_shapes, list)
     assert isinstance(notes_slide.placeholder_shapes, list)
-    assert all(shape.has_text_frame for shape in notes_slide.text_shapes)
+    assert all(shape.text_frame() is not None for shape in notes_slide.text_shapes)
     body_matches = notes_slide.shapes.find_all(placeholder_type="body")
     if body_matches:
         assert body_matches[0].placeholder_type == "body"
@@ -46,7 +45,7 @@ def _exercise_body_proxy(
     slide: _HasNotes, notes_slide: NotesSlide, body: NotesShape
 ) -> None:
     assert body.text == "speaker notes"
-    body_tf = body.text_frame
+    body_tf = body.text_frame()
     assert body_tf is not None
     assert body_tf.text == "speaker notes"
     body_tf.text = "updated via text frame"
@@ -113,7 +112,7 @@ def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
             "id": 42,
             "name": "Aux text",
             "type": "sp",
-            "has_text_frame": True,
+            "supports_text_frame": True,
             "placeholder_type": "",
             "text": "before",
         },
@@ -124,7 +123,7 @@ def test_notes_shape_non_placeholder_text_routes_to_shape_setter() -> None:
     assert shape.text == "after"
 
 
-def test_notes_shape_has_text_frame_accepts_camel_case_payload_key() -> None:
+def test_notes_shape_text_frame_accepts_camel_case_payload_key() -> None:
     class _DummyNotesSlide:
         text = ""
 
@@ -137,12 +136,12 @@ def test_notes_shape_has_text_frame_accepts_camel_case_payload_key() -> None:
             "id": 42,
             "name": "Aux text",
             "type": "sp",
-            "HasTextFrame": True,
+            "SupportsTextFrame": True,
             "placeholder_type": "",
             "text": "before",
         },
     )
-    assert shape.has_text_frame is True
+    assert shape.text_frame() is not None
 
 
 def test_notes_shape_geometry_and_style_route_to_props_setter() -> None:
@@ -161,7 +160,7 @@ def test_notes_shape_geometry_and_style_route_to_props_setter() -> None:
             "id": 7,
             "name": "Aux",
             "type": "sp",
-            "has_text_frame": True,
+            "supports_text_frame": True,
             "placeholder_type": "",
             "x": 10.0,
             "y": 20.0,

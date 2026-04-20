@@ -57,7 +57,7 @@ class ShapeProxy:
         self._shadow = _ShapeShadowProxy(self)
         self._text_frame: ShapeTextFrame | None = None
         self._table_proxy: Table | None = None
-        self._has_table_cache: bool | None = None
+        self._table_present_cache: bool | None = None
 
     def shape_record(self) -> Shape:
         """Return the current shape payload from slide state."""
@@ -185,35 +185,23 @@ class ShapeProxy:
         """
         self.text_frame.set_runs(builders)
 
-    @property
-    def has_table(self) -> bool:
-        """True if this shape is a table."""
-        if self._has_table_cache is not None:
-            return self._has_table_cache
+    def table(self) -> Table | None:
+        """Return a table proxy when this shape exposes table content."""
+        if self._table_proxy is not None:
+            return self._table_proxy
+        if self._table_present_cache is False:
+            return None
 
         shape_type = self.shape_type
-        if shape_type == "tbl":
-            self._has_table_cache = True
-            return True
-        if shape_type != "graphicFrame":
-            self._has_table_cache = False
-            return False
+        if shape_type not in {"tbl", "graphicFrame"}:
+            self._table_present_cache = False
+            return None
 
         try:
-            self._ensure_table_proxy()
+            return self._ensure_table_proxy()
         except AttributeError:
-            self._has_table_cache = False
-            return False
-
-        self._has_table_cache = True
-        return True
-
-    @property
-    def table(self) -> Table:
-        """Return a table proxy if this shape is a table."""
-        if not self.has_table:
-            raise AttributeError(f"shape {self._shape_id} has no table")
-        return self._ensure_table_proxy()
+            self._table_present_cache = False
+            return None
 
     def _ensure_table_proxy(self) -> Table:
         """Return a validated table proxy or raise when this shape is not a table."""
@@ -226,7 +214,7 @@ class ShapeProxy:
             raise AttributeError(f"shape {self._shape_id} has no table") from exc
 
         self._table_proxy = table
-        self._has_table_cache = True
+        self._table_present_cache = True
         return table
 
 
