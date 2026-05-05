@@ -75,7 +75,7 @@ class TextOperationsProtocol(Protocol):
         """Protocol member."""
         ...
 
-    def has_pending_textbox_adds(self, slide_index: int) -> bool:
+    def pending_textbox_adds(self, slide_index: int) -> bool:
         """Protocol member."""
         ...
 
@@ -87,7 +87,7 @@ class TextOperationsProtocol(Protocol):
         """Protocol member."""
         ...
 
-    def has_pending_slide_run_text_updates(self, slide_index: int) -> bool:
+    def pending_slide_run_text_updates(self, slide_index: int) -> bool:
         """Protocol member."""
         ...
 
@@ -109,6 +109,6 @@ class TextOperationsProtocol(Protocol):
         """Protocol member."""
         ...
 
-    def has_pending_shape_runs_replace(self, slide_index: int, shape_id: int) -> bool:
+    def pending_shape_run_replacement(self, slide_index: int, shape_id: int) -> bool:
         """Protocol member."""
         ...

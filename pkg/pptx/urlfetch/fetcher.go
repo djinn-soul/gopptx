@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/netsec"
 )
 
 const maxRedirects = 10
@@ -26,9 +28,9 @@ func NewWebFetcher() *WebFetcher {
 func NewWebFetcherWithConfig(cfg Config) *WebFetcher {
 	return &WebFetcher{
 		client: http.Client{
-			// ssrfSafeTransport enforces the IP-range check at dial time (after DNS
-			// resolution), which closes the TOCTOU window in pre-request checks.
-			Transport: ssrfSafeTransport(cfg.AllowPrivateHosts),
+			// netsec.NewRestrictedTransport enforces the IP-range check at dial time
+			// (after DNS resolution), which closes the TOCTOU window in pre-request checks.
+			Transport: netsec.NewRestrictedTransport(cfg.AllowPrivateHosts),
 			Timeout:   time.Duration(cfg.TimeoutSecs) * time.Second,
 			CheckRedirect: func(_ *http.Request, via []*http.Request) error {
 				if len(via) >= maxRedirects {
@@ -62,7 +64,7 @@ func (f *WebFetcher) fetchWithFinalURL(rawURL string) (string, string, error) {
 		return "", "", fmt.Errorf("unsupported scheme %q: only http and https are allowed", parsed.Scheme)
 	}
 	if !f.cfg.AllowPrivateHosts {
-		if err := denyPrivateHost(parsed.Host); err != nil {
+		if err := netsec.DenyPrivateHost(parsed.Host); err != nil {
 			return "", "", fmt.Errorf("SSRF guard: %w", err)
 		}
 	}

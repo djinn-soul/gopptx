@@ -211,7 +211,7 @@ Export:
 - `add_custom_xml`
 - `add_vba`
 - `convert_to_grayscale`
-- `has_digital_signature`
+- `is_digitally_signed`
 - `list_custom_xml`
 - `remove_custom_xml`
 - `repair`

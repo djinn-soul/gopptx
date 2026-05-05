@@ -249,7 +249,7 @@ _.list_charts  # unused method (python\gopptx\slide\slide_mixins.py)
 _.get_chart_state_by_rel_id  # unused method (python\gopptx\presentation\chart_state_mixin.py)
 _.body_shape  # unused property (python\gopptx\slide\notes_slide.py)
 _.notes_text_frame  # unused property (python\gopptx\slide\notes_slide.py)
-_.text_frame  # unused property (python\gopptx\slide\notes_slide.py)
+_.text_frame  # unused method (python\gopptx\slide\notes\notes_shape.py)
 _.is_placeholder  # unused property (python\gopptx\slide\notes_slide.py)
 _.x  # unused property (python\gopptx\slide\notes_slide.py)
 _.y  # unused property (python\gopptx\slide\notes_slide.py)
@@ -416,7 +416,7 @@ _.set_background  # unused method (python\gopptx\slide\shapes\smartart_anim_mixi
 _.set_header_footer  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
 _.get_handout_master  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.update_handout_master  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
-_.has_digital_signature  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
+_.is_digitally_signed  # unused method (python\gopptx\presentation\notes\notes_mixin.py)
 _.clear_shapes  # unused method (python\gopptx\presentation\shapes\shapes_tables.py / python\gopptx\slide\shapes\shape_mixin.py)
 
 # 2026-04-07: recently added bridge wrapper API methods (invoked dynamically by users/tests).

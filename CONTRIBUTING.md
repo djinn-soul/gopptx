@@ -21,7 +21,7 @@ Before diving in, please read this guide — it keeps the review cycle short for
 | Tool | Version |
 |---|---|
 | Git | any recent |
-| Go | `1.25.8` (from `go.mod`) |
+| Go | `1.25.9` (from `go.mod`) |
 | Python | `3.10+` (from `pyproject.toml`) |
 | Docker | recommended — used for the container workflow and docs builds |
 | PowerShell | required on Windows for `scripts/build_python.ps1` |

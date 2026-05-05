@@ -55,6 +55,9 @@ class PresentationPlaceholderMixin(PresentationMixinBase):
         image_path = kwargs.get("image_path")
         if isinstance(image_path, str):
             payload["image_path"] = image_path
+        if bounds is not None and not is_four_number_bounds(bounds):
+            msg = f"bounds must be a tuple of four finite numbers, got {bounds!r}"
+            raise ValueError(msg)
         if is_four_number_bounds(bounds):
             payload["bounds"] = list(bounds)
         text_style = kwargs.get("text_style")

@@ -199,15 +199,15 @@ func resolveURLExtension(sourceURL string, contentType string) string {
 	}
 	switch contentType {
 	case "image/jpeg":
-		return "jpg"
+		return jpegImageExt
 	case "image/png":
 		return defaultImageExt
 	case "image/gif":
-		return "gif"
+		return gifImageExt
 	case "image/bmp":
-		return "bmp"
+		return bmpImageExt
 	case "image/tiff":
-		return "tiff"
+		return tiffImageExt
 	default:
 		return defaultImageExt
 	}

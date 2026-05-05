@@ -202,7 +202,7 @@ func handoutSignatureHandlers() map[string]commandHandler {
 	return map[string]commandHandler{
 		OpGetHandoutMaster:    handleGetHandoutMaster,
 		OpUpdateHandoutMaster: handleUpdateHandoutMaster,
-		OpHasDigitalSignature: handleHasDigitalSignature,
+		OpIsDigitallySigned:   handleIsDigitallySigned,
 	}
 }
 

@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -142,6 +143,38 @@ func TestPlaceholderDefinitionAndXMLHelpers(t *testing.T) {
 		0, 0, 0, 0,
 	); err == nil {
 		t.Fatal("expected unsupported chart type error")
+	}
+	if _, err = PlaceholderChartDefinition(
+		map[string]any{"categories": []any{"A", "B"}, "values": []any{1.0}},
+		"bar",
+		"",
+		0, 0, 0, 0,
+	); err == nil {
+		t.Fatal("expected category/value length mismatch error")
+	}
+	if _, err = PlaceholderChartDefinition(
+		map[string]any{"x_values": []any{1.0, 2.0}, "y_values": []any{3.0}},
+		"scatter",
+		"",
+		0, 0, 0, 0,
+	); err == nil {
+		t.Fatal("expected xy length mismatch error")
+	}
+	if _, err = PlaceholderChartDefinition(
+		map[string]any{"x_values": []any{1.0}, "y_values": []any{2.0}, "sizes": []any{3.0, 4.0}},
+		"bubble",
+		"",
+		0, 0, 0, 0,
+	); err == nil {
+		t.Fatal("expected bubble sizes length mismatch error")
+	}
+	if _, err = PlaceholderChartDefinition(
+		map[string]any{"categories": []any{"A"}, "values": []any{math.NaN()}},
+		"bar",
+		"",
+		0, 0, 0, 0,
+	); err == nil {
+		t.Fatal("expected non-finite numeric payload error")
 	}
 
 	if got := boolToOneZero(true); got != "1" {

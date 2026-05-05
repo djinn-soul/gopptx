@@ -53,12 +53,12 @@ class SlideTextMixin:
 
     def _flush_pending_text_updates_if_present(self) -> None:
         """Flush deferred run-text updates queued at presentation layer."""
-        if self._presentation.has_pending_slide_run_text_updates(self.index):
+        if self._presentation.pending_slide_run_text_updates(self.index):
             self._presentation.flush_pending_slide_run_text_updates(self.index)
 
     def _flush_pending_shape_runs_replace_if_present(self, shape_id: int) -> None:
         """Flush pending whole-run replacement queued for a specific shape."""
-        if self._presentation.has_pending_shape_runs_replace(self.index, shape_id):
+        if self._presentation.pending_shape_run_replacement(self.index, shape_id):
             self._presentation.flush_pending_shape_runs_replacements(
                 slide_index=self.index,
                 shape_id=shape_id,

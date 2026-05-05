@@ -3,6 +3,7 @@ package chart
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
@@ -108,6 +109,9 @@ func requireCategorySeries(chartMap map[string]any) ([]string, []float64, error)
 	if !ok {
 		return nil, nil, errors.New("field values must be an array of numbers")
 	}
+	if len(categories) != len(values) {
+		return nil, nil, errors.New("field categories and values must have equal length")
+	}
 	return categories, values, nil
 }
 
@@ -120,6 +124,9 @@ func requireXYSeries(chartMap map[string]any) ([]float64, []float64, error) {
 	if !ok {
 		return nil, nil, errors.New("field y_values must be an array of numbers")
 	}
+	if len(xValues) != len(yValues) {
+		return nil, nil, errors.New("field x_values and y_values must have equal length")
+	}
 	return xValues, yValues, nil
 }
 
@@ -131,6 +138,9 @@ func requireBubbleSeries(chartMap map[string]any) ([]float64, []float64, []float
 	sizes, ok := parseFloat64Slice(chartMap["sizes"])
 	if !ok {
 		return nil, nil, nil, errors.New("field sizes must be an array of numbers")
+	}
+	if len(sizes) != len(xValues) {
+		return nil, nil, nil, errors.New("field sizes must match x_values/y_values length")
 	}
 	return xValues, yValues, sizes, nil
 }
@@ -160,6 +170,9 @@ func parseFloat64Slice(raw any) ([]float64, bool) {
 	for _, v := range values {
 		num, ok := v.(float64)
 		if !ok {
+			return nil, false
+		}
+		if math.IsNaN(num) || math.IsInf(num, 0) {
 			return nil, false
 		}
 		out = append(out, num)

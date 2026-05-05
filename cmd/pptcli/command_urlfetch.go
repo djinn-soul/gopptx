@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/urlfetch"
 )
+
+const urlfetchAllowPrivateHostsEnv = "GOPPTX_URLFETCH_ALLOW_PRIVATE_HOSTS"
 
 func runURLFetchCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("urlfetch", flag.ContinueOnError)
@@ -52,7 +55,7 @@ func runURLFetchCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 		opts = opts.WithAuthor(trimmedAuthor)
 	}
 
-	data, err := urlfetch.URLToPPTXWithOptions(sourceURL, urlfetch.DefaultConfig(), opts)
+	data, err := urlfetch.URLToPPTXWithOptions(sourceURL, urlfetchConfig(), opts)
 	if err != nil {
 		printErrorf(stderr, "urlfetch conversion failed: %v", err)
 		return exitInternal
@@ -68,6 +71,15 @@ func runURLFetchCommand(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	_, _ = fmt.Fprintf(stdout, "OK: wrote %s from %s\n", strings.TrimSpace(outPath), sourceURL)
 	return exitOK
+}
+
+func urlfetchConfig() urlfetch.Config {
+	cfg := urlfetch.DefaultConfig()
+	if os.Getenv(urlfetchAllowPrivateHostsEnv) == "1" {
+		// Only used by CLI integration tests that exercise a local httptest server.
+		cfg = cfg.WithAllowPrivateHosts(true)
+	}
+	return cfg
 }
 
 func printURLFetchUsage(w io.Writer) {

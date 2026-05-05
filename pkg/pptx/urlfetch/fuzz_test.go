@@ -3,12 +3,17 @@ package urlfetch
 import (
 	"net/netip"
 	"testing"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/netsec"
 )
 
 func FuzzWebParserParse(f *testing.F) {
 	f.Add("<html><body><main><h1>Title</h1><p>Some text here.</p></main></body></html>", "https://example.com")
 	f.Add("<article><h2>Sub</h2><ul><li>item one</li><li>item two</li></ul></article>", "")
-	f.Add("<html><body><article><table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table></article></body></html>", "https://example.com/page")
+	f.Add(
+		"<html><body><article><table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table></article></body></html>",
+		"https://example.com/page",
+	)
 	f.Add("<html><body><main><blockquote>quote text</blockquote></main></body></html>", "")
 	f.Add("<html><body><main><img src=\"/img.png\" alt=\"desc\"/></main></body></html>", "https://example.com")
 	f.Add("<html><body><main><a href=\"https://link.com\">link text</a></main></body></html>", "https://example.com")
@@ -36,6 +41,6 @@ func FuzzCheckAddrBlocked(f *testing.F) {
 			return
 		}
 		// Fuzz the blocking predicate directly to avoid network calls.
-		_ = checkAddrBlocked(parsed.Unmap())
+		_ = netsec.IsBlockedAddr(parsed.Unmap())
 	})
 }

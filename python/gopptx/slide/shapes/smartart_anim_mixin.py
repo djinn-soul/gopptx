@@ -33,6 +33,12 @@ class SlideSmartArtAnimMixin:
             ...
 
         def _invalidate_shape_cache_if_present(self) -> None: ...
+        def _invalidate_text_state_cache_if_present(self) -> None: ...
+
+    def _invalidate_shape_and_text_caches_if_present(self) -> None:
+        """Invalidate shape and text-state caches when slide implementation exposes them."""
+        self._invalidate_shape_cache_if_present()
+        self._invalidate_text_state_cache_if_present()
 
     def add_smartart(
         self,
@@ -57,31 +63,6 @@ class SlideSmartArtAnimMixin:
 
         Returns:
             The shape ID of the inserted graphic frame.
-
-        Examples::
-
-            from gopptx.smartart import SMARTART_BASIC_PROCESS, SMARTART_ORG_CHART
-
-            # Flat items for process/list layouts
-            shape_id = slide.add_smartart(
-                SMARTART_BASIC_PROCESS,
-                ["Plan", "Execute", "Review"],
-                (1.0, 2.0, 8.0, 4.0),
-            )
-
-            # Nested nodes for org chart / hierarchy
-            shape_id = slide.add_smartart(
-                SMARTART_ORG_CHART,
-                bounds=(1.0, 2.0, 8.0, 4.0),
-                nodes=[
-                    {"text": "CEO", "children": [
-                        {"text": "VP Engineering", "children": [
-                            {"text": "Engineer"},
-                        ]},
-                        {"text": "VP Sales"},
-                    ]},
-                ],
-            )
         """
         if bounds is None:
             bounds = (1.0, 2.0, 8.0, 4.0)
@@ -105,7 +86,7 @@ class SlideSmartArtAnimMixin:
             payload["items"] = items or []
 
         result = self._presentation.execute(ops.OP_ADD_SMART_ART, payload)
-        self._invalidate_shape_cache_if_present()
+        self._invalidate_shape_and_text_caches_if_present()
         return get_required_int(result, "shape_id")
 
     def update_smartart(
@@ -130,7 +111,7 @@ class SlideSmartArtAnimMixin:
             "items": items,
         }
         self._presentation.execute(ops.OP_UPDATE_SMART_ART, payload)
-        self._invalidate_shape_cache_if_present()
+        self._invalidate_shape_and_text_caches_if_present()
 
     def delete_smartart(self, shape_id: int) -> None:
         """Delete a SmartArt diagram by shape ID."""
@@ -139,7 +120,7 @@ class SlideSmartArtAnimMixin:
             "shape_id": shape_id,
         }
         self._presentation.execute(ops.OP_DELETE_SMART_ART, payload)
-        self._invalidate_shape_cache_if_present()
+        self._invalidate_shape_and_text_caches_if_present()
 
     def change_smartart_layout(self, shape_id: int, layout: str) -> None:
         """Change the layout URI of an existing SmartArt diagram."""
@@ -149,7 +130,7 @@ class SlideSmartArtAnimMixin:
             "layout": layout,
         }
         self._presentation.execute(ops.OP_CHANGE_SMART_ART_LAYOUT, payload)
-        self._invalidate_shape_cache_if_present()
+        self._invalidate_shape_and_text_caches_if_present()
 
     def set_smartart_style(
         self,
@@ -168,7 +149,7 @@ class SlideSmartArtAnimMixin:
         if color_style is not None:
             payload["color_style"] = color_style
         self._presentation.execute(ops.OP_SET_SMART_ART_STYLE, payload)
-        self._invalidate_shape_cache_if_present()
+        self._invalidate_shape_and_text_caches_if_present()
 
     def set_smartart_nodes(self, shape_id: int, items: list[str]) -> None:
         """Replace SmartArt node text using a flat items list."""
@@ -178,7 +159,7 @@ class SlideSmartArtAnimMixin:
             "items": items,
         }
         self._presentation.execute(ops.OP_SET_SMART_ART_NODES, payload)
-        self._invalidate_shape_cache_if_present()
+        self._invalidate_shape_and_text_caches_if_present()
 
     def add_animation(
         self,
@@ -199,11 +180,6 @@ class SlideSmartArtAnimMixin:
                 ``"withPrev"``, or ``"afterPrev"``.
             duration_ms: Duration in milliseconds (default 500).
             delay_ms: Delay before the animation starts, in milliseconds.
-
-        Example::
-
-            from gopptx.animations import ANIMATION_ENTRANCE_FADE
-            slide.add_animation(shape_id, ANIMATION_ENTRANCE_FADE, duration_ms=800)
         """
         payload: dict[str, object] = {
             "slide_index": self.index,
@@ -233,11 +209,6 @@ class SlideSmartArtAnimMixin:
                 means click-advance only (the default).
             disable_advance_on_click: When ``True``, disable click-to-advance
                 for this slide transition (writes ``advClick="0"``).
-
-        Example::
-
-            from gopptx.transitions import TRANSITION_PUSH
-            slide.set_transition(TRANSITION_PUSH, duration_ms=600)
         """
         payload: dict[str, object] = {
             "slide_index": self.index,
@@ -296,11 +267,6 @@ class SlideSmartArtAnimMixin:
             show_slide_num: Whether to show the slide number.
             show_date_time: Whether to show the date/time.
             date_time_text: Fixed date/time string (empty = auto).
-
-        Example::
-
-            slide.set_header_footer(footer="Confidential", show_footer=True,
-                                    show_slide_num=True)
         """
         payload: dict[str, object] = {
             "slide_index": self.index,
