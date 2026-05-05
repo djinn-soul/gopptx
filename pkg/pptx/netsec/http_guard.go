@@ -16,30 +16,64 @@ const (
 	restrictedDialKeepAlive = 30 * time.Second
 )
 
-// NewRestrictedHTTPClient builds an HTTP client that blocks private/internal
-// IPs at dial time unless allowPrivateHosts is true.
-//
-// The SSRF guard is always applied regardless of whether http.DefaultTransport
-// has been replaced — if the type assertion fails a fresh transport is used so
-// the guard never silently falls back to an unrestricted client.
-func NewRestrictedHTTPClient(timeout time.Duration, allowPrivateHosts bool) *http.Client {
-	baseDialer := &net.Dialer{
+// NewRestrictedTransport returns an HTTP transport whose DialContext validates
+// resolved IPs at connection time, closing the TOCTOU window in pre-request
+// checks. When allowPrivateHosts is true the default dialer is used unchanged
+// (intended for tests using httptest.NewServer).
+func NewRestrictedTransport(allowPrivateHosts bool) *http.Transport {
+	var t *http.Transport
+	if dt, ok := http.DefaultTransport.(*http.Transport); ok {
+		t = dt.Clone()
+	} else {
+		t = &http.Transport{}
+	}
+	if allowPrivateHosts {
+		return t
+	}
+	base := &net.Dialer{
 		Timeout:   restrictedDialTimeout,
 		KeepAlive: restrictedDialKeepAlive,
 	}
+	t.DialContext = restrictedDialContext(base, false)
+	return t
+}
 
-	var transport *http.Transport
-	if t, ok := http.DefaultTransport.(*http.Transport); ok {
-		transport = t.Clone()
-	} else {
-		transport = &http.Transport{}
-	}
-	transport.DialContext = restrictedDialContext(baseDialer, allowPrivateHosts)
-
+// NewRestrictedHTTPClient builds an HTTP client that blocks private/internal
+// IPs at dial time unless allowPrivateHosts is true.
+func NewRestrictedHTTPClient(timeout time.Duration, allowPrivateHosts bool) *http.Client {
 	return &http.Client{
 		Timeout:   timeout,
-		Transport: transport,
+		Transport: NewRestrictedTransport(allowPrivateHosts),
 	}
+}
+
+// IsBlockedAddr reports whether ip falls within a protected address range.
+// ip must already be unwrapped via Unmap.
+func IsBlockedAddr(ip netip.Addr) error {
+	if blocked, reason := isBlockedAddr(ip); blocked {
+		return fmt.Errorf("connection to %s blocked: %s", ip, reason)
+	}
+	return nil
+}
+
+// DenyPrivateHost resolves host and returns an error if any address falls in a
+// protected range. It does NOT replace transport-level checks — it is an early
+// fast-fail that produces a readable error before request setup.
+func DenyPrivateHost(hostWithPort string) error {
+	hostname, _, err := net.SplitHostPort(hostWithPort)
+	if err != nil {
+		hostname = hostWithPort
+	}
+	addrs, err := net.DefaultResolver.LookupNetIP(context.Background(), "ip", hostname)
+	if err != nil {
+		return fmt.Errorf("resolve host %q: %w", hostname, err)
+	}
+	for _, addr := range addrs {
+		if err := IsBlockedAddr(addr.Unmap()); err != nil {
+			return fmt.Errorf("request to %q: %w", hostname, err)
+		}
+	}
+	return nil
 }
 
 // ValidateURLForHTTPFetch validates URL scheme and optionally blocks private hosts.

@@ -101,10 +101,12 @@ class NotesShape(_NotesShapeStyleMixin):
         """Return whether this shape is a placeholder."""
         return self.idx >= 0
 
-    @property
-    def has_text_frame(self) -> bool:
+    def _supports_text_frame(self) -> bool:
         """Return whether this shape exposes text-frame behavior."""
-        value = self._payload.get("has_text_frame", self._payload.get("HasTextFrame"))
+        value = self._payload.get(
+            "supports_text_frame",
+            self._payload.get("SupportsTextFrame"),
+        )
         if isinstance(value, bool):
             return value
         return self.placeholder_type in _TEXT_PLACEHOLDER_TYPES
@@ -217,17 +219,16 @@ class NotesShape(_NotesShapeStyleMixin):
         if self.placeholder_type in _TEXT_PLACEHOLDER_TYPES:
             self._notes_slide.text = value
             return
-        if not self.has_text_frame:
+        if self.text_frame() is None:
             raise ValueError("target notes shape has no text frame")
         if self.shape_id < 0:
             raise ValueError("notes shape id is unavailable for mutation")
         self._shape_text_writer()(self.shape_id, value)
         self._payload["text"] = value
 
-    @property
     def text_frame(self) -> NotesTextFrame | None:
-        """Return text-frame proxy for text placeholders, else None."""
-        if self.placeholder_type not in _TEXT_PLACEHOLDER_TYPES:
+        """Return a text-frame proxy when the notes shape supports text."""
+        if not self._supports_text_frame():
             return None
         return NotesTextFrame(self)
 

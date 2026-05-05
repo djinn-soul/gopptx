@@ -74,6 +74,72 @@ func ValidateHyperlinkAction(a HyperlinkAction, context string) error {
 	return nil
 }
 
+func validateHyperlinkRenderableAction(action HyperlinkAction) error {
+	switch action.Type {
+	case HyperlinkActionURL:
+		return validateRenderableHyperlinkURL(action.URL)
+	case HyperlinkActionFile:
+		return validateRenderableHyperlinkPath(
+			action.FilePath,
+			"hyperlink file path cannot be empty",
+			"hyperlink file path cannot contain directory traversal (..)",
+		)
+	case HyperlinkActionProgram:
+		return validateRenderableHyperlinkPath(
+			action.ProgramPath,
+			"hyperlink program path cannot be empty",
+			"hyperlink program path cannot contain directory traversal (..)",
+		)
+	case HyperlinkActionEmail:
+		return validateRenderableHyperlinkEmail(action.EmailAddress)
+	case HyperlinkActionSlide, HyperlinkActionFirstSlide, HyperlinkActionLastSlide:
+		return nil
+	case HyperlinkActionNextSlide, HyperlinkActionPreviousSlide, HyperlinkActionEndShow:
+		return nil
+	default:
+		return nil
+	}
+}
+
+func validateRenderableHyperlinkURL(urlValue string) error {
+	if urlValue == "" {
+		return errors.New("hyperlink URL cannot be empty")
+	}
+	parsed, err := url.Parse(urlValue)
+	if err != nil {
+		return fmt.Errorf("invalid hyperlink URL %q: %w", urlValue, err)
+	}
+	if parsed.Scheme == "" {
+		return fmt.Errorf("hyperlink URL %q must have a scheme (e.g., https://)", urlValue)
+	}
+	switch strings.ToLower(parsed.Scheme) {
+	case "http", "https", "mailto", "ftp", "ftps":
+		return nil
+	}
+	return fmt.Errorf("hyperlink URL scheme %q is not allowed", parsed.Scheme)
+}
+
+func validateRenderableHyperlinkPath(
+	pathValue string,
+	emptyErr string,
+	traversalErr string,
+) error {
+	if pathValue == "" {
+		return errors.New(emptyErr)
+	}
+	if strings.Contains(pathValue, "..") {
+		return errors.New(traversalErr)
+	}
+	return validateFilePathScheme(pathValue)
+}
+
+func validateRenderableHyperlinkEmail(address string) error {
+	if address == "" {
+		return errors.New("hyperlink email address cannot be empty")
+	}
+	return nil
+}
+
 func validateFilePathScheme(pathValue string) error {
 	pathValue = strings.TrimSpace(pathValue)
 	if pathValue == "" {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -170,8 +171,8 @@ func TestCommandNotesOps(t *testing.T) {
 	var notesOut struct {
 		Result struct {
 			NotesShapes []struct {
-				ID           int  `json:"ID"`
-				HasTextFrame bool `json:"HasTextFrame"`
+				ID                int  `json:"ID"`
+				SupportsTextFrame bool `json:"supports_text_frame"`
 			} `json:"notes_shapes"`
 		} `json:"result"`
 	}
@@ -180,7 +181,7 @@ func TestCommandNotesOps(t *testing.T) {
 	}
 	targetShapeID := -1
 	for _, shape := range notesOut.Result.NotesShapes {
-		if shape.HasTextFrame && shape.ID > 0 {
+		if shape.SupportsTextFrame && shape.ID > 0 {
 			targetShapeID = shape.ID
 			break
 		}
@@ -220,6 +221,23 @@ func TestCommandNotesOps(t *testing.T) {
 	resp = ExecuteCommand(e, getReq)
 	if !strings.Contains(resp, "Updated notes") {
 		t.Fatalf("get_notes mismatch after update: %s", resp)
+	}
+}
+
+func TestCommandIsDigitallySigned(t *testing.T) {
+	basePath := writeDeckFixture(t, "bridge-digital-signature-test.pptx", []elements.SlideContent{
+		elements.NewSlide("Signature Test").AddBullet("body"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	req := `{"api_version":1,"request_id":"sig1","op":"is_digitally_signed","payload":{}}`
+	resp := ExecuteCommand(e, req)
+	if !strings.Contains(resp, `"ok":true`) || !strings.Contains(resp, `"is_digitally_signed":false`) {
+		t.Fatalf("expected unsigned deck response from is_digitally_signed: %s", resp)
 	}
 }
 
@@ -312,5 +330,43 @@ func TestCommandUpdateSlidePreservesTransitionWhenOmitted(t *testing.T) {
 	}
 	if !strings.Contains(string(slideXML), `<p15:morph`) {
 		t.Fatalf("expected preserved morph transition node in updated slide XML")
+	}
+}
+
+func TestCommandAddChartReturnsShapeID(t *testing.T) {
+	basePath := writeDeckFixture(t, "bridge-add-chart-shape-id.pptx", []elements.SlideContent{
+		elements.NewSlide("Chart Bridge").AddBullet("body"),
+	})
+	e, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = e.Close() }()
+
+	addReq := `{"api_version":1,"request_id":"chart1","op":"add_chart","payload":{"slide_index":0,"chart_type":"bar","categories":["A","B"],"values":[1,2],"x":100,"y":100,"w":1000,"h":800}}`
+	resp := ExecuteCommand(e, addReq)
+	if !strings.Contains(resp, `"ok":true`) {
+		t.Fatalf("add_chart failed: %s", resp)
+	}
+
+	var addOut struct {
+		Result struct {
+			ShapeID int `json:"shape_id"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal([]byte(resp), &addOut); err != nil {
+		t.Fatalf("unmarshal add_chart response: %v", err)
+	}
+	if addOut.Result.ShapeID == 0 {
+		t.Fatalf("expected add_chart to return a non-zero shape_id, got response: %s", resp)
+	}
+
+	listReq := `{"api_version":1,"request_id":"chart2","op":"list_shapes","payload":{"slide_index":0}}`
+	listResp := ExecuteCommand(e, listReq)
+	if !strings.Contains(listResp, `"ok":true`) {
+		t.Fatalf("list_shapes failed: %s", listResp)
+	}
+	if !strings.Contains(listResp, `"ID":`+strconv.Itoa(addOut.Result.ShapeID)) {
+		t.Fatalf("expected list_shapes to contain returned chart shape_id %d: %s", addOut.Result.ShapeID, listResp)
 	}
 }

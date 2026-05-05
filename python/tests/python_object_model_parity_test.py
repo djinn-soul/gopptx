@@ -82,3 +82,23 @@ def test_shape_fill_line_shadow_proxies() -> None:
 
         _refreshed = slide.shape(shape_id)
         assert shape.line.end_arrow == "arrow"
+
+
+def test_shape_table_proxy_distinguishes_tables_from_chart_graphic_frames() -> None:
+    with Presentation.new("Table Detection") as prs:
+        slide = prs.add_slide("Shapes")
+
+        table_id = slide.add_table(2, 2, (1000000, 1000000, 2000000, 1000000))
+        table_shape = slide.shape(table_id)
+        table = table_shape.table()
+        assert table is not None
+        assert table.row_count == 2
+
+        data = CategoryChartData(categories=["A", "B"])
+        data.add_series("S1", [1.0, 2.0])
+        chart_id = slide.add_chart("bar", data)
+        assert chart_id > 0
+        chart_shape = slide.shape(chart_id)
+
+        assert chart_shape.shape_type == "graphicFrame"
+        assert chart_shape.table() is None

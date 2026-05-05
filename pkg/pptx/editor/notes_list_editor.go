@@ -52,17 +52,17 @@ func (e *PresentationEditor) ListNotesShapes(slideIndex int) ([]common.NotesShap
 	shapes := make([]common.NotesShapeInfo, 0, len(parsed))
 	for _, shape := range parsed {
 		shapes = append(shapes, common.NotesShapeInfo{
-			ID:               shape.ID,
-			Name:             shape.Name,
-			Type:             shape.Type,
-			Text:             shape.Text,
-			X:                float64(shape.X),
-			Y:                float64(shape.Y),
-			CX:               float64(shape.W),
-			CY:               float64(shape.H),
-			PlaceholderIndex: shape.PhIndex,
-			PlaceholderType:  shape.PhType,
-			HasTextFrame:     shape.TextFrame != nil || len(shape.Runs) > 0 || shape.Text != "",
+			ID:                shape.ID,
+			Name:              shape.Name,
+			Type:              shape.Type,
+			Text:              shape.Text,
+			X:                 float64(shape.X),
+			Y:                 float64(shape.Y),
+			CX:                float64(shape.W),
+			CY:                float64(shape.H),
+			PlaceholderIndex:  shape.PhIndex,
+			PlaceholderType:   shape.PhType,
+			SupportsTextFrame: shape.TextFrame != nil || len(shape.Runs) > 0 || shape.Text != "",
 		})
 	}
 	return shapes, nil

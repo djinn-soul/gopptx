@@ -140,7 +140,7 @@ class Slide(
         return proxy
 
     def _flush_pending_textbox_adds_if_present(self) -> None:
-        if self._presentation.has_pending_textbox_adds(self.index):
+        if self._presentation.pending_textbox_adds(self.index):
             self._presentation.flush_pending_textbox_adds(self.index)
 
     def _shape_text_states(self) -> dict[int, dict[str, object]]:

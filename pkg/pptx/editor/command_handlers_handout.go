@@ -120,21 +120,21 @@ func handleUpdateHandoutMaster(e *PresentationEditor, payload json.RawMessage) (
 // Feature 5 – Digital signature detection
 // ---------------------------------------------------------------------------
 
-// HasDigitalSignature returns true if the package contains a digital signature.
-func (e *PresentationEditor) HasDigitalSignature() (bool, error) {
-	has := e.parts.Has("_xmlsignatures/origin.sigs") ||
+// IsDigitallySigned returns true if the package contains a digital signature.
+func (e *PresentationEditor) IsDigitallySigned() (bool, error) {
+	isSigned := e.parts.Has("_xmlsignatures/origin.sigs") ||
 		e.parts.Has("_xmlsignatures/sig1.xml")
-	return has, nil
+	return isSigned, nil
 }
 
-// handleHasDigitalSignature checks for a digital signature part.
+// handleIsDigitallySigned checks for a digital signature part.
 //
 // Payload: {} (empty).
-// Response: {"has_digital_signature": bool}.
-func handleHasDigitalSignature(e *PresentationEditor, _ json.RawMessage) (any, error) {
-	has, err := e.HasDigitalSignature()
+// Response: {"is_digitally_signed": bool}.
+func handleIsDigitallySigned(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	isSigned, err := e.IsDigitallySigned()
 	if err != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, err.Error())
 	}
-	return map[string]bool{"has_digital_signature": has}, nil
+	return map[string]bool{"is_digitally_signed": isSigned}, nil
 }

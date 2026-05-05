@@ -25,7 +25,18 @@ type Catalog struct {
 	ordered []Asset
 }
 
-const defaultImageExt = "png"
+const (
+	defaultImageExt   = "png"
+	jpegImageExt      = "jpg"
+	jpegAliasImageExt = "jpeg"
+	gifImageExt       = "gif"
+	bmpImageExt       = "bmp"
+	tifImageExt       = "tif"
+	tiffImageExt      = "tiff"
+	mp3AudioExt       = "mp3"
+	wavAudioExt       = "wav"
+	m4aAudioExt       = "m4a"
+)
 
 const imageFetchTimeout = 30 * time.Second
 
@@ -146,7 +157,16 @@ func NormalizeExtension(ext string) string {
 
 func isSupportedMediaExtension(ext string) bool {
 	switch ext {
-	case "png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff", "mp3", "wav", "m4a":
+	case defaultImageExt,
+		jpegImageExt,
+		jpegAliasImageExt,
+		gifImageExt,
+		bmpImageExt,
+		tifImageExt,
+		tiffImageExt,
+		mp3AudioExt,
+		wavAudioExt,
+		m4aAudioExt:
 		return true
 	default:
 		return false

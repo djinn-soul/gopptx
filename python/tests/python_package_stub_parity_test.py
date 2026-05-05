@@ -11,11 +11,11 @@ def _read_all_tuple(path: Path) -> tuple[str, ...]:
     for node in tree.body:
         if not isinstance(node, ast.Assign):
             continue
-        has_all_target = any(
+        assigns_all = any(
             isinstance(target, ast.Name) and target.id == "__all__"
             for target in node.targets
         )
-        if not has_all_target:
+        if not assigns_all:
             continue
         value = ast.literal_eval(node.value)
         if isinstance(value, tuple) and all(isinstance(item, str) for item in value):

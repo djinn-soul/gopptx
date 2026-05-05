@@ -1,7 +1,6 @@
 package action
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -244,49 +243,5 @@ func (h Hyperlink) Validate() error {
 	if strings.TrimSpace(h.RawAction) != "" && h.Action.Type == "" {
 		return nil
 	}
-	switch h.Action.Type {
-	case HyperlinkActionURL:
-		if h.Action.URL == "" {
-			return errors.New("hyperlink URL cannot be empty")
-		}
-		if parsed, err := url.Parse(h.Action.URL); err == nil && parsed.Scheme != "" {
-			switch strings.ToLower(parsed.Scheme) {
-			case "http", "https", "mailto", "ftp", "ftps":
-				// allowed
-			default:
-				return fmt.Errorf("hyperlink URL scheme %q is not allowed", parsed.Scheme)
-			}
-		}
-	case HyperlinkActionFile:
-		if h.Action.FilePath == "" {
-			return errors.New("hyperlink file path cannot be empty")
-		}
-		if strings.Contains(h.Action.FilePath, "..") {
-			return errors.New("hyperlink file path cannot contain directory traversal (..)")
-		}
-		if err := validateFilePathScheme(h.Action.FilePath); err != nil {
-			return err
-		}
-	case HyperlinkActionProgram:
-		if h.Action.ProgramPath == "" {
-			return errors.New("hyperlink program path cannot be empty")
-		}
-		if strings.Contains(h.Action.ProgramPath, "..") {
-			return errors.New("hyperlink program path cannot contain directory traversal (..)")
-		}
-		if err := validateFilePathScheme(h.Action.ProgramPath); err != nil {
-			return err
-		}
-	case HyperlinkActionEmail:
-		if h.Action.EmailAddress == "" {
-			return errors.New("hyperlink email address cannot be empty")
-		}
-	case HyperlinkActionSlide, HyperlinkActionFirstSlide, HyperlinkActionLastSlide:
-		// Internal slide-jump actions require no additional payload validation.
-	case HyperlinkActionNextSlide, HyperlinkActionPreviousSlide, HyperlinkActionEndShow:
-		// Navigation actions are fully described by the action type itself.
-	default:
-		// Unknown action type is handled by render-time fallback behavior.
-	}
-	return nil
+	return validateHyperlinkRenderableAction(h.Action)
 }

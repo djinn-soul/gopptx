@@ -296,9 +296,32 @@ def test_apply_slides_adds_slides_notes_and_tables() -> None:
     ]
 
     prs2 = _FakePresentation(title="t2", executed=[], slides_added=[])
-    apply_slides(prs2, "not-a-list")
-    assert prs2.removed == [0]
+    with pytest.raises(TypeError, match="template slides must be a list"):
+        apply_slides(prs2, "not-a-list")
+    assert prs2.removed is None
     assert prs2.slides_added == []
+
+
+@pytest.mark.parametrize(
+    ("slides", "message"),
+    [
+        ([1], "template slide 0 must be a mapping"),
+        (
+            [{"title": "Bad table", "table": "not-a-dict"}],
+            "template slide 0 table must be a mapping",
+        ),
+    ],
+)
+def test_apply_slides_rejects_malformed_slide_entries(
+    slides: object, message: str
+) -> None:
+    prs = _FakePresentation(title="bad", executed=[], slides_added=[])
+
+    with pytest.raises(TypeError, match=message):
+        apply_slides(prs, slides)
+
+    assert prs.removed is None
+    assert prs.slides_added == []
 
 
 def test_template_builders_execute_and_apply_theme(
@@ -392,6 +415,35 @@ def test_template_builders_close_on_execute_failure(
 
     monkeypatch.setattr(_FakePresentation, "execute", _execute_raises)
     with pytest.raises(RuntimeError, match="boom"):
+        SimpleTemplate(title="X").build()
+
+    assert fake_presentation_factory[-1].closed is True
+
+
+@pytest.mark.parametrize(
+    ("result", "exc_type", "message"),
+    [
+        ({}, KeyError, "slides"),
+        ({"slides": "not-a-list"}, TypeError, "template slides must be a list"),
+        ({"slides": [1]}, TypeError, "template slide 0 must be a mapping"),
+    ],
+)
+def test_template_builders_close_on_malformed_execute_result(
+    monkeypatch: pytest.MonkeyPatch,
+    fake_presentation_factory: list[_FakePresentation],
+    result: dict[str, object],
+    exc_type: type[Exception],
+    message: str,
+) -> None:
+    _ = fake_presentation_factory
+
+    def _execute_bad(
+        self: _FakePresentation, _op: str, _payload: dict[str, object]
+    ) -> dict[str, object]:
+        return result
+
+    monkeypatch.setattr(_FakePresentation, "execute", _execute_bad)
+    with pytest.raises(exc_type, match=message):
         SimpleTemplate(title="X").build()
 
     assert fake_presentation_factory[-1].closed is True
