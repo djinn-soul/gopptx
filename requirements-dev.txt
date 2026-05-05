@@ -201,7 +201,7 @@ pytest-cov==7.0.0
     # via gopptx
 python-dateutil==2.9.0.post0
     # via ghp-import
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via gitingest
 pyyaml==6.0.3
     # via
