@@ -94,7 +94,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"           # caches pip downloads
 
       - name: Setup Zig (Linux cross-compile)
         if: runner.os == 'Linux'
@@ -164,7 +163,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Build sdist
         run: uv build --sdist
