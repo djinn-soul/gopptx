@@ -3,14 +3,14 @@ name: Publish to TestPyPI
 on:
   push:
     tags:
-      - "v*-test*"    # e.g. v0.1.0-test1, v0.1.0-test.2
-      - "v*-rc*"      # e.g. v0.1.0-rc1
-      - "v*-alpha*"
-      - "v*-beta*"
+      - "v*a[0-9]*"     # alpha:   v0.1.0a1
+      - "v*b[0-9]*"     # beta:    v0.1.0b1
+      - "v*rc[0-9]*"    # rc:      v0.1.0rc1
+      - "v*.dev[0-9]*"  # dev/test: v0.1.0.dev1
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish (without 'v', e.g. 0.1.0-test1)"
+        description: "PEP 440 version (without 'v', e.g. 0.1.0a1, 0.1.0rc1, 0.1.0.dev1)"
         required: true
 
 # Cancel any in-progress run for the same tag/branch

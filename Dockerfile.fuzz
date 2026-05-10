@@ -14,7 +14,7 @@
 # Override budget (e.g. 2 minutes per target):
 #   docker run --rm -v "E:/Github/gopptx/fuzz-out:/workspace/fuzz-out" \
 #              -e FUZZ_TIME=2m gopptx-fuzz
-FROM golang:1.25.9
+FROM golang:1.25.10
 
 RUN useradd -m -u 1000 appuser
 
