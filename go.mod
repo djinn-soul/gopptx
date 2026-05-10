@@ -1,6 +1,6 @@
 module github.com/djinn-soul/gopptx
 
-go 1.25.9
+go 1.25.10
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -9,7 +9,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.6
 	github.com/signintech/gopdf v0.36.0
 	github.com/yuin/goldmark v1.7.13
-	golang.org/x/text v0.34.0
+	golang.org/x/text v0.36.0
 )
 
 require (
@@ -20,6 +20,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
 )

@@ -154,8 +154,10 @@ pathspec==1.0.4
     #   mkdocs
 pillow==12.2.0
     # via gopptx
-pip==26.0.1
-    # via pip-api
+pip==26.1.1
+    # via
+    #   gopptx
+    #   pip-api
 pip-api==0.0.34
     # via pip-audit
 pip-audit==2.10.0
@@ -201,7 +203,7 @@ pytest-cov==7.0.0
     # via gopptx
 python-dateutil==2.9.0.post0
     # via ghp-import
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via gitingest
 pyyaml==6.0.3
     # via
