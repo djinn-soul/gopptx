@@ -1,5 +1,6 @@
 """gopptx - High-performance PPTX engine powered by Go."""
 
+from ._version import __version__
 from .api import GopptxError, Presentation, PresentationBuilder, Slide
 from .constants import (
     ALIGN_CENTER,
@@ -204,4 +205,5 @@ __all__ = (
     "TrainingTemplate",
     "XyChartData",
     "XySeries",
+    "__version__",
 )
