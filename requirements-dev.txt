@@ -259,6 +259,7 @@ typing-extensions==4.15.0
     #   anyio
     #   cyclonedx-python-lib
     #   exceptiongroup
+    #   gopptx
     #   mkdocstrings-python
     #   pydantic
     #   pydantic-core

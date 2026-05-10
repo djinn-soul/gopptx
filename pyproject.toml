@@ -14,7 +14,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["orjson>=3.11.7", "Jinja2>=3.1.6"]
+dependencies = [
+    "orjson>=3.11.7",
+    "Jinja2>=3.1.6",
+    "typing-extensions>=4.15.0",
+]
 
 [project.optional-dependencies]
 dev = [

@@ -441,6 +441,7 @@ source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
     { name = "orjson" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -487,6 +488,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.7" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "vulture", marker = "extra == 'dev'", specifier = ">=2.15" },
 ]
 provides-extras = ["dev"]
