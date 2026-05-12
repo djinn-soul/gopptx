@@ -146,7 +146,6 @@ func writeOpsPy(f *os.File, ops []opSpec) error {
 
 func writeOpsPyi(f *os.File, ops []opSpec) error {
 	var out strings.Builder
-	out.WriteString("from __future__ import annotations\n\n")
 	for _, op := range ops {
 		out.WriteString(fmt.Sprintf("%s: str\n", op.PyName))
 	}
