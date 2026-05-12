@@ -3,9 +3,20 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"sort"
 	"strings"
 	"testing"
 )
+
+func opsRepoRoot(t *testing.T) string {
+	t.Helper()
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
+}
 
 func TestUnquoteEscapes(t *testing.T) {
 	got, err := unquote(`"line\nnext"`)
@@ -109,5 +120,73 @@ func TestWriteOpsOutputs(t *testing.T) {
 	}
 	if !strings.Contains(pyiText, "SUPPORTED_OPS_SET: frozenset[str]") {
 		t.Fatalf("missing supported ops set annotation in pyi output")
+	}
+}
+
+// TestOpsGeneratorDrift regenerates python/gopptx/ops.py and ops.pyi into a
+// temp dir and compares them byte-for-byte against the checked-in copies.
+// Fails if someone edited the generated files by hand or forgot to re-run
+// `go generate ./pkg/pptx/editor/`.
+func TestOpsGeneratorDrift(t *testing.T) {
+	root := opsRepoRoot(t)
+	input := filepath.Join(root, "pkg", "pptx", "editor", "opspec.go")
+	committedPy := filepath.Join(root, "python", "gopptx", "ops.py")
+	committedPyi := filepath.Join(root, "python", "gopptx", "ops.pyi")
+
+	ops, err := parseOpsFromGo(input)
+	if err != nil {
+		t.Fatalf("parseOpsFromGo: %v", err)
+	}
+	sort.Slice(ops, func(i, j int) bool { return ops[i].PyName < ops[j].PyName })
+
+	tmp := t.TempDir()
+	pyPath := filepath.Join(tmp, "ops.py")
+	pyiPath := filepath.Join(tmp, "ops.pyi")
+
+	py, err := os.Create(pyPath)
+	if err != nil {
+		t.Fatalf("create py: %v", err)
+	}
+	if err := writeOpsPy(py, ops); err != nil {
+		_ = py.Close()
+		t.Fatalf("writeOpsPy: %v", err)
+	}
+	if err := py.Close(); err != nil {
+		t.Fatalf("close py: %v", err)
+	}
+
+	pyi, err := os.Create(pyiPath)
+	if err != nil {
+		t.Fatalf("create pyi: %v", err)
+	}
+	if err := writeOpsPyi(pyi, ops); err != nil {
+		_ = pyi.Close()
+		t.Fatalf("writeOpsPyi: %v", err)
+	}
+	if err := pyi.Close(); err != nil {
+		t.Fatalf("close pyi: %v", err)
+	}
+
+	compareDrift(t, pyPath, committedPy, "ops.py")
+	compareDrift(t, pyiPath, committedPyi, "ops.pyi")
+}
+
+func compareDrift(t *testing.T, generatedPath, committedPath, label string) {
+	t.Helper()
+	got, err := os.ReadFile(generatedPath)
+	if err != nil {
+		t.Fatalf("read generated %s: %v", label, err)
+	}
+	want, err := os.ReadFile(committedPath)
+	if err != nil {
+		t.Fatalf("read committed %s: %v", label, err)
+	}
+	// Normalize CRLF in case Git checked out with autocrlf=true.
+	gotNorm := strings.ReplaceAll(string(got), "\r\n", "\n")
+	wantNorm := strings.ReplaceAll(string(want), "\r\n", "\n")
+	if gotNorm != wantNorm {
+		t.Fatalf("%s drift: generator output differs from checked-in file. "+
+			"Re-run `go generate ./pkg/pptx/editor/`.\nlen(got)=%d len(want)=%d",
+			label, len(gotNorm), len(wantNorm))
 	}
 }

@@ -68,9 +68,9 @@ OP_GET_SLIDE_TEXT_STATES = "get_slide_text_states"
 OP_GET_TABLE = "get_table"
 OP_GET_THEME_INVENTORY = "get_theme_inventory"
 OP_GROUP_SHAPES = "group_shapes"
-OP_IS_DIGITALLY_SIGNED = "is_digitally_signed"
 OP_INSERT_TABLE_COLUMN = "insert_table_column"
 OP_INSERT_TABLE_ROW = "insert_table_row"
+OP_IS_DIGITALLY_SIGNED = "is_digitally_signed"
 OP_LIST_CUSTOM_XML = "list_custom_xml"
 OP_LIST_MASTER_LAYOUTS = "list_master_layouts"
 OP_LIST_NOTES_PLACEHOLDERS = "list_notes_placeholders"
@@ -219,9 +219,9 @@ SUPPORTED_OPS = (
     OP_GET_TABLE,
     OP_GET_THEME_INVENTORY,
     OP_GROUP_SHAPES,
-    OP_IS_DIGITALLY_SIGNED,
     OP_INSERT_TABLE_COLUMN,
     OP_INSERT_TABLE_ROW,
+    OP_IS_DIGITALLY_SIGNED,
     OP_LIST_CUSTOM_XML,
     OP_LIST_MASTER_LAYOUTS,
     OP_LIST_NOTES_PLACEHOLDERS,

@@ -104,6 +104,8 @@ from .templates import (
 )
 from .text import RunBuilder
 
+__version__: str
+
 __all__ = (
     "ALIGN_CENTER",
     "ALIGN_JUSTIFY",
@@ -202,4 +204,5 @@ __all__ = (
     "TrainingTemplate",
     "XyChartData",
     "XySeries",
+    "__version__",
 )

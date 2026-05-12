@@ -8,18 +8,16 @@
 package main
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 func main() {
-	pres := &gopptx.Presentation{Title: "S02 Text Frame"}
-	slide := pres.AddSlide()
-	slide.Title = "Basic Text Frame"
-	slide.AddShape(shapes.NewRectangle(0.8, 2.0, 3.0, 1.0).WithText("Top anchor sample"))
-	slide.AddShape(shapes.NewRectangle(4.4, 2.0, 3.0, 1.0).WithText("Bottom anchor sample"))
-	slide.AddShape(shapes.NewRectangle(0.8, 3.3, 6.6, 1.0).WithText("No-wrap / shrink-fit text region"))
-	_ = pres.Save("s02-go.pptx")
+	slide := pptx.NewSlide("Basic Text Frame").
+		AddShape(shapes.NewRectangle(0.8, 2.0, 3.0, 1.0).WithText("Top anchor sample")).
+		AddShape(shapes.NewRectangle(4.4, 2.0, 3.0, 1.0).WithText("Bottom anchor sample")).
+		AddShape(shapes.NewRectangle(0.8, 3.3, 6.6, 1.0).WithText("No-wrap / shrink-fit text region"))
+	_ = pptx.NewPresentationBuilder("S02 Text Frame").AddSlide(slide).WriteToFile("s02-go.pptx")
 }
 ```
 

@@ -13,9 +13,8 @@ import (
 
 	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const outFile = "docs/assets/pptx/basic_usage.pptx"
@@ -25,23 +24,19 @@ func main() {
 		log.Fatalf("create output dir: %v", err)
 	}
 
-	pres := &gopptx.Presentation{Title: "gopptx - Basic Usage"}
-
-	slide := pres.AddSlide()
-	slide.Title = "Hello from gopptx"
-	slide.AddBullet("Create slides programmatically in Go.")
-	slide.AddBullet("Add shapes, text, charts, images, and more.")
-	slide.AddBullet("Export to .pptx in milliseconds.")
-
-	// Add a coloured call-out box
 	box := shapes.NewRectangle(0.5, 4.5, 9.0, 0.9).
 		WithText("Open-source * High-performance * Go + Python").
 		WithFill(shapes.NewShapeFill("2E4057"))
-	slide.AddShape(box)
 
-	_ = styling.Inches(0) // keep import used
+	slide := pptx.NewSlide("Hello from gopptx").
+		AddBullet("Create slides programmatically in Go.").
+		AddBullet("Add shapes, text, charts, images, and more.").
+		AddBullet("Export to .pptx in milliseconds.").
+		AddShape(box)
 
-	if err := pres.Save(outFile); err != nil {
+	if err := pptx.NewPresentationBuilder("gopptx - Basic Usage").
+		AddSlide(slide).
+		WriteToFile(outFile); err != nil {
 		log.Fatalf("save: %v", err)
 	}
 	log.Printf("Saved %s", outFile)

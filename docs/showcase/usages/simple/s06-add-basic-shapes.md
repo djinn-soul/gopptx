@@ -8,36 +8,34 @@
 package main
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func main() {
-	pres := &gopptx.Presentation{Title: "S06 Add Basic Shapes"}
-	slide := pres.AddSlide()
-	slide.Title = "Basic Shapes"
-	slide.AddShape(
-		shapes.NewRectangle(1.0, 1.8, 2.2, 1.3).
-			WithText("Rectangle").
-			WithFill(shapes.NewShapeFill("DCE6F2")).
-			WithLine(shapes.NewShapeLine("1F4E78", styling.Points(1))),
-	)
-	slide.AddShape(
-		shapes.NewEllipse(4.6, 1.8, 1.8, 1.8).
-			WithText("Circle").
-			WithFill(shapes.NewShapeFill("FCE4D6")).
-			WithLine(shapes.NewShapeLine("9C3F00", styling.Points(1))),
-	)
-	slide.AddConnector(
-		shapes.NewStraightConnector(
-			styling.Inches(2.6),
-			styling.Inches(2.7),
-			styling.Inches(4.6),
-			styling.Inches(2.7),
-		).WithLine(shapes.NewShapeLine("444444", styling.Points(1.5))),
-	)
-	_ = pres.Save("s06-go.pptx")
+	slide := pptx.NewSlide("Basic Shapes").
+		AddShape(
+			shapes.NewRectangle(1.0, 1.8, 2.2, 1.3).
+				WithText("Rectangle").
+				WithFill(shapes.NewShapeFill("DCE6F2")).
+				WithLine(shapes.NewShapeLine("1F4E78", styling.Points(1))),
+		).
+		AddShape(
+			shapes.NewEllipse(4.6, 1.8, 1.8, 1.8).
+				WithText("Circle").
+				WithFill(shapes.NewShapeFill("FCE4D6")).
+				WithLine(shapes.NewShapeLine("9C3F00", styling.Points(1))),
+		).
+		AddConnector(
+			shapes.NewStraightConnector(
+				styling.Inches(2.6),
+				styling.Inches(2.7),
+				styling.Inches(4.6),
+				styling.Inches(2.7),
+			).WithLine(shapes.NewShapeLine("444444", styling.Points(1.5))),
+		)
+	_ = pptx.NewPresentationBuilder("S06 Add Basic Shapes").AddSlide(slide).WriteToFile("s06-go.pptx")
 }
 ```
 

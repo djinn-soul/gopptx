@@ -74,3 +74,12 @@ func DistributeUniform(
 ) ([]styling.Length, error) {
 	return layout.DistributeUniform(orientation, bounds, count, elementSize)
 }
+
+// DistributeNonUniform calculates the top or left coordinates to space variable-sized elements with uniform gaps within a bound.
+func DistributeNonUniform(
+	orientation string,
+	bounds common.Box,
+	sizes []styling.Length,
+) ([]styling.Length, error) {
+	return layout.DistributeNonUniform(orientation, bounds, sizes)
+}

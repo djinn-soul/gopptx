@@ -143,6 +143,61 @@ func TestDistributeSingleElement(t *testing.T) {
 	}
 }
 
+func TestDistributeNonUniform(t *testing.T) {
+	bounds := common.Box{X: 0, Y: 0, CX: 1000, CY: 1000}
+	sizes := []styling.Length{styling.Emu(100), styling.Emu(200), styling.Emu(300)}
+
+	// Horizontal: total size = 600. Remaining = 400. Gaps = 2. Gap size = 200.
+	// Coords: 0, 100+200=300, 300+200+200=700
+	coords, err := DistributeNonUniform(OrientationHorizontal, bounds, sizes)
+	if err != nil {
+		t.Fatalf("DistributeNonUniform failed: %v", err)
+	}
+	if coords[0] != 0 {
+		t.Errorf("expected first coord 0, got %d", coords[0])
+	}
+	if coords[1] != 300 {
+		t.Errorf("expected second coord 300, got %d", coords[1])
+	}
+	if coords[2] != 700 {
+		t.Errorf("expected third coord 700, got %d", coords[2])
+	}
+
+	// Single element: centered.
+	single, err := DistributeNonUniform(
+		OrientationVertical, bounds, []styling.Length{styling.Emu(200)},
+	)
+	if err != nil {
+		t.Fatalf("single DistributeNonUniform failed: %v", err)
+	}
+	if single[0] != 400 {
+		t.Errorf("expected single coord 400, got %d", single[0])
+	}
+}
+
+func TestDistributeNonUniformErrors(t *testing.T) {
+	bounds := common.Box{X: 0, Y: 0, CX: 1000, CY: 1000}
+
+	if _, err := DistributeNonUniform(OrientationHorizontal, bounds, nil); err == nil {
+		t.Error("expected error for empty sizes")
+	}
+	if _, err := DistributeNonUniform(
+		"diagonal", bounds, []styling.Length{100, 200},
+	); err == nil {
+		t.Error("expected error for invalid orientation")
+	}
+	if _, err := DistributeNonUniform(
+		OrientationHorizontal, bounds, []styling.Length{600, 600},
+	); err == nil {
+		t.Error("expected error for elements exceeding space")
+	}
+	if _, err := DistributeNonUniform(
+		OrientationHorizontal, bounds, []styling.Length{100, -50},
+	); err == nil {
+		t.Error("expected error for negative size")
+	}
+}
+
 func TestLayoutHelpersErrors(t *testing.T) {
 	_, err := Grid(0, 1, 0)
 	if err == nil {

@@ -7,7 +7,7 @@ import (
 
 	logx "github.com/djinn-soul/gopptx/pkg/stdlog"
 
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/customxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 )
@@ -21,9 +21,9 @@ func main() {
 	roundTripPath := filepath.Join(outDir, "27_custom_xml_roundtrip.pptx")
 
 	// 1. Create a blank baseline presentation
-	p := &gopptx.Presentation{}
-	p.AddSlide()
-	if err := p.Save(outputPath); err != nil {
+	if err := pptx.NewPresentationBuilder("Presentation").
+		AddSlide(pptx.NewSlide("Slide 1")).
+		WriteToFile(outputPath); err != nil {
 		log.Fatalf("failed to save baseline presentation: %v", err)
 	}
 	logx.Printf("Created baseline presentation at %s\n", outputPath)
