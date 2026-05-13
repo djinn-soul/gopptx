@@ -1,7 +1,7 @@
 package pptxxml
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -45,43 +45,56 @@ func txStylesXML(spec *SlideMasterSpec) string {
 //nolint:mnd // Contains specific level limits and point conversion factors.
 func textLevelStylesXML(levels []TextLevelStyle) string {
 	var b strings.Builder
+	b.Grow(256 * len(levels))
 	for _, lvl := range levels {
 		lvlNum := max(lvl.Level+1, 1) // 0-based -> 1-based
 		lvlNum = min(lvlNum, 9)
+		lvlNumStr := strconv.Itoa(lvlNum)
 
-		attrs := ""
+		b.WriteString("\n<a:lvl")
+		b.WriteString(lvlNumStr)
+		b.WriteString("pPr")
 		if lvl.IndentEMU > 0 {
-			attrs += fmt.Sprintf(` indent="%d"`, lvl.IndentEMU)
+			b.WriteString(` indent="`)
+			b.WriteString(strconv.FormatInt(lvl.IndentEMU, 10))
+			b.WriteString(`"`)
 		}
-
-		b.WriteString(fmt.Sprintf(`
-<a:lvl%dpPr%s>`, lvlNum, attrs))
+		b.WriteString(`>`)
 		if lvl.BulletChar != "" {
-			b.WriteString(fmt.Sprintf(`<a:buChar char="%s"/>`, Escape(lvl.BulletChar)))
+			b.WriteString(`<a:buChar char="`)
+			b.WriteString(Escape(lvl.BulletChar))
+			b.WriteString(`"/>`)
 		}
 
-		rprAttrs := ""
+		b.WriteString(`<a:defRPr`)
 		if lvl.SizePt > 0 {
-			rprAttrs += fmt.Sprintf(` sz="%d"`, lvl.SizePt*100)
+			b.WriteString(` sz="`)
+			b.WriteString(strconv.Itoa(lvl.SizePt * 100))
+			b.WriteString(`"`)
 		}
 		if lvl.Bold {
-			rprAttrs += ` b="1"`
+			b.WriteString(` b="1"`)
 		}
 		if lvl.Italic {
-			rprAttrs += ` i="1"`
+			b.WriteString(` i="1"`)
 		}
-		b.WriteString(fmt.Sprintf(`<a:defRPr%s>`, rprAttrs))
+		b.WriteString(`>`)
 
 		if lvl.Color != "" {
 			color := strings.TrimPrefix(lvl.Color, "#")
-			b.WriteString(fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, color))
+			b.WriteString(`<a:solidFill><a:srgbClr val="`)
+			b.WriteString(color)
+			b.WriteString(`"/></a:solidFill>`)
 		}
 		if lvl.Font != "" {
-			b.WriteString(fmt.Sprintf(`<a:latin typeface="%s"/>`, Escape(lvl.Font)))
+			b.WriteString(`<a:latin typeface="`)
+			b.WriteString(Escape(lvl.Font))
+			b.WriteString(`"/>`)
 		}
 		b.WriteString(`</a:defRPr>`)
-		b.WriteString(fmt.Sprintf(`
-</a:lvl%dpPr>`, lvlNum))
+		b.WriteString("\n</a:lvl")
+		b.WriteString(lvlNumStr)
+		b.WriteString("pPr>")
 	}
 	return b.String()
 }
@@ -98,22 +111,26 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 		themeIndex = 1
 	}
 	var b strings.Builder
+	b.Grow(1024)
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
 	for i := 1; i <= 6; i++ {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/%s"/>`,
-			i, slideLayoutPartName(i, masterIndex)))
+		b.WriteString("\n<Relationship Id=\"rId")
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/`)
+		b.WriteString(slideLayoutPartName(i, masterIndex))
+		b.WriteString(`"/>`)
 	}
-	b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId7" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme%d.xml"/>`,
-		themeIndex))
+	b.WriteString("\n<Relationship Id=\"rId7\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme\" Target=\"../theme/theme")
+	b.WriteString(strconv.Itoa(themeIndex))
+	b.WriteString(`.xml"/>`)
 	for i, target := range imageTargets {
-		b.WriteString(fmt.Sprintf(`
-<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="%s"/>`,
-			imageRidStart+i, Escape(target)))
+		b.WriteString("\n<Relationship Id=\"rId")
+		b.WriteString(strconv.Itoa(imageRidStart + i))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="`)
+		b.WriteString(Escape(target))
+		b.WriteString(`"/>`)
 	}
-	b.WriteString(`
-</Relationships>`)
+	b.WriteString("\n</Relationships>")
 	return b.String()
 }

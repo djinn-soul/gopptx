@@ -15,8 +15,19 @@ type mediaInventoryEntry struct {
 }
 
 func (e *PresentationEditor) verifyMediaInventoryChecksumsParallel() error {
+	// Skip when nothing media-related has changed since last successful verification.
+	e.mediaMu.Lock()
+	if !e.mediaInventoryDirty {
+		e.mediaMu.Unlock()
+		return nil
+	}
+	e.mediaMu.Unlock()
+
 	entries := e.snapshotMediaInventoryEntries()
 	if len(entries) == 0 {
+		e.mediaMu.Lock()
+		e.mediaInventoryDirty = false
+		e.mediaMu.Unlock()
 		return nil
 	}
 
@@ -74,6 +85,9 @@ func (e *PresentationEditor) verifyMediaInventoryChecksumsParallel() error {
 	case err := <-errCh:
 		return err
 	default:
+		e.mediaMu.Lock()
+		e.mediaInventoryDirty = false
+		e.mediaMu.Unlock()
 		return nil
 	}
 }
