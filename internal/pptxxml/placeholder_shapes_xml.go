@@ -2,15 +2,23 @@ package pptxxml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
 func PlaceholderShape(ph PlaceholderOverrideSpec, id int) string {
-	phAttr := fmt.Sprintf(` idx="%d"`, ph.Index)
+	var pb strings.Builder
+	pb.Grow(40)
+	pb.WriteString(` idx="`)
+	pb.WriteString(strconv.Itoa(ph.Index))
+	pb.WriteString(`"`)
 	phType := NormalizePlaceholderType(ph.Type)
 	if phType != "" && phType != "obj" {
-		phAttr += fmt.Sprintf(` type="%s"`, phType)
+		pb.WriteString(` type="`)
+		pb.WriteString(phType)
+		pb.WriteString(`"`)
 	}
+	phAttr := pb.String()
 
 	if ph.Image != nil {
 		return renderPlaceholderImage(ph.Image, id, phAttr)
@@ -221,9 +229,12 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 		return ""
 	}
 	var b strings.Builder
+	b.Grow(192)
 	b.WriteString("<a:pPr")
 	if ts.Align != nil {
-		b.WriteString(fmt.Sprintf(` algn="%s"`, Escape(*ts.Align)))
+		b.WriteString(` algn="`)
+		b.WriteString(Escape(*ts.Align))
+		b.WriteString(`"`)
 	}
 	b.WriteString(">")
 	//nolint:nestif // Attribute emission is intentionally explicit per optional style field.
@@ -231,25 +242,35 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 		ts.Font != nil {
 		b.WriteString("<a:defRPr")
 		if ts.Bold != nil {
-			b.WriteString(fmt.Sprintf(` b="%s"`, boolToFlag(*ts.Bold)))
+			b.WriteString(` b="`)
+			b.WriteString(boolToFlag(*ts.Bold))
+			b.WriteString(`"`)
 		}
 		if ts.Italic != nil {
-			b.WriteString(fmt.Sprintf(` i="%s"`, boolToFlag(*ts.Italic)))
+			b.WriteString(` i="`)
+			b.WriteString(boolToFlag(*ts.Italic))
+			b.WriteString(`"`)
 		}
 		if ts.SizePt != nil {
-			b.WriteString(fmt.Sprintf(` sz="%d"`, *ts.SizePt*ptFactor))
+			b.WriteString(` sz="`)
+			b.WriteString(strconv.Itoa(*ts.SizePt * ptFactor))
+			b.WriteString(`"`)
 		}
 		if ts.Underline != nil {
-			b.WriteString(fmt.Sprintf(` u="%s"`, Escape(*ts.Underline)))
+			b.WriteString(` u="`)
+			b.WriteString(Escape(*ts.Underline))
+			b.WriteString(`"`)
 		}
 		b.WriteString(">")
 		if ts.Color != nil {
-			b.WriteString(
-				fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, strings.TrimPrefix(*ts.Color, "#")),
-			)
+			b.WriteString(`<a:solidFill><a:srgbClr val="`)
+			b.WriteString(strings.TrimPrefix(*ts.Color, "#"))
+			b.WriteString(`"/></a:solidFill>`)
 		}
 		if ts.Font != nil {
-			b.WriteString(fmt.Sprintf(`<a:latin typeface="%s"/>`, Escape(*ts.Font)))
+			b.WriteString(`<a:latin typeface="`)
+			b.WriteString(Escape(*ts.Font))
+			b.WriteString(`"/>`)
 		}
 		b.WriteString("</a:defRPr>")
 	}

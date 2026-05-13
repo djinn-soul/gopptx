@@ -1,7 +1,6 @@
 package pptxxml
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -68,55 +67,70 @@ func richShapeFillXML(fill RichShapeFillSpec) string {
 }
 
 func richSolidFillXML(fill SolidFillSpec) string {
-	alphaXML := ""
+	var b strings.Builder
+	b.Grow(96)
+	b.WriteString(`<a:solidFill><a:srgbClr val="`)
+	b.WriteString(Escape(fill.Color))
+	b.WriteString(`">`)
 	if fill.Transparency > 0 {
 		alphaVal := int((1.0 - fill.Transparency) * transparencyBase)
-		alphaXML = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaVal)
+		b.WriteString(`<a:alpha val="`)
+		b.WriteString(strconv.Itoa(alphaVal))
+		b.WriteString(`"/>`)
 	}
-	return fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s">%s</a:srgbClr></a:solidFill>`,
-		Escape(fill.Color), alphaXML)
+	b.WriteString(`</a:srgbClr></a:solidFill>`)
+	return b.String()
 }
 
 func richPatternFillXML(fill PatternFillSpec) string {
-	return fmt.Sprintf(
-		`<a:pattFill prst="%s">`+
-			`<a:fgClr><a:srgbClr val="%s"/></a:fgClr>`+
-			`<a:bgClr><a:srgbClr val="%s"/></a:bgClr>`+
-			`</a:pattFill>`,
-		Escape(fill.Pattern),
-		Escape(fill.FgColor),
-		Escape(fill.BgColor),
-	)
+	var b strings.Builder
+	b.Grow(160)
+	b.WriteString(`<a:pattFill prst="`)
+	b.WriteString(Escape(fill.Pattern))
+	b.WriteString(`"><a:fgClr><a:srgbClr val="`)
+	b.WriteString(Escape(fill.FgColor))
+	b.WriteString(`"/></a:fgClr><a:bgClr><a:srgbClr val="`)
+	b.WriteString(Escape(fill.BgColor))
+	b.WriteString(`"/></a:bgClr></a:pattFill>`)
+	return b.String()
 }
 
 func richShapeLineXML(line RichShapeLineSpec) string {
-	attrs := fmt.Sprintf(`w="%d"`, line.Width)
+	var b strings.Builder
+	b.Grow(160)
+	b.WriteString(`<a:ln w="`)
+	b.WriteString(strconv.FormatInt(line.Width, 10))
+	b.WriteString(`"`)
 	if line.CapStyle != "" {
-		attrs += fmt.Sprintf(` cap="%s"`, string(line.CapStyle))
+		b.WriteString(` cap="`)
+		b.WriteString(string(line.CapStyle))
+		b.WriteString(`"`)
 	}
-
-	dashXML := ""
-	if line.DashStyle != "" && line.DashStyle != LineDashStyleSolid {
-		dashXML = fmt.Sprintf(`<a:prstDash val="%s"/>`, string(line.DashStyle))
-	}
-
-	joinXML := ""
-	switch line.JoinStyle {
-	case LineJoinStyleBevel:
-		joinXML = `<a:bevel/>`
-	case LineJoinStyleMiter:
-		joinXML = `<a:miter/>`
-	case LineJoinStyleRound:
-		joinXML = `<a:round/>`
-	}
-
-	alphaXML := ""
+	b.WriteString(`><a:solidFill><a:srgbClr val="`)
+	b.WriteString(Escape(line.Color))
+	b.WriteString(`">`)
 	if line.Transparency > 0 {
 		alphaVal := int((1.0 - line.Transparency) * transparencyBase)
-		alphaXML = fmt.Sprintf(`<a:alpha val="%d"/>`, alphaVal)
+		b.WriteString(`<a:alpha val="`)
+		b.WriteString(strconv.Itoa(alphaVal))
+		b.WriteString(`"/>`)
 	}
-	return fmt.Sprintf(`<a:ln %s><a:solidFill><a:srgbClr val="%s">%s</a:srgbClr></a:solidFill>%s%s</a:ln>`,
-		attrs, Escape(line.Color), alphaXML, dashXML, joinXML)
+	b.WriteString(`</a:srgbClr></a:solidFill>`)
+	if line.DashStyle != "" && line.DashStyle != LineDashStyleSolid {
+		b.WriteString(`<a:prstDash val="`)
+		b.WriteString(string(line.DashStyle))
+		b.WriteString(`"/>`)
+	}
+	switch line.JoinStyle {
+	case LineJoinStyleBevel:
+		b.WriteString(`<a:bevel/>`)
+	case LineJoinStyleMiter:
+		b.WriteString(`<a:miter/>`)
+	case LineJoinStyleRound:
+		b.WriteString(`<a:round/>`)
+	}
+	b.WriteString(`</a:ln>`)
+	return b.String()
 }
 
 func richShapeShadowXML(shadow RichShapeShadowSpec) string {
@@ -135,14 +149,22 @@ func richShapeShadowXML(shadow RichShapeShadowSpec) string {
 }
 
 func richOuterShadowXML(shadow RichShapeShadowSpec) string {
-	attrs := shadowBlurDistDirAttrs(shadow)
+	var b strings.Builder
+	b.Grow(180)
+	b.WriteString(`<a:outerShdw `)
+	writeShadowBlurDistDirAttrs(&b, shadow)
 	if shadow.Alignment != "" {
-		attrs += fmt.Sprintf(` algn="%s"`, Escape(shadow.Alignment))
+		b.WriteString(` algn="`)
+		b.WriteString(Escape(shadow.Alignment))
+		b.WriteString(`"`)
 	}
 	if !shadow.RotateWithShape {
-		attrs += ` rotWithShape="0"`
+		b.WriteString(` rotWithShape="0"`)
 	}
-	alphaVal := shadowAlphaValue(shadow.Transparency)
-	return fmt.Sprintf(`<a:outerShdw %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:outerShdw>`,
-		attrs, Escape(shadow.Color), alphaVal)
+	b.WriteString(`><a:srgbClr val="`)
+	b.WriteString(Escape(shadow.Color))
+	b.WriteString(`"><a:alpha val="`)
+	b.WriteString(strconv.Itoa(shadowAlphaValue(shadow.Transparency)))
+	b.WriteString(`"/></a:srgbClr></a:outerShdw>`)
+	return b.String()
 }
