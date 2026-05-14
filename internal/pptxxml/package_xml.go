@@ -8,6 +8,9 @@ const (
 )
 
 // Escape replaces XML-sensitive characters with entity references.
+// strings.Replacer.Replace already returns the input unchanged when no
+// replacements are needed, so adding a ContainsAny fast-path was a
+// micro-benchmark loss. Keep the direct Replacer call.
 func Escape(value string) string {
 	return xmlEscapeReplacer.Replace(value)
 }

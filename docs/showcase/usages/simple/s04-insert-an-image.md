@@ -8,16 +8,13 @@
 package main
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func main() {
-	pres := &gopptx.Presentation{Title: "S04 Insert an Image"}
-	slide := pres.AddSlide()
-	slide.Title = "Insert an Image"
-	slide.AddImage(
+	slide := pptx.NewSlide("Insert an Image").AddImage(
 		shapes.NewImage(
 			"examples/assets/55/repository-open-graph-template.png",
 			styling.Inches(0.8),
@@ -26,7 +23,7 @@ func main() {
 			styling.Inches(4.6),
 		).WithAltText("Inserted PNG sample"),
 	)
-	_ = pres.Save("s04-go.pptx")
+	_ = pptx.NewPresentationBuilder("S04 Insert an Image").AddSlide(slide).WriteToFile("s04-go.pptx")
 }
 ```
 

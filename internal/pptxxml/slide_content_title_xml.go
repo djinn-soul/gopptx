@@ -33,7 +33,7 @@ func centeredTitleShape(title TitleSpec, width, height int64) string {
 	y := (height - cy) / 2
 	align := title.Align
 	if align == "" {
-		align = "ctr"
+		align = dataLabelPosCenter
 	}
 	return titleShapeAt(title, x, y, cx, cy, align)
 }

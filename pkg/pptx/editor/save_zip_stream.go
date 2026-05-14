@@ -22,14 +22,21 @@ var rawZipCopyBufferPool = sync.Pool{
 // mergedPartNames returns the sorted union of existing part keys and any extra
 // keys present in updatedParts that are not already in keys.
 func mergedPartNames(keys []string, updatedParts map[string][]byte) []string {
-	var extraKeys []string
+	// First pass: count extras to pre-size slice (avoids append re-growth).
+	extraCount := 0
+	for k := range updatedParts {
+		if i := sort.SearchStrings(keys, k); i >= len(keys) || keys[i] != k {
+			extraCount++
+		}
+	}
+	if extraCount == 0 {
+		return keys
+	}
+	extraKeys := make([]string, 0, extraCount)
 	for k := range updatedParts {
 		if i := sort.SearchStrings(keys, k); i >= len(keys) || keys[i] != k {
 			extraKeys = append(extraKeys, k)
 		}
-	}
-	if len(extraKeys) == 0 {
-		return keys
 	}
 	sort.Strings(extraKeys)
 	merged := make([]string, 0, len(keys)+len(extraKeys))

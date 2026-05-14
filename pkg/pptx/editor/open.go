@@ -130,6 +130,8 @@ func NewPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 
 	partKeys := ps.Keys()
 	editor.mediaInventory, editor.nextMediaNum = editorslide.ParseMediaInventory(ps, partKeys)
+	// Force one verification pass on next Save to detect source-archive corruption.
+	editor.mediaInventoryDirty = len(editor.mediaInventory) > 0
 	if sectionData, sectionOK := ps.Get("ppt/sectionList.xml"); sectionOK {
 		sections, err := parseSectionListXML(sectionData)
 		if err != nil {

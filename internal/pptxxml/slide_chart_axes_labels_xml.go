@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const dataLabelPosCenter = "ctr"
+
 type chartDataLabelDefaults struct {
 	showLegendKey  bool
 	showValue      bool
@@ -164,7 +166,7 @@ func normalizedAxisCrosses(mode string) string {
 
 func normalizedDataLabelPosition(position string) string {
 	switch strings.TrimSpace(position) {
-	case "ctr", "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
+	case dataLabelPosCenter, "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
 		return strings.TrimSpace(position)
 	default:
 		return ""
