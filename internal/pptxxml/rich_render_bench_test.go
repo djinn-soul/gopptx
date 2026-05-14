@@ -372,3 +372,22 @@ func makeFullStackFixture() (SolidFillSpec, RichShapeLineSpec, RichShapeShadowSp
 	}
 	return fill, line, shadow
 }
+
+// TestRichRenderBaselineParity guards that the optimized rich-render helpers
+// emit XML byte-identical to their pre-optimization baseline implementations.
+func TestRichRenderBaselineParity(t *testing.T) {
+	fill, line, shadow := makeFullStackFixture()
+	fill.Transparency = 0.2
+	line.Transparency = 0.1
+	shadow.Alignment = "ctr"
+
+	if got, want := richSolidFillXML(fill), baselineRichSolidFill(fill); got != want {
+		t.Errorf("solid fill mismatch:\n got: %s\nwant: %s", got, want)
+	}
+	if got, want := richShapeLineXML(line), baselineRichLine(line); got != want {
+		t.Errorf("rich line mismatch:\n got: %s\nwant: %s", got, want)
+	}
+	if got, want := richOuterShadowXML(shadow), baselineOuterShadow(shadow); got != want {
+		t.Errorf("outer shadow mismatch:\n got: %s\nwant: %s", got, want)
+	}
+}

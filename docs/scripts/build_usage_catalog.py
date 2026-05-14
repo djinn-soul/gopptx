@@ -418,15 +418,14 @@ def go_code(entry: UsageEntry) -> str:
             '    if err := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/tools/visual_regression/export_pptx_png.ps1", "-PptxPath", deckPath, "-OutDir", pngDir).Run(); err != nil { panic(err) }\n'
             "}\n"
         )
-    bullet_lines = "\n".join([f'\t\tAddBullet("{b}").' for b in entry.bullets])
-    if bullet_lines:
-        bullet_lines = bullet_lines.rstrip(".")
+    # Build the fluent chain conditionally: an empty bullet list must not leave
+    # a dangling `.` after NewSlide(...) (that is a Go syntax error).
+    bullet_lines = "".join([f'.\n\t\tAddBullet("{b}")' for b in entry.bullets])
     return (
         "package main\n\n"
         'import "github.com/djinn-soul/gopptx/pkg/pptx"\n\n'
         "func main() {\n"
-        f'\tslide := pptx.NewSlide("{entry.title}").\n'
-        f"{bullet_lines}\n"
+        f'\tslide := pptx.NewSlide("{entry.title}"){bullet_lines}\n'
         f'\t_ = pptx.NewPresentationBuilder("{entry.id} {entry.title}").AddSlide(slide).WriteToFile("{entry.id.lower()}-go.pptx")\n'
         "}\n"
     )

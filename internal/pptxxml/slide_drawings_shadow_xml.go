@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+const (
+	richInnerShadowGrowCap       = 160
+	richPerspectiveShadowGrowCap = 200
+)
+
 func shadowDirEMU(angle float64) int {
 	return int(angle * emusPerDegree)
 }
@@ -33,7 +38,7 @@ func writeShadowDistDirAttrs(b *strings.Builder, shadow RichShapeShadowSpec) {
 
 func richInnerShadowXML(shadow RichShapeShadowSpec) string {
 	var b strings.Builder
-	b.Grow(160)
+	b.Grow(richInnerShadowGrowCap)
 	b.WriteString(`<a:innerShdw `)
 	writeShadowBlurDistDirAttrs(&b, shadow)
 	b.WriteString(`><a:srgbClr val="`)
@@ -46,7 +51,7 @@ func richInnerShadowXML(shadow RichShapeShadowSpec) string {
 
 func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
 	var b strings.Builder
-	b.Grow(200)
+	b.Grow(richPerspectiveShadowGrowCap)
 	b.WriteString(`<a:prstShdw prst="shdw1" `)
 	writeShadowDistDirAttrs(&b, shadow)
 	if shadow.SkewX != 0 || shadow.SkewY != 0 {

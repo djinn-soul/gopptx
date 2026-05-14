@@ -23,9 +23,9 @@ func NormalizeHexColor(color string) string {
 }
 
 func isUpperHex6(s string) bool {
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		c := s[i]
-		if !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')) {
+		if (c < '0' || c > '9') && (c < 'A' || c > 'F') {
 			return false
 		}
 	}

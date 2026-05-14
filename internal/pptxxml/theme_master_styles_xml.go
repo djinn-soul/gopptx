@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const slideMasterRelsGrowCap = 1024
+
 // txStylesXML renders the <p:txStyles> block for a slide master.
 func txStylesXML(spec *SlideMasterSpec) string {
 	if spec == nil || spec.TxStyles == nil {
@@ -111,17 +113,24 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 		themeIndex = 1
 	}
 	var b strings.Builder
-	b.Grow(1024)
+	b.Grow(slideMasterRelsGrowCap)
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
 	for i := 1; i <= 6; i++ {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/`)
+		b.WriteString(
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"` +
+				` Target="../slideLayouts/`,
+		)
 		b.WriteString(slideLayoutPartName(i, masterIndex))
 		b.WriteString(`"/>`)
 	}
-	b.WriteString("\n<Relationship Id=\"rId7\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme\" Target=\"../theme/theme")
+	b.WriteString(
+		"\n<Relationship Id=\"rId7\"" +
+			" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme\"" +
+			" Target=\"../theme/theme",
+	)
 	b.WriteString(strconv.Itoa(themeIndex))
 	b.WriteString(`.xml"/>`)
 	for i, target := range imageTargets {
