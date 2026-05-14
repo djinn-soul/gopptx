@@ -8,42 +8,41 @@
 package main
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 func main() {
-	pres := &gopptx.Presentation{Title: "S09 Image Positioning and Scaling"}
-	slide := pres.AddSlide()
-	slide.AddImage(
-		shapes.NewImage(
-			"examples/assets/test_image.png",
-			styling.Inches(0.5),
-			styling.Inches(1.0),
-			styling.Inches(3.0),
-			styling.Inches(3.0),
-		),
-	)
-	slide.AddImage(
-		shapes.NewImage(
-			"examples/assets/test_image.png",
-			styling.Inches(4.0),
-			styling.Inches(1.0),
-			styling.Inches(2.2),
-			styling.Inches(2.2),
-		),
-	)
-	slide.AddImage(
-		shapes.NewImage(
-			"examples/assets/test_image.png",
-			styling.Inches(6.7),
-			styling.Inches(2.0),
-			styling.Inches(1.4),
-			styling.Inches(1.4),
-		),
-	)
-	_ = pres.Save("s09-go.pptx")
+	slide := pptx.NewSlide("").
+		AddImage(
+			shapes.NewImage(
+				"examples/assets/test_image.png",
+				styling.Inches(0.5),
+				styling.Inches(1.0),
+				styling.Inches(3.0),
+				styling.Inches(3.0),
+			),
+		).
+		AddImage(
+			shapes.NewImage(
+				"examples/assets/test_image.png",
+				styling.Inches(4.0),
+				styling.Inches(1.0),
+				styling.Inches(2.2),
+				styling.Inches(2.2),
+			),
+		).
+		AddImage(
+			shapes.NewImage(
+				"examples/assets/test_image.png",
+				styling.Inches(6.7),
+				styling.Inches(2.0),
+				styling.Inches(1.4),
+				styling.Inches(1.4),
+			),
+		)
+	_ = pptx.NewPresentationBuilder("S09 Image Positioning and Scaling").AddSlide(slide).WriteToFile("s09-go.pptx")
 }
 ```
 

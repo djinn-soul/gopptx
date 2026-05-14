@@ -418,16 +418,15 @@ def go_code(entry: UsageEntry) -> str:
             '    if err := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/tools/visual_regression/export_pptx_png.ps1", "-PptxPath", deckPath, "-OutDir", pngDir).Run(); err != nil { panic(err) }\n'
             "}\n"
         )
-    bullet_lines = "\n".join([f'\tslide.AddBullet("{b}")' for b in entry.bullets])
+    # Build the fluent chain conditionally: an empty bullet list must not leave
+    # a dangling `.` after NewSlide(...) (that is a Go syntax error).
+    bullet_lines = "".join([f'.\n\t\tAddBullet("{b}")' for b in entry.bullets])
     return (
         "package main\n\n"
-        'import "github.com/djinn-soul/gopptx/pkg/gopptx"\n\n'
+        'import "github.com/djinn-soul/gopptx/pkg/pptx"\n\n'
         "func main() {\n"
-        f'\tpres := &gopptx.Presentation{{Title: "{entry.id} {entry.title}"}}\n'
-        "\tslide := pres.AddSlide()\n"
-        f'\tslide.Title = "{entry.title}"\n'
-        f"{bullet_lines}\n"
-        f'\t_ = pres.Save("{entry.id.lower()}-go.pptx")\n'
+        f'\tslide := pptx.NewSlide("{entry.title}"){bullet_lines}\n'
+        f'\t_ = pptx.NewPresentationBuilder("{entry.id} {entry.title}").AddSlide(slide).WriteToFile("{entry.id.lower()}-go.pptx")\n'
         "}\n"
     )
 

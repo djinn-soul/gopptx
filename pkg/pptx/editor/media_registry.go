@@ -47,6 +47,7 @@ func (e *PresentationEditor) RegisterMedia(data []byte, ext string) (string, err
 
 	e.parts.Set(partPath, data)
 	e.mediaInventory[hexHash] = partPath
+	e.mediaInventoryDirty = true
 
 	return partPath, nil
 }
@@ -75,6 +76,7 @@ func (e *PresentationEditor) RegisterEmbedding(data []byte, ext string) (string,
 
 	e.parts.Set(partPath, data)
 	e.mediaInventory[hexHash] = partPath
+	e.mediaInventoryDirty = true
 
 	return partPath, nil
 }

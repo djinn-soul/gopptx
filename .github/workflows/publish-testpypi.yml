@@ -3,14 +3,13 @@ name: Publish to TestPyPI
 on:
   push:
     tags:
-      - "v*a[0-9]*"     # alpha:   v0.1.0a1
-      - "v*b[0-9]*"     # beta:    v0.1.0b1
-      - "v*rc[0-9]*"    # rc:      v0.1.0rc1
-      - "v*.dev[0-9]*"  # dev/test: v0.1.0.dev1
+      # Unified SemVer scheme — the same tags also drive .github/workflows/release-go.yml.
+      - "v[0-9]+.[0-9]+.[0-9]+"      # stable:      v0.1.0
+      - "v[0-9]+.[0-9]+.[0-9]+-*"    # prerelease:  v0.1.0-alpha.1, v0.1.0-beta.1, v0.1.0-rc.1, v0.1.0-dev.1
   workflow_dispatch:
     inputs:
       version:
-        description: "PEP 440 version (without 'v', e.g. 0.1.0a1, 0.1.0rc1, 0.1.0.dev1)"
+        description: "PEP 440 version (without 'v', e.g. 0.1.0, 0.1.0rc1, 0.1.0.dev1)"
         required: true
 
 # Cancel any in-progress run for the same tag/branch
@@ -20,7 +19,7 @@ concurrency:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # Extract version from tag (v0.1.0-test1 → 0.1.0-test1)
+  # Extract version from tag (SemVer v0.1.0-rc.1 → PEP 440 0.1.0rc1)
   # or from workflow_dispatch input
   # ─────────────────────────────────────────────────────────────
   set-version:
@@ -41,6 +40,14 @@ jobs:
           else
             TAG="$REF_NAME"
             VERSION="${TAG#v}"          # strip leading 'v'
+            # Normalize SemVer pre-release suffix -> PEP 440:
+            #   v0.1.0-alpha.1 -> 0.1.0a1    v0.1.0-beta.2 -> 0.1.0b2
+            #   v0.1.0-rc.1    -> 0.1.0rc1   v0.1.0-dev.1  -> 0.1.0.dev1
+            VERSION="$(printf '%s' "$VERSION" | sed -E \
+              -e 's/-alpha\.?([0-9]+)/a\1/'  \
+              -e 's/-beta\.?([0-9]+)/b\1/'   \
+              -e 's/-rc\.?([0-9]+)/rc\1/'    \
+              -e 's/-dev\.?([0-9]+)/.dev\1/')"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Building version: $VERSION"
@@ -94,7 +101,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"           # caches pip downloads
 
       - name: Setup Zig (Linux cross-compile)
         if: runner.os == 'Linux'
@@ -164,7 +170,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Build sdist
         run: uv build --sdist

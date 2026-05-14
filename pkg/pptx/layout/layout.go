@@ -112,6 +112,57 @@ func Stack(
 	return points, nil
 }
 
+// DistributeNonUniform calculates the top or left coordinates to evenly space elements
+// of variable sizes within a bound. Gaps between elements are uniform; element sizes are not.
+// orientation can be "horizontal" or "vertical".
+func DistributeNonUniform(
+	orientation string,
+	bounds common.Box,
+	sizes []styling.Length,
+) ([]styling.Length, error) {
+	if len(sizes) == 0 {
+		return nil, errors.New("sizes must contain at least one element")
+	}
+	if orientation != OrientationHorizontal && orientation != OrientationVertical {
+		return nil, fmt.Errorf("invalid orientation: %s", orientation)
+	}
+
+	var totalAvailable, startCoord styling.Length
+	switch orientation {
+	case OrientationHorizontal:
+		totalAvailable = bounds.CX
+		startCoord = bounds.X
+	case OrientationVertical:
+		totalAvailable = bounds.CY
+		startCoord = bounds.Y
+	}
+
+	var totalSize styling.Length
+	for _, s := range sizes {
+		if s < 0 {
+			return nil, errors.New("element sizes must be non-negative")
+		}
+		totalSize += s
+	}
+	if totalSize > totalAvailable {
+		return nil, errors.New("elements exceed available space")
+	}
+
+	if len(sizes) == 1 {
+		coord := startCoord + (totalAvailable-sizes[0])/centerDivisor
+		return []styling.Length{coord}, nil
+	}
+
+	gap := (totalAvailable - totalSize) / styling.Length(len(sizes)-1)
+	coords := make([]styling.Length, len(sizes))
+	cursor := startCoord
+	for i, s := range sizes {
+		coords[i] = cursor
+		cursor += s + gap
+	}
+	return coords, nil
+}
+
 // DistributeUniform calculates the top or left coordinates to evenly space elements of identical size within a bound.
 // orientation can be "horizontal" or "vertical".
 // count is the number of elements to distribute.

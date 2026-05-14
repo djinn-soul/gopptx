@@ -111,6 +111,8 @@ linters:
               desc: Use github.com/google/uuid instead.
             - pkg: github.com/gofrs/uuid$
               desc: Use github.com/gofrs/uuid/v5 or later.
+            - pkg: github.com/djinn-soul/gopptx/pkg/gopptx
+              desc: Removed legacy facade. Use github.com/djinn-soul/gopptx/pkg/pptx instead.
         non-test-files:
           files:
             - "!$test"
@@ -285,3 +287,5 @@ linters:
       - path: "pkg/pptx/mermaid/.*"
         linters:
           - mnd
+    paths:
+      - issues

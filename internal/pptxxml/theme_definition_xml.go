@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const defaultThemeFont = "Calibri"
+
 // Theme renders ppt/theme/theme1.xml.
 func Theme(spec *ThemeSpec) string {
 	name := "Office Theme"
@@ -107,7 +109,7 @@ func fallbackColor(val, def string) string {
 
 func themeFontsXML(spec *ThemeSpec) string {
 	fontName := "Office"
-	majorFont, minorFont := "Calibri", "Calibri"
+	majorFont, minorFont := defaultThemeFont, defaultThemeFont
 	if spec != nil {
 		if spec.Name != "" {
 			fontName = spec.Name

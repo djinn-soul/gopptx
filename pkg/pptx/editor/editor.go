@@ -33,8 +33,11 @@ type PresentationEditor struct {
 	mediaInventory map[string]string
 	nextMediaNum   int
 	mediaMu        sync.Mutex
-	imagePathCache map[string]imagePathCacheEntry
-	imagePathMu    sync.RWMutex
+	// mediaInventoryDirty tracks whether media has been added/changed since the last
+	// successful checksum verification. When false, Save can skip the SHA-256 re-hash.
+	mediaInventoryDirty bool
+	imagePathCache      map[string]imagePathCacheEntry
+	imagePathMu         sync.RWMutex
 
 	// Section management
 	sections []Section
