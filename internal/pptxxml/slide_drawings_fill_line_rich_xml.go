@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+const (
+	richSolidFillGrowCap   = 96
+	richPatternFillGrowCap = 160
+	richShapeLineGrowCap   = 160
+	richOuterShadowGrowCap = 180
+)
+
 func shapeSolidFillXML(fill ShapeFillSpec) string {
 	alphaXML := ""
 	if fill.Transparency != nil {
@@ -68,7 +75,7 @@ func richShapeFillXML(fill RichShapeFillSpec) string {
 
 func richSolidFillXML(fill SolidFillSpec) string {
 	var b strings.Builder
-	b.Grow(96)
+	b.Grow(richSolidFillGrowCap)
 	b.WriteString(`<a:solidFill><a:srgbClr val="`)
 	b.WriteString(Escape(fill.Color))
 	b.WriteString(`">`)
@@ -84,7 +91,7 @@ func richSolidFillXML(fill SolidFillSpec) string {
 
 func richPatternFillXML(fill PatternFillSpec) string {
 	var b strings.Builder
-	b.Grow(160)
+	b.Grow(richPatternFillGrowCap)
 	b.WriteString(`<a:pattFill prst="`)
 	b.WriteString(Escape(fill.Pattern))
 	b.WriteString(`"><a:fgClr><a:srgbClr val="`)
@@ -97,7 +104,7 @@ func richPatternFillXML(fill PatternFillSpec) string {
 
 func richShapeLineXML(line RichShapeLineSpec) string {
 	var b strings.Builder
-	b.Grow(160)
+	b.Grow(richShapeLineGrowCap)
 	b.WriteString(`<a:ln w="`)
 	b.WriteString(strconv.FormatInt(line.Width, 10))
 	b.WriteString(`"`)
@@ -150,7 +157,7 @@ func richShapeShadowXML(shadow RichShapeShadowSpec) string {
 
 func richOuterShadowXML(shadow RichShapeShadowSpec) string {
 	var b strings.Builder
-	b.Grow(180)
+	b.Grow(richOuterShadowGrowCap)
 	b.WriteString(`<a:outerShdw `)
 	writeShadowBlurDistDirAttrs(&b, shadow)
 	if shadow.Alignment != "" {

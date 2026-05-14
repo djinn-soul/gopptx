@@ -6,9 +6,14 @@ import (
 	"strings"
 )
 
+const (
+	placeholderShapeGrowCap     = 40
+	placeholderTextStyleGrowCap = 192
+)
+
 func PlaceholderShape(ph PlaceholderOverrideSpec, id int) string {
 	var pb strings.Builder
-	pb.Grow(40)
+	pb.Grow(placeholderShapeGrowCap)
 	pb.WriteString(` idx="`)
 	pb.WriteString(strconv.Itoa(ph.Index))
 	pb.WriteString(`"`)
@@ -229,7 +234,7 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 		return ""
 	}
 	var b strings.Builder
-	b.Grow(192)
+	b.Grow(placeholderTextStyleGrowCap)
 	b.WriteString("<a:pPr")
 	if ts.Align != nil {
 		b.WriteString(` algn="`)

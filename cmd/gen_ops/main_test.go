@@ -147,24 +147,24 @@ func TestOpsGeneratorDrift(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create py: %v", err)
 	}
-	if err := writeOpsPy(py, ops); err != nil {
-		_ = py.Close()
-		t.Fatalf("writeOpsPy: %v", err)
+	err = writeOpsPy(py, ops)
+	if closeErr := py.Close(); err == nil {
+		err = closeErr
 	}
-	if err := py.Close(); err != nil {
-		t.Fatalf("close py: %v", err)
+	if err != nil {
+		t.Fatalf("write/close py: %v", err)
 	}
 
 	pyi, err := os.Create(pyiPath)
 	if err != nil {
 		t.Fatalf("create pyi: %v", err)
 	}
-	if err := writeOpsPyi(pyi, ops); err != nil {
-		_ = pyi.Close()
-		t.Fatalf("writeOpsPyi: %v", err)
+	err = writeOpsPyi(pyi, ops)
+	if closeErr := pyi.Close(); err == nil {
+		err = closeErr
 	}
-	if err := pyi.Close(); err != nil {
-		t.Fatalf("close pyi: %v", err)
+	if err != nil {
+		t.Fatalf("write/close pyi: %v", err)
 	}
 
 	compareDrift(t, pyPath, committedPy, "ops.py")

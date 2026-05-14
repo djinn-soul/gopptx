@@ -1,0 +1,192 @@
+name: Release Go
+
+# Go libraries publish by pushing a git tag — the Go module proxy auto-indexes
+# it; there is no registry upload. This workflow:
+#   1. verifies the tag matches `pkg/pptx/version.go`
+#   2. builds + tests
+#   3. runs GoReleaser to cut a GitHub Release with cross-compiled `pptcli` binaries
+#   4. pings proxy.golang.org so pkg.go.dev indexes the release
+#   5. smoke-tests `go install ...@<tag>` on linux/macos/windows
+#
+# Tag scheme is unified with the Python workflow (publish-testpypi.yml): SemVer.
+#   stable:     v0.1.0
+#   prerelease: v0.1.0-alpha.1  v0.1.0-beta.1  v0.1.0-rc.1  v0.1.0-dev.1
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"      # stable
+      - "v[0-9]+.[0-9]+.[0-9]+-*"    # prerelease
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing SemVer tag to release (e.g. v0.1.0 or v0.1.0-rc.1)"
+        required: true
+
+concurrency:
+  group: release-go-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Resolve the tag and verify it matches the committed version.
+  # `go get` users pull tagged source directly, so the const MUST match.
+  # ─────────────────────────────────────────────────────────────
+  verify:
+    name: Verify version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      module: ${{ steps.resolve.outputs.module }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve tag + check pkg/pptx/version.go
+        id: resolve
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          TAG="${INPUT_TAG:-$REF_NAME}"
+          MODULE="$(grep -E '^module ' go.mod | awk '{print $2}')"
+          echo "tag=$TAG"       >> "$GITHUB_OUTPUT"
+          echo "module=$MODULE" >> "$GITHUB_OUTPUT"
+
+          # Tag base = strip leading 'v' and any '-prerelease' suffix.
+          BASE="${TAG#v}"; BASE="${BASE%%-*}"
+          CONST="$(grep -oE 'Version = "[^"]+"' pkg/pptx/version.go | cut -d'"' -f2)"
+          echo "tag=$TAG  base=$BASE  const=$CONST  module=$MODULE"
+          if [ "$BASE" != "$CONST" ]; then
+            echo "::error::Tag base ($BASE) != pkg/pptx/version.go const ($CONST). Bump the const or fix the tag."
+            exit 1
+          fi
+
+  # ─────────────────────────────────────────────────────────────
+  # Build + test before cutting the release.
+  # ─────────────────────────────────────────────────────────────
+  test:
+    name: Build & test
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: go build
+        run: go build ./...
+
+      - name: go test
+        run: go test $(go list ./... | grep -v 'bindings/c') -count=1
+
+  # ─────────────────────────────────────────────────────────────
+  # Cut the GitHub Release with cross-compiled pptcli binaries.
+  # ─────────────────────────────────────────────────────────────
+  goreleaser:
+    name: GoReleaser
+    needs: [verify, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write           # create the GitHub Release + upload assets
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─────────────────────────────────────────────────────────────
+  # Ask the Go module proxy to index the release (pkg.go.dev pickup).
+  # ─────────────────────────────────────────────────────────────
+  proxy:
+    name: Index on Go proxy
+    needs: [verify, goreleaser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping proxy.golang.org
+        env:
+          MODULE: ${{ needs.verify.outputs.module }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          # Module path must be lowercase for the proxy; gopptx already is.
+          for i in 1 2 3 4 5; do
+            if curl -fsS "https://proxy.golang.org/${MODULE}/@v/${TAG}.info"; then
+              echo ""
+              echo "Module indexed by proxy.golang.org."
+              exit 0
+            fi
+            echo "Proxy not ready yet (attempt $i); retrying in 15s..."
+            sleep 15
+          done
+          echo "::warning::Proxy did not return module info; it will be indexed on first 'go get'."
+
+      - name: Summary
+        env:
+          MODULE: ${{ needs.verify.outputs.module }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          {
+            echo "## Released $TAG"
+            echo ""
+            echo "Library:"
+            echo '```'
+            echo "go get ${MODULE}@${TAG}"
+            echo '```'
+            echo ""
+            echo "CLI:"
+            echo '```'
+            echo "go install ${MODULE}/cmd/pptcli@${TAG}"
+            echo '```'
+            echo ""
+            echo "Prebuilt \`pptcli\` binaries are attached to the GitHub Release."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ─────────────────────────────────────────────────────────────
+  # Smoke test: install the tagged CLI from the proxy on each OS.
+  # ─────────────────────────────────────────────────────────────
+  smoke-test:
+    name: Smoke test (${{ matrix.os }})
+    needs: [verify, proxy]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: go install pptcli@${{ needs.verify.outputs.tag }}
+        shell: bash
+        env:
+          MODULE: ${{ needs.verify.outputs.module }}
+          TAG: ${{ needs.verify.outputs.tag }}
+        run: |
+          go install "${MODULE}/cmd/pptcli@${TAG}"
+          BIN="$(go env GOPATH)/bin/pptcli"
+          "$BIN" version 2>/dev/null || "$BIN.exe" version
