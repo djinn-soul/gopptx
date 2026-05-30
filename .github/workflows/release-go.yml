@@ -177,16 +177,17 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.verify.outputs.tag }}
+
       - uses: actions/setup-go@v5
         with:
           go-version: stable
 
-      - name: go install pptcli@${{ needs.verify.outputs.tag }}
+      - name: Build and run tagged pptcli
         shell: bash
-        env:
-          MODULE: ${{ needs.verify.outputs.module }}
-          TAG: ${{ needs.verify.outputs.tag }}
         run: |
-          go install "${MODULE}/cmd/pptcli@${TAG}"
+          go install ./cmd/pptcli
           BIN="$(go env GOPATH)/bin/pptcli"
           "$BIN" version 2>/dev/null || "$BIN.exe" version
