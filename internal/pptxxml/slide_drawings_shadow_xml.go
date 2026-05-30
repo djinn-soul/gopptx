@@ -1,6 +1,14 @@
 package pptxxml
 
-import "fmt"
+import (
+	"strconv"
+	"strings"
+)
+
+const (
+	richInnerShadowGrowCap       = 160
+	richPerspectiveShadowGrowCap = 200
+)
 
 func shadowDirEMU(angle float64) int {
 	return int(angle * emusPerDegree)
@@ -10,52 +18,65 @@ func shadowAlphaValue(transparency float64) int {
 	return alphaFromNormalizedTransparency(transparency)
 }
 
-func shadowBlurDistDirAttrs(shadow RichShapeShadowSpec) string {
-	return fmt.Sprintf(
-		`blurRad="%d" dist="%d" dir="%d"`,
-		shadow.BlurRadius,
-		shadow.Distance,
-		shadowDirEMU(shadow.Angle),
-	)
+func writeShadowBlurDistDirAttrs(b *strings.Builder, shadow RichShapeShadowSpec) {
+	b.WriteString(`blurRad="`)
+	b.WriteString(strconv.Itoa(shadow.BlurRadius))
+	b.WriteString(`" dist="`)
+	b.WriteString(strconv.Itoa(shadow.Distance))
+	b.WriteString(`" dir="`)
+	b.WriteString(strconv.Itoa(shadowDirEMU(shadow.Angle)))
+	b.WriteString(`"`)
 }
 
-func shadowDistDirAttrs(shadow RichShapeShadowSpec) string {
-	return fmt.Sprintf(
-		`dist="%d" dir="%d"`,
-		shadow.Distance,
-		shadowDirEMU(shadow.Angle),
-	)
+func writeShadowDistDirAttrs(b *strings.Builder, shadow RichShapeShadowSpec) {
+	b.WriteString(`dist="`)
+	b.WriteString(strconv.Itoa(shadow.Distance))
+	b.WriteString(`" dir="`)
+	b.WriteString(strconv.Itoa(shadowDirEMU(shadow.Angle)))
+	b.WriteString(`"`)
 }
 
 func richInnerShadowXML(shadow RichShapeShadowSpec) string {
-	attrs := shadowBlurDistDirAttrs(shadow)
-	alphaVal := shadowAlphaValue(shadow.Transparency)
-
-	return fmt.Sprintf(`<a:innerShdw %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:innerShdw>`,
-		attrs, Escape(shadow.Color), alphaVal)
+	var b strings.Builder
+	b.Grow(richInnerShadowGrowCap)
+	b.WriteString(`<a:innerShdw `)
+	writeShadowBlurDistDirAttrs(&b, shadow)
+	b.WriteString(`><a:srgbClr val="`)
+	b.WriteString(Escape(shadow.Color))
+	b.WriteString(`"><a:alpha val="`)
+	b.WriteString(strconv.Itoa(shadowAlphaValue(shadow.Transparency)))
+	b.WriteString(`"/></a:srgbClr></a:innerShdw>`)
+	return b.String()
 }
 
 func richPerspectiveShadowXML(shadow RichShapeShadowSpec) string {
-	attrs := shadowDistDirAttrs(shadow)
-
+	var b strings.Builder
+	b.Grow(richPerspectiveShadowGrowCap)
+	b.WriteString(`<a:prstShdw prst="shdw1" `)
+	writeShadowDistDirAttrs(&b, shadow)
 	if shadow.SkewX != 0 || shadow.SkewY != 0 {
-		attrs += fmt.Sprintf(` sx="%d" sy="%d"`,
-			int(shadow.SkewX*shadowScaleBase), int(shadow.SkewY*shadowScaleBase))
+		b.WriteString(` sx="`)
+		b.WriteString(strconv.Itoa(int(shadow.SkewX * shadowScaleBase)))
+		b.WriteString(`" sy="`)
+		b.WriteString(strconv.Itoa(int(shadow.SkewY * shadowScaleBase)))
+		b.WriteString(`"`)
 	}
-
 	if shadow.ScaleX != 1.0 || shadow.ScaleY != 1.0 {
-		attrs += fmt.Sprintf(` kx="%d" ky="%d"`,
-			int(shadow.ScaleX*shadowScaleBase), int(shadow.ScaleY*shadowScaleBase))
+		b.WriteString(` kx="`)
+		b.WriteString(strconv.Itoa(int(shadow.ScaleX * shadowScaleBase)))
+		b.WriteString(`" ky="`)
+		b.WriteString(strconv.Itoa(int(shadow.ScaleY * shadowScaleBase)))
+		b.WriteString(`"`)
 	}
-
 	if shadow.Alignment != "" {
-		attrs += fmt.Sprintf(` algn="%s"`, Escape(shadow.Alignment))
+		b.WriteString(` algn="`)
+		b.WriteString(Escape(shadow.Alignment))
+		b.WriteString(`"`)
 	}
-
-	alphaVal := shadowAlphaValue(shadow.Transparency)
-
-	return fmt.Sprintf(
-		`<a:prstShdw prst="shdw1" %s><a:srgbClr val="%s"><a:alpha val="%d"/></a:srgbClr></a:prstShdw>`,
-		attrs, Escape(shadow.Color), alphaVal,
-	)
+	b.WriteString(`><a:srgbClr val="`)
+	b.WriteString(Escape(shadow.Color))
+	b.WriteString(`"><a:alpha val="`)
+	b.WriteString(strconv.Itoa(shadowAlphaValue(shadow.Transparency)))
+	b.WriteString(`"/></a:srgbClr></a:prstShdw>`)
+	return b.String()
 }

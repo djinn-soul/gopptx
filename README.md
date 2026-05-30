@@ -8,7 +8,7 @@ PowerPoint (PPTX) engine written in Go — with a Python library and a stable JS
 
 ## Overview
 
-`gopptx` is a Go library for generating and manipulating PPTX files. It is designed for correctness and ease of use across languages. A stable [JSON command bridge](docs/architecture/bridge-phase1-ops.md) lets you drive it from Python, or any other language without rewriting logic.
+`gopptx` is a Go library for generating and manipulating PPTX files. It is designed for correctness and ease of use across languages. A stable [JSON command bridge](docs/reference/bridge-operations.md) lets you drive it from Python, or any other language without rewriting logic.
 
 ### Why gopptx?
 
@@ -161,33 +161,6 @@ func main() {
 
 ---
 
-## JSON Command Bridge
-
-All bridge operations use a JSON envelope. This is the primary interface for cross-language use.
-
-**Request**
-```json
-{
-  "api_version": 1,
-  "request_id": "uuid-123",
-  "op": "add_slide",
-  "payload": { "title": "New Slide", "layout": "TITLE_AND_CONTENT" }
-}
-```
-
-**Response**
-```json
-{
-  "ok": true,
-  "result": { "index": 1 },
-  "request_id": "uuid-123"
-}
-```
-
-Full operation reference: [bridge-phase1-ops.md](docs/architecture/bridge-phase1-ops.md) — 145+ supported commands.
-
----
-
 ## PDF Export
 
 PDF export supports three drivers: `native`, `libreoffice`, and `powerpoint`. The default `auto` mode tries LibreOffice or PowerPoint first, and falls back to the native renderer.
@@ -217,7 +190,7 @@ with Presentation("input.pptx") as pres:
 | [Examples Index](examples/README.md) | 90+ runnable examples covering all features |
 | [Python Guide](docs/guides/python-library.md) | Full Python API reference and usage |
 | [Go API Reference](docs/reference/go-api.md) | Go library reference |
-| [Bridge Operations](docs/architecture/bridge-phase1-ops.md) | All 145+ JSON bridge commands |
+| [Bridge Operations](docs/reference/bridge-operations.md) | All 149 JSON bridge commands |
 | [Showcase](docs/showcase/usages/index.md) | Real-world usage patterns (simple → complex) |
 
 ---

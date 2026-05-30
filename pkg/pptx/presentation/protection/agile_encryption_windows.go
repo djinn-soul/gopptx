@@ -55,7 +55,11 @@ func encryptAgilePackage(zipPayload []byte, password string) ([]byte, error) {
 	script := buildPowerPointEncryptScript(inPath, outPath)
 	// Pass the password via an environment variable so it never appears in the
 	// process command line or in script text visible to other processes.
-	output, err := runPowerShellScript(script, powerPointEncryptTimeout, "GOPPTX_PW="+password)
+	// Use a byte slice so the buffer can be zeroed after use, minimising the
+	// window during which the plaintext credential remains in memory.
+	envLine := []byte("GOPPTX_PW=" + password)
+	defer clear(envLine)
+	output, err := runPowerShellScript(script, powerPointEncryptTimeout, string(envLine))
 	if err != nil {
 		// The output is safe to include: the password is only in the env var,
 		// not in the script string or in any PowerShell output.

@@ -155,7 +155,9 @@ pathspec==1.0.4
 pillow==12.2.0
     # via gopptx
 pip==26.1.1
-    # via pip-api
+    # via
+    #   gopptx
+    #   pip-api
 pip-api==0.0.34
     # via pip-audit
 pip-audit==2.10.0
@@ -257,6 +259,7 @@ typing-extensions==4.15.0
     #   anyio
     #   cyclonedx-python-lib
     #   exceptiongroup
+    #   gopptx
     #   mkdocstrings-python
     #   pydantic
     #   pydantic-core

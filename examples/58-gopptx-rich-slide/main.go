@@ -6,7 +6,7 @@ import (
 
 	log "github.com/djinn-soul/gopptx/pkg/stdlog"
 
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -23,18 +23,15 @@ func main() {
 		log.Fatalf("failed to create output directory: %v", err)
 	}
 
-	pres := &gopptx.Presentation{Title: "gopptx Rich Slide Demo"}
+	slide := pptx.NewSlide("gopptx Rich Slide").
+		AddBullet("gopptx now exposes helpers for notes, placeholders, and animations.").
+		AddBullet("Reuse the same slide object to keep your API surface stable.").
+		WithRichNotes([]elements.Paragraph{
+			elements.NewParagraph().
+				AddRun(elements.NewRun("Use these speaker notes to describe how the slide should feel.")),
+		})
 
-	slide := pres.AddSlide()
-	slide.Title = "gopptx Rich Slide"
-	slide.AddBullet("gopptx now exposes helpers for notes, placeholders, and animations.")
-	slide.AddBullet("Reuse the same slide object to keep your API surface stable.")
-	slide.SetRichNotes([]elements.Paragraph{
-		elements.NewParagraph().
-			AddRun(elements.NewRun("Use these speaker notes to describe how the slide should feel.")),
-	})
-
-	slide.AddPlaceholderOverride(shapes.PlaceholderContent{
+	slide.PlaceholderOverrides = append(slide.PlaceholderOverrides, shapes.PlaceholderContent{
 		Index: 1,
 		Type:  "obj",
 		Text:  "Body placeholder text with layout overrides and custom styling.",
@@ -55,21 +52,22 @@ func main() {
 	shape := shapes.NewRectangle(1.2, 2.9, 3.2, 1.1).
 		WithText("Animated callout").
 		WithFill(shapes.NewShapeFill("F4C542"))
-	slide.AddShape(shape)
-
-	slide.AddAnimation(
-		animations.NewAnimation(1, animations.AnimationEntranceFade).
-			WithTrigger(animations.AnimationOnClick).
-			WithDelay(250),
-	)
-	slide.AddAnimationDefinition(
-		animations.NewAnimation(1, animations.AnimationEntranceZoom).
-			WithTrigger(animations.AnimationAfterPrevious).
-			WithDuration(900),
-	)
+	slide = slide.AddShape(shape).
+		AddAnimation(
+			animations.NewAnimation(1, animations.AnimationEntranceFade).
+				WithTrigger(animations.AnimationOnClick).
+				WithDelay(250),
+		).
+		AddAnimation(
+			animations.NewAnimation(1, animations.AnimationEntranceZoom).
+				WithTrigger(animations.AnimationAfterPrevious).
+				WithDuration(900),
+		)
 
 	outputPath := filepath.Join(outputDir, outputFile)
-	if err := pres.Save(outputPath); err != nil {
+	if err := pptx.NewPresentationBuilder("gopptx Rich Slide Demo").
+		AddSlide(slide).
+		WriteToFile(outputPath); err != nil {
 		log.Fatalf("failed to save rich slide: %v", err)
 	}
 
