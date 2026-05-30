@@ -1,0 +1,217 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*-alpha*" # e.g. v0.2.0-alpha.1, v0.2.0-alpha1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-pypi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  set-version:
+    name: Normalize alpha version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      source_version: ${{ steps.version.outputs.source_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Normalize alpha tag to PEP 440
+        id: version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          python3 scripts/ci/normalize_python_version.py \
+            "$REF_NAME" \
+            --require-alpha \
+            --github-output >> "$GITHUB_OUTPUT"
+
+      - name: Show normalized version
+        run: |
+          echo "Source tag: ${{ steps.version.outputs.source_version }}"
+          echo "PyPI version: ${{ steps.version.outputs.version }}"
+
+  build-wheels:
+    name: Build wheel (${{ matrix.os }})
+    needs: set-version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version in pyproject.toml
+        shell: bash
+        run: |
+          python3 -c "
+          import pathlib, re
+          v = '${{ needs.set-version.outputs.version }}'
+          p = pathlib.Path('pyproject.toml')
+          p.write_text(re.sub(r'(?m)^version = \"[^\"]*\"', f'version = \"{v}\"', p.read_text()))
+          print(f'Set version to: {v}')
+          "
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Setup Zig (Linux cross-compile)
+        if: runner.os == 'Linux'
+        uses: mlugg/setup-zig@v1
+        with:
+          version: 0.13.0
+
+      - name: Install build deps
+        run: uv pip install --system build
+
+      - name: Install auditwheel (Linux only)
+        if: runner.os == 'Linux'
+        run: uv pip install --system auditwheel
+
+      - name: Build wheel
+        env:
+          GOPPTX_RELEASE_BUILD: "1"
+          CGO_ENABLED: "1"
+          CC: ${{ runner.os == 'Linux' && 'zig cc -target x86_64-linux-gnu.2.17' || '' }}
+          CXX: ${{ runner.os == 'Linux' && 'zig c++ -target x86_64-linux-gnu.2.17' || '' }}
+        run: python -m build --wheel
+
+      - name: Auditwheel repair (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          auditwheel repair dist/*linux*.whl --plat manylinux2014_x86_64 -w dist/repaired
+          rm dist/*linux*.whl
+          mv dist/repaired/*.whl dist/
+
+      - name: Show built wheel
+        shell: bash
+        run: ls -lh dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi-wheels-${{ matrix.os }}
+          path: dist/*.whl
+          retention-days: 7
+
+  build-sdist:
+    name: Build sdist
+    needs: set-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version in pyproject.toml
+        run: |
+          python3 -c "
+          import pathlib, re
+          v = '${{ needs.set-version.outputs.version }}'
+          p = pathlib.Path('pyproject.toml')
+          p.write_text(re.sub(r'(?m)^version = \"[^\"]*\"', f'version = \"{v}\"', p.read_text()))
+          print(f'Set version to: {v}')
+          "
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Build sdist
+        run: uv build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi-sdist
+          path: dist/*.tar.gz
+          retention-days: 7
+
+  publish:
+    name: Publish to PyPI
+    needs: [set-version, build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pypi-*
+          path: dist
+          merge-multiple: true
+
+      - name: List packages to upload
+        run: ls -lh dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
+
+      - name: Summary
+        run: |
+          echo "## Published alpha release to PyPI" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Tag:** ${{ needs.set-version.outputs.source_version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version:** ${{ needs.set-version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Install with:" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "pip install gopptx==${{ needs.set-version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  smoke-test:
+    name: Smoke test (${{ matrix.os }})
+    needs: [set-version, publish]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.0.0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Wait for PyPI index to update
+        run: sleep 30
+        shell: bash
+
+      - name: Install from PyPI
+        run: uv pip install --system "gopptx==${{ needs.set-version.outputs.version }}"
+        shell: bash
+
+      - name: Basic import check
+        run: python -c "import gopptx; print('gopptx imported OK:', gopptx.__version__)"
+        shell: bash

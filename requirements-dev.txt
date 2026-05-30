@@ -67,7 +67,7 @@ httpx==0.28.1
     # via gitingest
 hypothesis==6.151.9
     # via gopptx
-idna==3.11
+idna==3.16
     # via
     #   anyio
     #   httpx
@@ -154,7 +154,7 @@ pathspec==1.0.4
     #   mkdocs
 pillow==12.2.0
     # via gopptx
-pip==26.0.1
+pip==26.1.1
     # via pip-api
 pip-api==0.0.34
     # via pip-audit
@@ -185,7 +185,7 @@ pygments==2.20.0
     #   mkdocs-material
     #   pytest
     #   rich
-pymdown-extensions==10.21.2
+pymdown-extensions==10.21.3
     # via
     #   mkdocs-material
     #   mkdocstrings
@@ -201,7 +201,7 @@ pytest-cov==7.0.0
     # via gopptx
 python-dateutil==2.9.0.post0
     # via ghp-import
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via gitingest
 pyyaml==6.0.3
     # via
@@ -235,7 +235,7 @@ sortedcontainers==2.4.0
     # via
     #   cyclonedx-python-lib
     #   hypothesis
-starlette==0.52.1
+starlette==1.1.0
     # via gitingest
 stevedore==5.7.0
     # via bandit
@@ -264,7 +264,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 vulture==2.15
     # via gopptx
