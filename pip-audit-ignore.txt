@@ -1,2 +1,5 @@
 # pip-audit vulnerability IDs to ignore temporarily.
 # Keep entries scoped and remove them once a fixed version is available.
+
+# pip 26.0.1 - no fix available upstream as of 2026-05-05; revisit when fix releases
+CVE-2026-3219

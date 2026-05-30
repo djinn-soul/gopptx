@@ -259,17 +259,24 @@ func TestOpConstantsNamingConvention(t *testing.T) {
 	}
 }
 
-// TestAllOpsHaveDocumentation verifies all ops are documented in the architecture doc.
+// TestAllOpsHaveDocumentation verifies all ops are documented in the canonical bridge reference.
 func TestAllOpsHaveDocumentation(t *testing.T) {
 	root := findProjectRoot(t)
-	docPath := filepath.Join(root, "docs", "architecture", "bridge-phase1-ops.md")
-	content, _ := os.ReadFile(docPath) // file may not exist; log-only check below
+	docPath := filepath.Join(root, "docs", "reference", "bridge-operations.md")
+	content, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatalf("read bridge ops doc: %v", err)
+	}
 
 	docStr := string(content)
+	var missing []string
 	for _, op := range SupportedOps() {
 		if !strings.Contains(docStr, op) {
-			t.Logf("WARNING: op %q not found in documentation", op)
+			missing = append(missing, op)
 		}
+	}
+	if len(missing) > 0 {
+		t.Logf("WARNING: %d ops not found in %s: %v", len(missing), docPath, missing)
 	}
 }
 

@@ -1,5 +1,7 @@
 package pptx
 
+//go:generate go run ../../cmd/gen_shape_types shapes shape_aliases.go shape_types.go
+
 import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"

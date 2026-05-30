@@ -34,6 +34,7 @@ func (e *PresentationEditor) RegisterImage(data []byte, format string) (string, 
 
 	e.parts.Set(partPath, data)
 	e.mediaInventory[hexHash] = partPath
+	e.mediaInventoryDirty = true
 	return partPath, nil
 }
 

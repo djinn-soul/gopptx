@@ -8,19 +8,19 @@
 package main
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/gopptx"
+	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
 func main() {
-	pres := &gopptx.Presentation{Title: "S10 Slide Transitions"}
-	pres.AddSlide().Title = "Slide 1: Start"
+	slide1 := pptx.NewSlide("Slide 1: Start")
+	slide2 := pptx.NewSlide("Slide 2: Fade Entry").
+		WithTransitionOptions(transitions.TransitionOptions{Type: transitions.TransitionFade, DurationMS: 1000})
 
-	slide2 := pres.AddSlide()
-	slide2.Title = "Slide 2: Fade Entry"
-	slide2.WithTransitionOptions(transitions.TransitionOptions{Type: transitions.TransitionFade, DurationMS: 1000})
-
-	_ = pres.Save("s10-go.pptx")
+	_ = pptx.NewPresentationBuilder("S10 Slide Transitions").
+		AddSlide(slide1).
+		AddSlide(slide2).
+		WriteToFile("s10-go.pptx")
 }
 ```
 
