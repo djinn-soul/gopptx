@@ -64,6 +64,8 @@ class _RawGopptxLibProtocol(Protocol):
     deck_open: _CtypesFuncProtocol
     deck_new: _CtypesFuncProtocol
     deck_execute_json: _CtypesFuncProtocol
+    deck_open_bytes: _CtypesFuncProtocol
+    deck_save_bytes: _CtypesFuncProtocol
     deck_save: _CtypesFuncProtocol
     deck_last_error: _CtypesFuncProtocol
     deck_global_error: _CtypesFuncProtocol
@@ -148,6 +150,13 @@ class PresentationBase(
             lib.deck_new.restype = ctypes.c_void_p
             lib.deck_execute_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
             lib.deck_execute_json.restype = ctypes.c_void_p
+            lib.deck_open_bytes.argtypes = [ctypes.c_char_p, ctypes.c_int]
+            lib.deck_open_bytes.restype = ctypes.c_void_p
+            lib.deck_save_bytes.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.deck_save_bytes.restype = ctypes.c_void_p
             lib.deck_save.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
             lib.deck_save.restype = ctypes.c_int
             lib.deck_last_error.argtypes = [ctypes.c_void_p]
