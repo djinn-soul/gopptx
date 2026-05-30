@@ -67,7 +67,7 @@ httpx==0.28.1
     # via gitingest
 hypothesis==6.151.9
     # via gopptx
-idna==3.11
+idna==3.16
     # via
     #   anyio
     #   httpx
@@ -187,7 +187,7 @@ pygments==2.20.0
     #   mkdocs-material
     #   pytest
     #   rich
-pymdown-extensions==10.21.2
+pymdown-extensions==10.21.3
     # via
     #   mkdocs-material
     #   mkdocstrings
@@ -237,7 +237,7 @@ sortedcontainers==2.4.0
     # via
     #   cyclonedx-python-lib
     #   hypothesis
-starlette==0.52.1
+starlette==1.1.0
     # via gitingest
 stevedore==5.7.0
     # via bandit
