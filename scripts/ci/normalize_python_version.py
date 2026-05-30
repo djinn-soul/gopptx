@@ -42,10 +42,6 @@ def normalize_version(source_version: str, *, require_alpha: bool = False) -> st
 
     base = match.group("base")
     if label is None:
-        if require_alpha:
-            raise ValueError(
-                "production PyPI publishing is currently limited to alpha tags"
-            )
         return base
 
     return f"{base}{LABEL_MAP[label]}{number}"
