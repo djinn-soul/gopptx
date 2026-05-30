@@ -246,16 +246,26 @@ jobs:
 
       # TestPyPI may need a few seconds to make the release available
       - name: Wait for TestPyPI index to update
-        run: sleep 15
+        run: sleep 30
         shell: bash
 
       - name: Install from TestPyPI
-        run: |
-          uv pip install --system \
-            --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple/ \
-            "gopptx==${{ needs.set-version.outputs.version }}"
         shell: bash
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5; do
+            if uv pip install --system \
+              --index-strategy unsafe-best-match \
+              --index-url https://test.pypi.org/simple/ \
+              --extra-index-url https://pypi.org/simple/ \
+              "gopptx==${{ needs.set-version.outputs.version }}"; then
+              exit 0
+            fi
+            echo "TestPyPI package not visible yet (attempt $i). Retrying in 30s..."
+            sleep 30
+          done
+          echo "Failed to install gopptx==${{ needs.set-version.outputs.version }} from TestPyPI after retries."
+          exit 1
 
       - name: Basic import check
         run: python -c "import gopptx; print('gopptx imported OK:', gopptx.__version__)"
