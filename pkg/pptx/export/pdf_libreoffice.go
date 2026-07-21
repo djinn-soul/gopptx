@@ -63,12 +63,14 @@ func convertViaLibreOffice(pptxPath, workDir string, opts PDFOptions) (string, e
 	// no dynamic/user-controlled executable reaches this call site.
 	args := []string{"--headless", "--convert-to", "pdf", pptxPath, "--outdir", workDir}
 
+	// The literals are spelled out here rather than referenced through the
+	// constants: the rule requires the argument itself to be a string literal.
 	var cmd *exec.Cmd
 	switch sofficeCmd {
 	case sofficeMacPath:
-		cmd = exec.CommandContext(ctx, sofficeMacPath, args...)
+		cmd = exec.CommandContext(ctx, "/Applications/LibreOffice.app/Contents/MacOS/soffice", args...)
 	default: // "soffice"
-		cmd = exec.CommandContext(ctx, sofficeName, args...)
+		cmd = exec.CommandContext(ctx, "soffice", args...)
 	}
 	// Without WaitDelay, killing soffice on timeout still blocks here until every
 	// grandchild that inherited the output pipe exits.
