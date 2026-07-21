@@ -3,6 +3,7 @@ package export
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/signintech/gopdf"
 
@@ -15,7 +16,7 @@ import (
 // PDF uses 72 points/inch, so the slide page is 720×540 points.
 const (
 	ptPerInch       = 72.0
-	slideWidthPt    = 720.0 // 10 inches
+	slideWidthPt    = 720.0 // 10 inches, the 4:3 default
 	slideHeightPt   = 540.0 // 7.5 inches
 	defaultFontSize = 14
 
@@ -32,11 +33,45 @@ func emuToPt(emu int64) float64 {
 	return (float64(emu) / emuPerInch) * ptPerInch
 }
 
+// pageSize is the PDF page geometry in points. It mirrors the deck's own
+// <p:sldSz>, so a 16:9 deck renders onto a 960x540pt page rather than being
+// cropped into the 4:3 default.
+type pageSize struct {
+	WidthPt  float64
+	HeightPt float64
+}
+
+// defaultPageSize is the 4:3 page used when the deck's size is unknown.
+func defaultPageSize() pageSize {
+	return pageSize{WidthPt: slideWidthPt, HeightPt: slideHeightPt}
+}
+
+// pageSizeFromEMU converts a slide size in EMUs to a PDF page size, falling
+// back to 4:3 for missing or nonsensical dimensions.
+func pageSizeFromEMU(widthEMU, heightEMU int64) pageSize {
+	if widthEMU <= 0 || heightEMU <= 0 {
+		return defaultPageSize()
+	}
+	return pageSize{WidthPt: emuToPt(widthEMU), HeightPt: emuToPt(heightEMU)}
+}
+
+// optionsPageSize derives the page geometry for in-memory slides, which carry
+// no size of their own, from PDFOptions.
+func optionsPageSize(opts PDFOptions) pageSize {
+	return pageSizeFromEMU(opts.SlideSize.Width, opts.SlideSize.Height)
+}
+
 // pdfViaNative renders slides directly to PDF using gopdf drawing primitives.
-func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, opts PDFOptions) error {
+func pdfViaNative(
+	_ string,
+	slides []elements.SlideContent,
+	outputPath string,
+	opts PDFOptions,
+	page pageSize,
+) error {
 	pdf := &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{
-		PageSize: gopdf.Rect{W: slideWidthPt, H: slideHeightPt},
+		PageSize: gopdf.Rect{W: page.WidthPt, H: page.HeightPt},
 	})
 	if err := configureNativePDFFont(pdf, opts); err != nil {
 		return err
@@ -49,105 +84,57 @@ func pdfViaNative(_ string, slides []elements.SlideContent, outputPath string, o
 		}
 	}
 	visibleIndex := 0
+	var renderErrs []error
 	for _, slide := range slides {
 		if slide.Hidden {
 			continue
 		}
 		visibleIndex++
-		renderNativePDFSlide(pdf, slide, visibleIndex, totalVisible)
-	}
-
-	return pdf.WritePdf(outputPath)
-}
-
-func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
-	sansAlias := ""
-	if tryNativePDFFonts(pdf, opts.NativeFontPaths, fontFamilySans) {
-		sansAlias = fontFamilySans
-	} else if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilySans), fontFamilySans) {
-		sansAlias = fontFamilySans
-	}
-	if sansAlias == "" {
-		return errors.New("no system TTF font found; install Arial or DejaVu Sans, or specify NativeFontPaths")
-	}
-	// Register bold, italic, and bold+italic variants so SetFont("sans","B",...) works.
-	tryNativePDFFontsWithStyle(pdf, systemFontPathsForFamily(fontFamilySansBold), fontFamilySans, gopdf.Bold)
-	tryNativePDFFontsWithStyle(pdf, systemFontPathsForFamily(fontFamilySansItalic), fontFamilySans, gopdf.Italic)
-	tryNativePDFFontsWithStyle(
-		pdf, systemFontPathsForFamily(fontFamilySansBoldItalic), fontFamilySans, gopdf.Bold|gopdf.Italic,
-	)
-
-	serifAlias := ""
-	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilySerif), fontFamilySerif) {
-		serifAlias = fontFamilySerif
-		tryNativePDFFontsWithStyle(pdf, systemFontPathsForFamily(fontFamilySerifBold), fontFamilySerif, gopdf.Bold)
-		tryNativePDFFontsWithStyle(pdf, systemFontPathsForFamily(fontFamilySerifItalic), fontFamilySerif, gopdf.Italic)
-		tryNativePDFFontsWithStyle(
-			pdf, systemFontPathsForFamily(fontFamilySerifBoldItalic), fontFamilySerif, gopdf.Bold|gopdf.Italic,
-		)
-	}
-	monoAlias := ""
-	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilyMono), fontFamilyMono) {
-		monoAlias = fontFamilyMono
-		tryNativePDFFontsWithStyle(pdf, systemFontPathsForFamily(fontFamilyMonoBold), fontFamilyMono, gopdf.Bold)
-		tryNativePDFFontsWithStyle(pdf, systemFontPathsForFamily(fontFamilyMonoItalic), fontFamilyMono, gopdf.Italic)
-		tryNativePDFFontsWithStyle(
-			pdf, systemFontPathsForFamily(fontFamilyMonoBoldItalic), fontFamilyMono, gopdf.Bold|gopdf.Italic,
-		)
-	}
-	cjkAlias := ""
-	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilyCJK), fontFamilyCJK) {
-		cjkAlias = fontFamilyCJK
-	}
-	setPDFFontAliases(sansAlias, serifAlias, monoAlias)
-	setPDFCJKAlias(cjkAlias)
-	return nil
-}
-
-func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string, alias string) bool {
-	for _, path := range fontPaths {
-		if err := pdf.AddTTFFont(alias, path); err != nil {
-			continue
-		}
-		if err := pdf.SetFont(alias, "", defaultFontSize); err == nil {
-			return true
+		if err := renderNativePDFSlide(pdf, slide, visibleIndex, totalVisible, page); err != nil {
+			renderErrs = append(renderErrs, err)
 		}
 	}
-	return false
-}
 
-func tryNativePDFFontsWithStyle(pdf *gopdf.GoPdf, fontPaths []string, alias string, style int) {
-	for _, path := range fontPaths {
-		if err := pdf.AddTTFFontWithOption(alias, path, gopdf.TtfOption{Style: style}); err != nil {
-			continue
-		}
-		// Verify the font can be set at this style.
-		if err := pdf.SetFontWithStyle(alias, style, defaultFontSize); err == nil {
-			return
-		}
+	if err := pdf.WritePdf(outputPath); err != nil {
+		return err
 	}
+	// The PDF was written, but report anything that silently failed to render
+	// so callers do not ship a deck with missing pictures.
+	return errors.Join(renderErrs...)
 }
 
-func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, total int) {
+// renderNativePDFSlide paints one slide. Painting runs back to front:
+// background, then pictures, then vector content, and finally text, so a
+// full-bleed picture cannot hide the shapes and text drawn over it.
+func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, total int, page pageSize) error {
 	pdf.AddPage()
-	_ = renderPDFBackground(pdf, slide.Background)
-	renderNativePDFSlideText(pdf, slide)
+
+	var errs []error
+	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
+		errs = append(errs, fmt.Errorf("slide %d background: %w", index, err))
+	}
+	if err := renderNativePDFSlideImages(pdf, slide); err != nil {
+		errs = append(errs, fmt.Errorf("slide %d: %w", index, err))
+	}
 	renderNativePDFSlideShapes(pdf, slide)
 	renderNativePDFSlideSmartArt(pdf, slide)
 	renderNativePDFSlideCharts(pdf, slide)
-	renderNativePDFSlideAssets(pdf, slide)
+	renderNativePDFSlideTable(pdf, slide)
+	renderNativePDFSlideText(pdf, slide, page)
+
 	if slide.ShowSlideNumber {
-		renderNativePDFSlideNumber(pdf, index, total)
+		renderNativePDFSlideNumber(pdf, index, total, page)
 	}
 	if slide.FooterText != "" {
-		renderNativePDFFooter(pdf, slide.FooterText)
+		renderNativePDFFooter(pdf, slide.FooterText, page)
 	}
 	if len(slide.PlaceholderOverrides) > 0 {
 		renderNativePDFPlaceholderOverrides(pdf, slide)
 	}
+	return errors.Join(errs...)
 }
 
-func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
+func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize) {
 	titleSize := slide.TitleSize
 	if titleSize <= 0 {
 		switch elements.NormalizeSlideLayout(slide.Layout) {
@@ -170,7 +157,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	}
 	titleBoxX := 54.0
 	titleBoxY := 44.0
-	titleBoxW := slideWidthPt - 108
+	titleBoxW := page.WidthPt - 108
 	titleBoxH := 72.0
 	if b := slide.TitleBoundsEMU; b[2] > 0 || b[3] > 0 {
 		titleBoxX = emuToPt(b[0])
@@ -183,7 +170,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 		// (x≈685800 EMU, y≈2130425 EMU, cx≈7772400 EMU, cy≈1470025 EMU on a 9144000×6858000 slide).
 		titleBoxX = 54.0
 		titleBoxY = 167.0
-		titleBoxW = slideWidthPt - 108
+		titleBoxW = page.WidthPt - 108
 		titleBoxH = 116.0
 	}
 	titleSize = fitPDFTitleSize(

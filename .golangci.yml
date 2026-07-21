@@ -308,10 +308,6 @@ linters:
         text: "G703"
         linters:
           - gosec
-      - path: "pkg/pptx/export/pdf\\.go"
-        text: "G703"
-        linters:
-          - gosec
 
       # cgo-generated code in the C bindings. golangci-lint analyses the
       # cgo-processed translation unit, so it reports findings that have no
