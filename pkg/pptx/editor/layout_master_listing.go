@@ -3,11 +3,18 @@ package editor
 import (
 	"fmt"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
+)
+
+// Master/layout XML scanning patterns. Fixed literals, compiled once at init.
+var (
+	shapeNamePattern          = regexp.MustCompile(`(?s)<p:nvSpPr>.*?<p:cNvPr[^>]*name="([^"]+)"`)
+	placeholderElementPattern = regexp.MustCompile(`(?s)<p:ph[^>]*>`)
 )
 
 func (e *PresentationEditor) ListSlideMasters() ([]common.SlideMasterInfo, error) {
@@ -239,13 +246,7 @@ func parseShapesFromMasterLayoutXML(content []byte) []string {
 
 	// Simple pattern: find <p:sp> elements and extract name from <p:nvSpPr><p:cNvPr>
 	// This is a simplified implementation
-	namePattern := `(?s)<p:nvSpPr>.*?<p:cNvPr[^>]*name="([^"]+)"`
-	nameRegex := commonCompile(namePattern)
-	if nameRegex == nil {
-		return nil
-	}
-
-	matches := nameRegex.FindAllStringSubmatch(string(content), -1)
+	matches := shapeNamePattern.FindAllStringSubmatch(string(content), -1)
 	for _, m := range matches {
 		if len(m) > 1 {
 			shapes = append(shapes, m[1])
@@ -259,18 +260,12 @@ func parsePlaceholdersFromMasterLayoutXML(content []byte) []common.PlaceholderIn
 	var placeholders []common.PlaceholderInfo
 
 	// Find all placeholder elements <p:ph>
-	phPattern := `(?s)<p:ph[^>]*>`
-	phRegex := commonCompile(phPattern)
-	if phRegex == nil {
-		return nil
-	}
-
-	matches := phRegex.FindAllString(string(content), -1)
+	matches := placeholderElementPattern.FindAllString(string(content), -1)
 	for _, m := range matches {
 		placeholders = append(placeholders, common.PlaceholderInfo{
-			Type:  parsePlaceholderAttrString(m, `type="([^"]+)"`),
+			Type:  parsePlaceholderAttrString(m, phTypeAttrPattern),
 			Index: parsePlaceholderAttrIndex(m),
-			Name:  parsePlaceholderAttrString(m, `name="([^"]+)"`),
+			Name:  parsePlaceholderAttrString(m, phNameAttrPattern),
 		})
 	}
 

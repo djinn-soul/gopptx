@@ -3,18 +3,18 @@ package editor
 import (
 	"regexp"
 	"strconv"
-	"sync"
 )
 
-// commonPatternCache memoizes compiled attribute patterns. The patterns come
-// from a small fixed set of literals, so the cache is bounded; compiling on
-// every call cost ~13x the cached lookup.
-//
-//nolint:gochecknoglobals // Shared compile cache; see above.
-var commonPatternCache sync.Map // pattern string -> *regexp.Regexp
+// Attribute and element patterns used when parsing master/layout XML. They are
+// fixed literals, so compiling them once at init beats any runtime cache.
+var (
+	phIdxAttrPattern  = regexp.MustCompile(`idx="([^"]+)"`)
+	phTypeAttrPattern = regexp.MustCompile(`type="([^"]+)"`)
+	phNameAttrPattern = regexp.MustCompile(`name="([^"]+)"`)
+)
 
 func parsePlaceholderAttrIndex(match string) int {
-	raw := parsePlaceholderAttrString(match, `idx="([^"]+)"`)
+	raw := parsePlaceholderAttrString(match, phIdxAttrPattern)
 	if raw == "" {
 		return 0
 	}
@@ -25,24 +25,10 @@ func parsePlaceholderAttrIndex(match string) int {
 	return idx
 }
 
-func parsePlaceholderAttrString(match, pattern string) string {
-	re := commonCompile(pattern)
-	if re == nil {
-		return ""
-	}
-	ms := re.FindStringSubmatch(match)
+func parsePlaceholderAttrString(match string, pattern *regexp.Regexp) string {
+	ms := pattern.FindStringSubmatch(match)
 	if len(ms) <= 1 {
 		return ""
 	}
 	return ms[1]
-}
-
-func commonCompile(pattern string) *regexp.Regexp {
-	if cached, ok := commonPatternCache.Load(pattern); ok {
-		re, _ := cached.(*regexp.Regexp)
-		return re
-	}
-	re := regexp.MustCompile(pattern)
-	commonPatternCache.Store(pattern, re)
-	return re
 }
