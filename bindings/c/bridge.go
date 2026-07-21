@@ -9,6 +9,7 @@ typedef uintptr_t DeckHandle;
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -130,7 +131,19 @@ func newDeck(title *C.char, errOut **C.char) C.DeckHandle {
 }
 
 // openDeckBytes opens a presentation from an in-memory buffer.
+//
+// The buffer is validated before C.GoBytes sees it: a nil pointer with a
+// non-zero length dereferences nil, and a negative length panics with
+// "gobytes: length out of range". Both are reachable from any C caller.
 func openDeckBytes(data *C.char, length C.int, errOut **C.char) C.DeckHandle {
+	if length < 0 {
+		reportError(errOut, errors.New("deck_open_bytes: negative length"))
+		return 0
+	}
+	if data == nil && length > 0 {
+		reportError(errOut, errors.New("deck_open_bytes: nil buffer with non-zero length"))
+		return 0
+	}
 	e, err := editor.OpenPresentationEditorFromBytes(C.GoBytes(unsafe.Pointer(data), length))
 	if err != nil {
 		reportError(errOut, err)
