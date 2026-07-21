@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import Self
 
 from ..api_errors import GopptxError
+from ._ffi import take_error
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -35,17 +36,15 @@ class PresentationRuntimeLifecycleMixin:
         with self._lock:
             if self._handle:
                 self.close()
-            handle = cast("int", self._lib.deck_open(str(path).encode("utf-8")))  # type: ignore[attr-defined]
+            err = ctypes.c_void_p()
+            handle = cast(
+                "int",
+                self._lib.deck_open_ex(str(path).encode("utf-8"), ctypes.byref(err)),  # type: ignore[attr-defined]
+            )
             if not handle:
-                err_ptr = self._lib.deck_global_error()  # type: ignore[attr-defined]
-                msg = (
-                    ctypes.string_at(cast("int", err_ptr)).decode("utf-8")
-                    if err_ptr
-                    else "Unknown error"
+                raise GopptxError(
+                    f"Failed to open deck: {take_error(cast('object', self._lib), err.value)}"
                 )
-                if err_ptr:
-                    self._lib.deck_free_string(err_ptr)  # type: ignore[attr-defined]
-                raise GopptxError(f"Failed to open deck: {msg}")
             self._handle = int(handle)
             self.invalidate_cache()
 
@@ -55,20 +54,17 @@ class PresentationRuntimeLifecycleMixin:
             if self._handle:
                 self.close()
             buf = (ctypes.c_char * len(data)).from_buffer_copy(data)
+            err = ctypes.c_void_p()
             handle = cast(
                 "int",
-                self._lib.deck_open_bytes(buf, ctypes.c_int(len(data))),  # type: ignore[attr-defined]
+                self._lib.deck_open_bytes_ex(
+                    buf, ctypes.c_int(len(data)), ctypes.byref(err)
+                ),  # type: ignore[attr-defined]
             )
             if not handle:
-                err_ptr = self._lib.deck_global_error()  # type: ignore[attr-defined]
-                msg = (
-                    ctypes.string_at(cast("int", err_ptr)).decode("utf-8")
-                    if err_ptr
-                    else "Unknown error"
+                raise GopptxError(
+                    f"Failed to open deck from bytes: {take_error(cast('object', self._lib), err.value)}"
                 )
-                if err_ptr:
-                    self._lib.deck_free_string(err_ptr)  # type: ignore[attr-defined]
-                raise GopptxError(f"Failed to open deck from bytes: {msg}")
             self._handle = int(handle)
             self.invalidate_cache()
 

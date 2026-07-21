@@ -1,0 +1,29 @@
+# Normalize line endings.
+#
+# Without this, a Windows checkout (core.autocrlf=true) writes CRLF to disk and
+# goimports/gofmt then report every Go file as unformatted, even though the
+# committed blobs are LF and CI on Linux passes. Force LF in the working tree so
+# the formatting gate behaves identically on every platform.
+* text=auto eol=lf
+
+# Windows-only scripts must keep CRLF.
+*.ps1 text eol=crlf
+
+# Binary assets — never touch line endings.
+*.png binary
+*.PNG binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.mp3 binary
+*.mp4 binary
+*.pptx binary
+*.xlsx binary
+*.docx binary
+*.zip binary
+*.whl binary
+*.dll binary
+*.so binary
+*.dylib binary

@@ -79,7 +79,7 @@ func (e *PresentationEditor) AddSlideLayout(masterPart, layoutName string) (stri
 	layoutPart := fmt.Sprintf("ppt/slideLayouts/slideLayout%d.xml", layoutNum)
 	masterNum := layoutmaster.ExtractMasterNumber(masterPart)
 
-	layoutXML := editorslide.DefaultSlideLayout(layoutName, layoutNum, masterNum)
+	layoutXML := editorslide.DefaultSlideLayout(layoutName)
 	e.parts.Set(layoutPart, []byte(layoutXML))
 
 	layoutRelsPath := fmt.Sprintf("ppt/slideLayouts/_rels/slideLayout%d.xml.rels", layoutNum)

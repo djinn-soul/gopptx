@@ -14,6 +14,11 @@ import (
 type Handle uintptr
 
 type registeredEditor struct {
+	// mu serializes operations on editor. It is acquired only at the FFI
+	// boundary (see LockEditor) — never inside PresentationEditor methods,
+	// because command handlers such as export call back into e.Save and
+	// would deadlock on a re-entrant acquire.
+	mu        sync.Mutex
 	editor    *PresentationEditor
 	lastError string
 }
@@ -57,13 +62,14 @@ func (r *Registry) GetEditor(h Handle) (*PresentationEditor, bool) {
 	defer r.mu.RUnlock()
 
 	reg, ok := r.editors[h]
-	if !ok {
+	if !ok || reg.editor == nil {
 		return nil, false
 	}
 	return reg.editor, true
 }
 
 // UnregisterEditor removes an editor from the registry and closes it.
+// It blocks until any in-flight operation on the handle completes.
 func (r *Registry) UnregisterEditor(h Handle) {
 	if r == nil {
 		return
@@ -75,8 +81,16 @@ func (r *Registry) UnregisterEditor(h Handle) {
 	}
 	r.mu.Unlock()
 
-	if ok && reg.editor != nil {
+	if !ok {
+		return
+	}
+	// Wait for any in-flight operation before closing, and clear the pointer so
+	// a caller already blocked in LockEditor sees the handle as gone.
+	reg.mu.Lock()
+	defer reg.mu.Unlock()
+	if reg.editor != nil {
 		_ = reg.editor.Close()
+		reg.editor = nil
 	}
 }
 
