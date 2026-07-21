@@ -287,5 +287,53 @@ linters:
       - path: "pkg/pptx/mermaid/.*"
         linters:
           - mnd
+
+      # G703 (path traversal via taint analysis) on operator-supplied output
+      # paths. In a CLI, a build-time generator, or a library export function,
+      # the caller choosing where their own file is written IS the feature:
+      # the path is supplied by the operator running the process with their own
+      # privileges, so no trust boundary is crossed. Adding path restrictions
+      # here would break legitimate absolute-path output without closing a hole.
+      #
+      # Scoped to these paths on purpose rather than disabling G703 globally.
+      # A real path-traversal boundary does exist in this codebase - archive
+      # entry names written to disk (zip-slip) - and is guarded explicitly in
+      # pkg/pptx/tplx/tplx_archive.go. Keeping G703 enabled everywhere else
+      # means a new occurrence of that pattern still fails the build.
+      - path: "cmd/.*"
+        text: "G703"
+        linters:
+          - gosec
+      - path: "examples/.*"
+        text: "G703"
+        linters:
+          - gosec
+
+      # cgo-generated code in the C bindings. golangci-lint analyses the
+      # cgo-processed translation unit, so it reports findings that have no
+      # corresponding source line in bindings/c/bridge.go:
+      #
+      #   * nakedret / nonamedreturns / ST1003 originate in _cgo_gotypes.go,
+      #     a file cgo synthesises at build time (_cgo_cmalloc, the
+      #     __cgofn__cgo_<hash>_Cfunc__Cmalloc vars). It is not in the repo,
+      #     so there is nothing to edit. The <hash> is build-context derived
+      #     and changes between runs.
+      #
+      #   * gocritic commentFormatting fires on Go directives - //export,
+      #     //line, //go:linkname - where the absence of a space is REQUIRED.
+      #     Writing "// export deck_save" does not fail the build; it silently
+      #     demotes the directive to a plain comment, dropping the symbol from
+      #     the shared library and breaking the Python FFI at runtime.
+      #
+      # These are excluded rather than fixed because no correct source edit
+      # exists. Other linters remain active on bindings/c so hand-written code
+      # in that package is still checked.
+      - path: "bindings/c/.*"
+        linters:
+          - gocritic
+          - nakedret
+          - nonamedreturns
+          - staticcheck
+        text: "commentFormatting|naked return|named return|ST1003"
     paths:
       - issues

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/zipfast"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
@@ -59,7 +60,7 @@ func GenerateExcelForChartUpdate(kind Kind, req common.ChartDataUpdate) ([]byte,
 
 func generateExcelSheetBinary(headers []string, rows [][]string) ([]byte, error) {
 	buf := new(bytes.Buffer)
-	zw := zip.NewWriter(buf)
+	zw := zipfast.NewWriter(buf)
 
 	if err := writeZipFile(zw, "[Content_Types].xml", ExcelContentTypesXML); err != nil {
 		return nil, err
@@ -109,9 +110,7 @@ func generateSheetXML(headers []string, rows [][]string) (string, error) {
 	var sbHeaders strings.Builder
 	for i, h := range headers {
 		cell := ColumnName(i + 1)
-		sbHeaders.WriteString(
-			fmt.Sprintf(`<c r="%s1" t="inlineStr"><is><t>%s</t></is></c>`, cell, simpleXMLEscape(h)),
-		)
+		fmt.Fprintf(&sbHeaders, `<c r="%s1" t="inlineStr"><is><t>%s</t></is></c>`, cell, simpleXMLEscape(h))
 	}
 	xmlRows += sbHeaders.String()
 	xmlRows += `</row>`
@@ -119,7 +118,7 @@ func generateSheetXML(headers []string, rows [][]string) (string, error) {
 	var sbRows strings.Builder
 	for i, row := range rows {
 		rowNum := i + excelDataStartRow
-		sbRows.WriteString(fmt.Sprintf(`<row r="%d" spans="1:%d">`, rowNum, len(headers)))
+		fmt.Fprintf(&sbRows, `<row r="%d" spans="1:%d">`, rowNum, len(headers))
 		var sbCols strings.Builder
 		for col := range headers {
 			val := ""
@@ -128,10 +127,14 @@ func generateSheetXML(headers []string, rows [][]string) (string, error) {
 			}
 			cell := ColumnName(col + 1)
 			if isNumberLiteral(val) {
-				sbCols.WriteString(fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, cell, rowNum, val))
+				fmt.Fprintf(&sbCols, `<c r="%s%d"><v>%s</v></c>`, cell, rowNum, val)
 			} else {
-				sbCols.WriteString(
-					fmt.Sprintf(`<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>`, cell, rowNum, simpleXMLEscape(val)),
+				fmt.Fprintf(
+					&sbCols,
+					`<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>`,
+					cell,
+					rowNum,
+					simpleXMLEscape(val),
 				)
 			}
 		}

@@ -41,13 +41,13 @@ func resolveOOXMLColorToken(token string) (uint8, uint8, uint8, bool) {
 func resolveColorAlias(base string) string {
 	switch base {
 	case "tx1":
-		return "dk1"
+		return themeSlotDk1
 	case "bg1":
-		return "lt1"
+		return themeSlotLt1
 	case "tx2":
-		return "dk2"
+		return themeSlotDk2
 	case "bg2":
-		return "lt2"
+		return themeSlotLt2
 	default:
 		return base
 	}

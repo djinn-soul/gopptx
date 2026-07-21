@@ -223,7 +223,7 @@ func buildImageTransformAttrs(opts *common.ShapeUpdate) string {
 	}
 	var attrs strings.Builder
 	if opts.Rotation != nil {
-		attrs.WriteString(fmt.Sprintf(` rot="%d"`, int(*opts.Rotation*imageRotationScale)))
+		fmt.Fprintf(&attrs, ` rot="%d"`, int(*opts.Rotation*imageRotationScale))
 	}
 	if opts.FlipH != nil && *opts.FlipH {
 		attrs.WriteString(` flipH="1"`)

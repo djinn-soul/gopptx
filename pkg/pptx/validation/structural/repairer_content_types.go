@@ -75,7 +75,7 @@ func (r *Repairer) generateContentTypes() string {
 			continue
 		}
 		contentType := r.inferContentType(p)
-		sb.WriteString(fmt.Sprintf("  <Override PartName=\"/%s\" ContentType=\"%s\"/>\n", p, contentType))
+		fmt.Fprintf(&sb, "  <Override PartName=\"/%s\" ContentType=\"%s\"/>\n", p, contentType)
 	}
 
 	sb.WriteString(`</Types>`)

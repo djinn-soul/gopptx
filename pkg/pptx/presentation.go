@@ -1,13 +1,13 @@
 package pptx
 
 import (
-	"archive/zip"
 	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/internal/zipfast"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	"github.com/djinn-soul/gopptx/pkg/pptx/presentation"
@@ -95,7 +95,7 @@ func CreateWithMetadata(meta Metadata, slides []SlideContent) ([]byte, error) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	zw := zip.NewWriter(buf)
+	zw := zipfast.NewWriter(buf)
 	count := len(slides)
 
 	if err := presentation.WritePresentationPackage(zw, meta, slides, count); err != nil {

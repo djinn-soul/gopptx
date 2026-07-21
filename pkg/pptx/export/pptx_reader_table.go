@@ -86,7 +86,7 @@ func applyTableCellLayout(cell *tables.TableCell, cellMeta map[string]any) {
 		switch strings.ToLower(strings.TrimSpace(rawAlign)) {
 		case "top":
 			*cell = cell.WithVAlignTop()
-		case "bottom":
+		case anchorBottom:
 			*cell = cell.WithVAlignBottom()
 		case "middle", "center", "ctr":
 			*cell = cell.WithVAlignMiddle()

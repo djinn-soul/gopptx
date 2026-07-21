@@ -31,19 +31,28 @@ const (
 	ModuleTypeDocument
 )
 
+// Human-readable module type names returned by [VBAModuleType.String].
+const (
+	ModuleTypeNameStandard = "Standard"
+	ModuleTypeNameClass    = "Class"
+	ModuleTypeNameForm     = "Form"
+	ModuleTypeNameDocument = "Document"
+	ModuleTypeNameUnknown  = "Unknown"
+)
+
 // String returns a human-readable name for the module type.
 func (t VBAModuleType) String() string {
 	switch t {
 	case ModuleTypeStandard:
-		return "Standard"
+		return ModuleTypeNameStandard
 	case ModuleTypeClass:
-		return "Class"
+		return ModuleTypeNameClass
 	case ModuleTypeForm:
-		return "Form"
+		return ModuleTypeNameForm
 	case ModuleTypeDocument:
-		return "Document"
+		return ModuleTypeNameDocument
 	default:
-		return "Unknown"
+		return ModuleTypeNameUnknown
 	}
 }
 

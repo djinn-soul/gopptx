@@ -121,7 +121,7 @@ func layoutURIOrDefault(uri string) string {
 	if uri != "" {
 		return uri
 	}
-	return "urn:microsoft.com/office/officeart/2005/8/layout/default"
+	return smartArtDefaultLayoutURN
 }
 
 //nolint:gochecknoglobals // package-level cache for embedded template strings
@@ -180,7 +180,7 @@ func layoutTemplateKey(layoutURI string) (string, bool) {
 
 func layoutTemplateKeyList(layoutURI string) (string, bool) {
 	switch layoutURI {
-	case "urn:microsoft.com/office/officeart/2005/8/layout/default":
+	case smartArtDefaultLayoutURN:
 		return "basic_block_list", true
 	case "urn:microsoft.com/office/officeart/2005/8/layout/vList5":
 		return "vertical_block_list", true

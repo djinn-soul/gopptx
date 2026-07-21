@@ -7,6 +7,10 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 )
 
+// defaultFillWhite is the default white used for pattern fill backgrounds and
+// for a solid fill promoted from no-fill.
+const defaultFillWhite = "FFFFFF"
+
 // FillType represents the type of shape fill.
 type FillType string
 
@@ -135,7 +139,7 @@ func NewPatternFill(pattern PatternType) *RichShapeFill {
 		Pattern: &PatternFill{
 			Pattern: pattern,
 			FgColor: "000000",
-			BgColor: "FFFFFF",
+			BgColor: defaultFillWhite,
 		},
 	}
 }
@@ -176,7 +180,7 @@ func (f *RichShapeFill) WithPattern(pattern PatternType) *RichShapeFill {
 	f.Pattern = &PatternFill{
 		Pattern: pattern,
 		FgColor: "000000",
-		BgColor: "FFFFFF",
+		BgColor: defaultFillWhite,
 	}
 	f.Solid = nil
 	f.Gradient = nil
@@ -206,7 +210,7 @@ func (f *RichShapeFill) Foreground() *RichShapeFill {
 	if f.Type == FillTypeNoFill {
 		f.Type = FillTypeSolid
 		f.Solid = &SolidFill{
-			Color:        "FFFFFF",
+			Color:        defaultFillWhite,
 			Transparency: 0.0,
 		}
 	}

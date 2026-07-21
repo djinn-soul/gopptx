@@ -8,6 +8,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/djinn-soul/gopptx/internal/zipfast"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
 
@@ -94,7 +95,7 @@ func (e *PresentationEditor) buildZipToWriter(
 	allNames []string,
 	updatedParts map[string][]byte,
 ) error {
-	zw := zip.NewWriter(w)
+	zw := zipfast.NewWriter(w)
 	poolBuf, ok := rawZipCopyBufferPool.Get().(*[]byte)
 	if !ok || poolBuf == nil || cap(*poolBuf) < rawZipCopyBufferSize {
 		fresh := make([]byte, rawZipCopyBufferSize)

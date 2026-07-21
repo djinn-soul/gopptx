@@ -63,7 +63,7 @@ func resolveThemeColors(spec *ThemeSpec) resolvedThemeColors {
 	res := resolvedThemeColors{
 		clrName: "Office",
 		dk1:     "windowText", lt1: "window", dk2: "1F497D", lt2: "EEECE1",
-		dk1Last: "000000", lt1Last: "FFFFFF",
+		dk1Last: "000000", lt1Last: shapeTextColorLight,
 		accent1: "4F81BD", accent2: "C0504D", accent3: "9BBB59",
 		accent4: "8064A2", accent5: "4BACC6", accent6: "F79646",
 		hlink: "0000FF", folHlink: "800080",

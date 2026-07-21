@@ -56,7 +56,7 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 	bs := make([]float64, len(bubbleSizes))
 	copy(bs, bubbleSizes)
 	return BubbleChart{
-		Title:                      "Chart",
+		Title:                      defaultChartTitle,
 		XValues:                    xs,
 		YValues:                    ys,
 		BubbleSizes:                bs,
@@ -64,8 +64,8 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 		Y:                          defaultChartY,
 		CX:                         defaultChartCX,
 		CY:                         defaultChartCY,
-		LineColor:                  "4F81BD",
-		SeriesName:                 "Series 1",
+		LineColor:                  defaultChartSeriesColor,
+		SeriesName:                 defaultChartSeriesName,
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,
 		ShowDataLabels:             false,
@@ -75,7 +75,7 @@ func NewBubbleChart(xValues []float64, yValues []float64, bubbleSizes []float64)
 		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
 		CategoryAxisCrosses:        AxisCrossesAutoZero,
 		ValueAxisCrosses:           AxisCrossesAutoZero,
-		ValueFormat:                "General",
+		ValueFormat:                defaultChartValueFormat,
 		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 		BubbleScale:                defaultBubbleScale,
 	}

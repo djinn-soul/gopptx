@@ -17,6 +17,7 @@ const packageRelationshipsXMLNS = "http://schemas.openxmlformats.org/package/200
 const (
 	presentationRelsPath = "ppt/_rels/presentation.xml.rels"
 	contentTypesPath     = "[Content_Types].xml"
+	presentationPartPath = "ppt/presentation.xml"
 	xmlDeclSuffixLength  = 2
 	namespaceIssueCap    = 3
 )
@@ -57,10 +58,10 @@ func (v *Validator) AddChecker(c Checker) {
 //
 //nolint:gochecknoglobals // read-only lookup table, never mutated
 var requiredParts = map[string]string{
-	contentTypesPath:       "Content types definition",
-	"_rels/.rels":          "Package relationships",
-	"ppt/presentation.xml": "Presentation document",
-	presentationRelsPath:   "Presentation relationships",
+	contentTypesPath:     "Content types definition",
+	"_rels/.rels":        "Package relationships",
+	presentationPartPath: "Presentation document",
+	presentationRelsPath: "Presentation relationships",
 }
 
 // Validate performs a comprehensive validation check on the package.

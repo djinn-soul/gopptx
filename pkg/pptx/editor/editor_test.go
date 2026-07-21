@@ -318,19 +318,17 @@ func writeDeckFixture(t *testing.T, name string, slides []elements.SlideContent)
 		part := fmt.Sprintf("slides/slide%d.xml", num)
 		fullPart := fmt.Sprintf("ppt/slides/slide%d.xml", num)
 
-		sldIDs.WriteString(fmt.Sprintf(`<p:sldId id="%d" r:id="%s"/>`, id, rid))
-		presRels.WriteString(
-			fmt.Sprintf(
-				`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="%s"/>`,
-				rid,
-				part,
-			),
+		fmt.Fprintf(&sldIDs, `<p:sldId id="%d" r:id="%s"/>`, id, rid)
+		fmt.Fprintf(
+			&presRels,
+			`<Relationship Id="%s" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="%s"/>`,
+			rid,
+			part,
 		)
-		contentTypes.WriteString(
-			fmt.Sprintf(
-				`<Override PartName="/%s" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`,
-				fullPart,
-			),
+		fmt.Fprintf(
+			&contentTypes,
+			`<Override PartName="/%s" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`,
+			fullPart,
 		)
 
 		// Minimal slide XML

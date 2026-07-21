@@ -5,8 +5,16 @@ import (
 	"strconv"
 )
 
+// Attribute and element patterns used when parsing master/layout XML. They are
+// fixed literals, so compiling them once at init beats any runtime cache.
+var (
+	phIdxAttrPattern  = regexp.MustCompile(`idx="([^"]+)"`)
+	phTypeAttrPattern = regexp.MustCompile(`type="([^"]+)"`)
+	phNameAttrPattern = regexp.MustCompile(`name="([^"]+)"`)
+)
+
 func parsePlaceholderAttrIndex(match string) int {
-	raw := parsePlaceholderAttrString(match, `idx="([^"]+)"`)
+	raw := parsePlaceholderAttrString(match, phIdxAttrPattern)
 	if raw == "" {
 		return 0
 	}
@@ -17,18 +25,10 @@ func parsePlaceholderAttrIndex(match string) int {
 	return idx
 }
 
-func parsePlaceholderAttrString(match, pattern string) string {
-	re := commonCompile(pattern)
-	if re == nil {
-		return ""
-	}
-	ms := re.FindStringSubmatch(match)
+func parsePlaceholderAttrString(match string, pattern *regexp.Regexp) string {
+	ms := pattern.FindStringSubmatch(match)
 	if len(ms) <= 1 {
 		return ""
 	}
 	return ms[1]
-}
-
-func commonCompile(pattern string) *regexp.Regexp {
-	return regexp.MustCompile(pattern)
 }

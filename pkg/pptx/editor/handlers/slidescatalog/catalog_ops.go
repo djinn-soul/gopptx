@@ -2,6 +2,9 @@ package slidescatalog
 
 import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 
+// keyMasterPart is the JSON response key carrying a slide master part path.
+const keyMasterPart = "master_part"
+
 type CatalogReader interface {
 	ListSlideCharts(slideIndex int) ([]common.SlideChartRef, error)
 	GetSlideLayoutRef(slideIndex int) (string, string, error)
@@ -29,7 +32,7 @@ func BuildChartsResponse(charts []common.SlideChartRef) map[string]any {
 func BuildLayoutRefResponse(layoutPart, masterPart string) map[string]any {
 	return map[string]any{
 		"layout_part": layoutPart,
-		"master_part": masterPart,
+		keyMasterPart: masterPart,
 	}
 }
 
@@ -47,14 +50,14 @@ func BuildChartStateResponse(state common.ChartState) map[string]any {
 
 func BuildCloneFamilyResponse(result common.SlideMasterCloneResult) map[string]any {
 	return map[string]any{
-		"master_part": result.MasterPart,
+		keyMasterPart: result.MasterPart,
 		"theme_part":  result.ThemePart,
 		"layout_map":  result.LayoutMap,
 	}
 }
 
 func BuildAddedMasterResponse(masterPart string) map[string]any {
-	return map[string]any{"master_part": masterPart}
+	return map[string]any{keyMasterPart: masterPart}
 }
 
 func BuildAddedLayoutResponse(layoutPart string) map[string]any {

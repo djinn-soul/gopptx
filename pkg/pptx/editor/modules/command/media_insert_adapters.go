@@ -163,15 +163,15 @@ func NewVideoInsertSpec(
 	insertPath func(MediaPlacement, string, string, string) (int, error),
 ) MediaInsertSpec {
 	return MediaInsertSpec{
-		MetaKey:          "mime_type",
-		PrimaryPathKey:   "path",
-		PrimaryDataKey:   "data",
+		MetaKey:          KeyMimeType,
+		PrimaryPathKey:   KeyPath,
+		PrimaryDataKey:   KeyData,
 		SecondaryPathKey: "poster_path",
 		SecondaryDataKey: "poster_data",
 		PrimaryMaxLen:    maxLen,
 		SecondaryMaxLen:  maxLen,
-		PrimaryLabel:     "video",
-		SecondaryLabel:   "poster",
+		PrimaryLabel:     labelVideo,
+		SecondaryLabel:   labelPoster,
 		InsertBinary:     insertBinary,
 		InsertPath:       insertPath,
 	}
@@ -183,15 +183,15 @@ func NewAudioInsertSpec(
 	insertPath func(MediaPlacement, string, string, string) (int, error),
 ) MediaInsertSpec {
 	return MediaInsertSpec{
-		MetaKey:          "mime_type",
-		PrimaryPathKey:   "path",
-		PrimaryDataKey:   "data",
+		MetaKey:          KeyMimeType,
+		PrimaryPathKey:   KeyPath,
+		PrimaryDataKey:   KeyData,
 		SecondaryPathKey: "icon_path",
 		SecondaryDataKey: "icon_data",
 		PrimaryMaxLen:    maxLen,
 		SecondaryMaxLen:  maxLen,
 		PrimaryLabel:     "audio",
-		SecondaryLabel:   "icon",
+		SecondaryLabel:   labelIcon,
 		InsertBinary:     insertBinary,
 		InsertPath:       insertPath,
 	}
@@ -204,14 +204,14 @@ func NewOLEInsertSpec(
 ) MediaInsertSpec {
 	return MediaInsertSpec{
 		MetaKey:          "prog_id",
-		PrimaryPathKey:   "path",
-		PrimaryDataKey:   "data",
+		PrimaryPathKey:   KeyPath,
+		PrimaryDataKey:   KeyData,
 		SecondaryPathKey: "icon_path",
 		SecondaryDataKey: "icon_data",
 		PrimaryMaxLen:    maxLen,
 		SecondaryMaxLen:  maxLen,
 		PrimaryLabel:     "object",
-		SecondaryLabel:   "icon",
+		SecondaryLabel:   labelIcon,
 		InsertBinary:     insertBinary,
 		InsertPath:       insertPath,
 	}

@@ -40,11 +40,11 @@ func renderImageToWriter(w io.Writer, img shapes.Image, opts HTMLOptions) error 
 		ext = "." + strings.ToLower(img.Format)
 	}
 	switch ext {
-	case ".jpg", ".jpeg":
+	case ".jpg", extJPEG:
 		mimeType = "image/jpeg"
-	case ".png":
+	case extPNG:
 		mimeType = "image/png"
-	case ".gif":
+	case extGIF:
 		mimeType = "image/gif"
 	case ".svg":
 		mimeType = "image/svg+xml"

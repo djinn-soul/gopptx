@@ -47,7 +47,7 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, closeV
 	lowVals := append([]float64(nil), low...)
 	closeVals := append([]float64(nil), closeValues...)
 	return StockHLCChart{
-		Title:       "Chart",
+		Title:       defaultChartTitle,
 		Categories:  cats,
 		HighValues:  highVals,
 		LowValues:   lowVals,
@@ -61,7 +61,7 @@ func NewStockHLCChart(categories []string, high []float64, low []float64, closeV
 		LegendPosition:        LegendPositionRight,
 		ShowDataLabels:        false,
 		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
+		ValueFormat:           defaultChartValueFormat,
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }

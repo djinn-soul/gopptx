@@ -63,21 +63,25 @@ type SlideContent struct {
 	// ContentBoundsEMU holds the actual body/content placeholder geometry read
 	// from an existing PPTX (x, y, cx, cy in EMU).  Same zero-means-default
 	// convention as TitleBoundsEMU.
-	ContentBoundsEMU     [4]int64
-	Background           *SlideBackground
-	Transition           transitions.SlideTransition
-	DefaultBulletStyle   ParagraphStyle
-	Bullets              []string
-	BulletRuns           [][]Run
-	BulletStyles         []ParagraphStyle
-	ShowSlideNumber      bool
-	FooterText           string
-	Notes                string
-	NotesBody            []Paragraph
-	Images               []shapes.Image
-	Shapes               []shapes.Shape
-	Connectors           []shapes.Connector
-	Table                *tables.Table
+	ContentBoundsEMU   [4]int64
+	Background         *SlideBackground
+	Transition         transitions.SlideTransition
+	DefaultBulletStyle ParagraphStyle
+	Bullets            []string
+	BulletRuns         [][]Run
+	BulletStyles       []ParagraphStyle
+	ShowSlideNumber    bool
+	FooterText         string
+	Notes              string
+	NotesBody          []Paragraph
+	Images             []shapes.Image
+	Shapes             []shapes.Shape
+	Connectors         []shapes.Connector
+	Table              *tables.Table
+	// Tables holds any additional tables beyond Table. Slides read from a PPTX
+	// can carry several; Table keeps the first for backwards compatibility and
+	// the rest land here so exporters do not silently drop them.
+	Tables               []tables.Table
 	Chart                *charts.BarChart
 	BarHorizontal        *charts.BarHorizontalChart
 	BarStacked           *charts.BarStackedChart

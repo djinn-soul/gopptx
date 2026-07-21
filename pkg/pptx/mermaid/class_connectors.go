@@ -6,7 +6,7 @@ import (
 )
 
 func classNeedsHollowInheritanceMarker(relType string) bool {
-	return relType == "<|--" || relType == "<|.."
+	return relType == arrowInherit || relType == arrowRealize
 }
 
 func classInheritanceMarker(geometry classConnectorGeometry, theme Theme) *shapes.Shape {
@@ -88,7 +88,7 @@ func classArrowTypes(relType string) (string, string) {
 	startArrow := shapes.ArrowTypeNone
 	endArrow := shapes.ArrowTypeTriangle
 	switch relType {
-	case "<|--", "<|..":
+	case arrowInherit, arrowRealize:
 		endArrow = shapes.ArrowTypeOpen
 	case "*--", "*..":
 		startArrow = shapes.ArrowTypeDiamond

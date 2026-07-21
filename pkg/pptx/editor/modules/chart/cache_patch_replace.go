@@ -5,12 +5,26 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+// fieldPatternCache memoizes per-tag field patterns. Chart field tags come from
+// a small fixed set, so the cache is bounded; compiling on every call cost ~13x
+// the cached lookup.
+//
+//nolint:gochecknoglobals // Shared compile cache; see above.
+var fieldPatternCache sync.Map // tag string -> *regexp.Regexp
+
 func getFieldPattern(tag string) *regexp.Regexp {
-	return regexp.MustCompile(`(?s)<c:` + tag + `>.*?</c:` + tag + `>`)
+	if cached, ok := fieldPatternCache.Load(tag); ok {
+		re, _ := cached.(*regexp.Regexp)
+		return re
+	}
+	re := regexp.MustCompile(`(?s)<c:` + tag + `>.*?</c:` + tag + `>`)
+	fieldPatternCache.Store(tag, re)
+	return re
 }
 
 func replaceFieldContent(

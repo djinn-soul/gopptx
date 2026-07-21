@@ -104,18 +104,18 @@ func isBodyPlaceholder(shapeType, shapeName string) bool {
 // editorTypeToPreset normalizes editor shape types to OOXML preset names.
 func editorTypeToPreset(value string) string {
 	switch strings.ToLower(value) {
-	case "rect", "rectangle":
-		return "rect"
+	case presetRect, "rectangle":
+		return presetRect
 	case "roundrect", "roundedrectangle":
-		return "roundRect"
-	case "ellipse", "oval", "circle":
-		return "ellipse"
+		return presetRoundRect
+	case presetEllipse, "oval", "circle":
+		return presetEllipse
 	case editorTypeTriangle, "rt_triangle":
 		return editorTypeTriangle
 	case "rightarrow":
-		return "rightArrow"
+		return presetRightArrow
 	case "leftarrow":
-		return "leftArrow"
+		return presetLeftArrow
 	default:
 		return value
 	}

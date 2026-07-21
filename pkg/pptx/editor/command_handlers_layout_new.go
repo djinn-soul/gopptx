@@ -21,7 +21,7 @@ func handleGetLayoutShapes(e *PresentationEditor, payload json.RawMessage) (any,
 	}
 
 	shapes := e.GetLayoutShapes(layoutPart)
-	return map[string]any{"shapes": shapes}, nil
+	return map[string]any{keyShapes: shapes}, nil
 }
 
 // handleGetMasterShapes returns the shape names in a slide master.
@@ -41,7 +41,7 @@ func handleGetMasterShapes(e *PresentationEditor, payload json.RawMessage) (any,
 	}
 
 	shapes := e.GetMasterShapes(masterPart)
-	return map[string]any{"shapes": shapes}, nil
+	return map[string]any{keyShapes: shapes}, nil
 }
 
 // handleGetLayoutPlaceholders returns the placeholders in a slide layout.
@@ -61,7 +61,7 @@ func handleGetLayoutPlaceholders(e *PresentationEditor, payload json.RawMessage)
 	}
 
 	placeholders := e.GetLayoutPlaceholders(layoutPart)
-	return map[string]any{"placeholders": placeholders}, nil
+	return map[string]any{keyPlaceholder: placeholders}, nil
 }
 
 // handleGetMasterPlaceholders returns the placeholders in a slide master.
@@ -81,7 +81,7 @@ func handleGetMasterPlaceholders(e *PresentationEditor, payload json.RawMessage)
 	}
 
 	placeholders := e.GetMasterPlaceholders(masterPart)
-	return map[string]any{"placeholders": placeholders}, nil
+	return map[string]any{keyPlaceholder: placeholders}, nil
 }
 
 // handleSetGlobalThemePreset applies a named preset theme to the presentation.

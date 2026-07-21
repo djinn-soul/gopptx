@@ -163,9 +163,14 @@ func (e *PresentationEditor) ReplaceChartData(
 	})
 }
 
+// Hoisted out of the call path; recompiling per call cost ~13x.
+var (
+	reChartRelID   = regexp.MustCompile(`<(?:c:chart|cx:chart|chart)[^>]*r:id="([^"]+)"`)
+	reNumericIDVal = regexp.MustCompile(`id="(\d+)"`)
+)
+
 func extractChartRelIDs(content []byte) []string {
-	re := regexp.MustCompile(`<(?:c:chart|cx:chart|chart)[^>]*r:id="([^"]+)"`)
-	matches := re.FindAllSubmatch(content, -1)
+	matches := reChartRelID.FindAllSubmatch(content, -1)
 	ids := make([]string, 0, len(matches))
 	for _, m := range matches {
 		ids = append(ids, string(m[1]))
@@ -221,8 +226,7 @@ func (e *PresentationEditor) addRelationship(partPath, id, relType, target strin
 
 func (e *PresentationEditor) nextShapeID(slidePart string) int {
 	data, _ := e.parts.Get(slidePart)
-	re := regexp.MustCompile(`id="(\d+)"`)
-	matches := re.FindAllStringSubmatch(string(data), -1)
+	matches := reNumericIDVal.FindAllStringSubmatch(string(data), -1)
 	maxID := 0
 	for _, m := range matches {
 		id, _ := strconv.Atoi(m[1])

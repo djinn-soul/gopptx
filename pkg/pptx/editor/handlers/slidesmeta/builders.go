@@ -17,14 +17,27 @@ var (
 )
 
 const (
-	chartTypeBar         = "bar"
-	chartTypeLine        = "line"
-	chartTypeScatter     = "scatter"
-	chartTypeArea        = "area"
-	chartTypePie         = "pie"
-	chartTypeDoughnut    = "doughnut"
-	chartTypeBubble      = "bubble"
-	chartTypeRadar       = "radar"
+	chartTypeBar      = "bar"
+	chartTypeLine     = "line"
+	chartTypeScatter  = "scatter"
+	chartTypeArea     = "area"
+	chartTypePie      = "pie"
+	chartTypeDoughnut = "doughnut"
+	chartTypeBubble   = "bubble"
+	chartTypeRadar    = "radar"
+
+	chartTypeBarHorizontal  = "barHorizontal"
+	chartTypeBarStacked     = "barStacked"
+	chartTypeBarStacked100  = "barStacked100"
+	chartTypeLineMarkers    = "lineMarkers"
+	chartTypeLineStacked    = "lineStacked"
+	chartTypeAreaStacked    = "areaStacked"
+	chartTypeAreaStacked100 = "areaStacked100"
+	chartTypeRadarFilled    = "radarFilled"
+	chartTypeStockHLC       = "stockHLC"
+	chartTypeStockOHLC      = "stockOHLC"
+	chartTypeCombo          = "combo"
+
 	chartTypeStockDelta  = 2
 	defaultStockOpenDiff = 1
 )
@@ -34,17 +47,17 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 	switch canonicalChartType(request.ChartType) {
 	case chartTypeBar:
 		return withBounds(charts.NewBarChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
-	case "barHorizontal":
+	case chartTypeBarHorizontal:
 		return withBounds(
 			charts.NewBarHorizontalChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "barStacked":
+	case chartTypeBarStacked:
 		return withBounds(
 			charts.NewBarStackedChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "barStacked100":
+	case chartTypeBarStacked100:
 		return withBounds(
 			charts.NewBarStacked100Chart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
@@ -54,12 +67,12 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 			charts.NewLineChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "lineMarkers":
+	case chartTypeLineMarkers:
 		return withBounds(
 			charts.NewLineMarkersChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "lineStacked":
+	case chartTypeLineStacked:
 		return withBounds(
 			charts.NewLineStackedChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
@@ -72,12 +85,12 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 			charts.NewAreaChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "areaStacked":
+	case chartTypeAreaStacked:
 		return withBounds(
 			charts.NewAreaStackedChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "areaStacked100":
+	case chartTypeAreaStacked100:
 		return withBounds(
 			charts.NewAreaStacked100Chart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
@@ -98,24 +111,24 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 			charts.NewRadarChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "radarFilled":
+	case chartTypeRadarFilled:
 		return withBounds(
 			charts.NewRadarFilledChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
-	case "stockHLC":
+	case chartTypeStockHLC:
 		high, low, closeVals := syntheticStockTriplet(request.Values)
 		return withBounds(
 			charts.NewStockHLCChart(request.Categories, high, low, closeVals).WithTitle(request.Title),
 			request,
 		), nil
-	case "stockOHLC":
+	case chartTypeStockOHLC:
 		openVals, high, low, closeVals := syntheticStockQuad(request.Values)
 		return withBounds(
 			charts.NewStockOHLCChart(request.Categories, openVals, high, low, closeVals).WithTitle(request.Title),
 			request,
 		), nil
-	case "combo":
+	case chartTypeCombo:
 		barSeries := make([]charts.Series, len(request.BarSeries))
 		for i, s := range request.BarSeries {
 			barSeries[i] = charts.Series{Name: s.Name, Values: s.Values}
@@ -138,25 +151,25 @@ func canonicalChartType(value string) string {
 	case chartTypeBar, "column":
 		return chartTypeBar
 	case "barhorizontal", "bar_horizontal", "bar-horizontal":
-		return "barHorizontal"
+		return chartTypeBarHorizontal
 	case "barstacked", "bar_stacked", "bar-stacked":
-		return "barStacked"
+		return chartTypeBarStacked
 	case "barstacked100", "bar_stacked_100", "bar-stacked-100":
-		return "barStacked100"
+		return chartTypeBarStacked100
 	case chartTypeLine:
 		return chartTypeLine
 	case "linemarkers", "line_markers", "line-markers":
-		return "lineMarkers"
+		return chartTypeLineMarkers
 	case "linestacked", "line_stacked", "line-stacked":
-		return "lineStacked"
+		return chartTypeLineStacked
 	case chartTypeScatter:
 		return chartTypeScatter
 	case chartTypeArea:
 		return chartTypeArea
 	case "areastacked", "area_stacked", "area-stacked":
-		return "areaStacked"
+		return chartTypeAreaStacked
 	case "areastacked100", "area_stacked_100", "area-stacked-100":
-		return "areaStacked100"
+		return chartTypeAreaStacked100
 	case chartTypePie:
 		return chartTypePie
 	case chartTypeDoughnut:
@@ -166,13 +179,13 @@ func canonicalChartType(value string) string {
 	case chartTypeRadar:
 		return chartTypeRadar
 	case "radarfilled", "radar_filled", "radar-filled":
-		return "radarFilled"
+		return chartTypeRadarFilled
 	case "stockhlc", "stock_hlc", "stock-hlc":
-		return "stockHLC"
+		return chartTypeStockHLC
 	case "stockohlc", "stock_ohlc", "stock-ohlc":
-		return "stockOHLC"
-	case "combo":
-		return "combo"
+		return chartTypeStockOHLC
+	case chartTypeCombo:
+		return chartTypeCombo
 	default:
 		return value
 	}

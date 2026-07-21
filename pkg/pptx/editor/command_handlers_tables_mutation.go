@@ -258,7 +258,7 @@ func handleDefineTableStyle(e *PresentationEditor, payload json.RawMessage) (any
 	}
 	return map[string]any{
 		"style_id": id,
-		"name":     name,
+		keyName:    name,
 	}, nil
 }
 
@@ -271,7 +271,7 @@ func handleListTableStyles(e *PresentationEditor, _ json.RawMessage) (any, error
 	for _, style := range styles {
 		out = append(out, map[string]string{
 			"style_id": style.StyleID,
-			"name":     style.Name,
+			keyName:    style.Name,
 		})
 	}
 	return map[string]any{"styles": out}, nil
