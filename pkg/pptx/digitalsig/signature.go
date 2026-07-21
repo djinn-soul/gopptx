@@ -229,15 +229,17 @@ func (d DigitalSignature) ContentTypeEntry() string {
 
 // xmlEscape escapes special XML characters.
 func xmlEscape(s string) string {
-	replacer := strings.NewReplacer(
-		"&", "&amp;",
-		"<", "&lt;",
-		">", "&gt;",
-		"\"", "&quot;",
-		"'", "&apos;",
-	)
-	return replacer.Replace(s)
+	return xmlEscapeReplacer.Replace(s)
 }
+
+//nolint:gochecknoglobals // Replacer is stateless and reused to avoid per-call allocation.
+var xmlEscapeReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&quot;",
+	"'", "&apos;",
+)
 
 // Signature metadata literals repeated across the signature builders.
 const (
