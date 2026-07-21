@@ -29,7 +29,7 @@ func parseBoolAttr(value *string) bool {
 		return false
 	}
 	switch *value {
-	case "1", "true", "TRUE", "True":
+	case "1", boolTrueLiteral, "TRUE", "True":
 		return true
 	default:
 		return false

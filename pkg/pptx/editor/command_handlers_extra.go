@@ -181,7 +181,7 @@ func handleAddMermaidShape(e *PresentationEditor, payload json.RawMessage) (any,
 		h := float64(s.CY)
 		shapeType := s.Type
 		if shapeType == "" {
-			shapeType = "rect"
+			shapeType = shapeTypeRect
 		}
 		_, shapeErr := e.AddShape(slideIndex, shapeType, x, y, w, h)
 		if shapeErr != nil {

@@ -90,19 +90,19 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern __declspec(dllexport) char* deck_global_error(void);
-extern __declspec(dllexport) DeckHandle deck_open_ex(char* path, char** errOut);
-extern __declspec(dllexport) DeckHandle deck_new_ex(char* title, char** errOut);
-extern __declspec(dllexport) DeckHandle deck_open_bytes_ex(char* data, int length, char** errOut);
-extern __declspec(dllexport) DeckHandle deck_open(char* path);
-extern __declspec(dllexport) DeckHandle deck_new(char* title);
-extern __declspec(dllexport) DeckHandle deck_open_bytes(char* data, int length);
-extern __declspec(dllexport) char* deck_save_bytes(DeckHandle h, int* outLen);
-extern __declspec(dllexport) char* deck_execute_json(DeckHandle h, char* jsonInput);
-extern __declspec(dllexport) int deck_save(DeckHandle h, char* path);
-extern __declspec(dllexport) char* deck_last_error(DeckHandle h);
-extern __declspec(dllexport) void deck_free_string(char* s);
-extern __declspec(dllexport) void deck_close(DeckHandle h);
+extern char* deck_global_error(void);
+extern DeckHandle deck_open_ex(char* path, char** errOut);
+extern DeckHandle deck_new_ex(char* title, char** errOut);
+extern DeckHandle deck_open_bytes_ex(char* data, int length, char** errOut);
+extern DeckHandle deck_open(char* path);
+extern DeckHandle deck_new(char* title);
+extern DeckHandle deck_open_bytes(char* data, int length);
+extern char* deck_save_bytes(DeckHandle h, int* outLen);
+extern char* deck_execute_json(DeckHandle h, char* jsonInput);
+extern int deck_save(DeckHandle h, char* path);
+extern char* deck_last_error(DeckHandle h);
+extern void deck_free_string(char* s);
+extern void deck_close(DeckHandle h);
 
 #ifdef __cplusplus
 }

@@ -12,7 +12,7 @@ import (
 )
 
 func handleListSlides(e *PresentationEditor, _ json.RawMessage) (any, error) {
-	return map[string]any{"slides": e.Slides()}, nil
+	return map[string]any{keySlides: e.Slides()}, nil
 }
 
 func handleFindAndReplace(e *PresentationEditor, payload json.RawMessage) (any, error) {

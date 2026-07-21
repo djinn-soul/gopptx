@@ -80,10 +80,15 @@ func boolAttr(b bool) string {
 	return "0"
 }
 
+// Hoisted out of the call path; recompiling per call cost ~13x.
+var (
+	reInjectHF   = regexp.MustCompile(`(?s)<p:hf\b[^>]*>.*?</p:hf>|<p:hf\b[^>]*/>`)
+	reCNvPrIDVal = regexp.MustCompile(`<p:cNvPr[^>]*\bid="(\d+)"`)
+)
+
 // injectSlideHF removes any existing <p:hf> and inserts the new one near slide content.
 func injectSlideHF(slideXML, hfXML string) string {
-	reHF := regexp.MustCompile(`(?s)<p:hf\b[^>]*>.*?</p:hf>|<p:hf\b[^>]*/>`)
-	slideXML = reHF.ReplaceAllString(slideXML, "")
+	slideXML = reInjectHF.ReplaceAllString(slideXML, "")
 	if strings.Contains(slideXML, "</p:cSld>") {
 		return strings.Replace(slideXML, "</p:cSld>", "</p:cSld>"+hfXML, 1)
 	}
@@ -128,8 +133,7 @@ func buildVisibleHeaderFooterShapes(
 }
 
 func maxShapeID(slideXML string) int {
-	re := regexp.MustCompile(`<p:cNvPr[^>]*\bid="(\d+)"`)
-	matches := re.FindAllStringSubmatch(slideXML, -1)
+	matches := reCNvPrIDVal.FindAllStringSubmatch(slideXML, -1)
 	maxID := 1
 	for _, match := range matches {
 		if len(match) != cNvPrSubmatchCount {

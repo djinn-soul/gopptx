@@ -35,13 +35,13 @@ func handleListPlaceholders(e *PresentationEditor, payload json.RawMessage) (any
 	result := make([]map[string]any, len(placeholders))
 	for i, ph := range placeholders {
 		result[i] = map[string]any{
-			"index": ph.Index,
-			"type":  ph.Type,
-			"name":  ph.Name,
+			keyIndex: ph.Index,
+			keyType:  ph.Type,
+			keyName:  ph.Name,
 		}
 	}
 
-	return map[string]any{"placeholders": result}, nil
+	return map[string]any{keyPlaceholder: result}, nil
 }
 
 func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage) (any, error) {

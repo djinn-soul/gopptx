@@ -52,7 +52,7 @@ func applyExportTextFrameAnchor(tf *shapes.TextFrame, frame *editorcommon.TextFr
 	switch strings.ToLower(strings.TrimSpace(*frame.VerticalAlign)) {
 	case "t", "top":
 		tf.Anchor = shapes.TextAnchorTop
-	case "b", "bottom":
+	case "b", anchorBottom:
 		tf.Anchor = shapes.TextAnchorBottom
 	case "ctr", "center", "middle":
 		tf.Anchor = shapes.TextAnchorMiddle

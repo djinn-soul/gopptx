@@ -19,6 +19,11 @@ import (
 const (
 	outputDir  = "examples/output"
 	outputFile = "57_bridge_command_api.pptx"
+
+	// JSON bridge envelope keys.
+	keyAPIVersion = "api_version"
+	keyPayload    = "payload"
+	keyRequestID  = "request_id"
 )
 
 func main() {
@@ -65,43 +70,43 @@ func run() error {
 	// --- Command 1: slide_count ---
 	// Returns the number of slides in the presentation.
 	resp1 := executeJSON(e, map[string]any{
-		"api_version": 1,
+		keyAPIVersion: 1,
 		"op":          editor.OpSlideCount,
-		"payload":     map[string]any{},
-		"request_id":  "req-001",
+		keyPayload:    map[string]any{},
+		keyRequestID:  "req-001",
 	})
 	log.Printf("slide_count response: %s", resp1)
 
 	// --- Command 2: set_slide_title ---
 	// Updates the title placeholder on slide index 0.
 	resp2 := executeJSON(e, map[string]any{
-		"api_version": 1,
+		keyAPIVersion: 1,
 		"op":          editor.OpSetSlideTitle,
-		"payload": map[string]any{
+		keyPayload: map[string]any{
 			"slide_index": 0,
 			"title":       "Updated via Bridge API",
 		},
-		"request_id": "req-002",
+		keyRequestID: "req-002",
 	})
 	log.Printf("set_slide_title response: %s", resp2)
 
 	// --- Command 3: list_slides ---
 	// Returns a summary of all slides (index, title, layout).
 	resp3 := executeJSON(e, map[string]any{
-		"api_version": 1,
+		keyAPIVersion: 1,
 		"op":          editor.OpListSlides,
-		"payload":     map[string]any{},
-		"request_id":  "req-003",
+		keyPayload:    map[string]any{},
+		keyRequestID:  "req-003",
 	})
 	log.Printf("list_slides response: %s", resp3)
 
 	// --- Command 4: get_core_properties ---
 	// Reads document metadata (author, title, description, etc.).
 	resp4 := executeJSON(e, map[string]any{
-		"api_version": 1,
+		keyAPIVersion: 1,
 		"op":          editor.OpGetCoreProperties,
-		"payload":     map[string]any{},
-		"request_id":  "req-004",
+		keyPayload:    map[string]any{},
+		keyRequestID:  "req-004",
 	})
 	log.Printf("get_core_properties response: %s", resp4)
 

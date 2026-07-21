@@ -208,9 +208,9 @@ func ContentTypes(
 func imageContentType(ext string) (string, bool) {
 	ext = strings.TrimPrefix(strings.ToLower(ext), ".")
 	switch ext {
-	case "png":
+	case imageExtPNG:
 		return "image/png", true
-	case "jpg", "jpeg":
+	case imageExtJPG, "jpeg":
 		return "image/jpeg", true
 	case "gif":
 		return "image/gif", true

@@ -39,8 +39,12 @@ func TestBasicParsingAndNormalizationHelpers(t *testing.T) {
 		t.Fatal("ParseXMLBoolAttr(\"0\") should be false")
 	}
 
+	// Named entities (&quot;) rather than the numeric ones (&#34;) that
+	// xml.EscapeText produced previously. Both resolve to the same character
+	// in any conformant parser; named entities match what common.XMLEscape
+	// emits elsewhere in the codebase.
 	escaped := XMLEscape(`A&B<"C">`)
-	if escaped != `A&amp;B&lt;&#34;C&#34;&gt;` {
+	if escaped != `A&amp;B&lt;&quot;C&quot;&gt;` {
 		t.Fatalf("unexpected XMLEscape output: %q", escaped)
 	}
 

@@ -36,7 +36,7 @@ func shapeLineXML(line ShapeLineSpec) string {
 	switch strings.TrimSpace(line.Join) {
 	case "bevel":
 		join = `<a:bevel/>`
-	case "miter":
+	case lineJoinMiter:
 		join = `<a:miter/>`
 	case "round":
 		join = `<a:round/>`

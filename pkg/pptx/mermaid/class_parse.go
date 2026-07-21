@@ -3,7 +3,7 @@ package mermaid
 import "strings"
 
 func classRelationshipTypes() []string {
-	return []string{"<|--", "*--", "o--", "-->", "--", "..>", "..", "<|..", "*..", "o.."}
+	return []string{arrowInherit, "*--", "o--", arrowSolid, "--", "..>", "..", arrowRealize, "*..", "o.."}
 }
 
 // renderClass parses and renders a Mermaid class diagram into PowerPoint elements.

@@ -105,9 +105,9 @@ func renderFreeformShapeXML(
 ) string {
 	var pathXML strings.Builder
 	first := points[0]
-	pathXML.WriteString(fmt.Sprintf(`<a:moveTo><a:pt x="%d" y="%d"/></a:moveTo>`, first.X, first.Y))
+	fmt.Fprintf(&pathXML, `<a:moveTo><a:pt x="%d" y="%d"/></a:moveTo>`, first.X, first.Y)
 	for _, pt := range points[1:] {
-		pathXML.WriteString(fmt.Sprintf(`<a:lnTo><a:pt x="%d" y="%d"/></a:lnTo>`, pt.X, pt.Y))
+		fmt.Fprintf(&pathXML, `<a:lnTo><a:pt x="%d" y="%d"/></a:lnTo>`, pt.X, pt.Y)
 	}
 	if closePath {
 		pathXML.WriteString(`<a:close/>`)

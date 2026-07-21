@@ -26,8 +26,8 @@ func handleAddTextbox(e *PresentationEditor, payload json.RawMessage) (any, erro
 		v.Error,
 		func(request editorcommand.TextboxPlacementRequest, p map[string]any) (any, error) {
 			addPayload := map[string]any{
-				"slide_index": request.SlideIndex,
-				"type":        "rect",
+				keySlideIndex: request.SlideIndex,
+				keyType:       "rect",
 				"x":           request.Left,
 				"y":           request.Top,
 				"w":           request.Width,
@@ -60,8 +60,8 @@ func handleAddConnector(e *PresentationEditor, payload json.RawMessage) (any, er
 			height := math.Max(math.Abs(request.EndY-request.BeginY), minConnectorDimension)
 
 			addPayload := map[string]any{
-				"slide_index": request.SlideIndex,
-				"type":        request.ConnectorType,
+				keySlideIndex: request.SlideIndex,
+				keyType:       request.ConnectorType,
 				"x":           left,
 				"y":           top,
 				"w":           width,
@@ -125,7 +125,7 @@ func handleAddConnectors(e *PresentationEditor, payload json.RawMessage) (any, e
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{"shape_ids": shapeIDs}, nil
+			return map[string]any{keyShapeIDs: shapeIDs}, nil
 		},
 	)
 }
@@ -149,7 +149,7 @@ func handleAddTextboxes(e *PresentationEditor, payload json.RawMessage) (any, er
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{"shape_ids": shapeIDs}, nil
+			return map[string]any{keyShapeIDs: shapeIDs}, nil
 		},
 	)
 }
@@ -170,7 +170,7 @@ func handleReserveShapeIDs(e *PresentationEditor, payload json.RawMessage) (any,
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{"shape_ids": shapeIDs}, nil
+			return map[string]any{keyShapeIDs: shapeIDs}, nil
 		},
 	)
 }

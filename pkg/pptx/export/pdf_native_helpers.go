@@ -225,7 +225,7 @@ func pieAnglesFromAdjustments(adjustments []shapes.ShapeAdjustment) (float64, fl
 		switch strings.TrimSpace(adj.Name) {
 		case connectorAdjustmentPrimary:
 			startDeg = deg
-		case "adj2":
+		case adjustValue2:
 			endDeg = deg
 		}
 	}

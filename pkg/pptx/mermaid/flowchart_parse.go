@@ -107,11 +107,11 @@ func (s *flowchartParseState) addNode(id, label string, shape NodeShape) {
 
 func parseArrowStyle(arrow string) ArrowStyle {
 	switch arrow {
-	case "==>":
+	case arrowThick:
 		return ArrowStyleThick
-	case "-.->":
+	case arrowDotted:
 		return ArrowStyleDotted
-	case "---":
+	case arrowOpen:
 		return ArrowStyleOpen
 	default:
 		return ArrowStyleArrow

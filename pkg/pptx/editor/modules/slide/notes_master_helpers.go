@@ -55,5 +55,8 @@ func ResolveNotesMasterBackgroundMedia(
 	}
 
 	target := "../media/" + path.Base(internalPath)
-	return "rId2", []string{target}, nil
+	return notesMasterMediaRelID, []string{target}, nil
 }
+
+// notesMasterMediaRelID is the relationship id assigned to notes master media.
+const notesMasterMediaRelID = "rId2"

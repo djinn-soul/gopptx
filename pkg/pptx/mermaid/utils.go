@@ -75,11 +75,11 @@ func SplitConnection(line string) (string, string, string, bool) {
 		label := strings.TrimSpace(matches[2])
 		to := strings.TrimSpace(matches[3])
 		if from != "" && label != "" && to != "" {
-			return from, "-->", "|" + label + "| " + to, true
+			return from, arrowSolid, "|" + label + "| " + to, true
 		}
 	}
 
-	arrows := []string{"==>", "-.->", "-->", "---", "->"}
+	arrows := []string{arrowThick, arrowDotted, arrowSolid, arrowOpen, "->"}
 	for _, arrow := range arrows {
 		if before, after, ok := strings.Cut(line, arrow); ok {
 			from := strings.TrimSpace(before)
@@ -104,7 +104,7 @@ func ExtractArrowLabel(s string) (string, string) {
 
 	// Handle the alternative syntax: label --> target
 	// Split by the next arrow to extract label and remaining node
-	arrows := []string{"==>", "-.->", "-->", "---", "->"}
+	arrows := []string{arrowThick, arrowDotted, arrowSolid, arrowOpen, "->"}
 	for _, arrow := range arrows {
 		if before, after, ok := strings.Cut(s, arrow); ok {
 			label := strings.TrimSpace(before)

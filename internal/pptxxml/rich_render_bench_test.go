@@ -91,9 +91,9 @@ func baselineTextLevelStyles(levels []TextLevelStyle) string {
 		if lvl.IndentEMU > 0 {
 			attrs += fmt.Sprintf(` indent="%d"`, lvl.IndentEMU)
 		}
-		b.WriteString(fmt.Sprintf("\n<a:lvl%dpPr%s>", lvlNum, attrs))
+		fmt.Fprintf(&b, "\n<a:lvl%dpPr%s>", lvlNum, attrs)
 		if lvl.BulletChar != "" {
-			b.WriteString(fmt.Sprintf(`<a:buChar char="%s"/>`, baselineEscape(lvl.BulletChar)))
+			fmt.Fprintf(&b, `<a:buChar char="%s"/>`, baselineEscape(lvl.BulletChar))
 		}
 		rprAttrs := ""
 		if lvl.SizePt > 0 {
@@ -105,16 +105,16 @@ func baselineTextLevelStyles(levels []TextLevelStyle) string {
 		if lvl.Italic {
 			rprAttrs += ` i="1"`
 		}
-		b.WriteString(fmt.Sprintf(`<a:defRPr%s>`, rprAttrs))
+		fmt.Fprintf(&b, `<a:defRPr%s>`, rprAttrs)
 		if lvl.Color != "" {
 			color := strings.TrimPrefix(lvl.Color, "#")
-			b.WriteString(fmt.Sprintf(`<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, color))
+			fmt.Fprintf(&b, `<a:solidFill><a:srgbClr val="%s"/></a:solidFill>`, color)
 		}
 		if lvl.Font != "" {
-			b.WriteString(fmt.Sprintf(`<a:latin typeface="%s"/>`, baselineEscape(lvl.Font)))
+			fmt.Fprintf(&b, `<a:latin typeface="%s"/>`, baselineEscape(lvl.Font))
 		}
 		b.WriteString(`</a:defRPr>`)
-		b.WriteString(fmt.Sprintf("\n</a:lvl%dpPr>", lvlNum))
+		fmt.Fprintf(&b, "\n</a:lvl%dpPr>", lvlNum)
 	}
 	return b.String()
 }

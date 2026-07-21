@@ -49,7 +49,7 @@ type AreaChart struct {
 func NewAreaChart(categories []string, values []float64) AreaChart {
 	cats, vals := copyChartData(categories, values)
 	return AreaChart{
-		Title:      "Chart",
+		Title:      defaultChartTitle,
 		Categories: cats,
 		Values:     vals,
 		X:          styling.Emu(defaultChartX),
@@ -57,8 +57,8 @@ func NewAreaChart(categories []string, values []float64) AreaChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		AreaColor:                  "4F81BD",
-		SeriesName:                 "Series 1",
+		AreaColor:                  defaultChartSeriesColor,
+		SeriesName:                 defaultChartSeriesName,
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,
 		ShowDataLabels:             false,
@@ -68,7 +68,7 @@ func NewAreaChart(categories []string, values []float64) AreaChart {
 		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
 		CategoryAxisCrosses:        AxisCrossesAutoZero,
 		ValueAxisCrosses:           AxisCrossesAutoZero,
-		ValueFormat:                "General",
+		ValueFormat:                defaultChartValueFormat,
 		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 	}
 }

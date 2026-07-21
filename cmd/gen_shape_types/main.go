@@ -27,26 +27,38 @@ type group struct {
 	Idents  []string
 }
 
+// Trailing tags of the generated shape_types_<tag>.go files.
+const (
+	categoryBasic        = "basic"
+	categoryArrows       = "arrows"
+	categoryStars        = "stars"
+	categoryCallouts     = "callouts"
+	categoryFlowchart    = "flowchart"
+	categoryAction       = "action"
+	categoryMath         = "math"
+	categoryRectVariants = "rect_variants"
+)
+
 // categoryHeading maps the trailing tag of shape_types_<tag>.go to a human-readable section heading.
 //
 //nolint:gochecknoglobals // build-time generator config; behaves as a const map
 var categoryHeading = map[string]string{
-	"basic":         "Basic geometry (expanded).",
-	"arrows":        "Arrows (expanded).",
-	"stars":         "Stars, banners, scrolls.",
-	"callouts":      "Callouts.",
-	"flowchart":     "Flowcharts (expanded).",
-	"action":        "Action buttons.",
-	"math":          "Math and special shapes.",
-	"rect_variants": "Rectangle variants.",
+	categoryBasic:        "Basic geometry (expanded).",
+	categoryArrows:       "Arrows (expanded).",
+	categoryStars:        "Stars, banners, scrolls.",
+	categoryCallouts:     "Callouts.",
+	categoryFlowchart:    "Flowcharts (expanded).",
+	categoryAction:       "Action buttons.",
+	categoryMath:         "Math and special shapes.",
+	categoryRectVariants: "Rectangle variants.",
 }
 
 // orderedCategories controls emit order so the generated file matches conventional grouping.
 //
 //nolint:gochecknoglobals // build-time generator config; behaves as a const slice
 var orderedCategories = []string{
-	"basic", "arrows", "stars", "callouts",
-	"flowchart", "action", "math", "rect_variants",
+	categoryBasic, categoryArrows, categoryStars, categoryCallouts,
+	categoryFlowchart, categoryAction, categoryMath, categoryRectVariants,
 }
 
 func main() {

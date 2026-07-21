@@ -68,10 +68,10 @@ func parseState(code string) *StateDiagram {
 			if len(parts) >= 4 && parts[2] == "as" {
 				id := parts[3]
 				label := strings.Trim(parts[1], "\"")
-				states[id] = &StateNode{ID: id, Label: label, Type: "normal"}
+				states[id] = &StateNode{ID: id, Label: label, Type: stateTypeNormal}
 			} else if len(parts) >= 2 {
 				id := parts[1]
-				states[id] = &StateNode{ID: id, Label: id, Type: "normal"}
+				states[id] = &StateNode{ID: id, Label: id, Type: stateTypeNormal}
 			}
 			continue
 		}
@@ -84,7 +84,7 @@ func parseState(code string) *StateDiagram {
 			if s, ok := states[id]; ok {
 				s.Label = label
 			} else {
-				states[id] = &StateNode{ID: id, Label: label, Type: "normal"}
+				states[id] = &StateNode{ID: id, Label: label, Type: stateTypeNormal}
 			}
 		}
 	}
@@ -102,7 +102,7 @@ func parseState(code string) *StateDiagram {
 
 func ensureState(states map[string]*StateNode, id string) {
 	if _, ok := states[id]; !ok {
-		stateType := "normal"
+		stateType := stateTypeNormal
 		label := id
 		if strings.HasPrefix(id, "__start_") {
 			stateType = "start"
@@ -128,7 +128,7 @@ func resolveStateEndpoint(id string, counter *int, isFrom bool) string {
 }
 
 func splitStateTransition(line string) (string, string, string, bool) {
-	if before, after, ok := strings.Cut(line, "-->"); ok {
+	if before, after, ok := strings.Cut(line, arrowSolid); ok {
 		from := strings.TrimSpace(before)
 		rest := strings.TrimSpace(after)
 		to := rest

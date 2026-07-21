@@ -3,6 +3,8 @@ package opc
 import (
 	"archive/zip"
 	"io"
+
+	"github.com/djinn-soul/gopptx/internal/zipfast"
 )
 
 // Writer handles the creation of the PPTX (ZIP) package.
@@ -13,7 +15,7 @@ type Writer struct {
 // NewWriter creates a new OPC writer.
 func NewWriter(w io.Writer) *Writer {
 	return &Writer{
-		zipWriter: zip.NewWriter(w),
+		zipWriter: zipfast.NewWriter(w),
 	}
 }
 

@@ -9,6 +9,12 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+// Hoisted out of the call path; recompiling per call cost ~13x.
+var (
+	reSmartArtDM       = regexp.MustCompile(`r:dm=["']([^"']+)["']`)
+	reSmartArtTextItem = regexp.MustCompile(`(<a:t>)[^<]*(</a:t>)`)
+)
+
 // UpdateSmartArt replaces text items in an existing SmartArt diagram.
 // It finds the graphic frame by shapeID, resolves its r:dm rel to the data
 // part, and rewrites <a:t> nodes inside <dgm:pt> elements.
@@ -67,8 +73,7 @@ func extractSmartArtDataRelID(slideXML string, shapeID int) string {
 	if dmIdx < 0 {
 		return ""
 	}
-	re := regexp.MustCompile(`r:dm=["']([^"']+)["']`)
-	m := re.FindStringSubmatch(slideXML[idx+dmIdx:])
+	m := reSmartArtDM.FindStringSubmatch(slideXML[idx+dmIdx:])
 	if len(m) < 2 {
 		return ""
 	}
@@ -78,8 +83,7 @@ func extractSmartArtDataRelID(slideXML string, shapeID int) string {
 // rewriteSmartArtTextItems replaces <a:t> text content in sequence.
 func rewriteSmartArtTextItems(dataXML string, items []string) string {
 	itemIdx := 0
-	re := regexp.MustCompile(`(<a:t>)[^<]*(</a:t>)`)
-	return re.ReplaceAllStringFunc(dataXML, func(_ string) string {
+	return reSmartArtTextItem.ReplaceAllStringFunc(dataXML, func(_ string) string {
 		if itemIdx >= len(items) {
 			return "<a:t></a:t>"
 		}
