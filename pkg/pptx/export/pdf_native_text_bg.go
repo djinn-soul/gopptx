@@ -18,10 +18,10 @@ const (
 )
 
 //nolint:gocognit // Background rendering handles multiple media/fill modes with explicit branches.
-func renderPDFBackground(pdf *gopdf.GoPdf, bg *elements.SlideBackground) error {
+func renderPDFBackground(pdf *gopdf.GoPdf, bg *elements.SlideBackground, page pageSize) error {
 	if bg == nil {
 		pdf.SetFillColor(255, 255, 255)
-		pdf.RectFromUpperLeftWithStyle(0, 0, slideWidthPt, slideHeightPt, "F")
+		pdf.RectFromUpperLeftWithStyle(0, 0, page.WidthPt, page.HeightPt, "F")
 		return nil
 	}
 
@@ -32,18 +32,18 @@ func renderPDFBackground(pdf *gopdf.GoPdf, bg *elements.SlideBackground) error {
 		} else {
 			pdf.SetFillColor(255, 255, 255)
 		}
-		pdf.RectFromUpperLeftWithStyle(0, 0, slideWidthPt, slideHeightPt, "F")
+		pdf.RectFromUpperLeftWithStyle(0, 0, page.WidthPt, page.HeightPt, "F")
 	case elements.SlideBackgroundGradient:
-		if !renderPDFGradientBackground(pdf, bg.GradientFill) {
+		if !renderPDFGradientBackground(pdf, bg.GradientFill, page) {
 			pdf.SetFillColor(255, 255, 255)
 			if bg.GradientFill != nil && len(bg.GradientFill.Stops) > 0 {
 				pdf.SetFillColor(hexToRGB(bg.GradientFill.Stops[0].Color))
 			}
-			pdf.RectFromUpperLeftWithStyle(0, 0, slideWidthPt, slideHeightPt, "F")
+			pdf.RectFromUpperLeftWithStyle(0, 0, page.WidthPt, page.HeightPt, "F")
 		}
 	case elements.SlideBackgroundPicture:
 		pdf.SetFillColor(255, 255, 255)
-		pdf.RectFromUpperLeftWithStyle(0, 0, slideWidthPt, slideHeightPt, "F")
+		pdf.RectFromUpperLeftWithStyle(0, 0, page.WidthPt, page.HeightPt, "F")
 		if bg.PictureFill == nil {
 			return nil
 		}
@@ -62,16 +62,16 @@ func renderPDFBackground(pdf *gopdf.GoPdf, bg *elements.SlideBackground) error {
 		if err != nil {
 			return fmt.Errorf("load picture background: %w", err)
 		}
-		return pdf.ImageByHolder(holder, 0, 0, &gopdf.Rect{W: slideWidthPt, H: slideHeightPt})
+		return pdf.ImageByHolder(holder, 0, 0, &gopdf.Rect{W: page.WidthPt, H: page.HeightPt})
 	default:
 		pdf.SetFillColor(255, 255, 255)
-		pdf.RectFromUpperLeftWithStyle(0, 0, slideWidthPt, slideHeightPt, "F")
+		pdf.RectFromUpperLeftWithStyle(0, 0, page.WidthPt, page.HeightPt, "F")
 	}
 	return nil
 }
 
 //nolint:funlen,gocognit // Bullet rendering applies paragraph spacing/indents/line-fit rules in one ordered pass.
-func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
+func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize) {
 	yPos := 60.0
 	if slide.Title != "" {
 		yPos = 108.0
@@ -82,9 +82,9 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent) {
 	if elements.NormalizeSlideLayout(slide.Layout) == elements.SlideLayoutCenteredTitle {
 		yPos = 294.0 // ≈ standard subtitle placeholder top (3737600 EMU → ~294pt)
 	}
-	maxY := slideHeightPt - 24
+	maxY := page.HeightPt - 24
 	baseX := 36.0 // matches the standard PPT "Title and Content" content placeholder left edge (457200 EMU)
-	maxWidth := slideWidthPt - 108
+	maxWidth := page.WidthPt - 108
 	if b := slide.ContentBoundsEMU; b[2] > 0 || b[3] > 0 {
 		baseX = emuToPt(b[0])
 		yPos = emuToPt(b[1])

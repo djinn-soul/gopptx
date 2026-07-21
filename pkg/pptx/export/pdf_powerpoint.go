@@ -10,30 +10,24 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
-func pdfViaPowerPointFromSlides(title string, slides []elements.SlideContent, outputPath string) error {
+func pdfViaPowerPointFromSlides(
+	title string,
+	slides []elements.SlideContent,
+	outputPath string,
+	opts PDFOptions,
+) error {
 	if runtime.GOOS != osWindows {
 		return errors.New("PowerPoint driver is only available on Windows")
 	}
 
-	tmpDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
-		tmpDir = os.TempDir()
-	}
-
-	safeTitle := sanitizeTitle(title)
-	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("gopptx_%s_temp_windows.pptx", safeTitle))
-	pptxBytes, err := pptx.CreateWithSlides(title, slides)
+	workDir, tmpFile, err := writeTempDeck(title, slides, "gopptx-powerpoint-")
 	if err != nil {
-		return fmt.Errorf("PowerPoint driver (PPTX creation): %w", err)
+		return fmt.Errorf("PowerPoint driver: %w", err)
 	}
-	if err := os.WriteFile(tmpFile, pptxBytes, 0o600); err != nil {
-		return fmt.Errorf("PowerPoint driver (PPTX write): %w", err)
-	}
-	defer os.Remove(tmpFile)
+	defer os.RemoveAll(workDir)
 
 	absPPTX, err := filepath.Abs(tmpFile)
 	if err != nil {
@@ -43,10 +37,10 @@ func pdfViaPowerPointFromSlides(title string, slides []elements.SlideContent, ou
 	if err != nil {
 		return fmt.Errorf("PowerPoint driver (PDF path): %w", err)
 	}
-	return exportWithPowerPoint(absPPTX, absPDF)
+	return exportWithPowerPoint(absPPTX, absPDF, opts)
 }
 
-func exportWithPowerPoint(pptxPath, pdfPath string) error {
+func exportWithPowerPoint(pptxPath, pdfPath string, opts PDFOptions) error {
 	if err := os.MkdirAll(filepath.Dir(pdfPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create PDF output directory: %w", err)
 	}
@@ -98,23 +92,27 @@ try {
 	// no dynamic/user-controlled executable reaches this call site.
 	args := []string{"-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
 		"-File", scriptPath, "-pptxPath", pptxPath, "-pdfPath", pdfPath}
+
+	ctx, cancel := converterContext(opts)
+	defer cancel()
+
 	var cmd *exec.Cmd
 	switch psExe {
 	case "pwsh":
-		cmd = exec.CommandContext(context.Background(), "pwsh", args...)
+		cmd = exec.CommandContext(ctx, "pwsh", args...)
 	default: // "powershell"
-		cmd = exec.CommandContext(context.Background(), "powershell", args...)
+		cmd = exec.CommandContext(ctx, "powershell", args...)
 	}
+	cmd.WaitDelay = converterWaitDelay
 	output, err := cmd.CombinedOutput()
+	if ctxErr := ctx.Err(); errors.Is(ctxErr, context.DeadlineExceeded) {
+		return fmt.Errorf("PowerPoint export timed out after %s", converterTimeout(opts))
+	}
 	if err != nil {
 		return fmt.Errorf("PowerShell execution failed: %w\nOutput: %s", err, normalizePowerShellOutput(string(output)))
 	}
-	info, err := os.Stat(pdfPath)
-	if err != nil {
-		return fmt.Errorf("PowerPoint export completed but PDF not found at %q: %w", pdfPath, err)
-	}
-	if info.Size() == 0 {
-		return fmt.Errorf("PowerPoint export produced an empty PDF at %q", pdfPath)
+	if err := verifyPDFProduced(pdfPath); err != nil {
+		return fmt.Errorf("PowerPoint export completed but %w", err)
 	}
 	return nil
 }

@@ -18,8 +18,8 @@ type gradientStop struct {
 	alpha float64
 }
 
-func renderPDFGradientBackground(pdf *gopdf.GoPdf, grad *shapes.ShapeGradientFill) bool {
-	return renderPDFLinearGradientRect(pdf, grad, 0, 0, slideWidthPt, slideHeightPt)
+func renderPDFGradientBackground(pdf *gopdf.GoPdf, grad *shapes.ShapeGradientFill, page pageSize) bool {
+	return renderPDFLinearGradientRect(pdf, grad, 0, 0, page.WidthPt, page.HeightPt)
 }
 
 func renderPDFShapeGradient(
