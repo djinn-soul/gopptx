@@ -1,6 +1,6 @@
 module github.com/djinn-soul/gopptx
 
-go 1.25.10
+go 1.25.12
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
