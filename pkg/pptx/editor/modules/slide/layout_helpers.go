@@ -180,9 +180,11 @@ func DefaultSlideMasterRelationships() string {
 }
 
 // DefaultSlideLayout returns a basic slide layout XML.
-func DefaultSlideLayout(layoutName string, layoutNum, masterNum int) string {
-	_ = layoutNum // suppress unused parameter warning
-	_ = masterNum // suppress unused parameter warning
+//
+// The layout carries no reference to its own number or to its master: the
+// layout number lives in the part filename, and the master link is emitted
+// separately by [DefaultSlideLayoutRelationships].
+func DefaultSlideLayout(layoutName string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" preserve="1">
   <p:cSld name="%s">

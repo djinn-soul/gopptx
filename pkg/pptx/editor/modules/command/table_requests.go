@@ -35,14 +35,12 @@ func ParseTableAddRequest(
 	if !ok {
 		return TableAddRequest{}, false
 	}
-	x, ok := parseInt64Field(payload, "x")
-	_ = ok
-	y, ok := parseInt64Field(payload, "y")
-	_ = ok
-	cx, ok := parseInt64Field(payload, "cx")
-	_ = ok
-	cy, ok := parseInt64Field(payload, "cy")
-	_ = ok
+	// Geometry is optional: parseInt64Field is the caller's OptionalInt64, which
+	// yields a zero value when the field is absent. Callers substitute defaults.
+	x, _ := parseInt64Field(payload, "x")
+	y, _ := parseInt64Field(payload, "y")
+	cx, _ := parseInt64Field(payload, "cx")
+	cy, _ := parseInt64Field(payload, "cy")
 	return TableAddRequest{
 		SlideIndex: slideIndex,
 		Rows:       rows,

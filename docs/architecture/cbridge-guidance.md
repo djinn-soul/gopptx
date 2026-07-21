@@ -10,7 +10,7 @@ Do not expose Go structs across the boundary. Expose only an opaque handle.
 
 Suggested C API shape:
 
-- `DeckHandle deck_open(const char* path);`
+- `DeckHandle deck_open_ex(const char* path, char** err_out);`
 - `int deck_add_slide(DeckHandle h, ...);`
 - `int deck_add_chart(DeckHandle h, ...);`
 - `int deck_save(DeckHandle h, const char* out_path);`
@@ -30,12 +30,40 @@ Key rules:
 - Delete on close.
 - Return explicit error codes; do not panic across C boundary.
 
+### Per-handle locking
+
+The registry mutex protects the *map*, not the decks inside it. Guarding only the
+map still lets two callers mutate one deck at once — and cgo releases the Python
+GIL for the duration of a call, so two Python threads sharing a handle really do
+run concurrently.
+
+Every entry point that touches a deck must therefore take that deck's own lock
+(`Registry.LockEditor`), and it must take it **only at the C boundary**. Locking
+inside the Go methods deadlocks: command handlers such as `export_pdf` call back
+into `Save`, which would re-acquire a lock the same goroutine already holds.
+
+Cross-handle operations (`merge_from_editor`) take the second lock with
+`Registry.TryLockEditor` and fail if it is busy. Blocking there would deadlock two
+threads merging in opposite directions, and lock ordering is not available because
+the handler only knows the source handle.
+
+Closing waits for in-flight work: `UnregisterEditor` acquires the per-handle lock
+before `Close`, then clears the pointer so a caller already blocked on that lock
+sees the handle as gone rather than using a closed deck.
+
 ## Error and Memory Model
 
 At C boundaries, convert failures to:
 
 - integer return code (`0` success, non-zero error), and
 - error string retrievable via `deck_last_error`.
+
+Errors raised *before* a handle exists (open, create) have nowhere per-handle to
+live. Pass them back through a `char** err_out` out-parameter, as the `*_ex`
+entry points do — never through a process-wide slot, which crosses messages
+between threads opening decks concurrently. The older
+`deck_open`/`deck_new`/`deck_open_bytes` still use such a slot via
+`deck_global_error` and are kept only for ABI compatibility.
 
 If returning `char*` from Go:
 

@@ -41,6 +41,7 @@ if TYPE_CHECKING:
         def from_string(self, source: str) -> _JinjaTemplate: ...
 
 
+from ._ffi import take_error
 from .shapes.shape_write_buffer_mixin import PresentationShapeWriteBufferMixin
 from .slides.slide_lookup_mixin import PresentationSlideLookupMixin
 from .slides.slide_proxy_mixin import PresentationSlideProxyMixin
@@ -48,9 +49,7 @@ from .text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 
 class _GopptxLibProtocol(Protocol):
-    def deck_new(self, title: bytes) -> int: ...
-
-    def deck_global_error(self) -> int: ...
+    def deck_new_ex(self, title: bytes, err_out: object) -> int: ...
 
     def deck_free_string(self, ptr: int) -> None: ...
 
@@ -61,14 +60,13 @@ class _CtypesFuncProtocol(Protocol):
 
 
 class _RawGopptxLibProtocol(Protocol):
-    deck_open: _CtypesFuncProtocol
-    deck_new: _CtypesFuncProtocol
+    deck_open_ex: _CtypesFuncProtocol
+    deck_new_ex: _CtypesFuncProtocol
     deck_execute_json: _CtypesFuncProtocol
-    deck_open_bytes: _CtypesFuncProtocol
+    deck_open_bytes_ex: _CtypesFuncProtocol
     deck_save_bytes: _CtypesFuncProtocol
     deck_save: _CtypesFuncProtocol
     deck_last_error: _CtypesFuncProtocol
-    deck_global_error: _CtypesFuncProtocol
     deck_free_string: _CtypesFuncProtocol
     deck_close: _CtypesFuncProtocol
 
@@ -144,14 +142,18 @@ class PresentationBase(
                 )
 
             lib = cast("_RawGopptxLibProtocol", ctypes.CDLL(lib_path))
-            lib.deck_open.argtypes = [ctypes.c_char_p]
-            lib.deck_open.restype = ctypes.c_void_p
-            lib.deck_new.argtypes = [ctypes.c_char_p]
-            lib.deck_new.restype = ctypes.c_void_p
+            # The *_ex entry points take a char** out-parameter for the error
+            # message. The older deck_open/deck_new/deck_open_bytes report through
+            # a process-wide slot that races across threads — do not use them.
+            err_out = ctypes.POINTER(ctypes.c_void_p)
+            lib.deck_open_ex.argtypes = [ctypes.c_char_p, err_out]
+            lib.deck_open_ex.restype = ctypes.c_void_p
+            lib.deck_new_ex.argtypes = [ctypes.c_char_p, err_out]
+            lib.deck_new_ex.restype = ctypes.c_void_p
             lib.deck_execute_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
             lib.deck_execute_json.restype = ctypes.c_void_p
-            lib.deck_open_bytes.argtypes = [ctypes.c_char_p, ctypes.c_int]
-            lib.deck_open_bytes.restype = ctypes.c_void_p
+            lib.deck_open_bytes_ex.argtypes = [ctypes.c_char_p, ctypes.c_int, err_out]
+            lib.deck_open_bytes_ex.restype = ctypes.c_void_p
             lib.deck_save_bytes.argtypes = [
                 ctypes.c_void_p,
                 ctypes.POINTER(ctypes.c_int),
@@ -161,8 +163,6 @@ class PresentationBase(
             lib.deck_save.restype = ctypes.c_int
             lib.deck_last_error.argtypes = [ctypes.c_void_p]
             lib.deck_last_error.restype = ctypes.c_void_p
-            lib.deck_global_error.argtypes = []
-            lib.deck_global_error.restype = ctypes.c_void_p
             lib.deck_free_string.argtypes = [ctypes.c_void_p]
             lib.deck_free_string.restype = None
             lib.deck_close.argtypes = [ctypes.c_void_p]
@@ -281,17 +281,12 @@ class PresentationBase(
         if cls._lib is None:
             raise GopptxError("Presentation library is not loaded")
         lib = cast("_GopptxLibProtocol", cls._lib)
-        handle = lib.deck_new(title.encode("utf-8"))
+        err = ctypes.c_void_p()
+        handle = lib.deck_new_ex(title.encode("utf-8"), ctypes.byref(err))
         if not handle:
-            err_ptr = lib.deck_global_error()
-            msg = (
-                ctypes.string_at(err_ptr).decode("utf-8")
-                if err_ptr
-                else "Unknown error"
+            raise GopptxError(
+                f"Failed to create new deck: {take_error(lib, err.value)}"
             )
-            if err_ptr:
-                lib.deck_free_string(err_ptr)
-            raise GopptxError(f"Failed to create new deck: {msg}")
         pres._handle = int(handle)
         return pres
 
