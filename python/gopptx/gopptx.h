@@ -91,6 +91,9 @@ extern "C" {
 #endif
 
 extern __declspec(dllexport) char* deck_global_error(void);
+extern __declspec(dllexport) DeckHandle deck_open_ex(char* path, char** errOut);
+extern __declspec(dllexport) DeckHandle deck_new_ex(char* title, char** errOut);
+extern __declspec(dllexport) DeckHandle deck_open_bytes_ex(char* data, int length, char** errOut);
 extern __declspec(dllexport) DeckHandle deck_open(char* path);
 extern __declspec(dllexport) DeckHandle deck_new(char* title);
 extern __declspec(dllexport) DeckHandle deck_open_bytes(char* data, int length);

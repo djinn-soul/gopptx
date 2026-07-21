@@ -145,7 +145,7 @@ func TestLayoutHelpers(t *testing.T) {
 	if !strings.Contains(DefaultSlideMasterRelationships(), common.RelTypeTheme) {
 		t.Fatal("DefaultSlideMasterRelationships should include theme relationship")
 	}
-	if !strings.Contains(DefaultSlideLayout("Custom", 1, 1), `name="Custom"`) {
+	if !strings.Contains(DefaultSlideLayout("Custom"), `name="Custom"`) {
 		t.Fatal("DefaultSlideLayout should include provided layout name")
 	}
 	if !strings.Contains(DefaultSlideLayoutRelationships(3), "slideMaster3.xml") {
