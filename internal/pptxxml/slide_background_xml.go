@@ -27,7 +27,7 @@ func backgroundXML(bg *SlideBackgroundSpec) string {
 <p:bgPr>`
 
 	switch bg.Type {
-	case "solid":
+	case fillTypeSolid:
 		if bg.SolidFill != nil {
 			xml += `
 <a:solidFill>

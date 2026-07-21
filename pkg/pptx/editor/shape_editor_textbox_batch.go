@@ -80,7 +80,7 @@ func (e *PresentationEditor) buildTextboxBatchXML(
 		shape := parsedShape{
 			ID:   shapeID,
 			Name: fmt.Sprintf("rect %d", shapeID),
-			Type: "rect",
+			Type: shapeTypeRect,
 			Text: textbox.Text,
 			X:    int(textbox.Left),
 			Y:    int(textbox.Top),

@@ -98,7 +98,7 @@ func NormalizeDrawingLineDash(dash string) string {
 	switch strings.ToLower(strings.TrimSpace(dash)) {
 	case "", LineDashSolid:
 		return LineDashSolid
-	case "dash":
+	case LineDashDash:
 		return LineDashDash
 	case "dot":
 		return LineDashDot

@@ -13,7 +13,7 @@ func processLayoutName(l Layout) (string, bool) {
 	case PictureAccentList:
 		return "Picture Accent List", true
 	case BasicProcess:
-		return "Basic Process", true
+		return layoutNameBasicProcess, true
 	case AccentProcess:
 		return "Accent Process", true
 	case AlternatingFlow:
@@ -63,10 +63,16 @@ func relationshipLayoutName(l Layout) (string, bool) {
 func matrixPictureLayoutName(l Layout) (string, bool) {
 	switch l {
 	case PictureStrips:
-		return "Picture Strips", true
+		return layoutNamePictureStrips, true
 	case PictureGrid:
 		return "Picture Grid", true
 	default:
 		return "", false
 	}
 }
+
+// Layout display names that are also referenced outside this switch.
+const (
+	layoutNameBasicProcess  = "Basic Process"
+	layoutNamePictureStrips = "Picture Strips"
+)

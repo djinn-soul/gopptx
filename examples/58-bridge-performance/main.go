@@ -23,6 +23,13 @@ import (
 const (
 	outputDir  = "examples/output"
 	outputFile = "58_bridge_performance.pptx"
+
+	// JSON bridge envelope keys.
+	keyAPIVersion = "api_version"
+	keyPayload    = "payload"
+	keyRequestID  = "request_id"
+	keySlideIndex = "slide_index"
+	keyTitle      = "title"
 )
 
 func main() {
@@ -76,34 +83,34 @@ func run() error {
 	startBatch := time.Now()
 
 	batchResp := executeJSON(e, map[string]any{
-		"api_version": 1,
+		keyAPIVersion: 1,
 		"op":          editor.OpBatchExecute,
-		"payload": map[string]any{
+		keyPayload: map[string]any{
 			"commands": []map[string]any{
 				{
 					"op":         editor.OpSetSlideTitle,
-					"payload":    map[string]any{"slide_index": 0, "title": "Slide 1 - Batch Updated"},
-					"request_id": "batch-1",
+					keyPayload:   map[string]any{keySlideIndex: 0, keyTitle: "Slide 1 - Batch Updated"},
+					keyRequestID: "batch-1",
 				},
 				{
 					"op":         editor.OpSetSlideTitle,
-					"payload":    map[string]any{"slide_index": 1, "title": "Slide 2 - Batch Updated"},
-					"request_id": "batch-2",
+					keyPayload:   map[string]any{keySlideIndex: 1, keyTitle: "Slide 2 - Batch Updated"},
+					keyRequestID: "batch-2",
 				},
 				{
 					"op":         editor.OpSetSlideTitle,
-					"payload":    map[string]any{"slide_index": 2, "title": "Slide 3 - Batch Updated"},
-					"request_id": "batch-3",
+					keyPayload:   map[string]any{keySlideIndex: 2, keyTitle: "Slide 3 - Batch Updated"},
+					keyRequestID: "batch-3",
 				},
 				{
 					"op":         editor.OpSlideCount,
-					"payload":    map[string]any{},
-					"request_id": "batch-4",
+					keyPayload:   map[string]any{},
+					keyRequestID: "batch-4",
 				},
 			},
 			"stop_on_error": false,
 		},
-		"request_id": "batch-req-001",
+		keyRequestID: "batch-req-001",
 	})
 
 	durationBatch := time.Since(startBatch)
@@ -114,10 +121,10 @@ func run() error {
 	// Verify final state: list all slide titles
 	// -----------------------------------------------------------------------
 	listResp := executeJSON(e, map[string]any{
-		"api_version": 1,
+		keyAPIVersion: 1,
 		"op":          editor.OpListSlides,
-		"payload":     map[string]any{},
-		"request_id":  "verify-001",
+		keyPayload:    map[string]any{},
+		keyRequestID:  "verify-001",
 	})
 	log.Printf("Final slide list: %s", listResp)
 
@@ -139,13 +146,13 @@ func runIndividualCommands(e *editor.PresentationEditor) {
 		"Slide 3 - Individual Update",
 	} {
 		resp := executeJSON(e, map[string]any{
-			"api_version": 1,
+			keyAPIVersion: 1,
 			"op":          editor.OpSetSlideTitle,
-			"payload": map[string]any{
-				"slide_index": i,
-				"title":       title,
+			keyPayload: map[string]any{
+				keySlideIndex: i,
+				keyTitle:      title,
 			},
-			"request_id": fmt.Sprintf("individual-%d", i+1),
+			keyRequestID: fmt.Sprintf("individual-%d", i+1),
 		})
 		log.Printf("individual set_slide_title [%d]: %s", i, resp)
 	}

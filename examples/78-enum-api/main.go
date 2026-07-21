@@ -21,6 +21,9 @@ import (
 const (
 	outputDir  = "examples/output"
 	outputFile = "78_enum_api.pptx"
+
+	colorBlue = "4472C4"
+	colorRed  = "C0504D"
 )
 
 func main() {
@@ -60,28 +63,28 @@ func run() error {
 
 func buildCoreShapeTypesSlide() pptx.SlideContent {
 	coreShapeTypes := []shapeConstant{
-		{"Rect", pptx.ShapeTypeRectangle, "4472C4"},
-		{"RoundRect", pptx.ShapeTypeRoundedRectangle, "C0504D"},
+		{"Rect", pptx.ShapeTypeRectangle, colorBlue},
+		{"RoundRect", pptx.ShapeTypeRoundedRectangle, colorRed},
 		{"Ellipse", pptx.ShapeTypeEllipse, "9BBB59"},
 		{"Triangle", pptx.ShapeTypeTriangle, "F79646"},
 		{"Diamond", pptx.ShapeTypeDiamond, "8064A2"},
 		{"Pentagon", pptx.ShapeTypePentagon, "4BACC6"},
-		{"Hexagon", pptx.ShapeTypeHexagon, "4472C4"},
-		{"Parallelogram", pptx.ShapeTypeParallelogram, "C0504D"},
+		{"Hexagon", pptx.ShapeTypeHexagon, colorBlue},
+		{"Parallelogram", pptx.ShapeTypeParallelogram, colorRed},
 	}
 	return buildShapeConstantsSlide("Core Shape Type Constants", coreShapeTypes)
 }
 
 func buildArrowTypesSlide() pptx.SlideContent {
 	arrowTypes := []shapeConstant{
-		{"RightArrow", pptx.ShapeTypeRightArrow, "4472C4"},
-		{"LeftArrow", pptx.ShapeTypeLeftArrow, "C0504D"},
+		{"RightArrow", pptx.ShapeTypeRightArrow, colorBlue},
+		{"LeftArrow", pptx.ShapeTypeLeftArrow, colorRed},
 		{"UpArrow", pptx.ShapeTypeUpArrow, "9BBB59"},
 		{"DownArrow", pptx.ShapeTypeDownArrow, "F79646"},
 		{"LR Arrow", pptx.ShapeTypeLeftRightArrow, "8064A2"},
 		{"UD Arrow", pptx.ShapeTypeUpDownArrow, "4BACC6"},
-		{"Quad", pptx.ShapeTypeQuadArrow, "4472C4"},
-		{"Bent", pptx.ShapeTypeBentArrow, "C0504D"},
+		{"Quad", pptx.ShapeTypeQuadArrow, colorBlue},
+		{"Bent", pptx.ShapeTypeBentArrow, colorRed},
 	}
 	return buildShapeConstantsSlide("Arrow Shape Constants", arrowTypes)
 }

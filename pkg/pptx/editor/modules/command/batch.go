@@ -67,7 +67,7 @@ func HandleBatchExecute(
 				Error: &BatchResultError{
 					Code:    "INVALID_BATCH_ITEM",
 					Message: "nested batch_execute is not supported",
-					Details: map[string]int{"index": i},
+					Details: map[string]int{KeyIndex: i},
 				},
 			})
 			if p.StopOnError {
@@ -85,7 +85,7 @@ func HandleBatchExecute(
 				Error: &BatchResultError{
 					Code:    options.UnknownOpCode,
 					Message: "Operation " + `"` + cmd.Op + `"` + " not recognized",
-					Details: map[string]int{"index": i},
+					Details: map[string]int{KeyIndex: i},
 				},
 			})
 			if p.StopOnError {
@@ -96,7 +96,7 @@ func HandleBatchExecute(
 
 		if err != nil {
 			code := options.OpFailedCode
-			details := any(map[string]any{"index": i})
+			details := any(map[string]any{KeyIndex: i})
 			if be, ok := asBridgeError(err); ok {
 				code = be.Code
 				details = withBatchIndex(i, be.Details)
@@ -129,7 +129,7 @@ func HandleBatchExecute(
 }
 
 func withBatchIndex(index int, details any) map[string]any {
-	out := map[string]any{"index": index}
+	out := map[string]any{KeyIndex: index}
 	if details == nil {
 		return out
 	}

@@ -14,6 +14,9 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
 )
 
+// brandAccent is the accent color used across the exported table and theme.
+const brandAccent = "#0078D4"
+
 func main() {
 	outDir := filepath.Join("examples", "output")
 	if err := os.MkdirAll(outDir, 0o750); err != nil {
@@ -58,8 +61,8 @@ func main() {
 	tab := tables.NewTable([]styling.Length{styling.Inches(3), styling.Inches(3)}).
 		Position(styling.Inches(1), styling.Inches(2))
 
-	header1 := tables.TableCell{Text: "Feature", Bold: true, BackgroundColor: "#0078D4", Color: "#FFFFFF"}
-	header2 := tables.TableCell{Text: "Status", Bold: true, BackgroundColor: "#0078D4", Color: "#FFFFFF"}
+	header1 := tables.TableCell{Text: "Feature", Bold: true, BackgroundColor: brandAccent, Color: "#FFFFFF"}
+	header2 := tables.TableCell{Text: "Status", Bold: true, BackgroundColor: brandAccent, Color: "#FFFFFF"}
 	tab = tab.AddStyledRow([]tables.TableCell{header1, header2})
 
 	row1c1 := tables.TableCell{Text: "HTML SVG Export"}
@@ -89,7 +92,7 @@ func main() {
 	opts := export.DefaultHTMLOptions()
 	opts.Theme = &export.ThemeColors{
 		TitleColor:  "#222",
-		AccentColor: "#0078D4",
+		AccentColor: brandAccent,
 	}
 	htmlStr := export.HTMLWithOptions("Export Demo", slides, opts)
 	if err := os.WriteFile(htmlPath, []byte(htmlStr), 0o600); err != nil {

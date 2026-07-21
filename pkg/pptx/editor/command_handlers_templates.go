@@ -36,7 +36,7 @@ func handleBuildStatusTemplate(_ *PresentationEditor, payload json.RawMessage) (
 		slidesData[i] = slideDataForJSON(slide)
 	}
 
-	return map[string]any{"slides": slidesData}, nil
+	return map[string]any{keySlides: slidesData}, nil
 }
 
 // handleBuildSimpleTemplate builds a SimpleTemplate and returns the slides as JSON.
@@ -64,7 +64,7 @@ func handleBuildSimpleTemplate(_ *PresentationEditor, payload json.RawMessage) (
 		slidesData[i] = slideDataForJSON(slide)
 	}
 
-	return map[string]any{"slides": slidesData}, nil
+	return map[string]any{keySlides: slidesData}, nil
 }
 
 // handleBuildProposalTemplate builds a ProposalTemplate and returns the slides as JSON.
@@ -129,7 +129,7 @@ func handleBuildProposalTemplate(_ *PresentationEditor, payload json.RawMessage)
 		slidesData[i] = slideDataForJSON(slide)
 	}
 
-	return map[string]any{"slides": slidesData}, nil
+	return map[string]any{keySlides: slidesData}, nil
 }
 
 // handleBuildTrainingTemplate builds a TrainingTemplate and returns the slides as JSON.
@@ -161,7 +161,7 @@ func handleBuildTrainingTemplate(_ *PresentationEditor, payload json.RawMessage)
 		slidesData[i] = slideDataForJSON(slide)
 	}
 
-	return map[string]any{"slides": slidesData}, nil
+	return map[string]any{keySlides: slidesData}, nil
 }
 
 // handleBuildTechnicalTemplate builds a TechnicalTemplate and returns the slides as JSON.
@@ -193,5 +193,5 @@ func handleBuildTechnicalTemplate(_ *PresentationEditor, payload json.RawMessage
 		slidesData[i] = slideDataForJSON(slide)
 	}
 
-	return map[string]any{"slides": slidesData}, nil
+	return map[string]any{keySlides: slidesData}, nil
 }

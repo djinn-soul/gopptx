@@ -44,8 +44,8 @@ func tableCellBorderDash(dash string) string {
 	switch strings.ToLower(strings.TrimSpace(dash)) {
 	case "", strokeDashSolid:
 		return strokeDashSolid
-	case "dash":
-		return "dash"
+	case strokeDashDash:
+		return strokeDashDash
 	case "dot":
 		return "dot"
 	case "dashdot", "dash-dot", "dash_dot":

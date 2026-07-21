@@ -172,7 +172,7 @@ func quadrantXAxisLabelShape(label string, layout quadrantLayout, theme Theme) s
 }
 
 func quadrantYAxisLabelShape(label string, layout quadrantLayout, theme Theme) shapes.Shape {
-	label = strings.TrimSpace(strings.ReplaceAll(label, "-->", " -> "))
+	label = strings.TrimSpace(strings.ReplaceAll(label, arrowSolid, " -> "))
 	centerY := layout.startY + (layout.chartSize / 2)
 	return shapes.NewShape(
 		shapes.ShapeTypeRectangle,

@@ -58,7 +58,7 @@ func richTextRunLang(run TextRunSpec) string {
 	if lang := strings.TrimSpace(run.Lang); lang != "" {
 		return lang
 	}
-	return "en-US"
+	return langEnUS
 }
 
 func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {

@@ -24,7 +24,7 @@ func renderPDFImageWithEffects(pdf *gopdf.GoPdf, img shapes.Image) error {
 		return nil
 	}
 	// gopdf does not support EMF/WMF (vector formats) — skip them.
-	if img.Format == "emf" || img.Format == "wmf" {
+	if img.Format == formatEMF || img.Format == "wmf" {
 		return nil
 	}
 

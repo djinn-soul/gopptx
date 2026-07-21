@@ -36,7 +36,7 @@ type PieChart struct {
 func NewPieChart(categories []string, values []float64) PieChart {
 	cats, vals := copyChartData(categories, values)
 	return PieChart{
-		Title:      "Chart",
+		Title:      defaultChartTitle,
 		Categories: cats,
 		Values:     vals,
 		X:          styling.Emu(defaultChartX),
@@ -44,7 +44,7 @@ func NewPieChart(categories []string, values []float64) PieChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		SeriesName:     "Series 1",
+		SeriesName:     defaultChartSeriesName,
 		ShowLegend:     false,
 		LegendPosition: LegendPositionRight,
 		ShowDataLabels: false,

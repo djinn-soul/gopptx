@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/richardlehane/mscfb"
@@ -162,8 +163,8 @@ func getPersistDirectoryEntries(pptDocument *mscfb.File, offsets []int64) (map[u
 	const persistOffsetEntrySize = 4
 
 	persistDirEntries := make(map[uint32]int64)
-	for i := len(offsets) - 1; i >= 0; i-- {
-		rgPersistDirEntry, err := readRecord(pptDocument, offsets[i], recordTypePersistDirectoryAtom)
+	for _, v := range slices.Backward(offsets) {
+		rgPersistDirEntry, err := readRecord(pptDocument, v, recordTypePersistDirectoryAtom)
 		if err != nil {
 			return nil, err
 		}

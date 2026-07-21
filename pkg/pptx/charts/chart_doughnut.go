@@ -39,7 +39,7 @@ type DoughnutChart struct {
 func NewDoughnutChart(categories []string, values []float64) DoughnutChart {
 	cats, vals := copyChartData(categories, values)
 	return DoughnutChart{
-		Title:      "Chart",
+		Title:      defaultChartTitle,
 		Categories: cats,
 		Values:     vals,
 		X:          styling.Emu(defaultChartX),
@@ -47,7 +47,7 @@ func NewDoughnutChart(categories []string, values []float64) DoughnutChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		SeriesName:     "Series 1",
+		SeriesName:     defaultChartSeriesName,
 		ShowLegend:     false,
 		LegendPosition: LegendPositionRight,
 		ShowDataLabels: false,

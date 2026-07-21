@@ -60,7 +60,7 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 	ys := make([]float64, len(yValues))
 	copy(ys, yValues)
 	return ScatterChart{
-		Title:   "Chart",
+		Title:   defaultChartTitle,
 		XValues: xs,
 		YValues: ys,
 		X:       styling.Emu(defaultChartX),
@@ -68,8 +68,8 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 		CX:      styling.Emu(defaultChartCX),
 		CY:      styling.Emu(defaultChartCY),
 
-		LineColor:                  "4F81BD",
-		SeriesName:                 "Series 1",
+		LineColor:                  defaultChartSeriesColor,
+		SeriesName:                 defaultChartSeriesName,
 		ScatterStyle:               ScatterStyleMarker,
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,
@@ -80,7 +80,7 @@ func NewScatterChart(xValues []float64, yValues []float64) ScatterChart {
 		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
 		CategoryAxisCrosses:        AxisCrossesAutoZero,
 		ValueAxisCrosses:           AxisCrossesAutoZero,
-		ValueFormat:                "General",
+		ValueFormat:                defaultChartValueFormat,
 		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 	}
 }

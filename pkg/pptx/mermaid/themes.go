@@ -17,7 +17,7 @@ type Theme struct {
 func defaultTheme() Theme {
 	return Theme{
 		Name:            "default",
-		Background:      "FFFFFF",
+		Background:      backgroundWhite,
 		PrimaryFill:     "ECECFF",
 		PrimaryStroke:   "9370DB",
 		SecondaryFill:   "F4F4F4",
@@ -30,7 +30,7 @@ func defaultTheme() Theme {
 func forestTheme() Theme {
 	return Theme{
 		Name:            "forest",
-		Background:      "FFFFFF",
+		Background:      backgroundWhite,
 		PrimaryFill:     "DDFFDD",
 		PrimaryStroke:   "008000",
 		SecondaryFill:   "F0FFF0",
@@ -56,7 +56,7 @@ func darkTheme() Theme {
 func neutralTheme() Theme {
 	return Theme{
 		Name:            "neutral",
-		Background:      "FFFFFF",
+		Background:      backgroundWhite,
 		PrimaryFill:     "EEEEEE",
 		PrimaryStroke:   "999999",
 		SecondaryFill:   "F9F9F9",

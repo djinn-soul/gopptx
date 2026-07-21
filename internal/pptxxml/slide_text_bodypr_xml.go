@@ -4,7 +4,7 @@ import "strconv"
 
 // TextBodyPrXML renders <a:bodyPr> with the same defaults used by shape text bodies.
 func TextBodyPrXML(textFrame *TextFrameSpec) string {
-	autoFitXML := `<a:spAutoFit/>`
+	autoFitXML := textAutoFitElement
 	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(
 		defaultMargin,
 	) + `" tIns="` + strconv.Itoa(
@@ -43,8 +43,8 @@ func TextBodyPrXML(textFrame *TextFrameSpec) string {
 			bodyPrAttr += ` numCol="` + strconv.Itoa(textFrame.NumCol) + `"`
 		}
 		switch textFrame.AutoFit {
-		case "spAutoFit":
-			autoFitXML = `<a:spAutoFit/>`
+		case textAutoFitTag:
+			autoFitXML = textAutoFitElement
 		case normAutoFitToken:
 			// The public API token remains "normAutoFit", but the OOXML element
 			// name is schema-valid only as <a:normAutofit/>.

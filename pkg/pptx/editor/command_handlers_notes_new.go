@@ -23,7 +23,7 @@ func handleListNotesShapes(e *PresentationEditor, payload json.RawMessage) (any,
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{"shapes": shapes}, nil
+			return map[string]any{keyShapes: shapes}, nil
 		},
 	)
 }
@@ -47,12 +47,12 @@ func handleListNotesPlaceholders(e *PresentationEditor, payload json.RawMessage)
 			out := make([]map[string]any, 0, len(placeholders))
 			for _, ph := range placeholders {
 				out = append(out, map[string]any{
-					"type":  ph.Type,
-					"index": ph.Index,
-					"name":  ph.Name,
+					keyType:  ph.Type,
+					keyIndex: ph.Index,
+					keyName:  ph.Name,
 				})
 			}
-			return map[string]any{"placeholders": out}, nil
+			return map[string]any{keyPlaceholder: out}, nil
 		},
 	)
 }

@@ -18,6 +18,15 @@ const (
 	PPAlignCenterAcross PPAlign = "ctr"
 )
 
+// Human-friendly aliases accepted by the Parse* functions in this file in
+// addition to the canonical OOXML values above. They are spelled-out forms
+// (e.g. "justify") and deliberately differ from the enum values ("just").
+const (
+	aliasCenter     = "center"
+	aliasJustify    = "justify"
+	aliasDistribute = "distribute"
+)
+
 func (a PPAlign) XMLValue() string {
 	return string(a)
 }
@@ -26,13 +35,13 @@ func ParsePPAlign(value string) (PPAlign, error) {
 	switch normalizeKey(value) {
 	case "l", "left":
 		return PPAlignLeft, nil
-	case string(PPAlignCenter), "center", "centre":
+	case string(PPAlignCenter), aliasCenter, "centre":
 		return PPAlignCenter, nil
 	case "r", "right":
 		return PPAlignRight, nil
-	case "just", "justify":
+	case "just", aliasJustify:
 		return PPAlignJustify, nil
-	case string(PPAlignDistribute), "distribute":
+	case string(PPAlignDistribute), aliasDistribute:
 		return PPAlignDistribute, nil
 	case "thaidist", "thai_distribute":
 		return PPAlignThaiDist, nil
@@ -76,13 +85,13 @@ func ParseMSOAnchor(value string) (MSOAnchor, error) {
 	switch normalizeKey(value) {
 	case "t", "top":
 		return MSOAnchorTop, nil
-	case string(MSOAnchorMiddle), "center", "middle":
+	case string(MSOAnchorMiddle), aliasCenter, "middle":
 		return MSOAnchorMiddle, nil
 	case "b", "bottom":
 		return MSOAnchorBottom, nil
-	case "just", "justify":
+	case "just", aliasJustify:
 		return MSOAnchorJustify, nil
-	case string(MSOAnchorDistribute), "distribute":
+	case string(MSOAnchorDistribute), aliasDistribute:
 		return MSOAnchorDistribute, nil
 	default:
 		return "", fmt.Errorf("invalid MSO_ANCHOR value %q", value)

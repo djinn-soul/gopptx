@@ -48,7 +48,7 @@ func (h HashAlgorithm) URI() string {
 func (h HashAlgorithm) Name() string {
 	switch h {
 	case HashAlgorithmSha256:
-		return "SHA-256"
+		return digestMethodSHA256
 	case HashAlgorithmSha384:
 		return "SHA-384"
 	case HashAlgorithmSha512:
@@ -56,7 +56,7 @@ func (h HashAlgorithm) Name() string {
 	case HashAlgorithmSha1:
 		return "SHA-1"
 	default:
-		return "SHA-256"
+		return digestMethodSHA256
 	}
 }
 
@@ -123,13 +123,13 @@ func (s SignatureCommitment) URI() string {
 func (s SignatureCommitment) Label() string {
 	switch s {
 	case SignatureCommitmentCreated:
-		return "Created"
+		return signaturePropCreated
 	case SignatureCommitmentApproved:
 		return "Approved"
 	case SignatureCommitmentReviewed:
 		return "Reviewed"
 	default:
-		return "Created"
+		return signaturePropCreated
 	}
 }
 
@@ -197,20 +197,17 @@ func (d DigitalSignature) ToSignatureXML() string {
 	xml.WriteString(`<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">`)
 	xml.WriteString(`<SignedInfo>`)
 	xml.WriteString(`<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>`)
-	xml.WriteString(fmt.Sprintf(
-		`<SignatureMethod Algorithm="%s"/>`,
-		d.HashAlgorithm.URI(),
-	))
+	fmt.Fprintf(&xml, `<SignatureMethod Algorithm="%s"/>`,
+		d.HashAlgorithm.URI())
 	xml.WriteString(`</SignedInfo>`)
 	xml.WriteString(`<SignatureValue/>`)
 	xml.WriteString(`<KeyInfo>`)
-	xml.WriteString(fmt.Sprintf(
-		`<KeyName>%s</KeyName>`,
-		xmlEscape(d.Signer.Name),
-	))
+	fmt.Fprintf(&xml, `<KeyName>%s</KeyName>`,
+		xmlEscape(d.Signer.Name))
 	xml.WriteString(`</KeyInfo>`)
 	xml.WriteString("<Object>")
-	xml.WriteString(fmt.Sprintf(
+	fmt.Fprintf(
+		&xml,
 		"<SignatureProperties><SignatureProperty Target=\"#SignatureInfo\"><SignatureInfoV1 xmlns=\"http://schemas.microsoft.com/office/2006/digsig\"><SetupID/><SignatureText>%s</SignatureText>%s<SignatureType>1</SignatureType><SignatureProviderUrl/><SignatureProviderDetails>9</SignatureProviderDetails><ManifestHashAlgorithm>%s</ManifestHashAlgorithm><SignatureProviderId>{{00000000-0000-0000-0000-000000000000}}</SignatureProviderId><CommitmentTypeId>%s</CommitmentTypeId><CommitmentTypeQualifier>%s</CommitmentTypeQualifier><SigningTime>%s</SigningTime></SignatureInfoV1></SignatureProperty></SignatureProperties>",
 		xmlEscape(d.Signer.Name),
 		commentsXML,
@@ -218,7 +215,7 @@ func (d DigitalSignature) ToSignatureXML() string {
 		d.CommitmentType.URI(),
 		d.CommitmentType.Label(),
 		xmlEscape(date),
-	))
+	)
 	xml.WriteString("</Object>")
 	xml.WriteString(`</Signature>`)
 
@@ -241,3 +238,9 @@ func xmlEscape(s string) string {
 	)
 	return replacer.Replace(s)
 }
+
+// Signature metadata literals repeated across the signature builders.
+const (
+	digestMethodSHA256   = "SHA-256"
+	signaturePropCreated = "Created"
+)

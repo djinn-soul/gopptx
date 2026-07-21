@@ -16,7 +16,7 @@ func (e *PresentationEditor) writeRelationships(
 }
 
 func (e *PresentationEditor) addContentTypeOverride(partName, contentType string) {
-	ctPath := "[Content_Types].xml"
+	ctPath := contentTypesPath
 	data, ok := e.parts.Get(ctPath)
 	if !ok {
 		return

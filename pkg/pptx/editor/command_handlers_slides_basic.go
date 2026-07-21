@@ -102,8 +102,8 @@ func handleDuplicateSlide(e *PresentationEditor, payload json.RawMessage) (any, 
 func handleGetMetadata(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	m := e.Metadata()
 	return map[string]any{
-		"title":       m.Title,
-		"slide_count": m.SlideCount,
+		placeholderTypeTitle: m.Title,
+		OpSlideCount:         m.SlideCount,
 		"size": map[string]int64{
 			"width":  m.SlideSize.Width,
 			"height": m.SlideSize.Height,

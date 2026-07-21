@@ -8,6 +8,9 @@ import (
 // FontStyle represents the style variant of an embedded font.
 type FontStyle int
 
+// fontStyleRegular is the OOXML element name for the default font style.
+const fontStyleRegular = "regular"
+
 const (
 	defaultPitchFamily = 0x22
 	minObfuscateBytes  = 32
@@ -30,7 +33,7 @@ const (
 func (s FontStyle) XMLElement() string {
 	switch s {
 	case StyleRegular:
-		return "regular"
+		return fontStyleRegular
 	case StyleBold:
 		return "bold"
 	case StyleItalic:
@@ -38,7 +41,7 @@ func (s FontStyle) XMLElement() string {
 	case StyleBoldItalic:
 		return "boldItalic"
 	default:
-		return "regular"
+		return fontStyleRegular
 	}
 }
 

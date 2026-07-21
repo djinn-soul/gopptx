@@ -20,6 +20,12 @@ const (
 	ValueAxisCrossBetweenBetween     = "between"
 	ValueAxisCrossBetweenMidCategory = "midCat"
 
+	// Shared constructor defaults across every chart kind.
+	defaultChartTitle       = "Chart"
+	defaultChartSeriesColor = "4F81BD"
+	defaultChartValueFormat = "General"
+	defaultChartSeriesName  = "Series 1"
+
 	defaultChartX  = 685800
 	defaultChartY  = 1800000
 	defaultChartCX = 7772400
@@ -66,7 +72,7 @@ type BarChart struct {
 func NewBarChart(categories []string, values []float64) BarChart {
 	cats, vals := copyChartData(categories, values)
 	return BarChart{
-		Title:      "Chart",
+		Title:      defaultChartTitle,
 		Categories: cats,
 		Values:     vals,
 		X:          styling.Emu(defaultChartX),
@@ -74,8 +80,8 @@ func NewBarChart(categories []string, values []float64) BarChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		BarColor:                   "4F81BD",
-		SeriesName:                 "Series 1",
+		BarColor:                   defaultChartSeriesColor,
+		SeriesName:                 defaultChartSeriesName,
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,
 		ShowDataLabels:             false,
@@ -85,7 +91,7 @@ func NewBarChart(categories []string, values []float64) BarChart {
 		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
 		CategoryAxisCrosses:        AxisCrossesAutoZero,
 		ValueAxisCrosses:           AxisCrossesAutoZero,
-		ValueFormat:                "General",
+		ValueFormat:                defaultChartValueFormat,
 		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 	}
 }
@@ -131,7 +137,7 @@ type LineChart struct {
 func NewLineChart(categories []string, values []float64) LineChart {
 	cats, vals := copyChartData(categories, values)
 	return LineChart{
-		Title:      "Chart",
+		Title:      defaultChartTitle,
 		Categories: cats,
 		Values:     vals,
 		X:          styling.Emu(defaultChartX),
@@ -139,8 +145,8 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		LineColor:                  "4F81BD",
-		SeriesName:                 "Series 1",
+		LineColor:                  defaultChartSeriesColor,
+		SeriesName:                 defaultChartSeriesName,
 		ShowLegend:                 false,
 		LegendPosition:             LegendPositionRight,
 		ShowDataLabels:             false,
@@ -150,7 +156,7 @@ func NewLineChart(categories []string, values []float64) LineChart {
 		ValueTickLabelPosition:     AxisTickLabelPositionNextTo,
 		CategoryAxisCrosses:        AxisCrossesAutoZero,
 		ValueAxisCrosses:           AxisCrossesAutoZero,
-		ValueFormat:                "General",
+		ValueFormat:                defaultChartValueFormat,
 		ValueAxisCrossBetween:      ValueAxisCrossBetweenBetween,
 		Smooth:                     true,
 	}

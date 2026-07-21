@@ -84,7 +84,7 @@ func ParseXLChartType(value string) (XLChartType, error) {
 		return XLChartTypeAreaStacked100, nil
 	case "pie":
 		return XLChartTypePie, nil
-	case "doughnut", "donut":
+	case chartTypeNameDoughnut, "donut":
 		return XLChartTypeDoughnut, nil
 	case "bubble":
 		return XLChartTypeBubble, nil
@@ -102,3 +102,6 @@ func ParseXLChartType(value string) (XLChartType, error) {
 		return "", fmt.Errorf("invalid XL_CHART_TYPE value %q", value)
 	}
 }
+
+// chartTypeNameDoughnut is the canonical doughnut chart type token.
+const chartTypeNameDoughnut = "doughnut"
