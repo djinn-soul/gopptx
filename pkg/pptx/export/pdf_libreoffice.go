@@ -27,15 +27,18 @@ func converterTimeout(opts PDFOptions) time.Duration {
 	return opts.Timeout
 }
 
-// sofficeExecutable locates the LibreOffice binary, preferring the macOS
-// bundle path when the command is not on PATH.
-func sofficeExecutable() (string, error) {
-	const sofficeName = "soffice"
+const (
+	sofficeName    = "soffice"
+	sofficeMacPath = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+)
 
+// sofficeExecutable locates the LibreOffice binary, preferring the macOS
+// bundle path when the command is not on PATH. The result is always one of the
+// two constants above, never a caller-supplied string.
+func sofficeExecutable() (string, error) {
 	if runtime.GOOS == osDarwin {
-		macPath := "/Applications/LibreOffice.app/Contents/MacOS/soffice"
-		if _, err := os.Stat(macPath); err == nil {
-			return macPath, nil
+		if _, err := os.Stat(sofficeMacPath); err == nil {
+			return sofficeMacPath, nil
 		}
 	}
 	if _, err := exec.LookPath(sofficeName); err != nil {
@@ -56,16 +59,17 @@ func convertViaLibreOffice(pptxPath, workDir string, opts PDFOptions) (string, e
 	ctx, cancel := converterContext(opts)
 	defer cancel()
 
-	cmd := exec.CommandContext(
-		ctx,
-		sofficeCmd,
-		"--headless",
-		"--convert-to",
-		"pdf",
-		pptxPath,
-		"--outdir",
-		workDir,
-	)
+	// Use literal strings in exec.CommandContext so static analysis can verify
+	// no dynamic/user-controlled executable reaches this call site.
+	args := []string{"--headless", "--convert-to", "pdf", pptxPath, "--outdir", workDir}
+
+	var cmd *exec.Cmd
+	switch sofficeCmd {
+	case sofficeMacPath:
+		cmd = exec.CommandContext(ctx, sofficeMacPath, args...)
+	default: // "soffice"
+		cmd = exec.CommandContext(ctx, sofficeName, args...)
+	}
 	// Without WaitDelay, killing soffice on timeout still blocks here until every
 	// grandchild that inherited the output pipe exits.
 	cmd.WaitDelay = converterWaitDelay
