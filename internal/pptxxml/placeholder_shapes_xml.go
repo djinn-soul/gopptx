@@ -289,12 +289,12 @@ func NormalizePlaceholderType(raw string) string {
 		return "obj"
 	}
 	switch raw {
-	case "picture", "pic":
+	case placeholderPicture, "pic":
 		return "pic"
 	case "title":
 		return "title"
-	case "body":
-		return "body"
+	case placeholderBody:
+		return placeholderBody
 	case "ctrtitle", "centeredtitle", "centered_title":
 		return "ctrTitle"
 	default:

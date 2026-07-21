@@ -12,6 +12,9 @@ import (
 
 const (
 	smartArtOutputPath = "examples/output/24_smartart_smoke.pptx"
+	stepBuild          = "Build"
+	stepPlan           = "Plan"
+	stepShip           = "Ship"
 	smartArtX          = styling.Length(45 * 12700)
 	smartArtY          = styling.Length(115 * 12700)
 	smartArtCX         = styling.Length(625 * 12700)
@@ -150,11 +153,11 @@ func itemsForLayout(layout smartart.Layout, idx int) []string {
 			fmt.Sprintf("Topic %dC", idx+1),
 		}
 	case smartart.BasicProcess:
-		return []string{"Plan", "Build", "Ship"}
+		return []string{stepPlan, stepBuild, stepShip}
 	case smartart.AccentProcess:
-		return []string{"Plan", "Design", "Build", "Test", "Ship"}
+		return []string{stepPlan, "Design", stepBuild, "Test", stepShip}
 	case smartart.AlternatingFlow, smartart.ContinuousBlockProcess:
-		return []string{"Plan", "Build", "Ship"}
+		return []string{stepPlan, stepBuild, stepShip}
 	case smartart.BasicCycle,
 		smartart.TextCycle,
 		smartart.BlockCycle:

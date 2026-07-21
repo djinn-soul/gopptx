@@ -16,10 +16,10 @@ func toString(v any) string {
 // slideDataForJSON converts a SlideContent to a JSON-serializable map.
 func slideDataForJSON(slide elements.SlideContent) map[string]any {
 	data := map[string]any{
-		"title":   slide.Title,
-		"layout":  slide.Layout,
-		"bullets": slide.Bullets,
-		"notes":   slide.Notes,
+		placeholderTypeTitle: slide.Title,
+		"layout":             slide.Layout,
+		"bullets":            slide.Bullets,
+		"notes":              slide.Notes,
 	}
 	if slide.Table != nil {
 		data["table"] = map[string]any{

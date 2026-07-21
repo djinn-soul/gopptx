@@ -25,7 +25,7 @@ func handleListShapes(e *PresentationEditor, payload json.RawMessage) (any, erro
 			if err != nil {
 				return nil, err
 			}
-			return map[string]any{"shapes": shapes}, nil
+			return map[string]any{keyShapes: shapes}, nil
 		},
 	)
 }

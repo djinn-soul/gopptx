@@ -11,6 +11,10 @@ import (
 const (
 	outputDir  = "examples/output"
 	outputFile = "35_layout_helpers.pptx"
+
+	colorLightGreen = "A9D18E"
+	colorOrange     = "ED7D31"
+	colorRed        = "FF0000"
 )
 
 func main() {
@@ -71,7 +75,7 @@ func buildStackSlide() (pptx.SlideContent, error) {
 	if err != nil {
 		return slide, fmt.Errorf("stack: %w", err)
 	}
-	colors := []string{"4472C4", "ED7D31", "A9D18E", "FF0000"}
+	colors := []string{"4472C4", colorOrange, colorLightGreen, colorRed}
 	labels := []string{"Init", "Build", "Validate", "Export"}
 	for i, pt := range pts {
 		slide = slide.AddShape(
@@ -94,7 +98,7 @@ func buildDistributeSlide() (pptx.SlideContent, error) {
 	if err != nil {
 		return slide, fmt.Errorf("distribute: %w", err)
 	}
-	colors := []string{"4472C4", "ED7D31", "A9D18E", "FF0000", "FFC000"}
+	colors := []string{"4472C4", colorOrange, colorLightGreen, colorRed, "FFC000"}
 	labels := []string{"Alpha", "Beta", "Gamma", "Delta", "Epsilon"}
 	for i, x := range coords {
 		slide = slide.AddShape(
@@ -124,7 +128,7 @@ func buildGridSlide() (pptx.SlideContent, error) {
 	if err != nil {
 		return slide, fmt.Errorf("grid: %w", err)
 	}
-	colors := []string{"5B9BD5", "ED7D31", "A9D18E", "FF0000", "FFC000", "7030A0"}
+	colors := []string{"5B9BD5", colorOrange, colorLightGreen, colorRed, "FFC000", "7030A0"}
 	for i, b := range boxes {
 		slide = slide.AddShape(
 			pptx.NewShape(pptx.ShapeTypeRectangle, b.X, b.Y, b.CX, b.CY).

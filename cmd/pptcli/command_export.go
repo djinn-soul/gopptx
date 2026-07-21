@@ -134,7 +134,7 @@ func defaultPNGOutputDir(inPath string) string {
 }
 
 func buildPDFArgs(inPath, outPath, title, driver string) []string {
-	args := []string{"-in", strings.TrimSpace(inPath)}
+	args := []string{flagIn, strings.TrimSpace(inPath)}
 	if strings.TrimSpace(outPath) != "" {
 		args = append(args, "-out", strings.TrimSpace(outPath))
 	}
@@ -148,7 +148,7 @@ func buildPDFArgs(inPath, outPath, title, driver string) []string {
 }
 
 func buildHTMLArgs(inPath, outPath, title string, embedImages, nav bool) []string {
-	args := []string{"-in", strings.TrimSpace(inPath)}
+	args := []string{flagIn, strings.TrimSpace(inPath)}
 	if strings.TrimSpace(outPath) != "" {
 		args = append(args, "-out", strings.TrimSpace(outPath))
 	}
@@ -169,3 +169,6 @@ func boolToFlag(v bool) string {
 func printExportUsage(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "Usage: pptcli export -in <file.pptx|file.pptm|file.md> [-out path] [-format pdf|html|png]")
 }
+
+// flagIn is the LibreOffice input-file flag.
+const flagIn = "-in"

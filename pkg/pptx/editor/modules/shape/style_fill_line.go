@@ -266,13 +266,9 @@ func renderGradientFillXML(gradient *common.GradientFill) (string, error) {
 		if pos < 0.0 || pos > maxGradientPercent {
 			return "", fmt.Errorf("fill.gradient.stops[%d].position_pct must be between 0 and 100", i)
 		}
-		b.WriteString(
-			fmt.Sprintf(
-				`<a:gs pos="%d"><a:srgbClr val="%s"/></a:gs>`,
-				int(math.Round(pos*gradientPositionScaleStyle)),
-				color,
-			),
-		)
+		fmt.Fprintf(&b, `<a:gs pos="%d"><a:srgbClr val="%s"/></a:gs>`,
+			int(math.Round(pos*gradientPositionScaleStyle)),
+			color)
 	}
 	b.WriteString(`</a:gsLst>`)
 	if gradient.AngleDeg != nil {
@@ -280,7 +276,7 @@ func renderGradientFillXML(gradient *common.GradientFill) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("fill.gradient.angle_deg: %w", err)
 		}
-		b.WriteString(fmt.Sprintf(`<a:lin ang="%d" scaled="1"/>`, rotation))
+		fmt.Fprintf(&b, `<a:lin ang="%d" scaled="1"/>`, rotation)
 	}
 	b.WriteString(`</a:gradFill>`)
 	return b.String(), nil

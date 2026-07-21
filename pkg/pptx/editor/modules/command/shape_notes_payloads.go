@@ -116,11 +116,11 @@ func BuildNotesResultDetailed(
 	var notesSlide any
 	if hasNotesSlide {
 		notesSlide = map[string]any{
-			"text": text,
+			KeyText: text,
 		}
 	}
 	return map[string]any{
-		"text":               text,
+		KeyText:              text,
 		"notes_slide":        notesSlide,
 		"notes_placeholders": placeholders,
 		"notes_shapes":       shapes,

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/zipfast"
 )
 
 func readZipParts(zr *zip.Reader) (map[string][]byte, error) {
@@ -45,7 +47,7 @@ func readZipFileBytes(f *zip.File) ([]byte, error) {
 // repackZip rebuilds the ZIP archive, replacing parts with modified data.
 func repackZip(original *zip.Reader, parts map[string][]byte) ([]byte, error) {
 	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
+	zw := zipfast.NewWriter(&buf)
 
 	written := make(map[string]bool)
 	for _, f := range original.File {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -24,9 +25,18 @@ const (
 // SlidesFromPPTX reads an existing PPTX file and extracts slide content
 // (title, bullets, shapes, embedded images) for the native PDF/HTML export pipeline.
 func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
+	title, slides, _, err := slidesFromPPTXWithSize(pptxPath)
+	return title, slides, err
+}
+
+// slidesFromPPTXWithSize is SlidesFromPPTX plus the deck's slide size in EMUs,
+// which the native PDF renderer needs to size its pages.
+func slidesFromPPTXWithSize(pptxPath string) (string, []elements.SlideContent, common.SlideSize, error) {
+	var slideSize common.SlideSize
+
 	ed, err := editor.OpenPresentationEditor(pptxPath)
 	if err != nil {
-		return "", nil, fmt.Errorf("open PPTX: %w", err)
+		return "", nil, slideSize, fmt.Errorf("open PPTX: %w", err)
 	}
 	defer ed.Close()
 
@@ -34,6 +44,7 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 	presTitle := ""
 	if meta != nil {
 		presTitle = meta.Title
+		slideSize = meta.SlideSize
 	}
 
 	// Read slide master's txStyles to resolve inherited title alignment/size.
@@ -71,7 +82,7 @@ func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
 		presTitle = slideContents[0].Title
 	}
 
-	return presTitle, slideContents, nil
+	return presTitle, slideContents, slideSize, nil
 }
 
 // applyMasterTitleDefaults fills in title alignment and size from master txStyles
@@ -197,7 +208,12 @@ func applyGraphicFrame(
 		return
 	}
 	if tbl := extractTableContent(ed, slideIdx, es); tbl != nil {
-		sc.Table = tbl
+		// Keep the first table in Table; later ones would otherwise overwrite it.
+		if sc.Table == nil {
+			sc.Table = tbl
+		} else {
+			sc.Tables = append(sc.Tables, *tbl)
+		}
 		return
 	}
 	appendReaderShape(sc, shapeIndexByID, es)

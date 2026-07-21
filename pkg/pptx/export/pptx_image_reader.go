@@ -225,14 +225,14 @@ func resolveRelPath(slidePart, target string) string {
 func imageFormat(p string) string {
 	ext := strings.ToLower(path.Ext(p))
 	switch ext {
-	case ".png":
+	case extPNG:
 		return formatPNG
-	case ".jpg", ".jpeg":
-		return "jpeg"
-	case ".gif":
+	case ".jpg", extJPEG:
+		return formatJPEG
+	case extGIF:
 		return "gif"
 	case ".emf", ".wmf":
-		return "emf"
+		return formatEMF
 	default:
 		return formatPNG
 	}

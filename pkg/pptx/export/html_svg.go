@@ -71,21 +71,17 @@ func ensureHash(color string) string {
 
 func buildGradientDef(id string, grad shapes.ShapeGradientFill) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`<linearGradient id="%s" x1="0%%" y1="0%%" x2="100%%" y2="0%%">`+"\n", id))
+	fmt.Fprintf(&sb, `<linearGradient id="%s" x1="0%%" y1="0%%" x2="100%%" y2="0%%">`+"\n", id)
 	for _, stop := range grad.Stops {
 		opacityStr := "1.0"
 		if stop.Transparency != nil {
 			opacityStr = fmt.Sprintf("%.2f", 1.0-*stop.Transparency)
 		}
 		color := ensureHash(stop.Color)
-		sb.WriteString(
-			fmt.Sprintf(
-				`  <stop offset="%d%%" stop-color="%s" stop-opacity="%s" />`+"\n",
-				stop.PositionPct,
-				color,
-				opacityStr,
-			),
-		)
+		fmt.Fprintf(&sb, `  <stop offset="%d%%" stop-color="%s" stop-opacity="%s" />`+"\n",
+			stop.PositionPct,
+			color,
+			opacityStr)
 	}
 	sb.WriteString(`</linearGradient>` + "\n")
 	return sb.String()
@@ -140,53 +136,41 @@ func renderShape(s shapes.Shape, index int) string {
 	// Primitives
 	switch s.Type {
 	case shapes.ShapeTypeRectangle:
-		sb.WriteString(
-			fmt.Sprintf(
-				`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" %s %s%s/>`,
-				x,
-				y,
-				cx,
-				cy,
-				fill,
-				stroke,
-				transform,
-			),
-		)
+		fmt.Fprintf(&sb, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" %s %s%s/>`,
+			x,
+			y,
+			cx,
+			cy,
+			fill,
+			stroke,
+			transform)
 	case shapes.ShapeTypeRoundedRectangle:
 		rx := math.Min(cx, cy) * 0.1 // rough approx
-		sb.WriteString(
-			fmt.Sprintf(
-				`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" %s %s%s/>`,
-				x,
-				y,
-				cx,
-				cy,
-				rx,
-				fill,
-				stroke,
-				transform,
-			),
-		)
+		fmt.Fprintf(&sb, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" rx="%.2f" %s %s%s/>`,
+			x,
+			y,
+			cx,
+			cy,
+			rx,
+			fill,
+			stroke,
+			transform)
 	case shapes.ShapeTypeEllipse:
 		rx := cx / 2.0
 		ry := cy / 2.0
 		cxCenter := x + rx
 		cyCenter := y + ry
-		sb.WriteString(
-			fmt.Sprintf(
-				`<ellipse cx="%.2f" cy="%.2f" rx="%.2f" ry="%.2f" %s %s%s/>`,
-				cxCenter,
-				cyCenter,
-				rx,
-				ry,
-				fill,
-				stroke,
-				transform,
-			),
-		)
+		fmt.Fprintf(&sb, `<ellipse cx="%.2f" cy="%.2f" rx="%.2f" ry="%.2f" %s %s%s/>`,
+			cxCenter,
+			cyCenter,
+			rx,
+			ry,
+			fill,
+			stroke,
+			transform)
 	case shapes.ShapeTypeTriangle:
 		points := fmt.Sprintf("%.2f,%.2f %.2f,%.2f %.2f,%.2f", x+(cx/2), y, x, y+cy, x+cx, y+cy)
-		sb.WriteString(fmt.Sprintf(`<polygon points="%s" %s %s%s/>`, points, fill, stroke, transform))
+		fmt.Fprintf(&sb, `<polygon points="%s" %s %s%s/>`, points, fill, stroke, transform)
 	case shapes.ShapeTypeRightArrow:
 		aw := cx * 0.5 // arrow head width
 		bw := cx - aw  // body width
@@ -200,7 +184,7 @@ func renderShape(s shapes.Shape, index int) string {
 			x+bw, y+cy,
 			x+bw, y+cy-(cy-bh)/2,
 			x, y+cy-(cy-bh)/2)
-		sb.WriteString(fmt.Sprintf(`<polygon points="%s" %s %s%s/>`, points, fill, stroke, transform))
+		fmt.Fprintf(&sb, `<polygon points="%s" %s %s%s/>`, points, fill, stroke, transform)
 	case shapes.ShapeTypeLeftArrow:
 		aw := cx * 0.5
 		hh := cy * 0.5
@@ -213,21 +197,17 @@ func renderShape(s shapes.Shape, index int) string {
 			x+aw, y+cy,
 			x, y+hh,
 			x+aw, y)
-		sb.WriteString(fmt.Sprintf(`<polygon points="%s" %s %s%s/>`, points, fill, stroke, transform))
+		fmt.Fprintf(&sb, `<polygon points="%s" %s %s%s/>`, points, fill, stroke, transform)
 	default:
 		// Fallback for exotic shapes
-		sb.WriteString(
-			fmt.Sprintf(
-				`<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" %s %s%s/>`,
-				x,
-				y,
-				cx,
-				cy,
-				fill,
-				stroke,
-				transform,
-			),
-		)
+		fmt.Fprintf(&sb, `<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" %s %s%s/>`,
+			x,
+			y,
+			cx,
+			cy,
+			fill,
+			stroke,
+			transform)
 	}
 	sb.WriteString("\n")
 
@@ -238,16 +218,15 @@ func renderShape(s shapes.Shape, index int) string {
 		textX := x + cx/2
 		textY := y + cy/2
 		escaped := html.EscapeString(s.Text)
-		sb.WriteString(
-			fmt.Sprintf(
-				`<text x="%.2f" y="%.2f" font-size="%.1fpx" fill="%s" text-anchor="middle" dominant-baseline="middle"%s>%s</text>`+"\n",
-				textX,
-				textY,
-				fontSize,
-				textColor,
-				transform,
-				escaped,
-			),
+		fmt.Fprintf(
+			&sb,
+			`<text x="%.2f" y="%.2f" font-size="%.1fpx" fill="%s" text-anchor="middle" dominant-baseline="middle"%s>%s</text>`+"\n",
+			textX,
+			textY,
+			fontSize,
+			textColor,
+			transform,
+			escaped,
 		)
 	}
 

@@ -46,7 +46,7 @@ func GenerateCustomXMLItem(part common.CustomXMLPart) (string, error) {
 			if j > 0 {
 				propsSb.WriteString("\n  ")
 			}
-			propsSb.WriteString(fmt.Sprintf("<%s>%s</%s>", kv.Key, escapeCustomXML(kv.Value), kv.Key))
+			fmt.Fprintf(&propsSb, "<%s>%s</%s>", kv.Key, escapeCustomXML(kv.Value), kv.Key)
 		}
 		inner = propsSb.String()
 	}

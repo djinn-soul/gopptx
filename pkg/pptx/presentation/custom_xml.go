@@ -90,7 +90,7 @@ func generateCustomXMLItem(part common.CustomXMLPart) (string, error) {
 			if j > 0 {
 				propsSb55.WriteString("\n  ")
 			}
-			propsSb55.WriteString(fmt.Sprintf("<%s>%s</%s>", kv.Key, escapeCustomXML(kv.Value), kv.Key))
+			fmt.Fprintf(&propsSb55, "<%s>%s</%s>", kv.Key, escapeCustomXML(kv.Value), kv.Key)
 		}
 		inner = propsSb55.String()
 	}

@@ -7,7 +7,7 @@ import (
 
 func FlagAttributeName(flag string) (string, bool) {
 	switch flag {
-	case "first_row", "firstRow":
+	case keyFirstRow, "firstRow":
 		return "firstRow", true
 	case "band_row", "bandRow":
 		return "bandRow", true
@@ -17,7 +17,7 @@ func FlagAttributeName(flag string) (string, bool) {
 		return "lastRow", true
 	case "last_col", "lastCol":
 		return "lastCol", true
-	case "band_col", "bandCol":
+	case keyBandCol, "bandCol":
 		return "bandCol", true
 	default:
 		return "", false
@@ -62,15 +62,15 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 		"table": map[string]any{
 			"row_count":     rowCount,
 			"col_count":     colCount,
-			"first_row":     TruthyAttr(parsed.TblPr.FirstRow),
+			keyFirstRow:     TruthyAttr(parsed.TblPr.FirstRow),
 			"first_col":     TruthyAttr(parsed.TblPr.FirstCol),
 			"last_row":      TruthyAttr(parsed.TblPr.LastRow),
 			"last_col":      TruthyAttr(parsed.TblPr.LastCol),
 			"band_row":      TruthyAttr(parsed.TblPr.BandRow),
-			"band_col":      TruthyAttr(parsed.TblPr.BandCol),
+			keyBandCol:      TruthyAttr(parsed.TblPr.BandCol),
 			"row_heights":   rowHeights,
 			"column_widths": columnWidths,
-			"cells":         cells,
+			keyCells:        cells,
 			"rows":          rowsView,
 			"columns":       colsView,
 		},

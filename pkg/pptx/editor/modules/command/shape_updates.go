@@ -68,13 +68,13 @@ func ParseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 
 func CopyShapeUpdateFields(src, dst map[string]any) {
 	for _, key := range []string{
-		"text",
-		"runs",
+		KeyText,
+		KeyRuns,
 		"text_frame",
 		"paragraph",
 		"click_action",
 		"hover_action",
-		"properties",
+		KeyProperties,
 	} {
 		if value, ok := src[key]; ok {
 			dst[key] = value

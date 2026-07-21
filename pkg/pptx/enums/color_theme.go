@@ -39,7 +39,7 @@ func ParseMSOThemeColor(value string) (MSOThemeColor, error) {
 		return MSOThemeColorDark2, nil
 	case "lt2", "light2":
 		return MSOThemeColorLight2, nil
-	case "accent1":
+	case string(MSOThemeColorAccent1):
 		return MSOThemeColorAccent1, nil
 	case "accent2":
 		return MSOThemeColorAccent2, nil
@@ -83,7 +83,7 @@ func (t MSOColorType) XMLValue() string {
 
 func ParseMSOColorType(value string) (MSOColorType, error) {
 	switch normalizeKey(value) {
-	case "rgb", "srgb":
+	case string(MSOColorTypeRGB), "srgb":
 		return MSOColorTypeRGB, nil
 	case "scheme", "theme":
 		return MSOColorTypeScheme, nil

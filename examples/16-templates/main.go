@@ -19,6 +19,14 @@ import (
 
 const outputDir = "examples/output"
 
+// Line-item column keys used in the template rows.
+const (
+	keyName  = "name"
+	keyNum   = "num"
+	keyQty   = "qty"
+	keyPrice = "price"
+)
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -58,9 +66,9 @@ func run() error {
 		"notes_present": true,
 		"notes":         "Thank you for your business!",
 		"line_items": []tplx.Row{
-			{"num": "1", "name": "Widget A", "qty": "10", "price": "$1,200"},
-			{"num": "2", "name": "Widget B", "qty": "4", "price": "$800"},
-			{"num": "3", "name": "Consulting", "qty": "8h", "price": "$1,600"},
+			{keyNum: "1", keyName: "Widget A", keyQty: "10", keyPrice: "$1,200"},
+			{keyNum: "2", keyName: "Widget B", keyQty: "4", keyPrice: "$800"},
+			{keyNum: "3", keyName: "Consulting", keyQty: "8h", keyPrice: "$1,600"},
 		},
 	})
 	if err != nil {

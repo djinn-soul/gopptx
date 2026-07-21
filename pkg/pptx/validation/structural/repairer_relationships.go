@@ -66,7 +66,7 @@ func (r *Repairer) repairMissingSlideRef(issue Issue) error {
 		}
 	}
 
-	relsPath := "ppt/_rels/presentation.xml.rels"
+	relsPath := presentationRelsPath
 	relsData, ok := r.modifier.Get(relsPath)
 	if !ok {
 		return errors.New("cannot repair missing slide ref without presentation.xml.rels")
@@ -93,7 +93,7 @@ func (r *Repairer) repairMissingSlideRef(issue Issue) error {
 	repairedRelsStr := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" + string(repairedRels)
 	r.modifier.Set(relsPath, []byte(repairedRelsStr))
 
-	presPath := "ppt/presentation.xml"
+	presPath := presentationPartPath
 	presData, ok := r.modifier.Get(presPath)
 	if !ok {
 		return errors.New("cannot repair slide ref without presentation.xml")

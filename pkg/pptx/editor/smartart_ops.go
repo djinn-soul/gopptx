@@ -158,7 +158,7 @@ func (e *PresentationEditor) removeSlideRelationships(slidePart string, relIDs [
 
 // removeContentTypeOverride removes a content-type override entry from [Content_Types].xml.
 func (e *PresentationEditor) removeContentTypeOverride(partPath string) {
-	ctPath := "[Content_Types].xml"
+	ctPath := contentTypesPath
 	data, ok := e.parts.Get(ctPath)
 	if !ok {
 		return

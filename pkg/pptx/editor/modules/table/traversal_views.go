@@ -17,9 +17,9 @@ func initRowsView(rowCount, colCount int, rowHeights []int64) []map[string]any {
 	rowsView := make([]map[string]any, rowCount)
 	for r := range rowCount {
 		rowsView[r] = map[string]any{
-			"index":  r,
+			keyIndex: r,
 			"height": traversalMeasure(rowHeights, r),
-			"cells":  make([]map[string]any, 0, colCount),
+			keyCells: make([]map[string]any, 0, colCount),
 		}
 	}
 	return rowsView
@@ -29,9 +29,9 @@ func initColsView(rowCount, colCount int, columnWidths []int64) []map[string]any
 	colsView := make([]map[string]any, colCount)
 	for c := range colCount {
 		colsView[c] = map[string]any{
-			"index": c,
-			"width": traversalMeasure(columnWidths, c),
-			"cells": make([]map[string]any, 0, rowCount),
+			keyIndex: c,
+			"width":  traversalMeasure(columnWidths, c),
+			keyCells: make([]map[string]any, 0, rowCount),
 		}
 	}
 	return colsView
@@ -77,11 +77,11 @@ func appendTraversalRowCell(
 	if rowIndex < 0 || rowIndex >= rowCount {
 		return
 	}
-	rowCells, ok := rowsView[rowIndex]["cells"].([]map[string]any)
+	rowCells, ok := rowsView[rowIndex][keyCells].([]map[string]any)
 	if !ok {
 		return
 	}
-	rowsView[rowIndex]["cells"] = append(rowCells, cell)
+	rowsView[rowIndex][keyCells] = append(rowCells, cell)
 }
 
 func appendTraversalColCell(
@@ -92,9 +92,9 @@ func appendTraversalColCell(
 	if colIndex < 0 || colIndex >= colCount {
 		return
 	}
-	colCells, ok := colsView[colIndex]["cells"].([]map[string]any)
+	colCells, ok := colsView[colIndex][keyCells].([]map[string]any)
 	if !ok {
 		return
 	}
-	colsView[colIndex]["cells"] = append(colCells, cell)
+	colsView[colIndex][keyCells] = append(colCells, cell)
 }

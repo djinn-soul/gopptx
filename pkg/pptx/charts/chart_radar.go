@@ -49,7 +49,7 @@ type RadarChart struct {
 func NewRadarChart(categories []string, values []float64) RadarChart {
 	cats, vals := copyChartData(categories, values)
 	return RadarChart{
-		Title:      "Chart",
+		Title:      defaultChartTitle,
 		Categories: cats,
 		Values:     vals,
 		X:          styling.Emu(defaultChartX),
@@ -57,13 +57,13 @@ func NewRadarChart(categories []string, values []float64) RadarChart {
 		CX:         styling.Emu(defaultChartCX),
 		CY:         styling.Emu(defaultChartCY),
 
-		LineColor:             "4F81BD",
-		SeriesName:            "Series 1",
+		LineColor:             defaultChartSeriesColor,
+		SeriesName:            defaultChartSeriesName,
 		ShowLegend:            false,
 		LegendPosition:        LegendPositionRight,
 		ShowDataLabels:        false,
 		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
+		ValueFormat:           defaultChartValueFormat,
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 		RadarStyle:            RadarStyleMarker,
 	}

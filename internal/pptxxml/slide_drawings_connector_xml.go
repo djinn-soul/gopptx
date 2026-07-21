@@ -189,7 +189,7 @@ func connectorLineJoin(join string) string {
 	case "bevel":
 		return `
 <a:bevel/>`
-	case "miter":
+	case lineJoinMiter:
 		return `
 <a:miter/>`
 	case "round":

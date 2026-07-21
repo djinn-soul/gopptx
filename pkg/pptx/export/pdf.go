@@ -1,16 +1,11 @@
 package export
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
-	"github.com/djinn-soul/gopptx/pkg/pptx"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -35,11 +30,11 @@ func PDFWithOptions(title string, slides []elements.SlideContent, outputPath str
 	case PDFDriverAuto:
 		return pdfWithAutoDriver(title, slides, outputPath, opts)
 	case PDFDriverNative:
-		return pdfViaNative(title, slides, outputPath, opts)
+		return pdfViaNative(title, slides, outputPath, opts, optionsPageSize(opts))
 	case PDFDriverLibreOffice:
-		return pdfViaLibreOffice(title, slides, outputPath)
+		return pdfViaLibreOffice(title, slides, outputPath, opts)
 	case PDFDriverPowerPoint:
-		return pdfViaPowerPointFromSlides(title, slides, outputPath)
+		return pdfViaPowerPointFromSlides(title, slides, outputPath, opts)
 	default:
 		return fmt.Errorf("unsupported PDF driver %q", driver)
 	}
@@ -70,18 +65,18 @@ func PDFFromFileWithOptions(pptxPath, pdfPath string, opts PDFOptions) error {
 	case PDFDriverAuto:
 		return pdfFromFileWithAutoDriver(absPPTX, absPDF, opts)
 	case PDFDriverNative:
-		presTitle, slides, readErr := SlidesFromPPTX(absPPTX)
+		presTitle, slides, slideSize, readErr := slidesFromPPTXWithSize(absPPTX)
 		if readErr != nil {
 			return fmt.Errorf("native (PPTX reader): %w", readErr)
 		}
-		return pdfViaNative(presTitle, slides, absPDF, opts)
+		return pdfViaNative(presTitle, slides, absPDF, opts, pageSizeFromEMU(slideSize.Width, slideSize.Height))
 	case PDFDriverLibreOffice:
-		return pdfFromFileViaLibreOffice(absPPTX, absPDF)
+		return pdfFromFileViaLibreOffice(absPPTX, absPDF, opts)
 	case PDFDriverPowerPoint:
 		if runtime.GOOS != osWindows {
 			return errors.New("PowerPoint driver is only available on Windows")
 		}
-		return exportWithPowerPoint(absPPTX, absPDF)
+		return exportWithPowerPoint(absPPTX, absPDF, opts)
 	default:
 		return fmt.Errorf("unsupported PDF driver %q", driver)
 	}
@@ -89,36 +84,7 @@ func PDFFromFileWithOptions(pptxPath, pdfPath string, opts PDFOptions) error {
 
 func pdfWithAutoDriver(title string, slides []elements.SlideContent, outputPath string, opts PDFOptions) error {
 	// Attempt 1: LibreOffice
-	libreErr := pdfViaLibreOffice(title, slides, outputPath)
-	if libreErr == nil {
-		return nil
-	}
-
-	// Attempt 2: PowerPoint COM (Windows only)
-	pptErr := pdfViaPowerPointFromSlides(title, slides, outputPath)
-	if runtime.GOOS == osWindows && pptErr == nil {
-		return nil
-	}
-
-	// Attempt 3: Native gopdf engine (experimental fallback)
-	nativeErr := pdfViaNative(title, slides, outputPath, opts)
-	if nativeErr == nil {
-		return nil
-	}
-
-	if runtime.GOOS != osWindows {
-		return fmt.Errorf("LibreOffice driver: %w\nnative PDF driver (experimental): %w", libreErr, nativeErr)
-	}
-
-	compositeErr := fmt.Errorf("LibreOffice driver: %w", libreErr)
-	compositeErr = fmt.Errorf("%w\nPowerPoint driver: %w", compositeErr, pptErr)
-	compositeErr = fmt.Errorf("%w\nnative PDF driver (experimental): %w", compositeErr, nativeErr)
-	return compositeErr
-}
-
-func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
-	// Attempt 1: LibreOffice
-	libreErr := pdfFromFileViaLibreOffice(absPPTX, absPDF)
+	libreErr := pdfViaLibreOffice(title, slides, outputPath, opts)
 	if libreErr == nil {
 		return nil
 	}
@@ -126,17 +92,47 @@ func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
 	// Attempt 2: PowerPoint COM (Windows only)
 	var pptErr error
 	if runtime.GOOS == osWindows {
-		pptErr = exportWithPowerPoint(absPPTX, absPDF)
+		pptErr = pdfViaPowerPointFromSlides(title, slides, outputPath, opts)
+		if pptErr == nil {
+			return nil
+		}
+	}
+
+	// Attempt 3: Native gopdf engine (experimental fallback)
+	nativeErr := pdfViaNative(title, slides, outputPath, opts, optionsPageSize(opts))
+	if nativeErr == nil {
+		return nil
+	}
+
+	compositeErr := fmt.Errorf("LibreOffice driver: %w", libreErr)
+	if pptErr != nil {
+		compositeErr = fmt.Errorf("%w\nPowerPoint driver: %w", compositeErr, pptErr)
+	}
+	compositeErr = fmt.Errorf("%w\nnative PDF driver (experimental): %w", compositeErr, nativeErr)
+	return compositeErr
+}
+
+func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
+	// Attempt 1: LibreOffice
+	libreErr := pdfFromFileViaLibreOffice(absPPTX, absPDF, opts)
+	if libreErr == nil {
+		return nil
+	}
+
+	// Attempt 2: PowerPoint COM (Windows only)
+	var pptErr error
+	if runtime.GOOS == osWindows {
+		pptErr = exportWithPowerPoint(absPPTX, absPDF, opts)
 		if pptErr == nil {
 			return nil
 		}
 	}
 
 	// Attempt 3: Native gopdf via PPTX reader (experimental fallback)
-	presTitle, slides, readErr := SlidesFromPPTX(absPPTX)
+	presTitle, slides, slideSize, readErr := slidesFromPPTXWithSize(absPPTX)
 	var nativeErr error
 	if readErr == nil {
-		nativeErr = pdfViaNative(presTitle, slides, absPDF, opts)
+		nativeErr = pdfViaNative(presTitle, slides, absPDF, opts, pageSizeFromEMU(slideSize.Width, slideSize.Height))
 	}
 	if readErr == nil && nativeErr == nil {
 		return nil
@@ -152,143 +148,4 @@ func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
 		compositeErr = fmt.Errorf("%w\nnative (PPTX reader): %w", compositeErr, readErr)
 	}
 	return compositeErr
-}
-
-// pdfFromFileViaLibreOffice converts an existing PPTX file via LibreOffice.
-func pdfFromFileViaLibreOffice(pptxPath, pdfPath string) error {
-	sofficeCmd := "soffice"
-	if runtime.GOOS == osDarwin {
-		macPath := "/Applications/LibreOffice.app/Contents/MacOS/soffice"
-		if _, err := os.Stat(macPath); err == nil {
-			sofficeCmd = macPath
-		}
-	}
-
-	if _, err := exec.LookPath(sofficeCmd); err != nil {
-		return errors.New("LibreOffice ('soffice') not found in PATH")
-	}
-
-	outputDir := filepath.Dir(pdfPath)
-	cmd := exec.CommandContext(
-		context.Background(),
-		sofficeCmd,
-		"--headless",
-		"--convert-to",
-		"pdf",
-		pptxPath,
-		"--outdir",
-		outputDir,
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("LibreOffice conversion failed: %w\nOutput: %s", err, string(output))
-	}
-
-	baseName := filepath.Base(pptxPath)
-	pdfName := baseName[:len(baseName)-len(filepath.Ext(baseName))] + ".pdf"
-	generatedPDF := filepath.Join(outputDir, pdfName)
-
-	if generatedPDF != pdfPath {
-		return moveGeneratedPDF(generatedPDF, pdfPath)
-	}
-	return nil
-}
-
-func sanitizeTitle(title string) string {
-	safeTitle := "presentation"
-	if title != "" {
-		var safeTitleBuilder strings.Builder
-		for _, c := range title {
-			if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
-				safeTitleBuilder.WriteRune(c)
-			} else {
-				safeTitleBuilder.WriteByte('_')
-			}
-		}
-		if safeTitleBuilder.Len() > 0 {
-			safeTitle = safeTitleBuilder.String()
-		}
-	}
-	return safeTitle
-}
-
-// pdfViaLibreOffice attempts to use a local LibreOffice installation to perform the conversion.
-func pdfViaLibreOffice(title string, slides []elements.SlideContent, outputPath string) error {
-	safeTitle := sanitizeTitle(title)
-
-	tmpDir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(tmpDir, 0o750); err != nil {
-		tmpDir = os.TempDir()
-	}
-	tmpFile := filepath.Join(tmpDir, fmt.Sprintf("gopptx_%s_temp.pptx", safeTitle))
-
-	pptxBytes, err := pptx.CreateWithSlides(title, slides)
-	if err != nil {
-		return fmt.Errorf("failed to generate PPTX for LibreOffice: %w", err)
-	}
-
-	if err := os.WriteFile(tmpFile, pptxBytes, 0o600); err != nil {
-		return fmt.Errorf("failed to write temp PPTX: %w", err)
-	}
-	defer os.Remove(tmpFile)
-
-	sofficeCmd := "soffice"
-	if runtime.GOOS == osDarwin {
-		macPath := "/Applications/LibreOffice.app/Contents/MacOS/soffice"
-		if _, err := os.Stat(macPath); err == nil {
-			sofficeCmd = macPath
-		}
-	}
-
-	if _, err := exec.LookPath(sofficeCmd); err != nil {
-		return errors.New("LibreOffice ('soffice') not found in PATH")
-	}
-
-	outputDir := filepath.Dir(outputPath)
-	cmd := exec.CommandContext(
-		context.Background(),
-		sofficeCmd,
-		"--headless",
-		"--convert-to",
-		"pdf",
-		tmpFile,
-		"--outdir",
-		outputDir,
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("LibreOffice conversion failed: %w\nOutput: %s", err, string(output))
-	}
-
-	baseName := filepath.Base(tmpFile)
-	pdfName := baseName[:len(baseName)-len(filepath.Ext(baseName))] + ".pdf"
-	generatedPDF := filepath.Join(outputDir, pdfName)
-
-	if generatedPDF != outputPath {
-		if err := moveGeneratedPDF(generatedPDF, outputPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func moveGeneratedPDF(generatedPDF, outputPath string) error {
-	if _, err := os.Stat(generatedPDF); err != nil {
-		return fmt.Errorf("expected generated PDF not found at %s", generatedPDF)
-	}
-	if err := os.Rename(generatedPDF, outputPath); err == nil {
-		return nil
-	}
-	input, err := os.ReadFile(generatedPDF)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(outputPath, input, 0o600); err != nil {
-		return err
-	}
-	if err := os.Remove(generatedPDF); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return nil
 }

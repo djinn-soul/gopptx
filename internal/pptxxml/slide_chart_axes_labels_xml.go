@@ -139,8 +139,8 @@ func valueAxisScalingXML(minValue *float64, maxValue *float64) string {
 
 func normalizedValueAxisCrossBetween(mode string) string {
 	switch strings.TrimSpace(mode) {
-	case "midCat":
-		return "midCat"
+	case axisCrossBetweenMidCat:
+		return axisCrossBetweenMidCat
 	default:
 		return "between"
 	}

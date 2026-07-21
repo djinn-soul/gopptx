@@ -111,7 +111,7 @@ func HasAnyUpdate(u common.ShapeUpdate) bool {
 	v := reflect.ValueOf(u)
 	for i := range v.NumField() {
 		field := v.Field(i)
-		if field.Kind() == reflect.Ptr && !field.IsNil() {
+		if field.Kind() == reflect.Pointer && !field.IsNil() {
 			return true
 		}
 	}

@@ -133,11 +133,11 @@ func writeOpsPy(f *os.File, ops []opSpec) error {
 	out.WriteString(`"""Operation constants shared by gopptx Python runtime."""` + "\n\n")
 	out.WriteString("from __future__ import annotations\n\n")
 	for _, op := range ops {
-		out.WriteString(fmt.Sprintf("%s = %q\n", op.PyName, op.Value))
+		fmt.Fprintf(&out, "%s = %q\n", op.PyName, op.Value)
 	}
 	out.WriteString("\nSUPPORTED_OPS = (\n")
 	for _, op := range ops {
-		out.WriteString(fmt.Sprintf("    %s,\n", op.PyName))
+		fmt.Fprintf(&out, "    %s,\n", op.PyName)
 	}
 	out.WriteString(")\n\nSUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)\n")
 	_, err := f.WriteString(out.String())
@@ -147,7 +147,7 @@ func writeOpsPy(f *os.File, ops []opSpec) error {
 func writeOpsPyi(f *os.File, ops []opSpec) error {
 	var out strings.Builder
 	for _, op := range ops {
-		out.WriteString(fmt.Sprintf("%s: str\n", op.PyName))
+		fmt.Fprintf(&out, "%s: str\n", op.PyName)
 	}
 	out.WriteString("SUPPORTED_OPS: tuple[str, ...]\n")
 	out.WriteString("SUPPORTED_OPS_SET: frozenset[str]\n")

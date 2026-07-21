@@ -86,7 +86,7 @@ type ComboChart struct {
 
 func NewComboChart(categories []string, barSeries []Series, lineSeries []Series) ComboChart {
 	return ComboChart{
-		Title:                 "Chart",
+		Title:                 defaultChartTitle,
 		Categories:            append([]string(nil), categories...),
 		BarSeries:             CopySeriesList(barSeries),
 		LineSeries:            CopySeriesList(lineSeries),
@@ -98,7 +98,7 @@ func NewComboChart(categories []string, barSeries []Series, lineSeries []Series)
 		LegendPosition:        LegendPositionRight,
 		ShowDataLabels:        false,
 		ShowMajorGridlines:    true,
-		ValueFormat:           "General",
+		ValueFormat:           defaultChartValueFormat,
 		ValueAxisCrossBetween: ValueAxisCrossBetweenBetween,
 	}
 }
