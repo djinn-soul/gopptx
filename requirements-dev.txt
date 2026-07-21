@@ -26,7 +26,7 @@ certifi==2026.1.4
     #   requests
 charset-normalizer==3.4.4
     # via requests
-click==8.3.1
+click==8.4.2
     # via
     #   gitingest
     #   mkdocs
@@ -126,7 +126,7 @@ mkdocstrings==1.0.3
     #   mkdocstrings-python
 mkdocstrings-python==2.0.3
     # via mkdocstrings
-msgpack==1.1.2
+msgpack==1.2.1
     # via cachecontrol
 nodejs-wheel-binaries==24.13.1
     # via basedpyright
@@ -152,9 +152,9 @@ pathspec==1.0.4
     # via
     #   gitingest
     #   mkdocs
-pillow==12.2.0
+pillow==12.3.0
     # via gopptx
-pip==26.1.1
+pip==26.1.2
     # via
     #   gopptx
     #   pip-api
@@ -237,7 +237,7 @@ sortedcontainers==2.4.0
     # via
     #   cyclonedx-python-lib
     #   hypothesis
-starlette==1.1.0
+starlette==1.3.1
     # via gitingest
 stevedore==5.7.0
     # via bandit

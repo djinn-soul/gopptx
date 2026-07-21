@@ -21,6 +21,19 @@ func RegisterEditorLookupFn(fn func(int64) (*PresentationEditor, bool)) {
 	editorLookupFn = fn
 }
 
+// editorTryLockFn acquires the per-handle lock for a source editor without
+// blocking, returning a release function. See [RegisterEditorTryLockFn].
+//
+//nolint:gochecknoglobals // Required for cross-package init-time registration.
+var editorTryLockFn func(int64) (func(), bool)
+
+// RegisterEditorTryLockFn wires the bridge's non-blocking per-handle lock into
+// the editor package, so cross-handle operations can synchronize against the
+// source presentation without risking deadlock. See [Registry.TryLockEditor].
+func RegisterEditorTryLockFn(fn func(int64) (func(), bool)) {
+	editorTryLockFn = fn
+}
+
 // handleMergeFromEditor appends all slides from another open editor into this one.
 //
 // Payload: {"source_handle": N} where N is the integer handle of the source presentation.
@@ -41,6 +54,20 @@ func handleMergeFromEditor(e *PresentationEditor, payload json.RawMessage) (any,
 	src, found := editorLookupFn(int64(handleVal))
 	if !found {
 		return nil, NewBridgeError(ErrCodeOpFailed, fmt.Sprintf("source handle %d not found", handleVal))
+	}
+	// The caller already holds the destination lock. Take the source lock too so
+	// the merge cannot read a presentation another thread is mutating — but never
+	// block on it, or two threads merging each other's decks would deadlock.
+	// A self-merge needs no second acquire: we already hold that lock.
+	if src != e && editorTryLockFn != nil {
+		release, locked := editorTryLockFn(int64(handleVal))
+		if !locked {
+			return nil, NewBridgeError(
+				ErrCodeOpFailed,
+				fmt.Sprintf("source handle %d is busy in another operation", handleVal),
+			)
+		}
+		defer release()
 	}
 	if mergeErr := e.MergeFromEditor(src); mergeErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, mergeErr.Error())
