@@ -24,10 +24,18 @@ type DataLabelSettings struct {
 	ShowSeriesName bool
 	ShowPercent    bool
 	ShowBubbleSize bool
+	WordWrap       *bool
+}
+
+// WithWordWrap configures whether chart data-label text wraps.
+func (settings DataLabelSettings) WithWordWrap(wrap bool) DataLabelSettings {
+	settings.WordWrap = boolPtr(wrap)
+	return settings
 }
 
 func applyDataLabelSettings(spec *pptxxml.ChartSpec, settings DataLabelSettings) {
 	spec.DataLabelPosition = settings.Position
+	spec.DataLabelWordWrap = settings.WordWrap
 	if !settings.UseCustom {
 		return
 	}

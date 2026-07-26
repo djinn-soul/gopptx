@@ -51,7 +51,15 @@ def test_chart_data_label_state_survives_reopen(tmp_path: pathlib.Path) -> None:
         labels.show_category_name = True
         labels.show_series_name = True
         labels.number_format = "$#,##0"
+        labels.word_wrap = False
         pres.save(output_path)
+
+    with zipfile.ZipFile(output_path) as archive:
+        chart_xml = archive.read("ppt/charts/chart1.xml").decode("utf-8")
+    assert (
+        '<c:txPr><a:bodyPr wrap="none"/><a:lstStyle/>'
+        '<a:p><a:endParaRPr lang="en-US"/></a:p></c:txPr>'
+    ) in chart_xml
 
     with Presentation(output_path) as pres:
         plot = pres.slides[0].charts[0].plots[0]
@@ -62,3 +70,4 @@ def test_chart_data_label_state_survives_reopen(tmp_path: pathlib.Path) -> None:
         assert labels.show_category_name is True
         assert labels.show_series_name is True
         assert labels.number_format == "$#,##0"
+        assert labels.word_wrap is False

@@ -228,7 +228,8 @@ func patchChartDataLabels(xml string, req common.ChartFormatUpdate) string {
 		req.DataLabelShowCategory != nil ||
 		req.DataLabelShowSeriesName != nil ||
 		req.DataLabelShowPercent != nil ||
-		req.DataLabelShowBubbleSize != nil
+		req.DataLabelShowBubbleSize != nil ||
+		req.DataLabelWordWrap != nil
 	if !hasLabels && needLabels {
 		xml = insertDefaultDataLabels(xml)
 	}
@@ -249,6 +250,7 @@ func patchChartDataLabels(xml string, req common.ChartFormatUpdate) string {
 		block = patchDataLabelBool(block, "showSerName", req.DataLabelShowSeriesName)
 		block = patchDataLabelBool(block, "showPercent", req.DataLabelShowPercent)
 		block = patchDataLabelBool(block, "showBubbleSize", req.DataLabelShowBubbleSize)
+		block = patchDataLabelWordWrap(block, req.DataLabelWordWrap)
 		return block
 	})
 }

@@ -124,11 +124,27 @@ func HyperlinkProgram(path string) HyperlinkAction {
 	return HyperlinkAction{Type: HyperlinkActionProgram, ProgramPath: path}
 }
 
+// SanitizeHyperlinkURI strips malicious script protocols (javascript:, vbscript:, data:text/html)
+// and returns a clean, safe target string.
+func SanitizeHyperlinkURI(target string) string {
+	clean := strings.TrimSpace(target)
+	if clean == "" {
+		return ""
+	}
+	lower := strings.ToLower(clean)
+	if strings.HasPrefix(lower, "javascript:") ||
+		strings.HasPrefix(lower, "vbscript:") ||
+		(strings.HasPrefix(lower, "data:") && strings.Contains(lower, "html")) {
+		return "#"
+	}
+	return clean
+}
+
 // RelationshipTarget returns the target URL for the relationship.
 func (a HyperlinkAction) RelationshipTarget() string {
 	switch a.Type {
 	case HyperlinkActionURL:
-		return a.URL
+		return SanitizeHyperlinkURI(a.URL)
 	case HyperlinkActionSlide:
 		return fmt.Sprintf("slide%d.xml", a.SlideNumber)
 	case HyperlinkActionFirstSlide:

@@ -38,6 +38,7 @@ type ChartSpec struct {
 	DataLabelShowSeriesName    *bool
 	DataLabelShowPercent       *bool
 	DataLabelShowBubbleSize    *bool
+	DataLabelWordWrap          *bool
 	HoleSize                   int
 	ShowMajorGridlines         bool
 	ShowCategoryMajorGridlines bool

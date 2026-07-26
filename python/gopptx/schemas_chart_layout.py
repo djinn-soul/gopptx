@@ -53,6 +53,7 @@ class ChartFormatUpdate(TypedDict, total=False):
     data_label_show_bubble_size: bool
     data_label_number_format: str
     data_label_format_linked: bool
+    data_label_word_wrap: bool
     chart_grouping: str
     gap_width: int
     overlap: int
@@ -112,6 +113,7 @@ class ChartDataLabelState(TypedDict, total=False):
     show_series_name: bool
     number_format: str
     format_linked: bool
+    word_wrap: bool
 
 
 class ChartState(TypedDict, total=False):

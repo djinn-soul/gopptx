@@ -40,6 +40,7 @@ Use this map for quick navigation before the full class docs below.
 
 - Tables: `add_table(...)`, `get_table(...)`, `set_table_cell_text(...)`, `merge_table_cells(...)`, `split_table_cell(...)`
 - Charts: `add_chart(...)`, `get_chart_state(...)`, `update_chart_data(...)`, `replace_chart_data_by_index(...)`
+- Data-label wrapping: `slide.charts[0].plots[0].data_labels.word_wrap = False`
 
 ### SmartArt, transitions, and animation
 

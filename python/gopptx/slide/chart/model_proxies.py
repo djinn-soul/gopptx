@@ -175,6 +175,20 @@ class DataLabels:
             "data_label_number_format": value,
         })
 
+    @property
+    def word_wrap(self) -> bool | None:
+        """Whether data-label text wraps, or ``None`` when not specified."""
+        value = self._value("data_label_word_wrap", "word_wrap", default=None)
+        return value if isinstance(value, bool) else None
+
+    @word_wrap.setter
+    def word_wrap(self, value: bool) -> None:
+        self._chart.state_set("data_label_word_wrap", value)
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_word_wrap": value,
+        })
+
 
 class ChartPlot:
     """Single plot proxy."""
