@@ -245,10 +245,23 @@ func buildImageShapeXML(
 	srcRectXML := buildImageCropXML(opts)
 	xfrmAttr := buildImageTransformAttrs(opts)
 
+	descrAttr := ""
+	if opts != nil {
+		if opts.Description != nil && *opts.Description != "" {
+			descrAttr = fmt.Sprintf(` descr="%s"`, common.XMLEscape(*opts.Description))
+		} else if opts.AltText != nil && *opts.AltText != "" {
+			descrAttr = fmt.Sprintf(` descr="%s"`, common.XMLEscape(*opts.AltText))
+		}
+	}
+	titleAttr := ""
+	if opts != nil && opts.Title != nil && *opts.Title != "" {
+		titleAttr = fmt.Sprintf(` title="%s"`, common.XMLEscape(*opts.Title))
+	}
+
 	return fmt.Sprintf(`
 <p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
-    <p:cNvPr id="%d" name="%s"/>
+    <p:cNvPr id="%d" name="%s"%s%s/>
     <p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>
     <p:nvPr/>
   </p:nvPicPr>
@@ -264,5 +277,5 @@ func buildImageShapeXML(
     </a:xfrm>
     <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
   </p:spPr>
-</p:pic>`, newID, name, blipXML, srcRectXML, xfrmAttr, int64(x), int64(y), int64(w), int64(h))
+</p:pic>`, newID, name, descrAttr, titleAttr, blipXML, srcRectXML, xfrmAttr, int64(x), int64(y), int64(w), int64(h))
 }
