@@ -1,10 +1,8 @@
 package editor
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"image"
 	_ "image/gif"  // register GIF decoder for DecodeConfig metadata reads
 	_ "image/jpeg" // register JPEG decoder for DecodeConfig metadata reads
 	_ "image/png"  // register PNG decoder for DecodeConfig metadata reads
@@ -55,6 +53,14 @@ func (e *PresentationEditor) addImageGeneric(
 	}
 	if len(data) > 0 && strings.TrimSpace(format) == "" {
 		return 0, errors.New("image format is required when adding image bytes")
+	}
+
+	if opts == nil {
+		opts = &common.ShapeUpdate{}
+	}
+	if strings.EqualFold(format, "svg") || strings.HasSuffix(strings.ToLower(imagePath), ".svg") {
+		opts.IsSVG = true
+		opts.Format = "svg"
 	}
 
 	relID, err := resolveAddImageRelID(e, slideIndex, imagePath, data, format)
@@ -131,58 +137,17 @@ func (e *PresentationEditor) GetImageMetadata(slideIndex, shapeID int) (*common.
 		return nil, errors.New("read slide part: not found")
 	}
 
-	// Find the shape and its blip relID
-	shapes, err := scanShapesWithOffsets(content, false)
+	relID, err := imageRelIDForShape(content, shapeID)
 	if err != nil {
 		return nil, err
 	}
 
-	var relID string
-	for _, s := range shapes {
-		if s.ID == shapeID && s.Type == shapeTypePicture {
-			// Extract relID from XML (simplified: scan for r:embed)
-			shapeXML := content[s.Start:s.End]
-			match := embeddedImageRelPattern.FindSubmatch(shapeXML)
-			if len(match) > 1 {
-				relID = string(match[1])
-			}
-			break
-		}
-	}
-
-	if relID == "" {
-		return nil, fmt.Errorf("image shape %d not found or has no embed rel", shapeID)
-	}
-
-	// Resolve relID to part path
-	rels, err := e.slideRelationships(slideRef.Part)
+	data, partPath, err := e.imagePartData(slideRef.Part, relID)
 	if err != nil {
 		return nil, err
 	}
 
-	var partPath string
-	for _, r := range rels {
-		if r.ID == relID {
-			partPath = common.CanonicalPartPath(path.Join("ppt/slides", r.Target))
-			break
-		}
-	}
-
-	if partPath == "" {
-		return nil, fmt.Errorf("could not resolve relationship %s", relID)
-	}
-
-	data, ok := e.parts.Get(partPath)
-	if !ok {
-		return nil, fmt.Errorf("media part %s not found", partPath)
-	}
-
-	// Decode image config
-	config, format, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("decode image %s: %w", partPath, err)
-	}
-
+	config, format := decodeImageConfig(data, partPath)
 	return buildImageMetadata(data, config, format), nil
 }
 
@@ -241,7 +206,7 @@ func buildImageShapeXML(
 	opts *common.ShapeUpdate,
 ) string {
 	name := fmt.Sprintf("Picture %d", newID)
-	blipXML := fmt.Sprintf(`<a:blip r:embed="%s"/>`, relID)
+	blipXML := imageBlipXML(relID, opts)
 	srcRectXML := buildImageCropXML(opts)
 	xfrmAttr := buildImageTransformAttrs(opts)
 

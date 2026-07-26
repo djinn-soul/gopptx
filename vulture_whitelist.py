@@ -584,3 +584,11 @@ STOCK_HLC  # unused variable (python\gopptx\presentation\charts\chart_types.py)
 STOCK_OHLC  # unused variable (python\gopptx\presentation\charts\chart_types.py)
 show_category  # unused variable (python\gopptx\schemas_chart_layout.py)
 data_label_word_wrap  # unused variable (python\gopptx\schemas_chart_layout.py)
+
+# Public image and background parity surfaces exercised through proxy properties.
+_BackgroundSlideProtocol  # typing-only Protocol (python\gopptx\slide\background.py)
+_._element  # python-pptx compatibility property (python\gopptx\slide\background.py)
+_._cSld  # python-pptx compatibility property (python\gopptx\slide\background.py)
+_.set_solid  # public method (python\gopptx\slide\background.py)
+_.set_gradient  # public method (python\gopptx\slide\background.py)
+_.filename  # public property (python\gopptx\slide\shapes\picture_image.py)

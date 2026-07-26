@@ -216,6 +216,7 @@ type ImageMetadata struct {
 	Format      string `json:"format"`
 	ContentType string `json:"content_type,omitempty"`
 	Hash        string `json:"hash,omitempty"`
+	Data        []byte `json:"data,omitempty"`
 }
 
 type ImageCrop struct {
@@ -250,6 +251,8 @@ type ShapeUpdate struct {
 	Description *string          `json:"description,omitempty"`
 	AltText     *string          `json:"alt_text,omitempty"`
 	Title       *string          `json:"title,omitempty"`
+	Format      string           `json:"format,omitempty"`
+	IsSVG       bool             `json:"is_svg,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.

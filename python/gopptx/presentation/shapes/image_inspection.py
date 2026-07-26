@@ -18,8 +18,18 @@ _DEFAULT_DPI = 72.0
 _DPI_COMPONENTS = 2
 
 
+def is_svg_source(source: str | bytes | PathLike[str]) -> bool:
+    """Check whether the image source is SVG vector graphics."""
+    if isinstance(source, (str, os.PathLike)):
+        return os.fspath(source).lower().endswith(".svg")
+    sample = source.lstrip()[:300].lower()
+    return b"<svg" in sample or b"<?xml" in sample
+
+
 def infer_image_format(source: bytes) -> str:
     """Return the decoded image format used by the Go bridge."""
+    if is_svg_source(source):
+        return "svg"
     with Image.open(BytesIO(source)) as image:
         return _normalized_format(image)
 
@@ -53,11 +63,16 @@ def picture_bounds(
     if width > 0 and height > 0:
         return (left, top, width, height)
 
-    with Image.open(BytesIO(source) if isinstance(source, bytes) else source) as image:
-        native_width, native_height = _native_size_emu(image)
+    if is_svg_source(source):
+        native_width, native_height = 2_540_000, 2_540_000
+    else:
+        with Image.open(
+            BytesIO(source) if isinstance(source, bytes) else source
+        ) as image:
+            native_width, native_height = _native_size_emu(image)
 
     if width == 0 and height == 0:
-        width, height = native_width, native_height
+        width, height = float(native_width), float(native_height)
     elif width == 0:
         width = round(height * native_width / native_height)
     else:

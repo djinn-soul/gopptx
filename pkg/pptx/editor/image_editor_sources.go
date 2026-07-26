@@ -80,6 +80,7 @@ func buildImageMetadata(data []byte, cfg image.Config, format string) *common.Im
 		Format:      strings.ToLower(strings.TrimSpace(format)),
 		ContentType: imageContentType(data, format),
 		Hash:        imageSHA256Hex(data),
+		Data:        data,
 	}
 }
 
@@ -105,6 +106,8 @@ func imageContentType(data []byte, format string) string {
 		return mimeBMP
 	case "tif", formatTIFF:
 		return mimeTIFF
+	case "svg", "image/svg+xml":
+		return "image/svg+xml"
 	default:
 		return contentType
 	}

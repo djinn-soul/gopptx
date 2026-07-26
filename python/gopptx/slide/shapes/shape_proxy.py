@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from ...api_errors import GopptxError
 from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
+from .picture_image import ImagePartProxy
 from .shape_format_proxies import (
     _ShapeFillProxy,
     _ShapeLineProxy,
@@ -79,6 +80,11 @@ class ShapeProxy:
         return self._shape_id
 
     @property
+    def slide(self) -> _ShapeProxySlideProto:
+        """Return the owning slide proxy."""
+        return self._slide
+
+    @property
     def name(self) -> str:
         """Return the shape name."""
         shape = self.shape_record()
@@ -98,6 +104,11 @@ class ShapeProxy:
         shape = self.shape_record()
         value = shape.get("Text", shape.get("text", ""))
         return str(value)
+
+    @property
+    def image(self) -> ImagePartProxy:
+        """Return the ImagePartProxy representing the underlying image asset (Issue #1084)."""
+        return ImagePartProxy(self)
 
     @text.setter
     def text(self, value: str) -> None:

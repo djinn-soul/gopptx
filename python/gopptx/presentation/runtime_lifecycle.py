@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
-from typing import TYPE_CHECKING, cast
+import os
+from typing import TYPE_CHECKING, Protocol, TypeGuard, cast
 
 from typing_extensions import Self
 
@@ -14,6 +15,24 @@ from ._ffi import take_error
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+
+class _Readable(Protocol):
+    def read(self) -> str | bytes:
+        """Return stream content."""
+        ...
+
+
+def _is_readable(source: object) -> TypeGuard[_Readable]:
+    return hasattr(source, "read")
+
+
+def _path_bytes(source: object) -> bytes | None:
+    if isinstance(source, str):
+        return os.fsencode(source)
+    if isinstance(source, os.PathLike):
+        return os.fsencode(cast("os.PathLike[str]", source))
+    return None
 
 
 class PresentationRuntimeLifecycleMixin:
@@ -31,22 +50,35 @@ class PresentationRuntimeLifecycleMixin:
                 return err_msg
             return "Unknown error"
 
-    def open(self, path: str) -> None:
-        """Open an existing presentation file."""
-        with self._lock:
-            if self._handle:
-                self.close()
-            err = ctypes.c_void_p()
-            handle = cast(
-                "int",
-                self._lib.deck_open_ex(str(path).encode("utf-8"), ctypes.byref(err)),  # type: ignore[attr-defined]
-            )
-            if not handle:
-                raise GopptxError(
-                    f"Failed to open deck: {take_error(cast('object', self._lib), err.value)}"
+    def open(self, file_like_or_path: str | os.PathLike[str] | bytes | object) -> None:
+        """Open an existing presentation file, path-like object, bytes, or file-like stream (Issue #1050)."""
+        path_bytes = _path_bytes(file_like_or_path)
+        if path_bytes is not None:
+            with self._lock:
+                if self._handle:
+                    self.close()
+                err = ctypes.c_void_p()
+                handle = cast(
+                    "int",
+                    self._lib.deck_open_ex(path_bytes, ctypes.byref(err)),  # type: ignore[attr-defined]
                 )
-            self._handle = int(handle)
-            self.invalidate_cache()
+                if not handle:
+                    raise GopptxError(
+                        f"Failed to open deck: {take_error(cast('object', self._lib), err.value)}"
+                    )
+                self._handle = int(handle)
+                self.invalidate_cache()
+        elif isinstance(file_like_or_path, (bytes, bytearray)):
+            self.open_bytes(bytes(file_like_or_path))
+        elif _is_readable(file_like_or_path):
+            content = file_like_or_path.read()
+            if isinstance(content, str):
+                content = content.encode("utf-8")
+            self.open_bytes(content)
+        else:
+            raise GopptxError(
+                f"Unsupported file source type: {type(file_like_or_path).__name__}"
+            )
 
     def open_bytes(self, data: bytes) -> None:
         """Open a presentation from an in-memory byte string."""
