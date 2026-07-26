@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Protocol
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ...schemas import ChartFormatUpdate
+    from ...schemas import ChartFormatUpdate, ChartState
 
 
 class _ChartProto(Protocol):
@@ -17,6 +17,7 @@ class _ChartProto(Protocol):
     def state_get(self, key: str, *, default: object) -> object: ...
     def state_set(self, key: str, value: object) -> None: ...
     def apply_format(self, fmt: ChartFormatUpdate) -> None: ...
+    def snapshot(self) -> ChartState: ...
 
 
 class ChartTitle:
@@ -94,10 +95,17 @@ class DataLabels:
         """Initialize data labels proxy."""
         self._chart = chart
 
+    def _value(self, staged_key: str, persisted_key: str, *, default: object) -> object:
+        staged = self._chart.state_get(staged_key, default=None)
+        if staged is not None:
+            return staged
+        labels = self._chart.snapshot().get("data_labels", {})
+        return labels.get(persisted_key, default)
+
     @property
     def show_value(self) -> bool:
         """Whether value labels are shown."""
-        return bool(self._chart.state_get("data_label_show_value", default=False))
+        return bool(self._value("data_label_show_value", "show_value", default=False))
 
     @show_value.setter
     def show_value(self, value: bool) -> None:
@@ -110,7 +118,9 @@ class DataLabels:
     @property
     def show_category_name(self) -> bool:
         """Whether category-name labels are shown."""
-        return bool(self._chart.state_get("data_label_show_category", default=False))
+        return bool(
+            self._value("data_label_show_category", "show_category", default=False)
+        )
 
     @show_category_name.setter
     def show_category_name(self, value: bool) -> None:
@@ -123,7 +133,7 @@ class DataLabels:
     @property
     def position(self) -> str | None:
         """Return the label position token, if explicitly configured."""
-        value = self._chart.state_get("data_label_position", default=None)
+        value = self._value("data_label_position", "position", default=None)
         return value if isinstance(value, str) else None
 
     @position.setter
@@ -137,7 +147,11 @@ class DataLabels:
     @property
     def show_series_name(self) -> bool:
         """Whether series names are included in data labels."""
-        return bool(self._chart.state_get("data_label_show_series_name", default=False))
+        return bool(
+            self._value(
+                "data_label_show_series_name", "show_series_name", default=False
+            )
+        )
 
     @show_series_name.setter
     def show_series_name(self, value: bool) -> None:
@@ -150,7 +164,7 @@ class DataLabels:
     @property
     def number_format(self) -> str | None:
         """Return the OOXML number format used by data labels."""
-        value = self._chart.state_get("data_label_number_format", default=None)
+        value = self._value("data_label_number_format", "number_format", default=None)
         return value if isinstance(value, str) else None
 
     @number_format.setter
@@ -173,7 +187,11 @@ class ChartPlot:
     @property
     def data_labels_visible(self) -> bool:
         """Whether plot-level data labels are visible."""
-        return bool(self._chart.state_get("show_data_labels", default=False))
+        staged = self._chart.state_get("show_data_labels", default=None)
+        if staged is not None:
+            return bool(staged)
+        labels = self._chart.snapshot().get("data_labels", {})
+        return bool(labels.get("present", False))
 
     @data_labels_visible.setter
     def data_labels_visible(self, value: bool) -> None:

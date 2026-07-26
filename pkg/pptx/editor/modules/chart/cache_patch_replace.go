@@ -146,7 +146,7 @@ func buildStringData(tag string, vals []string) string {
 		b.WriteString(common.XMLEscape(v))
 		b.WriteString("</c:v></c:pt>")
 	}
-	b.WriteString("</c:")
+	b.WriteString(chartElementClosePrefix)
 	b.WriteString(tag)
 	b.WriteString(">")
 	return b.String()
@@ -168,7 +168,7 @@ func buildNumberData(tag string, formatCode string, vals []float64) string {
 		b.WriteString(strconv.FormatFloat(v, 'f', -1, 64))
 		b.WriteString("</c:v></c:pt>")
 	}
-	b.WriteString("</c:")
+	b.WriteString(chartElementClosePrefix)
 	b.WriteString(tag)
 	b.WriteString(">")
 	return b.String()
@@ -193,7 +193,7 @@ func buildMultiLevelData(tag string, levels [][]string) string {
 		}
 		b.WriteString("</c:lvl>")
 	}
-	b.WriteString("</c:")
+	b.WriteString(chartElementClosePrefix)
 	b.WriteString(tag)
 	b.WriteString(">")
 	return b.String()

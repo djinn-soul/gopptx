@@ -59,6 +59,9 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	}
 
 	updated := string(chartXML)
+	if err := validateAxisScaleAgainstXML(updated, req); err != nil {
+		return nil, err
+	}
 	if req.ShowTitle != nil || req.Title != nil || req.TitleOverlay != nil {
 		var err error
 		updated, err = patchChartTitle(updated, req.ShowTitle, req.Title, req.TitleOverlay)
@@ -163,17 +166,6 @@ func setAutoTitleDeleted(xml string, deleted bool) string {
 		return reAutoTitleDelete.ReplaceAllString(xml, node)
 	}
 	return strings.Replace(xml, "<c:plotArea>", node+"<c:plotArea>", 1)
-}
-
-func patchPlotVisibleOnly(xml string, value *bool) string {
-	if value == nil {
-		return xml
-	}
-	node := `<c:plotVisOnly val="` + boolToOneZero(*value) + `"/>`
-	if rePlotVisOnly.MatchString(xml) {
-		return rePlotVisOnly.ReplaceAllString(xml, node)
-	}
-	return strings.Replace(xml, "</c:chart>", node+"</c:chart>", 1)
 }
 
 func patchChartLegend(xml string, show *bool, position *string, overlay *bool) string {
@@ -284,7 +276,7 @@ func insertDefaultDataLabels(xml string) string {
 	chartBlock := xml[start:end]
 	insertAt := strings.Index(chartBlock, "<c:axId")
 	if insertAt < 0 {
-		insertAt = strings.LastIndex(chartBlock, "</c:")
+		insertAt = strings.LastIndex(chartBlock, chartElementClosePrefix)
 		if insertAt < 0 {
 			return xml
 		}

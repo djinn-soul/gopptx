@@ -8,6 +8,8 @@ import (
 type (
 	// SlideContent describes the user-visible content of a slide.
 	SlideContent = elements.SlideContent
+	// SlideBuilder builds slide content through pointer-receiver methods.
+	SlideBuilder = elements.SlideBuilder
 	// PlaceholderContent describes overridden content for a slide layout placeholder.
 	PlaceholderContent = shapes.PlaceholderContent
 
@@ -28,6 +30,14 @@ type (
 
 func NewSlide(title string) SlideContent {
 	return elements.NewSlide(title)
+}
+
+func NewSlideBuilder(title string) *SlideBuilder {
+	return elements.NewSlideBuilder(title)
+}
+
+func BuildFrom(content SlideContent) *SlideBuilder {
+	return elements.BuildFrom(content)
 }
 
 func NewNotesMaster() *NotesMaster {

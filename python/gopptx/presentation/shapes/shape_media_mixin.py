@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ..helpers import get_required_int
-from .image_inspection import infer_image_format, picture_bounds
+from .image_inspection import infer_image_format, picture_bounds, resolve_picture_source
 from .image_options import reject_unknown_image_options
 from .shape_payload_mixin import PresentationShapePayloadMixin
 
@@ -53,11 +53,13 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
 
         Supports optional ``description``, ``alt_text``, and ``title`` parameters.
         """
-        if source is None:
-            raise ValueError("picture source is required")
-        bounds = picture_bounds(source, left, top, width, height)
+        effective_source = resolve_picture_source(source, kwargs)
+        bounds = picture_bounds(effective_source, left, top, width, height)
         self._validate_picture_metadata(kwargs)
-        return self.add_image(slide_index, source, bounds=bounds, **kwargs)
+        options = {
+            key: value for key, value in kwargs.items() if key not in {"path", "data"}
+        }
+        return self.add_image(slide_index, effective_source, bounds=bounds, **options)
 
     @staticmethod
     def _validate_picture_metadata(kwargs: dict[str, object]) -> None:

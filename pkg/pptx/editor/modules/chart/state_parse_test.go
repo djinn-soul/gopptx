@@ -10,9 +10,10 @@ func TestExtractChartState(t *testing.T) {
 <c:chart><c:plotArea>
 <c:barChart>
 <c:ser><c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>North</c:v></c:pt></c:strCache></c:strRef></c:tx><c:val><c:numRef><c:numCache><c:pt idx="0"><c:v>1.5</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>
+<c:dLbls><c:numFmt formatCode="$#,##0" sourceLinked="0"/><c:dLblPos val="outEnd"/><c:showVal val="1"/><c:showCatName val="1"/><c:showSerName val="1"/></c:dLbls>
 <c:axId val="1"/><c:axId val="2"/>
 </c:barChart>
-<c:catAx><c:axId val="1"/><c:tickLblPos val="low"/><c:crosses val="autoZero"/></c:catAx>
+<c:catAx><c:axId val="1"/><c:title><c:tx><c:rich><a:p><a:r><a:t>R&amp;D &lt;Q1&gt;</a:t></a:r></a:p></c:rich></c:tx></c:title><c:tickLblPos val="low"/><c:crosses val="autoZero"/></c:catAx>
 <c:valAx><c:axId val="2"/><c:majorGridlines/><c:minorGridlines/><c:tickLblPos val="nextTo"/><c:crosses val="autoZero"/></c:valAx>
 </c:plotArea></c:chart></c:chartSpace>`)
 
@@ -25,6 +26,9 @@ func TestExtractChartState(t *testing.T) {
 	}
 	if state.CategoryAx.Crosses != "autoZero" {
 		t.Fatalf("expected category axis crosses autoZero, got %#v", state.CategoryAx.Crosses)
+	}
+	if state.CategoryAx.Title != "R&D <Q1>" {
+		t.Fatalf("expected decoded category axis title, got %q", state.CategoryAx.Title)
 	}
 	if !state.ValueAx.Present || state.ValueAx.TickLabelPos != "nextTo" || !state.ValueAx.MajorGridline {
 		t.Fatalf("unexpected value axis state %#v", state.ValueAx)
@@ -45,5 +49,31 @@ func TestExtractChartState(t *testing.T) {
 		state.Scene3D.LightDirection != "t" ||
 		!state.Scene3D.LightRigRevolution {
 		t.Fatalf("unexpected scene3d values %#v", state.Scene3D)
+	}
+	if !state.DataLabels.Present || state.DataLabels.Position != "outEnd" ||
+		!state.DataLabels.ShowValue || !state.DataLabels.ShowCategory ||
+		!state.DataLabels.ShowSeriesName {
+		t.Fatalf("unexpected data label state %#v", state.DataLabels)
+	}
+	if state.DataLabels.NumberFormat != "$#,##0" ||
+		state.DataLabels.FormatLinked == nil || *state.DataLabels.FormatLinked {
+		t.Fatalf("unexpected data label number format %#v", state.DataLabels)
+	}
+}
+
+func TestExtractChartStateUsesPlotDataLabelsAndAttributeNames(t *testing.T) {
+	xml := []byte(`<c:chartSpace xmlns:c="x"><c:chart><c:plotArea><c:barChart>` +
+		`<c:ser><c:dLbls><c:numFmt formatCode="series" sourceLinked="1"/>` +
+		`<c:showVal val="0"/></c:dLbls></c:ser>` +
+		`<c:dLbls><c:numFmt sourceLinked="0" formatCode="$#,##0"/>` +
+		`<c:dLblPos val="outEnd"/><c:showVal val="1"/></c:dLbls>` +
+		`</c:barChart></c:plotArea></c:chart></c:chartSpace>`)
+
+	state := ExtractChartState(xml)
+	if !state.DataLabels.Present || !state.DataLabels.ShowValue ||
+		state.DataLabels.Position != "outEnd" ||
+		state.DataLabels.NumberFormat != "$#,##0" ||
+		state.DataLabels.FormatLinked == nil || *state.DataLabels.FormatLinked {
+		t.Fatalf("unexpected plot data label state: %#v", state.DataLabels)
 	}
 }

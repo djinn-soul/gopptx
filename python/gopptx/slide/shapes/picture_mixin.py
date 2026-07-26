@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
+
+from ...presentation.shapes.image_inspection import (
+    picture_bounds,
+    resolve_picture_source,
+)
 
 
 class SlidePictureMixin:
@@ -26,7 +32,7 @@ class SlidePictureMixin:
 
     def add_picture(
         self,
-        image_file: str | bytes | None,
+        image_file: str | bytes | os.PathLike[str] | None,
         left: float = 0,
         top: float = 0,
         width: float = 0,
@@ -34,11 +40,11 @@ class SlidePictureMixin:
         **kwargs: object,
     ) -> int:
         """Add a picture with optional description, alt text, and title."""
-        bounds = (left, top, width, height)
-        if isinstance(image_file, str):
-            return self.add_image(image_file, bounds, **kwargs)
-        if isinstance(image_file, bytes):
-            return self.add_image(None, bounds, data=image_file, **kwargs)
-        if image_file is not None:
-            return self.add_image(str(image_file), bounds, **kwargs)
-        return self.add_image(None, bounds, **kwargs)
+        effective_source = resolve_picture_source(image_file, kwargs)
+        bounds = picture_bounds(effective_source, left, top, width, height)
+        options = {
+            key: value for key, value in kwargs.items() if key not in {"path", "data"}
+        }
+        if isinstance(effective_source, bytes):
+            return self.add_image(None, bounds, data=effective_source, **options)
+        return self.add_image(os.fspath(effective_source), bounds, **options)

@@ -40,7 +40,7 @@ func patchAxisTickLabelPosition(xml string, axisTag string, value *string) strin
 		return xml
 	}
 	startTag := "<c:" + axisTag + ">"
-	endTag := "</c:" + axisTag + ">"
+	endTag := chartElementClosePrefix + axisTag + ">"
 	reTick := regexp.MustCompile(`<c:tickLblPos val="[^"]*"/>`)
 	node := `<c:tickLblPos val="` + strings.TrimSpace(*value) + `"/>`
 
@@ -91,7 +91,7 @@ func patchAxisGridlines(
 		return xml
 	}
 	startTag := "<c:" + axisTag + ">"
-	endTag := "</c:" + axisTag + ">"
+	endTag := chartElementClosePrefix + axisTag + ">"
 
 	start := strings.Index(xml, startTag)
 	for start >= 0 {
@@ -137,7 +137,7 @@ func patchAxisGridBlock(
 }
 
 func axisNodeInsertIndex(block string) int {
-	insertAt := strings.Index(block, "<c:tickLblPos")
+	insertAt := strings.Index(block, axisTickLabelTagPrefix)
 	if insertAt >= 0 {
 		return insertAt
 	}
@@ -145,7 +145,7 @@ func axisNodeInsertIndex(block string) int {
 	if insertAt >= 0 {
 		return insertAt
 	}
-	return strings.Index(block, "</c:")
+	return strings.Index(block, chartElementClosePrefix)
 }
 
 func patchAxisCrosses(xml string, axisTag string, value *string) string {
@@ -153,7 +153,7 @@ func patchAxisCrosses(xml string, axisTag string, value *string) string {
 		return xml
 	}
 	startTag := "<c:" + axisTag + ">"
-	endTag := "</c:" + axisTag + ">"
+	endTag := chartElementClosePrefix + axisTag + ">"
 	reCrosses := regexp.MustCompile(`<c:crosses val="[^"]*"/>`)
 	node := `<c:crosses val="` + strings.TrimSpace(*value) + `"/>`
 
@@ -191,7 +191,7 @@ func patchAxisBlock(block string, reTick *regexp.Regexp, node string) (string, b
 	}
 	insertAt := strings.Index(block, "<c:crosses")
 	if insertAt < 0 {
-		insertAt = strings.Index(block, "</c:")
+		insertAt = strings.Index(block, chartElementClosePrefix)
 	}
 	if insertAt < 0 {
 		return "", false

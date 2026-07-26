@@ -83,25 +83,41 @@ func patchChartPlotOptions(xml string, req common.ChartFormatUpdate) string {
 	}
 	block := xml[start:end]
 	if req.ChartGrouping != nil {
-		block = patchChartOption(block, reChartGrouping, "grouping", *req.ChartGrouping)
+		block = patchChartOptionBefore(
+			block, reChartGrouping, "grouping", *req.ChartGrouping,
+			[]string{"<c:varyColors", "<c:ser>", "<c:dLbls", "<c:gapWidth", "<c:overlap"},
+		)
 	}
 	if req.GapWidth != nil {
-		block = patchChartOption(block, reChartGapWidth, "gapWidth", strconv.Itoa(*req.GapWidth))
+		block = patchChartOptionBefore(
+			block, reChartGapWidth, "gapWidth", strconv.Itoa(*req.GapWidth),
+			[]string{"<c:overlap", "<c:serLines", "<c:axId", chartExtensionListTagPrefix, chartElementClosePrefix},
+		)
 	}
 	if req.Overlap != nil {
-		block = patchChartOption(block, reChartOverlap, "overlap", strconv.Itoa(*req.Overlap))
+		block = patchChartOptionBefore(
+			block, reChartOverlap, "overlap", strconv.Itoa(*req.Overlap),
+			[]string{"<c:serLines", "<c:axId", chartExtensionListTagPrefix, chartElementClosePrefix},
+		)
 	}
 	return xml[:start] + block + xml[end:]
 }
 
-func patchChartOption(block string, re *regexp.Regexp, tag, value string) string {
+func patchChartOptionBefore(
+	block string,
+	re *regexp.Regexp,
+	tag string,
+	value string,
+	anchors []string,
+) string {
 	node := `<c:` + tag + ` val="` + value + `"/>`
 	if re.MatchString(block) {
 		return re.ReplaceAllString(block, node)
 	}
-	insertAt := strings.Index(block, "<c:ser>")
-	if insertAt >= 0 {
-		return block[:insertAt] + node + block[insertAt:]
+	for _, anchor := range anchors {
+		if insertAt := strings.Index(block, anchor); insertAt >= 0 {
+			return block[:insertAt] + node + block[insertAt:]
+		}
 	}
-	return strings.Replace(block, ">", ">"+node, 1)
+	return block
 }
