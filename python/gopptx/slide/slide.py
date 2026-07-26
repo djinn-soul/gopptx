@@ -10,6 +10,7 @@ from .chart import Chart, ChartCollection
 from .chart.chart_mixin import SlideChartMixin
 from .notes.notes_slide import NotesSlide
 from .placeholders.placeholder_mixin import SlidePlaceholderMixin
+from .shapes.picture_mixin import SlidePictureMixin
 from .shapes.shape_batch_mixin import SlideShapeBatchMixin
 from .shapes.shape_mixin import SlideShapeMixin
 from .shapes.shape_proxy import ShapeCollection, ShapeProxy
@@ -84,6 +85,7 @@ class Slide(
     SlideTextMixin,
     SlideShapeBatchMixin,
     SlideSmartArtAnimMixin,
+    SlidePictureMixin,
     SlideShapeMixin,
 ):
     """Proxy object for a slide within a presentation."""

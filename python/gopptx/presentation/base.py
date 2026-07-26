@@ -132,8 +132,8 @@ class PresentationBase(
                 else:
                     search_paths.append(env_as_path)
             search_paths.extend([
-                pkg_dir / "../../../bindings/c/build" / lib_name,
                 pkg_dir.parent / lib_name,
+                pkg_dir / "../../../bindings/c/build" / lib_name,
             ])
             lib_path = next((c.resolve() for c in search_paths if c.exists()), None)
             if not lib_path:
