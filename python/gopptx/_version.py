@@ -6,4 +6,4 @@ try:
     __version__ = version("gopptx")
 except PackageNotFoundError:
     # Source-tree imports can happen before package metadata exists.
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"

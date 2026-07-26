@@ -35,7 +35,7 @@ func findProjectRoot(t *testing.T) string {
 
 func TestSupportedOpsMatchPythonConstants(t *testing.T) {
 	root := findProjectRoot(t)
-	opsPath := filepath.Join(root, "python", "gopptx", "ops.py")
+	opsPath := filepath.Join(root, "python", "gopptx", "_ops_constants.py")
 	content, err := os.ReadFile(opsPath)
 	if err != nil {
 		t.Fatalf("read python ops map from %s: %v", opsPath, err)
@@ -46,7 +46,7 @@ func TestSupportedOpsMatchPythonConstants(t *testing.T) {
 		pyOps = append(pyOps, match[1])
 	}
 	if len(pyOps) == 0 {
-		t.Fatal("no OP_* constants found in python/gopptx/ops.py")
+		t.Fatal("no OP_* constants found in python/gopptx/_ops_constants.py")
 	}
 
 	goOps := SupportedOps()
@@ -184,12 +184,12 @@ func TestContractBreakPythonOnlyOp(t *testing.T) {
 // without a matching Python op would be caught by TestSupportedOpsMatchPythonConstants.
 func TestContractBreakGoOnlyOp(t *testing.T) {
 	// This test documents the expected behavior: if someone adds an Op* constant
-	// to Go's opspec.go but forgets to add it to Python's ops.py,
+	// to Go's opspec.go but forgets to regenerate Python's operation constants,
 	// TestSupportedOpsMatchPythonConstants will fail.
 	//
 	// We verify the current state is consistent.
 	root := findProjectRoot(t)
-	opsPath := filepath.Join(root, "python", "gopptx", "ops.py")
+	opsPath := filepath.Join(root, "python", "gopptx", "_ops_constants.py")
 	content, err := os.ReadFile(opsPath)
 	if err != nil {
 		t.Fatalf("read python ops: %v", err)
@@ -203,7 +203,7 @@ func TestContractBreakGoOnlyOp(t *testing.T) {
 	// Check each Go op exists in Python
 	for _, goOp := range SupportedOps() {
 		if _, ok := pyOpsMap[goOp]; !ok {
-			t.Fatalf("Go op %q not found in Python ops.py - contract break", goOp)
+			t.Fatalf("Go op %q not found in Python operation constants - contract break", goOp)
 		}
 	}
 }
@@ -211,7 +211,7 @@ func TestContractBreakGoOnlyOp(t *testing.T) {
 // TestContractBreakSupportedOpsSet verifies Python SUPPORTED_OPS_SET matches Go.
 func TestContractBreakSupportedOpsSet(t *testing.T) {
 	root := findProjectRoot(t)
-	opsPath := filepath.Join(root, "python", "gopptx", "ops.py")
+	opsPath := filepath.Join(root, "python", "gopptx", "_ops_constants.py")
 	content, err := os.ReadFile(opsPath)
 	if err != nil {
 		t.Fatalf("read python ops: %v", err)
@@ -221,7 +221,7 @@ func TestContractBreakSupportedOpsSet(t *testing.T) {
 	re := regexp.MustCompile(`(?s)SUPPORTED_OPS\s*=\s*\(([^)]+)\)`)
 	match := re.FindStringSubmatch(string(content))
 	if match == nil {
-		t.Fatal("could not find SUPPORTED_OPS tuple in ops.py")
+		t.Fatal("could not find SUPPORTED_OPS tuple in Python operation constants")
 	}
 
 	// Parse the tuple contents

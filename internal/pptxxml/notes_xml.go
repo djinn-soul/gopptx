@@ -280,22 +280,3 @@ func NotesMasterRelationships(themeIndex int, imageTargets []string) string {
 </Relationships>`)
 	return b.String()
 }
-
-func notesParagraphsXML(paragraphs []text.Paragraph) string {
-	if len(paragraphs) == 0 {
-		return `
-<a:p><a:endParaRPr lang="en-US"/></a:p>`
-	}
-	var b strings.Builder
-	defaultStyle := ContentStyleSpec{SizePt: defaultNotesFontSizePt}
-
-	for _, p := range paragraphs {
-		styleSpec := convertNotesStyle(p.Style)
-		runSpecs := make([]TextRunSpec, len(p.Runs))
-		for i, r := range p.Runs {
-			runSpecs[i] = convertNotesRun(r)
-		}
-		b.WriteString(bulletParagraphRuns(runSpecs, styleSpec, defaultStyle))
-	}
-	return b.String()
-}

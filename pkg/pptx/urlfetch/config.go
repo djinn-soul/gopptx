@@ -13,6 +13,9 @@ const (
 	defaultMaxImageSizeBytes  = 5 * bytesPerMiB
 	defaultMaxTotalImageSize  = 20 * bytesPerMiB
 	defaultMaxImagesPerSlide  = 3
+	imageMIMEGIF              = "image/gif"
+	imageMIMEJPEG             = "image/jpeg"
+	imageMIMEPNG              = "image/png"
 )
 
 // Config holds options that control content extraction and slide generation.
@@ -81,7 +84,7 @@ func DefaultConfig() Config {
 		MaxImageSizeBytes:      defaultMaxImageSizeBytes,
 		MaxTotalImageSizeBytes: defaultMaxTotalImageSize,
 		MaxImagesPerSlide:      defaultMaxImagesPerSlide,
-		AllowedImageTypes:      []string{"image/png", "image/jpeg", "image/gif"},
+		AllowedImageTypes:      []string{imageMIMEPNG, imageMIMEJPEG, imageMIMEGIF},
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 	editorcommand "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/command"
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
@@ -267,41 +266,4 @@ func withBubbleBounds(chart charts.BubbleChart, request editorcommand.AddChartRe
 		return chart.Size(request.W, request.H).Position(request.X, request.Y)
 	}
 	return chart
-}
-
-func BuildSlideContent(request editorcommand.UpdateSlideRequest, currentTitle string) elements.SlideContent {
-	title := request.Title
-	if title == "" {
-		title = currentTitle
-	}
-
-	slide := elements.NewSlide(title)
-	if request.Layout != "" {
-		slide = slide.WithLayout(request.Layout)
-	}
-	for _, bullet := range request.Bullets {
-		slide = slide.AddBullet(bullet)
-	}
-	return slide
-}
-
-func ResolveThemeByName(name string) (styling.Theme, error) {
-	switch name {
-	case "Corporate":
-		return styling.ThemeCorporate, nil
-	case "Modern":
-		return styling.ThemeModern, nil
-	case "Vibrant":
-		return styling.ThemeVibrant, nil
-	case "Dark":
-		return styling.ThemeDark, nil
-	case "Nature":
-		return styling.ThemeNature, nil
-	case "Tech":
-		return styling.ThemeTech, nil
-	case "Carbon":
-		return styling.ThemeCarbon, nil
-	default:
-		return styling.Theme{}, fmt.Errorf("%w: %q", ErrUnknownThemeName, name)
-	}
 }
