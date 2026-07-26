@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import pytest
 from gopptx import Presentation
+from gopptx.presentation.charts import ChartType
 
 
 def test_chart_axis_aliases_and_crosses_helpers() -> None:
     with Presentation.new("Chart Axis Ergonomics") as prs:
         slide = prs.add_slide("Chart")
         _ = slide.add_chart(
-            "bar",
+            ChartType.BAR,
             ["A", "B"],
             [1.0, 2.0],
             bounds=(1000000, 1000000, 5000000, 3000000),
@@ -52,7 +53,7 @@ def test_chart_axis_validation_errors() -> None:
     with Presentation.new("Chart Axis Validation") as prs:
         slide = prs.add_slide("Chart")
         _ = slide.add_chart(
-            "bar",
+            ChartType.BAR,
             ["A", "B"],
             [1.0, 2.0],
             bounds=(1000000, 1000000, 5000000, 3000000),

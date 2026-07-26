@@ -24,8 +24,23 @@ var (
 	pictureXfrmPattern     = regexp.MustCompile(`<a:xfrm\b([^>]*)>`)
 )
 
+// hasPictureUpdateFields reports whether any field handled by
+// applyPictureShapeUpdates is set.
 func hasPictureUpdateFields(updates common.ShapeUpdate) bool {
-	return updates.Crop != nil || updates.Rotation != nil || updates.FlipH != nil || updates.FlipV != nil
+	return hasPictureOnlyUpdateFields(updates) || hasTransformAttrUpdateFields(updates)
+}
+
+// hasPictureOnlyUpdateFields reports whether an update needs a picture shape.
+// Cropping edits <a:srcRect> inside <p:blipFill>, which only pictures have.
+func hasPictureOnlyUpdateFields(updates common.ShapeUpdate) bool {
+	return updates.Crop != nil
+}
+
+// hasTransformAttrUpdateFields reports whether an update sets rot/flipH/flipV.
+// Those are attributes of <a:xfrm>, which every shape kind carries, so they are
+// not restricted to pictures.
+func hasTransformAttrUpdateFields(updates common.ShapeUpdate) bool {
+	return updates.Rotation != nil || updates.FlipH != nil || updates.FlipV != nil
 }
 
 func validatePictureUpdateFields(updates common.ShapeUpdate) error {

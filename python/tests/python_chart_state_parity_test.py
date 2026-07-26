@@ -7,6 +7,7 @@ from math import isclose
 from typing import TYPE_CHECKING
 
 from gopptx import Presentation
+from gopptx.presentation.charts import ChartType
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -21,7 +22,7 @@ def test_chart_series_and_axis_state(tmp_path: Path) -> None:
     with Presentation.new("Chart State") as prs:
         slide = prs.add_slide("Chart")
         _ = slide.add_chart(
-            "bar",
+            ChartType.BAR,
             ["Q1", "Q2"],
             [1.0, 2.0],
             title="Revenue",
@@ -42,7 +43,7 @@ def test_chart_axis_tick_label_position_update(tmp_path: Path) -> None:
     with Presentation.new("Chart Axis Tick Labels") as prs:
         slide = prs.add_slide("Chart")
         _ = slide.add_chart(
-            "bar",
+            ChartType.BAR,
             ["A", "B"],
             [1.0, 2.0],
             bounds=(1000000, 1000000, 5000000, 3000000),
@@ -65,7 +66,7 @@ def test_chart_axis_title_scale_and_number_format_update(tmp_path: Path) -> None
     with Presentation.new("Chart Axis Details") as prs:
         slide = prs.add_slide("Chart")
         _ = slide.add_chart(
-            "bar",
+            ChartType.BAR,
             ["A", "B"],
             [1.0, 2.0],
             bounds=(1000000, 1000000, 5000000, 3000000),

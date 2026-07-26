@@ -9,6 +9,7 @@ from typing_extensions import Protocol
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from ...presentation.charts.chart_types import ChartType
     from ...schemas import ChartState, SlideChartRef
     from ...slide.chart.data import CategoryChartData, XyChartData
 
@@ -19,10 +20,12 @@ class ChartOperationsProtocol(Protocol):
     def add_chart(
         self,
         slide_index: int,
-        chart_type: str,
+        chart_type: ChartType,
         categories: Sequence[str] | CategoryChartData | XyChartData,
         values_or_series: Sequence[float] | Sequence[dict[str, object]] | None = None,
-        **kwargs: object,
+        *,
+        title: str = "Chart",
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
     ) -> int:
         """Protocol member."""
         ...

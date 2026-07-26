@@ -240,9 +240,11 @@ func patchChartDataLabels(xml string, req common.ChartFormatUpdate) string {
 	if !hasLabels && needLabels {
 		xml = insertDefaultDataLabels(xml)
 	}
+	isBarChart := strings.Contains(xml, "<c:barChart")
 	return reDataLabelsBlock.ReplaceAllStringFunc(xml, func(block string) string {
 		if position != nil {
-			node := `<c:dLblPos val="` + strings.TrimSpace(*position) + `"/>`
+			normPos := normalizeDataLabelPosition(*position, isBarChart)
+			node := `<c:dLblPos val="` + normPos + `"/>`
 			if reDataLabelPos.MatchString(block) {
 				block = reDataLabelPos.ReplaceAllString(block, node)
 			} else {
