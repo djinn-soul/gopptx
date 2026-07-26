@@ -1,177 +1,153 @@
-"""Example showing improved chart type API using enum-style constants.
+"""Chart type selection with the ChartType enum.
 
-This example demonstrates the ONLY way to specify chart types:
-- Using ChartType constants (required): ChartType.COLUMN, ChartType.LINE, etc.
+ChartType is a real enum generated from the Go XLChartType constants, so the two
+languages can never drift. Members subclass str, so a member equals its wire
+value (ChartType.PIE == "pie"), but passing a bare string is deprecated: the
+enum is what a type checker can verify and an IDE can complete.
 
-No string values are accepted - type safety through constants only.
+This example uses the slide object returned by add_slide rather than a slide
+index, so a chart cannot land on the wrong slide.
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 
-from gopptx import Presentation
+from gopptx import Presentation, Slide
 from gopptx.presentation.charts import ChartType
 from gopptx.schemas import Inches
 
 
-def _add_chart_slides(prs: Presentation) -> None:
-    """Add slides for chart examples 1 through 4."""
-    # Example 1: Column Chart
-    prs.add_slide("Column Chart", layout="title_only")
-    print("\nCreating a column/bar chart with ChartType.COLUMN constant")
-    prs.add_chart(
-        0,
-        ChartType.COLUMN,
-        ["Q1", "Q2", "Q3", "Q4"],
-        [12.0, 18.0, 15.0, 24.0],
-        title="Revenue by Quarter",
-        bounds=(Inches(0.45), Inches(1.2), Inches(4.5), Inches(3.0)),
-    )
+def _add_single_chart_slides(prs: Presentation) -> None:
+    """One slide per chart type, each built from the ChartType member."""
+    samples: list[tuple[str, ChartType, list[str], list[float], str]] = [
+        (
+            "Column Chart",
+            ChartType.COLUMN,
+            ["Q1", "Q2", "Q3", "Q4"],
+            [12.0, 18.0, 15.0, 24.0],
+            "Revenue by Quarter",
+        ),
+        (
+            "Line Chart",
+            ChartType.LINE,
+            ["Jan", "Feb", "Mar", "Apr", "May"],
+            [4.0, 7.0, 6.0, 9.0, 8.0],
+            "Monthly Trend",
+        ),
+        (
+            "Pie Chart",
+            ChartType.PIE,
+            ["Direct", "Search", "Referral", "Social"],
+            [45.0, 35.0, 12.0, 8.0],
+            "Traffic Sources",
+        ),
+    ]
 
-    # Example 2: Line Chart
-    prs.add_slide("Line Chart", layout="title_only")
-    print("\nCreating a line chart with ChartType.LINE constant")
-    prs.add_chart(
-        1,
-        ChartType.LINE,
-        ["Jan", "Feb", "Mar", "Apr", "May"],
-        [4.0, 7.0, 6.0, 9.0, 8.0],
-        title="Monthly Trend",
-        bounds=(Inches(0.45), Inches(1.2), Inches(9.0), Inches(3.0)),
-    )
-
-    # Example 3: Pie Charts
-    prs.add_slide("Pie Chart", layout="title_only")
-    print("\nCreating a pie chart with ChartType.PIE constant")
-    prs.add_chart(
-        2,
-        ChartType.PIE,
-        ["Direct", "Search", "Referral", "Social"],
-        [45.0, 35.0, 12.0, 8.0],
-        title="Traffic Sources",
-        bounds=(Inches(0.45), Inches(1.2), Inches(4.0), Inches(3.0)),
-    )
-    print("\nCreating another pie chart with different data")
-    prs.add_chart(
-        2,
-        ChartType.PIE,
-        ["Product A", "Product B", "Product C", "Product D"],
-        [25.0, 35.0, 25.0, 15.0],
-        title="Sales by Product",
-        bounds=(Inches(5.0), Inches(1.2), Inches(4.0), Inches(3.0)),
-    )
-
-    # Example 4: Same data, different chart types
-    prs.add_slide("Same Data, Different Visualizations", layout="title_only")
-    data_categories = ["A", "B", "C", "D"]
-    data_values = [30.0, 40.0, 20.0, 10.0]
-    print("\nColumn view of data")
-    prs.add_chart(
-        3,
-        ChartType.COLUMN,
-        data_categories,
-        data_values,
-        title="Column View",
-        bounds=(Inches(0.45), Inches(1.2), Inches(3.0), Inches(2.5)),
-    )
-    print("Line view of data")
-    prs.add_chart(
-        3,
-        ChartType.LINE,
-        data_categories,
-        data_values,
-        title="Line View",
-        bounds=(Inches(3.55), Inches(1.2), Inches(3.0), Inches(2.5)),
-    )
-    print("Pie view of data")
-    prs.add_chart(
-        3,
-        ChartType.PIE,
-        data_categories,
-        data_values,
-        title="Pie View",
-        bounds=(Inches(6.65), Inches(1.2), Inches(3.0), Inches(2.5)),
-    )
-
-
-def _add_discovery_and_errors(prs: Presentation) -> None:
-    """Add slides for chart discovery (example 5) and error handling (example 6)."""
-    # Example 5: Discovery
-    all_types = ChartType.get_all()
-    print("\nCurrently supported chart types:")
-    for name, value in sorted(all_types.items()):
-        print(f"  ChartType.{name:10} = '{value}'")
-    print(f"\nTotal: {len(set(all_types.values()))} chart types available")
-
-    # Example 6: Error Handling
-    prs.add_slide("Error Handling Demo", layout="title_only")
-    try:
-        print("\nTrying invalid type: 'COLUMN' (string constant name not allowed)")
-        prs.add_chart(5, "COLUMN", ["A", "B"], [1.0, 2.0], bounds=(100, 100, 400, 300))
-    except ValueError as e:
-        print(f"Caught error (as expected): {str(e)[:80]}...")
-    try:
-        print("Trying invalid type: 'not_a_chart_type'")
-        prs.add_chart(
-            5,
-            "not_a_chart_type",
-            [1.0, 2.0, 3.0],
-            [2.0, 4.0, 5.0],
-            bounds=(100, 100, 400, 300),
+    for slide_title, chart_type, categories, values, chart_title in samples:
+        slide = prs.add_slide(slide_title, layout="title_only")
+        slide.add_chart(
+            chart_type,
+            categories,
+            values,
+            title=chart_title,
+            bounds=(Inches(0.5), Inches(1.5), Inches(9.0), Inches(5.0)),
         )
-    except ValueError as e:
-        print(f"Caught error (as expected): {str(e)[:80]}...")
+        print(f"  {slide_title:<14} -> ChartType.{chart_type.name}")
+
+
+def _add_same_data_slide(prs: Presentation) -> None:
+    """The same data drawn three ways, selected by enum member."""
+    categories = ["A", "B", "C", "D"]
+    values = [30.0, 40.0, 20.0, 10.0]
+    views: list[ChartType] = [ChartType.COLUMN, ChartType.LINE, ChartType.PIE]
+
+    slide: Slide = prs.add_slide("Same Data, Different Views", layout="title_only")
+    for position, chart_type in enumerate(views):
+        slide.add_chart(
+            chart_type,
+            categories,
+            values,
+            title=f"{chart_type.name.title()} View",
+            bounds=(
+                Inches(0.4 + position * 3.1),
+                Inches(1.5),
+                Inches(3.0),
+                Inches(4.0),
+            ),
+        )
+    print(f"  Same data as {', '.join(t.name for t in views)} on one slide")
+
+
+def _show_discovery() -> None:
+    """ChartType is discoverable without reading the docs."""
+    all_types = ChartType.get_all()
+    print("\nSupported chart types:")
+    for name, value in sorted(all_types.items()):
+        print(f"  ChartType.{name:<17} = {value!r}")
+    print(f"\n{len(all_types)} names, {len(ChartType.values())} distinct chart types")
+    print("(COLUMN and BAR are the same chart; COLUMN is the python-pptx spelling.)")
+
+
+def _describe_rejection(candidate: str) -> str:
+    """Return how ChartType reacts to a candidate value.
+
+    add_chart runs this same check on whatever it is handed, so calling
+    ChartType.validate directly shows the rejection without having to pass a
+    deliberately wrong argument through the typed add_chart signature.
+    """
+    try:
+        return f"accepted as {ChartType.validate(candidate)!r}"
+    except ValueError as exc:
+        return f"ValueError: {str(exc)[:70]}..."
+
+
+def _show_rejected_values() -> None:
+    """Invalid chart types are rejected with a message that names the fix."""
+    print("\nHow values are checked:")
+    for candidate in ("COLUMN", "not_a_chart_type", "pie"):
+        print(f"  {candidate!r:<20} -> {_describe_rejection(candidate)}")
+    print("  (COLUMN is a member *name*, not a value; ChartType.COLUMN is 'bar'.)")
 
 
 def main() -> None:
-    """Create a presentation with charts using the new ChartType enum."""
+    """Create a presentation demonstrating the ChartType enum."""
     output_dir = Path("examples/output")
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     with Presentation.new("Chart Type Examples") as prs:
-        print("\n" + "=" * 70)
-        print("CHART TYPE ENUM EXAMPLES")
-        print("=" * 70)
-
-        _add_chart_slides(prs)
-
-        print("\n" + "=" * 70)
-        print("EXAMPLE 5: Available Chart Types")
-        print("=" * 70)
-        _add_discovery_and_errors(prs)
+        print("Building chart slides:")
+        _add_single_chart_slides(prs)
+        _add_same_data_slide(prs)
+        _show_discovery()
+        _show_rejected_values()
 
         output_path = output_dir / "16-chart-type-enum.pptx"
         prs.save(str(output_path))
-        print(f"\n\nPresentation saved to {output_path}")
+        print(f"\nSaved: {output_path}")
 
-    print("\n" + "=" * 70)
-    print("SUMMARY")
-    print("=" * 70)
     print(
         """
-CHART TYPE API - ENUM CONSTANTS REQUIRED:
+CHART TYPE API
 
-[+] ONLY CORRECT WAY
     from gopptx.presentation.charts import ChartType
-    slide.add_chart(ChartType.COLUMN, ...)
 
-    Benefits:
-    - IDE autocomplete and type hints
-    - Type-safe: no string typos possible
-    - Discoverable: ChartType.get_all() lists all options
-    - Self-documenting code
+    slide = prs.add_slide("Sales", layout="title_only")
+    slide.add_chart(ChartType.COLUMN, categories, values, title="Sales")
 
-[!] NOT SUPPORTED
-    - String constant names: "COLUMN", "LINE", "PIE" - NOT allowed
-    - Raw values: "bar", "line", "pie" - NOT allowed
-    - Must use the actual ChartType constants
+Why the enum:
+    - a type checker rejects ChartType typos; a bare string it cannot check
+    - IDE autocomplete and inline docs on every member
+    - ChartType.get_all() lists everything available
+    - generated from the Go XLChartType constants, so Go and Python agree
 
-CURRENTLY SUPPORTED CHART TYPES:
+Bare strings such as "bar" still work but raise a DeprecationWarning and will
+stop being accepted in a future release.
 
-    ChartType.COLUMN   = "bar"   - Vertical bar/column chart
-    ChartType.BAR      = "bar"   - Alias for COLUMN
-    ChartType.LINE     = "line"  - Line chart
-    ChartType.PIE      = "pie"   - Pie/circular chart
-        """
+Why slide.add_chart over prs.add_chart(slide_index, ...):
+    Presentation.new() already creates slide 0, so the first slide you add is
+    index 1. Using the Slide object returned by add_slide removes the question.
+"""
     )
 
 

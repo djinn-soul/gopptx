@@ -111,7 +111,7 @@ func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
 		return nil, false
 	}
 	u.found = true
-	if hasPictureUpdateFields(u.updates) && s.Type != shapeTypePicture {
+	if hasPictureOnlyUpdateFields(u.updates) && s.Type != shapeTypePicture {
 		u.err = fmt.Errorf("shape id %d is not a picture shape", u.shapeID)
 		return nil, false
 	}
@@ -177,7 +177,9 @@ func (u *shapeUpdater) applyPicture(
 	if !hasPictureUpdateFields(u.updates) {
 		return xmlData, replaced, nil
 	}
-	if s.Type != shapeTypePicture {
+	// Cropping is picture-only; rotation and flips are plain <a:xfrm>
+	// attributes and apply to any shape kind.
+	if hasPictureOnlyUpdateFields(u.updates) && s.Type != shapeTypePicture {
 		return xmlData, replaced, fmt.Errorf("shape id %d is not a picture shape", s.ID)
 	}
 	updatedXML, err := applyPictureShapeUpdates(xmlData, u.updates)

@@ -40,7 +40,8 @@ func isLegendPosition(position string) bool {
 }
 
 func isDataLabelPosition(position string) bool {
-	switch strings.TrimSpace(position) {
+	norm := normalizeDataLabelPosition(position, false)
+	switch norm {
 	case "ctr", "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
 		return true
 	default:

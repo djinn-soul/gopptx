@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from types import TracebackType
+from typing import overload
 
 from typing_extensions import Self
 
@@ -18,6 +19,7 @@ from ._api_placeholders import (
 from ._api_tables import Table
 from ._api_text import Run, TextFrameProps
 from .constants import ConnectorType, ShapeType
+from .presentation.charts.chart_types import ChartType
 from .schemas import (
     Author,
     BatchCommand,
@@ -59,7 +61,10 @@ class GopptxError(Exception):
 class Slides:
     def __len__(self) -> int: ...
     def __iter__(self) -> Iterator[Slide]: ...
-    def __getitem__(self, index: int | slice) -> Slide | list[Slide]: ...
+    @overload
+    def __getitem__(self, index: int) -> Slide: ...
+    @overload
+    def __getitem__(self, index: slice) -> list[Slide]: ...
     def find_by_slide_id(self, slide_id: int) -> Slide | None: ...
 
 class Slide:
@@ -161,10 +166,12 @@ class Slide:
     def charts(self) -> ChartCollection: ...
     def add_chart(
         self,
-        chart_type: str,
+        chart_type: ChartType,
         categories: list[str],
         values_or_series: list[float] | list[dict[str, str | list[float]]],
-        **kwargs: str | tuple[float, float, float, float],
+        *,
+        title: str = ...,
+        bounds: tuple[float, float, float, float] = ...,
     ) -> int: ...
     def add_combo_chart(
         self,
@@ -285,10 +292,12 @@ class Presentation:
     def add_chart(
         self,
         slide_index: int,
-        chart_type: str,
+        chart_type: ChartType,
         categories: list[str],
         values_or_series: list[float] | list[dict[str, str | list[float]]],
-        **kwargs: str | tuple[float, float, float, float],
+        *,
+        title: str = ...,
+        bounds: tuple[float, float, float, float] = ...,
     ) -> int: ...
     def add_table(
         self,
@@ -382,7 +391,10 @@ class Presentation:
     ) -> Slide: ...
     def add_slide_from_markdown(self, markdown: str, *, layout: str = "") -> int: ...
     def add_slide_from_url(self, url: str, *, layout: str = "") -> int: ...
-    def __getitem__(self, index: int | slice) -> Slide | list[Slide]: ...
+    @overload
+    def __getitem__(self, index: int) -> Slide: ...
+    @overload
+    def __getitem__(self, index: slice) -> list[Slide]: ...
     def __len__(self) -> int: ...
     def __iter__(self) -> Iterator[Slide]: ...
     def apply_theme(self, theme_name: str) -> None: ...

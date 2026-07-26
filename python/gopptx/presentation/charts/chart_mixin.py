@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from .chart_mixin_updates import PresentationChartUpdatesMixin
+from .chart_type_coerce import coerce_chart_type
 from .chart_types import ChartType
 from .state_mixin import PresentationChartStateMixin
 
@@ -25,67 +26,50 @@ class PresentationChartMixin(
     def add_chart(
         self,
         slide_index: int,
-        chart_type: str,
+        chart_type: ChartType,
         categories: Sequence[str] | CategoryChartData | XyChartData,
         values_or_series: Sequence[float] | Sequence[dict[str, object]] | None = None,
-        **kwargs: str | tuple[float, float, float, float],
+        *,
+        title: str = "Chart",
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
     ) -> int:
         """Add a chart to a slide.
 
+        Prefer ``slide.add_chart(...)`` on the Slide object, which takes the same
+        arguments without the slide_index and so cannot address the wrong slide.
+
         Args:
-            slide_index: Zero-based slide index.
-            chart_type: Chart type constant (ChartType enum value).
-                Must be one of: ChartType.COLUMN, ChartType.LINE,
-                ChartType.PIE, ChartType.SCATTER, ChartType.AREA,
-                ChartType.RADAR, ChartType.BUBBLE, etc.
+            slide_index: Zero-based slide index. Note that Presentation.new()
+                already creates slide 0, so the first slide you add is index 1.
+            chart_type: A ChartType member, e.g. ChartType.COLUMN,
+                ChartType.LINE, ChartType.PIE. Bare strings still work but are
+                deprecated and warn.
             categories: List of category labels or ChartData builder.
             values_or_series: List of values or list of series dicts.
-            **kwargs: Additional options including:
-                - bounds: (x, y, width, height) tuple
-                - title: Chart title string
+            title: Chart title.
+            bounds: (x, y, width, height) in EMU. Use Inches() or Pt() to build
+                it; raw numbers are EMU, and there are 914400 EMU to the inch.
 
         Returns:
             Shape ID of the created chart.
 
         Raises:
-            ValueError: If chart_type is invalid or bounds format is wrong.
+            ValueError: If chart_type is invalid or bounds is not a 4-tuple.
 
         Examples:
-            # Using ChartType enum constants (required)
             from gopptx.presentation.charts import ChartType
+            from gopptx.schemas import Inches
 
             chart_id = prs.add_chart(
-                0,
+                1,
                 ChartType.COLUMN,
                 ["Q1", "Q2", "Q3"],
                 [100, 200, 150],
                 title="Sales",
-                bounds=(100, 100, 400, 300),
-            )
-
-            # Other chart types
-            chart_id = prs.add_chart(
-                0,
-                ChartType.PIE,
-                ["Product A", "Product B", "Product C"],
-                [25.0, 35.0, 40.0],
-                title="Sales by Product",
-                bounds=(100, 100, 400, 300),
+                bounds=(Inches(1), Inches(1), Inches(4), Inches(3)),
             )
         """
-        # Validate chart type - only constant string values accepted
-        if not chart_type:
-            raise ValueError(
-                f"chart_type must be a ChartType constant (e.g., ChartType.COLUMN). Got: {chart_type!r}. Use ChartType.get_all() to see available options."
-            )
-
-        # Check if it's a valid chart type value
-        valid_types = set(ChartType.get_all().values())
-        if chart_type not in valid_types:
-            valid_values = ", ".join(sorted(valid_types))
-            raise ValueError(
-                f"Invalid chart_type {chart_type!r}. Use ChartType constants like ChartType.COLUMN, ChartType.LINE, ChartType.PIE. Available raw values: {valid_values}"
-            )
+        chart_type_value = coerce_chart_type(chart_type)
 
         if hasattr(categories, "to_add_chart_args"):
             categories, values_or_series = cast(
@@ -93,13 +77,9 @@ class PresentationChartMixin(
             ).to_add_chart_args()
         if values_or_series is None:
             values_or_series = []
-        bounds = cast(
-            "tuple[float, float, float, float]", kwargs.get("bounds", (0, 0, 0, 0))
-        )
         if len(bounds) != self._BOUNDS_LEN:
             raise ValueError("bounds must be a tuple of (x, y, w, h)")
         x, y, w, h = bounds
-        title = kwargs.get("title", "Chart")
 
         values: list[float]
         if values_or_series and isinstance(values_or_series[0], dict):
@@ -113,7 +93,7 @@ class PresentationChartMixin(
             ops.OP_ADD_CHART,
             {
                 "slide_index": slide_index,
-                "chart_type": chart_type,
+                "chart_type": chart_type_value,
                 "title": title,
                 "categories": categories,
                 "values": values,

@@ -58,7 +58,9 @@ class PresentationShapeMixin(
             "w": w,
             "h": h,
         }
-        self._apply_shape_payload_options(payload, kwargs, include_text=True)
+        self._apply_shape_payload_options(
+            payload, kwargs, include_text=True, reject_unknown=True
+        )
         result = self.execute(ops.OP_ADD_SHAPE, payload)
         return get_required_int(result, "shape_id")
 
@@ -87,6 +89,7 @@ class PresentationShapeMixin(
             payload,
             kwargs,
             include_text=False,
+            reject_unknown=True,
         )
         result = self.execute(ops.OP_ADD_TEXTBOX, payload)
         return get_required_int(result, "shape_id")
@@ -115,6 +118,7 @@ class PresentationShapeMixin(
             payload,
             kwargs,
             include_text=True,
+            reject_unknown=True,
         )
         result = self.execute(ops.OP_ADD_CONNECTOR, payload)
         return get_required_int(result, "shape_id")
