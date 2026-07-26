@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
     from ...schemas import TableCellInfo, TableInfo
     from ..contracts import SlidePresentationProtocol
+    from .table import Table
 
 
 class _TableFactoryProto(Protocol):
@@ -18,7 +19,7 @@ class _TableFactoryProto(Protocol):
         prs: SlidePresentationProtocol,
         slide_index: int,
         shape_id: int,
-    ) -> object: ...
+    ) -> Table: ...
 
 
 class SlideTableMixin:
@@ -69,8 +70,13 @@ class SlideTableMixin:
         """Fetch raw table payload by shape id."""
         return self._presentation.get_table(self.index, shape_id)
 
-    def table(self, shape_id: int) -> object:
-        """Return table proxy object by shape id."""
+    def table(self, shape_id: int) -> Table:
+        """Return table proxy object by shape id.
+
+        The Table class is imported lazily at call time to avoid a circular
+        import; the name is resolved statically under TYPE_CHECKING so callers
+        still get a real type rather than object.
+        """
         table_module = import_module(".table", __package__)
         table_factory = cast("_TableFactoryProto", table_module.Table)
         return table_factory(self._presentation, self.index, shape_id)
