@@ -29,6 +29,13 @@ func TestImageFetcher_FetchImage(t *testing.T) {
 		case "/invalid.txt":
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write([]byte("not an image"))
+		case "/spoofed.png":
+			w.Header().Set("Content-Type", "image/png")
+			w.Write([]byte{
+				'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0x80, 0, 0,
+				0, 0, 0, 0xff, 0xff, 0xff, 0x21, 0xf9, 4, 1, 0, 0, 0,
+				0, 0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 0x44, 1, 0, 0x3b,
+			})
 		case "/error":
 			w.WriteHeader(http.StatusInternalServerError)
 		default:
@@ -53,6 +60,7 @@ func TestImageFetcher_FetchImage(t *testing.T) {
 		{"Valid absolute", server.URL + "/test.png", false},
 		{"Too large", "/large.png", true},
 		{"Invalid type", "/invalid.txt", true},
+		{"Header does not match decoded type", "/spoofed.png", true},
 		{"Server error", "/error", true},
 		{"Not found", "/notfound", true},
 		{

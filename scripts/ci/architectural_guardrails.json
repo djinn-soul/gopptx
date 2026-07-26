@@ -1,6 +1,7 @@
 {
     "line_ceiling": 300,
     "roots": [
+        "bindings/c",
         "cmd",
         "internal",
         "pkg",
@@ -11,6 +12,6 @@
         ".py"
     ],
     "line_count_baseline": {},
-    "python_import_cycle_budget": 1,
+    "python_import_cycle_budget": 0,
     "python_cycle_root": "python/gopptx"
 }

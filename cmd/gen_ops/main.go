@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -73,6 +74,21 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error closing file: %v\n", err)
 		os.Exit(1)
 	}
+
+	facadePath := filepath.Join(filepath.Dir(outputPy), "ops.py")
+	facadeFile, err := os.Create(facadePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating facade: %v\n", err)
+		os.Exit(1)
+	}
+	if err := writeOpsFacade(facadeFile, ops); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing facade: %v\n", err)
+		os.Exit(1)
+	}
+	if err := facadeFile.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error closing facade: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func parseOpsFromGo(input string) ([]opSpec, error) {
@@ -130,14 +146,21 @@ func parseOpSpec(vspec *ast.ValueSpec) (opSpec, bool, error) {
 
 func writeOpsPy(f *os.File, ops []opSpec) error {
 	var out strings.Builder
+	out.WriteString("# ruff: noqa: S105\n")
 	out.WriteString(`"""Operation constants shared by gopptx Python runtime."""` + "\n\n")
 	out.WriteString("from __future__ import annotations\n\n")
 	for _, op := range ops {
 		fmt.Fprintf(&out, "%s = %q\n", op.PyName, op.Value)
 	}
-	out.WriteString("\nSUPPORTED_OPS = (\n")
-	for _, op := range ops {
-		fmt.Fprintf(&out, "    %s,\n", op.PyName)
+	out.WriteString("\nSUPPORTED_OPS = (")
+	for index, op := range ops {
+		if index > 0 {
+			out.WriteString(", ")
+		}
+		out.WriteString(op.PyName)
+	}
+	if len(ops) == 1 {
+		out.WriteString(",")
 	}
 	out.WriteString(")\n\nSUPPORTED_OPS_SET = frozenset(SUPPORTED_OPS)\n")
 	_, err := f.WriteString(out.String())
@@ -151,6 +174,20 @@ func writeOpsPyi(f *os.File, ops []opSpec) error {
 	}
 	out.WriteString("SUPPORTED_OPS: tuple[str, ...]\n")
 	out.WriteString("SUPPORTED_OPS_SET: frozenset[str]\n")
+	_, err := f.WriteString(out.String())
+	return err
+}
+
+func writeOpsFacade(f *os.File, ops []opSpec) error {
+	var out strings.Builder
+	out.WriteString(`"""Operation constants shared by the gopptx Python runtime."""` + "\n\n")
+	out.WriteString("from ._ops_constants import (\n")
+	for _, op := range ops {
+		fmt.Fprintf(&out, "    %s as %s,\n", op.PyName, op.PyName)
+	}
+	out.WriteString("    SUPPORTED_OPS as SUPPORTED_OPS,\n")
+	out.WriteString("    SUPPORTED_OPS_SET as SUPPORTED_OPS_SET,\n")
+	out.WriteString(")\n")
 	_, err := f.WriteString(out.String())
 	return err
 }

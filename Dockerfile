@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.25.10
+FROM golang:1.25.12
 
 RUN useradd -m -u 1000 appuser
 

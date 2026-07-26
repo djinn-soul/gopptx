@@ -1,6 +1,6 @@
 package editor
 
-//go:generate go run ../../../cmd/gen_ops opspec.go ../../../python/gopptx/ops.py ../../../python/gopptx/ops.pyi
+//go:generate go run ../../../cmd/gen_ops opspec.go ../../../python/gopptx/_ops_constants.py ../../../python/gopptx/ops.pyi
 
 // Command operation names shared between bridge clients and Go dispatcher.
 const (

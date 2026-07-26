@@ -130,7 +130,7 @@ func TestWriteOpsOutputs(t *testing.T) {
 func TestOpsGeneratorDrift(t *testing.T) {
 	root := opsRepoRoot(t)
 	input := filepath.Join(root, "pkg", "pptx", "editor", "opspec.go")
-	committedPy := filepath.Join(root, "python", "gopptx", "ops.py")
+	committedPy := filepath.Join(root, "python", "gopptx", "_ops_constants.py")
 	committedPyi := filepath.Join(root, "python", "gopptx", "ops.pyi")
 
 	ops, err := parseOpsFromGo(input)
@@ -140,7 +140,8 @@ func TestOpsGeneratorDrift(t *testing.T) {
 	sort.Slice(ops, func(i, j int) bool { return ops[i].PyName < ops[j].PyName })
 
 	tmp := t.TempDir()
-	pyPath := filepath.Join(tmp, "ops.py")
+	pyPath := filepath.Join(tmp, "_ops_constants.py")
+	facadePath := filepath.Join(tmp, "ops.py")
 	pyiPath := filepath.Join(tmp, "ops.pyi")
 
 	py, err := os.Create(pyPath)
@@ -167,7 +168,20 @@ func TestOpsGeneratorDrift(t *testing.T) {
 		t.Fatalf("write/close pyi: %v", err)
 	}
 
-	compareDrift(t, pyPath, committedPy, "ops.py")
+	facade, err := os.Create(facadePath)
+	if err != nil {
+		t.Fatalf("create facade: %v", err)
+	}
+	err = writeOpsFacade(facade, ops)
+	if closeErr := facade.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		t.Fatalf("write/close facade: %v", err)
+	}
+
+	compareDrift(t, pyPath, committedPy, "_ops_constants.py")
+	compareDrift(t, facadePath, filepath.Join(root, "python", "gopptx", "ops.py"), "ops.py")
 	compareDrift(t, pyiPath, committedPyi, "ops.pyi")
 }
 

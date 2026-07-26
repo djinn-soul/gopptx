@@ -39,15 +39,19 @@ repos:
 
   # --- Ruff Format (priority 0 - modifies files) ---
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.13
+    rev: v0.15.7
     hooks:
       - id: ruff-format
         name: ruff-format (commit)
+        files: ^(python/gopptx|python/tests|scripts/ci|hatch_build\.py)
+        exclude: ^python/gopptx/_ops_constants\.py$
         priority: 11
       - id: ruff
         name: ruff check --fix (commit)
         args:
           ["--fix", "--ignore-noqa", "--unsafe-fixes", "--exit-non-zero-on-fix"]
+        files: ^(python/gopptx|python/tests|scripts/ci|hatch_build\.py)
+        exclude: ^python/gopptx/_ops_constants\.py$
         priority: 12
 
   # --- Codespell (priority 10 - fast, read-only) ---
@@ -105,13 +109,21 @@ repos:
         stages: [commit, push]
         priority: 18
 
+      - id: version-consistency
+        name: Go/Python version consistency
+        entry: uv run python scripts/ci/check_version_consistency.py
+        language: system
+        pass_filenames: false
+        stages: [commit, push]
+        priority: 19
+
       - id: bandit
         name: bandit security scan
         entry: uv run bandit -r python/gopptx -c pyproject.toml
         language: system
         types: [python]
         pass_filenames: false
-        priority: 19
+        priority: 20
 
       - id: vulture
         name: vulture dead code detection
@@ -119,7 +131,7 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        priority: 20
+        priority: 21
 
       - id: go-vet
         name: go vet
@@ -129,7 +141,7 @@ repos:
         pass_filenames: false
         args:
           ["vet", "./cmd/...", "./internal/...", "./pkg/...", "./examples/..."]
-        priority: 21
+        priority: 22
 
       - id: go-mod-tidy
         name: go mod tidy
@@ -138,7 +150,7 @@ repos:
         files: (\.go$|^go\.mod$|^go\.sum$)
         pass_filenames: false
         args: ["mod", "tidy"]
-        priority: 22
+        priority: 23
 
       # --- Priority 30: finalizers (depend on earlier stages) ---
       - id: golangci-lint
@@ -157,7 +169,7 @@ repos:
             "./pkg/...",
             "./examples/...",
           ]
-        priority: 23
+        priority: 24
 
       - id: pip-audit
         name: pip-audit dependency scan
@@ -171,4 +183,4 @@ repos:
             "--ignore-file",
             "pip-audit-ignore.txt",
           ]
-        priority: 24
+        priority: 25

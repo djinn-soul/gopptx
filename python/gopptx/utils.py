@@ -6,7 +6,7 @@ import math
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 _FOUR_BOUNDS_COMPONENTS = 4
 
