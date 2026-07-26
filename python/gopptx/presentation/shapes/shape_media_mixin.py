@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ..helpers import get_required_int
+from .image_inspection import infer_image_format, picture_bounds
+from .image_options import reject_unknown_image_options
 from .shape_payload_mixin import PresentationShapePayloadMixin
 
 if TYPE_CHECKING:
@@ -24,7 +26,12 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
         **kwargs: object,
     ) -> int:
-        """Add an image to a slide and return the created shape ID."""
+        """Add an image to a slide and return the created shape ID.
+
+        Raises:
+            TypeError: If a keyword option is not recognized.
+        """
+        reject_unknown_image_options(kwargs)
         payload = self._init_bounds_payload(slide_index, bounds)
         self._resolve_image_source(payload, source, kwargs)
         self._resolve_image_options(payload, kwargs)
@@ -46,7 +53,9 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
 
         Supports optional ``description``, ``alt_text``, and ``title`` parameters.
         """
-        bounds = (left, top, width, height)
+        if source is None:
+            raise ValueError("picture source is required")
+        bounds = picture_bounds(source, left, top, width, height)
         self._validate_picture_metadata(kwargs)
         return self.add_image(slide_index, source, bounds=bounds, **kwargs)
 
@@ -68,13 +77,22 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         data = kwargs.get("data")
         if source:
             self._set_source_payload(payload, source)
+            if isinstance(source, bytes):
+                self._set_image_format(payload, source, kwargs)
         elif isinstance(path, str):
             self._set_source_payload(payload, path)
         elif isinstance(data, bytes):
             self._set_source_payload(payload, data)
-            fmt = kwargs.get("image_format") or kwargs.get("img_format")
-            if isinstance(fmt, str):
-                payload["format"] = fmt
+            self._set_image_format(payload, data, kwargs)
+
+    @staticmethod
+    def _set_image_format(
+        payload: dict[str, object],
+        data: bytes,
+        kwargs: dict[str, object],
+    ) -> None:
+        fmt = kwargs.get("image_format") or kwargs.get("img_format")
+        payload["format"] = fmt if isinstance(fmt, str) else infer_image_format(data)
 
     @staticmethod
     def _resolve_image_options(

@@ -1,11 +1,13 @@
-"""Misspelled shape keyword arguments must fail loudly, not be dropped.
+"""Misspelled keyword arguments must fail loudly, not be dropped.
 
-add_shape/add_textbox/add_connector take **kwargs, so a typo used to be
-silently discarded and the shape was created without the option the caller
-asked for. These check the option name is validated instead.
+add_shape/add_textbox/add_connector/add_image/add_table all take **kwargs, so a
+typo used to be silently discarded and the shape was created without the option
+the caller asked for. These check the option name is validated instead.
 """
 
 from __future__ import annotations
+
+import pathlib
 
 import pytest
 from gopptx import GopptxError, Presentation
@@ -13,6 +15,9 @@ from gopptx.constants import ShapeType
 from gopptx.schemas import Inches
 
 BOUNDS = (Inches(1), Inches(1), Inches(2), Inches(1))
+SAMPLE_PNG = (
+    pathlib.Path(__file__).parent / ".." / ".." / "examples" / "assets" / "test_image.png"
+).resolve()
 
 
 def test_add_shape_accepts_supported_options() -> None:
@@ -96,3 +101,57 @@ def test_crop_is_still_rejected_on_a_non_picture_shape() -> None:
                 shape_id,
                 {"crop": {"left": 0.1, "right": 0.1, "top": 0.1, "bottom": 0.1}},
             )
+
+
+def test_add_image_rejects_unknown_option() -> None:
+    """A misspelled image option raises instead of being dropped."""
+    with (
+        Presentation.new("Strict kwargs") as prs,
+        pytest.raises(TypeError, match="descripton"),
+    ):
+        prs.add_image(0, "does-not-matter.png", BOUNDS, descripton="typo")
+
+
+def test_add_image_accepts_supported_options() -> None:
+    """The documented image options are still accepted."""
+    with Presentation.new("Strict kwargs") as prs:
+        shape_id = prs.add_image(
+            0,
+            str(SAMPLE_PNG),
+            BOUNDS,
+            description="a picture",
+            rotation=45,
+            flip_h=True,
+        )
+        assert shape_id > 0
+
+
+@pytest.mark.parametrize("bad_kwarg", ["bound", "frist_row", "colum_widths"])
+def test_add_table_rejects_unknown_option(bad_kwarg: str) -> None:
+    """A misspelled table option raises naming the offending keyword."""
+    with (
+        Presentation.new("Strict kwargs") as prs,
+        pytest.raises(TypeError, match=bad_kwarg),
+    ):
+        prs.add_table(
+            slide_index=0,
+            rows=2,
+            cols=2,
+            bounds=(0, 0, 100, 100),
+            **{bad_kwarg: True},
+        )
+
+
+def test_add_table_accepts_supported_options() -> None:
+    """The documented table options are still accepted."""
+    with Presentation.new("Strict kwargs") as prs:
+        shape_id = prs.add_table(
+            slide_index=0,
+            rows=2,
+            cols=2,
+            bounds=(0, 0, 1828800, 914400),
+            data=[["a", "b"], ["c", "d"]],
+            first_row=True,
+            band_row=True,
+        )
+        assert shape_id > 0
