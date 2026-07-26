@@ -64,6 +64,35 @@ def _resolve_table_identity(
     return cast("int", slide_idx), rows_val, cols_val, bounds
 
 
+# Every keyword add_table reads, between _resolve_bounds, the style flags and
+# _populate_table. Anything else is a misspelling and used to be dropped.
+_TABLE_OPTION_KEYS = frozenset({
+    "bounds",
+    "x",
+    "y",
+    "cx",
+    "cy",
+    "data",
+    "column_widths",
+    "first_row",
+    "first_col",
+    "last_row",
+    "last_col",
+    "band_row",
+    "band_col",
+})
+
+
+def _reject_unknown_table_options(kwargs: dict[str, object]) -> None:
+    """Raise on a table keyword option add_table does not understand."""
+    unknown = sorted(set(kwargs) - _TABLE_OPTION_KEYS)
+    if unknown:
+        raise TypeError(" ".join((
+            f"unexpected keyword argument(s) {', '.join(unknown)};",
+            f"supported: {', '.join(sorted(_TABLE_OPTION_KEYS))}",
+        )))
+
+
 def _resolve_bounds(
     bounds: tuple[int, int, int, int] | None,
     kwargs: dict[str, object],
@@ -126,7 +155,11 @@ class PresentationTableMixin(
         Supports both the legacy positional API and the new named-parameter API.
         Keyword options: bounds, x, y, cx, cy, data, first_row, first_col,
         last_row, last_col, band_row, band_col, column_widths.
+
+        Raises:
+            TypeError: If a keyword option is not recognized.
         """
+        _reject_unknown_table_options(kwargs)
         slide_idx, rows_val, cols_val, resolved_bounds = _resolve_table_identity(
             slide, slide_index, rows, cols
         )
