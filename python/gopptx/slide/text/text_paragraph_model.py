@@ -11,13 +11,13 @@ from .text_run_model import _ShapeRunCollection
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .text_model import ShapeTextFrame
+    from .text_frame_protocol import ShapeTextFrameProtocol
 
 
 class _ShapeParagraphProxy:
     """Single-paragraph proxy; PPTX run API currently models one normalized paragraph."""
 
-    def __init__(self, text_frame: ShapeTextFrame) -> None:
+    def __init__(self, text_frame: ShapeTextFrameProtocol) -> None:
         self._text_frame = text_frame
         self._runs = _ShapeRunCollection(text_frame)
 
@@ -140,7 +140,7 @@ class _ShapeParagraphProxy:
 class _ShapeParagraphCollection:
     """Collection facade for the normalized single paragraph."""
 
-    def __init__(self, text_frame: ShapeTextFrame) -> None:
+    def __init__(self, text_frame: ShapeTextFrameProtocol) -> None:
         self._paragraph = _ShapeParagraphProxy(text_frame)
 
     def __len__(self) -> int:

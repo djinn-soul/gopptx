@@ -282,22 +282,3 @@ func renderPlaceholderTextStyle(ts *PlaceholderTextStyleSpec) string {
 	b.WriteString("</a:pPr>")
 	return b.String()
 }
-
-func NormalizePlaceholderType(raw string) string {
-	raw = strings.ToLower(strings.TrimSpace(raw))
-	if raw == "" {
-		return "obj"
-	}
-	switch raw {
-	case placeholderPicture, "pic":
-		return "pic"
-	case "title":
-		return "title"
-	case placeholderBody:
-		return placeholderBody
-	case "ctrtitle", "centeredtitle", "centered_title":
-		return "ctrTitle"
-	default:
-		return raw
-	}
-}

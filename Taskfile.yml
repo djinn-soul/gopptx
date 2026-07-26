@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  GO_BRIDGE_SRC: bindings/c/bridge.go
+  GO_BRIDGE_SRC: ./bindings/c
   PYTHON_PKG_DIR: python/gopptx
   GO_ALLOWED_LICENSES: MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,MPL-2.0,ISC
   LIB_NAME:
@@ -39,22 +39,30 @@ tasks:
     desc: Setup Python environment using uv
     sources:
       - pyproject.toml
+      - uv.lock
     generates:
       - .venv/pyvenv.cfg
     cmds:
-      - uv venv
-      - uv pip install -e .[dev]
+      - uv sync --extra dev --frozen --python 3.12
 
   test:go:
     desc: Run Go unit tests
     cmds:
-      - go test ./pkg/... ./internal/...
+      - go test ./bindings/... ./cmd/... ./internal/... ./pkg/...
 
   test:python:
     desc: Run Python tests
-    deps: [build:go, setup:python]
+    deps: [setup:python]
     cmds:
-      - uv run python -c "import gopptx; print('Python package imported successfully')"
+      - task build:go
+      - uv run --frozen pytest python/tests
+
+  test:python-smoke:
+    desc: Verify the Python package imports successfully
+    deps: [setup:python]
+    cmds:
+      - task build:go
+      - uv run --frozen python -c "import gopptx; print('Python package imported successfully')"
 
   test:
     desc: Run all tests
@@ -64,8 +72,15 @@ tasks:
     desc: Run all linters
     cmds:
       - golangci-lint run ./...
+      - uv run ruff check python/gopptx python/tests scripts/ci hatch_build.py
       - uv run basedpyright
+      - task check:versions
       - task check:go-licenses
+
+  check:versions:
+    desc: Verify Go and Python development versions match
+    cmds:
+      - uv run python scripts/ci/check_version_consistency.py
 
   check:go-licenses:
     desc: Validate licenses for direct Go dependencies
