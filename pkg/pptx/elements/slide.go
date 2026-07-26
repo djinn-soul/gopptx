@@ -1,5 +1,7 @@
 package elements
 
+//go:generate go run ../../../cmd/gen_slide_builder . slide_builder_gen.go
+
 import (
 	"strings"
 
