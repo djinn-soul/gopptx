@@ -204,7 +204,7 @@ func extractFormatCode(node string) string {
 	if len(matches) > 1 && strings.TrimSpace(matches[1]) != "" {
 		return matches[1]
 	}
-	return "General"
+	return defaultChartNumberFormat
 }
 
 func sheetRange(col string, n int) string {

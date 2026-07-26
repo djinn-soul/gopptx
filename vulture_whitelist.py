@@ -330,6 +330,27 @@ category_axis_minor_gridlines  # unused variable (python\gopptx\schemas_chart_la
 value_axis_minor_gridlines  # unused variable (python\gopptx\schemas_chart_layout.py)
 minor_gridline  # unused variable (python\gopptx\schemas_chart_layout.py)
 
+# Chart parity public TypedDict and proxy API (2026-07-26).
+data_label_number_format  # unused variable (python\gopptx\schemas_chart_layout.py)
+data_label_format_linked  # unused variable (python\gopptx\schemas_chart_layout.py)
+chart_grouping  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_title  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_title  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_minimum_scale  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_maximum_scale  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_minimum_scale  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_maximum_scale  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_major_unit  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_minor_unit  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_major_unit  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_minor_unit  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_number_format  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_number_format  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_format_linked  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_format_linked  # unused variable (python\gopptx\schemas_chart_layout.py)
+format_linked  # unused variable (python\gopptx\schemas_chart_layout.py)
+_.set_bar_options  # unused method (python\gopptx\slide\chart\model_proxies.py)
+
 # Phase 5-8 additions: RunBuilder, Mermaid, Markdown, URL fetch.
 _.set_runs  # unused method (python\gopptx\slide\text\text_model.py)
 _.set_text_runs  # unused method (python\gopptx\slide\shapes\shape_proxy.py)

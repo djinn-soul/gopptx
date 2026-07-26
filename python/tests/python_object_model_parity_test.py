@@ -32,12 +32,19 @@ def test_chart_object_model_updates() -> None:
         )
         chart.plots[0].data_labels_visible = True
         chart.plots[0].data_labels.show_value = True
+        chart.plots[0].data_labels.show_category_name = True
+        chart.plots[0].data_labels.show_series_name = True
+        chart.plots[0].data_labels.position = "outEnd"
+        chart.plots[0].data_labels.number_format = "$#,##0"
+        chart.plots[0].set_bar_options(grouping="stacked", gap_width=35, overlap=100)
         assert chart.category_axis.tick_label_position == "low"
         assert chart.category_axis.crosses == "max"
         assert chart.value_axis.tick_label_position == "high"
         assert chart.value_axis.crosses == "min"
         assert chart.chart_area.scene3d.camera_preset == "orthographicFront"
         assert chart.chart_area.scene3d.light_rig == "threePt"
+        assert chart.plots[0].data_labels.position == "outEnd"
+        assert chart.plots[0].data_labels.number_format == "$#,##0"
 
         new_data = CategoryChartData(categories=["X", "Y"])
         new_data.add_series("S2", [3.0, 4.0])

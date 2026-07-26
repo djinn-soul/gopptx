@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, cast
 
+from typing_extensions import override
+
+from .axis_format import ChartAxisFormatMixin
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -36,13 +40,12 @@ class ChartProtocol(Protocol):
         ...
 
 
-class ChartAxis:
+class ChartAxis(ChartAxisFormatMixin):
     """Proxy exposing chart axis state and formatting operations."""
 
     def __init__(self, chart: ChartProtocol, *, axis_name: str) -> None:
         """Initialize an axis proxy for the given axis name."""
-        self._chart = chart
-        self._axis_name = axis_name
+        super().__init__(chart, axis_name=axis_name)
 
     @staticmethod
     def _major_gridline_state_key() -> str:
@@ -58,6 +61,7 @@ class ChartAxis:
         prefix = "category_axis_" if axis_name == "category" else "value_axis_"
         return prefix + "minor_gridlines"
 
+    @override
     def _payload(self) -> ChartAxisState:
         snapshot = self._chart.snapshot()
         key = "category_axis" if self._axis_name == "category" else "value_axis"

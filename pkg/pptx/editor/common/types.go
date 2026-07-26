@@ -1,6 +1,7 @@
 package editorcommon
 
 import (
+	"path"
 	"strconv"
 	"strings"
 )
@@ -76,13 +77,21 @@ func XMLEscape(value string) string {
 	return xmlEscaper.Replace(value)
 }
 
-// CanonicalPartPath cleans a path to use forward slashes and removes leading slash.
+// CanonicalPartPath cleans a path to use forward slashes, removes leading slashes,
+// and prevents Zip Slip / path traversal escaping the package root.
 func CanonicalPartPath(target string) string {
 	clean := strings.TrimSpace(strings.ReplaceAll(target, "\\", "/"))
-	if after, ok := strings.CutPrefix(clean, "/"); ok {
-		return after
+	for strings.HasPrefix(clean, "/") {
+		clean = clean[1:]
 	}
-	return clean
+	cleaned := path.Clean(clean)
+	for strings.HasPrefix(cleaned, "../") {
+		cleaned = cleaned[3:]
+	}
+	if cleaned == ".." || cleaned == "." {
+		return ""
+	}
+	return cleaned
 }
 
 // SlideRelsPartName returns the relative path to a slide's relationships part.
