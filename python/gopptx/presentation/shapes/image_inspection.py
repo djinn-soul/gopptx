@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from io import BytesIO
 from typing import TYPE_CHECKING, cast
 
@@ -21,6 +22,22 @@ def infer_image_format(source: bytes) -> str:
     """Return the decoded image format used by the Go bridge."""
     with Image.open(BytesIO(source)) as image:
         return _normalized_format(image)
+
+
+def resolve_picture_source(
+    source: str | bytes | PathLike[str] | None,
+    options: dict[str, object],
+) -> str | bytes:
+    """Resolve picture input using explicit source, path, then data."""
+    if source is not None:
+        return os.fspath(source) if isinstance(source, os.PathLike) else source
+    path = options.get("path")
+    if isinstance(path, (str, os.PathLike)):
+        return os.fspath(path)
+    data = options.get("data")
+    if isinstance(data, bytes):
+        return data
+    raise ValueError("picture source is required")
 
 
 def picture_bounds(

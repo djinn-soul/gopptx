@@ -30,6 +30,7 @@ func TestPatchChartFormatting_DataLabelsAndBarOptions(t *testing.T) {
 			t.Fatalf("expected XML to contain %s", want)
 		}
 	}
+	assertXMLOrder(t, xml, "<c:grouping", "<c:ser>", "<c:dLbls", "<c:gapWidth", "<c:overlap", "<c:axId")
 }
 
 func TestValidateChartFormatUpdateRejectsInvalidBarOptions(t *testing.T) {
@@ -40,5 +41,20 @@ func TestValidateChartFormatUpdateRejectsInvalidBarOptions(t *testing.T) {
 	gapWidth := 501
 	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{GapWidth: &gapWidth}); err == nil {
 		t.Fatal("expected invalid gap width error")
+	}
+}
+
+func assertXMLOrder(t *testing.T, xml string, nodes ...string) {
+	t.Helper()
+	previous := -1
+	for _, node := range nodes {
+		index := strings.Index(xml, node)
+		if index < 0 {
+			t.Fatalf("XML missing ordered node %q: %s", node, xml)
+		}
+		if index <= previous {
+			t.Fatalf("node %q is out of schema order in %s", node, xml)
+		}
+		previous = index
 	}
 }

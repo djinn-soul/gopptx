@@ -189,6 +189,29 @@ UNDERLINE_DOUBLE = "dbl"
 UNDERLINE_DOTTED = "dotted"
 UNDERLINE_DASH = "dash"
 
+
+# Pattern Fill Types (Issue #1127)
+class PatternType(StrEnum):
+    """DrawingML preset pattern types for pattern fills."""
+
+    PERCENT_5 = "pct5"
+    PERCENT_10 = "pct10"
+    PERCENT_20 = "pct20"
+    PERCENT_25 = "pct25"
+    PERCENT_30 = "pct30"
+    PERCENT_40 = "pct40"
+    PERCENT_50 = "pct50"
+    PERCENT_60 = "pct60"
+    PERCENT_70 = "pct70"
+    PERCENT_75 = "pct75"
+    PERCENT_80 = "pct80"
+    PERCENT_90 = "pct90"
+    CROSS = "cross"
+    DIAGONAL_CROSS = "diagCross"
+
+
+MSO_PATTERN = PatternType
+
 # Slide Size Constants (EMU)
 SIZE_4X3_WIDTH = 9144000
 SIZE_4X3_HEIGHT = 6858000

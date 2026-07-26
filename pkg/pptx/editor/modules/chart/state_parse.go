@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"html"
 	"regexp"
 	"strconv"
 	"strings"
@@ -41,6 +42,7 @@ func ExtractChartState(chartXML []byte) common.ChartState {
 		ValueAx:    buildAxisState(xml, []string{"valAx"}),
 		Series:     parseSeriesState(xml),
 		Scene3D:    parseScene3DState(xml),
+		DataLabels: parseDataLabelState(xml),
 	}
 	if match := reChartStyle.FindStringSubmatch(xml); len(match) == expectedSingleGroupMatch {
 		if style, err := strconv.Atoi(match[1]); err == nil {
@@ -77,42 +79,58 @@ func parseScene3DState(xml string) common.ChartScene3DState {
 }
 
 func buildAxisState(xml string, tags []string) common.ChartAxisState {
-	state := common.ChartAxisState{}
+	states := buildAxisStates(xml, tags)
+	if len(states) == 0 {
+		return common.ChartAxisState{}
+	}
+	return states[0]
+}
+
+func buildAxisStates(xml string, tags []string) []common.ChartAxisState {
+	states := make([]common.ChartAxisState, 0)
 	for _, tag := range tags {
 		startTag := "<c:" + tag + ">"
-		endTag := "</c:" + tag + ">"
-		start := strings.Index(xml, startTag)
-		if start < 0 {
-			continue
+		endTag := chartElementClosePrefix + tag + ">"
+		remaining := xml
+		for {
+			start := strings.Index(remaining, startTag)
+			if start < 0 {
+				break
+			}
+			endRel := strings.Index(remaining[start:], endTag)
+			if endRel < 0 {
+				break
+			}
+			end := start + endRel + len(endTag)
+			states = append(states, parseAxisStateBlock(remaining[start:end]))
+			remaining = remaining[end:]
 		}
-		endRel := strings.Index(xml[start:], endTag)
-		if endRel < 0 {
-			continue
-		}
-		block := xml[start : start+endRel+len(endTag)]
-		state.Present = true
-		if match := reTickLblPos.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
-			state.TickLabelPos = strings.TrimSpace(match[1])
-		}
-		if match := reCrosses.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
-			state.Crosses = strings.TrimSpace(match[1])
-		}
-		if match := reStateAxisTitle.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
-			state.Title = strings.TrimSpace(match[1])
-		}
-		state.MinimumScale = axisFloatValue(block, reStateAxisMin)
-		state.MaximumScale = axisFloatValue(block, reStateAxisMax)
-		state.MajorUnit = axisFloatValue(block, reStateAxisMajor)
-		state.MinorUnit = axisFloatValue(block, reStateAxisMinor)
-		if match := reStateAxisNumFmt.FindStringSubmatch(block); len(match) == expectedAxisNumFmtMatch {
-			state.NumberFormat = match[1]
-			linked := strings.TrimSpace(match[2]) == "1"
-			state.FormatLinked = &linked
-		}
-		state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
-		state.MinorGridline = strings.Contains(block, "<c:minorGridlines")
-		break
 	}
+	return states
+}
+
+func parseAxisStateBlock(block string) common.ChartAxisState {
+	state := common.ChartAxisState{Present: true}
+	if match := reTickLblPos.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+		state.TickLabelPos = strings.TrimSpace(match[1])
+	}
+	if match := reCrosses.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+		state.Crosses = strings.TrimSpace(match[1])
+	}
+	if match := reStateAxisTitle.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+		state.Title = strings.TrimSpace(html.UnescapeString(match[1]))
+	}
+	state.MinimumScale = axisFloatValue(block, reStateAxisMin)
+	state.MaximumScale = axisFloatValue(block, reStateAxisMax)
+	state.MajorUnit = axisFloatValue(block, reStateAxisMajor)
+	state.MinorUnit = axisFloatValue(block, reStateAxisMinor)
+	if match := reStateAxisNumFmt.FindStringSubmatch(block); len(match) == expectedAxisNumFmtMatch {
+		state.NumberFormat = match[1]
+		linked := strings.TrimSpace(match[2]) == "1"
+		state.FormatLinked = &linked
+	}
+	state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
+	state.MinorGridline = strings.Contains(block, "<c:minorGridlines")
 	return state
 }
 

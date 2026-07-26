@@ -51,6 +51,23 @@ func TestPatchChartFormatting_AxisDetails(t *testing.T) {
 			t.Fatalf("updated XML missing %q: %s", want, updated)
 		}
 	}
+	valueAxisStart := strings.Index(updated, "<c:valAx>")
+	valueAxisEnd := strings.Index(updated, "</c:valAx>")
+	if valueAxisStart < 0 || valueAxisEnd <= valueAxisStart {
+		t.Fatalf("value axis missing from updated XML: %s", updated)
+	}
+	valueAxis := updated[valueAxisStart:valueAxisEnd]
+	assertXMLOrder(
+		t,
+		valueAxis,
+		"<c:axId",
+		"<c:scaling",
+		"<c:title",
+		"<c:numFmt",
+		"<c:crosses",
+		"<c:majorUnit",
+		"<c:minorUnit",
+	)
 
 	state := ExtractChartState(got)
 	if state.CategoryAx.Title != categoryTitle || state.ValueAx.Title != valueTitle {
@@ -66,6 +83,31 @@ func TestPatchChartFormatting_AxisDetails(t *testing.T) {
 	}
 	if state.ValueAx.NumberFormat != numberFormat || state.ValueAx.FormatLinked == nil || *state.ValueAx.FormatLinked {
 		t.Fatalf("axis number format not preserved in state: %#v", state.ValueAx)
+	}
+}
+
+func TestPatchChartFormattingRejectsScaleAgainstRetainedBound(t *testing.T) {
+	xml := []byte(`<c:chartSpace xmlns:c="x"><c:chart><c:plotArea>` +
+		`<c:valAx><c:axId val="2"/><c:scaling><c:min val="0"/><c:max val="100"/></c:scaling></c:valAx>` +
+		`</c:plotArea></c:chart></c:chartSpace>`)
+	minimum := 100.0
+	if _, err := PatchChartFormatting(xml, common.ChartFormatUpdate{
+		ValueAxisMinimumScale: &minimum,
+	}); err == nil {
+		t.Fatal("expected minimum equal to retained maximum to be rejected")
+	}
+}
+
+func TestPatchChartFormattingRejectsScaleAgainstEveryRetainedAxis(t *testing.T) {
+	xml := []byte(`<c:chartSpace xmlns:c="x"><c:chart><c:plotArea>` +
+		`<c:valAx><c:axId val="2"/><c:scaling><c:max val="100"/></c:scaling></c:valAx>` +
+		`<c:valAx><c:axId val="3"/><c:scaling><c:max val="10"/></c:scaling></c:valAx>` +
+		`</c:plotArea></c:chart></c:chartSpace>`)
+	minimum := 50.0
+	if _, err := PatchChartFormatting(xml, common.ChartFormatUpdate{
+		ValueAxisMinimumScale: &minimum,
+	}); err == nil {
+		t.Fatal("expected minimum conflicting with the second retained maximum to be rejected")
 	}
 }
 

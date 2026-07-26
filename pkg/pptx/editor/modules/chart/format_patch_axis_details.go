@@ -128,7 +128,7 @@ func patchAxisScaling(block string, minimum *float64, maximum *float64) string {
 	scaling := reAxisScaling.FindString(block)
 	if scaling == "" {
 		scaling = "<c:scaling/>"
-		insertAt := axisDetailInsertIndex(block)
+		insertAt := axisScalingInsertIndex(block)
 		if insertAt < 0 {
 			return block
 		}
@@ -143,15 +143,6 @@ func patchAxisScaling(block string, minimum *float64, maximum *float64) string {
 	return reAxisScaling.ReplaceAllString(block, scaling)
 }
 
-func axisDetailInsertIndex(block string) int {
-	for _, before := range []string{"<c:delete", "<c:crosses", "<c:tickLblPos", "</c:"} {
-		if index := strings.Index(block, before); index >= 0 {
-			return index
-		}
-	}
-	return -1
-}
-
 func patchAxisTitle(block string, title *string) string {
 	if title == nil {
 		return block
@@ -164,7 +155,7 @@ func patchAxisTitle(block string, title *string) string {
 		}
 		return strings.Replace(block, current, node, 1)
 	}
-	return insertAxisNode(block, node)
+	return insertAxisTitle(block, node)
 }
 
 func patchAxisNumberFormat(block string, format *string, linked *bool) string {
@@ -186,7 +177,7 @@ func patchAxisNumberFormat(block string, format *string, linked *bool) string {
 	if reAxisNumFmt.MatchString(block) {
 		return reAxisNumFmt.ReplaceAllString(block, node)
 	}
-	return insertAxisNode(block, node)
+	return insertAxisNumberFormat(block, node)
 }
 
 func patchAxisUnit(block string, re *regexp.Regexp, tag string, value *float64) string {
@@ -197,16 +188,7 @@ func patchAxisUnit(block string, re *regexp.Regexp, tag string, value *float64) 
 	if re.MatchString(block) {
 		return re.ReplaceAllString(block, node)
 	}
-	return insertAxisNode(block, node)
-}
-
-func insertAxisNode(block string, node string) string {
-	for _, before := range []string{"<c:tickLblPos", "<c:crosses", "</c:"} {
-		if index := strings.Index(block, before); index >= 0 {
-			return block[:index] + node + block[index:]
-		}
-	}
-	return block
+	return insertAxisUnit(block, node)
 }
 
 func replaceOrInsertAxisNode(value string, re *regexp.Regexp, node string) string {

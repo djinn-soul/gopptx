@@ -98,11 +98,23 @@ type ChartAxisState struct {
 
 // ChartState is a read snapshot for chart-level object model traversal.
 type ChartState struct {
-	ChartStyle *int              `json:"chart_style,omitempty"`
-	CategoryAx ChartAxisState    `json:"category_axis"`
-	ValueAx    ChartAxisState    `json:"value_axis"`
-	Series     []ChartSeriesData `json:"series,omitempty"`
-	Scene3D    ChartScene3DState `json:"scene3d"`
+	ChartStyle *int                `json:"chart_style,omitempty"`
+	CategoryAx ChartAxisState      `json:"category_axis"`
+	ValueAx    ChartAxisState      `json:"value_axis"`
+	Series     []ChartSeriesData   `json:"series,omitempty"`
+	Scene3D    ChartScene3DState   `json:"scene3d"`
+	DataLabels ChartDataLabelState `json:"data_labels"`
+}
+
+// ChartDataLabelState is the persisted data-label state for the first chart plot.
+type ChartDataLabelState struct {
+	Present        bool   `json:"present"`
+	Position       string `json:"position,omitempty"`
+	ShowValue      bool   `json:"show_value,omitempty"`
+	ShowCategory   bool   `json:"show_category,omitempty"`
+	ShowSeriesName bool   `json:"show_series_name,omitempty"`
+	NumberFormat   string `json:"number_format,omitempty"`
+	FormatLinked   *bool  `json:"format_linked,omitempty"`
 }
 
 // ChartScene3DState is a read snapshot for chart-level 3D scene settings.

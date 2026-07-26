@@ -102,6 +102,18 @@ class ChartAxisState(TypedDict, total=False):
     format_linked: bool
 
 
+class ChartDataLabelState(TypedDict, total=False):
+    """Persisted data-label state for the first chart plot."""
+
+    present: bool
+    position: str
+    show_value: bool
+    show_category: bool
+    show_series_name: bool
+    number_format: str
+    format_linked: bool
+
+
 class ChartState(TypedDict, total=False):
     """Chart traversal state snapshot."""
 
@@ -110,6 +122,7 @@ class ChartState(TypedDict, total=False):
     value_axis: ChartAxisState
     series: list[ChartSeriesData]
     scene3d: NotRequired[ChartScene3DState]
+    data_labels: NotRequired[ChartDataLabelState]
 
 
 class ChartScene3DState(TypedDict, total=False):

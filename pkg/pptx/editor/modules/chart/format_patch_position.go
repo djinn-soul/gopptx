@@ -12,34 +12,34 @@ func normalizeDataLabelPosition(rawPos string, isBarChart bool) string {
 	switch posLower {
 	case "right", "r":
 		if isBarChart {
-			return "outEnd"
+			return dataLabelPositionOutsideEnd
 		}
 		return "r"
 	case "left", "l":
 		if isBarChart {
-			return "inBase"
+			return dataLabelPositionInsideBase
 		}
 		return "l"
 	case "top", "t":
 		if isBarChart {
-			return "outEnd"
+			return dataLabelPositionOutsideEnd
 		}
 		return "t"
 	case "bottom", "b":
 		if isBarChart {
-			return "inBase"
+			return dataLabelPositionInsideBase
 		}
 		return "b"
-	case "center", "ctr":
-		return "ctr"
+	case dataLabelPositionCenterInput, dataLabelPositionCenter:
+		return dataLabelPositionCenter
 	case "outside_end", "outsideend", "outend":
-		return "outEnd"
+		return dataLabelPositionOutsideEnd
 	case "inside_end", "insideend", "inend":
-		return "inEnd"
+		return dataLabelPositionInsideEnd
 	case "inside_base", "insidebase", "inbase":
-		return "inBase"
+		return dataLabelPositionInsideBase
 	case "best_fit", "bestfit":
-		return "bestFit"
+		return dataLabelPositionBestFit
 	default:
 		return pos
 	}
