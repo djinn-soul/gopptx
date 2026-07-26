@@ -118,3 +118,28 @@ def test_add_audio_uses_icon_payload_keys() -> None:
     )
     assert "icon_data" in fake.last_payload
     assert "poster_data" not in fake.last_payload
+
+
+def test_add_picture_with_description(tmp_path: pathlib.Path) -> None:
+    """add_picture creates image shape with description, alt_text, and title options."""
+    img_path = tmp_path / "chart_pic.png"
+    img_path.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n2\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+
+    output_path = tmp_path / "picture_output.pptx"
+    with Presentation.new("Picture Test") as pres:
+        slide = pres.slides[0]
+        pic_id = slide.add_picture(
+            img_path,
+            left=Inches(1),
+            top=Inches(1),
+            width=Inches(3),
+            height=Inches(2),
+            description="Sample Alt Text Description",
+            title="Sample Title",
+        )
+        assert pic_id > 0
+        pres.save(output_path)
+
+    assert output_path.exists()

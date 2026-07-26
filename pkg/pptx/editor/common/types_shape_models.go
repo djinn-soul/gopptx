@@ -247,6 +247,9 @@ type ShapeUpdate struct {
 	Y           *int             `json:"y,omitempty"`
 	W           *int             `json:"w,omitempty"`
 	H           *int             `json:"h,omitempty"`
+	Description *string          `json:"description,omitempty"`
+	AltText     *string          `json:"alt_text,omitempty"`
+	Title       *string          `json:"title,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.

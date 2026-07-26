@@ -120,6 +120,47 @@ class DataLabels:
             "data_label_show_category": value,
         })
 
+    @property
+    def position(self) -> str | None:
+        """Return the label position token, if explicitly configured."""
+        value = self._chart.state_get("data_label_position", default=None)
+        return value if isinstance(value, str) else None
+
+    @position.setter
+    def position(self, value: str) -> None:
+        self._chart.state_set("data_label_position", value)
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_position": value,
+        })
+
+    @property
+    def show_series_name(self) -> bool:
+        """Whether series names are included in data labels."""
+        return bool(self._chart.state_get("data_label_show_series_name", default=False))
+
+    @show_series_name.setter
+    def show_series_name(self, value: bool) -> None:
+        self._chart.state_set("data_label_show_series_name", value)
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_show_series_name": value,
+        })
+
+    @property
+    def number_format(self) -> str | None:
+        """Return the OOXML number format used by data labels."""
+        value = self._chart.state_get("data_label_number_format", default=None)
+        return value if isinstance(value, str) else None
+
+    @number_format.setter
+    def number_format(self, value: str) -> None:
+        self._chart.state_set("data_label_number_format", value)
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_number_format": value,
+        })
+
 
 class ChartPlot:
     """Single plot proxy."""
@@ -143,6 +184,17 @@ class ChartPlot:
     def data_labels(self) -> DataLabels:
         """Plot data-labels proxy."""
         return self._data_labels
+
+    def set_bar_options(self, *, grouping: str, gap_width: int, overlap: int) -> None:
+        """Set grouping and spacing options for bar or column charts."""
+        self._chart.state_set("chart_grouping", grouping)
+        self._chart.state_set("gap_width", gap_width)
+        self._chart.state_set("overlap", overlap)
+        self._chart.apply_format({
+            "chart_grouping": grouping,
+            "gap_width": gap_width,
+            "overlap": overlap,
+        })
 
 
 class ChartPlots:

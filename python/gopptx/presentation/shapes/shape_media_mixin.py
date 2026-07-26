@@ -32,6 +32,32 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         result = self.execute(ops.OP_ADD_IMAGE, payload)
         return get_required_int(result, "shape_id")
 
+    def add_picture(
+        self,
+        slide_index: int,
+        source: str | bytes | None = None,
+        left: float = 0,
+        top: float = 0,
+        width: float = 0,
+        height: float = 0,
+        **kwargs: object,
+    ) -> int:
+        """Add a picture shape to a slide (python-pptx compatible API).
+
+        Supports optional ``description``, ``alt_text``, and ``title`` parameters.
+        """
+        bounds = (left, top, width, height)
+        self._validate_picture_metadata(kwargs)
+        return self.add_image(slide_index, source, bounds=bounds, **kwargs)
+
+    @staticmethod
+    def _validate_picture_metadata(kwargs: dict[str, object]) -> None:
+        """Validate optional picture metadata supplied through keyword options."""
+        for key in ("description", "alt_text", "title"):
+            value = kwargs.get(key)
+            if value is not None and not isinstance(value, str):
+                raise TypeError(f"{key} must be a string")
+
     def _resolve_image_source(
         self,
         payload: dict[str, object],
@@ -67,6 +93,15 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
             val = kwargs.get(key)
             if isinstance(val, bool):
                 options[key] = val
+
+        descr = kwargs.get("description") or kwargs.get("alt_text")
+        if isinstance(descr, str):
+            options["description"] = descr
+            options["alt_text"] = descr
+
+        title = kwargs.get("title")
+        if isinstance(title, str):
+            options["title"] = title
 
         if options:
             payload["options"] = options

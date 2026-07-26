@@ -24,6 +24,7 @@ profile.cov
 # Go workspace file
 go.work
 go.work.sum
+issues/
 
 # env file
 .env
@@ -46,7 +47,7 @@ testdata/
 pkg/pptx/*.pptx
 issues
 bindings/c/build
-
+architecture
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
