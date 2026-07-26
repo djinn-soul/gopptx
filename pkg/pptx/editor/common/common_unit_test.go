@@ -26,6 +26,18 @@ func TestPathHelpers(t *testing.T) {
 		if CanonicalPartPath("/ppt/slides/slide1.xml") != "ppt/slides/slide1.xml" {
 			t.Error("CanonicalPartPath failed")
 		}
+		if CanonicalPartPath("../../etc/passwd") != "etc/passwd" {
+			t.Errorf("Zip Slip defense failed for ../../etc/passwd: got %q", CanonicalPartPath("../../etc/passwd"))
+		}
+		if CanonicalPartPath(`\..\..\Windows\System32\cmd.exe`) != "Windows/System32/cmd.exe" {
+			t.Errorf(
+				"Zip Slip defense failed for backslashes: got %q",
+				CanonicalPartPath(`\..\..\Windows\System32\cmd.exe`),
+			)
+		}
+		if CanonicalPartPath("ppt/slides/../../outside.xml") != "outside.xml" {
+			t.Errorf("Path traversal cleanup failed: got %q", CanonicalPartPath("ppt/slides/../../outside.xml"))
+		}
 	})
 
 	t.Run("SlideRelsPartName", func(t *testing.T) {

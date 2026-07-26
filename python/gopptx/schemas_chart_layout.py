@@ -51,6 +51,11 @@ class ChartFormatUpdate(TypedDict, total=False):
     data_label_show_series_name: bool
     data_label_show_percent: bool
     data_label_show_bubble_size: bool
+    data_label_number_format: str
+    data_label_format_linked: bool
+    chart_grouping: str
+    gap_width: int
+    overlap: int
     category_axis_tick_label_pos: str
     value_axis_tick_label_pos: str
     category_axis_major_gridlines: bool
@@ -59,6 +64,20 @@ class ChartFormatUpdate(TypedDict, total=False):
     value_axis_minor_gridlines: bool
     category_axis_crosses: str
     value_axis_crosses: str
+    category_axis_title: str
+    value_axis_title: str
+    category_axis_minimum_scale: float
+    category_axis_maximum_scale: float
+    value_axis_minimum_scale: float
+    value_axis_maximum_scale: float
+    category_axis_major_unit: float
+    category_axis_minor_unit: float
+    value_axis_major_unit: float
+    value_axis_minor_unit: float
+    category_axis_number_format: str
+    value_axis_number_format: str
+    category_axis_format_linked: bool
+    value_axis_format_linked: bool
     camera_preset: str
     camera_field_of_view: int
     light_rig: str
@@ -74,6 +93,13 @@ class ChartAxisState(TypedDict, total=False):
     major_gridline: bool
     minor_gridline: bool
     crosses: str
+    title: str
+    minimum_scale: float
+    maximum_scale: float
+    major_unit: float
+    minor_unit: float
+    number_format: str
+    format_linked: bool
 
 
 class ChartState(TypedDict, total=False):

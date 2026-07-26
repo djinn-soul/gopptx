@@ -9,19 +9,27 @@ import (
 )
 
 var (
-	reChartStyle = regexp.MustCompile(`<c:style val="(\d+)"`)
-	reSerBlock   = regexp.MustCompile(`(?s)<c:ser>.*?</c:ser>`)
-	reAText      = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
-	reNumValue   = regexp.MustCompile(`(?s)<c:v>(-?\d+(?:\.\d+)?)</c:v>`)
-	reTickLblPos = regexp.MustCompile(`<c:tickLblPos val="([^"]+)"`)
-	reCrosses    = regexp.MustCompile(`<c:crosses val="([^"]+)"`)
-	reScene3D    = regexp.MustCompile(`(?s)<a:scene3d\b.*?</a:scene3d>`)
-	reCamera     = regexp.MustCompile(`<a:camera\b[^>]*prst="([^"]+)"[^>]*>`)
-	reCameraFOV  = regexp.MustCompile(`<a:camera\b[^>]*fov="([^"]+)"[^>]*>`)
-	reLightRig   = regexp.MustCompile(`<a:lightRig\b[^>]*rig="([^"]+)"[^>]*>`)
-	reLightDir   = regexp.MustCompile(`<a:lightRig\b[^>]*dir="([^"]+)"[^>]*>`)
-	reLightRev   = regexp.MustCompile(`<a:lightRig\b[^>]*rev="([^"]+)"[^>]*>`)
+	reChartStyle      = regexp.MustCompile(`<c:style val="(\d+)"`)
+	reSerBlock        = regexp.MustCompile(`(?s)<c:ser>.*?</c:ser>`)
+	reAText           = regexp.MustCompile(`(?s)<a:t>(.*?)</a:t>`)
+	reNumValue        = regexp.MustCompile(`(?s)<c:v>(-?\d+(?:\.\d+)?)</c:v>`)
+	reTickLblPos      = regexp.MustCompile(`<c:tickLblPos val="([^"]+)"`)
+	reCrosses         = regexp.MustCompile(`<c:crosses val="([^"]+)"`)
+	reStateAxisTitle  = regexp.MustCompile(`(?s)<c:title>.*?<a:t>(.*?)</a:t>.*?</c:title>`)
+	reStateAxisMin    = regexp.MustCompile(`<c:min val="([^"]+)"`)
+	reStateAxisMax    = regexp.MustCompile(`<c:max val="([^"]+)"`)
+	reStateAxisMajor  = regexp.MustCompile(`<c:majorUnit val="([^"]+)"`)
+	reStateAxisMinor  = regexp.MustCompile(`<c:minorUnit val="([^"]+)"`)
+	reStateAxisNumFmt = regexp.MustCompile(`<c:numFmt\b[^>]*formatCode="([^"]*)"[^>]*sourceLinked="([^"]+)"[^>]*/>`)
+	reScene3D         = regexp.MustCompile(`(?s)<a:scene3d\b.*?</a:scene3d>`)
+	reCamera          = regexp.MustCompile(`<a:camera\b[^>]*prst="([^"]+)"[^>]*>`)
+	reCameraFOV       = regexp.MustCompile(`<a:camera\b[^>]*fov="([^"]+)"[^>]*>`)
+	reLightRig        = regexp.MustCompile(`<a:lightRig\b[^>]*rig="([^"]+)"[^>]*>`)
+	reLightDir        = regexp.MustCompile(`<a:lightRig\b[^>]*dir="([^"]+)"[^>]*>`)
+	reLightRev        = regexp.MustCompile(`<a:lightRig\b[^>]*rev="([^"]+)"[^>]*>`)
 )
+
+const expectedAxisNumFmtMatch = 3
 
 const expectedSingleGroupMatch = 2
 
@@ -89,11 +97,35 @@ func buildAxisState(xml string, tags []string) common.ChartAxisState {
 		if match := reCrosses.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
 			state.Crosses = strings.TrimSpace(match[1])
 		}
+		if match := reStateAxisTitle.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+			state.Title = strings.TrimSpace(match[1])
+		}
+		state.MinimumScale = axisFloatValue(block, reStateAxisMin)
+		state.MaximumScale = axisFloatValue(block, reStateAxisMax)
+		state.MajorUnit = axisFloatValue(block, reStateAxisMajor)
+		state.MinorUnit = axisFloatValue(block, reStateAxisMinor)
+		if match := reStateAxisNumFmt.FindStringSubmatch(block); len(match) == expectedAxisNumFmtMatch {
+			state.NumberFormat = match[1]
+			linked := strings.TrimSpace(match[2]) == "1"
+			state.FormatLinked = &linked
+		}
 		state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
 		state.MinorGridline = strings.Contains(block, "<c:minorGridlines")
 		break
 	}
 	return state
+}
+
+func axisFloatValue(block string, re *regexp.Regexp) *float64 {
+	match := re.FindStringSubmatch(block)
+	if len(match) != expectedSingleGroupMatch {
+		return nil
+	}
+	value, err := strconv.ParseFloat(strings.TrimSpace(match[1]), 64)
+	if err != nil {
+		return nil
+	}
+	return &value
 }
 
 func parseSeriesState(xml string) []common.ChartSeriesData {

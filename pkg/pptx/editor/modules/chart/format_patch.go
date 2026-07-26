@@ -8,6 +8,8 @@ import (
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
+const defaultChartNumberFormat = "General"
+
 var (
 	reChartTitleBlock = regexp.MustCompile(`(?s)<c:title>.*?</c:title>`)
 	reTitleText       = regexp.MustCompile(`(?s)<a:t>.*?</a:t>`)
@@ -39,6 +41,12 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if err := validateAxisCrosses("value_axis_crosses", req.ValueAxisCrosses); err != nil {
 		return err
 	}
+	if err := validateAxisDetails(req); err != nil {
+		return err
+	}
+	if err := validateChartPlotOptions(req); err != nil {
+		return err
+	}
 	if err := validateScene3DUpdate(req); err != nil {
 		return err
 	}
@@ -61,6 +69,8 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchPlotVisibleOnly(updated, req.PlotVisibleOnly)
 	updated = patchChartLegend(updated, req.ShowLegend, req.LegendPosition, req.LegendOverlay)
 	updated = patchChartDataLabels(updated, req)
+	updated = patchChartDataLabelNumberFormat(updated, req.DataLabelNumberFormat, req.DataLabelFormatLinked)
+	updated = patchChartPlotOptions(updated, req)
 	updated = patchAxisTickLabelPosition(updated, "catAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "dateAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "valAx", req.ValueAxisTickLabelPos)
@@ -73,6 +83,7 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchAxisCrosses(updated, "catAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)
+	updated = patchAxisDetails(updated, req)
 	updated = patchChartScene3D(updated, req)
 	return []byte(updated), nil
 }
