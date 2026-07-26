@@ -20,6 +20,8 @@ func contentTypeForExtension(ext string) string {
 		return "image/bmp"
 	case "tif", "tiff":
 		return "image/tiff"
+	case "svg":
+		return "image/svg+xml"
 	case "wav":
 		return "audio/wav"
 	case "mp3":

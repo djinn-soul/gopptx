@@ -105,12 +105,14 @@ class PresentationBase(
     _lib: object | None = None
     _lib_lock = threading.Lock()
 
-    def __init__(self, path: str | None = None) -> None:
-        """Initialize the presentation, optionally opening a file."""
+    def __init__(
+        self, file_like_or_path: str | os.PathLike[str] | bytes | object = None
+    ) -> None:
+        """Initialize the presentation, optionally opening a file or file-like object."""
         super().__init__()
         self._load_library()
-        if path:
-            self.open(path)
+        if file_like_or_path is not None:
+            self.open(file_like_or_path)
 
     @classmethod
     def _load_library(cls) -> None:

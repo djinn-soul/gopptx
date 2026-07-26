@@ -13,6 +13,7 @@ from ..runtime_lifecycle import PresentationRuntimeLifecycleMixin
 from ..text.text_write_buffer_mixin import PresentationTextWriteBufferMixin
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Mapping
 
 
@@ -89,11 +90,11 @@ class PresentationShapeWriteBufferMixin(PresentationMixinBase):
         runtime_self = cast("PresentationRuntimeMixin", self)
         return PresentationRuntimeMixin.execute(runtime_self, op, normalized_payload)
 
-    def open(self, path: str) -> None:
+    def open(self, file_like_or_path: str | os.PathLike[str] | bytes | object) -> None:
         """Discard pending textbox state before opening another deck."""
         self._reset_shape_write_buffer()
         runtime_self = cast("PresentationRuntimeLifecycleMixin", self)
-        PresentationRuntimeLifecycleMixin.open(runtime_self, path)
+        PresentationRuntimeLifecycleMixin.open(runtime_self, file_like_or_path)
 
     def open_bytes(self, data: bytes) -> None:
         """Discard pending textbox state before opening a deck from bytes."""

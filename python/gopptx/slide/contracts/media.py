@@ -27,6 +27,18 @@ class MediaOperationsProtocol(Protocol):
         """Protocol member."""
         ...
 
+    def swap_image_by_index(
+        self, slide_index: int, image_index: int, data: bytes, img_format: str
+    ) -> None:
+        """Protocol member."""
+        ...
+
+    def swap_image_by_rel_id(
+        self, slide_index: int, rel_id: str, data: bytes, img_format: str
+    ) -> None:
+        """Protocol member."""
+        ...
+
     def add_video(
         self,
         slide_index: int,
