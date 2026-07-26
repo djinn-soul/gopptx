@@ -10,13 +10,13 @@ from .text_run import Run, RunHyperlink
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .text_model import ShapeTextFrame
+    from .text_frame_protocol import ShapeTextFrameProtocol
 
 
 class _ShapeRunProxy:
     """Live run proxy backed by bridge operations."""
 
-    def __init__(self, text_frame: ShapeTextFrame, run_index: int) -> None:
+    def __init__(self, text_frame: ShapeTextFrameProtocol, run_index: int) -> None:
         self._text_frame = text_frame
         self._run_index = run_index
 
@@ -24,7 +24,7 @@ class _ShapeRunProxy:
         runs = self._text_frame.get_runs()
         if self._run_index < 0 or self._run_index >= len(runs):
             raise IndexError("run index out of range")
-        return cast("dict[str, object]", runs[self._run_index])
+        return runs[self._run_index]
 
     def _set_field(self, name: str, value: object) -> None:
         runs = [dict(run) for run in self._text_frame.get_runs()]
@@ -96,7 +96,7 @@ class _ShapeRunProxy:
 class _ShapeRunCollection:
     """Live run collection for a paragraph proxy."""
 
-    def __init__(self, text_frame: ShapeTextFrame) -> None:
+    def __init__(self, text_frame: ShapeTextFrameProtocol) -> None:
         self._text_frame = text_frame
         self._run_proxies: dict[int, _ShapeRunProxy] = {}
 

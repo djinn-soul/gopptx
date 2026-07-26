@@ -1,7 +1,5 @@
 package shape
 
-import common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
-
 const (
 	rotationDegreeToOOXML = 60000.0
 	gradientPositionScale = 1000.0
@@ -282,30 +280,4 @@ type shapeXML struct {
 			} `xml:"r"`
 		} `xml:"p"`
 	} `xml:"txBody"`
-}
-
-type ParsedShapeProperties struct {
-	ID         int
-	Name       string
-	Type       string
-	Text       string
-	Runs       []common.TextRun
-	Paragraphs []common.ShapeTextParagraph
-	TextFrame  *common.TextFrame
-	Paragraph  *common.Paragraph
-	Fill       *common.ShapeFill
-	Line       *common.ShapeLine
-	Shadow     *common.ShapeShadow
-	Glow       *common.ShapeGlow
-	Blur       *common.ShapeBlur
-	SoftEdge   *common.ShapeSoftEdge
-	Reflection *common.ShapeReflection
-	Rotation   *float64
-	Connector  *common.ConnectorInfo
-	X, Y       int
-	W, H       int
-	PhIndex    int
-	PhType     string
-
-	Adjustments []common.ShapeAdjustment
 }

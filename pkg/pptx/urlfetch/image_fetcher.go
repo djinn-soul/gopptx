@@ -58,8 +58,6 @@ type FetchedImage struct {
 }
 
 const (
-	minMagicBytes      = 4
-	webpMagicBytes     = 12
 	defaultAspectNum   = 3
 	defaultAspectDenom = 4
 )
@@ -123,6 +121,17 @@ func (f *ImageFetcher) FetchImage(imageURL string) (*FetchedImage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("detect image info: %w", err)
 	}
+	decodedMIME, knownFormat := imageFormatMIME(format)
+	if !knownFormat || !f.isAllowedImageType(decodedMIME) {
+		return nil, fmt.Errorf("decoded image type is not allowed: image/%s", format)
+	}
+	if !strings.EqualFold(normalizeContentType(contentType), decodedMIME) {
+		return nil, fmt.Errorf(
+			"image content type mismatch: header %q, decoded %q",
+			contentType,
+			decodedMIME,
+		)
+	}
 
 	// Check and reserve total size limit only after validation succeeds.
 	f.mu.Lock()
@@ -176,15 +185,11 @@ func (f *ImageFetcher) resolveURL(imageURL string) (string, error) {
 
 // isAllowedImageType checks if the content type is in the allowed list.
 func (f *ImageFetcher) isAllowedImageType(contentType string) bool {
-	// Extract main type/subtype (ignore parameters like charset)
-	semicolonIdx := strings.Index(contentType, ";")
-	if semicolonIdx != -1 {
-		contentType = strings.TrimSpace(contentType[:semicolonIdx])
-	}
+	contentType = normalizeContentType(contentType)
 
 	allowedTypes := f.cfg.AllowedImageTypes
 	if len(allowedTypes) == 0 {
-		allowedTypes = []string{"image/png", "image/jpeg", "image/gif"}
+		allowedTypes = []string{imageMIMEPNG, imageMIMEJPEG, imageMIMEGIF}
 	}
 
 	for _, allowed := range allowedTypes {
@@ -198,50 +203,28 @@ func (f *ImageFetcher) isAllowedImageType(contentType string) bool {
 
 // detectImageInfo detects the format and dimensions of image data.
 func (f *ImageFetcher) detectImageInfo(data []byte) (string, int, int, error) {
-	// Use image.DecodeConfig to get dimensions without full decode
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		// Try to detect format from magic bytes if DecodeConfig fails
-		format = detectFormatFromMagic(data)
-		if format == "" {
-			return "", 0, 0, fmt.Errorf("decode image config: %w", err)
-		}
-		// Return with zero dimensions if we can't decode
-		return format, 0, 0, nil
+		return "", 0, 0, fmt.Errorf("decode image config: %w", err)
 	}
 
 	return format, cfg.Width, cfg.Height, nil
 }
 
-// detectFormatFromMagic detects image format from magic bytes.
-func detectFormatFromMagic(data []byte) string {
-	if len(data) < minMagicBytes {
-		return ""
-	}
+func imageFormatMIME(format string) (string, bool) {
+	mimeType, ok := map[string]string{
+		"gif":  imageMIMEGIF,
+		"jpeg": imageMIMEJPEG,
+		"png":  imageMIMEPNG,
+	}[strings.ToLower(format)]
+	return mimeType, ok
+}
 
-	// PNG: 89 50 4E 47
-	if data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47 {
-		return "png"
+func normalizeContentType(contentType string) string {
+	if semicolonIndex := strings.Index(contentType, ";"); semicolonIndex != -1 {
+		contentType = contentType[:semicolonIndex]
 	}
-
-	// JPEG: FF D8 FF
-	if data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
-		return "jpeg"
-	}
-
-	// GIF: GIF87a or GIF89a
-	if data[0] == 'G' && data[1] == 'I' && data[2] == 'F' && data[3] == '8' {
-		return "gif"
-	}
-
-	// WebP: RIFF....WEBP
-	if len(data) >= webpMagicBytes && data[0] == 'R' && data[1] == 'I' && data[2] == 'F' && data[3] == 'F' {
-		if data[8] == 'W' && data[9] == 'E' && data[10] == 'B' && data[11] == 'P' {
-			return "webp"
-		}
-	}
-
-	return ""
+	return strings.TrimSpace(contentType)
 }
 
 // CalculateImageDimensions calculates EMU dimensions preserving aspect ratio.

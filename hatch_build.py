@@ -4,6 +4,7 @@ import os
 import pathlib
 import subprocess  # noqa: S404
 import sys
+import sysconfig
 from typing import Any
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
@@ -51,7 +52,9 @@ class CustomBuildHook(BuildHookInterface):
         return hidden
 
     @staticmethod
-    def _restore_hidden_binaries(hidden: list[tuple[pathlib.Path, pathlib.Path]]) -> None:
+    def _restore_hidden_binaries(
+        hidden: list[tuple[pathlib.Path, pathlib.Path]],
+    ) -> None:
         for dst, src in hidden:
             if dst.exists():
                 if src.exists():
@@ -70,7 +73,7 @@ class CustomBuildHook(BuildHookInterface):
             return
 
         project_root = pathlib.Path(self.root)
-        go_bridge_src = project_root / "bindings" / "c" / "bridge.go"
+        go_bridge_package = project_root / "bindings" / "c"
         pkg_dir = project_root / "python" / "gopptx"
 
         lib_name = self._target_lib_name(sys.platform)
@@ -86,7 +89,7 @@ class CustomBuildHook(BuildHookInterface):
             "-o",
             str(out_path),
             "-buildmode=c-shared",
-            str(go_bridge_src),
+            str(go_bridge_package),
         ]
         if self._release_build_enabled():
             cmd[2:2] = ["-trimpath", "-buildvcs=false", "-ldflags=-s -w"]
@@ -97,7 +100,6 @@ class CustomBuildHook(BuildHookInterface):
             sys.exit(1)
 
         build_data["artifacts"].append(f"python/gopptx/{lib_name}")
-        import sysconfig
         plat = sysconfig.get_platform().replace("-", "_").replace(".", "_")
         build_data["tag"] = f"py3-none-{plat}"
         build_data["pure_python"] = False
@@ -110,7 +112,10 @@ class CustomBuildHook(BuildHookInterface):
     ) -> None:
         """Restore any non-target binaries hidden during wheel build."""
         hidden = build_data.pop("gopptx_hidden_bins", [])
-        parsed_hidden = [(pathlib.Path(dst_raw), pathlib.Path(src_raw)) for dst_raw, src_raw in hidden]
+        parsed_hidden = [
+            (pathlib.Path(dst_raw), pathlib.Path(src_raw))
+            for dst_raw, src_raw in hidden
+        ]
         self._restore_hidden_binaries(parsed_hidden)
         hidden_dir = pathlib.Path(self.root) / ".hatch_build_hidden_bins"
         if hidden_dir.exists() and not any(hidden_dir.iterdir()):

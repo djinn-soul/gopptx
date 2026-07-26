@@ -58,16 +58,6 @@ func setGlobalError(err error) {
 	}
 }
 
-//export deck_global_error
-func deck_global_error() *C.char {
-	globalErrorMu.RLock()
-	defer globalErrorMu.RUnlock()
-	if globalError == "" {
-		return nil
-	}
-	return C.CString(globalError)
-}
-
 // main is required for cgo build but not used for library.
 func init() { //nolint:gochecknoinits // required for cgo shared library registration
 	editorexport.Register()
@@ -295,13 +285,6 @@ func deck_last_error(h C.DeckHandle) *C.char {
 
 	errMsg := editor.GetHandleError(deckRegistry, handle)
 	return C.CString(errMsg)
-}
-
-//export deck_free_string
-func deck_free_string(s *C.char) {
-	if s != nil {
-		C.free(unsafe.Pointer(s))
-	}
 }
 
 //export deck_close

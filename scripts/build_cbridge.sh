@@ -13,9 +13,9 @@ pythonLibPath="python/gopptx/$libName"
 
 echo "Building gopptx shared library..."
 if [[ "${GOPPTX_RELEASE_BUILD:-}" == "1" || "${GOPPTX_RELEASE_BUILD:-}" == "true" ]]; then
-    go build -trimpath -buildvcs=false -ldflags="-s -w" -o "$outDir/$libName" -buildmode=c-shared bindings/c/bridge.go
+    go build -trimpath -buildvcs=false -ldflags="-s -w" -o "$outDir/$libName" -buildmode=c-shared ./bindings/c
 else
-    go build -o "$outDir/$libName" -buildmode=c-shared bindings/c/bridge.go
+    go build -o "$outDir/$libName" -buildmode=c-shared ./bindings/c
 fi
 
 echo "Build successful!"

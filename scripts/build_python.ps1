@@ -13,9 +13,9 @@ $isReleaseBuild = $releaseBuild -eq "1" -or $releaseBuild -ieq "true"
 
 Write-Host "Building Go engine for Python..."
 if ($isReleaseBuild) {
-    go build -trimpath -buildvcs=false -ldflags "-s -w" -o $libPath -buildmode=c-shared bindings/c/bridge.go
+    go build -trimpath -buildvcs=false -ldflags "-s -w" -o $libPath -buildmode=c-shared ./bindings/c
 } else {
-    go build -o $libPath -buildmode=c-shared bindings/c/bridge.go
+    go build -o $libPath -buildmode=c-shared ./bindings/c
 }
 
 if ($LASTEXITCODE -eq 0) {
