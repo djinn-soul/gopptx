@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
@@ -157,10 +158,12 @@ func applyReaderRelationshipTarget(
 		if decoded, err := url.PathUnescape(address); err == nil {
 			address = decoded
 		}
+		address = action.SanitizeHyperlinkURI(address)
 		hl.Address = &address
 	default:
 		address := strings.TrimSpace(rel.Target)
 		if address != "" {
+			address = action.SanitizeHyperlinkURI(address)
 			hl.Address = &address
 		}
 	}

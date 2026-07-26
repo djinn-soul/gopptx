@@ -16,12 +16,21 @@ type dataLabelNumberFormatXML struct {
 	SourceLinked string `xml:"sourceLinked,attr"`
 }
 
+type dataLabelBodyPropertiesXML struct {
+	Wrap string `xml:"wrap,attr"`
+}
+
+type dataLabelTextPropertiesXML struct {
+	BodyProperties dataLabelBodyPropertiesXML `xml:"bodyPr"`
+}
+
 type dataLabelsXML struct {
-	Position       dataLabelValueXML         `xml:"dLblPos"`
-	ShowValue      dataLabelValueXML         `xml:"showVal"`
-	ShowCategory   dataLabelValueXML         `xml:"showCatName"`
-	ShowSeriesName dataLabelValueXML         `xml:"showSerName"`
-	NumberFormat   *dataLabelNumberFormatXML `xml:"numFmt"`
+	Position       dataLabelValueXML           `xml:"dLblPos"`
+	ShowValue      dataLabelValueXML           `xml:"showVal"`
+	ShowCategory   dataLabelValueXML           `xml:"showCatName"`
+	ShowSeriesName dataLabelValueXML           `xml:"showSerName"`
+	NumberFormat   *dataLabelNumberFormatXML   `xml:"numFmt"`
+	TextProperties *dataLabelTextPropertiesXML `xml:"txPr"`
 }
 
 type chartPlotXML struct {
@@ -53,6 +62,16 @@ func parseDataLabelState(chartXML string) common.ChartDataLabelState {
 		state.NumberFormat = labels.NumberFormat.FormatCode
 		linked := strings.TrimSpace(labels.NumberFormat.SourceLinked) == "1"
 		state.FormatLinked = &linked
+	}
+	if labels.TextProperties != nil {
+		switch strings.TrimSpace(labels.TextProperties.BodyProperties.Wrap) {
+		case xmlValueNone:
+			wordWrap := false
+			state.WordWrap = &wordWrap
+		case dataLabelWrapSquare:
+			wordWrap := true
+			state.WordWrap = &wordWrap
+		}
 	}
 	return state
 }

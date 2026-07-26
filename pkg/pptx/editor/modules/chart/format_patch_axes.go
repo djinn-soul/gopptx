@@ -9,6 +9,7 @@ import (
 const (
 	axisTickPosLow  = "low"
 	axisCrossesAuto = "autoZero"
+	xmlValueNone    = "none"
 )
 
 func validateAxisTickLabelPosition(field string, value *string) error {
@@ -16,7 +17,7 @@ func validateAxisTickLabelPosition(field string, value *string) error {
 		return nil
 	}
 	switch strings.TrimSpace(*value) {
-	case "nextTo", "high", axisTickPosLow, "none":
+	case "nextTo", "high", axisTickPosLow, xmlValueNone:
 		return nil
 	default:
 		return fmt.Errorf("%s must be one of nextTo,high,low,none", field)

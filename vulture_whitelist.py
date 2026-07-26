@@ -583,3 +583,4 @@ RADAR_FILLED  # unused variable (python\gopptx\presentation\charts\chart_types.p
 STOCK_HLC  # unused variable (python\gopptx\presentation\charts\chart_types.py)
 STOCK_OHLC  # unused variable (python\gopptx\presentation\charts\chart_types.py)
 show_category  # unused variable (python\gopptx\schemas_chart_layout.py)
+data_label_word_wrap  # unused variable (python\gopptx\schemas_chart_layout.py)

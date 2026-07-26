@@ -62,6 +62,14 @@ Most chart types share a `With*` fluent API for title, legend, labels, position,
 - `Position(...)`
 - `Size(...)`
 
+Data-label text wrapping is tri-state so an unspecified value preserves the
+presentation default. Configure it through the chart's `DataLabels` value:
+
+```go
+chart := charts.NewBarChart(categories, values).WithDataLabels(true)
+chart.DataLabels = chart.DataLabels.WithWordWrap(false)
+```
+
 ## Constants
 
 - `LegendPositionRight`
@@ -133,7 +141,7 @@ Source file: `pkg/pptx/presentation_chart_api.go`
 
 - `ChartSelector` — identifies a chart by index (`Index *int`) or relationship ID (`RelID string`)
 - `ChartDataUpdate` — complete chart replacement payload
-- `ChartFormatUpdate` — partial formatting patch
+- `ChartFormatUpdate` — partial formatting patch, including `DataLabelWordWrap *bool`
 - `SlideChartRef` — chart reference returned by `ListSlideCharts`
 - `ChartDataBuilder` — interface implemented by `*CategoryChartData`, `*XyChartData`, `*BubbleChartData`
 

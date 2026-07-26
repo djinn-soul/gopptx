@@ -10,7 +10,7 @@ func TestExtractChartState(t *testing.T) {
 <c:chart><c:plotArea>
 <c:barChart>
 <c:ser><c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>North</c:v></c:pt></c:strCache></c:strRef></c:tx><c:val><c:numRef><c:numCache><c:pt idx="0"><c:v>1.5</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>
-<c:dLbls><c:numFmt formatCode="$#,##0" sourceLinked="0"/><c:dLblPos val="outEnd"/><c:showVal val="1"/><c:showCatName val="1"/><c:showSerName val="1"/></c:dLbls>
+<c:dLbls><c:numFmt formatCode="$#,##0" sourceLinked="0"/><c:txPr><a:bodyPr wrap="none"/><a:lstStyle/><a:p/></c:txPr><c:dLblPos val="outEnd"/><c:showVal val="1"/><c:showCatName val="1"/><c:showSerName val="1"/></c:dLbls>
 <c:axId val="1"/><c:axId val="2"/>
 </c:barChart>
 <c:catAx><c:axId val="1"/><c:title><c:tx><c:rich><a:p><a:r><a:t>R&amp;D &lt;Q1&gt;</a:t></a:r></a:p></c:rich></c:tx></c:title><c:tickLblPos val="low"/><c:crosses val="autoZero"/></c:catAx>
@@ -58,6 +58,9 @@ func TestExtractChartState(t *testing.T) {
 	if state.DataLabels.NumberFormat != "$#,##0" ||
 		state.DataLabels.FormatLinked == nil || *state.DataLabels.FormatLinked {
 		t.Fatalf("unexpected data label number format %#v", state.DataLabels)
+	}
+	if state.DataLabels.WordWrap == nil || *state.DataLabels.WordWrap {
+		t.Fatalf("expected persisted data-label word-wrap false, got %#v", state.DataLabels)
 	}
 }
 

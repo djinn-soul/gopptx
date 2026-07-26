@@ -48,6 +48,7 @@ type ChartFormatUpdate struct {
 	DataLabelShowBubbleSize  *bool    `json:"data_label_show_bubble_size,omitempty"`
 	DataLabelNumberFormat    *string  `json:"data_label_number_format,omitempty"`
 	DataLabelFormatLinked    *bool    `json:"data_label_format_linked,omitempty"`
+	DataLabelWordWrap        *bool    `json:"data_label_word_wrap,omitempty"`
 	ChartGrouping            *string  `json:"chart_grouping,omitempty"`
 	GapWidth                 *int     `json:"gap_width,omitempty"`
 	Overlap                  *int     `json:"overlap,omitempty"`
@@ -115,6 +116,7 @@ type ChartDataLabelState struct {
 	ShowSeriesName bool   `json:"show_series_name,omitempty"`
 	NumberFormat   string `json:"number_format,omitempty"`
 	FormatLinked   *bool  `json:"format_linked,omitempty"`
+	WordWrap       *bool  `json:"word_wrap,omitempty"`
 }
 
 // ChartScene3DState is a read snapshot for chart-level 3D scene settings.
