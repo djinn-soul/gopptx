@@ -264,6 +264,13 @@ func applyPlaceholderInfo(ps *ParsedShapeProperties, ph *struct {
 	ps.PhIndex = 0
 }
 func applyParsedShapeTransform(ps *ParsedShapeProperties, s *shapeXML) {
+	// Flip lives on whichever <a:xfrm> the shape carries, and is read for every
+	// shape kind so a value written through ShapeUpdate can be read back.
+	ps.FlipH = parseBoolAttr(s.SpPr.Xfrm.FlipH) || parseBoolAttr(s.Xfrm.FlipH) ||
+		parseBoolAttr(s.GrpSpPr.Xfrm.FlipH)
+	ps.FlipV = parseBoolAttr(s.SpPr.Xfrm.FlipV) || parseBoolAttr(s.Xfrm.FlipV) ||
+		parseBoolAttr(s.GrpSpPr.Xfrm.FlipV)
+
 	if s.SpPr.Xfrm.Ext.Cx != 0 || s.SpPr.Xfrm.Ext.Cy != 0 || s.SpPr.Xfrm.Off.X != 0 || s.SpPr.Xfrm.Off.Y != 0 {
 		ps.X = s.SpPr.Xfrm.Off.X
 		ps.Y = s.SpPr.Xfrm.Off.Y

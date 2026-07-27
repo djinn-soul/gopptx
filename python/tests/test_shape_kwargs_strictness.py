@@ -16,7 +16,12 @@ from gopptx.schemas import Inches
 
 BOUNDS = (Inches(1), Inches(1), Inches(2), Inches(1))
 SAMPLE_PNG = (
-    pathlib.Path(__file__).parent / ".." / ".." / "examples" / "assets" / "test_image.png"
+    pathlib.Path(__file__).parent
+    / ".."
+    / ".."
+    / "examples"
+    / "assets"
+    / "test_image.png"
 ).resolve()
 
 

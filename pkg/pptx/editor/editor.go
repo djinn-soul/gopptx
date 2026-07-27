@@ -56,6 +56,14 @@ type PresentationEditor struct {
 	// SmartArt diagram counter (for ppt/diagrams/data%d.xml etc.)
 	nextDiagramNum int
 
+	// objectIDWatermark tracks the highest shape id ever handed out per part, so
+	// removing the highest-numbered shape does not free its id for reuse. A
+	// caller holding an id from before a removal would otherwise silently edit
+	// an unrelated shape. Session-scoped: a reopened deck re-derives from live
+	// content.
+	objectIDWatermark   map[string]int
+	objectIDWatermarkMu sync.Mutex
+
 	// Comment authors
 	authorCache   map[int64]comments.Author
 	nextAuthorID  int64

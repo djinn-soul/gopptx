@@ -12,11 +12,20 @@ const (
 	keyName        = "name"
 	keySlideIndex  = "slide_index"
 	keyShapeIDs    = "shape_ids"
+	keyShapeID     = "shape_id"
+	keyLeft        = "left"
+	keyTop         = "top"
+	keyWidth       = "width"
+	keyHeight      = "height"
 )
 
 // shapeTypeRect is the default preset geometry reported for shapes with no
 // explicit geometry.
 const shapeTypeRect = "rect"
+
+// targetModeExternal marks a relationship whose target is a URL rather than a
+// part inside the package.
+const targetModeExternal = "External"
 
 // contentTypesPath is the OPC content-types part.
 const contentTypesPath = "[Content_Types].xml"

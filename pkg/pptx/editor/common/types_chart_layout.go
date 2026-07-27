@@ -8,6 +8,9 @@ type ChartSelector struct {
 
 // ChartSeriesData carries one chart series worth of input data.
 type ChartSeriesData struct {
+	// Hidden keeps the series in the embedded workbook but out of the plot, so
+	// the data behind the chart can be a superset of what it draws.
+	Hidden     bool      `json:"hidden,omitempty"`
 	Name       *string   `json:"name,omitempty"`
 	Categories []string  `json:"categories,omitempty"`
 	Values     []float64 `json:"values,omitempty"`
@@ -29,56 +32,75 @@ type ChartDataBatchItem struct {
 	Data          ChartDataUpdate `json:"data"`
 }
 
+// DataLabelOffset positions one data label relative to its default spot.
+// X and Y are fractions of the chart area, as PowerPoint's own "drag the label"
+// gesture records them.
+type DataLabelOffset struct {
+	// SeriesIndex is the zero-based c:ser index; defaults to the first series.
+	SeriesIndex int `json:"series_index,omitempty"`
+	// PointIndex is the zero-based data point the label belongs to.
+	PointIndex int `json:"point_index"`
+	// X and Y are offsets from the label's default position.
+	X *float64 `json:"x,omitempty"`
+	Y *float64 `json:"y,omitempty"`
+}
+
 // ChartFormatUpdate is a partial formatting patch for an existing chart part.
 type ChartFormatUpdate struct {
-	ShowTitle                *bool    `json:"show_title,omitempty"`
-	Title                    *string  `json:"title,omitempty"`
-	TitleOverlay             *bool    `json:"title_overlay,omitempty"`
-	PlotVisibleOnly          *bool    `json:"plot_visible_only,omitempty"`
-	ShowLegend               *bool    `json:"show_legend,omitempty"`
-	LegendPosition           *string  `json:"legend_position,omitempty"`
-	LegendOverlay            *bool    `json:"legend_overlay,omitempty"`
-	ShowDataLabels           *bool    `json:"show_data_labels,omitempty"`
-	DataLabelPosition        *string  `json:"data_label_position,omitempty"`
-	DataLabelShowLegendKey   *bool    `json:"data_label_show_legend_key,omitempty"`
-	DataLabelShowValue       *bool    `json:"data_label_show_value,omitempty"`
-	DataLabelShowCategory    *bool    `json:"data_label_show_category,omitempty"`
-	DataLabelShowSeriesName  *bool    `json:"data_label_show_series_name,omitempty"`
-	DataLabelShowPercent     *bool    `json:"data_label_show_percent,omitempty"`
-	DataLabelShowBubbleSize  *bool    `json:"data_label_show_bubble_size,omitempty"`
-	DataLabelNumberFormat    *string  `json:"data_label_number_format,omitempty"`
-	DataLabelFormatLinked    *bool    `json:"data_label_format_linked,omitempty"`
-	DataLabelWordWrap        *bool    `json:"data_label_word_wrap,omitempty"`
-	ChartGrouping            *string  `json:"chart_grouping,omitempty"`
-	GapWidth                 *int     `json:"gap_width,omitempty"`
-	Overlap                  *int     `json:"overlap,omitempty"`
-	CategoryAxisTickLabelPos *string  `json:"category_axis_tick_label_pos,omitempty"`
-	ValueAxisTickLabelPos    *string  `json:"value_axis_tick_label_pos,omitempty"`
-	CategoryAxisMajorGrid    *bool    `json:"category_axis_major_gridlines,omitempty"`
-	ValueAxisMajorGrid       *bool    `json:"value_axis_major_gridlines,omitempty"`
-	CategoryAxisMinorGrid    *bool    `json:"category_axis_minor_gridlines,omitempty"`
-	ValueAxisMinorGrid       *bool    `json:"value_axis_minor_gridlines,omitempty"`
-	CategoryAxisCrosses      *string  `json:"category_axis_crosses,omitempty"`
-	ValueAxisCrosses         *string  `json:"value_axis_crosses,omitempty"`
-	CategoryAxisTitle        *string  `json:"category_axis_title,omitempty"`
-	ValueAxisTitle           *string  `json:"value_axis_title,omitempty"`
-	CategoryAxisMinimumScale *float64 `json:"category_axis_minimum_scale,omitempty"`
-	CategoryAxisMaximumScale *float64 `json:"category_axis_maximum_scale,omitempty"`
-	ValueAxisMinimumScale    *float64 `json:"value_axis_minimum_scale,omitempty"`
-	ValueAxisMaximumScale    *float64 `json:"value_axis_maximum_scale,omitempty"`
-	CategoryAxisMajorUnit    *float64 `json:"category_axis_major_unit,omitempty"`
-	CategoryAxisMinorUnit    *float64 `json:"category_axis_minor_unit,omitempty"`
-	ValueAxisMajorUnit       *float64 `json:"value_axis_major_unit,omitempty"`
-	ValueAxisMinorUnit       *float64 `json:"value_axis_minor_unit,omitempty"`
-	CategoryAxisNumberFormat *string  `json:"category_axis_number_format,omitempty"`
-	ValueAxisNumberFormat    *string  `json:"value_axis_number_format,omitempty"`
-	CategoryAxisFormatLinked *bool    `json:"category_axis_format_linked,omitempty"`
-	ValueAxisFormatLinked    *bool    `json:"value_axis_format_linked,omitempty"`
-	CameraPreset             *string  `json:"camera_preset,omitempty"`
-	CameraFieldOfView        *int     `json:"camera_field_of_view,omitempty"`
-	LightRig                 *string  `json:"light_rig,omitempty"`
-	LightDirection           *string  `json:"light_direction,omitempty"`
-	LightRigRevolution       *bool    `json:"light_rig_revolution,omitempty"`
+	ShowTitle    *bool    `json:"show_title,omitempty"`
+	Title        *string  `json:"title,omitempty"`
+	TitleOverlay *bool    `json:"title_overlay,omitempty"`
+	TitleX       *float64 `json:"title_x,omitempty"`
+	TitleY       *float64 `json:"title_y,omitempty"`
+	// DataLabelOffsets nudges individual data labels. Doughnut and pie charts
+	// reject most c:dLblPos values, so a manual layout is the only way to move
+	// one of their labels.
+	DataLabelOffsets         []DataLabelOffset `json:"data_label_offsets,omitempty"`
+	PlotVisibleOnly          *bool             `json:"plot_visible_only,omitempty"`
+	ShowLegend               *bool             `json:"show_legend,omitempty"`
+	LegendPosition           *string           `json:"legend_position,omitempty"`
+	LegendOverlay            *bool             `json:"legend_overlay,omitempty"`
+	ShowDataLabels           *bool             `json:"show_data_labels,omitempty"`
+	DataLabelPosition        *string           `json:"data_label_position,omitempty"`
+	DataLabelShowLegendKey   *bool             `json:"data_label_show_legend_key,omitempty"`
+	DataLabelShowValue       *bool             `json:"data_label_show_value,omitempty"`
+	DataLabelShowCategory    *bool             `json:"data_label_show_category,omitempty"`
+	DataLabelShowSeriesName  *bool             `json:"data_label_show_series_name,omitempty"`
+	DataLabelShowPercent     *bool             `json:"data_label_show_percent,omitempty"`
+	DataLabelShowBubbleSize  *bool             `json:"data_label_show_bubble_size,omitempty"`
+	DataLabelNumberFormat    *string           `json:"data_label_number_format,omitempty"`
+	DataLabelFormatLinked    *bool             `json:"data_label_format_linked,omitempty"`
+	DataLabelWordWrap        *bool             `json:"data_label_word_wrap,omitempty"`
+	ChartGrouping            *string           `json:"chart_grouping,omitempty"`
+	GapWidth                 *int              `json:"gap_width,omitempty"`
+	Overlap                  *int              `json:"overlap,omitempty"`
+	CategoryAxisTickLabelPos *string           `json:"category_axis_tick_label_pos,omitempty"`
+	ValueAxisTickLabelPos    *string           `json:"value_axis_tick_label_pos,omitempty"`
+	CategoryAxisMajorGrid    *bool             `json:"category_axis_major_gridlines,omitempty"`
+	ValueAxisMajorGrid       *bool             `json:"value_axis_major_gridlines,omitempty"`
+	CategoryAxisMinorGrid    *bool             `json:"category_axis_minor_gridlines,omitempty"`
+	ValueAxisMinorGrid       *bool             `json:"value_axis_minor_gridlines,omitempty"`
+	CategoryAxisCrosses      *string           `json:"category_axis_crosses,omitempty"`
+	ValueAxisCrosses         *string           `json:"value_axis_crosses,omitempty"`
+	CategoryAxisTitle        *string           `json:"category_axis_title,omitempty"`
+	ValueAxisTitle           *string           `json:"value_axis_title,omitempty"`
+	CategoryAxisMinimumScale *float64          `json:"category_axis_minimum_scale,omitempty"`
+	CategoryAxisMaximumScale *float64          `json:"category_axis_maximum_scale,omitempty"`
+	ValueAxisMinimumScale    *float64          `json:"value_axis_minimum_scale,omitempty"`
+	ValueAxisMaximumScale    *float64          `json:"value_axis_maximum_scale,omitempty"`
+	CategoryAxisMajorUnit    *float64          `json:"category_axis_major_unit,omitempty"`
+	CategoryAxisMinorUnit    *float64          `json:"category_axis_minor_unit,omitempty"`
+	ValueAxisMajorUnit       *float64          `json:"value_axis_major_unit,omitempty"`
+	ValueAxisMinorUnit       *float64          `json:"value_axis_minor_unit,omitempty"`
+	CategoryAxisNumberFormat *string           `json:"category_axis_number_format,omitempty"`
+	ValueAxisNumberFormat    *string           `json:"value_axis_number_format,omitempty"`
+	CategoryAxisFormatLinked *bool             `json:"category_axis_format_linked,omitempty"`
+	ValueAxisFormatLinked    *bool             `json:"value_axis_format_linked,omitempty"`
+	CameraPreset             *string           `json:"camera_preset,omitempty"`
+	CameraFieldOfView        *int              `json:"camera_field_of_view,omitempty"`
+	LightRig                 *string           `json:"light_rig,omitempty"`
+	LightDirection           *string           `json:"light_direction,omitempty"`
+	LightRigRevolution       *bool             `json:"light_rig_revolution,omitempty"`
 }
 
 // ChartAxisState is a read snapshot for one chart axis.

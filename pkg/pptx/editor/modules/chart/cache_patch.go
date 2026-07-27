@@ -33,8 +33,13 @@ func PatchChartDataCache(chartXML []byte, kind Kind, req common.ChartDataUpdate)
 	if len(series) == 0 {
 		return nil, errors.New("chart has no series nodes")
 	}
-	if len(series) != len(req.Series) {
-		return nil, fmt.Errorf("series count mismatch: chart has %d, payload has %d", len(series), len(req.Series))
+
+	plotted := PlottedSeries(req.Series)
+	if len(series) != len(plotted) {
+		return nil, fmt.Errorf(
+			"series count mismatch: chart has %d, payload has %d plotted (%d total)",
+			len(series), len(plotted), len(req.Series),
+		)
 	}
 
 	for i := range series {
@@ -42,13 +47,18 @@ func PatchChartDataCache(chartXML []byte, kind Kind, req common.ChartDataUpdate)
 			updated string
 			err     error
 		)
+		// The workbook keeps every series, hidden ones included, so the sheet
+		// column comes from the payload index rather than the plot order.
+		col := plotted[i].WorkbookIndex
 		switch kind {
 		case KindScatter:
-			updated, err = patchScatterSeries(i, series[i], req.Series[i], false)
+			updated, err = patchScatterSeries(col, series[i], plotted[i].Data, false)
 		case KindBubble:
-			updated, err = patchScatterSeries(i, series[i], req.Series[i], true)
+			updated, err = patchScatterSeries(col, series[i], plotted[i].Data, true)
 		default:
-			updated, err = patchCategorySeries(i, series[i], req.Categories, req.MultiLevelCategories, req.Series[i])
+			updated, err = patchCategorySeries(
+				col, series[i], req.Categories, req.MultiLevelCategories, plotted[i].Data,
+			)
 		}
 		if err != nil {
 			return nil, err
@@ -65,6 +75,31 @@ func PatchChartDataCache(chartXML []byte, kind Kind, req common.ChartDataUpdate)
 		return out
 	})
 	return []byte(result), nil
+}
+
+// PlottedSeriesRef pairs a series that the chart draws with its column in the
+// embedded workbook.
+type PlottedSeriesRef struct {
+	// WorkbookIndex is the series' position in the payload, which is also its
+	// column in the embedded sheet.
+	WorkbookIndex int
+	Data          common.ChartSeriesData
+}
+
+// PlottedSeries returns the series the chart draws, dropping the hidden ones.
+//
+// A hidden series still gets its column in the embedded workbook — the data is
+// there for the user to see behind the chart, it just is not plotted (upstream
+// issue #1043).
+func PlottedSeries(all []common.ChartSeriesData) []PlottedSeriesRef {
+	out := make([]PlottedSeriesRef, 0, len(all))
+	for i, data := range all {
+		if data.Hidden {
+			continue
+		}
+		out = append(out, PlottedSeriesRef{WorkbookIndex: i, Data: data})
+	}
+	return out
 }
 
 func patchCategorySeries(

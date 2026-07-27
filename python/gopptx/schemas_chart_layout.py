@@ -33,12 +33,29 @@ class ChartDataUpdate(TypedDict, total=False):
     series: list[ChartSeriesData]
 
 
+class DataLabelOffset(TypedDict, total=False):
+    """Manual position for one data label.
+
+    x and y are fractions of the chart area, offset from the label's default
+    spot. Doughnut and pie charts reject most data_label_position values, so
+    this is how one of their labels is moved.
+    """
+
+    series_index: int
+    point_index: int
+    x: float
+    y: float
+
+
 class ChartFormatUpdate(TypedDict, total=False):
     """Chart formatting update payload."""
 
     show_title: bool
     title: str
     title_overlay: bool
+    title_x: float
+    title_y: float
+    data_label_offsets: list[DataLabelOffset]
     plot_visible_only: bool
     show_legend: bool
     legend_position: str

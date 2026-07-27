@@ -208,6 +208,10 @@ func resolveURLExtension(sourceURL string, contentType string) string {
 		return bmpImageExt
 	case "image/tiff":
 		return tiffImageExt
+	case "image/x-emf", "image/emf":
+		return emfImageExt
+	case "image/x-wmf", "image/wmf":
+		return wmfImageExt
 	default:
 		return defaultImageExt
 	}

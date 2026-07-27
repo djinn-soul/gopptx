@@ -11,7 +11,6 @@ import (
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 const (
@@ -74,8 +73,8 @@ func (e *PresentationEditor) addImageGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
+	newID := e.maxObjectID(slideRef.Part, content) + 1
+	e.reserveObjectIDs(slideRef.Part, newID)
 
 	imageXML := buildImageShapeXML(newID, relID, x, y, w, h, opts)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, imageXML)

@@ -177,7 +177,7 @@ func applyParagraphBulletFormatting(spec *pptxxml.BulletParagraphSpec, p *common
 
 func normalizeParagraphAlignment(raw string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "l", "left":
+	case "l", keyLeft:
 		return "l", nil
 	case alignCtr, alignCenter, "middle":
 		return alignCtr, nil

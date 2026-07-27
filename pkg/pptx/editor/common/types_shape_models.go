@@ -14,6 +14,11 @@ type Shape struct {
 	TextFrame *TextFrame
 	Paragraph *Paragraph
 	Rotation  *float64
+	// FlipH and FlipV mirror the <a:xfrm> flip attributes. They are set for
+	// every shape kind, not just connectors, so a value written through
+	// ShapeUpdate can be read back.
+	FlipH bool `json:"flip_h,omitempty"`
+	FlipV bool `json:"flip_v,omitempty"`
 
 	PlaceholderIndex *int   `json:"PlaceholderIndex,omitempty"`
 	PlaceholderType  string `json:"PlaceholderType,omitempty"`

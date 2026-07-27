@@ -6,7 +6,6 @@ import (
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddVideo adds a video shape to the slide. If no poster frame bytes are
@@ -102,8 +101,8 @@ func (e *PresentationEditor) addVideoGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
+	newID := e.maxObjectID(slideRef.Part, content) + 1
+	e.reserveObjectIDs(slideRef.Part, newID)
 	videoXML := editormodmedia.BuildVideoShapeXML(newID, videoRelID, mediaRelID, posterRelID, altText, x, y, w, h)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, videoXML)
 	if err != nil {
@@ -184,8 +183,8 @@ func (e *PresentationEditor) addOLEObjectGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
+	newID := e.maxObjectID(slideRef.Part, content) + 1
+	e.reserveObjectIDs(slideRef.Part, newID)
 	oleXML := editormodmedia.BuildOLEObjectShapeXML(newID, slideIndex, embedRelID, iconRelID, progID, x, y, w, h)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, oleXML)
 	if err != nil {

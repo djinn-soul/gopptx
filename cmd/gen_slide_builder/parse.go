@@ -56,6 +56,73 @@ func collect(dir string) ([]method, map[string]string, error) {
 	return methods, available, nil
 }
 
+// sliceField is one exported SlideContent slice field. BuildFrom clones these:
+// a value copy shares its backing arrays, so two builders derived from the same
+// SlideContent would append into the same slot.
+type sliceField struct {
+	Name string
+	// Nested is true when the element type is itself a slice, which needs its
+	// own per-element clone.
+	Nested bool
+}
+
+// collectSliceFields returns the SlideContent slice fields found in dir. It
+// reads them from the source rather than hardcoding a list, so a field added to
+// SlideContent cannot silently escape the clone.
+func collectSliceFields(dir string) ([]sliceField, error) {
+	entries, err := filepath.Glob(filepath.Join(dir, "*.go"))
+	if err != nil {
+		return nil, fmt.Errorf("glob %s: %w", dir, err)
+	}
+
+	fset := token.NewFileSet()
+	for _, path := range entries {
+		if strings.HasSuffix(path, "_test.go") || strings.Contains(path, genSuffix+".go") {
+			continue
+		}
+		file, parseErr := parser.ParseFile(fset, path, nil, parser.SkipObjectResolution)
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, parseErr)
+		}
+		if fields, found := sliceFieldsOf(file); found {
+			return fields, nil
+		}
+	}
+	return nil, fmt.Errorf("struct %s not found in %s", receiverType, dir)
+}
+
+func sliceFieldsOf(file *ast.File) ([]sliceField, bool) {
+	var fields []sliceField
+	found := false
+	ast.Inspect(file, func(node ast.Node) bool {
+		spec, ok := node.(*ast.TypeSpec)
+		if !ok || spec.Name.Name != receiverType {
+			return true
+		}
+		structType, ok := spec.Type.(*ast.StructType)
+		if !ok {
+			return true
+		}
+		found = true
+		for _, field := range structType.Fields.List {
+			// Len != nil means a fixed-size array, which the value copy already
+			// duplicates and which therefore needs no clone.
+			array, isArray := field.Type.(*ast.ArrayType)
+			if !isArray || array.Len != nil {
+				continue
+			}
+			_, nested := array.Elt.(*ast.ArrayType)
+			for _, name := range field.Names {
+				if name.IsExported() {
+					fields = append(fields, sliceField{Name: name.Name, Nested: nested})
+				}
+			}
+		}
+		return false
+	})
+	return fields, found
+}
+
 func collectImports(file *ast.File, into map[string]string) {
 	for _, spec := range file.Imports {
 		path, err := strconv.Unquote(spec.Path.Value)

@@ -93,7 +93,7 @@ func RewritePresentationEmbeddedFonts(current []byte, fontLst string) (string, e
 	source := string(current)
 
 	if embeddedFontLstPattern.MatchString(source) {
-		return embeddedFontLstPattern.ReplaceAllString(source, fontLst), nil
+		return embeddedFontLstPattern.ReplaceAllLiteralString(source, fontLst), nil
 	}
 
 	if strings.Contains(source, "<p:extLst>") {
@@ -125,7 +125,7 @@ func rewriteExtListMatch(match, fullExtBlock string) string {
 
 func replaceSectionExtension(match, fullExtBlock string) string {
 	if sectionExtPattern.MatchString(match) {
-		return sectionExtPattern.ReplaceAllString(match, fullExtBlock)
+		return sectionExtPattern.ReplaceAllLiteralString(match, fullExtBlock)
 	}
 	return appendSectionExtension(match, fullExtBlock)
 }

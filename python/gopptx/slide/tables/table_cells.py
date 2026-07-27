@@ -114,7 +114,10 @@ class Cell:
 
     @property
     def border_left(self) -> dict[str, object] | None:
-        """Get the left border properties dict (width, color, dash) or None if unset."""
+        """Get the left border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("left")
 
     @border_left.setter
@@ -123,7 +126,10 @@ class Cell:
 
     @property
     def border_right(self) -> dict[str, object] | None:
-        """Get the right border properties dict (width, color, dash) or None if unset."""
+        """Get the right border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("right")
 
     @border_right.setter
@@ -132,7 +138,10 @@ class Cell:
 
     @property
     def border_top(self) -> dict[str, object] | None:
-        """Get the top border properties dict (width, color, dash) or None if unset."""
+        """Get the top border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("top")
 
     @border_top.setter
@@ -141,7 +150,10 @@ class Cell:
 
     @property
     def border_bottom(self) -> dict[str, object] | None:
-        """Get the bottom border properties dict (width, color, dash) or None if unset."""
+        """Get the bottom border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("bottom")
 
     @border_bottom.setter

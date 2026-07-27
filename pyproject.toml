@@ -18,6 +18,7 @@ dependencies = [
     "orjson>=3.11.7",
     "Jinja2>=3.1.6",
     "typing-extensions>=4.15.0",
+    "pillow>=12.3.0",
 ]
 
 [project.optional-dependencies]
@@ -40,7 +41,6 @@ dev = [
     "basedpyright>=1.39.0",
     "vulture>=2.15",
     "gitingest",
-    "pillow==12.3.0",
     "pypdfium2==5.6.0",
     "numpy>=2.2.6",
     "mkdocs-material>=9.7.6",

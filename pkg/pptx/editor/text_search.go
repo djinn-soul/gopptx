@@ -2,11 +2,10 @@ package editor
 
 import (
 	"bytes"
-	"encoding/xml"
 	"errors"
 	"fmt"
-	"html"
 	"regexp"
+	"sort"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -14,22 +13,37 @@ import (
 
 var textRunPattern = regexp.MustCompile(`(?s)(<a:t(?:\s+[^>]*)?>)(.*?)(</a:t>)`)
 
-// FindAndReplaceInShapes performs a global text replacement across slide text runs.
+// FindAndReplaceInShapes replaces text across slide shapes only. Speaker notes,
+// layouts and masters are untouched; use FindAndReplaceInScope to include them.
 // It returns the number of replacements made.
 func (e *PresentationEditor) FindAndReplaceInShapes(findText, replaceText string) (int, error) {
+	return e.FindAndReplaceInScope(findText, replaceText, common.TextScopeSlides)
+}
+
+// FindAndReplaceInScope replaces text across the parts named by scope. An empty
+// scope means common.TextScopeSlides, which is what FindAndReplaceInShapes has
+// always done.
+func (e *PresentationEditor) FindAndReplaceInScope(
+	findText string,
+	replaceText string,
+	scope common.TextReplaceScope,
+) (int, error) {
 	if e == nil {
 		return 0, errors.New("editor cannot be nil")
 	}
 	if strings.TrimSpace(findText) == "" {
 		return 0, errors.New("find text cannot be empty")
 	}
+	parts, err := e.textReplacementParts(scope)
+	if err != nil {
+		return 0, err
+	}
 
 	total := 0
-	for i := range e.slides {
-		partPath := e.slides[i].Part
+	for _, partPath := range parts {
 		content, ok := e.parts.Get(partPath)
 		if !ok {
-			return 0, fmt.Errorf("read slide part %s: not found", partPath)
+			return 0, fmt.Errorf("read part %s: not found", partPath)
 		}
 		updated, count := replaceTextRuns(content, findText, replaceText)
 		if count > 0 {
@@ -40,45 +54,55 @@ func (e *PresentationEditor) FindAndReplaceInShapes(findText, replaceText string
 	return total, nil
 }
 
-func replaceTextRuns(content []byte, findText, replaceText string) ([]byte, int) {
-	// Single-pass: FindAllSubmatchIndex locates all <a:t> runs in one regex scan.
-	// The previous approach called ReplaceAllFunc + FindSubmatch, scanning twice.
-	indices := textRunPattern.FindAllSubmatchIndex(content, -1)
-	if len(indices) == 0 {
-		return content, 0
+// textReplacementParts lists the parts a scope covers, slides always first and
+// in slide order so replacement counts stay stable across calls.
+func (e *PresentationEditor) textReplacementParts(
+	scope common.TextReplaceScope,
+) ([]string, error) {
+	parts := make([]string, 0, len(e.slides))
+	for i := range e.slides {
+		parts = append(parts, e.slides[i].Part)
 	}
 
-	total := 0
-	var buf bytes.Buffer
-	buf.Grow(len(content))
-	pos := 0
+	switch scope {
+	case common.TextScopeSlides, "":
+		return parts, nil
+	case common.TextScopeSlidesAndNotes:
+		return append(parts, e.notesParts()...), nil
+	case common.TextScopeAll:
+		parts = append(parts, e.notesParts()...)
+		for _, prefix := range []string{
+			"ppt/slideLayouts/", "ppt/slideMasters/",
+			"ppt/notesMasters/", "ppt/handoutMasters/",
+		} {
+			parts = append(parts, sortedXMLParts(e.parts.KeysWithPrefix(prefix))...)
+		}
+		return parts, nil
+	default:
+		return nil, fmt.Errorf(
+			"unknown scope %q: want %q, %q or %q",
+			scope, common.TextScopeSlides,
+			common.TextScopeSlidesAndNotes, common.TextScopeAll,
+		)
+	}
+}
 
-	for _, idx := range indices {
-		// idx layout: [fullStart, fullStop, openStart, openStop, textStart, textStop, closeStart, closeStop]
-		fullStart, fullEnd := idx[0], idx[1]
-		textStart, textEnd := idx[4], idx[5]
+func (e *PresentationEditor) notesParts() []string {
+	return sortedXMLParts(e.parts.KeysWithPrefix("ppt/notesSlides/"))
+}
 
-		raw := content[textStart:textEnd]
-		unescaped := html.UnescapeString(string(raw))
-		count := strings.Count(unescaped, findText)
-
-		buf.Write(content[pos:fullStart])
-		pos = fullEnd
-
-		if count == 0 {
-			buf.Write(content[fullStart:fullEnd])
+// sortedXMLParts keeps only the XML parts of a directory, dropping the _rels
+// entries a prefix scan also returns.
+func sortedXMLParts(keys []string) []string {
+	out := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if strings.Contains(key, "/_rels/") || !strings.HasSuffix(key, ".xml") {
 			continue
 		}
-
-		total += count
-		updated := strings.ReplaceAll(unescaped, findText, replaceText)
-		buf.Write(content[idx[2]:idx[3]])         // openTag
-		_ = xml.EscapeText(&buf, []byte(updated)) // escaped text, direct to buf
-		buf.Write(content[idx[6]:idx[7]])         // closeTag
+		out = append(out, key)
 	}
-
-	buf.Write(content[pos:])
-	return buf.Bytes(), total
+	sort.Strings(out)
+	return out
 }
 
 // SearchShapes scans all slides and returns shapes matching the query.
@@ -138,8 +162,17 @@ func prepareShapeSearchQuery(query common.ShapeSearchQuery) (common.ShapeSearchQ
 	return query, needles
 }
 
+// prefilterIsReliable reports whether scanning the raw part bytes can rule a
+// slide out. The part stores text XML-escaped and split across <a:t> elements,
+// so a needle carrying an escapable character or a space may be present in the
+// decoded text while absent from every contiguous byte range. In that case the
+// prefilter must not skip the slide.
+func prefilterIsReliable(needle string) bool {
+	return !strings.ContainsAny(needle, "&<>\"'") && !strings.ContainsAny(needle, " \t\r\n")
+}
+
 func contentMatchesTextNeedle(content []byte, query common.ShapeSearchQuery, needles shapeSearchNeedles) bool {
-	if needles.textNeedle == nil {
+	if needles.textNeedle == nil || !prefilterIsReliable(string(needles.textNeedle)) {
 		return true
 	}
 	if query.CaseSensitive {

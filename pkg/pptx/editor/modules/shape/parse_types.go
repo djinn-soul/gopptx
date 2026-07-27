@@ -260,7 +260,9 @@ type shapeXML struct {
 	} `xml:"spPr"`
 	GrpSpPr struct {
 		Xfrm struct {
-			Off struct {
+			FlipH *string `xml:"flipH,attr"`
+			FlipV *string `xml:"flipV,attr"`
+			Off   struct {
 				X int `xml:"x,attr"`
 				Y int `xml:"y,attr"`
 			} `xml:"off"`

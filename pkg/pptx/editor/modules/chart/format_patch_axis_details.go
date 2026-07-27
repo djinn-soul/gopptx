@@ -22,6 +22,16 @@ var (
 	reAxisNumFmt  = regexp.MustCompile(`<c:numFmt [^>]*/>`)
 )
 
+// attributePatterns holds the attribute readers used by the axis and data-label
+// patch loops. Hoisted out of attributeValue so the loops do not recompile a
+// regexp on every call; the set of attribute names is fixed and small.
+//
+//nolint:gochecknoglobals // Package-level compiled patterns, as elsewhere here.
+var attributePatterns = map[string]*regexp.Regexp{
+	"formatCode":   regexp.MustCompile(`formatCode="([^"]*)"`),
+	"sourceLinked": regexp.MustCompile(`sourceLinked="([^"]*)"`),
+}
+
 func validateAxisDetails(req common.ChartFormatUpdate) error {
 	for _, pair := range []struct {
 		name string
@@ -140,7 +150,7 @@ func patchAxisScaling(block string, minimum *float64, maximum *float64) string {
 	if minimum != nil {
 		scaling = replaceOrInsertAxisNode(scaling, reAxisMin, "<c:min val=\""+formatAxisNumber(*minimum)+"\"/>")
 	}
-	return reAxisScaling.ReplaceAllString(block, scaling)
+	return reAxisScaling.ReplaceAllLiteralString(block, scaling)
 }
 
 func patchAxisTitle(block string, title *string) string {
@@ -151,7 +161,7 @@ func patchAxisTitle(block string, title *string) string {
 		xmlEscape(*title) + `</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`
 	if current := reAxisTitle.FindString(block); current != "" {
 		if reAxisTitleTx.MatchString(current) {
-			node = reAxisTitleTx.ReplaceAllString(current, `<a:t>`+xmlEscape(*title)+`</a:t>`)
+			node = reAxisTitleTx.ReplaceAllLiteralString(current, `<a:t>`+xmlEscape(*title)+`</a:t>`)
 		}
 		return strings.Replace(block, current, node, 1)
 	}
@@ -175,7 +185,7 @@ func patchAxisNumberFormat(block string, format *string, linked *bool) string {
 	}
 	node := `<c:numFmt formatCode="` + xmlEscape(formatCode) + `" sourceLinked="` + boolToOneZero(sourceLinked) + `"/>`
 	if reAxisNumFmt.MatchString(block) {
-		return reAxisNumFmt.ReplaceAllString(block, node)
+		return reAxisNumFmt.ReplaceAllLiteralString(block, node)
 	}
 	return insertAxisNumberFormat(block, node)
 }
@@ -186,14 +196,14 @@ func patchAxisUnit(block string, re *regexp.Regexp, tag string, value *float64) 
 	}
 	node := `<c:` + tag + ` val="` + formatAxisNumber(*value) + `"/>`
 	if re.MatchString(block) {
-		return re.ReplaceAllString(block, node)
+		return re.ReplaceAllLiteralString(block, node)
 	}
 	return insertAxisUnit(block, node)
 }
 
 func replaceOrInsertAxisNode(value string, re *regexp.Regexp, node string) string {
 	if re.MatchString(value) {
-		return re.ReplaceAllString(value, node)
+		return re.ReplaceAllLiteralString(value, node)
 	}
 	if prefix, found := strings.CutSuffix(value, "/>"); found {
 		return prefix + ">" + node + "</c:scaling>"
@@ -206,7 +216,10 @@ func formatAxisNumber(value float64) string {
 }
 
 func attributeValue(xml string, name string, fallback string) string {
-	re := regexp.MustCompile(name + `="([^"]*)"`)
+	re, ok := attributePatterns[name]
+	if !ok {
+		re = regexp.MustCompile(regexp.QuoteMeta(name) + `="([^"]*)"`)
+	}
 	match := re.FindStringSubmatch(xml)
 	if len(match) != 2 {
 		return fallback

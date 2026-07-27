@@ -26,11 +26,15 @@ const (
 	mimeGIF    = "image/gif"
 	mimeBMP    = "image/bmp"
 	mimeTIFF   = "image/tiff"
+	mimeEMF    = "image/x-emf"
+	mimeWMF    = "image/x-wmf"
 	formatPNG  = "png"
 	formatJPEG = "jpeg"
 	formatGIF  = "gif"
 	formatBMP  = "bmp"
 	formatTIFF = "tiff"
+	formatEMF  = "emf"
+	formatWMF  = "wmf"
 )
 
 // DecodeBase64ImagePayload decodes raw base64 or data-URI image payloads.
@@ -142,6 +146,10 @@ func formatFromMimeType(contentType string) string {
 		return formatBMP
 	case mimeTIFF:
 		return formatTIFF
+	case mimeEMF, "image/emf":
+		return formatEMF
+	case mimeWMF, "image/wmf":
+		return formatWMF
 	default:
 		return ""
 	}
@@ -150,7 +158,7 @@ func formatFromMimeType(contentType string) string {
 func formatFromPath(pathValue string) string {
 	ext := strings.TrimPrefix(strings.ToLower(path.Ext(pathValue)), ".")
 	switch ext {
-	case formatPNG, "jpg", formatJPEG, formatGIF, formatBMP:
+	case formatPNG, "jpg", formatJPEG, formatGIF, formatBMP, formatEMF, formatWMF:
 		return ext
 	case "tif", formatTIFF:
 		return formatTIFF

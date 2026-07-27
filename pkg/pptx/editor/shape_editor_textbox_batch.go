@@ -6,36 +6,17 @@ import (
 	"fmt"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddTextboxes inserts multiple textboxes on one slide in a single XML rewrite.
 func (e *PresentationEditor) AddTextboxes(slideIndex int, textboxes []common.TextboxInsert) ([]int, error) {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return nil, errors.New("slide index out of range")
-	}
-	if len(textboxes) == 0 {
-		return []int{}, nil
-	}
-
-	partPath := e.slides[slideIndex].Part
-	content, ok := e.parts.Get(partPath)
-	if !ok {
-		return nil, fmt.Errorf("read slide part %s: not found", partPath)
-	}
-
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	shapeXML, shapeIDs, err := e.buildTextboxBatchXML(partPath, maxID, textboxes)
-	if err != nil {
-		return nil, err
-	}
-
-	newXML, err := insertShapeXML(content, shapeXML)
-	if err != nil {
-		return nil, err
-	}
-	e.parts.Set(partPath, newXML)
-	return shapeIDs, nil
+	return e.insertBatchShapes(
+		slideIndex,
+		len(textboxes),
+		func(partPath string, startID int) ([]byte, []int, error) {
+			return e.buildTextboxBatchXML(partPath, startID, textboxes)
+		},
+	)
 }
 
 // ReserveShapeIDs returns the next available shape IDs on a slide without mutating XML.
@@ -56,7 +37,10 @@ func (e *PresentationEditor) ReserveShapeIDs(slideIndex int, count int) ([]int, 
 		return nil, fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
+	maxID := e.maxObjectID(partPath, content)
+	// Reserved ids are handed to the caller, so they must never be handed out
+	// again even though no XML is written here.
+	e.reserveObjectIDs(partPath, maxID+count)
 	shapeIDs := make([]int, 0, count)
 	for offset := range count {
 		shapeIDs = append(shapeIDs, maxID+offset+1)

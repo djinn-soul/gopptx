@@ -2,6 +2,8 @@
 
 package elements
 
+import "slices"
+
 // SlideBuilder builds a SlideContent through pointer-receiver methods.
 //
 // SlideContent's own chainable methods take a value receiver, so dropping the
@@ -28,11 +30,38 @@ func NewSlideBuilder(title string) *SlideBuilder {
 
 // BuildFrom starts a builder from an existing SlideContent, so code already
 // holding one can switch to the pointer-receiver style.
+//
+// The slice fields are cloned, so the builder and the original SlideContent
+// (and any other builder derived from it) never share backing arrays.
 func BuildFrom(content SlideContent) *SlideBuilder {
-	return &SlideBuilder{content: content}
+	return &SlideBuilder{content: cloneSlideContentSlices(content)}
 }
 
 // Build returns the SlideContent assembled so far.
 func (b *SlideBuilder) Build() SlideContent {
 	return b.content
+}
+
+// cloneSlideContentSlices copies every slice field of content.
+//
+// A SlideContent value copy shares the backing arrays of its slices, so
+// appending through two copies with spare capacity writes to the same slot
+// and one write is silently lost.
+func cloneSlideContentSlices(content SlideContent) SlideContent {
+	content.Bullets = slices.Clone(content.Bullets)
+	content.BulletRuns = slices.Clone(content.BulletRuns)
+	for i := range content.BulletRuns {
+		content.BulletRuns[i] = slices.Clone(content.BulletRuns[i])
+	}
+	content.BulletStyles = slices.Clone(content.BulletStyles)
+	content.NotesBody = slices.Clone(content.NotesBody)
+	content.Images = slices.Clone(content.Images)
+	content.Shapes = slices.Clone(content.Shapes)
+	content.Connectors = slices.Clone(content.Connectors)
+	content.Tables = slices.Clone(content.Tables)
+	content.Animations = slices.Clone(content.Animations)
+	content.SmartArtDiagrams = slices.Clone(content.SmartArtDiagrams)
+	content.PlaceholderOverrides = slices.Clone(content.PlaceholderOverrides)
+	content.Comments = slices.Clone(content.Comments)
+	return content
 }

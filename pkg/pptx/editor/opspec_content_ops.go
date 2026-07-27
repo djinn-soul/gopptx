@@ -71,6 +71,7 @@ func supportedContentOps() []string {
 		OpSetPlaceholderContent,
 		OpGetImageMetadata,
 		OpAddVideo,
+		OpAddOnlineVideo,
 		OpAddAudio,
 		OpAddOLEObject,
 		OpMarkdownToSlides,

@@ -147,7 +147,11 @@ func TestShapeUpdateAndAddHelpers(t *testing.T) {
 }
 
 func TestContentRequestHelpers(t *testing.T) {
-	if _, ok := ParseFindReplaceRequest(map[string]any{"find": "a", "replace": "b"}, testParseStringField); !ok {
+	if _, ok := ParseFindReplaceRequest(
+		map[string]any{"find": "a", "replace": "b"},
+		testParseStringField,
+		testOptionalStringField,
+	); !ok {
 		t.Fatal("ParseFindReplaceRequest should succeed")
 	}
 	if _, ok := ParseAuthorAddRequest(map[string]any{"name": "A", "initials": "AA"}, testParseStringField); !ok {

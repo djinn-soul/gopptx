@@ -77,7 +77,7 @@ func normalizeTextFrameOrientation(raw string) (string, error) {
 
 func normalizeTextFrameVerticalAlign(raw string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "t", "top":
+	case "t", keyTop:
 		return "t", nil
 	case alignCtr, alignCenter, "middle":
 		return alignCtr, nil

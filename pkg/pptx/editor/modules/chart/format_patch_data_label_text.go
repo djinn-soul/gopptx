@@ -50,7 +50,7 @@ func patchDataLabelWordWrap(block string, wordWrap *bool) string {
 func setDataLabelBodyWrap(bodyProperties string, wrap string) string {
 	attribute := ` wrap="` + wrap + `"`
 	if reBodyPropertiesWrap.MatchString(bodyProperties) {
-		return reBodyPropertiesWrap.ReplaceAllString(bodyProperties, attribute)
+		return reBodyPropertiesWrap.ReplaceAllLiteralString(bodyProperties, attribute)
 	}
 	if prefix, found := strings.CutSuffix(bodyProperties, "/>"); found {
 		return prefix + attribute + "/>"

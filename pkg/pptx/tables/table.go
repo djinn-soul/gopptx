@@ -268,8 +268,13 @@ func toXMLTableBorderSpec(border *TableCellBorder) *pptxxml.TableCellBorderSpec 
 		return nil
 	}
 	return &pptxxml.TableCellBorderSpec{
-		Width: TableBorderWidthEMU(border.WidthPt),
-		Color: border.Color,
-		Dash:  border.Dash,
+		Width:         TableBorderWidthEMU(border.WidthPt),
+		Color:         border.Color,
+		Dash:          border.Dash,
+		Cap:           border.Cap,
+		Join:          border.Join,
+		MiterLimitPct: border.MiterLimitPct,
+		Compound:      border.Compound,
+		Inset:         border.Inset,
 	}
 }

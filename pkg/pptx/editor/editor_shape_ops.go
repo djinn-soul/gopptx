@@ -81,6 +81,8 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			TextFrame:        p.TextFrame,
 			Paragraph:        p.Paragraph,
 			Rotation:         p.Rotation,
+			FlipH:            p.FlipH,
+			FlipV:            p.FlipV,
 			PlaceholderIndex: placeholderIndex,
 			PlaceholderType:  p.PhType,
 			Fill:             p.Fill,
@@ -127,6 +129,7 @@ func (e *PresentationEditor) RemoveShapeByIndex(slideIndex, shapeIndex int) erro
 		return fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
+	e.rememberObjectIDs(partPath, content)
 	shapes, err := parseSlideShapes(content)
 	if err != nil {
 		return fmt.Errorf("parse shapes: %w", err)
@@ -151,6 +154,7 @@ func (e *PresentationEditor) RemoveShape(slideIndex, shapeID int) error {
 		return fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
+	e.rememberObjectIDs(partPath, content)
 	shapes, err := parseSlideShapes(content)
 	if err != nil {
 		return fmt.Errorf("parse shapes: %w", err)
@@ -183,6 +187,7 @@ func (e *PresentationEditor) ClearShapes(slideIndex int) error {
 		return fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
+	e.rememberObjectIDs(partPath, content)
 	shapes, err := parseSlideShapes(content)
 	if err != nil {
 		return fmt.Errorf("parse shapes: %w", err)
@@ -220,6 +225,7 @@ func (e *PresentationEditor) UngroupShapes(slideIndex, shapeID int) (int, error)
 		return 0, errors.New("read slide part: not found")
 	}
 
+	e.rememberObjectIDs(partPath, content)
 	shapes, err := parseSlideShapes(content)
 	if err != nil {
 		return 0, fmt.Errorf("parse shapes: %w", err)

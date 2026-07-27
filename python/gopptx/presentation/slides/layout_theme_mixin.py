@@ -167,6 +167,101 @@ class PresentationThemeMixin(PresentationMixinBase):
         result = self.execute(ops.OP_GET_MASTER_SHAPES, {"master_part": master_part})
         return cast("list[str]", result.get("shapes", []))
 
+    def add_layout_shape(
+        self,
+        layout_part: str,
+        shape_type: str,
+        bounds: tuple[float, float, float, float],
+    ) -> int:
+        """Add an autoshape to a slide layout and return its shape id.
+
+        The shape appears on every slide that uses the layout.
+
+        Args:
+            layout_part: Layout part path, e.g. "ppt/slideLayouts/slideLayout1.xml".
+            shape_type: Preset geometry name, e.g. "rect".
+            bounds: (left, top, width, height) in EMU.
+        """
+        left, top, width, height = bounds
+        result = self.execute(
+            ops.OP_ADD_LAYOUT_SHAPE,
+            {
+                "layout_part": layout_part,
+                "shape_type": shape_type,
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+            },
+        )
+        return int(cast("int", result.get("shape_id", 0)))
+
+    def add_layout_textbox(
+        self,
+        layout_part: str,
+        text: str,
+        bounds: tuple[float, float, float, float],
+    ) -> int:
+        """Add a text box to a slide layout and return its shape id.
+
+        This is the operation upstream python-pptx has no API for (issue #1044).
+        """
+        left, top, width, height = bounds
+        result = self.execute(
+            ops.OP_ADD_LAYOUT_TEXTBOX,
+            {
+                "layout_part": layout_part,
+                "text": text,
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+            },
+        )
+        return int(cast("int", result.get("shape_id", 0)))
+
+    def add_master_shape(
+        self,
+        master_part: str,
+        shape_type: str,
+        bounds: tuple[float, float, float, float],
+    ) -> int:
+        """Add an autoshape to a slide master and return its shape id."""
+        left, top, width, height = bounds
+        result = self.execute(
+            ops.OP_ADD_MASTER_SHAPE,
+            {
+                "master_part": master_part,
+                "shape_type": shape_type,
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+            },
+        )
+        return int(cast("int", result.get("shape_id", 0)))
+
+    def add_master_textbox(
+        self,
+        master_part: str,
+        text: str,
+        bounds: tuple[float, float, float, float],
+    ) -> int:
+        """Add a text box to a slide master and return its shape id."""
+        left, top, width, height = bounds
+        result = self.execute(
+            ops.OP_ADD_MASTER_TEXTBOX,
+            {
+                "master_part": master_part,
+                "text": text,
+                "left": left,
+                "top": top,
+                "width": width,
+                "height": height,
+            },
+        )
+        return int(cast("int", result.get("shape_id", 0)))
+
     def get_layout_placeholders(self, layout_part: str) -> list[dict[str, object]]:
         """Return placeholder metadata for a slide layout."""
         result = self.execute(
