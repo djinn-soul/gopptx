@@ -21,12 +21,20 @@ class _AxisChartProtocol(Protocol):
         ...
 
 
+_AXIS_NAMES = ("category", "value")
+
+
 class ChartAxisFormatMixin:
     """Adds python-pptx-style axis title, scale, unit, and format controls."""
 
     def __init__(self, chart: _AxisChartProtocol, *, axis_name: str) -> None:
         """Initialize the shared axis formatting state."""
         super().__init__()
+        # Validated here rather than per property: every axis lookup treats any
+        # name other than "category" as the value axis, so a mis-specified name
+        # would silently format the wrong axis.
+        if axis_name not in _AXIS_NAMES:
+            raise ValueError(f"axis_name must be one of: {', '.join(_AXIS_NAMES)}")
         self._chart = chart
         self._axis_name = axis_name
 
@@ -134,7 +142,10 @@ class ChartAxisFormatMixin:
 
     def _float_state(self, name: str) -> float | None:
         value = self._axis_state_value(name)
-        return float(value) if isinstance(value, int | float) else None
+        # bool is a subclass of int, so it would otherwise become 1.0/0.0.
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            return None
+        return float(value)
 
     @staticmethod
     def _finite_number(value: float, name: str) -> float:

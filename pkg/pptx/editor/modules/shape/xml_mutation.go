@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	editormodcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/common"
 )
 
 func UpdateShapeTransforms(xmlData []byte, x, y, w, h int) []byte {
@@ -132,11 +134,73 @@ func normalizeStyleAfterPresetGeometry(inner string) string {
 
 	before := inner[:geomLoc[0]]
 	styles := stylePattern.FindAllString(before, -1)
-	if len(styles) == 0 {
-		return inner
-	}
-	beforeWithoutStyles := stylePattern.ReplaceAllString(before, "")
 	geom := inner[geomLoc[0]:geomLoc[1]]
 	after := inner[geomLoc[1]:]
-	return beforeWithoutStyles + geom + strings.Join(styles, "") + after
+	if len(styles) > 0 {
+		before = stylePattern.ReplaceAllString(before, "")
+		after = strings.Join(styles, "") + after
+	}
+	return before + geom + orderStyleChildren(after)
+}
+
+// spPr child ranks follow the CT_ShapeProperties sequence: fill, then ln, then
+// effectLst, then everything that must trail them (scene3d, sp3d, extLst).
+const (
+	styleRankFill = iota
+	styleRankLine
+	styleRankEffect
+	styleRankTrailing
+	styleRankCount
+)
+
+func styleChildRank(name string) int {
+	switch name {
+	case "a:solidFill", "a:noFill", "a:gradFill", "a:pattFill", "a:blipFill", "a:grpFill":
+		return styleRankFill
+	case "a:ln":
+		return styleRankLine
+	case "a:effectLst":
+		return styleRankEffect
+	default:
+		return styleRankTrailing
+	}
+}
+
+// orderStyleChildren rewrites the spPr content that follows the geometry so the
+// fill, line and effect elements appear in schema order. PowerPoint silently
+// drops a shape whose children are out of order, which happens when an
+// effects-only update inserts <a:effectLst> ahead of an existing fill.
+//
+// Splitting is depth-aware: a fill nested inside <a:ln> is part of the line, not
+// a sibling to hoist.
+func orderStyleChildren(after string) string {
+	elements := editormodcommon.SplitTopLevelXMLElements(after)
+	if len(elements) == 0 {
+		return after
+	}
+
+	needsReorder := false
+	lastRank := -1
+	for _, el := range elements {
+		rank := styleChildRank(el.Name)
+		if rank < lastRank {
+			needsReorder = true
+			break
+		}
+		lastRank = rank
+	}
+	if !needsReorder {
+		return after
+	}
+
+	var b strings.Builder
+	b.Grow(len(after))
+	for rank := range styleRankCount {
+		for _, el := range elements {
+			if styleChildRank(el.Name) == rank {
+				b.WriteString(el.XML)
+			}
+		}
+	}
+	return b.String()
 }

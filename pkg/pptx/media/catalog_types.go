@@ -33,6 +33,10 @@ const (
 	bmpImageExt       = "bmp"
 	tifImageExt       = "tif"
 	tiffImageExt      = "tiff"
+	emfImageExt       = "emf"
+	wmfImageExt       = "wmf"
+	wdpImageExt       = "wdp"
+	hdpImageExt       = "hdp"
 	mp3AudioExt       = "mp3"
 	wavAudioExt       = "wav"
 	m4aAudioExt       = "m4a"
@@ -164,6 +168,10 @@ func isSupportedMediaExtension(ext string) bool {
 		bmpImageExt,
 		tifImageExt,
 		tiffImageExt,
+		emfImageExt,
+		wmfImageExt,
+		wdpImageExt,
+		hdpImageExt,
 		mp3AudioExt,
 		wavAudioExt,
 		m4aAudioExt:

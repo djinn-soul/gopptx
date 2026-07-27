@@ -44,14 +44,20 @@ repos:
       - id: ruff-format
         name: ruff-format (commit)
         files: ^(python/gopptx|python/tests|scripts/ci|hatch_build\.py)
-        exclude: ^python/gopptx/_ops_constants\.py$
+        # Generated files: the generators own their formatting and their noqa
+        # comments, and --ignore-noqa would otherwise strip them back out on
+        # every run, leaving the tree permanently drifted from `task generate`.
+        exclude: ^python/gopptx/(_ops_constants|presentation/charts/chart_types)\.py$
         priority: 11
       - id: ruff
         name: ruff check --fix (commit)
         args:
           ["--fix", "--ignore-noqa", "--unsafe-fixes", "--exit-non-zero-on-fix"]
         files: ^(python/gopptx|python/tests|scripts/ci|hatch_build\.py)
-        exclude: ^python/gopptx/_ops_constants\.py$
+        # Generated files: the generators own their formatting and their noqa
+        # comments, and --ignore-noqa would otherwise strip them back out on
+        # every run, leaving the tree permanently drifted from `task generate`.
+        exclude: ^python/gopptx/(_ops_constants|presentation/charts/chart_types)\.py$
         priority: 12
 
   # --- Codespell (priority 10 - fast, read-only) ---
@@ -61,7 +67,9 @@ repos:
       - id: codespell
         args:
           [
-            "--ignore-words-list=nd,ot,tt,astroid,prSet,pres,lIns,fromT,userA,ser,initialY,currentY,defaultY,wantIn,effectiveness,flate",
+            # propertie/descripton are deliberate misspellings: the strict-kwargs
+            # tests pass them to assert the API rejects unknown keywords.
+            "--ignore-words-list=nd,ot,tt,astroid,prSet,pres,lIns,fromT,userA,ser,initialY,currentY,defaultY,wantIn,effectiveness,flate,propertie,descripton",
             "--skip=./.venv,./uv.lock,./.git,./internal/pptxxml/templates/smartart",
           ]
         exclude: ^uv\.lock$

@@ -17,6 +17,17 @@ func TestContentTypeHelpers(t *testing.T) {
 	if got := contentTypeForExtension("unknown"); got != "" {
 		t.Fatalf("contentTypeForExtension(unknown)=%q, want empty", got)
 	}
+	// Metafile media must resolve, otherwise saves emit no Default entry for the
+	// extension and PowerPoint reports the package as corrupt.
+	if got := contentTypeForExtension("emf"); got != "image/x-emf" {
+		t.Fatalf("contentTypeForExtension(emf)=%q", got)
+	}
+	if got := contentTypeForExtension(".WMF"); got != "image/x-wmf" {
+		t.Fatalf("contentTypeForExtension(.WMF)=%q", got)
+	}
+	if got := contentTypeForExtension("wdp"); got != "image/vnd.ms-photo" {
+		t.Fatalf("contentTypeForExtension(wdp)=%q", got)
+	}
 
 	if !isSlidePartOverride("/ppt/slides/slide2.xml") {
 		t.Fatal("expected slide override detection to match slide2.xml")

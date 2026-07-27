@@ -13,6 +13,9 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return 0, errors.New("slide index out of range")
 	}
+	if err := validateShapeExtents(w, h); err != nil {
+		return 0, err
+	}
 
 	partPath := e.slides[slideIndex].Part
 	content, ok := e.parts.Get(partPath)
@@ -20,8 +23,8 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 		return 0, fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
+	newID := e.maxObjectID(partPath, content) + 1
+	e.reserveObjectIDs(partPath, newID)
 
 	newShape := parsedShape{
 		ID:   newID,
@@ -56,6 +59,9 @@ const placeholderTypeTitle = "title"
 func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
+	}
+	if err := validateShapeUpdateExtents(updates); err != nil {
+		return err
 	}
 
 	partPath := e.slides[slideIndex].Part

@@ -71,6 +71,51 @@ func BuildVideoShapeXML(
 </p:pic>`, newID, name, escapeXMLAttr(descr), videoRelID, mediaRelID, posterRelID, int64(x), int64(y), int64(w), int64(h))
 }
 
+// BuildOnlineVideoShapeXML renders a picture that links to a hosted video.
+//
+// It differs from BuildVideoShapeXML in having no <p14:media> element: that
+// extension points at an embedded media part, which an online video does not
+// have. The <a:videoFile r:link> target is an external relationship.
+func BuildOnlineVideoShapeXML(
+	newID int,
+	videoRelID string,
+	posterRelID string,
+	altText string,
+	x, y, w, h float64,
+) string {
+	name := fmt.Sprintf("Online Video %d", newID)
+	descr := strings.TrimSpace(altText)
+	if descr == "" {
+		descr = "Online Video"
+	}
+	return fmt.Sprintf(`
+<p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:nvPicPr>
+    <p:cNvPr id="%d" name="%s" descr="%s">
+      <a:hlinkClick r:id="" action="ppaction://media"/>
+    </p:cNvPr>
+    <p:cNvPicPr>
+      <a:picLocks noChangeAspect="1"/>
+    </p:cNvPicPr>
+    <p:nvPr>
+      <a:videoFile r:link="%s"/>
+    </p:nvPr>
+  </p:nvPicPr>
+  <p:blipFill>
+    <a:blip r:embed="%s"/>
+    <a:stretch><a:fillRect/></a:stretch>
+  </p:blipFill>
+  <p:spPr>
+    <a:xfrm>
+      <a:off x="%d" y="%d"/>
+      <a:ext cx="%d" cy="%d"/>
+    </a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>
+</p:pic>`, newID, name, escapeXMLAttr(descr), videoRelID, posterRelID,
+		int64(x), int64(y), int64(w), int64(h))
+}
+
 func BuildOLEObjectShapeXML(
 	newID int,
 	slideIndex int,

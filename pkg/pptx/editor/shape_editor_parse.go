@@ -40,6 +40,8 @@ type parsedShape struct {
 	IsDecorative   bool
 	Connector      *common.ConnectorInfo
 	Rotation       *float64
+	FlipH          bool
+	FlipV          bool
 	X, Y           int
 	W, H           int
 	PhIndex        int    // Placeholder index, -1 if not a placeholder
@@ -260,6 +262,8 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		IsDecorative:   metadata.IsDecorative,
 		Connector:      props.Connector,
 		Rotation:       props.Rotation,
+		FlipH:          props.FlipH,
+		FlipV:          props.FlipV,
 		X:              props.X,
 		Y:              props.Y,
 		W:              props.W,

@@ -24,8 +24,11 @@ func handleRenderTemplate(e *PresentationEditor, payload json.RawMessage) (any, 
 
 	ctx := gonja.Context(req.Context)
 	replacements := collectTemplateReplacements(e, ctx)
-	total := applyTemplateReplacements(e, replacements)
-	return map[string]any{"replacements": total}, nil
+	total, unapplied := applyTemplateReplacements(e, replacements)
+	// unapplied counts rendered texts that matched nothing on the write side, so
+	// a deck that ships with raw {{ ... }} tags is visible to the caller instead
+	// of being reported as a plain success.
+	return map[string]any{"replacements": total, "unapplied": unapplied}, nil
 }
 
 func collectTemplateReplacements(e *PresentationEditor, ctx gonja.Context) map[string]string {
@@ -67,15 +70,21 @@ func renderTemplateText(text string, ctx gonja.Context) string {
 	return rendered
 }
 
-func applyTemplateReplacements(e *PresentationEditor, replacements map[string]string) int {
-	total := 0
+// applyTemplateReplacements returns the number of replacements written and the
+// number of rendered texts that could not be applied to any shape.
+func applyTemplateReplacements(e *PresentationEditor, replacements map[string]string) (int, int) {
+	total, unapplied := 0, 0
 	for raw, rendered := range replacements {
 		if raw == rendered {
 			continue
 		}
-		total += applyLineAwareReplacement(e, raw, rendered)
+		applied := applyLineAwareReplacement(e, raw, rendered)
+		if applied == 0 {
+			unapplied++
+		}
+		total += applied
 	}
-	return total
+	return total, unapplied
 }
 
 func applyLineAwareReplacement(e *PresentationEditor, raw, rendered string) int {

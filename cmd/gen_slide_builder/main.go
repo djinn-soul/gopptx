@@ -39,7 +39,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := writeAll(output, methods, imports); err != nil {
+	sliceFields, err := collectSliceFields(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error collecting slice fields: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeAll(output, methods, imports, sliceFields); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing output: %v\n", err)
 		os.Exit(1)
 	}
@@ -47,8 +53,13 @@ func main() {
 
 // writeAll emits the core builder file plus one file per chunk of methods, so
 // that no generated file crosses the repository's per-file line ceiling.
-func writeAll(output string, methods []method, imports map[string]string) error {
-	core, err := renderCore()
+func writeAll(
+	output string,
+	methods []method,
+	imports map[string]string,
+	sliceFields []sliceField,
+) error {
+	core, err := renderCore(sliceFields)
 	if err != nil {
 		return err
 	}

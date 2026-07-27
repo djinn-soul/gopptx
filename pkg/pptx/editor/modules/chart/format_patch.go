@@ -3,6 +3,7 @@ package chart
 import (
 	"errors"
 	"regexp"
+	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -20,6 +21,10 @@ var (
 	reDataLabelsBlock = regexp.MustCompile(`(?s)<c:dLbls>.*?</c:dLbls>`)
 	reDataLabelPos    = regexp.MustCompile(`<c:dLblPos val="[^"]*"/>`)
 	rePlotVisOnly     = regexp.MustCompile(`<c:plotVisOnly val="[^"]*"/>`)
+
+	reChartTitleLayout = regexp.MustCompile(`(?s)<c:layout>.*?</c:layout>|<c:layout/>`)
+	reLayoutX          = regexp.MustCompile(`<c:x val="([^"]*)"/>`)
+	reLayoutY          = regexp.MustCompile(`<c:y val="([^"]*)"/>`)
 )
 
 func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
@@ -62,9 +67,12 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	if err := validateAxisScaleAgainstXML(updated, req); err != nil {
 		return nil, err
 	}
-	if req.ShowTitle != nil || req.Title != nil || req.TitleOverlay != nil {
+	if req.ShowTitle != nil || req.Title != nil || req.TitleOverlay != nil ||
+		req.TitleX != nil || req.TitleY != nil {
 		var err error
-		updated, err = patchChartTitle(updated, req.ShowTitle, req.Title, req.TitleOverlay)
+		updated, err = patchChartTitle(
+			updated, req.ShowTitle, req.Title, req.TitleOverlay, req.TitleX, req.TitleY,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -72,6 +80,7 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchPlotVisibleOnly(updated, req.PlotVisibleOnly)
 	updated = patchChartLegend(updated, req.ShowLegend, req.LegendPosition, req.LegendOverlay)
 	updated = patchChartDataLabels(updated, req)
+	updated = patchDataLabelOffsets(updated, req.DataLabelOffsets)
 	updated = patchChartDataLabelNumberFormat(updated, req.DataLabelNumberFormat, req.DataLabelFormatLinked)
 	updated = patchChartPlotOptions(updated, req)
 	updated = patchAxisTickLabelPosition(updated, "catAx", req.CategoryAxisTickLabelPos)
@@ -91,21 +100,90 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	return []byte(updated), nil
 }
 
-func patchChartTitle(xml string, show *bool, title *string, overlay *bool) (string, error) {
+func patchChartTitle(
+	xml string,
+	show *bool,
+	title *string,
+	overlay *bool,
+	titleX, titleY *float64,
+) (string, error) {
 	match := reChartTitleBlock.FindString(xml)
 	if show != nil && !*show {
 		xml = strings.Replace(xml, match, "", 1)
 		return setAutoTitleDeleted(xml, true), nil
 	}
 	if match == "" {
-		if show != nil || title != nil || overlay != nil {
-			return insertChartTitleBlock(xml, title, overlay), nil
+		if show != nil || title != nil || overlay != nil || titleX != nil || titleY != nil {
+			inserted := insertChartTitleBlock(xml, title, overlay)
+			return patchChartTitleLayoutIn(inserted, titleX, titleY), nil
 		}
 		return "", errors.New("chart title block not found")
 	}
 	block := patchExistingChartTitleBlock(match, title, overlay)
+	block = patchChartTitleLayout(block, titleX, titleY)
 	xml = strings.Replace(xml, match, block, 1)
 	return setAutoTitleDeleted(xml, false), nil
+}
+
+func patchChartTitleLayoutIn(xml string, titleX, titleY *float64) string {
+	if titleX == nil && titleY == nil {
+		return xml
+	}
+	match := reChartTitleBlock.FindString(xml)
+	if match == "" {
+		return xml
+	}
+	return strings.Replace(xml, match, patchChartTitleLayout(match, titleX, titleY), 1)
+}
+
+// patchChartTitleLayout writes the manual title position. CT_Title orders its
+// children tx, layout, overlay, spPr, txPr, so the layout is spliced after
+// </c:tx> rather than appended.
+func patchChartTitleLayout(block string, titleX, titleY *float64) string {
+	if titleX == nil && titleY == nil {
+		return block
+	}
+
+	existing := reChartTitleLayout.FindString(block)
+	x, y := 0.0, 0.0
+	if existing != "" {
+		x, y = parseManualLayoutXY(existing)
+	}
+	if titleX != nil {
+		x = *titleX
+	}
+	if titleY != nil {
+		y = *titleY
+	}
+
+	layout := `<c:layout><c:manualLayout>` +
+		`<c:xMode val="edge"/><c:yMode val="edge"/>` +
+		`<c:x val="` + formatChartFraction(x) + `"/>` +
+		`<c:y val="` + formatChartFraction(y) + `"/>` +
+		`</c:manualLayout></c:layout>`
+
+	if existing != "" {
+		return strings.Replace(block, existing, layout, 1)
+	}
+	if strings.Contains(block, "</c:tx>") {
+		return strings.Replace(block, "</c:tx>", "</c:tx>"+layout, 1)
+	}
+	return strings.Replace(block, "<c:title>", "<c:title>"+layout, 1)
+}
+
+func parseManualLayoutXY(layout string) (float64, float64) {
+	var x, y float64
+	if m := reLayoutX.FindStringSubmatch(layout); len(m) > 1 {
+		x, _ = strconv.ParseFloat(m[1], 64)
+	}
+	if m := reLayoutY.FindStringSubmatch(layout); len(m) > 1 {
+		y, _ = strconv.ParseFloat(m[1], 64)
+	}
+	return x, y
+}
+
+func formatChartFraction(v float64) string {
+	return strconv.FormatFloat(v, 'g', -1, 64)
 }
 
 func insertChartTitleBlock(xml string, title *string, overlay *bool) string {
@@ -142,7 +220,7 @@ func patchExistingChartTitleBlock(match string, title *string, overlay *bool) st
 func patchChartTitleText(block string, title string) string {
 	escaped := `<a:t>` + xmlEscape(title) + `</a:t>`
 	if reTitleText.MatchString(block) {
-		return reTitleText.ReplaceAllString(block, escaped)
+		return reTitleText.ReplaceAllLiteralString(block, escaped)
 	}
 	return strings.Replace(
 		block,

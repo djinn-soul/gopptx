@@ -58,8 +58,16 @@ type cellPropertiesXML struct {
 }
 
 type linePropertiesXML struct {
-	Width    int64     `xml:"w,attr"`
-	NoFill   *struct{} `xml:"noFill"`
+	Width  int64     `xml:"w,attr"`
+	Cap    string    `xml:"cap,attr"`
+	Cmpd   string    `xml:"cmpd,attr"`
+	Algn   string    `xml:"algn,attr"`
+	NoFill *struct{} `xml:"noFill"`
+	Round  *struct{} `xml:"round"`
+	Bevel  *struct{} `xml:"bevel"`
+	Miter  *struct {
+		Lim string `xml:"lim,attr"`
+	} `xml:"miter"`
 	PrstDash *struct {
 		Val string `xml:"val,attr"`
 	} `xml:"prstDash"`

@@ -12,11 +12,15 @@ type AddValidationErrorFn func(code, message string)
 type FindReplaceRequest struct {
 	Find    string
 	Replace string
+	// Scope names the parts to cover. Empty means slides only, which is the
+	// historical behavior.
+	Scope string
 }
 
 func ParseFindReplaceRequest(
 	payload map[string]any,
 	parseStringField ParseStringFieldFn,
+	optionalStringField OptionalStringFieldFn,
 ) (FindReplaceRequest, bool) {
 	find, ok := parseStringField(payload, "find")
 	if !ok {
@@ -29,6 +33,7 @@ func ParseFindReplaceRequest(
 	return FindReplaceRequest{
 		Find:    find,
 		Replace: replace,
+		Scope:   optionalStringField(payload, "scope"),
 	}, true
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -60,8 +61,30 @@ func UpdateTableColumnWidthInFrame(frame []byte, colIdx int, width int64) ([]byt
 	)
 }
 
+// defaultTableRowHeightEMU is used when a new row has no height to copy: 0.4",
+// PowerPoint's own default for a table row.
+const defaultTableRowHeightEMU int64 = 365760
+
+// resolveNewRowHeight picks the h value for a new row. CT_TableRow requires the
+// attribute, so an unspecified height falls back to the last row's height rather
+// than being omitted; a row without h makes PowerPoint reject the package.
+func resolveNewRowHeight(parsed *XML, height int64) int64 {
+	if height > 0 {
+		return height
+	}
+	if parsed == nil {
+		return defaultTableRowHeightEMU
+	}
+	for _, row := range slices.Backward(parsed.Rows) {
+		if row.Height > 0 {
+			return row.Height
+		}
+	}
+	return defaultTableRowHeightEMU
+}
+
 // AddTableRowInFrame appends a new empty row to the table XML.
-// height is in EMU; pass 0 to omit the h attribute (PowerPoint will auto-size).
+// height is in EMU; pass 0 to inherit the last row's height.
 func AddTableRowInFrame(frame []byte, height int64) ([]byte, error) {
 	parsed, err := ParseTable(frame)
 	if err != nil {
@@ -74,13 +97,9 @@ func AddTableRowInFrame(frame []byte, height int64) ([]byte, error) {
 
 	emptyCell := `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr/><a:t></a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>`
 	var newRow strings.Builder
-	if height > 0 {
-		newRow.WriteString(`<a:tr h="`)
-		newRow.WriteString(strconv.FormatInt(height, 10))
-		newRow.WriteString(`">`)
-	} else {
-		newRow.WriteString(`<a:tr>`)
-	}
+	newRow.WriteString(`<a:tr h="`)
+	newRow.WriteString(strconv.FormatInt(resolveNewRowHeight(parsed, height), 10))
+	newRow.WriteString(`">`)
 	for range colCount {
 		newRow.WriteString(emptyCell)
 	}
@@ -119,13 +138,9 @@ func InsertTableRowInFrame(frame []byte, atIndex int, height int64) ([]byte, err
 
 	emptyCell := `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr/><a:t></a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>`
 	var newRow strings.Builder
-	if height > 0 {
-		newRow.WriteString(`<a:tr h="`)
-		newRow.WriteString(strconv.FormatInt(height, 10))
-		newRow.WriteString(`">`)
-	} else {
-		newRow.WriteString(`<a:tr>`)
-	}
+	newRow.WriteString(`<a:tr h="`)
+	newRow.WriteString(strconv.FormatInt(resolveNewRowHeight(parsed, height), 10))
+	newRow.WriteString(`">`)
 	for range colCount {
 		newRow.WriteString(emptyCell)
 	}

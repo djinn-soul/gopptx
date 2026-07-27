@@ -36,7 +36,9 @@ def reject_unknown_image_options(kwargs: dict[str, object]) -> None:
     """
     unknown = sorted(set(kwargs) - IMAGE_OPTION_KEYS)
     if unknown:
-        raise TypeError(" ".join((
-            f"unexpected keyword argument(s) {', '.join(unknown)};",
-            f"supported: {', '.join(sorted(IMAGE_OPTION_KEYS))}",
-        )))
+        raise TypeError(
+            " ".join((
+                f"unexpected keyword argument(s) {', '.join(unknown)};",
+                f"supported: {', '.join(sorted(IMAGE_OPTION_KEYS))}",
+            ))
+        )

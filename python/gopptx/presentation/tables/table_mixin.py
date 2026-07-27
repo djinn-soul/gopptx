@@ -87,10 +87,12 @@ def _reject_unknown_table_options(kwargs: dict[str, object]) -> None:
     """Raise on a table keyword option add_table does not understand."""
     unknown = sorted(set(kwargs) - _TABLE_OPTION_KEYS)
     if unknown:
-        raise TypeError(" ".join((
-            f"unexpected keyword argument(s) {', '.join(unknown)};",
-            f"supported: {', '.join(sorted(_TABLE_OPTION_KEYS))}",
-        )))
+        raise TypeError(
+            " ".join((
+                f"unexpected keyword argument(s) {', '.join(unknown)};",
+                f"supported: {', '.join(sorted(_TABLE_OPTION_KEYS))}",
+            ))
+        )
 
 
 def _resolve_bounds(

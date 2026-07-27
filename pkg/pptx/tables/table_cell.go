@@ -5,6 +5,82 @@ type TableCellBorder struct {
 	WidthPt float64
 	Color   string
 	Dash    string
+	// Cap is the line cap: TableBorderCapFlat, TableBorderCapRound or
+	// TableBorderCapSquare.
+	Cap string
+	// Join is the line join: TableBorderJoinRound, TableBorderJoinBevel or
+	// TableBorderJoinMiter.
+	Join string
+	// MiterLimitPct scales a miter join; ignored unless Join is miter.
+	MiterLimitPct float64
+	// Compound is the compound line type, e.g. TableBorderCompoundDouble.
+	Compound string
+	// Inset draws the pen inside the cell boundary instead of centred on it.
+	Inset bool
+}
+
+// Table cell border line caps.
+const (
+	TableBorderCapFlat   = "flat"
+	TableBorderCapRound  = "rnd"
+	TableBorderCapSquare = "sq"
+)
+
+// Table cell border line joins.
+const (
+	TableBorderJoinRound = "round"
+	TableBorderJoinBevel = "bevel"
+	TableBorderJoinMiter = "miter"
+)
+
+// Table cell border compound line types.
+const (
+	TableBorderCompoundSingle    = "sng"
+	TableBorderCompoundDouble    = "dbl"
+	TableBorderCompoundThickThin = "thickThin"
+	TableBorderCompoundThinThick = "thinThick"
+	TableBorderCompoundTriple    = "tri"
+)
+
+// NewTableCellBorder builds a border spec that the WithSideBorderSpec setters
+// accept, carrying the cap, join, compound and inset controls the
+// fixed-argument helpers do not expose.
+func NewTableCellBorder(widthPt float64, color string, dash string) TableCellBorder {
+	return TableCellBorder{
+		WidthPt: widthPt,
+		Color:   NormalizeHexColor(color),
+		Dash:    NormalizeTableBorderDash(dash),
+	}
+}
+
+// WithCap returns the border with an explicit line cap.
+func (b TableCellBorder) WithCap(lineCap string) TableCellBorder {
+	b.Cap = lineCap
+	return b
+}
+
+// WithJoin returns the border with an explicit line join.
+func (b TableCellBorder) WithJoin(join string) TableCellBorder {
+	b.Join = join
+	return b
+}
+
+// WithMiterLimit returns the border with a miter limit percentage.
+func (b TableCellBorder) WithMiterLimit(limitPct float64) TableCellBorder {
+	b.MiterLimitPct = limitPct
+	return b
+}
+
+// WithCompound returns the border with a compound line type.
+func (b TableCellBorder) WithCompound(compound string) TableCellBorder {
+	b.Compound = compound
+	return b
+}
+
+// WithInset returns the border drawn inside the cell boundary.
+func (b TableCellBorder) WithInset(inset bool) TableCellBorder {
+	b.Inset = inset
+	return b
 }
 
 // TableCell stores text and optional style for one table cell.
@@ -191,12 +267,50 @@ func (c TableCell) WithBottomBorderStyle(widthPt float64, color string, dash str
 	return c.withSideBorder(borderSideBottom, widthPt, color, dash)
 }
 
+// WithLeftBorderSpec sets the left border from a fully specified border.
+func (c TableCell) WithLeftBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideLeft, border)
+}
+
+// WithRightBorderSpec sets the right border from a fully specified border.
+func (c TableCell) WithRightBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideRight, border)
+}
+
+// WithTopBorderSpec sets the top border from a fully specified border.
+func (c TableCell) WithTopBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideTop, border)
+}
+
+// WithBottomBorderSpec sets the bottom border from a fully specified border.
+func (c TableCell) WithBottomBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideBottom, border)
+}
+
+// WithBorderSpec sets every side from a fully specified border.
+func (c TableCell) WithBorderSpec(border TableCellBorder) TableCell {
+	c = c.withSideBorderSpec(borderSideLeft, border)
+	c = c.withSideBorderSpec(borderSideRight, border)
+	c = c.withSideBorderSpec(borderSideTop, border)
+	return c.withSideBorderSpec(borderSideBottom, border)
+}
+
+func (c TableCell) withSideBorderSpec(side string, border TableCellBorder) TableCell {
+	border.Color = NormalizeHexColor(border.Color)
+	border.Dash = NormalizeTableBorderDash(border.Dash)
+	return c.assignSideBorder(side, &border)
+}
+
 func (c TableCell) withSideBorder(side string, widthPt float64, color string, dash string) TableCell {
 	border := &TableCellBorder{
 		WidthPt: widthPt,
 		Color:   NormalizeHexColor(color),
 		Dash:    NormalizeTableBorderDash(dash),
 	}
+	return c.assignSideBorder(side, border)
+}
+
+func (c TableCell) assignSideBorder(side string, border *TableCellBorder) TableCell {
 	switch side {
 	case borderSideLeft:
 		c.BorderLeft = border

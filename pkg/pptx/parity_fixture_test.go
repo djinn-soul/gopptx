@@ -166,6 +166,14 @@ func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T
 	testutil.AssertContainsTokens(t, "gopptx text-enhancement parity deck", ours, tokens)
 }
 
+// emfFixtureBytes returns a minimal EMR_HEADER with the " EMF" signature.
+func emfFixtureBytes() []byte {
+	data := make([]byte, 88)
+	copy(data, []byte{0x01, 0x00, 0x00, 0x00})
+	copy(data[40:], []byte{0x20, 0x45, 0x4D, 0x46})
+	return data
+}
+
 func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
 	cases := []struct {
 		name string
@@ -180,6 +188,9 @@ func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
 		{name: "bmp", ext: "bmp", mime: "image/bmp", data: []byte{'B', 'M', 0x00, 0x00}},
 		{name: "tif", ext: "tif", mime: "image/tiff", data: []byte{'I', 'I', '*', 0x00}},
 		{name: "tiff", ext: "tiff", mime: "image/tiff", data: []byte{'I', 'I', '*', 0x00}},
+		{name: "emf", ext: "emf", mime: "image/x-emf", data: emfFixtureBytes()},
+		{name: "wmf", ext: "wmf", mime: "image/x-wmf", data: []byte{0xD7, 0xCD, 0xC6, 0x9A, 0x00, 0x00}},
+		{name: "wdp", ext: "wdp", mime: "image/vnd.ms-photo", data: []byte{'I', 'I', 0xBC, 0x01}},
 	}
 
 	for _, tc := range cases {

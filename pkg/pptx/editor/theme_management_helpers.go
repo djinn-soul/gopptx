@@ -94,7 +94,10 @@ func rewriteFontBlock(xmlText string, block *regexp.Regexp, typeface string) (st
 	}
 	rewrittenLatin := latin
 	if typefacePattern.MatchString(rewrittenLatin) {
-		rewrittenLatin = typefacePattern.ReplaceAllString(rewrittenLatin, `typeface="`+escapeXMLAttr(typeface)+`"`)
+		rewrittenLatin = typefacePattern.ReplaceAllLiteralString(
+			rewrittenLatin,
+			`typeface="`+escapeXMLAttr(typeface)+`"`,
+		)
 	} else {
 		rewrittenLatin = strings.Replace(rewrittenLatin, "/>", ` typeface="`+escapeXMLAttr(typeface)+`"/>`, 1)
 	}

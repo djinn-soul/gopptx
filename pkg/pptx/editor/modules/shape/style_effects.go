@@ -29,6 +29,12 @@ func RenderEffectsXML(
 		return inheritXML, nil
 	}
 
+	// A shadow carrying only inherit=false describes the absence of style
+	// effects, not a shadow to draw.
+	if shadow != nil && shadow.Inherit != nil && !hasExplicitShadowAttrs(shadow) {
+		shadow = nil
+	}
+
 	items, err := renderEffectItems(shadow, glow, blur, softEdge, reflection)
 	if err != nil {
 		return "", err
@@ -49,16 +55,37 @@ func renderInheritedShadowEffects(
 	if shadow == nil || shadow.Inherit == nil {
 		return false, "", nil
 	}
-	if shadow.Color != nil || shadow.BlurEmu != nil || shadow.DistanceEmu != nil || shadow.AngleDeg != nil {
+	hasExplicitShadow := hasExplicitShadowAttrs(shadow)
+	hasOtherEffects := glow != nil || blur != nil || softEdge != nil || reflection != nil
+
+	if !*shadow.Inherit {
+		// inherit=false means "do not take effects from the shape style". With no
+		// explicit effects that is an empty effect list; with explicit ones the
+		// rendered effects already override the style, so fall through to them.
+		if hasExplicitShadow || hasOtherEffects {
+			return false, "", nil
+		}
+		return true, effectListEmptyXML, nil
+	}
+
+	// inherit=true means "use the shape style", which explicit effects contradict.
+	if hasExplicitShadow {
 		return false, "", errors.New("shadow.inherit cannot be combined with explicit shadow attributes")
 	}
-	if glow != nil || blur != nil || softEdge != nil || reflection != nil {
+	if hasOtherEffects {
 		return false, "", errors.New("shadow.inherit cannot be combined with other explicit effects")
 	}
-	if *shadow.Inherit {
-		return true, "", nil
+	return true, "", nil
+}
+
+func hasExplicitShadowAttrs(shadow *common.ShapeShadow) bool {
+	if shadow == nil {
+		return false
 	}
-	return true, effectListEmptyXML, nil
+	return shadow.Color != nil ||
+		shadow.BlurEmu != nil ||
+		shadow.DistanceEmu != nil ||
+		shadow.AngleDeg != nil
 }
 
 func renderEffectItems(

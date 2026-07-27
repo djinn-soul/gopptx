@@ -66,6 +66,17 @@ type TableCellBorderSpec struct {
 	Width int64
 	Color string
 	Dash  string
+	// Cap is the line cap: "rnd", "sq" or "flat".
+	Cap string
+	// Join is the line join: "round", "bevel" or "miter".
+	Join string
+	// MiterLimitPct scales a miter join; ignored for other joins.
+	MiterLimitPct float64
+	// Compound is the compound line type: "sng", "dbl", "thickThin",
+	// "thinThick" or "tri".
+	Compound string
+	// Inset draws the pen inside the cell boundary instead of centred on it.
+	Inset bool
 }
 type tableCellBorderSet struct {
 	Left   *TableCellBorderSpec

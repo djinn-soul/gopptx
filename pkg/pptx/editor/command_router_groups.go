@@ -75,6 +75,10 @@ func layoutMetadataHandlers() map[string]commandHandler {
 func themeLayoutHandlers() map[string]commandHandler {
 	return map[string]commandHandler{
 		OpGetLayoutShapes:       handleGetLayoutShapes,
+		OpAddLayoutShape:        handleAddLayoutShape,
+		OpAddLayoutTextbox:      handleAddLayoutTextbox,
+		OpAddMasterShape:        handleAddMasterShape,
+		OpAddMasterTextbox:      handleAddMasterTextbox,
 		OpGetMasterShapes:       handleGetMasterShapes,
 		OpGetLayoutPlaceholders: handleGetLayoutPlaceholders,
 		OpGetMasterPlaceholders: handleGetMasterPlaceholders,
@@ -159,6 +163,7 @@ func shapeMutationHandlers() map[string]commandHandler {
 		OpMoveShapeToIndex: handleMoveShapeToIndex,
 		OpGetImageMetadata: handleGetImageMetadata,
 		OpAddVideo:         handleAddVideo,
+		OpAddOnlineVideo:   handleAddOnlineVideo,
 		OpAddAudio:         handleAddAudio,
 		OpAddOLEObject:     handleAddOLEObject,
 		OpListSlideImages:  handleListSlideImages,

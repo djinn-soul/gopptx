@@ -51,8 +51,32 @@ func importsFor(chunk []method, available map[string]string) []string {
 	return paths
 }
 
-func renderCore() (string, error) {
-	return formatted(generatedHeader + builderCore)
+func renderCore(fields []sliceField) (string, error) {
+	return formatted(generatedHeader + `import "slices"
+
+` + builderCore + renderCloneSlices(fields))
+}
+
+// renderCloneSlices emits the deep copy BuildFrom applies to every slice field,
+// so a builder never appends into an array another holder still owns.
+func renderCloneSlices(fields []sliceField) string {
+	var out strings.Builder
+	out.WriteString("// cloneSlideContentSlices copies every slice field of content.\n")
+	out.WriteString("//\n")
+	out.WriteString("// A SlideContent value copy shares the backing arrays of its slices, so\n")
+	out.WriteString("// appending through two copies with spare capacity writes to the same slot\n")
+	out.WriteString("// and one write is silently lost.\n")
+	out.WriteString("func cloneSlideContentSlices(content SlideContent) SlideContent {\n")
+	for _, field := range fields {
+		fmt.Fprintf(&out, "\tcontent.%s = slices.Clone(content.%s)\n", field.Name, field.Name)
+		if field.Nested {
+			fmt.Fprintf(&out, "\tfor i := range content.%s {\n", field.Name)
+			fmt.Fprintf(&out, "\t\tcontent.%s[i] = slices.Clone(content.%s[i])\n", field.Name, field.Name)
+			out.WriteString("\t}\n")
+		}
+	}
+	out.WriteString("\treturn content\n}\n")
+	return out.String()
 }
 
 func renderChunk(chunk []method, imports []string) (string, error) {
@@ -112,12 +136,16 @@ func NewSlideBuilder(title string) *SlideBuilder {
 
 // BuildFrom starts a builder from an existing SlideContent, so code already
 // holding one can switch to the pointer-receiver style.
+//
+// The slice fields are cloned, so the builder and the original SlideContent
+// (and any other builder derived from it) never share backing arrays.
 func BuildFrom(content SlideContent) *SlideBuilder {
-	return &SlideBuilder{content: content}
+	return &SlideBuilder{content: cloneSlideContentSlices(content)}
 }
 
 // Build returns the SlideContent assembled so far.
 func (b *SlideBuilder) Build() SlideContent {
 	return b.content
 }
+
 `

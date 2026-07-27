@@ -4,9 +4,18 @@ from __future__ import annotations
 
 import os
 from io import BytesIO
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from PIL import Image
+# Pillow is a runtime dependency. The import is guarded so a wheel installed
+# without it fails with an actionable message instead of an opaque
+# ModuleNotFoundError raised from an unrelated module.
+try:
+    from PIL import Image
+except ImportError as exc:  # pragma: no cover - depends on install shape
+    raise ImportError(
+        "Pillow is required to inspect image sources: pip install pillow"
+    ) from exc
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -17,13 +26,18 @@ _EMU_PER_INCH = 914_400
 _DEFAULT_DPI = 72.0
 _DPI_COMPONENTS = 2
 
+# An XML prolog, a DOCTYPE and a comment can all precede the root element, so
+# the window is wide enough to reach <svg but still bounded.
+_SVG_SNIFF_BYTES = 1024
+
 
 def is_svg_source(source: str | bytes | PathLike[str]) -> bool:
     """Check whether the image source is SVG vector graphics."""
     if isinstance(source, (str, os.PathLike)):
         return os.fspath(source).lower().endswith(".svg")
-    sample = source.lstrip()[:300].lower()
-    return b"<svg" in sample or b"<?xml" in sample
+    # An XML prolog alone is not enough: any XML-ish payload would otherwise
+    # take the SVG fallback instead of failing to decode. Require an <svg root.
+    return b"<svg" in source.lstrip()[:_SVG_SNIFF_BYTES].lower()
 
 
 def infer_image_format(source: bytes) -> str:
@@ -40,12 +54,20 @@ def resolve_picture_source(
 ) -> str | bytes:
     """Resolve picture input using explicit source, path, then data."""
     if source is not None:
-        return os.fspath(source) if isinstance(source, os.PathLike) else source
+        resolved = os.fspath(source) if isinstance(source, os.PathLike) else source
+        if not resolved:
+            raise ValueError("picture source must not be empty")
+        return resolved
     path = options.get("path")
     if isinstance(path, (str, os.PathLike)):
-        return os.fspath(path)
+        resolved_path: str = os.fspath(path)
+        if not resolved_path:
+            raise ValueError("picture path must not be empty")
+        return resolved_path
     data = options.get("data")
     if isinstance(data, bytes):
+        if not data:
+            raise ValueError("picture data must not be empty")
         return data
     raise ValueError("picture source is required")
 
@@ -66,6 +88,8 @@ def picture_bounds(
     if is_svg_source(source):
         native_width, native_height = 2_540_000, 2_540_000
     else:
+        if not isinstance(source, bytes) and not Path(source).exists():
+            raise FileNotFoundError(f"picture source not found: {os.fspath(source)}")
         with Image.open(
             BytesIO(source) if isinstance(source, bytes) else source
         ) as image:

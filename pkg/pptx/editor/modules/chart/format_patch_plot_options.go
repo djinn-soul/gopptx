@@ -66,7 +66,7 @@ func patchChartDataLabelNumberFormat(xml string, format *string, linked *bool) s
 	}
 	node := `<c:numFmt formatCode="` + xmlEscape(formatCode) + `" sourceLinked="` + boolToOneZero(sourceLinked) + `"/>`
 	if reDataLabelNumberFormat.MatchString(match) {
-		match = reDataLabelNumberFormat.ReplaceAllString(match, node)
+		match = reDataLabelNumberFormat.ReplaceAllLiteralString(match, node)
 	} else {
 		match = strings.Replace(match, "<c:dLbls>", "<c:dLbls>"+node, 1)
 	}

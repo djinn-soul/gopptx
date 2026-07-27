@@ -21,11 +21,15 @@ func handleFindAndReplace(e *PresentationEditor, payload json.RawMessage) (any, 
 		payload,
 		parseRawPayloadBytes,
 		func(p map[string]any) (editorcommand.FindReplaceRequest, bool) {
-			return editorcommand.ParseFindReplaceRequest(p, v.RequireString)
+			return editorcommand.ParseFindReplaceRequest(p, v.RequireString, v.OptionalString)
 		},
 		v.Error,
 		func(request editorcommand.FindReplaceRequest) (any, error) {
-			count, err := e.FindAndReplaceInShapes(request.Find, request.Replace)
+			count, err := e.FindAndReplaceInScope(
+				request.Find,
+				request.Replace,
+				common.TextReplaceScope(request.Scope),
+			)
 			if err != nil {
 				return nil, err
 			}

@@ -85,10 +85,12 @@ class PresentationShapePayloadMixin(PresentationMixinBase):
         if reject_unknown:
             unknown = sorted(set(options) - set(keys))
             if unknown:
-                raise TypeError(" ".join((
-                    f"unexpected keyword argument(s) {', '.join(unknown)};",
-                    f"supported: {', '.join(sorted(keys))}",
-                )))
+                raise TypeError(
+                    " ".join((
+                        f"unexpected keyword argument(s) {', '.join(unknown)};",
+                        f"supported: {', '.join(sorted(keys))}",
+                    ))
+                )
         for key in keys:
             value = options.get(key)
             if value is None:

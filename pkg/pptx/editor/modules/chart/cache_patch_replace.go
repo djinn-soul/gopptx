@@ -70,9 +70,9 @@ func applyFieldFormula(field string, formula string) string {
 func applyStringValues(fieldTag string, field string, strVals []string) (string, error) {
 	switch {
 	case strCachePattern.MatchString(field):
-		return strCachePattern.ReplaceAllString(field, buildStringData("strCache", strVals)), nil
+		return strCachePattern.ReplaceAllLiteralString(field, buildStringData("strCache", strVals)), nil
 	case strLitPattern.MatchString(field):
-		return strLitPattern.ReplaceAllString(field, buildStringData("strLit", strVals)), nil
+		return strLitPattern.ReplaceAllLiteralString(field, buildStringData("strLit", strVals)), nil
 	case numCachePattern.MatchString(field):
 		numeric, err := convertStringsToFloats(strVals, "numeric cache")
 		if err != nil {
@@ -80,7 +80,7 @@ func applyStringValues(fieldTag string, field string, strVals []string) (string,
 		}
 		existing := numCachePattern.FindString(field)
 		formatCode := extractFormatCode(existing)
-		return numCachePattern.ReplaceAllString(field, buildNumberData("numCache", formatCode, numeric)), nil
+		return numCachePattern.ReplaceAllLiteralString(field, buildNumberData("numCache", formatCode, numeric)), nil
 	case numLitPattern.MatchString(field):
 		numeric, err := convertStringsToFloats(strVals, "numeric literal")
 		if err != nil {
@@ -88,7 +88,7 @@ func applyStringValues(fieldTag string, field string, strVals []string) (string,
 		}
 		existing := numLitPattern.FindString(field)
 		formatCode := extractFormatCode(existing)
-		return numLitPattern.ReplaceAllString(field, buildNumberData("numLit", formatCode, numeric)), nil
+		return numLitPattern.ReplaceAllLiteralString(field, buildNumberData("numLit", formatCode, numeric)), nil
 	default:
 		return "", fmt.Errorf("missing data node for %s", fieldTag)
 	}
@@ -97,9 +97,9 @@ func applyStringValues(fieldTag string, field string, strVals []string) (string,
 func applyMultiLevelValues(fieldTag string, field string, vals [][]string) (string, error) {
 	switch {
 	case multiLvlCache.MatchString(field):
-		return multiLvlCache.ReplaceAllString(field, buildMultiLevelData("multiLvlStrCache", vals)), nil
+		return multiLvlCache.ReplaceAllLiteralString(field, buildMultiLevelData("multiLvlStrCache", vals)), nil
 	case multiLvlLit.MatchString(field):
-		return multiLvlLit.ReplaceAllString(field, buildMultiLevelData("multiLvlStrLit", vals)), nil
+		return multiLvlLit.ReplaceAllLiteralString(field, buildMultiLevelData("multiLvlStrLit", vals)), nil
 	default:
 		return "", fmt.Errorf("missing multi-level category node for %s", fieldTag)
 	}
@@ -110,11 +110,11 @@ func applyNumericValues(fieldTag string, field string, numVals []float64) (strin
 	case numCachePattern.MatchString(field):
 		existing := numCachePattern.FindString(field)
 		formatCode := extractFormatCode(existing)
-		return numCachePattern.ReplaceAllString(field, buildNumberData("numCache", formatCode, numVals)), nil
+		return numCachePattern.ReplaceAllLiteralString(field, buildNumberData("numCache", formatCode, numVals)), nil
 	case numLitPattern.MatchString(field):
 		existing := numLitPattern.FindString(field)
 		formatCode := extractFormatCode(existing)
-		return numLitPattern.ReplaceAllString(field, buildNumberData("numLit", formatCode, numVals)), nil
+		return numLitPattern.ReplaceAllLiteralString(field, buildNumberData("numLit", formatCode, numVals)), nil
 	default:
 		return "", fmt.Errorf("missing numeric data node for %s", fieldTag)
 	}

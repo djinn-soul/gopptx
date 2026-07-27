@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 const minFreeformPoints = 2
@@ -24,7 +22,7 @@ func (e *PresentationEditor) AddGroupShape(slideIndex int, shapeIDs []int) (int,
 		return 0, err
 	}
 
-	newID, lastShapeEnd := nextGroupShapeID(content, shapeNodes)
+	newID, lastShapeEnd := e.nextGroupShapeID(partPath, content, shapeNodes)
 
 	if len(shapeIDs) == 0 {
 		return e.insertEmptyGroupShape(partPath, content, newID, lastShapeEnd)
@@ -58,15 +56,20 @@ func (e *PresentationEditor) groupShapeContext(slideIndex int) (string, []byte, 
 	return partPath, content, shapeNodes, nil
 }
 
-func nextGroupShapeID(content []byte, shapeNodes []parsedShape) (int, int64) {
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
+func (e *PresentationEditor) nextGroupShapeID(
+	partPath string,
+	content []byte,
+	shapeNodes []parsedShape,
+) (int, int64) {
 	lastShapeEnd := int64(-1)
 	for _, shape := range shapeNodes {
 		if shape.End > lastShapeEnd {
 			lastShapeEnd = shape.End
 		}
 	}
-	return maxID + 1, lastShapeEnd
+	newID := e.maxObjectID(partPath, content) + 1
+	e.reserveObjectIDs(partPath, newID)
+	return newID, lastShapeEnd
 }
 
 func (e *PresentationEditor) insertEmptyGroupShape(

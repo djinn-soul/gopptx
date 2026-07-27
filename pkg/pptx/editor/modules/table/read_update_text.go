@@ -50,11 +50,24 @@ func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) (
 				lstStyle = []byte("<a:lstStyle/>")
 			}
 
+			// A text-only update must not discard the run's formatting: the
+			// cell's font, size and colour live in the first <a:rPr>, and its
+			// alignment in <a:pPr> (upstream issue #1037).
+			rPr := extractXMLElement(oldTxBody, []byte("<a:rPr"))
+			if len(rPr) == 0 {
+				rPr = []byte("<a:rPr/>")
+			}
+			pPr := extractXMLElement(oldTxBody, []byte("<a:pPr"))
+
 			newTxBody := bytes.Join([][]byte{
 				[]byte("<a:txBody>"),
 				bodyPr,
 				lstStyle,
-				[]byte("<a:p><a:r><a:rPr/><a:t>"),
+				[]byte("<a:p>"),
+				pPr,
+				[]byte("<a:r>"),
+				rPr,
+				[]byte("<a:t>"),
 				[]byte(escapedText),
 				[]byte("</a:t></a:r></a:p></a:txBody>"),
 			}, nil)

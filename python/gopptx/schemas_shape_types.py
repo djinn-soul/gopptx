@@ -251,6 +251,8 @@ class Shape(TypedDict, total=False):
     fill: FillFormat
     line: LineFormat
     shadow: ShadowFormat
+    flip_h: bool
+    flip_v: bool
 
 
 class GrayscaleShapeRef(TypedDict):

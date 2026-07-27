@@ -107,6 +107,7 @@ const (
 	OpSetPlaceholderContent   = "set_placeholder_content"
 	OpGetImageMetadata        = "get_image_metadata"
 	OpAddVideo                = "add_video"
+	OpAddOnlineVideo          = "add_online_video"
 	OpAddAudio                = "add_audio"
 	OpAddOLEObject            = "add_ole_object"
 	OpMarkdownToSlides        = "markdown_to_slides"
@@ -147,6 +148,10 @@ const (
 	OpSwapImageByIndex      = "swap_image_by_index"
 	OpSwapImageByRelID      = "swap_image_by_rel_id"
 	OpGetLayoutShapes       = "get_layout_shapes"
+	OpAddLayoutShape        = "add_layout_shape"
+	OpAddLayoutTextbox      = "add_layout_textbox"
+	OpAddMasterShape        = "add_master_shape"
+	OpAddMasterTextbox      = "add_master_textbox"
 	OpGetMasterShapes       = "get_master_shapes"
 	OpGetLayoutPlaceholders = "get_layout_placeholders"
 	OpGetMasterPlaceholders = "get_master_placeholders"
@@ -203,6 +208,10 @@ func supportedSlideAndMetaOps() []string {
 		OpValidate,
 		OpRepair,
 		OpGetLayoutShapes,
+		OpAddLayoutShape,
+		OpAddLayoutTextbox,
+		OpAddMasterShape,
+		OpAddMasterTextbox,
 		OpGetMasterShapes,
 		OpGetLayoutPlaceholders,
 		OpGetMasterPlaceholders,
