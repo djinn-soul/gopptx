@@ -185,8 +185,6 @@ linters:
 
     govet:
       enable-all: true
-      disable:
-        - fieldalignment
       settings:
         shadow:
           strict: true
@@ -223,7 +221,7 @@ linters:
       require-specific: true
 
     perfsprint:
-      strconcat: false
+      strconcat: true
 
     reassign:
       patterns:

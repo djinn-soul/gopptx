@@ -14,7 +14,7 @@ type runData struct {
 
 // paraChild is a polymorphic child inside a paragraph: either a run or raw XML bytes.
 type paraChild struct {
-	isRun bool
 	run   runData
 	raw   []byte
+	isRun bool
 }

@@ -3,6 +3,8 @@ package comments
 import "time"
 
 // Author represents a person making comments in the presentation.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Author struct {
 	ID         int64
 	Name       string
@@ -14,6 +16,8 @@ type Author struct {
 }
 
 // Comment represents a single comment on a slide.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Comment struct {
 	ID       int64
 	AuthorID int64

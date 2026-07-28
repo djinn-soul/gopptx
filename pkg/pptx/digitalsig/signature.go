@@ -61,6 +61,8 @@ func (h HashAlgorithm) Name() string {
 }
 
 // SignerInfo contains identity information for the signer.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type SignerInfo struct {
 	Name         string
 	Email        *string
@@ -134,6 +136,8 @@ func (s SignatureCommitment) Label() string {
 }
 
 // DigitalSignature contains configuration for a presentation signature.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type DigitalSignature struct {
 	Signer         SignerInfo
 	HashAlgorithm  HashAlgorithm

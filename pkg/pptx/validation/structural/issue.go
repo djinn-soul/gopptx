@@ -44,6 +44,8 @@ const (
 )
 
 // Issue represents a single diagnostic finding.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals and JSON layout.
 type Issue struct {
 	Code        IssueCode         `json:"code"`
 	Severity    Severity          `json:"severity"`

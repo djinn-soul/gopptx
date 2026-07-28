@@ -46,7 +46,7 @@ func RenderChart(chart *ChartSpec) []byte {
 	if chart.Kind == ChartKindCombo {
 		return []byte(comboChartPartXML(chart))
 	}
-	panic(fmt.Sprintf("unsupported chart kind: %s", chart.Kind))
+	panic("unsupported chart kind: " + chart.Kind)
 }
 
 func barChartPartXML(chart *ChartSpec) string {
