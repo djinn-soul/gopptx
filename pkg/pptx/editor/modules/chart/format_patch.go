@@ -45,6 +45,9 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if err := validateAxisCrosses("value_axis_crosses", req.ValueAxisCrosses); err != nil {
 		return err
 	}
+	if err := ValidateAxisVisibility(req); err != nil {
+		return err
+	}
 	if err := validateAxisDetails(req); err != nil {
 		return err
 	}
@@ -126,6 +129,7 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)
 	updated = patchAxisDetails(updated, req)
+	updated = PatchAxisVisibility(updated, req)
 	// After the axes: CT_PlotArea puts c:dTable behind them.
 	updated = patchChartDataTable(updated, req.DataTable)
 	updated = patchChartScene3D(updated, req)

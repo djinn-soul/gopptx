@@ -234,6 +234,11 @@ class ChartFormatUpdate(TypedDict, total=False):
     value_axis_minor_unit: float
     category_axis_number_format: str
     value_axis_number_format: str
+    category_axis_visible: bool
+    value_axis_visible: bool
+    category_axis_tick_label_rotation: float
+    value_axis_tick_label_rotation: float
+    value_axis_cross_between: str
     category_axis_tick_mark_skip: int
     category_axis_label_alignment: str
     category_axis_format_linked: bool
@@ -262,6 +267,9 @@ class ChartAxisState(TypedDict, total=False):
     format_linked: bool
     tick_mark_skip: int
     label_alignment: str
+    visible: bool
+    tick_label_rotation: float
+    cross_between: str
 
 
 class ChartDataLabelState(TypedDict, total=False):

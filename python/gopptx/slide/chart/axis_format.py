@@ -95,6 +95,31 @@ class ChartAxisFormatMixin:
         self._chart.apply_format(cast("ChartFormatUpdate", payload))
 
     @property
+    def visible(self) -> bool:
+        """Return whether PowerPoint draws this axis.
+
+        An axis is hidden with ``<c:delete val="1"/>``; the axis element stays
+        in the chart so the series keep referring to it (issues #473, #852).
+        """
+        value = self._axis_state_value("visible")
+        return True if value is None else bool(value)
+
+    @visible.setter
+    def visible(self, value: bool) -> None:
+        self._apply_axis_format("visible", bool(value))
+
+    @property
+    def tick_label_rotation(self) -> float | None:
+        """Return the tick-label angle in degrees, if one is set (issue #329)."""
+        return self._float_state("tick_label_rotation")
+
+    @tick_label_rotation.setter
+    def tick_label_rotation(self, value: float) -> None:
+        self._apply_axis_format(
+            "tick_label_rotation", self._finite_number(value, "tick_label_rotation")
+        )
+
+    @property
     def major_unit(self) -> float | None:
         """Return the major tick interval, if explicitly configured."""
         return self._float_state("major_unit")
