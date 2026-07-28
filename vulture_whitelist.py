@@ -731,4 +731,10 @@ segments  # unused variable (python\gopptx\schemas_shape_types.py FreeformPath)
 paths  # unused variable (python\gopptx\schemas_shape_types.py FreeformGeometry)
 freeform  # unused variable (python\gopptx\schemas_shape_types.py Shape)
 _.picture  # unused property (python\gopptx\slide\shapes\shape_format_proxies.py)
-_.freeform  # unused property (python\gopptx\slide\shapes\shape_proxy.py)
+_.freeform  # unused property (python\gopptx\slide\shapes\shape_style_proxy.py)
+
+# Effective-style read model (upstream #1013).
+scheme_slot  # unused variable (python\gopptx\schemas_shape_types.py EffectiveColor)
+font_typeface  # unused variable (python\gopptx\schemas_shape_types.py EffectiveShapeStyle)
+_.effective  # unused property (python\gopptx\slide\shapes\shape_style_proxy.py)
+ShapeStyleProxy  # public alias (python\gopptx\slide\shapes\shape_style_proxy.py)
