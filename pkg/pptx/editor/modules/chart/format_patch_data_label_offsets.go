@@ -95,8 +95,8 @@ func applyDataLabelOffset(ser string, offset common.DataLabelOffset, plotFlags s
 // dataLabelFlagNames returns the CT_DLbl display flags, in schema order.
 func dataLabelFlagNames() []string {
 	return []string{
-		"showLegendKey", "showVal", "showCatName",
-		"showSerName", "showPercent", "showBubbleSize",
+		flagShowLegendKey, flagShowValue, flagShowCategory,
+		flagShowSeriesName, flagShowPercent, flagShowBubbleSize,
 	}
 }
 
@@ -108,14 +108,31 @@ func dataLabelFlagNames() []string {
 func seriesDataLabelFlags(ser string, existing string, plotFlags string) string {
 	for _, source := range []string{existing, seriesDataLabelsBlock(ser)} {
 		if flags := dataLabelFlagsFrom(source); flags != "" {
-			return flags
+			return completeDataLabelFlags(flags)
 		}
 	}
 	if plotFlags != "" {
-		return plotFlags
+		return completeDataLabelFlags(plotFlags)
 	}
 	return `<c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/>` +
 		`<c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/>`
+}
+
+// completeDataLabelFlags fills in the flags the source omitted, defaulting them
+// to off. PowerPoint ignores a <c:dLbl> that carries only some of the six
+// display flags — label, number format and font all revert to the parent's —
+// so an inherited partial set has to be completed before it is written back.
+func completeDataLabelFlags(flags string) string {
+	values := dataLabelFlagValues(flags)
+	var b strings.Builder
+	for _, name := range dataLabelFlagNames() {
+		value, ok := values[name]
+		if !ok {
+			value = "0"
+		}
+		b.WriteString(`<c:` + name + ` val="` + value + `"/>`)
+	}
+	return b.String()
 }
 
 // dataLabelFlagsFrom copies the display flags out of a dLbls or dLbl block,
@@ -124,11 +141,11 @@ func dataLabelFlagsFrom(source string) string {
 	if source == "" {
 		return ""
 	}
+	values := dataLabelFlagValues(source)
 	var b strings.Builder
 	for _, flag := range dataLabelFlagNames() {
-		re := regexp.MustCompile(`<c:` + flag + ` val="([^"]*)"/>`)
-		if m := re.FindStringSubmatch(source); len(m) > 1 {
-			b.WriteString(`<c:` + flag + ` val="` + m[1] + `"/>`)
+		if value, ok := values[flag]; ok {
+			b.WriteString(`<c:` + flag + ` val="` + value + `"/>`)
 		}
 	}
 	return b.String()

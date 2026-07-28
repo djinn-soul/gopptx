@@ -10,6 +10,8 @@ const (
 	axisTickPosLow  = "low"
 	axisCrossesAuto = "autoZero"
 	xmlValueNone    = "none"
+	// xmlValuePlus is both an ST_ErrBarType and a CT_MarkerStyle value.
+	xmlValuePlus = "plus"
 )
 
 func validateAxisTickLabelPosition(field string, value *string) error {

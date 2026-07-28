@@ -1,4 +1,5 @@
 from .api import GopptxError, Presentation, PresentationBuilder, Slide
+from .color import ColorFormat, ColorType, ThemeColor
 from .constants import (
     ALIGN_CENTER,
     ALIGN_JUSTIFY,
@@ -156,6 +157,8 @@ __all__ = (
     "ChartSelector",
     "ChartSeriesData",
     "ChartTitle",
+    "ColorFormat",
+    "ColorType",
     "Comment",
     "ConnectorType",
     "DataLabels",
@@ -205,6 +208,7 @@ __all__ = (
     "TechnicalTemplate",
     "Template",
     "TextFrameProps",
+    "ThemeColor",
     "TrainingTemplate",
     "XyChartData",
     "XySeries",

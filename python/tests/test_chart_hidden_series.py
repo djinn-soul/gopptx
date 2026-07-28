@@ -48,7 +48,11 @@ def test_hidden_series_stays_in_workbook_only(deck: pathlib.Path) -> None:
             "series": [
                 {"name": "Revenue", "values": [12.0, 18.0, 15.0, 22.0]},
                 {"name": "Cost", "values": [8.0, 11.0, 9.0, 13.0], "hidden": True},
-                {"name": "Forecast", "values": [14.0, 20.0, 17.0, 25.0], "hidden": True},
+                {
+                    "name": "Forecast",
+                    "values": [14.0, 20.0, 17.0, 25.0],
+                    "hidden": True,
+                },
             ],
         },
     )

@@ -111,14 +111,37 @@ class RunBuilder:
     # Hyperlink / hover action
     # ------------------------------------------------------------------
 
-    def hyperlink(self, address: str, *, tooltip: str = "") -> RunBuilder:
-        """Attach a URL hyperlink to the run.
+    def hyperlink(
+        self,
+        address: str = "",
+        *,
+        tooltip: str = "",
+        target_slide: int | None = None,
+    ) -> RunBuilder:
+        """Attach a hyperlink to the run.
+
+        Exactly one target must be supplied: either an external ``address`` or
+        an internal ``target_slide`` jump.
 
         Args:
-            address: The URL or slide target.
+            address: The URL to link to.
             tooltip: Optional hover tooltip text.
+            target_slide: Zero-based index of a slide in the same presentation.
+
+        Raises:
+            ValueError: If neither or both of ``address`` and ``target_slide``
+                are supplied.
         """
-        link: dict[str, object] = {"address": address}
+        has_address = bool(address)
+        has_slide = target_slide is not None
+        if has_address == has_slide:
+            msg = "hyperlink requires exactly one of address or target_slide"
+            raise ValueError(msg)
+        link: dict[str, object] = {}
+        if has_address:
+            link["address"] = address
+        else:
+            link["target_slide"] = target_slide
         if tooltip:
             link["tooltip"] = tooltip
         self._payload["hyperlink"] = link

@@ -19,7 +19,7 @@ func formatted(src string) (string, error) {
 }
 
 // maxMethodsPerFile keeps each generated file comfortably under the
-// repository's 300-line per-file ceiling (see scripts/ci/architectural_guardrails.json).
+// repository's 400-line per-file ceiling (see scripts/ci/architectural_guardrails.json).
 const maxMethodsPerFile = 40
 
 // chunkMethods splits methods into groups small enough to emit one per file.

@@ -12,15 +12,22 @@ import (
 )
 
 var (
-	reAxisTitle   = regexp.MustCompile(`(?s)<c:title>.*?</c:title>`)
-	reAxisTitleTx = regexp.MustCompile(`(?s)<a:t>.*?</a:t>`)
-	reAxisScaling = regexp.MustCompile(`(?s)<c:scaling(?:\s*/>|>.*?</c:scaling>)`)
-	reAxisMax     = regexp.MustCompile(`<c:max val="[^"]*"/>`)
-	reAxisMin     = regexp.MustCompile(`<c:min val="[^"]*"/>`)
-	reAxisMajor   = regexp.MustCompile(`<c:majorUnit val="[^"]*"/>`)
-	reAxisMinor   = regexp.MustCompile(`<c:minorUnit val="[^"]*"/>`)
-	reAxisNumFmt  = regexp.MustCompile(`<c:numFmt [^>]*/>`)
+	reAxisTitle    = regexp.MustCompile(`(?s)<c:title>.*?</c:title>`)
+	reAxisTitleTx  = regexp.MustCompile(`(?s)<a:t>.*?</a:t>`)
+	reAxisScaling  = regexp.MustCompile(`(?s)<c:scaling(?:\s*/>|>.*?</c:scaling>)`)
+	reAxisMax      = regexp.MustCompile(`<c:max val="[^"]*"/>`)
+	reAxisMin      = regexp.MustCompile(`<c:min val="[^"]*"/>`)
+	reAxisMajor    = regexp.MustCompile(`<c:majorUnit val="[^"]*"/>`)
+	reAxisMinor    = regexp.MustCompile(`<c:minorUnit val="[^"]*"/>`)
+	reAxisNumFmt   = regexp.MustCompile(`<c:numFmt [^>]*/>`)
+	reAxisTickSkip = regexp.MustCompile(`<c:tickMarkSkip val="[^"]*"/>`)
+	reAxisLblAlgn  = regexp.MustCompile(`<c:lblAlgn val="[^"]*"/>`)
 )
+
+// categoryAxisLabelAlignments are the CT_LblAlgn enumeration values.
+//
+//nolint:gochecknoglobals // Fixed enumeration, mirrors the other patch tables here.
+var categoryAxisLabelAlignments = map[string]bool{dataLabelPositionCenter: true, "l": true, "r": true}
 
 // attributePatterns holds the attribute readers used by the axis and data-label
 // patch loops. Hoisted out of attributeValue so the loops do not recompile a
@@ -58,6 +65,13 @@ func validateAxisDetails(req common.ChartFormatUpdate) error {
 			return errors.New("axis number format must not be empty")
 		}
 	}
+	if skip := req.CategoryAxisTickMarkSkip; skip != nil && *skip < 1 {
+		return errors.New("category_axis_tick_mark_skip must be greater than or equal to 1")
+	}
+	if algn := req.CategoryAxisLabelAlignment; algn != nil &&
+		!categoryAxisLabelAlignments[strings.TrimSpace(*algn)] {
+		return errors.New("category_axis_label_alignment must be one of ctr,l,r")
+	}
 	return nil
 }
 
@@ -82,9 +96,39 @@ func patchAxisDetails(xml string, req common.ChartFormatUpdate) string {
 	xml = patchAxisDetailSet(xml, "dateAx", req.CategoryAxisTitle, req.CategoryAxisMinimumScale,
 		req.CategoryAxisMaximumScale, req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
 		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked)
+	// tickMarkSkip and lblAlgn are valid only inside CT_CatAx.
+	xml = patchCategoryAxisTickDetail(xml, req.CategoryAxisTickMarkSkip, req.CategoryAxisLabelAlignment)
 	return patchAxisDetailSet(xml, "valAx", req.ValueAxisTitle, req.ValueAxisMinimumScale,
 		req.ValueAxisMaximumScale, req.ValueAxisMajorUnit, req.ValueAxisMinorUnit,
 		req.ValueAxisNumberFormat, req.ValueAxisFormatLinked)
+}
+
+// patchCategoryAxisTickDetail writes c:tickMarkSkip and c:lblAlgn. CT_CatAx
+// orders its trailing children auto, lblAlgn, lblOffset, tickLblSkip,
+// tickMarkSkip, noMultiLvlLbl, extLst, so each node is spliced into place
+// rather than appended.
+func patchCategoryAxisTickDetail(xml string, tickMarkSkip *int, labelAlignment *string) string {
+	if tickMarkSkip == nil && labelAlignment == nil {
+		return xml
+	}
+	return patchEachAxisBlock(xml, "catAx", func(block string) string {
+		if labelAlignment != nil {
+			node := `<c:lblAlgn val="` + strings.TrimSpace(*labelAlignment) + `"/>`
+			if reAxisLblAlgn.MatchString(block) {
+				block = reAxisLblAlgn.ReplaceAllLiteralString(block, node)
+			} else {
+				block = insertAxisLabelAlignment(block, node)
+			}
+		}
+		if tickMarkSkip == nil {
+			return block
+		}
+		node := `<c:tickMarkSkip val="` + strconv.Itoa(*tickMarkSkip) + `"/>`
+		if reAxisTickSkip.MatchString(block) {
+			return reAxisTickSkip.ReplaceAllLiteralString(block, node)
+		}
+		return insertAxisTickMarkSkip(block, node)
+	})
 }
 
 func patchAxisDetailSet(

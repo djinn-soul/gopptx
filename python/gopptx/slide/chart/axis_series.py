@@ -27,6 +27,12 @@ _VALID_CROSSES = {
     "min",
 }
 
+_VALID_LABEL_ALIGNMENTS = {
+    "ctr",
+    "l",
+    "r",
+}
+
 
 class ChartProtocol(Protocol):
     """Protocol for chart operations required by axis helpers."""
@@ -169,6 +175,46 @@ class ChartAxis(ChartAxisFormatMixin):
     def set_crosses_at_minimum(self) -> None:
         """Set axis crossing mode to `min`."""
         self.crosses = "min"
+
+    @property
+    def tick_mark_skip(self) -> int | None:
+        """Return how many categories are skipped between tick marks."""
+        value = self._payload().get("tick_mark_skip")
+        # bool is a subclass of int, so it would otherwise become 1/0.
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        return value
+
+    @tick_mark_skip.setter
+    def tick_mark_skip(self, value: int) -> None:
+        self._require_category_axis("tick_mark_skip")
+        if value < 1:
+            raise ValueError("tick_mark_skip must be greater than or equal to 1")
+        self._chart.apply_format(
+            cast("ChartFormatUpdate", {"category_axis_tick_mark_skip": int(value)})
+        )
+
+    @property
+    def label_alignment(self) -> str | None:
+        """Return the tick-label alignment token (``ctr``, ``l``, or ``r``)."""
+        value = self._payload().get("label_alignment")
+        return str(value) if isinstance(value, str) and value else None
+
+    @label_alignment.setter
+    def label_alignment(self, value: str) -> None:
+        self._require_category_axis("label_alignment")
+        normalized = value.strip()
+        if normalized not in _VALID_LABEL_ALIGNMENTS:
+            raise ValueError("label_alignment must be one of: ctr, l, r")
+        self._chart.apply_format(
+            cast("ChartFormatUpdate", {"category_axis_label_alignment": normalized})
+        )
+
+    def _require_category_axis(self, name: str) -> None:
+        # c:tickMarkSkip and c:lblAlgn are CT_CatAx-only children; writing them
+        # onto a value axis makes PowerPoint repair the file.
+        if not self.is_category_axis:
+            raise ValueError(f"{name} is only supported on the category axis")
 
     @staticmethod
     def _normalize_tick_label_position(value: str) -> str:

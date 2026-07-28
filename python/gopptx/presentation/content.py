@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .charts import PresentationChartMixin
+from .color_mixin import PresentationColorMixin
 from .comments import PresentationCommentMixin
 from .custom_xml import PresentationCustomXMLMixin
 from .export import PresentationExportMixin
@@ -21,6 +22,7 @@ from .vba import PresentationVBAMixin
 class PresentationContentMixin(
     PresentationHeaderFooterMixin,
     PresentationThemeMixin,
+    PresentationColorMixin,
     PresentationShapeBatchMixin,
     PresentationTableMixin,
     PresentationTableBuilders,

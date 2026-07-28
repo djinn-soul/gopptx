@@ -13,6 +13,7 @@ type manifestParts struct {
 	presentationXML     []byte
 	presentationRelsXML []byte
 	corePropsXML        []byte
+	appPropsXML         []byte
 	contentTypesXML     []byte
 }
 
@@ -39,6 +40,7 @@ func (e *PresentationEditor) buildManifestParts(
 	}
 
 	corePropsXML := renderCoreProperties(e.metadata.CoreProperties)
+	appPropsXML := e.renderAppProperties()
 
 	contentTypesXML, err := e.renderContentTypesPart(
 		hasSections,
@@ -56,6 +58,7 @@ func (e *PresentationEditor) buildManifestParts(
 		presentationXML:     []byte(presentationXML),
 		presentationRelsXML: []byte(presentationRelsXML),
 		corePropsXML:        corePropsXML,
+		appPropsXML:         appPropsXML,
 		contentTypesXML:     contentTypesXML,
 	}, nil
 }

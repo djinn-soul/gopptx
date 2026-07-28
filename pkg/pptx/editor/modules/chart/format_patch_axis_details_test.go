@@ -130,3 +130,103 @@ func TestValidateChartFormatUpdateRejectsInvalidAxisDetails(t *testing.T) {
 		t.Fatal("expected non-finite axis scale error")
 	}
 }
+
+func TestPatchChartFormatting_CategoryAxisTickDetail(t *testing.T) {
+	xml := []byte(`<c:chartSpace xmlns:c="x"><c:chart><c:plotArea>` +
+		`<c:catAx><c:axId val="1"/><c:crossAx val="2"/><c:crosses val="autoZero"/>` +
+		`<c:auto val="1"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
+		`<c:valAx><c:axId val="2"/><c:crossAx val="1"/></c:valAx>` +
+		`</c:plotArea></c:chart></c:chartSpace>`)
+	skip := 3
+	alignment := "l"
+
+	got, err := PatchChartFormatting(xml, common.ChartFormatUpdate{
+		CategoryAxisTickMarkSkip:   &skip,
+		CategoryAxisLabelAlignment: &alignment,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	updated := string(got)
+	for _, want := range []string{`<c:tickMarkSkip val="3"/>`, `<c:lblAlgn val="l"/>`} {
+		if !strings.Contains(updated, want) {
+			t.Fatalf("updated XML missing %q: %s", want, updated)
+		}
+	}
+	if strings.Contains(categoryAxisBlock(t, updated, "<c:valAx>", "</c:valAx>"), "<c:tickMarkSkip") ||
+		strings.Contains(categoryAxisBlock(t, updated, "<c:valAx>", "</c:valAx>"), "<c:lblAlgn") {
+		t.Fatalf("category-only nodes leaked onto the value axis: %s", updated)
+	}
+	assertXMLOrder(
+		t,
+		categoryAxisBlock(t, updated, "<c:catAx>", "</c:catAx>"),
+		"<c:crosses",
+		"<c:auto",
+		"<c:lblAlgn",
+		"<c:lblOffset",
+		"<c:tickMarkSkip",
+		"<c:noMultiLvlLbl",
+	)
+
+	state := ExtractChartState(got)
+	if state.CategoryAx.TickMarkSkip == nil || *state.CategoryAx.TickMarkSkip != skip {
+		t.Fatalf("tick mark skip not preserved in state: %#v", state.CategoryAx)
+	}
+	if state.CategoryAx.LabelAlignment != alignment {
+		t.Fatalf("label alignment not preserved in state: %#v", state.CategoryAx)
+	}
+
+	// Re-patching the same values must be idempotent, not append duplicates.
+	again, err := PatchChartFormatting(got, common.ChartFormatUpdate{
+		CategoryAxisTickMarkSkip:   &skip,
+		CategoryAxisLabelAlignment: &alignment,
+	})
+	if err != nil {
+		t.Fatalf("re-patch error: %v", err)
+	}
+	if string(again) != updated {
+		t.Fatalf("re-patch was not idempotent:\n%s\n%s", updated, string(again))
+	}
+}
+
+func TestPatchChartFormattingInsertsCategoryAxisTickDetailWithoutSiblings(t *testing.T) {
+	xml := []byte(`<c:chartSpace xmlns:c="x"><c:chart><c:plotArea>` +
+		`<c:catAx><c:axId val="1"/><c:crossAx val="2"/></c:catAx>` +
+		`</c:plotArea></c:chart></c:chartSpace>`)
+	skip := 2
+	alignment := "ctr"
+	got, err := PatchChartFormatting(xml, common.ChartFormatUpdate{
+		CategoryAxisTickMarkSkip:   &skip,
+		CategoryAxisLabelAlignment: &alignment,
+	})
+	if err != nil {
+		t.Fatalf("PatchChartFormatting error: %v", err)
+	}
+	block := categoryAxisBlock(t, string(got), "<c:catAx>", "</c:catAx>")
+	assertXMLOrder(t, block, "<c:crossAx", "<c:lblAlgn", "<c:tickMarkSkip")
+}
+
+func TestValidateChartFormatUpdateRejectsInvalidCategoryAxisTickDetail(t *testing.T) {
+	zero := 0
+	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{
+		CategoryAxisTickMarkSkip: &zero,
+	}); err == nil {
+		t.Fatal("expected tick mark skip below 1 to be rejected")
+	}
+	bad := "center"
+	if err := ValidateChartFormatUpdate(common.ChartFormatUpdate{
+		CategoryAxisLabelAlignment: &bad,
+	}); err == nil {
+		t.Fatal("expected invalid label alignment to be rejected")
+	}
+}
+
+func categoryAxisBlock(t *testing.T, xml string, startTag string, endTag string) string {
+	t.Helper()
+	start := strings.Index(xml, startTag)
+	end := strings.Index(xml, endTag)
+	if start < 0 || end <= start {
+		t.Fatalf("axis block %s missing from XML: %s", startTag, xml)
+	}
+	return xml[start:end]
+}

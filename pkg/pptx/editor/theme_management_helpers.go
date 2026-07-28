@@ -17,18 +17,18 @@ type colorSlot struct {
 
 func (s ThemeColorScheme) toSlots() []colorSlot {
 	return []colorSlot{
-		{name: "dk1", hex: cleanHex(s.Dk1)},
-		{name: "lt1", hex: cleanHex(s.Lt1)},
-		{name: "dk2", hex: cleanHex(s.Dk2)},
-		{name: "lt2", hex: cleanHex(s.Lt2)},
-		{name: "accent1", hex: cleanHex(s.Accent1)},
-		{name: "accent2", hex: cleanHex(s.Accent2)},
-		{name: "accent3", hex: cleanHex(s.Accent3)},
-		{name: "accent4", hex: cleanHex(s.Accent4)},
-		{name: "accent5", hex: cleanHex(s.Accent5)},
-		{name: "accent6", hex: cleanHex(s.Accent6)},
-		{name: "hlink", hex: cleanHex(s.Hlink)},
-		{name: "folHlink", hex: cleanHex(s.FolHlink)},
+		{name: themeSlotDk1, hex: cleanHex(s.Dk1)},
+		{name: themeSlotLt1, hex: cleanHex(s.Lt1)},
+		{name: themeSlotDk2, hex: cleanHex(s.Dk2)},
+		{name: themeSlotLt2, hex: cleanHex(s.Lt2)},
+		{name: themeSlotAccent1, hex: cleanHex(s.Accent1)},
+		{name: themeSlotAccent2, hex: cleanHex(s.Accent2)},
+		{name: themeSlotAccent3, hex: cleanHex(s.Accent3)},
+		{name: themeSlotAccent4, hex: cleanHex(s.Accent4)},
+		{name: themeSlotAccent5, hex: cleanHex(s.Accent5)},
+		{name: themeSlotAccent6, hex: cleanHex(s.Accent6)},
+		{name: themeSlotHlink, hex: cleanHex(s.Hlink)},
+		{name: themeSlotFolHlink, hex: cleanHex(s.FolHlink)},
 	}
 }
 

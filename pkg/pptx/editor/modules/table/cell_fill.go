@@ -60,7 +60,7 @@ func setCellFillXML(cellContent []byte, fillXML string) ([]byte, error) {
 
 func removeCellFillElements(inner []byte) []byte {
 	out := inner
-	for _, tag := range fillChildren {
+	for _, tag := range fillChildren() {
 		out = removeSingleXMLElement(out, []byte("<a:"+tag), []byte("</a:"+tag+">"))
 	}
 	return out

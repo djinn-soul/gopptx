@@ -55,52 +55,79 @@ type ChartFormatUpdate struct {
 	// DataLabelOffsets nudges individual data labels. Doughnut and pie charts
 	// reject most c:dLblPos values, so a manual layout is the only way to move
 	// one of their labels.
-	DataLabelOffsets         []DataLabelOffset `json:"data_label_offsets,omitempty"`
-	PlotVisibleOnly          *bool             `json:"plot_visible_only,omitempty"`
-	ShowLegend               *bool             `json:"show_legend,omitempty"`
-	LegendPosition           *string           `json:"legend_position,omitempty"`
-	LegendOverlay            *bool             `json:"legend_overlay,omitempty"`
-	ShowDataLabels           *bool             `json:"show_data_labels,omitempty"`
-	DataLabelPosition        *string           `json:"data_label_position,omitempty"`
-	DataLabelShowLegendKey   *bool             `json:"data_label_show_legend_key,omitempty"`
-	DataLabelShowValue       *bool             `json:"data_label_show_value,omitempty"`
-	DataLabelShowCategory    *bool             `json:"data_label_show_category,omitempty"`
-	DataLabelShowSeriesName  *bool             `json:"data_label_show_series_name,omitempty"`
-	DataLabelShowPercent     *bool             `json:"data_label_show_percent,omitempty"`
-	DataLabelShowBubbleSize  *bool             `json:"data_label_show_bubble_size,omitempty"`
-	DataLabelNumberFormat    *string           `json:"data_label_number_format,omitempty"`
-	DataLabelFormatLinked    *bool             `json:"data_label_format_linked,omitempty"`
-	DataLabelWordWrap        *bool             `json:"data_label_word_wrap,omitempty"`
-	ChartGrouping            *string           `json:"chart_grouping,omitempty"`
-	GapWidth                 *int              `json:"gap_width,omitempty"`
-	Overlap                  *int              `json:"overlap,omitempty"`
-	CategoryAxisTickLabelPos *string           `json:"category_axis_tick_label_pos,omitempty"`
-	ValueAxisTickLabelPos    *string           `json:"value_axis_tick_label_pos,omitempty"`
-	CategoryAxisMajorGrid    *bool             `json:"category_axis_major_gridlines,omitempty"`
-	ValueAxisMajorGrid       *bool             `json:"value_axis_major_gridlines,omitempty"`
-	CategoryAxisMinorGrid    *bool             `json:"category_axis_minor_gridlines,omitempty"`
-	ValueAxisMinorGrid       *bool             `json:"value_axis_minor_gridlines,omitempty"`
-	CategoryAxisCrosses      *string           `json:"category_axis_crosses,omitempty"`
-	ValueAxisCrosses         *string           `json:"value_axis_crosses,omitempty"`
-	CategoryAxisTitle        *string           `json:"category_axis_title,omitempty"`
-	ValueAxisTitle           *string           `json:"value_axis_title,omitempty"`
-	CategoryAxisMinimumScale *float64          `json:"category_axis_minimum_scale,omitempty"`
-	CategoryAxisMaximumScale *float64          `json:"category_axis_maximum_scale,omitempty"`
-	ValueAxisMinimumScale    *float64          `json:"value_axis_minimum_scale,omitempty"`
-	ValueAxisMaximumScale    *float64          `json:"value_axis_maximum_scale,omitempty"`
-	CategoryAxisMajorUnit    *float64          `json:"category_axis_major_unit,omitempty"`
-	CategoryAxisMinorUnit    *float64          `json:"category_axis_minor_unit,omitempty"`
-	ValueAxisMajorUnit       *float64          `json:"value_axis_major_unit,omitempty"`
-	ValueAxisMinorUnit       *float64          `json:"value_axis_minor_unit,omitempty"`
-	CategoryAxisNumberFormat *string           `json:"category_axis_number_format,omitempty"`
-	ValueAxisNumberFormat    *string           `json:"value_axis_number_format,omitempty"`
-	CategoryAxisFormatLinked *bool             `json:"category_axis_format_linked,omitempty"`
-	ValueAxisFormatLinked    *bool             `json:"value_axis_format_linked,omitempty"`
-	CameraPreset             *string           `json:"camera_preset,omitempty"`
-	CameraFieldOfView        *int              `json:"camera_field_of_view,omitempty"`
-	LightRig                 *string           `json:"light_rig,omitempty"`
-	LightDirection           *string           `json:"light_direction,omitempty"`
-	LightRigRevolution       *bool             `json:"light_rig_revolution,omitempty"`
+	DataLabelOffsets []DataLabelOffset `json:"data_label_offsets,omitempty"`
+	// DataLabelPoints formats individual data labels: number format, font and
+	// display flags on one c:dLbl.
+	DataLabelPoints []ChartDataLabelPoint `json:"data_label_points,omitempty"`
+	// Trendlines replaces every c:trendline on each series it addresses.
+	Trendlines []ChartTrendline `json:"trendlines,omitempty"`
+	// AppendTrendlines adds c:trendline elements without rebuilding existing
+	// trendlines, preserving unsupported formatting and extension children.
+	AppendTrendlines []ChartTrendline `json:"append_trendlines,omitempty"`
+	// ClearTrendlineSeries removes every c:trendline from the listed series,
+	// which an empty Trendlines list cannot express.
+	ClearTrendlineSeries []int `json:"clear_trendline_series,omitempty"`
+	// ErrorBars replaces every c:errBars on each series it addresses.
+	ErrorBars []ChartErrorBars `json:"error_bars,omitempty"`
+	// ClearErrorBarSeries removes every c:errBars from the listed series.
+	ClearErrorBarSeries []int `json:"clear_error_bar_series,omitempty"`
+	// DataPoints merges per-point formatting into the series it addresses.
+	DataPoints []ChartDataPoint `json:"data_points,omitempty"`
+	// ClearDataPointSeries drops every c:dPt from the listed series.
+	ClearDataPointSeries []int `json:"clear_data_point_series,omitempty"`
+	// SeriesInverts toggles c:invertIfNegative per series.
+	SeriesInverts []ChartSeriesInvert `json:"series_invert_if_negative,omitempty"`
+	// DataTable shows or hides the c:dTable grid under the plot area.
+	DataTable                *ChartDataTable `json:"data_table,omitempty"`
+	PlotVisibleOnly          *bool           `json:"plot_visible_only,omitempty"`
+	ShowLegend               *bool           `json:"show_legend,omitempty"`
+	LegendPosition           *string         `json:"legend_position,omitempty"`
+	LegendOverlay            *bool           `json:"legend_overlay,omitempty"`
+	ShowDataLabels           *bool           `json:"show_data_labels,omitempty"`
+	DataLabelPosition        *string         `json:"data_label_position,omitempty"`
+	DataLabelShowLegendKey   *bool           `json:"data_label_show_legend_key,omitempty"`
+	DataLabelShowValue       *bool           `json:"data_label_show_value,omitempty"`
+	DataLabelShowCategory    *bool           `json:"data_label_show_category,omitempty"`
+	DataLabelShowSeriesName  *bool           `json:"data_label_show_series_name,omitempty"`
+	DataLabelShowPercent     *bool           `json:"data_label_show_percent,omitempty"`
+	DataLabelShowBubbleSize  *bool           `json:"data_label_show_bubble_size,omitempty"`
+	DataLabelNumberFormat    *string         `json:"data_label_number_format,omitempty"`
+	DataLabelFormatLinked    *bool           `json:"data_label_format_linked,omitempty"`
+	DataLabelWordWrap        *bool           `json:"data_label_word_wrap,omitempty"`
+	ChartGrouping            *string         `json:"chart_grouping,omitempty"`
+	GapWidth                 *int            `json:"gap_width,omitempty"`
+	Overlap                  *int            `json:"overlap,omitempty"`
+	CategoryAxisTickLabelPos *string         `json:"category_axis_tick_label_pos,omitempty"`
+	ValueAxisTickLabelPos    *string         `json:"value_axis_tick_label_pos,omitempty"`
+	CategoryAxisMajorGrid    *bool           `json:"category_axis_major_gridlines,omitempty"`
+	ValueAxisMajorGrid       *bool           `json:"value_axis_major_gridlines,omitempty"`
+	CategoryAxisMinorGrid    *bool           `json:"category_axis_minor_gridlines,omitempty"`
+	ValueAxisMinorGrid       *bool           `json:"value_axis_minor_gridlines,omitempty"`
+	CategoryAxisCrosses      *string         `json:"category_axis_crosses,omitempty"`
+	ValueAxisCrosses         *string         `json:"value_axis_crosses,omitempty"`
+	CategoryAxisTitle        *string         `json:"category_axis_title,omitempty"`
+	ValueAxisTitle           *string         `json:"value_axis_title,omitempty"`
+	CategoryAxisMinimumScale *float64        `json:"category_axis_minimum_scale,omitempty"`
+	CategoryAxisMaximumScale *float64        `json:"category_axis_maximum_scale,omitempty"`
+	ValueAxisMinimumScale    *float64        `json:"value_axis_minimum_scale,omitempty"`
+	ValueAxisMaximumScale    *float64        `json:"value_axis_maximum_scale,omitempty"`
+	CategoryAxisMajorUnit    *float64        `json:"category_axis_major_unit,omitempty"`
+	CategoryAxisMinorUnit    *float64        `json:"category_axis_minor_unit,omitempty"`
+	ValueAxisMajorUnit       *float64        `json:"value_axis_major_unit,omitempty"`
+	ValueAxisMinorUnit       *float64        `json:"value_axis_minor_unit,omitempty"`
+	CategoryAxisNumberFormat *string         `json:"category_axis_number_format,omitempty"`
+	ValueAxisNumberFormat    *string         `json:"value_axis_number_format,omitempty"`
+	// CategoryAxisTickMarkSkip and CategoryAxisLabelAlignment exist only on
+	// CT_CatAx; CT_DateAx and CT_ValAx have no such children.
+	CategoryAxisTickMarkSkip   *int    `json:"category_axis_tick_mark_skip,omitempty"`
+	CategoryAxisLabelAlignment *string `json:"category_axis_label_alignment,omitempty"`
+	CategoryAxisFormatLinked   *bool   `json:"category_axis_format_linked,omitempty"`
+	ValueAxisFormatLinked      *bool   `json:"value_axis_format_linked,omitempty"`
+	CameraPreset               *string `json:"camera_preset,omitempty"`
+	CameraFieldOfView          *int    `json:"camera_field_of_view,omitempty"`
+	LightRig                   *string `json:"light_rig,omitempty"`
+	LightDirection             *string `json:"light_direction,omitempty"`
+	LightRigRevolution         *bool   `json:"light_rig_revolution,omitempty"`
 }
 
 // ChartAxisState is a read snapshot for one chart axis.
@@ -117,6 +144,9 @@ type ChartAxisState struct {
 	MinorUnit     *float64 `json:"minor_unit,omitempty"`
 	NumberFormat  string   `json:"number_format,omitempty"`
 	FormatLinked  *bool    `json:"format_linked,omitempty"`
+	// TickMarkSkip and LabelAlignment are category-axis-only children.
+	TickMarkSkip   *int   `json:"tick_mark_skip,omitempty"`
+	LabelAlignment string `json:"label_alignment,omitempty"`
 }
 
 // ChartState is a read snapshot for chart-level object model traversal.
@@ -127,6 +157,15 @@ type ChartState struct {
 	Series     []ChartSeriesData   `json:"series,omitempty"`
 	Scene3D    ChartScene3DState   `json:"scene3d"`
 	DataLabels ChartDataLabelState `json:"data_labels"`
+	// Trendlines and ErrorBars mirror the update payload shape, one entry per
+	// c:trendline and c:errBars respectively.
+	Trendlines []ChartTrendline `json:"trendlines,omitempty"`
+	ErrorBars  []ChartErrorBars `json:"error_bars,omitempty"`
+	DataPoints []ChartDataPoint `json:"data_points,omitempty"`
+	DataTable  *ChartDataTable  `json:"data_table,omitempty"`
+	// DataLabelPoints is every c:dLbl that carries its own number format, font
+	// or display flags.
+	DataLabelPoints []ChartDataLabelPoint `json:"data_label_points,omitempty"`
 }
 
 // ChartDataLabelState is the persisted data-label state for the first chart plot.

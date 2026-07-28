@@ -151,7 +151,7 @@ func (c RadarChart) Validate(slideIndex int) error {
 		c.Y,
 		c.CX,
 		c.CY,
-		false,
+		true,
 	); err != nil {
 		return err
 	}

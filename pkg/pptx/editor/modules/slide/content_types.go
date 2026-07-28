@@ -142,6 +142,8 @@ func rewriteContentTypesFromDoc(
 	if hasVBA {
 		extraOverrides++
 	}
+	// docProps/app.xml is written on every save, so it always needs an override.
+	extraOverrides++
 
 	overrides := filterDynamicOverrides(doc.Overrides, extraOverrides)
 	overrides = appendSlideOverrides(overrides, slides)
@@ -165,6 +167,10 @@ func rewriteContentTypesFromDoc(
 		"application/vnd.openxmlformats-officedocument.presentationml.commentAuthors+xml")
 	overrides = appendOptionalContentTypeOverride(overrides, hasVBA, "/ppt/vbaProject.bin",
 		"application/vnd.ms-office.vbaProject")
+	// The editor always writes docProps/app.xml so slide counts stay current;
+	// a deck that arrived without the part needs the override added here.
+	overrides = appendOptionalContentTypeOverride(overrides, true, "/"+common.AppPropsPath,
+		common.ExtendedPropsContentType)
 	overrides = appendPathOverrides(overrides, commentPaths, commentsPartType)
 	overrides = appendPathOverrides(overrides, customXMLPropsPaths,
 		"application/vnd.openxmlformats-officedocument.customXmlProperties+xml")

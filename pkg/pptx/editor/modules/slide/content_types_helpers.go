@@ -92,7 +92,7 @@ func FilterDrawingMLChartPaths(paths []string) []string {
 // isDrawingMLChartPart reports whether a part is a classic ppt/charts/chartN.xml.
 //
 // Chart extension parts (ppt/charts/chartExN.xml) share the prefix but carry a
-// different content type, so they must not be swept up and re-declared as
+// different content type, so they must not be swept up and redeclared as
 // DrawingML charts.
 func isDrawingMLChartPart(part string) bool {
 	if !strings.HasPrefix(part, "ppt/charts/chart") {

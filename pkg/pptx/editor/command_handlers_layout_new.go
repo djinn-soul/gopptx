@@ -181,3 +181,18 @@ func handleGetThemeInventory(e *PresentationEditor, _ json.RawMessage) (any, err
 		"bindings":    inv.Bindings,
 	}, nil
 }
+
+func handleGetThemeColorScheme(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	scheme, err := e.GetThemeColorScheme()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"dk1": scheme.Dk1, "lt1": scheme.Lt1,
+		"dk2": scheme.Dk2, "lt2": scheme.Lt2,
+		"accent1": scheme.Accent1, "accent2": scheme.Accent2,
+		"accent3": scheme.Accent3, "accent4": scheme.Accent4,
+		"accent5": scheme.Accent5, "accent6": scheme.Accent6,
+		"hlink": scheme.Hlink, "fol_hlink": scheme.FolHlink,
+	}, nil
+}

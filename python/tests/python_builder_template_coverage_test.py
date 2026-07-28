@@ -266,6 +266,22 @@ def test_run_builder_payload_and_build() -> None:
     }
 
 
+def test_run_builder_hyperlink_target_slide() -> None:
+    assert RunBuilder("x").hyperlink(target_slide=2).to_payload()["hyperlink"] == {
+        "target_slide": 2
+    }
+    assert RunBuilder("x").hyperlink(target_slide=0, tooltip="go").to_payload()[
+        "hyperlink"
+    ] == {"target_slide": 0, "tooltip": "go"}
+
+
+def test_run_builder_hyperlink_requires_exactly_one_target() -> None:
+    with pytest.raises(ValueError, match="exactly one of address or target_slide"):
+        _ = RunBuilder("x").hyperlink()
+    with pytest.raises(ValueError, match="exactly one of address or target_slide"):
+        _ = RunBuilder("x").hyperlink("https://x", target_slide=1)
+
+
 def test_apply_slides_adds_slides_notes_and_tables() -> None:
     prs = _FakePresentation(title="t", executed=[], slides_added=[])
     apply_slides(

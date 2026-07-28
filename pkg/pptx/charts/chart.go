@@ -210,7 +210,7 @@ func (c BarChart) Validate(slideIndex int) error {
 	return validateChartCommon(
 		slideIndex, c.Title, c.Categories,
 		c.Values, c.X, c.Y, c.CX, c.CY,
-		false, c.BarColor, c.SeriesName,
+		true, c.BarColor, c.SeriesName,
 		c.LegendPosition, c.ValueFormat,
 		c.CategoryTickLabelPosition, c.ValueTickLabelPosition,
 		c.CategoryAxisCrosses, c.ValueAxisCrosses,

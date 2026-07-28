@@ -18,7 +18,20 @@ import (
 	"compress/flate"
 	"io"
 	"sync"
+	"time"
 )
+
+// EpochDOS returns the timestamp stamped on every entry this package writes.
+//
+// A zip entry created without one carries an all-zero MS-DOS date, which
+// decodes to month 0 day 0 — a date that does not exist. Info-ZIP prints it as
+// "1980-00-00", and a strict consumer is within its rights to reject the
+// archive. 1980-01-01 is the earliest representable MS-DOS date and is what
+// PowerPoint itself writes, so entries carry a valid timestamp without leaking
+// when the deck was generated, and the package stays byte-reproducible.
+func EpochDOS() time.Time {
+	return time.Date(1980, time.January, 1, 0, 0, 0, 0, time.UTC)
+}
 
 //nolint:gochecknoglobals // Pooling flate writers is the entire point of this package.
 var flateWriterPool sync.Pool
@@ -77,4 +90,15 @@ func NewWriter(w io.Writer) *zip.Writer {
 	zw := zip.NewWriter(w)
 	Register(zw)
 	return zw
+}
+
+// CreateEntry starts a package part with the given compression method and a
+// valid MS-DOS timestamp. Use it instead of [zip.Writer.Create], which leaves
+// the timestamp zeroed. See [EpochDOS].
+func CreateEntry(zw *zip.Writer, name string, method uint16) (io.Writer, error) {
+	return zw.CreateHeader(&zip.FileHeader{
+		Name:     name,
+		Method:   method,
+		Modified: EpochDOS(),
+	})
 }

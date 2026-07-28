@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 from gopptx import Presentation
+from gopptx.text import RunBuilder
 
 if TYPE_CHECKING:
     from gopptx.schemas import Hyperlink, TextRun
@@ -120,3 +121,46 @@ def test_action_api_rejects_invalid_action_combinations() -> None:
                     "jump": "homeslide",
                 },
             )
+
+
+def test_run_builder_target_slide_hyperlink_round_trips(tmp_path: Path) -> None:
+    """RunBuilder slide jumps persist a slide relationship and read back."""
+    output_path = tmp_path / "run_builder_jump.pptx"
+
+    with Presentation.new(title="Run Builder Jump") as prs:
+        slide1 = prs.slides[0]
+        prs.add_slide("Slide 2")
+        prs.add_slide("Slide 3")
+        slide1.add_shape("rect", (1000000, 1000000, 3000000, 1000000), text="link")
+        slide1.shapes[-1].text_frame.set_runs([
+            RunBuilder("Go to Slide 3").hyperlink(target_slide=2, tooltip="s3")
+        ])
+        prs.save(output_path)
+
+    with Presentation(output_path) as prs:
+        run = prs.slides[0].shapes[-1].text_frame.paragraphs[0].runs[0]
+        assert run.text == "Go to Slide 3"
+        assert run.hyperlink.target_slide == EXPECTED_SLIDE_COUNT - 1
+        assert run.hyperlink.tooltip == "s3"
+
+    with zipfile.ZipFile(output_path) as zf:
+        slide1_rels = zf.read("ppt/slides/_rels/slide1.xml.rels").decode("utf-8")
+    assert 'Target="slide3.xml"' in slide1_rels
+
+
+def test_run_builder_external_hyperlink_round_trips(tmp_path: Path) -> None:
+    """RunBuilder URL hyperlinks read back through shape text state."""
+    output_path = tmp_path / "run_builder_url.pptx"
+
+    with Presentation.new(title="Run Builder URL") as prs:
+        slide = prs.slides[0]
+        slide.add_shape("rect", (1000000, 1000000, 3000000, 1000000), text="link")
+        slide.shapes[-1].text_frame.set_runs([
+            RunBuilder("Docs").hyperlink("https://example.com", tooltip="docs")
+        ])
+        prs.save(output_path)
+
+    with Presentation(output_path) as prs:
+        run = prs.slides[0].shapes[-1].text_frame.paragraphs[0].runs[0]
+        assert run.hyperlink.address == "https://example.com"
+        assert run.hyperlink.tooltip == "docs"
