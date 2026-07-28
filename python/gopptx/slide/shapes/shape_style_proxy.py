@@ -6,7 +6,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, cast
 
 if TYPE_CHECKING:
-    from ...schemas import EffectiveShapeStyle, FreeformGeometry, Shape
+    from ...schemas import (
+        EffectiveShapeStyle,
+        FreeformGeometry,
+        Shape,
+        ShapeAdjustment,
+        ShapeAdjustmentValue,
+    )
     from ..contracts import SlidePresentationProtocol
 
 
@@ -50,6 +56,24 @@ class _ShapeStyleProxy:
         """
         return self._shape.slide.presentation.get_effective_shape_style(
             self._shape.slide.index, self._shape.id
+        )
+
+    @property
+    def adjustments(self) -> list[ShapeAdjustment]:
+        """Return the shape's preset-geometry adjustments, as read from the slide."""
+        raw = cast("object", self._shape.shape_record().get("Adjustments"))
+        if not isinstance(raw, list):
+            return []
+        return cast("list[ShapeAdjustment]", raw)
+
+    def set_adjustments(self, adjustments: list[ShapeAdjustmentValue]) -> None:
+        """Set preset-geometry adjustments — the yellow handles (issue #1017).
+
+        Values are fractions: 0.5 is the halfway point. Adjustments not named
+        are left alone.
+        """
+        self._shape.slide.presentation.set_shape_adjustments(
+            self._shape.slide.index, self._shape.id, adjustments
         )
 
     @property

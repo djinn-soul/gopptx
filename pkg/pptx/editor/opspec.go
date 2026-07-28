@@ -73,6 +73,7 @@ const (
 	OpRemoveShape             = "remove_shape"
 	OpClearShapes             = "clear_shapes"
 	OpUpdateShape             = "update_shape"
+	OpSetShapeAdjustments     = "set_shape_adjustments"
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"

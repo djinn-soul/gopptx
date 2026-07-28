@@ -5,6 +5,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 const (
@@ -21,15 +23,23 @@ func escapeXMLText(value string) string {
 	return buf.String()
 }
 
+// presetGeometry resolves a caller's shape type to an OOXML preset name.
+//
+// It used to recognize only ellipse, oval and triangle and silently emit
+// prst="rect" for everything else, so every star, arrow, callout and flowchart
+// shape gopptx exposes drew as a plain rectangle. Unknown names still fall back
+// to "rect", because an invalid preset makes PowerPoint refuse the file.
 func presetGeometry(shapeType string) string {
-	switch strings.ToLower(shapeType) {
+	switch strings.ToLower(strings.TrimSpace(shapeType)) {
 	case prstEllipse, prstOval:
 		return prstEllipse
 	case prstTriangle:
 		return prstTriangle
-	default:
-		return "rect"
 	}
+	if canonical := shapes.NormalizeShapeType(shapeType); shapes.IsShapeType(canonical) {
+		return canonical
+	}
+	return "rect"
 }
 
 // BuildPresetShapeXML constructs XML for standard preset-geometry shapes.

@@ -748,3 +748,8 @@ size_bytes  # unused variable (python\gopptx\schemas_shape_types.py SlideMediaRe
 _.update_chart_cached_values  # unused method (python\gopptx\presentation\charts\chart_mixin_updates.py)
 _.get_chart_data_source  # unused method (python\gopptx\presentation\charts\chart_mixin_updates.py)
 auto_update  # unused variable (python\gopptx\schemas_chart_layout.py ChartDataSource)
+
+# Preset-geometry adjustments (upstream #1017).
+Formula  # unused variable (python\gopptx\schemas_shape_types.py ShapeAdjustment)
+formula  # unused variable (python\gopptx\schemas_shape_types.py ShapeAdjustmentValue)
+_.set_adjustments  # unused method (python\gopptx\slide\shapes\shape_style_proxy.py)
