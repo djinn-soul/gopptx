@@ -125,21 +125,22 @@ func contentSectionHandlers() map[string]commandHandler {
 
 func commentsShapesReadHandlers() map[string]commandHandler {
 	return map[string]commandHandler{
-		OpGetAuthors:          handleGetAuthors,
-		OpAddAuthor:           handleAddAuthor,
-		OpGetComments:         handleGetComments,
-		OpAddComment:          handleAddComment,
-		OpRemoveComment:       handleRemoveComment,
-		OpListShapes:          handleListShapes,
-		OpGetSlideTextStates:  handleGetSlideTextStates,
-		OpGetShapeTextState:   handleGetShapeTextState,
-		OpGetShapeRuns:        handleGetShapeRuns,
-		OpSetShapeRuns:        handleSetShapeRuns,
-		OpSetSlideShapeRuns:   handleSetSlideShapeRuns,
-		OpUpdateDeckRunTexts:  handleUpdateDeckRunTexts,
-		OpUpdateSlideRunTexts: handleUpdateSlideRunTexts,
-		OpUpdateShapeRunText:  handleUpdateShapeRunText,
-		OpAppendShapeRun:      handleAppendShapeRun,
+		OpGetAuthors:             handleGetAuthors,
+		OpAddAuthor:              handleAddAuthor,
+		OpGetComments:            handleGetComments,
+		OpAddComment:             handleAddComment,
+		OpRemoveComment:          handleRemoveComment,
+		OpListShapes:             handleListShapes,
+		OpGetSlideTextStates:     handleGetSlideTextStates,
+		OpGetShapeTextState:      handleGetShapeTextState,
+		OpGetEffectiveShapeStyle: handleGetEffectiveShapeStyle,
+		OpGetShapeRuns:           handleGetShapeRuns,
+		OpSetShapeRuns:           handleSetShapeRuns,
+		OpSetSlideShapeRuns:      handleSetSlideShapeRuns,
+		OpUpdateDeckRunTexts:     handleUpdateDeckRunTexts,
+		OpUpdateSlideRunTexts:    handleUpdateSlideRunTexts,
+		OpUpdateShapeRunText:     handleUpdateShapeRunText,
+		OpAppendShapeRun:         handleAppendShapeRun,
 	}
 }
 

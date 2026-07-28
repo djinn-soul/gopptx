@@ -13,6 +13,7 @@ func supportedContentOps() []string {
 		OpListShapes,
 		OpGetSlideTextStates,
 		OpGetShapeTextState,
+		OpGetEffectiveShapeStyle,
 		OpGetShapeRuns,
 		OpSetShapeRuns,
 		OpSetSlideShapeRuns,

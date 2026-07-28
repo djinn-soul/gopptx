@@ -49,6 +49,7 @@ const (
 	OpListShapes              = "list_shapes"
 	OpGetSlideTextStates      = "get_slide_text_states"
 	OpGetShapeTextState       = "get_shape_text_state"
+	OpGetEffectiveShapeStyle  = "get_effective_shape_style"
 	OpGetShapeRuns            = "get_shape_runs"
 	OpSetShapeRuns            = "set_shape_runs"
 	OpSetSlideShapeRuns       = "set_slide_shape_runs"

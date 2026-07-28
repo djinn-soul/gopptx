@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from . import schemas_chart_layout as _schemas_chart_layout
 from . import schemas_presentation_types as _schemas_presentation_types
+from . import schemas_shape_style as _schemas_shape_style
 from . import schemas_shape_types as _schemas_shape_types
 
 emu = _schemas_presentation_types.emu
@@ -34,12 +35,18 @@ FillFormat = _schemas_shape_types.FillFormat
 GradientStop = _schemas_shape_types.GradientStop
 GradientFill = _schemas_shape_types.GradientFill
 PatternFill = _schemas_shape_types.PatternFill
-PictureFill = _schemas_shape_types.PictureFill
-PictureFillCrop = _schemas_shape_types.PictureFillCrop
-FreeformPoint = _schemas_shape_types.FreeformPoint
-FreeformSegment = _schemas_shape_types.FreeformSegment
-FreeformPath = _schemas_shape_types.FreeformPath
-FreeformGeometry = _schemas_shape_types.FreeformGeometry
+PictureFill = _schemas_shape_style.PictureFill
+PictureFillCrop = _schemas_shape_style.PictureFillCrop
+FreeformPoint = _schemas_shape_style.FreeformPoint
+FreeformSegment = _schemas_shape_style.FreeformSegment
+FreeformPath = _schemas_shape_style.FreeformPath
+FreeformGeometry = _schemas_shape_style.FreeformGeometry
+EffectiveColor = _schemas_shape_style.EffectiveColor
+EffectiveString = _schemas_shape_style.EffectiveString
+EffectiveFloat = _schemas_shape_style.EffectiveFloat
+EffectiveBool = _schemas_shape_style.EffectiveBool
+EffectivePosition = _schemas_shape_style.EffectivePosition
+EffectiveShapeStyle = _schemas_shape_style.EffectiveShapeStyle
 LineFormat = _schemas_shape_types.LineFormat
 ShadowFormat = _schemas_shape_types.ShadowFormat
 GlowFormat = _schemas_shape_types.GlowFormat

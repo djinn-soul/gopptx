@@ -9,7 +9,7 @@ from typing_extensions import Protocol
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-    from ...schemas import TextRun
+    from ...schemas import EffectiveShapeStyle, TextRun
 
 
 class TextOperationsProtocol(Protocol):
@@ -22,6 +22,12 @@ class TextOperationsProtocol(Protocol):
     def get_shape_text_state(
         self, slide_index: int, shape_id: int
     ) -> dict[str, object]:
+        """Protocol member."""
+        ...
+
+    def get_effective_shape_style(
+        self, slide_index: int, shape_id: int
+    ) -> EffectiveShapeStyle:
         """Protocol member."""
         ...
 

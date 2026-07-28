@@ -14,12 +14,13 @@ from .shape_format_proxies import (
     _ShapeLineProxy,
     _ShapeShadowProxy,
 )
+from .shape_style_proxy import _ShapeStyleProxy
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...constants import ShapeType
-    from ...schemas import FreeformGeometry, Shape, ShapeProps, ShapeUpdate
+    from ...schemas import Shape, ShapeProps, ShapeUpdate
     from ...shapes import ShapeBuilder
     from ...text.run_builder import RunBuilder
     from ..contracts import SlidePresentationProtocol
@@ -56,6 +57,7 @@ class ShapeProxy:
         self._fill = _ShapeFillProxy(self)
         self._line = _ShapeLineProxy(self)
         self._shadow = _ShapeShadowProxy(self)
+        self._style = _ShapeStyleProxy(self)
         self._text_frame: ShapeTextFrame | None = None
         self._table_proxy: Table | None = None
         self._table_present_cache: bool | None = None
@@ -127,17 +129,9 @@ class ShapeProxy:
         return self._fill
 
     @property
-    def freeform(self) -> FreeformGeometry | None:
-        """Return the shape's custom geometry, or ``None`` for preset geometry.
-
-        Freeform paths used to be write-only: ``<a:custGeom>`` was emitted and
-        never parsed back (upstream #1020).
-        """
-        shape = self.shape_record()
-        raw = cast("object", shape.get("freeform"))
-        if not isinstance(raw, dict):
-            return None
-        return cast("FreeformGeometry", raw)
+    def style(self) -> _ShapeStyleProxy:
+        """Return the read-only style views: resolved style and custom geometry."""
+        return self._style
 
     @property
     def line(self) -> _ShapeLineProxy:

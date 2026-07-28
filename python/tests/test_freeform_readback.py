@@ -13,7 +13,7 @@ PNG_BYTES = base64.b64decode(
 
 
 def test_freeform_paths_are_readable(tmp_path: pathlib.Path) -> None:
-    """A committed freeform reports its paths back through shape.freeform."""
+    """A committed freeform reports its paths back through shape.style.freeform."""
     output_path = tmp_path / "freeform_readback.pptx"
 
     with Presentation.new(title="Freeform Readback") as pres:
@@ -27,7 +27,7 @@ def test_freeform_paths_are_readable(tmp_path: pathlib.Path) -> None:
         slide = pres.slides[0]
         shape = next(s for s in slide.shapes if s.id == shape_id)
 
-        geometry = shape.freeform
+        geometry = shape.style.freeform
         assert geometry is not None
         paths = geometry["paths"]
         assert len(paths) == 1
@@ -58,7 +58,7 @@ def test_preset_shape_has_no_freeform(tmp_path: pathlib.Path) -> None:
     with Presentation(output_path) as pres:
         slide = pres.slides[0]
         shape = next(s for s in slide.shapes if s.id == shape_id)
-        assert shape.freeform is None
+        assert shape.style.freeform is None
 
 
 def test_picture_fill_is_readable(tmp_path: pathlib.Path) -> None:
