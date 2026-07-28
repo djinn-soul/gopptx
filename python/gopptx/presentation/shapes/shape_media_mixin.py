@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
@@ -13,7 +14,9 @@ from .shape_media_av_mixin import PresentationShapeAVMixin
 from .shape_payload_mixin import PresentationShapePayloadMixin
 
 if TYPE_CHECKING:
-    from ...schemas import ImageMetadata, SlideImageRef
+    from os import PathLike
+
+    from ...schemas import ImageMetadata, SlideImageRef, SlideMediaRef
 
 
 class PresentationShapeMediaMixin(
@@ -147,6 +150,38 @@ class PresentationShapeMediaMixin(
         """
         result = self.execute(ops.OP_LIST_SLIDE_IMAGES, {"slide_index": slide_index})
         return cast("list[SlideImageRef]", result.get("images", []))
+
+    def list_slide_media(self, slide_index: int) -> list[SlideMediaRef]:
+        """List every media relationship on a slide: images, sounds and movies.
+
+        Images already had ``list_slide_images``; an embedded movie or sound
+        could only be found by walking relationships by hand (issue #1049).
+
+        Args:
+            slide_index: Zero-based index of the slide.
+
+        Returns:
+            List of SlideMediaRef dicts: index, rel_id, kind, target, part_path,
+            content_type, size_bytes and external.
+        """
+        result = self.execute(ops.OP_LIST_SLIDE_MEDIA, {"slide_index": slide_index})
+        return cast("list[SlideMediaRef]", result.get("media", []))
+
+    def extract_media(self, part_path: str) -> bytes:
+        """Return the bytes of one media part.
+
+        Args:
+            part_path: Package part path, as reported by list_slide_media
+                (for example ``ppt/media/media1.mp4``).
+        """
+        result = self.execute(ops.OP_EXTRACT_MEDIA, {"part_path": part_path})
+        return base64.b64decode(cast("str", result.get("data", "")))
+
+    def save_media(self, part_path: str, destination: str | PathLike[str]) -> int:
+        """Write one media part out to a file, and return the bytes written."""
+        data = self.extract_media(part_path)
+        Path(destination).write_bytes(data)
+        return len(data)
 
     def swap_image_by_index(
         self,

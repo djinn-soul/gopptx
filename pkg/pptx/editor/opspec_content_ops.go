@@ -2,7 +2,7 @@ package editor
 
 // supportedContentOps returns ops for shapes, text, tables, notes, media, and export.
 func supportedContentOps() []string {
-	return []string{
+	return append([]string{
 		OpFindAndReplace,
 		OpSearchShapes,
 		OpGetAuthors,
@@ -82,7 +82,16 @@ func supportedContentOps() []string {
 		OpAddAnimation,
 		OpSetSlideTransition,
 		OpMoveShapeToIndex,
+	}, contentMediaAndStructureOps()...)
+}
+
+// contentMediaAndStructureOps returns the media, notes, SmartArt, background and
+// export half of the content ops, split out to keep each function readable.
+func contentMediaAndStructureOps() []string {
+	return []string{
 		OpListSlideImages,
+		OpListSlideMedia,
+		OpExtractMedia,
 		OpSwapImageByIndex,
 		OpSwapImageByRelID,
 		OpListNotesShapes,

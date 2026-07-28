@@ -169,6 +169,8 @@ func shapeMutationHandlers() map[string]commandHandler {
 		OpAddAudio:         handleAddAudio,
 		OpAddOLEObject:     handleAddOLEObject,
 		OpListSlideImages:  handleListSlideImages,
+		OpListSlideMedia:   handleListSlideMedia,
+		OpExtractMedia:     handleExtractMedia,
 		OpSwapImageByIndex: handleSwapImageByIndex,
 		OpSwapImageByRelID: handleSwapImageByRelID,
 	}

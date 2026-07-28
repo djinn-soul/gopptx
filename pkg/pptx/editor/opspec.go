@@ -146,6 +146,8 @@ const (
 	OpSetSmartArtStyle      = "set_smartart_style"
 	OpSetSmartArtNodes      = "set_smartart_nodes"
 	OpListSlideImages       = "list_slide_images"
+	OpListSlideMedia        = "list_slide_media"
+	OpExtractMedia          = "extract_media"
 	OpSwapImageByIndex      = "swap_image_by_index"
 	OpSwapImageByRelID      = "swap_image_by_rel_id"
 	OpGetLayoutShapes       = "get_layout_shapes"
