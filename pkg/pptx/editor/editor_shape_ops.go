@@ -98,6 +98,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			IsDecorative:     p.IsDecorative,
 			Connector:        p.Connector,
 			Adjustments:      p.Adjustments,
+			Freeform:         p.Freeform,
 		}
 	}
 

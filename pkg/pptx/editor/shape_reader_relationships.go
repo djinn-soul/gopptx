@@ -2,6 +2,7 @@ package editor
 
 import (
 	"net/url"
+	"path"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
@@ -39,8 +40,27 @@ func (e *PresentationEditor) enrichParsedShapeRelationships(partPath string, par
 			slideIndexByPart,
 		)
 		applyResolvedRunActions(&parsed[idx], partPath, relsByID, slideIndexByPart)
+		resolvePictureFillPart(&parsed[idx], relsByID)
 	}
 	return nil
+}
+
+// resolvePictureFillPart turns the r:embed of an <a:blipFill> shape fill into a
+// package part path, so a caller reading a picture-filled shape can reach the
+// image without knowing relationship ids.
+func resolvePictureFillPart(shape *parsedShape, relsByID map[string]common.EditorRelationship) {
+	if shape.Fill == nil || shape.Fill.Picture == nil || shape.Fill.Picture.RelID == "" {
+		return
+	}
+	rel, ok := relsByID[shape.Fill.Picture.RelID]
+	if !ok {
+		return
+	}
+	if strings.EqualFold(rel.TargetMode, "External") {
+		shape.Fill.Picture.External = rel.Target
+		return
+	}
+	shape.Fill.Picture.ImagePart = common.CanonicalPartPath(path.Join("ppt/slides", rel.Target))
 }
 
 func (e *PresentationEditor) slideRelationshipsByID(partPath string) (map[string]common.EditorRelationship, error) {

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...constants import ShapeType
-    from ...schemas import Shape, ShapeProps, ShapeUpdate
+    from ...schemas import FreeformGeometry, Shape, ShapeProps, ShapeUpdate
     from ...shapes import ShapeBuilder
     from ...text.run_builder import RunBuilder
     from ..contracts import SlidePresentationProtocol
@@ -125,6 +125,19 @@ class ShapeProxy:
     def fill(self) -> _ShapeFillProxy:
         """Return fill formatting facade."""
         return self._fill
+
+    @property
+    def freeform(self) -> FreeformGeometry | None:
+        """Return the shape's custom geometry, or ``None`` for preset geometry.
+
+        Freeform paths used to be write-only: ``<a:custGeom>`` was emitted and
+        never parsed back (upstream #1020).
+        """
+        shape = self.shape_record()
+        raw = cast("object", shape.get("freeform"))
+        if not isinstance(raw, dict):
+            return None
+        return cast("FreeformGeometry", raw)
 
     @property
     def line(self) -> _ShapeLineProxy:

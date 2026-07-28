@@ -105,7 +105,7 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 func normalizeUnderlineValue(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", bulletStyleNone:
-		return "none"
+		return bulletStyleNone
 	case "single":
 		return "sng"
 	case "double":

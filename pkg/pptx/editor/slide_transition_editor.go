@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// transitionNone is the transition type that means "no transition".
+const transitionNone = "none"
+
 // SetSlideTransition applies a transition type to an existing slide.
 // transitionType should be one of the Go transition constants (e.g. "fade", "push").
 // durationMS is optional (0 = default). advanceMS is optional (-1 = disabled).
@@ -66,7 +69,7 @@ func buildTransitionXML(
 	}
 	b.WriteString(">")
 
-	if transitionType == "none" || transitionType == "cut" || transitionType == "" {
+	if transitionType == transitionNone || transitionType == "cut" || transitionType == "" {
 		b.WriteString("</p:transition>")
 		return b.String()
 	}

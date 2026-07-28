@@ -47,6 +47,7 @@ type parsedShape struct {
 	PhIndex        int    // Placeholder index, -1 if not a placeholder
 	PhType         string // Placeholder type (e.g. "title", "body")
 	Adjustments    []common.ShapeAdjustment
+	Freeform       *common.FreeformGeometry
 	Start          int64 // Byte offset of the start of the node
 	End            int64 // Byte offset of the end of the node
 	IsGroup        bool
@@ -271,5 +272,6 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		PhIndex:        props.PhIndex,
 		PhType:         props.PhType,
 		Adjustments:    props.Adjustments,
+		Freeform:       props.Freeform,
 	}, nil
 }

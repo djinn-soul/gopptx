@@ -17,7 +17,13 @@ func imageRelIDForShape(content []byte, shapeID int) (string, error) {
 	}
 
 	for _, shape := range shapes {
-		if shape.ID != shapeID || shape.Type != shapeTypePicture {
+		if shape.ID != shapeID {
+			continue
+		}
+		// A picture carries <p:blipFill>; an autoshape filled with an image
+		// carries <a:blipFill> inside <p:spPr>. Both name the image through the
+		// same r:embed, so both are readable here.
+		if shape.Type != shapeTypePicture && !hasPictureFill(shape) {
 			continue
 		}
 		match := embeddedImageRelPattern.FindSubmatch(content[shape.Start:shape.End])
@@ -28,6 +34,10 @@ func imageRelIDForShape(content []byte, shapeID int) (string, error) {
 	}
 
 	return "", fmt.Errorf("image shape %d not found or has no embed rel", shapeID)
+}
+
+func hasPictureFill(shape parsedShape) bool {
+	return shape.Fill != nil && shape.Fill.Picture != nil && shape.Fill.Picture.RelID != ""
 }
 
 func (e *PresentationEditor) imagePartData(
