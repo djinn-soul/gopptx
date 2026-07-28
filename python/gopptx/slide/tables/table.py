@@ -160,6 +160,20 @@ class Table(_TableBandingMixin, TableFlagsMixin):
         self._ensure_cache()
         return self._col_count or 0
 
+    @property
+    def style(self) -> str:
+        """Table style GUID applied to this table, or ``""`` when unstyled."""
+        self._ensure_cache()
+        if self._cache is None:
+            return ""
+        return str(self._cache.get("style_id", "") or "")
+
+    @style.setter
+    def style(self, value: str) -> None:
+        """Apply a table style by name (see ``TableStyle``) or by GUID."""
+        self.prs.set_table_style(self.slide_index, self.shape_id, value)
+        self.invalidate_cache()
+
     def __getitem__(self, idx: tuple[int | slice, int | slice]) -> Cell | CellRange:
         """Return a cell or rectangular range for the given index tuple."""
         if len(idx) != _TABLE_INDEX_DIMENSIONS:

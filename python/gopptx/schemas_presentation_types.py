@@ -173,4 +173,5 @@ class TableInfo(TypedDict):
     last_col: bool
     band_row: bool
     band_col: bool
+    style_id: str
     cells: list[TableCellInfo]

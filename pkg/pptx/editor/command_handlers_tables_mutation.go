@@ -197,9 +197,14 @@ func handleUpdateTableCell(e *PresentationEditor, payload json.RawMessage) (any,
 					request.Row,
 					request.Col,
 					tablemod.CellContentUpdate{
-						Text:     textPtr,
-						SizePt:   style.SizePt,
-						FontName: style.FontName,
+						Text:            textPtr,
+						SizePt:          style.SizePt,
+						FontName:        style.FontName,
+						Bold:            style.Bold,
+						Italic:          style.Italic,
+						Underline:       style.Underline,
+						Color:           style.Color,
+						BackgroundColor: style.BackgroundColor,
 					},
 				); err != nil {
 					return nil, err

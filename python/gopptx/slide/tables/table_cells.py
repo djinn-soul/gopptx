@@ -22,6 +22,16 @@ class Cell:
         self.col = col
 
     @property
+    def row_idx(self) -> int:
+        """python-pptx alias for :attr:`row` (zero-based row index)."""
+        return self.row
+
+    @property
+    def col_idx(self) -> int:
+        """python-pptx alias for :attr:`col` (zero-based column index)."""
+        return self.col
+
+    @property
     def is_merge_origin(self) -> bool:
         """Check if this cell is the origin of a merged cell range."""
         return (

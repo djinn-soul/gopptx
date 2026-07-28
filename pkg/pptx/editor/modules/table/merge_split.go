@@ -20,7 +20,61 @@ func MergeCellsInFrame(frame []byte, row1, col1, row2, col2 int) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	return updatedFrame, nil
+	return collapseFullSpanMerge(updatedFrame, row1, col1, rowSpan, colSpan)
+}
+
+// collapseFullSpanMerge reproduces what PowerPoint does when a vertical merge covers
+// every column of the table: it keeps the origin cell and drops the now redundant rows
+// instead of leaving vMerge placeholders. PowerPoint ignores such a merge and renders
+// the rows unmerged (issue #636), which rendering confirms.
+//
+// The condition is deliberately narrow. Rendering checks show a vMerge that leaves at
+// least one column outside the merge renders correctly, and gridSpan renders correctly
+// even when it covers every column of a single-row table, so neither case is collapsed.
+func collapseFullSpanMerge(frame []byte, row1, col1, rowSpan, colSpan int) ([]byte, error) {
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return nil, err
+	}
+	_, cols := Dimensions(parsed)
+	if colSpan != cols || rowSpan <= 1 {
+		return frame, nil
+	}
+	return collapseMergedRows(frame, row1, col1, rowSpan, colSpan)
+}
+
+// collapseMergedRows deletes rows row1+1..row1+rowSpan-1, folds their heights into
+// the origin row, and clears the vertical merge attributes that no longer apply.
+func collapseMergedRows(frame []byte, row1, col1, rowSpan, colSpan int) ([]byte, error) {
+	parsed, err := ParseTable(frame)
+	if err != nil {
+		return nil, err
+	}
+	var totalHeight int64
+	for r := row1; r < row1+rowSpan && r < len(parsed.Rows); r++ {
+		totalHeight += parsed.Rows[r].Height
+	}
+
+	updated := frame
+	for r := row1 + rowSpan - 1; r > row1; r-- {
+		if updated, err = RemoveTableRowInFrame(updated, r); err != nil {
+			return nil, err
+		}
+	}
+
+	updated, err = MutateTableRows(updated, row1, row1, func(_ int, rowContent []byte) ([]byte, error) {
+		return MutateTableCells(rowContent, col1, col1+colSpan-1, func(_ int, cellContent []byte) ([]byte, error) {
+			cellContent = RemoveTcAttr(cellContent, "rowSpan")
+			return RemoveTcAttr(cellContent, "vMerge"), nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	if totalHeight <= 0 {
+		return updated, nil
+	}
+	return UpdateTableRowHeightInFrame(updated, row1, totalHeight)
 }
 
 func validateMergeRange(frame []byte, row1, col1, row2, col2 int) (int, int, error) {

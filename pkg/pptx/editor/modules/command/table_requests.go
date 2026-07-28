@@ -214,12 +214,19 @@ func ParseOptionalTextUpdate(updates map[string]any) (string, bool, error) {
 
 // CellStyleUpdate holds optional style fields parsed from an update_table_cell payload.
 type CellStyleUpdate struct {
-	SizePt   float64
-	FontName string
-	HasStyle bool
+	SizePt          float64
+	FontName        string
+	Bold            *bool
+	Italic          *bool
+	Underline       *bool
+	Color           string
+	BackgroundColor string
+	HasStyle        bool
 }
 
-// ParseOptionalCellStyleUpdate reads size_pt and font_name from an updates map.
+// ParseOptionalCellStyleUpdate reads the run and cell style fields from an
+// updates map: size_pt, font_name, bold, italic, underline, color and
+// background_color.
 func ParseOptionalCellStyleUpdate(updates map[string]any) (CellStyleUpdate, error) {
 	var out CellStyleUpdate
 	if raw, ok := updates["size_pt"]; ok {
@@ -234,12 +241,41 @@ func ParseOptionalCellStyleUpdate(updates map[string]any) (CellStyleUpdate, erro
 			return CellStyleUpdate{}, fmt.Errorf("size_pt must be a number, got %T", raw)
 		}
 	}
-	if raw, ok := updates["font_name"]; ok {
-		s, ok := raw.(string)
+
+	stringFields := map[string]*string{
+		"font_name":        &out.FontName,
+		"color":            &out.Color,
+		"background_color": &out.BackgroundColor,
+	}
+	for key, dst := range stringFields {
+		raw, ok := updates[key]
 		if !ok {
-			return CellStyleUpdate{}, fmt.Errorf("font_name must be a string, got %T", raw)
+			continue
 		}
-		out.FontName = s
+		s, isString := raw.(string)
+		if !isString {
+			return CellStyleUpdate{}, fmt.Errorf("%s must be a string, got %T", key, raw)
+		}
+		*dst = s
+		out.HasStyle = true
+	}
+
+	boolFields := map[string]**bool{
+		"bold":      &out.Bold,
+		"italic":    &out.Italic,
+		"underline": &out.Underline,
+	}
+	for key, dst := range boolFields {
+		raw, ok := updates[key]
+		if !ok {
+			continue
+		}
+		b, isBool := raw.(bool)
+		if !isBool {
+			return CellStyleUpdate{}, fmt.Errorf("%s must be a boolean, got %T", key, raw)
+		}
+		value := b
+		*dst = &value
 		out.HasStyle = true
 	}
 	return out, nil
