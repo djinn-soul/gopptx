@@ -10,7 +10,13 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ...presentation.charts.chart_types import ChartType
-    from ...schemas import ChartState, SlideChartRef
+    from ...schemas import (
+        ChartDataSource,
+        ChartDataUpdate,
+        ChartSelector,
+        ChartState,
+        SlideChartRef,
+    )
     from ...slide.chart.data import CategoryChartData, XyChartData
 
 
@@ -63,6 +69,23 @@ class ChartOperationsProtocol(Protocol):
         chart_selector: dict[str, object] | list[str],
         data: dict[str, object] | list[dict[str, object]],
     ) -> None:
+        """Protocol member."""
+        ...
+
+    def update_chart_cached_values(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+        data: ChartDataUpdate,
+    ) -> None:
+        """Protocol member."""
+        ...
+
+    def get_chart_data_source(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+    ) -> ChartDataSource:
         """Protocol member."""
         ...
 

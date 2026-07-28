@@ -743,3 +743,8 @@ ShapeStyleProxy  # public alias (python\gopptx\slide\shapes\shape_style_proxy.py
 _.list_slide_media  # unused method (python\gopptx\presentation\shapes\shape_media_mixin.py)
 _.save_media  # unused method (python\gopptx\presentation\shapes\shape_media_mixin.py)
 size_bytes  # unused variable (python\gopptx\schemas_shape_types.py SlideMediaRef)
+
+# Chart cached-value refresh and data-source reporting (upstream #115).
+_.update_chart_cached_values  # unused method (python\gopptx\presentation\charts\chart_mixin_updates.py)
+_.get_chart_data_source  # unused method (python\gopptx\presentation\charts\chart_mixin_updates.py)
+auto_update  # unused variable (python\gopptx\schemas_chart_layout.py ChartDataSource)

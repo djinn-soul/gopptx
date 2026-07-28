@@ -48,6 +48,8 @@ func layoutMetadataHandlers() map[string]commandHandler {
 		OpGetMetadata:             handleGetMetadata,
 		OpListSlideCharts:         handleListSlideCharts,
 		OpUpdateChartData:         handleUpdateChartData,
+		OpUpdateChartCachedValues: handleUpdateChartCachedValues,
+		OpGetChartDataSource:      handleGetChartDataSource,
 		OpUpdateChartDataBatch:    handleUpdateChartDataBatch,
 		OpUpdateChartFormatting:   handleUpdateChartFormatting,
 		OpGetChartState:           handleGetChartState,
