@@ -16,6 +16,7 @@ type XML struct {
 		LastCol  string `xml:"lastCol,attr"`
 		BandRow  string `xml:"bandRow,attr"`
 		BandCol  string `xml:"bandCol,attr"`
+		StyleID  string `xml:"tableStyleId"`
 	} `xml:"tblPr"`
 	Grid struct {
 		Cols []struct {

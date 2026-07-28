@@ -4,81 +4,17 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
-
-// fontSzScale converts font size in points to OOXML hundredths-of-points.
-const fontSzScale = 100
 
 // UpdateTableCellTextInFrame modifies the text of a single table cell.
 // NOTE: This implementation replaces all existing paragraphs and runs within the cell
 // with a single paragraph containing the new text, while preserving cell-level
 // formatting properties like vertical alignment.
 func UpdateTableCellTextInFrame(frame []byte, rowIdx, colIdx int, text string) ([]byte, error) {
-	parsed, err := ParseTable(frame)
-	if err != nil {
-		return nil, err
-	}
-	rows, cols := Dimensions(parsed)
-	if rowIdx < 0 || rowIdx >= rows || colIdx < 0 || colIdx >= cols {
-		return nil, fmt.Errorf("table cell [%d,%d] out of range", rowIdx, colIdx)
-	}
-
-	escapedText := common.XMLEscape(text)
-	return MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
-		return MutateTableCells(rowContent, colIdx, colIdx, func(_ int, cellContent []byte) ([]byte, error) {
-			txStart := bytes.Index(cellContent, []byte("<a:txBody>"))
-			if txStart == -1 {
-				return nil, errors.New("txBody not found in cell")
-			}
-			txEndRel := bytes.Index(cellContent[txStart:], []byte("</a:txBody>"))
-			if txEndRel == -1 {
-				return nil, errors.New("invalid txBody xml")
-			}
-			txEnd := txStart + txEndRel + len("</a:txBody>")
-			oldTxBody := cellContent[txStart:txEnd]
-
-			bodyPr := extractXMLElement(oldTxBody, []byte("<a:bodyPr"))
-			if len(bodyPr) == 0 {
-				bodyPr = []byte("<a:bodyPr/>")
-			}
-			lstStyle := extractXMLElement(oldTxBody, []byte("<a:lstStyle"))
-			if len(lstStyle) == 0 {
-				lstStyle = []byte("<a:lstStyle/>")
-			}
-
-			// A text-only update must not discard the run's formatting: the
-			// cell's font, size and colour live in the first <a:rPr>, and its
-			// alignment in <a:pPr> (upstream issue #1037).
-			rPr := extractXMLElement(oldTxBody, []byte("<a:rPr"))
-			if len(rPr) == 0 {
-				rPr = []byte("<a:rPr/>")
-			}
-			pPr := extractXMLElement(oldTxBody, []byte("<a:pPr"))
-
-			newTxBody := bytes.Join([][]byte{
-				[]byte("<a:txBody>"),
-				bodyPr,
-				lstStyle,
-				[]byte("<a:p>"),
-				pPr,
-				[]byte("<a:r>"),
-				rPr,
-				[]byte("<a:t>"),
-				[]byte(escapedText),
-				[]byte("</a:t></a:r></a:p></a:txBody>"),
-			}, nil)
-
-			updated := make([]byte, 0, len(cellContent)-((txEnd-txStart)-len(newTxBody)))
-			updated = append(updated, cellContent[:txStart]...)
-			updated = append(updated, newTxBody...)
-			updated = append(updated, cellContent[txEnd:]...)
-			return updated, nil
-		})
-	})
+	return UpdateTableCellContentInFrame(frame, rowIdx, colIdx, CellContentUpdate{Text: &text})
 }
 
 func extractXMLElement(content []byte, tagOpen []byte) []byte {
@@ -105,16 +41,36 @@ func extractXMLElement(content []byte, tagOpen []byte) []byte {
 }
 
 // CellContentUpdate holds the fields for a combined text+style cell update.
-// A nil Text means preserve the existing cell text.
+// A nil Text means preserve the existing cell text; nil style pointers mean
+// leave that aspect alone.
 type CellContentUpdate struct {
 	Text     *string
 	SizePt   float64
 	FontName string
+	// Bold, Italic and Underline are tri-state: nil leaves the run as it is.
+	Bold      *bool
+	Italic    *bool
+	Underline *bool
+	// Color is the run's text colour as a hex string, e.g. "C00000".
+	Color string
+	// BackgroundColor fills the cell via <a:tcPr>. "none" clears the fill.
+	BackgroundColor string
 }
 
-// UpdateTableCellContentInFrame updates a cell's text and/or run-level style (font size, font name).
-// When Text is nil, the existing cell text is preserved. When SizePt or FontName are set,
-// the rPr element is emitted with those attributes.
+// HasRunStyle reports whether the update touches run-level formatting.
+func (u CellContentUpdate) HasRunStyle() bool {
+	return u.SizePt > 0 ||
+		strings.TrimSpace(u.FontName) != "" ||
+		u.Bold != nil || u.Italic != nil || u.Underline != nil ||
+		strings.TrimSpace(u.Color) != ""
+}
+
+// UpdateTableCellContentInFrame updates a cell's text and/or run-level style.
+// When Text is nil the existing cell text is preserved. Any style field the
+// caller leaves unset keeps whatever the cell already had: the new run
+// properties are merged onto the cell's first <a:rPr>, and its <a:pPr> is
+// carried over, so refreshing a deck's numbers does not flatten hand-applied
+// formatting (upstream issue #1037).
 func UpdateTableCellContentInFrame(frame []byte, rowIdx, colIdx int, update CellContentUpdate) ([]byte, error) {
 	parsed, err := ParseTable(frame)
 	if err != nil {
@@ -139,19 +95,22 @@ func UpdateTableCellContentInFrame(frame []byte, rowIdx, colIdx int, update Cell
 		textToUse = sb.String()
 	}
 
-	rPr := buildCellRPr(update.SizePt, update.FontName)
 	escapedText := common.XMLEscape(textToUse)
 
 	return MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
 		return MutateTableCells(rowContent, colIdx, colIdx, func(_ int, cellContent []byte) ([]byte, error) {
-			return replaceCellTxBody(cellContent, rPr, escapedText)
+			updated, err := replaceCellTxBody(cellContent, update, escapedText)
+			if err != nil {
+				return nil, err
+			}
+			return applyCellFill(updated, update.BackgroundColor)
 		})
 	})
 }
 
-// replaceCellTxBody rewrites the <a:txBody> of a single cell, preserving
-// existing <a:bodyPr> and <a:lstStyle> children.
-func replaceCellTxBody(cellContent []byte, rPr, escapedText string) ([]byte, error) {
+// replaceCellTxBody rewrites the <a:txBody> of a single cell, preserving the
+// existing <a:bodyPr>, <a:lstStyle>, <a:pPr> and run properties.
+func replaceCellTxBody(cellContent []byte, update CellContentUpdate, escapedText string) ([]byte, error) {
 	txStart := bytes.Index(cellContent, []byte("<a:txBody>"))
 	if txStart == -1 {
 		return nil, errors.New("txBody not found in cell")
@@ -171,12 +130,25 @@ func replaceCellTxBody(cellContent []byte, rPr, escapedText string) ([]byte, err
 	if len(lstStyle) == 0 {
 		lstStyle = []byte("<a:lstStyle/>")
 	}
+	// The paragraph's own properties (alignment, indent, bullet) survive a data
+	// refresh, as do the run properties not named by this update.
+	pPr := extractXMLElement(oldTxBody, []byte("<a:pPr"))
+	rPr := mergeCellRPr(extractXMLElement(oldTxBody, []byte("<a:rPr")), update)
+	// An empty paragraph carries its formatting on <a:endParaRPr>, which is the
+	// only place to recover it once a run is added.
+	if rPr == "<a:rPr/>" {
+		if endPara := extractXMLElement(oldTxBody, []byte("<a:endParaRPr")); len(endPara) > 0 {
+			rPr = mergeCellRPr(renameElement(endPara, "endParaRPr", "rPr"), update)
+		}
+	}
 
 	newTxBody := bytes.Join([][]byte{
 		[]byte("<a:txBody>"),
 		bodyPr,
 		lstStyle,
-		[]byte("<a:p><a:r>"),
+		[]byte("<a:p>"),
+		pPr,
+		[]byte("<a:r>"),
 		[]byte(rPr),
 		[]byte("<a:t>"),
 		[]byte(escapedText),
@@ -190,23 +162,8 @@ func replaceCellTxBody(cellContent []byte, rPr, escapedText string) ([]byte, err
 	return updated, nil
 }
 
-func buildCellRPr(sizePt float64, fontName string) string {
-	if sizePt <= 0 && strings.TrimSpace(fontName) == "" {
-		return "<a:rPr/>"
-	}
-	var b strings.Builder
-	b.WriteString(`<a:rPr lang="en-US" dirty="0"`)
-	if sizePt > 0 {
-		b.WriteString(` sz="`)
-		b.WriteString(strconv.Itoa(int(sizePt * fontSzScale)))
-		b.WriteString(`"`)
-	}
-	b.WriteString(`>`)
-	if strings.TrimSpace(fontName) != "" {
-		b.WriteString(`<a:latin typeface="`)
-		b.WriteString(common.XMLEscape(fontName))
-		b.WriteString(`"/>`)
-	}
-	b.WriteString(`</a:rPr>`)
-	return b.String()
+// renameElement swaps an element's tag name, keeping its attributes and body.
+func renameElement(element []byte, from, to string) []byte {
+	out := bytes.ReplaceAll(element, []byte("<a:"+from), []byte("<a:"+to))
+	return bytes.ReplaceAll(out, []byte("</a:"+from+">"), []byte("</a:"+to+">"))
 }

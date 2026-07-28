@@ -118,7 +118,10 @@ func TestMutationsAndInfoProjection(t *testing.T) {
 		t.Fatalf("unexpected flag projection after update: %+v", meta)
 	}
 
-	merged, err := MergeCellsInFrame(updated, 0, 0, 1, 1)
+	// Merge one row across its two columns. A vertical merge covering every column
+	// collapses the redundant rows (see merge_full_span_test.go), so this projection
+	// check uses a horizontal merge, which keeps its span placeholders.
+	merged, err := MergeCellsInFrame(updated, 0, 0, 0, 1)
 	if err != nil {
 		t.Fatalf("MergeCellsInFrame failed: %v", err)
 	}
@@ -132,7 +135,7 @@ func TestMutationsAndInfoProjection(t *testing.T) {
 		if c["row"].(int) == 0 && c["col"].(int) == 0 {
 			origin = c
 		}
-		if c["row"].(int) == 1 && c["col"].(int) == 1 {
+		if c["row"].(int) == 0 && c["col"].(int) == 1 {
 			spanned = c
 		}
 	}
@@ -140,7 +143,7 @@ func TestMutationsAndInfoProjection(t *testing.T) {
 		t.Fatalf("expected merge origin at [0,0], got %+v", origin)
 	}
 	if spanned == nil || !spanned["is_spanned"].(bool) {
-		t.Fatalf("expected spanned cell at [1,1], got %+v", spanned)
+		t.Fatalf("expected spanned cell at [0,1], got %+v", spanned)
 	}
 
 	split, err := SplitCellInFrame(merged, 0, 0)
