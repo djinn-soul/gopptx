@@ -226,6 +226,25 @@ class ShapeProps(TypedDict, total=False):
     flip_v: bool
 
 
+class ShapeAdjustment(TypedDict, total=False):
+    """One adjustment as read back from a shape's preset geometry."""
+
+    Name: str
+    Formula: str
+
+
+class ShapeAdjustmentValue(TypedDict, total=False):
+    """One preset-geometry adjustment: a yellow handle in PowerPoint's UI.
+
+    ``value`` is a fraction (0.5 is the halfway point); ``formula`` overrides it
+    with a raw OOXML guide expression.
+    """
+
+    name: str
+    value: float
+    formula: str
+
+
 class ShapeUpdate(TypedDict, total=False):
     """Shape update parameters."""
 

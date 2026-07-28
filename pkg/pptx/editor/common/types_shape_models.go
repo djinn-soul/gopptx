@@ -292,3 +292,13 @@ type SlideMediaRef struct {
 	SizeBytes   int    `json:"size_bytes,omitempty"`
 	External    bool   `json:"external,omitempty"`
 }
+
+// ShapeAdjustmentValue sets one preset-geometry adjustment — a yellow handle in
+// PowerPoint's UI (upstream #1017). Value is a fraction in the same units the
+// reader reports, so 0.5 is the halfway point; Formula overrides it when a
+// caller needs a raw OOXML guide expression.
+type ShapeAdjustmentValue struct {
+	Name    string  `json:"name"`
+	Value   float64 `json:"value,omitempty"`
+	Formula string  `json:"formula,omitempty"`
+}

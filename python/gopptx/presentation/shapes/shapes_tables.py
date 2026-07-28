@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from ...constants import ConnectorType, ShapeType
     from ...schemas import (
         Shape,
+        ShapeAdjustmentValue,
         ShapeSearchQuery,
         ShapeSearchResult,
         ShapeUpdate,
@@ -40,6 +41,29 @@ class PresentationShapeMixin(
         """List all shapes on a slide."""
         result = self.execute(ops.OP_LIST_SHAPES, {"slide_index": slide_index})
         return cast("list[Shape]", result.get("shapes", []))
+
+    def set_shape_adjustments(
+        self,
+        slide_index: int,
+        shape_id: int,
+        adjustments: list[ShapeAdjustmentValue],
+    ) -> None:
+        """Set preset-geometry adjustment values on a shape.
+
+        These are the yellow handles in PowerPoint's UI. An elbow connector
+        routes through the point its ``adj1`` names, so setting it is the
+        difference between a connector that doubles back and one that goes
+        straight (issue #1017). Values are fractions: 0.5 is the halfway point.
+        Adjustments not named are left alone.
+        """
+        self.execute(
+            ops.OP_SET_SHAPE_ADJUSTMENTS,
+            {
+                "slide_index": slide_index,
+                "shape_id": shape_id,
+                "adjustments": [dict(item) for item in adjustments],
+            },
+        )
 
     def add_shape(
         self,

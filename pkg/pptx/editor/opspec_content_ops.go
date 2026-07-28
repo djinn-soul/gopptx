@@ -35,6 +35,7 @@ func supportedContentOps() []string {
 		OpRemoveShape,
 		OpClearShapes,
 		OpUpdateShape,
+		OpSetShapeAdjustments,
 		OpMoveShapeToFront,
 		OpMoveShapeToBack,
 		OpGetNotes,
