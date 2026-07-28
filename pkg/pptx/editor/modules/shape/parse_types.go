@@ -45,7 +45,10 @@ type gradientFillXML struct {
 		Gs []struct {
 			Pos     *int `xml:"pos,attr"`
 			SrgbClr *struct {
-				Val string `xml:"val,attr"`
+				Val   string `xml:"val,attr"`
+				Alpha *struct {
+					Val *int `xml:"val,attr"`
+				} `xml:"alpha"`
 			} `xml:"srgbClr"`
 		} `xml:"gs"`
 	} `xml:"gsLst"`
@@ -197,10 +200,12 @@ type shapeXML struct {
 				} `xml:"gd"`
 			} `xml:"avLst"`
 		} `xml:"prstGeom"`
+		CustGeom  *custGeomXML     `xml:"custGeom"`
 		NoFill    *struct{}        `xml:"noFill"`
 		SolidFill *solidFillXML    `xml:"solidFill"`
 		GradFill  *gradientFillXML `xml:"gradFill"`
 		PattFill  *patternFillXML  `xml:"pattFill"`
+		BlipFill  *blipFillXML     `xml:"blipFill"`
 		Ln        *struct {
 			W         *int          `xml:"w,attr"`
 			SolidFill *solidFillXML `xml:"solidFill"`

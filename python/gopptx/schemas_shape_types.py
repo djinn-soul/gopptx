@@ -52,6 +52,7 @@ class GradientStop(TypedDict, total=False):
 
     position_pct: float
     color: str
+    transparency: float
 
 
 class GradientFill(TypedDict, total=False):
@@ -69,6 +70,25 @@ class PatternFill(TypedDict, total=False):
     bg_color: str
 
 
+class PictureFillCrop(TypedDict):
+    """Source-rectangle insets of a picture fill, as fractions of the image."""
+
+    left: float
+    top: float
+    right: float
+    bottom: float
+
+
+class PictureFill(TypedDict, total=False):
+    """Read-only view of an image used as a shape fill."""
+
+    rel_id: str
+    image_part: str
+    external: str
+    mode: str
+    crop: PictureFillCrop
+
+
 class FillFormat(TypedDict, total=False):
     """Shape fill settings."""
 
@@ -77,6 +97,7 @@ class FillFormat(TypedDict, total=False):
     background: bool
     gradient: GradientFill
     pattern: PatternFill
+    picture: PictureFill
 
 
 class LineFormat(TypedDict, total=False):
@@ -235,6 +256,46 @@ class ShapeUpdate(TypedDict, total=False):
     h: int
 
 
+class FreeformPoint(TypedDict, total=False):
+    """One point of a freeform path.
+
+    ``x_expr``/``y_expr`` carry the raw attribute when the coordinate is a guide
+    formula rather than a number, in which case ``x``/``y`` stay 0.
+    """
+
+    x: int
+    y: int
+    x_expr: str
+    y_expr: str
+
+
+class FreeformSegment(TypedDict, total=False):
+    """One drawing command of a freeform path."""
+
+    type: str
+    points: list[FreeformPoint]
+    width_radius: int
+    height_radius: int
+    start_angle_deg: float
+    swing_angle_deg: float
+
+
+class FreeformPath(TypedDict, total=False):
+    """One path of a custom geometry, in its own coordinate space."""
+
+    w: int
+    h: int
+    fill: str
+    stroke: bool
+    segments: list[FreeformSegment]
+
+
+class FreeformGeometry(TypedDict, total=False):
+    """Custom geometry (``<a:custGeom>``) read back from a shape."""
+
+    paths: list[FreeformPath]
+
+
 class Shape(TypedDict, total=False):
     """Shape information."""
 
@@ -253,6 +314,7 @@ class Shape(TypedDict, total=False):
     shadow: ShadowFormat
     flip_h: bool
     flip_v: bool
+    freeform: FreeformGeometry
 
 
 class GrayscaleShapeRef(TypedDict):

@@ -37,6 +37,9 @@ type Shape struct {
 	Connector    *ConnectorInfo
 
 	Adjustments []ShapeAdjustment
+	// Freeform is set when the shape carries <a:custGeom> instead of a preset
+	// geometry, so custom paths can be read back and not just written.
+	Freeform *FreeformGeometry `json:"freeform,omitempty"`
 }
 
 // ShapeAdjustment represents one preset-geometry adjustment formula.
@@ -155,6 +158,8 @@ type ShapeFill struct {
 	Gradient     *GradientFill  `json:"gradient,omitempty"`
 	Pattern      *PatternedFill `json:"pattern,omitempty"`
 	Background   *bool          `json:"background,omitempty"`
+	// Picture is a read-only view of an <a:blipFill> shape fill.
+	Picture *PictureFill `json:"picture,omitempty"`
 }
 
 // ShapeLine defines generic shape line controls.
@@ -203,7 +208,10 @@ type ShapeReflection struct {
 
 type GradientStop struct {
 	PositionPct *float64 `json:"position_pct,omitempty"`
-	Color       string   `json:"color"`
+	// Transparency is read back from the stop colour's <a:alpha>, so a
+	// transparency set on a gradient is extractable and not only a solid fill's.
+	Transparency *float64 `json:"transparency,omitempty"`
+	Color        string   `json:"color"`
 }
 type GradientFill struct {
 	AngleDeg *float64       `json:"angle_deg,omitempty"`

@@ -29,4 +29,5 @@ type ParsedShapeProperties struct {
 	PhType     string
 
 	Adjustments []common.ShapeAdjustment
+	Freeform    *common.FreeformGeometry
 }

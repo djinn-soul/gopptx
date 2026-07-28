@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from ...schemas import (
         FillFormat,
         LineFormat,
+        PictureFill,
         ShadowFormat,
         Shape,
         ShapeUpdate,
@@ -70,6 +71,19 @@ class _ShapeFillProxy:
             raise ValueError("fill.transparency requires a solid fill color")
         payload["transparency"] = float(value)
         self._apply(cast("FillFormat", payload))
+
+    @property
+    def picture(self) -> PictureFill | None:
+        """Return the image used as this shape's fill, if any.
+
+        Reports the relationship id, the resolved package part, the tile/stretch
+        mode and any source-rectangle crop. Read-only: setting a picture fill
+        goes through the picture APIs.
+        """
+        raw = cast("object", self._payload().get("picture"))
+        if not isinstance(raw, dict):
+            return None
+        return cast("PictureFill", raw)
 
     def background(self) -> None:
         self._apply(cast("FillFormat", {"background": True}))
