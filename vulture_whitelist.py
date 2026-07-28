@@ -753,3 +753,13 @@ auto_update  # unused variable (python\gopptx\schemas_chart_layout.py ChartDataS
 Formula  # unused variable (python\gopptx\schemas_shape_types.py ShapeAdjustment)
 formula  # unused variable (python\gopptx\schemas_shape_types.py ShapeAdjustmentValue)
 _.set_adjustments  # unused method (python\gopptx\slide\shapes\shape_style_proxy.py)
+
+# Axis visibility, tick-label rotation and tick crossing (upstream #473, #852,
+# #329, #349).
+category_axis_visible  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_visible  # unused variable (python\gopptx\schemas_chart_layout.py)
+category_axis_tick_label_rotation  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_tick_label_rotation  # unused variable (python\gopptx\schemas_chart_layout.py)
+value_axis_cross_between  # unused variable (python\gopptx\schemas_chart_layout.py)
+cross_between  # unused variable (python\gopptx\schemas_chart_layout.py ChartAxisState)
+_.tick_label_rotation  # unused property (python\gopptx\slide\chart\axis_format.py)

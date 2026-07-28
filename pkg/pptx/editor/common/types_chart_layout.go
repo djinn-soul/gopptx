@@ -121,13 +121,26 @@ type ChartFormatUpdate struct {
 	// CT_CatAx; CT_DateAx and CT_ValAx have no such children.
 	CategoryAxisTickMarkSkip   *int    `json:"category_axis_tick_mark_skip,omitempty"`
 	CategoryAxisLabelAlignment *string `json:"category_axis_label_alignment,omitempty"`
-	CategoryAxisFormatLinked   *bool   `json:"category_axis_format_linked,omitempty"`
-	ValueAxisFormatLinked      *bool   `json:"value_axis_format_linked,omitempty"`
-	CameraPreset               *string `json:"camera_preset,omitempty"`
-	CameraFieldOfView          *int    `json:"camera_field_of_view,omitempty"`
-	LightRig                   *string `json:"light_rig,omitempty"`
-	LightDirection             *string `json:"light_direction,omitempty"`
-	LightRigRevolution         *bool   `json:"light_rig_revolution,omitempty"`
+	// CategoryAxisVisible and ValueAxisVisible write <c:delete>: the axis
+	// element stays so the series keep referring to it, and the flag decides
+	// whether PowerPoint draws it (upstream #473, #852).
+	CategoryAxisVisible *bool `json:"category_axis_visible,omitempty"`
+	ValueAxisVisible    *bool `json:"value_axis_visible,omitempty"`
+	// Tick label rotation in degrees, the "Custom angle" of an axis label
+	// (upstream #329).
+	CategoryAxisTickLabelRotation *float64 `json:"category_axis_tick_label_rotation,omitempty"`
+	ValueAxisTickLabelRotation    *float64 `json:"value_axis_tick_label_rotation,omitempty"`
+	// ValueAxisCrossBetween is "between" or "midCat": whether the category
+	// axis crosses between tick marks or on them (upstream #349). It lives on
+	// CT_ValAx even though it describes the category axis.
+	ValueAxisCrossBetween    *string `json:"value_axis_cross_between,omitempty"`
+	CategoryAxisFormatLinked *bool   `json:"category_axis_format_linked,omitempty"`
+	ValueAxisFormatLinked    *bool   `json:"value_axis_format_linked,omitempty"`
+	CameraPreset             *string `json:"camera_preset,omitempty"`
+	CameraFieldOfView        *int    `json:"camera_field_of_view,omitempty"`
+	LightRig                 *string `json:"light_rig,omitempty"`
+	LightDirection           *string `json:"light_direction,omitempty"`
+	LightRigRevolution       *bool   `json:"light_rig_revolution,omitempty"`
 }
 
 // ChartAxisState is a read snapshot for one chart axis.
@@ -147,6 +160,12 @@ type ChartAxisState struct {
 	// TickMarkSkip and LabelAlignment are category-axis-only children.
 	TickMarkSkip   *int   `json:"tick_mark_skip,omitempty"`
 	LabelAlignment string `json:"label_alignment,omitempty"`
+	// Visible is false when the axis carries <c:delete val="1"/>.
+	Visible *bool `json:"visible,omitempty"`
+	// TickLabelRotation is the axis label angle in degrees.
+	TickLabelRotation *float64 `json:"tick_label_rotation,omitempty"`
+	// CrossBetween is "between" or "midCat", and is set only on a value axis.
+	CrossBetween string `json:"cross_between,omitempty"`
 }
 
 // ChartState is a read snapshot for chart-level object model traversal.

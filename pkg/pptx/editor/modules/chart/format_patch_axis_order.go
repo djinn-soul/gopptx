@@ -11,15 +11,15 @@ func axisScalingInsertIndex(block string) int {
 
 func insertAxisTitle(block string, node string) string {
 	return insertBeforeFirst(block, node, []string{
-		"<c:numFmt", "<c:majorTickMark", "<c:minorTickMark", axisTickLabelTagPrefix,
-		"<c:spPr", "<c:txPr", "<c:crossAx", "<c:crosses", chartElementClosePrefix,
+		"<c:numFmt", axisMajorTickTag, axisMinorTickTag, axisTickLabelTagPrefix,
+		axisShapePropsTag, axisTextPropsTag, axisCrossAxTag, axisCrossesTag, chartElementClosePrefix,
 	})
 }
 
 func insertAxisNumberFormat(block string, node string) string {
 	return insertBeforeFirst(block, node, []string{
-		"<c:majorTickMark", "<c:minorTickMark", axisTickLabelTagPrefix, "<c:spPr",
-		"<c:txPr", "<c:crossAx", "<c:crosses", chartElementClosePrefix,
+		axisMajorTickTag, axisMinorTickTag, axisTickLabelTagPrefix, axisShapePropsTag,
+		axisTextPropsTag, axisCrossAxTag, axisCrossesTag, chartElementClosePrefix,
 	})
 }
 
