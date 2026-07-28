@@ -8,6 +8,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/internal/zipfast"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 )
@@ -19,6 +20,9 @@ var rawZipCopyBufferPool = sync.Pool{
 		return &b
 	},
 }
+
+// packageRelsPartName is the package-level relationships part.
+const packageRelsPartName = "_rels/.rels"
 
 // mergedPartNames returns the sorted union of existing part keys and any extra
 // keys present in updatedParts that are not already in keys.
@@ -56,19 +60,49 @@ func mergedPartNames(keys []string, updatedParts map[string][]byte) []string {
 	return merged
 }
 
+// orderPackageNames moves the content types stream to the front, then the
+// package relationships. OPC requires the content types stream to be the first
+// part in the archive, so a consumer reading the package as a stream knows a
+// part's content type before it reaches the part.
+//
+// Sorted names put "[Content_Types].xml" first already for every part path seen
+// in practice, because "[" sorts below "_" and the lowercase directory names.
+// A source deck carrying a part whose name starts with an uppercase letter
+// would break that, so the order is made explicit rather than inherited.
+func orderPackageNames(names []string) []string {
+	firstIdx, relsIdx := -1, -1
+	for i, name := range names {
+		switch name {
+		case pptxxml.ContentTypesPartName:
+			firstIdx = i
+		case packageRelsPartName:
+			relsIdx = i
+		}
+	}
+	if firstIdx <= 0 && (relsIdx < 0 || relsIdx <= 1) {
+		return names // already in order
+	}
+
+	ordered := make([]string, 0, len(names))
+	if firstIdx >= 0 {
+		ordered = append(ordered, names[firstIdx])
+	}
+	if relsIdx >= 0 {
+		ordered = append(ordered, names[relsIdx])
+	}
+	for i, name := range names {
+		if i == firstIdx || i == relsIdx {
+			continue
+		}
+		ordered = append(ordered, name)
+	}
+	return ordered
+}
+
 // writeZipData writes data into a new zip entry, choosing Store vs Deflate
 // based on the file name.
 func writeZipData(zw *zip.Writer, name string, data []byte) error {
-	var (
-		w         io.Writer
-		createErr error
-	)
-	if editorslide.SaveZipMethod(name) == zip.Store {
-		header := &zip.FileHeader{Name: name, Method: zip.Store}
-		w, createErr = zw.CreateHeader(header)
-	} else {
-		w, createErr = zw.Create(name)
-	}
+	w, createErr := zipfast.CreateEntry(zw, name, editorslide.SaveZipMethod(name))
 	if createErr != nil {
 		return fmt.Errorf("create zip entry %q: %w", name, createErr)
 	}
@@ -104,7 +138,7 @@ func (e *PresentationEditor) buildZipToWriter(
 	rawZipCopyBuffer := (*poolBuf)[:rawZipCopyBufferSize]
 	defer rawZipCopyBufferPool.Put(poolBuf)
 
-	for _, name := range allNames {
+	for _, name := range orderPackageNames(allNames) {
 		if updated, updatedOK := updatedParts[name]; updatedOK {
 			if err := writeZipData(zw, name, updated); err != nil {
 				return err

@@ -159,6 +159,7 @@ const (
 	OpSetThemeColorScheme   = "set_theme_color_scheme"
 	OpSetThemeFontScheme    = "set_theme_font_scheme"
 	OpGetThemeInventory     = "get_theme_inventory"
+	OpGetThemeColorScheme   = "get_theme_color_scheme"
 	OpListNotesShapes       = "list_notes_shapes"
 	OpListNotesPlaceholders = "list_notes_placeholders"
 	OpUpdateNotesMaster     = "update_notes_master"
@@ -219,6 +220,7 @@ func supportedSlideAndMetaOps() []string {
 		OpSetThemeColorScheme,
 		OpSetThemeFontScheme,
 		OpGetThemeInventory,
+		OpGetThemeColorScheme,
 		OpBuildStatusTemplate,
 		OpBuildSimpleTemplate,
 		OpBuildProposalTemplate,

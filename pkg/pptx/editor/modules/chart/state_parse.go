@@ -22,6 +22,8 @@ var (
 	reStateAxisMajor  = regexp.MustCompile(`<c:majorUnit val="([^"]+)"`)
 	reStateAxisMinor  = regexp.MustCompile(`<c:minorUnit val="([^"]+)"`)
 	reStateAxisNumFmt = regexp.MustCompile(`<c:numFmt\b[^>]*formatCode="([^"]*)"[^>]*sourceLinked="([^"]+)"[^>]*/>`)
+	reStateTickSkip   = regexp.MustCompile(`<c:tickMarkSkip val="([^"]+)"`)
+	reStateLblAlgn    = regexp.MustCompile(`<c:lblAlgn val="([^"]+)"`)
 	reScene3D         = regexp.MustCompile(`(?s)<a:scene3d\b.*?</a:scene3d>`)
 	reCamera          = regexp.MustCompile(`<a:camera\b[^>]*prst="([^"]+)"[^>]*>`)
 	reCameraFOV       = regexp.MustCompile(`<a:camera\b[^>]*fov="([^"]+)"[^>]*>`)
@@ -43,6 +45,13 @@ func ExtractChartState(chartXML []byte) common.ChartState {
 		Series:     parseSeriesState(xml),
 		Scene3D:    parseScene3DState(xml),
 		DataLabels: parseDataLabelState(xml),
+		Trendlines: parseTrendlineState(xml),
+		ErrorBars:  parseErrorBarState(xml),
+		DataPoints: parseDataPointState(xml),
+		DataTable:  parseDataTableState(xml),
+		// Per-label reads: a point's number format lives on its c:dLbl, not on
+		// the chart-wide c:dLbls.
+		DataLabelPoints: parseDataLabelPointState(xml),
 	}
 	if match := reChartStyle.FindStringSubmatch(xml); len(match) == expectedSingleGroupMatch {
 		if style, err := strconv.Atoi(match[1]); err == nil {
@@ -128,6 +137,14 @@ func parseAxisStateBlock(block string) common.ChartAxisState {
 		state.NumberFormat = match[1]
 		linked := strings.TrimSpace(match[2]) == "1"
 		state.FormatLinked = &linked
+	}
+	if match := reStateTickSkip.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+		if skip, err := strconv.Atoi(strings.TrimSpace(match[1])); err == nil {
+			state.TickMarkSkip = &skip
+		}
+	}
+	if match := reStateLblAlgn.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
+		state.LabelAlignment = strings.TrimSpace(match[1])
 	}
 	state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
 	state.MinorGridline = strings.Contains(block, "<c:minorGridlines")

@@ -61,10 +61,12 @@ def test_add_shape_to_layout_and_master(deck: pathlib.Path) -> None:
         assert layout_shape != master_shape or layout_part != master_part
 
         assert any(
-            name.startswith("rect") for name in pres.get_layout_shapes(layout_part) or []
+            name.startswith("rect")
+            for name in pres.get_layout_shapes(layout_part) or []
         )
         assert any(
-            name.startswith("rect") for name in pres.get_master_shapes(master_part) or []
+            name.startswith("rect")
+            for name in pres.get_master_shapes(master_part) or []
         )
     finally:
         pres.close()
@@ -91,7 +93,9 @@ def test_layout_shape_ids_do_not_collide(deck: pathlib.Path) -> None:
         layout_part, _ = pres.get_slide_layout_ref(1)
         ids = [
             pres.add_layout_textbox(
-                layout_part, f"box {i}", (Inches(1), Inches(1 + i), Inches(2), Inches(0.4))
+                layout_part,
+                f"box {i}",
+                (Inches(1), Inches(1 + i), Inches(2), Inches(0.4)),
             )
             for i in range(3)
         ]

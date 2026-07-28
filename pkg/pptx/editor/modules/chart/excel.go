@@ -93,7 +93,7 @@ func generateExcelSheetBinary(headers []string, rows [][]string) ([]byte, error)
 }
 
 func writeZipFile(zw *zip.Writer, name, content string) error {
-	w, err := zw.Create(name)
+	w, err := zipfast.CreateEntry(zw, name, zip.Deflate)
 	if err != nil {
 		return err
 	}

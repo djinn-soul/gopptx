@@ -12,6 +12,7 @@ const (
 	PresentationXMLPath = "ppt/presentation.xml"
 	ContentTypesPath    = "[Content_Types].xml"
 	CorePropsPath       = "docProps/core.xml"
+	AppPropsPath        = "docProps/app.xml"
 
 	// DCNamespace and related metadata XML namespaces.
 	DCNamespace       = "http://purl.org/dc/elements/1.1/"
@@ -37,6 +38,10 @@ const (
 	RelTypeTableStyles    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles"
 	RelTypeCustomXML      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml"
 	RelTypeCustomXMLProps = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps"
+	RelTypeExtendedProps  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"
+
+	// ExtendedPropsContentType is the content type of docProps/app.xml.
+	ExtendedPropsContentType = "application/vnd.openxmlformats-officedocument.extended-properties+xml"
 
 	RelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 	ContentTypesXMLNS  = "http://schemas.openxmlformats.org/package/2006/content-types"

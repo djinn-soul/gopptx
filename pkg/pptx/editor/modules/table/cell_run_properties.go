@@ -11,23 +11,27 @@ import (
 // fontSzScale converts font size in points to OOXML hundredths-of-points.
 const fontSzScale = 100
 
-// rPrChildOrder is the child order of CT_TextCharacterProperties. PowerPoint
-// refuses to open a file whose <a:rPr> children are out of schema order, so a
-// merged rPr is always re-emitted through this list.
-var rPrChildOrder = []string{
-	"ln",
-	"noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill",
-	"effectLst", "effectDag",
-	"highlight",
-	"uLnTx", "uLn", "uFillTx", "uFill",
-	"latin", "ea", "cs", "sym",
-	"hlinkClick", "hlinkMouseOver",
-	"rtl", "extLst",
+// rPrChildOrder returns the child order of CT_TextCharacterProperties.
+// PowerPoint refuses to open a file whose <a:rPr> children are out of schema
+// order, so a merged rPr is always re-emitted through this list.
+func rPrChildOrder() []string {
+	return []string{
+		"ln",
+		"noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill",
+		"effectLst", "effectDag",
+		"highlight",
+		"uLnTx", "uLn", "uFillTx", "uFill",
+		"latin", "ea", "cs", "sym",
+		"hlinkClick", "hlinkMouseOver",
+		"rtl", "extLst",
+	}
 }
 
-// fillChildren is the mutually exclusive fill choice group: setting one must
-// remove the others.
-var fillChildren = []string{"noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill"}
+// fillChildren returns the mutually exclusive fill choice group: setting one
+// must remove the others.
+func fillChildren() []string {
+	return []string{"noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill"}
+}
 
 // runProperties is a parsed <a:rPr> that keeps attribute order stable and
 // re-emits children in schema order.
@@ -67,7 +71,7 @@ func parseRunProperties(rPrXML []byte) *runProperties {
 	if closeIdx := bytes.Index(inner, []byte("</a:rPr>")); closeIdx != -1 {
 		inner = inner[:closeIdx]
 	}
-	for _, tag := range rPrChildOrder {
+	for _, tag := range rPrChildOrder() {
 		if el := extractXMLElement(inner, []byte("<a:"+tag)); len(el) > 0 {
 			out.children[tag] = string(el)
 		}
@@ -84,8 +88,8 @@ func parseXMLAttrs(head []byte) map[string]string {
 			continue
 		}
 		rest := head[idx+len(name)+2:]
-		if end := bytes.IndexByte(rest, '"'); end != -1 {
-			attrs[name] = string(rest[:end])
+		if value, _, found := bytes.Cut(rest, []byte(`"`)); found {
+			attrs[name] = string(value)
 		}
 	}
 	return attrs
@@ -128,7 +132,7 @@ func (r *runProperties) setAttr(name, value string) {
 }
 
 func (r *runProperties) setFill(xml string) {
-	for _, tag := range fillChildren {
+	for _, tag := range fillChildren() {
 		delete(r.children, tag)
 	}
 	r.children["solidFill"] = xml
@@ -151,7 +155,7 @@ func (r *runProperties) render() string {
 	}
 
 	var body strings.Builder
-	for _, tag := range rPrChildOrder {
+	for _, tag := range rPrChildOrder() {
 		if xml, ok := r.children[tag]; ok {
 			body.WriteString(xml)
 		}

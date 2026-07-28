@@ -86,6 +86,7 @@ func themeLayoutHandlers() map[string]commandHandler {
 		OpSetThemeFontScheme:    handleSetThemeFontScheme,
 		OpSetThemeColorScheme:   handleSetThemeColorScheme,
 		OpGetThemeInventory:     handleGetThemeInventory,
+		OpGetThemeColorScheme:   handleGetThemeColorScheme,
 	}
 }
 

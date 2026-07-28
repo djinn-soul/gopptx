@@ -155,7 +155,7 @@ func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, has
 	if err := e.rewriteSlideVisibilityParts(out); err != nil {
 		return nil, err
 	}
-	e.filterRootCustomXMLRelationships(out)
+	e.rewriteRootRelationships(out)
 
 	// Check for commentAuthors existence and relationship injection
 	hasCommentAuthors := e.parts.Has("ppt/commentAuthors.xml")
@@ -185,6 +185,7 @@ func (e *PresentationEditor) collectUpdatedParts(vbaProject *vba.VBAProject, has
 	out[common.PresentationXMLPath] = manifestParts.presentationXML
 	out[common.PresentationRelPath] = manifestParts.presentationRelsXML
 	out[common.CorePropsPath] = manifestParts.corePropsXML
+	out[common.AppPropsPath] = manifestParts.appPropsXML
 	out[common.ContentTypesPath] = manifestParts.contentTypesXML
 
 	e.writeOptionalPresentationParts(
