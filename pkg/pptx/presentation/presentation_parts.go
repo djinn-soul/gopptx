@@ -23,7 +23,7 @@ func addLayoutFiles(pw *pptxxml.PackageWriter, masterCount int) {
 		for i, xml := range layoutXMLs {
 			idx := (masterNum-1)*len(layoutXMLs) + (i + 1)
 			name := fmt.Sprintf("slideLayout%d.xml", idx)
-			pw.AddPart(fmt.Sprintf("ppt/slideLayouts/%s", name), xml)
+			pw.AddPart("ppt/slideLayouts/"+name, xml)
 			pw.AddPart(fmt.Sprintf("ppt/slideLayouts/_rels/%s.rels", name), pptxxml.SlideLayoutRelationships(masterNum))
 		}
 	}

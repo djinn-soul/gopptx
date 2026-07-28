@@ -8,6 +8,7 @@ import (
 )
 
 func TestVBAModuleType_String(t *testing.T) {
+	//nolint:govet // Field order keeps positional test cases readable; layout is irrelevant here.
 	tests := []struct {
 		name string
 		t    VBAModuleType

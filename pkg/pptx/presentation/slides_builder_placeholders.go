@@ -31,7 +31,7 @@ func (b *slidePartBuilder) mapImages(images []shapes.Image) ([]pptxxml.ImageRef,
 			IsDecorative: img.IsDecorative,
 			Crop:         mapToXMLCrop(img.Crop),
 		})
-		b.targets = append(b.targets, fmt.Sprintf("../media/%s", mediaName))
+		b.targets = append(b.targets, "../media/"+mediaName)
 	}
 	return refs, nil
 }
@@ -122,7 +122,7 @@ func (b *slidePartBuilder) applyPlaceholderImage(spec *pptxxml.PlaceholderOverri
 		Reflection: o.Image.Reflection,
 		Crop:       mapToXMLCrop(o.Image.Crop),
 	}
-	b.targets = append(b.targets, fmt.Sprintf("../media/%s", mediaName))
+	b.targets = append(b.targets, "../media/"+mediaName)
 }
 
 func (b *slidePartBuilder) applyPlaceholderTable(

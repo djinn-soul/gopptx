@@ -1,7 +1,6 @@
 package mermaid
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -116,7 +115,7 @@ func createPlaceholder(code string, theme Theme) DiagramElements {
 		x, y, cx, cy,
 	).WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
 		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, styling.Emu(12700))).
-		WithText(fmt.Sprintf("Diagram: %s", firstLine))
+		WithText("Diagram: " + firstLine)
 
 	return DiagramElements{
 		Shapes:  []shapes.Shape{placeholder},

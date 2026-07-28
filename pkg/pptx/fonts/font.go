@@ -67,6 +67,8 @@ const (
 
 // EmbeddedFont represents a single font embedded into the presentation.
 // The Data field should contain the obfuscated .fntdata bytes ready to be written.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type EmbeddedFont struct {
 	Typeface       string
 	Style          FontStyle

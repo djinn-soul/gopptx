@@ -11,11 +11,11 @@ import (
 
 func TestAdaptedReaderAt(t *testing.T) {
 	type operation struct {
+		expectedErr     error
+		expected        []byte
 		offset          int64
 		count           int
-		expected        []byte
 		expectedWritten int
-		expectedErr     error
 	}
 
 	type tcase struct {

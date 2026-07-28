@@ -47,6 +47,8 @@ type CustomXMLPart struct {
 }
 
 // Metadata describes summary information for a PPTX package.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Metadata struct {
 	Title          string
 	Subject        string
@@ -73,6 +75,8 @@ const (
 )
 
 // ShowSettings controls how a presentation is shown (maps to p:showPr in presentation.xml).
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type ShowSettings struct {
 	Loop           bool     // Loop presentation continuously when finished
 	Mode           ShowMode // Present (default), Browse, or Kiosk
@@ -82,6 +86,8 @@ type ShowSettings struct {
 }
 
 // Protection defines write-protection and suggested read-only settings.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Protection struct {
 	ModifyPassword    string
 	MarkAsFinal       bool

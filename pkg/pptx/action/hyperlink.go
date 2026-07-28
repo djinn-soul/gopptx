@@ -41,6 +41,8 @@ const (
 )
 
 // HyperlinkAction defines the target of a hyperlink.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type HyperlinkAction struct {
 	Type         HyperlinkActionType
 	URL          string // For URL type
@@ -52,6 +54,8 @@ type HyperlinkAction struct {
 }
 
 // Hyperlink represents a clickable hyperlink on a shape or text run.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Hyperlink struct {
 	Action         HyperlinkAction
 	RawAction      string
