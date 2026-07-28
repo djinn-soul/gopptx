@@ -8,6 +8,20 @@ except ImportError:  # pragma: no cover
     from typing_extensions import NotRequired, TypedDict
 
 
+class ChartDataSource(TypedDict, total=False):
+    """Where a chart's numbers come from.
+
+    ``kind`` is ``"embedded"``, ``"external"`` or ``"none"``.
+    """
+
+    chart_part: str
+    kind: str
+    rel_id: str
+    target: str
+    part_path: str
+    auto_update: bool
+
+
 class ChartSelector(TypedDict, total=False):
     """Chart selector for identifying charts."""
 

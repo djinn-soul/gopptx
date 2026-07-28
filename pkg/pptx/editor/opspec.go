@@ -12,6 +12,8 @@ const (
 	OpDuplicateSlide          = "duplicate_slide"
 	OpGetMetadata             = "get_metadata"
 	OpUpdateChartData         = "update_chart_data"
+	OpUpdateChartCachedValues = "update_chart_cached_values"
+	OpGetChartDataSource      = "get_chart_data_source"
 	OpUpdateChartDataBatch    = "update_chart_data_batch"
 	OpUpdateChartFormatting   = "update_chart_formatting"
 	OpGetChartState           = "get_chart_state"
@@ -203,6 +205,8 @@ func supportedSlideAndMetaOps() []string {
 		OpAddSlideLayout,
 		OpRemoveSlideLayout,
 		OpUpdateChartData,
+		OpUpdateChartCachedValues,
+		OpGetChartDataSource,
 		OpUpdateChartDataBatch,
 		OpUpdateChartFormatting,
 		OpGetChartState,

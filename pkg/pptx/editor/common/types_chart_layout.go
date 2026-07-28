@@ -244,3 +244,21 @@ type SlideMasterCloneResult struct {
 	ThemePart  string
 	LayoutMap  map[string]string
 }
+
+// ChartDataSource says where a chart's numbers come from: an embedded workbook,
+// an external (linked) one, or nothing at all. A caller needs this to tell a
+// linked chart from an embedded one before choosing how to update it
+// (upstream #115).
+type ChartDataSource struct {
+	ChartPart string `json:"chart_part"`
+	// Kind is "embedded", "external" or "none".
+	Kind  string `json:"kind"`
+	RelID string `json:"rel_id,omitempty"`
+	// Target is the raw relationship target; PartPath is that target resolved
+	// to a package part, and is empty for an external link.
+	Target   string `json:"target,omitempty"`
+	PartPath string `json:"part_path,omitempty"`
+	// AutoUpdate mirrors <c:autoUpdate>, which asks PowerPoint to refresh the
+	// link when the deck opens.
+	AutoUpdate *bool `json:"auto_update,omitempty"`
+}

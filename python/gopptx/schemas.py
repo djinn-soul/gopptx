@@ -68,6 +68,7 @@ GrayscalePlaceholderRef = _schemas_shape_types.GrayscalePlaceholderRef
 GrayscaleScope = _schemas_shape_types.GrayscaleScope
 
 ChartDataUpdate = _schemas_chart_layout.ChartDataUpdate
+ChartDataSource = _schemas_chart_layout.ChartDataSource
 ChartAxisState = _schemas_chart_layout.ChartAxisState
 ChartState = _schemas_chart_layout.ChartState
 ChartFormatUpdate = _schemas_chart_layout.ChartFormatUpdate
