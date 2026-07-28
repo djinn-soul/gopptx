@@ -738,3 +738,8 @@ scheme_slot  # unused variable (python\gopptx\schemas_shape_types.py EffectiveCo
 font_typeface  # unused variable (python\gopptx\schemas_shape_types.py EffectiveShapeStyle)
 _.effective  # unused property (python\gopptx\slide\shapes\shape_style_proxy.py)
 ShapeStyleProxy  # public alias (python\gopptx\slide\shapes\shape_style_proxy.py)
+
+# Media listing and extraction (upstream #1049).
+_.list_slide_media  # unused method (python\gopptx\presentation\shapes\shape_media_mixin.py)
+_.save_media  # unused method (python\gopptx\presentation\shapes\shape_media_mixin.py)
+size_bytes  # unused variable (python\gopptx\schemas_shape_types.py SlideMediaRef)

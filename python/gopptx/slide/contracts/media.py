@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Protocol
 
 if TYPE_CHECKING:
-    from ...schemas import ImageMetadata
+    from ...schemas import ImageMetadata, SlideMediaRef
 
 
 class MediaOperationsProtocol(Protocol):
@@ -24,6 +24,14 @@ class MediaOperationsProtocol(Protocol):
         ...
 
     def get_image_metadata(self, slide_index: int, shape_id: int) -> ImageMetadata:
+        """Protocol member."""
+        ...
+
+    def list_slide_media(self, slide_index: int) -> list[SlideMediaRef]:
+        """Protocol member."""
+        ...
+
+    def extract_media(self, part_path: str) -> bytes:
         """Protocol member."""
         ...
 

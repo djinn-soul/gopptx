@@ -149,6 +149,19 @@ class SlideImageRef(TypedDict):
     Target: str
 
 
+class SlideMediaRef(TypedDict, total=False):
+    """Reference to one media relationship on a slide: image, audio or video."""
+
+    index: int
+    rel_id: str
+    kind: str
+    target: str
+    part_path: str
+    content_type: str
+    size_bytes: int
+    external: bool
+
+
 class ImageCrop(TypedDict, total=False):
     """Cropping offsets (0.0 to 1.0)."""
 
