@@ -43,15 +43,16 @@ const expectedSingleGroupMatch = 2
 func ExtractChartState(chartXML []byte) common.ChartState {
 	xml := string(chartXML)
 	state := common.ChartState{
-		CategoryAx: buildAxisState(xml, []string{"catAx", "dateAx"}),
-		ValueAx:    buildAxisState(xml, []string{"valAx"}),
-		Series:     parseSeriesState(xml),
-		Scene3D:    parseScene3DState(xml),
-		DataLabels: parseDataLabelState(xml),
-		Trendlines: parseTrendlineState(xml),
-		ErrorBars:  parseErrorBarState(xml),
-		DataPoints: parseDataPointState(xml),
-		DataTable:  parseDataTableState(xml),
+		CategoryAx:   buildAxisState(xml, []string{"catAx", "dateAx"}),
+		ValueAx:      buildAxisState(xml, []string{"valAx"}),
+		Series:       parseSeriesState(xml),
+		Scene3D:      parseScene3DState(xml),
+		DataLabels:   parseDataLabelState(xml),
+		Trendlines:   parseTrendlineState(xml),
+		ErrorBars:    parseErrorBarState(xml),
+		DataPoints:   parseDataPointState(xml),
+		DataTable:    parseDataTableState(xml),
+		PlotAreaLine: parsePlotAreaLine(xml),
 		// Per-label reads: a point's number format lives on its c:dLbl, not on
 		// the chart-wide c:dLbls.
 		DataLabelPoints: parseDataLabelPointState(xml),

@@ -178,7 +178,7 @@ func TestPatchChartFormatting_DataLabelBox(t *testing.T) {
 		ShowDataLabels:     &show,
 		DataLabelFillColor: stringPtr("FFF2CC"),
 		DataLabelBorder: &common.ChartLineFormat{
-			Color: stringPtr("BF8F00"), WidthEMU: intPtr(9525), Dash: stringPtr("dash"),
+			Color: stringPtr("BF8F00"), WidthEMU: intPtr(9525), Dash: stringPtr(lineDashPresetDash),
 		},
 	})
 	mustContain(t, xml, `<c:spPr><a:solidFill><a:srgbClr val="FFF2CC"/></a:solidFill>`+

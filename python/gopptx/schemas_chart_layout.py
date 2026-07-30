@@ -95,6 +95,7 @@ class ChartFormatUpdate(TypedDict, total=False):
     clear_data_point_series: list[int]
     series_invert_if_negative: list[ChartSeriesInvertSpec]
     data_table: ChartDataTableSpec
+    plot_area_line: ChartLineFormatSpec
     plot_visible_only: bool
     show_legend: bool
     legend_position: str
@@ -212,6 +213,7 @@ class ChartState(TypedDict, total=False):
     data_points: NotRequired[list[ChartDataPointSpec]]
     data_label_points: NotRequired[list[ChartDataLabelPointSpec]]
     data_table: NotRequired[ChartDataTableSpec]
+    plot_area_line: NotRequired[ChartLineFormatSpec]
     series_formats: NotRequired[list[ChartSeriesFormatSpec]]
     series_lines: NotRequired[ChartSeriesLinesSpec]
 

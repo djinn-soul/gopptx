@@ -10,6 +10,8 @@ import (
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
+const lineDashPresetDash = "dash"
+
 // Shared c:spPr line handling for the chart elements whose only formatting is a
 // line: gridlines, series lines, and the outline of a data label.
 

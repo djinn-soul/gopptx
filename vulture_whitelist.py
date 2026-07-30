@@ -797,6 +797,10 @@ transparent_color
 _.make_color_transparent
 _.iter_leaf_shapes
 _.dash_style
+
+# Issue #298 (Chart.plot_area.format.line)
+plot_area_line
+_.plot_area
 SOLID  # unused variable (python\gopptx\constants.py LineDashStyle)
 DASH  # unused variable (python\gopptx\constants.py LineDashStyle)
 DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
