@@ -25,6 +25,16 @@ func (e *PresentationEditor) enrichParsedShapeRelationships(partPath string, par
 		slideIndexByPart[slide.Part] = idx
 	}
 
+	enrichParsedShapeRelationshipsFromMaps(parsed, partPath, relsByID, slideIndexByPart)
+	return nil
+}
+
+func enrichParsedShapeRelationshipsFromMaps(
+	parsed []parsedShape,
+	partPath string,
+	relsByID map[string]common.EditorRelationship,
+	slideIndexByPart map[string]int,
+) {
 	for idx := range parsed {
 		parsed[idx].ClickAction = resolveReaderHyperlink(
 			partPath,
@@ -40,8 +50,13 @@ func (e *PresentationEditor) enrichParsedShapeRelationships(partPath string, par
 		)
 		applyResolvedRunActions(&parsed[idx], partPath, relsByID, slideIndexByPart)
 		resolvePictureFillPart(&parsed[idx], partPath, relsByID)
+		enrichParsedShapeRelationshipsFromMaps(
+			parsed[idx].Shapes,
+			partPath,
+			relsByID,
+			slideIndexByPart,
+		)
 	}
-	return nil
 }
 
 // resolvePictureFillPart turns the r:embed of an <a:blipFill> shape fill into a

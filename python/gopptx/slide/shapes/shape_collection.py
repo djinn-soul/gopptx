@@ -74,6 +74,14 @@ class ShapeCollection:
         for shape_id in self._shape_ids():
             yield self._slide.shape(shape_id)
 
+    def iter_leaf_shapes(self) -> Iterator[ShapeProxy]:
+        """Yield non-group shapes recursively in document order (Issue #435)."""
+        for shape in self:
+            if shape.shape_type == "grpSp":
+                yield from _iter_group_leaves(shape)
+            else:
+                yield shape
+
     def add(self, builder: ShapeBuilder) -> ShapeProxy:
         """Add a shape from a ShapeBuilder and return its proxy."""
         shape_id = self._slide.add_shape(
@@ -158,3 +166,12 @@ class ShapeCollection:
         for shape_id in shape_ids:
             self.remove(shape_id)
         return len(shape_ids)
+
+
+def _iter_group_leaves(group: ShapeProxy) -> Iterator[ShapeProxy]:
+    for child_host in group.shapes:
+        child = cast("ShapeProxy", child_host)
+        if child.shape_type == "grpSp":
+            yield from _iter_group_leaves(child)
+        else:
+            yield child

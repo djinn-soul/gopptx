@@ -78,14 +78,9 @@ class ShapeProxyFeatureMixin(ShapeProxyExtraMixin):
     def shapes(self: _ShapeFeatureHost) -> list[_ShapeFeatureHost]:
         """Return child proxies when this is a group shape."""
         children = self.shape_record().get("Shapes", [])
-        if not isinstance(children, list):
-            return []
         proxies: list[_ShapeFeatureHost] = []
-        for child in cast("list[object]", children):
-            if not isinstance(child, dict):
-                continue
-            payload = cast("dict[str, object]", child)
-            shape_id = payload.get("ID", payload.get("id"))
+        for child in children:
+            shape_id = child.get("ID", child.get("id"))
             if shape_id is not None:
                 proxies.append(self.slide.shape(int(str(shape_id))))
         return proxies
