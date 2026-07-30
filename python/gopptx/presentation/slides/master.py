@@ -28,6 +28,8 @@ class SlideLayout:
         self._info = info
         self._part = str(info.get("part", info.get("Part", "")))
         self._name = str(info.get("name", info.get("Name", "")))
+        raw_id = info.get("layout_id", info.get("LayoutID", 0))
+        self._layout_id = int(raw_id) if isinstance(raw_id, int) else 0
 
     @property
     def part(self) -> str:
@@ -43,6 +45,15 @@ class SlideLayout:
     def name(self) -> str:
         """The name of this layout."""
         return self._name
+
+    @property
+    def slide_layout_id(self) -> int:
+        """The p:sldLayoutId/@id the master lists this layout under.
+
+        Zero when the layout is not referenced from a master's sldLayoutIdLst
+        (Issue #269).
+        """
+        return self._layout_id
 
     @property
     def slide_master(self) -> SlideMaster:
@@ -108,6 +119,15 @@ class SlideLayouts:
                 return layout
         return None
 
+    def get(
+        self, slide_layout_id: int, default: SlideLayout | None = None
+    ) -> SlideLayout | None:
+        """Return the layout with this sldLayoutId, or ``default`` (Issue #269)."""
+        for layout in self._layouts:
+            if layout.slide_layout_id == slide_layout_id:
+                return layout
+        return default
+
 
 class SlideMaster:
     """Represents a slide master in the presentation."""
@@ -149,6 +169,16 @@ class SlideMaster:
                 self, cast("list[SlideLayoutInfo]", layouts)
             )
         return self._slide_layouts
+
+    def get_layout(
+        self, slide_layout_id: int, default: SlideLayout | None = None
+    ) -> SlideLayout | None:
+        """Return this master's layout with the given sldLayoutId.
+
+        Mirrors python-pptx's SlideMaster.get_layout: returns ``default`` rather
+        than raising when no layout carries that id (Issue #269).
+        """
+        return self.slide_layouts.get(slide_layout_id, default)
 
     @property
     def shapes(self) -> list[str]:

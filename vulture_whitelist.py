@@ -777,3 +777,9 @@ _.hidden
 _.is_hidden
 fore_color
 replace
+
+# Issue #96 (shapes.clear) and #269 (SlideMaster.get_layout)
+_.clear
+_.get_layout
+_.slide_layout_id
+LayoutID  # unused variable (python\gopptx\schemas_chart_layout.py SlideLayoutInfo)

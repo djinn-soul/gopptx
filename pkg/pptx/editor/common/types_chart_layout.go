@@ -248,9 +248,13 @@ type SlideChartRef struct {
 
 // SlideLayoutInfo describes one available slide layout part.
 type SlideLayoutInfo struct {
-	Part         string
-	Name         string
-	MasterPart   string
+	Part       string
+	Name       string
+	MasterPart string
+	// LayoutID is the p:sldLayoutId/@id the master lists this layout under, which
+	// is what python-pptx's SlideMaster.get_layout(slide_layout_id) keys on. Zero
+	// when the layout is not referenced from a master's sldLayoutIdLst.
+	LayoutID     int
 	Shapes       []string
 	Placeholders []PlaceholderInfo
 }
