@@ -35,14 +35,39 @@ class ShapeCollection:
         """Return shape count."""
         return len(self._shape_ids())
 
-    def __getitem__(self, index: int) -> ShapeProxy:
-        """Return shape proxy at index."""
+    def __getitem__(self, index: int | str) -> ShapeProxy:
+        """Return the shape at an index, or the first shape with that name.
+
+        A string key raises KeyError when nothing matches, so a typo is not
+        mistaken for an empty slide (Issue #309).
+        """
+        if isinstance(index, str):
+            found = self.get_by_name(index)
+            if found is None:
+                msg = f"no shape named {index!r} on slide {self._slide.index}"
+                raise KeyError(msg)
+            return found
         ids = self._shape_ids()
         if index < 0:
             index += len(ids)
         if index < 0 or index >= len(ids):
             raise IndexError("shape index out of range")
         return self._slide.shape(ids[index])
+
+    def get_by_name(self, name: str) -> ShapeProxy | None:
+        """Return the first shape with this name, or None (Issue #309).
+
+        Shape names are not unique in OOXML, so the first match in document
+        order wins, matching how PowerPoint's selection pane resolves them.
+        """
+        for shape in self:
+            if shape.name == name:
+                return shape
+        return None
+
+    def names(self) -> list[str]:
+        """Return every shape name on the slide, in document order (Issue #309)."""
+        return [shape.name for shape in self]
 
     def __iter__(self) -> Iterator[ShapeProxy]:
         """Iterate shape proxies."""
