@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
+from .background_inheritance_mixin import SlideBackgroundInheritanceMixin
 from .chart import Chart, ChartCollection
 from .chart.chart_mixin import SlideChartMixin
 from .master_shapes_mixin import SlideMasterShapesMixin
@@ -31,6 +32,7 @@ class Slide(
     SlideTableMixin,
     SlideChartMixin,
     SlidePlaceholderMixin,
+    SlideBackgroundInheritanceMixin,
     SlideMasterShapesMixin,
     SlideBase,
     SlideTextCacheMixin,
