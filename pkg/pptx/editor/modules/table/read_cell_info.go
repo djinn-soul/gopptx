@@ -1,6 +1,9 @@
 package table
 
-import "bytes"
+import (
+	"bytes"
+	"strconv"
+)
 
 func buildTableCellInfo(rowIndex, colIndex int, cell CellXML) map[string]any {
 	rowSpan := normalizeSpan(cell.RowSpan)
@@ -100,7 +103,9 @@ func lineToBorderInfo(line *linePropertiesXML) map[string]any {
 	case line.Miter != nil:
 		border["join"] = borderJoinMiter
 		if line.Miter.Lim != "" {
-			border["miter_limit"] = line.Miter.Lim
+			if limit, err := strconv.Atoi(line.Miter.Lim); err == nil {
+				border["miter_limit"] = limit
+			}
 		}
 	}
 	if len(border) == 0 {

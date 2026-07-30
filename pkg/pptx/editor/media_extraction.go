@@ -40,8 +40,12 @@ func (e *PresentationEditor) ListSlideMedia(slideIndex int) ([]common.SlideMedia
 	}
 
 	out := make([]common.SlideMediaRef, 0)
+	pairedKinds := specificMediaKindsByTarget(rels)
 	for _, rel := range rels {
 		kind, ok := mediaKindForRelType(rel.Type)
+		if rel.Type == common.RelTypeMedia {
+			kind, ok = e.genericMediaKind(slidePart, rel, pairedKinds)
+		}
 		if !ok {
 			continue
 		}
@@ -96,7 +100,52 @@ func mediaKindForRelType(relType string) (string, bool) {
 		return MediaKindImage, true
 	case common.RelTypeAudio:
 		return MediaKindAudio, true
-	case common.RelTypeVideo, common.RelTypeMedia:
+	case common.RelTypeVideo:
+		return MediaKindVideo, true
+	default:
+		return "", false
+	}
+}
+
+func specificMediaKindsByTarget(
+	rels []common.EditorRelationship,
+) map[string]string {
+	kinds := make(map[string]string)
+	for _, rel := range rels {
+		kind, ok := mediaKindForRelType(rel.Type)
+		if ok && (kind == MediaKindAudio || kind == MediaKindVideo) {
+			kinds[rel.Target] = kind
+		}
+	}
+	return kinds
+}
+
+func (e *PresentationEditor) genericMediaKind(
+	slidePart string,
+	rel common.EditorRelationship,
+	pairedKinds map[string]string,
+) (string, bool) {
+	if kind := pairedKinds[rel.Target]; kind != "" {
+		return kind, true
+	}
+
+	targetPath := rel.Target
+	if !strings.EqualFold(rel.TargetMode, "External") {
+		targetPath = common.ResolveRelationshipTarget(slidePart, rel.Target)
+		if contentType := strings.ToLower(e.declaredContentType(targetPath)); contentType != "" {
+			switch {
+			case strings.HasPrefix(contentType, "audio/"):
+				return MediaKindAudio, true
+			case strings.HasPrefix(contentType, "video/"):
+				return MediaKindVideo, true
+			}
+		}
+	}
+	contentType := strings.ToLower(mediaContentTypeForExtension(path.Ext(targetPath)))
+	switch {
+	case strings.HasPrefix(contentType, "audio/"):
+		return MediaKindAudio, true
+	case strings.HasPrefix(contentType, "video/"):
 		return MediaKindVideo, true
 	default:
 		return "", false

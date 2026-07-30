@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from ..chart.model import Chart
 from ..text.text_run import RunHyperlink
 from .picture_image import ImagePartProxy
+from .shape_proxy_extra_features import ShapeProxyExtraMixin
 
 if TYPE_CHECKING:
     from ...schemas import Shape, ShapeUpdate, SlideChartRef
@@ -34,6 +35,12 @@ class _ShapeFeatureHost(Protocol):
     @property
     def id(self) -> int: ...
 
+    @property
+    def flip_horizontal(self) -> bool: ...
+
+    @property
+    def flip_vertical(self) -> bool: ...
+
     def shape_record(self) -> Shape:
         """Return the current shape payload."""
         ...
@@ -43,7 +50,7 @@ class _ShapeFeatureHost(Protocol):
         ...
 
 
-class ShapeProxyFeatureMixin:
+class ShapeProxyFeatureMixin(ShapeProxyExtraMixin):
     """Features kept separate from the core shape and collection facades."""
 
     @property
@@ -167,6 +174,24 @@ class ShapeProxyFeatureMixin:
 
     @flip_vertical.setter
     def flip_vertical(self: _ShapeFeatureHost, value: bool) -> None:
+        self.apply_update(cast("ShapeUpdate", {"flip_v": bool(value)}))
+
+    @property
+    def flip_x(self: _ShapeFeatureHost) -> bool:
+        """Alias for flip_horizontal (Issue #547)."""
+        return self.flip_horizontal
+
+    @flip_x.setter
+    def flip_x(self: _ShapeFeatureHost, value: bool) -> None:
+        self.apply_update(cast("ShapeUpdate", {"flip_h": bool(value)}))
+
+    @property
+    def flip_y(self: _ShapeFeatureHost) -> bool:
+        """Alias for flip_vertical (Issue #547)."""
+        return self.flip_vertical
+
+    @flip_y.setter
+    def flip_y(self: _ShapeFeatureHost, value: bool) -> None:
         self.apply_update(cast("ShapeUpdate", {"flip_v": bool(value)}))
 
     def begin_connect(

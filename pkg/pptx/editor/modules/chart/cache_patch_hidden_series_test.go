@@ -33,7 +33,7 @@ func TestPatchChartDataCacheSkipsHiddenSeries(t *testing.T) {
 		},
 	}
 
-	out, err := PatchChartDataCache([]byte(twoSeriesChartXML), KindCategory, req)
+	out, err := PatchChartDataCache([]byte(twoSeriesChartXML), KindCategory, req, CachePatchOptions{})
 	if err != nil {
 		t.Fatalf("patch: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestPatchChartDataCacheCountsPlottedSeriesOnly(t *testing.T) {
 			{Name: seriesName("hidden"), Values: []float64{5, 6}, Hidden: true},
 		},
 	}
-	_, err := PatchChartDataCache([]byte(twoSeriesChartXML), KindCategory, req)
+	_, err := PatchChartDataCache([]byte(twoSeriesChartXML), KindCategory, req, CachePatchOptions{})
 	if err == nil {
 		t.Fatal("expected a mismatch error: the chart draws two series, the payload plots one")
 	}

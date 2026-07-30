@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, BinaryIO, Protocol
 
 from typing_extensions import override
 
+from ...presentation.shapes.image_inspection import infer_image_format
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -19,6 +21,12 @@ class _ImagePresentationProtocol(Protocol):
         self, slide_index: int, shape_id: int
     ) -> Mapping[str, object]:
         """Return image metadata."""
+        ...
+
+    def swap_image_by_rel_id(
+        self, slide_index: int, rel_id: str, data: bytes, img_format: str
+    ) -> None:
+        """Replace the image behind a relationship ID."""
         ...
 
 
@@ -111,6 +119,32 @@ class ImagePartProxy:
         path = pathlib.Path(file_or_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(blob)
+
+    def replace(self, image_path_or_bytes: str | bytes | os.PathLike[str]) -> None:
+        """Swap the image asset behind this picture shape (Issue #1142).
+
+        Args:
+            image_path_or_bytes: Raw image bytes, or a path to an image file.
+
+        Raises:
+            ValueError: The shape's image relationship could not be resolved.
+        """
+        if isinstance(image_path_or_bytes, (bytes, bytearray)):
+            data = bytes(image_path_or_bytes)
+        else:
+            data = pathlib.Path(os.fspath(image_path_or_bytes)).read_bytes()
+        # Sniff the bytes rather than trust a file extension: the bridge keys
+        # the content type off this string, and a mislabelled part is what
+        # PowerPoint refuses to open.
+        img_format = infer_image_format(data)
+
+        rel_id = str(self._get_meta().get("rel_id", ""))
+        if not rel_id:
+            raise ValueError("shape has no resolvable image relationship to replace")
+
+        slide = self._shape.slide
+        slide.presentation.swap_image_by_rel_id(slide.index, rel_id, data, img_format)
+        self._meta_cache = None
 
     @override
     def __repr__(self) -> str:

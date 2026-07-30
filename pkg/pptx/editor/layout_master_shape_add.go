@@ -1,11 +1,14 @@
 package editor
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
+
+const layoutPartKind = "layout"
 
 // AddLayoutShape appends an autoshape to a slide layout's shape tree and
 // returns its new object ID.
@@ -18,7 +21,7 @@ func (e *PresentationEditor) AddLayoutShape(
 	shapeType string,
 	x, y, w, h float64,
 ) (int, error) {
-	return e.addShapeToPart(layoutPart, "layout", shapeType, x, y, w, h)
+	return e.addShapeToPart(layoutPart, layoutPartKind, shapeType, x, y, w, h)
 }
 
 // AddLayoutTextBox appends a text box to a slide layout's shape tree.
@@ -27,7 +30,7 @@ func (e *PresentationEditor) AddLayoutTextBox(
 	text string,
 	x, y, w, h float64,
 ) (int, error) {
-	return e.addTextBoxToPart(layoutPart, "layout", text, x, y, w, h)
+	return e.addTextBoxToPart(layoutPart, layoutPartKind, text, x, y, w, h)
 }
 
 // AddMasterShape appends an autoshape to a slide master's shape tree.
@@ -54,6 +57,9 @@ func (e *PresentationEditor) addShapeToPart(
 	shapeType string,
 	x, y, w, h float64,
 ) (int, error) {
+	if err := ValidateLayoutShapeExtents(w, h); err != nil {
+		return 0, err
+	}
 	content, newID, err := e.prepareShapeTreePart(partPath, kind)
 	if err != nil {
 		return 0, err
@@ -81,6 +87,9 @@ func (e *PresentationEditor) addTextBoxToPart(
 	text string,
 	x, y, w, h float64,
 ) (int, error) {
+	if err := ValidateLayoutShapeExtents(w, h); err != nil {
+		return 0, err
+	}
 	content, newID, err := e.prepareShapeTreePart(partPath, kind)
 	if err != nil {
 		return 0, err
@@ -100,6 +109,12 @@ func (e *PresentationEditor) addTextBoxToPart(
 	if err != nil {
 		return 0, err
 	}
+	shapeXML = bytes.Replace(
+		shapeXML,
+		[]byte("<p:cNvSpPr/>"),
+		[]byte(`<p:cNvSpPr txBox="1"/>`),
+		1,
+	)
 	return e.appendShapeToPart(partPath, content, shapeXML, newID)
 }
 
@@ -142,7 +157,7 @@ func (e *PresentationEditor) appendShapeToPart(
 func (e *PresentationEditor) isShapeTreePart(partPath string, kind string) bool {
 	var known []common.SlideLayoutInfo
 	switch kind {
-	case "layout":
+	case layoutPartKind:
 		layouts, err := e.ListSlideLayouts()
 		if err != nil {
 			return false

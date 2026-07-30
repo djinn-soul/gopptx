@@ -12,6 +12,7 @@ import (
 // paragraphPattern bounds one <a:p> block. DrawingML paragraphs do not nest, so
 // a non-greedy match is exact.
 var paragraphPattern = regexp.MustCompile(`(?s)<a:p(?:\s[^>]*)?>.*?</a:p>`)
+var paragraphRunPattern = regexp.MustCompile(`(?s)<a:r(?:\s[^>]*)?>.*?</a:r>`)
 
 // replaceTextRuns replaces findText across the text runs of each paragraph.
 //
@@ -44,28 +45,64 @@ func replaceTextRuns(content []byte, findText, replaceText string) ([]byte, int)
 	return buf.Bytes(), total
 }
 
-// replaceInParagraph joins the paragraph's run texts, replaces in the joined
-// string, then writes each run's share back.
+// replaceInParagraph replaces across adjacent a:r elements. A break, field, or
+// any other paragraph child ends the searchable text segment, matching what a
+// user sees as a boundary in PowerPoint.
 func replaceInParagraph(paragraph []byte, findText, replaceText string) ([]byte, int) {
-	runs := textRunPattern.FindAllSubmatchIndex(paragraph, -1)
-	if len(runs) == 0 {
+	runBlocks := paragraphRunPattern.FindAllIndex(paragraph, -1)
+	if len(runBlocks) == 0 {
 		return paragraph, 0
 	}
 
+	var buf bytes.Buffer
+	buf.Grow(len(paragraph))
+	total, pos := 0, 0
+	for start := 0; start < len(runBlocks); {
+		end := start + 1
+		for end < len(runBlocks) &&
+			len(bytes.TrimSpace(paragraph[runBlocks[end-1][1]:runBlocks[end][0]])) == 0 {
+			end++
+		}
+
+		segmentStart := runBlocks[start][0]
+		segmentEnd := runBlocks[end-1][1]
+		buf.Write(paragraph[pos:segmentStart])
+		updated, count := replaceInTextRegion(
+			paragraph[segmentStart:segmentEnd],
+			findText,
+			replaceText,
+		)
+		buf.Write(updated)
+		total += count
+		pos = segmentEnd
+		start = end
+	}
+	buf.Write(paragraph[pos:])
+	if total == 0 {
+		return paragraph, 0
+	}
+	return buf.Bytes(), total
+}
+
+func replaceInTextRegion(region []byte, findText, replaceText string) ([]byte, int) {
+	runs := textRunPattern.FindAllSubmatchIndex(region, -1)
+	if len(runs) == 0 {
+		return region, 0
+	}
 	texts := make([]string, len(runs))
 	starts := make([]int, len(runs))
 	var joined strings.Builder
 	for i, run := range runs {
-		texts[i] = html.UnescapeString(string(paragraph[run[4]:run[5]]))
+		texts[i] = html.UnescapeString(string(region[run[4]:run[5]]))
 		starts[i] = joined.Len()
 		joined.WriteString(texts[i])
 	}
 	if !strings.Contains(joined.String(), findText) {
-		return paragraph, 0
+		return region, 0
 	}
 
 	updated, count := redistributeReplacements(joined.String(), starts, findText, replaceText)
-	return rewriteRunTexts(paragraph, runs, updated), count
+	return rewriteRunTexts(region, runs, updated), count
 }
 
 // redistributeReplacements rewrites joined text run by run. Unmatched

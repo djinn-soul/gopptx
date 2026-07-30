@@ -140,6 +140,10 @@ class ImageMetadata(TypedDict):
     height: int
     format: str
     hash: NotRequired[str]
+    content_type: NotRequired[str]
+    # Where the bytes live, so a caller can address the same image again.
+    rel_id: NotRequired[str]
+    part_path: NotRequired[str]
 
 
 class SlideImageRef(TypedDict):

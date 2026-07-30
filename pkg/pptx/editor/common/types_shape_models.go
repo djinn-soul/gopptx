@@ -17,8 +17,9 @@ type Shape struct {
 	// FlipH and FlipV mirror the <a:xfrm> flip attributes. They are set for
 	// every shape kind, not just connectors, so a value written through
 	// ShapeUpdate can be read back.
-	FlipH bool `json:"flip_h,omitempty"`
-	FlipV bool `json:"flip_v,omitempty"`
+	FlipH  bool `json:"flip_h,omitempty"`
+	FlipV  bool `json:"flip_v,omitempty"`
+	Hidden bool `json:"hidden,omitempty"`
 
 	PlaceholderIndex *int   `json:"PlaceholderIndex,omitempty"`
 	PlaceholderType  string `json:"PlaceholderType,omitempty"`
@@ -231,6 +232,11 @@ type ImageMetadata struct {
 	ContentType string `json:"content_type,omitempty"`
 	Hash        string `json:"hash,omitempty"`
 	Data        []byte `json:"data,omitempty"`
+	// RelID and PartPath identify where the bytes live, so a caller holding
+	// only a shape can address the same image again — to swap it, for
+	// instance — without re-walking the slide relationships itself.
+	RelID    string `json:"rel_id,omitempty"`
+	PartPath string `json:"part_path,omitempty"`
 }
 
 type ImageCrop struct {
@@ -259,6 +265,7 @@ type ShapeUpdate struct {
 	Rotation    *float64              `json:"rotation,omitempty"`
 	FlipH       *bool                 `json:"flip_h,omitempty"`
 	FlipV       *bool                 `json:"flip_v,omitempty"`
+	Hidden      *bool                 `json:"hidden,omitempty"`
 	X           *int                  `json:"x,omitempty"`
 	Y           *int                  `json:"y,omitempty"`
 	W           *int                  `json:"w,omitempty"`

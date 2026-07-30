@@ -22,6 +22,7 @@ type ParsedShapeProperties struct {
 	Rotation   *float64
 	FlipH      bool
 	FlipV      bool
+	Hidden     bool
 	Connector  *common.ConnectorInfo
 	X, Y       int
 	W, H       int
