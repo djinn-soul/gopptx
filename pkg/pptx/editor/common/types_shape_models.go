@@ -262,19 +262,22 @@ type ShapeUpdate struct {
 	ClickAction *Hyperlink            `json:"click_action,omitempty"`
 	HoverAction *Hyperlink            `json:"hover_action,omitempty"`
 	Crop        *ImageCrop            `json:"crop,omitempty"`
-	Rotation    *float64              `json:"rotation,omitempty"`
-	FlipH       *bool                 `json:"flip_h,omitempty"`
-	FlipV       *bool                 `json:"flip_v,omitempty"`
-	Hidden      *bool                 `json:"hidden,omitempty"`
-	X           *int                  `json:"x,omitempty"`
-	Y           *int                  `json:"y,omitempty"`
-	W           *int                  `json:"w,omitempty"`
-	H           *int                  `json:"h,omitempty"`
-	Description *string               `json:"description,omitempty"`
-	AltText     *string               `json:"alt_text,omitempty"`
-	Title       *string               `json:"title,omitempty"`
-	Format      string                `json:"format,omitempty"`
-	IsSVG       bool                  `json:"is_svg,omitempty"`
+	// TransparentColor makes matching pixels in a picture fully transparent.
+	// It maps to DrawingML's a:clrChange image effect (upstream #165).
+	TransparentColor *string  `json:"transparent_color,omitempty"`
+	Rotation         *float64 `json:"rotation,omitempty"`
+	FlipH            *bool    `json:"flip_h,omitempty"`
+	FlipV            *bool    `json:"flip_v,omitempty"`
+	Hidden           *bool    `json:"hidden,omitempty"`
+	X                *int     `json:"x,omitempty"`
+	Y                *int     `json:"y,omitempty"`
+	W                *int     `json:"w,omitempty"`
+	H                *int     `json:"h,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	AltText          *string  `json:"alt_text,omitempty"`
+	Title            *string  `json:"title,omitempty"`
+	Format           string   `json:"format,omitempty"`
+	IsSVG            bool     `json:"is_svg,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.

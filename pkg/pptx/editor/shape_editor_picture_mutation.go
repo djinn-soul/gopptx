@@ -19,9 +19,11 @@ const (
 )
 
 var (
-	pictureBlipFillPattern = regexp.MustCompile(`(?s)<p:blipFill\b[^>]*>(.*?)</p:blipFill>`)
-	pictureSrcRectPattern  = regexp.MustCompile(`(?s)<a:srcRect\b[^>]*/>`)
-	pictureXfrmPattern     = regexp.MustCompile(`<a:xfrm\b([^>]*)>`)
+	pictureBlipFillPattern  = regexp.MustCompile(`(?s)<p:blipFill\b[^>]*>(.*?)</p:blipFill>`)
+	pictureSrcRectPattern   = regexp.MustCompile(`(?s)<a:srcRect\b[^>]*/>`)
+	pictureXfrmPattern      = regexp.MustCompile(`<a:xfrm\b([^>]*)>`)
+	pictureBlipPattern      = regexp.MustCompile(`(?s)<a:blip\b([^>]*?)(?:/>|>(.*?)</a:blip>)`)
+	pictureClrChangePattern = regexp.MustCompile(`(?s)<a:clrChange\b.*?</a:clrChange>`)
 )
 
 // hasPictureUpdateFields reports whether any field handled by
@@ -33,7 +35,7 @@ func hasPictureUpdateFields(updates common.ShapeUpdate) bool {
 // hasPictureOnlyUpdateFields reports whether an update needs a picture shape.
 // Cropping edits <a:srcRect> inside <p:blipFill>, which only pictures have.
 func hasPictureOnlyUpdateFields(updates common.ShapeUpdate) bool {
-	return updates.Crop != nil
+	return updates.Crop != nil || updates.TransparentColor != nil
 }
 
 // hasTransformAttrUpdateFields reports whether an update sets rot/flipH/flipV.
@@ -44,6 +46,11 @@ func hasTransformAttrUpdateFields(updates common.ShapeUpdate) bool {
 }
 
 func validatePictureUpdateFields(updates common.ShapeUpdate) error {
+	if updates.TransparentColor != nil {
+		if _, err := editorshape.NormalizeHexColor(*updates.TransparentColor); err != nil {
+			return fmt.Errorf("transparent_color: %w", err)
+		}
+	}
 	if updates.Crop != nil {
 		crop := updates.Crop
 		fields := []struct {
@@ -93,6 +100,12 @@ func applyPictureShapeUpdates(xmlData []byte, updates common.ShapeUpdate) ([]byt
 			return nil, err
 		}
 	}
+	if updates.TransparentColor != nil {
+		updated, err = replacePictureTransparentColor(updated, *updates.TransparentColor)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if updates.Rotation != nil || updates.FlipH != nil || updates.FlipV != nil {
 		updated, err = replacePictureTransformAttrs(updated, updates)
 		if err != nil {
@@ -100,6 +113,31 @@ func applyPictureShapeUpdates(xmlData []byte, updates common.ShapeUpdate) ([]byt
 		}
 	}
 	return updated, nil
+}
+
+func replacePictureTransparentColor(xmlData []byte, rawColor string) ([]byte, error) {
+	match := pictureBlipPattern.FindSubmatchIndex(xmlData)
+	if match == nil {
+		return nil, errors.New("picture shape missing blip")
+	}
+	color, err := editorshape.NormalizeHexColor(rawColor)
+	if err != nil {
+		return nil, fmt.Errorf("transparent_color: %w", err)
+	}
+	attrs := string(xmlData[match[2]:match[3]])
+	inner := ""
+	if match[4] >= 0 {
+		inner = string(xmlData[match[4]:match[5]])
+	}
+	inner = pictureClrChangePattern.ReplaceAllString(inner, "")
+	effect := `<a:clrChange><a:clrFrom><a:srgbClr val="` + color +
+		`"/></a:clrFrom><a:clrTo><a:srgbClr val="FFFFFF"><a:alpha val="0"/>` +
+		`</a:srgbClr></a:clrTo></a:clrChange>`
+	replacement := `<a:blip` + attrs + `>` + effect + inner + `</a:blip>`
+	out := append([]byte{}, xmlData[:match[0]]...)
+	out = append(out, replacement...)
+	out = append(out, xmlData[match[1]:]...)
+	return out, nil
 }
 
 func replacePictureCrop(xmlData []byte, crop *common.ImageCrop) ([]byte, error) {

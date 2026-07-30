@@ -76,6 +76,30 @@ func TestUpdateShapePictureRejectsCropForNonPicture(t *testing.T) {
 	}
 }
 
+func TestUpdateShapePictureAddsTransparentColorEffect(t *testing.T) {
+	pptxPath := createPictureFixturePPTX(t, testutil.TinyPNG())
+	ed, err := OpenPresentationEditor(pptxPath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = ed.Close() }()
+
+	color := "#FF0000"
+	if err := ed.UpdateShape(0, 2, common.ShapeUpdate{TransparentColor: &color}); err != nil {
+		t.Fatalf("set transparent color: %v", err)
+	}
+	slideBytes, ok := ed.parts.Get("ppt/slides/slide1.xml")
+	if !ok {
+		t.Fatal("slide part not found after update")
+	}
+	slideXML := string(slideBytes)
+	want := `<a:clrChange><a:clrFrom><a:srgbClr val="FF0000"/></a:clrFrom>` +
+		`<a:clrTo><a:srgbClr val="FFFFFF"><a:alpha val="0"/></a:srgbClr></a:clrTo></a:clrChange>`
+	if !strings.Contains(slideXML, want) {
+		t.Fatalf("expected transparent-color effect in slide xml, got: %s", slideXML)
+	}
+}
+
 func pictureFixtureSlideXML() string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
 		`<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">` +

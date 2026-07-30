@@ -58,6 +58,14 @@ class ShapeProxyFeatureMixin(ShapeProxyExtraMixin):
         """Return the image part represented by this shape."""
         return ImagePartProxy(self)
 
+    def make_color_transparent(self: _ShapeFeatureHost, color: str) -> None:
+        """Make pixels matching ``color`` transparent in this picture.
+
+        ``color`` is a six-digit RGB value with an optional leading ``#``.
+        PowerPoint stores this as an ``a:clrChange`` effect (Issue #165).
+        """
+        self.apply_update(cast("ShapeUpdate", {"transparent_color": color}))
+
     @property
     def has_chart(self: _ShapeFeatureHost) -> bool:
         """Return whether this exact shape contains a chart."""
