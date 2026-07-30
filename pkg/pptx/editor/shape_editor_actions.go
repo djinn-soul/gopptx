@@ -42,8 +42,12 @@ func (e *PresentationEditor) buildClickActionXML(partPath string, hl *common.Hyp
 	return e.buildActionXML(partPath, hl, "hlinkClick")
 }
 
+// buildHoverActionXML writes a:hlinkHover, the hover element of
+// CT_NonVisualDrawingProps. a:hlinkMouseOver is the run-level spelling from
+// CT_TextCharacterProperties; PowerPoint round-trips it inside p:cNvPr but
+// never reads it, so a shape written that way had no hover action at all.
 func (e *PresentationEditor) buildHoverActionXML(partPath string, hl *common.Hyperlink) (string, error) {
-	return e.buildActionXML(partPath, hl, "hlinkMouseOver")
+	return e.buildActionXML(partPath, hl, "hlinkHover")
 }
 
 func (e *PresentationEditor) buildActionXML(partPath string, hl *common.Hyperlink, tag string) (string, error) {

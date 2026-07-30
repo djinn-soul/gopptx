@@ -81,20 +81,27 @@ def test_action_api_slide_jumps_and_macros(tmp_path: Path) -> None:
         slide1_rels = zf.read("ppt/slides/_rels/slide1.xml.rels").decode("utf-8")
         slide3_xml = zf.read("ppt/slides/slide3.xml").decode("utf-8")
 
-    if "hlinkMouseOver" not in slide1_xml:
-        raise AssertionError("expected hover action link token")
-    if "ppaction://macro?name=MyCustomMacro" not in slide1_xml:
-        raise AssertionError("expected macro action token")
-    if "ppaction://hlinksldjump" not in slide1_xml:
-        raise AssertionError("expected slide jump action token")
-    if "ppaction://hlinkshowjump?jump=nextslide" not in slide1_xml:
-        raise AssertionError("expected relative jump token")
-    if "relationships/slide" not in slide1_rels:
-        raise AssertionError("expected slide relationship entry")
-    if 'Target="slide3.xml"' not in slide1_rels:
-        raise AssertionError("expected relationship target to slide3.xml")
-    if "ppaction://hlinkshowjump?jump=firstslide" not in slide3_xml:
-        raise AssertionError("expected firstslide jump token on slide 3")
+    expected = [
+        # p:cNvPr takes a:hlinkHover; a:hlinkMouseOver is the run-level spelling,
+        # which PowerPoint ignores there.
+        (slide1_xml, "<a:hlinkHover", "hover action link token"),
+        (slide1_xml, "ppaction://macro?name=MyCustomMacro", "macro action token"),
+        (slide1_xml, "ppaction://hlinksldjump", "slide jump action token"),
+        (slide1_xml, "ppaction://hlinkshowjump?jump=nextslide", "relative jump token"),
+        (slide1_rels, "relationships/slide", "slide relationship entry"),
+        (slide1_rels, 'Target="slide3.xml"', "relationship target to slide3.xml"),
+        (
+            slide3_xml,
+            "ppaction://hlinkshowjump?jump=firstslide",
+            "firstslide jump token",
+        ),
+    ]
+    for document, token, description in expected:
+        if token not in document:
+            raise AssertionError(f"expected {description}")
+
+    if "hlinkMouseOver" in slide1_xml:
+        raise AssertionError("cNvPr must not use the run-level hover spelling")
 
 
 def test_action_api_rejects_invalid_action_combinations() -> None:
