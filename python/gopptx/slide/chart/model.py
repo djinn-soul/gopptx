@@ -15,6 +15,7 @@ from .model_proxies import (
     ChartPlots,
     ChartTitle,
 )
+from .plot_area import ChartPlotArea
 from .scene3d_area import ChartArea
 from .series_format import ChartSeriesFormatMixin
 from .series_proxy import ChartSeriesCollection
@@ -136,6 +137,7 @@ class Chart(
         self._legend = ChartLegend(self)
         self._plots = ChartPlots(self)
         self._chart_area = ChartArea(self)
+        self._plot_area = ChartPlotArea(self)
         self._category_axis = ChartAxis(self, axis_name="category")
         self._value_axis = ChartAxis(self, axis_name="value")
         self._data_table = ChartDataTable(self)
@@ -179,6 +181,11 @@ class Chart(
     def chart_area(self) -> ChartArea:
         """Chart-area formatting proxy."""
         return self._chart_area
+
+    @property
+    def plot_area(self) -> ChartPlotArea:
+        """Plot-area formatting proxy (Issue #298)."""
+        return self._plot_area
 
     @property
     def data_table(self) -> ChartDataTable:
