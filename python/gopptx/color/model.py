@@ -109,9 +109,24 @@ class ColorFormat:
 
     @classmethod
     def from_theme(
-        cls, theme_color: ThemeColor, *, brightness: float = 0.0
+        cls, theme_color: ThemeColor | str, *, brightness: float = 0.0
     ) -> ColorFormat:
-        """Build a colour that references a theme slot."""
+        """Build a colour that references a theme slot.
+
+        ``ThemeColor`` is a str-Enum, so a bare slot name such as ``"accent1"``
+        reads as a valid argument. It is coerced here, because storing the plain
+        string used to blow up later on ``theme_color.value`` (Issue #308).
+
+        Raises:
+            ValueError: If the slot name is not an OOXML scheme slot.
+        """
+        if not isinstance(theme_color, ThemeColor):
+            try:
+                theme_color = ThemeColor(theme_color)
+            except ValueError as exc:
+                slots = ", ".join(slot.value for slot in ThemeColor)
+                msg = f"unknown theme colour {theme_color!r}; expected one of: {slots}"
+                raise ValueError(msg) from exc
         return cls(ColorType.SCHEME, theme_color=theme_color, brightness=brightness)
 
     @property
