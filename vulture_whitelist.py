@@ -795,3 +795,4 @@ _.names
 # Issue #165 (make a picture source color transparent)
 transparent_color
 _.make_color_transparent
+_.iter_leaf_shapes

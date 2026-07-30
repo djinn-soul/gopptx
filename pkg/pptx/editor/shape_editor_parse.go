@@ -53,6 +53,7 @@ type parsedShape struct {
 	Start          int64 // Byte offset of the start of the node
 	End            int64 // Byte offset of the end of the node
 	IsGroup        bool
+	Shapes         []parsedShape
 }
 
 func (p parsedShape) ToShape() shapes.Shape {
@@ -230,6 +231,12 @@ func buildParsedShapeFromRange(
 	pShape.Start = startOffset
 	pShape.End = endOffset
 	pShape.IsGroup = stopTag == "grpSp"
+	if pShape.IsGroup {
+		pShape.Shapes, parseErr = parseGroupChildShapes(shapeXML)
+		if parseErr != nil {
+			return parsedShape{}, parseErr
+		}
+	}
 	return pShape, nil
 }
 

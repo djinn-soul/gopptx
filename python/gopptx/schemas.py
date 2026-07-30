@@ -8,9 +8,11 @@ from typing_extensions import override
 
 from . import schemas_chart_layout as _schemas_chart_layout
 from . import schemas_chart_series as _schemas_chart_series
+from . import schemas_grayscale_types as _schemas_grayscale_types
 from . import schemas_presentation_types as _schemas_presentation_types
 from . import schemas_shape_style as _schemas_shape_style
 from . import schemas_shape_types as _schemas_shape_types
+from . import schemas_text_types as _schemas_text_types
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -37,8 +39,8 @@ BatchItemResult = _schemas_presentation_types.BatchItemResult
 TableCellInfo = _schemas_presentation_types.TableCellInfo
 TableInfo = _schemas_presentation_types.TableInfo
 
-TextFrame = _schemas_shape_types.TextFrame
-Paragraph = _schemas_shape_types.Paragraph
+TextFrame = _schemas_text_types.TextFrame
+Paragraph = _schemas_text_types.Paragraph
 FillFormat = _schemas_shape_types.FillFormat
 GradientStop = _schemas_shape_types.GradientStop
 GradientFill = _schemas_shape_types.GradientFill
@@ -73,10 +75,10 @@ ShapeAdjustment = _schemas_shape_types.ShapeAdjustment
 ShapeAdjustmentValue = _schemas_shape_types.ShapeAdjustmentValue
 ShapeUpdate = _schemas_shape_types.ShapeUpdate
 Shape = _schemas_shape_types.Shape
-GrayscaleShapeRef = _schemas_shape_types.GrayscaleShapeRef
-GrayscaleTextRef = _schemas_shape_types.GrayscaleTextRef
-GrayscalePlaceholderRef = _schemas_shape_types.GrayscalePlaceholderRef
-GrayscaleScope = _schemas_shape_types.GrayscaleScope
+GrayscaleShapeRef = _schemas_grayscale_types.GrayscaleShapeRef
+GrayscaleTextRef = _schemas_grayscale_types.GrayscaleTextRef
+GrayscalePlaceholderRef = _schemas_grayscale_types.GrayscalePlaceholderRef
+GrayscaleScope = _schemas_grayscale_types.GrayscaleScope
 
 ChartDataUpdate = _schemas_chart_layout.ChartDataUpdate
 ChartDataSource = _schemas_chart_layout.ChartDataSource

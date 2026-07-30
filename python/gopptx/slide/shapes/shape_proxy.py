@@ -15,6 +15,7 @@ from .shape_format_proxies import (
 )
 from .shape_proxy_features import ShapeProxyFeatureMixin
 from .shape_style_proxy import _ShapeStyleProxy
+from .shape_tree import iter_shape_records
 
 if TYPE_CHECKING:
     import os
@@ -92,7 +93,7 @@ class ShapeProxy(ShapeProxyFeatureMixin):
 
     def shape_record(self) -> Shape:
         """Return the current shape payload from slide state."""
-        for shape in self._slide.list_shapes():
+        for shape in iter_shape_records(self._slide.list_shapes()):
             shape_id = shape.get("ID", shape.get("id"))
             if shape_id is None:
                 continue
