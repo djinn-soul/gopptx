@@ -303,3 +303,7 @@ scripts/tools/*
 tmp/
 examples/output/*
 web*
+
+# Tooling caches and local scratch work
+.serena/
+scratch/

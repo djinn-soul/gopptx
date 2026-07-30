@@ -127,8 +127,9 @@ type paragraphPropsXML struct {
 type shapeXML struct {
 	NvSpPr struct {
 		CNvPr struct {
-			ID   int    `xml:"id,attr"`
-			Name string `xml:"name,attr"`
+			ID     int     `xml:"id,attr"`
+			Name   string  `xml:"name,attr"`
+			Hidden *string `xml:"hidden,attr"`
 		} `xml:"cNvPr"`
 		NvPr struct {
 			Ph *struct {
@@ -139,8 +140,9 @@ type shapeXML struct {
 	} `xml:"nvSpPr"`
 	NvPicPr struct {
 		CNvPr struct {
-			ID   int    `xml:"id,attr"`
-			Name string `xml:"name,attr"`
+			ID     int     `xml:"id,attr"`
+			Name   string  `xml:"name,attr"`
+			Hidden *string `xml:"hidden,attr"`
 		} `xml:"cNvPr"`
 		NvPr struct {
 			Ph *struct {
@@ -151,8 +153,9 @@ type shapeXML struct {
 	} `xml:"nvPicPr"`
 	NvCxnSpPr struct {
 		CNvPr struct {
-			ID   int    `xml:"id,attr"`
-			Name string `xml:"name,attr"`
+			ID     int     `xml:"id,attr"`
+			Name   string  `xml:"name,attr"`
+			Hidden *string `xml:"hidden,attr"`
 		} `xml:"cNvPr"`
 		CNvCxnSpPr struct {
 			StCxn *struct {
@@ -167,14 +170,16 @@ type shapeXML struct {
 	} `xml:"nvCxnSpPr"`
 	NvGrpSpPr struct {
 		CNvPr struct {
-			ID   int    `xml:"id,attr"`
-			Name string `xml:"name,attr"`
+			ID     int     `xml:"id,attr"`
+			Name   string  `xml:"name,attr"`
+			Hidden *string `xml:"hidden,attr"`
 		} `xml:"cNvPr"`
 	} `xml:"nvGrpSpPr"`
 	NvGraphicFramePr struct {
 		CNvPr struct {
-			ID   int    `xml:"id,attr"`
-			Name string `xml:"name,attr"`
+			ID     int     `xml:"id,attr"`
+			Name   string  `xml:"name,attr"`
+			Hidden *string `xml:"hidden,attr"`
 		} `xml:"cNvPr"`
 	} `xml:"nvGraphicFramePr"`
 	Xfrm struct {

@@ -196,6 +196,53 @@ func (u *shapeUpdater) applyPicture(
 	return updatedXML, true, nil
 }
 
+// mergeTextFrame overlays the set fields of patch onto a copy of existing, so a
+// partial text_frame update keeps the properties it does not mention instead of
+// letting them fall back to the bodyPr defaults on re-render.
+func mergeTextFrame(existing, patch *common.TextFrame) *common.TextFrame {
+	if patch == nil {
+		return existing
+	}
+	if existing == nil {
+		return patch
+	}
+	merged := *existing
+	if patch.MarginTop != nil {
+		merged.MarginTop = patch.MarginTop
+	}
+	if patch.MarginBottom != nil {
+		merged.MarginBottom = patch.MarginBottom
+	}
+	if patch.MarginLeft != nil {
+		merged.MarginLeft = patch.MarginLeft
+	}
+	if patch.MarginRight != nil {
+		merged.MarginRight = patch.MarginRight
+	}
+	if patch.WordWrap != nil {
+		merged.WordWrap = patch.WordWrap
+	}
+	if patch.AutoFit != nil {
+		merged.AutoFit = patch.AutoFit
+	}
+	if patch.AutoFitType != nil {
+		merged.AutoFitType = patch.AutoFitType
+	}
+	if patch.VerticalAlign != nil {
+		merged.VerticalAlign = patch.VerticalAlign
+	}
+	if patch.Orientation != nil {
+		merged.Orientation = patch.Orientation
+	}
+	if patch.Columns != nil {
+		merged.Columns = patch.Columns
+	}
+	if patch.Rotation != nil {
+		merged.Rotation = patch.Rotation
+	}
+	return &merged
+}
+
 func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {
 	if u.updates.Text == nil && u.updates.Runs == nil && u.updates.Paragraphs == nil &&
 		u.updates.TextFrame == nil && u.updates.Paragraph == nil {
@@ -219,7 +266,7 @@ func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) 
 		}
 	}
 	if u.updates.TextFrame != nil {
-		s.TextFrame = u.updates.TextFrame
+		s.TextFrame = mergeTextFrame(s.TextFrame, u.updates.TextFrame)
 	}
 	if u.updates.Paragraph != nil {
 		s.Paragraph = u.updates.Paragraph

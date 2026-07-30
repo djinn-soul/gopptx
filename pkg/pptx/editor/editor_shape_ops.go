@@ -83,6 +83,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			Rotation:         p.Rotation,
 			FlipH:            p.FlipH,
 			FlipV:            p.FlipV,
+			Hidden:           p.Hidden,
 			PlaceholderIndex: placeholderIndex,
 			PlaceholderType:  p.PhType,
 			Fill:             p.Fill,

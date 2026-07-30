@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .. import ops
 from .background import SlideBackground
 from .notes.notes_slide import NotesSlide
 
@@ -32,12 +33,12 @@ class SlideBase:
     @property
     def slide_id(self) -> int:
         """Return the unique internal slide ID."""
-        return self._metadata["SlideID"]
+        return self._metadata.get("SlideID", 0)
 
     @property
     def title(self) -> str:
         """Return the slide title."""
-        return self._metadata["Title"]
+        return self._metadata.get("Title", "")
 
     @title.setter
     def title(self, value: str) -> None:
@@ -67,6 +68,14 @@ class SlideBase:
     def background(self) -> SlideBackground:
         """Return the slide background proxy."""
         return SlideBackground(self)
+
+    def get_background_xml(self) -> str:
+        """Return the slide's current p:bg subtree."""
+        result = self._presentation.execute(
+            ops.OP_GET_SLIDE_BACKGROUND,
+            {"slide_index": self.index},
+        )
+        return str(result.get("background_xml", ""))
 
     def rebind_layout(self, layout_part_or_name: str) -> None:
         """Rebind this slide to a different layout across any slide master (Issue #1109)."""

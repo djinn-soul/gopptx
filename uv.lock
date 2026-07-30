@@ -439,6 +439,7 @@ name = "gopptx"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "defusedxml" },
     { name = "jinja2" },
     { name = "orjson" },
     { name = "pillow" },
@@ -471,6 +472,7 @@ dev = [
 requires-dist = [
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.9.4" },
     { name = "basedpyright", marker = "extra == 'dev'", specifier = ">=1.39.0" },
+    { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "detect-secrets", marker = "extra == 'dev'", specifier = ">=1.5.0" },
     { name = "gitingest", marker = "extra == 'dev'" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.150.0" },

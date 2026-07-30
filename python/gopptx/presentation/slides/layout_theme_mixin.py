@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from typing_extensions import Protocol
 
     from ...presentation.theme.theme import Theme
-    from ...schemas import SlideLayoutInfo, SlideMasterCloneResult
+    from ...schemas import SlideLayoutInfo, SlideMasterCloneResult, SlideSize
 
     class _PresentationThemeOps(Protocol):
         def execute(
@@ -138,6 +138,28 @@ class PresentationThemeMixin(PresentationMixinBase):
         """Set the slide size."""
         self.execute(ops.OP_SET_SLIDE_SIZE, {"width": width, "height": height})
         self.invalidate_cache()
+
+    def _slide_size(self) -> SlideSize:
+        """Return the slide size sub-dict of the presentation metadata."""
+        return self.metadata["size"]
+
+    @property
+    def slide_width(self) -> int:
+        """Return slide width in EMU."""
+        return int(self._slide_size()["width"])
+
+    @slide_width.setter
+    def slide_width(self, value: int) -> None:
+        self.set_slide_size(int(value), self.slide_height)
+
+    @property
+    def slide_height(self) -> int:
+        """Return slide height in EMU."""
+        return int(self._slide_size()["height"])
+
+    @slide_height.setter
+    def slide_height(self, value: int) -> None:
+        self.set_slide_size(self.slide_width, int(value))
 
     def set_global_theme_preset(self, name: str) -> None:
         """Apply a named built-in theme preset (e.g. 'facet', 'ion', 'office')."""

@@ -5,11 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 func (e *PresentationEditor) getOrCreateHyperlinkRelID(partPath, address string) (string, error) {
+	// Never persist script protocols into the relationship target; the reader
+	// applies the same filter, so sanitizing here keeps write and read agreeing.
+	address = action.SanitizeHyperlinkURI(address)
 	relsPath := common.SlideRelsPartName(partPath)
 	rels := make([]common.EditorRelationship, 0)
 	if data, ok := e.parts.Get(relsPath); ok {

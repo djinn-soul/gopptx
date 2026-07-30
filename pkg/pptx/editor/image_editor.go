@@ -147,7 +147,10 @@ func (e *PresentationEditor) GetImageMetadata(slideIndex, shapeID int) (*common.
 	}
 
 	config, format := decodeImageConfig(data, partPath)
-	return buildImageMetadata(data, config, format), nil
+	meta := buildImageMetadata(data, config, format)
+	meta.RelID = relID
+	meta.PartPath = partPath
+	return meta, nil
 }
 
 func resolveAddImageRelID(

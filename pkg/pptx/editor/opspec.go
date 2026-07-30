@@ -133,6 +133,7 @@ const (
 	// OpUpdateHandoutMaster, and OpIsDigitallySigned extend parity with the Go API.
 	OpUpdateSmartArt       = "update_smartart"
 	OpSetSlideBackground   = "set_slide_background"
+	OpGetSlideBackground   = "get_slide_background"
 	OpSetSlideHeaderFooter = "set_slide_header_footer"
 	OpGetSlideHeaderFooter = "get_slide_header_footer"
 	OpGetHandoutMaster     = "get_handout_master"

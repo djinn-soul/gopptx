@@ -36,7 +36,7 @@ class SlidePictureMixin:
 
     def add_picture(
         self,
-        image_file: str | bytes | os.PathLike[str] | None,
+        image_file: str | bytes | os.PathLike[str] | None = None,
         left: float = 0,
         top: float = 0,
         width: float = 0,

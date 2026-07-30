@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, overload
+from typing import TYPE_CHECKING, Protocol, cast, overload
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -51,3 +51,62 @@ class Slides:
         if idx >= len(self._items):
             return None
         return self._items[idx]
+
+    def remove(self, slide: Slide | int) -> None:
+        """Remove slide proxy or index from the presentation (Issue #67)."""
+        if isinstance(slide, int):
+            index = slide
+        elif hasattr(slide, "index"):
+            index = slide.index
+        else:
+            raise TypeError("slide must be a Slide proxy or integer index")
+        remove_func = getattr(self._owner, "remove_slide", None)
+        if callable(remove_func):
+            remove_func(index)
+        else:
+            raise AttributeError("owner does not support remove_slide")
+
+    def delete(self, slide: Slide | int) -> None:
+        """Alias for remove (Issue #67)."""
+        self.remove(slide)
+
+    def __delitem__(self, index: int) -> None:
+        """Delete slide at index (Issue #67)."""
+        self.remove(index)
+
+    def move(self, slide_or_index: Slide | int, to_index: int) -> None:
+        """Move slide from current position to to_index (Issue #68)."""
+        if isinstance(slide_or_index, int):
+            from_idx = slide_or_index
+        elif hasattr(slide_or_index, "index"):
+            from_idx = slide_or_index.index
+        else:
+            raise TypeError("slide must be a Slide proxy or integer index")
+        move_func = getattr(self._owner, "move_slide", None)
+        if callable(move_func):
+            move_func(from_idx, to_index)
+        else:
+            raise AttributeError("owner does not support move_slide")
+
+    def add_slide(
+        self, layout: object = None, index: int | None = None, title: str = ""
+    ) -> Slide:
+        """Add or insert a slide with optional index (Issue #194)."""
+        add_func = getattr(self._owner, "add_slide", None)
+        if not callable(add_func):
+            raise AttributeError("owner does not support add_slide")
+
+        layout_name = (
+            getattr(layout, "name", str(layout)) if layout is not None else None
+        )
+        slide_obj = cast("Slide", add_func(title=title, layout=layout_name))
+        slide_idx = getattr(slide_obj, "index", -1)
+        if index is not None and isinstance(slide_idx, int) and index != slide_idx:
+            self.move(slide_idx, index)
+            slides_list = cast("list[Slide]", getattr(self._owner, "slides", []))
+            return slides_list[index]
+        return slide_obj
+
+    def insert_slide(self, index: int, layout: object = None, title: str = "") -> Slide:
+        """Insert a slide at index (Issue #194)."""
+        return self.add_slide(layout=layout, index=index, title=title)

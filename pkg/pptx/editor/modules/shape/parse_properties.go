@@ -159,6 +159,9 @@ func applyParsedShapeLine(ps *ParsedShapeProperties, s *shapeXML) {
 }
 
 func applyParsedShapeIdentity(ps *ParsedShapeProperties, s *shapeXML) {
+	ps.Hidden = parseBoolAttr(s.NvSpPr.CNvPr.Hidden) || parseBoolAttr(s.NvPicPr.CNvPr.Hidden) ||
+		parseBoolAttr(s.NvCxnSpPr.CNvPr.Hidden) || parseBoolAttr(s.NvGrpSpPr.CNvPr.Hidden) ||
+		parseBoolAttr(s.NvGraphicFramePr.CNvPr.Hidden)
 	switch {
 	case s.NvSpPr.CNvPr.ID != 0:
 		ps.ID = s.NvSpPr.CNvPr.ID

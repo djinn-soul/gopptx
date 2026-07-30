@@ -43,6 +43,7 @@ type parsedShape struct {
 	Rotation       *float64
 	FlipH          bool
 	FlipV          bool
+	Hidden         bool
 	X, Y           int
 	W, H           int
 	PhIndex        int    // Placeholder index, -1 if not a placeholder
@@ -267,6 +268,7 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		Rotation:       props.Rotation,
 		FlipH:          props.FlipH,
 		FlipV:          props.FlipV,
+		Hidden:         props.Hidden,
 		X:              props.X,
 		Y:              props.Y,
 		W:              props.W,

@@ -147,6 +147,18 @@ class _ShapeParagraphProxy:
     def space_after(self, value: int | None) -> None:
         self._set_paragraph_field("space_after_pts", value)
 
+    @property
+    def right_to_left(self) -> bool | None:
+        """Spelled-out alias for :attr:`rtl` (Issue #1080).
+
+        None means the paragraph states nothing and inherits its direction.
+        """
+        return self.rtl
+
+    @right_to_left.setter
+    def right_to_left(self, value: bool | None) -> None:
+        self.rtl = value
+
     def clear(self) -> None:
         """Clear paragraph text content while keeping the paragraph container."""
         self._text_frame.replace_paragraph_runs(self._paragraph_index, [])
@@ -160,6 +172,21 @@ class _ShapeParagraphProxy:
         if not paragraphs:
             paragraphs = [cast("dict[str, object]", {"runs": [], "paragraph": {}})]
         self._text_frame.replace_paragraphs(paragraphs)
+
+    def delete(self) -> None:
+        """Alias for remove (Issue #144)."""
+        self.remove()
+
+    def remove_run(self, run: object) -> None:
+        """Remove a run proxy or run index from this paragraph (Issue #144)."""
+        if isinstance(run, int):
+            self.runs[run].delete()
+        else:
+            delete_func = getattr(run, "delete", None)
+            if callable(delete_func):
+                delete_func()
+            else:
+                raise TypeError("run must be a ShapeRunProxy or run index")
 
 
 class _ShapeParagraphCollection:
@@ -198,3 +225,7 @@ class _ShapeParagraphCollection:
     def remove(paragraph: _ShapeParagraphProxy) -> None:
         """Remove one paragraph from this collection."""
         paragraph.remove()
+
+    def __delitem__(self, index: int) -> None:
+        """Delete paragraph at index (Issue #144)."""
+        self[index].remove()

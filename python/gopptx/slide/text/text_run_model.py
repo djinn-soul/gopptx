@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, cast
 
 from .text_run import Run, RunHyperlink
 
+_EMU_PER_POINT = 12700
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -69,13 +71,42 @@ class _ShapeRunProxy:
         self.set_field("italic", value)
 
     @property
-    def underline(self) -> str | None:
+    def underline(self) -> bool | str | None:
         value = self.payload().get("underline")
-        return str(value) if isinstance(value, str) else None
+        if not value:
+            return False
+        if value in {"single", "sng", True}:
+            return True
+        return str(value)
 
     @underline.setter
-    def underline(self, value: str | None) -> None:
-        self.set_field("underline", value)
+    def underline(self, value: bool | str | None) -> None:
+        if value is True:
+            self.set_field("underline", "single")
+        elif value is False or value is None:
+            self.set_field("underline", "")
+        else:
+            self.set_field("underline", str(value))
+
+    @property
+    def strikethrough(self) -> bool | str | None:
+        """Return whether run has strikethrough formatting (Issue #339)."""
+        value = self.payload().get("strikethrough")
+        if not value or value == "none" or value is False:
+            return False
+        if value in {"sngStrike", "sng", True}:
+            return True
+        return str(value)
+
+    @strikethrough.setter
+    def strikethrough(self, value: bool | str | None) -> None:
+        """Set strikethrough formatting (Issue #339)."""
+        if value is True:
+            self.set_field("strikethrough", "sngStrike")
+        elif value is False or value is None:
+            self.set_field("strikethrough", "none")
+        else:
+            self.set_field("strikethrough", str(value))
 
     @property
     def hyperlink(self) -> RunHyperlink:
@@ -87,7 +118,10 @@ class _ShapeRunProxy:
         return RunHyperlink()
 
     @hyperlink.setter
-    def hyperlink(self, value: RunHyperlink | dict[str, object] | None) -> None:
+    def hyperlink(self, value: RunHyperlink | dict[str, object] | str | None) -> None:
+        if isinstance(value, str):
+            self.set_field("hyperlink", {"address": value})
+            return
         if isinstance(value, RunHyperlink):
             self.set_field("hyperlink", value.to_payload())
             return
@@ -109,6 +143,10 @@ class _ShapeRunProxy:
         del runs[self._run_index]
         self._text_frame.replace_paragraph_runs(self._paragraph_index, runs)
 
+    def delete(self) -> None:
+        """Alias for remove (Issue #144)."""
+        self.remove()
+
 
 class _FontColorProxy:
     """Non-mutating font color proxy for text run (Issue #1111)."""
@@ -124,8 +162,12 @@ class _FontColorProxy:
         return str(val) if isinstance(val, str) else None
 
     @rgb.setter
-    def rgb(self, value: str | None) -> None:
-        self._run_proxy.set_field("color", value)
+    def rgb(self, value: object) -> None:
+        if value is None:
+            self._run_proxy.set_field("color", None)
+        else:
+            val_str = str(value).lstrip("#")
+            self._run_proxy.set_field("color", val_str)
 
     @property
     def type(self) -> str | None:
@@ -154,13 +196,59 @@ class _FontProxy:
         self._run_proxy.set_field("font", value)
 
     @property
-    def size(self) -> float | None:
-        val = self._run_proxy.payload().get("size_pt")
-        return float(val) if isinstance(val, (int, float)) else None
+    def size(self) -> int | None:
+        """Font size in EMU, so ``Point(28)`` round-trips (python-pptx parity)."""
+        points = self.size_pt
+        return None if points is None else int(points * _EMU_PER_POINT)
 
     @size.setter
     def size(self, value: float | None) -> None:
-        self._run_proxy.set_field("size_pt", value)
+        self.size_pt = None if value is None else float(value) / _EMU_PER_POINT
+
+    @property
+    def size_pt(self) -> float | None:
+        """Font size in points."""
+        val = self._run_proxy.payload().get("size_pt")
+        return float(val) if isinstance(val, (int, float)) else None
+
+    @size_pt.setter
+    def size_pt(self, value: float | None) -> None:
+        self._run_proxy.set_field("size_pt", None if value is None else float(value))
+
+    @property
+    def bold(self) -> bool | None:
+        return self._run_proxy.bold
+
+    @bold.setter
+    def bold(self, value: bool | None) -> None:
+        self._run_proxy.bold = value
+
+    @property
+    def italic(self) -> bool | None:
+        return self._run_proxy.italic
+
+    @italic.setter
+    def italic(self, value: bool | None) -> None:
+        self._run_proxy.italic = value
+
+    @property
+    def underline(self) -> bool | str | None:
+        """True/False, or the OOXML underline style name (e.g. ``"dash"``)."""
+        return self._run_proxy.underline
+
+    @underline.setter
+    def underline(self, value: bool | str | None) -> None:
+        self._run_proxy.underline = value
+
+    @property
+    def strikethrough(self) -> bool | str | None:
+        """Return whether run has strikethrough formatting (Issue #339)."""
+        return self._run_proxy.strikethrough
+
+    @strikethrough.setter
+    def strikethrough(self, value: bool | str | None) -> None:
+        """Set strikethrough formatting (Issue #339)."""
+        self._run_proxy.strikethrough = value
 
 
 class _ShapeRunCollection:
@@ -203,3 +291,7 @@ class _ShapeRunCollection:
     def remove(run: _ShapeRunProxy) -> None:
         """Remove one run proxy from this collection."""
         run.remove()
+
+    def __delitem__(self, index: int) -> None:
+        """Delete run at index (Issue #144)."""
+        self[index].remove()

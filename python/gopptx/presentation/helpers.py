@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import Protocol
 
 if TYPE_CHECKING:
-    from ..schemas import BatchItemResult
+    from ..schemas import BatchItemResult, PresentationMetadata
 
 try:
     import orjson as _orjson
@@ -27,6 +27,11 @@ class PresentationProtocol(Protocol):
     @property
     def handle(self) -> int | None:
         """Return the opaque integer handle for this presentation instance."""
+        ...
+
+    @property
+    def metadata(self) -> PresentationMetadata:
+        """Return the cached presentation metadata."""
         ...
 
     def execute(

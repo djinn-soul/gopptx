@@ -763,3 +763,17 @@ value_axis_tick_label_rotation  # unused variable (python\gopptx\schemas_chart_l
 value_axis_cross_between  # unused variable (python\gopptx\schemas_chart_layout.py)
 cross_between  # unused variable (python\gopptx\schemas_chart_layout.py ChartAxisState)
 _.tick_label_rotation  # unused property (python\gopptx\slide\chart\axis_format.py)
+
+# Facade parity and next 10 issues (#41, #49, #67, #68, #144, #194, #319, #339, #452, #547)
+_.insert_slide
+_.move_to_front
+_.move_to_back
+_.z_order
+_.remove_paragraph
+_.remove_run
+_.flip_x
+_.flip_y
+_.hidden
+_.is_hidden
+fore_color
+replace

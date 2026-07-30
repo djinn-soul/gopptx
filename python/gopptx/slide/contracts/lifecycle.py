@@ -31,6 +31,10 @@ class SlideLifecycleProtocol(Protocol):
         """Protocol member."""
         ...
 
+    def move_slide(self, from_index: int, to_index: int) -> None:
+        """Protocol member."""
+        ...
+
     def update_slide(
         self,
         index: int,

@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	shapeCNvPrPattern = regexp.MustCompile(`(?s)(<p:cNvPr\b[^>]*?)(\s*/?>)`)
-	shapeDescrPattern = regexp.MustCompile(`\s+descr="[^"]*"`)
-	shapeTitlePattern = regexp.MustCompile(`\s+title="[^"]*"`)
+	shapeCNvPrPattern  = regexp.MustCompile(`(?s)(<p:cNvPr\b[^>]*?)(\s*/?>)`)
+	shapeDescrPattern  = regexp.MustCompile(`\s+descr="[^"]*"`)
+	shapeTitlePattern  = regexp.MustCompile(`\s+title="[^"]*"`)
+	shapeHiddenPattern = regexp.MustCompile(`\s+hidden="[^"]*"`)
 )
 
 const shapeMetadataMatchIndexCount = 6
@@ -22,7 +23,8 @@ func (u *shapeUpdater) applyAltTextAndTitle(
 ) ([]byte, bool) {
 	updateAltText := u.updates.AltText != nil || u.updates.Description != nil
 	updateTitle := u.updates.Title != nil
-	if !updateAltText && !updateTitle {
+	updateHidden := u.updates.Hidden != nil
+	if !updateAltText && !updateTitle && !updateHidden {
 		return xmlData, replaced
 	}
 
@@ -57,6 +59,18 @@ func (u *shapeUpdater) applyAltTextAndTitle(
 			shapeTitlePattern,
 			"title",
 			title,
+		)
+	}
+	if updateHidden {
+		hiddenVal := ""
+		if *u.updates.Hidden {
+			hiddenVal = "1"
+		}
+		attributes = replaceOptionalShapeMetadataAttribute(
+			attributes,
+			shapeHiddenPattern,
+			"hidden",
+			hiddenVal,
 		)
 	}
 	updated := content[:match[2]] + attributes + content[match[3]:]

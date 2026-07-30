@@ -17,11 +17,10 @@ from .shape_proxy_features import ShapeProxyFeatureMixin
 from .shape_style_proxy import _ShapeStyleProxy
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    import os
 
     from ...constants import ShapeType
     from ...schemas import Shape, ShapeProps, ShapeUpdate, SlideChartRef
-    from ...shapes import ShapeBuilder
     from ...text.run_builder import RunBuilder
     from ..contracts import SlidePresentationProtocol
 
@@ -47,6 +46,33 @@ class _ShapeProxySlideProto(Protocol):
     ) -> int: ...
 
     def shape(self, shape_id: int) -> ShapeProxy: ...
+
+    def remove_shape(self, shape_id: int) -> None: ...
+
+    def move_shape_to_front(self, shape_id: int) -> None: ...
+
+    def move_shape_to_back(self, shape_id: int) -> None: ...
+
+    def add_picture(
+        self,
+        image_file: str | bytes | os.PathLike[str] | None = None,
+        left: float = 0,
+        top: float = 0,
+        width: float = 0,
+        height: float = 0,
+        **kwargs: object,
+    ) -> int: ...
+
+    def add_textbox(
+        self,
+        left: float,
+        top: float,
+        width: float,
+        height: float,
+        *,
+        text: str = "",
+        **kwargs: str | ShapeProps,
+    ) -> int: ...
 
 
 class ShapeProxy(ShapeProxyFeatureMixin):
@@ -231,59 +257,6 @@ class ShapeProxy(ShapeProxyFeatureMixin):
         self._table_proxy = table
         self._table_present_cache = True
         return table
-
-
-class ShapeCollection:
-    """python-pptx-style slide shapes collection."""
-
-    def __init__(self, slide: _ShapeProxySlideProto) -> None:
-        """Create a shape collection for a slide."""
-        self._slide = slide
-
-    def _shape_ids(self) -> list[int]:
-        out: list[int] = []
-        for shape in self._slide.list_shapes():
-            shape_id = shape.get("ID", shape.get("id"))
-            if shape_id is None:
-                continue
-            out.append(int(str(shape_id)))
-        return out
-
-    def __len__(self) -> int:
-        """Return shape count."""
-        return len(self._shape_ids())
-
-    def __getitem__(self, index: int) -> ShapeProxy:
-        """Return shape proxy at index."""
-        ids = self._shape_ids()
-        if index < 0:
-            index += len(ids)
-        if index < 0 or index >= len(ids):
-            raise IndexError("shape index out of range")
-        return self._slide.shape(ids[index])
-
-    def __iter__(self) -> Iterator[ShapeProxy]:
-        """Iterate shape proxies."""
-        for shape_id in self._shape_ids():
-            yield self._slide.shape(shape_id)
-
-    def add(self, builder: ShapeBuilder) -> ShapeProxy:
-        """Add a shape from a :class:`~gopptx.shapes.ShapeBuilder` and return its proxy.
-
-        Example::
-
-            proxy = slide.shapes.add(
-                ShapeBuilder.rectangle(1.0, 1.0, 4.0, 2.0)
-                .with_text("Hello")
-                .with_fill("4472C4")
-            )
-        """
-        shape_id = self._slide.add_shape(
-            builder.shape_type,
-            builder.bounds,
-            **cast("dict[str, ShapeProps]", builder.to_kwargs()),
-        )
-        return self._slide.shape(shape_id)
 
 
 ShapeFillProxy = _ShapeFillProxy

@@ -29,6 +29,10 @@ if TYPE_CHECKING:
     class _ChartAxisBulkOpsProto(Protocol):
         def _axes_for(self, axis: str) -> tuple[ChartAxis, ...]: ...
 
+    class _ChartTitleProto(Protocol):
+        @property
+        def _chart_title(self) -> ChartTitle: ...
+
 
 class _ChartAxisBulkOpsMixin:
     """Bulk axis convenience operations."""
@@ -57,6 +61,37 @@ class _ChartAxisBulkOpsMixin:
                 target.minor_gridlines_visible = minor
 
 
+class _ChartTitleMixin:
+    """The chart-title accessors, held together so the spellings cannot drift.
+
+    ``chart_title`` and ``has_title`` are the python-pptx names;
+    ``title_visible`` predates them and stays as an alias.
+    """
+
+    @property
+    def chart_title(self: _ChartTitleProto) -> ChartTitle:
+        """Chart title proxy."""
+        return self._chart_title
+
+    @property
+    def has_title(self: _ChartTitleProto) -> bool:
+        """Whether the chart draws a title, as on ``ChartAxis`` (Issue #1072)."""
+        return self._chart_title.visible
+
+    @has_title.setter
+    def has_title(self: _ChartTitleProto, value: bool) -> None:
+        self._chart_title.visible = value
+
+    @property
+    def title_visible(self: _ChartTitleProto) -> bool:
+        """Alias for :attr:`has_title`."""
+        return self._chart_title.visible
+
+    @title_visible.setter
+    def title_visible(self: _ChartTitleProto, value: bool) -> None:
+        self._chart_title.visible = value
+
+
 class _ChartStateMixin:
     """Read/write helpers for staged chart state."""
 
@@ -72,6 +107,7 @@ class _ChartStateMixin:
 
 
 class Chart(
+    _ChartTitleMixin,
     _ChartStateMixin,
     _ChartAxisBulkOpsMixin,
     ChartTrendlineMixin,
@@ -127,20 +163,6 @@ class Chart(
     def chart_part(self) -> str:
         """Package path for the chart XML part."""
         return self._chart_part
-
-    @property
-    def chart_title(self) -> ChartTitle:
-        """Chart title proxy."""
-        return self._chart_title
-
-    @property
-    def title_visible(self) -> bool:
-        """Whether the chart title is visible."""
-        return self._chart_title.visible
-
-    @title_visible.setter
-    def title_visible(self, value: bool) -> None:
-        self._chart_title.visible = value
 
     @property
     def legend(self) -> ChartLegend:

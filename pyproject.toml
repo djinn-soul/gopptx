@@ -19,6 +19,7 @@ dependencies = [
     "Jinja2>=3.1.6",
     "typing-extensions>=4.15.0",
     "pillow>=12.3.0",
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]
@@ -140,7 +141,11 @@ convention = "google"
 "python/gopptx/text/**/*.py" = ["TID252"]
 "python/gopptx/ops.py" = ["I001", "PLC0414", "S105"]
 "python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
+# Both background tests assert on the parsed p:bg subtree, which the proxy only
+# exposes through _element/_cSld. The ruff hook runs --ignore-noqa, so a per-file
+# ignore is the only thing that holds here.
 "python/tests/test_slide_background_element.py" = ["SLF001"]
+"python/tests/test_slide_background_readback.py" = ["SLF001"]
 
 "examples/**/*.py" = ["T201", "INP001", "D"]
 

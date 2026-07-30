@@ -35,6 +35,11 @@ class SlideLayout:
         return self._part
 
     @property
+    def part_name(self) -> str:
+        """Alias for part path (python-pptx parity)."""
+        return self._part
+
+    @property
     def name(self) -> str:
         """The name of this layout."""
         return self._name

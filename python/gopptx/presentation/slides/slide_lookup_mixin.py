@@ -33,8 +33,8 @@ class PresentationSlideLookupMixin(PresentationMixinBase):
         with self._lock:
             if self._slide_index_map_cache is None:
                 self._slide_index_map_cache = {
-                    int(item["SlideID"]): int(item["Index"])
-                    for item in self.slides_metadata
+                    int(item.get("SlideID", 0)): int(item.get("Index", idx))
+                    for idx, item in enumerate(self.slides_metadata)
                 }
             return self._slide_index_map_cache.get(slide_id, -1)
 
