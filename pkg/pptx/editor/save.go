@@ -42,6 +42,9 @@ func (e *PresentationEditor) Save(filePath string) error {
 	if err != nil {
 		return fmt.Errorf("prepare updated parts: %w", err)
 	}
+	if err := applyOutputPresentationKind(updatedParts, filePath); err != nil {
+		return err
+	}
 
 	allNames := mergedPartNames(e.parts.Keys(), updatedParts)
 	if password := strings.TrimSpace(e.metadata.Protection.EncryptPassword); password != "" {
