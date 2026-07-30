@@ -21,12 +21,20 @@ class _AxisChartProtocol(Protocol):
         ...
 
 
+_AXIS_NAMES = ("category", "value")
+
+
 class ChartAxisFormatMixin:
     """Adds python-pptx-style axis title, scale, unit, and format controls."""
 
     def __init__(self, chart: _AxisChartProtocol, *, axis_name: str) -> None:
         """Initialize the shared axis formatting state."""
         super().__init__()
+        # Validated here rather than per property: every axis lookup treats any
+        # name other than "category" as the value axis, so a mis-specified name
+        # would silently format the wrong axis.
+        if axis_name not in _AXIS_NAMES:
+            raise ValueError(f"axis_name must be one of: {', '.join(_AXIS_NAMES)}")
         self._chart = chart
         self._axis_name = axis_name
 
@@ -87,6 +95,31 @@ class ChartAxisFormatMixin:
         self._chart.apply_format(cast("ChartFormatUpdate", payload))
 
     @property
+    def visible(self) -> bool:
+        """Return whether PowerPoint draws this axis.
+
+        An axis is hidden with ``<c:delete val="1"/>``; the axis element stays
+        in the chart so the series keep referring to it (issues #473, #852).
+        """
+        value = self._axis_state_value("visible")
+        return True if value is None else bool(value)
+
+    @visible.setter
+    def visible(self, value: bool) -> None:
+        self._apply_axis_format("visible", bool(value))
+
+    @property
+    def tick_label_rotation(self) -> float | None:
+        """Return the tick-label angle in degrees, if one is set (issue #329)."""
+        return self._float_state("tick_label_rotation")
+
+    @tick_label_rotation.setter
+    def tick_label_rotation(self, value: float) -> None:
+        self._apply_axis_format(
+            "tick_label_rotation", self._finite_number(value, "tick_label_rotation")
+        )
+
+    @property
     def major_unit(self) -> float | None:
         """Return the major tick interval, if explicitly configured."""
         return self._float_state("major_unit")
@@ -134,7 +167,10 @@ class ChartAxisFormatMixin:
 
     def _float_state(self, name: str) -> float | None:
         value = self._axis_state_value(name)
-        return float(value) if isinstance(value, int | float) else None
+        # bool is a subclass of int, so it would otherwise become 1.0/0.0.
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            return None
+        return float(value)
 
     @staticmethod
     def _finite_number(value: float, name: str) -> float:

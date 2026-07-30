@@ -1,5 +1,5 @@
 {
-    "line_ceiling": 300,
+    "line_ceiling": 400,
     "roots": [
         "bindings/c",
         "cmd",

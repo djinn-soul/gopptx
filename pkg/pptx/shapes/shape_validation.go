@@ -33,10 +33,10 @@ func (s Shape) Validate(slideIndex, shapeIndex int) error {
 	return s.validateActions(slideIndex, shapeIndex)
 }
 
+// validateShapeBounds checks extents only. A negative x/y is valid OOXML and is
+// how a shape is legitimately placed partly off the slide, so position is not
+// constrained here.
 func (s Shape) validateShapeBounds(slideIndex, shapeIndex int) error {
-	if s.X < 0 || s.Y < 0 {
-		return fmt.Errorf("shape %d on slide %d position cannot be negative", shapeIndex, slideIndex)
-	}
 	if s.CX <= 0 || s.CY <= 0 {
 		return fmt.Errorf("shape %d on slide %d size must be > 0", shapeIndex, slideIndex)
 	}

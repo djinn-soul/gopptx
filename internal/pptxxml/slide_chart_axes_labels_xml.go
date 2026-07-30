@@ -38,6 +38,7 @@ func chartDataLabelsWithDefaults(chart *ChartSpec, defaults chartDataLabelDefaul
 	b.WriteString(`
 <c:dLbls>
 `)
+	b.WriteString(chartDataLabelTextPropertiesXML(chart.DataLabelWordWrap))
 	if position != "" {
 		b.WriteString(`<c:dLblPos val="`)
 		b.WriteString(position)
@@ -71,6 +72,20 @@ func chartDataLabelsWithDefaults(chart *ChartSpec, defaults chartDataLabelDefaul
 	b.WriteString(`</c:dLbls>`)
 	return b.String()
 }
+
+func chartDataLabelTextPropertiesXML(wordWrap *bool) string {
+	if wordWrap == nil {
+		return ""
+	}
+	wrap := valNone
+	if *wordWrap {
+		wrap = dataLabelWrapSquare
+	}
+	return `<c:txPr><a:bodyPr wrap="` + wrap +
+		`"/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></c:txPr>` + "\n"
+}
+
+const dataLabelWrapSquare = "square"
 
 func normalizedLegendPosition(pos string) string {
 	switch strings.ToLower(strings.TrimSpace(pos)) {

@@ -53,8 +53,23 @@ class PresentationShapePayloadMixin(PresentationMixinBase):
         options: Mapping[str, object],
         *,
         include_text: bool,
+        reject_unknown: bool = False,
     ) -> None:
-        """Apply typed payload options and serializers for shape command calls."""
+        """Apply typed payload options and serializers for shape command calls.
+
+        Args:
+            payload: Command payload to populate in place.
+            options: Caller-supplied options.
+            include_text: Whether a "text" option applies to this command.
+            reject_unknown: Raise TypeError on an option this helper does not
+                recognize. Set it where *options* comes straight from a public
+                **kwargs, so that a misspelled keyword fails loudly instead of
+                being dropped. Leave it off where the caller forwards
+                unrecognized keys on purpose, as update_shape does.
+
+        Raises:
+            TypeError: If reject_unknown is set and an option is not recognized.
+        """
         serializers = {
             "runs": serialize_runs_for_payload,
             "text_frame": serialize_text_frame_for_payload,
@@ -67,6 +82,15 @@ class PresentationShapePayloadMixin(PresentationMixinBase):
             "hover_action",
             "properties",
         )
+        if reject_unknown:
+            unknown = sorted(set(options) - set(keys))
+            if unknown:
+                raise TypeError(
+                    " ".join((
+                        f"unexpected keyword argument(s) {', '.join(unknown)};",
+                        f"supported: {', '.join(sorted(keys))}",
+                    ))
+                )
         for key in keys:
             value = options.get(key)
             if value is None:

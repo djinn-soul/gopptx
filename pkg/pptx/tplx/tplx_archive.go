@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/zipfast"
@@ -96,15 +97,22 @@ func writeArchiveBytes(w io.Writer, data []byte) error {
 }
 
 func writeNewArchiveParts(zw *zip.Writer, parts map[string][]byte, written map[string]bool) error {
-	for name, data := range parts {
-		if written[name] {
-			continue
+	// Sorted, so a rendered template is byte-reproducible rather than ordered by
+	// map iteration.
+	names := make([]string, 0, len(parts))
+	for name := range parts {
+		if !written[name] {
+			names = append(names, name)
 		}
-		w, err := zw.Create(name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		w, err := zipfast.CreateEntry(zw, name, zip.Deflate)
 		if err != nil {
 			return err //nolint:wrapcheck // ZIP writer create failures are surfaced directly.
 		}
-		if _, err = w.Write(data); err != nil {
+		if _, err = w.Write(parts[name]); err != nil {
 			return err //nolint:wrapcheck // Preserve write failures for newly added parts.
 		}
 	}

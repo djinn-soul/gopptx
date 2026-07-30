@@ -152,3 +152,48 @@ func containsBinding(inv ThemeInventory, owner, theme string) bool {
 	}
 	return false
 }
+
+func TestPresentationEditorGetThemeColorScheme(t *testing.T) {
+	path := writeThemeFixtureDeck(t)
+	editor, err := OpenPresentationEditor(path)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	scheme, err := editor.GetThemeColorScheme()
+	if err != nil {
+		t.Fatalf("get theme color scheme: %v", err)
+	}
+	// dk1/lt1 are a:sysClr in the fixture and resolve to their lastClr.
+	for _, want := range []struct {
+		name string
+		got  string
+		hex  string
+	}{
+		{"dk1", scheme.Dk1, "000000"},
+		{"lt1", scheme.Lt1, "FFFFFF"},
+		{"dk2", scheme.Dk2, "1F497D"},
+		{"lt2", scheme.Lt2, "EEECE1"},
+		{"accent1", scheme.Accent1, "4F81BD"},
+		{"accent6", scheme.Accent6, "F79646"},
+		{"hlink", scheme.Hlink, "0000FF"},
+		{"folHlink", scheme.FolHlink, "800080"},
+	} {
+		if want.got != want.hex {
+			t.Fatalf("%s = %q, want %q", want.name, want.got, want.hex)
+		}
+	}
+
+	// The read must follow a write rather than caching the original theme.
+	if err := editor.SetThemeColorScheme(ThemeColorScheme{Accent1: "FF1122"}); err != nil {
+		t.Fatalf("set theme color scheme: %v", err)
+	}
+	updated, err := editor.GetThemeColorScheme()
+	if err != nil {
+		t.Fatalf("re-read theme color scheme: %v", err)
+	}
+	if updated.Accent1 != "FF1122" {
+		t.Fatalf("accent1 after write = %q, want FF1122", updated.Accent1)
+	}
+}

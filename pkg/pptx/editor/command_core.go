@@ -89,7 +89,7 @@ func (v *PayloadValidator) setCode(code string) {
 
 func (v *PayloadValidator) missingField(field string) {
 	v.setCode(ErrCodeMissingField)
-	v.errors = append(v.errors, fmt.Sprintf("missing required field: %s", field))
+	v.errors = append(v.errors, "missing required field: "+field)
 }
 
 func (v *PayloadValidator) invalidType(field, expected string, value any) {

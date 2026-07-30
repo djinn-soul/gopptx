@@ -56,7 +56,7 @@ func (v *Validator) checkSlideReferences() {
 				Code:        CodeMissingSlideRef,
 				Severity:    SeverityError,
 				Path:        presentationRelsPath,
-				Description: fmt.Sprintf("Referenced slide not found: %s", slidePath),
+				Description: "Referenced slide not found: " + slidePath,
 				Repairable:  true,
 			})
 		}

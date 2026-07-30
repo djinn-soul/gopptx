@@ -13,6 +13,9 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return 0, errors.New("slide index out of range")
 	}
+	if err := validateShapeExtents(w, h); err != nil {
+		return 0, err
+	}
 
 	partPath := e.slides[slideIndex].Part
 	content, ok := e.parts.Get(partPath)
@@ -20,8 +23,8 @@ func (e *PresentationEditor) AddShape(slideIndex int, shapeType string, x, y, w,
 		return 0, fmt.Errorf("read slide part %s: not found", partPath)
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
+	newID := e.maxObjectID(partPath, content) + 1
+	e.reserveObjectIDs(partPath, newID)
 
 	newShape := parsedShape{
 		ID:   newID,
@@ -56,6 +59,9 @@ const placeholderTypeTitle = "title"
 func (e *PresentationEditor) UpdateShape(slideIndex, shapeID int, updates common.ShapeUpdate) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return errors.New("slide index out of range")
+	}
+	if err := validateShapeUpdateExtents(updates); err != nil {
+		return err
 	}
 
 	partPath := e.slides[slideIndex].Part
@@ -111,7 +117,7 @@ func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
 		return nil, false
 	}
 	u.found = true
-	if hasPictureUpdateFields(u.updates) && s.Type != shapeTypePicture {
+	if hasPictureOnlyUpdateFields(u.updates) && s.Type != shapeTypePicture {
 		u.err = fmt.Errorf("shape id %d is not a picture shape", u.shapeID)
 		return nil, false
 	}
@@ -136,6 +142,7 @@ func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
 	if u.err != nil {
 		return nil, false
 	}
+	updatedXML, replaced = u.applyAltTextAndTitle(updatedXML, s, replaced)
 	if replaced {
 		return updatedXML, true
 	}
@@ -177,7 +184,9 @@ func (u *shapeUpdater) applyPicture(
 	if !hasPictureUpdateFields(u.updates) {
 		return xmlData, replaced, nil
 	}
-	if s.Type != shapeTypePicture {
+	// Cropping is picture-only; rotation and flips are plain <a:xfrm>
+	// attributes and apply to any shape kind.
+	if hasPictureOnlyUpdateFields(u.updates) && s.Type != shapeTypePicture {
 		return xmlData, replaced, fmt.Errorf("shape id %d is not a picture shape", s.ID)
 	}
 	updatedXML, err := applyPictureShapeUpdates(xmlData, u.updates)
@@ -188,21 +197,35 @@ func (u *shapeUpdater) applyPicture(
 }
 
 func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {
-	if u.updates.Text == nil && u.updates.Runs == nil && u.updates.TextFrame == nil && u.updates.Paragraph == nil {
+	if u.updates.Text == nil && u.updates.Runs == nil && u.updates.Paragraphs == nil &&
+		u.updates.TextFrame == nil && u.updates.Paragraph == nil {
 		return xmlData, replaced, nil
 	}
 	if u.updates.Text != nil {
 		s.Text = *u.updates.Text
 		s.Runs = nil
+		s.Paragraphs = nil
 	}
 	if u.updates.Runs != nil {
 		s.Runs = *u.updates.Runs
+		s.Paragraphs = nil
+	}
+	if u.updates.Paragraphs != nil {
+		s.Paragraphs = *u.updates.Paragraphs
+		s.Runs = nil
+		s.Text = ""
+		if len(s.Paragraphs) > 0 {
+			s.Paragraph = s.Paragraphs[0].Paragraph
+		}
 	}
 	if u.updates.TextFrame != nil {
 		s.TextFrame = u.updates.TextFrame
 	}
 	if u.updates.Paragraph != nil {
 		s.Paragraph = u.updates.Paragraph
+		if len(s.Paragraphs) > 0 {
+			s.Paragraphs[0].Paragraph = u.updates.Paragraph
+		}
 	}
 	updatedXML, err := replaceShapeTextBody(u.editor, u.partPath, xmlData, s)
 	return updatedXML, true, err

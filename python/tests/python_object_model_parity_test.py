@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from gopptx import CategoryChartData, Presentation
+from gopptx.presentation.charts import ChartType
 
 
 def test_chart_object_model_updates() -> None:
@@ -10,7 +11,7 @@ def test_chart_object_model_updates() -> None:
         slide = prs.add_slide("Chart")
         data = CategoryChartData(categories=["A", "B"])
         data.add_series("S1", [1.0, 2.0])
-        _shape_id = slide.add_chart("bar", data)
+        _shape_id = slide.add_chart(ChartType.BAR, data)
 
         chart = slide.charts[0]
         chart.title_visible = True
@@ -103,7 +104,7 @@ def test_shape_table_proxy_distinguishes_tables_from_chart_graphic_frames() -> N
 
         data = CategoryChartData(categories=["A", "B"])
         data.add_series("S1", [1.0, 2.0])
-        chart_id = slide.add_chart("bar", data)
+        chart_id = slide.add_chart(ChartType.BAR, data)
         assert chart_id > 0
         chart_shape = slide.shape(chart_id)
 

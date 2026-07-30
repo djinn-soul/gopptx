@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .constants import PlaceholderType
+    from .schemas_shape_style import FreeformGeometry, PictureFill
 
 
 class TextFrame(TypedDict, total=False):
@@ -45,6 +46,7 @@ class Paragraph(TypedDict, total=False):
     line_spacing_pts: int
     space_before_pts: int
     space_after_pts: int
+    rtl: bool
 
 
 class GradientStop(TypedDict, total=False):
@@ -52,6 +54,7 @@ class GradientStop(TypedDict, total=False):
 
     position_pct: float
     color: str
+    transparency: float
 
 
 class GradientFill(TypedDict, total=False):
@@ -77,6 +80,7 @@ class FillFormat(TypedDict, total=False):
     background: bool
     gradient: GradientFill
     pattern: PatternFill
+    picture: PictureFill
 
 
 class LineFormat(TypedDict, total=False):
@@ -146,6 +150,19 @@ class SlideImageRef(TypedDict):
     Target: str
 
 
+class SlideMediaRef(TypedDict, total=False):
+    """Reference to one media relationship on a slide: image, audio or video."""
+
+    index: int
+    rel_id: str
+    kind: str
+    target: str
+    part_path: str
+    content_type: str
+    size_bytes: int
+    external: bool
+
+
 class ImageCrop(TypedDict, total=False):
     """Cropping offsets (0.0 to 1.0)."""
 
@@ -190,6 +207,13 @@ class TextRun(TypedDict, total=False):
     hover_action: Hyperlink
 
 
+class ShapeTextParagraph(TypedDict, total=False):
+    """One shape-text paragraph with independent runs and properties."""
+
+    runs: list[TextRun]
+    paragraph: Paragraph
+
+
 class ShapeProps(TypedDict, total=False):
     """Shape properties."""
 
@@ -210,11 +234,31 @@ class ShapeProps(TypedDict, total=False):
     flip_v: bool
 
 
+class ShapeAdjustment(TypedDict, total=False):
+    """One adjustment as read back from a shape's preset geometry."""
+
+    Name: str
+    Formula: str
+
+
+class ShapeAdjustmentValue(TypedDict, total=False):
+    """One preset-geometry adjustment: a yellow handle in PowerPoint's UI.
+
+    ``value`` is a fraction (0.5 is the halfway point); ``formula`` overrides it
+    with a raw OOXML guide expression.
+    """
+
+    name: str
+    value: float
+    formula: str
+
+
 class ShapeUpdate(TypedDict, total=False):
     """Shape update parameters."""
 
     text: str
     runs: list[TextRun]
+    paragraphs: list[ShapeTextParagraph]
     text_frame: TextFrame
     paragraph: Paragraph
     fill: FillFormat
@@ -233,6 +277,9 @@ class ShapeUpdate(TypedDict, total=False):
     y: int
     w: int
     h: int
+    description: str
+    alt_text: str
+    title: str
 
 
 class Shape(TypedDict, total=False):
@@ -251,6 +298,9 @@ class Shape(TypedDict, total=False):
     fill: FillFormat
     line: LineFormat
     shadow: ShadowFormat
+    flip_h: bool
+    flip_v: bool
+    freeform: FreeformGeometry
 
 
 class GrayscaleShapeRef(TypedDict):

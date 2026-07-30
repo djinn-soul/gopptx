@@ -185,8 +185,6 @@ linters:
 
     govet:
       enable-all: true
-      disable:
-        - fieldalignment
       settings:
         shadow:
           strict: true
@@ -223,7 +221,7 @@ linters:
       require-specific: true
 
     perfsprint:
-      strconcat: false
+      strconcat: true
 
     reassign:
       patterns:
@@ -269,6 +267,19 @@ linters:
         linters: [revive, staticcheck]
       - text: "^shadow: declaration of"
         linters: [govet]
+      # Public library, wire-contract, renderer-spec, and example structs
+      # intentionally keep their field order. Reordering exported structs can
+      # break positional literals, while schema structs mirror stable document
+      # contracts. Keep fieldalignment active for tools, commands, and bindings.
+      - path: '^(?:pkg[\\/]pptx|internal[\\/]pptxxml|examples)[\\/].*\.go$'
+        text: "fieldalignment:"
+        linters: [govet]
+      # The path-level compatibility rule above supersedes older per-struct
+      # fieldalignment annotations. They remain useful documentation if a file
+      # later moves out of the schema/API domains.
+      - path: '^pkg[\\/]pptx[\\/].*\.go$'
+        text: 'directive .* is unused for linter "govet"'
+        linters: [nolintlint]
       - path: '_test\.go'
         linters:
           - bodyclose
@@ -278,6 +289,7 @@ linters:
           - gocognit
           - goconst
           - gosec
+          - govet
           - noctx
           - testpackage
           - wrapcheck

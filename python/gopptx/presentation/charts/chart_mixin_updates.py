@@ -11,6 +11,7 @@ from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
     from ...schemas import (
+        ChartDataSource,
         ChartDataUpdate,
         ChartFormatUpdate,
         ChartSelector,
@@ -71,6 +72,44 @@ class PresentationChartUpdatesMixin(PresentationMixinBase):
                 UserWarning,
                 stacklevel=2,
             )
+
+    def update_chart_cached_values(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+        data: ChartDataUpdate,
+    ) -> None:
+        """Refresh the numbers a chart displays without touching its link.
+
+        ``update_chart_data`` regenerates an embedded workbook and repoints the
+        chart at it, which turns a chart linked to an external workbook into an
+        embedded one. This refreshes only the cache PowerPoint draws from, so a
+        deck rebuilt from a linked workbook shows current numbers without
+        opening each chart and clicking Refresh (issue #115).
+        """
+        self.execute(
+            ops.OP_UPDATE_CHART_CACHED_VALUES,
+            {
+                "slide_index": slide_index,
+                "chart_selector": cast("dict[str, object]", chart_selector),
+                "data": cast("dict[str, object]", data),
+            },
+        )
+
+    def get_chart_data_source(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+    ) -> ChartDataSource:
+        """Report whether a chart's data is embedded, externally linked, or absent."""
+        result = self.execute(
+            ops.OP_GET_CHART_DATA_SOURCE,
+            {
+                "slide_index": slide_index,
+                "chart_selector": cast("dict[str, object]", chart_selector),
+            },
+        )
+        return cast("ChartDataSource", result.get("source", {}))
 
     def update_chart_data_batch(
         self,

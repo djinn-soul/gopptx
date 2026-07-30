@@ -3,6 +3,7 @@ package table
 import (
 	"bytes"
 	"errors"
+	"strings"
 )
 
 func FlagAttributeName(flag string) (string, bool) {
@@ -68,6 +69,7 @@ func BuildTableInfo(frame []byte) (map[string]any, error) {
 			"last_col":      TruthyAttr(parsed.TblPr.LastCol),
 			"band_row":      TruthyAttr(parsed.TblPr.BandRow),
 			keyBandCol:      TruthyAttr(parsed.TblPr.BandCol),
+			"style_id":      strings.TrimSpace(parsed.TblPr.StyleID),
 			"row_heights":   rowHeights,
 			"column_widths": columnWidths,
 			keyCells:        cells,

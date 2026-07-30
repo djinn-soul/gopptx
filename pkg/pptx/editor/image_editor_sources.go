@@ -1,12 +1,8 @@
 package editor
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"image"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,16 +15,21 @@ import (
 var embeddedImageRelPattern = regexp.MustCompile(`r:embed="([^"]+)"`)
 
 const (
-	mimePNG    = "image/png"
-	mimeJPEG   = "image/jpeg"
-	mimeGIF    = "image/gif"
-	mimeBMP    = "image/bmp"
-	mimeTIFF   = "image/tiff"
-	formatPNG  = "png"
-	formatJPEG = "jpeg"
-	formatGIF  = "gif"
-	formatBMP  = "bmp"
-	formatTIFF = "tiff"
+	mimePNG     = "image/png"
+	mimeJPEG    = "image/jpeg"
+	mimeGIF     = "image/gif"
+	mimeBMP     = "image/bmp"
+	mimeTIFF    = "image/tiff"
+	mimeEMF     = "image/x-emf"
+	mimeWMF     = "image/x-wmf"
+	mimeMSPhoto = "image/vnd.ms-photo"
+	formatPNG   = "png"
+	formatJPEG  = "jpeg"
+	formatGIF   = "gif"
+	formatBMP   = "bmp"
+	formatTIFF  = "tiff"
+	formatEMF   = "emf"
+	formatWMF   = "wmf"
 )
 
 type imagePathCacheEntry struct {
@@ -71,43 +72,6 @@ func (e *PresentationEditor) AddImageFromURL(
 		return 0, err
 	}
 	return e.AddImageFromBytes(slideIndex, data, format, x, y, w, h, opts)
-}
-
-func buildImageMetadata(data []byte, cfg image.Config, format string) *common.ImageMetadata {
-	return &common.ImageMetadata{
-		Width:       cfg.Width,
-		Height:      cfg.Height,
-		Format:      strings.ToLower(strings.TrimSpace(format)),
-		ContentType: imageContentType(data, format),
-		Hash:        imageSHA256Hex(data),
-	}
-}
-
-func imageSHA256Hex(data []byte) string {
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])
-}
-
-func imageContentType(data []byte, format string) string {
-	contentType := strings.TrimSpace(http.DetectContentType(data))
-	if contentType != "" && contentType != "application/octet-stream" {
-		return contentType
-	}
-
-	switch strings.ToLower(strings.TrimSpace(format)) {
-	case "jpg", formatJPEG:
-		return mimeJPEG
-	case formatPNG:
-		return mimePNG
-	case formatGIF:
-		return mimeGIF
-	case formatBMP:
-		return mimeBMP
-	case "tif", formatTIFF:
-		return mimeTIFF
-	default:
-		return contentType
-	}
 }
 
 func (e *PresentationEditor) registerImageFromPath(imagePath, formatHint string) (string, error) {

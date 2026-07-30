@@ -2,6 +2,7 @@ import pathlib
 
 import pytest
 from gopptx import SHAPE_RECTANGLE, Presentation
+from gopptx.presentation.charts import ChartType
 
 project_root = (pathlib.Path(__file__).parent / "../..").resolve()
 input_deck = project_root / "examples/assets/01/01_basic_pptx.pptx"
@@ -79,7 +80,7 @@ def test_charts_basic() -> None:
     with Presentation(str(input_deck)) as prs:
         slide = prs.add_slide("Chart Test")
         # Basic add_chart
-        slide.add_chart("bar", ["A", "B"], [10, 20], title="Test Chart")
+        slide.add_chart(ChartType.BAR, ["A", "B"], [10, 20], title="Test Chart")
 
         charts = slide.list_charts()
         assert len(charts) > 0

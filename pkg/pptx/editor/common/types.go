@@ -12,6 +12,7 @@ const (
 	PresentationXMLPath = "ppt/presentation.xml"
 	ContentTypesPath    = "[Content_Types].xml"
 	CorePropsPath       = "docProps/core.xml"
+	AppPropsPath        = "docProps/app.xml"
 
 	// DCNamespace and related metadata XML namespaces.
 	DCNamespace       = "http://purl.org/dc/elements/1.1/"
@@ -37,6 +38,10 @@ const (
 	RelTypeTableStyles    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/tableStyles"
 	RelTypeCustomXML      = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml"
 	RelTypeCustomXMLProps = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXmlProps"
+	RelTypeExtendedProps  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"
+
+	// ExtendedPropsContentType is the content type of docProps/app.xml.
+	ExtendedPropsContentType = "application/vnd.openxmlformats-officedocument.extended-properties+xml"
 
 	RelationshipsXMLNS = "http://schemas.openxmlformats.org/package/2006/relationships"
 	ContentTypesXMLNS  = "http://schemas.openxmlformats.org/package/2006/content-types"
@@ -61,6 +66,20 @@ type EditorSlideRef struct {
 	Hidden  bool
 }
 
+// TextReplaceScope names the parts a find-and-replace covers.
+type TextReplaceScope string
+
+const (
+	// TextScopeSlides covers slide shapes only. It is the default, and what
+	// find-and-replace has always done.
+	TextScopeSlides TextReplaceScope = "slides"
+	// TextScopeSlidesAndNotes adds the speaker notes parts.
+	TextScopeSlidesAndNotes TextReplaceScope = "slides+notes"
+	// TextScopeAll adds notes, layouts, slide masters, the notes master and the
+	// handout master, which is what a deck-wide rename wants.
+	TextScopeAll TextReplaceScope = "all"
+)
+
 // xmlEscaper is a package-level replacer so XMLEscape never allocates.
 //
 //nolint:gochecknoglobals // read-only package-level replacer, never mutated
@@ -70,6 +89,13 @@ var xmlEscaper = strings.NewReplacer(
 	">", "&gt;",
 	`"`, "&quot;",
 	"'", "&apos;",
+	// XML parsers normalize a literal newline, carriage return or tab inside an
+	// attribute value to a space, so multi-line values (picture alt text, for
+	// one) would lose their breaks. Character references survive normalization
+	// and mean the same thing in element text.
+	"\n", "&#10;",
+	"\r", "&#13;",
+	"\t", "&#9;",
 )
 
 // XMLEscape provides basic XML attribute escaping.

@@ -58,8 +58,10 @@ func TestPresentation_UpdateChartFormattingByIndex(t *testing.T) {
 	if !strings.Contains(chartXML, `<c:showSerName val="1"/>`) {
 		t.Fatalf("updated chart XML missing showSerName")
 	}
-	if strings.Contains(chartXML, `<c:showPercent`) {
-		t.Fatalf("expected showPercent removed when false")
+	// A flag turned off is written as val="0" rather than dropped: PowerPoint
+	// ignores a label carrying only some of the six display flags.
+	if !strings.Contains(chartXML, `<c:showPercent val="0"/>`) {
+		t.Fatalf("expected showPercent written as off")
 	}
 }
 

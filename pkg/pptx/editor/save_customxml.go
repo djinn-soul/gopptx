@@ -98,8 +98,11 @@ func (e *PresentationEditor) writeCustomXMLPropsRelationship(out map[string][]by
 	out[fmt.Sprintf("customXml/_rels/item%d.xml.rels", index)] = []byte(itemRelContent)
 }
 
-func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]byte) {
-	packageRelsData, ok := e.parts.Get("_rels/.rels")
+// rewriteRootRelationships drops the custom XML relationships the editor
+// re-creates itself and adds the docProps/app.xml relationship when the source
+// deck lacks one. It writes _rels/.rels only when one of the two applies.
+func (e *PresentationEditor) rewriteRootRelationships(out map[string][]byte) {
+	packageRelsData, ok := e.parts.Get(packageRelsPartName)
 	if !ok {
 		return
 	}
@@ -107,7 +110,7 @@ func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]b
 	if len(packageRelsData) > 0 {
 		if bytes.Equal(e.packageRelsData, packageRelsData) {
 			if e.packageRelsNeedsFilter {
-				out["_rels/.rels"] = e.packageRelsFilteredXML
+				out[packageRelsPartName] = e.packageRelsFilteredXML
 			}
 			return
 		}
@@ -123,7 +126,7 @@ func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]b
 	if err != nil {
 		return
 	}
-	filtered := make([]common.EditorRelationship, 0, len(rels))
+	filtered := make([]common.EditorRelationship, 0, len(rels)+1)
 	changed := false
 	for _, r := range rels {
 		if r.Type == common.RelTypeCustomXML || r.Type == common.RelTypeCustomXMLProps {
@@ -132,11 +135,13 @@ func (e *PresentationEditor) filterRootCustomXMLRelationships(out map[string][]b
 		}
 		filtered = append(filtered, r)
 	}
+	filtered, addedAppProps := ensureAppPropertiesRelationship(filtered)
+	changed = changed || addedAppProps
 	if changed {
 		filteredXML := []byte(renderRelationshipsXML(filtered))
 		e.packageRelsNeedsFilter = true
 		e.packageRelsFilteredXML = filteredXML
-		out["_rels/.rels"] = filteredXML
+		out[packageRelsPartName] = filteredXML
 		return
 	}
 	e.packageRelsNeedsFilter = false

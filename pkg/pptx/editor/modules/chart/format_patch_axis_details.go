@@ -12,15 +12,32 @@ import (
 )
 
 var (
-	reAxisTitle   = regexp.MustCompile(`(?s)<c:title>.*?</c:title>`)
-	reAxisTitleTx = regexp.MustCompile(`(?s)<a:t>.*?</a:t>`)
-	reAxisScaling = regexp.MustCompile(`(?s)<c:scaling(?:\s*/>|>.*?</c:scaling>)`)
-	reAxisMax     = regexp.MustCompile(`<c:max val="[^"]*"/>`)
-	reAxisMin     = regexp.MustCompile(`<c:min val="[^"]*"/>`)
-	reAxisMajor   = regexp.MustCompile(`<c:majorUnit val="[^"]*"/>`)
-	reAxisMinor   = regexp.MustCompile(`<c:minorUnit val="[^"]*"/>`)
-	reAxisNumFmt  = regexp.MustCompile(`<c:numFmt [^>]*/>`)
+	reAxisTitle    = regexp.MustCompile(`(?s)<c:title>.*?</c:title>`)
+	reAxisTitleTx  = regexp.MustCompile(`(?s)<a:t>.*?</a:t>`)
+	reAxisScaling  = regexp.MustCompile(`(?s)<c:scaling(?:\s*/>|>.*?</c:scaling>)`)
+	reAxisMax      = regexp.MustCompile(`<c:max val="[^"]*"/>`)
+	reAxisMin      = regexp.MustCompile(`<c:min val="[^"]*"/>`)
+	reAxisMajor    = regexp.MustCompile(`<c:majorUnit val="[^"]*"/>`)
+	reAxisMinor    = regexp.MustCompile(`<c:minorUnit val="[^"]*"/>`)
+	reAxisNumFmt   = regexp.MustCompile(`<c:numFmt [^>]*/>`)
+	reAxisTickSkip = regexp.MustCompile(`<c:tickMarkSkip val="[^"]*"/>`)
+	reAxisLblAlgn  = regexp.MustCompile(`<c:lblAlgn val="[^"]*"/>`)
 )
+
+// categoryAxisLabelAlignments are the CT_LblAlgn enumeration values.
+//
+//nolint:gochecknoglobals // Fixed enumeration, mirrors the other patch tables here.
+var categoryAxisLabelAlignments = map[string]bool{dataLabelPositionCenter: true, "l": true, "r": true}
+
+// attributePatterns holds the attribute readers used by the axis and data-label
+// patch loops. Hoisted out of attributeValue so the loops do not recompile a
+// regexp on every call; the set of attribute names is fixed and small.
+//
+//nolint:gochecknoglobals // Package-level compiled patterns, as elsewhere here.
+var attributePatterns = map[string]*regexp.Regexp{
+	"formatCode":   regexp.MustCompile(`formatCode="([^"]*)"`),
+	"sourceLinked": regexp.MustCompile(`sourceLinked="([^"]*)"`),
+}
 
 func validateAxisDetails(req common.ChartFormatUpdate) error {
 	for _, pair := range []struct {
@@ -48,6 +65,13 @@ func validateAxisDetails(req common.ChartFormatUpdate) error {
 			return errors.New("axis number format must not be empty")
 		}
 	}
+	if skip := req.CategoryAxisTickMarkSkip; skip != nil && *skip < 1 {
+		return errors.New("category_axis_tick_mark_skip must be greater than or equal to 1")
+	}
+	if algn := req.CategoryAxisLabelAlignment; algn != nil &&
+		!categoryAxisLabelAlignments[strings.TrimSpace(*algn)] {
+		return errors.New("category_axis_label_alignment must be one of ctr,l,r")
+	}
 	return nil
 }
 
@@ -66,20 +90,60 @@ func isFinite(value float64) bool {
 }
 
 func patchAxisDetails(xml string, req common.ChartFormatUpdate) string {
-	xml = patchAxisDetailSet(xml, "catAx", req.CategoryAxisTitle, req.CategoryAxisMinimumScale,
-		req.CategoryAxisMaximumScale, req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
-		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked)
-	xml = patchAxisDetailSet(xml, "dateAx", req.CategoryAxisTitle, req.CategoryAxisMinimumScale,
-		req.CategoryAxisMaximumScale, req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
-		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked)
-	return patchAxisDetailSet(xml, "valAx", req.ValueAxisTitle, req.ValueAxisMinimumScale,
-		req.ValueAxisMaximumScale, req.ValueAxisMajorUnit, req.ValueAxisMinorUnit,
-		req.ValueAxisNumberFormat, req.ValueAxisFormatLinked)
+	xml = patchAxisDetailSet(
+		xml, "catAx", req.CategoryAxisHasTitle, req.CategoryAxisTitle,
+		req.CategoryAxisMinimumScale, req.CategoryAxisMaximumScale,
+		req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
+		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked,
+	)
+	xml = patchAxisDetailSet(
+		xml, "dateAx", req.CategoryAxisHasTitle, req.CategoryAxisTitle,
+		req.CategoryAxisMinimumScale, req.CategoryAxisMaximumScale,
+		req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
+		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked,
+	)
+	// tickMarkSkip and lblAlgn are valid only inside CT_CatAx.
+	xml = patchCategoryAxisTickDetail(xml, req.CategoryAxisTickMarkSkip, req.CategoryAxisLabelAlignment)
+	return patchAxisDetailSet(
+		xml, "valAx", req.ValueAxisHasTitle, req.ValueAxisTitle,
+		req.ValueAxisMinimumScale, req.ValueAxisMaximumScale,
+		req.ValueAxisMajorUnit, req.ValueAxisMinorUnit,
+		req.ValueAxisNumberFormat, req.ValueAxisFormatLinked,
+	)
+}
+
+// patchCategoryAxisTickDetail writes c:tickMarkSkip and c:lblAlgn. CT_CatAx
+// orders its trailing children auto, lblAlgn, lblOffset, tickLblSkip,
+// tickMarkSkip, noMultiLvlLbl, extLst, so each node is spliced into place
+// rather than appended.
+func patchCategoryAxisTickDetail(xml string, tickMarkSkip *int, labelAlignment *string) string {
+	if tickMarkSkip == nil && labelAlignment == nil {
+		return xml
+	}
+	return patchEachAxisBlock(xml, "catAx", func(block string) string {
+		if labelAlignment != nil {
+			node := `<c:lblAlgn val="` + strings.TrimSpace(*labelAlignment) + `"/>`
+			if reAxisLblAlgn.MatchString(block) {
+				block = reAxisLblAlgn.ReplaceAllLiteralString(block, node)
+			} else {
+				block = insertAxisLabelAlignment(block, node)
+			}
+		}
+		if tickMarkSkip == nil {
+			return block
+		}
+		node := `<c:tickMarkSkip val="` + strconv.Itoa(*tickMarkSkip) + `"/>`
+		if reAxisTickSkip.MatchString(block) {
+			return reAxisTickSkip.ReplaceAllLiteralString(block, node)
+		}
+		return insertAxisTickMarkSkip(block, node)
+	})
 }
 
 func patchAxisDetailSet(
 	xml string,
 	axisTag string,
+	hasTitle *bool,
 	title *string,
 	minimum *float64,
 	maximum *float64,
@@ -88,13 +152,13 @@ func patchAxisDetailSet(
 	numberFormat *string,
 	formatLinked *bool,
 ) string {
-	if title == nil && minimum == nil && maximum == nil && majorUnit == nil && minorUnit == nil &&
+	if hasTitle == nil && title == nil && minimum == nil && maximum == nil && majorUnit == nil && minorUnit == nil &&
 		numberFormat == nil && formatLinked == nil {
 		return xml
 	}
 	return patchEachAxisBlock(xml, axisTag, func(block string) string {
 		block = patchAxisScaling(block, minimum, maximum)
-		block = patchAxisTitle(block, title)
+		block = patchAxisTitle(block, hasTitle, title)
 		block = patchAxisNumberFormat(block, numberFormat, formatLinked)
 		block = patchAxisUnit(block, reAxisMajor, "majorUnit", majorUnit)
 		return patchAxisUnit(block, reAxisMinor, "minorUnit", minorUnit)
@@ -128,7 +192,7 @@ func patchAxisScaling(block string, minimum *float64, maximum *float64) string {
 	scaling := reAxisScaling.FindString(block)
 	if scaling == "" {
 		scaling = "<c:scaling/>"
-		insertAt := axisDetailInsertIndex(block)
+		insertAt := axisScalingInsertIndex(block)
 		if insertAt < 0 {
 			return block
 		}
@@ -140,31 +204,32 @@ func patchAxisScaling(block string, minimum *float64, maximum *float64) string {
 	if minimum != nil {
 		scaling = replaceOrInsertAxisNode(scaling, reAxisMin, "<c:min val=\""+formatAxisNumber(*minimum)+"\"/>")
 	}
-	return reAxisScaling.ReplaceAllString(block, scaling)
+	return reAxisScaling.ReplaceAllLiteralString(block, scaling)
 }
 
-func axisDetailInsertIndex(block string) int {
-	for _, before := range []string{"<c:delete", "<c:crosses", "<c:tickLblPos", "</c:"} {
-		if index := strings.Index(block, before); index >= 0 {
-			return index
-		}
+func patchAxisTitle(block string, hasTitle *bool, title *string) string {
+	if hasTitle != nil && !*hasTitle {
+		return reAxisTitle.ReplaceAllLiteralString(block, "")
 	}
-	return -1
-}
-
-func patchAxisTitle(block string, title *string) string {
-	if title == nil {
+	if title == nil && hasTitle == nil {
 		return block
 	}
+	titleText := ""
+	if title != nil {
+		titleText = *title
+	}
 	node := `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>` +
-		xmlEscape(*title) + `</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`
+		xmlEscape(titleText) + `</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`
 	if current := reAxisTitle.FindString(block); current != "" {
+		if title == nil {
+			return block
+		}
 		if reAxisTitleTx.MatchString(current) {
-			node = reAxisTitleTx.ReplaceAllString(current, `<a:t>`+xmlEscape(*title)+`</a:t>`)
+			node = reAxisTitleTx.ReplaceAllLiteralString(current, `<a:t>`+xmlEscape(titleText)+`</a:t>`)
 		}
 		return strings.Replace(block, current, node, 1)
 	}
-	return insertAxisNode(block, node)
+	return insertAxisTitle(block, node)
 }
 
 func patchAxisNumberFormat(block string, format *string, linked *bool) string {
@@ -184,9 +249,9 @@ func patchAxisNumberFormat(block string, format *string, linked *bool) string {
 	}
 	node := `<c:numFmt formatCode="` + xmlEscape(formatCode) + `" sourceLinked="` + boolToOneZero(sourceLinked) + `"/>`
 	if reAxisNumFmt.MatchString(block) {
-		return reAxisNumFmt.ReplaceAllString(block, node)
+		return reAxisNumFmt.ReplaceAllLiteralString(block, node)
 	}
-	return insertAxisNode(block, node)
+	return insertAxisNumberFormat(block, node)
 }
 
 func patchAxisUnit(block string, re *regexp.Regexp, tag string, value *float64) string {
@@ -195,23 +260,14 @@ func patchAxisUnit(block string, re *regexp.Regexp, tag string, value *float64) 
 	}
 	node := `<c:` + tag + ` val="` + formatAxisNumber(*value) + `"/>`
 	if re.MatchString(block) {
-		return re.ReplaceAllString(block, node)
+		return re.ReplaceAllLiteralString(block, node)
 	}
-	return insertAxisNode(block, node)
-}
-
-func insertAxisNode(block string, node string) string {
-	for _, before := range []string{"<c:tickLblPos", "<c:crosses", "</c:"} {
-		if index := strings.Index(block, before); index >= 0 {
-			return block[:index] + node + block[index:]
-		}
-	}
-	return block
+	return insertAxisUnit(block, node)
 }
 
 func replaceOrInsertAxisNode(value string, re *regexp.Regexp, node string) string {
 	if re.MatchString(value) {
-		return re.ReplaceAllString(value, node)
+		return re.ReplaceAllLiteralString(value, node)
 	}
 	if prefix, found := strings.CutSuffix(value, "/>"); found {
 		return prefix + ">" + node + "</c:scaling>"
@@ -224,7 +280,10 @@ func formatAxisNumber(value float64) string {
 }
 
 func attributeValue(xml string, name string, fallback string) string {
-	re := regexp.MustCompile(name + `="([^"]*)"`)
+	re, ok := attributePatterns[name]
+	if !ok {
+		re = regexp.MustCompile(regexp.QuoteMeta(name) + `="([^"]*)"`)
+	}
 	match := re.FindStringSubmatch(xml)
 	if len(match) != 2 {
 		return fallback

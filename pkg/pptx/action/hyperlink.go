@@ -41,6 +41,8 @@ const (
 )
 
 // HyperlinkAction defines the target of a hyperlink.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type HyperlinkAction struct {
 	Type         HyperlinkActionType
 	URL          string // For URL type
@@ -52,6 +54,8 @@ type HyperlinkAction struct {
 }
 
 // Hyperlink represents a clickable hyperlink on a shape or text run.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Hyperlink struct {
 	Action         HyperlinkAction
 	RawAction      string
@@ -124,11 +128,27 @@ func HyperlinkProgram(path string) HyperlinkAction {
 	return HyperlinkAction{Type: HyperlinkActionProgram, ProgramPath: path}
 }
 
+// SanitizeHyperlinkURI strips malicious script protocols (javascript:, vbscript:, data:text/html)
+// and returns a clean, safe target string.
+func SanitizeHyperlinkURI(target string) string {
+	clean := strings.TrimSpace(target)
+	if clean == "" {
+		return ""
+	}
+	lower := strings.ToLower(clean)
+	if strings.HasPrefix(lower, "javascript:") ||
+		strings.HasPrefix(lower, "vbscript:") ||
+		(strings.HasPrefix(lower, "data:") && strings.Contains(lower, "html")) {
+		return "#"
+	}
+	return clean
+}
+
 // RelationshipTarget returns the target URL for the relationship.
 func (a HyperlinkAction) RelationshipTarget() string {
 	switch a.Type {
 	case HyperlinkActionURL:
-		return a.URL
+		return SanitizeHyperlinkURI(a.URL)
 	case HyperlinkActionSlide:
 		return fmt.Sprintf("slide%d.xml", a.SlideNumber)
 	case HyperlinkActionFirstSlide:

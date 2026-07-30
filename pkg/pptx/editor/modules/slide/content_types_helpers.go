@@ -9,17 +9,10 @@ import (
 
 func contentTypeForExtension(ext string) string {
 	ext = strings.TrimPrefix(strings.ToLower(ext), ".")
+	if imageType := imageContentTypeForExtension(ext); imageType != "" {
+		return imageType
+	}
 	switch ext {
-	case "png":
-		return "image/png"
-	case "jpg", "jpeg":
-		return "image/jpeg"
-	case "gif":
-		return "image/gif"
-	case "bmp":
-		return "image/bmp"
-	case "tif", "tiff":
-		return "image/tiff"
 	case "wav":
 		return "audio/wav"
 	case "mp3":
@@ -57,6 +50,57 @@ func contentTypeForExtension(ext string) string {
 	}
 }
 
+// imageContentTypeForExtension maps image extensions, including the EMF and WMF
+// metafiles PowerPoint embeds, to their part content types.
+func imageContentTypeForExtension(ext string) string {
+	switch ext {
+	case "png":
+		return "image/png"
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	case "gif":
+		return "image/gif"
+	case "bmp":
+		return "image/bmp"
+	case "tif", "tiff":
+		return "image/tiff"
+	case "emf":
+		return "image/x-emf"
+	case "wmf":
+		return "image/x-wmf"
+	case "wdp", "hdp":
+		return "image/vnd.ms-photo"
+	case "svg":
+		return "image/svg+xml"
+	default:
+		return ""
+	}
+}
+
+// FilterDrawingMLChartPaths keeps only the classic DrawingML chart parts,
+// dropping chart extension (chartEx) parts.
+func FilterDrawingMLChartPaths(paths []string) []string {
+	out := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if isDrawingMLChartPart(common.CanonicalPartPath(p)) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// isDrawingMLChartPart reports whether a part is a classic ppt/charts/chartN.xml.
+//
+// Chart extension parts (ppt/charts/chartExN.xml) share the prefix but carry a
+// different content type, so they must not be swept up and redeclared as
+// DrawingML charts.
+func isDrawingMLChartPart(part string) bool {
+	if !strings.HasPrefix(part, "ppt/charts/chart") {
+		return false
+	}
+	return !strings.HasPrefix(part, "ppt/charts/chartEx")
+}
+
 func filterDynamicOverrides(existing []contentTypeOverride, extraCapacity int) []contentTypeOverride {
 	filtered := make([]contentTypeOverride, 0, len(existing)+extraCapacity)
 	for _, override := range existing {
@@ -75,7 +119,7 @@ func shouldSkipOverridePart(part string) bool {
 	}
 	return part == "ppt/sectionList.xml" ||
 		part == "ppt/commentAuthors.xml" ||
-		strings.HasPrefix(part, "ppt/charts/chart") ||
+		isDrawingMLChartPart(part) ||
 		strings.HasPrefix(part, "ppt/notesSlides/notesSlide") ||
 		strings.HasPrefix(part, "ppt/notesMasters/notesMaster") ||
 		strings.HasPrefix(part, "ppt/theme/theme") ||

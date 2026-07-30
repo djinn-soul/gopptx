@@ -77,7 +77,7 @@ func normalizeTextFrameOrientation(raw string) (string, error) {
 
 func normalizeTextFrameVerticalAlign(raw string) (string, error) {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "t", "top":
+	case "t", keyTop:
 		return "t", nil
 	case alignCtr, alignCenter, "middle":
 		return alignCtr, nil
@@ -105,7 +105,7 @@ func normalizeTextFrameRotation(raw float64) (int64, error) {
 func normalizeUnderlineValue(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "", bulletStyleNone:
-		return "none"
+		return bulletStyleNone
 	case "single":
 		return "sng"
 	case "double":

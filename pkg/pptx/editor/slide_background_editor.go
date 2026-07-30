@@ -145,6 +145,10 @@ func loadBgImageData(bg SlideBackground) ([]byte, string, error) {
 func injectSlideBg(slideXML, bgXML string) string {
 	reBg := regexp.MustCompile(`<p:bg>.*?</p:bg>`)
 	slideXML = reBg.ReplaceAllString(slideXML, "")
-	reCsld := regexp.MustCompile(`(<p:cSld[^>]*>)`)
-	return reCsld.ReplaceAllString(slideXML, "$1"+bgXML)
+	reCsld := regexp.MustCompile(`<p:cSld[^>]*>`)
+	// ReplaceAllStringFunc, not ReplaceAllString: bgXML carries caller-derived
+	// text and would otherwise be read as a regexp replacement template.
+	return reCsld.ReplaceAllStringFunc(slideXML, func(match string) string {
+		return match + bgXML
+	})
 }

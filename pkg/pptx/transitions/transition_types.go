@@ -82,6 +82,8 @@ type TransitionSound struct {
 }
 
 // TransitionOptions provides advanced configuration for a slide transition.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type TransitionOptions struct {
 	Type                  TransitionType
 	DurationMS            uint32

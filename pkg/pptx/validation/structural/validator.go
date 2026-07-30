@@ -90,7 +90,7 @@ func (v *Validator) checkRequiredParts() {
 				Code:        CodeMissingPart,
 				Severity:    SeverityError,
 				Path:        p,
-				Description: fmt.Sprintf("Missing required part: %s", desc),
+				Description: "Missing required part: " + desc,
 				Repairable:  true,
 			})
 		}

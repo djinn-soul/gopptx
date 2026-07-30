@@ -20,6 +20,10 @@ var (
 	reDataLabelsBlock = regexp.MustCompile(`(?s)<c:dLbls>.*?</c:dLbls>`)
 	reDataLabelPos    = regexp.MustCompile(`<c:dLblPos val="[^"]*"/>`)
 	rePlotVisOnly     = regexp.MustCompile(`<c:plotVisOnly val="[^"]*"/>`)
+
+	reChartTitleLayout = regexp.MustCompile(`(?s)<c:layout>.*?</c:layout>|<c:layout/>`)
+	reLayoutX          = regexp.MustCompile(`<c:x val="([^"]*)"/>`)
+	reLayoutY          = regexp.MustCompile(`<c:y val="([^"]*)"/>`)
 )
 
 func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
@@ -41,6 +45,9 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if err := validateAxisCrosses("value_axis_crosses", req.ValueAxisCrosses); err != nil {
 		return err
 	}
+	if err := ValidateAxisVisibility(req); err != nil {
+		return err
+	}
 	if err := validateAxisDetails(req); err != nil {
 		return err
 	}
@@ -48,6 +55,42 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 		return err
 	}
 	if err := validateScene3DUpdate(req); err != nil {
+		return err
+	}
+	if err := validateChartTrendlines(
+		req.Trendlines, req.AppendTrendlines, req.ClearTrendlineSeries,
+	); err != nil {
+		return err
+	}
+	if err := validateChartErrorBars(req.ErrorBars, req.ClearErrorBarSeries); err != nil {
+		return err
+	}
+	if err := validateChartDataPoints(req.DataPoints, req.ClearDataPointSeries); err != nil {
+		return err
+	}
+	if err := validateChartDataLabelPoints(req.DataLabelPoints); err != nil {
+		return err
+	}
+	if err := validateChartDataLabelBox(req); err != nil {
+		return err
+	}
+	return validateChartFormatLinesAndTables(req)
+}
+
+func validateChartFormatLinesAndTables(req common.ChartFormatUpdate) error {
+	if err := validateGridlineFormats(req); err != nil {
+		return err
+	}
+	if err := validateChartSeriesFormats(req.SeriesFormats); err != nil {
+		return err
+	}
+	if err := validateChartSeriesLines(req.SeriesLines); err != nil {
+		return err
+	}
+	if err := validateChartSeriesInverts(req.SeriesInverts); err != nil {
+		return err
+	}
+	if err := validateChartDataTable(req.DataTable); err != nil {
 		return err
 	}
 	return nil
@@ -59,9 +102,15 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	}
 
 	updated := string(chartXML)
-	if req.ShowTitle != nil || req.Title != nil || req.TitleOverlay != nil {
+	if err := validateAxisScaleAgainstXML(updated, req); err != nil {
+		return nil, err
+	}
+	if req.ShowTitle != nil || req.Title != nil || req.TitleOverlay != nil ||
+		req.TitleX != nil || req.TitleY != nil {
 		var err error
-		updated, err = patchChartTitle(updated, req.ShowTitle, req.Title, req.TitleOverlay)
+		updated, err = patchChartTitle(
+			updated, req.ShowTitle, req.Title, req.TitleOverlay, req.TitleX, req.TitleY,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -69,8 +118,26 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchPlotVisibleOnly(updated, req.PlotVisibleOnly)
 	updated = patchChartLegend(updated, req.ShowLegend, req.LegendPosition, req.LegendOverlay)
 	updated = patchChartDataLabels(updated, req)
+	updated = patchDataLabelOffsets(updated, req.DataLabelOffsets)
 	updated = patchChartDataLabelNumberFormat(updated, req.DataLabelNumberFormat, req.DataLabelFormatLinked)
+	updated = patchChartDataLabelBox(updated, req)
+	// After the chart-wide label settings: a per-label patch reads the series
+	// flags it has to repeat, and must win over them.
+	updated = patchChartDataLabelPoints(updated, req.DataLabelPoints)
+	// Data points first: the invert patch derives more of them from the series
+	// values, and both write into the same c:dPt run.
+	updated = patchChartDataPoints(updated, req.DataPoints, req.ClearDataPointSeries)
+	updated = patchChartSeriesInvert(updated, req.SeriesInverts)
+	// After the per-point work: a series format writes the c:spPr and c:marker
+	// that sit before the c:dPt run it must not disturb.
+	updated = patchChartSeriesFormats(updated, req.SeriesFormats)
+	updated = patchChartTrendlines(
+		updated, req.Trendlines, req.AppendTrendlines, req.ClearTrendlineSeries,
+	)
+	updated = patchChartErrorBars(updated, req.ErrorBars, req.ClearErrorBarSeries)
 	updated = patchChartPlotOptions(updated, req)
+	// After gapWidth and overlap: CT_BarChart puts c:serLines behind both.
+	updated = patchChartSeriesLines(updated, req.SeriesLines)
 	updated = patchAxisTickLabelPosition(updated, "catAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "dateAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "valAx", req.ValueAxisTickLabelPos)
@@ -80,100 +147,18 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchAxisMinorGridlines(updated, "catAx", req.CategoryAxisMinorGrid)
 	updated = patchAxisMinorGridlines(updated, "dateAx", req.CategoryAxisMinorGrid)
 	updated = patchAxisMinorGridlines(updated, "valAx", req.ValueAxisMinorGrid)
+	// After the on/off patches: styling a gridline draws it, and both write the
+	// same element.
+	updated = patchAxisGridlineFormats(updated, req)
 	updated = patchAxisCrosses(updated, "catAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)
 	updated = patchAxisDetails(updated, req)
+	updated = PatchAxisVisibility(updated, req)
+	// After the axes: CT_PlotArea puts c:dTable behind them.
+	updated = patchChartDataTable(updated, req.DataTable)
 	updated = patchChartScene3D(updated, req)
 	return []byte(updated), nil
-}
-
-func patchChartTitle(xml string, show *bool, title *string, overlay *bool) (string, error) {
-	match := reChartTitleBlock.FindString(xml)
-	if show != nil && !*show {
-		xml = strings.Replace(xml, match, "", 1)
-		return setAutoTitleDeleted(xml, true), nil
-	}
-	if match == "" {
-		if show != nil || title != nil || overlay != nil {
-			return insertChartTitleBlock(xml, title, overlay), nil
-		}
-		return "", errors.New("chart title block not found")
-	}
-	block := patchExistingChartTitleBlock(match, title, overlay)
-	xml = strings.Replace(xml, match, block, 1)
-	return setAutoTitleDeleted(xml, false), nil
-}
-
-func insertChartTitleBlock(xml string, title *string, overlay *bool) string {
-	titleText := "Chart"
-	if title != nil {
-		titleText = *title
-	}
-	overlayVal := "0"
-	if overlay != nil {
-		overlayVal = boolToOneZero(*overlay)
-	}
-	titleBlock := `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>` +
-		xmlEscape(titleText) +
-		`</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="` + overlayVal + `"/></c:title>`
-	if strings.Contains(xml, "<c:autoTitleDeleted") {
-		xml = strings.Replace(xml, "<c:autoTitleDeleted", titleBlock+"<c:autoTitleDeleted", 1)
-	} else {
-		xml = strings.Replace(xml, "<c:plotArea>", titleBlock+"<c:plotArea>", 1)
-	}
-	return setAutoTitleDeleted(xml, false)
-}
-
-func patchExistingChartTitleBlock(match string, title *string, overlay *bool) string {
-	block := match
-	if title != nil {
-		block = patchChartTitleText(block, *title)
-	}
-	if overlay != nil {
-		block = patchChartTitleOverlay(block, *overlay)
-	}
-	return block
-}
-
-func patchChartTitleText(block string, title string) string {
-	escaped := `<a:t>` + xmlEscape(title) + `</a:t>`
-	if reTitleText.MatchString(block) {
-		return reTitleText.ReplaceAllString(block, escaped)
-	}
-	return strings.Replace(
-		block,
-		"</c:tx>",
-		`<c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/>`+escaped+`</a:r></a:p></c:rich></c:tx>`,
-		1,
-	)
-}
-
-func patchChartTitleOverlay(block string, overlay bool) string {
-	overlayNode := `<c:overlay val="` + boolToOneZero(overlay) + `"/>`
-	if reOverlay.MatchString(block) {
-		return reOverlay.ReplaceAllString(block, overlayNode)
-	}
-	return strings.Replace(block, "</c:title>", overlayNode+"</c:title>", 1)
-}
-
-func setAutoTitleDeleted(xml string, deleted bool) string {
-	node := `<c:autoTitleDeleted val="` + boolToOneZero(deleted) + `"/>`
-	if reAutoTitleDelete.MatchString(xml) {
-		return reAutoTitleDelete.ReplaceAllString(xml, node)
-	}
-	return strings.Replace(xml, "<c:plotArea>", node+"<c:plotArea>", 1)
-}
-
-func patchPlotVisibleOnly(xml string, value *bool) string {
-	if value == nil {
-		return xml
-	}
-	node := `<c:plotVisOnly val="` + boolToOneZero(*value) + `"/>`
-	if rePlotVisOnly.MatchString(xml) {
-		return rePlotVisOnly.ReplaceAllString(xml, node)
-	}
-	return strings.Replace(xml, "</c:chart>", node+"</c:chart>", 1)
 }
 
 func patchChartLegend(xml string, show *bool, position *string, overlay *bool) string {
@@ -236,42 +221,69 @@ func patchChartDataLabels(xml string, req common.ChartFormatUpdate) string {
 		req.DataLabelShowCategory != nil ||
 		req.DataLabelShowSeriesName != nil ||
 		req.DataLabelShowPercent != nil ||
-		req.DataLabelShowBubbleSize != nil
+		req.DataLabelShowBubbleSize != nil ||
+		req.DataLabelWordWrap != nil
 	if !hasLabels && needLabels {
 		xml = insertDefaultDataLabels(xml)
 	}
+	isBarChart := strings.Contains(xml, "<c:barChart")
 	return reDataLabelsBlock.ReplaceAllStringFunc(xml, func(block string) string {
 		if position != nil {
-			node := `<c:dLblPos val="` + strings.TrimSpace(*position) + `"/>`
+			normPos := normalizeDataLabelPosition(*position, isBarChart)
+			node := `<c:dLblPos val="` + normPos + `"/>`
 			if reDataLabelPos.MatchString(block) {
 				block = reDataLabelPos.ReplaceAllString(block, node)
 			} else {
 				block = strings.Replace(block, "<c:dLbls>", "<c:dLbls>"+node, 1)
 			}
 		}
-		block = patchDataLabelBool(block, "showLegendKey", req.DataLabelShowLegendKey)
-		block = patchDataLabelBool(block, "showVal", req.DataLabelShowValue)
-		block = patchDataLabelBool(block, "showCatName", req.DataLabelShowCategory)
-		block = patchDataLabelBool(block, "showSerName", req.DataLabelShowSeriesName)
-		block = patchDataLabelBool(block, "showPercent", req.DataLabelShowPercent)
-		block = patchDataLabelBool(block, "showBubbleSize", req.DataLabelShowBubbleSize)
+		block = patchDataLabelFlags(block, req)
+		block = patchDataLabelWordWrap(block, req.DataLabelWordWrap)
 		return block
 	})
 }
 
-func patchDataLabelBool(block string, tag string, value *bool) string {
-	if value == nil {
+// patchDataLabelFlags rewrites the display flags of one c:dLbls as a complete
+// set in schema order. CT_DLbls puts them after numFmt, spPr, txPr and dLblPos
+// and before c:separator, and a partial set makes PowerPoint fall back to its
+// own defaults, which is how a per-point label loses its number format.
+func patchDataLabelFlags(block string, req common.ChartFormatUpdate) string {
+	overrides := map[string]*bool{
+		flagShowLegendKey:  req.DataLabelShowLegendKey,
+		flagShowValue:      req.DataLabelShowValue,
+		flagShowCategory:   req.DataLabelShowCategory,
+		flagShowSeriesName: req.DataLabelShowSeriesName,
+		flagShowPercent:    req.DataLabelShowPercent,
+		flagShowBubbleSize: req.DataLabelShowBubbleSize,
+	}
+
+	values := dataLabelFlagValues(block)
+	present := len(values) > 0
+	for name, override := range overrides {
+		if override == nil {
+			continue
+		}
+		values[name] = boolToOneZero(*override)
+		present = true
+	}
+	if !present {
 		return block
 	}
-	re := regexp.MustCompile(`<c:` + tag + ` val="[^"]*"/>`)
-	if *value {
-		node := `<c:` + tag + ` val="1"/>`
-		if re.MatchString(block) {
-			return re.ReplaceAllString(block, node)
+
+	block = reDataLabelFlag.ReplaceAllLiteralString(block, "")
+	var flags strings.Builder
+	for _, name := range dataLabelFlagNames() {
+		value, ok := values[name]
+		if !ok {
+			value = "0"
 		}
-		return strings.Replace(block, "<c:dLbls>", "<c:dLbls>"+node, 1)
+		flags.WriteString(`<c:` + name + ` val="` + value + `"/>`)
 	}
-	return re.ReplaceAllString(block, "")
+
+	if index := strings.Index(block, "<c:separator>"); index >= 0 {
+		return block[:index] + flags.String() + block[index:]
+	}
+	return strings.Replace(block, "</c:dLbls>", flags.String()+"</c:dLbls>", 1)
 }
 
 func insertDefaultDataLabels(xml string) string {
@@ -282,7 +294,7 @@ func insertDefaultDataLabels(xml string) string {
 	chartBlock := xml[start:end]
 	insertAt := strings.Index(chartBlock, "<c:axId")
 	if insertAt < 0 {
-		insertAt = strings.LastIndex(chartBlock, "</c:")
+		insertAt = strings.LastIndex(chartBlock, chartElementClosePrefix)
 		if insertAt < 0 {
 			return xml
 		}

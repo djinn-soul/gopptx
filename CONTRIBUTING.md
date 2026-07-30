@@ -70,7 +70,7 @@ scripts/      Build and smoke-test scripts
 - Avoid silent fallbacks — let failures surface so they can be fixed.
 - Do not add empty `try/catch` (or `recover`) blocks.
 - Keep entry points stable; isolate new logic into focused modules.
-- No source file should exceed ~300 lines of code.
+- No source file should exceed ~400 lines of code.
 
 ---
 

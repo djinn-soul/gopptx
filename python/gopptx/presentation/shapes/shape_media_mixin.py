@@ -3,18 +3,25 @@
 from __future__ import annotations
 
 import base64
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ..helpers import get_required_int
+from .image_inspection import infer_image_format, picture_bounds, resolve_picture_source
+from .image_options import reject_unknown_image_options
+from .shape_media_av_mixin import PresentationShapeAVMixin
 from .shape_payload_mixin import PresentationShapePayloadMixin
 
 if TYPE_CHECKING:
-    from ...schemas import ImageMetadata, SlideImageRef
+    from os import PathLike
+
+    from ...schemas import ImageMetadata, SlideImageRef, SlideMediaRef
 
 
-class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
+class PresentationShapeMediaMixin(
+    PresentationShapeAVMixin, PresentationShapePayloadMixin
+):
     """Methods that add and inspect image/video/audio/OLE shapes."""
 
     def add_image(
@@ -24,7 +31,12 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
         **kwargs: object,
     ) -> int:
-        """Add an image to a slide and return the created shape ID."""
+        """Add an image to a slide and return the created shape ID.
+
+        Raises:
+            TypeError: If a keyword option is not recognized.
+        """
+        reject_unknown_image_options(kwargs)
         payload = self._init_bounds_payload(slide_index, bounds)
         self._resolve_image_source(payload, source, kwargs)
         self._resolve_image_options(payload, kwargs)
@@ -46,9 +58,13 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
 
         Supports optional ``description``, ``alt_text``, and ``title`` parameters.
         """
-        bounds = (left, top, width, height)
+        effective_source = resolve_picture_source(source, kwargs)
+        bounds = picture_bounds(effective_source, left, top, width, height)
         self._validate_picture_metadata(kwargs)
-        return self.add_image(slide_index, source, bounds=bounds, **kwargs)
+        options = {
+            key: value for key, value in kwargs.items() if key not in {"path", "data"}
+        }
+        return self.add_image(slide_index, effective_source, bounds=bounds, **options)
 
     @staticmethod
     def _validate_picture_metadata(kwargs: dict[str, object]) -> None:
@@ -68,13 +84,22 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         data = kwargs.get("data")
         if source:
             self._set_source_payload(payload, source)
+            if isinstance(source, bytes):
+                self._set_image_format(payload, source, kwargs)
         elif isinstance(path, str):
             self._set_source_payload(payload, path)
         elif isinstance(data, bytes):
             self._set_source_payload(payload, data)
-            fmt = kwargs.get("image_format") or kwargs.get("img_format")
-            if isinstance(fmt, str):
-                payload["format"] = fmt
+            self._set_image_format(payload, data, kwargs)
+
+    @staticmethod
+    def _set_image_format(
+        payload: dict[str, object],
+        data: bytes,
+        kwargs: dict[str, object],
+    ) -> None:
+        fmt = kwargs.get("image_format") or kwargs.get("img_format")
+        payload["format"] = fmt if isinstance(fmt, str) else infer_image_format(data)
 
     @staticmethod
     def _resolve_image_options(
@@ -114,99 +139,6 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         )
         return cast("ImageMetadata", result)
 
-    def add_video(
-        self,
-        slide_index: int,
-        source: str | bytes,
-        bounds: tuple[float, float, float, float],
-        **kwargs: object,
-    ) -> int:
-        """Add a video to a slide and return the created shape ID."""
-        name = kwargs.get("name")
-        poster_frame = kwargs.get("poster_frame")
-        mime_type = kwargs.get("mime_type")
-        payload = self._init_bounds_payload(slide_index, bounds)
-        self._set_source_payload(payload, source)
-
-        if isinstance(name, str) and name:
-            payload["name"] = name
-        if isinstance(mime_type, str) and mime_type:
-            payload["mime_type"] = mime_type
-
-        if isinstance(poster_frame, (str, bytes, os.PathLike)):
-            poster_source = cast("str | bytes | os.PathLike[str]", poster_frame)
-            self._set_source_payload(
-                payload,
-                poster_source,
-                path_key="poster_path",
-                data_key="poster_data",
-            )
-
-        result = self.execute(ops.OP_ADD_VIDEO, payload)
-        return get_required_int(result, "shape_id")
-
-    def add_audio(
-        self,
-        slide_index: int,
-        source: str | bytes,
-        bounds: tuple[float, float, float, float],
-        **kwargs: object,
-    ) -> int:
-        """Add an audio file to a slide and return the created shape ID."""
-        name = kwargs.get("name")
-        icon = kwargs.get("icon", kwargs.get("poster_frame"))
-        mime_type = kwargs.get("mime_type")
-        payload = self._init_bounds_payload(slide_index, bounds)
-        self._set_source_payload(payload, source)
-
-        if isinstance(name, str) and name:
-            payload["name"] = name
-        if isinstance(mime_type, str) and mime_type:
-            payload["mime_type"] = mime_type
-
-        if isinstance(icon, (str, bytes, os.PathLike)):
-            icon_source = cast("str | bytes | os.PathLike[str]", icon)
-            self._set_source_payload(
-                payload,
-                icon_source,
-                path_key="icon_path",
-                data_key="icon_data",
-            )
-
-        result = self.execute(ops.OP_ADD_AUDIO, payload)
-        return get_required_int(result, "shape_id")
-
-    def add_ole_object(
-        self,
-        slide_index: int,
-        source: str | bytes,
-        bounds: tuple[float, float, float, float],
-        **kwargs: object,
-    ) -> int:
-        """Add an OLE object to a slide and return the created shape ID."""
-        name = kwargs.get("name")
-        prog_id = kwargs.get("prog_id")
-        icon = kwargs.get("icon")
-        payload = self._init_bounds_payload(slide_index, bounds)
-        self._set_source_payload(payload, source)
-
-        if isinstance(name, str) and name:
-            payload["name"] = name
-        if isinstance(prog_id, str) and prog_id:
-            payload["prog_id"] = prog_id
-
-        if isinstance(icon, (str, bytes, os.PathLike)):
-            icon_source = cast("str | bytes | os.PathLike[str]", icon)
-            self._set_source_payload(
-                payload,
-                icon_source,
-                path_key="icon_path",
-                data_key="icon_data",
-            )
-
-        result = self.execute(ops.OP_ADD_OLE_OBJECT, payload)
-        return get_required_int(result, "shape_id")
-
     def list_slide_images(self, slide_index: int) -> list[SlideImageRef]:
         """List all images embedded in a slide.
 
@@ -218,6 +150,38 @@ class PresentationShapeMediaMixin(PresentationShapePayloadMixin):
         """
         result = self.execute(ops.OP_LIST_SLIDE_IMAGES, {"slide_index": slide_index})
         return cast("list[SlideImageRef]", result.get("images", []))
+
+    def list_slide_media(self, slide_index: int) -> list[SlideMediaRef]:
+        """List every media relationship on a slide: images, sounds and movies.
+
+        Images already had ``list_slide_images``; an embedded movie or sound
+        could only be found by walking relationships by hand (issue #1049).
+
+        Args:
+            slide_index: Zero-based index of the slide.
+
+        Returns:
+            List of SlideMediaRef dicts: index, rel_id, kind, target, part_path,
+            content_type, size_bytes and external.
+        """
+        result = self.execute(ops.OP_LIST_SLIDE_MEDIA, {"slide_index": slide_index})
+        return cast("list[SlideMediaRef]", result.get("media", []))
+
+    def extract_media(self, part_path: str) -> bytes:
+        """Return the bytes of one media part.
+
+        Args:
+            part_path: Package part path, as reported by list_slide_media
+                (for example ``ppt/media/media1.mp4``).
+        """
+        result = self.execute(ops.OP_EXTRACT_MEDIA, {"part_path": part_path})
+        return base64.b64decode(cast("str", result.get("data", "")))
+
+    def save_media(self, part_path: str, destination: str | PathLike[str]) -> int:
+        """Write one media part out to a file, and return the bytes written."""
+        data = self.extract_media(part_path)
+        Path(destination).write_bytes(data)
+        return len(data)
 
     def swap_image_by_index(
         self,

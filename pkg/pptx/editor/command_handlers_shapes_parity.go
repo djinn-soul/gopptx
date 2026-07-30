@@ -245,3 +245,21 @@ func bridgeValidationError(err error) error {
 	}
 	return err
 }
+
+func handleGetEffectiveShapeStyle(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	v := NewPayloadValidator()
+	return editorcommand.HandleSlideShapeRequest(
+		payload,
+		parseRawPayloadBytes,
+		func(p map[string]any) (int, bool) { return requireSlideIndex(e, p, v) },
+		v.RequireInt,
+		v.Error,
+		func(request editorcommand.SlideShapeRequest) (any, error) {
+			style, err := e.GetEffectiveShapeStyle(request.SlideIndex, request.ShapeID)
+			if err != nil {
+				return nil, err
+			}
+			return map[string]any{"style": style}, nil
+		},
+	)
+}

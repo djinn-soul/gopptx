@@ -126,6 +126,7 @@ func TestHyperlink_Methods(t *testing.T) {
 }
 
 func TestHyperlink_Validate(t *testing.T) {
+	//nolint:govet // Field order keeps positional test cases readable; layout is irrelevant here.
 	tests := []struct {
 		name    string
 		h       Hyperlink

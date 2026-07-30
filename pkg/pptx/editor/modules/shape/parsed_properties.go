@@ -20,6 +20,8 @@ type ParsedShapeProperties struct {
 	SoftEdge   *common.ShapeSoftEdge
 	Reflection *common.ShapeReflection
 	Rotation   *float64
+	FlipH      bool
+	FlipV      bool
 	Connector  *common.ConnectorInfo
 	X, Y       int
 	W, H       int
@@ -27,4 +29,5 @@ type ParsedShapeProperties struct {
 	PhType     string
 
 	Adjustments []common.ShapeAdjustment
+	Freeform    *common.FreeformGeometry
 }

@@ -144,17 +144,17 @@ func handleSetThemeColorScheme(e *PresentationEditor, payload json.RawMessage) (
 
 	v := NewPayloadValidator()
 	scheme := ThemeColorScheme{
-		Dk1:      v.OptionalString(p, "dk1"),
-		Lt1:      v.OptionalString(p, "lt1"),
-		Dk2:      v.OptionalString(p, "dk2"),
-		Lt2:      v.OptionalString(p, "lt2"),
-		Accent1:  v.OptionalString(p, "accent1"),
-		Accent2:  v.OptionalString(p, "accent2"),
-		Accent3:  v.OptionalString(p, "accent3"),
-		Accent4:  v.OptionalString(p, "accent4"),
-		Accent5:  v.OptionalString(p, "accent5"),
-		Accent6:  v.OptionalString(p, "accent6"),
-		Hlink:    v.OptionalString(p, "hlink"),
+		Dk1:      v.OptionalString(p, themeSlotDk1),
+		Lt1:      v.OptionalString(p, themeSlotLt1),
+		Dk2:      v.OptionalString(p, themeSlotDk2),
+		Lt2:      v.OptionalString(p, themeSlotLt2),
+		Accent1:  v.OptionalString(p, themeSlotAccent1),
+		Accent2:  v.OptionalString(p, themeSlotAccent2),
+		Accent3:  v.OptionalString(p, themeSlotAccent3),
+		Accent4:  v.OptionalString(p, themeSlotAccent4),
+		Accent5:  v.OptionalString(p, themeSlotAccent5),
+		Accent6:  v.OptionalString(p, themeSlotAccent6),
+		Hlink:    v.OptionalString(p, themeSlotHlink),
 		FolHlink: v.OptionalString(p, "fol_hlink"),
 	}
 
@@ -179,5 +179,20 @@ func handleGetThemeInventory(e *PresentationEditor, _ json.RawMessage) (any, err
 	return map[string]any{
 		"theme_parts": inv.ThemeParts,
 		"bindings":    inv.Bindings,
+	}, nil
+}
+
+func handleGetThemeColorScheme(e *PresentationEditor, _ json.RawMessage) (any, error) {
+	scheme, err := e.GetThemeColorScheme()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		themeSlotDk1: scheme.Dk1, themeSlotLt1: scheme.Lt1,
+		themeSlotDk2: scheme.Dk2, themeSlotLt2: scheme.Lt2,
+		themeSlotAccent1: scheme.Accent1, themeSlotAccent2: scheme.Accent2,
+		themeSlotAccent3: scheme.Accent3, themeSlotAccent4: scheme.Accent4,
+		themeSlotAccent5: scheme.Accent5, themeSlotAccent6: scheme.Accent6,
+		themeSlotHlink: scheme.Hlink, "fol_hlink": scheme.FolHlink,
 	}, nil
 }

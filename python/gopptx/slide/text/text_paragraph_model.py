@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .text_run import Run
 from .text_run_model import _ShapeRunCollection
@@ -15,17 +15,20 @@ if TYPE_CHECKING:
 
 
 class _ShapeParagraphProxy:
-    """Single-paragraph proxy; PPTX run API currently models one normalized paragraph."""
+    """Live proxy for one indexed shape-text paragraph."""
 
-    def __init__(self, text_frame: ShapeTextFrameProtocol) -> None:
+    def __init__(
+        self, text_frame: ShapeTextFrameProtocol, paragraph_index: int
+    ) -> None:
         self._text_frame = text_frame
-        self._runs = _ShapeRunCollection(text_frame)
+        self._paragraph_index = paragraph_index
+        self._runs = _ShapeRunCollection(text_frame, paragraph_index)
 
     def _paragraph_payload(self) -> dict[str, object]:
-        return self._text_frame.get_paragraph_payload()
+        return self._text_frame.get_paragraph_payload(self._paragraph_index)
 
     def _set_paragraph_field(self, field: str, value: object) -> None:
-        self._text_frame.set_paragraph_field(field, value)
+        self._text_frame.set_paragraph_field(self._paragraph_index, field, value)
 
     @property
     def runs(self) -> _ShapeRunCollection:
@@ -33,11 +36,16 @@ class _ShapeParagraphProxy:
 
     @property
     def text(self) -> str:
-        return "".join(str(run.get("text", "")) for run in self._text_frame.get_runs())
+        return "".join(
+            str(run.get("text", ""))
+            for run in self._text_frame.get_paragraph_runs(self._paragraph_index)
+        )
 
     @text.setter
     def text(self, value: str) -> None:
-        self._text_frame.replace_runs([Run(text=value).to_payload()])
+        self._text_frame.replace_paragraph_runs(
+            self._paragraph_index, [Run(text=value).to_payload()]
+        )
 
     @property
     def alignment(self) -> str | None:
@@ -56,6 +64,17 @@ class _ShapeParagraphProxy:
     @level.setter
     def level(self, value: int | None) -> None:
         self._set_paragraph_field("level", value)
+
+    @property
+    def rtl(self) -> bool | None:
+        """Return whether paragraph has right-to-left text layout enabled."""
+        value = self._paragraph_payload().get("rtl")
+        return bool(value) if isinstance(value, bool) else None
+
+    @rtl.setter
+    def rtl(self, value: bool | None) -> None:
+        """Set right-to-left text layout."""
+        self._set_paragraph_field("rtl", value)
 
     @property
     def bullet(self) -> bool:
@@ -130,32 +149,52 @@ class _ShapeParagraphProxy:
 
     def clear(self) -> None:
         """Clear paragraph text content while keeping the paragraph container."""
-        self._text_frame.replace_runs([])
+        self._text_frame.replace_paragraph_runs(self._paragraph_index, [])
 
     def remove(self) -> None:
-        """Remove paragraph content (single-paragraph model maps this to clear)."""
-        self.clear()
+        """Remove this paragraph from the text frame."""
+        paragraphs = self._text_frame.get_paragraphs()
+        if self._paragraph_index >= len(paragraphs):
+            raise IndexError("paragraph index out of range")
+        del paragraphs[self._paragraph_index]
+        if not paragraphs:
+            paragraphs = [cast("dict[str, object]", {"runs": [], "paragraph": {}})]
+        self._text_frame.replace_paragraphs(paragraphs)
 
 
 class _ShapeParagraphCollection:
-    """Collection facade for the normalized single paragraph."""
+    """Collection facade for indexed shape-text paragraphs."""
 
     def __init__(self, text_frame: ShapeTextFrameProtocol) -> None:
-        self._paragraph = _ShapeParagraphProxy(text_frame)
+        self._text_frame = text_frame
+        self._paragraphs: dict[int, _ShapeParagraphProxy] = {}
 
     def __len__(self) -> int:
-        return 1
+        return len(self._text_frame.get_paragraphs())
 
     def __getitem__(self, index: int) -> _ShapeParagraphProxy:
-        if index not in {0, -1}:
+        if index < 0:
+            index += len(self)
+        if index < 0 or index >= len(self):
             raise IndexError("paragraph index out of range")
-        return self._paragraph
+        proxy = self._paragraphs.get(index)
+        if proxy is None:
+            proxy = _ShapeParagraphProxy(self._text_frame, index)
+            self._paragraphs[index] = proxy
+        return proxy
 
     def __iter__(self) -> Iterator[_ShapeParagraphProxy]:
-        yield self[0]
+        for index in range(len(self)):
+            yield self[index]
 
-    def remove(self, paragraph: _ShapeParagraphProxy) -> None:
-        """Remove paragraph content in the normalized single-paragraph model."""
-        if paragraph is not self._paragraph:
-            raise ValueError("paragraph does not belong to this collection")
+    def add_paragraph(self, text: str = "") -> _ShapeParagraphProxy:
+        """Add a paragraph to the text frame (Issue #1135)."""
+        paragraphs = self._text_frame.get_paragraphs()
+        paragraphs.append({"runs": [Run(text=text).to_payload()], "paragraph": {}})
+        self._text_frame.replace_paragraphs(paragraphs)
+        return self[len(paragraphs) - 1]
+
+    @staticmethod
+    def remove(paragraph: _ShapeParagraphProxy) -> None:
+        """Remove one paragraph from this collection."""
         paragraph.remove()

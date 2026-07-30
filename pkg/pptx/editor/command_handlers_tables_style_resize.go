@@ -220,6 +220,24 @@ func parseCellBorderUpdate(p map[string]any) (*tablemod.CellBorderSideUpdate, er
 	if d, ok := borderMap["dash"].(string); ok {
 		update.Dash = d
 	}
+	if c, ok := borderMap["cap"].(string); ok {
+		update.Cap = c
+	}
+	if j, ok := borderMap["join"].(string); ok {
+		update.Join = j
+	}
+	if compound, ok := borderMap["compound"].(string); ok {
+		update.Compound = compound
+	}
+	if inset, ok := borderMap["inset"].(bool); ok {
+		update.Inset = inset
+	}
+	switch limit := borderMap["miter_limit"].(type) {
+	case float64:
+		update.MiterLimitPct = limit
+	case int:
+		update.MiterLimitPct = float64(limit)
+	}
 	return update, nil
 }
 
@@ -238,7 +256,7 @@ func handleUpdateTableCellBorder(e *PresentationEditor, payload json.RawMessage)
 				return nil, v.Error()
 			}
 			switch side {
-			case "left", "right", "top", "bottom":
+			case keyLeft, "right", keyTop, "bottom":
 			default:
 				return nil, errors.New("side must be one of: left, right, top, bottom")
 			}

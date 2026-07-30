@@ -60,7 +60,7 @@ def _add_connector_types_slide(prs: Presentation) -> None:
         (ConnectorType.CURVED, Inches(5.0), Inches(2.0), Inches(9.0), Inches(4.5)),
     ]
     labels = ["STRAIGHT", "ELBOW", "CURVED"]
-    for _label, (ctype, x1, y1, x2, y2) in zip(labels, connectors):
+    for _label, (ctype, x1, y1, x2, y2) in zip(labels, connectors, strict=True):
         prs.add_connector(idx, ctype, x1, y1, x2, y2)
     prs.add_textbox(
         idx,

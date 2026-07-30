@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 try:
-    from typing import TypedDict
+    from typing import NotRequired, TypedDict
 except ImportError:  # pragma: no cover
-    from typing_extensions import TypedDict
+    from typing_extensions import NotRequired, TypedDict
 
 if TYPE_CHECKING:
     from .schemas_shape_types import Shape
@@ -160,6 +160,10 @@ class TableCellInfo(TypedDict):
     is_merge_origin: bool
     is_spanned: bool
     text: str
+    margin_left: NotRequired[int]
+    margin_right: NotRequired[int]
+    margin_top: NotRequired[int]
+    margin_bottom: NotRequired[int]
 
 
 class TableInfo(TypedDict):
@@ -173,4 +177,5 @@ class TableInfo(TypedDict):
     last_col: bool
     band_row: bool
     band_col: bool
+    style_id: str
     cells: list[TableCellInfo]

@@ -186,15 +186,13 @@ func connectorArrows(connector ConnectorSpec) string {
 
 func connectorLineJoin(join string) string {
 	switch strings.TrimSpace(join) {
-	case "bevel":
-		return `
-<a:bevel/>`
+	case string(LineJoinStyleBevel):
+		return "\n" + joinBevelXML
 	case lineJoinMiter:
 		return `
 <a:miter/>`
-	case "round":
-		return `
-<a:round/>`
+	case string(LineJoinStyleRound):
+		return "\n" + joinRoundXML
 	default:
 		return ""
 	}

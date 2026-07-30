@@ -269,12 +269,17 @@ func NotesMasterRelationships(themeIndex int, imageTargets []string) string {
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme` + strconv.Itoa(themeIndex) + `.xml"/>`)
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme`)
+	b.WriteString(strconv.Itoa(themeIndex))
+	b.WriteString(`.xml"/>`)
 
 	for i, target := range imageTargets {
 		rid := i + notesMasterImageRelIDOffset
-		b.WriteString(`
-<Relationship Id="rId` + strconv.Itoa(rid) + `" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="` + Escape(target) + `"/>`)
+		b.WriteString("\n<Relationship Id=\"rId")
+		b.WriteString(strconv.Itoa(rid))
+		b.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="`)
+		b.WriteString(Escape(target))
+		b.WriteString(`"/>`)
 	}
 	b.WriteString(`
 </Relationships>`)

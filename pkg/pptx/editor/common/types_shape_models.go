@@ -14,6 +14,11 @@ type Shape struct {
 	TextFrame *TextFrame
 	Paragraph *Paragraph
 	Rotation  *float64
+	// FlipH and FlipV mirror the <a:xfrm> flip attributes. They are set for
+	// every shape kind, not just connectors, so a value written through
+	// ShapeUpdate can be read back.
+	FlipH bool `json:"flip_h,omitempty"`
+	FlipV bool `json:"flip_v,omitempty"`
 
 	PlaceholderIndex *int   `json:"PlaceholderIndex,omitempty"`
 	PlaceholderType  string `json:"PlaceholderType,omitempty"`
@@ -28,10 +33,14 @@ type Shape struct {
 	ClickAction  *Hyperlink
 	HoverAction  *Hyperlink
 	AltText      string
+	Title        string `json:"title,omitempty"`
 	IsDecorative bool
 	Connector    *ConnectorInfo
 
 	Adjustments []ShapeAdjustment
+	// Freeform is set when the shape carries <a:custGeom> instead of a preset
+	// geometry, so custom paths can be read back and not just written.
+	Freeform *FreeformGeometry `json:"freeform,omitempty"`
 }
 
 // ShapeAdjustment represents one preset-geometry adjustment formula.
@@ -150,6 +159,8 @@ type ShapeFill struct {
 	Gradient     *GradientFill  `json:"gradient,omitempty"`
 	Pattern      *PatternedFill `json:"pattern,omitempty"`
 	Background   *bool          `json:"background,omitempty"`
+	// Picture is a read-only view of an <a:blipFill> shape fill.
+	Picture *PictureFill `json:"picture,omitempty"`
 }
 
 // ShapeLine defines generic shape line controls.
@@ -198,7 +209,10 @@ type ShapeReflection struct {
 
 type GradientStop struct {
 	PositionPct *float64 `json:"position_pct,omitempty"`
-	Color       string   `json:"color"`
+	// Transparency is read back from the stop colour's <a:alpha>, so a
+	// transparency set on a gradient is extractable and not only a solid fill's.
+	Transparency *float64 `json:"transparency,omitempty"`
+	Color        string   `json:"color"`
 }
 type GradientFill struct {
 	AngleDeg *float64       `json:"angle_deg,omitempty"`
@@ -216,6 +230,7 @@ type ImageMetadata struct {
 	Format      string `json:"format"`
 	ContentType string `json:"content_type,omitempty"`
 	Hash        string `json:"hash,omitempty"`
+	Data        []byte `json:"data,omitempty"`
 }
 
 type ImageCrop struct {
@@ -226,30 +241,33 @@ type ImageCrop struct {
 }
 
 type ShapeUpdate struct {
-	Text        *string          `json:"text,omitempty"`
-	Runs        *[]TextRun       `json:"runs,omitempty"`
-	TextFrame   *TextFrame       `json:"text_frame,omitempty"`
-	Paragraph   *Paragraph       `json:"paragraph,omitempty"`
-	Fill        *ShapeFill       `json:"fill,omitempty"`
-	Line        *ShapeLine       `json:"line,omitempty"`
-	Shadow      *ShapeShadow     `json:"shadow,omitempty"`
-	Glow        *ShapeGlow       `json:"glow,omitempty"`
-	Blur        *ShapeBlur       `json:"blur,omitempty"`
-	SoftEdge    *ShapeSoftEdge   `json:"soft_edge,omitempty"`
-	Reflection  *ShapeReflection `json:"reflection,omitempty"`
-	ClickAction *Hyperlink       `json:"click_action,omitempty"`
-	HoverAction *Hyperlink       `json:"hover_action,omitempty"`
-	Crop        *ImageCrop       `json:"crop,omitempty"`
-	Rotation    *float64         `json:"rotation,omitempty"`
-	FlipH       *bool            `json:"flip_h,omitempty"`
-	FlipV       *bool            `json:"flip_v,omitempty"`
-	X           *int             `json:"x,omitempty"`
-	Y           *int             `json:"y,omitempty"`
-	W           *int             `json:"w,omitempty"`
-	H           *int             `json:"h,omitempty"`
-	Description *string          `json:"description,omitempty"`
-	AltText     *string          `json:"alt_text,omitempty"`
-	Title       *string          `json:"title,omitempty"`
+	Text        *string               `json:"text,omitempty"`
+	Runs        *[]TextRun            `json:"runs,omitempty"`
+	Paragraphs  *[]ShapeTextParagraph `json:"paragraphs,omitempty"`
+	TextFrame   *TextFrame            `json:"text_frame,omitempty"`
+	Paragraph   *Paragraph            `json:"paragraph,omitempty"`
+	Fill        *ShapeFill            `json:"fill,omitempty"`
+	Line        *ShapeLine            `json:"line,omitempty"`
+	Shadow      *ShapeShadow          `json:"shadow,omitempty"`
+	Glow        *ShapeGlow            `json:"glow,omitempty"`
+	Blur        *ShapeBlur            `json:"blur,omitempty"`
+	SoftEdge    *ShapeSoftEdge        `json:"soft_edge,omitempty"`
+	Reflection  *ShapeReflection      `json:"reflection,omitempty"`
+	ClickAction *Hyperlink            `json:"click_action,omitempty"`
+	HoverAction *Hyperlink            `json:"hover_action,omitempty"`
+	Crop        *ImageCrop            `json:"crop,omitempty"`
+	Rotation    *float64              `json:"rotation,omitempty"`
+	FlipH       *bool                 `json:"flip_h,omitempty"`
+	FlipV       *bool                 `json:"flip_v,omitempty"`
+	X           *int                  `json:"x,omitempty"`
+	Y           *int                  `json:"y,omitempty"`
+	W           *int                  `json:"w,omitempty"`
+	H           *int                  `json:"h,omitempty"`
+	Description *string               `json:"description,omitempty"`
+	AltText     *string               `json:"alt_text,omitempty"`
+	Title       *string               `json:"title,omitempty"`
+	Format      string                `json:"format,omitempty"`
+	IsSVG       bool                  `json:"is_svg,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.
@@ -257,4 +275,32 @@ type SlideImageRef struct {
 	Index  int
 	RelID  string
 	Target string
+}
+
+// SlideMediaRef describes one media relationship on a slide: an image, a sound
+// or a movie. Images already had a listing; audio and video did not, so an
+// embedded movie could not be found without walking relationships by hand
+// (upstream #1049).
+type SlideMediaRef struct {
+	Index int    `json:"index"`
+	RelID string `json:"rel_id"`
+	// Kind is "image", "audio" or "video".
+	Kind string `json:"kind"`
+	// Target is the raw relationship target; PartPath is that target resolved
+	// to a package part, and is empty for an external link.
+	Target      string `json:"target"`
+	PartPath    string `json:"part_path,omitempty"`
+	ContentType string `json:"content_type,omitempty"`
+	SizeBytes   int    `json:"size_bytes,omitempty"`
+	External    bool   `json:"external,omitempty"`
+}
+
+// ShapeAdjustmentValue sets one preset-geometry adjustment — a yellow handle in
+// PowerPoint's UI (upstream #1017). Value is a fraction in the same units the
+// reader reports, so 0.5 is the halfway point; Formula overrides it when a
+// caller needs a raw OOXML guide expression.
+type ShapeAdjustmentValue struct {
+	Name    string  `json:"name"`
+	Value   float64 `json:"value,omitempty"`
+	Formula string  `json:"formula,omitempty"`
 }

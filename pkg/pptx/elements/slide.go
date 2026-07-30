@@ -1,5 +1,7 @@
 package elements
 
+//go:generate go run ../../../cmd/gen_slide_builder . slide_builder_gen.go
+
 import (
 	"strings"
 
@@ -127,9 +129,22 @@ func NewSlide(title string) SlideContent {
 	}
 }
 
-// Validate checks the slide for consistency.
+// Validate checks the slide for consistency, returning the first problem found.
 func (s SlideContent) Validate(index int) error {
 	return validateSlideContent(s, index)
+}
+
+// ValidateAll reports every logical problem on the slide.
+//
+// Per-object rules are independent, so stopping at the first defect forces a
+// caller to run validate → fix → validate once per problem. Slide-level rules
+// still short-circuit, and contribute at most one error.
+func (s SlideContent) ValidateAll(index int) []error {
+	errs := validateSlideObjectsAll(s, index)
+	if err := validateSlideContentBeyondObjects(s, index); err != nil {
+		errs = append(errs, err)
+	}
+	return errs
 }
 
 // AddBullet appends one bullet item and returns the updated slide.

@@ -1,10 +1,12 @@
 """Advanced media API integration tests."""
 
 import pathlib
+from io import BytesIO
 
 from gopptx import Presentation
 from gopptx.presentation.shapes.shape_media_mixin import PresentationShapeMediaMixin
 from gopptx.schemas import Inches
+from PIL import Image
 
 
 def test_image_advanced(tmp_path: pathlib.Path) -> None:
@@ -140,6 +142,84 @@ def test_add_picture_with_description(tmp_path: pathlib.Path) -> None:
             title="Sample Title",
         )
         assert pic_id > 0
+        pres.save(output_path)
+
+    assert output_path.exists()
+
+
+def _png_bytes(width: int = 144, height: int = 72) -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (width, height), "blue").save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def test_presentation_add_picture_infers_byte_format_and_native_size() -> None:
+    """Presentation-level picture insertion inspects byte sources."""
+
+    class _FakeShapeMedia(PresentationShapeMediaMixin):
+        def __init__(self) -> None:
+            self.last_payload: dict[str, object] = {}
+
+        def execute(self, _op: str, payload: dict[str, object]) -> dict[str, int]:
+            self.last_payload = payload
+            return {"shape_id": 1}
+
+    fake = _FakeShapeMedia()
+    _ = fake.add_picture(0, _png_bytes(), left=100, top=200)
+    assert fake.last_payload["format"] == "png"
+    assert fake.last_payload["w"] == Inches(2)
+    assert fake.last_payload["h"] == Inches(1)
+
+
+def test_presentation_add_picture_accepts_data_only_source() -> None:
+    """Presentation-level insertion resolves the documented data option."""
+
+    class _FakeShapeMedia(PresentationShapeMediaMixin):
+        def __init__(self) -> None:
+            self.last_payload: dict[str, object] = {}
+
+        def execute(self, _op: str, payload: dict[str, object]) -> dict[str, int]:
+            self.last_payload = payload
+            return {"shape_id": 1}
+
+    fake = _FakeShapeMedia()
+    _ = fake.add_picture(0, None, data=_png_bytes())
+    assert fake.last_payload["format"] == "png"
+    assert fake.last_payload["w"] == Inches(2)
+    assert fake.last_payload["h"] == Inches(1)
+
+
+def test_slide_add_picture_accepts_data_only_source(tmp_path: pathlib.Path) -> None:
+    """Slide-level insertion forwards a data-only picture to the bridge."""
+    output_path = tmp_path / "data_only_picture.pptx"
+    with Presentation.new("Data-only Picture") as pres:
+        slide = pres.slides[0]
+        picture_id = slide.add_picture(None, data=_png_bytes())
+        metadata = slide.get_image_metadata(picture_id)
+        assert metadata["format"] == "png"
+        pres.save(output_path)
+
+    assert output_path.exists()
+
+
+def test_slide_add_picture_preserves_aspect_ratio_for_omitted_dimension(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Slide-level insertion derives height and embeds inferred PNG bytes."""
+    output_path = tmp_path / "native_picture_size.pptx"
+    with Presentation.new("Native Picture Size") as pres:
+        slide = pres.slides[0]
+        picture_id = slide.add_picture(
+            _png_bytes(),
+            left=Inches(1),
+            top=Inches(1),
+            width=Inches(1),
+        )
+        shape = next(item for item in slide.list_shapes() if item["ID"] == picture_id)
+        assert shape["W"] == Inches(1)
+        assert shape["H"] == Inches(0.5)
+        metadata = slide.get_image_metadata(picture_id)
+        assert metadata["format"] == "png"
         pres.save(output_path)
 
     assert output_path.exists()

@@ -156,6 +156,27 @@ func TestWithChartIgnoresNilChart(t *testing.T) {
 	}
 }
 
+func TestWithChartAcceptsChartPointer(t *testing.T) {
+	bar := charts.NewBarChart([]string{"A"}, []float64{1})
+	slide := NewSlide("Chart").WithChart(&bar)
+	if slide.Chart == nil {
+		t.Fatal("WithChart ignored *charts.BarChart")
+	}
+	if slide.Chart.Title != bar.Title {
+		t.Fatalf("WithChart pointer produced %+v, want %+v", *slide.Chart, bar)
+	}
+}
+
+func TestWithChartIgnoresTypedNilChartPointer(t *testing.T) {
+	bar := charts.NewBarChart([]string{"A"}, []float64{1})
+	slide := NewSlide("Chart").WithChart(bar)
+	var nilBar *charts.BarChart
+	got := slide.WithChart(nilBar)
+	if got.Chart == nil || got.Chart.Title != bar.Title {
+		t.Fatal("WithChart typed nil pointer changed the existing chart")
+	}
+}
+
 func typeName(v any) string {
 	if v == nil {
 		return "<nil>"

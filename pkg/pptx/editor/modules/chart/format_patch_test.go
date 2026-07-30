@@ -57,9 +57,13 @@ func TestPatchChartFormatting_TitleLegendAndDataLabels(t *testing.T) {
 	mustContain(t, xml, `<c:legend><c:legendPos val="b"/><c:overlay val="1"/></c:legend>`)
 	mustContain(t, xml, `<c:dLblPos val="outEnd"/>`)
 	mustContain(t, xml, `<c:showSerName val="1"/>`)
-	if strings.Contains(xml, `<c:showPercent`) {
-		t.Fatalf("expected showPercent removed when false")
-	}
+	// A flag turned off is written as val="0" rather than dropped: PowerPoint
+	// ignores a label that carries only some of the six flags.
+	mustContain(t, xml, `<c:showPercent val="0"/>`)
+	assertXMLOrder(t, xml,
+		"<c:dLblPos", "<c:showLegendKey", "<c:showVal", "<c:showCatName",
+		"<c:showSerName", "<c:showPercent", "<c:showBubbleSize",
+	)
 }
 
 func TestPatchChartFormatting_HideLegendAndDataLabels(t *testing.T) {

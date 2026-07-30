@@ -64,6 +64,19 @@ jobs:
           install-mode: binary
           skip-save-cache: true
 
+      # Guards the Go-declarations-as-source-of-truth contract: the Python
+      # surface generated from Go (chart types, op constants, shape types) must
+      # match what the current Go declarations produce.
+      - name: Check generated files are up to date
+        run: |
+          go generate ./...
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated files are stale. Run 'task generate' and commit the result."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
       - name: Sync dev dependencies
         run: uv sync --extra dev
 

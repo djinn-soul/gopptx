@@ -6,7 +6,6 @@ import (
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editormodmedia "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/media"
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddAudio adds an audio shape to the slide without a custom icon.
@@ -95,8 +94,8 @@ func (e *PresentationEditor) addAudioGeneric(
 		return 0, errors.New("read slide part: not found")
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	newID := maxID + 1
+	newID := e.maxObjectID(slideRef.Part, content) + 1
+	e.reserveObjectIDs(slideRef.Part, newID)
 	audioXML := editormodmedia.BuildAudioShapeXML(newID, audioRelID, mediaRelID, iconRelID, altText, x, y, w, h)
 	updatedContent, err := editormodmedia.AppendShapeXMLToSlide(content, audioXML)
 	if err != nil {
