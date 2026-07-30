@@ -274,6 +274,7 @@ class ShapeUpdate(TypedDict, total=False):
     reflection: ReflectionFormat
     click_action: Hyperlink
     crop: ImageCrop
+    transparent_color: str
     rotation: float
     flip_h: bool
     flip_v: bool

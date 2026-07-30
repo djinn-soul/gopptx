@@ -791,3 +791,7 @@ _.add_column
 # Issue #309 (access shapes by name)
 _.get_by_name
 _.names
+
+# Issue #165 (make a picture source color transparent)
+transparent_color
+_.make_color_transparent
