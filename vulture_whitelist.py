@@ -783,3 +783,7 @@ _.clear
 _.get_layout
 _.slide_layout_id
 LayoutID  # unused variable (python\gopptx\schemas_chart_layout.py SlideLayoutInfo)
+
+# Issue #86 (Table.add_row / add_column)
+_.add_row
+_.add_column
