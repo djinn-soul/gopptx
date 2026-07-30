@@ -504,8 +504,13 @@ func TestRenderShapeXMLWithHoverAction(t *testing.T) {
 		t.Fatalf("renderShapeXML failed: %v", err)
 	}
 	xmlStr := string(xmlBytes)
-	if !strings.Contains(xmlStr, `hlinkMouseOver`) {
-		t.Fatalf("expected hover action in cNvPr, got: %s", xmlStr)
+	// p:cNvPr takes a:hlinkHover; a:hlinkMouseOver is the run-level spelling and
+	// PowerPoint ignores it here, which left the shape with no hover action.
+	if !strings.Contains(xmlStr, `<a:hlinkHover`) {
+		t.Fatalf("expected a:hlinkHover in cNvPr, got: %s", xmlStr)
+	}
+	if strings.Contains(xmlStr, `hlinkMouseOver`) {
+		t.Fatalf("cNvPr must not use the run-level hover spelling, got: %s", xmlStr)
 	}
 	if !strings.Contains(xmlStr, `ppaction://macro?name=HoverMacro`) {
 		t.Fatalf("expected macro action URL, got: %s", xmlStr)
