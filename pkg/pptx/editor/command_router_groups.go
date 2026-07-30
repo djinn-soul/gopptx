@@ -27,19 +27,21 @@ func registerHandlers(dst map[string]commandHandler, src map[string]commandHandl
 
 func slideBasicHandlers() map[string]commandHandler {
 	return map[string]commandHandler{
-		OpBatchExecute:        handleBatchExecute,
-		OpSlideCount:          handleSlideCount,
-		OpAddSlide:            handleAddSlide,
-		OpRemoveSlide:         handleRemoveSlide,
-		OpMoveSlide:           handleMoveSlide,
-		OpDuplicateSlide:      handleDuplicateSlide,
-		OpDuplicateSlideAfter: handleDuplicateSlideAfter,
-		OpListSlides:          handleListSlides,
-		OpSetSlideTitle:       handleSetSlideTitle,
-		OpUpdateSlide:         handleUpdateSlide,
-		OpValidate:            handleValidate,
-		OpRepair:              handleRepair,
-		OpSetSlideHidden:      handleSetSlideHidden,
+		OpBatchExecute:             handleBatchExecute,
+		OpSlideCount:               handleSlideCount,
+		OpAddSlide:                 handleAddSlide,
+		OpRemoveSlide:              handleRemoveSlide,
+		OpMoveSlide:                handleMoveSlide,
+		OpDuplicateSlide:           handleDuplicateSlide,
+		OpDuplicateSlideAfter:      handleDuplicateSlideAfter,
+		OpListSlides:               handleListSlides,
+		OpSetSlideTitle:            handleSetSlideTitle,
+		OpUpdateSlide:              handleUpdateSlide,
+		OpValidate:                 handleValidate,
+		OpRepair:                   handleRepair,
+		OpSetSlideHidden:           handleSetSlideHidden,
+		OpGetSlideShowMasterShapes: handleGetSlideShowMasterShapes,
+		OpSetSlideShowMasterShapes: handleSetSlideShowMasterShapes,
 	}
 }
 

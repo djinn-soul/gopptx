@@ -8,6 +8,7 @@ from typing_extensions import override
 
 from .chart import Chart, ChartCollection
 from .chart.chart_mixin import SlideChartMixin
+from .master_shapes_mixin import SlideMasterShapesMixin
 from .placeholders.placeholder_mixin import SlidePlaceholderMixin
 from .shapes.picture_mixin import SlidePictureMixin
 from .shapes.shape_batch_mixin import SlideShapeBatchMixin
@@ -30,6 +31,7 @@ class Slide(
     SlideTableMixin,
     SlideChartMixin,
     SlidePlaceholderMixin,
+    SlideMasterShapesMixin,
     SlideBase,
     SlideTextCacheMixin,
     SlideTextMixin,
