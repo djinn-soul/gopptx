@@ -79,6 +79,13 @@ func (s SlideContent) WithPieChart(chart charts.PieChart) SlideContent {
 	return s
 }
 
+// WithPie3DChart sets one 3D pie chart for the slide.
+func (s SlideContent) WithPie3DChart(chart charts.Pie3DChart) SlideContent {
+	clearCharts(&s)
+	s.Pie3D = &chart
+	return s
+}
+
 // WithDoughnutChart sets one doughnut chart for the slide.
 func (s SlideContent) WithDoughnutChart(chart charts.DoughnutChart) SlideContent {
 	clearCharts(&s)
@@ -135,6 +142,7 @@ func clearCharts(s *SlideContent) {
 	s.AreaStacked = nil
 	s.AreaStacked100 = nil
 	s.Pie = nil
+	s.Pie3D = nil
 	s.Doughnut = nil
 	s.Bubble = nil
 	s.Radar = nil

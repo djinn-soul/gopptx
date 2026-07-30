@@ -18,6 +18,7 @@ EXPECTED_CHART_TYPES = {
     "AREA_STACKED": "areaStacked",
     "AREA_STACKED_100": "areaStacked100",
     "PIE": "pie",
+    "THREE_D_PIE": "pie3D",
     "DOUGHNUT": "doughnut",
     "BUBBLE": "bubble",
     "RADAR": "radar",
@@ -64,9 +65,9 @@ class TestChartTypeGetAll(unittest.TestCase):
         self.assertEqual(result["COLUMN"], result["BAR"])
 
     def test_get_all_unique_value_count_matches_go_surface(self) -> None:
-        """Go surface has 19 distinct chart type values (BAR aliases COLUMN)."""
+        """Go surface has 20 distinct chart type values (BAR aliases COLUMN)."""
         result = ChartType.get_all()
-        self.assertEqual(len(set(result.values())), 19)
+        self.assertEqual(len(set(result.values())), 20)
 
 
 class TestChartTypeValidate(unittest.TestCase):

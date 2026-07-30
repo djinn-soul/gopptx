@@ -48,6 +48,8 @@ func NewChart(chartType enums.XLChartType, categories []string, values []float64
 		return charts.NewAreaStacked100Chart(categories, values), nil
 	case enums.XLChartTypePie:
 		return charts.NewPieChart(categories, values), nil
+	case enums.XLChartTypeThreeDPie:
+		return charts.NewPie3DChart(categories, values), nil
 	case enums.XLChartTypeDoughnut:
 		return charts.NewDoughnutChart(categories, values), nil
 	case enums.XLChartTypeRadar:

@@ -43,6 +43,8 @@ func (s SlideContent) WithChart(chart charts.Chart) SlideContent {
 		return s.WithAreaStacked100Chart(c)
 	case charts.PieChart:
 		return s.WithPieChart(c)
+	case charts.Pie3DChart:
+		return s.WithPie3DChart(c)
 	case charts.DoughnutChart:
 		return s.WithDoughnutChart(c)
 	case charts.BubbleChart:

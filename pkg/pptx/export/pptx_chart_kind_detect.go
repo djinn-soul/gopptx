@@ -20,6 +20,7 @@ const (
 	chartKindBar100      = "barStacked100"
 	chartKindBarHoriz    = "barHorizontal"
 	chartKindPie         = "pie"
+	chartKindPie3D       = "pie3D"
 	chartKindDoughnut    = "doughnut"
 	chartKindBubble      = "bubble"
 	chartKindScatter     = "scatter"
@@ -58,7 +59,7 @@ func scanChartXMLInfo(rawXML string) chartXMLInfo {
 			continue
 		}
 		switch start.Name.Local {
-		case "stockChart", "barChart", "lineChart", "doughnutChart", "pieChart",
+		case "stockChart", "barChart", "lineChart", "doughnutChart", "pieChart", "pie3DChart",
 			"bubbleChart", "scatterChart", "radarChart", "areaChart":
 			info.chartTypes[start.Name.Local] = true
 		case "barDir":
@@ -108,6 +109,8 @@ func detectChartKind(rawXML string) string {
 		return chartKindDoughnut
 	case info.chartTypes["pieChart"]:
 		return chartKindPie
+	case info.chartTypes["pie3DChart"]:
+		return chartKindPie3D
 	case info.chartTypes["bubbleChart"]:
 		return chartKindBubble
 	case info.chartTypes["scatterChart"]:

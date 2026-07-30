@@ -47,6 +47,7 @@ const (
 	XLChartTypeAreaStacked    XLChartType = pptxxml.ChartKindAreaStacked
 	XLChartTypeAreaStacked100 XLChartType = pptxxml.ChartKindAreaStacked100
 	XLChartTypePie            XLChartType = pptxxml.ChartKindPie
+	XLChartTypeThreeDPie      XLChartType = pptxxml.ChartKindThreeDPie
 	XLChartTypeDoughnut       XLChartType = pptxxml.ChartKindDoughnut
 	XLChartTypeBubble         XLChartType = pptxxml.ChartKindBubble
 	XLChartTypeRadar          XLChartType = pptxxml.ChartKindRadar
@@ -86,6 +87,8 @@ func ParseXLChartType(value string) (XLChartType, error) {
 		return XLChartTypeAreaStacked100, nil
 	case "pie":
 		return XLChartTypePie, nil
+	case "pie3d", "threedpie", "three_d_pie", "three-d-pie":
+		return XLChartTypeThreeDPie, nil
 	case chartTypeNameDoughnut, "donut":
 		return XLChartTypeDoughnut, nil
 	case "bubble":

@@ -78,6 +78,7 @@ const (
 	ChartKindAreaStacked    = "areaStacked"
 	ChartKindAreaStacked100 = "areaStacked100"
 	ChartKindPie            = "pie"
+	ChartKindThreeDPie      = "pie3D"
 	ChartKindDoughnut       = "doughnut"
 	ChartKindBubble         = "bubble"
 	ChartKindRadar          = "radar"
