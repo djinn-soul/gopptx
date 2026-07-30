@@ -86,6 +86,39 @@ func TestPatchChartFormatting_AxisDetails(t *testing.T) {
 	}
 }
 
+func TestPatchChartFormatting_AxisTitleVisibility(t *testing.T) {
+	xml := []byte(`<c:chartSpace xmlns:c="x" xmlns:a="y"><c:chart><c:plotArea>` +
+		`<c:valAx><c:axId val="2"/><c:title><c:tx><c:rich><a:p><a:r>` +
+		`<a:t>Revenue</a:t></a:r></a:p></c:rich></c:tx></c:title>` +
+		`<c:crosses val="autoZero"/></c:valAx></c:plotArea></c:chart></c:chartSpace>`)
+	hide := false
+	got, err := PatchChartFormatting(
+		xml,
+		common.ChartFormatUpdate{ValueAxisHasTitle: &hide},
+	)
+	if err != nil {
+		t.Fatalf("hide axis title: %v", err)
+	}
+	if strings.Contains(string(got), "<c:title>") {
+		t.Fatalf("axis title was not removed: %s", got)
+	}
+	if ExtractChartState(got).ValueAx.HasTitle {
+		t.Fatal("axis state still reports a title after removal")
+	}
+
+	show := true
+	got, err = PatchChartFormatting(
+		got,
+		common.ChartFormatUpdate{ValueAxisHasTitle: &show},
+	)
+	if err != nil {
+		t.Fatalf("show empty axis title: %v", err)
+	}
+	if !ExtractChartState(got).ValueAx.HasTitle {
+		t.Fatal("axis state does not report the restored empty title")
+	}
+}
+
 func TestPatchChartFormattingRejectsScaleAgainstRetainedBound(t *testing.T) {
 	xml := []byte(`<c:chartSpace xmlns:c="x"><c:chart><c:plotArea>` +
 		`<c:valAx><c:axId val="2"/><c:scaling><c:min val="0"/><c:max val="100"/></c:scaling></c:valAx>` +

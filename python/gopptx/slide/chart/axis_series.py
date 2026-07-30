@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from typing_extensions import override
 
 from .axis_format import ChartAxisFormatMixin
+from .gridlines import ChartAxisGridlineMixin
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -46,12 +47,74 @@ class ChartProtocol(Protocol):
         ...
 
 
-class ChartAxis(ChartAxisFormatMixin):
+class ChartAxisTitle:
+    """Chart axis title proxy (Issue #1103)."""
+
+    def __init__(self, chart: ChartProtocol, *, axis_name: str) -> None:
+        """Bind the title proxy to one chart axis."""
+        self._chart = chart
+        self._axis_name = axis_name
+
+    @property
+    def text(self) -> str:
+        """Return the current axis-title text."""
+        key = "category_axis" if self._axis_name == "category" else "value_axis"
+        raw = self._chart.snapshot().get(key, {})
+        payload = cast("dict[str, object]", raw) if isinstance(raw, dict) else {}
+        return str(payload.get("title", ""))
+
+    @text.setter
+    def text(self, value: str) -> None:
+        prefix = "category_axis_" if self._axis_name == "category" else "value_axis_"
+        self._chart.apply_format(
+            cast(
+                "ChartFormatUpdate",
+                {
+                    f"{prefix}has_title": True,
+                    f"{prefix}title": str(value),
+                },
+            )
+        )
+
+
+class ChartAxis(ChartAxisFormatMixin, ChartAxisGridlineMixin):
     """Proxy exposing chart axis state and formatting operations."""
 
     def __init__(self, chart: ChartProtocol, *, axis_name: str) -> None:
         """Initialize an axis proxy for the given axis name."""
         super().__init__(chart, axis_name=axis_name)
+
+    @property
+    def has_title(self) -> bool:
+        """Return whether the axis has a title (Issue #1103)."""
+        payload = self._payload()
+        return bool(payload.get("has_title", bool(payload.get("title"))))
+
+    @has_title.setter
+    def has_title(self, value: bool) -> None:
+        prefix = "category_axis_" if self.is_category_axis else "value_axis_"
+        self._chart.apply_format(
+            cast("ChartFormatUpdate", {f"{prefix}has_title": bool(value)})
+        )
+
+    @property
+    def axis_title(self) -> ChartAxisTitle | str:
+        """Return axis title proxy (Issue #1103)."""
+        return ChartAxisTitle(self._chart, axis_name=self._axis_name)
+
+    @axis_title.setter
+    def axis_title(self, value: str | ChartAxisTitle) -> None:
+        val_str = value.text if isinstance(value, ChartAxisTitle) else str(value)
+        prefix = "category_axis_" if self.is_category_axis else "value_axis_"
+        self._chart.apply_format(
+            cast(
+                "ChartFormatUpdate",
+                {
+                    f"{prefix}has_title": True,
+                    f"{prefix}title": val_str,
+                },
+            )
+        )
 
     @staticmethod
     def _major_gridline_state_key() -> str:

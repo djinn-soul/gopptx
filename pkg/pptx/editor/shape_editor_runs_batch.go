@@ -42,6 +42,7 @@ func (e *PresentationEditor) SetSlideShapeRuns(slideIndex int, updates []common.
 		}
 		update := updatesByShape[targetID]
 		shape.Runs = editorshape.CopyTextRuns(update.Runs)
+		shape.Paragraphs = nil
 		updatedXML, err := replaceShapeTextBody(e, partPath, content[shape.Start:shape.End], shape)
 		if err != nil {
 			replaceErr = err

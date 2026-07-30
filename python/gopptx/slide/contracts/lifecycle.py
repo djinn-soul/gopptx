@@ -53,3 +53,7 @@ class SlideLifecycleProtocol(Protocol):
     def get_slide_layout_ref(self, slide_index: int) -> tuple[str, str]:
         """Protocol member."""
         ...
+
+    def rebind_slide_layout(self, slide_index: int, layout_part_or_name: str) -> None:
+        """Rebind one slide to a layout by part path or name."""
+        ...

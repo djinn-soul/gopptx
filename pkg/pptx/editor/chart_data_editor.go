@@ -35,17 +35,22 @@ func (e *PresentationEditor) ListSlideCharts(slideIndex int) ([]common.SlideChar
 		relToChart[rel.ID] = common.ResolveRelationshipTarget(slideRef.Part, rel.Target)
 	}
 
-	rIDs := extractChartRelIDs(slideXML)
-	out := make([]common.SlideChartRef, 0, len(rIDs))
-	for i, relID := range rIDs {
+	chartFrames, err := extractChartFrameRefs(slideXML)
+	if err != nil {
+		return nil, fmt.Errorf("parse slide chart frames: %w", err)
+	}
+	out := make([]common.SlideChartRef, 0, len(chartFrames))
+	for _, frame := range chartFrames {
+		relID := frame.RelID
 		chartPart, found := relToChart[relID]
 		if !found {
 			continue
 		}
 		out = append(out, common.SlideChartRef{
-			Index:     i,
+			Index:     len(out),
 			RelID:     relID,
 			ChartPart: chartPart,
+			ShapeID:   frame.ShapeID,
 		})
 	}
 	return out, nil

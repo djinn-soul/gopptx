@@ -69,7 +69,7 @@ include = [
 target-version = "py310"
 line-length = 88
 src = ["python/gopptx", "tests", "examples"]
-exclude = ["vulture_whitelist.py", "hatch_build.py"]
+exclude = ["vulture_whitelist.py", "vulture_whitelist_review.py", "hatch_build.py"]
 preview = true
 
 [tool.ruff.lint]
@@ -275,6 +275,7 @@ reportImportCycles = "warning"
 
 exclude = [
     "vulture_whitelist.py",
+    "vulture_whitelist_review.py",
     "**/__pycache__",
     "**/node_modules",
     ".git",
@@ -304,7 +305,13 @@ venv = ".venv"
 # PYLINT - Duplicate code detection (R0801)
 # ============================================================================
 [tool.pylint.main]
-ignore = [".venv", "tests", "vulture_whitelist.py", "examples"]
+ignore = [
+    ".venv",
+    "tests",
+    "vulture_whitelist.py",
+    "vulture_whitelist_review.py",
+    "examples",
+]
 jobs = 0
 
 [tool.pylint."messages control"]

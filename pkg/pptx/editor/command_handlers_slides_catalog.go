@@ -204,6 +204,20 @@ func handleRebindSlideLayout(e *PresentationEditor, payload json.RawMessage) (an
 	return slidescatalog.BuildReboundResponse(), nil
 }
 
+func handleReorderSlideLayouts(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	v := NewPayloadValidator()
+	masterPart := v.OptionalString(p, "master_part")
+	layoutParts, _ := v.OptionalStringSlice(p, "layout_parts")
+	if err := e.ReorderSlideLayouts(masterPart, layoutParts); err != nil {
+		return nil, err
+	}
+	return respUpdated, nil
+}
+
 func handleCloneLayoutMasterFamily(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
 	if err != nil {

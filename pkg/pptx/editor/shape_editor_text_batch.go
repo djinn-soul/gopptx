@@ -52,6 +52,7 @@ func (e *PresentationEditor) UpdateSlideRunTexts(
 			}
 		}
 		shape.Runs = runs
+		shape.Paragraphs = nil
 
 		updatedXML, err := replaceShapeTextBody(e, partPath, content[shape.Start:shape.End], shape)
 		if err != nil {

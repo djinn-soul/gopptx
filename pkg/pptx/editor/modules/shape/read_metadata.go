@@ -30,6 +30,7 @@ type ReaderRunActions struct {
 // run-level hyperlink tags and is resolved later by the editor reader.
 type ParsedShapeReaderMetadata struct {
 	AltText      string
+	Title        string
 	HasAltText   bool
 	IsDecorative bool
 	ClickAction  *ReaderHyperlinkRef
@@ -118,6 +119,9 @@ func ParseShapeReaderMetadata(content []byte) (ParsedShapeReaderMetadata, error)
 	cNvPr := firstReaderCNvPr(&src)
 	applyReaderAltText(&meta, cNvPr)
 	if cNvPr != nil {
+		if cNvPr.Title != nil {
+			meta.Title = *cNvPr.Title
+		}
 		meta.ClickAction = readerHyperlinkRef(cNvPr.HlinkClick)
 		meta.HoverAction = readerHyperlinkRef(firstReaderHyperlink(cNvPr.HlinkHover, cNvPr.HlinkMouseOver))
 	}

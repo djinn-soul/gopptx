@@ -95,6 +95,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 			ClickAction:      p.ClickAction,
 			HoverAction:      p.HoverAction,
 			AltText:          p.AltText,
+			Title:            p.Title,
 			IsDecorative:     p.IsDecorative,
 			Connector:        p.Connector,
 			Adjustments:      p.Adjustments,

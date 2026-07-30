@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...api_errors import GopptxError
+from .table_cell_margins import CellMarginMixin
 
 if TYPE_CHECKING:
     from ._protocols import TableWriteProto
 
 
-class Cell:
+class Cell(CellMarginMixin):
     """Proxy object for a table cell."""
 
     def __init__(self, table: TableWriteProto, row: int, col: int) -> None:
@@ -169,6 +170,33 @@ class Cell:
     @border_bottom.setter
     def border_bottom(self, value: dict[str, object] | None) -> None:
         self._set_border("bottom", value)
+
+    def set_border(
+        self,
+        color: str | None = None,
+        width: float | None = None,
+        side: str = "all",
+    ) -> None:
+        """Set border color and width for this table cell (Issue #1084).
+
+        Args:
+            color: Hex RGB color string (e.g. "FF0000").
+            width: Line width in EMU or points.
+            side: "left", "right", "top", "bottom", or "all".
+        """
+        border_data: dict[str, object] = {}
+        if color is not None:
+            border_data["color"] = str(color).lstrip("#")
+        if width is not None:
+            border_data["width"] = int(width)
+
+        sides = (
+            ["left", "right", "top", "bottom"]
+            if side.lower() == "all"
+            else [side.lower()]
+        )
+        for s in sides:
+            self._set_border(s, border_data)
 
     def split(self) -> None:
         """Split a merged cell back into a 1x1 cell."""

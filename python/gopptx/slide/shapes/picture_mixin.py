@@ -49,6 +49,15 @@ class SlidePictureMixin:
         options = {
             key: value for key, value in kwargs.items() if key not in {"path", "data"}
         }
+        if (
+            isinstance(effective_source, (str, os.PathLike))
+            and str(effective_source).lower().endswith(".svg")
+        ) or (
+            isinstance(effective_source, bytes) and b"<svg" in effective_source.lower()
+        ):
+            options["format"] = "svg"
+            options["is_svg"] = True
+
         if isinstance(effective_source, bytes):
             return self.add_image(None, bounds, data=effective_source, **options)
         return self.add_image(os.fspath(effective_source), bounds, **options)

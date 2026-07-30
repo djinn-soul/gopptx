@@ -27,7 +27,9 @@ def _table_deck(tmp_path: pathlib.Path) -> pathlib.Path:
 def _table(pres: Presentation):
     slide = pres.slides[0]
     shape_id = next(
-        s.id for s in slide.shapes if s.shape_type in {"tbl", "graphicFrame"}
+        shape.id
+        for shape in slide.shapes
+        if shape.shape_type in {"tbl", "graphicFrame"}
     )
     return slide.table(shape_id)
 
@@ -102,7 +104,10 @@ def test_cell_border_precedes_cell_fill(deck: pathlib.Path) -> None:
 def test_cell_border_can_be_cleared(deck: pathlib.Path) -> None:
     pres = Presentation()
     pres.open(deck)
-    _table(pres).cell(1, 1).border_top = {"width": 12700, "color": "000000"}
+    _table(pres).cell(1, 1).border_top = {
+        "width": 12700,
+        "color": "000000",
+    }
     pres.save(deck)
     pres.close()
 

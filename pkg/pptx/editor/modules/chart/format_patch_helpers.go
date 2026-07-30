@@ -32,7 +32,7 @@ func firstChartBlockBounds(xml string) (int, int) {
 
 func isLegendPosition(position string) bool {
 	switch strings.ToLower(strings.TrimSpace(position)) {
-	case "r", "l", "t", "b":
+	case "r", "l", "t", "b", "tr", "right", "left", "top", "bottom", "top_right", "topright":
 		return true
 	default:
 		return false

@@ -16,6 +16,7 @@ from .model_proxies import (
     ChartTitle,
 )
 from .scene3d_area import ChartArea
+from .series_format import ChartSeriesFormatMixin
 from .trendline import ChartTrendlineMixin
 
 if TYPE_CHECKING:
@@ -77,6 +78,7 @@ class Chart(
     ChartErrorBarMixin,
     ChartDataPointMixin,
     ChartDataLabelPointMixin,
+    ChartSeriesFormatMixin,
 ):
     """Live chart proxy with python-pptx-style accessors."""
 

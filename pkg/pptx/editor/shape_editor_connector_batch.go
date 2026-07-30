@@ -62,6 +62,7 @@ func (e *PresentationEditor) buildConnectorBatchXML(
 		}
 		if connector.Runs != nil {
 			shape.Runs = *connector.Runs
+			shape.Paragraphs = nil
 		}
 
 		shapeNode, err := e.renderShapeXML(partPath, &shape)

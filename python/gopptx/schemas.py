@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from . import schemas_chart_layout as _schemas_chart_layout
+from . import schemas_chart_series as _schemas_chart_series
 from . import schemas_presentation_types as _schemas_presentation_types
 from . import schemas_shape_style as _schemas_shape_style
 from . import schemas_shape_types as _schemas_shape_types
@@ -60,6 +61,7 @@ SlideMediaRef = _schemas_shape_types.SlideMediaRef
 ImageCrop = _schemas_shape_types.ImageCrop
 Hyperlink = _schemas_shape_types.Hyperlink
 TextRun = _schemas_shape_types.TextRun
+ShapeTextParagraph = _schemas_shape_types.ShapeTextParagraph
 ShapeAdjustment = _schemas_shape_types.ShapeAdjustment
 ShapeAdjustmentValue = _schemas_shape_types.ShapeAdjustmentValue
 ShapeUpdate = _schemas_shape_types.ShapeUpdate
@@ -76,12 +78,15 @@ ChartState = _schemas_chart_layout.ChartState
 ChartFormatUpdate = _schemas_chart_layout.ChartFormatUpdate
 ChartSelector = _schemas_chart_layout.ChartSelector
 ChartSeriesData = _schemas_chart_layout.ChartSeriesData
-ChartTrendlineSpec = _schemas_chart_layout.ChartTrendlineSpec
-ChartErrorBarSpec = _schemas_chart_layout.ChartErrorBarSpec
-ChartDataPointSpec = _schemas_chart_layout.ChartDataPointSpec
-ChartDataLabelPointSpec = _schemas_chart_layout.ChartDataLabelPointSpec
-ChartSeriesInvertSpec = _schemas_chart_layout.ChartSeriesInvertSpec
-ChartDataTableSpec = _schemas_chart_layout.ChartDataTableSpec
+ChartTrendlineSpec = _schemas_chart_series.ChartTrendlineSpec
+ChartErrorBarSpec = _schemas_chart_series.ChartErrorBarSpec
+ChartDataPointSpec = _schemas_chart_series.ChartDataPointSpec
+ChartDataLabelPointSpec = _schemas_chart_series.ChartDataLabelPointSpec
+ChartSeriesInvertSpec = _schemas_chart_series.ChartSeriesInvertSpec
+ChartDataTableSpec = _schemas_chart_series.ChartDataTableSpec
+ChartLineFormatSpec = _schemas_chart_series.ChartLineFormatSpec
+ChartSeriesFormatSpec = _schemas_chart_series.ChartSeriesFormatSpec
+ChartSeriesLinesSpec = _schemas_chart_series.ChartSeriesLinesSpec
 PlaceholderInfo = _schemas_chart_layout.PlaceholderInfo
 SlideChartRef = _schemas_chart_layout.SlideChartRef
 SlideLayoutInfo = _schemas_chart_layout.SlideLayoutInfo

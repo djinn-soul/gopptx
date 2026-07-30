@@ -8,19 +8,19 @@ from typing import TYPE_CHECKING, Protocol, cast
 from ...api_errors import GopptxError
 from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
-from .picture_image import ImagePartProxy
 from .shape_format_proxies import (
     _ShapeFillProxy,
     _ShapeLineProxy,
     _ShapeShadowProxy,
 )
+from .shape_proxy_features import ShapeProxyFeatureMixin
 from .shape_style_proxy import _ShapeStyleProxy
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...constants import ShapeType
-    from ...schemas import Shape, ShapeProps, ShapeUpdate
+    from ...schemas import Shape, ShapeProps, ShapeUpdate, SlideChartRef
     from ...shapes import ShapeBuilder
     from ...text.run_builder import RunBuilder
     from ..contracts import SlidePresentationProtocol
@@ -35,6 +35,8 @@ class _ShapeProxySlideProto(Protocol):
 
     def list_shapes(self) -> list[Shape]: ...
 
+    def list_charts(self) -> list[SlideChartRef]: ...
+
     def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None: ...
 
     def add_shape(
@@ -47,7 +49,7 @@ class _ShapeProxySlideProto(Protocol):
     def shape(self, shape_id: int) -> ShapeProxy: ...
 
 
-class ShapeProxy:
+class ShapeProxy(ShapeProxyFeatureMixin):
     """Live shape proxy object."""
 
     def __init__(self, slide: _ShapeProxySlideProto, shape_id: int) -> None:
@@ -106,11 +108,6 @@ class ShapeProxy:
         shape = self.shape_record()
         value = shape.get("Text", shape.get("text", ""))
         return str(value)
-
-    @property
-    def image(self) -> ImagePartProxy:
-        """Return the ImagePartProxy representing the underlying image asset (Issue #1084)."""
-        return ImagePartProxy(self)
 
     @text.setter
     def text(self, value: str) -> None:

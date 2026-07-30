@@ -33,6 +33,7 @@ type Shape struct {
 	ClickAction  *Hyperlink
 	HoverAction  *Hyperlink
 	AltText      string
+	Title        string `json:"title,omitempty"`
 	IsDecorative bool
 	Connector    *ConnectorInfo
 
@@ -240,32 +241,33 @@ type ImageCrop struct {
 }
 
 type ShapeUpdate struct {
-	Text        *string          `json:"text,omitempty"`
-	Runs        *[]TextRun       `json:"runs,omitempty"`
-	TextFrame   *TextFrame       `json:"text_frame,omitempty"`
-	Paragraph   *Paragraph       `json:"paragraph,omitempty"`
-	Fill        *ShapeFill       `json:"fill,omitempty"`
-	Line        *ShapeLine       `json:"line,omitempty"`
-	Shadow      *ShapeShadow     `json:"shadow,omitempty"`
-	Glow        *ShapeGlow       `json:"glow,omitempty"`
-	Blur        *ShapeBlur       `json:"blur,omitempty"`
-	SoftEdge    *ShapeSoftEdge   `json:"soft_edge,omitempty"`
-	Reflection  *ShapeReflection `json:"reflection,omitempty"`
-	ClickAction *Hyperlink       `json:"click_action,omitempty"`
-	HoverAction *Hyperlink       `json:"hover_action,omitempty"`
-	Crop        *ImageCrop       `json:"crop,omitempty"`
-	Rotation    *float64         `json:"rotation,omitempty"`
-	FlipH       *bool            `json:"flip_h,omitempty"`
-	FlipV       *bool            `json:"flip_v,omitempty"`
-	X           *int             `json:"x,omitempty"`
-	Y           *int             `json:"y,omitempty"`
-	W           *int             `json:"w,omitempty"`
-	H           *int             `json:"h,omitempty"`
-	Description *string          `json:"description,omitempty"`
-	AltText     *string          `json:"alt_text,omitempty"`
-	Title       *string          `json:"title,omitempty"`
-	Format      string           `json:"format,omitempty"`
-	IsSVG       bool             `json:"is_svg,omitempty"`
+	Text        *string               `json:"text,omitempty"`
+	Runs        *[]TextRun            `json:"runs,omitempty"`
+	Paragraphs  *[]ShapeTextParagraph `json:"paragraphs,omitempty"`
+	TextFrame   *TextFrame            `json:"text_frame,omitempty"`
+	Paragraph   *Paragraph            `json:"paragraph,omitempty"`
+	Fill        *ShapeFill            `json:"fill,omitempty"`
+	Line        *ShapeLine            `json:"line,omitempty"`
+	Shadow      *ShapeShadow          `json:"shadow,omitempty"`
+	Glow        *ShapeGlow            `json:"glow,omitempty"`
+	Blur        *ShapeBlur            `json:"blur,omitempty"`
+	SoftEdge    *ShapeSoftEdge        `json:"soft_edge,omitempty"`
+	Reflection  *ShapeReflection      `json:"reflection,omitempty"`
+	ClickAction *Hyperlink            `json:"click_action,omitempty"`
+	HoverAction *Hyperlink            `json:"hover_action,omitempty"`
+	Crop        *ImageCrop            `json:"crop,omitempty"`
+	Rotation    *float64              `json:"rotation,omitempty"`
+	FlipH       *bool                 `json:"flip_h,omitempty"`
+	FlipV       *bool                 `json:"flip_v,omitempty"`
+	X           *int                  `json:"x,omitempty"`
+	Y           *int                  `json:"y,omitempty"`
+	W           *int                  `json:"w,omitempty"`
+	H           *int                  `json:"h,omitempty"`
+	Description *string               `json:"description,omitempty"`
+	AltText     *string               `json:"alt_text,omitempty"`
+	Title       *string               `json:"title,omitempty"`
+	Format      string                `json:"format,omitempty"`
+	IsSVG       bool                  `json:"is_svg,omitempty"`
 }
 
 // SlideImageRef describes one image relationship on a slide.

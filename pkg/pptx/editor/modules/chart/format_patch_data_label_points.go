@@ -93,6 +93,9 @@ func validateChartDataLabelPoints(points []common.ChartDataLabelPoint) error {
 				dataLabelFontSizeMinPt, dataLabelFontSizeMaxPt, *point.FontSizePt,
 			)
 		}
+		if err := validateDataLabelPointBox(point); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -195,7 +198,7 @@ func buildDataLabelPointBlock(
 	b.WriteString(reDataLabelLayout.FindString(existing))
 	b.WriteString(reDataLabelRichText.FindString(existing))
 	b.WriteString(buildDataLabelNumberFormat(existing, point, inheritedNumFmt))
-	b.WriteString(reDataLabelShapePr.FindString(existing))
+	b.WriteString(buildDataLabelShapeProperties(existing, point))
 	b.WriteString(buildDataLabelTextProperties(existing, point))
 	b.WriteString(reDataLabelPosition.FindString(existing))
 	b.WriteString(applyDataLabelFlagOverrides(seriesDataLabelFlags(ser, existing, plotFlags), point))
