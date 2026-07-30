@@ -95,7 +95,7 @@ func firstPlotDataLabels(chartXML string) (dataLabelsXML, bool) {
 
 func isChartPlotElement(name string) bool {
 	switch name {
-	case "barChart", "lineChart", "areaChart", "pieChart", "doughnutChart",
+	case "barChart", "lineChart", "areaChart", "pieChart", "pie3DChart", "doughnutChart",
 		"scatterChart", "bubbleChart", "radarChart", "stockChart":
 		return true
 	default:

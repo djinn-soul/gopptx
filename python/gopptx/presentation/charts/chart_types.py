@@ -71,6 +71,9 @@ class ChartType(str, Enum):
     PIE = "pie"
     """Pie chart. Go: enums.XLChartTypePie."""
 
+    THREE_D_PIE = "pie3D"
+    """3D pie chart. Go: enums.XLChartTypeThreeDPie."""
+
     DOUGHNUT = "doughnut"
     """Doughnut chart. Go: enums.XLChartTypeDoughnut."""
 

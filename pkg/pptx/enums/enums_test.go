@@ -70,6 +70,13 @@ func TestParseXLChartType(t *testing.T) {
 	if chartType.XMLValue() != "doughnut" {
 		t.Fatalf("expected doughnut, got %s", chartType.XMLValue())
 	}
+	chartType, err = ParseXLChartType("three_d_pie")
+	if err != nil {
+		t.Fatalf("parse 3D pie chart type: %v", err)
+	}
+	if chartType != XLChartTypeThreeDPie || chartType.XMLValue() != "pie3D" {
+		t.Fatalf("expected pie3D, got %s", chartType.XMLValue())
+	}
 	if _, err := ParseXLChartType("surface3D"); err == nil {
 		t.Fatal("expected invalid chart type error")
 	}

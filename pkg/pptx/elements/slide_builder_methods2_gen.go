@@ -75,6 +75,12 @@ func (b *SlideBuilder) WithPictureBackground(img shapes.Image) *SlideBuilder {
 	return b
 }
 
+// WithPie3DChart sets one 3D pie chart for the slide.
+func (b *SlideBuilder) WithPie3DChart(chart charts.Pie3DChart) *SlideBuilder {
+	b.content = b.content.WithPie3DChart(chart)
+	return b
+}
+
 // WithPieChart sets one pie chart for the slide.
 func (b *SlideBuilder) WithPieChart(chart charts.PieChart) *SlideBuilder {
 	b.content = b.content.WithPieChart(chart)
@@ -240,11 +246,5 @@ func (b *SlideBuilder) WithTitleSize(size int) *SlideBuilder {
 // WithTitleUnderline sets whether the title is underlined.
 func (b *SlideBuilder) WithTitleUnderline(underline bool) *SlideBuilder {
 	b.content = b.content.WithTitleUnderline(underline)
-	return b
-}
-
-// WithTransition sets the transition for the slide.
-func (b *SlideBuilder) WithTransition(t transitions.SlideTransition) *SlideBuilder {
-	b.content = b.content.WithTransition(t)
 	return b
 }

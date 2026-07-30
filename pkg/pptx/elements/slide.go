@@ -96,6 +96,7 @@ type SlideContent struct {
 	AreaStacked          *charts.AreaStackedChart
 	AreaStacked100       *charts.AreaStacked100Chart
 	Pie                  *charts.PieChart
+	Pie3D                *charts.Pie3DChart
 	Doughnut             *charts.DoughnutChart
 	Bubble               *charts.BubbleChart
 	Radar                *charts.RadarChart

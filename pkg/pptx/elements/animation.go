@@ -85,6 +85,7 @@ func hasPrimaryChart(s SlideContent) bool {
 		s.AreaStacked != nil ||
 		s.AreaStacked100 != nil ||
 		s.Pie != nil ||
+		s.Pie3D != nil ||
 		s.Doughnut != nil ||
 		s.Bubble != nil ||
 		s.Radar != nil ||

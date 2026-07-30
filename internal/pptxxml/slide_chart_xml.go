@@ -34,6 +34,9 @@ func RenderChart(chart *ChartSpec) []byte {
 	if chart.Kind == ChartKindPie {
 		return []byte(pieChartPartXML(chart))
 	}
+	if chart.Kind == ChartKindThreeDPie {
+		return []byte(pie3DChartPartXML(chart))
+	}
 	if chart.Kind == ChartKindDoughnut {
 		return []byte(doughnutChartPartXML(chart))
 	}

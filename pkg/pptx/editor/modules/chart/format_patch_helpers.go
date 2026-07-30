@@ -8,6 +8,7 @@ func firstChartBlockBounds(xml string) (int, int) {
 		"lineChart",
 		"areaChart",
 		"pieChart",
+		"pie3DChart",
 		"doughnutChart",
 		"scatterChart",
 		"bubbleChart",

@@ -42,6 +42,9 @@ func (s SlideContent) directChartCount() int {
 	if s.Pie != nil {
 		count++
 	}
+	if s.Pie3D != nil {
+		count++
+	}
 	if s.Doughnut != nil {
 		count++
 	}

@@ -811,3 +811,6 @@ ROUND_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
 SQUARE_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
 SYSTEM_DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
 SYSTEM_DASH_DOT_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+
+# Issue #235 (THREE_D_PIE chart type)
+THREE_D_PIE  # unused variable (python\gopptx\presentation\charts\chart_types.py)
