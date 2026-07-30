@@ -796,3 +796,14 @@ _.names
 transparent_color
 _.make_color_transparent
 _.iter_leaf_shapes
+_.dash_style
+SOLID  # unused variable (python\gopptx\constants.py LineDashStyle)
+DASH  # unused variable (python\gopptx\constants.py LineDashStyle)
+DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+LONG_DASH  # unused variable (python\gopptx\constants.py LineDashStyle)
+LONG_DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+LONG_DASH_DOT_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+ROUND_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+SQUARE_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+SYSTEM_DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+SYSTEM_DASH_DOT_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)

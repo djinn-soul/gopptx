@@ -1,6 +1,6 @@
 """Chart proxy model package for slide APIs."""
 
-from .axis_series import ChartAxis, ChartSeries, ChartSeriesCollection
+from .axis_series import ChartAxis
 from .collection import ChartCollection
 from .data_label_points import DataLabelPoint, DataLabelPointCollection
 from .data_points import DataPoint, DataPointCollection
@@ -21,6 +21,7 @@ from .model_proxies import (
     DataLabels,
 )
 from .scene3d_area import ChartArea, ChartScene3D
+from .series_proxy import ChartSeries, ChartSeriesCollection
 from .trendline import TRENDLINE_TYPES, Trendline, TrendlineCollection
 
 __all__ = [
