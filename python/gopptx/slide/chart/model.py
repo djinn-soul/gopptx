@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .axis_series import ChartAxis, ChartSeriesCollection
+from .axis_series import ChartAxis
 from .data_label_points import ChartDataLabelPointMixin
 from .data_points import ChartDataPointMixin
 from .data_table import ChartDataTable
@@ -17,6 +17,7 @@ from .model_proxies import (
 )
 from .scene3d_area import ChartArea
 from .series_format import ChartSeriesFormatMixin
+from .series_proxy import ChartSeriesCollection
 from .trendline import ChartTrendlineMixin
 
 if TYPE_CHECKING:
@@ -236,7 +237,7 @@ class Chart(
         """Series collection snapshot proxy."""
         snapshot = self._snapshot()
         return ChartSeriesCollection(
-            cast("list[dict[str, object]]", snapshot.get("series", []))
+            self, cast("list[dict[str, object]]", snapshot.get("series", []))
         )
 
     def replace_data(

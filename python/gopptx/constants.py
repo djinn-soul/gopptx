@@ -131,6 +131,24 @@ class ConnectorType(StrEnum):
     BENT_CONNECTOR_5 = SHAPE_BENT_CONNECTOR_5
 
 
+class LineDashStyle(StrEnum):
+    """DrawingML line-dash tokens used by shape and chart line facades."""
+
+    SOLID = "solid"
+    DASH = "dash"
+    DASH_DOT = "dashDot"
+    LONG_DASH = "lgDash"
+    LONG_DASH_DOT = "lgDashDot"
+    LONG_DASH_DOT_DOT = "lgDashDotDot"
+    ROUND_DOT = "sysDot"
+    SQUARE_DOT = "sysDash"
+    SYSTEM_DASH_DOT = "sysDashDot"
+    SYSTEM_DASH_DOT_DOT = "sysDashDotDot"
+
+
+MSO_LINE = LineDashStyle
+
+
 # Placeholder Types
 PLACEHOLDER_TITLE = "title"
 PLACEHOLDER_BODY = "body"
