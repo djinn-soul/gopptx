@@ -253,6 +253,7 @@ class SlideLayoutInfo(TypedDict):
     Part: str
     Name: str
     MasterPart: str
+    LayoutID: NotRequired[int]
     Shapes: NotRequired[list[str]]
     Placeholders: NotRequired[list[PlaceholderInfo]]
 
