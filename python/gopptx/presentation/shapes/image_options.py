@@ -13,6 +13,8 @@ __all__ = ["IMAGE_OPTION_KEYS", "reject_unknown_image_options"]
 IMAGE_OPTION_KEYS = frozenset({
     "path",
     "data",
+    "format",
+    "is_svg",
     "image_format",
     "img_format",
     "crop",

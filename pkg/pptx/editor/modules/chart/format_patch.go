@@ -71,6 +71,22 @@ func ValidateChartFormatUpdate(req common.ChartFormatUpdate) error {
 	if err := validateChartDataLabelPoints(req.DataLabelPoints); err != nil {
 		return err
 	}
+	if err := validateChartDataLabelBox(req); err != nil {
+		return err
+	}
+	return validateChartFormatLinesAndTables(req)
+}
+
+func validateChartFormatLinesAndTables(req common.ChartFormatUpdate) error {
+	if err := validateGridlineFormats(req); err != nil {
+		return err
+	}
+	if err := validateChartSeriesFormats(req.SeriesFormats); err != nil {
+		return err
+	}
+	if err := validateChartSeriesLines(req.SeriesLines); err != nil {
+		return err
+	}
 	if err := validateChartSeriesInverts(req.SeriesInverts); err != nil {
 		return err
 	}
@@ -104,6 +120,7 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchChartDataLabels(updated, req)
 	updated = patchDataLabelOffsets(updated, req.DataLabelOffsets)
 	updated = patchChartDataLabelNumberFormat(updated, req.DataLabelNumberFormat, req.DataLabelFormatLinked)
+	updated = patchChartDataLabelBox(updated, req)
 	// After the chart-wide label settings: a per-label patch reads the series
 	// flags it has to repeat, and must win over them.
 	updated = patchChartDataLabelPoints(updated, req.DataLabelPoints)
@@ -111,11 +128,16 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	// values, and both write into the same c:dPt run.
 	updated = patchChartDataPoints(updated, req.DataPoints, req.ClearDataPointSeries)
 	updated = patchChartSeriesInvert(updated, req.SeriesInverts)
+	// After the per-point work: a series format writes the c:spPr and c:marker
+	// that sit before the c:dPt run it must not disturb.
+	updated = patchChartSeriesFormats(updated, req.SeriesFormats)
 	updated = patchChartTrendlines(
 		updated, req.Trendlines, req.AppendTrendlines, req.ClearTrendlineSeries,
 	)
 	updated = patchChartErrorBars(updated, req.ErrorBars, req.ClearErrorBarSeries)
 	updated = patchChartPlotOptions(updated, req)
+	// After gapWidth and overlap: CT_BarChart puts c:serLines behind both.
+	updated = patchChartSeriesLines(updated, req.SeriesLines)
 	updated = patchAxisTickLabelPosition(updated, "catAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "dateAx", req.CategoryAxisTickLabelPos)
 	updated = patchAxisTickLabelPosition(updated, "valAx", req.ValueAxisTickLabelPos)
@@ -125,6 +147,9 @@ func PatchChartFormatting(chartXML []byte, req common.ChartFormatUpdate) ([]byte
 	updated = patchAxisMinorGridlines(updated, "catAx", req.CategoryAxisMinorGrid)
 	updated = patchAxisMinorGridlines(updated, "dateAx", req.CategoryAxisMinorGrid)
 	updated = patchAxisMinorGridlines(updated, "valAx", req.ValueAxisMinorGrid)
+	// After the on/off patches: styling a gridline draws it, and both write the
+	// same element.
+	updated = patchAxisGridlineFormats(updated, req)
 	updated = patchAxisCrosses(updated, "catAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "dateAx", req.CategoryAxisCrosses)
 	updated = patchAxisCrosses(updated, "valAx", req.ValueAxisCrosses)

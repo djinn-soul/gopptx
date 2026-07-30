@@ -20,4 +20,8 @@ const (
 	seriesValuesTag     = "<c:val>"
 	seriesSmoothTag     = "<c:smooth"
 	seriesCloseTag      = "</c:ser>"
+
+	// barChartPlotTag is the plot element that carries gapWidth, overlap and
+	// the series lines.
+	barChartPlotTag = "barChart"
 )

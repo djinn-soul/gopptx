@@ -90,17 +90,26 @@ func isFinite(value float64) bool {
 }
 
 func patchAxisDetails(xml string, req common.ChartFormatUpdate) string {
-	xml = patchAxisDetailSet(xml, "catAx", req.CategoryAxisTitle, req.CategoryAxisMinimumScale,
-		req.CategoryAxisMaximumScale, req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
-		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked)
-	xml = patchAxisDetailSet(xml, "dateAx", req.CategoryAxisTitle, req.CategoryAxisMinimumScale,
-		req.CategoryAxisMaximumScale, req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
-		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked)
+	xml = patchAxisDetailSet(
+		xml, "catAx", req.CategoryAxisHasTitle, req.CategoryAxisTitle,
+		req.CategoryAxisMinimumScale, req.CategoryAxisMaximumScale,
+		req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
+		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked,
+	)
+	xml = patchAxisDetailSet(
+		xml, "dateAx", req.CategoryAxisHasTitle, req.CategoryAxisTitle,
+		req.CategoryAxisMinimumScale, req.CategoryAxisMaximumScale,
+		req.CategoryAxisMajorUnit, req.CategoryAxisMinorUnit,
+		req.CategoryAxisNumberFormat, req.CategoryAxisFormatLinked,
+	)
 	// tickMarkSkip and lblAlgn are valid only inside CT_CatAx.
 	xml = patchCategoryAxisTickDetail(xml, req.CategoryAxisTickMarkSkip, req.CategoryAxisLabelAlignment)
-	return patchAxisDetailSet(xml, "valAx", req.ValueAxisTitle, req.ValueAxisMinimumScale,
-		req.ValueAxisMaximumScale, req.ValueAxisMajorUnit, req.ValueAxisMinorUnit,
-		req.ValueAxisNumberFormat, req.ValueAxisFormatLinked)
+	return patchAxisDetailSet(
+		xml, "valAx", req.ValueAxisHasTitle, req.ValueAxisTitle,
+		req.ValueAxisMinimumScale, req.ValueAxisMaximumScale,
+		req.ValueAxisMajorUnit, req.ValueAxisMinorUnit,
+		req.ValueAxisNumberFormat, req.ValueAxisFormatLinked,
+	)
 }
 
 // patchCategoryAxisTickDetail writes c:tickMarkSkip and c:lblAlgn. CT_CatAx
@@ -134,6 +143,7 @@ func patchCategoryAxisTickDetail(xml string, tickMarkSkip *int, labelAlignment *
 func patchAxisDetailSet(
 	xml string,
 	axisTag string,
+	hasTitle *bool,
 	title *string,
 	minimum *float64,
 	maximum *float64,
@@ -142,13 +152,13 @@ func patchAxisDetailSet(
 	numberFormat *string,
 	formatLinked *bool,
 ) string {
-	if title == nil && minimum == nil && maximum == nil && majorUnit == nil && minorUnit == nil &&
+	if hasTitle == nil && title == nil && minimum == nil && maximum == nil && majorUnit == nil && minorUnit == nil &&
 		numberFormat == nil && formatLinked == nil {
 		return xml
 	}
 	return patchEachAxisBlock(xml, axisTag, func(block string) string {
 		block = patchAxisScaling(block, minimum, maximum)
-		block = patchAxisTitle(block, title)
+		block = patchAxisTitle(block, hasTitle, title)
 		block = patchAxisNumberFormat(block, numberFormat, formatLinked)
 		block = patchAxisUnit(block, reAxisMajor, "majorUnit", majorUnit)
 		return patchAxisUnit(block, reAxisMinor, "minorUnit", minorUnit)
@@ -197,15 +207,25 @@ func patchAxisScaling(block string, minimum *float64, maximum *float64) string {
 	return reAxisScaling.ReplaceAllLiteralString(block, scaling)
 }
 
-func patchAxisTitle(block string, title *string) string {
-	if title == nil {
+func patchAxisTitle(block string, hasTitle *bool, title *string) string {
+	if hasTitle != nil && !*hasTitle {
+		return reAxisTitle.ReplaceAllLiteralString(block, "")
+	}
+	if title == nil && hasTitle == nil {
 		return block
 	}
+	titleText := ""
+	if title != nil {
+		titleText = *title
+	}
 	node := `<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>` +
-		xmlEscape(*title) + `</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`
+		xmlEscape(titleText) + `</a:t></a:r></a:p></c:rich></c:tx><c:layout/><c:overlay val="0"/></c:title>`
 	if current := reAxisTitle.FindString(block); current != "" {
+		if title == nil {
+			return block
+		}
 		if reAxisTitleTx.MatchString(current) {
-			node = reAxisTitleTx.ReplaceAllLiteralString(current, `<a:t>`+xmlEscape(*title)+`</a:t>`)
+			node = reAxisTitleTx.ReplaceAllLiteralString(current, `<a:t>`+xmlEscape(titleText)+`</a:t>`)
 		}
 		return strings.Replace(block, current, node, 1)
 	}

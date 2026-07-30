@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from typing import Protocol, cast
 
 # Element only constructs trusted namespace-tagged nodes; it never parses input.
@@ -49,6 +50,18 @@ class SlideBackground:
         """Set solid background color (e.g. 'FF0000')."""
         self._slide.set_background("solid", color=color)
 
+    def solid(self, color: str = "FFFFFF") -> None:
+        """python-pptx alias for set_solid."""
+        self.set_solid(color)
+
     def set_gradient(self, colors: list[str], angle: int = 0) -> None:
         """Set gradient background colors and angle."""
         self._slide.set_background("gradient", colors=colors, angle=angle)
+
+    def set_picture(self, image_path_or_bytes: str | bytes | object) -> None:
+        """Set full-slide picture background from file path, bytes, or Path (Issue #1095)."""
+        if isinstance(image_path_or_bytes, bytes):
+            b64_data = base64.b64encode(image_path_or_bytes).decode("ascii")
+            self._slide.set_background("image", image_data=b64_data)
+        else:
+            self._slide.set_background("image", image_path=str(image_path_or_bytes))

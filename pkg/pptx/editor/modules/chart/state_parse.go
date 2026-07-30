@@ -55,6 +55,8 @@ func ExtractChartState(chartXML []byte) common.ChartState {
 		// Per-label reads: a point's number format lives on its c:dLbl, not on
 		// the chart-wide c:dLbls.
 		DataLabelPoints: parseDataLabelPointState(xml),
+		SeriesFormats:   parseSeriesFormatState(xml),
+		SeriesLines:     parseChartSeriesLines(xml),
 	}
 	if match := reChartStyle.FindStringSubmatch(xml); len(match) == expectedSingleGroupMatch {
 		if style, err := strconv.Atoi(match[1]); err == nil {
@@ -123,6 +125,7 @@ func buildAxisStates(xml string, tags []string) []common.ChartAxisState {
 
 func parseAxisStateBlock(block string) common.ChartAxisState {
 	state := common.ChartAxisState{Present: true}
+	state.HasTitle = reAxisTitle.MatchString(block)
 	if match := reTickLblPos.FindStringSubmatch(block); len(match) == expectedSingleGroupMatch {
 		state.TickLabelPos = strings.TrimSpace(match[1])
 	}
@@ -164,6 +167,7 @@ func parseAxisStateBlock(block string) common.ChartAxisState {
 	}
 	state.MajorGridline = strings.Contains(block, "<c:majorGridlines")
 	state.MinorGridline = strings.Contains(block, "<c:minorGridlines")
+	parseAxisGridlineFormats(block, &state)
 	return state
 }
 

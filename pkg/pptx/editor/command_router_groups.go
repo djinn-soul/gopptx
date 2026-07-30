@@ -64,6 +64,7 @@ func layoutMetadataHandlers() map[string]commandHandler {
 		OpRemoveSlideMaster:       handleRemoveSlideMaster,
 		OpAddSlideLayout:          handleAddSlideLayout,
 		OpRemoveSlideLayout:       handleRemoveSlideLayout,
+		OpReorderSlideLayouts:     handleReorderSlideLayouts,
 		OpApplyTheme:              handleApplyTheme,
 		OpSetSlideSize:            handleSetSlideSize,
 		OpMergeFromFile:           handleMergeFromFile,

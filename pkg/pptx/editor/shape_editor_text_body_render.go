@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 )
 
 const textBodyRootXML = `<p:txBody xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`
@@ -18,7 +19,11 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 	if err := writeTextBodyHeader(&txBody, s); err != nil {
 		return nil, err
 	}
-	if len(s.Runs) > 0 {
+	if len(s.Paragraphs) > 0 {
+		if err := writeTextParagraphsXML(&txBody, e, partPath, s.Paragraphs); err != nil {
+			return nil, err
+		}
+	} else if len(s.Runs) > 0 {
 		if err := writeRunParagraphXML(&txBody, e, partPath, s); err != nil {
 			return nil, err
 		}
@@ -27,6 +32,31 @@ func renderTextBodyXML(e *PresentationEditor, partPath string, s *parsedShape) (
 	}
 	txBody.WriteString(`</p:txBody>`)
 	return txBody.Bytes(), nil
+}
+
+func writeTextParagraphsXML(
+	txBody *bytes.Buffer,
+	e *PresentationEditor,
+	partPath string,
+	paragraphs []common.ShapeTextParagraph,
+) error {
+	for _, paragraph := range paragraphs {
+		paragraphXML, err := renderParagraphPropsXML(paragraph.Paragraph)
+		if err != nil {
+			return err
+		}
+		txBody.WriteString(`<a:p>`)
+		txBody.WriteString(paragraphXML)
+		for _, run := range paragraph.Runs {
+			runSpec, err := e.editorRunToXMLSpec(partPath, run)
+			if err != nil {
+				return err
+			}
+			txBody.WriteString(pptxxml.RichTextRunXML(runSpec, pptxxml.ContentStyleSpec{}))
+		}
+		txBody.WriteString(`</a:p>`)
+	}
+	return nil
 }
 
 func writeTextBodyHeader(txBody *bytes.Buffer, s *parsedShape) error {

@@ -28,6 +28,7 @@ const (
 	OpRemoveSlideMaster       = "remove_slide_master"
 	OpAddSlideLayout          = "add_slide_layout"
 	OpRemoveSlideLayout       = "remove_slide_layout"
+	OpReorderSlideLayouts     = "reorder_slide_layouts"
 	OpAddSection              = "add_section"
 	OpRemoveSection           = "remove_section"
 	OpRenameSection           = "rename_section"
@@ -205,6 +206,7 @@ func supportedSlideAndMetaOps() []string {
 		OpRemoveSlideMaster,
 		OpAddSlideLayout,
 		OpRemoveSlideLayout,
+		OpReorderSlideLayouts,
 		OpUpdateChartData,
 		OpUpdateChartCachedValues,
 		OpGetChartDataSource,

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import base64
 import hashlib
-from typing import TYPE_CHECKING, Protocol
+import os
+import pathlib
+from typing import TYPE_CHECKING, BinaryIO, Protocol
 
 from typing_extensions import override
 
@@ -93,7 +95,22 @@ class ImagePartProxy:
     @property
     def sha1(self) -> str:
         """Return SHA-1 hex digest of the image blob."""
-        return hashlib.sha1(self.blob, usedforsecurity=False).hexdigest()
+        # Non-security content fingerprint retained for python-pptx API parity.
+        return hashlib.sha1(self.blob, usedforsecurity=False).hexdigest()  # nosemgrep
+
+    def save(self, file_or_path: str | os.PathLike[str] | BinaryIO) -> None:
+        """Save the image blob to a file path or open binary stream.
+
+        Args:
+            file_or_path: File path string, Path object, or binary stream with write().
+        """
+        blob = self.blob
+        if not isinstance(file_or_path, (str, os.PathLike)):
+            file_or_path.write(blob)
+            return
+        path = pathlib.Path(file_or_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(blob)
 
     @override
     def __repr__(self) -> str:

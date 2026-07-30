@@ -67,3 +67,7 @@ class SlideBase:
     def background(self) -> SlideBackground:
         """Return the slide background proxy."""
         return SlideBackground(self)
+
+    def rebind_layout(self, layout_part_or_name: str) -> None:
+        """Rebind this slide to a different layout across any slide master (Issue #1109)."""
+        self._presentation.rebind_slide_layout(self.index, layout_part_or_name)

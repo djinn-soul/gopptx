@@ -142,6 +142,7 @@ func (u *shapeUpdater) apply(_ int, s *parsedShape) ([]byte, bool) {
 	if u.err != nil {
 		return nil, false
 	}
+	updatedXML, replaced = u.applyAltTextAndTitle(updatedXML, s, replaced)
 	if replaced {
 		return updatedXML, true
 	}
@@ -196,21 +197,35 @@ func (u *shapeUpdater) applyPicture(
 }
 
 func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {
-	if u.updates.Text == nil && u.updates.Runs == nil && u.updates.TextFrame == nil && u.updates.Paragraph == nil {
+	if u.updates.Text == nil && u.updates.Runs == nil && u.updates.Paragraphs == nil &&
+		u.updates.TextFrame == nil && u.updates.Paragraph == nil {
 		return xmlData, replaced, nil
 	}
 	if u.updates.Text != nil {
 		s.Text = *u.updates.Text
 		s.Runs = nil
+		s.Paragraphs = nil
 	}
 	if u.updates.Runs != nil {
 		s.Runs = *u.updates.Runs
+		s.Paragraphs = nil
+	}
+	if u.updates.Paragraphs != nil {
+		s.Paragraphs = *u.updates.Paragraphs
+		s.Runs = nil
+		s.Text = ""
+		if len(s.Paragraphs) > 0 {
+			s.Paragraph = s.Paragraphs[0].Paragraph
+		}
 	}
 	if u.updates.TextFrame != nil {
 		s.TextFrame = u.updates.TextFrame
 	}
 	if u.updates.Paragraph != nil {
 		s.Paragraph = u.updates.Paragraph
+		if len(s.Paragraphs) > 0 {
+			s.Paragraphs[0].Paragraph = u.updates.Paragraph
+		}
 	}
 	updatedXML, err := replaceShapeTextBody(u.editor, u.partPath, xmlData, s)
 	return updatedXML, true, err

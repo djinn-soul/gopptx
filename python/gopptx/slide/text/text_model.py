@@ -29,6 +29,10 @@ class ShapeTextFrame(BaseShapeTextFrame):
         """Return full text content of the frame."""
         return "\n".join(p.text for p in self.paragraphs)
 
+    def add_paragraph(self, text: str = "") -> _ShapeParagraphProxy:
+        """Add a paragraph to the text frame (Issue #1135)."""
+        return self.paragraphs.add_paragraph(text)
+
     @text.setter
     def text(self, value: str) -> None:
         """Replace all text in the frame with a single paragraph."""
@@ -50,7 +54,7 @@ class ShapeTextFrame(BaseShapeTextFrame):
             ])
         """
         payloads = [b.to_payload() for b in builders]
-        self.replace_runs(payloads)
+        self.replace_paragraphs([{"runs": payloads, "paragraph": {}}])
 
 
 ShapeRunProxy = _ShapeRunProxy

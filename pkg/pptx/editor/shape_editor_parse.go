@@ -37,6 +37,7 @@ type parsedShape struct {
 	HoverActionRef *editorshape.ReaderHyperlinkRef
 	RunActions     [][]editorshape.ReaderRunActions
 	AltText        string
+	Title          string
 	IsDecorative   bool
 	Connector      *common.ConnectorInfo
 	Rotation       *float64
@@ -260,6 +261,7 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		HoverActionRef: metadata.HoverAction,
 		RunActions:     metadata.RunActions,
 		AltText:        metadata.AltText,
+		Title:          metadata.Title,
 		IsDecorative:   metadata.IsDecorative,
 		Connector:      props.Connector,
 		Rotation:       props.Rotation,

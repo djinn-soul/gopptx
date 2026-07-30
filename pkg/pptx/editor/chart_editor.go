@@ -169,15 +169,6 @@ var (
 	reNumericIDVal = regexp.MustCompile(`id="(\d+)"`)
 )
 
-func extractChartRelIDs(content []byte) []string {
-	matches := reChartRelID.FindAllSubmatch(content, -1)
-	ids := make([]string, 0, len(matches))
-	for _, m := range matches {
-		ids = append(ids, string(m[1]))
-	}
-	return ids
-}
-
 func (e *PresentationEditor) addSlideRelationship(slidePart, id, relType, target string) error {
 	relsPath := common.RelsPathFor(slidePart)
 

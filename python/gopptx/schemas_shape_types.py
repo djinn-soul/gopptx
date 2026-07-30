@@ -46,6 +46,7 @@ class Paragraph(TypedDict, total=False):
     line_spacing_pts: int
     space_before_pts: int
     space_after_pts: int
+    rtl: bool
 
 
 class GradientStop(TypedDict, total=False):
@@ -206,6 +207,13 @@ class TextRun(TypedDict, total=False):
     hover_action: Hyperlink
 
 
+class ShapeTextParagraph(TypedDict, total=False):
+    """One shape-text paragraph with independent runs and properties."""
+
+    runs: list[TextRun]
+    paragraph: Paragraph
+
+
 class ShapeProps(TypedDict, total=False):
     """Shape properties."""
 
@@ -250,6 +258,7 @@ class ShapeUpdate(TypedDict, total=False):
 
     text: str
     runs: list[TextRun]
+    paragraphs: list[ShapeTextParagraph]
     text_frame: TextFrame
     paragraph: Paragraph
     fill: FillFormat
@@ -268,6 +277,9 @@ class ShapeUpdate(TypedDict, total=False):
     y: int
     w: int
     h: int
+    description: str
+    alt_text: str
+    title: str
 
 
 class Shape(TypedDict, total=False):

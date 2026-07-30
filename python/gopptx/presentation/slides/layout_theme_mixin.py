@@ -55,6 +55,27 @@ class PresentationLayoutMixin(PresentationMixinBase):
         )
         self.invalidate_cache()
 
+    def reorder_slide_layouts(
+        self, layout_parts: list[str], master_part: str | None = None
+    ) -> None:
+        """Reorder slide layouts within a slide master (Issue #1080).
+
+        Args:
+            layout_parts: List of layout part paths or layout names in desired order.
+            master_part: Optional master part path (e.g. 'ppt/slideMasters/slideMaster1.xml').
+        """
+        layouts = self.list_slide_layouts()
+        name_to_part = {
+            cast("str", layout.get("name", "")): cast("str", layout.get("part", ""))
+            for layout in layouts
+        }
+        resolved = [name_to_part.get(p, p) for p in layout_parts]
+        payload: dict[str, object] = {"layout_parts": resolved}
+        if master_part:
+            payload["master_part"] = master_part
+        self.execute(ops.OP_REORDER_SLIDE_LAYOUTS, payload)
+        self.invalidate_cache()
+
     def clone_layout_master_family(self, layout_part: str) -> SlideMasterCloneResult:
         """Clone a layout and its master family."""
         result = self.execute(

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from .line_format import build_line_format, normalize_hex_color
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -72,8 +74,17 @@ class ChartLegend:
 
     @position.setter
     def position(self, value: str) -> None:
-        self._chart.state_set("legend_position", value)
-        self._chart.apply_format({"legend_position": value})
+        val_map = {
+            "top_right": "tr",
+            "topright": "tr",
+            "top": "t",
+            "bottom": "b",
+            "left": "l",
+            "right": "r",
+        }
+        norm = val_map.get(value.lower(), value)
+        self._chart.state_set("legend_position", norm)
+        self._chart.apply_format({"legend_position": norm})
 
     @property
     def include_in_layout(self) -> bool:
@@ -187,6 +198,46 @@ class DataLabels:
         self._chart.apply_format({
             "show_data_labels": True,
             "data_label_word_wrap": value,
+        })
+
+    def set_fill(self, color: str | None = None, *, none: bool = False) -> None:
+        """Set the background of every data label (issue #662).
+
+        ``none`` clears the fill, which is how a label is made transparent
+        again after one has been set.
+        """
+        if none:
+            self._chart.apply_format({
+                "show_data_labels": True,
+                "data_label_no_fill": True,
+            })
+            return
+        if color is None:
+            raise ValueError("set_fill needs a color unless none is true")
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_fill_color": normalize_hex_color(color, "fill color"),
+        })
+
+    def set_border(
+        self,
+        *,
+        color: str | None = None,
+        width_emu: int | None = None,
+        dash: str | None = None,
+        none: bool | None = None,
+    ) -> None:
+        """Set the outline drawn around every data label (issue #716)."""
+        spec = build_line_format(
+            color=color,
+            width_emu=width_emu,
+            dash=dash,
+            none=none,
+            name="data label border",
+        )
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_border": spec,
         })
 
 

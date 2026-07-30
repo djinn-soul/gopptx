@@ -5,6 +5,8 @@ from .schemas import (
     ChartDataPointSpec,
     ChartDataUpdate,
     ChartErrorBarSpec,
+    ChartLineFormatSpec,
+    ChartSeriesFormatSpec,
     ChartTrendlineSpec,
 )
 
@@ -75,6 +77,15 @@ class DataLabels:
     def word_wrap(self) -> bool | None: ...
     @word_wrap.setter
     def word_wrap(self, value: bool) -> None: ...
+    def set_fill(self, color: str | None = ..., *, none: bool = ...) -> None: ...
+    def set_border(
+        self,
+        *,
+        color: str | None = ...,
+        width_emu: int | None = ...,
+        dash: str | None = ...,
+        none: bool | None = ...,
+    ) -> None: ...
 
 class ChartPlot:
     @property
@@ -131,6 +142,26 @@ class ChartAxis:
     def minor_gridlines_visible(self) -> bool: ...
     @minor_gridlines_visible.setter
     def minor_gridlines_visible(self, value: bool) -> None: ...
+    @property
+    def major_gridlines_format(self) -> ChartLineFormatSpec | None: ...
+    @property
+    def minor_gridlines_format(self) -> ChartLineFormatSpec | None: ...
+    def format_major_gridlines(
+        self,
+        *,
+        color: str | None = ...,
+        width_emu: int | None = ...,
+        dash: str | None = ...,
+        none: bool | None = ...,
+    ) -> None: ...
+    def format_minor_gridlines(
+        self,
+        *,
+        color: str | None = ...,
+        width_emu: int | None = ...,
+        dash: str | None = ...,
+        none: bool | None = ...,
+    ) -> None: ...
     @property
     def crosses(self) -> str | None: ...
     @crosses.setter
@@ -247,6 +278,38 @@ class Chart:
     def series(self) -> ChartSeriesCollection: ...
     @property
     def trendlines(self) -> TrendlineCollection: ...
+    def format_series(
+        self,
+        series_index: int = ...,
+        *,
+        fill_color: str | None = ...,
+        no_fill: bool | None = ...,
+        line_color: str | None = ...,
+        line_width_emu: int | None = ...,
+        line_dash: str | None = ...,
+        no_line: bool | None = ...,
+        marker_symbol: str | None = ...,
+        marker_size: int | None = ...,
+        marker_fill_color: str | None = ...,
+        marker_line_color: str | None = ...,
+        marker_line_width_emu: int | None = ...,
+        marker_no_fill: bool | None = ...,
+        marker_no_line: bool | None = ...,
+        smooth: bool | None = ...,
+    ) -> None: ...
+    def series_format(
+        self, series_index: int = ...
+    ) -> ChartSeriesFormatSpec | None: ...
+    def set_series_lines(
+        self,
+        *,
+        show: bool | None = ...,
+        color: str | None = ...,
+        width_emu: int | None = ...,
+        dash: str | None = ...,
+        none: bool | None = ...,
+    ) -> None: ...
+    def series_lines(self) -> dict[str, object] | None: ...
     def add_trendline(
         self,
         trendline_type: str,

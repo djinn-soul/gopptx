@@ -59,6 +59,58 @@ type ChartErrorBars struct {
 	LineColor      *string  `json:"line_color,omitempty"`
 }
 
+// ChartLineFormat is the line style of a chart line element: an axis gridline,
+// the series lines between stacked bars, or the outline of a data label.
+//
+// None draws no line at all, which is how PowerPoint hides one of these while
+// keeping the element itself; it wins over the other three fields.
+type ChartLineFormat struct {
+	Color    *string `json:"color,omitempty"`
+	WidthEMU *int    `json:"width_emu,omitempty"`
+	// Dash is an ST_PresetLineDashVal value, such as dash or sysDot.
+	Dash *string `json:"dash,omitempty"`
+	None *bool   `json:"none,omitempty"`
+}
+
+// ChartSeriesLines is the c:serLines connector drawn between the segments of a
+// stacked bar chart, and between the pie and the bar of a bar-of-pie chart.
+//
+// Show false removes it; a Line without Show leaves it in place and restyles it.
+type ChartSeriesLines struct {
+	Show *bool            `json:"show,omitempty"`
+	Line *ChartLineFormat `json:"line,omitempty"`
+}
+
+// ChartSeriesFormat is series-level fill, line and marker formatting: the c:spPr
+// and c:marker of one c:ser.
+//
+// On a line, scatter or radar series the c:spPr formats the line joining the
+// points and the marker carries its own fill and outline, so recolouring the
+// markers of a series needs the Marker fields rather than LineColor.
+type ChartSeriesFormat struct {
+	FillColor    *string `json:"fill_color,omitempty"`
+	NoFill       *bool   `json:"no_fill,omitempty"`
+	LineColor    *string `json:"line_color,omitempty"`
+	LineWidthEMU *int    `json:"line_width_emu,omitempty"`
+	LineDash     *string `json:"line_dash,omitempty"`
+	NoLine       *bool   `json:"no_line,omitempty"`
+	// MarkerSymbol is one of circle, dash, diamond, dot, none, plus, square,
+	// star, triangle, x, auto.
+	MarkerSymbol *string `json:"marker_symbol,omitempty"`
+	// MarkerSize is the marker width in points, 2 to 72.
+	MarkerSize         *int    `json:"marker_size,omitempty"`
+	MarkerFillColor    *string `json:"marker_fill_color,omitempty"`
+	MarkerLineColor    *string `json:"marker_line_color,omitempty"`
+	MarkerLineWidthEMU *int    `json:"marker_line_width_emu,omitempty"`
+	MarkerNoFill       *bool   `json:"marker_no_fill,omitempty"`
+	MarkerNoLine       *bool   `json:"marker_no_line,omitempty"`
+	// Smooth curves a line or scatter series through its points.
+	Smooth *bool `json:"smooth,omitempty"`
+	// SeriesIndex is the zero-based c:ser index; defaults to the first series.
+	// It sits last so the pointer fields pack ahead of it.
+	SeriesIndex int `json:"series_index,omitempty"`
+}
+
 // ChartDataPoint is per-point formatting for one c:dPt in a series.
 //
 // Explosion applies to pie and doughnut series only; Bubble3D to bubble series.
@@ -101,15 +153,20 @@ type ChartDataLabelPoint struct {
 	NumberFormat *string `json:"number_format,omitempty"`
 	// FormatLinked mirrors c:numFmt/@sourceLinked; it defaults to false when
 	// NumberFormat is set, because a linked label ignores its own code.
-	FormatLinked   *bool   `json:"format_linked,omitempty"`
-	FontColor      *string `json:"font_color,omitempty"`
-	FontSizePt     *int    `json:"font_size_pt,omitempty"`
-	FontBold       *bool   `json:"font_bold,omitempty"`
-	ShowValue      *bool   `json:"show_value,omitempty"`
-	ShowCategory   *bool   `json:"show_category,omitempty"`
-	ShowSeriesName *bool   `json:"show_series_name,omitempty"`
-	ShowPercent    *bool   `json:"show_percent,omitempty"`
-	ShowLegendKey  *bool   `json:"show_legend_key,omitempty"`
+	FormatLinked *bool   `json:"format_linked,omitempty"`
+	FontColor    *string `json:"font_color,omitempty"`
+	FontSizePt   *int    `json:"font_size_pt,omitempty"`
+	FontBold     *bool   `json:"font_bold,omitempty"`
+	// FillColor is the label's background, and Border its outline: the c:spPr
+	// of this one c:dLbl (upstream #662, #716).
+	FillColor      *string          `json:"fill_color,omitempty"`
+	NoFill         *bool            `json:"no_fill,omitempty"`
+	Border         *ChartLineFormat `json:"border,omitempty"`
+	ShowValue      *bool            `json:"show_value,omitempty"`
+	ShowCategory   *bool            `json:"show_category,omitempty"`
+	ShowSeriesName *bool            `json:"show_series_name,omitempty"`
+	ShowPercent    *bool            `json:"show_percent,omitempty"`
+	ShowLegendKey  *bool            `json:"show_legend_key,omitempty"`
 	// Delete removes the label for this point, which is how PowerPoint hides
 	// one label of a series that otherwise shows them.
 	Delete *bool `json:"delete,omitempty"`

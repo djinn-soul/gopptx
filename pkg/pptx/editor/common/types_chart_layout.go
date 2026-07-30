@@ -78,45 +78,65 @@ type ChartFormatUpdate struct {
 	// SeriesInverts toggles c:invertIfNegative per series.
 	SeriesInverts []ChartSeriesInvert `json:"series_invert_if_negative,omitempty"`
 	// DataTable shows or hides the c:dTable grid under the plot area.
-	DataTable                *ChartDataTable `json:"data_table,omitempty"`
-	PlotVisibleOnly          *bool           `json:"plot_visible_only,omitempty"`
-	ShowLegend               *bool           `json:"show_legend,omitempty"`
-	LegendPosition           *string         `json:"legend_position,omitempty"`
-	LegendOverlay            *bool           `json:"legend_overlay,omitempty"`
-	ShowDataLabels           *bool           `json:"show_data_labels,omitempty"`
-	DataLabelPosition        *string         `json:"data_label_position,omitempty"`
-	DataLabelShowLegendKey   *bool           `json:"data_label_show_legend_key,omitempty"`
-	DataLabelShowValue       *bool           `json:"data_label_show_value,omitempty"`
-	DataLabelShowCategory    *bool           `json:"data_label_show_category,omitempty"`
-	DataLabelShowSeriesName  *bool           `json:"data_label_show_series_name,omitempty"`
-	DataLabelShowPercent     *bool           `json:"data_label_show_percent,omitempty"`
-	DataLabelShowBubbleSize  *bool           `json:"data_label_show_bubble_size,omitempty"`
-	DataLabelNumberFormat    *string         `json:"data_label_number_format,omitempty"`
-	DataLabelFormatLinked    *bool           `json:"data_label_format_linked,omitempty"`
-	DataLabelWordWrap        *bool           `json:"data_label_word_wrap,omitempty"`
-	ChartGrouping            *string         `json:"chart_grouping,omitempty"`
-	GapWidth                 *int            `json:"gap_width,omitempty"`
-	Overlap                  *int            `json:"overlap,omitempty"`
-	CategoryAxisTickLabelPos *string         `json:"category_axis_tick_label_pos,omitempty"`
-	ValueAxisTickLabelPos    *string         `json:"value_axis_tick_label_pos,omitempty"`
-	CategoryAxisMajorGrid    *bool           `json:"category_axis_major_gridlines,omitempty"`
-	ValueAxisMajorGrid       *bool           `json:"value_axis_major_gridlines,omitempty"`
-	CategoryAxisMinorGrid    *bool           `json:"category_axis_minor_gridlines,omitempty"`
-	ValueAxisMinorGrid       *bool           `json:"value_axis_minor_gridlines,omitempty"`
-	CategoryAxisCrosses      *string         `json:"category_axis_crosses,omitempty"`
-	ValueAxisCrosses         *string         `json:"value_axis_crosses,omitempty"`
-	CategoryAxisTitle        *string         `json:"category_axis_title,omitempty"`
-	ValueAxisTitle           *string         `json:"value_axis_title,omitempty"`
-	CategoryAxisMinimumScale *float64        `json:"category_axis_minimum_scale,omitempty"`
-	CategoryAxisMaximumScale *float64        `json:"category_axis_maximum_scale,omitempty"`
-	ValueAxisMinimumScale    *float64        `json:"value_axis_minimum_scale,omitempty"`
-	ValueAxisMaximumScale    *float64        `json:"value_axis_maximum_scale,omitempty"`
-	CategoryAxisMajorUnit    *float64        `json:"category_axis_major_unit,omitempty"`
-	CategoryAxisMinorUnit    *float64        `json:"category_axis_minor_unit,omitempty"`
-	ValueAxisMajorUnit       *float64        `json:"value_axis_major_unit,omitempty"`
-	ValueAxisMinorUnit       *float64        `json:"value_axis_minor_unit,omitempty"`
-	CategoryAxisNumberFormat *string         `json:"category_axis_number_format,omitempty"`
-	ValueAxisNumberFormat    *string         `json:"value_axis_number_format,omitempty"`
+	DataTable               *ChartDataTable `json:"data_table,omitempty"`
+	PlotVisibleOnly         *bool           `json:"plot_visible_only,omitempty"`
+	ShowLegend              *bool           `json:"show_legend,omitempty"`
+	LegendPosition          *string         `json:"legend_position,omitempty"`
+	LegendOverlay           *bool           `json:"legend_overlay,omitempty"`
+	ShowDataLabels          *bool           `json:"show_data_labels,omitempty"`
+	DataLabelPosition       *string         `json:"data_label_position,omitempty"`
+	DataLabelShowLegendKey  *bool           `json:"data_label_show_legend_key,omitempty"`
+	DataLabelShowValue      *bool           `json:"data_label_show_value,omitempty"`
+	DataLabelShowCategory   *bool           `json:"data_label_show_category,omitempty"`
+	DataLabelShowSeriesName *bool           `json:"data_label_show_series_name,omitempty"`
+	DataLabelShowPercent    *bool           `json:"data_label_show_percent,omitempty"`
+	DataLabelShowBubbleSize *bool           `json:"data_label_show_bubble_size,omitempty"`
+	DataLabelNumberFormat   *string         `json:"data_label_number_format,omitempty"`
+	DataLabelFormatLinked   *bool           `json:"data_label_format_linked,omitempty"`
+	DataLabelWordWrap       *bool           `json:"data_label_word_wrap,omitempty"`
+	// DataLabelFillColor and DataLabelBorder format the label box itself, the
+	// c:spPr of the plot-wide c:dLbls (upstream #662, #716).
+	DataLabelFillColor *string          `json:"data_label_fill_color,omitempty"`
+	DataLabelNoFill    *bool            `json:"data_label_no_fill,omitempty"`
+	DataLabelBorder    *ChartLineFormat `json:"data_label_border,omitempty"`
+	// SeriesFormats sets the fill, line and marker of whole series, which is
+	// what recolours the markers of a line or scatter series (upstream #872).
+	SeriesFormats []ChartSeriesFormat `json:"series_formats,omitempty"`
+	// SeriesLines draws the c:serLines connectors of a stacked bar or
+	// bar-of-pie chart (upstream #846).
+	SeriesLines              *ChartSeriesLines `json:"series_lines,omitempty"`
+	ChartGrouping            *string           `json:"chart_grouping,omitempty"`
+	GapWidth                 *int              `json:"gap_width,omitempty"`
+	Overlap                  *int              `json:"overlap,omitempty"`
+	CategoryAxisTickLabelPos *string           `json:"category_axis_tick_label_pos,omitempty"`
+	ValueAxisTickLabelPos    *string           `json:"value_axis_tick_label_pos,omitempty"`
+	CategoryAxisMajorGrid    *bool             `json:"category_axis_major_gridlines,omitempty"`
+	ValueAxisMajorGrid       *bool             `json:"value_axis_major_gridlines,omitempty"`
+	CategoryAxisMinorGrid    *bool             `json:"category_axis_minor_gridlines,omitempty"`
+	ValueAxisMinorGrid       *bool             `json:"value_axis_minor_gridlines,omitempty"`
+	// Gridline formats write the c:spPr of a c:majorGridlines or
+	// c:minorGridlines. Setting one turns that gridline on, since an unstyled
+	// absent gridline has nothing to format (upstream #984).
+	CategoryAxisMajorGridFormat *ChartLineFormat `json:"category_axis_major_gridline_format,omitempty"`
+	CategoryAxisMinorGridFormat *ChartLineFormat `json:"category_axis_minor_gridline_format,omitempty"`
+	ValueAxisMajorGridFormat    *ChartLineFormat `json:"value_axis_major_gridline_format,omitempty"`
+	ValueAxisMinorGridFormat    *ChartLineFormat `json:"value_axis_minor_gridline_format,omitempty"`
+	CategoryAxisCrosses         *string          `json:"category_axis_crosses,omitempty"`
+	ValueAxisCrosses            *string          `json:"value_axis_crosses,omitempty"`
+	CategoryAxisHasTitle        *bool            `json:"category_axis_has_title,omitempty"`
+	ValueAxisHasTitle           *bool            `json:"value_axis_has_title,omitempty"`
+	CategoryAxisTitle           *string          `json:"category_axis_title,omitempty"`
+	ValueAxisTitle              *string          `json:"value_axis_title,omitempty"`
+	CategoryAxisMinimumScale    *float64         `json:"category_axis_minimum_scale,omitempty"`
+	CategoryAxisMaximumScale    *float64         `json:"category_axis_maximum_scale,omitempty"`
+	ValueAxisMinimumScale       *float64         `json:"value_axis_minimum_scale,omitempty"`
+	ValueAxisMaximumScale       *float64         `json:"value_axis_maximum_scale,omitempty"`
+	CategoryAxisMajorUnit       *float64         `json:"category_axis_major_unit,omitempty"`
+	CategoryAxisMinorUnit       *float64         `json:"category_axis_minor_unit,omitempty"`
+	ValueAxisMajorUnit          *float64         `json:"value_axis_major_unit,omitempty"`
+	ValueAxisMinorUnit          *float64         `json:"value_axis_minor_unit,omitempty"`
+	CategoryAxisNumberFormat    *string          `json:"category_axis_number_format,omitempty"`
+	ValueAxisNumberFormat       *string          `json:"value_axis_number_format,omitempty"`
 	// CategoryAxisTickMarkSkip and CategoryAxisLabelAlignment exist only on
 	// CT_CatAx; CT_DateAx and CT_ValAx have no such children.
 	CategoryAxisTickMarkSkip   *int    `json:"category_axis_tick_mark_skip,omitempty"`
@@ -150,6 +170,7 @@ type ChartAxisState struct {
 	MajorGridline bool     `json:"major_gridline,omitempty"`
 	MinorGridline bool     `json:"minor_gridline,omitempty"`
 	Crosses       string   `json:"crosses,omitempty"`
+	HasTitle      bool     `json:"has_title,omitempty"`
 	Title         string   `json:"title,omitempty"`
 	MinimumScale  *float64 `json:"minimum_scale,omitempty"`
 	MaximumScale  *float64 `json:"maximum_scale,omitempty"`
@@ -166,6 +187,10 @@ type ChartAxisState struct {
 	TickLabelRotation *float64 `json:"tick_label_rotation,omitempty"`
 	// CrossBetween is "between" or "midCat", and is set only on a value axis.
 	CrossBetween string `json:"cross_between,omitempty"`
+	// Gridline formats mirror the c:spPr of the gridline elements, and are nil
+	// when the gridline carries no explicit style.
+	MajorGridlineFormat *ChartLineFormat `json:"major_gridline_format,omitempty"`
+	MinorGridlineFormat *ChartLineFormat `json:"minor_gridline_format,omitempty"`
 }
 
 // ChartState is a read snapshot for chart-level object model traversal.
@@ -185,6 +210,11 @@ type ChartState struct {
 	// DataLabelPoints is every c:dLbl that carries its own number format, font
 	// or display flags.
 	DataLabelPoints []ChartDataLabelPoint `json:"data_label_points,omitempty"`
+	// SeriesFormats is the fill, line and marker of each series that carries
+	// any of them; series with no explicit formatting are omitted.
+	SeriesFormats []ChartSeriesFormat `json:"series_formats,omitempty"`
+	// SeriesLines is set when the first plot draws c:serLines.
+	SeriesLines *ChartSeriesLines `json:"series_lines,omitempty"`
 }
 
 // ChartDataLabelState is the persisted data-label state for the first chart plot.
@@ -213,6 +243,7 @@ type SlideChartRef struct {
 	Index     int
 	RelID     string
 	ChartPart string
+	ShapeID   int
 }
 
 // SlideLayoutInfo describes one available slide layout part.

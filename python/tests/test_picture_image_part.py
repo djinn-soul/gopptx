@@ -46,3 +46,9 @@ def test_picture_shape_image_part(tmp_path: pathlib.Path) -> None:
         assert img_part.content_type in {"image/png", "png"}
         assert img_part.filename.endswith(".png") or img_part.filename.endswith("png")
         assert len(img_part.sha1) == 40
+
+        # Test saving image to path
+        saved_img_path = tmp_path / "extracted_picture.png"
+        img_part.save(saved_img_path)
+        assert saved_img_path.exists()
+        assert saved_img_path.read_bytes() == png_bytes

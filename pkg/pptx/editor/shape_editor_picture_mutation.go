@@ -162,10 +162,11 @@ func (e *PresentationEditor) GetShapeTextState(slideIndex, shapeID int) (common.
 	}
 
 	state := common.ShapeTextState{
-		Text:      shape.Text,
-		Runs:      editorshape.CopyTextRuns(shape.Runs),
-		TextFrame: shape.TextFrame,
-		Paragraph: shape.Paragraph,
+		Text:       shape.Text,
+		Runs:       editorshape.CopyTextRuns(shape.Runs),
+		Paragraphs: shape.Paragraphs,
+		TextFrame:  shape.TextFrame,
+		Paragraph:  shape.Paragraph,
 	}
 	return state, nil
 }
@@ -180,11 +181,12 @@ func (e *PresentationEditor) GetSlideTextStates(slideIndex int) ([]common.SlideS
 	states := make([]common.SlideShapeTextState, 0, len(shapes))
 	for _, shape := range shapes {
 		states = append(states, common.SlideShapeTextState{
-			ShapeID:   shape.ID,
-			Text:      shape.Text,
-			Runs:      editorshape.CopyTextRuns(shape.Runs),
-			TextFrame: shape.TextFrame,
-			Paragraph: shape.Paragraph,
+			ShapeID:    shape.ID,
+			Text:       shape.Text,
+			Runs:       editorshape.CopyTextRuns(shape.Runs),
+			Paragraphs: shape.Paragraphs,
+			TextFrame:  shape.TextFrame,
+			Paragraph:  shape.Paragraph,
 		})
 	}
 	return states, nil
