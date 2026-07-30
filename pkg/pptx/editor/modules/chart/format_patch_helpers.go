@@ -20,7 +20,7 @@ func firstChartBlockBounds(xml string) (int, int) {
 		if start < 0 {
 			continue
 		}
-		endTag := "</c:" + tag + ">"
+		endTag := chartElementClosePrefix + tag + ">"
 		relEnd := strings.Index(xml[start:], endTag)
 		if relEnd < 0 {
 			continue
@@ -32,7 +32,7 @@ func firstChartBlockBounds(xml string) (int, int) {
 
 func isLegendPosition(position string) bool {
 	switch strings.ToLower(strings.TrimSpace(position)) {
-	case "r", "l", "t", "b":
+	case "r", "l", "t", "b", "tr", "right", "left", "top", "bottom", "top_right", "topright":
 		return true
 	default:
 		return false
@@ -40,8 +40,10 @@ func isLegendPosition(position string) bool {
 }
 
 func isDataLabelPosition(position string) bool {
-	switch strings.TrimSpace(position) {
-	case "ctr", "inEnd", "inBase", "outEnd", "bestFit", "l", "r", "t", "b":
+	norm := normalizeDataLabelPosition(position, false)
+	switch norm {
+	case dataLabelPositionCenter, dataLabelPositionInsideEnd, dataLabelPositionInsideBase,
+		dataLabelPositionOutsideEnd, dataLabelPositionBestFit, "l", "r", "t", "b":
 		return true
 	default:
 		return false

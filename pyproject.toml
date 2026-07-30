@@ -18,6 +18,7 @@ dependencies = [
     "orjson>=3.11.7",
     "Jinja2>=3.1.6",
     "typing-extensions>=4.15.0",
+    "pillow>=12.3.0",
 ]
 
 [project.optional-dependencies]
@@ -40,7 +41,6 @@ dev = [
     "basedpyright>=1.39.0",
     "vulture>=2.15",
     "gitingest",
-    "pillow==12.3.0",
     "pypdfium2==5.6.0",
     "numpy>=2.2.6",
     "mkdocs-material>=9.7.6",
@@ -69,7 +69,7 @@ include = [
 target-version = "py310"
 line-length = 88
 src = ["python/gopptx", "tests", "examples"]
-exclude = ["vulture_whitelist.py", "hatch_build.py"]
+exclude = ["vulture_whitelist.py", "vulture_whitelist_review.py", "hatch_build.py"]
 preview = true
 
 [tool.ruff.lint]
@@ -135,10 +135,12 @@ convention = "google"
 "python/gopptx/**/*.pyi" = ["ANN401", "ANN001"]
 "python/gopptx/presentation/**/*.py" = ["TID252"]
 "python/gopptx/slide/**/*.py" = ["TID252"]
+"python/gopptx/slide/background.py" = ["N802", "S405"]
 "python/gopptx/shapes/**/*.py" = ["TID252", "PLR0904"]
 "python/gopptx/text/**/*.py" = ["TID252"]
 "python/gopptx/ops.py" = ["I001", "PLC0414", "S105"]
 "python/tests/**/*.py" = ["S101", "ARG", "PLR2004", "ANN", "FBT", "PLR6301", "D"]
+"python/tests/test_slide_background_element.py" = ["SLF001"]
 
 "examples/**/*.py" = ["T201", "INP001", "D"]
 
@@ -273,6 +275,7 @@ reportImportCycles = "warning"
 
 exclude = [
     "vulture_whitelist.py",
+    "vulture_whitelist_review.py",
     "**/__pycache__",
     "**/node_modules",
     ".git",
@@ -302,7 +305,13 @@ venv = ".venv"
 # PYLINT - Duplicate code detection (R0801)
 # ============================================================================
 [tool.pylint.main]
-ignore = [".venv", "tests", "vulture_whitelist.py", "examples"]
+ignore = [
+    ".venv",
+    "tests",
+    "vulture_whitelist.py",
+    "vulture_whitelist_review.py",
+    "examples",
+]
 jobs = 0
 
 [tool.pylint."messages control"]

@@ -6,6 +6,7 @@ import (
 )
 
 func TestFontStyle_XMLElement(t *testing.T) {
+	//nolint:govet // Field order keeps positional test cases readable; layout is irrelevant here.
 	tests := []struct {
 		style    FontStyle
 		expected string

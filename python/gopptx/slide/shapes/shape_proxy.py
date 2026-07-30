@@ -13,12 +13,14 @@ from .shape_format_proxies import (
     _ShapeLineProxy,
     _ShapeShadowProxy,
 )
+from .shape_proxy_features import ShapeProxyFeatureMixin
+from .shape_style_proxy import _ShapeStyleProxy
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ...constants import ShapeType
-    from ...schemas import Shape, ShapeProps, ShapeUpdate
+    from ...schemas import Shape, ShapeProps, ShapeUpdate, SlideChartRef
     from ...shapes import ShapeBuilder
     from ...text.run_builder import RunBuilder
     from ..contracts import SlidePresentationProtocol
@@ -33,6 +35,8 @@ class _ShapeProxySlideProto(Protocol):
 
     def list_shapes(self) -> list[Shape]: ...
 
+    def list_charts(self) -> list[SlideChartRef]: ...
+
     def update_shape(self, shape_id: int, updates: ShapeUpdate) -> None: ...
 
     def add_shape(
@@ -45,7 +49,7 @@ class _ShapeProxySlideProto(Protocol):
     def shape(self, shape_id: int) -> ShapeProxy: ...
 
 
-class ShapeProxy:
+class ShapeProxy(ShapeProxyFeatureMixin):
     """Live shape proxy object."""
 
     def __init__(self, slide: _ShapeProxySlideProto, shape_id: int) -> None:
@@ -55,6 +59,7 @@ class ShapeProxy:
         self._fill = _ShapeFillProxy(self)
         self._line = _ShapeLineProxy(self)
         self._shadow = _ShapeShadowProxy(self)
+        self._style = _ShapeStyleProxy(self)
         self._text_frame: ShapeTextFrame | None = None
         self._table_proxy: Table | None = None
         self._table_present_cache: bool | None = None
@@ -77,6 +82,11 @@ class ShapeProxy:
     def id(self) -> int:
         """Return the shape id."""
         return self._shape_id
+
+    @property
+    def slide(self) -> _ShapeProxySlideProto:
+        """Return the owning slide proxy."""
+        return self._slide
 
     @property
     def name(self) -> str:
@@ -114,6 +124,11 @@ class ShapeProxy:
     def fill(self) -> _ShapeFillProxy:
         """Return fill formatting facade."""
         return self._fill
+
+    @property
+    def style(self) -> _ShapeStyleProxy:
+        """Return the read-only style views: resolved style and custom geometry."""
+        return self._style
 
     @property
     def line(self) -> _ShapeLineProxy:

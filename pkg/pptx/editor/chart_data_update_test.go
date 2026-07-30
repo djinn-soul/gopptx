@@ -159,7 +159,8 @@ func TestListSlideCharts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListSlideCharts failed: %v", err)
 	}
-	if len(refs) != 1 || refs[0].RelID != "rIdChart" || refs[0].ChartPart != "ppt/charts/chart1.xml" {
+	if len(refs) != 1 || refs[0].RelID != "rIdChart" ||
+		refs[0].ChartPart != "ppt/charts/chart1.xml" || refs[0].ShapeID != 7 {
 		t.Fatalf("unexpected chart refs: %+v", refs)
 	}
 }
@@ -222,7 +223,9 @@ func newChartUpdateEditorFixture() *PresentationEditor {
 	e.parts.Set(
 		"ppt/slides/slide1.xml",
 		[]byte(
-			`<p:sld><p:spTree><p:graphicFrame><a:graphic><a:graphicData>`+
+			`<p:sld><p:spTree><p:graphicFrame><p:nvGraphicFramePr>`+
+				`<p:cNvPr id="7" name="Chart 7"/></p:nvGraphicFramePr>`+
+				`<a:graphic><a:graphicData>`+
 				`<c:chart r:id="rIdChart"/></a:graphicData></a:graphic></p:graphicFrame></p:spTree></p:sld>`,
 		),
 	)

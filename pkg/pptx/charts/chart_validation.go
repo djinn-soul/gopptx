@@ -115,6 +115,9 @@ func validateChartCore(
 		if strings.TrimSpace(categories[i]) == "" {
 			return fmt.Errorf("slide %d chart category %d cannot be empty", slideIndex, i+1)
 		}
+		// Only charts whose geometry has no meaning below zero — pie, doughnut,
+		// stock — reject negative values. Bar, line, area and radar charts all
+		// plot them, which is what c:invertIfNegative exists for.
 		if !allowNegative && values[i] < 0 {
 			return fmt.Errorf("slide %d chart value %d cannot be negative", slideIndex, i+1)
 		}

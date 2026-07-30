@@ -1,7 +1,6 @@
 package presentation
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -53,7 +52,7 @@ func (b *slidePartBuilder) mapBackground(bg *elements.SlideBackground) string {
 		mediaName, ok := b.catalog.MediaNameForImage(*bg.PictureFill)
 		if ok {
 			rid := b.nextRID()
-			b.targets = append(b.targets, fmt.Sprintf("../media/%s", mediaName))
+			b.targets = append(b.targets, "../media/"+mediaName)
 			return rid
 		}
 	}
@@ -81,7 +80,7 @@ func (b *slidePartBuilder) mapTransition(slide elements.SlideContent) string {
 	}
 
 	rid := b.nextRID()
-	b.targets = append(b.targets, fmt.Sprintf("../media/%s", mediaName))
+	b.targets = append(b.targets, "../media/"+mediaName)
 
 	newOpt := opt
 	newSound := *opt.Sound

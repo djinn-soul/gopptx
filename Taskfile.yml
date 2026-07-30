@@ -74,8 +74,33 @@ tasks:
       - golangci-lint run ./...
       - uv run ruff check python/gopptx python/tests scripts/ci hatch_build.py
       - uv run basedpyright
+      - task check:generated
       - task check:versions
       - task check:go-licenses
+
+  generate:
+    desc: Regenerate all code generated from Go declarations
+    cmds:
+      - go generate ./...
+
+  check:generated:
+    desc: Fail when generated files are stale relative to their Go sources
+    cmds:
+      # Compares the working tree before and after regenerating, so it reports
+      # only files that `go generate` itself changed. Any generator wired up
+      # with //go:generate is covered without listing its outputs here.
+      # `git diff` is part of the snapshot so that a content change to a file
+      # that was already modified is caught, not just newly appearing files.
+      - |
+        before="$(git status --porcelain; git diff)"
+        go generate ./...
+        after="$(git status --porcelain; git diff)"
+        if [ "$before" != "$after" ]; then
+          echo "Generated files are stale. Run 'task generate' and commit the result." >&2
+          echo "Working tree after regenerating:" >&2
+          echo "$after" >&2
+          exit 1
+        fi
 
   check:versions:
     desc: Verify Go and Python development versions match

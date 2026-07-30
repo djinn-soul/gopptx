@@ -6,12 +6,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from .axis_series import ChartAxis, ChartSeriesCollection
+from .data_label_points import ChartDataLabelPointMixin
+from .data_points import ChartDataPointMixin
+from .data_table import ChartDataTable
+from .error_bars import ChartErrorBarMixin
 from .model_proxies import (
     ChartLegend,
     ChartPlots,
     ChartTitle,
 )
 from .scene3d_area import ChartArea
+from .series_format import ChartSeriesFormatMixin
+from .trendline import ChartTrendlineMixin
 
 if TYPE_CHECKING:
     from typing import Protocol
@@ -65,7 +71,15 @@ class _ChartStateMixin:
         state[key] = value
 
 
-class Chart(_ChartStateMixin, _ChartAxisBulkOpsMixin):
+class Chart(
+    _ChartStateMixin,
+    _ChartAxisBulkOpsMixin,
+    ChartTrendlineMixin,
+    ChartErrorBarMixin,
+    ChartDataPointMixin,
+    ChartDataLabelPointMixin,
+    ChartSeriesFormatMixin,
+):
     """Live chart proxy with python-pptx-style accessors."""
 
     def __init__(
@@ -87,6 +101,7 @@ class Chart(_ChartStateMixin, _ChartAxisBulkOpsMixin):
         self._chart_area = ChartArea(self)
         self._category_axis = ChartAxis(self, axis_name="category")
         self._value_axis = ChartAxis(self, axis_name="value")
+        self._data_table = ChartDataTable(self)
 
     def _snapshot(self) -> ChartState:
         return self._slide.presentation.get_chart_state_by_index(
@@ -141,6 +156,11 @@ class Chart(_ChartStateMixin, _ChartAxisBulkOpsMixin):
     def chart_area(self) -> ChartArea:
         """Chart-area formatting proxy."""
         return self._chart_area
+
+    @property
+    def data_table(self) -> ChartDataTable:
+        """Data-table proxy for the grid under the plot area."""
+        return self._data_table
 
     @property
     def category_axis(self) -> ChartAxis:

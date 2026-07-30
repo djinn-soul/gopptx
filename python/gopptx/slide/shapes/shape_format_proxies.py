@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from ...schemas import (
         FillFormat,
         LineFormat,
+        PictureFill,
         ShadowFormat,
         Shape,
         ShapeUpdate,
@@ -70,6 +71,19 @@ class _ShapeFillProxy:
             raise ValueError("fill.transparency requires a solid fill color")
         payload["transparency"] = float(value)
         self._apply(cast("FillFormat", payload))
+
+    @property
+    def picture(self) -> PictureFill | None:
+        """Return the image used as this shape's fill, if any.
+
+        Reports the relationship id, the resolved package part, the tile/stretch
+        mode and any source-rectangle crop. Read-only: setting a picture fill
+        goes through the picture APIs.
+        """
+        raw = cast("object", self._payload().get("picture"))
+        if not isinstance(raw, dict):
+            return None
+        return cast("PictureFill", raw)
 
     def background(self) -> None:
         self._apply(cast("FillFormat", {"background": True}))
@@ -187,6 +201,9 @@ class _ShapeShadowProxy:
     def _apply(self, patch: dict[str, object]) -> None:
         payload = dict(cast("dict[str, object]", self._payload()))
         payload.update(patch)
+        # An explicit effect already overrides the shape style, so carrying a
+        # stale ``inherit`` alongside it would only describe the same state twice.
+        payload.pop("inherit", None)
         self._shape.apply_update(cast("ShapeUpdate", {"shadow": payload}))
 
     @property
@@ -226,13 +243,25 @@ class _ShapeShadowProxy:
         self._apply({"angle_deg": value})
 
     @property
-    def inherit(self) -> bool | None:
-        value = self._payload().get("inherit")
-        return bool(value) if isinstance(value, bool) else None
+    def inherit(self) -> bool:
+        """Return whether the shape takes its effects from the shape style.
+
+        True when the shape carries no effect list of its own, matching
+        python-pptx's ``ShadowFormat.inherit`` (upstream issue #130).
+        """
+        payload = self._payload()
+        value = payload.get("inherit")
+        if isinstance(value, bool):
+            return value
+        return not any(
+            key in payload for key in ("color", "blur_emu", "distance_emu", "angle_deg")
+        )
 
     @inherit.setter
     def inherit(self, value: bool) -> None:
-        self._apply({"inherit": value})
+        # Sent alone: inherit describes the whole effect list, so any previously
+        # set explicit attribute must not travel with it.
+        self._shape.apply_update(cast("ShapeUpdate", {"shadow": {"inherit": value}}))
 
 
 ShapeFillProxy = _ShapeFillProxy

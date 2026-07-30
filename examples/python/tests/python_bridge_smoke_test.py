@@ -16,6 +16,8 @@ from pathlib import Path
 
 import gopptx
 from gopptx import ops
+from gopptx.presentation.charts import ChartType
+from gopptx.schemas import Inches
 
 
 class TestBridgeSlideOperations(unittest.TestCase):
@@ -627,10 +629,10 @@ class TestBridgeChartOperations(unittest.TestCase):
         try:
             chart_id = pres.add_chart(
                 0,
-                "bar",
+                ChartType.BAR,
                 ["Q1", "Q2", "Q3"],
                 [{"name": "Sales", "values": [100, 200, 150]}],
-                bounds=(100, 100, 400, 300),
+                bounds=(Inches(1), Inches(1), Inches(4), Inches(3)),
             )
             self.assertIsInstance(chart_id, int)
         finally:
@@ -642,10 +644,10 @@ class TestBridgeChartOperations(unittest.TestCase):
         try:
             pres.add_chart(
                 0,
-                "bar",
+                ChartType.BAR,
                 ["Q1", "Q2"],
                 [{"name": "Sales", "values": [100, 200]}],
-                bounds=(100, 100, 400, 300),
+                bounds=(Inches(1), Inches(1), Inches(4), Inches(3)),
             )
             charts = pres.list_slide_charts(0)
             self.assertIsInstance(charts, list)
@@ -659,14 +661,15 @@ class TestBridgeChartOperations(unittest.TestCase):
         try:
             chart_id = pres.add_chart(
                 0,
-                "bar",
+                ChartType.BAR,
                 ["Q1", "Q2"],
                 [{"name": "Sales", "values": [100, 200]}],
-                bounds=(100, 100, 400, 300),
+                bounds=(Inches(1), Inches(1), Inches(4), Inches(3)),
             )
             self.assertIsInstance(chart_id, int)
+            # First argument is the slide index, not the chart's shape id.
             pres.update_chart_data(
-                chart_id,
+                0,
                 ["Q1", "Q2", "Q3"],
                 [{"name": "Sales", "values": [100, 200, 150]}],
             )

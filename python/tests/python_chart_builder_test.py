@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from gopptx import CategoryChartData, Presentation, XyChartData
+from gopptx.presentation.charts import ChartType
 
 
 def test_category_chart_builder_add_chart() -> None:
@@ -13,7 +14,7 @@ def test_category_chart_builder_add_chart() -> None:
         data.add_category("B")
         data.add_series("Series 1", [1.0, 2.0])
 
-        _shape_id = slide.add_chart("bar", data, title="Builder Chart")
+        _shape_id = slide.add_chart(ChartType.BAR, data, title="Builder Chart")
         charts = slide.list_charts()
         assert len(charts) >= 1
 

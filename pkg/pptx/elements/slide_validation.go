@@ -15,6 +15,12 @@ func validateSlideContent(s SlideContent, index int) error {
 	if err := validateSlideObjects(s, index); err != nil {
 		return err
 	}
+	return validateSlideContentBeyondObjects(s, index)
+}
+
+// validateSlideContentBeyondObjects runs the slide-level rules, i.e. everything
+// that is not a per-shape, per-connector or per-image check.
+func validateSlideContentBeyondObjects(s SlideContent, index int) error {
 	if err := validateSlideCharts(s, index); err != nil {
 		return err
 	}
@@ -40,6 +46,30 @@ func validateSlideContent(s SlideContent, index int) error {
 		return errors.New("title cannot be empty")
 	}
 	return validateSlideAnimations(s)
+}
+
+// validateSlideObjectsAll returns every per-object problem on the slide rather
+// than the first. Object rules are independent, so a caller repairing a deck
+// can see all of them in one pass instead of running validate → fix → validate
+// once per defect.
+func validateSlideObjectsAll(s SlideContent, index int) []error {
+	var errs []error
+	for shapeIndex, shape := range s.Shapes {
+		if err := shape.Validate(index, shapeIndex+1); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	for connectorIndex, connector := range s.Connectors {
+		if err := connector.ValidateWithShapes(s.Shapes, index, connectorIndex+1); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	for imageIndex, image := range s.Images {
+		if err := image.Validate(index, imageIndex+1); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
 }
 
 func validateSlideObjects(s SlideContent, index int) error {

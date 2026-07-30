@@ -42,7 +42,7 @@ func (l HandoutLayout) String() string {
 
 // HandoutMaster configures the handout master page included in a presentation.
 //
-//nolint:revive // Public type name kept for compatibility with existing consumers.
+//nolint:revive,govet // Preserve the public type name and field order for source compatibility.
 type HandoutMaster struct {
 	Layout         HandoutLayout
 	ShowHeader     bool

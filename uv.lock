@@ -441,6 +441,7 @@ source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
     { name = "orjson" },
+    { name = "pillow" },
     { name = "typing-extensions" },
 ]
 
@@ -455,7 +456,6 @@ dev = [
     { name = "mkdocstrings", extra = ["python"] },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pillow" },
     { name = "pip" },
     { name = "pip-audit" },
     { name = "poethepoet" },
@@ -479,7 +479,7 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'dev'", specifier = ">=1.0.3" },
     { name = "numpy", marker = "extra == 'dev'", specifier = ">=2.2.6" },
     { name = "orjson", specifier = ">=3.11.7" },
-    { name = "pillow", marker = "extra == 'dev'", specifier = "==12.3.0" },
+    { name = "pillow", specifier = ">=12.3.0" },
     { name = "pip", marker = "extra == 'dev'", specifier = ">=26.1.2" },
     { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.10.0" },
     { name = "poethepoet", marker = "extra == 'dev'", specifier = ">=0.44.0" },

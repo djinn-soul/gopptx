@@ -24,8 +24,23 @@ var (
 	pictureXfrmPattern     = regexp.MustCompile(`<a:xfrm\b([^>]*)>`)
 )
 
+// hasPictureUpdateFields reports whether any field handled by
+// applyPictureShapeUpdates is set.
 func hasPictureUpdateFields(updates common.ShapeUpdate) bool {
-	return updates.Crop != nil || updates.Rotation != nil || updates.FlipH != nil || updates.FlipV != nil
+	return hasPictureOnlyUpdateFields(updates) || hasTransformAttrUpdateFields(updates)
+}
+
+// hasPictureOnlyUpdateFields reports whether an update needs a picture shape.
+// Cropping edits <a:srcRect> inside <p:blipFill>, which only pictures have.
+func hasPictureOnlyUpdateFields(updates common.ShapeUpdate) bool {
+	return updates.Crop != nil
+}
+
+// hasTransformAttrUpdateFields reports whether an update sets rot/flipH/flipV.
+// Those are attributes of <a:xfrm>, which every shape kind carries, so they are
+// not restricted to pictures.
+func hasTransformAttrUpdateFields(updates common.ShapeUpdate) bool {
+	return updates.Rotation != nil || updates.FlipH != nil || updates.FlipV != nil
 }
 
 func validatePictureUpdateFields(updates common.ShapeUpdate) error {
@@ -147,10 +162,11 @@ func (e *PresentationEditor) GetShapeTextState(slideIndex, shapeID int) (common.
 	}
 
 	state := common.ShapeTextState{
-		Text:      shape.Text,
-		Runs:      editorshape.CopyTextRuns(shape.Runs),
-		TextFrame: shape.TextFrame,
-		Paragraph: shape.Paragraph,
+		Text:       shape.Text,
+		Runs:       editorshape.CopyTextRuns(shape.Runs),
+		Paragraphs: shape.Paragraphs,
+		TextFrame:  shape.TextFrame,
+		Paragraph:  shape.Paragraph,
 	}
 	return state, nil
 }
@@ -165,11 +181,12 @@ func (e *PresentationEditor) GetSlideTextStates(slideIndex int) ([]common.SlideS
 	states := make([]common.SlideShapeTextState, 0, len(shapes))
 	for _, shape := range shapes {
 		states = append(states, common.SlideShapeTextState{
-			ShapeID:   shape.ID,
-			Text:      shape.Text,
-			Runs:      editorshape.CopyTextRuns(shape.Runs),
-			TextFrame: shape.TextFrame,
-			Paragraph: shape.Paragraph,
+			ShapeID:    shape.ID,
+			Text:       shape.Text,
+			Runs:       editorshape.CopyTextRuns(shape.Runs),
+			Paragraphs: shape.Paragraphs,
+			TextFrame:  shape.TextFrame,
+			Paragraph:  shape.Paragraph,
 		})
 	}
 	return states, nil
@@ -243,40 +260,4 @@ func (e *PresentationEditor) RemoveShapeParagraph(slideIndex, shapeID, paragraph
 	emptyRuns := []common.TextRun{}
 	updates := common.ShapeUpdate{Text: &empty, Runs: &emptyRuns}
 	return e.UpdateShape(slideIndex, shapeID, updates)
-}
-
-func (e *PresentationEditor) getShapeForTextOps(slideIndex, shapeID int) (parsedShape, error) {
-	shapes, err := e.getShapesForTextOps(slideIndex)
-	if err != nil {
-		return parsedShape{}, err
-	}
-
-	for _, shape := range shapes {
-		if shape.ID == shapeID || (shape.PhType == placeholderTypeTitle && shapeID == 0) {
-			return shape, nil
-		}
-	}
-
-	return parsedShape{}, fmt.Errorf("shape id %d not found on slide %d", shapeID, slideIndex)
-}
-
-func (e *PresentationEditor) getShapesForTextOps(slideIndex int) ([]parsedShape, error) {
-	if e == nil {
-		return nil, errors.New("editor cannot be nil")
-	}
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return nil, errors.New("slide index out of range")
-	}
-
-	partPath := e.slides[slideIndex].Part
-	content, ok := e.parts.Get(partPath)
-	if !ok {
-		return nil, fmt.Errorf("read slide part %s: not found", partPath)
-	}
-
-	shapes, err := parseSlideShapes(content)
-	if err != nil {
-		return nil, fmt.Errorf("parse shapes: %w", err)
-	}
-	return shapes, nil
 }

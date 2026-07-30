@@ -10,6 +10,10 @@ const (
 	richPatternFillGrowCap = 160
 	richShapeLineGrowCap   = 160
 	richOuterShadowGrowCap = 180
+
+	// Line join child elements.
+	joinRoundXML = `<a:round/>`
+	joinBevelXML = `<a:bevel/>`
 )
 
 func shapeSolidFillXML(fill ShapeFillSpec) string {
@@ -34,12 +38,12 @@ func shapeLineXML(line ShapeLineSpec) string {
 	}
 	join := ""
 	switch strings.TrimSpace(line.Join) {
-	case "bevel":
-		join = `<a:bevel/>`
+	case string(LineJoinStyleBevel):
+		join = joinBevelXML
 	case lineJoinMiter:
 		join = `<a:miter/>`
-	case "round":
-		join = `<a:round/>`
+	case string(LineJoinStyleRound):
+		join = joinRoundXML
 	}
 	return `
 <a:ln w="` + strconv.FormatInt(line.Width, 10) + `"` + lineCapAttr + `>

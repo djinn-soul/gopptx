@@ -9,7 +9,14 @@ from typing_extensions import Protocol
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from ...schemas import ChartState, SlideChartRef
+    from ...presentation.charts.chart_types import ChartType
+    from ...schemas import (
+        ChartDataSource,
+        ChartDataUpdate,
+        ChartSelector,
+        ChartState,
+        SlideChartRef,
+    )
     from ...slide.chart.data import CategoryChartData, XyChartData
 
 
@@ -19,10 +26,12 @@ class ChartOperationsProtocol(Protocol):
     def add_chart(
         self,
         slide_index: int,
-        chart_type: str,
+        chart_type: ChartType,
         categories: Sequence[str] | CategoryChartData | XyChartData,
         values_or_series: Sequence[float] | Sequence[dict[str, object]] | None = None,
-        **kwargs: object,
+        *,
+        title: str = "Chart",
+        bounds: tuple[float, float, float, float] = (0, 0, 0, 0),
     ) -> int:
         """Protocol member."""
         ...
@@ -60,6 +69,23 @@ class ChartOperationsProtocol(Protocol):
         chart_selector: dict[str, object] | list[str],
         data: dict[str, object] | list[dict[str, object]],
     ) -> None:
+        """Protocol member."""
+        ...
+
+    def update_chart_cached_values(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+        data: ChartDataUpdate,
+    ) -> None:
+        """Protocol member."""
+        ...
+
+    def get_chart_data_source(
+        self,
+        slide_index: int,
+        chart_selector: ChartSelector,
+    ) -> ChartDataSource:
         """Protocol member."""
         ...
 

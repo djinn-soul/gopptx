@@ -44,7 +44,7 @@ func (e *PresentationEditor) DefineTableStyle(def common.TableStyleDefinition) (
 	entry := fmt.Sprintf(`<a:tblStyle styleId="%s" styleName="%s"/>`, common.XMLEscape(styleID), common.XMLEscape(name))
 	pattern := regexp.MustCompile(fmt.Sprintf(reTableStyleByID.String(), regexp.QuoteMeta(styleID)))
 	if pattern.MatchString(xml) {
-		xml = pattern.ReplaceAllString(xml, entry)
+		xml = pattern.ReplaceAllLiteralString(xml, entry)
 	} else {
 		xml = strings.Replace(xml, "</a:tblStyleLst>", entry+"</a:tblStyleLst>", 1)
 	}

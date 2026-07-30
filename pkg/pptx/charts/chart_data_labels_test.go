@@ -27,6 +27,24 @@ func TestCreateWithSlidesBarDataLabelFormatting(t *testing.T) {
 	}
 }
 
+func TestCreateWithSlidesDataLabelWordWrap(t *testing.T) {
+	chart := charts.NewBarChart([]string{"A", "B"}, []float64{10, 20}).
+		WithDataLabels(true).
+		WithDataLabelPosition(charts.DataLabelPositionOutsideEnd)
+	chart.DataLabels = chart.DataLabels.WithWordWrap(false)
+
+	xml := chartXMLForSlide(t, pptx.NewSlide("S").WithBarChart(chart))
+	assertXMLContainsAll(t, xml, []string{
+		`<c:dLbls>`,
+		`<c:txPr><a:bodyPr wrap="none"/><a:lstStyle/>`,
+		`<c:dLblPos val="outEnd"/>`,
+		`<c:showVal val="1"/>`,
+	})
+	if strings.Index(xml, "<c:txPr>") > strings.Index(xml, "<c:dLblPos") {
+		t.Fatalf("expected data-label text properties before position properties")
+	}
+}
+
 func TestCreateWithSlidesPieDataLabelDefaults(t *testing.T) {
 	chart := charts.NewPieChart([]string{"A", "B"}, []float64{25, 75}).WithDataLabels(true)
 	xml := chartXMLForSlide(t, pptx.NewSlide("S").WithPieChart(chart))

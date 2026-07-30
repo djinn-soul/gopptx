@@ -1,12 +1,5 @@
 package tables
 
-// TableCellBorder describes one side border for a table cell.
-type TableCellBorder struct {
-	WidthPt float64
-	Color   string
-	Dash    string
-}
-
 // TableCell stores text and optional style for one table cell.
 type TableCell struct {
 	Text            string
@@ -191,12 +184,50 @@ func (c TableCell) WithBottomBorderStyle(widthPt float64, color string, dash str
 	return c.withSideBorder(borderSideBottom, widthPt, color, dash)
 }
 
+// WithLeftBorderSpec sets the left border from a fully specified border.
+func (c TableCell) WithLeftBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideLeft, border)
+}
+
+// WithRightBorderSpec sets the right border from a fully specified border.
+func (c TableCell) WithRightBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideRight, border)
+}
+
+// WithTopBorderSpec sets the top border from a fully specified border.
+func (c TableCell) WithTopBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideTop, border)
+}
+
+// WithBottomBorderSpec sets the bottom border from a fully specified border.
+func (c TableCell) WithBottomBorderSpec(border TableCellBorder) TableCell {
+	return c.withSideBorderSpec(borderSideBottom, border)
+}
+
+// WithBorderSpec sets every side from a fully specified border.
+func (c TableCell) WithBorderSpec(border TableCellBorder) TableCell {
+	c = c.withSideBorderSpec(borderSideLeft, border)
+	c = c.withSideBorderSpec(borderSideRight, border)
+	c = c.withSideBorderSpec(borderSideTop, border)
+	return c.withSideBorderSpec(borderSideBottom, border)
+}
+
+func (c TableCell) withSideBorderSpec(side string, border TableCellBorder) TableCell {
+	border.Color = NormalizeHexColor(border.Color)
+	border.Dash = NormalizeTableBorderDash(border.Dash)
+	return c.assignSideBorder(side, &border)
+}
+
 func (c TableCell) withSideBorder(side string, widthPt float64, color string, dash string) TableCell {
 	border := &TableCellBorder{
 		WidthPt: widthPt,
 		Color:   NormalizeHexColor(color),
 		Dash:    NormalizeTableBorderDash(dash),
 	}
+	return c.assignSideBorder(side, border)
+}
+
+func (c TableCell) assignSideBorder(side string, border *TableCellBorder) TableCell {
 	switch side {
 	case borderSideLeft:
 		c.BorderLeft = border

@@ -12,6 +12,8 @@ const (
 	OpDuplicateSlide          = "duplicate_slide"
 	OpGetMetadata             = "get_metadata"
 	OpUpdateChartData         = "update_chart_data"
+	OpUpdateChartCachedValues = "update_chart_cached_values"
+	OpGetChartDataSource      = "get_chart_data_source"
 	OpUpdateChartDataBatch    = "update_chart_data_batch"
 	OpUpdateChartFormatting   = "update_chart_formatting"
 	OpGetChartState           = "get_chart_state"
@@ -26,6 +28,7 @@ const (
 	OpRemoveSlideMaster       = "remove_slide_master"
 	OpAddSlideLayout          = "add_slide_layout"
 	OpRemoveSlideLayout       = "remove_slide_layout"
+	OpReorderSlideLayouts     = "reorder_slide_layouts"
 	OpAddSection              = "add_section"
 	OpRemoveSection           = "remove_section"
 	OpRenameSection           = "rename_section"
@@ -49,6 +52,7 @@ const (
 	OpListShapes              = "list_shapes"
 	OpGetSlideTextStates      = "get_slide_text_states"
 	OpGetShapeTextState       = "get_shape_text_state"
+	OpGetEffectiveShapeStyle  = "get_effective_shape_style"
 	OpGetShapeRuns            = "get_shape_runs"
 	OpSetShapeRuns            = "set_shape_runs"
 	OpSetSlideShapeRuns       = "set_slide_shape_runs"
@@ -70,6 +74,7 @@ const (
 	OpRemoveShape             = "remove_shape"
 	OpClearShapes             = "clear_shapes"
 	OpUpdateShape             = "update_shape"
+	OpSetShapeAdjustments     = "set_shape_adjustments"
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
@@ -107,6 +112,7 @@ const (
 	OpSetPlaceholderContent   = "set_placeholder_content"
 	OpGetImageMetadata        = "get_image_metadata"
 	OpAddVideo                = "add_video"
+	OpAddOnlineVideo          = "add_online_video"
 	OpAddAudio                = "add_audio"
 	OpAddOLEObject            = "add_ole_object"
 	OpMarkdownToSlides        = "markdown_to_slides"
@@ -144,9 +150,15 @@ const (
 	OpSetSmartArtStyle      = "set_smartart_style"
 	OpSetSmartArtNodes      = "set_smartart_nodes"
 	OpListSlideImages       = "list_slide_images"
+	OpListSlideMedia        = "list_slide_media"
+	OpExtractMedia          = "extract_media"
 	OpSwapImageByIndex      = "swap_image_by_index"
 	OpSwapImageByRelID      = "swap_image_by_rel_id"
 	OpGetLayoutShapes       = "get_layout_shapes"
+	OpAddLayoutShape        = "add_layout_shape"
+	OpAddLayoutTextbox      = "add_layout_textbox"
+	OpAddMasterShape        = "add_master_shape"
+	OpAddMasterTextbox      = "add_master_textbox"
 	OpGetMasterShapes       = "get_master_shapes"
 	OpGetLayoutPlaceholders = "get_layout_placeholders"
 	OpGetMasterPlaceholders = "get_master_placeholders"
@@ -154,6 +166,7 @@ const (
 	OpSetThemeColorScheme   = "set_theme_color_scheme"
 	OpSetThemeFontScheme    = "set_theme_font_scheme"
 	OpGetThemeInventory     = "get_theme_inventory"
+	OpGetThemeColorScheme   = "get_theme_color_scheme"
 	OpListNotesShapes       = "list_notes_shapes"
 	OpListNotesPlaceholders = "list_notes_placeholders"
 	OpUpdateNotesMaster     = "update_notes_master"
@@ -193,7 +206,10 @@ func supportedSlideAndMetaOps() []string {
 		OpRemoveSlideMaster,
 		OpAddSlideLayout,
 		OpRemoveSlideLayout,
+		OpReorderSlideLayouts,
 		OpUpdateChartData,
+		OpUpdateChartCachedValues,
+		OpGetChartDataSource,
 		OpUpdateChartDataBatch,
 		OpUpdateChartFormatting,
 		OpGetChartState,
@@ -203,6 +219,10 @@ func supportedSlideAndMetaOps() []string {
 		OpValidate,
 		OpRepair,
 		OpGetLayoutShapes,
+		OpAddLayoutShape,
+		OpAddLayoutTextbox,
+		OpAddMasterShape,
+		OpAddMasterTextbox,
 		OpGetMasterShapes,
 		OpGetLayoutPlaceholders,
 		OpGetMasterPlaceholders,
@@ -210,6 +230,7 @@ func supportedSlideAndMetaOps() []string {
 		OpSetThemeColorScheme,
 		OpSetThemeFontScheme,
 		OpGetThemeInventory,
+		OpGetThemeColorScheme,
 		OpBuildStatusTemplate,
 		OpBuildSimpleTemplate,
 		OpBuildProposalTemplate,

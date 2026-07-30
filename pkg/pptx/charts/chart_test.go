@@ -269,13 +269,26 @@ func TestLineChartSupportsNegativeValues(t *testing.T) {
 	}
 }
 
-func TestBarChartRejectsNegativeValues(t *testing.T) {
+// A bar chart plots negative values, which is what c:invertIfNegative exists
+// for; only pie and doughnut geometry has no meaning below zero. This asserted
+// the opposite until upstream #504 and #776 showed the rule blocked the very
+// decks those issues are about.
+func TestBarChartAcceptsNegativeValues(t *testing.T) {
 	chart := charts.NewBarChart(
 		[]string{"Q1", "Q2"},
 		[]float64{10, -5},
 	)
-	err := chart.Validate(1)
-	if err == nil {
-		t.Fatalf("expected BarChart to reject negative values")
+	if err := chart.Validate(1); err != nil {
+		t.Fatalf("expected BarChart to support negative values: %v", err)
+	}
+}
+
+func TestPieChartRejectsNegativeValues(t *testing.T) {
+	chart := charts.NewPieChart(
+		[]string{"Q1", "Q2"},
+		[]float64{10, -5},
+	)
+	if err := chart.Validate(1); err == nil {
+		t.Fatalf("expected PieChart to reject negative values")
 	}
 }

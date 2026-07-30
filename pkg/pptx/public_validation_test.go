@@ -48,8 +48,15 @@ func TestShapeValidate(t *testing.T) {
 		t.Errorf("expected no error for valid shape, got %v", err)
 	}
 
+	// A negative offset is valid OOXML: it is how a shape is placed partly off
+	// the slide. Only the extents are constrained.
 	sh2 := pptx.NewShape(pptx.ShapeTypeRectangle, -1, 0, 100, 100)
-	if err := sh2.Validate(1, 1); err == nil {
-		t.Error("expected error for shape with negative position, got nil")
+	if err := sh2.Validate(1, 1); err != nil {
+		t.Errorf("expected no error for shape placed off-slide, got %v", err)
+	}
+
+	sh3 := pptx.NewShape(pptx.ShapeTypeRectangle, 0, 0, 0, 100)
+	if err := sh3.Validate(1, 1); err == nil {
+		t.Error("expected error for shape with zero width, got nil")
 	}
 }

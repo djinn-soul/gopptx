@@ -1,5 +1,7 @@
 package enums
 
+//go:generate go run ../../../cmd/gen_chart_types shape_chart.go ../../../internal/pptxxml/chart_spec.go ../../../python/gopptx/presentation/charts/chart_types.py
+
 import (
 	"fmt"
 

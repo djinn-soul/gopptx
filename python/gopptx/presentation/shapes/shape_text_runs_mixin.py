@@ -9,7 +9,7 @@ from ...slide.text.text_run import serialize_runs_for_payload
 from ..helpers import PresentationMixinBase
 
 if TYPE_CHECKING:
-    from ...schemas import TextRun
+    from ...schemas import EffectiveShapeStyle, TextRun
 
 
 class PresentationShapeTextRunMixin(PresentationMixinBase):
@@ -23,6 +23,22 @@ class PresentationShapeTextRunMixin(PresentationMixinBase):
             ops.OP_GET_SHAPE_TEXT_STATE,
             {"slide_index": slide_index, "shape_id": shape_id},
         )
+
+    def get_effective_shape_style(
+        self, slide_index: int, shape_id: int
+    ) -> EffectiveShapeStyle:
+        """Resolve how a shape actually looks, following the inheritance chain.
+
+        A placeholder that states no colour of its own reports ``None`` for
+        every direct property even though it draws with a colour, because the
+        value lives on the layout, the master or the theme (issue #1013). Each
+        resolved value carries the ``source`` it was found on.
+        """
+        result = self.execute(
+            ops.OP_GET_EFFECTIVE_SHAPE_STYLE,
+            {"slide_index": slide_index, "shape_id": shape_id},
+        )
+        return cast("EffectiveShapeStyle", result.get("style", {}))
 
     def get_slide_text_states(self, slide_index: int) -> list[dict[str, object]]:
         """Get text/runs/text-frame/paragraph state for all shapes on a slide."""

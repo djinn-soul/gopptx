@@ -61,3 +61,23 @@ func TestHyperlinkAction_IsExternal(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizeHyperlinkURI(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"https://example.com", "https://example.com"},
+		{"javascript:alert(1)", "#"},
+		{"vbscript:MsgBox(1)", "#"},
+		{"data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==", "#"},
+		{"  http://safe.org  ", "http://safe.org"},
+	}
+
+	for _, tt := range tests {
+		got := SanitizeHyperlinkURI(tt.input)
+		if got != tt.want {
+			t.Errorf("SanitizeHyperlinkURI(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}

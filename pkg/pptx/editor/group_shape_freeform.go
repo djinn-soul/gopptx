@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddFreeformShape inserts a custom-geometry shape based on provided points.
@@ -33,14 +31,14 @@ func (e *PresentationEditor) AddFreeformShape(
 		return 0, fmt.Errorf("parse shapes: %w", err)
 	}
 
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
 	lastShapeEnd := int64(-1)
 	for _, shape := range shapeNodes {
 		if shape.End > lastShapeEnd {
 			lastShapeEnd = shape.End
 		}
 	}
-	newID := maxID + 1
+	newID := e.maxObjectID(partPath, content) + 1
+	e.reserveObjectIDs(partPath, newID)
 
 	minX, minY, width, height, localPts := computeFreeformBounds(points)
 	shapeXML := renderFreeformShapeXML(newID, minX, minY, width, height, localPts, closePath)

@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/internal/zipfast"
 )
 
 // PackageWriter accumulates parts and handles writing them to a zip archive.
@@ -35,48 +38,71 @@ func (pw *PackageWriter) AddBinaryPart(path string, content []byte) {
 	delete(pw.textParts, path)
 }
 
+// ContentTypesPartName is the OPC content types stream, which must be the first
+// entry in the package.
+const ContentTypesPartName = "[Content_Types].xml"
+
 // WriteTo writes all collected parts to the provided [zip.Writer].
+//
+// Entries are written in a fixed order: [Content_Types].xml first, then the
+// package relationships, then everything else sorted by path. OPC requires the
+// content types stream to be the first part in the archive — a consumer reading
+// the package as a stream has to know a part's content type before it reaches
+// the part. PowerPoint tolerates finding it anywhere; stricter readers, such as
+// the previewers used by webmail, do not. Sorting the rest also makes the
+// package byte-reproducible, which iterating the maps directly was not.
 func (pw *PackageWriter) WriteTo(zw *zip.Writer) error {
-	// Note: In an OPC package, order doesn't strictly matter for most tools,
-	// but [Content_Types].xml and _rels/.rels are usually first.
-	// For now, we just iterate the map.
-	for path, content := range pw.textParts {
-		method := packageZipMethod(path)
-		var (
-			w         io.Writer
-			createErr error
-		)
-		if method == zip.Deflate {
-			w, createErr = zw.Create(path)
-		} else {
-			header := &zip.FileHeader{Name: path, Method: method}
-			w, createErr = zw.CreateHeader(header)
+	for _, path := range pw.orderedPartNames() {
+		if content, ok := pw.textParts[path]; ok {
+			if err := writePart(zw, path, []byte(content)); err != nil {
+				return err
+			}
+			continue
 		}
-		if createErr != nil {
-			return createErr
-		}
-		if _, err := io.WriteString(w, content); err != nil {
-			return fmt.Errorf("write package part %q: %w", path, err)
+		if err := writePart(zw, path, pw.binaryParts[path]); err != nil {
+			return err
 		}
 	}
-	for path, content := range pw.binaryParts {
-		method := packageZipMethod(path)
-		var (
-			w         io.Writer
-			createErr error
-		)
-		if method == zip.Deflate {
-			w, createErr = zw.Create(path)
-		} else {
-			header := &zip.FileHeader{Name: path, Method: method}
-			w, createErr = zw.CreateHeader(header)
+	return nil
+}
+
+// orderedPartNames returns every part name in package write order.
+func (pw *PackageWriter) orderedPartNames() []string {
+	paths := make([]string, 0, len(pw.textParts)+len(pw.binaryParts))
+	for path := range pw.textParts {
+		paths = append(paths, path)
+	}
+	for path := range pw.binaryParts {
+		paths = append(paths, path)
+	}
+	sort.Slice(paths, func(i, j int) bool {
+		ri, rj := partWriteRank(paths[i]), partWriteRank(paths[j])
+		if ri != rj {
+			return ri < rj
 		}
-		if createErr != nil {
-			return createErr
-		}
-		if _, err := w.Write(content); err != nil {
-			return fmt.Errorf("write package part %q: %w", path, err)
-		}
+		return paths[i] < paths[j]
+	})
+	return paths
+}
+
+func partWriteRank(path string) int {
+	switch path {
+	case ContentTypesPartName:
+		return 0
+	case "_rels/.rels":
+		return 1
+	default:
+		return 2
+	}
+}
+
+func writePart(zw *zip.Writer, path string, content []byte) error {
+	w, err := zipfast.CreateEntry(zw, path, packageZipMethod(path))
+	if err != nil {
+		return fmt.Errorf("create package part %q: %w", path, err)
+	}
+	if _, err := w.Write(content); err != nil {
+		return fmt.Errorf("write package part %q: %w", path, err)
 	}
 	return nil
 }

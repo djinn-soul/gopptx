@@ -12,13 +12,13 @@ import (
 )
 
 type pptxFileInfo struct {
+	modifiedAt time.Time
 	path       string
 	size       int64
-	modifiedAt time.Time
-	isPPTXZip  bool
 	slideCount int
 	chartCount int
 	imageCount int
+	isPPTXZip  bool
 }
 
 func runInfoCommand(args []string, stdout io.Writer, stderr io.Writer) int {

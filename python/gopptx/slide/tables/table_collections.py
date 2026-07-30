@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
+from ...api_errors import GopptxError
 from .table_cells import Cell
 
 if TYPE_CHECKING:
@@ -193,29 +194,37 @@ class TableColumns:
         for i in range(len(self)):
             yield TableColumn(self._table, i)
 
-    def add(self, width: int) -> TableColumn:
+    def _default_width(self) -> int:
+        """Return the last column's width, the width a new column inherits."""
+        count = len(self)
+        if count == 0:
+            raise GopptxError("cannot infer a column width for an empty table")
+        return self[count - 1].width
+
+    def add(self, width: int | None = None) -> TableColumn:
         """Append a new empty column to the table and return a proxy for it.
 
         Args:
-            width: Column width in EMUs (must be > 0).
+            width: Column width in EMUs. Defaults to the last column's width,
+                so ``columns.add()`` works like the python-pptx 0.6 API.
         """
         self._table.prs.execute(
             ops.OP_ADD_TABLE_COLUMN,
             {
                 "slide_index": self._table.slide_index,
                 "shape_id": self._table.shape_id,
-                "width": int(width),
+                "width": int(width) if width is not None else self._default_width(),
             },
         )
         self._table.invalidate_cache()
         return TableColumn(self._table, len(self) - 1)
 
-    def insert(self, at_index: int, width: int) -> TableColumn:
+    def insert(self, at_index: int, width: int | None = None) -> TableColumn:
         """Insert a new empty column before at_index and return a proxy for it.
 
         Args:
             at_index: Position to insert before. Use len(columns) to append.
-            width: Column width in EMUs (must be > 0).
+            width: Column width in EMUs. Defaults to the last column's width.
         """
         self._table.prs.execute(
             ops.OP_INSERT_TABLE_COLUMN,
@@ -223,7 +232,7 @@ class TableColumns:
                 "slide_index": self._table.slide_index,
                 "shape_id": self._table.shape_id,
                 "at_index": int(at_index),
-                "width": int(width),
+                "width": int(width) if width is not None else self._default_width(),
             },
         )
         self._table.invalidate_cache()

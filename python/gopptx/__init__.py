@@ -2,11 +2,13 @@
 
 from ._version import __version__
 from .api import GopptxError, Presentation, PresentationBuilder, Slide
+from .color import ColorFormat, ColorType, ThemeColor
 from .constants import (
     ALIGN_CENTER,
     ALIGN_JUSTIFY,
     ALIGN_LEFT,
     ALIGN_RIGHT,
+    MSO_PATTERN,
     SHAPE_ELLIPSE,
     SHAPE_RECTANGLE,
     SHAPE_ROUNDED_RECTANGLE,
@@ -27,6 +29,7 @@ from .constants import (
     VALIGN_CENTER,
     VALIGN_TOP,
     ConnectorType,
+    PatternType,
     PlaceholderType,
     ShapeType,
 )
@@ -112,6 +115,7 @@ __all__ = (
     "ALIGN_JUSTIFY",
     "ALIGN_LEFT",
     "ALIGN_RIGHT",
+    "MSO_PATTERN",
     "OP_ADD_SLIDE",
     "OP_DUPLICATE_SLIDE",
     "OP_GET_METADATA",
@@ -154,6 +158,8 @@ __all__ = (
     "ChartSelector",
     "ChartSeriesData",
     "ChartTitle",
+    "ColorFormat",
+    "ColorType",
     "Comment",
     "ConnectorType",
     "DataLabels",
@@ -161,6 +167,7 @@ __all__ = (
     "GrayscaleScope",
     "Milestone",
     "ParagraphProps",
+    "PatternType",
     "PlaceholderType",
     "Presentation",
     "PresentationBuilder",
@@ -202,6 +209,7 @@ __all__ = (
     "TechnicalTemplate",
     "Template",
     "TextFrameProps",
+    "ThemeColor",
     "TrainingTemplate",
     "XyChartData",
     "XySeries",

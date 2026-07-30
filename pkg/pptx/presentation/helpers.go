@@ -83,7 +83,7 @@ func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.Catalog) 
 		}
 		// Master image RIDs start at rId8 (rId1-6 are layouts, rId7 is theme).
 		relID := fmt.Sprintf("rId%d", masterImageRelIDStart+i)
-		targets = append(targets, fmt.Sprintf("../media/%s", mediaName))
+		targets = append(targets, "../media/"+mediaName)
 		refs = append(refs, pptxxml.ImageRef{
 			RelID: relID,
 			Name:  fmt.Sprintf("Master Picture %d", i+1),
@@ -101,7 +101,7 @@ func buildMasterImageInfo(master *elements.SlideMaster, catalog *media.Catalog) 
 
 func writeMediaFiles(pw *pptxxml.PackageWriter, catalog *media.Catalog) error {
 	for _, asset := range catalog.Assets() {
-		path := fmt.Sprintf("ppt/media/%s", asset.MediaName())
+		path := "ppt/media/" + asset.MediaName()
 		pw.AddBinaryPart(path, asset.Data())
 	}
 	return nil

@@ -24,6 +24,7 @@ func handleGetShapeTextState(e *PresentationEditor, payload json.RawMessage) (an
 			return map[string]any{
 				"text":       state.Text,
 				"runs":       state.Runs,
+				"paragraphs": state.Paragraphs,
 				"text_frame": state.TextFrame,
 				"paragraph":  state.Paragraph,
 			}, nil

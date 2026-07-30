@@ -44,9 +44,9 @@ func applyTableCellLayoutInfo(info map[string]any, props cellPropertiesXML) {
 func normalizeTableCellVAlign(anchor string) string {
 	switch anchor {
 	case "t":
-		return "top"
+		return borderSideTop
 	case "b":
-		return "bottom"
+		return borderSideBottom
 	case "ctr":
 		return "middle"
 	default:
@@ -82,6 +82,26 @@ func lineToBorderInfo(line *linePropertiesXML) map[string]any {
 	}
 	if color := lineColorToken(line); color != "" {
 		border["color"] = color
+	}
+	if line.Cap != "" {
+		border["cap"] = line.Cap
+	}
+	if line.Cmpd != "" {
+		border["compound"] = line.Cmpd
+	}
+	if line.Algn == "in" {
+		border["inset"] = true
+	}
+	switch {
+	case line.Round != nil:
+		border["join"] = borderJoinRound
+	case line.Bevel != nil:
+		border["join"] = borderJoinBevel
+	case line.Miter != nil:
+		border["join"] = borderJoinMiter
+		if line.Miter.Lim != "" {
+			border["miter_limit"] = line.Miter.Lim
+		}
 	}
 	if len(border) == 0 {
 		return nil

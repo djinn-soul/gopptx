@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"path"
 	"strings"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
@@ -78,7 +77,7 @@ func (e *PresentationEditor) SetNotes(slideIndex int, textContent string) error 
 
 	for _, rel := range rels {
 		if rel.Type == common.RelTypeNotesSlide {
-			notesPart = path.Join("ppt/slides", rel.Target)
+			notesPart = common.CanonicalPartPath(common.ResolveRelationshipTarget(ref.Part, rel.Target))
 			break
 		}
 	}
@@ -247,7 +246,7 @@ func (e *PresentationEditor) resolveSlideNotesPart(slideIndex int) (string, erro
 
 	for _, rel := range rels {
 		if rel.Type == common.RelTypeNotesSlide {
-			return path.Join("ppt/slides", rel.Target), nil
+			return common.CanonicalPartPath(common.ResolveRelationshipTarget(ref.Part, rel.Target)), nil
 		}
 	}
 	return "", nil

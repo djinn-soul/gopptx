@@ -2,41 +2,21 @@ package editor
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"math"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
-	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 // AddConnectors inserts multiple connectors on one slide in a single XML rewrite.
 func (e *PresentationEditor) AddConnectors(slideIndex int, connectors []common.ConnectorInsert) ([]int, error) {
-	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return nil, errors.New("slide index out of range")
-	}
-	if len(connectors) == 0 {
-		return []int{}, nil
-	}
-
-	partPath := e.slides[slideIndex].Part
-	content, ok := e.parts.Get(partPath)
-	if !ok {
-		return nil, fmt.Errorf("read slide part %s: not found", partPath)
-	}
-
-	maxID := editorshape.MaxObjectID(content, cNvPrIDPattern, cNvPrSubmatchSize)
-	shapeXML, shapeIDs, err := e.buildConnectorBatchXML(partPath, maxID, connectors)
-	if err != nil {
-		return nil, err
-	}
-
-	newXML, err := insertShapeXML(content, shapeXML)
-	if err != nil {
-		return nil, err
-	}
-	e.parts.Set(partPath, newXML)
-	return shapeIDs, nil
+	return e.insertBatchShapes(
+		slideIndex,
+		len(connectors),
+		func(partPath string, startID int) ([]byte, []int, error) {
+			return e.buildConnectorBatchXML(partPath, startID, connectors)
+		},
+	)
 }
 
 func (e *PresentationEditor) buildConnectorBatchXML(
@@ -82,6 +62,7 @@ func (e *PresentationEditor) buildConnectorBatchXML(
 		}
 		if connector.Runs != nil {
 			shape.Runs = *connector.Runs
+			shape.Paragraphs = nil
 		}
 
 		shapeNode, err := e.renderShapeXML(partPath, &shape)

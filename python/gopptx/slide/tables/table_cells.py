@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...api_errors import GopptxError
+from .table_cell_margins import CellMarginMixin
 
 if TYPE_CHECKING:
     from ._protocols import TableWriteProto
 
 
-class Cell:
+class Cell(CellMarginMixin):
     """Proxy object for a table cell."""
 
     def __init__(self, table: TableWriteProto, row: int, col: int) -> None:
@@ -20,6 +21,16 @@ class Cell:
         self._table = table
         self.row = row
         self.col = col
+
+    @property
+    def row_idx(self) -> int:
+        """python-pptx alias for :attr:`row` (zero-based row index)."""
+        return self.row
+
+    @property
+    def col_idx(self) -> int:
+        """python-pptx alias for :attr:`col` (zero-based column index)."""
+        return self.col
 
     @property
     def is_merge_origin(self) -> bool:
@@ -114,7 +125,10 @@ class Cell:
 
     @property
     def border_left(self) -> dict[str, object] | None:
-        """Get the left border properties dict (width, color, dash) or None if unset."""
+        """Get the left border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("left")
 
     @border_left.setter
@@ -123,7 +137,10 @@ class Cell:
 
     @property
     def border_right(self) -> dict[str, object] | None:
-        """Get the right border properties dict (width, color, dash) or None if unset."""
+        """Get the right border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("right")
 
     @border_right.setter
@@ -132,7 +149,10 @@ class Cell:
 
     @property
     def border_top(self) -> dict[str, object] | None:
-        """Get the top border properties dict (width, color, dash) or None if unset."""
+        """Get the top border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("top")
 
     @border_top.setter
@@ -141,12 +161,42 @@ class Cell:
 
     @property
     def border_bottom(self) -> dict[str, object] | None:
-        """Get the bottom border properties dict (width, color, dash) or None if unset."""
+        """Get the bottom border dict, or None if unset.
+
+        Keys: width, color, dash, cap, join, compound, inset, miter_limit.
+        """
         return self._get_border("bottom")
 
     @border_bottom.setter
     def border_bottom(self, value: dict[str, object] | None) -> None:
         self._set_border("bottom", value)
+
+    def set_border(
+        self,
+        color: str | None = None,
+        width: float | None = None,
+        side: str = "all",
+    ) -> None:
+        """Set border color and width for this table cell (Issue #1084).
+
+        Args:
+            color: Hex RGB color string (e.g. "FF0000").
+            width: Line width in EMU or points.
+            side: "left", "right", "top", "bottom", or "all".
+        """
+        border_data: dict[str, object] = {}
+        if color is not None:
+            border_data["color"] = str(color).lstrip("#")
+        if width is not None:
+            border_data["width"] = int(width)
+
+        sides = (
+            ["left", "right", "top", "bottom"]
+            if side.lower() == "all"
+            else [side.lower()]
+        )
+        for s in sides:
+            self._set_border(s, border_data)
 
     def split(self) -> None:
         """Split a merged cell back into a 1x1 cell."""

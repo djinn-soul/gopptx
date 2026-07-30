@@ -13,6 +13,7 @@ type manifestParts struct {
 	presentationXML     []byte
 	presentationRelsXML []byte
 	corePropsXML        []byte
+	appPropsXML         []byte
 	contentTypesXML     []byte
 }
 
@@ -39,6 +40,7 @@ func (e *PresentationEditor) buildManifestParts(
 	}
 
 	corePropsXML := renderCoreProperties(e.metadata.CoreProperties)
+	appPropsXML := e.renderAppProperties()
 
 	contentTypesXML, err := e.renderContentTypesPart(
 		hasSections,
@@ -56,6 +58,7 @@ func (e *PresentationEditor) buildManifestParts(
 		presentationXML:     []byte(presentationXML),
 		presentationRelsXML: []byte(presentationRelsXML),
 		corePropsXML:        corePropsXML,
+		appPropsXML:         appPropsXML,
 		contentTypesXML:     contentTypesXML,
 	}, nil
 }
@@ -68,8 +71,19 @@ func (e *PresentationEditor) renderContentTypesPart(
 	hasHandoutMaster bool,
 	customXMLPropsPaths []string,
 ) ([]byte, error) {
-	mediaPaths := editorslide.MapValues(e.mediaInventory)
-	filteredChartPaths := editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/charts/chart"))
+	// Embeddings ride along with the media paths because both only need their
+	// extension declared. A chart data update writes a new
+	// ppt/embeddings/*.xlsx part, and without a content type for it PowerPoint
+	// refuses the package with 0x80CB8002.
+	mediaPaths := append(
+		editorslide.MapValues(e.mediaInventory),
+		e.parts.KeysWithPrefix("ppt/embeddings/")...,
+	)
+	// chartEx parts share the chart prefix but need their own content type, so
+	// they keep the override recorded when they were added.
+	filteredChartPaths := editorslide.FilterDrawingMLChartPaths(
+		editorslide.FilterXMLPartPaths(e.parts.KeysWithPrefix("ppt/charts/chart")),
+	)
 	notesPaths := editorslide.MapValues(e.notesInventory)
 
 	themePaths := e.parts.KeysWithPrefix("ppt/theme/theme")

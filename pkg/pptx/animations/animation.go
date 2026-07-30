@@ -81,6 +81,8 @@ const (
 )
 
 // Animation represents a single animation effect on a slide object.
+//
+//nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Animation struct {
 	// ShapeIndex is the 1-based index of the target element.
 	// This index refers to a unified list of slide elements in the following order:

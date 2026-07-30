@@ -118,9 +118,10 @@ func TestShape_Validation(t *testing.T) {
 			false,
 		},
 		{
+			// Valid OOXML: this is how a shape is placed partly off the slide.
 			"Negative position",
 			NewShape(ShapeTypeRectangle, -1, 0, styling.Inches(1), styling.Inches(1)),
-			true,
+			false,
 		},
 		{
 			"Zero size",

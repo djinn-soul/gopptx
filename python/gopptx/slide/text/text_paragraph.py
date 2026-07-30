@@ -19,6 +19,7 @@ _ALLOWED_PARAGRAPH_FIELDS = frozenset({
     "level",
     "line_spacing_pct",
     "line_spacing_pts",
+    "rtl",
     "space_after_pts",
     "space_before_pts",
     "tab_stops",
@@ -26,6 +27,7 @@ _ALLOWED_PARAGRAPH_FIELDS = frozenset({
 _PARAGRAPH_FIELD_ALIASES = {
     "hanging_indent": "hanging",
     "left_margin": "indent",
+    "right_to_left": "rtl",
     "tabStops": "tab_stops",
     "tabs": "tab_stops",
 }
@@ -45,6 +47,7 @@ class ParagraphProps:
         "level",
         "line_spacing_pct",
         "line_spacing_pts",
+        "rtl",
         "space_after_pts",
         "space_before_pts",
         "tab_stops",
@@ -70,6 +73,8 @@ class ParagraphProps:
         self.line_spacing_pts = as_optional_int(kwargs.get("line_spacing_pts"))
         self.space_before_pts = as_optional_int(kwargs.get("space_before_pts"))
         self.space_after_pts = as_optional_int(kwargs.get("space_after_pts"))
+        rtl_val = kwargs.get("rtl", kwargs.get("right_to_left"))
+        self.rtl = bool(rtl_val) if rtl_val is not None else None
 
     @classmethod
     def from_payload(
@@ -99,6 +104,8 @@ class ParagraphProps:
         _append_line_spacing(payload, self.line_spacing_pct, self.line_spacing_pts)
         _append_non_negative(payload, "space_before_pts", self.space_before_pts)
         _append_non_negative(payload, "space_after_pts", self.space_after_pts)
+        if self.rtl is not None:
+            payload["rtl"] = self.rtl
         return payload
 
 

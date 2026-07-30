@@ -62,17 +62,21 @@ func (c *Checker) checkSlide(ps structural.PartProvider, slidePart string, index
 		Images: parsedImages,
 	}
 
-	if err := slide.Validate(index); err != nil {
-		return []structural.Issue{{
+	// One issue per defect: the structural checker on the other side of the same
+	// API accumulates, so an issue count here should reflect the real number of
+	// problems rather than just the first.
+	errs := slide.ValidateAll(index)
+	issues := make([]structural.Issue, 0, len(errs))
+	for _, err := range errs {
+		issues = append(issues, structural.Issue{
 			Code:        structural.CodeModelValidationError,
 			Severity:    structural.SeverityWarning,
 			Path:        slidePart,
 			Description: fmt.Sprintf("Logical validation failed: %v", err),
 			Repairable:  false,
-		}}
+		})
 	}
-
-	return nil
+	return issues
 }
 
 func extractFirstAText(content []byte) string {

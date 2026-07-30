@@ -49,7 +49,7 @@ func TextBodyPrXML(textFrame *TextFrameSpec) string {
 			// The public API token remains "normAutoFit", but the OOXML element
 			// name is schema-valid only as <a:normAutofit/>.
 			autoFitXML = `<a:normAutofit/>`
-		case "none":
+		case valNone:
 			autoFitXML = `<a:noAutofit/>`
 		default:
 			autoFitXML = ""

@@ -7,5 +7,7 @@ markupsafe==3.0.3
     # via jinja2
 orjson==3.11.7
     # via gopptx
+pillow==12.3.0
+    # via gopptx
 typing-extensions==4.15.0
     # via gopptx

@@ -5,10 +5,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from .line_format import build_line_format, normalize_hex_color
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ...schemas import ChartFormatUpdate
+    from ...schemas import ChartFormatUpdate, ChartState
 
 
 class _ChartProto(Protocol):
@@ -17,6 +19,7 @@ class _ChartProto(Protocol):
     def state_get(self, key: str, *, default: object) -> object: ...
     def state_set(self, key: str, value: object) -> None: ...
     def apply_format(self, fmt: ChartFormatUpdate) -> None: ...
+    def snapshot(self) -> ChartState: ...
 
 
 class ChartTitle:
@@ -71,8 +74,17 @@ class ChartLegend:
 
     @position.setter
     def position(self, value: str) -> None:
-        self._chart.state_set("legend_position", value)
-        self._chart.apply_format({"legend_position": value})
+        val_map = {
+            "top_right": "tr",
+            "topright": "tr",
+            "top": "t",
+            "bottom": "b",
+            "left": "l",
+            "right": "r",
+        }
+        norm = val_map.get(value.lower(), value)
+        self._chart.state_set("legend_position", norm)
+        self._chart.apply_format({"legend_position": norm})
 
     @property
     def include_in_layout(self) -> bool:
@@ -94,10 +106,17 @@ class DataLabels:
         """Initialize data labels proxy."""
         self._chart = chart
 
+    def _value(self, staged_key: str, persisted_key: str, *, default: object) -> object:
+        staged = self._chart.state_get(staged_key, default=None)
+        if staged is not None:
+            return staged
+        labels = self._chart.snapshot().get("data_labels", {})
+        return labels.get(persisted_key, default)
+
     @property
     def show_value(self) -> bool:
         """Whether value labels are shown."""
-        return bool(self._chart.state_get("data_label_show_value", default=False))
+        return bool(self._value("data_label_show_value", "show_value", default=False))
 
     @show_value.setter
     def show_value(self, value: bool) -> None:
@@ -110,7 +129,9 @@ class DataLabels:
     @property
     def show_category_name(self) -> bool:
         """Whether category-name labels are shown."""
-        return bool(self._chart.state_get("data_label_show_category", default=False))
+        return bool(
+            self._value("data_label_show_category", "show_category", default=False)
+        )
 
     @show_category_name.setter
     def show_category_name(self, value: bool) -> None:
@@ -123,7 +144,7 @@ class DataLabels:
     @property
     def position(self) -> str | None:
         """Return the label position token, if explicitly configured."""
-        value = self._chart.state_get("data_label_position", default=None)
+        value = self._value("data_label_position", "position", default=None)
         return value if isinstance(value, str) else None
 
     @position.setter
@@ -137,7 +158,11 @@ class DataLabels:
     @property
     def show_series_name(self) -> bool:
         """Whether series names are included in data labels."""
-        return bool(self._chart.state_get("data_label_show_series_name", default=False))
+        return bool(
+            self._value(
+                "data_label_show_series_name", "show_series_name", default=False
+            )
+        )
 
     @show_series_name.setter
     def show_series_name(self, value: bool) -> None:
@@ -150,7 +175,7 @@ class DataLabels:
     @property
     def number_format(self) -> str | None:
         """Return the OOXML number format used by data labels."""
-        value = self._chart.state_get("data_label_number_format", default=None)
+        value = self._value("data_label_number_format", "number_format", default=None)
         return value if isinstance(value, str) else None
 
     @number_format.setter
@@ -159,6 +184,60 @@ class DataLabels:
         self._chart.apply_format({
             "show_data_labels": True,
             "data_label_number_format": value,
+        })
+
+    @property
+    def word_wrap(self) -> bool | None:
+        """Whether data-label text wraps, or ``None`` when not specified."""
+        value = self._value("data_label_word_wrap", "word_wrap", default=None)
+        return value if isinstance(value, bool) else None
+
+    @word_wrap.setter
+    def word_wrap(self, value: bool) -> None:
+        self._chart.state_set("data_label_word_wrap", value)
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_word_wrap": value,
+        })
+
+    def set_fill(self, color: str | None = None, *, none: bool = False) -> None:
+        """Set the background of every data label (issue #662).
+
+        ``none`` clears the fill, which is how a label is made transparent
+        again after one has been set.
+        """
+        if none:
+            self._chart.apply_format({
+                "show_data_labels": True,
+                "data_label_no_fill": True,
+            })
+            return
+        if color is None:
+            raise ValueError("set_fill needs a color unless none is true")
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_fill_color": normalize_hex_color(color, "fill color"),
+        })
+
+    def set_border(
+        self,
+        *,
+        color: str | None = None,
+        width_emu: int | None = None,
+        dash: str | None = None,
+        none: bool | None = None,
+    ) -> None:
+        """Set the outline drawn around every data label (issue #716)."""
+        spec = build_line_format(
+            color=color,
+            width_emu=width_emu,
+            dash=dash,
+            none=none,
+            name="data label border",
+        )
+        self._chart.apply_format({
+            "show_data_labels": True,
+            "data_label_border": spec,
         })
 
 
@@ -173,7 +252,11 @@ class ChartPlot:
     @property
     def data_labels_visible(self) -> bool:
         """Whether plot-level data labels are visible."""
-        return bool(self._chart.state_get("show_data_labels", default=False))
+        staged = self._chart.state_get("show_data_labels", default=None)
+        if staged is not None:
+            return bool(staged)
+        labels = self._chart.snapshot().get("data_labels", {})
+        return bool(labels.get("present", False))
 
     @data_labels_visible.setter
     def data_labels_visible(self, value: bool) -> None:

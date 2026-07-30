@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, overload
 
 from ... import ops
 from ..helpers import PresentationMixinBase
@@ -81,6 +81,12 @@ class PresentationSlidesExtrasMixin(PresentationMixinBase):
         prs.invalidate_cache()
         _ = layout  # layout not yet forwarded for URL fetch
         return int(cast("int", result.get("first_index", -1)))
+
+    @overload
+    def __getitem__(self, index: int) -> Slide: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Slide]: ...
 
     def __getitem__(self, index: int | slice) -> Slide | list[Slide]:
         """Get a slide by index or slice."""

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from ...constants import ConnectorType, ShapeType
-    from ...schemas import Shape, ShapeUpdate
+    from ...schemas import Shape, ShapeAdjustmentValue, ShapeUpdate
     from ..shapes.freeform_builder import FreeformBuilder
 
 
@@ -28,6 +28,15 @@ class ShapeOperationsProtocol(Protocol):
         bounds: tuple[float, float, float, float],
         **kwargs: object,
     ) -> int:
+        """Protocol member."""
+        ...
+
+    def set_shape_adjustments(
+        self,
+        slide_index: int,
+        shape_id: int,
+        adjustments: list[ShapeAdjustmentValue],
+    ) -> None:
         """Protocol member."""
         ...
 

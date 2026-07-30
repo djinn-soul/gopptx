@@ -190,7 +190,7 @@ func injectTextIntoDrawingShape(shape, text string) string {
 func fillPlaceholderTextRuns(xml, text string) string {
 	escaped := Escape(text)
 	if strings.Contains(xml, "<a:t>[Text") {
-		xml = placeholderTextRunPattern.ReplaceAllString(xml, "<a:t>"+escaped+"</a:t>")
+		xml = placeholderTextRunPattern.ReplaceAllLiteralString(xml, "<a:t>"+escaped+"</a:t>")
 	}
 	return xml
 }

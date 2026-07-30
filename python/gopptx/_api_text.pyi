@@ -122,6 +122,7 @@ class ParagraphProps:
     line_spacing_pts: int | None
     space_before_pts: int | None
     space_after_pts: int | None
+    rtl: bool | None
     def __init__(
         self,
         *,

@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from gopptx import GopptxError, Presentation, ops
 from gopptx.presentation import helpers
+from gopptx.presentation.charts import ChartType
 from gopptx.presentation.theme import get_theme
 from gopptx.utils import normalize_table_index
 
@@ -195,11 +196,11 @@ class TestCoverageExpansion(unittest.TestCase):
         with Presentation(self.test_pptx) as pres:
             # Invalid bounds
             with self.assertRaises(ValueError):
-                pres.add_chart(0, "bar", ["A"], [10.0], bounds=(0, 0, 100))
+                pres.add_chart(0, ChartType.BAR, ["A"], [10.0], bounds=(0, 0, 100))
 
             # Series-style input
             series = [{"name": "S1", "values": [10.0, 20.0]}]
-            pres.add_chart(0, "bar", ["C1", "C2"], series)
+            pres.add_chart(0, ChartType.BAR, ["C1", "C2"], series)
 
             # For update_chart_data with dict selector, we need a valid chart RelID usually.
             charts = pres.list_slide_charts(0)
@@ -220,7 +221,7 @@ class TestCoverageExpansion(unittest.TestCase):
     def test_chart_expansion_convenience_methods(self) -> None:
         """Chart convenience update/replace methods dispatch correctly."""
         with Presentation(self.test_pptx) as pres:
-            pres.add_chart(0, "bar", ["A", "B"], [10.0, 20.0])
+            pres.add_chart(0, ChartType.BAR, ["A", "B"], [10.0, 20.0])
             pres.update_chart_data_by_index(
                 0,
                 0,
