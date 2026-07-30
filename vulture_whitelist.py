@@ -787,3 +787,7 @@ LayoutID  # unused variable (python\gopptx\schemas_chart_layout.py SlideLayoutIn
 # Issue #86 (Table.add_row / add_column)
 _.add_row
 _.add_column
+
+# Issue #309 (access shapes by name)
+_.get_by_name
+_.names
