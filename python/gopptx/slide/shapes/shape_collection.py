@@ -121,3 +121,15 @@ class ShapeCollection:
         """Delete shape at index (Issue #41)."""
         proxy = self[index]
         proxy.delete()
+
+    def clear(self) -> int:
+        """Remove every shape on the slide and return how many were removed.
+
+        Ids are snapshotted first: removing a shape renumbers nothing, but it
+        does invalidate the slide's shape cache, so iterating live would skip
+        entries (Issue #96).
+        """
+        shape_ids = self._shape_ids()
+        for shape_id in shape_ids:
+            self.remove(shape_id)
+        return len(shape_ids)
