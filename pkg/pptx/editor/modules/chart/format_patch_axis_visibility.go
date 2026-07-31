@@ -81,7 +81,7 @@ func patchAxisVisible(xml string, axisTag string, visible *bool) string {
 	if *visible {
 		node = `<c:delete val="0"/>`
 	}
-	return patchEachAxisBlock(xml, axisTag, func(block string) string {
+	return patchPrimaryAxisBlock(xml, axisTag, func(block string) string {
 		if reAxisDelete.MatchString(block) {
 			return reAxisDelete.ReplaceAllLiteralString(block, node)
 		}
@@ -102,7 +102,7 @@ func patchAxisTickLabelRotation(xml string, axisTag string, degrees *float64) st
 		return xml
 	}
 	rotation := strconv.Itoa(int(*degrees * tickLabelRotationScale))
-	return patchEachAxisBlock(xml, axisTag, func(block string) string {
+	return patchPrimaryAxisBlock(xml, axisTag, func(block string) string {
 		if reAxisTxPrBlock.MatchString(block) {
 			return rewriteAxisTextRotation(block, rotation)
 		}
@@ -137,7 +137,7 @@ func patchAxisCrossBetween(xml string, between *string) string {
 		return xml
 	}
 	node := `<c:crossBetween val="` + strings.TrimSpace(*between) + `"/>`
-	return patchEachAxisBlock(xml, axisTagValue, func(block string) string {
+	return patchPrimaryAxisBlock(xml, axisTagValue, func(block string) string {
 		if reAxisCrossBetween.MatchString(block) {
 			return reAxisCrossBetween.ReplaceAllLiteralString(block, node)
 		}

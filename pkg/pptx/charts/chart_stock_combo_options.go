@@ -261,3 +261,40 @@ func (c ComboChart) WithValueRange(minValue float64, maxValue float64) ComboChar
 	c.MaxValue = &maxValue
 	return c
 }
+
+// WithSecondaryAxis draws the line series against a second value axis on the
+// right instead of sharing the bar series' scale.
+func (c ComboChart) WithSecondaryAxis(enabled bool) ComboChart {
+	c.SecondaryAxis = enabled
+	return c
+}
+
+// WithSecondaryAxisTitle labels the secondary value axis and enables it, since
+// a title on an axis that is not drawn would be silently dropped.
+func (c ComboChart) WithSecondaryAxisTitle(title string) ComboChart {
+	c.SecondaryValueAxisTitle = strings.TrimSpace(title)
+	c.SecondaryAxis = true
+	return c
+}
+
+// WithSecondaryValueFormat sets the number format of the secondary value axis.
+func (c ComboChart) WithSecondaryValueFormat(format string) ComboChart {
+	c.SecondaryValueFormat = strings.TrimSpace(format)
+	return c
+}
+
+// WithSecondaryValueRange fixes the secondary value axis scale, which is the
+// point of a second axis: the line series get bounds of their own.
+func (c ComboChart) WithSecondaryValueRange(minValue float64, maxValue float64) ComboChart {
+	c.SecondaryMinValue = &minValue
+	c.SecondaryMaxValue = &maxValue
+	c.SecondaryAxis = true
+	return c
+}
+
+// WithSecondaryMajorGridlines draws horizontal gridlines from the secondary
+// axis. Off by default: gridlines from two axes rarely align and read as noise.
+func (c ComboChart) WithSecondaryMajorGridlines(show bool) ComboChart {
+	c.ShowSecondaryMajorGridlines = show
+	return c
+}

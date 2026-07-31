@@ -60,3 +60,30 @@ func BenchmarkEditorSaveToBytesEncrypted(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkEditorSaveLargeDeckToWriter exercises the save path on a package
+// shaped like a real deck. The unencrypted fixture above is 8 parts totalling
+// ~3KB, small enough that per-entry zip costs stay below timer noise.
+func BenchmarkEditorSaveLargeDeckToWriter(b *testing.B) {
+	editor := openLargeBenchEditor(b)
+	defer func() { _ = editor.Close() }()
+
+	b.ResetTimer()
+	for b.Loop() {
+		if err := editor.SaveToWriter(io.Discard); err != nil {
+			b.Fatalf("SaveToWriter: %v", err)
+		}
+	}
+}
+
+func BenchmarkEditorSaveLargeDeckToBytes(b *testing.B) {
+	editor := openLargeBenchEditor(b)
+	defer func() { _ = editor.Close() }()
+
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := editor.SaveToBytes(); err != nil {
+			b.Fatalf("SaveToBytes: %v", err)
+		}
+	}
+}

@@ -52,8 +52,19 @@ type ChartSpec struct {
 	ValueAxisCrossBetween      string
 	MinValue                   *float64
 	MaxValue                   *float64
-	Smooth                     bool
-	ExternalDataID             string
+
+	// Secondary value axis. SecondaryAxis declares the axis; a plot only draws
+	// against it when its c:axId pair references the secondary ids, which is
+	// what puts two series on independent scales.
+	SecondaryAxis                   bool
+	SecondaryValueAxisTitle         string
+	SecondaryValueTickLabelPosition string
+	SecondaryValueFormat            string
+	ShowSecondaryMajorGridlines     bool
+	SecondaryMinValue               *float64
+	SecondaryMaxValue               *float64
+	Smooth                          bool
+	ExternalDataID                  string
 
 	// Accessibility
 	AltText      string
