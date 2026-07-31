@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ...schemas import RGBColor
 from .text_run import Run, RunHyperlink
 
 _EMU_PER_POINT = 12700
@@ -150,14 +151,23 @@ class _FontColorProxy:
         self._run_proxy = run_proxy
 
     @property
-    def rgb(self) -> str | None:
-        """Return the RGB hex color without mutating XML (Issue #1111)."""
+    def rgb(self) -> RGBColor | None:
+        """Return the color as an RGBColor without mutating XML (Issue #1111).
+
+        Matches ``shape.fill.fore_color.rgb`` and ``shape.line.color.rgb``,
+        which have always returned RGBColor.
+        """
         payload = self._run_proxy.payload()
         val = payload.get("color")
-        return str(val) if isinstance(val, str) else None
+        if not isinstance(val, str) or not val:
+            return None
+        try:
+            return RGBColor.from_string(val.lstrip("#"))
+        except ValueError:
+            return None
 
     @rgb.setter
-    def rgb(self, value: object) -> None:
+    def rgb(self, value: RGBColor | None) -> None:
         if value is None:
             self._run_proxy.set_field("color", None)
         else:
