@@ -62,6 +62,16 @@ class Placeholder:
         return self._index
 
     @property
+    def type(self) -> str:
+        """The type of this placeholder (Issue #144)."""
+        return self._type
+
+    @property
+    def ph_type(self) -> str:
+        """Alias for type (python-pptx parity)."""
+        return self._type
+
+    @property
     def placeholder_format(self) -> PlaceholderFormat:
         """The placeholder format object (string-compatible)."""
         return PlaceholderFormat(self._type, self._index)
@@ -143,6 +153,34 @@ class Placeholder:
         if master_obj is None:
             return None
         return self._find_placeholder_info(master_obj.placeholders)
+
+    @property
+    def text(self) -> str:
+        """Get or set the text of this placeholder (Issue #144).
+
+        The getter re-reads the slide, so it reflects writes made through
+        ``text``/``insert_text`` as well as text already in the file.
+        """
+        record = self._find_placeholder_record()
+        if record is None:
+            return ""
+        return str(record.get("text", ""))
+
+    @text.setter
+    def text(self, value: str) -> None:
+        self.insert_text(str(value))
+
+    def _find_placeholder_record(self) -> dict[str, object] | None:
+        records = self._slide.list_placeholders()
+        for record in records:
+            if int(cast("int", record.get("index", -1))) == self._index and str(
+                record.get("type", "")
+            ) in {self._type, ""}:
+                return record
+        for record in records:
+            if int(cast("int", record.get("index", -1))) == self._index:
+                return record
+        return None
 
     def insert_text(self, text: str, **style_kwargs: object) -> None:
         """Replace the placeholder with text.

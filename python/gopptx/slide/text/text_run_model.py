@@ -109,13 +109,8 @@ class _ShapeRunProxy:
             self.set_field("strikethrough", str(value))
 
     @property
-    def hyperlink(self) -> RunHyperlink:
-        payload = self.payload().get("hyperlink")
-        if isinstance(payload, dict):
-            parsed = RunHyperlink.from_payload(cast("dict[str, object]", payload))
-            if parsed is not None:
-                return parsed
-        return RunHyperlink()
+    def hyperlink(self) -> _RunHyperlinkProxy:
+        return _RunHyperlinkProxy(self)
 
     @hyperlink.setter
     def hyperlink(self, value: RunHyperlink | dict[str, object] | str | None) -> None:
@@ -173,6 +168,94 @@ class _FontColorProxy:
     def type(self) -> str | None:
         """Return color type ('RGB' or None) without mutating XML (Issue #1111)."""
         return "RGB" if self.rgb else None
+
+
+class _RunHyperlinkProxy:
+    """Live proxy for run hyperlink attributes (Issue #151)."""
+
+    def __init__(self, run_proxy: _ShapeRunProxy) -> None:
+        self._run_proxy = run_proxy
+
+    def _get_field(self, field: str) -> object:
+        payload = self._run_proxy.payload().get("hyperlink")
+        if isinstance(payload, dict):
+            return cast("dict[str, object]", payload).get(field)
+        return None
+
+    def _set_field(self, field: str, value: object) -> None:
+        raw_payload = self._run_proxy.payload().get("hyperlink")
+        payload = (
+            dict(cast("dict[str, object]", raw_payload))
+            if isinstance(raw_payload, dict)
+            else {}
+        )
+        if value is None:
+            payload.pop(field, None)
+        else:
+            payload[field] = value
+        self._run_proxy.set_field("hyperlink", payload or None)
+
+    @property
+    def address(self) -> str | None:
+        val = self._get_field("address")
+        return str(val) if val else None
+
+    @address.setter
+    def address(self, value: str | None) -> None:
+        self._set_field("address", value)
+
+    @property
+    def url(self) -> str | None:
+        return self.address
+
+    @url.setter
+    def url(self, value: str | None) -> None:
+        self.address = value
+
+    @property
+    def tooltip(self) -> str | None:
+        val = self._get_field("tooltip")
+        return str(val) if val else None
+
+    @tooltip.setter
+    def tooltip(self, value: str | None) -> None:
+        self._set_field("tooltip", value)
+
+    @property
+    def action(self) -> str | None:
+        val = self._get_field("action")
+        return str(val) if val else None
+
+    @action.setter
+    def action(self, value: str | None) -> None:
+        self._set_field("action", value)
+
+    @property
+    def target_slide(self) -> int | None:
+        val = self._get_field("target_slide")
+        return int(val) if isinstance(val, (int, float)) else None
+
+    @target_slide.setter
+    def target_slide(self, value: int | None) -> None:
+        self._set_field("target_slide", value)
+
+    @property
+    def jump(self) -> str | None:
+        val = self._get_field("jump")
+        return str(val) if val else None
+
+    @jump.setter
+    def jump(self, value: str | None) -> None:
+        self._set_field("jump", value)
+
+    @property
+    def macro(self) -> str | None:
+        val = self._get_field("macro")
+        return str(val) if val else None
+
+    @macro.setter
+    def macro(self, value: str | None) -> None:
+        self._set_field("macro", value)
 
 
 class _FontProxy:
