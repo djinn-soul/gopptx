@@ -1,6 +1,7 @@
 package export
 
 import (
+	"math"
 	"strings"
 
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -54,7 +55,7 @@ func applyTitleSizeFromRuns(sc *elements.SlideContent, es editorcommon.Shape) {
 	}
 	for _, run := range es.Runs {
 		if run.SizePt != nil && *run.SizePt > 0 {
-			sc.TitleSize = *run.SizePt
+			sc.TitleSize = int(math.Round(*run.SizePt))
 			return
 		}
 	}

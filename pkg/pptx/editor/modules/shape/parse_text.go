@@ -201,7 +201,7 @@ func applyRunStyle(run *common.TextRun, rpr *runPropsXML) {
 		run.Strikethrough = rpr.Strikethrough
 	}
 	if rpr.Size != nil && *rpr.Size > 0 {
-		sizePt := *rpr.Size / fontSizeScale
+		sizePt := float64(*rpr.Size) / float64(fontSizeScale)
 		run.SizePt = &sizePt
 	}
 	if rpr.Latin != nil && rpr.Latin.Typeface != "" {

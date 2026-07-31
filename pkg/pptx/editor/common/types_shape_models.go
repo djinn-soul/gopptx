@@ -100,7 +100,7 @@ type TextRun struct {
 	Color          *string    `json:"color,omitempty"`
 	Highlight      *string    `json:"highlight,omitempty"`
 	Font           *string    `json:"font,omitempty"`
-	SizePt         *int       `json:"size_pt,omitempty"`
+	SizePt         *float64   `json:"size_pt,omitempty"`
 	Code           *bool      `json:"code,omitempty"`
 	AllCaps        *bool      `json:"all_caps,omitempty"`
 	SmallCaps      *bool      `json:"small_caps,omitempty"`

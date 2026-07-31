@@ -98,7 +98,7 @@ func applyShapeOwnStyle(
 	}
 	if run.SizePt != nil {
 		style.FontSizePt = &common.EffectiveFloat{
-			Value:  float64(*run.SizePt),
+			Value:  *run.SizePt,
 			Source: common.StyleSourceShape,
 		}
 	}
