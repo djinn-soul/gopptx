@@ -6,13 +6,13 @@ import "strconv"
 func TextBodyPrXML(textFrame *TextFrameSpec) string {
 	autoFitXML := textAutoFitElement
 	bodyPrAttr := ` wrap="square" rtlCol="0" anchor="ctr" lIns="` + strconv.Itoa(
-		defaultMargin,
+		defaultInsetLR,
 	) + `" tIns="` + strconv.Itoa(
-		defaultMargin,
+		defaultInsetTB,
 	) + `" rIns="` + strconv.Itoa(
-		defaultMargin,
+		defaultInsetLR,
 	) + `" bIns="` + strconv.Itoa(
-		defaultMargin,
+		defaultInsetTB,
 	) + `"`
 
 	if textFrame != nil {

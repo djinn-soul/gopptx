@@ -16,6 +16,9 @@ var (
 	reDTableOutline  = regexp.MustCompile(`<c:showOutline val="([^"]+)"`)
 	reDTableKeys     = regexp.MustCompile(`<c:showKeys val="([^"]+)"`)
 	reDTableFontSize = regexp.MustCompile(`<a:defRPr\b[^>]*\bsz="([^"]+)"`)
+	reDTableSpPr     = regexp.MustCompile(`(?s)<c:spPr\b[^>]*>.*?</c:spPr>|<c:spPr\b[^>]*/>`)
+	reDTableTxPr     = regexp.MustCompile(`(?s)<c:txPr\b[^>]*>.*?</c:txPr>|<c:txPr\b[^>]*/>`)
+	reDTableDefRPr   = regexp.MustCompile(`<a:defRPr\b[^>]*>`)
 )
 
 const (
@@ -77,6 +80,7 @@ func buildDataTableBlock(xml string, table common.ChartDataTable) string {
 		}
 		b.WriteString(`<c:` + flag.tag + ` val="` + boolToOneZero(value) + `"/>`)
 	}
+	b.WriteString(reDTableSpPr.FindString(existing))
 	b.WriteString(buildDataTableTextProperties(existing, table.FontSizePt))
 	b.WriteString("</c:dTable>")
 	return b.String()
@@ -85,15 +89,17 @@ func buildDataTableBlock(xml string, table common.ChartDataTable) string {
 // buildDataTableTextProperties renders the c:txPr font size, which OOXML
 // records in hundredths of a point.
 func buildDataTableTextProperties(existing string, fontSizePt *int) string {
-	size := 0
-	if match := reDTableFontSize.FindStringSubmatch(existing); len(match) == expectedSingleGroupMatch {
-		if parsed, err := strconv.Atoi(strings.TrimSpace(match[1])); err == nil {
-			size = parsed
-		}
+	existingTxPr := reDTableTxPr.FindString(existing)
+	if fontSizePt == nil {
+		return existingTxPr
 	}
-	if fontSizePt != nil {
-		size = *fontSizePt * pointsToHundredths
+	size := *fontSizePt * pointsToHundredths
+	if existingTxPr != "" && reDTableDefRPr.MatchString(existingTxPr) {
+		return reDTableDefRPr.ReplaceAllStringFunc(existingTxPr, func(tag string) string {
+			return setXMLAttribute(tag, "sz", strconv.Itoa(size))
+		})
 	}
+
 	if size <= 0 {
 		return ""
 	}

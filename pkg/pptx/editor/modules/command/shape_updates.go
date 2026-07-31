@@ -33,8 +33,15 @@ func ParseOptionalShapeUpdates(payload map[string]any) (common.ShapeUpdate, bool
 	if err := DecodeOptionalPayloadValue(payload, "hover_action", &hoverAction); err != nil {
 		return common.ShapeUpdate{}, false, NewValidationError("INVALID_PAYLOAD", err.Error())
 	}
+	var hiddenVal *bool
+	if err := DecodeOptionalPayloadValue(payload, "hidden", &hiddenVal); err != nil {
+		return common.ShapeUpdate{}, false, NewValidationError("INVALID_PAYLOAD", err.Error())
+	}
 	if err := DecodeOptionalPayloadValue(payload, "properties", &properties); err != nil {
 		return common.ShapeUpdate{}, false, NewValidationError("INVALID_PAYLOAD", err.Error())
+	}
+	if hiddenVal != nil {
+		properties.Hidden = hiddenVal
 	}
 
 	hasExplicitUpdates := text != "" || len(runs) > 0 || textFrame != nil || paragraph != nil || clickAction != nil ||

@@ -2,6 +2,7 @@
 package editor
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"path"
@@ -24,22 +25,38 @@ var (
 // GetSlideBackground reads the background of an existing slide.
 // Returns nil, nil when the slide has no explicit background defined.
 func (e *PresentationEditor) GetSlideBackground(slideIndex int) (*elements.SlideBackground, error) {
+	bgXML, slidePart, err := e.slideBackgroundXML(slideIndex)
+	if err != nil {
+		return nil, err
+	}
+	return parseBgXML(bgXML, e, slidePart), nil
+}
+
+// GetSlideBackgroundXML returns the slide's actual p:bg subtree for bridge
+// clients that expose a native XML element.
+func (e *PresentationEditor) GetSlideBackgroundXML(slideIndex int) (string, error) {
+	bgXML, _, err := e.slideBackgroundXML(slideIndex)
+	return bgXML, err
+}
+
+func (e *PresentationEditor) slideBackgroundXML(slideIndex int) (string, string, error) {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
-		return nil, fmt.Errorf("slide index %d out of range", slideIndex)
+		return "", "", fmt.Errorf("slide index %d out of range", slideIndex)
 	}
 	slideRef := e.slides[slideIndex]
 	slideXML, ok := e.parts.Get(slideRef.Part)
 	if !ok {
-		return nil, fmt.Errorf("slide part %q not found", slideRef.Part)
+		return "", "", fmt.Errorf("slide part %q not found", slideRef.Part)
 	}
 
-	raw := string(slideXML)
-	bgXML := extractBgXML(raw)
-	return parseBgXML(bgXML, e, slideRef.Part), nil
+	return extractBgXML(string(slideXML)), slideRef.Part, nil
 }
 
+// extractBgXML returns the whole <p:bg> element, attributes included. A
+// self-closing <p:bg/> carries no background of its own, so it reads the same
+// as a slide that states none at all.
 func extractBgXML(raw string) string {
-	start := strings.Index(raw, "<p:bg>")
+	start := strings.Index(raw, "<p:bg")
 	if start < 0 {
 		return ""
 	}
@@ -48,6 +65,23 @@ func extractBgXML(raw string) string {
 		return ""
 	}
 	return raw[start : start+end+len("</p:bg>")]
+}
+
+func handleGetSlideBackground(e *PresentationEditor, payload json.RawMessage) (any, error) {
+	p, err := ParseRawPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	v := NewPayloadValidator()
+	slideIndex, ok := requireSlideIndex(e, p, v)
+	if !ok {
+		return nil, v.Error()
+	}
+	backgroundXML, readErr := e.GetSlideBackgroundXML(slideIndex)
+	if readErr != nil {
+		return nil, NewBridgeError(ErrCodeOpFailed, readErr.Error())
+	}
+	return map[string]any{"background_xml": backgroundXML}, nil
 }
 
 func parseBgXML(bgXML string, e *PresentationEditor, slidePart string) *elements.SlideBackground {

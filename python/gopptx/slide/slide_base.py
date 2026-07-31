@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .. import ops
 from .background import SlideBackground
 from .notes.notes_slide import NotesSlide
 
@@ -32,12 +33,12 @@ class SlideBase:
     @property
     def slide_id(self) -> int:
         """Return the unique internal slide ID."""
-        return self._metadata["SlideID"]
+        return self._metadata.get("SlideID", 0)
 
     @property
     def title(self) -> str:
         """Return the slide title."""
-        return self._metadata["Title"]
+        return self._metadata.get("Title", "")
 
     @title.setter
     def title(self, value: str) -> None:
@@ -54,12 +55,21 @@ class SlideBase:
         self._presentation.set_notes(self.index, value)
 
     @property
-    def notes_slide(self) -> NotesSlide | None:
-        """Return a notes-slide proxy when notes exist."""
+    def has_notes_slide(self) -> bool:
+        """Return True if speaker notes slide exists (Issue #176)."""
         if self.index < 0:
-            return None
+            return False
         notes_payload = self._presentation.get_notes_payload(self.index)
-        if notes_payload.get("notes_slide") is None:
+        return (
+            notes_payload.get("notes_slide") is not None
+            or bool(self.notes)
+            or bool(notes_payload.get("notes_text"))
+        )
+
+    @property
+    def notes_slide(self) -> NotesSlide | None:
+        """Return a notes-slide proxy when notes exist (Issue #176)."""
+        if not self.has_notes_slide:
             return None
         return NotesSlide(self)
 
@@ -67,6 +77,14 @@ class SlideBase:
     def background(self) -> SlideBackground:
         """Return the slide background proxy."""
         return SlideBackground(self)
+
+    def get_background_xml(self) -> str:
+        """Return the slide's current p:bg subtree."""
+        result = self._presentation.execute(
+            ops.OP_GET_SLIDE_BACKGROUND,
+            {"slide_index": self.index},
+        )
+        return str(result.get("background_xml", ""))
 
     def rebind_layout(self, layout_part_or_name: str) -> None:
         """Rebind this slide to a different layout across any slide master (Issue #1109)."""

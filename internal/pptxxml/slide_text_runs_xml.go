@@ -1,6 +1,7 @@
 package pptxxml
 
 import (
+	"math"
 	"strconv"
 	"strings"
 )
@@ -23,7 +24,7 @@ type TextRunSpec struct {
 	Color          string
 	Highlight      string
 	Font           string
-	SizePt         int
+	SizePt         float64
 	Code           bool
 	AllCaps        bool
 	SmallCaps      bool
@@ -149,9 +150,12 @@ func richTextRunOutlineXML(run TextRunSpec) string {
 	return b.String()
 }
 
-func runSizeValueWithDefault(sizePt int, defaultSizePt int) string {
+// runSizeValueWithDefault renders the a:rPr sz attribute in centipoints. The run
+// size is a float so half-point sizes survive a read/write round-trip; it is
+// rounded to the nearest centipoint because sz is an integer attribute.
+func runSizeValueWithDefault(sizePt float64, defaultSizePt int) string {
 	if sizePt > 0 {
-		return strconv.Itoa(sizePt * ptFactor)
+		return strconv.Itoa(int(math.Round(sizePt * float64(ptFactor))))
 	}
 	if defaultSizePt > 0 {
 		return strconv.Itoa(defaultSizePt * ptFactor)

@@ -379,7 +379,7 @@ func TestConsumeBodyPlaceholderAsBulletsPreservesParagraphStyle(t *testing.T) {
 func TestEditorShapeToShapePreservesTextParagraphs(t *testing.T) {
 	bold := true
 	color := "FF0000"
-	size := 18
+	size := 18.0
 	level := 1
 	bulletStyle := "number"
 
@@ -409,7 +409,7 @@ func TestEditorShapeToShapePreservesTextParagraphs(t *testing.T) {
 	}
 	first := shape.TextParagraphs[0]
 	if len(first.Runs) != 1 || first.Runs[0].Text != "Alpha" || !first.Runs[0].Bold ||
-		first.Runs[0].Color != color || first.Runs[0].SizePt != size {
+		first.Runs[0].Color != color || float64(first.Runs[0].SizePt) != size {
 		t.Fatalf("unexpected first paragraph runs: %+v", first.Runs)
 	}
 	if first.Style.Level != level || first.Style.BulletStyle != bulletStyle {

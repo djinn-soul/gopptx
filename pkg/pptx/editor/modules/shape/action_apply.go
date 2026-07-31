@@ -14,8 +14,11 @@ func ApplyCNvPrActions(
 ) ([]byte, error) {
 	xmlStr := string(xmlData)
 	hlinkClickPattern := regexp.MustCompile(`(?s)<a:hlinkClick\b[^>]*/>|<a:hlinkClick\b[^>]*>.*?</a:hlinkClick>`)
+	// a:hlinkHover is the correct element inside p:cNvPr. a:hlinkMouseOver is
+	// matched too, so a shape written by an older build gets its dead element
+	// replaced instead of ending up with both.
 	hlinkHoverPattern := regexp.MustCompile(
-		`(?s)<a:hlinkMouseOver\b[^>]*/>|<a:hlinkMouseOver\b[^>]*>.*?</a:hlinkMouseOver>`,
+		`(?s)<a:hlink(?:Hover|MouseOver)\b[^>]*/>|<a:hlink(?:Hover|MouseOver)\b[^>]*>.*?</a:hlink(?:Hover|MouseOver)>`,
 	)
 	cNvPrOpenClose := regexp.MustCompile(`(?s)<p:cNvPr\b([^>]*)>(.*?)</p:cNvPr>`)
 

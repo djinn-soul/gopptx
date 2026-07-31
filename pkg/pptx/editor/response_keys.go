@@ -10,6 +10,7 @@ const (
 	keyIndex       = "index"
 	keyType        = "type"
 	keyName        = "name"
+	keyText        = "text"
 	keySlideIndex  = "slide_index"
 	keyShapeIDs    = "shape_ids"
 	keyShapeID     = "shape_id"

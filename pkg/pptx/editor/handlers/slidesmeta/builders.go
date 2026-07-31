@@ -21,6 +21,7 @@ const (
 	chartTypeScatter  = "scatter"
 	chartTypeArea     = "area"
 	chartTypePie      = "pie"
+	chartTypePie3D    = "pie3D"
 	chartTypeDoughnut = "doughnut"
 	chartTypeBubble   = "bubble"
 	chartTypeRadar    = "radar"
@@ -96,6 +97,11 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 		), nil
 	case chartTypePie:
 		return withBounds(charts.NewPieChart(request.Categories, request.Values).WithTitle(request.Title), request), nil
+	case chartTypePie3D:
+		return withBounds(
+			charts.NewPie3DChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case chartTypeDoughnut:
 		return withBounds(
 			charts.NewDoughnutChart(request.Categories, request.Values).WithTitle(request.Title),
@@ -171,6 +177,8 @@ func canonicalChartType(value string) string {
 		return chartTypeAreaStacked100
 	case chartTypePie:
 		return chartTypePie
+	case "pie3d", "three_d_pie", "three-d-pie":
+		return chartTypePie3D
 	case chartTypeDoughnut:
 		return chartTypeDoughnut
 	case chartTypeBubble:

@@ -29,6 +29,7 @@ func TestNewChartBuildsEveryCategoryChartType(t *testing.T) {
 		{enums.XLChartTypeAreaStacked, "areaStacked", charts.AreaStackedChart{}},
 		{enums.XLChartTypeAreaStacked100, "areaStacked100", charts.AreaStacked100Chart{}},
 		{enums.XLChartTypePie, "pie", charts.PieChart{}},
+		{enums.XLChartTypeThreeDPie, "pie3D", charts.Pie3DChart{}},
 		{enums.XLChartTypeDoughnut, "doughnut", charts.DoughnutChart{}},
 		{enums.XLChartTypeRadar, "radar", charts.RadarChart{}},
 		{enums.XLChartTypeRadarFilled, "radarFilled", charts.RadarFilledChart{}},

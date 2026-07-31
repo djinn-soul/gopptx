@@ -99,6 +99,9 @@ func UpdateTableCellContentInFrame(frame []byte, rowIdx, colIdx int, update Cell
 
 	return MutateTableRows(frame, rowIdx, rowIdx, func(_ int, rowContent []byte) ([]byte, error) {
 		return MutateTableCells(rowContent, colIdx, colIdx, func(_ int, cellContent []byte) ([]byte, error) {
+			if update.Text == nil && !update.HasRunStyle() {
+				return applyCellFill(cellContent, update.BackgroundColor)
+			}
 			updated, err := replaceCellTxBody(cellContent, update, escapedText)
 			if err != nil {
 				return nil, err

@@ -27,7 +27,37 @@ const (
 	bubbleSizeColumnOffset       = 2
 )
 
-func PatchChartDataCache(chartXML []byte, kind Kind, req common.ChartDataUpdate) ([]byte, error) {
+// CachePatchOptions tunes what PatchChartDataCache rewrites besides the caches
+// themselves. The zero value repoints every c:f at the columns the new data
+// occupies, which is what a full data replacement wants.
+type CachePatchOptions struct {
+	// KeepFormulas leaves every c:f exactly as authored, so a refresh of the
+	// cached numbers does not disturb a workbook link the user set up.
+	KeepFormulas bool
+}
+
+// PatchChartDataCache refreshes the cached values a chart draws from.
+func PatchChartDataCache(
+	chartXML []byte,
+	kind Kind,
+	req common.ChartDataUpdate,
+	opts CachePatchOptions,
+) ([]byte, error) {
+	patched, err := patchChartDataCacheXML(chartXML, kind, req)
+	if err != nil {
+		return nil, err
+	}
+	if !opts.KeepFormulas {
+		return patched, nil
+	}
+	return restoreChartFormulas(chartXML, patched), nil
+}
+
+func patchChartDataCacheXML(
+	chartXML []byte,
+	kind Kind,
+	req common.ChartDataUpdate,
+) ([]byte, error) {
 	src := string(chartXML)
 	series := chartSeriesPattern.FindAllString(src, -1)
 	if len(series) == 0 {
@@ -75,6 +105,38 @@ func PatchChartDataCache(chartXML []byte, kind Kind, req common.ChartDataUpdate)
 		return out
 	})
 	return []byte(result), nil
+}
+
+// restoreChartFormulas writes every c:f of the source back over the patched
+// XML, series by series. Pairing them by position is exact because the patch
+// only ever rewrites the text of a c:f that already exists — applyFieldFormula
+// never adds or drops one — so both sides hold the same nodes in the same
+// order.
+func restoreChartFormulas(chartXML, patched []byte) []byte {
+	originalSeries := chartSeriesPattern.FindAllString(string(chartXML), -1)
+	seriesIndex := 0
+	result := chartSeriesPattern.ReplaceAllStringFunc(string(patched), func(updated string) string {
+		if seriesIndex >= len(originalSeries) {
+			return updated
+		}
+		restored := restoreSeriesFormulas(originalSeries[seriesIndex], updated)
+		seriesIndex++
+		return restored
+	})
+	return []byte(result)
+}
+
+func restoreSeriesFormulas(original, updated string) string {
+	formulas := xmlFormulaPattern.FindAllString(original, -1)
+	index := 0
+	return xmlFormulaPattern.ReplaceAllStringFunc(updated, func(current string) string {
+		if index >= len(formulas) {
+			return current
+		}
+		formula := formulas[index]
+		index++
+		return formula
+	})
 }
 
 // PlottedSeriesRef pairs a series that the chart draws with its column in the

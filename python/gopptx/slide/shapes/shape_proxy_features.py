@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from ..chart.model import Chart
 from ..text.text_run import RunHyperlink
 from .picture_image import ImagePartProxy
+from .shape_proxy_extra_features import ShapeProxyExtraMixin
 
 if TYPE_CHECKING:
     from ...schemas import Shape, ShapeUpdate, SlideChartRef
@@ -34,6 +35,12 @@ class _ShapeFeatureHost(Protocol):
     @property
     def id(self) -> int: ...
 
+    @property
+    def flip_horizontal(self) -> bool: ...
+
+    @property
+    def flip_vertical(self) -> bool: ...
+
     def shape_record(self) -> Shape:
         """Return the current shape payload."""
         ...
@@ -43,13 +50,21 @@ class _ShapeFeatureHost(Protocol):
         ...
 
 
-class ShapeProxyFeatureMixin:
+class ShapeProxyFeatureMixin(ShapeProxyExtraMixin):
     """Features kept separate from the core shape and collection facades."""
 
     @property
     def image(self: _ShapeFeatureHost) -> ImagePartProxy:
         """Return the image part represented by this shape."""
         return ImagePartProxy(self)
+
+    def make_color_transparent(self: _ShapeFeatureHost, color: str) -> None:
+        """Make pixels matching ``color`` transparent in this picture.
+
+        ``color`` is a six-digit RGB value with an optional leading ``#``.
+        PowerPoint stores this as an ``a:clrChange`` effect (Issue #165).
+        """
+        self.apply_update(cast("ShapeUpdate", {"transparent_color": color}))
 
     @property
     def has_chart(self: _ShapeFeatureHost) -> bool:
@@ -63,14 +78,9 @@ class ShapeProxyFeatureMixin:
     def shapes(self: _ShapeFeatureHost) -> list[_ShapeFeatureHost]:
         """Return child proxies when this is a group shape."""
         children = self.shape_record().get("Shapes", [])
-        if not isinstance(children, list):
-            return []
         proxies: list[_ShapeFeatureHost] = []
-        for child in cast("list[object]", children):
-            if not isinstance(child, dict):
-                continue
-            payload = cast("dict[str, object]", child)
-            shape_id = payload.get("ID", payload.get("id"))
+        for child in children:
+            shape_id = child.get("ID", child.get("id"))
             if shape_id is not None:
                 proxies.append(self.slide.shape(int(str(shape_id))))
         return proxies
@@ -167,6 +177,24 @@ class ShapeProxyFeatureMixin:
 
     @flip_vertical.setter
     def flip_vertical(self: _ShapeFeatureHost, value: bool) -> None:
+        self.apply_update(cast("ShapeUpdate", {"flip_v": bool(value)}))
+
+    @property
+    def flip_x(self: _ShapeFeatureHost) -> bool:
+        """Alias for flip_horizontal (Issue #547)."""
+        return self.flip_horizontal
+
+    @flip_x.setter
+    def flip_x(self: _ShapeFeatureHost, value: bool) -> None:
+        self.apply_update(cast("ShapeUpdate", {"flip_h": bool(value)}))
+
+    @property
+    def flip_y(self: _ShapeFeatureHost) -> bool:
+        """Alias for flip_vertical (Issue #547)."""
+        return self.flip_vertical
+
+    @flip_y.setter
+    def flip_y(self: _ShapeFeatureHost, value: bool) -> None:
         self.apply_update(cast("ShapeUpdate", {"flip_v": bool(value)}))
 
     def begin_connect(

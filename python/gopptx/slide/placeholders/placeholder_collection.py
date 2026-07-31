@@ -48,6 +48,14 @@ class PlaceholderCollection:
         """Return number of placeholders."""
         return len(self._items())
 
+    @property
+    def title(self) -> Placeholder | None:
+        """Return title placeholder if present (Issue #144)."""
+        for ph in self._items():
+            if ph.type in {"title", "ctrTitle"}:
+                return ph
+        return None
+
     def __getitem__(self, idx: int) -> Placeholder:
         """Return placeholder by idx."""
         for placeholder in self._items():

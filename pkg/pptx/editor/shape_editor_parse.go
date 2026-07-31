@@ -43,6 +43,7 @@ type parsedShape struct {
 	Rotation       *float64
 	FlipH          bool
 	FlipV          bool
+	Hidden         bool
 	X, Y           int
 	W, H           int
 	PhIndex        int    // Placeholder index, -1 if not a placeholder
@@ -52,6 +53,7 @@ type parsedShape struct {
 	Start          int64 // Byte offset of the start of the node
 	End            int64 // Byte offset of the end of the node
 	IsGroup        bool
+	Shapes         []parsedShape
 }
 
 func (p parsedShape) ToShape() shapes.Shape {
@@ -229,6 +231,12 @@ func buildParsedShapeFromRange(
 	pShape.Start = startOffset
 	pShape.End = endOffset
 	pShape.IsGroup = stopTag == "grpSp"
+	if pShape.IsGroup {
+		pShape.Shapes, parseErr = parseGroupChildShapes(shapeXML)
+		if parseErr != nil {
+			return parsedShape{}, parseErr
+		}
+	}
 	return pShape, nil
 }
 
@@ -267,6 +275,7 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		Rotation:       props.Rotation,
 		FlipH:          props.FlipH,
 		FlipV:          props.FlipV,
+		Hidden:         props.Hidden,
 		X:              props.X,
 		Y:              props.Y,
 		W:              props.W,

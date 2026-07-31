@@ -166,3 +166,100 @@ class ShapeTextFrame:
                 {"text_frame": {"word_wrap": True, "auto_fit_type": "shape"}},
             ),
         )
+
+    def _text_frame_state(self) -> dict[str, object]:
+        """Return the text_frame sub-dict of this shape's text state."""
+        state = self._slide.get_shape_text_state(self._shape_id)
+        raw = state.get("text_frame")
+        return cast("dict[str, object]", raw) if isinstance(raw, dict) else {}
+
+    def _margin(self, key: str) -> int | None:
+        val = self._text_frame_state().get(key)
+        return int(val) if isinstance(val, (int, float)) else None
+
+    @property
+    def margin_left(self) -> int | None:
+        """Left margin of text frame in EMU."""
+        return self._margin("margin_left")
+
+    @margin_left.setter
+    def margin_left(self, value: int | None) -> None:
+        self._slide.update_shape(
+            self._shape_id,
+            cast("ShapeUpdate", {"text_frame": {"margin_left": value}}),
+        )
+
+    @property
+    def margin_top(self) -> int | None:
+        """Top margin of text frame in EMU."""
+        return self._margin("margin_top")
+
+    @margin_top.setter
+    def margin_top(self, value: int | None) -> None:
+        self._slide.update_shape(
+            self._shape_id,
+            cast("ShapeUpdate", {"text_frame": {"margin_top": value}}),
+        )
+
+    @property
+    def margin_right(self) -> int | None:
+        """Right margin of text frame in EMU."""
+        return self._margin("margin_right")
+
+    @margin_right.setter
+    def margin_right(self, value: int | None) -> None:
+        self._slide.update_shape(
+            self._shape_id,
+            cast("ShapeUpdate", {"text_frame": {"margin_right": value}}),
+        )
+
+    @property
+    def margin_bottom(self) -> int | None:
+        """Bottom margin of text frame in EMU."""
+        return self._margin("margin_bottom")
+
+    @margin_bottom.setter
+    def margin_bottom(self, value: int | None) -> None:
+        self._slide.update_shape(
+            self._shape_id,
+            cast("ShapeUpdate", {"text_frame": {"margin_bottom": value}}),
+        )
+
+    @property
+    def word_wrap(self) -> bool | None:
+        """Return word wrap setting."""
+        val = self._text_frame_state().get("word_wrap")
+        return bool(val) if val is not None else None
+
+    @word_wrap.setter
+    def word_wrap(self, value: bool | None) -> None:
+        self._slide.update_shape(
+            self._shape_id,
+            cast("ShapeUpdate", {"text_frame": {"word_wrap": value}}),
+        )
+
+    @property
+    def vertical_anchor(self) -> str | None:
+        """Return vertical alignment anchor ('top', 'middle', 'bottom')."""
+        val = self._text_frame_state().get("vertical_align")
+        if val in {"ctr", "middle", "center"}:
+            return "middle"
+        if val in {"t", "top"}:
+            return "top"
+        if val in {"b", "bottom"}:
+            return "bottom"
+        return str(val) if val is not None else None
+
+    @vertical_anchor.setter
+    def vertical_anchor(self, value: str | None) -> None:
+        val = value
+        if value == "middle":
+            val = "ctr"
+        elif value == "top":
+            val = "t"
+        elif value == "bottom":
+            val = "b"
+        self._slide.update_shape(
+            self._shape_id,
+            cast("ShapeUpdate", {"text_frame": {"vertical_alignment": val}}),
+        )

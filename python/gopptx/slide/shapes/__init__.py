@@ -1,8 +1,8 @@
 """Shapes-domain package for slide object-model helpers."""
 
 from .freeform_builder import FreeformBuilder
+from .shape_collection import ShapeCollection
 from .shape_proxy import (
-    ShapeCollection,
     ShapeFillProxy,
     ShapeLineProxy,
     ShapeProxy,

@@ -10,43 +10,8 @@ except ImportError:  # pragma: no cover
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .constants import PlaceholderType
     from .schemas_shape_style import FreeformGeometry, PictureFill
-
-
-class TextFrame(TypedDict, total=False):
-    """Text frame settings."""
-
-    margin_top: int
-    margin_bottom: int
-    margin_left: int
-    margin_right: int
-    word_wrap: bool
-    auto_fit: bool
-    auto_fit_type: str
-    vertical_align: str
-    orientation: str
-    columns: int
-    rotation: float
-
-
-class Paragraph(TypedDict, total=False):
-    """Paragraph settings."""
-
-    indent: int
-    hanging: int
-    tab_stops: list[int]
-    alignment: str
-    level: int
-    bullet_style: str
-    bullet_char: str
-    bullet_color: str
-    bullet_size_pct: int
-    line_spacing_pct: int
-    line_spacing_pts: int
-    space_before_pts: int
-    space_after_pts: int
-    rtl: bool
+    from .schemas_text_types import Paragraph, TextFrame
 
 
 class GradientStop(TypedDict, total=False):
@@ -140,6 +105,10 @@ class ImageMetadata(TypedDict):
     height: int
     format: str
     hash: NotRequired[str]
+    content_type: NotRequired[str]
+    # Where the bytes live, so a caller can address the same image again.
+    rel_id: NotRequired[str]
+    part_path: NotRequired[str]
 
 
 class SlideImageRef(TypedDict):
@@ -270,6 +239,7 @@ class ShapeUpdate(TypedDict, total=False):
     reflection: ReflectionFormat
     click_action: Hyperlink
     crop: ImageCrop
+    transparent_color: str
     rotation: float
     flip_h: bool
     flip_v: bool
@@ -301,34 +271,4 @@ class Shape(TypedDict, total=False):
     flip_h: bool
     flip_v: bool
     freeform: FreeformGeometry
-
-
-class GrayscaleShapeRef(TypedDict):
-    """Shape target for grayscale conversion."""
-
-    slide_index: int
-    shape_id: int
-
-
-class GrayscaleTextRef(TypedDict):
-    """Text target for grayscale conversion."""
-
-    slide_index: int
-    shape_id: int
-    run_indices: NotRequired[list[int]]
-
-
-class GrayscalePlaceholderRef(TypedDict):
-    """Placeholder target for grayscale conversion."""
-
-    slide_index: int
-    type: NotRequired[PlaceholderType]
-    index: NotRequired[int | None]
-
-
-class GrayscaleScope(TypedDict, total=False):
-    """Which content types to convert to grayscale."""
-
-    colors: bool
-    images: bool
-    backgrounds: bool
+    Shapes: list[Shape]

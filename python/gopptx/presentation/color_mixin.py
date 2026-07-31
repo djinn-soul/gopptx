@@ -56,12 +56,15 @@ class PresentationColorMixin(PresentationMixinBase):
         return color.to_rgb(self.theme_color_scheme)
 
     def theme_color_rgb(
-        self, theme_color: ThemeColor, *, brightness: float = 0.0
+        self, theme_color: ThemeColor | str, *, brightness: float = 0.0
     ) -> str | None:
         """Return one theme slot as hex RGB, with an optional brightness tweak.
 
+        Accepts a ThemeColor or the bare slot name, e.g. ``"accent1"``.
+
         Raises:
-            ValueError: If brightness is outside -1.0..1.0.
+            ValueError: If brightness is outside -1.0..1.0, or the slot name is
+                not an OOXML scheme slot.
         """
         return self.resolve_color(
             ColorFormat.from_theme(theme_color, brightness=brightness)

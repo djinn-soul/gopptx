@@ -78,22 +78,24 @@ type ChartFormatUpdate struct {
 	// SeriesInverts toggles c:invertIfNegative per series.
 	SeriesInverts []ChartSeriesInvert `json:"series_invert_if_negative,omitempty"`
 	// DataTable shows or hides the c:dTable grid under the plot area.
-	DataTable               *ChartDataTable `json:"data_table,omitempty"`
-	PlotVisibleOnly         *bool           `json:"plot_visible_only,omitempty"`
-	ShowLegend              *bool           `json:"show_legend,omitempty"`
-	LegendPosition          *string         `json:"legend_position,omitempty"`
-	LegendOverlay           *bool           `json:"legend_overlay,omitempty"`
-	ShowDataLabels          *bool           `json:"show_data_labels,omitempty"`
-	DataLabelPosition       *string         `json:"data_label_position,omitempty"`
-	DataLabelShowLegendKey  *bool           `json:"data_label_show_legend_key,omitempty"`
-	DataLabelShowValue      *bool           `json:"data_label_show_value,omitempty"`
-	DataLabelShowCategory   *bool           `json:"data_label_show_category,omitempty"`
-	DataLabelShowSeriesName *bool           `json:"data_label_show_series_name,omitempty"`
-	DataLabelShowPercent    *bool           `json:"data_label_show_percent,omitempty"`
-	DataLabelShowBubbleSize *bool           `json:"data_label_show_bubble_size,omitempty"`
-	DataLabelNumberFormat   *string         `json:"data_label_number_format,omitempty"`
-	DataLabelFormatLinked   *bool           `json:"data_label_format_linked,omitempty"`
-	DataLabelWordWrap       *bool           `json:"data_label_word_wrap,omitempty"`
+	DataTable *ChartDataTable `json:"data_table,omitempty"`
+	// PlotAreaLine formats the outline in the plot area's own c:spPr.
+	PlotAreaLine            *ChartLineFormat `json:"plot_area_line,omitempty"`
+	PlotVisibleOnly         *bool            `json:"plot_visible_only,omitempty"`
+	ShowLegend              *bool            `json:"show_legend,omitempty"`
+	LegendPosition          *string          `json:"legend_position,omitempty"`
+	LegendOverlay           *bool            `json:"legend_overlay,omitempty"`
+	ShowDataLabels          *bool            `json:"show_data_labels,omitempty"`
+	DataLabelPosition       *string          `json:"data_label_position,omitempty"`
+	DataLabelShowLegendKey  *bool            `json:"data_label_show_legend_key,omitempty"`
+	DataLabelShowValue      *bool            `json:"data_label_show_value,omitempty"`
+	DataLabelShowCategory   *bool            `json:"data_label_show_category,omitempty"`
+	DataLabelShowSeriesName *bool            `json:"data_label_show_series_name,omitempty"`
+	DataLabelShowPercent    *bool            `json:"data_label_show_percent,omitempty"`
+	DataLabelShowBubbleSize *bool            `json:"data_label_show_bubble_size,omitempty"`
+	DataLabelNumberFormat   *string          `json:"data_label_number_format,omitempty"`
+	DataLabelFormatLinked   *bool            `json:"data_label_format_linked,omitempty"`
+	DataLabelWordWrap       *bool            `json:"data_label_word_wrap,omitempty"`
 	// DataLabelFillColor and DataLabelBorder format the label box itself, the
 	// c:spPr of the plot-wide c:dLbls (upstream #662, #716).
 	DataLabelFillColor *string          `json:"data_label_fill_color,omitempty"`
@@ -193,51 +195,6 @@ type ChartAxisState struct {
 	MinorGridlineFormat *ChartLineFormat `json:"minor_gridline_format,omitempty"`
 }
 
-// ChartState is a read snapshot for chart-level object model traversal.
-type ChartState struct {
-	ChartStyle *int                `json:"chart_style,omitempty"`
-	CategoryAx ChartAxisState      `json:"category_axis"`
-	ValueAx    ChartAxisState      `json:"value_axis"`
-	Series     []ChartSeriesData   `json:"series,omitempty"`
-	Scene3D    ChartScene3DState   `json:"scene3d"`
-	DataLabels ChartDataLabelState `json:"data_labels"`
-	// Trendlines and ErrorBars mirror the update payload shape, one entry per
-	// c:trendline and c:errBars respectively.
-	Trendlines []ChartTrendline `json:"trendlines,omitempty"`
-	ErrorBars  []ChartErrorBars `json:"error_bars,omitempty"`
-	DataPoints []ChartDataPoint `json:"data_points,omitempty"`
-	DataTable  *ChartDataTable  `json:"data_table,omitempty"`
-	// DataLabelPoints is every c:dLbl that carries its own number format, font
-	// or display flags.
-	DataLabelPoints []ChartDataLabelPoint `json:"data_label_points,omitempty"`
-	// SeriesFormats is the fill, line and marker of each series that carries
-	// any of them; series with no explicit formatting are omitted.
-	SeriesFormats []ChartSeriesFormat `json:"series_formats,omitempty"`
-	// SeriesLines is set when the first plot draws c:serLines.
-	SeriesLines *ChartSeriesLines `json:"series_lines,omitempty"`
-}
-
-// ChartDataLabelState is the persisted data-label state for the first chart plot.
-type ChartDataLabelState struct {
-	Present        bool   `json:"present"`
-	Position       string `json:"position,omitempty"`
-	ShowValue      bool   `json:"show_value,omitempty"`
-	ShowCategory   bool   `json:"show_category,omitempty"`
-	ShowSeriesName bool   `json:"show_series_name,omitempty"`
-	NumberFormat   string `json:"number_format,omitempty"`
-	FormatLinked   *bool  `json:"format_linked,omitempty"`
-	WordWrap       *bool  `json:"word_wrap,omitempty"`
-}
-
-// ChartScene3DState is a read snapshot for chart-level 3D scene settings.
-type ChartScene3DState struct {
-	CameraPreset       string `json:"camera_preset,omitempty"`
-	CameraFieldOfView  int    `json:"camera_field_of_view,omitempty"`
-	LightRig           string `json:"light_rig,omitempty"`
-	LightDirection     string `json:"light_direction,omitempty"`
-	LightRigRevolution bool   `json:"light_rig_revolution,omitempty"`
-}
-
 // SlideChartRef describes a chart relationship discovered on a slide.
 type SlideChartRef struct {
 	Index     int
@@ -248,9 +205,13 @@ type SlideChartRef struct {
 
 // SlideLayoutInfo describes one available slide layout part.
 type SlideLayoutInfo struct {
-	Part         string
-	Name         string
-	MasterPart   string
+	Part       string
+	Name       string
+	MasterPart string
+	// LayoutID is the p:sldLayoutId/@id the master lists this layout under, which
+	// is what python-pptx's SlideMaster.get_layout(slide_layout_id) keys on. Zero
+	// when the layout is not referenced from a master's sldLayoutIdLst.
+	LayoutID     int
 	Shapes       []string
 	Placeholders []PlaceholderInfo
 }

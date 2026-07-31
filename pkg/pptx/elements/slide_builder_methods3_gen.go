@@ -6,6 +6,12 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
+// WithTransition sets the transition for the slide.
+func (b *SlideBuilder) WithTransition(t transitions.SlideTransition) *SlideBuilder {
+	b.content = b.content.WithTransition(t)
+	return b
+}
+
 // WithTransitionOptions sets built-in transition options.
 func (b *SlideBuilder) WithTransitionOptions(opt transitions.TransitionOptions) *SlideBuilder {
 	b.content = b.content.WithTransitionOptions(opt)

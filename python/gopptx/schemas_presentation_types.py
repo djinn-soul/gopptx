@@ -68,7 +68,7 @@ class CoreProperties(TypedDict, total=False):
     version: str
 
 
-class SlideMetadata(TypedDict):
+class SlideMetadata(TypedDict, total=False):
     """Metadata for a slide."""
 
     Index: int
@@ -76,6 +76,8 @@ class SlideMetadata(TypedDict):
     RelationshipID: str
     PartName: str
     Title: str
+    is_hidden: bool
+    hidden: bool
 
 
 class Section(TypedDict):

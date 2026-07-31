@@ -5,11 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorshape "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/shape"
 )
 
 func (e *PresentationEditor) getOrCreateHyperlinkRelID(partPath, address string) (string, error) {
+	// Never persist script protocols into the relationship target; the reader
+	// applies the same filter, so sanitizing here keeps write and read agreeing.
+	address = action.SanitizeHyperlinkURI(address)
 	relsPath := common.SlideRelsPartName(partPath)
 	rels := make([]common.EditorRelationship, 0)
 	if data, ok := e.parts.Get(relsPath); ok {
@@ -38,8 +42,12 @@ func (e *PresentationEditor) buildClickActionXML(partPath string, hl *common.Hyp
 	return e.buildActionXML(partPath, hl, "hlinkClick")
 }
 
+// buildHoverActionXML writes a:hlinkHover, the hover element of
+// CT_NonVisualDrawingProps. a:hlinkMouseOver is the run-level spelling from
+// CT_TextCharacterProperties; PowerPoint round-trips it inside p:cNvPr but
+// never reads it, so a shape written that way had no hover action at all.
 func (e *PresentationEditor) buildHoverActionXML(partPath string, hl *common.Hyperlink) (string, error) {
-	return e.buildActionXML(partPath, hl, "hlinkMouseOver")
+	return e.buildActionXML(partPath, hl, "hlinkHover")
 }
 
 func (e *PresentationEditor) buildActionXML(partPath string, hl *common.Hyperlink, tag string) (string, error) {

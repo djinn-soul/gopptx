@@ -16,11 +16,19 @@ import (
 // "Slides" and "HiddenSlides" cannot cross-match even though one name ends with
 // the other: "<Slides>" does not occur inside "<HiddenSlides>", because the
 // character before "Slides" there is "n", not "<".
+//
+//nolint:gochecknoglobals // compiled once; renderAppProperties runs on every save
 var (
-	appSlidesPattern       = regexp.MustCompile(`(?s)<Slides>.*?</Slides>`)
-	appNotesPattern        = regexp.MustCompile(`(?s)<Notes>.*?</Notes>`)
-	appHiddenSlidesPattern = regexp.MustCompile(`(?s)<HiddenSlides>.*?</HiddenSlides>`)
+	appSlidesPattern       = appPropertyPattern("Slides")
+	appNotesPattern        = appPropertyPattern("Notes")
+	appHiddenSlidesPattern = appPropertyPattern("HiddenSlides")
+	appPropertiesClose     = regexp.MustCompile(`</(?:[A-Za-z_][\w.-]*:)?Properties\s*>`)
 )
+
+func appPropertyPattern(tag string) *regexp.Regexp {
+	qualified := `(?:[A-Za-z_][\w.-]*:)?` + regexp.QuoteMeta(tag)
+	return regexp.MustCompile(`(?s)<` + qualified + `\b[^>]*>.*?</` + qualified + `\s*>`)
+}
 
 // appPropertyCounts are the docProps/app.xml values that go stale as soon as a
 // slide is added, removed or hidden through the editor. Gmail, Outlook and the
@@ -90,16 +98,26 @@ func (e *PresentationEditor) renderAppProperties() []byte {
 // setAppPropertyInt replaces the value of an app.xml count element, appending
 // the element if the source document omits it.
 func setAppPropertyInt(appXML string, pattern *regexp.Regexp, tag string, value int) string {
-	element := "<" + tag + ">" + strconv.Itoa(value) + "</" + tag + ">"
+	valueText := strconv.Itoa(value)
 	if pattern.MatchString(appXML) {
-		// Literal replacement: a "$" in surrounding markup must not expand.
-		return pattern.ReplaceAllLiteralString(appXML, element)
+		return pattern.ReplaceAllStringFunc(appXML, func(element string) string {
+			openTagEnd := strings.Index(element, ">")
+			closeStart := strings.LastIndex(element, "</")
+			if openTagEnd < 0 || closeStart < openTagEnd {
+				return element
+			}
+			return element[:openTagEnd+1] + valueText + element[closeStart:]
+		})
 	}
-	const closing = "</Properties>"
-	if idx := strings.LastIndex(appXML, closing); idx >= 0 {
-		return appXML[:idx] + element + "\n" + appXML[idx:]
+	closeLocation := appPropertiesClose.FindAllStringIndex(appXML, -1)
+	if len(closeLocation) == 0 {
+		return appXML
 	}
-	return appXML
+	last := closeLocation[len(closeLocation)-1]
+	closing := appXML[last[0]:last[1]]
+	prefix := strings.TrimSuffix(strings.TrimPrefix(closing, "</"), "Properties>")
+	element := "<" + prefix + tag + ">" + valueText + "</" + prefix + tag + ">\n"
+	return appXML[:last[0]] + element + appXML[last[0]:]
 }
 
 // ensureAppPropertiesRelationship adds the package-level relationship pointing

@@ -23,7 +23,11 @@ const (
 	bulletStyleRomanUpper  = "roman_upper"
 	paragraphPtUnit        = 100
 	paragraphPct           = 1000
-	defaultBodyPrIn        = 457200
+	// OOXML's implicit a:bodyPr insets (ECMA-376 §20.1.10.44). A shape whose
+	// bodyPr omits an inset attribute must re-render with these, not with a
+	// half-inch pad, or its text visibly reflows on the first edit.
+	defaultBodyPrInsetLR   = 91440
+	defaultBodyPrInsetTB   = 45720
 	textFrameWrapSquare    = "square"
 	textFrameWrapNone      = "none"
 	textFrameAutoFitShape  = "spAutoFit"
@@ -33,10 +37,10 @@ const (
 
 func editorTextFrameToSpec(tf *common.TextFrame) (pptxxml.TextFrameSpec, error) {
 	spec := pptxxml.TextFrameSpec{
-		MarginLeft:   defaultBodyPrIn,
-		MarginRight:  defaultBodyPrIn,
-		MarginTop:    defaultBodyPrIn,
-		MarginBottom: defaultBodyPrIn,
+		MarginLeft:   defaultBodyPrInsetLR,
+		MarginRight:  defaultBodyPrInsetLR,
+		MarginTop:    defaultBodyPrInsetTB,
+		MarginBottom: defaultBodyPrInsetTB,
 		Wrap:         textFrameWrapSquare,
 		Anchor:       alignCtr,
 		AutoFit:      textFrameAutoFitShape,

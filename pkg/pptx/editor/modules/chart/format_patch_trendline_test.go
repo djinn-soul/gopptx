@@ -24,7 +24,7 @@ func TestPatchChartFormatting_Trendline(t *testing.T) {
 	order := 3
 	forward, backward := 2.0, 1.0
 	showRSqr, showEq := true, true
-	color, dash := "FF0000", "dash"
+	color, dash := "FF0000", lineDashPresetDash
 	width := 19050
 
 	got, err := PatchChartFormatting(trendlineChartXML(), common.ChartFormatUpdate{

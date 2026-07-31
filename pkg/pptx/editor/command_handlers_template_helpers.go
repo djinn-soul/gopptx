@@ -17,7 +17,7 @@ func toString(v any) string {
 func slideDataForJSON(slide elements.SlideContent) map[string]any {
 	data := map[string]any{
 		placeholderTypeTitle: slide.Title,
-		"layout":             slide.Layout,
+		layoutPartKind:       slide.Layout,
 		"bullets":            slide.Bullets,
 		"notes":              slide.Notes,
 	}

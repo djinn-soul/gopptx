@@ -31,6 +31,11 @@ class _ShapeParagraphProxy:
         self._text_frame.set_paragraph_field(self._paragraph_index, field, value)
 
     @property
+    def font(self) -> _ParagraphFontProxy:
+        """Paragraph-level font proxy (Issue #168)."""
+        return _ParagraphFontProxy(self)
+
+    @property
     def runs(self) -> _ShapeRunCollection:
         return self._runs
 
@@ -147,6 +152,18 @@ class _ShapeParagraphProxy:
     def space_after(self, value: int | None) -> None:
         self._set_paragraph_field("space_after_pts", value)
 
+    @property
+    def right_to_left(self) -> bool | None:
+        """Spelled-out alias for :attr:`rtl` (Issue #1080).
+
+        None means the paragraph states nothing and inherits its direction.
+        """
+        return self.rtl
+
+    @right_to_left.setter
+    def right_to_left(self, value: bool | None) -> None:
+        self.rtl = value
+
     def clear(self) -> None:
         """Clear paragraph text content while keeping the paragraph container."""
         self._text_frame.replace_paragraph_runs(self._paragraph_index, [])
@@ -160,6 +177,21 @@ class _ShapeParagraphProxy:
         if not paragraphs:
             paragraphs = [cast("dict[str, object]", {"runs": [], "paragraph": {}})]
         self._text_frame.replace_paragraphs(paragraphs)
+
+    def delete(self) -> None:
+        """Alias for remove (Issue #144)."""
+        self.remove()
+
+    def remove_run(self, run: object) -> None:
+        """Remove a run proxy or run index from this paragraph (Issue #144)."""
+        if isinstance(run, int):
+            self.runs[run].delete()
+        else:
+            delete_func = getattr(run, "delete", None)
+            if callable(delete_func):
+                delete_func()
+            else:
+                raise TypeError("run must be a ShapeRunProxy or run index")
 
 
 class _ShapeParagraphCollection:
@@ -198,3 +230,97 @@ class _ShapeParagraphCollection:
     def remove(paragraph: _ShapeParagraphProxy) -> None:
         """Remove one paragraph from this collection."""
         paragraph.remove()
+
+    def __delitem__(self, index: int) -> None:
+        """Delete paragraph at index (Issue #144)."""
+        self[index].remove()
+
+
+class _ParagraphFontProxy:
+    """Paragraph-level font proxy for formatting runs in a paragraph (Issue #168)."""
+
+    def __init__(self, paragraph: _ShapeParagraphProxy) -> None:
+        self._paragraph = paragraph
+
+    @property
+    def name(self) -> str | None:
+        runs = list(self._paragraph.runs)
+        return runs[0].font.name if runs else None
+
+    @name.setter
+    def name(self, value: str | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.name = value
+
+    @property
+    def size(self) -> float | None:
+        """Font size in EMU, matching ``run.font.size`` (python-pptx parity)."""
+        runs = list(self._paragraph.runs)
+        return runs[0].font.size if runs else None
+
+    @size.setter
+    def size(self, value: float | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.size = value
+
+    @property
+    def size_pt(self) -> float | None:
+        """Font size in points, matching ``run.font.size_pt``."""
+        runs = list(self._paragraph.runs)
+        return runs[0].font.size_pt if runs else None
+
+    @size_pt.setter
+    def size_pt(self, value: float | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.size_pt = value
+
+    @property
+    def bold(self) -> bool | None:
+        runs = list(self._paragraph.runs)
+        return runs[0].font.bold if runs else None
+
+    @bold.setter
+    def bold(self, value: bool | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.bold = value
+
+    @property
+    def italic(self) -> bool | None:
+        runs = list(self._paragraph.runs)
+        return runs[0].font.italic if runs else None
+
+    @italic.setter
+    def italic(self, value: bool | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.italic = value
+
+    @property
+    def underline(self) -> bool | str | None:
+        runs = list(self._paragraph.runs)
+        return runs[0].font.underline if runs else None
+
+    @underline.setter
+    def underline(self, value: bool | str | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.underline = value
+
+    @property
+    def color(self) -> _ParagraphFontColorProxy:
+        return _ParagraphFontColorProxy(self._paragraph)
+
+
+class _ParagraphFontColorProxy:
+    """Paragraph-level font color proxy (Issue #168)."""
+
+    def __init__(self, paragraph: _ShapeParagraphProxy) -> None:
+        self._paragraph = paragraph
+
+    @property
+    def rgb(self) -> str | None:
+        runs = list(self._paragraph.runs)
+        return runs[0].font.color.rgb if runs else None
+
+    @rgb.setter
+    def rgb(self, value: str | None) -> None:
+        for run in self._paragraph.runs:
+            run.font.color.rgb = value

@@ -105,7 +105,7 @@ func ToXMLTextRunRows(rows [][]Run, hyperlinkRIDs map[*action.Hyperlink]string) 
 				Color:          common.NormalizeHexColor(run.Color),
 				Highlight:      common.NormalizeHexColor(run.Highlight),
 				Font:           run.Font,
-				SizePt:         run.SizePt,
+				SizePt:         float64(run.SizePt),
 				Code:           run.Code,
 				AllCaps:        run.AllCaps,
 				SmallCaps:      run.SmallCaps,

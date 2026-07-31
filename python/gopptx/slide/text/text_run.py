@@ -36,6 +36,19 @@ class RunHyperlink:
         self.highlight_click = as_optional_bool(kwargs.get("highlight_click"))
         self.end_sound = as_optional_bool(kwargs.get("end_sound"))
 
+    @property
+    def url(self) -> str | None:
+        """Alias for :attr:`address` (Issue #1140).
+
+        python-pptx spells this ``address``; ``url`` is offered because that is
+        what callers reach for first.
+        """
+        return self.address
+
+    @url.setter
+    def url(self, value: str | None) -> None:
+        self.address = value
+
     @classmethod
     def from_payload(
         cls, payload: Mapping[str, object] | RunHyperlink | None

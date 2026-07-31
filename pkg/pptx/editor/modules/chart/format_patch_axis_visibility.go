@@ -30,7 +30,7 @@ const (
 var (
 	reAxisDelete       = regexp.MustCompile(`<c:delete\b[^>]*/>`)
 	reAxisCrossBetween = regexp.MustCompile(`<c:crossBetween\b[^>]*/>`)
-	reAxisTxPrBodyRot  = regexp.MustCompile(`(?s)<c:txPr>\s*<a:bodyPr\b[^>]*/>`)
+	reAxisTxPrBodyRot  = regexp.MustCompile(`(?s)<c:txPr>\s*<a:bodyPr\b[^>]*>`)
 	reAxisTxPrBlock    = regexp.MustCompile(`(?s)<c:txPr>.*?</c:txPr>`)
 
 	//nolint:gochecknoglobals // static lookup, behaves as a const set
@@ -158,7 +158,10 @@ func setXMLAttribute(tag, name, value string) string {
 	}
 	insertAt := strings.LastIndex(tag, "/>")
 	if insertAt < 0 {
-		return tag
+		insertAt = strings.LastIndex(tag, ">")
+		if insertAt < 0 {
+			return tag
+		}
 	}
 	return tag[:insertAt] + ` ` + name + `="` + value + `"` + tag[insertAt:]
 }

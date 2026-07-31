@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .axis_series import ChartAxis, ChartSeriesCollection
+from .axis_series import ChartAxis
 from .data_label_points import ChartDataLabelPointMixin
 from .data_points import ChartDataPointMixin
 from .data_table import ChartDataTable
@@ -15,8 +15,10 @@ from .model_proxies import (
     ChartPlots,
     ChartTitle,
 )
+from .plot_area import ChartPlotArea
 from .scene3d_area import ChartArea
 from .series_format import ChartSeriesFormatMixin
+from .series_proxy import ChartSeriesCollection
 from .trendline import ChartTrendlineMixin
 
 if TYPE_CHECKING:
@@ -28,6 +30,10 @@ if TYPE_CHECKING:
 
     class _ChartAxisBulkOpsProto(Protocol):
         def _axes_for(self, axis: str) -> tuple[ChartAxis, ...]: ...
+
+    class _ChartTitleProto(Protocol):
+        @property
+        def _chart_title(self) -> ChartTitle: ...
 
 
 class _ChartAxisBulkOpsMixin:
@@ -57,6 +63,37 @@ class _ChartAxisBulkOpsMixin:
                 target.minor_gridlines_visible = minor
 
 
+class _ChartTitleMixin:
+    """The chart-title accessors, held together so the spellings cannot drift.
+
+    ``chart_title`` and ``has_title`` are the python-pptx names;
+    ``title_visible`` predates them and stays as an alias.
+    """
+
+    @property
+    def chart_title(self: _ChartTitleProto) -> ChartTitle:
+        """Chart title proxy."""
+        return self._chart_title
+
+    @property
+    def has_title(self: _ChartTitleProto) -> bool:
+        """Whether the chart draws a title, as on ``ChartAxis`` (Issue #1072)."""
+        return self._chart_title.visible
+
+    @has_title.setter
+    def has_title(self: _ChartTitleProto, value: bool) -> None:
+        self._chart_title.visible = value
+
+    @property
+    def title_visible(self: _ChartTitleProto) -> bool:
+        """Alias for :attr:`has_title`."""
+        return self._chart_title.visible
+
+    @title_visible.setter
+    def title_visible(self: _ChartTitleProto, value: bool) -> None:
+        self._chart_title.visible = value
+
+
 class _ChartStateMixin:
     """Read/write helpers for staged chart state."""
 
@@ -72,6 +109,7 @@ class _ChartStateMixin:
 
 
 class Chart(
+    _ChartTitleMixin,
     _ChartStateMixin,
     _ChartAxisBulkOpsMixin,
     ChartTrendlineMixin,
@@ -99,6 +137,7 @@ class Chart(
         self._legend = ChartLegend(self)
         self._plots = ChartPlots(self)
         self._chart_area = ChartArea(self)
+        self._plot_area = ChartPlotArea(self)
         self._category_axis = ChartAxis(self, axis_name="category")
         self._value_axis = ChartAxis(self, axis_name="value")
         self._data_table = ChartDataTable(self)
@@ -129,20 +168,6 @@ class Chart(
         return self._chart_part
 
     @property
-    def chart_title(self) -> ChartTitle:
-        """Chart title proxy."""
-        return self._chart_title
-
-    @property
-    def title_visible(self) -> bool:
-        """Whether the chart title is visible."""
-        return self._chart_title.visible
-
-    @title_visible.setter
-    def title_visible(self, value: bool) -> None:
-        self._chart_title.visible = value
-
-    @property
     def legend(self) -> ChartLegend:
         """Chart legend proxy."""
         return self._legend
@@ -156,6 +181,11 @@ class Chart(
     def chart_area(self) -> ChartArea:
         """Chart-area formatting proxy."""
         return self._chart_area
+
+    @property
+    def plot_area(self) -> ChartPlotArea:
+        """Plot-area formatting proxy (Issue #298)."""
+        return self._plot_area
 
     @property
     def data_table(self) -> ChartDataTable:
@@ -214,7 +244,7 @@ class Chart(
         """Series collection snapshot proxy."""
         snapshot = self._snapshot()
         return ChartSeriesCollection(
-            cast("list[dict[str, object]]", snapshot.get("series", []))
+            self, cast("list[dict[str, object]]", snapshot.get("series", []))
         )
 
     def replace_data(

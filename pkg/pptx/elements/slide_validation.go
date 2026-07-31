@@ -101,7 +101,7 @@ func validateSlideCharts(s SlideContent, index int) error {
 }
 
 func collectSlideCharts(s SlideContent) []ChartDefinition {
-	const expectedChartTypeCount = 19
+	const expectedChartTypeCount = 20
 	chartsOnSlide := make([]ChartDefinition, 0, expectedChartTypeCount)
 	candidates := []ChartDefinition{
 		s.Chart,
@@ -116,6 +116,7 @@ func collectSlideCharts(s SlideContent) []ChartDefinition {
 		s.AreaStacked,
 		s.AreaStacked100,
 		s.Pie,
+		s.Pie3D,
 		s.Doughnut,
 		s.Bubble,
 		s.Radar,

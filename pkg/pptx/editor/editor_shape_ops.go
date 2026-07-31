@@ -62,45 +62,7 @@ func (e *PresentationEditor) GetShapes(slideIndex int) ([]common.Shape, error) {
 
 	shapes := make([]common.Shape, len(parsed))
 	for i, p := range parsed {
-		var placeholderIndex *int
-		if p.PhType != "" {
-			idx := p.PhIndex
-			placeholderIndex = &idx
-		}
-		shapes[i] = common.Shape{
-			ID:               p.ID,
-			Name:             p.Name,
-			Type:             p.Type,
-			Text:             p.Text,
-			X:                p.X,
-			Y:                p.Y,
-			W:                p.W,
-			H:                p.H,
-			Runs:             p.Runs,
-			Paragraphs:       p.Paragraphs,
-			TextFrame:        p.TextFrame,
-			Paragraph:        p.Paragraph,
-			Rotation:         p.Rotation,
-			FlipH:            p.FlipH,
-			FlipV:            p.FlipV,
-			PlaceholderIndex: placeholderIndex,
-			PlaceholderType:  p.PhType,
-			Fill:             p.Fill,
-			Line:             p.Line,
-			Shadow:           p.Shadow,
-			Glow:             p.Glow,
-			Blur:             p.Blur,
-			SoftEdge:         p.SoftEdge,
-			Reflection:       p.Reflection,
-			ClickAction:      p.ClickAction,
-			HoverAction:      p.HoverAction,
-			AltText:          p.AltText,
-			Title:            p.Title,
-			IsDecorative:     p.IsDecorative,
-			Connector:        p.Connector,
-			Adjustments:      p.Adjustments,
-			Freeform:         p.Freeform,
-		}
+		shapes[i] = commonShapeFromParsed(p)
 	}
 
 	// Populate cache for next call on the same unmodified slide.

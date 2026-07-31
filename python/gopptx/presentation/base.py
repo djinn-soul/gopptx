@@ -115,6 +115,17 @@ class PresentationBase(
             self.open(file_like_or_path)
 
     @classmethod
+    def open_deck(
+        cls, file_like_or_path: str | os.PathLike[str] | bytes | object
+    ) -> Self:
+        """Open a presentation from a path or file-like object.
+
+        Equivalent to ``Presentation(file_like_or_path)``, named for callers that
+        prefer an explicit constructor over the implicit-open form.
+        """
+        return cls(file_like_or_path)
+
+    @classmethod
     def _load_library(cls) -> None:
         with cls._lib_lock:
             if cls._lib:

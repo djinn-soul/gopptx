@@ -160,14 +160,8 @@ func applyOtherChart(ctx chartApplyCtx) {
 		c.ScatterStyle = pc.ScatterStyle
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Scatter = &c
-	case chartKindPie:
-		c := charts.NewPieChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
-		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
-		slide.Pie = &c
-	case chartKindDoughnut:
-		c := charts.NewDoughnutChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
-		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
-		slide.Doughnut = &c
+	case chartKindPie, chartKindPie3D, chartKindDoughnut:
+		applyPieLikeChart(ctx)
 	case chartKindBubble:
 		xs, ys, sizes := bubbleForChart(pc)
 		c := charts.NewBubbleChart(xs, ys, sizes).

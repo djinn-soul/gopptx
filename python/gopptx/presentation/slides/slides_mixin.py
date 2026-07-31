@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from ...slide.contracts import SlidePresentationProtocol
     from ..helpers import PresentationProtocol
     from .collection import Slides
+    from .master import SlideLayouts, SlideMaster
 
 
 class PresentationSlidesMixin(
@@ -57,10 +58,24 @@ class PresentationSlidesMixin(
             self._slide_masters_obj = SlideMasters(cast("PresentationProtocol", self))
         return self._slide_masters_obj
 
+    @property
+    def slide_master(self) -> SlideMaster:
+        """Return the primary slide master."""
+        return self.slide_masters[0]
+
+    @property
+    def slide_layouts(self) -> SlideLayouts:
+        """Return slide layouts of the primary slide master."""
+        return self.slide_masters[0].slide_layouts
+
     def add_slide(
-        self, title: str, layout: str | None = None, bullets: list[str] | None = None
+        self,
+        title: str = "",
+        layout: str | None = None,
+        bullets: list[str] | None = None,
+        index: int | None = None,
     ) -> Slide:
-        """Add a new slide to the presentation."""
+        """Add a new slide to the presentation, optionally inserting at index (Issue #194)."""
         payload: dict[str, object] = {"title": title}
         if layout:
             try:
@@ -107,7 +122,21 @@ class PresentationSlidesMixin(
                 }
                 self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, hf_payload)
 
+        if index is not None and index != slide_index:
+            self.move_slide(slide_index, index)
+            slide_index = index
+
         return self.slides[slide_index]
+
+    def insert_slide(
+        self,
+        index: int,
+        layout: str | None = None,
+        title: str = "",
+        bullets: list[str] | None = None,
+    ) -> Slide:
+        """Insert a slide at index (Issue #194)."""
+        return self.add_slide(title=title, layout=layout, bullets=bullets, index=index)
 
     def remove_slide(self, index: int) -> None:
         """Remove a slide from the presentation."""
@@ -162,9 +191,11 @@ class PresentationSlidesMixin(
         self.execute(ops.OP_SET_SLIDE_TITLE, {"slide_index": index, "title": title})
         self.invalidate_cache()
 
-    def set_slide_hidden(self, index: int, *, hidden: bool) -> None:
+    def set_slide_hidden(self, index: int, *, hidden: bool = True) -> None:
         """Mark or unmark a slide as hidden."""
-        self.execute(ops.OP_SET_SLIDE_HIDDEN, {"slide_index": index, "hidden": hidden})
+        self.execute(
+            ops.OP_SET_SLIDE_HIDDEN, {"slide_index": index, "hidden": bool(hidden)}
+        )
         self.invalidate_cache()
 
     def merge_from_file(self, path: str) -> None:

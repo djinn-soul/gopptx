@@ -42,10 +42,10 @@ class PlaceholderSlideProto(Protocol):
         """Set placeholder content by placeholder index/type with typed payload kwargs."""
         ...
 
-
-class PlaceholderCollectionSlideProto(PlaceholderSlideProto, Protocol):
-    """Structural protocol for slide APIs used by placeholder collections."""
-
     def list_placeholders(self) -> list[dict[str, object]]:
         """List raw placeholder records for the slide."""
         ...
+
+
+class PlaceholderCollectionSlideProto(PlaceholderSlideProto, Protocol):
+    """Structural protocol for slide APIs used by placeholder collections."""
