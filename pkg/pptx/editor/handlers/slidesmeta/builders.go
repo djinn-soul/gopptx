@@ -142,10 +142,13 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 		for i, s := range request.LineSeries {
 			lineSeries[i] = charts.Series{Name: s.Name, Values: s.Values}
 		}
-		return withBounds(
-			charts.NewComboChart(request.Categories, barSeries, lineSeries).WithTitle(request.Title),
-			request,
-		), nil
+		combo := charts.NewComboChart(request.Categories, barSeries, lineSeries).
+			WithTitle(request.Title).
+			WithSecondaryAxis(request.SecondaryAxis)
+		if request.SecondaryValueAxisTitle != "" {
+			combo = combo.WithSecondaryAxisTitle(request.SecondaryValueAxisTitle)
+		}
+		return withBounds(combo, request), nil
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrUnsupportedChartType, request.ChartType)
 	}

@@ -15,10 +15,8 @@ func areaChartPartXML(chart *ChartSpec) string {
 <c:areaChart>
 <c:grouping val="%s"/>
 <c:varyColors val="0"/>%s
-%s
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
+%s%s
 </c:areaChart>
-%s`, Escape(chart.Grouping), series, labels, chartAxesXML(chart)),
+%s`, Escape(chart.Grouping), series, labels, primaryAxisIDRefsXML(), chartAxesXML(chart)),
 	)
 }

@@ -80,6 +80,16 @@ type ComboChart struct {
 	MinValue              *float64
 	MaxValue              *float64
 
+	// SecondaryAxis draws the line series against their own value axis on the
+	// right, so bar and line series with unrelated magnitudes stay readable.
+	SecondaryAxis                   bool
+	SecondaryValueAxisTitle         string
+	SecondaryValueFormat            string
+	SecondaryValueTickLabelPosition string
+	ShowSecondaryMajorGridlines     bool
+	SecondaryMinValue               *float64
+	SecondaryMaxValue               *float64
+
 	AltText      string
 	IsDecorative bool
 }
@@ -136,8 +146,17 @@ func (c ComboChart) ToChartSpec() *pptxxml.ChartSpec {
 		ValueAxisCrossBetween: c.ValueAxisCrossBetween,
 		MinValue:              CopyFloat64Pointer(c.MinValue),
 		MaxValue:              CopyFloat64Pointer(c.MaxValue),
-		AltText:               c.AltText,
-		IsDecorative:          c.IsDecorative,
+
+		SecondaryAxis:                   c.SecondaryAxis,
+		SecondaryValueAxisTitle:         c.SecondaryValueAxisTitle,
+		SecondaryValueFormat:            c.SecondaryValueFormat,
+		SecondaryValueTickLabelPosition: c.SecondaryValueTickLabelPosition,
+		ShowSecondaryMajorGridlines:     c.ShowSecondaryMajorGridlines,
+		SecondaryMinValue:               CopyFloat64Pointer(c.SecondaryMinValue),
+		SecondaryMaxValue:               CopyFloat64Pointer(c.SecondaryMaxValue),
+
+		AltText:      c.AltText,
+		IsDecorative: c.IsDecorative,
 	}
 	applyDataLabelSettings(spec, c.DataLabels)
 	return spec

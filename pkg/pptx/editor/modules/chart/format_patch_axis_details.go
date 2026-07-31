@@ -120,7 +120,7 @@ func patchCategoryAxisTickDetail(xml string, tickMarkSkip *int, labelAlignment *
 	if tickMarkSkip == nil && labelAlignment == nil {
 		return xml
 	}
-	return patchEachAxisBlock(xml, "catAx", func(block string) string {
+	return patchPrimaryAxisBlock(xml, "catAx", func(block string) string {
 		if labelAlignment != nil {
 			node := `<c:lblAlgn val="` + strings.TrimSpace(*labelAlignment) + `"/>`
 			if reAxisLblAlgn.MatchString(block) {
@@ -156,7 +156,7 @@ func patchAxisDetailSet(
 		numberFormat == nil && formatLinked == nil {
 		return xml
 	}
-	return patchEachAxisBlock(xml, axisTag, func(block string) string {
+	return patchPrimaryAxisBlock(xml, axisTag, func(block string) string {
 		block = patchAxisScaling(block, minimum, maximum)
 		block = patchAxisTitle(block, hasTitle, title)
 		block = patchAxisNumberFormat(block, numberFormat, formatLinked)
@@ -165,24 +165,25 @@ func patchAxisDetailSet(
 	})
 }
 
-func patchEachAxisBlock(xml string, axisTag string, patch func(string) string) string {
+// patchPrimaryAxisBlock patches only the first block of an axis tag.
+//
+// A chart with a secondary value axis has two <c:valAx> elements, and the
+// request fields these patchers serve (ValueAxisTitle, ValueAxisVisible, ...)
+// describe the primary axis only. Patching every block would retitle and hide
+// the secondary axis as a side effect. The first block is the primary one,
+// which is also the block buildAxisState reports as the value axis.
+func patchPrimaryAxisBlock(xml string, axisTag string, patch func(string) string) string {
 	startTag, endTag := "<c:"+axisTag+">", "</c:"+axisTag+">"
 	start := strings.Index(xml, startTag)
-	for start >= 0 {
-		endRel := strings.Index(xml[start:], endTag)
-		if endRel < 0 {
-			return xml
-		}
-		end := start + endRel + len(endTag)
-		block := patch(xml[start:end])
-		xml = xml[:start] + block + xml[end:]
-		next := strings.Index(xml[start+len(block):], startTag)
-		if next < 0 {
-			return xml
-		}
-		start += len(block) + next
+	if start < 0 {
+		return xml
 	}
-	return xml
+	endRel := strings.Index(xml[start:], endTag)
+	if endRel < 0 {
+		return xml
+	}
+	end := start + endRel + len(endTag)
+	return xml[:start] + patch(xml[start:end]) + xml[end:]
 }
 
 func patchAxisScaling(block string, minimum *float64, maximum *float64) string {

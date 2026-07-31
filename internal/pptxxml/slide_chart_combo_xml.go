@@ -15,9 +15,8 @@ func comboChartPartXML(chart *ChartSpec) string {
 <c:barDir val="col"/>
 <c:grouping val="clustered"/>`)
 	plot.WriteString(barSeries)
+	plot.WriteString(primaryAxisIDRefsXML())
 	plot.WriteString(`
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
 </c:barChart>
 <c:lineChart>
 <c:grouping val="standard"/>`)
@@ -25,9 +24,15 @@ func comboChartPartXML(chart *ChartSpec) string {
 	plot.WriteString(`
 `)
 	plot.WriteString(labels)
+	// The line plot is what moves to its own scale: binding it to the secondary
+	// axis pair is the difference between two series sharing one value axis and
+	// each having its own.
+	if chart.SecondaryAxis {
+		plot.WriteString(secondaryAxisIDRefsXML())
+	} else {
+		plot.WriteString(primaryAxisIDRefsXML())
+	}
 	plot.WriteString(`
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
 </c:lineChart>
 `)
 	plot.WriteString(chartAxesXML(chart))

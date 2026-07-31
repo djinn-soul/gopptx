@@ -31,9 +31,8 @@ func stockChartPartXML(chart *ChartSpec) string {
 	plot.WriteString(`
 `)
 	plot.WriteString(labels)
+	plot.WriteString(primaryAxisIDRefsXML())
 	plot.WriteString(`
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
 </c:stockChart>
 `)
 	plot.WriteString(chartAxesXML(chart))

@@ -80,9 +80,16 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	}
 
 	phSpec.Type = resolvedType
-	phSpec.GeometryXML = extractPlaceholderGeometryXML(content[shapesList[shapeIndex].Start:shapesList[shapeIndex].End])
+	targetShapeXML := content[shapesList[shapeIndex].Start:shapesList[shapeIndex].End]
+	phSpec.GeometryXML = extractPlaceholderGeometryXML(targetShapeXML)
 	if forceRect != nil {
 		phSpec.ForceRectGeometry = forceRect
+	}
+
+	// Fitting needs the resolved shape, so it runs here rather than while the
+	// spec is being built from the payload.
+	if err := e.applyPlaceholderImageFit(slideIndex, p, v, &phSpec, targetShapeXML); err != nil {
+		return nil, err
 	}
 
 	newShapeXML := pptxxml.PlaceholderShape(phSpec, shapesList[shapeIndex].ID)

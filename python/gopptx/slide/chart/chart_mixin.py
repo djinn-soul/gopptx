@@ -98,6 +98,9 @@ class SlideChartMixin:
             categories: List of category labels.
             bar_series: List of bar series dicts with "name" and "values" keys.
             line_series: List of line series dicts with "name" and "values" keys.
+                Add ``"secondary_axis": True`` to a series to draw the line plot
+                against its own value axis on the right, and
+                ``"secondary_axis_title"`` to label that axis.
             title: Chart title.
             bounds: (x, y, width, height) in EMU.
 

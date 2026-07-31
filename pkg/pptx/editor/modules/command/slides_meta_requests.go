@@ -196,6 +196,10 @@ type AddChartRequest struct {
 	Y          int64
 	W          int64
 	H          int64
+
+	// SecondaryAxis puts a combo chart's line series on their own value axis.
+	SecondaryAxis           bool
+	SecondaryValueAxisTitle string
 }
 
 func ParseAddChartRequest(
@@ -229,6 +233,11 @@ func ParseAddChartRequest(
 	h, _ := optionalInt64(payload, "h")
 	barSeries := parseChartSeriesList(payload, "bar_series")
 	lineSeries := parseChartSeriesList(payload, "line_series")
+	secondaryAxisTitle := optionalString(payload, "secondary_value_axis_title")
+	secondaryAxis, _ := payload["secondary_axis"].(bool)
+	// A title on an axis that is never drawn would be silently dropped, so
+	// naming the axis is taken as asking for it.
+	secondaryAxis = secondaryAxis || secondaryAxisTitle != ""
 
 	return AddChartRequest{
 		SlideIndex: slideIndex,
@@ -242,6 +251,9 @@ func ParseAddChartRequest(
 		Y:          y,
 		W:          w,
 		H:          h,
+
+		SecondaryAxis:           secondaryAxis,
+		SecondaryValueAxisTitle: secondaryAxisTitle,
 	}, true
 }
 
