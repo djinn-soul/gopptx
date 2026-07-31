@@ -137,12 +137,19 @@ class NotesSlide(NotesSlideStyleMixin):
         return [shape for shape in self.shapes if shape.is_placeholder]
 
     @property
-    def notes_text_frame(self) -> NotesTextFrame | None:
-        """python-pptx-like notes text-frame alias for the body placeholder."""
+    def notes_text_frame(self) -> NotesTextFrame | NotesSlide:
+        """python-pptx-like notes text-frame alias (Issue #176).
+
+        Falls back to the notes slide itself when the deck has no body
+        placeholder on the notes slide; both expose a ``text`` property, so
+        ``slide.notes_slide.notes_text_frame.text`` works either way.
+        """
         body = self.body_shape
-        if body is None:
-            return None
-        return body.text_frame()
+        if body is not None:
+            frame = body.text_frame()
+            if frame is not None:
+                return frame
+        return self
 
     @override
     def __repr__(self) -> str:

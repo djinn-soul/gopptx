@@ -55,12 +55,21 @@ class SlideBase:
         self._presentation.set_notes(self.index, value)
 
     @property
-    def notes_slide(self) -> NotesSlide | None:
-        """Return a notes-slide proxy when notes exist."""
+    def has_notes_slide(self) -> bool:
+        """Return True if speaker notes slide exists (Issue #176)."""
         if self.index < 0:
-            return None
+            return False
         notes_payload = self._presentation.get_notes_payload(self.index)
-        if notes_payload.get("notes_slide") is None:
+        return (
+            notes_payload.get("notes_slide") is not None
+            or bool(self.notes)
+            or bool(notes_payload.get("notes_text"))
+        )
+
+    @property
+    def notes_slide(self) -> NotesSlide | None:
+        """Return a notes-slide proxy when notes exist (Issue #176)."""
+        if not self.has_notes_slide:
             return None
         return NotesSlide(self)
 

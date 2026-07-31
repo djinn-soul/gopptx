@@ -496,6 +496,7 @@ _PresentationTemplateProtocol  # unused class (python\gopptx\presentation\base.p
 _GopptxLibProtocol  # unused class (python\gopptx\presentation\base.py)
 ptr  # unused variable (python\gopptx\presentation\base.py)
 _RawGopptxLibProtocol  # unused class (python\gopptx\presentation\base.py)
+_.open_deck  # unused method (python\gopptx\presentation\base.py)
 _.from_template  # unused method (python\gopptx\presentation\base.py)
 _.render_template  # unused method (python\gopptx\presentation\base.py)
 _PresentationSlidesProto  # unused class (python\gopptx\presentation\headers_footers_mixin.py)
