@@ -38,6 +38,7 @@ func handleListPlaceholders(e *PresentationEditor, payload json.RawMessage) (any
 			keyIndex: ph.Index,
 			keyType:  ph.Type,
 			keyName:  ph.Name,
+			keyText:  ph.Text,
 		}
 	}
 

@@ -186,7 +186,7 @@ func FuzzRichTextRun(f *testing.F) {
 			Color:         color,
 			Highlight:     highlight,
 			Font:          font,
-			SizePt:        sizePt,
+			SizePt:        float64(sizePt),
 			Code:          code,
 			AllCaps:       allCaps,
 			SmallCaps:     smallCaps,

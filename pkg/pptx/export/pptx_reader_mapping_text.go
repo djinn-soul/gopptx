@@ -1,6 +1,7 @@
 package export
 
 import (
+	"math"
 	"reflect"
 	"strings"
 
@@ -168,7 +169,7 @@ func editorRunsToExportRuns(runs []editorcommon.TextRun) []elements.Run {
 			exportRun.Font = *run.Font
 		}
 		if run.SizePt != nil {
-			exportRun.SizePt = *run.SizePt
+			exportRun.SizePt = int(math.Round(*run.SizePt))
 		}
 		if run.Code != nil {
 			exportRun.Code = *run.Code

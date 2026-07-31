@@ -36,6 +36,7 @@ type Placeholder struct {
 	Index int
 	Type  string
 	Name  string
+	Text  string
 }
 
 // Placeholders parses the slide XML and returns all placeholder elements found.
@@ -56,6 +57,7 @@ func parsePlaceholdersFromSlideXML(content []byte) []Placeholder {
 				Index: s.PhIndex,
 				Type:  s.PhType,
 				Name:  s.Name,
+				Text:  s.Text,
 			})
 		}
 	}
