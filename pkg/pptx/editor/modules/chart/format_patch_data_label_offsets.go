@@ -84,12 +84,40 @@ func applyDataLabelOffset(ser string, offset common.DataLabelOffset, plotFlags s
 		y = *offset.Y
 	}
 
+	if existing != "" {
+		patched := patchExistingDataLabelLayout(existing, x, y)
+		return ser[:start] + patched + ser[end:]
+	}
 	flags := seriesDataLabelFlags(ser, existing, plotFlags)
 	label := buildDataLabelBlock(offset.PointIndex, x, y, flags)
-	if existing != "" {
-		return ser[:start] + label + ser[end:]
-	}
 	return insertDataLabelBlock(ser, label)
+}
+
+func patchExistingDataLabelLayout(existing string, x, y float64) string {
+	layout := buildManualDataLabelLayout(x, y)
+	if current := reChartTitleLayout.FindString(existing); current != "" {
+		return strings.Replace(existing, current, layout, 1)
+	}
+
+	insertAt := strings.Index(existing, "<c:idx")
+	if insertAt >= 0 {
+		if idxEnd := strings.Index(existing[insertAt:], "/>"); idxEnd >= 0 {
+			insertAt += idxEnd + len("/>")
+		} else if idxEnd := strings.Index(existing[insertAt:], "</c:idx>"); idxEnd >= 0 {
+			insertAt += idxEnd + len("</c:idx>")
+		} else {
+			insertAt = -1
+		}
+	}
+	if deleteAt := strings.Index(existing, "<c:delete"); deleteAt >= 0 {
+		if deleteEnd := strings.Index(existing[deleteAt:], "/>"); deleteEnd >= 0 {
+			insertAt = deleteAt + deleteEnd + len("/>")
+		}
+	}
+	if insertAt < 0 {
+		return existing
+	}
+	return existing[:insertAt] + layout + existing[insertAt:]
 }
 
 // dataLabelFlagNames returns the CT_DLbl display flags, in schema order.
@@ -176,12 +204,16 @@ func seriesDataLabelsBlock(ser string) string {
 // delete/layout group, then the display flags.
 func buildDataLabelBlock(pointIndex int, x, y float64, flags string) string {
 	return `<c:dLbl><c:idx val="` + strconv.Itoa(pointIndex) + `"/>` +
-		`<c:layout><c:manualLayout>` +
-		`<c:x val="` + formatChartFraction(x) + `"/>` +
-		`<c:y val="` + formatChartFraction(y) + `"/>` +
-		`</c:manualLayout></c:layout>` +
+		buildManualDataLabelLayout(x, y) +
 		flags +
 		`</c:dLbl>`
+}
+
+func buildManualDataLabelLayout(x, y float64) string {
+	return `<c:layout><c:manualLayout>` +
+		`<c:x val="` + formatChartFraction(x) + `"/>` +
+		`<c:y val="` + formatChartFraction(y) + `"/>` +
+		`</c:manualLayout></c:layout>`
 }
 
 // findDataLabelBlock locates the <c:dLbl> for pointIndex, returning it with its

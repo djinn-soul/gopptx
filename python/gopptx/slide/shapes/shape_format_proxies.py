@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, cast
 
+from ...schemas import RGBColor
+
 if TYPE_CHECKING:
     from ...schemas import (
         FillFormat,
@@ -23,11 +25,82 @@ class _ShapeProto(Protocol):
     def apply_update(self, patch: ShapeUpdate) -> None: ...
 
 
+class _FillColorProxy:
+    """Proxy for fill fore_color."""
+
+    def __init__(self, fill: _ShapeFillProxy) -> None:
+        self._fill = fill
+
+    @property
+    def rgb(self) -> RGBColor | None:
+        hex_str = self._fill.solid_color
+        if not hex_str:
+            return None
+        return RGBColor.from_string(hex_str.lstrip("#"))
+
+    @rgb.setter
+    def rgb(self, color: RGBColor | None) -> None:
+        self._fill.solid_color = None if color is None else f"#{color}"
+
+
+class _LineFillProxy:
+    """Proxy for line fill."""
+
+    def __init__(self, line: _ShapeLineProxy) -> None:
+        self._line = line
+
+    def solid(self) -> None:
+        """Give the line a solid fill, defaulting to black when it has no color."""
+        if not self._line.color:
+            self._line.color = "#000000"
+
+    @property
+    def fore_color(self) -> _LineColorProxy:
+        return _LineColorProxy(self._line)
+
+
+class _LineColorProxy:
+    """Proxy for line color."""
+
+    def __init__(self, line: _ShapeLineProxy) -> None:
+        self._line = line
+
+    @property
+    def rgb(self) -> RGBColor | None:
+        hex_str = self._line.color
+        if not hex_str:
+            return None
+        return RGBColor.from_string(hex_str.lstrip("#"))
+
+    @rgb.setter
+    def rgb(self, color: RGBColor | None) -> None:
+        self._line.color = "" if color is None else f"#{color}"
+
+
 class _ShapeFillProxy:
     """Live fill proxy."""
 
     def __init__(self, shape: _ShapeProto) -> None:
         self._shape = shape
+
+    def solid(self) -> None:
+        """Set fill to solid."""
+        if not self.solid_color:
+            self.solid_color = "#000000"
+
+    @property
+    def fore_color(self) -> _FillColorProxy:
+        """Return fill color proxy."""
+        return _FillColorProxy(self)
+
+    @property
+    def type(self) -> str:
+        """Return fill type string."""
+        if self.solid_color:
+            return "solid"
+        if self.picture:
+            return "picture"
+        return "none"
 
     def _payload(self) -> FillFormat:
         record = self._shape.shape_record()
@@ -94,6 +167,11 @@ class _ShapeLineProxy:
 
     def __init__(self, shape: _ShapeProto) -> None:
         self._shape = shape
+
+    @property
+    def fill(self) -> _LineFillProxy:
+        """Return line fill proxy."""
+        return _LineFillProxy(self)
 
     def _payload(self) -> LineFormat:
         record = self._shape.shape_record()

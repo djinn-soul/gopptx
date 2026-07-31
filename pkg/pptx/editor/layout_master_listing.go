@@ -5,6 +5,7 @@ import (
 	"path"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
@@ -49,6 +50,7 @@ func (e *PresentationEditor) ListMasterLayouts(masterPart string) ([]common.Slid
 	if err != nil {
 		return nil, err
 	}
+	layoutIDs := e.layoutIDsForMaster(masterPart)
 	infos := make([]common.SlideLayoutInfo, 0, len(layouts))
 	for _, part := range layouts {
 		xmlData, ok := e.parts.Get(part)
@@ -63,6 +65,7 @@ func (e *PresentationEditor) ListMasterLayouts(masterPart string) ([]common.Slid
 			Part:         part,
 			Name:         editorslide.ParseLayoutName(xmlData),
 			MasterPart:   masterPart,
+			LayoutID:     layoutIDs[part],
 			Shapes:       shapes,
 			Placeholders: placeholders,
 		})
@@ -200,13 +203,13 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 
 	masterXML, _ := e.parts.Get(masterPart)
 	content := string(masterXML)
-	matches := regexp.MustCompile(`<p:sldLayoutId[^>]*r:id="([^"]+)"`).FindAllStringSubmatch(content, -1)
+	matches := slideLayoutIDPattern.FindAllStringSubmatch(content, -1)
 
 	out := make([]string, 0, len(matches))
 	seen := make(map[string]bool)
 	for _, m := range matches {
-		if len(m) > 1 {
-			rID := m[1]
+		if len(m) > 2 {
+			rID := m[2]
 			if part, ok := ridToPart[rID]; ok && e.parts.Has(part) {
 				out = append(out, part)
 				seen[part] = true
@@ -219,4 +222,50 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 		}
 	}
 	return out, nil
+}
+
+// slideLayoutIDPattern captures the sldLayoutId id and its relationship id. The
+// id is what SlideMaster.get_layout(slide_layout_id) looks a layout up by.
+var slideLayoutIDPattern = regexp.MustCompile(
+	`<p:sldLayoutId[^>]*\bid="(\d+)"[^>]*r:id="([^"]+)"`,
+)
+
+// slideLayoutIDGroups is the full match plus the id and r:id capture groups.
+const slideLayoutIDGroups = 3
+
+// layoutIDsForMaster maps each layout part to the sldLayoutId id the master
+// lists it under. Parts not referenced from sldLayoutIdLst are absent.
+func (e *PresentationEditor) layoutIDsForMaster(masterPart string) map[string]int {
+	ids := make(map[string]int)
+	masterRelsData, ok := e.parts.Get(common.RelsPathFor(masterPart))
+	if !ok {
+		return ids
+	}
+	rels, err := parseRelationshipsXML(masterRelsData)
+	if err != nil {
+		return ids
+	}
+	ridToPart := make(map[string]string, len(rels))
+	for _, rel := range rels {
+		if rel.Type == common.RelTypeSlideLayout {
+			ridToPart[rel.ID] = common.CanonicalPartPath(
+				path.Join(path.Dir(masterPart), rel.Target),
+			)
+		}
+	}
+
+	masterXML, _ := e.parts.Get(masterPart)
+	for _, m := range slideLayoutIDPattern.FindAllStringSubmatch(string(masterXML), -1) {
+		if len(m) < slideLayoutIDGroups {
+			continue
+		}
+		layoutID, convErr := strconv.Atoi(m[1])
+		if convErr != nil {
+			continue
+		}
+		if part, found := ridToPart[m[2]]; found {
+			ids[part] = layoutID
+		}
+	}
+	return ids
 }

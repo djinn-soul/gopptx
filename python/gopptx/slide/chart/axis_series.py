@@ -11,8 +11,6 @@ from .axis_format import ChartAxisFormatMixin
 from .gridlines import ChartAxisGridlineMixin
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from ...schemas import ChartAxisState, ChartFormatUpdate, ChartState
 
 _VALID_TICK_LABEL_POSITIONS = {
@@ -294,51 +292,3 @@ class ChartAxis(ChartAxisFormatMixin, ChartAxisGridlineMixin):
         if normalized not in _VALID_CROSSES:
             raise ValueError("crosses must be one of: autoZero, max, min")
         return normalized
-
-
-class ChartSeries:
-    """Read-only proxy for a chart series payload."""
-
-    def __init__(self, payload: dict[str, object]) -> None:
-        """Initialize with raw series payload."""
-        self._payload = payload
-
-    @property
-    def name(self) -> str | None:
-        """Return the series name, if present."""
-        value = self._payload.get("name")
-        return str(value) if isinstance(value, str) else None
-
-    @property
-    def values(self) -> list[float]:
-        """Return numeric series values."""
-        raw = self._payload.get("values")
-        if not isinstance(raw, list):
-            return []
-        values_raw = cast("list[object]", raw)
-        return [float(item) for item in values_raw if isinstance(item, int | float)]
-
-
-class ChartSeriesCollection:
-    """Sequence-like container of chart-series proxies."""
-
-    def __init__(self, payload: list[dict[str, object]]) -> None:
-        """Initialize the collection with raw series payloads."""
-        self._payload = payload
-
-    def __len__(self) -> int:
-        """Return the number of series."""
-        return len(self._payload)
-
-    def __getitem__(self, index: int) -> ChartSeries:
-        """Return the series at the given index."""
-        if index < 0:
-            index += len(self._payload)
-        if index < 0 or index >= len(self._payload):
-            raise IndexError("series index out of range")
-        return ChartSeries(self._payload[index])
-
-    def __iter__(self) -> Iterator[ChartSeries]:
-        """Iterate over series proxies."""
-        for item in self._payload:
-            yield ChartSeries(item)

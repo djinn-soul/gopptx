@@ -78,8 +78,16 @@ func trendlineBoolValue(block string, re *regexp.Regexp) *bool {
 	if len(match) != expectedSingleGroupMatch {
 		return nil
 	}
-	value := strings.TrimSpace(match[1]) == "1"
-	return &value
+	switch strings.ToLower(strings.TrimSpace(match[1])) {
+	case "1", "true":
+		value := true
+		return &value
+	case "0", "false":
+		value := false
+		return &value
+	default:
+		return nil
+	}
 }
 
 func trendlineStringValue(block string, re *regexp.Regexp) *string {

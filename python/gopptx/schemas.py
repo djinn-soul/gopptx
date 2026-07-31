@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from typing_extensions import override
+
 from . import schemas_chart_layout as _schemas_chart_layout
 from . import schemas_chart_series as _schemas_chart_series
+from . import schemas_grayscale_types as _schemas_grayscale_types
 from . import schemas_presentation_types as _schemas_presentation_types
 from . import schemas_shape_style as _schemas_shape_style
 from . import schemas_shape_types as _schemas_shape_types
+from . import schemas_text_types as _schemas_text_types
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 emu = _schemas_presentation_types.emu
 inches = _schemas_presentation_types.inches
@@ -30,8 +39,8 @@ BatchItemResult = _schemas_presentation_types.BatchItemResult
 TableCellInfo = _schemas_presentation_types.TableCellInfo
 TableInfo = _schemas_presentation_types.TableInfo
 
-TextFrame = _schemas_shape_types.TextFrame
-Paragraph = _schemas_shape_types.Paragraph
+TextFrame = _schemas_text_types.TextFrame
+Paragraph = _schemas_text_types.Paragraph
 FillFormat = _schemas_shape_types.FillFormat
 GradientStop = _schemas_shape_types.GradientStop
 GradientFill = _schemas_shape_types.GradientFill
@@ -66,10 +75,10 @@ ShapeAdjustment = _schemas_shape_types.ShapeAdjustment
 ShapeAdjustmentValue = _schemas_shape_types.ShapeAdjustmentValue
 ShapeUpdate = _schemas_shape_types.ShapeUpdate
 Shape = _schemas_shape_types.Shape
-GrayscaleShapeRef = _schemas_shape_types.GrayscaleShapeRef
-GrayscaleTextRef = _schemas_shape_types.GrayscaleTextRef
-GrayscalePlaceholderRef = _schemas_shape_types.GrayscalePlaceholderRef
-GrayscaleScope = _schemas_shape_types.GrayscaleScope
+GrayscaleShapeRef = _schemas_grayscale_types.GrayscaleShapeRef
+GrayscaleTextRef = _schemas_grayscale_types.GrayscaleTextRef
+GrayscalePlaceholderRef = _schemas_grayscale_types.GrayscalePlaceholderRef
+GrayscaleScope = _schemas_grayscale_types.GrayscaleScope
 
 ChartDataUpdate = _schemas_chart_layout.ChartDataUpdate
 ChartDataSource = _schemas_chart_layout.ChartDataSource
@@ -92,4 +101,38 @@ SlideChartRef = _schemas_chart_layout.SlideChartRef
 SlideLayoutInfo = _schemas_chart_layout.SlideLayoutInfo
 SlideMasterCloneResult = _schemas_chart_layout.SlideMasterCloneResult
 
-RGBColor = str  # Hex string like 'FF0000'
+_HEX_RGB_DIGITS = 6
+_CHANNEL_MAX = 255
+
+
+class RGBColor(tuple[int, int, int]):
+    """An (r, g, b) triple that formats as the uppercase hex OOXML expects."""
+
+    __slots__ = ()
+
+    def __new__(cls, r: int, g: int, b: int) -> Self:
+        """Build a color from three 0-255 channel values."""
+        channels = (int(r), int(g), int(b))
+        for value in channels:
+            if not 0 <= value <= _CHANNEL_MAX:
+                msg = f"RGB channel out of range: {channels}"
+                raise ValueError(msg)
+        return super().__new__(cls, channels)
+
+    @classmethod
+    def from_string(cls, hex_str: str) -> Self:
+        """Parse ``RRGGBB`` or ``#RRGGBB``, raising on anything else."""
+        clean = hex_str.lstrip("#")
+        if len(clean) != _HEX_RGB_DIGITS:
+            msg = f"expected a 6-digit hex color, got {hex_str!r}"
+            raise ValueError(msg)
+        try:
+            return cls(int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16))
+        except ValueError as exc:
+            msg = f"expected a 6-digit hex color, got {hex_str!r}"
+            raise ValueError(msg) from exc
+
+    @override
+    def __str__(self) -> str:
+        """Return the color as uppercase ``RRGGBB``."""
+        return f"{self[0]:02X}{self[1]:02X}{self[2]:02X}"

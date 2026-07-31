@@ -28,6 +28,15 @@ func pieChartPartXML(chart *ChartSpec) string {
 	)
 }
 
+func pie3DChartPartXML(chart *ChartSpec) string {
+	xml := pieChartPartXML(chart)
+	xml = strings.Replace(xml, "<c:pieChart>", "<c:pie3DChart>", 1)
+	xml = strings.Replace(xml, "</c:pieChart>", "</c:pie3DChart>", 1)
+	const view3D = `<c:view3D><c:rotX val="30"/><c:rotY val="0"/>` +
+		`<c:rAngAx val="1"/><c:perspective val="30"/></c:view3D>`
+	return strings.Replace(xml, "<c:plotArea>", view3D+"<c:plotArea>", 1)
+}
+
 func chartPieDataLabelsXML(chart *ChartSpec) string {
 	return chartDataLabelsWithDefaults(chart, chartDataLabelDefaults{
 		showCategory: true,

@@ -38,6 +38,7 @@ _KEY_ALIASES = {
     "margin-left": "margin_left",
     "margin-right": "margin_right",
     "vertical_anchor": "vertical_align",
+    "vertical_alignment": "vertical_align",
     "auto_size": "auto_fit_type",
     "column_count": "columns",
     "text_direction": "orientation",

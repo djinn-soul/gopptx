@@ -21,7 +21,8 @@ from .placeholders.placeholder import (
 )
 from .placeholders.placeholder_collection import PlaceholderCollection
 from .shapes.freeform_builder import FreeformBuilder
-from .shapes.shape_proxy import ShapeCollection, ShapeProxy
+from .shapes.shape_collection import ShapeCollection
+from .shapes.shape_proxy import ShapeProxy
 from .slide import Slide
 from .tables.table import (
     Cell,

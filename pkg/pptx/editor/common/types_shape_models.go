@@ -17,8 +17,9 @@ type Shape struct {
 	// FlipH and FlipV mirror the <a:xfrm> flip attributes. They are set for
 	// every shape kind, not just connectors, so a value written through
 	// ShapeUpdate can be read back.
-	FlipH bool `json:"flip_h,omitempty"`
-	FlipV bool `json:"flip_v,omitempty"`
+	FlipH  bool `json:"flip_h,omitempty"`
+	FlipV  bool `json:"flip_v,omitempty"`
+	Hidden bool `json:"hidden,omitempty"`
 
 	PlaceholderIndex *int   `json:"PlaceholderIndex,omitempty"`
 	PlaceholderType  string `json:"PlaceholderType,omitempty"`
@@ -38,6 +39,7 @@ type Shape struct {
 	Connector    *ConnectorInfo
 
 	Adjustments []ShapeAdjustment
+	Shapes      []Shape `json:"Shapes,omitempty"`
 	// Freeform is set when the shape carries <a:custGeom> instead of a preset
 	// geometry, so custom paths can be read back and not just written.
 	Freeform *FreeformGeometry `json:"freeform,omitempty"`
@@ -98,7 +100,7 @@ type TextRun struct {
 	Color          *string    `json:"color,omitempty"`
 	Highlight      *string    `json:"highlight,omitempty"`
 	Font           *string    `json:"font,omitempty"`
-	SizePt         *int       `json:"size_pt,omitempty"`
+	SizePt         *float64   `json:"size_pt,omitempty"`
 	Code           *bool      `json:"code,omitempty"`
 	AllCaps        *bool      `json:"all_caps,omitempty"`
 	SmallCaps      *bool      `json:"small_caps,omitempty"`
@@ -231,6 +233,11 @@ type ImageMetadata struct {
 	ContentType string `json:"content_type,omitempty"`
 	Hash        string `json:"hash,omitempty"`
 	Data        []byte `json:"data,omitempty"`
+	// RelID and PartPath identify where the bytes live, so a caller holding
+	// only a shape can address the same image again — to swap it, for
+	// instance — without re-walking the slide relationships itself.
+	RelID    string `json:"rel_id,omitempty"`
+	PartPath string `json:"part_path,omitempty"`
 }
 
 type ImageCrop struct {
@@ -256,51 +263,20 @@ type ShapeUpdate struct {
 	ClickAction *Hyperlink            `json:"click_action,omitempty"`
 	HoverAction *Hyperlink            `json:"hover_action,omitempty"`
 	Crop        *ImageCrop            `json:"crop,omitempty"`
-	Rotation    *float64              `json:"rotation,omitempty"`
-	FlipH       *bool                 `json:"flip_h,omitempty"`
-	FlipV       *bool                 `json:"flip_v,omitempty"`
-	X           *int                  `json:"x,omitempty"`
-	Y           *int                  `json:"y,omitempty"`
-	W           *int                  `json:"w,omitempty"`
-	H           *int                  `json:"h,omitempty"`
-	Description *string               `json:"description,omitempty"`
-	AltText     *string               `json:"alt_text,omitempty"`
-	Title       *string               `json:"title,omitempty"`
-	Format      string                `json:"format,omitempty"`
-	IsSVG       bool                  `json:"is_svg,omitempty"`
-}
-
-// SlideImageRef describes one image relationship on a slide.
-type SlideImageRef struct {
-	Index  int
-	RelID  string
-	Target string
-}
-
-// SlideMediaRef describes one media relationship on a slide: an image, a sound
-// or a movie. Images already had a listing; audio and video did not, so an
-// embedded movie could not be found without walking relationships by hand
-// (upstream #1049).
-type SlideMediaRef struct {
-	Index int    `json:"index"`
-	RelID string `json:"rel_id"`
-	// Kind is "image", "audio" or "video".
-	Kind string `json:"kind"`
-	// Target is the raw relationship target; PartPath is that target resolved
-	// to a package part, and is empty for an external link.
-	Target      string `json:"target"`
-	PartPath    string `json:"part_path,omitempty"`
-	ContentType string `json:"content_type,omitempty"`
-	SizeBytes   int    `json:"size_bytes,omitempty"`
-	External    bool   `json:"external,omitempty"`
-}
-
-// ShapeAdjustmentValue sets one preset-geometry adjustment — a yellow handle in
-// PowerPoint's UI (upstream #1017). Value is a fraction in the same units the
-// reader reports, so 0.5 is the halfway point; Formula overrides it when a
-// caller needs a raw OOXML guide expression.
-type ShapeAdjustmentValue struct {
-	Name    string  `json:"name"`
-	Value   float64 `json:"value,omitempty"`
-	Formula string  `json:"formula,omitempty"`
+	// TransparentColor makes matching pixels in a picture fully transparent.
+	// It maps to DrawingML's a:clrChange image effect (upstream #165).
+	TransparentColor *string  `json:"transparent_color,omitempty"`
+	Rotation         *float64 `json:"rotation,omitempty"`
+	FlipH            *bool    `json:"flip_h,omitempty"`
+	FlipV            *bool    `json:"flip_v,omitempty"`
+	Hidden           *bool    `json:"hidden,omitempty"`
+	X                *int     `json:"x,omitempty"`
+	Y                *int     `json:"y,omitempty"`
+	W                *int     `json:"w,omitempty"`
+	H                *int     `json:"h,omitempty"`
+	Description      *string  `json:"description,omitempty"`
+	AltText          *string  `json:"alt_text,omitempty"`
+	Title            *string  `json:"title,omitempty"`
+	Format           string   `json:"format,omitempty"`
+	IsSVG            bool     `json:"is_svg,omitempty"`
 }

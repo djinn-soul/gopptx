@@ -251,3 +251,19 @@ class Table(_TableBandingMixin, TableFlagsMixin):
     def columns(self) -> TableColumns:
         """A column collection proxy."""
         return TableColumns(self)
+
+    def add_row(self, height: int = 0) -> TableRow:
+        """Append an empty row and return it (python-pptx name, Issue #86).
+
+        Args:
+            height: Row height in EMU. Pass 0 to let PowerPoint auto-size.
+        """
+        return self.rows.add(height)
+
+    def add_column(self, width: int | None = None) -> TableColumn:
+        """Append an empty column and return it (python-pptx name, Issue #86).
+
+        Args:
+            width: Column width in EMU. Defaults to the last column's width.
+        """
+        return self.columns.add(width)

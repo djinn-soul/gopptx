@@ -37,7 +37,7 @@ func convertNotesRun(r text.Run) TextRunSpec {
 		Color:         r.Color,
 		Highlight:     r.Highlight,
 		Font:          r.Font,
-		SizePt:        r.SizePt,
+		SizePt:        float64(r.SizePt),
 		Code:          r.Code,
 		AllCaps:       r.AllCaps,
 		SmallCaps:     r.SmallCaps,

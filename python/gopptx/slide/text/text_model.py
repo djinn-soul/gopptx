@@ -33,6 +33,17 @@ class ShapeTextFrame(BaseShapeTextFrame):
         """Add a paragraph to the text frame (Issue #1135)."""
         return self.paragraphs.add_paragraph(text)
 
+    def remove_paragraph(self, paragraph: object) -> None:
+        """Remove a paragraph or paragraph index from the text frame (Issue #144)."""
+        if isinstance(paragraph, int):
+            self.paragraphs[paragraph].remove()
+        elif hasattr(paragraph, "remove") and callable(paragraph.remove):
+            paragraph.remove()
+        else:
+            raise TypeError(
+                "paragraph must be a ShapeParagraphProxy or paragraph index"
+            )
+
     @text.setter
     def text(self, value: str) -> None:
         """Replace all text in the frame with a single paragraph."""

@@ -53,7 +53,10 @@ func (e *PresentationEditor) UpdateChartCachedValues(
 		return validateErr
 	}
 
-	patched, err := editormodchart.PatchChartDataCache(chartXML, kind, req)
+	patched, err := editormodchart.PatchChartDataCache(
+		chartXML, kind, req,
+		editormodchart.CachePatchOptions{KeepFormulas: true},
+	)
 	if err != nil {
 		return err
 	}

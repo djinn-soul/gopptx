@@ -32,6 +32,18 @@ func (e *PresentationEditor) GetThemeColorScheme() (ThemeColorScheme, error) {
 	if !ok {
 		return ThemeColorScheme{}, errors.New("theme part not found: " + inv.ThemeParts[0])
 	}
+	return parseThemeColorScheme(data)
+}
+
+func (e *PresentationEditor) themeColorSchemeForPart(partPath string) (ThemeColorScheme, error) {
+	data, ok := e.parts.Get(partPath)
+	if !ok {
+		return ThemeColorScheme{}, errors.New("theme part not found: " + partPath)
+	}
+	return parseThemeColorScheme(data)
+}
+
+func parseThemeColorScheme(data []byte) (ThemeColorScheme, error) {
 	block := themeClrSchemeBlock.FindString(string(data))
 	if block == "" {
 		return ThemeColorScheme{}, errors.New("theme part has no colour scheme")

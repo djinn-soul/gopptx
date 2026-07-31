@@ -6,13 +6,16 @@ from typing import TYPE_CHECKING, cast
 
 from typing_extensions import override
 
+from .background_inheritance_mixin import SlideBackgroundInheritanceMixin
 from .chart import Chart, ChartCollection
 from .chart.chart_mixin import SlideChartMixin
+from .master_shapes_mixin import SlideMasterShapesMixin
 from .placeholders.placeholder_mixin import SlidePlaceholderMixin
 from .shapes.picture_mixin import SlidePictureMixin
 from .shapes.shape_batch_mixin import SlideShapeBatchMixin
+from .shapes.shape_collection import ShapeCollection
 from .shapes.shape_mixin import SlideShapeMixin
-from .shapes.shape_proxy import ShapeCollection, ShapeProxy
+from .shapes.shape_proxy import ShapeProxy
 from .shapes.smartart_anim_mixin import SlideSmartArtAnimMixin
 from .slide_base import SlideBase
 from .tables.table_mixin import SlideTableMixin
@@ -20,6 +23,7 @@ from .text.text_cache_mixin import SlideTextCacheMixin
 from .text.text_mixin import SlideTextMixin
 
 if TYPE_CHECKING:
+    from ..presentation.slides.master import SlideLayout
     from ..schemas import Shape, ShapeProps, ShapeUpdate, SlideMetadata
     from .contracts import SlidePresentationProtocol
 
@@ -28,6 +32,8 @@ class Slide(
     SlideTableMixin,
     SlideChartMixin,
     SlidePlaceholderMixin,
+    SlideBackgroundInheritanceMixin,
+    SlideMasterShapesMixin,
     SlideBase,
     SlideTextCacheMixin,
     SlideTextMixin,
@@ -181,6 +187,22 @@ class Slide(
         self._flush_pending_text_updates_if_present()
         super().update_shape(shape_id, updates)
 
+    @property
+    def slide_layout(self) -> SlideLayout:
+        """Return the slide's bound layout."""
+        layout_part, _master_part = self._presentation.get_slide_layout_ref(self.index)
+        for master in self._presentation.slide_masters:
+            for layout in master.slide_layouts:
+                if layout_part in {layout.part_name, layout.name}:
+                    return layout
+        msg = f"slide {self.index} is bound to unknown layout {layout_part!r}"
+        raise LookupError(msg)
+
+    @slide_layout.setter
+    def slide_layout(self, layout: SlideLayout) -> None:
+        # rebind_layout also accepts a bare part path or name for string callers.
+        self.rebind_layout(layout.part_name)
+
     def update(
         self,
         title: str | None = None,
@@ -233,6 +255,36 @@ class Slide(
     def remove(self) -> None:
         """Remove this slide from the presentation."""
         self._presentation.remove_slide(self.index)
+
+    def delete(self) -> None:
+        """Alias for remove (Issue #67)."""
+        self.remove()
+
+    def move(self, new_index: int) -> None:
+        """Move slide to a new index in presentation (Issue #68)."""
+        self._presentation.move_slide(self.index, new_index)
+
+    def move_to(self, new_index: int) -> None:
+        """Alias for move (Issue #68)."""
+        self.move(new_index)
+
+    @property
+    def is_hidden(self) -> bool:
+        """Return whether this slide is hidden (Issue #319)."""
+        is_hidden_func = getattr(self._presentation, "is_slide_hidden", None)
+        if callable(is_hidden_func):
+            return bool(is_hidden_func(self.index))
+        return bool(
+            self._metadata.get("is_hidden", self._metadata.get("hidden", False))
+        )
+
+    @is_hidden.setter
+    def is_hidden(self, value: bool) -> None:
+        """Set whether this slide is hidden (Issue #319)."""
+        set_hidden_func = getattr(self._presentation, "set_slide_hidden", None)
+        if callable(set_hidden_func):
+            set_hidden_func(self.index, hidden=bool(value))
+        self._metadata["is_hidden"] = bool(value)
 
     def duplicate(self, insert_at: int | None = None) -> Slide:
         """Duplicate this slide."""

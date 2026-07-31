@@ -15,6 +15,11 @@ const (
 	initialCap      = 32
 )
 
+//nolint:gochecknoglobals // stable Python spellings that cannot be inferred from Go word boundaries
+var pythonNameOverrides = map[string]string{
+	"ThreeDPie": pyNameThreeDPie,
+}
+
 // chartType is one generated Python enum member.
 type chartType struct {
 	PyName string
@@ -67,8 +72,13 @@ func parseChartTypes(path string, kinds map[string]string) ([]chartType, error) 
 				resolveErr = fmt.Errorf("%s: %w", name.Name, valueErr)
 				return
 			}
+			goSuffix := strings.TrimPrefix(name.Name, chartTypePrefix)
+			pyName := toScreamingSnake(goSuffix)
+			if override, ok := pythonNameOverrides[goSuffix]; ok {
+				pyName = override
+			}
 			types = append(types, chartType{
-				PyName: toScreamingSnake(strings.TrimPrefix(name.Name, chartTypePrefix)),
+				PyName: pyName,
 				Value:  value,
 				GoName: name.Name,
 			})

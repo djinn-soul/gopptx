@@ -51,6 +51,10 @@ func patchChartTitleLayout(block string, titleX, titleY *float64) string {
 	}
 
 	existing := reChartTitleLayout.FindString(block)
+	if existing != "" && strings.Contains(existing, "</c:manualLayout>") {
+		patched := patchManualLayoutCoordinates(existing, titleX, titleY)
+		return strings.Replace(block, existing, patched, 1)
+	}
 	x, y := 0.0, 0.0
 	if existing != "" {
 		x, y = parseManualLayoutXY(existing)
@@ -75,6 +79,52 @@ func patchChartTitleLayout(block string, titleX, titleY *float64) string {
 		return strings.Replace(block, "</c:tx>", "</c:tx>"+layout, 1)
 	}
 	return strings.Replace(block, "<c:title>", "<c:title>"+layout, 1)
+}
+
+func patchManualLayoutCoordinates(layout string, titleX, titleY *float64) string {
+	start := strings.Index(layout, "<c:manualLayout")
+	if start < 0 {
+		return layout
+	}
+	openTagEndRel := strings.Index(layout[start:], ">")
+	if openTagEndRel < 0 {
+		return layout
+	}
+	openTagEnd := start + openTagEndRel + 1
+	closeRel := strings.Index(layout[openTagEnd:], "</c:manualLayout>")
+	if closeRel < 0 {
+		return layout
+	}
+	end := openTagEnd + closeRel + len("</c:manualLayout>")
+	manual := layout[start:end]
+
+	manual = patchManualLayoutCoordinate(manual, "x", titleX, []string{
+		"<c:y", "<c:w", "<c:h", chartExtensionListTagPrefix,
+	})
+	manual = patchManualLayoutCoordinate(manual, "y", titleY, []string{
+		"<c:w", "<c:h", chartExtensionListTagPrefix,
+	})
+	return layout[:start] + manual + layout[end:]
+}
+
+func patchManualLayoutCoordinate(
+	manual string,
+	axis string,
+	value *float64,
+	anchors []string,
+) string {
+	if value == nil {
+		return manual
+	}
+	node := `<c:` + axis + ` val="` + formatChartFraction(*value) + `"/>`
+	pattern := reLayoutX
+	if axis == "y" {
+		pattern = reLayoutY
+	}
+	if pattern.MatchString(manual) {
+		return pattern.ReplaceAllLiteralString(manual, node)
+	}
+	return insertBeforeFirstOrClose(manual, node, "manualLayout", anchors)
 }
 
 func parseManualLayoutXY(layout string) (float64, float64) {

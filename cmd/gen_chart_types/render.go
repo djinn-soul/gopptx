@@ -9,6 +9,7 @@ const (
 	pyNameBar       = "BAR"
 	pyNameColumn    = "COLUMN"
 	pyNameStockOHLC = "STOCK_OHLC"
+	pyNameThreeDPie = "THREE_D_PIE"
 )
 
 //nolint:gochecknoglobals // immutable generator configuration
@@ -35,6 +36,7 @@ var memberDoc = map[string]string{
 	"AREA_STACKED":     "Stacked area chart.",
 	"AREA_STACKED_100": "100% stacked area chart.",
 	"PIE":              "Pie chart.",
+	pyNameThreeDPie:    "3D pie chart.",
 	"DOUGHNUT":         "Doughnut chart.",
 	"BUBBLE":           "Bubble chart. Takes x, y and size values, not categories.",
 	"RADAR":            "Radar chart.",

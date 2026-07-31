@@ -23,16 +23,9 @@ func applyParsedShapeEffects(ps *ParsedShapeProperties, s *shapeXML) {
 	}
 }
 func applyParsedShadow(ps *ParsedShapeProperties, s *shapeXML) {
-	if s.SpPr.EffectLst.OuterShdw == nil &&
-		s.SpPr.EffectLst.Glow == nil &&
-		s.SpPr.EffectLst.Blur == nil &&
-		s.SpPr.EffectLst.SoftEdge == nil &&
-		s.SpPr.EffectLst.Reflection == nil {
+	if s.SpPr.EffectLst.OuterShdw == nil {
 		inherit := false
 		ps.Shadow = &common.ShapeShadow{Inherit: &inherit}
-		return
-	}
-	if s.SpPr.EffectLst.OuterShdw == nil {
 		return
 	}
 	outer := s.SpPr.EffectLst.OuterShdw

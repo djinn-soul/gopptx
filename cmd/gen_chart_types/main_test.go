@@ -37,6 +37,34 @@ func TestToScreamingSnake(t *testing.T) {
 	}
 }
 
+func TestParseChartTypesUsesStablePythonNameOverride(t *testing.T) {
+	dir := t.TempDir()
+	kindPath := filepath.Join(dir, "kinds.go")
+	enumPath := filepath.Join(dir, "enums.go")
+	if err := os.WriteFile(kindPath, []byte(`package pptxxml
+const ChartKindThreeDPie = "pie3D"
+`), 0o600); err != nil {
+		t.Fatalf("write kinds: %v", err)
+	}
+	if err := os.WriteFile(enumPath, []byte(`package enums
+const XLChartTypeThreeDPie XLChartType = pptxxml.ChartKindThreeDPie
+`), 0o600); err != nil {
+		t.Fatalf("write enums: %v", err)
+	}
+
+	kinds, err := parseChartKinds(kindPath)
+	if err != nil {
+		t.Fatalf("parseChartKinds: %v", err)
+	}
+	types, err := parseChartTypes(enumPath, kinds)
+	if err != nil {
+		t.Fatalf("parseChartTypes: %v", err)
+	}
+	if len(types) != 1 || types[0].PyName != pyNameThreeDPie {
+		t.Fatalf("generated names = %+v, want THREE_D_PIE", types)
+	}
+}
+
 func TestParseStringConsts(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "kinds.go")
 	src := `package pptxxml

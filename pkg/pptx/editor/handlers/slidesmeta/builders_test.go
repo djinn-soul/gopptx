@@ -32,6 +32,7 @@ func TestBuildChartDefinition(t *testing.T) {
 	for _, chartType := range []string{
 		"line",
 		"pie",
+		"pie3D",
 		"barHorizontal",
 		"barStacked",
 		"barStacked100",

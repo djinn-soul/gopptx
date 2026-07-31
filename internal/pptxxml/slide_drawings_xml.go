@@ -13,10 +13,17 @@ const (
 	emusPerDegree       = 60000
 	shadowScaleBase     = 100000
 	transparencyBase    = 100000
-	defaultMargin       = 457200
-	customShapeGrowCap  = 2048
-	midpointDivisor     = 2
-	normAutoFitToken    = "normAutoFit"
+	// defaultMargin is the slide-edge inset used to lay out title and content
+	// placeholders. It is a layout choice, not a text inset.
+	defaultMargin = 457200
+	// OOXML's implicit a:bodyPr insets (ECMA-376 §20.1.10.44): 0.1" left/right,
+	// 0.05" top/bottom. Writing these keeps a re-rendered shape looking the same
+	// as one PowerPoint drew from an a:bodyPr with no inset attributes at all.
+	defaultInsetLR     = 91440
+	defaultInsetTB     = 45720
+	customShapeGrowCap = 2048
+	midpointDivisor    = 2
+	normAutoFitToken   = "normAutoFit"
 )
 
 func customShapeXML(shape ShapeSpec, shapeID int) string {

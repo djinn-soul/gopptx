@@ -47,13 +47,12 @@ func (e *PresentationEditor) GetEffectiveShapeStyle(
 	}
 
 	style := &common.EffectiveShapeStyle{}
-	applyShapeOwnStyle(style, shape, content)
-
 	chain := e.styleInheritanceChain(slideIndex, shape)
+	applyShapeOwnStyle(style, shape, content, chain.theme)
 	style.LayoutPart = chain.layoutPart
 	style.MasterPart = chain.masterPart
 	for _, level := range chain.levels {
-		applyInheritedStyle(style, level)
+		applyInheritedStyle(style, level, chain.theme)
 	}
 	applyThemeStyle(style, chain.theme)
 
@@ -63,13 +62,15 @@ func (e *PresentationEditor) GetEffectiveShapeStyle(
 
 // applyShapeOwnStyle takes everything the shape states directly. Direct
 // properties always win, so nothing later overwrites what this sets.
-func applyShapeOwnStyle(style *common.EffectiveShapeStyle, shape *parsedShape, content []byte) {
-	if color, slot, found := solidFillColor(content[shape.Start:shape.End]); found {
-		style.FillColor = &common.EffectiveColor{
-			RGB:        color,
-			SchemeSlot: slot,
-			Source:     common.StyleSourceShape,
-		}
+func applyShapeOwnStyle(
+	style *common.EffectiveShapeStyle,
+	shape *parsedShape,
+	content []byte,
+	theme themeStyleContext,
+) {
+	shapeXML := content[shape.Start:shape.End]
+	if color, found := solidFillColorDetails(shapeXML); found {
+		style.FillColor = effectiveColor(color, common.StyleSourceShape, theme)
 	}
 	if shape.W > 0 && shape.H > 0 {
 		style.Position = &common.EffectivePosition{
@@ -84,7 +85,12 @@ func applyShapeOwnStyle(style *common.EffectiveShapeStyle, shape *parsedShape, c
 		return
 	}
 	run := shape.Runs[0]
-	if run.Color != nil && *run.Color != "" {
+	if rPr := firstRunPropertiesPattern.Find(shapeXML); len(rPr) > 0 {
+		if color, found := solidFillColorDetails(rPr); found {
+			style.FontColor = effectiveColor(color, common.StyleSourceShape, theme)
+		}
+	}
+	if style.FontColor == nil && run.Color != nil && *run.Color != "" {
 		style.FontColor = &common.EffectiveColor{RGB: *run.Color, Source: common.StyleSourceShape}
 	}
 	if run.Font != nil && *run.Font != "" {
@@ -92,7 +98,7 @@ func applyShapeOwnStyle(style *common.EffectiveShapeStyle, shape *parsedShape, c
 	}
 	if run.SizePt != nil {
 		style.FontSizePt = &common.EffectiveFloat{
-			Value:  float64(*run.SizePt),
+			Value:  *run.SizePt,
 			Source: common.StyleSourceShape,
 		}
 	}
@@ -106,20 +112,24 @@ func applyShapeOwnStyle(style *common.EffectiveShapeStyle, shape *parsedShape, c
 
 // applyInheritedStyle fills only the values still unset, so the nearer level in
 // the chain keeps its win.
-func applyInheritedStyle(style *common.EffectiveShapeStyle, level inheritedStyle) {
-	if style.FillColor == nil && level.fillRGB != "" {
-		style.FillColor = &common.EffectiveColor{
-			RGB:        level.fillRGB,
-			SchemeSlot: level.fillScheme,
-			Source:     level.source,
-		}
+func applyInheritedStyle(
+	style *common.EffectiveShapeStyle,
+	level inheritedStyle,
+	theme themeStyleContext,
+) {
+	if style.FillColor == nil && (level.fillRGB != "" || level.fillScheme != "") {
+		style.FillColor = effectiveColor(styleColor{
+			rgb:        level.fillRGB,
+			scheme:     level.fillScheme,
+			transforms: level.fillTransforms,
+		}, level.source, theme)
 	}
 	if style.FontColor == nil && (level.fontRGB != "" || level.fontScheme != "") {
-		style.FontColor = &common.EffectiveColor{
-			RGB:        level.fontRGB,
-			SchemeSlot: level.fontScheme,
-			Source:     level.source,
-		}
+		style.FontColor = effectiveColor(styleColor{
+			rgb:        level.fontRGB,
+			scheme:     level.fontScheme,
+			transforms: level.fontTransforms,
+		}, level.source, theme)
 	}
 	if style.FontTypeface == nil && level.typeface != "" {
 		style.FontTypeface = &common.EffectiveString{Value: level.typeface, Source: level.source}
@@ -164,7 +174,7 @@ func applyThemeStyle(style *common.EffectiveShapeStyle, theme themeStyleContext)
 // the concrete RGB the theme gives it.
 func resolveSchemeColors(style *common.EffectiveShapeStyle, theme themeStyleContext) {
 	for _, color := range []*common.EffectiveColor{style.FillColor, style.FontColor} {
-		if color == nil || color.SchemeSlot == "" {
+		if color == nil || color.SchemeSlot == "" || color.RGB != "" {
 			continue
 		}
 		if rgb, ok := theme.resolveSchemeSlot(color.SchemeSlot); ok {

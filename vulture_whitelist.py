@@ -496,6 +496,7 @@ _PresentationTemplateProtocol  # unused class (python\gopptx\presentation\base.p
 _GopptxLibProtocol  # unused class (python\gopptx\presentation\base.py)
 ptr  # unused variable (python\gopptx\presentation\base.py)
 _RawGopptxLibProtocol  # unused class (python\gopptx\presentation\base.py)
+_.open_deck  # unused method (python\gopptx\presentation\base.py)
 _.from_template  # unused method (python\gopptx\presentation\base.py)
 _.render_template  # unused method (python\gopptx\presentation\base.py)
 _PresentationSlidesProto  # unused class (python\gopptx\presentation\headers_footers_mixin.py)
@@ -763,3 +764,54 @@ value_axis_tick_label_rotation  # unused variable (python\gopptx\schemas_chart_l
 value_axis_cross_between  # unused variable (python\gopptx\schemas_chart_layout.py)
 cross_between  # unused variable (python\gopptx\schemas_chart_layout.py ChartAxisState)
 _.tick_label_rotation  # unused property (python\gopptx\slide\chart\axis_format.py)
+
+# Facade parity and next 10 issues (#41, #49, #67, #68, #144, #194, #319, #339, #452, #547)
+_.insert_slide
+_.move_to_front
+_.move_to_back
+_.z_order
+_.remove_paragraph
+_.remove_run
+_.flip_x
+_.flip_y
+_.hidden
+_.is_hidden
+fore_color
+replace
+
+# Issue #96 (shapes.clear) and #269 (SlideMaster.get_layout)
+_.clear
+_.get_layout
+_.slide_layout_id
+LayoutID  # unused variable (python\gopptx\schemas_chart_layout.py SlideLayoutInfo)
+
+# Issue #86 (Table.add_row / add_column)
+_.add_row
+_.add_column
+
+# Issue #309 (access shapes by name)
+_.get_by_name
+_.names
+
+# Issue #165 (make a picture source color transparent)
+transparent_color
+_.make_color_transparent
+_.iter_leaf_shapes
+_.dash_style
+
+# Issue #298 (Chart.plot_area.format.line)
+plot_area_line
+_.plot_area
+SOLID  # unused variable (python\gopptx\constants.py LineDashStyle)
+DASH  # unused variable (python\gopptx\constants.py LineDashStyle)
+DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+LONG_DASH  # unused variable (python\gopptx\constants.py LineDashStyle)
+LONG_DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+LONG_DASH_DOT_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+ROUND_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+SQUARE_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+SYSTEM_DASH_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+SYSTEM_DASH_DOT_DOT  # unused variable (python\gopptx\constants.py LineDashStyle)
+
+# Issue #235 (THREE_D_PIE chart type)
+THREE_D_PIE  # unused variable (python\gopptx\presentation\charts\chart_types.py)

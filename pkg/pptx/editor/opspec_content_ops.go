@@ -105,6 +105,7 @@ func contentMediaAndStructureOps() []string {
 		OpSetSmartArtStyle,
 		OpSetSmartArtNodes,
 		OpSetSlideBackground,
+		OpGetSlideBackground,
 		OpSetSlideHeaderFooter,
 		OpGetSlideHeaderFooter,
 		OpGetHandoutMaster,

@@ -188,7 +188,9 @@ func (e *PresentationEditor) applyChartDataUpdateByRef(
 
 	e.chartEmbeddings[chartRef.ChartPart] = excelPartPath
 
-	patchedChartXML, err := editormodchart.PatchChartDataCache(chartXML, kind, req)
+	patchedChartXML, err := editormodchart.PatchChartDataCache(
+		chartXML, kind, req, editormodchart.CachePatchOptions{},
+	)
 	if err != nil {
 		return err
 	}

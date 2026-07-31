@@ -43,7 +43,7 @@ const (
 //
 //nolint:gochecknoglobals // Fixed enumeration, as elsewhere in this package.
 var markerSymbols = map[string]bool{
-	markerSymbolCircle: true, "dash": true, "diamond": true, "dot": true, "none": true,
+	markerSymbolCircle: true, lineDashPresetDash: true, "diamond": true, "dot": true, "none": true,
 	xmlValuePlus: true, "square": true, "star": true, "triangle": true, "x": true,
 	"auto": true,
 }
