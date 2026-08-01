@@ -52,6 +52,7 @@ class SlidePlaceholderMixin:
         """Set content (text, image, table, or chart) on a placeholder. Internal method used by Placeholder."""
         text = kwargs.get("text")
         image_path = kwargs.get("image_path")
+        image_fit = kwargs.get("image_fit")
         bounds = kwargs.get("bounds")
         text_style = kwargs.get("text_style")
         table_rows = kwargs.get("table_rows")
@@ -78,6 +79,7 @@ class SlidePlaceholderMixin:
             ph_type,
             text=text if isinstance(text, str) else None,
             image_path=image_path if isinstance(image_path, str) else None,
+            image_fit=image_fit if isinstance(image_fit, str) else None,
             bounds=typed_bounds,
             text_style=cast("dict[str, object] | None", text_style)
             if isinstance(text_style, dict)

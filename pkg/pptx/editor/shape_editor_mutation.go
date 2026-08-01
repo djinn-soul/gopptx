@@ -90,7 +90,7 @@ func (e *PresentationEditor) updateShapeInPart(
 		updates:   updates,
 		origSlide: content,
 	}
-	newXML := replaceShapeNodes(content, shapes, updater.apply)
+	newXML := replaceShapeNodes(content, shapes, updater.applyOrDescend(content))
 	if updater.err != nil {
 		return updater.err
 	}

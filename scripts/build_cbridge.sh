@@ -5,10 +5,11 @@ set -e
 outDir="bindings/c/build"
 mkdir -p "$outDir"
 
-libName="libgopptx.so"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    libName="libgopptx.dylib"
-fi
+case "$(go env GOOS)" in
+    darwin)  libName="libgopptx.dylib" ;;
+    windows) libName="gopptx.dll" ;;
+    *)       libName="libgopptx.so" ;;
+esac
 pythonLibPath="python/gopptx/$libName"
 
 echo "Building gopptx shared library..."
@@ -22,4 +23,4 @@ echo "Build successful!"
 echo "Library: $outDir/$libName"
 cp "$outDir/$libName" "$pythonLibPath"
 echo "Python package library synced: $pythonLibPath"
-echo "Header: $outDir/libgopptx.h"
+echo "Header: $outDir/${libName%.*}.h"

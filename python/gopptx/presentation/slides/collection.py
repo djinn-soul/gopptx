@@ -96,11 +96,20 @@ class Slides:
         if not callable(add_func):
             raise AttributeError("owner does not support add_slide")
 
+        # A SlideLayout object names a concrete layout part. Routing its display
+        # name ("Title Slide", or any custom layout name) through add_slide would
+        # hit SlideLayoutType.validate, which only accepts the four built-in
+        # tokens. Create the slide first, then rebind it to that exact part.
+        layout_part = getattr(layout, "part_name", None) if layout is not None else None
         layout_name = (
-            getattr(layout, "name", str(layout)) if layout is not None else None
+            None
+            if layout is None or layout_part is not None
+            else getattr(layout, "name", str(layout))
         )
         slide_obj = cast("Slide", add_func(title=title, layout=layout_name))
         slide_idx = getattr(slide_obj, "index", -1)
+        if layout_part and isinstance(slide_idx, int) and slide_idx >= 0:
+            slide_obj.rebind_layout(cast("str", layout_part))
         if index is not None and isinstance(slide_idx, int) and index != slide_idx:
             self.move(slide_idx, index)
             slides_list = cast("list[Slide]", getattr(self._owner, "slides", []))

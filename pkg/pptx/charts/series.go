@@ -12,6 +12,10 @@ import (
 type Series struct {
 	Name   string
 	Values []float64
+	// SecondaryAxis draws this series against the secondary value axis. It is
+	// honoured for combo line series; a combo whose line series disagree gets
+	// one line plot per axis so an unmarked series keeps the primary scale.
+	SecondaryAxis bool
 }
 
 func CopySeriesList(series []Series) []Series {
@@ -20,8 +24,9 @@ func CopySeriesList(series []Series) []Series {
 		vals := make([]float64, len(series[i].Values))
 		copy(vals, series[i].Values)
 		out[i] = Series{
-			Name:   series[i].Name,
-			Values: vals,
+			Name:          series[i].Name,
+			Values:        vals,
+			SecondaryAxis: series[i].SecondaryAxis,
 		}
 	}
 	return out
@@ -64,8 +69,9 @@ func ToXMLSeries(series []Series) []pptxxml.ChartSeries {
 	out := make([]pptxxml.ChartSeries, len(series))
 	for i := range series {
 		out[i] = pptxxml.ChartSeries{
-			Name:   series[i].Name,
-			Values: CopyFloat64Slice(series[i].Values),
+			Name:          series[i].Name,
+			Values:        CopyFloat64Slice(series[i].Values),
+			SecondaryAxis: series[i].SecondaryAxis,
 		}
 	}
 	return out

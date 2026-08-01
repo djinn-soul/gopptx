@@ -182,6 +182,9 @@ func ParseUpdateSlideRequest(
 type ChartSeriesRequest struct {
 	Name   string
 	Values []float64
+	// SecondaryAxis marks a combo line series as drawn against the secondary
+	// value axis, leaving the unmarked line series on the primary one.
+	SecondaryAxis bool
 }
 
 type AddChartRequest struct {
@@ -196,6 +199,10 @@ type AddChartRequest struct {
 	Y          int64
 	W          int64
 	H          int64
+
+	// SecondaryAxis puts a combo chart's line series on their own value axis.
+	SecondaryAxis           bool
+	SecondaryValueAxisTitle string
 }
 
 func ParseAddChartRequest(
@@ -229,6 +236,11 @@ func ParseAddChartRequest(
 	h, _ := optionalInt64(payload, "h")
 	barSeries := parseChartSeriesList(payload, "bar_series")
 	lineSeries := parseChartSeriesList(payload, "line_series")
+	secondaryAxisTitle := optionalString(payload, "secondary_value_axis_title")
+	secondaryAxis, _ := payload["secondary_axis"].(bool)
+	// A title on an axis that is never drawn would be silently dropped, so
+	// naming the axis is taken as asking for it.
+	secondaryAxis = secondaryAxis || secondaryAxisTitle != ""
 
 	return AddChartRequest{
 		SlideIndex: slideIndex,
@@ -242,6 +254,9 @@ func ParseAddChartRequest(
 		Y:          y,
 		W:          w,
 		H:          h,
+
+		SecondaryAxis:           secondaryAxis,
+		SecondaryValueAxisTitle: secondaryAxisTitle,
 	}, true
 }
 
@@ -272,7 +287,11 @@ func parseChartSeriesList(payload map[string]any, key string) []ChartSeriesReque
 				}
 			}
 		}
-		out = append(out, ChartSeriesRequest{Name: name, Values: vals})
+		seriesSecondary, _ := m["secondary_axis"].(bool)
+		out = append(
+			out,
+			ChartSeriesRequest{Name: name, Values: vals, SecondaryAxis: seriesSecondary},
+		)
 	}
 	return out
 }

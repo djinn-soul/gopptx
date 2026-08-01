@@ -212,15 +212,31 @@ class Placeholder:
         self,
         image_path: str,
         bounds: tuple[float, float, float, float] | None = None,
+        fit: str = "stretch",
     ) -> None:
         """Replace the placeholder with a picture.
 
         Args:
             image_path: Path to the image file.
             bounds: Optional (x, y, width, height) in points relative to the placeholder.
+            fit: How the image fills the placeholder box.
+
+                - ``"stretch"`` (default) distorts the image to the box, which is
+                  the plain OOXML behaviour and what this method always did.
+                - ``"contain"`` shrinks the image inside the box, preserving the
+                  aspect ratio and centring the letterboxed result.
+                - ``"cover"`` fills the box and crops the overflowing axis
+                  evenly, like PowerPoint's own picture "Fill".
+
+                ``"contain"`` and ``"cover"`` need a sized box: pass ``bounds``
+                when the placeholder inherits its geometry from the layout.
         """
         self._slide.set_placeholder_content(
-            self.idx, self._type, image_path=image_path, bounds=bounds
+            self.idx,
+            self._type,
+            image_path=image_path,
+            bounds=bounds,
+            image_fit=fit,
         )
 
     def insert_table(

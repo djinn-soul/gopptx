@@ -122,6 +122,14 @@ class PresentationChartMixin(
             categories: List of category labels.
             bar_series: List of bar series dicts with "name" and "values" keys.
             line_series: List of line series dicts with "name" and "values" keys.
+                A series may also carry ``"secondary_axis": True`` to draw that
+                series against its own value axis on the right instead of
+                sharing the bar series' scale, which is what keeps a growth
+                percentage readable next to revenue. Series without the flag
+                stay on the primary axis, so a mixed set is drawn as two line
+                plots. ``"secondary_axis_title"`` labels that axis and enables
+                it on its own; when no series is marked, every line series moves
+                to it.
             title: Chart title.
             bounds: (x, y, width, height) in EMU.
 
@@ -139,6 +147,18 @@ class PresentationChartMixin(
             )
         """
         x, y, w, h = bounds
+        line_payload = [dict(s) for s in line_series]
+        secondary_title = next(
+            (
+                str(s["secondary_axis_title"])
+                for s in line_payload
+                if s.get("secondary_axis_title")
+            ),
+            "",
+        )
+        secondary_axis = bool(secondary_title) or any(
+            bool(s.get("secondary_axis")) for s in line_payload
+        )
         result = self.execute(
             ops.OP_ADD_CHART,
             {
@@ -148,11 +168,13 @@ class PresentationChartMixin(
                 "categories": categories,
                 "values": [],
                 "bar_series": [dict(s) for s in bar_series],
-                "line_series": [dict(s) for s in line_series],
+                "line_series": line_payload,
                 "x": x,
                 "y": y,
                 "w": w,
                 "h": h,
+                "secondary_axis": secondary_axis,
+                "secondary_value_axis_title": secondary_title,
             },
         )
         return int(cast("int", result.get("shape_id") or result.get("chart_id", 0)))

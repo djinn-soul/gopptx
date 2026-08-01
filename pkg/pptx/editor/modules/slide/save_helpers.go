@@ -83,6 +83,13 @@ func FilterXMLPartPaths(paths []string) []string {
 	return filtered
 }
 
+// SaveZipMethod reports the zip compression method for a part.
+//
+// Storing small parts instead of deflating them was measured and rejected: on a
+// 193-entry deck it left save time unchanged (3.80ms vs 3.75ms, within noise)
+// while growing the package 13.7%. Deflate's Huffman cost scales with content
+// rather than being fixed per entry, so the handful of large parts dominates it
+// and the many small ones are not worth trading size for.
 func SaveZipMethod(path string) uint16 {
 	lowerPath := strings.ToLower(path)
 	if strings.HasPrefix(lowerPath, "ppt/notes") {

@@ -154,7 +154,9 @@ class PresentationBase(
                     f"Could not find shared library {lib_name}. Please build it first."
                 )
 
-            lib = cast("_RawGopptxLibProtocol", ctypes.CDLL(lib_path))
+            # ctypes.CDLL only grew os.PathLike support in 3.12, and its Windows
+            # branch inspects the name as a string, so pass the path as text.
+            lib = cast("_RawGopptxLibProtocol", ctypes.CDLL(str(lib_path)))
             # The *_ex entry points take a char** out-parameter for the error
             # message. The older deck_open/deck_new/deck_open_bytes report through
             # a process-wide slot that races across threads — do not use them.

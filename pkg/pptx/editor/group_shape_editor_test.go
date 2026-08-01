@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -92,5 +93,59 @@ func TestAddFreeformShapeWritesCustomGeometry(t *testing.T) {
 	}
 	if !strings.Contains(xmlText, "<a:close/>") {
 		t.Fatalf("expected closed path marker in freeform shape xml")
+	}
+}
+
+// The slide scan consumes a group as one node, so updating a shape inside one
+// used to report the id as missing (Codex review).
+func TestUpdateShapeInsideGroup(t *testing.T) {
+	basePath := writeDeckFixture(t, "group-nested-update-test.pptx", []elements.SlideContent{
+		elements.NewSlide("Group Update").AddBullet("body"),
+	})
+	editor, err := OpenPresentationEditor(basePath)
+	if err != nil {
+		t.Fatalf("open editor: %v", err)
+	}
+	defer func() { _ = editor.Close() }()
+
+	shapeA, err := editor.AddShape(0, "rect", 100, 100, 400, 300)
+	if err != nil {
+		t.Fatalf("add shape A: %v", err)
+	}
+	shapeB, err := editor.AddShape(0, "ellipse", 650, 100, 500, 300)
+	if err != nil {
+		t.Fatalf("add shape B: %v", err)
+	}
+	if _, err = editor.AddGroupShape(0, []int{shapeA, shapeB}); err != nil {
+		t.Fatalf("add group shape: %v", err)
+	}
+
+	text := "nested text"
+	if err = editor.UpdateShape(0, shapeB, common.ShapeUpdate{Text: &text}); err != nil {
+		t.Fatalf("update nested shape: %v", err)
+	}
+
+	slideXML, ok := editor.parts.Get(editor.slides[0].Part)
+	if !ok {
+		t.Fatal("missing slide part")
+	}
+	xmlText := string(slideXML)
+	if !strings.Contains(xmlText, text) {
+		t.Fatalf("nested shape text was not written: %s", xmlText)
+	}
+	// The group wrapper and its other child must survive the rewrite.
+	if !strings.Contains(xmlText, "<p:grpSp") {
+		t.Fatal("group wrapper was lost")
+	}
+	if !strings.Contains(xmlText, fmt.Sprintf(`<p:cNvPr id="%d"`, shapeA)) {
+		t.Fatal("sibling shape was lost")
+	}
+	if strings.Count(xmlText, fmt.Sprintf(`<p:cNvPr id="%d"`, shapeB)) != 1 {
+		t.Fatalf("nested shape was duplicated: %s", xmlText)
+	}
+
+	missing := "no such shape"
+	if err = editor.UpdateShape(0, 999999, common.ShapeUpdate{Text: &missing}); err == nil {
+		t.Fatal("expected an error for an id that is in no group")
 	}
 }
