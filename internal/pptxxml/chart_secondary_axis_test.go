@@ -162,3 +162,40 @@ func TestSinglePlotChartsKeepThePrimaryAxisPair(t *testing.T) {
 		})
 	}
 }
+
+// A combo with one marked and one unmarked line series must keep the unmarked
+// one on the primary scale, which takes a line plot per axis pair.
+func TestComboChartKeepsUnmarkedLineSeriesOnPrimaryAxis(t *testing.T) {
+	spec := comboSpec(true)
+	spec.LineSeries = []ChartSeries{
+		{Name: "Growth", Values: []float64{4.5, 13.7}, SecondaryAxis: true},
+		{Name: "Target", Values: []float64{800, 900}},
+	}
+	xml := comboChartPartXML(spec)
+
+	plots := regexp.MustCompile(`(?s)<c:lineChart>.*?</c:lineChart>`).FindAllString(xml, -1)
+	if len(plots) != 2 {
+		t.Fatalf("expected one line plot per axis pair, got %d", len(plots))
+	}
+	var primaryPlot, secondaryPlot string
+	for _, plot := range plots {
+		if strings.Contains(plot, `<c:axId val="`+strconv.Itoa(secondaryValAxID)+`"/>`) {
+			secondaryPlot = plot
+		} else {
+			primaryPlot = plot
+		}
+	}
+	if primaryPlot == "" || secondaryPlot == "" {
+		t.Fatalf("expected a primary and a secondary line plot, got %v", plots)
+	}
+	if !strings.Contains(secondaryPlot, "Growth") || strings.Contains(secondaryPlot, "Target") {
+		t.Fatalf("only the marked series belongs on the secondary axis: %s", secondaryPlot)
+	}
+	if !strings.Contains(primaryPlot, "Target") || strings.Contains(primaryPlot, "Growth") {
+		t.Fatalf("the unmarked series must stay on the primary axis: %s", primaryPlot)
+	}
+	// Splitting the series across plots must not renumber them.
+	if !strings.Contains(primaryPlot, `<c:idx val="2"/>`) {
+		t.Fatalf("series kept its chart-wide index: %s", primaryPlot)
+	}
+}

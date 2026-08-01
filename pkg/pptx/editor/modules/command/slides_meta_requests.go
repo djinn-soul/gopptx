@@ -182,6 +182,9 @@ func ParseUpdateSlideRequest(
 type ChartSeriesRequest struct {
 	Name   string
 	Values []float64
+	// SecondaryAxis marks a combo line series as drawn against the secondary
+	// value axis, leaving the unmarked line series on the primary one.
+	SecondaryAxis bool
 }
 
 type AddChartRequest struct {
@@ -284,7 +287,11 @@ func parseChartSeriesList(payload map[string]any, key string) []ChartSeriesReque
 				}
 			}
 		}
-		out = append(out, ChartSeriesRequest{Name: name, Values: vals})
+		seriesSecondary, _ := m["secondary_axis"].(bool)
+		out = append(
+			out,
+			ChartSeriesRequest{Name: name, Values: vals, SecondaryAxis: seriesSecondary},
+		)
 	}
 	return out
 }

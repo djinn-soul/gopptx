@@ -45,6 +45,64 @@ func (c Pie3DChart) Size(cx styling.Length, cy styling.Length) Pie3DChart {
 	return c
 }
 
+// WithSeriesName sets the series name.
+func (c Pie3DChart) WithSeriesName(name string) Pie3DChart {
+	c.PieChart = c.PieChart.WithSeriesName(name)
+	return c
+}
+
+// WithLegend toggles the legend.
+func (c Pie3DChart) WithLegend(show bool) Pie3DChart {
+	c.PieChart = c.PieChart.WithLegend(show)
+	return c
+}
+
+// WithLegendPosition sets the legend position.
+func (c Pie3DChart) WithLegendPosition(position string) Pie3DChart {
+	c.PieChart = c.PieChart.WithLegendPosition(position)
+	return c
+}
+
+// WithLegendOverlay toggles drawing the legend over the plot area.
+func (c Pie3DChart) WithLegendOverlay(overlay bool) Pie3DChart {
+	c.PieChart = c.PieChart.WithLegendOverlay(overlay)
+	return c
+}
+
+// WithTitleOverlay toggles drawing the title over the plot area.
+func (c Pie3DChart) WithTitleOverlay(overlay bool) Pie3DChart {
+	c.PieChart = c.PieChart.WithTitleOverlay(overlay)
+	return c
+}
+
+// WithDataLabels toggles data labels.
+func (c Pie3DChart) WithDataLabels(show bool) Pie3DChart {
+	c.PieChart = c.PieChart.WithDataLabels(show)
+	return c
+}
+
+// WithDataLabelPosition sets data-label position.
+func (c Pie3DChart) WithDataLabelPosition(position string) Pie3DChart {
+	c.PieChart = c.PieChart.WithDataLabelPosition(position)
+	return c
+}
+
+// WithDataLabelContent customizes data-label content fields.
+func (c Pie3DChart) WithDataLabelContent(
+	showValue bool,
+	showCategory bool,
+	showSeriesName bool,
+	showPercent bool,
+) Pie3DChart {
+	c.PieChart = c.PieChart.WithDataLabelContent(
+		showValue,
+		showCategory,
+		showSeriesName,
+		showPercent,
+	)
+	return c
+}
+
 // ToChartSpec converts Pie3DChart to the internal 3D-pie XML spec.
 func (c Pie3DChart) ToChartSpec() *pptxxml.ChartSpec {
 	spec := c.PieChart.ToChartSpec()

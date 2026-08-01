@@ -10,7 +10,16 @@ if sys.version_info >= (3, 11):
 else:
 
     class StrEnum(str, Enum):
-        """Python 3.10 compatibility shim for ``enum.StrEnum``."""
+        """Python 3.10 compatibility shim for ``enum.StrEnum``.
+
+        ``Enum`` overrides ``__str__``/``__format__`` to render as
+        ``ClassName.MEMBER``; ``enum.StrEnum`` restores the plain ``str``
+        behaviour so members stringify to their value. Mirror that here so
+        members sent over the FFI bridge carry the DrawingML token on 3.10.
+        """
+
+        __str__ = str.__str__
+        __format__ = str.__format__  # type: ignore[assignment]
 
 
 # Theme Presets

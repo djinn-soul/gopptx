@@ -122,11 +122,14 @@ class PresentationChartMixin(
             categories: List of category labels.
             bar_series: List of bar series dicts with "name" and "values" keys.
             line_series: List of line series dicts with "name" and "values" keys.
-                A series may also carry ``"secondary_axis": True`` to draw the
-                line plot against its own value axis on the right instead of
+                A series may also carry ``"secondary_axis": True`` to draw that
+                series against its own value axis on the right instead of
                 sharing the bar series' scale, which is what keeps a growth
-                percentage readable next to revenue. ``"secondary_axis_title"``
-                labels that axis and enables it on its own.
+                percentage readable next to revenue. Series without the flag
+                stay on the primary axis, so a mixed set is drawn as two line
+                plots. ``"secondary_axis_title"`` labels that axis and enables
+                it on its own; when no series is marked, every line series moves
+                to it.
             title: Chart title.
             bounds: (x, y, width, height) in EMU.
 

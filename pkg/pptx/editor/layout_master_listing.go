@@ -203,17 +203,14 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 
 	masterXML, _ := e.parts.Get(masterPart)
 	content := string(masterXML)
-	matches := slideLayoutIDPattern.FindAllStringSubmatch(content, -1)
+	entries := parseSlideLayoutIDs(content)
 
-	out := make([]string, 0, len(matches))
+	out := make([]string, 0, len(entries))
 	seen := make(map[string]bool)
-	for _, m := range matches {
-		if len(m) > 2 {
-			rID := m[2]
-			if part, ok := ridToPart[rID]; ok && e.parts.Has(part) {
-				out = append(out, part)
-				seen[part] = true
-			}
+	for _, entry := range entries {
+		if part, ok := ridToPart[entry.relationshipID]; ok && e.parts.Has(part) {
+			out = append(out, part)
+			seen[part] = true
 		}
 	}
 	for _, part := range ridToPart {
@@ -224,14 +221,58 @@ func (e *PresentationEditor) layoutsForMaster(masterPart string) ([]string, erro
 	return out, nil
 }
 
-// slideLayoutIDPattern captures the sldLayoutId id and its relationship id. The
-// id is what SlideMaster.get_layout(slide_layout_id) looks a layout up by.
-var slideLayoutIDPattern = regexp.MustCompile(
-	`<p:sldLayoutId[^>]*\bid="(\d+)"[^>]*r:id="([^"]+)"`,
-)
+// slideLayoutIDElementPattern matches a whole sldLayoutId element so its
+// attributes can be read individually. XML attribute order is not significant,
+// so the id and r:id are extracted separately rather than in a fixed order.
+var slideLayoutIDElementPattern = regexp.MustCompile(`<p:sldLayoutId\b[^>]*>`)
 
-// slideLayoutIDGroups is the full match plus the id and r:id capture groups.
-const slideLayoutIDGroups = 3
+// slideLayoutIDAttrPattern captures the sldLayoutId id, which is what
+// SlideMaster.get_layout(slide_layout_id) looks a layout up by. The leading
+// boundary keeps it from matching the r:id attribute.
+var slideLayoutIDAttrPattern = regexp.MustCompile(`(?:^|\s)id\s*=\s*"([^"]*)"|(?:^|\s)id\s*=\s*'([^']*)'`)
+
+// slideLayoutRelIDAttrPattern captures the sldLayoutId relationship id.
+var slideLayoutRelIDAttrPattern = regexp.MustCompile(`\sr:id\s*=\s*"([^"]*)"|\sr:id\s*=\s*'([^']*)'`)
+
+// slideLayoutIDEntry is one sldLayoutIdLst entry: the layout id the master
+// lists the layout under, and the relationship pointing at the layout part.
+type slideLayoutIDEntry struct {
+	layoutID       string
+	relationshipID string
+}
+
+// parseSlideLayoutIDs reads every sldLayoutId entry in a master, independent of
+// how each element orders or quotes its attributes.
+func parseSlideLayoutIDs(content string) []slideLayoutIDEntry {
+	elements := slideLayoutIDElementPattern.FindAllString(content, -1)
+	entries := make([]slideLayoutIDEntry, 0, len(elements))
+	for _, element := range elements {
+		relID := firstSubmatchValue(slideLayoutRelIDAttrPattern, element)
+		if relID == "" {
+			continue
+		}
+		entries = append(entries, slideLayoutIDEntry{
+			layoutID:       firstSubmatchValue(slideLayoutIDAttrPattern, element),
+			relationshipID: relID,
+		})
+	}
+	return entries
+}
+
+// firstSubmatchValue returns the first non-empty capture group of the first
+// match, letting one pattern carry a double-quoted and a single-quoted branch.
+func firstSubmatchValue(pattern *regexp.Regexp, text string) string {
+	match := pattern.FindStringSubmatch(text)
+	if match == nil {
+		return ""
+	}
+	for _, group := range match[1:] {
+		if group != "" {
+			return group
+		}
+	}
+	return ""
+}
 
 // layoutIDsForMaster maps each layout part to the sldLayoutId id the master
 // lists it under. Parts not referenced from sldLayoutIdLst are absent.
@@ -255,15 +296,12 @@ func (e *PresentationEditor) layoutIDsForMaster(masterPart string) map[string]in
 	}
 
 	masterXML, _ := e.parts.Get(masterPart)
-	for _, m := range slideLayoutIDPattern.FindAllStringSubmatch(string(masterXML), -1) {
-		if len(m) < slideLayoutIDGroups {
-			continue
-		}
-		layoutID, convErr := strconv.Atoi(m[1])
+	for _, entry := range parseSlideLayoutIDs(string(masterXML)) {
+		layoutID, convErr := strconv.Atoi(entry.layoutID)
 		if convErr != nil {
 			continue
 		}
-		if part, found := ridToPart[m[2]]; found {
+		if part, found := ridToPart[entry.relationshipID]; found {
 			ids[part] = layoutID
 		}
 	}

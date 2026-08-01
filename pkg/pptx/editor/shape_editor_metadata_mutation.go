@@ -8,10 +8,13 @@ import (
 )
 
 var (
-	shapeCNvPrPattern  = regexp.MustCompile(`(?s)(<p:cNvPr\b[^>]*?)(\s*/?>)`)
-	shapeDescrPattern  = regexp.MustCompile(`\s+descr="[^"]*"`)
-	shapeTitlePattern  = regexp.MustCompile(`\s+title="[^"]*"`)
-	shapeHiddenPattern = regexp.MustCompile(`\s+hidden="[^"]*"`)
+	shapeCNvPrPattern = regexp.MustCompile(`(?s)(<p:cNvPr\b[^>]*?)(\s*/?>)`)
+	// Imported decks may single-quote attribute values, so each matcher accepts
+	// both XML quote styles; matching only one style would leave a stale
+	// attribute in place and append a duplicate alongside it.
+	shapeDescrPattern  = regexp.MustCompile(`\s+descr=("[^"]*"|'[^']*')`)
+	shapeTitlePattern  = regexp.MustCompile(`\s+title=("[^"]*"|'[^']*')`)
+	shapeHiddenPattern = regexp.MustCompile(`\s+hidden=("[^"]*"|'[^']*')`)
 )
 
 const shapeMetadataMatchIndexCount = 6

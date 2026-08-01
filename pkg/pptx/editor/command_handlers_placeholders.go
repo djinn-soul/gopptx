@@ -128,7 +128,13 @@ func buildPlaceholderOverrideSpecForPayload(
 		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
 	}
 	hasImagePath := imagePath != ""
-	if err := validatePlaceholderContentKinds(text != "", hasImagePath, hasTableSpec, hasChart); err != nil {
+	kindErr := validatePlaceholderContentKinds(
+		payloadHasText(payload),
+		hasImagePath,
+		hasTableSpec,
+		hasChart,
+	)
+	if err := kindErr; err != nil {
 		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
 	}
 
@@ -170,6 +176,18 @@ func applyPlaceholderBounds(payload map[string]any, phSpec *pptxxml.PlaceholderO
 	phSpec.CX = &cxEMU
 	phSpec.CY = &cyEMU
 	return nil
+}
+
+// payloadHasText reports whether the caller supplied a text value, regardless of
+// whether that value is empty. Clearing a placeholder is `text: ""`, so
+// presence of the key rather than its content decides the content kind.
+func payloadHasText(payload map[string]any) bool {
+	raw, ok := payload["text"]
+	if !ok {
+		return false
+	}
+	_, isString := raw.(string)
+	return isString
 }
 
 func validatePlaceholderContentKinds(hasText, hasImagePath, hasTableContent, hasChart bool) error {

@@ -2,6 +2,12 @@ package editor
 
 import "testing"
 
+const (
+	layoutRelID1 = "rId1"
+	layoutRelID2 = "rId2"
+	layoutRelID3 = "rId3"
+)
+
 const masterWithLayoutIDList = `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
 	`<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:grpSpPr/></p:spTree></p:cSld>` +
 	`<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>` +
@@ -43,23 +49,59 @@ func TestListMasterLayoutsReportsZeroWhenNotInLayoutIDList(t *testing.T) {
 }
 
 func TestSlideLayoutIDPatternReadsIDAndRelID(t *testing.T) {
-	matches := slideLayoutIDPattern.FindAllStringSubmatch(
-		`<p:sldLayoutIdLst>`+
-			`<p:sldLayoutId id="2147483649" r:id="rId1"/>`+
-			`<p:sldLayoutId id="2147483650" r:id="rId2"/>`+
+	entries := parseSlideLayoutIDs(
+		`<p:sldLayoutIdLst>` +
+			`<p:sldLayoutId id="2147483649" r:id="rId1"/>` +
+			`<p:sldLayoutId id="2147483650" r:id="rId2"/>` +
 			`</p:sldLayoutIdLst>`,
-		-1,
 	)
 
-	if len(matches) != 2 {
-		t.Fatalf("expected 2 matches, got %d", len(matches))
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
 	}
 	for i, want := range [][2]string{
-		{"2147483649", "rId1"},
-		{"2147483650", "rId2"},
+		{"2147483649", layoutRelID1},
+		{"2147483650", layoutRelID2},
 	} {
-		if matches[i][1] != want[0] || matches[i][2] != want[1] {
-			t.Errorf("match %d = (%s, %s), want %v", i, matches[i][1], matches[i][2], want)
+		if entries[i].layoutID != want[0] || entries[i].relationshipID != want[1] {
+			t.Errorf(
+				"entry %d = (%s, %s), want %v",
+				i,
+				entries[i].layoutID,
+				entries[i].relationshipID,
+				want,
+			)
+		}
+	}
+}
+
+// XML attribute order is not significant, so a master that writes r:id first,
+// or single-quotes its values, must still report the layout id.
+func TestSlideLayoutIDsIgnoreAttributeOrderAndQuoting(t *testing.T) {
+	entries := parseSlideLayoutIDs(
+		`<p:sldLayoutIdLst>` +
+			`<p:sldLayoutId r:id="rId1" id="2147483649"/>` +
+			`<p:sldLayoutId id='2147483650' r:id='rId2'/>` +
+			`<p:sldLayoutId  r:id = "rId3"  id = "2147483651" />` +
+			`</p:sldLayoutIdLst>`,
+	)
+
+	if len(entries) != 3 {
+		t.Fatalf("expected 3 entries, got %d", len(entries))
+	}
+	for i, want := range [][2]string{
+		{"2147483649", layoutRelID1},
+		{"2147483650", layoutRelID2},
+		{"2147483651", layoutRelID3},
+	} {
+		if entries[i].layoutID != want[0] || entries[i].relationshipID != want[1] {
+			t.Errorf(
+				"entry %d = (%s, %s), want %v",
+				i,
+				entries[i].layoutID,
+				entries[i].relationshipID,
+				want,
+			)
 		}
 	}
 }
