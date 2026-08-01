@@ -113,3 +113,25 @@ def test_primary_axis_formatting_does_not_reach_the_secondary_axis(tmp_path):
     assert "Revenue (k)" in primary
     assert "Revenue (k)" not in secondary
     assert "Growth %" in secondary
+
+
+def test_unmarked_line_series_stays_on_the_primary_axis(tmp_path):
+    """A mixed set is drawn as one line plot per axis pair (Codex review)."""
+    mixed = [
+        dict(LINE_SERIES[0], secondary_axis=True),
+        {"name": "Target (k)", "values": [800.0, 900.0, 950.0, 1200.0]},
+    ]
+    xml = _chart_xml(tmp_path, "mixed.pptx", mixed)
+
+    plots = re.findall(r"<c:lineChart>.*?</c:lineChart>", xml, re.DOTALL)
+    assert len(plots) == 2
+
+    bar_ids = _plot_axis_ids(xml, "barChart")
+    primary = [plot for plot in plots if "Target (k)" in plot]
+    secondary = [plot for plot in plots if "Growth %" in plot]
+    assert len(primary) == 1
+    assert len(secondary) == 1
+    assert "Growth %" not in primary[0]
+    assert "Target (k)" not in secondary[0]
+    assert re.findall(r'<c:axId val="(\d+)"/>', primary[0]) == bar_ids
+    assert set(re.findall(r'<c:axId val="(\d+)"/>', secondary[0])).isdisjoint(bar_ids)

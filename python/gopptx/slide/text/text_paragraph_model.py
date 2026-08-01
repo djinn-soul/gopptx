@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from .text_run import Run
-from .text_run_model import _ShapeRunCollection
+from .text_run_collection import _ShapeRunCollection
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

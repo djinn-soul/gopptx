@@ -74,6 +74,10 @@ type ChartSpec struct {
 type ChartSeries struct {
 	Name   string
 	Values []float64
+	// SecondaryAxis draws this series against the secondary value axis. Only
+	// combo line series honour it; a combo with a mix emits one line plot per
+	// axis so an unmarked series keeps the primary scale.
+	SecondaryAxis bool
 }
 
 const (

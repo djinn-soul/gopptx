@@ -140,7 +140,11 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 		}
 		lineSeries := make([]charts.Series, len(request.LineSeries))
 		for i, s := range request.LineSeries {
-			lineSeries[i] = charts.Series{Name: s.Name, Values: s.Values}
+			lineSeries[i] = charts.Series{
+				Name:          s.Name,
+				Values:        s.Values,
+				SecondaryAxis: s.SecondaryAxis,
+			}
 		}
 		combo := charts.NewComboChart(request.Categories, barSeries, lineSeries).
 			WithTitle(request.Title).

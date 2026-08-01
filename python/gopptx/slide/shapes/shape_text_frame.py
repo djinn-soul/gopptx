@@ -261,5 +261,5 @@ class ShapeTextFrame:
             val = "b"
         self._slide.update_shape(
             self._shape_id,
-            cast("ShapeUpdate", {"text_frame": {"vertical_alignment": val}}),
+            cast("ShapeUpdate", {"text_frame": {"vertical_align": val}}),
         )
