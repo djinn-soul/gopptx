@@ -6,7 +6,8 @@ from __future__ import annotations
 from ...text.run_builder import RunBuilder
 from ..shapes.shape_text_frame import ShapeTextFrame as BaseShapeTextFrame
 from .text_paragraph_model import _ShapeParagraphCollection, _ShapeParagraphProxy
-from .text_run_model import _ShapeRunCollection, _ShapeRunProxy
+from .text_run_collection import _ShapeRunCollection
+from .text_run_model import _ShapeRunProxy
 
 
 class ShapeTextFrame(BaseShapeTextFrame):

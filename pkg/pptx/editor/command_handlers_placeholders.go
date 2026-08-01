@@ -80,9 +80,16 @@ func handleSetPlaceholderContent(e *PresentationEditor, payload json.RawMessage)
 	}
 
 	phSpec.Type = resolvedType
-	phSpec.GeometryXML = extractPlaceholderGeometryXML(content[shapesList[shapeIndex].Start:shapesList[shapeIndex].End])
+	targetShapeXML := content[shapesList[shapeIndex].Start:shapesList[shapeIndex].End]
+	phSpec.GeometryXML = extractPlaceholderGeometryXML(targetShapeXML)
 	if forceRect != nil {
 		phSpec.ForceRectGeometry = forceRect
+	}
+
+	// Fitting needs the resolved shape, so it runs here rather than while the
+	// spec is being built from the payload.
+	if err := e.applyPlaceholderImageFit(slideIndex, p, v, &phSpec, targetShapeXML); err != nil {
+		return nil, err
 	}
 
 	newShapeXML := pptxxml.PlaceholderShape(phSpec, shapesList[shapeIndex].ID)
@@ -121,7 +128,13 @@ func buildPlaceholderOverrideSpecForPayload(
 		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
 	}
 	hasImagePath := imagePath != ""
-	if err := validatePlaceholderContentKinds(text != "", hasImagePath, hasTableSpec, hasChart); err != nil {
+	kindErr := validatePlaceholderContentKinds(
+		payloadHasText(payload),
+		hasImagePath,
+		hasTableSpec,
+		hasChart,
+	)
+	if err := kindErr; err != nil {
 		return pptxxml.PlaceholderOverrideSpec{}, 0, "", nil, err
 	}
 
@@ -163,6 +176,18 @@ func applyPlaceholderBounds(payload map[string]any, phSpec *pptxxml.PlaceholderO
 	phSpec.CX = &cxEMU
 	phSpec.CY = &cyEMU
 	return nil
+}
+
+// payloadHasText reports whether the caller supplied a text value, regardless of
+// whether that value is empty. Clearing a placeholder is `text: ""`, so
+// presence of the key rather than its content decides the content kind.
+func payloadHasText(payload map[string]any) bool {
+	raw, ok := payload["text"]
+	if !ok {
+		return false
+	}
+	_, isString := raw.(string)
+	return isString
 }
 
 func validatePlaceholderContentKinds(hasText, hasImagePath, hasTableContent, hasChart bool) error {

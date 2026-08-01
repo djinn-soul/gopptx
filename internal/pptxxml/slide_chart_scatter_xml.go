@@ -18,9 +18,8 @@ func scatterChartPartXML(chart *ChartSpec) string {
 	plot.WriteString(`
 `)
 	plot.WriteString(labels)
+	plot.WriteString(primaryAxisIDRefsXML())
 	plot.WriteString(`
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
 </c:scatterChart>
 `)
 	plot.WriteString(scatterAxesXML(chart))

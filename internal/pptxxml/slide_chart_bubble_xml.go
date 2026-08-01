@@ -19,9 +19,9 @@ func bubbleChartPartXML(chart *ChartSpec) string {
 	plot.WriteString(`
 <c:bubbleScale val="`)
 	plot.WriteString(strconv.Itoa(chart.BubbleScale))
-	plot.WriteString(`"/>
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
+	plot.WriteString(`"/>`)
+	plot.WriteString(primaryAxisIDRefsXML())
+	plot.WriteString(`
 </c:bubbleChart>
 `)
 	plot.WriteString(scatterAxesXML(chart))

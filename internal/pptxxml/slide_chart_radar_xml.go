@@ -19,11 +19,9 @@ func radarChartPartXML(chart *ChartSpec) string {
 <c:radarChart>
 <c:radarStyle val="%s"/>
 <c:varyColors val="0"/>%s
-%s
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
+%s%s
 </c:radarChart>
-%s`, Escape(chart.RadarStyle), series, labels, radarAxesXML(chart)),
+%s`, Escape(chart.RadarStyle), series, labels, primaryAxisIDRefsXML(), radarAxesXML(chart)),
 	)
 }
 

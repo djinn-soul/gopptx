@@ -73,7 +73,7 @@ func patchAxisGridlineFormat(
 	if major {
 		tag, re = "majorGridlines", reMajorGridlinesBlock
 	}
-	return patchEachAxisBlock(xml, axisTag, func(block string) string {
+	return patchPrimaryAxisBlock(xml, axisTag, func(block string) string {
 		current := re.FindString(block)
 		if current == "" {
 			// Styling a gridline the axis does not have implies drawing it;

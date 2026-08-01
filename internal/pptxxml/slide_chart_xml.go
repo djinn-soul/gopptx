@@ -66,11 +66,9 @@ func barChartPartXML(chart *ChartSpec) string {
 <c:barDir val="%s"/>
 <c:grouping val="%s"/>
 <c:varyColors val="0"/>%s
-%s
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
+%s%s
 </c:barChart>
-%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, chartAxesXML(chart)),
+%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, primaryAxisIDRefsXML(), chartAxesXML(chart)),
 	)
 }
 
@@ -92,11 +90,9 @@ func lineChartPartXML(chart *ChartSpec) string {
 <c:grouping val="%s"/>
 <c:varyColors val="0"/>%s
 %s
-<c:smooth val="%s"/>
-<c:axId val="48650112"/>
-<c:axId val="48672768"/>
+<c:smooth val="%s"/>%s
 </c:lineChart>
-%s`, Escape(chart.Grouping), series, labels, smooth, chartAxesXML(chart)),
+%s`, Escape(chart.Grouping), series, labels, smooth, primaryAxisIDRefsXML(), chartAxesXML(chart)),
 	)
 }
 

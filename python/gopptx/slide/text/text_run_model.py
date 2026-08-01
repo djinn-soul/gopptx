@@ -3,16 +3,27 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
-from .text_run import Run, RunHyperlink
+from ...schemas import RGBColor
+from .text_run import RunHyperlink
 
 _EMU_PER_POINT = 12700
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from .text_frame_protocol import ShapeTextFrameProtocol
+
+
+class _RunCollectionProtocol(Protocol):
+    """The part of the owning run collection a run proxy calls back into.
+
+    Structural typing here keeps the collection module importing this one and
+    not the other way round.
+    """
+
+    def reindex_after_removal(self, removed_index: int) -> None:
+        """Shift cached proxies down after a run is removed."""
+        ...
 
 
 class _ShapeRunProxy:
@@ -23,9 +34,17 @@ class _ShapeRunProxy:
         text_frame: ShapeTextFrameProtocol,
         paragraph_index: int,
         run_index: int,
+        collection: _RunCollectionProtocol | None = None,
     ) -> None:
         self._text_frame = text_frame
         self._paragraph_index = paragraph_index
+        self._run_index = run_index
+        # The owning collection, when there is one, is told about removals so
+        # proxies for later runs shift down with the runs they point at.
+        self._collection = collection
+
+    def rebind_index(self, run_index: int) -> None:
+        """Point this proxy at ``run_index`` after the run list shifted."""
         self._run_index = run_index
 
     def payload(self) -> dict[str, object]:
@@ -135,8 +154,14 @@ class _ShapeRunProxy:
         ]
         if self._run_index < 0 or self._run_index >= len(runs):
             raise IndexError("run index out of range")
-        del runs[self._run_index]
+        removed_index = self._run_index
+        del runs[removed_index]
         self._text_frame.replace_paragraph_runs(self._paragraph_index, runs)
+        # This proxy no longer points at a run; leaving its index in place would
+        # silently retarget it at whichever run shifted into that position.
+        self._run_index = -1
+        if self._collection is not None:
+            self._collection.reindex_after_removal(removed_index)
 
     def delete(self) -> None:
         """Alias for remove (Issue #144)."""
@@ -150,14 +175,23 @@ class _FontColorProxy:
         self._run_proxy = run_proxy
 
     @property
-    def rgb(self) -> str | None:
-        """Return the RGB hex color without mutating XML (Issue #1111)."""
+    def rgb(self) -> RGBColor | None:
+        """Return the color as an RGBColor without mutating XML (Issue #1111).
+
+        Matches ``shape.fill.fore_color.rgb`` and ``shape.line.color.rgb``,
+        which have always returned RGBColor.
+        """
         payload = self._run_proxy.payload()
         val = payload.get("color")
-        return str(val) if isinstance(val, str) else None
+        if not isinstance(val, str) or not val:
+            return None
+        try:
+            return RGBColor.from_string(val.lstrip("#"))
+        except ValueError:
+            return None
 
     @rgb.setter
-    def rgb(self, value: object) -> None:
+    def rgb(self, value: RGBColor | None) -> None:
         if value is None:
             self._run_proxy.set_field("color", None)
         else:
@@ -332,49 +366,3 @@ class _FontProxy:
     def strikethrough(self, value: bool | str | None) -> None:
         """Set strikethrough formatting (Issue #339)."""
         self._run_proxy.strikethrough = value
-
-
-class _ShapeRunCollection:
-    """Live run collection for a paragraph proxy."""
-
-    def __init__(
-        self, text_frame: ShapeTextFrameProtocol, paragraph_index: int
-    ) -> None:
-        self._text_frame = text_frame
-        self._paragraph_index = paragraph_index
-        self._run_proxies: dict[int, _ShapeRunProxy] = {}
-
-    def __len__(self) -> int:
-        return len(self._text_frame.get_paragraph_runs(self._paragraph_index))
-
-    def __getitem__(self, index: int) -> _ShapeRunProxy:
-        if index < 0:
-            index += len(self)
-        if index < 0:
-            raise IndexError("run index out of range")
-        proxy = self._run_proxies.get(index)
-        if proxy is None:
-            proxy = _ShapeRunProxy(self._text_frame, self._paragraph_index, index)
-            self._run_proxies[index] = proxy
-        return proxy
-
-    def __iter__(self) -> Iterator[_ShapeRunProxy]:
-        for index, _ in enumerate(
-            self._text_frame.get_paragraph_runs(self._paragraph_index)
-        ):
-            yield _ShapeRunProxy(self._text_frame, self._paragraph_index, index)
-
-    def add_run(self, text: str = "") -> _ShapeRunProxy:
-        runs = self._text_frame.get_paragraph_runs(self._paragraph_index)
-        runs.append(Run(text=text).to_payload())
-        self._text_frame.replace_paragraph_runs(self._paragraph_index, runs)
-        return self[len(self) - 1]
-
-    @staticmethod
-    def remove(run: _ShapeRunProxy) -> None:
-        """Remove one run proxy from this collection."""
-        run.remove()
-
-    def __delitem__(self, index: int) -> None:
-        """Delete run at index (Issue #144)."""
-        self[index].remove()

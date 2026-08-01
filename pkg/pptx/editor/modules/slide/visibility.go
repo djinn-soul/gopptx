@@ -44,11 +44,7 @@ func ParseSlideShowMasterShapes(content []byte) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	tagText := string(tag)
-	return !strings.Contains(tagText, `showMasterSp="0"`) &&
-		!strings.Contains(tagText, `showMasterSp="false"`) &&
-		!strings.Contains(tagText, "showMasterSp='0'") &&
-		!strings.Contains(tagText, "showMasterSp='false'"), nil
+	return !attributeIsFalse(tag, slideShowMasterShapesAttrPattern), nil
 }
 
 // RewriteSlideShowMasterShapes toggles shapes inherited from the slide master.
@@ -99,11 +95,20 @@ func locateSlideStartTag(content []byte) ([]byte, int, int, error) {
 }
 
 func slideTagShowIsHidden(tag []byte) bool {
-	tagText := string(tag)
-	return strings.Contains(tagText, `show="0"`) ||
-		strings.Contains(tagText, `show="false"`) ||
-		strings.Contains(tagText, "show='0'") ||
-		strings.Contains(tagText, "show='false'")
+	return attributeIsFalse(tag, slideShowAttrPattern)
+}
+
+// attributeIsFalse reports whether the attribute matched by pattern is present
+// on the tag with a false value. The pattern carries the quoted value as its
+// first submatch, so whitespace around the equals sign and either XML quote
+// style are handled the same way the rewriters handle them.
+func attributeIsFalse(tag []byte, pattern *regexp.Regexp) bool {
+	match := pattern.FindSubmatch(tag)
+	if match == nil {
+		return false
+	}
+	value := strings.ToLower(strings.TrimSpace(string(match[1][1 : len(match[1])-1])))
+	return value == "0" || value == "false"
 }
 
 func stripShowAttr(tag []byte) []byte {

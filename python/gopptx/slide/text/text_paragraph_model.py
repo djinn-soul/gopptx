@@ -6,11 +6,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from .text_run import Run
-from .text_run_model import _ShapeRunCollection
+from .text_run_collection import _ShapeRunCollection
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from ...schemas import RGBColor
     from .text_frame_protocol import ShapeTextFrameProtocol
 
 
@@ -316,11 +317,11 @@ class _ParagraphFontColorProxy:
         self._paragraph = paragraph
 
     @property
-    def rgb(self) -> str | None:
+    def rgb(self) -> RGBColor | None:
         runs = list(self._paragraph.runs)
         return runs[0].font.color.rgb if runs else None
 
     @rgb.setter
-    def rgb(self, value: str | None) -> None:
+    def rgb(self, value: RGBColor | None) -> None:
         for run in self._paragraph.runs:
             run.font.color.rgb = value

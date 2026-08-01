@@ -6,10 +6,11 @@ outDir="bindings/c/build"
 pkgDir="python/gopptx"
 mkdir -p "$outDir"
 
-libName="libgopptx.so"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    libName="libgopptx.dylib"
-fi
+case "$(go env GOOS)" in
+    darwin)  libName="libgopptx.dylib" ;;
+    windows) libName="gopptx.dll" ;;
+    *)       libName="libgopptx.so" ;;
+esac
 
 echo "Building Go engine for Python..."
 if [[ "${GOPPTX_RELEASE_BUILD:-}" == "1" || "${GOPPTX_RELEASE_BUILD:-}" == "true" ]]; then

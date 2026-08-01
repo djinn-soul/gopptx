@@ -56,6 +56,11 @@ func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
   </p:spPr>`, img.X, img.Y, img.CX, img.CY)
 	}
 
+	// a:srcRect crops the source before it is stretched into the box, which is
+	// how a cover fit hides the overflowing axis. Without it the bare
+	// a:fillRect distorts the image to the placeholder bounds.
+	srcRect := imageSrcRectXML(img.Crop)
+
 	return fmt.Sprintf(`
 <p:pic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:nvPicPr>
@@ -69,12 +74,12 @@ func renderPlaceholderImage(img *ImageRef, id int, phAttr string) string {
   </p:nvPicPr>
   <p:blipFill>
     <a:blip r:embed="%s"/>
-    <a:stretch>
+    %s<a:stretch>
       <a:fillRect/>
     </a:stretch>
   </p:blipFill>
   %s
-</p:pic>`, id, Escape(img.Name), phAttr, FastEscapeRID(img.RelID), xfrm)
+</p:pic>`, id, Escape(img.Name), phAttr, FastEscapeRID(img.RelID), srcRect, xfrm)
 }
 
 func renderPlaceholderTable(tbl *TableSpec, id int, index int, phAttr string) string {
