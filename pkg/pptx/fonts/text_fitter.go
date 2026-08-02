@@ -24,6 +24,10 @@ const (
 // the fonts it ships.
 const pointsPerEmHeightRatio = 1.2
 
+// emHalvingDivisor yields half an em, the conventional advance for a rune the
+// font has no glyph for.
+const emHalvingDivisor = 2
+
 // ErrNoFontMetrics reports that text cannot be measured because no usable font
 // file was supplied. Callers that only want the autofit flags should not treat
 // this as fatal.
@@ -57,7 +61,14 @@ func NewTextMeasurer(fontPath string) (*TextMeasurer, error) {
 
 	advances := make(map[rune]float64, len(parser.Chars()))
 	for code, glyphIndex := range parser.Chars() {
-		if int(glyphIndex) >= len(widths) {
+		// Compare in the glyph index's own unsigned space: converting it to int
+		// first can overflow on a corrupt font table.
+		if glyphIndex >= uint(len(widths)) {
+			continue
+		}
+		// A cmap entry outside the Unicode range is not a character we can be
+		// asked to measure, so it is skipped rather than wrapped into a rune.
+		if code < 0 || code > unicode.MaxRune {
 			continue
 		}
 		advances[rune(code)] = float64(widths[glyphIndex])
@@ -65,7 +76,7 @@ func NewTextMeasurer(fontPath string) (*TextMeasurer, error) {
 
 	// An unmapped rune is measured as the font's own space, or half an em when
 	// even that is missing, rather than silently counting as zero width.
-	fallback := unitsPerEm / 2 //nolint:mnd // half an em is the conventional default advance
+	fallback := unitsPerEm / emHalvingDivisor
 	if space, ok := advances[' ']; ok && space > 0 {
 		fallback = space
 	}
@@ -158,7 +169,7 @@ func (m *TextMeasurer) FitText(request FitRequest) (FitResult, error) {
 func (m *TextMeasurer) WrappedHeightPt(
 	text string,
 	widthPt, fontSizePt float64,
-) (heightPt float64, lineCount int, err error) {
+) (float64, int, error) {
 	if m == nil {
 		return 0, 0, ErrNoFontMetrics
 	}
@@ -187,7 +198,7 @@ func (m *TextMeasurer) widestLinePt(lines []string, fontSizePt float64) float64 
 // A single word wider than the line gets its own line rather than being dropped.
 func (m *TextMeasurer) WrapLines(text string, widthPt, fontSizePt float64) []string {
 	var lines []string
-	for _, paragraph := range strings.Split(text, "\n") {
+	for paragraph := range strings.SplitSeq(text, "\n") {
 		lines = append(lines, m.wrapParagraph(paragraph, widthPt, fontSizePt)...)
 	}
 	if len(lines) == 0 {
