@@ -11,6 +11,7 @@ from .chart import Chart, ChartCollection
 from .chart.chart_mixin import SlideChartMixin
 from .master_shapes_mixin import SlideMasterShapesMixin
 from .placeholders.placeholder_mixin import SlidePlaceholderMixin
+from .shapes.equation_mixin import SlideEquationMixin
 from .shapes.picture_mixin import SlidePictureMixin
 from .shapes.shape_batch_mixin import SlideShapeBatchMixin
 from .shapes.shape_collection import ShapeCollection
@@ -41,6 +42,7 @@ class Slide(
     SlideSmartArtAnimMixin,
     SlidePictureMixin,
     SlideShapeMixin,
+    SlideEquationMixin,
 ):
     """Proxy object for a slide within a presentation."""
 

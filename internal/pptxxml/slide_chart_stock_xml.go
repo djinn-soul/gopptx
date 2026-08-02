@@ -35,7 +35,7 @@ func stockChartPartXML(chart *ChartSpec) string {
 	plot.WriteString(`
 </c:stockChart>
 `)
-	plot.WriteString(chartAxesXML(chart))
+	plot.WriteString(chartAxesAndDataTableXML(chart))
 
 	return chartPartEnvelope(
 		chart.Title,
@@ -80,18 +80,7 @@ func chartSeriesWithValues(chart *ChartSpec, seriesName string, values []float64
 </c:strLit></c:cat>
 <c:val><c:numLit>
 <c:formatCode>General</c:formatCode>`)
-	b.WriteString(`
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(values)))
-	b.WriteString(`"/>`)
-	for i, value := range values {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+	writeNumericPoints(&b, values)
 	b.WriteString(`
 	</c:numLit></c:val>
 </c:ser>`)

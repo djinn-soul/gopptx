@@ -126,6 +126,8 @@ func contentSectionHandlers() map[string]commandHandler {
 		OpAddAnimation:         handleAddAnimation,
 		OpSetSlideTransition:   handleSetSlideTransition,
 		OpMergeFromEditor:      handleMergeFromEditor,
+		OpCopySlidesFrom:       handleCopySlidesFrom,
+		OpImportLayoutFrom:     handleImportLayoutFrom,
 		OpConvertToGrayscale:   handleConvertToGrayscale,
 	}
 }
@@ -168,6 +170,12 @@ func shapeMutationHandlers() map[string]commandHandler {
 		OpUngroupShapes:       handleUngroupShapes,
 		OpUpdateShape:         handleUpdateShape,
 		OpSetShapeAdjustments: handleSetShapeAdjustments,
+		OpSetPictureFill:      handleSetPictureFill,
+		OpFitShapeText:        handleFitShapeText,
+		OpFitShapeToText:      handleFitShapeToText,
+		OpSaveFlatXML:         handleSaveFlatXML,
+		OpAddEquation:         handleAddEquation,
+		OpAddChartUserShapes:  handleAddChartUserShapes,
 		OpMoveShapeToFront:    handleMoveShapeToFront,
 		OpMoveShapeToBack:     handleMoveShapeToBack,
 		OpMoveShapeToIndex:    handleMoveShapeToIndex,

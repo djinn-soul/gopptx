@@ -6,9 +6,12 @@ from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...api_errors import GopptxError
+from ..shapes.picture_fill import picture_fill_payload
 from .table_cell_margins import CellMarginMixin
 
 if TYPE_CHECKING:
+    import os
+
     from ._protocols import TableWriteProto
 
 
@@ -197,6 +200,36 @@ class Cell(CellMarginMixin):
         )
         for s in sides:
             self._set_border(s, border_data)
+
+    def set_picture_fill(
+        self,
+        image: str | bytes | os.PathLike[str],
+        *,
+        tile: bool = False,
+        crop: tuple[float, float, float, float] | None = None,
+    ) -> None:
+        """Fill this cell's background with an image (Issue #234).
+
+        Args:
+            image: Image file path, ``os.PathLike``, or raw image bytes.
+            tile: Repeat the image at its natural size instead of stretching a
+                single copy over the cell.
+            crop: ``(left, top, right, bottom)`` fractions in ``[0, 1)`` trimmed
+                off the source image before it is drawn.
+
+        Writes an ``<a:blipFill>`` into the cell's ``<a:tcPr>``, replacing any
+        solid or gradient fill it had.
+        """
+        payload = picture_fill_payload(image, tile=tile, crop=crop)
+        request: dict[str, object] = {
+            "slide_index": self._table.slide_index,
+            "shape_id": self._table.shape_id,
+            "row": self.row,
+            "column": self.col,
+        }
+        request.update(payload)
+        self._table.prs.execute(ops.OP_SET_PICTURE_FILL, request)
+        self._table.invalidate_cache()
 
     def split(self) -> None:
         """Split a merged cell back into a 1x1 cell."""

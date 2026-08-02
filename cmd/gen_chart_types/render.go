@@ -6,10 +6,14 @@ import (
 )
 
 const (
-	pyNameBar       = "BAR"
-	pyNameColumn    = "COLUMN"
-	pyNameStockOHLC = "STOCK_OHLC"
-	pyNameThreeDPie = "THREE_D_PIE"
+	pyNameBar          = "BAR"
+	pyNameColumn       = "COLUMN"
+	pyNameStockOHLC    = "STOCK_OHLC"
+	pyNameThreeDPie    = "THREE_D_PIE"
+	pyNameThreeDColumn = "THREE_D_COLUMN"
+	pyNameThreeDBar    = "THREE_D_BAR"
+	pyNameThreeDLine   = "THREE_D_LINE"
+	pyNameThreeDArea   = "THREE_D_AREA"
 )
 
 //nolint:gochecknoglobals // immutable generator configuration
@@ -37,6 +41,10 @@ var memberDoc = map[string]string{
 	"AREA_STACKED_100": "100% stacked area chart.",
 	"PIE":              "Pie chart.",
 	pyNameThreeDPie:    "3D pie chart.",
+	pyNameThreeDColumn: "3D clustered column chart.",
+	pyNameThreeDBar:    "3D clustered horizontal bar chart.",
+	pyNameThreeDLine:   "3D line chart. Each series sits on its own depth row.",
+	pyNameThreeDArea:   "3D area chart.",
 	"DOUGHNUT":         "Doughnut chart.",
 	"BUBBLE":           "Bubble chart. Takes x, y and size values, not categories.",
 	"RADAR":            "Radar chart.",

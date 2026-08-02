@@ -1,9 +1,11 @@
 package editor
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 
 	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
@@ -15,15 +17,41 @@ var themeNumPattern = regexp.MustCompile(`^theme(\d+)\.xml$`)
 
 const nextPartPatternSubmatchSize = 2
 
+// CloneLayoutMasterFamily duplicates a layout and its master family inside this
+// presentation.
 func (e *PresentationEditor) CloneLayoutMasterFamily(layoutPart string) (common.SlideMasterCloneResult, error) {
+	return e.cloneLayoutMasterFamilyFrom(e, layoutPart)
+}
+
+// ImportLayoutMasterFamily copies a layout and its master family out of another
+// presentation into this one, so a slide here can be bound to a layout that
+// lives in a different deck. The returned LayoutMap gives the part path each
+// source layout now has locally.
+func (e *PresentationEditor) ImportLayoutMasterFamily(
+	src *PresentationEditor,
+	layoutPart string,
+) (common.SlideMasterCloneResult, error) {
+	if src == nil {
+		return common.SlideMasterCloneResult{}, errors.New("source editor cannot be nil")
+	}
+	return e.cloneLayoutMasterFamilyFrom(src, layoutPart)
+}
+
+// cloneLayoutMasterFamilyFrom reads the layout family from src and writes the
+// copy into e. When src is e this is an in-deck clone; otherwise it is a
+// cross-deck import and any media the layouts reference is copied too.
+func (e *PresentationEditor) cloneLayoutMasterFamilyFrom(
+	src *PresentationEditor,
+	layoutPart string,
+) (common.SlideMasterCloneResult, error) {
 	sourceMaster, layoutFamily, err := editorslide.CloneFamilyInputs(
 		layoutPart,
-		e.parts.Has,
+		src.parts.Has,
 		common.CanonicalPartPath,
 		func(part string) (string, error) {
-			return editorslide.ResolveLayoutMasterPart(part, e.parts.Get, parseRelationshipsXML)
+			return editorslide.ResolveLayoutMasterPart(part, src.parts.Get, parseRelationshipsXML)
 		},
-		e.layoutsForMaster,
+		src.layoutsForMaster,
 	)
 	if err != nil {
 		return common.SlideMasterCloneResult{}, err
@@ -44,16 +72,16 @@ func (e *PresentationEditor) CloneLayoutMasterFamily(layoutPart string) (common.
 			nextPartPatternSubmatchSize,
 		),
 	)
-	masterXML, masterRels, err := e.loadMasterCloneSource(sourceMaster)
+	masterXML, masterRels, err := e.loadMasterCloneSource(src, sourceMaster)
 	if err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
 
-	themePart, newThemePart, err := e.cloneMasterTheme(masterRels, sourceMaster)
+	themePart, newThemePart, err := e.cloneMasterTheme(src, masterRels, sourceMaster)
 	if err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
-	if err := e.cloneLayoutParts(layoutMap, newMaster); err != nil {
+	if err := e.cloneLayoutParts(src, layoutMap, newMaster); err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
 	e.writeClonedMaster(sourceMaster, newMaster, masterXML, masterRels, layoutMap, newThemePart)
@@ -69,14 +97,15 @@ func (e *PresentationEditor) CloneLayoutMasterFamily(layoutPart string) (common.
 }
 
 func (e *PresentationEditor) loadMasterCloneSource(
+	src *PresentationEditor,
 	sourceMaster string,
 ) ([]byte, []common.EditorRelationship, error) {
-	masterXML, ok := e.parts.Get(sourceMaster)
+	masterXML, ok := src.parts.Get(sourceMaster)
 	if !ok {
 		return nil, nil, fmt.Errorf("master part not found: %s", sourceMaster)
 	}
 	masterRelsPath := common.RelsPathFor(sourceMaster)
-	masterRelsData, ok := e.parts.Get(masterRelsPath)
+	masterRelsData, ok := src.parts.Get(masterRelsPath)
 	if !ok {
 		return nil, nil, fmt.Errorf("master rels part not found: %s", masterRelsPath)
 	}
@@ -87,16 +116,20 @@ func (e *PresentationEditor) loadMasterCloneSource(
 	return masterXML, masterRels, nil
 }
 
-func (e *PresentationEditor) cloneLayoutParts(layoutMap map[string]string, newMaster string) error {
+func (e *PresentationEditor) cloneLayoutParts(
+	src *PresentationEditor,
+	layoutMap map[string]string,
+	newMaster string,
+) error {
 	for oldLayout, clonedLayout := range layoutMap {
-		layoutXML, layoutOK := e.parts.Get(oldLayout)
+		layoutXML, layoutOK := src.parts.Get(oldLayout)
 		if !layoutOK {
 			return fmt.Errorf("layout part not found: %s", oldLayout)
 		}
 		e.parts.Set(clonedLayout, append([]byte(nil), layoutXML...))
 
 		layoutRelsPath := common.RelsPathFor(oldLayout)
-		layoutRelsData, relsOK := e.parts.Get(layoutRelsPath)
+		layoutRelsData, relsOK := src.parts.Get(layoutRelsPath)
 		if !relsOK {
 			return fmt.Errorf("layout rels missing: %s", layoutRelsPath)
 		}
@@ -105,8 +138,21 @@ func (e *PresentationEditor) cloneLayoutParts(layoutMap map[string]string, newMa
 			return fmt.Errorf("parse layout rels: %w", parseErr)
 		}
 		for i := range layoutRels {
-			if layoutRels[i].Type == common.RelTypeSlideMaster {
+			switch layoutRels[i].Type {
+			case common.RelTypeSlideMaster:
 				layoutRels[i].Target = common.MakeRelativePath(clonedLayout, newMaster)
+			case common.RelTypeImage:
+				// A cross-deck import has to bring the image bytes along; an
+				// in-deck clone already shares the media part.
+				if src == e {
+					continue
+				}
+				srcImage := common.ResolveRelationshipTarget(oldLayout, layoutRels[i].Target)
+				newImage, copyErr := e.copyImageAsset(src, srcImage)
+				if copyErr != nil {
+					return fmt.Errorf("copy layout image %s: %w", srcImage, copyErr)
+				}
+				layoutRels[i].Target = common.MakeRelativePath(clonedLayout, newImage)
 			}
 		}
 		rendered := renderRelationshipsXML(layoutRels)
@@ -123,7 +169,7 @@ func (e *PresentationEditor) writeClonedMaster(
 	layoutMap map[string]string,
 	newThemePart string,
 ) {
-	e.parts.Set(newMaster, append([]byte(nil), masterXML...))
+	e.parts.Set(newMaster, e.renumberClonedLayoutIDs(append([]byte(nil), masterXML...)))
 	for i := range masterRels {
 		switch masterRels[i].Type {
 		case common.RelTypeSlideLayout:
@@ -141,6 +187,65 @@ func (e *PresentationEditor) writeClonedMaster(
 	e.parts.Set(common.RelsPathFor(newMaster), []byte(renderedMasterRels))
 }
 
+// sldLayoutIDPattern matches the id attribute of a p:sldLayoutId entry.
+var sldLayoutIDPattern = regexp.MustCompile(`(<p:sldLayoutId\b[^>]*\bid=")(\d+)(")`)
+
+// sldMasterIDPattern matches the id attribute of a p:sldMasterId entry.
+var sldMasterIDPattern = regexp.MustCompile(`<p:sldMasterId\b[^>]*\bid="(\d+)"`)
+
+// minSlideObjectID is the floor ECMA-376 sets for slide master and slide layout
+// ids.
+const minSlideObjectID uint32 = 2147483648
+
+// renumberClonedLayoutIDs gives a cloned master's p:sldLayoutId entries ids that
+// are free across the whole package. PowerPoint draws slide master and slide
+// layout ids from one pool, so a straight copy of a master collides with the
+// master it came from and Office rejects the package as unreadable — which our
+// own validator, and a round trip through this library, both accept.
+func (e *PresentationEditor) renumberClonedLayoutIDs(masterXML []byte) []byte {
+	used := e.usedSlideObjectIDs()
+	next := minSlideObjectID
+	return sldLayoutIDPattern.ReplaceAllFunc(masterXML, func(match []byte) []byte {
+		groups := sldLayoutIDPattern.FindSubmatch(match)
+		assigned := nextFreeSlideObjectID(used, &next)
+		return fmt.Appendf(nil, "%s%d%s", groups[1], assigned, groups[3])
+	})
+}
+
+// nextFreeSlideObjectID hands out the lowest unused id at or above cursor and
+// marks it taken.
+func nextFreeSlideObjectID(used map[uint32]bool, cursor *uint32) uint32 {
+	for used[*cursor] {
+		*cursor++
+	}
+	assigned := *cursor
+	used[assigned] = true
+	*cursor++
+	return assigned
+}
+
+// usedSlideObjectIDs collects every p:sldMasterId and p:sldLayoutId already in
+// the package, which share one id pool as far as PowerPoint is concerned.
+func (e *PresentationEditor) usedSlideObjectIDs() map[uint32]bool {
+	used := make(map[uint32]bool)
+	collect := func(data []byte, pattern *regexp.Regexp, group int) {
+		for _, match := range pattern.FindAllSubmatch(data, -1) {
+			value, err := strconv.ParseUint(string(match[group]), 10, 32)
+			if err != nil {
+				continue
+			}
+			used[uint32(value)] = true
+		}
+	}
+	for _, masterPart := range e.parts.KeysWithPrefix("ppt/slideMasters/") {
+		if masterXML, ok := e.parts.Get(masterPart); ok {
+			collect(masterXML, sldLayoutIDPattern, 2)
+		}
+	}
+	collect([]byte(e.presentationXML), sldMasterIDPattern, 1)
+	return used
+}
+
 func (e *PresentationEditor) registerClonedMaster(newMaster string) error {
 	e.recalculateNextRelIDNum()
 	newMasterRelID := fmt.Sprintf("rId%d", e.nextRelIDNum)
@@ -151,9 +256,16 @@ func (e *PresentationEditor) registerClonedMaster(newMaster string) error {
 		Target: common.MakeRelativePath(common.PresentationXMLPath, newMaster),
 	})
 
-	updatedPresentationXML, err := editorslide.RewritePresentationSlideMasterList(
+	// The master id has to avoid every layout id too, including the ones the
+	// clone just took, or PowerPoint refuses to open the package.
+	used := e.usedSlideObjectIDs()
+	cursor := minSlideObjectID
+	masterID := nextFreeSlideObjectID(used, &cursor)
+
+	updatedPresentationXML, err := editorslide.RewritePresentationSlideMasterListWithID(
 		[]byte(e.presentationXML),
 		newMasterRelID,
+		int64(masterID),
 	)
 	if err != nil {
 		return err
@@ -163,6 +275,7 @@ func (e *PresentationEditor) registerClonedMaster(newMaster string) error {
 }
 
 func (e *PresentationEditor) cloneMasterTheme(
+	src *PresentationEditor,
 	masterRels []common.EditorRelationship,
 	sourceMaster string,
 ) (string, string, error) {
@@ -171,7 +284,7 @@ func (e *PresentationEditor) cloneMasterTheme(
 			continue
 		}
 		oldTheme := common.CanonicalPartPath(path.Join(path.Dir(sourceMaster), rel.Target))
-		themeXML, ok := e.parts.Get(oldTheme)
+		themeXML, ok := src.parts.Get(oldTheme)
 		if !ok {
 			return "", "", fmt.Errorf("theme part not found: %s", oldTheme)
 		}

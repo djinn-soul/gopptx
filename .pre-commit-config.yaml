@@ -70,7 +70,9 @@ repos:
             # propertie/descripton are deliberate misspellings: the strict-kwargs
             # tests pass them to assert the API rejects unknown keywords. "Hel" is
             # a "Hello" fixture split across runs by the text-replace tests.
-            "--ignore-words-list=nd,ot,tt,astroid,prSet,pres,lIns,fromT,userA,ser,initialY,currentY,defaultY,wantIn,effectiveness,flate,propertie,descripton,Hel",
+            # Beng/te are ISO 15924 script codes and BCP-47 language subtags in the
+            # lang-to-script tables; fPr is the OOXML <m:fPr> fraction-properties tag.
+            "--ignore-words-list=nd,ot,tt,astroid,prSet,pres,lIns,fromT,userA,ser,initialY,currentY,defaultY,wantIn,effectiveness,flate,propertie,descripton,Hel,Beng,te,fPr",
             "--skip=./.venv,./uv.lock,./.git,./internal/pptxxml/templates/smartart",
           ]
         exclude: ^uv\.lock$

@@ -16,6 +16,10 @@ const (
 	keyShapeID     = "shape_id"
 	keyLeft        = "left"
 	keyTop         = "top"
+	keyRight       = "right"
+	keyBottom      = "bottom"
+	keySlideCount  = "slide_count"
+	keyFirstIndex  = "first_index"
 	keyWidth       = "width"
 	keyHeight      = "height"
 )

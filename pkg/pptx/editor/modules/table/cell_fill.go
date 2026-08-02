@@ -24,6 +24,13 @@ func applyCellFill(cellContent []byte, backgroundColor string) ([]byte, error) {
 	return setCellFillXML(cellContent, fillXML)
 }
 
+// SetCellFillXML replaces a cell's fill with the given fill element. It is what
+// a picture fill goes through: the caller renders the <a:blipFill> after it has
+// registered the media part and relationship, which this package cannot do.
+func SetCellFillXML(cellContent []byte, fillXML string) ([]byte, error) {
+	return setCellFillXML(cellContent, fillXML)
+}
+
 func setCellFillXML(cellContent []byte, fillXML string) ([]byte, error) {
 	tcPrStart := bytes.Index(cellContent, []byte("<a:tcPr"))
 	if tcPrStart == -1 {

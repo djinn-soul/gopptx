@@ -3,13 +3,40 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, cast
+import os
+from typing import TYPE_CHECKING, Protocol, TypedDict, cast
+
+from ... import ops
 
 if TYPE_CHECKING:
     from ...schemas import ShapeTextParagraph, ShapeUpdate, TextRun
+    from ..contracts import SlidePresentationProtocol
+
+
+class FitTextResult(TypedDict):
+    """What :meth:`ShapeTextFrame.fit_text` settled on."""
+
+    font_size_pt: float
+    fits: bool
+    line_count: int
+    measured: bool
+
+
+class FitShapeToTextResult(TypedDict):
+    """What :meth:`ShapeTextFrame.fit_shape_to_text` settled on."""
+
+    height_emu: int
+    line_count: int
+    resized: bool
 
 
 class _ShapeTextSlideProto(Protocol):
+    @property
+    def index(self) -> int: ...
+
+    @property
+    def presentation(self) -> SlidePresentationProtocol: ...
+
     def get_shape_text_state(self, shape_id: int) -> dict[str, object]: ...
 
     def set_shape_runs(self, shape_id: int, runs: list[TextRun]) -> None: ...
@@ -157,15 +184,93 @@ class ShapeTextFrame:
             raise IndexError("paragraph index out of range")
         return paragraphs[paragraph_index]
 
-    def fit_text(self) -> None:
-        """Best-effort fit text behavior using bridge-supported controls."""
-        self._slide.update_shape(
-            self._shape_id,
-            cast(
-                "ShapeUpdate",
-                {"text_frame": {"word_wrap": True, "auto_fit_type": "shape"}},
-            ),
-        )
+    def fit_text(
+        self,
+        font_file: str | os.PathLike[str] | None = None,
+        max_size: float = 0,
+        *,
+        min_size: float = 0,
+        word_wrap: bool = True,
+    ) -> FitTextResult:
+        """Shrink this shape's text to the largest size that fits its box.
+
+        Args:
+            font_file: TrueType file used to measure the text. Without one the
+                text cannot be measured, so only the autofit flags are set and
+                the returned ``measured`` is False.
+            max_size: Largest point size to try. 0 uses the fitter's default.
+            min_size: Smallest point size to try. 0 uses the fitter's floor.
+            word_wrap: Turn wrapping on, which is what makes shrinking useful.
+
+        Returns:
+            A dict with ``font_size_pt``, ``fits``, ``line_count`` and
+            ``measured``. ``fits`` is False when even the smallest size
+            overflows, so a caller can react instead of guessing.
+
+        Text that cannot be broken -- a long unspaced number, say -- goes on a
+        line of its own and is allowed to overflow rather than raising, which is
+        the failure reported upstream in issues #168 and #1026.
+        """
+        payload: dict[str, object] = {
+            "slide_index": self._slide.index,
+            "shape_id": self._shape_id,
+            "word_wrap": word_wrap,
+        }
+        if font_file is not None:
+            payload["font_path"] = os.fspath(font_file)
+        if max_size:
+            payload["max_size_pt"] = float(max_size)
+        if min_size:
+            payload["min_size_pt"] = float(min_size)
+
+        result = self._slide.presentation.execute(ops.OP_FIT_SHAPE_TEXT, payload)
+        # Run sizes changed under us, so the cached paragraphs are stale.
+        self._paragraphs_cache = None
+        return cast("FitTextResult", result)
+
+    def fit_shape_to_text(
+        self,
+        font_file: str | os.PathLike[str],
+        *,
+        font_size: float = 0,
+        min_height: int = 0,
+        max_height: int = 0,
+        shrink: bool = False,
+    ) -> FitShapeToTextResult:
+        """Grow this shape until its text fits, leaving the font size alone.
+
+        This is the opposite of :meth:`fit_text`: the words keep their size and
+        the box moves, which is what upstream issue #970 asks for.
+
+        Args:
+            font_file: TrueType file used to measure the text.
+            font_size: Point size to measure at. 0 uses the largest size the
+                shape's own runs carry, or 18pt.
+            min_height: Lower bound on the resulting height, in EMU. 0 is none.
+            max_height: Upper bound on the resulting height, in EMU. 0 is none.
+            shrink: Allow the shape to get shorter. By default it only grows,
+                matching PowerPoint's "resize shape to fit text".
+
+        Returns:
+            A dict with ``height_emu``, ``line_count`` and ``resized``.
+        """
+        payload: dict[str, object] = {
+            "slide_index": self._slide.index,
+            "shape_id": self._shape_id,
+            "font_path": os.fspath(font_file),
+            "shrink": shrink,
+        }
+        if font_size:
+            payload["font_size_pt"] = float(font_size)
+        if min_height:
+            payload["min_height_emu"] = int(min_height)
+        if max_height:
+            payload["max_height_emu"] = int(max_height)
+
+        result = self._slide.presentation.execute(ops.OP_FIT_SHAPE_TO_TEXT, payload)
+        # The frame's autofit changed, so cached paragraph state is stale.
+        self._paragraphs_cache = None
+        return cast("FitShapeToTextResult", result)
 
     def _text_frame_state(self) -> dict[str, object]:
         """Return the text_frame sub-dict of this shape's text state."""

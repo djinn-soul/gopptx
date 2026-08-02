@@ -17,7 +17,11 @@ const (
 
 //nolint:gochecknoglobals // stable Python spellings that cannot be inferred from Go word boundaries
 var pythonNameOverrides = map[string]string{
-	"ThreeDPie": pyNameThreeDPie,
+	"ThreeDPie":    pyNameThreeDPie,
+	"ThreeDColumn": pyNameThreeDColumn,
+	"ThreeDBar":    pyNameThreeDBar,
+	"ThreeDLine":   pyNameThreeDLine,
+	"ThreeDArea":   pyNameThreeDArea,
 }
 
 // chartType is one generated Python enum member.

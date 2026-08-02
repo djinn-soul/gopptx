@@ -340,12 +340,26 @@ func TestFreeformToShape(t *testing.T) {
 
 	s := f.ToShape()
 
-	// Should convert to a rectangle bounding the points
+	// Bounds are the bounding box of the points, but the path itself has to
+	// survive as custom geometry (issue #151) instead of degrading to a rect.
 	if s.Name != "TestFreeform" {
 		t.Errorf("expected name 'TestFreeform', got %q", s.Name)
 	}
 	if s.Fill == nil {
 		t.Error("expected Fill to be preserved")
+	}
+	if s.CustomGeometry == nil {
+		t.Fatal("expected custom geometry to be carried over")
+	}
+	if got, want := len(s.CustomGeometry.Points), 3; got != want {
+		t.Fatalf("custom geometry points = %d, want %d", got, want)
+	}
+	if !s.CustomGeometry.ClosePath {
+		t.Error("expected the default closed path to be preserved")
+	}
+	last := s.CustomGeometry.Points[2]
+	if last.X.Emu() != 100000 || last.Y.Emu() != 100000 {
+		t.Errorf("last point = (%d,%d), want (100000,100000)", last.X.Emu(), last.Y.Emu())
 	}
 }
 

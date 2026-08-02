@@ -54,6 +54,8 @@ type parsedShape struct {
 	End            int64 // Byte offset of the end of the node
 	IsGroup        bool
 	Shapes         []parsedShape
+	// GroupChild is the child coordinate space of a group shape, nil otherwise.
+	GroupChild *common.GroupChildSpace
 }
 
 func (p parsedShape) ToShape() shapes.Shape {
@@ -284,5 +286,6 @@ func parseShapeProperties(content []byte) (parsedShape, error) {
 		PhType:         props.PhType,
 		Adjustments:    props.Adjustments,
 		Freeform:       props.Freeform,
+		GroupChild:     props.GroupChild,
 	}, nil
 }

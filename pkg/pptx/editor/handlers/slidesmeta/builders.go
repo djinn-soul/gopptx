@@ -37,6 +37,10 @@ const (
 	chartTypeStockHLC       = "stockHLC"
 	chartTypeStockOHLC      = "stockOHLC"
 	chartTypeCombo          = "combo"
+	chartTypeColumn3D       = "column3D"
+	chartTypeBar3D          = "bar3D"
+	chartTypeLine3D         = "line3D"
+	chartTypeArea3D         = "area3D"
 
 	chartTypeStockDelta  = 2
 	defaultStockOpenDiff = 1
@@ -102,6 +106,26 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 			charts.NewPie3DChart(request.Categories, request.Values).WithTitle(request.Title),
 			request,
 		), nil
+	case chartTypeColumn3D:
+		return withBounds(
+			charts.NewColumn3DChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypeBar3D:
+		return withBounds(
+			charts.NewBar3DChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypeLine3D:
+		return withBounds(
+			charts.NewLine3DChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
+	case chartTypeArea3D:
+		return withBounds(
+			charts.NewArea3DChart(request.Categories, request.Values).WithTitle(request.Title),
+			request,
+		), nil
 	case chartTypeDoughnut:
 		return withBounds(
 			charts.NewDoughnutChart(request.Categories, request.Values).WithTitle(request.Title),
@@ -158,51 +182,55 @@ func BuildChartDefinition(request editorcommand.AddChartRequest) (charts.ChartDe
 	}
 }
 
+// chartTypeAliases maps every accepted spelling of a chart type to its
+// canonical token. A table keeps the alias list flat and additive: a new chart
+// kind adds rows here instead of growing a switch past the statement limit.
+//
+//nolint:gochecknoglobals // immutable lookup table
+var chartTypeAliases = map[string]string{
+	"column": chartTypeBar, chartTypeBar: chartTypeBar,
+	"barhorizontal": chartTypeBarHorizontal, "bar_horizontal": chartTypeBarHorizontal,
+	"bar-horizontal": chartTypeBarHorizontal,
+	"barstacked":     chartTypeBarStacked, "bar_stacked": chartTypeBarStacked,
+	"bar-stacked":   chartTypeBarStacked,
+	"barstacked100": chartTypeBarStacked100, "bar_stacked_100": chartTypeBarStacked100,
+	"bar-stacked-100": chartTypeBarStacked100,
+	chartTypeLine:     chartTypeLine,
+	"linemarkers":     chartTypeLineMarkers, "line_markers": chartTypeLineMarkers,
+	"line-markers": chartTypeLineMarkers,
+	"linestacked":  chartTypeLineStacked, "line_stacked": chartTypeLineStacked,
+	"line-stacked":   chartTypeLineStacked,
+	chartTypeScatter: chartTypeScatter,
+	chartTypeArea:    chartTypeArea,
+	"areastacked":    chartTypeAreaStacked, "area_stacked": chartTypeAreaStacked,
+	"area-stacked":   chartTypeAreaStacked,
+	"areastacked100": chartTypeAreaStacked100, "area_stacked_100": chartTypeAreaStacked100,
+	"area-stacked-100": chartTypeAreaStacked100,
+	chartTypePie:       chartTypePie,
+	"pie3d":            chartTypePie3D, "three_d_pie": chartTypePie3D, "three-d-pie": chartTypePie3D,
+	"column3d": chartTypeColumn3D, "three_d_column": chartTypeColumn3D,
+	"three-d-column": chartTypeColumn3D,
+	"bar3d":          chartTypeBar3D, "three_d_bar": chartTypeBar3D, "three-d-bar": chartTypeBar3D,
+	"line3d": chartTypeLine3D, "three_d_line": chartTypeLine3D, "three-d-line": chartTypeLine3D,
+	"area3d": chartTypeArea3D, "three_d_area": chartTypeArea3D, "three-d-area": chartTypeArea3D,
+	chartTypeDoughnut: chartTypeDoughnut,
+	chartTypeBubble:   chartTypeBubble,
+	chartTypeRadar:    chartTypeRadar,
+	"radarfilled":     chartTypeRadarFilled, "radar_filled": chartTypeRadarFilled,
+	"radar-filled": chartTypeRadarFilled,
+	"stockhlc":     chartTypeStockHLC, "stock_hlc": chartTypeStockHLC, "stock-hlc": chartTypeStockHLC,
+	"stockohlc": chartTypeStockOHLC, "stock_ohlc": chartTypeStockOHLC,
+	"stock-ohlc":   chartTypeStockOHLC,
+	chartTypeCombo: chartTypeCombo,
+}
+
+// canonicalChartType resolves any accepted spelling to its canonical token,
+// returning the input unchanged when it is not a known alias.
 func canonicalChartType(value string) string {
-	switch strings.ToLower(value) {
-	case chartTypeBar, "column":
-		return chartTypeBar
-	case "barhorizontal", "bar_horizontal", "bar-horizontal":
-		return chartTypeBarHorizontal
-	case "barstacked", "bar_stacked", "bar-stacked":
-		return chartTypeBarStacked
-	case "barstacked100", "bar_stacked_100", "bar-stacked-100":
-		return chartTypeBarStacked100
-	case chartTypeLine:
-		return chartTypeLine
-	case "linemarkers", "line_markers", "line-markers":
-		return chartTypeLineMarkers
-	case "linestacked", "line_stacked", "line-stacked":
-		return chartTypeLineStacked
-	case chartTypeScatter:
-		return chartTypeScatter
-	case chartTypeArea:
-		return chartTypeArea
-	case "areastacked", "area_stacked", "area-stacked":
-		return chartTypeAreaStacked
-	case "areastacked100", "area_stacked_100", "area-stacked-100":
-		return chartTypeAreaStacked100
-	case chartTypePie:
-		return chartTypePie
-	case "pie3d", "three_d_pie", "three-d-pie":
-		return chartTypePie3D
-	case chartTypeDoughnut:
-		return chartTypeDoughnut
-	case chartTypeBubble:
-		return chartTypeBubble
-	case chartTypeRadar:
-		return chartTypeRadar
-	case "radarfilled", "radar_filled", "radar-filled":
-		return chartTypeRadarFilled
-	case "stockhlc", "stock_hlc", "stock-hlc":
-		return chartTypeStockHLC
-	case "stockohlc", "stock_ohlc", "stock-ohlc":
-		return chartTypeStockOHLC
-	case chartTypeCombo:
-		return chartTypeCombo
-	default:
-		return value
+	if canonical, ok := chartTypeAliases[strings.ToLower(value)]; ok {
+		return canonical
 	}
+	return value
 }
 
 func withBounds[T interface {

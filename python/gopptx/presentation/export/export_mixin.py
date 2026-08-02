@@ -110,3 +110,20 @@ class PresentationExportMixin(PresentationMixinBase):
         if output_path is not None:
             return str(result.get("output_path", output_path))
         return str(result.get("html", ""))
+
+    def save_flat_xml(self, output_path: str) -> str:
+        """Save the presentation as a single PowerPoint XML Presentation file.
+
+        This is PowerPoint's ``ppSaveAsXMLPresentation`` format: the whole
+        package as one XML document, which can be read and diffed without
+        unzipping anything (upstream issue #1059). PowerPoint opens the result
+        directly, but gopptx does not read it back.
+
+        Args:
+            output_path: File to write, conventionally with a ``.xml`` suffix.
+
+        Returns:
+            The path written.
+        """
+        result = self.execute(ops.OP_SAVE_FLAT_XML, {"path": output_path})
+        return str(result.get("path", output_path))

@@ -815,3 +815,32 @@ SYSTEM_DASH_DOT_DOT  # unused variable (python\gopptx\constants.py LineDashStyle
 
 # Issue #235 (THREE_D_PIE chart type)
 THREE_D_PIE  # unused variable (python\gopptx\presentation\charts\chart_types.py)
+
+# Issue #266 (3-D chart types)
+THREE_D_COLUMN  # unused variable (python\gopptx\presentation\charts\chart_types.py)
+THREE_D_BAR  # unused variable (python\gopptx\presentation\charts\chart_types.py)
+THREE_D_LINE  # unused variable (python\gopptx\presentation\charts\chart_types.py)
+THREE_D_AREA  # unused variable (python\gopptx\presentation\charts\chart_types.py)
+
+# Issue #1036 (copy one slide from another presentation)
+_.copy_slide_from
+
+# Issue #351 (chart user shapes)
+_.add_user_shapes
+
+# Issue #234 (FillFormat.blip_fill)
+_.blip_fill
+
+# Issue #126 (native equations)
+_.add_equation
+
+# Issues #1026 / #168 (measured fit_text result fields)
+fits  # unused variable (python\gopptx\slide\shapes\shape_text_frame.py FitTextResult)
+line_count  # unused variable (python\gopptx\slide\shapes\shape_text_frame.py FitTextResult)
+measured  # unused variable (python\gopptx\slide\shapes\shape_text_frame.py FitTextResult)
+
+# Concurrent-session work carried in this branch (flat XML save, fit_shape_to_text)
+_.save_flat_xml
+_.fit_shape_to_text
+height_emu  # unused variable (python\gopptx\slide\shapes\shape_text_frame.py FitShapeToTextResult)
+resized  # unused variable (python\gopptx\slide\shapes\shape_text_frame.py FitShapeToTextResult)

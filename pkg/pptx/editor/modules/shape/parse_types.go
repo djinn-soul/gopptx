@@ -69,19 +69,26 @@ type patternFillXML struct {
 }
 
 type bodyPrXML struct {
-	LeftInset   *int      `xml:"lIns,attr"`
-	RIns        *int      `xml:"rIns,attr"`
-	TIns        *int      `xml:"tIns,attr"`
-	BIns        *int      `xml:"bIns,attr"`
-	Wrap        *string   `xml:"wrap,attr"`
-	Anchor      *string   `xml:"anchor,attr"`
-	Vert        *string   `xml:"vert,attr"`
-	NumCol      *int      `xml:"numCol,attr"`
-	Rot         *int      `xml:"rot,attr"`
-	NoAutofit   *struct{} `xml:"noAutofit"`
-	NormAutoFit *struct{} `xml:"normAutoFit"`
-	NormAutofit *struct{} `xml:"normAutofit"`
-	SpAutoFit   *struct{} `xml:"spAutoFit"`
+	LeftInset   *int            `xml:"lIns,attr"`
+	RIns        *int            `xml:"rIns,attr"`
+	TIns        *int            `xml:"tIns,attr"`
+	BIns        *int            `xml:"bIns,attr"`
+	Wrap        *string         `xml:"wrap,attr"`
+	Anchor      *string         `xml:"anchor,attr"`
+	Vert        *string         `xml:"vert,attr"`
+	NumCol      *int            `xml:"numCol,attr"`
+	Rot         *int            `xml:"rot,attr"`
+	NoAutofit   *struct{}       `xml:"noAutofit"`
+	NormAutoFit *normAutofitXML `xml:"normAutoFit"`
+	NormAutofit *normAutofitXML `xml:"normAutofit"`
+	SpAutoFit   *struct{}       `xml:"spAutoFit"`
+}
+
+// normAutofitXML carries the shrink-on-overflow amounts, in thousandths of a
+// percent, that PowerPoint wrote the last time it laid the text out.
+type normAutofitXML struct {
+	FontScale      *int `xml:"fontScale,attr"`
+	LnSpcReduction *int `xml:"lnSpcReduction,attr"`
 }
 
 type spacingNodeXML struct {
@@ -280,6 +287,18 @@ type shapeXML struct {
 				Cx int `xml:"cx,attr"`
 				Cy int `xml:"cy,attr"`
 			} `xml:"ext"`
+			// ChOff and ChExt are the coordinate space the children are drawn
+			// in. They are usually, but not always, the same as Off and Ext;
+			// when they differ, a child's own x/y/cx/cy is in that space and
+			// has to be mapped before it means anything on the slide.
+			ChOff *struct {
+				X int `xml:"x,attr"`
+				Y int `xml:"y,attr"`
+			} `xml:"chOff"`
+			ChExt *struct {
+				Cx int `xml:"cx,attr"`
+				Cy int `xml:"cy,attr"`
+			} `xml:"chExt"`
 		} `xml:"xfrm"`
 	} `xml:"grpSpPr"`
 	TxBody struct {

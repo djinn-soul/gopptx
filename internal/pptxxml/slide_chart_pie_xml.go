@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// defaultSeriesName labels a series the caller left unnamed.
+const defaultSeriesName = "Series 1"
+
 func pieChartPartXML(chart *ChartSpec) string {
 	series := chartPieSeriesXML(chart)
 	labels := chartPieDataLabelsXML(chart)
@@ -47,7 +50,7 @@ func chartPieDataLabelsXML(chart *ChartSpec) string {
 func chartPieSeriesXML(chart *ChartSpec) string {
 	seriesName := chart.SeriesName
 	if strings.TrimSpace(seriesName) == "" {
-		seriesName = "Series 1"
+		seriesName = defaultSeriesName
 	}
 
 	var b strings.Builder
@@ -75,18 +78,8 @@ func chartPieSeriesXML(chart *ChartSpec) string {
 <c:val><c:numLit>`)
 
 	b.WriteString(`
-<c:formatCode>General</c:formatCode>
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(chart.Values)))
-	b.WriteString(`"/>`)
-	for i, value := range chart.Values {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+<c:formatCode>General</c:formatCode>`)
+	writeNumericPoints(&b, chart.Values)
 	b.WriteString(`
 </c:numLit></c:val>
 </c:ser>`)

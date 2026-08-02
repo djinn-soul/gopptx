@@ -31,4 +31,8 @@ type ParsedShapeProperties struct {
 
 	Adjustments []common.ShapeAdjustment
 	Freeform    *common.FreeformGeometry
+
+	// GroupChild describes a group's child coordinate space (a:chOff/a:chExt).
+	// It is nil for anything that is not a group.
+	GroupChild *common.GroupChildSpace
 }

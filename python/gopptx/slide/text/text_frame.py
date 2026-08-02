@@ -20,6 +20,8 @@ _SUPPORTED_KEYS = {
     "word_wrap",
     "auto_fit",
     "auto_fit_type",
+    "font_scale",
+    "line_space_reduction",
     "vertical_align",
     "orientation",
     "columns",
@@ -92,6 +94,8 @@ class TextFrameProps:
         "auto_fit",
         "auto_fit_type",
         "columns",
+        "font_scale",
+        "line_space_reduction",
         "margin_bottom",
         "margin_left",
         "margin_right",
@@ -116,6 +120,8 @@ class TextFrameProps:
         self.word_wrap = None
         self.auto_fit = None
         self.auto_fit_type = None
+        self.font_scale = None
+        self.line_space_reduction = None
         self.vertical_align = None
         self.orientation = None
         self.columns = None
@@ -131,6 +137,10 @@ class TextFrameProps:
         self.auto_fit = as_optional_bool(kwargs.get("auto_fit"))
 
         self.auto_fit_type = as_optional_string(kwargs.get("auto_fit_type"))
+        self.font_scale = as_optional_float(kwargs.get("font_scale"))
+        self.line_space_reduction = as_optional_float(
+            kwargs.get("line_space_reduction")
+        )
         self.vertical_align = as_optional_string(kwargs.get("vertical_align"))
         self.orientation = as_optional_string(kwargs.get("orientation"))
 
@@ -176,6 +186,10 @@ class TextFrameProps:
             word_wrap=as_optional_bool(normalized.get("word_wrap")),
             auto_fit=as_optional_bool(normalized.get("auto_fit")),
             auto_fit_type=as_optional_string(normalized.get("auto_fit_type")),
+            font_scale=as_optional_float(normalized.get("font_scale")),
+            line_space_reduction=as_optional_float(
+                normalized.get("line_space_reduction")
+            ),
             vertical_align=as_optional_string(normalized.get("vertical_align")),
             orientation=as_optional_string(normalized.get("orientation")),
             columns=as_optional_int(normalized.get("columns")),
@@ -191,6 +205,16 @@ class TextFrameProps:
 
 def _collect_base_payload(props: TextFrameProps) -> dict[str, object]:
     payload: dict[str, object] = {}
+    _append_margin_payload(payload, props)
+    _append_autofit_payload(payload, props)
+    if props.vertical_align is not None:
+        payload["vertical_align"] = _normalize_vertical_align(props.vertical_align)
+    if props.orientation is not None:
+        payload["orientation"] = _normalize_orientation(props.orientation)
+    return payload
+
+
+def _append_margin_payload(payload: dict[str, object], props: TextFrameProps) -> None:
     if props.margin_top is not None:
         payload["margin_top"] = props.margin_top
     if props.margin_bottom is not None:
@@ -199,17 +223,21 @@ def _collect_base_payload(props: TextFrameProps) -> dict[str, object]:
         payload["margin_left"] = props.margin_left
     if props.margin_right is not None:
         payload["margin_right"] = props.margin_right
+
+
+def _append_autofit_payload(payload: dict[str, object], props: TextFrameProps) -> None:
     if props.word_wrap is not None:
         payload["word_wrap"] = props.word_wrap
     if props.auto_fit is not None:
         payload["auto_fit"] = props.auto_fit
     if props.auto_fit_type is not None:
         payload["auto_fit_type"] = _normalize_auto_fit_type(props.auto_fit_type)
-    if props.vertical_align is not None:
-        payload["vertical_align"] = _normalize_vertical_align(props.vertical_align)
-    if props.orientation is not None:
-        payload["orientation"] = _normalize_orientation(props.orientation)
-    return payload
+    # A shrink amount only reaches the file on a "normal" autofit frame, which
+    # the Go side selects for us when one is named (upstream issue #969).
+    if props.font_scale is not None:
+        payload["font_scale"] = float(props.font_scale)
+    if props.line_space_reduction is not None:
+        payload["line_space_reduction"] = float(props.line_space_reduction)
 
 
 def _append_layout_payload(payload: dict[str, object], props: TextFrameProps) -> None:

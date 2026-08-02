@@ -181,7 +181,7 @@ func normalizeParagraphAlignment(raw string) (string, error) {
 		return "l", nil
 	case alignCtr, alignCenter, "middle":
 		return alignCtr, nil
-	case "r", "right":
+	case "r", keyRight:
 		return "r", nil
 	case alignJust, "justify":
 		return alignJust, nil
