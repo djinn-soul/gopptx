@@ -1,4 +1,3 @@
-// LaTeX parsing for the OMML renderer: one left-to-right pass over the source.
 package mathml
 
 import (
@@ -13,74 +12,108 @@ type parser struct {
 	pos int
 }
 
+// sequenceBuilder accumulates one parsed sequence: finished OMML elements plus
+// the literal characters not yet flushed into an <m:r>.
+type sequenceBuilder struct {
+	out     strings.Builder
+	pending strings.Builder
+}
+
+// flush turns any buffered literal characters into a run.
+func (s *sequenceBuilder) flush() {
+	if s.pending.Len() > 0 {
+		s.out.WriteString(runXML(s.pending.String()))
+		s.pending.Reset()
+	}
+}
+
 // parseSequence reads runs until the source ends or a closing brace at depth is
 // reached, joining them into one OMML fragment.
 func (p *parser) parseSequence(depth int) (string, error) {
-	var b strings.Builder
-	var pending strings.Builder // literal characters not yet flushed to an m:r
-
-	flush := func() {
-		if pending.Len() > 0 {
-			b.WriteString(runXML(pending.String()))
-			pending.Reset()
-		}
-	}
+	var b sequenceBuilder
 
 	for p.pos < len(p.src) {
 		ch := p.src[p.pos]
-		switch {
-		case ch == '}':
+		if ch == '}' {
 			if depth == 0 {
 				return "", fmt.Errorf("unmatched '}' at position %d", p.pos)
 			}
-			flush()
-			return b.String(), nil
-		case ch == '{':
-			p.pos++
-			group, err := p.parseSequence(depth + 1)
-			if err != nil {
-				return "", err
-			}
-			if err := p.expect('}'); err != nil {
-				return "", err
-			}
-			flush()
-			b.WriteString(group)
-		case ch == '^' || ch == '_':
-			p.pos++
-			operand, err := p.parseOperand()
-			if err != nil {
-				return "", err
-			}
-			base := takeLastElement(&b, &pending)
-			if base == "" {
-				return "", fmt.Errorf("'%c' at position %d has nothing to attach to", ch, p.pos)
-			}
-			flush()
-			b.WriteString(scriptXML(ch, base, operand))
-		case ch == '\\':
-			flush()
-			command, err := p.readCommand()
-			if err != nil {
-				return "", err
-			}
-			rendered, err := p.renderCommand(command)
-			if err != nil {
-				return "", err
-			}
-			b.WriteString(rendered)
-		case unicode.IsSpace(ch):
-			p.pos++
-		default:
-			pending.WriteRune(ch)
-			p.pos++
+			b.flush()
+			return b.out.String(), nil
+		}
+		if err := p.parseSequenceToken(ch, depth, &b); err != nil {
+			return "", err
 		}
 	}
 	if depth != 0 {
 		return "", fmt.Errorf("unclosed '{' in %q", string(p.src))
 	}
-	flush()
-	return b.String(), nil
+	b.flush()
+	return b.out.String(), nil
+}
+
+// parseSequenceToken consumes the one construct starting at ch and appends it
+// to the builder. Splitting it out of parseSequence keeps that function to the
+// loop and the brace bookkeeping.
+func (p *parser) parseSequenceToken(ch rune, depth int, b *sequenceBuilder) error {
+	switch {
+	case ch == '{':
+		return p.parseGroupToken(depth, b)
+	case ch == '^' || ch == '_':
+		return p.parseScriptToken(ch, b)
+	case ch == '\\':
+		return p.parseCommandToken(b)
+	case unicode.IsSpace(ch):
+		p.pos++
+		return nil
+	default:
+		b.pending.WriteRune(ch)
+		p.pos++
+		return nil
+	}
+}
+
+func (p *parser) parseGroupToken(depth int, b *sequenceBuilder) error {
+	p.pos++
+	group, err := p.parseSequence(depth + 1)
+	if err != nil {
+		return err
+	}
+	if err := p.expect('}'); err != nil {
+		return err
+	}
+	b.flush()
+	b.out.WriteString(group)
+	return nil
+}
+
+func (p *parser) parseScriptToken(marker rune, b *sequenceBuilder) error {
+	p.pos++
+	operand, err := p.parseOperand()
+	if err != nil {
+		return err
+	}
+	base := takeLastElement(&b.out, &b.pending)
+	if base == "" {
+		return fmt.Errorf("'%c' at position %d has nothing to attach to", marker, p.pos)
+	}
+	b.flush()
+	b.out.WriteString(scriptXML(marker, base, operand))
+	return nil
+}
+
+func (p *parser) parseCommandToken(b *sequenceBuilder) error {
+	b.flush()
+	command, err := p.readCommand()
+	if err != nil {
+		return err
+	}
+	rendered, err := p.renderCommand(command)
+	if err != nil {
+		return err
+	}
+	b.out.WriteString(rendered)
+	return nil
 }
 
 // parseOperand reads the argument of a script or command: a braced group or a
