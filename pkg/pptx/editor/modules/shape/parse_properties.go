@@ -230,4 +230,27 @@ func applyParsedShapeTransform(ps *ParsedShapeProperties, s *shapeXML) {
 	ps.Y = s.GrpSpPr.Xfrm.Off.Y
 	ps.W = s.GrpSpPr.Xfrm.Ext.Cx
 	ps.H = s.GrpSpPr.Xfrm.Ext.Cy
+	applyParsedGroupChildSpace(ps, s)
+}
+
+// applyParsedGroupChildSpace records a group's child coordinate space, which is
+// what a child's raw x/y/cx/cy is expressed in. Reporting a child's own numbers
+// as slide coordinates is the mismatch upstream issue #925 reports: the
+// children look right relative to each other but wrong on the slide.
+func applyParsedGroupChildSpace(ps *ParsedShapeProperties, s *shapeXML) {
+	chOff := s.GrpSpPr.Xfrm.ChOff
+	chExt := s.GrpSpPr.Xfrm.ChExt
+	if chOff == nil && chExt == nil {
+		return
+	}
+	space := &common.GroupChildSpace{}
+	if chOff != nil {
+		space.OffsetX = chOff.X
+		space.OffsetY = chOff.Y
+	}
+	if chExt != nil {
+		space.ExtentCx = chExt.Cx
+		space.ExtentCy = chExt.Cy
+	}
+	ps.GroupChild = space
 }

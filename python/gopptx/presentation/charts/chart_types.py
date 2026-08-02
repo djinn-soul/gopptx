@@ -74,6 +74,18 @@ class ChartType(str, Enum):
     THREE_D_PIE = "pie3D"
     """3D pie chart. Go: enums.XLChartTypeThreeDPie."""
 
+    THREE_D_COLUMN = "column3D"
+    """3D clustered column chart. Go: enums.XLChartTypeThreeDColumn."""
+
+    THREE_D_BAR = "bar3D"
+    """3D clustered horizontal bar chart. Go: enums.XLChartTypeThreeDBar."""
+
+    THREE_D_LINE = "line3D"
+    """3D line chart. Each series sits on its own depth row. Go: enums.XLChartTypeThreeDLine."""
+
+    THREE_D_AREA = "area3D"
+    """3D area chart. Go: enums.XLChartTypeThreeDArea."""
+
     DOUGHNUT = "doughnut"
     """Doughnut chart. Go: enums.XLChartTypeDoughnut."""
 

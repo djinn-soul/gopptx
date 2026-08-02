@@ -11,6 +11,15 @@ func commonShapeFromParsed(shape parsedShape) common.Shape {
 	children := make([]common.Shape, len(shape.Shapes))
 	for idx, child := range shape.Shapes {
 		children[idx] = commonShapeFromParsed(child)
+		// A child states its geometry in the group's child space. Reporting
+		// those numbers as they stand puts the child in the wrong place on the
+		// slide whenever chOff/chExt differ from the group's own off/ext
+		// (upstream issue #925).
+		children[idx].X, children[idx].Y, children[idx].W, children[idx].H =
+			shape.GroupChild.ChildToSlide(
+				shape.X, shape.Y, shape.W, shape.H,
+				child.X, child.Y, child.W, child.H,
+			)
 	}
 	return common.Shape{
 		ID:               shape.ID,
@@ -46,6 +55,7 @@ func commonShapeFromParsed(shape parsedShape) common.Shape {
 		Connector:        shape.Connector,
 		Adjustments:      shape.Adjustments,
 		Freeform:         shape.Freeform,
+		GroupChild:       shape.GroupChild,
 		Shapes:           children,
 	}
 }

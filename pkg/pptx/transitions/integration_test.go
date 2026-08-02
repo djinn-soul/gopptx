@@ -170,7 +170,8 @@ func TestTransitionOptions(t *testing.T) {
 				AdvanceAfterMS:        2000,
 				DurationMS:            1500,
 			},
-			expectXML: `<p:transition advClick="0" advTm="2000"><p:push dir="r"/></p:transition>`,
+			expectXML: `<p:transition spd="slow" p14:dur="1500" advClick="0" advTm="2000">` +
+				`<p:push dir="r"/></p:transition>`,
 		},
 		{
 			name: "fade through black",

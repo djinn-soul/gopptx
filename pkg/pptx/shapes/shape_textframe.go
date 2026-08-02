@@ -44,6 +44,11 @@ type TextFrame struct {
 	Orientation  string
 	Columns      int
 	RotationDeg  *float64
+	// FontScale and LineSpaceReduction are the shrink-on-overflow amounts of a
+	// normAutoFit frame, in percent (62.5 means 62.5%). They apply only when
+	// AutoFit is TextAutoFitNormal.
+	FontScale          *float64
+	LineSpaceReduction *float64
 }
 
 const defaultTextMarginInches = 0.05
@@ -71,6 +76,21 @@ func (t TextFrame) WithRotation(degrees float64) TextFrame {
 // WithOrientation sets the OOXML text orientation token (for example, "vert270").
 func (t TextFrame) WithOrientation(orientation string) TextFrame {
 	t.Orientation = strings.TrimSpace(orientation)
+	return t
+}
+
+// WithShrinkOnOverflow turns on PowerPoint's "shrink text on overflow" and
+// records how far the text is already shrunk: fontScale scales every run's size
+// and lineSpaceReduction tightens line spacing, both in percent.
+//
+// PowerPoint recalculates both the moment the text is edited, so the values
+// only have to be close enough that the deck looks right when it is opened.
+func (t TextFrame) WithShrinkOnOverflow(fontScale, lineSpaceReduction float64) TextFrame {
+	t.AutoFit = TextAutoFitNormal
+	scale := fontScale
+	reduction := lineSpaceReduction
+	t.FontScale = &scale
+	t.LineSpaceReduction = &reduction
 	return t
 }
 

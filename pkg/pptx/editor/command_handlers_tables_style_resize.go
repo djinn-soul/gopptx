@@ -256,7 +256,7 @@ func handleUpdateTableCellBorder(e *PresentationEditor, payload json.RawMessage)
 				return nil, v.Error()
 			}
 			switch side {
-			case keyLeft, "right", keyTop, "bottom":
+			case keyLeft, keyRight, keyTop, keyBottom:
 			default:
 				return nil, errors.New("side must be one of: left, right, top, bottom")
 			}

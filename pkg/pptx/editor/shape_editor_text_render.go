@@ -123,55 +123,7 @@ func (e *PresentationEditor) editorRunToXMLSpec(
 		Text: run.Text,
 		Lang: "en-US",
 	}
-	if run.Bold != nil {
-		spec.Bold = *run.Bold
-	}
-	if run.Italic != nil {
-		spec.Italic = *run.Italic
-	}
-	if run.Underline != nil {
-		spec.Underline = normalizeUnderlineValue(*run.Underline)
-	}
-	if run.Strikethrough != nil {
-		val := *run.Strikethrough
-		switch val {
-		case "sng":
-			val = "sngStrike"
-		case "dbl":
-			val = "dblStrike"
-		}
-		spec.Strikethrough = val
-	}
-	if run.Subscript != nil {
-		spec.Subscript = *run.Subscript
-	}
-	if run.Superscript != nil {
-		spec.Superscript = *run.Superscript
-	}
-	if run.SizePt != nil {
-		spec.SizePt = *run.SizePt
-	}
-	if run.AllCaps != nil {
-		spec.AllCaps = *run.AllCaps
-	}
-	if run.SmallCaps != nil {
-		spec.SmallCaps = *run.SmallCaps
-	}
-	if run.Color != nil {
-		spec.Color = *run.Color
-	}
-	if run.Highlight != nil {
-		spec.Highlight = *run.Highlight
-	}
-	if run.Font != nil {
-		spec.Font = *run.Font
-	}
-	if run.OutlineColor != nil {
-		spec.OutlineColor = *run.OutlineColor
-	}
-	if run.OutlineWidthPt != nil {
-		spec.OutlineWidthPt = *run.OutlineWidthPt
-	}
+	applyEditorRunFormatting(&spec, run)
 
 	runHyperlink, ok, err := e.editorHyperlinkToRunSpec(partPath, run.Hyperlink)
 	if err != nil {
@@ -229,4 +181,62 @@ func (e *PresentationEditor) editorHyperlinkToRunSpec(
 		return pptxxml.HyperlinkSpec{}, false, nil
 	}
 	return *spec, true, nil
+}
+
+// applyEditorRunFormatting copies the set fields of an editor run onto the XML
+// spec. It is split out of editorRunToXMLSpec so that function stays about
+// resolving hyperlinks rather than unwrapping two dozen optional fields.
+func applyEditorRunFormatting(spec *pptxxml.TextRunSpec, run editorcommon.TextRun) {
+	if run.Bold != nil {
+		spec.Bold = *run.Bold
+	}
+	if run.Italic != nil {
+		spec.Italic = *run.Italic
+	}
+	if run.Underline != nil {
+		spec.Underline = normalizeUnderlineValue(*run.Underline)
+	}
+	if run.Strikethrough != nil {
+		val := *run.Strikethrough
+		switch val {
+		case "sng":
+			val = "sngStrike"
+		case "dbl":
+			val = "dblStrike"
+		}
+		spec.Strikethrough = val
+	}
+	if run.Subscript != nil {
+		spec.Subscript = *run.Subscript
+	}
+	if run.Superscript != nil {
+		spec.Superscript = *run.Superscript
+	}
+	if run.SizePt != nil {
+		spec.SizePt = *run.SizePt
+	}
+	if run.AllCaps != nil {
+		spec.AllCaps = *run.AllCaps
+	}
+	if run.SmallCaps != nil {
+		spec.SmallCaps = *run.SmallCaps
+	}
+	if run.Color != nil {
+		spec.Color = *run.Color
+	}
+	if run.Highlight != nil {
+		spec.Highlight = *run.Highlight
+	}
+	if run.Font != nil {
+		spec.Font = *run.Font
+	}
+	if run.OutlineColor != nil {
+		spec.OutlineColor = *run.OutlineColor
+	}
+	if run.OutlineWidthPt != nil {
+		spec.OutlineWidthPt = *run.OutlineWidthPt
+	}
+	if run.Language != nil && strings.TrimSpace(*run.Language) != "" {
+		spec.Lang = strings.TrimSpace(*run.Language)
+	}
 }

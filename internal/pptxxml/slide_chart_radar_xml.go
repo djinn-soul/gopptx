@@ -53,18 +53,8 @@ func radarSeriesXML(chart *ChartSpec) string {
 	b.WriteString(`
 </c:strLit></c:cat>
 <c:val><c:numLit>
-<c:formatCode>General</c:formatCode>
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(chart.Values)))
-	b.WriteString(`"/>`)
-	for i, value := range chart.Values {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+<c:formatCode>General</c:formatCode>`)
+	writeNumericPoints(&b, chart.Values)
 	b.WriteString(`
 </c:numLit></c:val>
 </c:ser>`)

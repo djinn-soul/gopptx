@@ -8,6 +8,33 @@ import (
 
 const chartMajorGridlinesXML = "<c:majorGridlines/>"
 
+// chartAxesAndDataTableXML renders the axes followed by the optional data
+// table. CT_PlotArea puts <c:dTable> after the axes, so the two are emitted
+// together to keep that order in every chart kind that supports a data table.
+func chartAxesAndDataTableXML(chart *ChartSpec) string {
+	return chartAxesXML(chart) + chartDataTableXML(chart)
+}
+
+// chartDataTableXML renders <c:dTable>, the grid of plotted values PowerPoint
+// draws beneath the plot area.
+func chartDataTableXML(chart *ChartSpec) string {
+	if !chart.ShowDataTable {
+		return ""
+	}
+	flag := func(v *bool) string {
+		if v == nil {
+			return "1"
+		}
+		return boolToOneZero(*v)
+	}
+	return "\n<c:dTable>" +
+		`<c:showHorzBorder val="` + flag(chart.DataTableShowHorzBorder) + `"/>` +
+		`<c:showVertBorder val="` + flag(chart.DataTableShowVertBorder) + `"/>` +
+		`<c:showOutline val="` + flag(chart.DataTableShowOutline) + `"/>` +
+		`<c:showKeys val="` + flag(chart.DataTableShowLegendKeys) + `"/>` +
+		"</c:dTable>"
+}
+
 // ChartPartXML renders a chart part (`ppt/charts/chartN.xml`).
 func ChartPartXML(chart *ChartSpec) string {
 	return string(RenderChart(chart))
@@ -15,6 +42,23 @@ func ChartPartXML(chart *ChartSpec) string {
 
 // RenderChart renders a chart part to bytes.
 func RenderChart(chart *ChartSpec) []byte {
+	return withDisplayBlanksAs(renderChartBody(chart), chart.DisplayBlanksAs)
+}
+
+// withDisplayBlanksAs inserts <c:dispBlanksAs> after <c:plotVisOnly>, the only
+// position the schema allows it in. Every chart kind goes through here, so a
+// blank in any of them is drawn the same way.
+func withDisplayBlanksAs(chartXML []byte, displayBlanksAs string) []byte {
+	node := displayBlanksAsXML(displayBlanksAs)
+	if node == "" {
+		return chartXML
+	}
+	return []byte(strings.Replace(
+		string(chartXML), plotVisOnlyElement, plotVisOnlyElement+node, 1,
+	))
+}
+
+func renderChartBody(chart *ChartSpec) []byte {
 	if chart.Kind == ChartKindBar || chart.Kind == ChartKindBarHorizontal ||
 		chart.Kind == ChartKindBarStacked || chart.Kind == ChartKindBarStacked100 {
 		return []byte(barChartPartXML(chart))
@@ -36,6 +80,15 @@ func RenderChart(chart *ChartSpec) []byte {
 	}
 	if chart.Kind == ChartKindThreeDPie {
 		return []byte(pie3DChartPartXML(chart))
+	}
+	if chart.Kind == ChartKindThreeDColumn || chart.Kind == ChartKindThreeDBar {
+		return []byte(bar3DChartPartXML(chart))
+	}
+	if chart.Kind == ChartKindThreeDLine {
+		return []byte(line3DChartPartXML(chart))
+	}
+	if chart.Kind == ChartKindThreeDArea {
+		return []byte(area3DChartPartXML(chart))
 	}
 	if chart.Kind == ChartKindDoughnut {
 		return []byte(doughnutChartPartXML(chart))
@@ -68,7 +121,7 @@ func barChartPartXML(chart *ChartSpec) string {
 <c:varyColors val="0"/>%s
 %s%s
 </c:barChart>
-%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, primaryAxisIDRefsXML(), chartAxesXML(chart)),
+%s`, Escape(chart.BarDir), Escape(chart.Grouping), series, labels, primaryAxisIDRefsXML(), chartAxesAndDataTableXML(chart)),
 	)
 }
 
@@ -92,7 +145,7 @@ func lineChartPartXML(chart *ChartSpec) string {
 %s
 <c:smooth val="%s"/>%s
 </c:lineChart>
-%s`, Escape(chart.Grouping), series, labels, smooth, primaryAxisIDRefsXML(), chartAxesXML(chart)),
+%s`, Escape(chart.Grouping), series, labels, smooth, primaryAxisIDRefsXML(), chartAxesAndDataTableXML(chart)),
 	)
 }
 
@@ -128,7 +181,7 @@ func chartPartEnvelope(
 <c:layout/>%s
 </c:plotArea>
 %s
-<c:plotVisOnly val="1"/>
+`+plotVisOnlyElement+`
 </c:chart>
 </c:chartSpace>`, Escape(title), boolToOneZero(titleOverlay), plotXML, legend)
 }
@@ -161,18 +214,8 @@ func chartSeriesXML(chart *ChartSpec) string {
 <c:val><c:numLit>`)
 
 	b.WriteString(`
-<c:formatCode>General</c:formatCode>
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(chart.Values)))
-	b.WriteString(`"/>`)
-	for i, value := range chart.Values {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+<c:formatCode>General</c:formatCode>`)
+	writeNumericPoints(&b, chart.Values)
 	b.WriteString(`
 	</c:numLit></c:val>
 </c:ser>`)

@@ -25,6 +25,9 @@ func toXMLTextFrameSpec(tf *TextFrame) *pptxxml.TextFrameSpec {
 		Orientation:  tf.Orientation,
 		NumCol:       tf.Columns,
 		Rotation:     rotation,
+
+		FontScale:          tf.FontScale,
+		LineSpaceReduction: tf.LineSpaceReduction,
 	}
 }
 

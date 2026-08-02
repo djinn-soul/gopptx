@@ -108,6 +108,7 @@ class Run:
         "font",
         "highlight",
         "italic",
+        "language",
         "size_pt",
         "small_caps",
         "strikethrough",
@@ -134,6 +135,9 @@ class Run:
         self.code = as_optional_bool(kwargs.get("code"))
         self.all_caps = as_optional_bool(kwargs.get("all_caps"))
         self.small_caps = as_optional_bool(kwargs.get("small_caps"))
+        # BCP-47 tag. Decides which typeface slot the font lands in, so a
+        # Japanese or Arabic run keeps the font it was given (Issue #172).
+        self.language = as_optional_string(kwargs.get("language"))
         self._hyperlink = RunHyperlink.from_payload(
             cast("Mapping[str, object] | RunHyperlink | None", kwargs.get("hyperlink"))
         )
@@ -180,6 +184,7 @@ class Run:
             "code",
             "all_caps",
             "small_caps",
+            "language",
         ):
             val = cast("object", getattr(self, key))
             if val is not None:

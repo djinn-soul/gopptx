@@ -53,6 +53,23 @@ type ShapeSpec struct {
 	RichFill     *RichShapeFillSpec
 	RichLine     *RichShapeLineSpec
 	RichShadow   *RichShapeShadowSpec
+	// CustomGeometry replaces the preset geometry with an <a:custGeom> path.
+	// When it is set, Type is ignored.
+	CustomGeometry *CustomGeometrySpec
+}
+
+// CustomGeometrySpec describes a freeform path drawn as <a:custGeom>. Points
+// are in path space, i.e. relative to the shape origin, and the path box is the
+// shape extent.
+type CustomGeometrySpec struct {
+	Points    []CustomGeometryPointSpec
+	ClosePath bool
+}
+
+// CustomGeometryPointSpec is one path vertex in EMUs relative to the shape origin.
+type CustomGeometryPointSpec struct {
+	X int64
+	Y int64
 }
 
 // ShapeEffectsSpec describes effects for one custom shape.
@@ -198,6 +215,12 @@ type TextFrameSpec struct {
 	Orientation  string
 	NumCol       int
 	Rotation     *int64
+	// FontScale and LineSpaceReduction carry the shrink-on-overflow amounts of
+	// an <a:normAutofit>, as percentages (62.5 means 62.5%). They are ignored
+	// unless AutoFit selects normAutoFit, which is the only element that
+	// accepts them.
+	FontScale          *float64
+	LineSpaceReduction *float64
 }
 
 // ConnectorSpec describes one custom connector rendered as p:cxnSp.

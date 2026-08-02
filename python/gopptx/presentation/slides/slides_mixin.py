@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...slide.slide import Slide
 from .layout_theme_mixin import PresentationLayoutMixin, PresentationThemeMixin
-from .master import SlideMasters
+from .master import SlideLayout, SlideMasters
 from .properties_mixin import PresentationPropertiesMixin
 from .sections_mixin import PresentationSectionMixin
 from .slide_layout_enum import SlideLayoutType
@@ -16,6 +17,8 @@ from .slides_extras_mixin import PresentationSlidesExtrasMixin
 from .slides_placeholder_mixin import PresentationPlaceholderMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from ...schemas import SlideMetadata
     from ...slide.contracts import SlidePresentationProtocol
     from ..helpers import PresentationProtocol
@@ -68,16 +71,47 @@ class PresentationSlidesMixin(
         """Return slide layouts of the primary slide master."""
         return self.slide_masters[0].slide_layouts
 
+    def _resolve_layout_object(self, layout: SlideLayout) -> str:
+        """Return the local part path for a SlideLayout, importing it if foreign.
+
+        A layout from another open presentation has no parts in this package, so
+        its master family is copied over first and the imported copy's part path
+        is what the slide gets bound to (Issue #175).
+        """
+        if layout.presentation is self:
+            return layout.part
+        result = self.execute(
+            ops.OP_IMPORT_LAYOUT_FROM,
+            {"source_handle": layout.presentation.handle, "layout_part": layout.part},
+        )
+        self.invalidate_cache()
+        imported = result.get("layout_part")
+        if not isinstance(imported, str) or not imported:
+            raise TypeError("bridge response layout_part must be a non-empty string")
+        return imported
+
     def add_slide(
         self,
         title: str = "",
-        layout: str | None = None,
+        layout: str | SlideLayout | None = None,
         bullets: list[str] | None = None,
         index: int | None = None,
     ) -> Slide:
-        """Add a new slide to the presentation, optionally inserting at index (Issue #194)."""
+        """Add a new slide to the presentation, optionally inserting at index (Issue #194).
+
+        Args:
+            title: Title text for the new slide.
+            layout: A built-in layout name, or a :class:`SlideLayout` object --
+                including one taken from another open presentation, whose master
+                family is imported into this deck first (Issue #175).
+            bullets: Body bullet lines.
+            index: Position to insert at; appended when omitted.
+        """
         payload: dict[str, object] = {"title": title}
-        if layout:
+        layout_part: str | None = None
+        if isinstance(layout, SlideLayout):
+            layout_part = self._resolve_layout_object(layout)
+        elif layout:
             try:
                 validated_layout = SlideLayoutType.validate(layout)
                 payload["layout"] = validated_layout
@@ -121,6 +155,9 @@ class PresentationSlidesMixin(
                     "date_time_text": cast("str", defaults.get("date_time_text", "")),
                 }
                 self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, hf_payload)
+
+        if layout_part is not None:
+            self.rebind_slide_layout(slide_index, layout_part)
 
         if index is not None and index != slide_index:
             self.move_slide(slide_index, index)
@@ -207,3 +244,51 @@ class PresentationSlidesMixin(
         """Merge all slides from *other* into this presentation."""
         self.execute(ops.OP_MERGE_FROM_EDITOR, {"source_handle": other.handle})
         self.invalidate_cache()
+
+    def copy_slides_from(
+        self,
+        source: PresentationProtocol | str | os.PathLike[str],
+        slide_indices: Sequence[int] | int | None = None,
+    ) -> list[int]:
+        """Copy selected slides from another presentation (Issue #1036).
+
+        Unlike :meth:`merge_from_editor`, which appends the whole deck, this
+        lifts out only the slides named, in the order given.
+
+        Args:
+            source: An open presentation, or a path to a ``.pptx`` file.
+            slide_indices: Zero-based source slide index, a sequence of them, or
+                ``None`` for every slide.
+
+        Returns:
+            The indices the copied slides now occupy in this presentation.
+        """
+        payload: dict[str, object] = {}
+        if isinstance(source, (str, os.PathLike)):
+            payload["path"] = os.fspath(source)
+        else:
+            payload["source_handle"] = source.handle
+        if slide_indices is not None:
+            indices = (
+                [slide_indices]
+                if isinstance(slide_indices, int)
+                else [int(i) for i in slide_indices]
+            )
+            payload["slide_indices"] = indices
+
+        result = self.execute(ops.OP_COPY_SLIDES_FROM, payload)
+        self.invalidate_cache()
+        first = int(cast("int", result.get("first_index", 0)))
+        count = int(cast("int", result.get("slide_count", 0)))
+        return list(range(first, first + count))
+
+    def copy_slide_from(
+        self,
+        source: PresentationProtocol | str | os.PathLike[str],
+        slide_index: int,
+    ) -> int:
+        """Copy one slide from another presentation (Issue #1036).
+
+        Returns the index the copied slide now occupies in this presentation.
+        """
+        return self.copy_slides_from(source, [slide_index])[0]

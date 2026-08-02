@@ -52,9 +52,34 @@ func applyParsedShapeTextFrame(ps *ParsedShapeProperties, s *shapeXML) {
 	if autoFitBool != nil {
 		frame.AutoFit = autoFitBool
 	}
+	applyParsedShrinkAmounts(frame, bodyPr)
 
 	if hasTextFrameProps(frame) {
 		ps.TextFrame = frame
+	}
+}
+
+// autofitPercentScale converts OOXML's thousandths of a percent to percent.
+const autofitPercentScale = 1000.0
+
+// applyParsedShrinkAmounts reports the fontScale and lnSpcReduction of a
+// normAutofit frame in percent, so a caller can read back what PowerPoint (or
+// an earlier edit) computed instead of guessing.
+func applyParsedShrinkAmounts(frame *common.TextFrame, bodyPr *bodyPrXML) {
+	norm := bodyPr.NormAutoFit
+	if norm == nil {
+		norm = bodyPr.NormAutofit
+	}
+	if norm == nil {
+		return
+	}
+	if norm.FontScale != nil {
+		scale := float64(*norm.FontScale) / autofitPercentScale
+		frame.FontScale = &scale
+	}
+	if norm.LnSpcReduction != nil {
+		reduction := float64(*norm.LnSpcReduction) / autofitPercentScale
+		frame.LineSpaceReduction = &reduction
 	}
 }
 
@@ -88,5 +113,7 @@ func hasTextFrameProps(frame *common.TextFrame) bool {
 		frame.VerticalAlign != nil ||
 		frame.Orientation != nil ||
 		frame.Columns != nil ||
-		frame.Rotation != nil
+		frame.Rotation != nil ||
+		frame.FontScale != nil ||
+		frame.LineSpaceReduction != nil
 }

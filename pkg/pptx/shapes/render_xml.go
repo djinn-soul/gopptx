@@ -34,6 +34,16 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		Name:         shape.Name,
 		Adjustments:  toXMLShapeAdjustments(shape.Adjustments),
 	}
+	if shape.CustomGeometry != nil && len(shape.CustomGeometry.Points) > 0 {
+		points := make([]pptxxml.CustomGeometryPointSpec, len(shape.CustomGeometry.Points))
+		for i, pt := range shape.CustomGeometry.Points {
+			points[i] = pptxxml.CustomGeometryPointSpec{X: pt.X.Emu(), Y: pt.Y.Emu()}
+		}
+		spec.CustomGeometry = &pptxxml.CustomGeometrySpec{
+			Points:    points,
+			ClosePath: shape.CustomGeometry.ClosePath,
+		}
+	}
 	if shape.Effects != nil {
 		spec.Effects = &pptxxml.ShapeEffectsSpec{
 			Shadow:         shape.Effects.Shadow,

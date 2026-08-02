@@ -62,6 +62,8 @@ type BarChart struct {
 	ValueAxisCrossBetween      string
 	MinValue                   *float64
 	MaxValue                   *float64
+	// DisplayBlanksAs decides how a BlankValue category is drawn.
+	DisplayBlanksAs string
 
 	// Accessibility
 	AltText      string
@@ -127,6 +129,8 @@ type LineChart struct {
 	MinValue                   *float64
 	MaxValue                   *float64
 	Smooth                     bool
+	// DisplayBlanksAs decides how a BlankValue category is drawn.
+	DisplayBlanksAs string
 
 	// Accessibility
 	AltText      string
@@ -195,6 +199,7 @@ func (c BarChart) ToChartSpec() *pptxxml.ChartSpec {
 		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
 		BarDir:                     "col",
 		Grouping:                   "clustered",
+		DisplayBlanksAs:            c.DisplayBlanksAs,
 		AltText:                    c.AltText,
 		IsDecorative:               c.IsDecorative,
 	}
@@ -261,6 +266,7 @@ func (c LineChart) ToChartSpec() *pptxxml.ChartSpec {
 		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
 		Grouping:                   "standard",
 		Smooth:                     c.Smooth,
+		DisplayBlanksAs:            c.DisplayBlanksAs,
 		AltText:                    c.AltText,
 		IsDecorative:               c.IsDecorative,
 	}

@@ -6,8 +6,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, cast
 
 from ...schemas import RGBColor
+from .picture_fill import picture_fill_payload
 
 if TYPE_CHECKING:
+    import os
+
     from ...schemas import (
         FillFormat,
         LineFormat,
@@ -23,6 +26,7 @@ class _ShapeProto(Protocol):
 
     def shape_record(self) -> Shape: ...
     def apply_update(self, patch: ShapeUpdate) -> None: ...
+    def set_picture_fill(self, payload: dict[str, object]) -> None: ...
 
 
 class _FillColorProxy:
@@ -150,13 +154,44 @@ class _ShapeFillProxy:
         """Return the image used as this shape's fill, if any.
 
         Reports the relationship id, the resolved package part, the tile/stretch
-        mode and any source-rectangle crop. Read-only: setting a picture fill
-        goes through the picture APIs.
+        mode and any source-rectangle crop. Use :meth:`set_picture` to write one.
         """
         raw = cast("object", self._payload().get("picture"))
         if not isinstance(raw, dict):
             return None
         return cast("PictureFill", raw)
+
+    def set_picture(
+        self,
+        image: str | bytes | os.PathLike[str],
+        *,
+        tile: bool = False,
+        crop: tuple[float, float, float, float] | None = None,
+    ) -> None:
+        """Fill this shape with an image (Issue #234).
+
+        Args:
+            image: Image file path, ``os.PathLike``, or raw image bytes.
+            tile: Repeat the image at its natural size instead of stretching a
+                single copy over the shape.
+            crop: ``(left, top, right, bottom)`` fractions in ``[0, 1)`` trimmed
+                off the source image before it is drawn.
+
+        Writes an ``<a:blipFill>`` into the shape's ``<a:spPr>``, replacing any
+        existing fill and leaving the line and effects alone.
+        """
+        payload = picture_fill_payload(image, tile=tile, crop=crop)
+        self._shape.set_picture_fill(payload)
+
+    def blip_fill(
+        self,
+        image: str | bytes | os.PathLike[str],
+        *,
+        tile: bool = False,
+        crop: tuple[float, float, float, float] | None = None,
+    ) -> None:
+        """python-pptx spelling of :meth:`set_picture` (Issue #234)."""
+        self.set_picture(image, tile=tile, crop=crop)
 
     def background(self) -> None:
         self._apply(cast("FillFormat", {"background": True}))

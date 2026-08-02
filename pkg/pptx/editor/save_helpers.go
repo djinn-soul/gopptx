@@ -79,6 +79,12 @@ func (e *PresentationEditor) renderContentTypesPart(
 		editorslide.MapValues(e.mediaInventory),
 		e.parts.KeysWithPrefix("ppt/embeddings/")...,
 	)
+	// Every media part in the package counts, not only the ones this editor
+	// added. A picture a layout or master references, or one another tool put
+	// there, is still a part whose extension needs a Default -- without it
+	// PowerPoint rejects the file with "no content-type for partname
+	// '/ppt/media/...'" (upstream issue #915).
+	mediaPaths = append(mediaPaths, e.parts.KeysWithPrefix("ppt/media/")...)
 	// chartEx parts share the chart prefix but need their own content type, so
 	// they keep the override recorded when they were added.
 	filteredChartPaths := editorslide.FilterDrawingMLChartPaths(

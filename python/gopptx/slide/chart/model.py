@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ... import ops
 from .axis_series import ChartAxis
 from .data_label_points import ChartDataLabelPointMixin
 from .data_points import ChartDataPointMixin
@@ -22,6 +23,7 @@ from .series_proxy import ChartSeriesCollection
 from .trendline import ChartTrendlineMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
     from typing import Protocol
 
     from ...schemas import ChartDataUpdate, ChartFormatUpdate, ChartState
@@ -272,3 +274,32 @@ class Chart(
     def apply_format(self, fmt: ChartFormatUpdate) -> None:
         """Apply formatting updates to the chart."""
         self._apply_format(fmt)
+
+    def add_user_shapes(self, shapes: Sequence[Mapping[str, object]]) -> str:
+        """Attach shapes to this chart's drawing part (Issue #351).
+
+        A caption added with ``slide.add_textbox`` is a separate slide shape:
+        copying or moving the chart leaves it behind. A user shape lives in the
+        chart's own ``c:userShapes`` part, so it travels with the chart and
+        scales with it.
+
+        Args:
+            shapes: Each mapping takes ``text`` plus the ``from_x``, ``from_y``,
+                ``to_x`` and ``to_y`` anchors as fractions of the chart area in
+                ``[0, 1]``, and optionally ``font_size_pt``, ``bold`` and
+                ``name``.
+
+        Returns:
+            The package path of the chart drawing part that was written.
+
+        Replaces any user shapes the chart already had.
+        """
+        result = self._slide.presentation.execute(
+            ops.OP_ADD_CHART_USER_SHAPES,
+            {
+                "slide_index": self._slide.index,
+                "chart_selector": {"index": self._index},
+                "shapes": list(shapes),
+            },
+        )
+        return str(result.get("drawing_part", ""))

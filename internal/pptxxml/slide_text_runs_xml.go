@@ -4,6 +4,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
 const (
@@ -108,14 +110,15 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 		b.WriteString(Escape(color))
 		b.WriteString(`"/></a:solidFill>`)
 	}
-	if font := strings.TrimSpace(runFont(run)); font != "" {
-		b.WriteString(`<a:latin typeface="`)
-		b.WriteString(Escape(font))
-		b.WriteString(`"/>`)
-	}
+	b.WriteString(runTypefaceXML(runFont(run), run.Lang))
 	b.WriteString(richTextRunOutlineXML(run))
 	if run.Hyperlink != nil {
-		b.WriteString(HyperlinkXML(*run.Hyperlink, "a:hlinkClick"))
+		// A run that names its own colour keeps it: without the override
+		// PowerPoint repaints the whole run in the theme's hyperlink colour
+		// (upstream issue #940).
+		link := *run.Hyperlink
+		link.UseTextColor = link.UseTextColor || color != ""
+		b.WriteString(HyperlinkXML(link, "a:hlinkClick"))
 	}
 	if run.HoverAction != nil {
 		b.WriteString(HyperlinkXML(*run.HoverAction, "a:hlinkMouseOver"))
@@ -130,6 +133,30 @@ func richTextRun(run TextRunSpec, contentStyle ContentStyleSpec) string {
 // RichTextRunXML renders one <a:r> node for a text run.
 func RichTextRunXML(run TextRunSpec, contentStyle ContentStyleSpec) string {
 	return richTextRun(run, contentStyle)
+}
+
+// runTypefaceXML writes the font into the typeface slot the run's language is
+// actually rendered from. A Japanese or Arabic run whose font only appears in
+// <a:latin> is drawn in the theme's fallback face instead, because PowerPoint
+// picks <a:ea> for East Asian text and <a:cs> for complex scripts
+// (upstream issue #172).
+func runTypefaceXML(font, langTag string) string {
+	trimmed := strings.TrimSpace(font)
+	if trimmed == "" {
+		return ""
+	}
+	escaped := Escape(trimmed)
+	latin := `<a:latin typeface="` + escaped + `"/>`
+	switch text.ScriptKindForLanguage(langTag) {
+	case text.ScriptEastAsian:
+		return latin + `<a:ea typeface="` + escaped + `"/>`
+	case text.ScriptComplex:
+		return latin + `<a:cs typeface="` + escaped + `"/>`
+	case text.ScriptLatin:
+		return latin
+	default:
+		return latin
+	}
 }
 
 func richTextRunOutlineXML(run TextRunSpec) string {

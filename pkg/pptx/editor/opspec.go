@@ -75,6 +75,12 @@ const (
 	OpClearShapes             = "clear_shapes"
 	OpUpdateShape             = "update_shape"
 	OpSetShapeAdjustments     = "set_shape_adjustments"
+	OpSetPictureFill          = "set_picture_fill"
+	OpFitShapeText            = "fit_shape_text"
+	OpFitShapeToText          = "fit_shape_to_text"
+	OpSaveFlatXML             = "save_flat_xml"
+	OpAddEquation             = "add_equation"
+	OpAddChartUserShapes      = "add_chart_user_shapes"
 	OpMoveShapeToFront        = "move_shape_to_front"
 	OpMoveShapeToBack         = "move_shape_to_back"
 	OpGetNotes                = "get_notes"
@@ -175,6 +181,8 @@ const (
 	OpListNotesPlaceholders          = "list_notes_placeholders"
 	OpUpdateNotesMaster              = "update_notes_master"
 	OpMergeFromEditor                = "merge_from_editor"
+	OpCopySlidesFrom                 = "copy_slides_from"
+	OpImportLayoutFrom               = "import_layout_from"
 )
 
 // SupportedOps returns the canonical list of operations accepted by ExecuteCommand.

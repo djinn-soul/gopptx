@@ -13,6 +13,9 @@ type HyperlinkSpec struct {
 	History        *bool
 	EndSound       *bool
 	Action         string // ppaction:// for internal navigation
+	// UseTextColor keeps the run's own colour instead of the theme's hyperlink
+	// colour. It is set when the run states a colour of its own.
+	UseTextColor bool
 }
 
 // HyperlinkXML generates drawing hyperlink elements such as
@@ -42,8 +45,26 @@ func HyperlinkXML(spec HyperlinkSpec, tagName string) string {
 		xml += fmt.Sprintf(` endSnd="%d"`, boolToInt(*spec.EndSound))
 	}
 
+	if spec.UseTextColor {
+		return xml + ">" + hyperlinkTextColorOverrideXML() + "</" + tagName + ">"
+	}
 	xml += "/>"
 	return xml
+}
+
+// Office's hyperlink-color extension. Without it PowerPoint paints every
+// hyperlink run in the theme's hlink colour and the run's own solidFill is
+// never seen, which is the "impossible to set the font color" of upstream issue
+// #940. val="tx" tells PowerPoint to use the run's text colour instead.
+const (
+	hyperlinkColorExtURI = "{A12FA001-AC4F-418D-AE19-62706E023703}"
+	hyperlinkColorNS     = "http://schemas.microsoft.com/office/drawing/2018/hyperlinkcolor"
+)
+
+func hyperlinkTextColorOverrideXML() string {
+	return `<a:extLst><a:ext uri="` + hyperlinkColorExtURI + `">` +
+		`<ahyp:hlinkClr xmlns:ahyp="` + hyperlinkColorNS + `" val="tx"/>` +
+		`</a:ext></a:extLst>`
 }
 
 func boolToInt(value bool) int {
