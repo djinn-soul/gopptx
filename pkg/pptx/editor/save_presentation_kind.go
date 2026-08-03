@@ -18,6 +18,13 @@ const (
 	macroSlideshowMainType      = "application/vnd.ms-powerpoint.slideshow.macroEnabled.main+xml"
 )
 
+// Output extensions that carry a VBA project.
+const (
+	extMacroPresentation = ".pptm"
+	extMacroTemplate     = ".potm"
+	extMacroSlideshow    = ".ppsm"
+)
+
 // mainPartContentTypes lists every content type ppt/presentation.xml can carry.
 // A package opened from any of them holds the same slides; only this one
 // declaration says which PowerPoint file kind it is, which is why a .potx can
@@ -44,14 +51,26 @@ func mainContentTypeForExtension(ext string) string {
 		return slideshowMainContentType
 	case ".potx":
 		return templateMainContentType
-	case ".pptm":
+	case extMacroPresentation:
 		return macroPresentationMainType
-	case ".potm":
+	case extMacroTemplate:
 		return macroTemplateMainType
-	case ".ppsm":
+	case extMacroSlideshow:
 		return macroSlideshowMainType
 	default:
 		return ""
+	}
+}
+
+// isMacroEnabledExtension reports whether an output extension can carry a VBA
+// project. A macro-enabled template or slideshow keeps its macros just as a
+// .pptm does, so rejecting them would make those kinds unreachable.
+func isMacroEnabledExtension(ext string) bool {
+	switch strings.ToLower(ext) {
+	case extMacroPresentation, extMacroTemplate, extMacroSlideshow:
+		return true
+	default:
+		return false
 	}
 }
 

@@ -25,8 +25,11 @@ func (e *PresentationEditor) Save(filePath string) error {
 	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
 	if hasVBA {
 		ext := strings.ToLower(strings.TrimSpace(filepath.Ext(filePath)))
-		if ext != ".pptm" {
-			return fmt.Errorf("macro-enabled presentations must be saved with .pptm extension, got %q", ext)
+		if !isMacroEnabledExtension(ext) {
+			return fmt.Errorf(
+				"macro-enabled presentations must be saved with a macro-enabled extension "+
+					"(.pptm, .potm or .ppsm), got %q", ext,
+			)
 		}
 	}
 

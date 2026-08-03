@@ -7,6 +7,7 @@ import uuid
 from typing import TYPE_CHECKING, cast
 
 from ... import ops
+from ...api_errors import GopptxError
 from ...slide.slide import Slide
 from .layout_theme_mixin import PresentationLayoutMixin, PresentationThemeMixin
 from .master import SlideLayout, SlideMasters
@@ -80,6 +81,16 @@ class PresentationSlidesMixin(
         """
         if layout.presentation is self:
             return layout.part
+        if getattr(self, "_batch_active", False):
+            # The import has to finish before the queued add can name the part it
+            # produced, and a queued op returns nothing to name it with.
+            message = """importing a layout from another presentation is not \
+allowed inside a batch; add the slide outside the batch, or use a layout from \
+this presentation"""
+            raise GopptxError(
+                message,
+                code="BATCH_STRUCTURAL_CHANGE_NOT_ALLOWED",
+            )
         result = self.execute(
             ops.OP_IMPORT_LAYOUT_FROM,
             {"source_handle": layout.presentation.handle, "layout_part": layout.part},
@@ -108,9 +119,11 @@ class PresentationSlidesMixin(
             index: Position to insert at; appended when omitted.
         """
         payload: dict[str, object] = {"title": title}
-        layout_part: str | None = None
         if isinstance(layout, SlideLayout):
-            layout_part = self._resolve_layout_object(layout)
+            # The part goes into the add itself. Adding a default slide and then
+            # only retargeting its layout relationship left the default title and
+            # body placeholders in place whatever the layout said.
+            payload["layout_part"] = self._resolve_layout_object(layout)
         elif layout:
             try:
                 validated_layout = SlideLayoutType.validate(layout)
@@ -155,9 +168,6 @@ class PresentationSlidesMixin(
                     "date_time_text": cast("str", defaults.get("date_time_text", "")),
                 }
                 self.execute(ops.OP_SET_SLIDE_HEADER_FOOTER, hf_payload)
-
-        if layout_part is not None:
-            self.rebind_slide_layout(slide_index, layout_part)
 
         if index is not None and index != slide_index:
             self.move_slide(slide_index, index)

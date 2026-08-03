@@ -84,7 +84,11 @@ func (e *PresentationEditor) cloneLayoutMasterFamilyFrom(
 	if err := e.cloneLayoutParts(src, layoutMap, newMaster); err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
-	e.writeClonedMaster(sourceMaster, newMaster, masterXML, masterRels, layoutMap, newThemePart)
+	if err := e.writeClonedMaster(
+		src, sourceMaster, newMaster, masterXML, masterRels, layoutMap, newThemePart,
+	); err != nil {
+		return common.SlideMasterCloneResult{}, err
+	}
 	if err := e.registerClonedMaster(newMaster); err != nil {
 		return common.SlideMasterCloneResult{}, err
 	}
@@ -162,13 +166,14 @@ func (e *PresentationEditor) cloneLayoutParts(
 }
 
 func (e *PresentationEditor) writeClonedMaster(
+	src *PresentationEditor,
 	sourceMaster string,
 	newMaster string,
 	masterXML []byte,
 	masterRels []common.EditorRelationship,
 	layoutMap map[string]string,
 	newThemePart string,
-) {
+) error {
 	e.parts.Set(newMaster, e.renumberClonedLayoutIDs(append([]byte(nil), masterXML...)))
 	for i := range masterRels {
 		switch masterRels[i].Type {
@@ -181,10 +186,25 @@ func (e *PresentationEditor) writeClonedMaster(
 			if newThemePart != "" {
 				masterRels[i].Target = common.MakeRelativePath(newMaster, newThemePart)
 			}
+		case common.RelTypeImage:
+			// A master carries images of its own -- a background or a logo --
+			// and on a cross-deck import they need the same copy-and-retarget
+			// the layouts get, or the target points into the source deck's
+			// media and resolves to nothing here.
+			if src == e {
+				continue
+			}
+			srcImage := common.ResolveRelationshipTarget(sourceMaster, masterRels[i].Target)
+			newImage, copyErr := e.copyImageAsset(src, srcImage)
+			if copyErr != nil {
+				return fmt.Errorf("copy master image %s: %w", srcImage, copyErr)
+			}
+			masterRels[i].Target = common.MakeRelativePath(newMaster, newImage)
 		}
 	}
 	renderedMasterRels := renderRelationshipsXML(masterRels)
 	e.parts.Set(common.RelsPathFor(newMaster), []byte(renderedMasterRels))
+	return nil
 }
 
 // sldLayoutIDPattern matches the id attribute of a p:sldLayoutId entry.

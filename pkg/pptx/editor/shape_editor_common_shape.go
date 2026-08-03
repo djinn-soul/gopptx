@@ -15,11 +15,7 @@ func commonShapeFromParsed(shape parsedShape) common.Shape {
 		// those numbers as they stand puts the child in the wrong place on the
 		// slide whenever chOff/chExt differ from the group's own off/ext
 		// (upstream issue #925).
-		children[idx].X, children[idx].Y, children[idx].W, children[idx].H =
-			shape.GroupChild.ChildToSlide(
-				shape.X, shape.Y, shape.W, shape.H,
-				child.X, child.Y, child.W, child.H,
-			)
+		mapSubtreeToSlideSpace(&children[idx], shape.GroupChild, shape.X, shape.Y, shape.W, shape.H)
 	}
 	return common.Shape{
 		ID:               shape.ID,
@@ -57,5 +53,26 @@ func commonShapeFromParsed(shape parsedShape) common.Shape {
 		Freeform:         shape.Freeform,
 		GroupChild:       shape.GroupChild,
 		Shapes:           children,
+	}
+}
+
+// mapSubtreeToSlideSpace applies one group's child-to-slide transform to a whole
+// subtree, not just its immediate child.
+//
+// A nested group's descendants come back from the recursion already reduced to
+// the outer group's child space, and the transform is a scale and a translate,
+// so the same map applies to every one of them. Transforming only the immediate
+// child left grandchildren behind in the intermediate space.
+func mapSubtreeToSlideSpace(
+	shape *common.Shape,
+	space *common.GroupChildSpace,
+	groupX, groupY, groupW, groupH int,
+) {
+	shape.X, shape.Y, shape.W, shape.H = space.ChildToSlide(
+		groupX, groupY, groupW, groupH,
+		shape.X, shape.Y, shape.W, shape.H,
+	)
+	for i := range shape.Shapes {
+		mapSubtreeToSlideSpace(&shape.Shapes[i], space, groupX, groupY, groupW, groupH)
 	}
 }

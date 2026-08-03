@@ -118,6 +118,12 @@ class ShapeProxy(ShapeProxyFeatureMixin):
         }
         request.update(payload)
         self._slide.presentation.execute(ops.OP_SET_PICTURE_FILL, request)
+        # A proxy is normally handed out from the slide's cached shape list, so
+        # without this a read of the new fill keeps returning the old one until
+        # some other operation happens to drop the cache.
+        invalidate = getattr(self._slide, "_invalidate_shape_cache", None)
+        if callable(invalidate):
+            invalidate()
 
     @property
     def id(self) -> int:

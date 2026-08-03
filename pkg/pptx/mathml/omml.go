@@ -73,23 +73,50 @@ func ToOMML(latex string) (string, error) {
 }
 
 // ParagraphXML wraps an equation in the mc:AlternateContent a shape's text body
-// needs: the mc:Choice holds the real equation for readers that understand the
-// a14 extension, and the mc:Fallback holds the source text so the paragraph is
-// never empty for readers that do not.
+// needs, leaving the text size to the theme. See ParagraphXMLSized.
 func ParagraphXML(latex string) (string, error) {
+	return ParagraphXMLSized(latex, 0)
+}
+
+// ParagraphXMLSized wraps an equation in the mc:AlternateContent a shape's text
+// body needs: the mc:Choice holds the real equation for readers that understand
+// the a14 extension, and the mc:Fallback holds the source text so the paragraph
+// is never empty for readers that do not.
+//
+// sizeHundredths is the run size in hundredths of a point; zero leaves it to the
+// theme. The size has to land on the math runs themselves -- run properties on a
+// following paragraph do not flow backwards into an equation.
+func ParagraphXMLSized(latex string, sizeHundredths int) (string, error) {
 	omml, err := ToOMML(latex)
 	if err != nil {
 		return "", err
 	}
+	runProps := runSizeProps(sizeHundredths)
 	var b strings.Builder
 	b.WriteString(`<a:p><mc:AlternateContent xmlns:mc="` + MCNS + `">`)
 	b.WriteString(`<mc:Choice xmlns:a14="` + A14NS + `" Requires="a14"><a14:m>`)
 	b.WriteString(`<m:oMathPara xmlns:m="` + MathNS + `">`)
-	b.WriteString(strings.Replace(omml, `<m:oMath xmlns:m="`+MathNS+`">`, `<m:oMath>`, 1))
+	body := strings.Replace(omml, `<m:oMath xmlns:m="`+MathNS+`">`, `<m:oMath>`, 1)
+	b.WriteString(sizeMathRuns(body, runProps))
 	b.WriteString(`</m:oMathPara></a14:m></mc:Choice>`)
-	b.WriteString(`<mc:Fallback><a:r><a:rPr lang="en-US" dirty="0"/><a:t>`)
+	b.WriteString(`<mc:Fallback><a:r>` + runProps + `<a:t>`)
 	b.WriteString(escapeXML(latex))
 	b.WriteString(`</a:t></a:r></mc:Fallback>`)
 	b.WriteString(`</mc:AlternateContent></a:p>`)
 	return b.String(), nil
+}
+
+// runSizeProps renders the a:rPr every run in the equation carries.
+func runSizeProps(sizeHundredths int) string {
+	if sizeHundredths <= 0 {
+		return `<a:rPr lang="en-US" dirty="0"/>`
+	}
+	return fmt.Sprintf(`<a:rPr lang="en-US" sz="%d" dirty="0"/>`, sizeHundredths)
+}
+
+// sizeMathRuns puts the run properties on every math run. runXML is the only
+// producer of <m:r>, and it always writes the two tags adjacent, so this reaches
+// each run exactly once.
+func sizeMathRuns(omml, runProps string) string {
+	return strings.ReplaceAll(omml, `<m:r><m:t>`, `<m:r>`+runProps+`<m:t>`)
 }

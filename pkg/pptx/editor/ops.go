@@ -231,6 +231,12 @@ func (e *PresentationEditor) mergeSlideRefs(
 	other *PresentationEditor,
 	sourceSlides []common.EditorSlideRef,
 ) error {
+	// Done first, so every relationship id the import consumes is allocated
+	// before the merge reserves its own.
+	layoutImports, err := e.importSlideLayouts(other, sourceSlides)
+	if err != nil {
+		return err
+	}
 	next, err := editorslide.MergeSlidesFromSource(
 		editorslide.MergeState{
 			Slides:       e.slides,
@@ -242,7 +248,7 @@ func (e *PresentationEditor) mergeSlideRefs(
 		sourceSlides,
 		other.parts.Get,
 		func(srcPart string, sourceRelsBytes []byte, newPart string) ([]byte, error) {
-			return e.deepCloneSlideAssets(other, srcPart, sourceRelsBytes, newPart)
+			return e.deepCloneSlideAssets(other, srcPart, sourceRelsBytes, newPart, layoutImports)
 		},
 		e.parts.Set,
 	)
