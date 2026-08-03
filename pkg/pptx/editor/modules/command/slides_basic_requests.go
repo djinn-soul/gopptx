@@ -4,9 +4,13 @@ type OptionalStringSliceFieldFn func(map[string]any, string) ([]string, bool)
 type OptionalIntFieldFn func(map[string]any, string) (int, bool)
 
 type AddSlideRequest struct {
-	Title   string
-	Layout  string
-	Bullets []string
+	Title string
+	// Layout names one of the built-in layout modes.
+	Layout string
+	// LayoutPart is a slide layout part in this package. When set it wins over
+	// Layout, and the slide's placeholders are taken from that layout.
+	LayoutPart string
+	Bullets    []string
 }
 
 func ParseAddSlideRequest(
@@ -16,9 +20,10 @@ func ParseAddSlideRequest(
 ) AddSlideRequest {
 	bullets, _ := optionalStringSlice(payload, "bullets")
 	return AddSlideRequest{
-		Title:   optionalString(payload, "title"),
-		Layout:  optionalString(payload, "layout"),
-		Bullets: bullets,
+		Title:      optionalString(payload, "title"),
+		Layout:     optionalString(payload, "layout"),
+		LayoutPart: optionalString(payload, "layout_part"),
+		Bullets:    bullets,
 	}
 }
 

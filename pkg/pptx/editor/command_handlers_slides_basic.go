@@ -21,6 +21,15 @@ func handleAddSlide(e *PresentationEditor, payload json.RawMessage) (any, error)
 		},
 		v.Error,
 		func(request editorcommand.AddSlideRequest) (any, error) {
+			if request.LayoutPart != "" {
+				index, err := e.AddSlideFromLayoutPart(
+					request.LayoutPart, request.Title, request.Bullets,
+				)
+				if err != nil {
+					return nil, err
+				}
+				return respIndex(index), nil
+			}
 			slide := elements.NewSlide(request.Title)
 			if request.Layout != "" {
 				slide = slide.WithLayout(request.Layout)

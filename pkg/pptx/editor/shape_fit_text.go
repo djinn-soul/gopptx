@@ -76,8 +76,9 @@ func (e *PresentationEditor) FitShapeText(
 		return FitTextResult{}, err
 	}
 
-	widthPt := (float64(shape.W) - 2*defaultTextInsetLREmu) / emuPerPoint
-	heightPt := (float64(shape.H) - 2*defaultTextInsetTBEmu) / emuPerPoint
+	insetX, insetY := shapeTextInsetsEmu(shape.TextFrame)
+	widthPt := (float64(shape.W) - insetX) / emuPerPoint
+	heightPt := (float64(shape.H) - insetY) / emuPerPoint
 	if widthPt <= 0 || heightPt <= 0 {
 		return FitTextResult{}, fmt.Errorf(
 			"shape %d is too small to hold any text (%dx%d EMU)", shapeID, shape.W, shape.H,
@@ -95,14 +96,12 @@ func (e *PresentationEditor) FitShapeText(
 		return FitTextResult{}, err
 	}
 
-	runs, err := e.fitTextRuns(slideIndex, shapeID, fit.FontSizePt)
+	update, err := e.fitTextUpdate(slideIndex, shapeID, fit.FontSizePt)
 	if err != nil {
 		return FitTextResult{}, err
 	}
-	if updateErr := e.UpdateShape(slideIndex, shapeID, common.ShapeUpdate{
-		TextFrame: &frame,
-		Runs:      &runs,
-	}); updateErr != nil {
+	update.TextFrame = &frame
+	if updateErr := e.UpdateShape(slideIndex, shapeID, update); updateErr != nil {
 		return FitTextResult{}, updateErr
 	}
 
@@ -114,24 +113,66 @@ func (e *PresentationEditor) FitShapeText(
 	}, nil
 }
 
-// fitTextRuns re-reads the shape's runs and stamps the fitted size on each,
-// leaving every other run property alone.
-func (e *PresentationEditor) fitTextRuns(
+// shapeTextInsetsEmu returns the horizontal and vertical insets to subtract
+// from a shape's extent, taking the frame's own margins when it has them so a
+// shape with wider padding is not measured against the default.
+func shapeTextInsetsEmu(frame *common.TextFrame) (float64, float64) {
+	left, right := defaultTextInsetLREmu, defaultTextInsetLREmu
+	top, bottom := defaultTextInsetTBEmu, defaultTextInsetTBEmu
+	if frame != nil {
+		if frame.MarginLeft != nil {
+			left = float64(*frame.MarginLeft)
+		}
+		if frame.MarginRight != nil {
+			right = float64(*frame.MarginRight)
+		}
+		if frame.MarginTop != nil {
+			top = float64(*frame.MarginTop)
+		}
+		if frame.MarginBottom != nil {
+			bottom = float64(*frame.MarginBottom)
+		}
+	}
+	return left + right, top + bottom
+}
+
+// fitTextUpdate re-reads the shape's text and stamps the fitted size on every
+// run, leaving all other run properties alone.
+//
+// Paragraphs are carried through as paragraphs. Flattening them into a single
+// Runs patch would make applyText drop s.Paragraphs, collapsing the whole shape
+// into one paragraph and losing its line breaks and per-paragraph bullets --
+// a heavy price for a font size change.
+func (e *PresentationEditor) fitTextUpdate(
 	slideIndex, shapeID int,
 	sizePt float64,
-) ([]common.TextRun, error) {
+) (common.ShapeUpdate, error) {
 	shape, err := e.getShapeForTextOps(slideIndex, shapeID)
 	if err != nil {
-		return nil, err
+		return common.ShapeUpdate{}, err
+	}
+	if len(shape.Paragraphs) > 0 {
+		paragraphs := make([]common.ShapeTextParagraph, len(shape.Paragraphs))
+		for i, paragraph := range shape.Paragraphs {
+			paragraphs[i] = paragraph
+			paragraphs[i].Runs = runsAtSize(paragraph.Runs, sizePt)
+		}
+		return common.ShapeUpdate{Paragraphs: &paragraphs}, nil
 	}
 	if len(shape.Runs) == 0 {
-		return nil, errors.New("shape has no text runs to fit")
+		return common.ShapeUpdate{}, errors.New("shape has no text runs to fit")
 	}
-	runs := make([]common.TextRun, len(shape.Runs))
-	copy(runs, shape.Runs)
-	for i := range runs {
+	runs := runsAtSize(shape.Runs, sizePt)
+	return common.ShapeUpdate{Runs: &runs}, nil
+}
+
+// runsAtSize copies runs with the given point size applied to each.
+func runsAtSize(runs []common.TextRun, sizePt float64) []common.TextRun {
+	sized := make([]common.TextRun, len(runs))
+	copy(sized, runs)
+	for i := range sized {
 		size := sizePt
-		runs[i].SizePt = &size
+		sized[i].SizePt = &size
 	}
-	return runs, nil
+	return sized
 }

@@ -26,6 +26,7 @@ type runPropsXML struct {
 	Caps          *string      `xml:"caps,attr"`
 	SmallCaps     *string      `xml:"smCaps,attr"`
 	Size          *int         `xml:"sz,attr"`
+	Lang          *string      `xml:"lang,attr"`
 	SolidFill     solidFillXML `xml:"solidFill"`
 	Highlight     solidFillXML `xml:"highlight"`
 	Latin         *struct {

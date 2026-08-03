@@ -38,11 +38,11 @@ func parseHeaderFooterXML(slideXML string) SlideHeaderFooter {
 	var hf SlideHeaderFooter
 	for _, a := range reHFAttr.FindAllStringSubmatch(attrs, -1) {
 		switch a[1] {
-		case "sldNum":
+		case placeholderTypeSlideNum:
 			hf.ShowSlideNum = a[2] == "1"
-		case "dt":
+		case placeholderTypeDate:
 			hf.ShowDateTime = a[2] == "1"
-		case "ftr":
+		case placeholderTypeFooter:
 			hf.ShowFooter = a[2] == "1"
 		}
 	}

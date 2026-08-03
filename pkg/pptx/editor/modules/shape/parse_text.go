@@ -208,6 +208,13 @@ func applyRunStyle(run *common.TextRun, rpr *runPropsXML) {
 		font := rpr.Latin.Typeface
 		run.Font = &font
 	}
+	// Without the language a read-modify-write would re-emit the editor's en-US
+	// default and drop the ea/cs typeface slot the run needs, undoing the font a
+	// non-Latin run was given.
+	if rpr.Lang != nil && strings.TrimSpace(*rpr.Lang) != "" {
+		lang := strings.TrimSpace(*rpr.Lang)
+		run.Language = &lang
+	}
 	applyRunBaseline(run, rpr)
 	applyRunCaps(run, rpr)
 	applyRunColors(run, rpr)

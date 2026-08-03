@@ -1,9 +1,6 @@
 package pptxxml
 
-import (
-	"strconv"
-	"strings"
-)
+import "strings"
 
 func scatterChartPartXML(chart *ChartSpec) string {
 	series := chartScatterSeriesXML(chart)
@@ -43,36 +40,18 @@ func chartScatterSeriesXML(chart *ChartSpec) string {
 <c:spPr><a:solidFill><a:srgbClr val="` + Escape(chart.Color) + `"/></a:solidFill></c:spPr>
 <c:xVal><c:numLit>`)
 
+	// The blank-aware writer is used here too: formatting a BlankValue directly
+	// would put the literal NaN in <c:v>, which PowerPoint has to repair.
 	b.WriteString(`
-<c:formatCode>General</c:formatCode>
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(chart.XValues)))
-	b.WriteString(`"/>`)
-	for i, value := range chart.XValues {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+<c:formatCode>General</c:formatCode>`)
+	writeNumericPoints(&b, chart.XValues)
 	b.WriteString(`
 </c:numLit></c:xVal>
 <c:yVal><c:numLit>`)
 
 	b.WriteString(`
-<c:formatCode>General</c:formatCode>
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(chart.Values)))
-	b.WriteString(`"/>`)
-	for i, value := range chart.Values {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+<c:formatCode>General</c:formatCode>`)
+	writeNumericPoints(&b, chart.Values)
 	b.WriteString(`
 </c:numLit></c:yVal>
 </c:ser>`)

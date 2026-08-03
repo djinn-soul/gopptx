@@ -56,7 +56,8 @@ func (e *PresentationEditor) FitShapeToText(
 		)
 	}
 
-	widthPt := (float64(shape.W) - 2*defaultTextInsetLREmu) / emuPerPoint
+	insetX, insetY := shapeTextInsetsEmu(shape.TextFrame)
+	widthPt := (float64(shape.W) - insetX) / emuPerPoint
 	if widthPt <= 0 {
 		return FitShapeToTextResult{}, fmt.Errorf(
 			"shape %d is too narrow to hold any text (%d EMU wide)", shapeID, shape.W,
@@ -74,21 +75,25 @@ func (e *PresentationEditor) FitShapeToText(
 		return FitShapeToTextResult{}, err
 	}
 
-	height := int(textHeightPt*emuPerPoint) + 2*int(defaultTextInsetTBEmu)
+	height := int(textHeightPt*emuPerPoint) + int(insetY)
 	height = boundFittedHeight(height, shape.H, request)
-	if height == shape.H {
-		return FitShapeToTextResult{HeightEmu: shape.H, LineCount: lineCount}, nil
-	}
 
+	// The frame is switched to spAutoFit even when the height did not move: that
+	// is what keeps the shape sized to its text through later edits, and it is
+	// the contract of this call. Returning early here left the shape without it.
 	wordWrap := true
 	autoFitType := "shape"
-	if updateErr := e.UpdateShape(slideIndex, shapeID, common.ShapeUpdate{
-		H:         &height,
+	update := common.ShapeUpdate{
 		TextFrame: &common.TextFrame{WordWrap: &wordWrap, AutoFitType: &autoFitType},
-	}); updateErr != nil {
+	}
+	resized := height != shape.H
+	if resized {
+		update.H = &height
+	}
+	if updateErr := e.UpdateShape(slideIndex, shapeID, update); updateErr != nil {
 		return FitShapeToTextResult{}, updateErr
 	}
-	return FitShapeToTextResult{HeightEmu: height, LineCount: lineCount, Resized: true}, nil
+	return FitShapeToTextResult{HeightEmu: height, LineCount: lineCount, Resized: resized}, nil
 }
 
 // fitShapeFontSizePt picks the size the text is measured at: the caller's, else

@@ -31,7 +31,11 @@ func (e *PresentationEditor) AddEquation(slideIndex int, request EquationRequest
 	if request.W <= 0 || request.H <= 0 {
 		return 0, errors.New("equation shape needs a positive width and height")
 	}
-	paragraph, err := mathml.ParagraphXML(request.LaTeX)
+	sizeHundredths := defaultEquationFontSizeHundredths
+	if request.FontSizePt > 0 {
+		sizeHundredths = int(request.FontSizePt * 100) //nolint:mnd // sz is in hundredths of a point
+	}
+	paragraph, err := mathml.ParagraphXMLSized(request.LaTeX, sizeHundredths)
 	if err != nil {
 		return 0, fmt.Errorf("render equation: %w", err)
 	}
@@ -54,11 +58,6 @@ func (e *PresentationEditor) AddEquation(slideIndex int, request EquationRequest
 
 	newID := e.maxObjectID(partPath, content) + 1
 	e.reserveObjectIDs(partPath, newID)
-
-	sizeHundredths := defaultEquationFontSizeHundredths
-	if request.FontSizePt > 0 {
-		sizeHundredths = int(request.FontSizePt * 100) //nolint:mnd // sz is in hundredths of a point
-	}
 
 	shapeXML := fmt.Sprintf(
 		`<p:sp xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" `+

@@ -19,11 +19,14 @@ func rewriteChartExternalData(current []byte, newRelID string) []byte {
 // deepCloneSlideAssets walks through the relationships of a source slide and copies
 // all referenced assets (images, charts, etc.) to the target editor.
 // It returns a modified relationships XML byte slice where targets are remapped to the new locations.
+// layoutImports remembers which source layout parts have already been imported
+// and where they landed, so slides sharing a layout share one imported family.
 func (e *PresentationEditor) deepCloneSlideAssets(
 	srcEditor *PresentationEditor,
 	srcSlidePart string,
 	srcSlideRelsBytes []byte,
 	dstSlidePart string,
+	layoutImports map[string]string,
 ) ([]byte, error) {
 	rels, err := parseRelationshipsXML(srcSlideRelsBytes)
 	if err != nil {
@@ -50,6 +53,17 @@ func (e *PresentationEditor) deepCloneSlideAssets(
 		case common.RelTypeNotesSlide:
 			newTarget, err = e.copyNotesSlideAsset(srcEditor, srcTargetAbs, dstSlidePart)
 			handled = true
+		case common.RelTypeSlideLayout:
+			// Left alone, a copied slide binds to whatever local part happens to
+			// carry the same name, or to none at all -- so it either looks wrong
+			// or breaks the package. The import itself ran before the merge
+			// started; this only retargets to what it produced.
+			local, imported := layoutImports[common.CanonicalPartPath(srcTargetAbs)]
+			if !imported {
+				break
+			}
+			newTarget = local
+			handled = true
 		}
 
 		if err != nil {
@@ -74,6 +88,72 @@ func (e *PresentationEditor) deepCloneSlideAssets(
 	}
 
 	return srcSlideRelsBytes, nil
+}
+
+// importSlideLayouts brings the layout family of every source slide into this
+// presentation and returns the source-to-local layout part mapping.
+//
+// This runs before the slides are merged, not while they are being merged: the
+// import allocates presentation relationship ids of its own, and doing that
+// halfway through the merge made the master and the new slide claim the same
+// rId, which cost the slide its relationship and left a package PowerPoint
+// refuses to open.
+//
+// A whole family is imported at once, so a second slide bound to a sibling
+// layout of the same master reuses it instead of duplicating the master.
+func (e *PresentationEditor) importSlideLayouts(
+	srcEditor *PresentationEditor,
+	sourceSlides []common.EditorSlideRef,
+) (map[string]string, error) {
+	layoutImports := map[string]string{}
+	if srcEditor == e {
+		return layoutImports, nil
+	}
+	for _, slide := range sourceSlides {
+		layoutPart, err := srcEditor.slideLayoutPartFor(slide.Part)
+		if err != nil {
+			return nil, err
+		}
+		if layoutPart == "" {
+			continue
+		}
+		if _, done := layoutImports[layoutPart]; done {
+			continue
+		}
+		result, importErr := e.ImportLayoutMasterFamily(srcEditor, layoutPart)
+		if importErr != nil {
+			return nil, fmt.Errorf("import layout %s: %w", layoutPart, importErr)
+		}
+		for sourceLayout, localLayout := range result.LayoutMap {
+			layoutImports[common.CanonicalPartPath(sourceLayout)] = localLayout
+		}
+		if _, ok := layoutImports[layoutPart]; !ok {
+			return nil, fmt.Errorf("imported layout family does not contain %s", layoutPart)
+		}
+	}
+	return layoutImports, nil
+}
+
+// slideLayoutPartFor resolves the layout a slide is bound to, or "" when it has
+// no layout relationship.
+func (e *PresentationEditor) slideLayoutPartFor(slidePart string) (string, error) {
+	relsPath := common.RelsPathFor(slidePart)
+	relsData, ok := e.parts.Get(relsPath)
+	if !ok {
+		return "", nil
+	}
+	rels, err := parseRelationshipsXML(relsData)
+	if err != nil {
+		return "", fmt.Errorf("parse slide rels %s: %w", relsPath, err)
+	}
+	for _, rel := range rels {
+		if rel.Type == common.RelTypeSlideLayout {
+			return common.CanonicalPartPath(
+				common.ResolveRelationshipTarget(slidePart, rel.Target),
+			), nil
+		}
+	}
+	return "", nil
 }
 
 func (e *PresentationEditor) copyImageAsset(srcEditor *PresentationEditor, srcPath string) (string, error) {
