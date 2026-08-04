@@ -18,6 +18,9 @@ type ImageCrop struct {
 
 // Image describes one image placement.
 type Image struct {
+	// ZOrder is the picture's position in the slide shape tree. Lower paints
+	// first (further back). Zero for images not read from a PPTX.
+	ZOrder    int
 	Path      string
 	SourceURL string
 	Data      []byte

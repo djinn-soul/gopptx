@@ -146,7 +146,7 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)
 		renderedText := renderRunsPlain(runs)
-		gap := paragraphStartGap(i, prevSpaceAfter, style)
+		gap := paragraphStartGap(i, prevSpaceAfter, style, bodyPlaceholderSpacing())
 		total += gap
 		availableWidth := maxWidth - leftIndent - rightIndent
 		if availableWidth < 80 {
@@ -155,7 +155,10 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		fontSize = fitPDFTextToBoxWithMetrics(
 			pdf, renderedText, fontSize, minTextAutoFitSize, bold, italic, availableWidth, availH-total, fontHint,
 		)
-		lineHeight := math.Max(paragraphRenderedLineHeight(style, pdfLineHeight(fontSize)), 12)
+		lineHeight := math.Max(
+			paragraphRenderedLineHeight(style, pdfLineHeight(fontSize), bodyPlaceholderSpacing()),
+			12,
+		)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
 		lines := wrapStyledRuns(pdf, styledRuns, availableWidth, paragraphTabStopsPt(style))
 		total += float64(len(lines)) * lineHeight

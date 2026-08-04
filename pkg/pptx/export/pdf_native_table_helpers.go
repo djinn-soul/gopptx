@@ -9,9 +9,13 @@ import (
 )
 
 const (
-	tableDefaultPaddingPt = 4.0
 	tableMinUsableWidthPt = 24.0
 	tableCenterDivisor    = 2.0
+
+	// defaultTableFontSize is what PowerPoint uses for table text when the cell
+	// carries no explicit size. It is 18pt, not the renderer's general 14pt
+	// default, which is why unsized cells used to come out visibly small.
+	defaultTableFontSize = 18
 )
 
 type tableCellBorderSpec struct {
@@ -19,23 +23,43 @@ type tableCellBorderSpec struct {
 	color   string
 }
 
-func tableCellPadding(marginPt *float64) float64 {
+// tableCellPaddingLR and tableCellPaddingTB default to the OOXML a:tcPr insets
+// (marL/marR 91440 EMU = 7.2pt, marT/marB 45720 EMU = 3.6pt) rather than one
+// padding for all four sides.
+func tableCellPaddingLR(marginPt *float64) float64 {
+	return tableCellPaddingOr(marginPt, defaultTextInsetLRPt)
+}
+
+func tableCellPaddingTB(marginPt *float64) float64 {
+	return tableCellPaddingOr(marginPt, defaultTextInsetTBPt)
+}
+
+func tableCellPaddingOr(marginPt *float64, fallback float64) float64 {
 	if marginPt == nil || *marginPt <= 0 {
-		return tableDefaultPaddingPt
+		return fallback
 	}
 	return *marginPt
 }
 
+// tableCellFontSize honours the cell's own size and otherwise falls back to
+// PowerPoint's table default.
+func tableCellFontSize(cell tables.TableCell) int {
+	if cell.SizePt > 0 {
+		return int(cell.SizePt)
+	}
+	return defaultTableFontSize
+}
+
 func tableCellTextX(pdf *gopdf.GoPdf, cell tables.TableCell, line string, cellX, cellW float64) float64 {
-	leftPad := tableCellPadding(cell.MarginLeftPt)
-	rightPad := tableCellPadding(cell.MarginRightPt)
+	leftPad := tableCellPaddingLR(cell.MarginLeftPt)
+	rightPad := tableCellPaddingLR(cell.MarginRightPt)
 	contentW := max(cellW-leftPad-rightPad, tableMinUsableWidthPt)
 	switch cell.Align {
 	case tables.TableAlignCenter:
-		lineW := measuredWidthWithMetrics(pdf, line, "")
+		lineW := measuredWidth(pdf, line)
 		return cellX + leftPad + math.Max((contentW-lineW)/tableCenterDivisor, 0)
 	case tables.TableAlignRight:
-		lineW := measuredWidthWithMetrics(pdf, line, "")
+		lineW := measuredWidth(pdf, line)
 		return cellX + leftPad + math.Max(contentW-lineW, 0)
 	default:
 		return cellX + leftPad

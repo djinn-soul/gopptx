@@ -83,11 +83,6 @@ func renderBarLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-	if horizontal {
-		px, py, pw, ph = chartPlotRectHorizontal(plotR, opts.titleOverlay)
-	}
-
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -100,15 +95,32 @@ func renderBarLike(
 	}
 	rangeV := maxV - minV
 
+	// The axis range has to be known before the plot rect, because the tick
+	// labels it produces are what the plot area is sized around.
+	valueAxis := chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat}
+	categoryAxis := chartAxisSpec{Categories: categories}
+	verticalAxis, horizontalAxis := valueAxis, categoryAxis
+	if horizontal {
+		verticalAxis, horizontalAxis = categoryAxis, valueAxis
+	}
+	layout := solveChartLayout(pdf, plotR, opts.titleOverlay, title, verticalAxis, horizontalAxis)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
 	barR, barG, barB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
 		barR, barG, barB = hexToRGB(opts.color)
 	}
 
 	if horizontal {
-		drawHorizontalChartFrame(pdf, px, py, pw, ph, minV, maxV, categories, opts.showCatGridlines, opts.valueFormat)
+		drawHorizontalChartFrame(
+			pdf, px, py, pw, ph, minV, maxV, categories,
+			opts.showCatGridlines, opts.valueFormat, layout.Horizontal,
+		)
 	} else {
-		drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+		drawChartFrame(
+			pdf, px, py, pw, ph, minV, maxV,
+			opts.showMajorGridlines, opts.valueFormat, layout.Vertical,
+		)
 	}
 
 	for i, v := range values {
@@ -158,8 +170,6 @@ func renderLineLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -172,12 +182,22 @@ func renderLineLike(
 	}
 	rangeV := maxV - minV
 
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
 	lineR, lineG, lineB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
 		lineR, lineG, lineB = hexToRGB(opts.color)
 	}
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 	pdf.SetStrokeColor(lineR, lineG, lineB)
 	pdf.SetFillColor(lineR, lineG, lineB)
 
@@ -241,8 +261,6 @@ func renderAreaLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -255,12 +273,22 @@ func renderAreaLike(
 	}
 	rangeV := maxV - minV
 
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
 	areaR, areaG, areaB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
 		areaR, areaG, areaB = hexToRGB(opts.color)
 	}
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 
 	zeroY := py + ph*maxV/rangeV
 	pts := make([]gopdf.Point, 0, len(values)+2)

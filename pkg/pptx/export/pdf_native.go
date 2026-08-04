@@ -15,10 +15,15 @@ import (
 // PPTX slides default to 9144000×6858000 EMU (10×7.5 inches).
 // PDF uses 72 points/inch, so the slide page is 720×540 points.
 const (
-	ptPerInch       = 72.0
-	slideWidthPt    = 720.0 // 10 inches, the 4:3 default
-	slideHeightPt   = 540.0 // 7.5 inches
-	defaultFontSize = 14
+	ptPerInch     = 72.0
+	slideWidthPt  = 720.0 // 10 inches, the 4:3 default
+	slideHeightPt = 540.0 // 7.5 inches
+
+	// defaultFontSize is the size PowerPoint gives a run that states none. It is
+	// 18pt: measured off PowerPoint's own render of a text box whose a:rPr
+	// carries no sz, which came out at 17.95pt. It was 14pt here, which made
+	// every unsized run render a fifth too small.
+	defaultFontSize = 18
 
 	// Layout constants.
 	defaultRadiusFactor = 0.1
@@ -27,6 +32,13 @@ const (
 	// nearZeroEpsilon is used for floating-point comparisons where a value
 	// is considered effectively zero (e.g. rotation angle, cursor boundary).
 	nearZeroEpsilon = 0.01
+
+	// Default text-frame insets from the OOXML a:bodyPr defaults: lIns and rIns
+	// are 91440 EMU (0.1in = 7.2pt), tIns and bIns are 45720 EMU (0.05in =
+	// 3.6pt). PowerPoint applies these whenever a shape omits them, so text
+	// starts 7.2pt inside its box rather than flush against the edge.
+	defaultTextInsetLRPt = 7.2
+	defaultTextInsetTBPt = 3.6
 )
 
 func emuToPt(emu int64) float64 {
@@ -113,10 +125,13 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
 		errs = append(errs, fmt.Errorf("slide %d background: %w", index, err))
 	}
-	if err := renderNativePDFSlideImages(pdf, slide); err != nil {
+	// Pictures and shapes interleave by shape-tree order, so they are painted
+	// together. Drawing every picture before every shape put a picture behind a
+	// shape the deck had placed behind it: a white card over a photo hid the
+	// photo entirely.
+	if err := renderNativePDFSlidePictureLayer(pdf, slide); err != nil {
 		errs = append(errs, fmt.Errorf("slide %d: %w", index, err))
 	}
-	renderNativePDFSlideShapes(pdf, slide)
 	renderNativePDFSlideSmartArt(pdf, slide)
 	renderNativePDFSlideCharts(pdf, slide)
 	renderNativePDFSlideTable(pdf, slide)
@@ -173,6 +188,11 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 		titleBoxW = page.WidthPt - 108
 		titleBoxH = 116.0
 	}
+	// The bounds above are the placeholder box; text sits inside its insets.
+	titleBoxX += defaultTextInsetLRPt
+	titleBoxY += defaultTextInsetTBPt
+	titleBoxW -= 2 * defaultTextInsetLRPt
+	titleBoxH -= 2 * defaultTextInsetTBPt
 	titleSize = fitPDFTitleSize(
 		pdf,
 		slide.Title,
@@ -189,7 +209,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 	} else {
 		pdf.SetTextColor(0, 0, 0)
 	}
-	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW, slide.TitleFont)
+	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW)
 	lineH := pdfLineHeight(titleSize)
 	totalTextH := float64(len(lines)) * lineH
 	yPos := titleBoxY + max(0, (titleBoxH-totalTextH)/2)
@@ -197,7 +217,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 		if yPos+lineH > titleBoxY+titleBoxH {
 			break
 		}
-		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign, slide.TitleFont))
+		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign))
 		pdf.SetY(yPos + fontBaselineShift(slide.TitleFont, titleSize))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
@@ -234,9 +254,8 @@ func alignedTextX(
 	boxX float64,
 	boxW float64,
 	align string,
-	fontHint string,
 ) float64 {
-	textW := measuredWidthWithMetrics(pdf, text, fontHint)
+	textW := measuredWidth(pdf, text)
 	switch elements.NormalizeTextAlign(align) {
 	case elements.TextAlignCenter:
 		return boxX + max((boxW-textW)/2, 0)

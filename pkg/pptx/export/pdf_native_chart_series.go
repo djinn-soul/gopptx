@@ -24,8 +24,6 @@ func renderStockLike(
 	if n == 0 {
 		return
 	}
-	px, py, pw, ph := chartPlotRect(r, opts.titleOverlay)
-
 	// Determine axis range from all OHLC values.
 	// Use niceAxisRange so the axis starts at 0 for non-negative data (matches PowerPoint default).
 	all := append(append([]float64{}, highVals[:n]...), lowVals[:n]...)
@@ -41,7 +39,17 @@ func renderStockLike(
 	}
 	rangeV := maxV - minV
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, r, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 	// Complete the box with top and right borders.
 	pdf.SetStrokeColor(30, 30, 30)
 	pdf.Line(px, py, px+pw, py)
@@ -144,8 +152,6 @@ func renderComboLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
 	// Unified axis range across all series.
 	var allVals []float64
 	for _, s := range barSeries {
@@ -166,7 +172,17 @@ func renderComboLike(
 	}
 	rangeV := maxV - minV
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 
 	nCats := len(categories)
 	if nCats == 0 {

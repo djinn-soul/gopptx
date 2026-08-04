@@ -17,6 +17,9 @@ type ShapeAdjustment struct {
 
 // Shape is one auto shape.
 type Shape struct {
+	// ZOrder is the shape's position in the slide shape tree. Lower paints
+	// first (further back). Zero for shapes not read from a PPTX.
+	ZOrder         int
 	Type           string
 	X              styling.Length
 	Y              styling.Length

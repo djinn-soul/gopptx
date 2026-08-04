@@ -7,70 +7,65 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-func renderScatterAxes(
-	pdf *gopdf.GoPdf,
-	px, py, pw, ph,
-	minX, maxX, minY, maxY, rangeX, rangeY float64,
-	opts chartSeriesOpts,
-) {
-	renderScatterGridlines(pdf, px, py, pw, ph, minX, maxX, minY, maxY, rangeX, rangeY, opts)
-	renderScatterTickLabels(pdf, px, py, pw, ph, minX, maxX, minY, maxY, rangeX, rangeY, opts)
+// scatterAxisGeometry bundles the plot rect and both axis ranges, which every
+// scatter axis helper needs together.
+type scatterAxisGeometry struct {
+	px, py, pw, ph         float64
+	minX, maxX, minY, maxY float64
+	rangeX, rangeY         float64
+	densityX, densityY     chartAxisTickDensity
 }
 
-func renderScatterGridlines(
-	pdf *gopdf.GoPdf,
-	px, py, pw, ph,
-	minX, maxX, minY, maxY, rangeX, rangeY float64,
-	opts chartSeriesOpts,
-) {
-	stepX := niceStep(rangeX)
-	stepY := niceStep(rangeY)
+func renderScatterAxes(pdf *gopdf.GoPdf, g scatterAxisGeometry, opts chartSeriesOpts) {
+	renderScatterGridlines(pdf, g, opts)
+	renderScatterTickLabels(pdf, g, opts)
+}
 
-	pdf.SetStrokeColor(90, 90, 90)
+func renderScatterGridlines(pdf *gopdf.GoPdf, g scatterAxisGeometry, opts chartSeriesOpts) {
+	pdf.SetStrokeColor(chartGridlineGrey, chartGridlineGrey, chartGridlineGrey)
 	if opts.showCatGridlines {
-		for tick := minX; tick <= maxX+stepX*1e-9; tick = math.Round((tick+stepX)*1e9) / 1e9 {
-			xg := px + (tick-minX)/rangeX*pw
-			if xg >= px-1 && xg <= px+pw+1 {
-				pdf.Line(xg, py, xg, py+ph)
+		for _, tick := range chartAxisTicks(g.minX, g.maxX, g.densityX) {
+			xg := g.px + (tick-g.minX)/g.rangeX*g.pw
+			if xg >= g.px-1 && xg <= g.px+g.pw+1 {
+				pdf.Line(xg, g.py, xg, g.py+g.ph)
 			}
 		}
 	}
 	if opts.showMajorGridlines {
-		for tick := minY; tick <= maxY+stepY*1e-9; tick = math.Round((tick+stepY)*1e9) / 1e9 {
-			yg := py + ph - (tick-minY)/rangeY*ph
-			if yg >= py-1 && yg <= py+ph+1 {
-				pdf.Line(px, yg, px+pw, yg)
+		for _, tick := range chartAxisTicks(g.minY, g.maxY, g.densityY) {
+			yg := g.py + g.ph - (tick-g.minY)/g.rangeY*g.ph
+			if yg >= g.py-1 && yg <= g.py+g.ph+1 {
+				pdf.Line(g.px, yg, g.px+g.pw, yg)
 			}
 		}
 	}
 }
 
-func renderScatterTickLabels(
-	pdf *gopdf.GoPdf,
-	px, py, pw, ph,
-	minX, maxX, minY, maxY, rangeX, rangeY float64,
-	opts chartSeriesOpts,
-) {
-	stepX := niceStep(rangeX)
-	stepY := niceStep(rangeY)
+func renderScatterTickLabels(pdf *gopdf.GoPdf, g scatterAxisGeometry, opts chartSeriesOpts) {
 	pdf.SetStrokeColor(30, 30, 30)
-	for tick := minX; tick <= maxX+stepX*1e-9; tick = math.Round((tick+stepX)*1e9) / 1e9 {
-		xTick := px + (tick-minX)/rangeX*pw
-		if xTick < px-1 || xTick > px+pw+1 {
+	for _, tick := range chartAxisTicks(g.minX, g.maxX, g.densityX) {
+		xTick := g.px + (tick-g.minX)/g.rangeX*g.pw
+		if xTick < g.px-1 || xTick > g.px+g.pw+1 {
 			continue
 		}
-		pdf.SetX(xTick - 6)
-		pdf.SetY(py + ph + 8)
-		_ = pdf.Cell(nil, formatTickValue(tick, opts.valueFormat))
+		drawChartAxisTick(pdf, xTick, g.py+g.ph, chartAxisHorizontal)
+		drawChartLabel(
+			pdf, formatTickValue(tick, opts.valueFormat),
+			xTick, g.py+g.ph+chartTickMarkPt+chartAxisLabelGapPt+pdfLineHeight(chartLabelFontSize)/2,
+			chartLabelFontSize, chartTextCenter,
+		)
 	}
-	for tick := minY; tick <= maxY+stepY*1e-9; tick = math.Round((tick+stepY)*1e9) / 1e9 {
-		yTick := py + ph - (tick-minY)/rangeY*ph
-		if yTick < py-1 || yTick > py+ph+1 {
+	for _, tick := range chartAxisTicks(g.minY, g.maxY, g.densityY) {
+		yTick := g.py + g.ph - (tick-g.minY)/g.rangeY*g.ph
+		if yTick < g.py-1 || yTick > g.py+g.ph+1 {
 			continue
 		}
-		pdf.SetX(px - 28)
-		pdf.SetY(yTick - 3)
-		_ = pdf.Cell(nil, formatTickValue(tick, opts.valueFormat))
+		drawChartAxisTick(pdf, g.px, yTick, chartAxisVertical)
+		drawChartLabel(
+			pdf, formatTickValue(tick, opts.valueFormat),
+			g.px-chartTickMarkPt-chartAxisLabelGapPt, yTick,
+			chartLabelFontSize, chartTextRight,
+		)
 	}
 }
 

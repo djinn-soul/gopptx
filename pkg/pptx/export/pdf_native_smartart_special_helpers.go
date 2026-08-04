@@ -78,13 +78,13 @@ func drawSmartArtPolygon(pdf *gopdf.GoPdf, points []gopdf.Point, fill, stroke st
 func drawSmartArtCenteredText(pdf *gopdf.GoPdf, text string, x, y, w, h float64, color string, maxSize int) {
 	fontSize := fitPDFTextToBoxWithMetrics(pdf, text, maxSize, minTextAutoFitSize, false, false, w-8, h-8, "")
 	setPDFTextFontWithHint(pdf, fontSize, false, false, "")
-	lines := wrapPDFTextWithMetrics(pdf, text, w-8, "")
+	lines := wrapPDFTextWithMetrics(pdf, text, w-8)
 	lineH := pdfLineHeight(fontSize)
 	totalH := lineH * float64(len(lines))
 	startY := y + max((h-totalH)/2, 0)
 	pdf.SetTextColor(hexToRGB(color))
 	for i, line := range lines {
-		lineW := measuredWidthWithMetrics(pdf, line, "")
+		lineW := measuredWidth(pdf, line)
 		pdf.SetX(x + max((w-lineW)/2, 0))
 		pdf.SetY(startY + float64(i)*lineH + fontBaselineShift("", fontSize))
 		_ = pdf.Cell(nil, line)
@@ -95,7 +95,7 @@ func drawSmartArtCenteredText(pdf *gopdf.GoPdf, text string, x, y, w, h float64,
 func drawSmartArtTopText(pdf *gopdf.GoPdf, text string, x, y, w float64, color string, fontSize int) {
 	setPDFTextFontWithHint(pdf, fontSize, false, false, "")
 	pdf.SetTextColor(hexToRGB(color))
-	lineW := measuredWidthWithMetrics(pdf, text, "")
+	lineW := measuredWidth(pdf, text)
 	pdf.SetX(x + max((w-lineW)/2, 0))
 	pdf.SetY(y + fontBaselineShift("", fontSize))
 	_ = pdf.Cell(nil, text)
@@ -105,7 +105,7 @@ func drawSmartArtTopText(pdf *gopdf.GoPdf, text string, x, y, w float64, color s
 func drawSmartArtVerticalText(pdf *gopdf.GoPdf, text string, cx, cy float64, color string, fontSize int) {
 	setPDFTextFontWithHint(pdf, fontSize, false, false, "")
 	pdf.SetTextColor(hexToRGB(color))
-	lineW := measuredWidthWithMetrics(pdf, text, "")
+	lineW := measuredWidth(pdf, text)
 	pdf.Rotate(90, cx, cy)
 	pdf.SetX(cx - lineW/2)
 	pdf.SetY(cy + fontBaselineShift("", fontSize))

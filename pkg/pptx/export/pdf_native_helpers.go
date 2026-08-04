@@ -77,15 +77,15 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			default:
 				pdf.SetTextColor(0, 0, 0)
 			}
-			leftPad := tableCellPadding(cell.MarginLeftPt)
-			rightPad := tableCellPadding(cell.MarginRightPt)
-			topPad := tableCellPadding(cell.MarginTopPt)
-			bottomPad := tableCellPadding(cell.MarginBottomPt)
+			leftPad := tableCellPaddingLR(cell.MarginLeftPt)
+			rightPad := tableCellPaddingLR(cell.MarginRightPt)
+			topPad := tableCellPaddingTB(cell.MarginTopPt)
+			bottomPad := tableCellPaddingTB(cell.MarginBottomPt)
 			usableW := max(cw-leftPad-rightPad, tableMinUsableWidthPt)
 			fontSize := fitPDFTextToBoxWithMetrics(
 				pdf,
 				text,
-				defaultFontSize,
+				tableCellFontSize(cell),
 				minTextAutoFitSize,
 				cell.Bold,
 				false,
@@ -95,7 +95,7 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			)
 			hint := inferCodeFontHint(text)
 			setPDFTextFontWithHint(pdf, fontSize, cell.Bold, false, hint)
-			lines := wrapPDFTextWithMetrics(pdf, text, usableW, hint)
+			lines := wrapPDFTextWithMetrics(pdf, text, usableW)
 			lineHeight := math.Max(pdfLineHeight(fontSize), 12)
 			totalTextH := lineHeight * float64(len(lines))
 			textY := tableCellStartY(cell, cellY, rowH, totalTextH)
@@ -115,15 +115,17 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 }
 
 func tableCellStartY(cell tables.TableCell, cellY, rowH, totalTextH float64) float64 {
-	topPad := tableCellPadding(cell.MarginTopPt)
-	bottomPad := tableCellPadding(cell.MarginBottomPt)
+	topPad := tableCellPaddingTB(cell.MarginTopPt)
+	bottomPad := tableCellPaddingTB(cell.MarginBottomPt)
 	switch strings.TrimSpace(cell.VAlign) {
-	case tables.TableVAlignTop:
-		return cellY + topPad
+	case tables.TableVAlignMiddle:
+		return cellY + math.Max((rowH-totalTextH)/2, topPad)
 	case tables.TableVAlignBottom:
 		return cellY + math.Max(rowH-totalTextH-bottomPad, topPad)
 	default:
-		return cellY + math.Max((rowH-totalTextH)/2, topPad)
+		// OOXML's a:tcPr anchor defaults to "t", so an unset alignment is top,
+		// not middle.
+		return cellY + topPad
 	}
 }
 
@@ -159,17 +161,17 @@ func computePDFTableRowHeights(
 				cell = tab.StyledRows[ri][ci]
 				text = cell.Text
 			}
-			leftPad := tableCellPadding(cell.MarginLeftPt)
-			rightPad := tableCellPadding(cell.MarginRightPt)
-			topPad := tableCellPadding(cell.MarginTopPt)
-			bottomPad := tableCellPadding(cell.MarginBottomPt)
+			leftPad := tableCellPaddingLR(cell.MarginLeftPt)
+			rightPad := tableCellPaddingLR(cell.MarginRightPt)
+			topPad := tableCellPaddingTB(cell.MarginTopPt)
+			bottomPad := tableCellPaddingTB(cell.MarginBottomPt)
 			usableW := max(cw-leftPad-rightPad, tableMinUsableWidthPt)
 			hint := inferCodeFontHint(text)
 			fontSize := fitPDFTextToBoxWithMetrics(
-				pdf, text, defaultFontSize, minTextAutoFitSize, cell.Bold, false, usableW, rowH*2, hint,
+				pdf, text, tableCellFontSize(cell), minTextAutoFitSize, cell.Bold, false, usableW, rowH*2, hint,
 			)
 			setPDFTextFontWithHint(pdf, fontSize, cell.Bold, false, hint)
-			lineCount := float64(len(wrapPDFTextWithMetrics(pdf, text, usableW, hint)))
+			lineCount := float64(len(wrapPDFTextWithMetrics(pdf, text, usableW)))
 			needH := max(lineCount*math.Max(pdfLineHeight(fontSize), 12)+topPad+bottomPad, rowH)
 			if needH > needed {
 				needed = needH
