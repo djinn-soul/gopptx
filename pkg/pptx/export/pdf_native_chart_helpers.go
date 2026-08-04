@@ -121,29 +121,28 @@ func minMax(values []float64) (float64, float64) {
 	return minV, maxV
 }
 
-// chartPlotRect returns the inner (x,y,w,h) of the chart plot area, reserving space
-// for axes, labels, and (optionally) a title. When titleOverlay is true the title
-// overlaps the chart body, so minimal top padding is applied.
-func chartPlotRect(r chartRect, titleOverlay bool) (float64, float64, float64, float64) {
-	leftPad := math.Max(36, r.w*0.08)
-	rightPad := math.Max(16, r.w*0.07)
-	topPad := math.Max(24, r.h*0.12)
-	if titleOverlay {
-		topPad = 4
-	}
-	bottomPad := math.Max(26, r.h*0.12)
-	return r.x + leftPad, r.y + topPad, r.w - leftPad - rightPad, r.h - topPad - bottomPad
-}
+// Fallback padding used when no labels are supplied to measure against.
+const (
+	chartFallbackLeftPadPt   = 36.0
+	chartFallbackRightPadPt  = 12.0
+	chartFallbackTopPadPt    = 24.0
+	chartFallbackBottomPadPt = 26.0
+	chartOverlayTopPadPt     = 4.0
+	chartAxisTickPt          = 4.0
 
-func chartPlotRectHorizontal(r chartRect, titleOverlay bool) (float64, float64, float64, float64) {
-	leftPad := math.Max(18, r.w*0.03)
-	rightPad := math.Max(26, r.w*0.10)
-	topPad := math.Max(24, r.h*0.12)
-	if titleOverlay {
-		topPad = 4
+	// chartMinLeftPadPt is the smallest gutter PowerPoint leaves between the
+	// chart edge and the plot area, regardless of how narrow the axis labels are.
+	chartMinLeftPadPt = 24.0
+)
+
+func widestChartLabel(pdf *gopdf.GoPdf, labels []string) float64 {
+	widest := 0.0
+	for _, label := range labels {
+		if w := chartLabelWidth(pdf, label, chartLabelFontSize); w > widest {
+			widest = w
+		}
 	}
-	bottomPad := math.Max(26, r.h*0.12)
-	return r.x + leftPad, r.y + topPad, r.w - leftPad - rightPad, r.h - topPad - bottomPad
+	return widest
 }
 
 // chartRectWithLegendMargin shrinks the chart rect to make room for the legend.

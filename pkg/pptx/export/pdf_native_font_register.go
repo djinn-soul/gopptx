@@ -7,6 +7,9 @@ import (
 )
 
 func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
+	// Metrics are keyed by alias and every export registers its own fonts, so
+	// clear anything a previous export left behind.
+	resetPDFFontMetrics()
 	sansAlias := ""
 	if tryNativePDFFonts(pdf, opts.NativeFontPaths, fontFamilySans) {
 		sansAlias = fontFamilySans
@@ -50,12 +53,22 @@ func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
 	return nil
 }
 
+// nativePDFFontOption is the option every face is registered with. Kerning is
+// on because PowerPoint applies the font's kern pairs by default; leaving it off
+// widened kern-heavy runs by up to 5%, which showed up as drifting line breaks
+// and off-centre headings.
+func nativePDFFontOption(style int) gopdf.TtfOption {
+	return gopdf.TtfOption{Style: style, UseKerning: true}
+}
+
 func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string, alias string) bool {
 	for _, path := range fontPaths {
-		if err := pdf.AddTTFFont(alias, path); err != nil {
+		if err := pdf.AddTTFFontWithOption(alias, path, nativePDFFontOption(gopdf.Regular)); err != nil {
 			continue
 		}
 		if err := pdf.SetFont(alias, "", defaultFontSize); err == nil {
+			// The regular face supplies the line metrics for this alias.
+			registerPDFFontMetrics(alias, path)
 			return true
 		}
 	}
@@ -64,7 +77,7 @@ func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string, alias string) bool 
 
 func tryNativePDFFontsWithStyle(pdf *gopdf.GoPdf, fontPaths []string, alias string, style int) {
 	for _, path := range fontPaths {
-		if err := pdf.AddTTFFontWithOption(alias, path, gopdf.TtfOption{Style: style}); err != nil {
+		if err := pdf.AddTTFFontWithOption(alias, path, nativePDFFontOption(style)); err != nil {
 			continue
 		}
 		// Verify the font can be set at this style.

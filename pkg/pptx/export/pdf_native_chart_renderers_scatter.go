@@ -85,8 +85,6 @@ func renderScatterLike(pdf *gopdf.GoPdf, title string, r chartRect, xs, ys, size
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
 	// Use XY-specific axis range (adds ~20% headroom) matching PowerPoint's auto-axis
 	// for scatter/bubble charts — ensures data points never sit on the axis edge.
 	minX, maxX := niceAxisRangeXY(xs[:n])
@@ -97,13 +95,28 @@ func renderScatterLike(pdf *gopdf.GoPdf, title string, r chartRect, xs, ys, size
 	if maxY <= minY {
 		maxY = minY + 1
 	}
+
+	// Both axes carry numeric tick labels here, so the plot area is sized around
+	// them; the ranges therefore have to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minY, MaxV: maxY, ValueFormat: opts.valueFormat},
+		chartAxisSpec{MinV: minX, MaxV: maxX, ValueFormat: opts.valueFormat},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
 	rangeX := maxX - minX
 	rangeY := maxY - minY
 
 	// Draw plot frame.
 	pdf.SetStrokeColor(30, 30, 30)
 	pdf.RectFromUpperLeftWithStyle(px, py, pw, ph, "D")
-	renderScatterAxes(pdf, px, py, pw, ph, minX, maxX, minY, maxY, rangeX, rangeY, opts)
+	renderScatterAxes(pdf, scatterAxisGeometry{
+		px: px, py: py, pw: pw, ph: ph,
+		minX: minX, maxX: maxX, minY: minY, maxY: maxY,
+		rangeX: rangeX, rangeY: rangeY,
+		densityX: layout.Horizontal, densityY: layout.Vertical,
+	}, opts)
 
 	ptR, ptG, ptB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
@@ -212,10 +225,7 @@ func renderRadarLike(
 		labelR := radius + 14
 		lx := cx + math.Cos(angle)*labelR
 		ly := cy + math.Sin(angle)*labelR
-		label := categoryLabel(categories, i)
-		pdf.SetX(lx - float64(len(label))*3)
-		pdf.SetY(ly - 4)
-		_ = pdf.Cell(nil, label)
+		drawChartLabel(pdf, categoryLabel(categories, i), lx, ly, chartLabelFontSize, chartTextCenter)
 	}
 	pdf.SetTextColor(0, 0, 0)
 

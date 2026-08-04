@@ -61,6 +61,27 @@ func newChartApplyCtx(slide *elements.SlideContent, pc parsedChart) chartApplyCt
 	return ctx
 }
 
+// applyLegend copies the legend state parsed from the chart part onto whichever
+// concrete chart type this branch built. Every chart struct carries these two
+// fields but they share no interface, so the caller passes them by pointer.
+func (ctx chartApplyCtx) applyLegend(show *bool, position *string) {
+	*show = ctx.pc.ShowLegend
+	*position = nonEmpty(ctx.pc.LegendPosition, charts.LegendPositionRight)
+}
+
+// applyGridlines copies the parsed gridline state, in the same by-pointer style
+// and for the same reason as applyLegend. Not every chart type has both axes:
+// radar, stock and combo carry only a value-axis flag, and pie-like charts have
+// no gridlines at all, so callers pass nil for what does not apply.
+func (ctx chartApplyCtx) applyGridlines(value *bool, category *bool) {
+	if value != nil {
+		*value = ctx.pc.ShowValueGridlines
+	}
+	if category != nil {
+		*category = ctx.pc.ShowCategoryGridlines
+	}
+}
+
 func applyParsedChart(slide *elements.SlideContent, pc parsedChart) {
 	ctx := newChartApplyCtx(slide, pc)
 	switch pc.Kind {
@@ -82,24 +103,32 @@ func applyBarLikeChart(ctx chartApplyCtx) {
 		c := charts.NewBarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Chart = &c
 	case chartKindBarHoriz:
 		c := charts.NewBarHorizontalChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.BarHorizontal = &c
 	case chartKindBarStacked:
 		c := charts.NewBarStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.BarStacked = &c
 	case chartKindBar100:
 		c := charts.NewBarStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.BarColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.BarStacked100 = &c
 	}
@@ -113,36 +142,48 @@ func applyLineAreaLikeChart(ctx chartApplyCtx) {
 		c := charts.NewLineChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Line = &c
 	case chartKindLineMarkers:
 		c := charts.NewLineMarkersChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.LineMarkers = &c
 	case chartKindLineStacked:
 		c := charts.NewLineStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.LineStacked = &c
 	case chartKindArea:
 		c := charts.NewAreaChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.AreaColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Area = &c
 	case chartKindAreaStacked:
 		c := charts.NewAreaStackedChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.AreaColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.AreaStacked = &c
 	case chartKindArea100:
 		c := charts.NewAreaStacked100Chart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.AreaColor, color)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.AreaStacked100 = &c
 	}
@@ -157,6 +198,8 @@ func applyOtherChart(ctx chartApplyCtx) {
 		c := charts.NewScatterChart(xs, ys).WithTitle(title).Position(px, py).Size(pw, ph)
 		setIfNonEmpty(&c.LineColor, ctx.seriesColor)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.ScatterStyle = pc.ScatterStyle
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Scatter = &c
@@ -167,20 +210,39 @@ func applyOtherChart(ctx chartApplyCtx) {
 		c := charts.NewBubbleChart(xs, ys, sizes).
 			WithTitle(title).Position(px.Emu(), py.Emu()).Size(pw.Emu(), ph.Emu())
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, &c.ShowCategoryMajorGridlines)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Bubble = &c
 	case chartKindRadar:
 		c := charts.NewRadarChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, nil)
 		slide.Radar = &c
 	case chartKindRadarFilled:
 		c := charts.NewRadarFilledChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, nil)
 		slide.RadarFilled = &c
+	case chartKindStockHLC, chartKindStockOHLC, chartKindCombo:
+		applyStockComboChart(ctx)
+	}
+}
+
+// applyStockComboChart handles the multi-series kinds, split out of
+// applyOtherChart to keep each within the statement budget.
+func applyStockComboChart(ctx chartApplyCtx) {
+	slide, pc, cats, title, px, py, pw, ph :=
+		ctx.slide, ctx.pc, ctx.cats, ctx.title, ctx.px, ctx.py, ctx.pw, ctx.ph
+	switch pc.Kind {
 	case chartKindStockHLC:
 		high, low, closeVals := stockTriplet(pc)
 		c := charts.NewStockHLCChart(cats, high, low, closeVals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, nil)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.StockHLC = &c
 	case chartKindStockOHLC:
@@ -188,12 +250,16 @@ func applyOtherChart(ctx chartApplyCtx) {
 		c := charts.NewStockOHLCChart(cats, openVals, high, low, closeVals).
 			WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, nil)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.StockOHLC = &c
 	case chartKindCombo:
 		barSeries, lineSeries := comboSeries(pc)
 		c := charts.NewComboChart(cats, barSeries, lineSeries).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
+		ctx.applyGridlines(&c.ShowMajorGridlines, nil)
 		c.MinValue, c.MaxValue = ctx.axisMin, ctx.axisMax
 		slide.Combo = &c
 	}

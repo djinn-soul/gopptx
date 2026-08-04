@@ -14,11 +14,15 @@ type pdfTextRenderOptions struct {
 	TabStops   []float64
 }
 
-func paragraphRenderedLineHeight(style text.ParagraphStyle, baseLineHeight float64) float64 {
+func paragraphRenderedLineHeight(
+	style text.ParagraphStyle,
+	baseLineHeight float64,
+	defaults paragraphSpacingDefaults,
+) float64 {
 	if style.LineSpacingPts > 0 {
 		return float64(style.LineSpacingPts)
 	}
-	return baseLineHeight * paragraphLineSpacingFactor(style)
+	return baseLineHeight * paragraphLineSpacingFactor(style, defaults)
 }
 
 func paragraphTabStopsPt(style text.ParagraphStyle) []float64 {

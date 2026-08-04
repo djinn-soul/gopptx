@@ -117,7 +117,7 @@ func measureStyledRunWidth(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
 		size = defaultFontSize
 	}
 	setPDFTextFontWithHintAndLang(pdf, size, run.Bold, run.Italic, run.FontHint, run.Lang)
-	return measuredWidthWithMetrics(pdf, run.Text, run.FontHint)
+	return measuredWidth(pdf, run.Text)
 }
 
 func measureStyledRunAdvance(pdf *gopdf.GoPdf, run pdfStyledRun, cursorOffset float64, tabStops []float64) float64 {

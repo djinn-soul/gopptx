@@ -9,14 +9,17 @@ func applyPieLikeChart(ctx chartApplyCtx) {
 	case chartKindPie:
 		c := charts.NewPieChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
 		slide.Pie = &c
 	case chartKindPie3D:
 		c := charts.NewPie3DChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
 		slide.Pie3D = &c
 	case chartKindDoughnut:
 		c := charts.NewDoughnutChart(cats, vals).WithTitle(title).Position(px, py).Size(pw, ph)
 		c.AltText, c.IsDecorative = pc.AltText, pc.IsDecorative
+		ctx.applyLegend(&c.ShowLegend, &c.LegendPosition)
 		slide.Doughnut = &c
 	}
 }

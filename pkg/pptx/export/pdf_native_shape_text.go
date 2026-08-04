@@ -8,10 +8,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
-const (
-	defaultShapeTextPaddingPt = 4.0
-	shapeTextMinBoxHeightPt   = 10.0
-)
+const shapeTextMinBoxHeightPt = 10.0
 
 func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 	if len(s.TextParagraphs) > 0 {
@@ -31,19 +28,22 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 	)
 	defer restoreOrientation()
 	fontHint := inferCodeFontHint(s.Text)
-	fontSize := fitPDFTextToBoxWithMetrics(
-		pdf,
-		s.Text,
-		defaultFontSize,
-		minTextAutoFitSize,
-		false,
-		false,
-		boxW,
-		boxH,
-		fontHint,
-	)
+	fontSize := defaultFontSize
+	if shapeTextShrinksToFit(s) {
+		fontSize = fitPDFTextToBoxWithMetrics(
+			pdf,
+			s.Text,
+			defaultFontSize,
+			minTextAutoFitSize,
+			false,
+			false,
+			boxW,
+			boxH,
+			fontHint,
+		)
+	}
 	setPDFTextFontWithHint(pdf, fontSize, false, false, fontHint)
-	lines := wrapPDFTextWithMetrics(pdf, s.Text, boxW, fontHint)
+	lines := wrapPDFTextWithMetrics(pdf, s.Text, boxW)
 	lineH := pdfLineHeight(fontSize)
 	isCode := strings.Contains(strings.ToLower(fontHint), "consolas")
 	lineSpacing := 1.0
@@ -57,9 +57,11 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 	startY := shapeTextStartY(anchor, boxY, boxH, textBlockH)
 
 	pdf.SetTextColor(0, 0, 0)
+	// See renderPDFShapeParagraphText: only a shrink-to-fit shape clips.
+	clipToBox := shapeTextShrinksToFit(s)
 	yPos := startY
 	for i, line := range lines {
-		if yPos+lineH > boxY+boxH+0.5 {
+		if clipToBox && yPos+lineH > boxY+boxH+0.5 {
 			break
 		}
 		pdf.SetX(boxX)
@@ -77,10 +79,10 @@ func shapeTextBox(
 	s shapes.Shape,
 	x, y, w, h float64,
 ) (float64, float64, float64, float64, shapes.TextFrameAnchor) {
-	left := defaultShapeTextPaddingPt
-	right := defaultShapeTextPaddingPt
-	top := defaultShapeTextPaddingPt
-	bottom := defaultShapeTextPaddingPt
+	left := defaultTextInsetLRPt
+	right := defaultTextInsetLRPt
+	top := defaultTextInsetTBPt
+	bottom := defaultTextInsetTBPt
 	anchor := shapes.TextAnchorTop
 	if s.TextFrame != nil {
 		left = emuToPt(s.TextFrame.MarginLeft.Emu())

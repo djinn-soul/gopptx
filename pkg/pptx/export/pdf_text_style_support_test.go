@@ -11,11 +11,16 @@ import (
 func TestParagraphRenderedLineHeightUsesPointSpacing(t *testing.T) {
 	t.Parallel()
 
-	if got := paragraphRenderedLineHeight(text.ParagraphStyle{LineSpacingPts: 18}, 12); got != 18 {
+	defaults := shapeTextSpacing()
+	if got := paragraphRenderedLineHeight(text.ParagraphStyle{LineSpacingPts: 18}, 12, defaults); got != 18 {
 		t.Fatalf("point line spacing=%v want 18", got)
 	}
-	if got := paragraphRenderedLineHeight(text.ParagraphStyle{LineSpacingPct: 150}, 12); got != 18 {
+	if got := paragraphRenderedLineHeight(text.ParagraphStyle{LineSpacingPct: 150}, 12, defaults); got != 18 {
 		t.Fatalf("pct line spacing=%v want 18", got)
+	}
+	// With no explicit spacing a body placeholder falls back to the Office 90%.
+	if got := paragraphRenderedLineHeight(text.ParagraphStyle{}, 20, bodyPlaceholderSpacing()); got != 18 {
+		t.Fatalf("default body line height=%v want 18", got)
 	}
 }
 

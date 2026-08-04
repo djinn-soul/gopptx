@@ -12,6 +12,7 @@ const (
 
 type picRef struct {
 	RelID        string
+	ShapeID      int
 	X, Y         int64
 	CX, CY       int64
 	Rotation     float64
@@ -33,6 +34,7 @@ type picRef struct {
 const decorativeExtURI = "{C183D7F6-72BE-476a-BEBA-66C5E2CAE503}"
 
 type picCNvPrXML struct {
+	ID     *int    `xml:"id,attr"`
 	Descr  *string `xml:"descr,attr"`
 	Title  *string `xml:"title,attr"`
 	ExtLst *struct {
@@ -107,7 +109,7 @@ func parsePicElements(data []byte) []picRef {
 			return pics
 		}
 		start, ok := token.(xml.StartElement)
-		if !ok || start.Name.Local != "pic" {
+		if !ok || start.Name.Local != shapeTreePicElement {
 			continue
 		}
 		var src picReaderXML
@@ -135,6 +137,11 @@ func picRefFromXML(src *picReaderXML) (picRef, bool) {
 	}
 	if ref.RelID == "" || ref.CX <= 0 || ref.CY <= 0 {
 		return picRef{}, false
+	}
+	// The shape id ties this picture back to its position in the slide's shape
+	// tree, which is what decides whether it paints above or below a shape.
+	if src.NvPicPr.CNvPr.ID != nil {
+		ref.ShapeID = *src.NvPicPr.CNvPr.ID
 	}
 	if src.SpPr.Xfrm.Rot != nil {
 		ref.Rotation = float64(*src.SpPr.Xfrm.Rot) / imageRotScale

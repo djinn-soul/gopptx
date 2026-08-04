@@ -27,10 +27,10 @@ func renderPDFShapeParagraphTextVertical(pdf *gopdf.GoPdf, s shapes.Shape, x, y,
 	fontSize := fitPDFShapeParagraphText(pdf, paragraphs, boxW, boxH)
 	lines := make([]verticalStyledLine, 0, len(paragraphs))
 	for _, paragraph := range paragraphs {
-		style := text.NormalizeParagraphStyle(paragraph.Style)
+		style := shapeParagraphStyle(paragraph)
 		runs := buildShapeParagraphStyledRuns(paragraph.Runs, fontSize)
 		lineHeight := math.Max(
-			paragraphRenderedLineHeight(style, maxStyledRunsLineHeight(runs)),
+			paragraphRenderedLineHeight(style, maxStyledRunsLineHeight(runs), shapeTextSpacing()),
 			minVerticalLineHeightPt,
 		)
 		lines = append(lines, verticalStyledLine{

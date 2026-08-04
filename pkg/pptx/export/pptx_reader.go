@@ -68,12 +68,18 @@ func slidesFromPPTXWithSize(pptxPath string) (string, []elements.SlideContent, c
 		// Best-effort SmartArt extraction; continue without semantic diagrams when parsing fails.
 		slideSmartArt = nil
 	}
+	zOrders, err := extractSlideZOrder(pptxPath)
+	if err != nil {
+		// Best-effort: without paint order the renderer falls back to its
+		// layered order rather than failing the export.
+		zOrders = nil
+	}
 
 	slideMeta := ed.Slides()
 	slideContents := make([]elements.SlideContent, 0, len(slideMeta))
 
 	for _, sm := range slideMeta {
-		sc := extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt)
+		sc := extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt, zOrders)
 		applyMasterTitleDefaults(&sc, masterStyle)
 		slideContents = append(slideContents, sc)
 	}
@@ -102,6 +108,7 @@ func extractSlideContent(
 	slideImages [][]SlideImage,
 	slideCharts [][]parsedChart,
 	slideSmartArt [][]parsedSmartArt,
+	zOrders []map[int]int,
 ) elements.SlideContent {
 	editorShapes, err := ed.GetShapes(sm.Index)
 	if err != nil {
@@ -140,7 +147,71 @@ func extractSlideContent(
 	if sm.Index < len(slideSmartArt) {
 		applyParsedSmartArt(&sc, slideSmartArt[sm.Index])
 	}
+	applySlideZOrder(&sc, shapeIndexByID, slideImages, zOrders, sm.Index)
+	dropTitleDrawnAsShape(&sc)
 	return sc
+}
+
+// dropTitleDrawnAsShape clears SlideContent.Title when the same text is already
+// on the slide as an ordinary shape.
+//
+// The slide's title comes from presentation metadata, which reports one whether
+// or not the deck uses a title placeholder. When it does, the placeholder is
+// consumed and never becomes a shape. When it does not — a deck that lays its
+// heading out as a plain text box — the text was rendered twice: once by the
+// shape at its real position, and once by the title renderer at the default
+// title position and size.
+func dropTitleDrawnAsShape(sc *elements.SlideContent) {
+	if sc.Title == "" {
+		return
+	}
+	// A consumed title placeholder records its geometry; without that the title
+	// did not come from a placeholder.
+	if b := sc.TitleBoundsEMU; b[2] > 0 || b[3] > 0 {
+		return
+	}
+	for _, shape := range sc.Shapes {
+		if strings.TrimSpace(shape.Text) == strings.TrimSpace(sc.Title) {
+			sc.Title = ""
+			return
+		}
+	}
+}
+
+// applySlideZOrder stamps each shape and picture with its position in the slide
+// shape tree so the renderer can paint them in the order PowerPoint does.
+func applySlideZOrder(
+	sc *elements.SlideContent,
+	shapeIndexByID map[int]int,
+	slideImages [][]SlideImage,
+	zOrders []map[int]int,
+	idx int,
+) {
+	if idx >= len(zOrders) || zOrders[idx] == nil {
+		return
+	}
+	order := zOrders[idx]
+	// shapeIndexByID stores one-based positions into sc.Shapes.
+	for shapeID, position := range shapeIndexByID {
+		z, ok := order[shapeID]
+		if !ok || position <= 0 || position > len(sc.Shapes) {
+			continue
+		}
+		sc.Shapes[position-1].ZOrder = z
+	}
+	if idx >= len(slideImages) {
+		return
+	}
+	// Images were appended in the order extractSlideImages found them, so the
+	// two slices line up index for index.
+	for i, img := range slideImages[idx] {
+		if i >= len(sc.Images) {
+			break
+		}
+		if z, ok := order[img.ShapeID]; ok {
+			sc.Images[i].ZOrder = z
+		}
+	}
 }
 
 // applySlideMetadata reads background, header/footer, and notes from the editor.
@@ -180,7 +251,7 @@ func processEditorShape(
 		lowerType = lowerPhType
 	}
 	switch lowerType {
-	case "pic":
+	case shapeTreePicElement:
 		return
 	case "graphicframe":
 		applyGraphicFrame(sc, es, shapeIndexByID, chartShapeIDs, smartArtShapeIDs, ed, slideIdx)
