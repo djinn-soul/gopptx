@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	common "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
@@ -185,9 +186,55 @@ func (e *PresentationEditor) MergeFromFile(filePath string) error {
 	return e.MergeFromEditor(other)
 }
 
+// CopySlidesFromFile appends the selected slides of another PPTX package.
+// Passing no indices copies every slide, which is what MergeFromFile does.
+func (e *PresentationEditor) CopySlidesFromFile(filePath string, indices []int) error {
+	other, err := OpenPresentationEditor(filePath)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = other.Close() }()
+	return e.CopySlidesFromEditor(other, indices)
+}
+
+// CopySlidesFromEditor appends the selected slides of another editor instance,
+// in the order the indices are given, so one slide can be lifted out of a deck
+// without merging the whole thing. Passing no indices copies every slide.
+func (e *PresentationEditor) CopySlidesFromEditor(other *PresentationEditor, indices []int) error {
+	if err := editorslide.ValidateMergeEditorsNil(e == nil, other == nil); err != nil {
+		return err
+	}
+	selected := other.slides
+	if len(indices) > 0 {
+		selected = make([]common.EditorSlideRef, 0, len(indices))
+		for _, index := range indices {
+			if index < 0 || index >= len(other.slides) {
+				return fmt.Errorf("source slide index %d out of range [0,%d)", index, len(other.slides))
+			}
+			selected = append(selected, other.slides[index])
+		}
+	}
+	return e.mergeSlideRefs(other, selected)
+}
+
 // MergeFromEditor appends slides from another editor instance.
 func (e *PresentationEditor) MergeFromEditor(other *PresentationEditor) error {
 	if err := editorslide.ValidateMergeEditorsNil(e == nil, other == nil); err != nil {
+		return err
+	}
+	return e.mergeSlideRefs(other, other.slides)
+}
+
+// mergeSlideRefs copies the given source slides, with their assets, into this
+// presentation.
+func (e *PresentationEditor) mergeSlideRefs(
+	other *PresentationEditor,
+	sourceSlides []common.EditorSlideRef,
+) error {
+	// Done first, so every relationship id the import consumes is allocated
+	// before the merge reserves its own.
+	layoutImports, err := e.importSlideLayouts(other, sourceSlides)
+	if err != nil {
 		return err
 	}
 	next, err := editorslide.MergeSlidesFromSource(
@@ -198,10 +245,10 @@ func (e *PresentationEditor) MergeFromEditor(other *PresentationEditor) error {
 			NextSlideID:  e.nextSlideID,
 			SlideCount:   e.metadata.SlideCount,
 		},
-		other.slides,
+		sourceSlides,
 		other.parts.Get,
 		func(srcPart string, sourceRelsBytes []byte, newPart string) ([]byte, error) {
-			return e.deepCloneSlideAssets(other, srcPart, sourceRelsBytes, newPart)
+			return e.deepCloneSlideAssets(other, srcPart, sourceRelsBytes, newPart, layoutImports)
 		},
 		e.parts.Set,
 	)

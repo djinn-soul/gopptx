@@ -207,18 +207,7 @@ func mergeTextFrame(existing, patch *common.TextFrame) *common.TextFrame {
 		return patch
 	}
 	merged := *existing
-	if patch.MarginTop != nil {
-		merged.MarginTop = patch.MarginTop
-	}
-	if patch.MarginBottom != nil {
-		merged.MarginBottom = patch.MarginBottom
-	}
-	if patch.MarginLeft != nil {
-		merged.MarginLeft = patch.MarginLeft
-	}
-	if patch.MarginRight != nil {
-		merged.MarginRight = patch.MarginRight
-	}
+	mergeTextFrameMargins(&merged, patch)
 	if patch.WordWrap != nil {
 		merged.WordWrap = patch.WordWrap
 	}
@@ -240,7 +229,31 @@ func mergeTextFrame(existing, patch *common.TextFrame) *common.TextFrame {
 	if patch.Rotation != nil {
 		merged.Rotation = patch.Rotation
 	}
+	// The shrink amounts are part of the frame like any other field: leaving them
+	// out here dropped them on every existing shape, because a parsed shape
+	// almost always already has a text frame from its bodyPr.
+	if patch.FontScale != nil {
+		merged.FontScale = patch.FontScale
+	}
+	if patch.LineSpaceReduction != nil {
+		merged.LineSpaceReduction = patch.LineSpaceReduction
+	}
 	return &merged
+}
+
+func mergeTextFrameMargins(merged *common.TextFrame, patch *common.TextFrame) {
+	if patch.MarginTop != nil {
+		merged.MarginTop = patch.MarginTop
+	}
+	if patch.MarginBottom != nil {
+		merged.MarginBottom = patch.MarginBottom
+	}
+	if patch.MarginLeft != nil {
+		merged.MarginLeft = patch.MarginLeft
+	}
+	if patch.MarginRight != nil {
+		merged.MarginRight = patch.MarginRight
+	}
 }
 
 func (u *shapeUpdater) applyText(xmlData []byte, s *parsedShape, replaced bool) ([]byte, bool, error) {

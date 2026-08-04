@@ -68,8 +68,17 @@ func TestTransitionXML(t *testing.T) {
 		want string
 	}{
 		{
-			name: "fade",
+			name: "fade with duration",
 			opts: TransitionOptions{Type: TransitionFade, DurationMS: 2000},
+			want: `<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">` +
+				`<mc:Choice xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" Requires="p14">` +
+				`<p:transition spd="slow" p14:dur="2000"><p:fade/></p:transition></mc:Choice>` +
+				`<mc:Fallback><p:transition spd="slow"><p:fade/></p:transition></mc:Fallback>` +
+				`</mc:AlternateContent>`,
+		},
+		{
+			name: "fade without duration",
+			opts: TransitionOptions{Type: TransitionFade},
 			want: `<p:transition><p:fade/></p:transition>`,
 		},
 		{

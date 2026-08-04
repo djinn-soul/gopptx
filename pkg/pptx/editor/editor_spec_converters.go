@@ -119,6 +119,8 @@ func applyTextFrameColumnsAndRotation(spec *pptxxml.TextFrameSpec, tf *common.Te
 }
 
 func applyTextFrameAutoFit(spec *pptxxml.TextFrameSpec, tf *common.TextFrame) {
+	spec.FontScale = tf.FontScale
+	spec.LineSpaceReduction = tf.LineSpaceReduction
 	if tf.AutoFitType != nil {
 		switch strings.ToLower(strings.TrimSpace(*tf.AutoFitType)) {
 		case "normal":
@@ -130,6 +132,12 @@ func applyTextFrameAutoFit(spec *pptxxml.TextFrameSpec, tf *common.TextFrame) {
 		default:
 			spec.AutoFit = textFrameAutoFitShape
 		}
+		return
+	}
+	// A shrink amount is only meaningful on a normAutoFit frame, so naming one
+	// selects that autofit rather than being dropped on the floor.
+	if tf.FontScale != nil || tf.LineSpaceReduction != nil {
+		spec.AutoFit = textFrameAutoFitNormal
 		return
 	}
 	if tf.AutoFit == nil {

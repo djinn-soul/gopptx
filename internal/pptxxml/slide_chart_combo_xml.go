@@ -38,7 +38,7 @@ func comboChartPartXML(chart *ChartSpec) string {
 		plot.WriteString(comboLinePlotXML(chart, secondaryLine, labels, secondaryAxisIDRefsXML()))
 	}
 	plot.WriteString("\n")
-	plot.WriteString(chartAxesXML(chart))
+	plot.WriteString(chartAxesAndDataTableXML(chart))
 
 	return chartPartEnvelope(
 		chart.Title,
@@ -144,18 +144,7 @@ func comboSeriesXML(chart *ChartSpec, series ChartSeries, idx int) string {
 </c:strLit></c:cat>
 <c:val><c:numLit>
 <c:formatCode>General</c:formatCode>`)
-	out.WriteString(`
-<c:ptCount val="`)
-	out.WriteString(strconv.Itoa(len(series.Values)))
-	out.WriteString(`"/>`)
-	for j, value := range series.Values {
-		out.WriteString(`
-<c:pt idx="`)
-		out.WriteString(strconv.Itoa(j))
-		out.WriteString(`"><c:v>`)
-		out.WriteString(strconv.FormatFloat(value, 'f', 6, 64))
-		out.WriteString(`</c:v></c:pt>`)
-	}
+	writeNumericPoints(&out, series.Values)
 	out.WriteString(`
 </c:numLit></c:val>
 </c:ser>`)

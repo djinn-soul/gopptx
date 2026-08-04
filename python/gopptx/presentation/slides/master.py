@@ -61,6 +61,15 @@ class SlideLayout:
         return self._master
 
     @property
+    def presentation(self) -> PresentationProtocol:
+        """The presentation this layout belongs to.
+
+        Lets a caller tell a layout of this deck from one handed over from
+        another open presentation (Issue #175).
+        """
+        return self._master.presentation
+
+    @property
     def shapes(self) -> list[str]:
         """Layout shape names snapshot."""
         shapes = self._info.get("shapes", self._info.get("Shapes", []))
@@ -155,6 +164,11 @@ class SlideMaster:
     def part(self) -> str:
         """The part path of this slide master."""
         return self._part
+
+    @property
+    def presentation(self) -> PresentationProtocol:
+        """The presentation this master belongs to."""
+        return self._prs
 
     @property
     def slide_layouts(self) -> SlideLayouts:

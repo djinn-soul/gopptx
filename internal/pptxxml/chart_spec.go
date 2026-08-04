@@ -52,6 +52,9 @@ type ChartSpec struct {
 	ValueAxisCrossBetween      string
 	MinValue                   *float64
 	MaxValue                   *float64
+	// DisplayBlanksAs decides how a missing value is drawn: "gap", "zero" or
+	// "span". Empty leaves the element out, which PowerPoint reads as "gap".
+	DisplayBlanksAs string
 
 	// Secondary value axis. SecondaryAxis declares the axis; a plot only draws
 	// against it when its c:axId pair references the secondary ids, which is
@@ -65,6 +68,15 @@ type ChartSpec struct {
 	SecondaryMaxValue               *float64
 	Smooth                          bool
 	ExternalDataID                  string
+
+	// Data table drawn under the plot area (<c:dTable>). Only chart kinds with
+	// a category axis can carry one; the border and legend-key flags default to
+	// true when the table is shown and nothing else is stated.
+	ShowDataTable           bool
+	DataTableShowHorzBorder *bool
+	DataTableShowVertBorder *bool
+	DataTableShowOutline    *bool
+	DataTableShowLegendKeys *bool
 
 	// Accessibility
 	AltText      string
@@ -94,6 +106,10 @@ const (
 	ChartKindAreaStacked100 = "areaStacked100"
 	ChartKindPie            = "pie"
 	ChartKindThreeDPie      = "pie3D"
+	ChartKindThreeDColumn   = "column3D"
+	ChartKindThreeDBar      = "bar3D"
+	ChartKindThreeDLine     = "line3D"
+	ChartKindThreeDArea     = "area3D"
 	ChartKindDoughnut       = "doughnut"
 	ChartKindBubble         = "bubble"
 	ChartKindRadar          = "radar"

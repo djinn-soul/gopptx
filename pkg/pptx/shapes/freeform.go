@@ -193,8 +193,9 @@ func (f Freeform) WithEffects(effects ShapeEffects) Freeform {
 	return f
 }
 
-// ToShape converts the freeform to a Shape for slide addition.
-// Note: This creates a basic shape - for full freeform support, use the dedicated renderer.
+// ToShape converts the freeform to a Shape for slide addition. The path is
+// carried through as custom geometry, so the rendered shape is the outline the
+// points describe rather than its bounding rectangle.
 func (f Freeform) ToShape() Shape {
 	// Calculate bounds from points
 	if len(f.Points) == 0 {
@@ -222,6 +223,14 @@ func (f Freeform) ToShape() Shape {
 	}
 
 	s := NewShape(ShapeTypeRectangle, minX, minY, maxX-minX, maxY-minY)
+	localPoints := make([]FreeformPoint, len(f.Points))
+	for i, pt := range f.Points {
+		localPoints[i] = FreeformPoint{
+			X: styling.Emu(pt.X.Emu() - minX.Emu()),
+			Y: styling.Emu(pt.Y.Emu() - minY.Emu()),
+		}
+	}
+	s.CustomGeometry = &CustomGeometry{Points: localPoints, ClosePath: f.ClosePath}
 	s.Name = f.Name
 	s.AltText = f.AltText
 	s.IsDecorative = f.IsDecorative

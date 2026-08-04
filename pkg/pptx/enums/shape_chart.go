@@ -48,6 +48,10 @@ const (
 	XLChartTypeAreaStacked100 XLChartType = pptxxml.ChartKindAreaStacked100
 	XLChartTypePie            XLChartType = pptxxml.ChartKindPie
 	XLChartTypeThreeDPie      XLChartType = pptxxml.ChartKindThreeDPie
+	XLChartTypeThreeDColumn   XLChartType = pptxxml.ChartKindThreeDColumn
+	XLChartTypeThreeDBar      XLChartType = pptxxml.ChartKindThreeDBar
+	XLChartTypeThreeDLine     XLChartType = pptxxml.ChartKindThreeDLine
+	XLChartTypeThreeDArea     XLChartType = pptxxml.ChartKindThreeDArea
 	XLChartTypeDoughnut       XLChartType = pptxxml.ChartKindDoughnut
 	XLChartTypeBubble         XLChartType = pptxxml.ChartKindBubble
 	XLChartTypeRadar          XLChartType = pptxxml.ChartKindRadar
@@ -61,51 +65,49 @@ func (t XLChartType) XMLValue() string {
 	return string(t)
 }
 
+// xlChartTypeByName maps every accepted spelling to its XLChartType. A table
+// keeps the alias list additive: a new chart kind adds rows instead of growing
+// a switch past the statement limit.
+//
+//nolint:gochecknoglobals // immutable lookup table
+var xlChartTypeByName = map[string]XLChartType{
+	"bar":           XLChartTypeBar,
+	"barhorizontal": XLChartTypeBarHorizontal, "barh": XLChartTypeBarHorizontal,
+	"barstacked":    XLChartTypeBarStacked,
+	"barstacked100": XLChartTypeBarStacked100,
+	"line":          XLChartTypeLine,
+	"linemarkers":   XLChartTypeLineMarkers,
+	"linestacked":   XLChartTypeLineStacked,
+	"scatter":       XLChartTypeScatter, "xy": XLChartTypeScatter,
+	"area":           XLChartTypeArea,
+	"areastacked":    XLChartTypeAreaStacked,
+	"areastacked100": XLChartTypeAreaStacked100,
+	"pie":            XLChartTypePie,
+	"pie3d":          XLChartTypeThreeDPie, "threedpie": XLChartTypeThreeDPie,
+	"three_d_pie": XLChartTypeThreeDPie, "three-d-pie": XLChartTypeThreeDPie,
+	"column3d": XLChartTypeThreeDColumn, "threedcolumn": XLChartTypeThreeDColumn,
+	"three_d_column": XLChartTypeThreeDColumn, "three-d-column": XLChartTypeThreeDColumn,
+	"bar3d": XLChartTypeThreeDBar, "threedbar": XLChartTypeThreeDBar,
+	"three_d_bar": XLChartTypeThreeDBar, "three-d-bar": XLChartTypeThreeDBar,
+	"line3d": XLChartTypeThreeDLine, "threedline": XLChartTypeThreeDLine,
+	"three_d_line": XLChartTypeThreeDLine, "three-d-line": XLChartTypeThreeDLine,
+	"area3d": XLChartTypeThreeDArea, "threedarea": XLChartTypeThreeDArea,
+	"three_d_area": XLChartTypeThreeDArea, "three-d-area": XLChartTypeThreeDArea,
+	chartTypeNameDoughnut: XLChartTypeDoughnut, "donut": XLChartTypeDoughnut,
+	"bubble":      XLChartTypeBubble,
+	"radar":       XLChartTypeRadar,
+	"radarfilled": XLChartTypeRadarFilled,
+	"stockhlc":    XLChartTypeStockHLC,
+	"stockohlc":   XLChartTypeStockOHLC,
+	"combo":       XLChartTypeCombo,
+}
+
+// ParseXLChartType resolves any accepted spelling of a chart type.
 func ParseXLChartType(value string) (XLChartType, error) {
-	switch normalizeKey(value) {
-	case "bar":
-		return XLChartTypeBar, nil
-	case "barhorizontal", "barh":
-		return XLChartTypeBarHorizontal, nil
-	case "barstacked":
-		return XLChartTypeBarStacked, nil
-	case "barstacked100":
-		return XLChartTypeBarStacked100, nil
-	case "line":
-		return XLChartTypeLine, nil
-	case "linemarkers":
-		return XLChartTypeLineMarkers, nil
-	case "linestacked":
-		return XLChartTypeLineStacked, nil
-	case "scatter", "xy":
-		return XLChartTypeScatter, nil
-	case "area":
-		return XLChartTypeArea, nil
-	case "areastacked":
-		return XLChartTypeAreaStacked, nil
-	case "areastacked100":
-		return XLChartTypeAreaStacked100, nil
-	case "pie":
-		return XLChartTypePie, nil
-	case "pie3d", "threedpie", "three_d_pie", "three-d-pie":
-		return XLChartTypeThreeDPie, nil
-	case chartTypeNameDoughnut, "donut":
-		return XLChartTypeDoughnut, nil
-	case "bubble":
-		return XLChartTypeBubble, nil
-	case "radar":
-		return XLChartTypeRadar, nil
-	case "radarfilled":
-		return XLChartTypeRadarFilled, nil
-	case "stockhlc":
-		return XLChartTypeStockHLC, nil
-	case "stockohlc":
-		return XLChartTypeStockOHLC, nil
-	case "combo":
-		return XLChartTypeCombo, nil
-	default:
-		return "", fmt.Errorf("invalid XL_CHART_TYPE value %q", value)
+	if chartType, ok := xlChartTypeByName[normalizeKey(value)]; ok {
+		return chartType, nil
 	}
+	return "", fmt.Errorf("invalid XL_CHART_TYPE value %q", value)
 }
 
 // chartTypeNameDoughnut is the canonical doughnut chart type token.

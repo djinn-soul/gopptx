@@ -1,6 +1,43 @@
 package pptxxml
 
-import "strconv"
+import (
+	"math"
+	"strconv"
+)
+
+// OOXML stores autofit percentages in thousandths of a percent, and bounds them
+// (ECMA-376 §20.1.10.42/§20.1.10.43): the font may shrink to 25% at the least
+// and line spacing may be cut by at most 20%. A value outside the range makes
+// PowerPoint reject the part, so the writer clamps rather than emits it raw.
+const (
+	autofitPercentScale     = 1000.0
+	minFontScalePercent     = 25.0
+	maxFontScalePercent     = 100.0
+	maxLineSpaceReductionPc = 20.0
+)
+
+// normAutofitXML renders <a:normAutofit>, carrying the shrink amounts when the
+// caller supplied them. PowerPoint recomputes these when the text is edited,
+// but it honours what is in the file until then, which is what makes a deck
+// generated headlessly look shrunk on first open.
+func normAutofitXML(textFrame *TextFrameSpec) string {
+	attrs := ""
+	if textFrame.FontScale != nil {
+		scale := clampPercent(*textFrame.FontScale, minFontScalePercent, maxFontScalePercent)
+		attrs += ` fontScale="` + strconv.Itoa(int(math.Round(scale*autofitPercentScale))) + `"`
+	}
+	if textFrame.LineSpaceReduction != nil {
+		reduction := clampPercent(*textFrame.LineSpaceReduction, 0, maxLineSpaceReductionPc)
+		attrs += ` lnSpcReduction="` + strconv.Itoa(
+			int(math.Round(reduction*autofitPercentScale)),
+		) + `"`
+	}
+	return `<a:normAutofit` + attrs + `/>`
+}
+
+func clampPercent(value, low, high float64) float64 {
+	return math.Min(math.Max(value, low), high)
+}
 
 // TextBodyPrXML renders <a:bodyPr> with the same defaults used by shape text bodies.
 func TextBodyPrXML(textFrame *TextFrameSpec) string {
@@ -48,7 +85,7 @@ func TextBodyPrXML(textFrame *TextFrameSpec) string {
 		case normAutoFitToken:
 			// The public API token remains "normAutoFit", but the OOXML element
 			// name is schema-valid only as <a:normAutofit/>.
-			autoFitXML = `<a:normAutofit/>`
+			autoFitXML = normAutofitXML(textFrame)
 		case valNone:
 			autoFitXML = `<a:noAutofit/>`
 		default:

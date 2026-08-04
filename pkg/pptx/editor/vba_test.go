@@ -95,7 +95,8 @@ func TestPresentationEditorSaveRejectsVBAToPptxExtension(t *testing.T) {
 	if saveErr == nil {
 		t.Fatal("expected save to .pptx with VBA metadata to fail")
 	}
-	if !strings.Contains(saveErr.Error(), ".pptm extension") {
-		t.Fatalf("expected .pptm extension guidance, got: %v", saveErr)
+	if !strings.Contains(saveErr.Error(), "macro-enabled extension") ||
+		!strings.Contains(saveErr.Error(), ".pptm") {
+		t.Fatalf("expected macro-enabled extension guidance, got: %v", saveErr)
 	}
 }

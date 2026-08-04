@@ -40,6 +40,15 @@ type Shape struct {
 	RichFill       *RichShapeFill
 	RichLine       *RichShapeLine
 	RichShadow     *RichShapeShadow
+	// CustomGeometry carries a freeform path. When set it replaces Type as the
+	// shape geometry and is rendered as <a:custGeom>.
+	CustomGeometry *CustomGeometry
+}
+
+// CustomGeometry is a freeform outline, with points relative to the shape origin.
+type CustomGeometry struct {
+	Points    []FreeformPoint
+	ClosePath bool
 }
 
 // NewShape creates one shape.
@@ -186,6 +195,14 @@ func (s Shape) WithTextWrap(wrap TextFrameWrap) Shape {
 func (s Shape) WithAutoFit(autoFit TextFrameAutoFit) Shape {
 	tf := s.cloneTextFrame()
 	tf.AutoFit = autoFit
+	s.TextFrame = &tf
+	return s
+}
+
+// WithShrinkOnOverflow turns on "shrink text on overflow" and states how far
+// the text is already shrunk, both in percent (upstream issue #969).
+func (s Shape) WithShrinkOnOverflow(fontScale, lineSpaceReduction float64) Shape {
+	tf := s.cloneTextFrame().WithShrinkOnOverflow(fontScale, lineSpaceReduction)
 	s.TextFrame = &tf
 	return s
 }

@@ -27,7 +27,7 @@ func handleAddTextbox(e *PresentationEditor, payload json.RawMessage) (any, erro
 		func(request editorcommand.TextboxPlacementRequest, p map[string]any) (any, error) {
 			addPayload := map[string]any{
 				keySlideIndex: request.SlideIndex,
-				keyType:       "rect",
+				keyType:       shapeTypeRect,
 				"x":           request.Left,
 				"y":           request.Top,
 				"w":           request.Width,

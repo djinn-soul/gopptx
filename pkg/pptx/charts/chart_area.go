@@ -39,6 +39,8 @@ type AreaChart struct {
 	ValueAxisCrossBetween      string
 	MinValue                   *float64
 	MaxValue                   *float64
+	// DisplayBlanksAs decides how a BlankValue category is drawn.
+	DisplayBlanksAs string
 
 	// Accessibility
 	AltText      string
@@ -143,6 +145,7 @@ func (c AreaChart) ToChartSpec() *pptxxml.ChartSpec {
 		MinValue:                   CopyFloat64Pointer(c.MinValue),
 		MaxValue:                   CopyFloat64Pointer(c.MaxValue),
 		Grouping:                   "standard",
+		DisplayBlanksAs:            c.DisplayBlanksAs,
 		AltText:                    c.AltText,
 		IsDecorative:               c.IsDecorative,
 	}

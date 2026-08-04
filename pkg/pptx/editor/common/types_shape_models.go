@@ -43,6 +43,10 @@ type Shape struct {
 	// Freeform is set when the shape carries <a:custGeom> instead of a preset
 	// geometry, so custom paths can be read back and not just written.
 	Freeform *FreeformGeometry `json:"freeform,omitempty"`
+	// GroupChild is a group shape's child coordinate space. Children in Shapes
+	// are already reported in slide coordinates; this says what space their
+	// own XML holds, for callers that write back into the group.
+	GroupChild *GroupChildSpace `json:"group_child,omitempty"`
 }
 
 // ShapeAdjustment represents one preset-geometry adjustment formula.
@@ -90,24 +94,27 @@ type Hyperlink struct {
 
 // TextRun represents a single formatted text segment.
 type TextRun struct {
-	Text           string     `json:"text"`
-	Bold           *bool      `json:"bold,omitempty"`
-	Italic         *bool      `json:"italic,omitempty"`
-	Underline      *string    `json:"underline,omitempty"`
-	Strikethrough  *string    `json:"strikethrough,omitempty"`
-	Subscript      *bool      `json:"subscript,omitempty"`
-	Superscript    *bool      `json:"superscript,omitempty"`
-	Color          *string    `json:"color,omitempty"`
-	Highlight      *string    `json:"highlight,omitempty"`
-	Font           *string    `json:"font,omitempty"`
-	SizePt         *float64   `json:"size_pt,omitempty"`
-	Code           *bool      `json:"code,omitempty"`
-	AllCaps        *bool      `json:"all_caps,omitempty"`
-	SmallCaps      *bool      `json:"small_caps,omitempty"`
-	OutlineColor   *string    `json:"outline_color,omitempty"`
-	OutlineWidthPt *float64   `json:"outline_width_pt,omitempty"`
-	Hyperlink      *Hyperlink `json:"hyperlink,omitempty"`
-	HoverAction    *Hyperlink `json:"hover_action,omitempty"`
+	Text           string   `json:"text"`
+	Bold           *bool    `json:"bold,omitempty"`
+	Italic         *bool    `json:"italic,omitempty"`
+	Underline      *string  `json:"underline,omitempty"`
+	Strikethrough  *string  `json:"strikethrough,omitempty"`
+	Subscript      *bool    `json:"subscript,omitempty"`
+	Superscript    *bool    `json:"superscript,omitempty"`
+	Color          *string  `json:"color,omitempty"`
+	Highlight      *string  `json:"highlight,omitempty"`
+	Font           *string  `json:"font,omitempty"`
+	SizePt         *float64 `json:"size_pt,omitempty"`
+	Code           *bool    `json:"code,omitempty"`
+	AllCaps        *bool    `json:"all_caps,omitempty"`
+	SmallCaps      *bool    `json:"small_caps,omitempty"`
+	OutlineColor   *string  `json:"outline_color,omitempty"`
+	OutlineWidthPt *float64 `json:"outline_width_pt,omitempty"`
+	// Language is the run's BCP-47 tag. It drives which typeface slot the font
+	// is written to, so non-Latin text picks up the font it was given.
+	Language    *string    `json:"language,omitempty"`
+	Hyperlink   *Hyperlink `json:"hyperlink,omitempty"`
+	HoverAction *Hyperlink `json:"hover_action,omitempty"`
 }
 
 // ShapeTextParagraph represents one paragraph of shape text with its own runs and style.
@@ -135,6 +142,11 @@ type TextFrame struct {
 	Orientation   *string  `json:"orientation,omitempty"`
 	Columns       *int     `json:"columns,omitempty"`
 	Rotation      *float64 `json:"rotation,omitempty"` // Degrees, converted to OOXML 1/60000 degree units.
+	// FontScale and LineSpaceReduction are the shrink-on-overflow amounts of a
+	// "normal" autofit frame, in percent. They only reach the file when
+	// AutoFitType is "normal", the one autofit element that carries them.
+	FontScale          *float64 `json:"font_scale,omitempty"`
+	LineSpaceReduction *float64 `json:"line_space_reduction,omitempty"`
 }
 
 // Paragraph defines paragraph-level formatting controls.

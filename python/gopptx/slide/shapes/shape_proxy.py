@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, cast
 
+from ... import ops
 from ...api_errors import GopptxError
 from ..tables.table import Table
 from ..text.text_model import ShapeTextFrame
@@ -104,6 +105,25 @@ class ShapeProxy(ShapeProxyFeatureMixin):
     def apply_update(self, patch: ShapeUpdate) -> None:
         """Apply a shape patch to the backing slide."""
         self._slide.update_shape(self._shape_id, patch)
+
+    def set_picture_fill(self, payload: dict[str, object]) -> None:
+        """Write an image fill onto this shape, or one of its table cells.
+
+        The image needs a media part and a slide relationship, which the generic
+        shape-update path cannot allocate, so this goes through its own op.
+        """
+        request: dict[str, object] = {
+            "slide_index": self._slide.index,
+            "shape_id": self._shape_id,
+        }
+        request.update(payload)
+        self._slide.presentation.execute(ops.OP_SET_PICTURE_FILL, request)
+        # A proxy is normally handed out from the slide's cached shape list, so
+        # without this a read of the new fill keeps returning the old one until
+        # some other operation happens to drop the cache.
+        invalidate = getattr(self._slide, "_invalidate_shape_cache", None)
+        if callable(invalidate):
+            invalidate()
 
     @property
     def id(self) -> int:

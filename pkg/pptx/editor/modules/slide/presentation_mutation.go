@@ -80,6 +80,18 @@ func RewritePresentationNotesMasterList(current []byte, relID string, enable boo
 }
 
 func RewritePresentationSlideMasterList(current []byte, relID string) (string, error) {
+	return RewritePresentationSlideMasterListWithID(current, relID, 0)
+}
+
+// RewritePresentationSlideMasterListWithID adds a p:sldMasterId entry using the
+// given id. Slide master and slide layout ids share one pool in PowerPoint, so
+// a caller that can see the layout ids should pass an id that avoids them;
+// passing 0 falls back to scanning presentation.xml alone.
+func RewritePresentationSlideMasterListWithID(
+	current []byte,
+	relID string,
+	masterID int64,
+) (string, error) {
 	if len(current) == 0 {
 		return "", errors.New("missing presentation XML content")
 	}
@@ -88,7 +100,10 @@ func RewritePresentationSlideMasterList(current []byte, relID string) (string, e
 	}
 	source := string(current)
 
-	nextMasterID := scanNextIDAttribute(source, initialSlideMasterID)
+	nextMasterID := masterID
+	if nextMasterID == 0 {
+		nextMasterID = scanNextIDAttribute(source, initialSlideMasterID)
+	}
 
 	newEntry := fmt.Sprintf(`<p:sldMasterId id="%d" r:id="%s"/>`, nextMasterID, common.XMLEscape(relID))
 	if result, found := replaceAllXMLTagBlocksFunc(source, "p:sldMasterIdLst", func(match string) string {

@@ -64,12 +64,17 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 <p:spPr>
 `)
 	b.WriteString(xfrmXML)
-	b.WriteString(`
+	if shape.CustomGeometry != nil {
+		b.WriteString("\n")
+		b.WriteString(customGeometryXML(*shape.CustomGeometry, shape.CX, shape.CY))
+	} else {
+		b.WriteString(`
 <a:prstGeom prst="`)
-	b.WriteString(Escape(shape.Type))
-	b.WriteString(`">`)
-	b.WriteString(shapeAdjustments(shape))
-	b.WriteString(`</a:prstGeom>`)
+		b.WriteString(Escape(shape.Type))
+		b.WriteString(`">`)
+		b.WriteString(shapeAdjustments(shape))
+		b.WriteString(`</a:prstGeom>`)
+	}
 	b.WriteString(fillXML)
 	b.WriteString(lineXML)
 	b.WriteString(shapeEffectsXML(shape.Effects, shape.RichShadow))
@@ -79,6 +84,31 @@ func customShapeXML(shape ShapeSpec, shapeID int) string {
 	b.WriteString(customShapeTextBody(shape))
 	b.WriteString(`
 </p:sp>`)
+	return b.String()
+}
+
+// customGeometryXML renders an <a:custGeom> path. The path box is the shape
+// extent so path coordinates and EMUs stay one to one and the drawn outline
+// matches the coordinates the caller supplied.
+func customGeometryXML(geom CustomGeometrySpec, cx, cy int64) string {
+	if len(geom.Points) == 0 {
+		return `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`
+	}
+	pathW := max(cx, 1)
+	pathH := max(cy, 1)
+
+	var b strings.Builder
+	b.WriteString(`<a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/>`)
+	b.WriteString(`<a:rect l="l" t="t" r="r" b="b"/><a:pathLst>`)
+	fmt.Fprintf(&b, `<a:path w="%d" h="%d">`, pathW, pathH)
+	fmt.Fprintf(&b, `<a:moveTo><a:pt x="%d" y="%d"/></a:moveTo>`, geom.Points[0].X, geom.Points[0].Y)
+	for _, pt := range geom.Points[1:] {
+		fmt.Fprintf(&b, `<a:lnTo><a:pt x="%d" y="%d"/></a:lnTo>`, pt.X, pt.Y)
+	}
+	if geom.ClosePath {
+		b.WriteString(`<a:close/>`)
+	}
+	b.WriteString(`</a:path></a:pathLst></a:custGeom>`)
 	return b.String()
 }
 

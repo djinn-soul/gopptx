@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+// Upper bounds, in milliseconds, for the "fast" and "med" ECMA-376 transition
+// speeds. Anything longer is reported as "slow".
+const (
+	fastTransitionMaxMS   = 500
+	mediumTransitionMaxMS = 1000
+)
+
 func (o TransitionOptions) XML() string {
 	if o.Type == TransitionNone || (o.Type == TransitionCut && o.Sound == nil) {
 		return ""
@@ -13,8 +20,35 @@ func (o TransitionOptions) XML() string {
 		return o.morphXML()
 	}
 
+	if o.DurationMS == 0 {
+		return o.transitionXML(false)
+	}
+
+	// An exact duration in milliseconds only exists in the PowerPoint 2010
+	// extension attribute p14:dur, so the timed form goes in an mc:Choice and a
+	// spd-only element is left in the fallback for readers that do not know p14.
+	var b strings.Builder
+	b.WriteString(`<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">`)
+	b.WriteString(`<mc:Choice xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" Requires="p14">`)
+	b.WriteString(o.transitionXML(true))
+	b.WriteString(`</mc:Choice><mc:Fallback>`)
+	b.WriteString(o.transitionXML(false))
+	b.WriteString(`</mc:Fallback></mc:AlternateContent>`)
+	return b.String()
+}
+
+// transitionXML renders a single <p:transition> element. When withDuration is
+// set the exact millisecond duration is carried in the p14:dur extension
+// attribute, which is only legal inside an mc:Choice that requires p14.
+func (o TransitionOptions) transitionXML(withDuration bool) string {
 	var b strings.Builder
 	b.WriteString(`<p:transition`)
+	if o.DurationMS > 0 {
+		fmt.Fprintf(&b, ` spd="%s"`, speedForDuration(o.DurationMS))
+	}
+	if withDuration {
+		fmt.Fprintf(&b, ` p14:dur="%d"`, o.DurationMS)
+	}
 	if o.DisableAdvanceOnClick {
 		b.WriteString(` advClick="0"`)
 	}
@@ -46,6 +80,19 @@ func (o TransitionOptions) XML() string {
 
 	b.WriteString(`</p:transition>`)
 	return b.String()
+}
+
+// speedForDuration buckets a millisecond duration into the three ECMA-376
+// transition speeds, which is all a p14-unaware reader can honour.
+func speedForDuration(durationMS uint32) string {
+	switch {
+	case durationMS <= fastTransitionMaxMS:
+		return "fast"
+	case durationMS <= mediumTransitionMaxMS:
+		return "med"
+	default:
+		return "slow"
+	}
 }
 
 func (o TransitionOptions) morphXML() string {
