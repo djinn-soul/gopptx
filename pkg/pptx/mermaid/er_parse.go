@@ -2,30 +2,9 @@ package mermaid
 
 import "strings"
 
-func erRelationshipTypes() []string {
-	return []string{
-		"||--o{",
-		"||--|{",
-		"}|--|{",
-		"}|--o{",
-		"|o--o{",
-		"|o--|{",
-		"o{--}o",
-		"o{--|{",
-		"o{--o{",
-		"||--||",
-		"||--|o",
-		"|o--|o",
-		"|o--||",
-		"||--",
-		"}|--",
-		"o{--",
-		"--o{",
-		"--|{",
-		"--}o",
-		"--",
-	}
-}
+// erCardinalityChars are the glyphs Mermaid builds crow's-foot cardinalities
+// from: one (|), zero (o) and many (} or {).
+const erCardinalityChars = "|o}{"
 
 // renderER parses and renders a Mermaid ER diagram into PowerPoint elements.
 func renderER(code string, theme Theme) DiagramElements {
@@ -118,21 +97,50 @@ func parseERSimpleEntity(line string) (string, bool) {
 	return name, name != ""
 }
 
+// splitERRelationship pulls `CUSTOMER ||--o{ ORDER : places` apart into its
+// entities, relation token and label.
+//
+// The relation used to be matched against a hand-written list of the solid
+// `--` forms, so every non-identifying `..` relation — `}|..|{`, `||..o{` —
+// missed and the line was dropped along with any entity only named there.
+// Finding the connector and growing outwards over the cardinality glyphs
+// accepts each combination of the two notations instead.
 func splitERRelationship(line string) (string, string, string, string, bool) {
-	for _, relType := range erRelationshipTypes() {
-		before, after, ok := strings.Cut(line, relType)
-		if !ok {
-			continue
-		}
-		from := strings.TrimSpace(before)
-		rest := strings.TrimSpace(after)
-		to := rest
-		label := ""
-		if beforeLabel, afterLabel, ok := strings.Cut(rest, ":"); ok {
-			to = strings.TrimSpace(beforeLabel)
-			label = strings.TrimSpace(afterLabel)
-		}
-		return from, relType, to, label, true
+	// A label follows the colon and may itself contain dots, so only the part
+	// before it can hold the relation.
+	head, label, hasLabel := strings.Cut(line, ":")
+	start, end, ok := erRelationSpan(head)
+	if !ok {
+		return "", "", "", "", false
 	}
-	return "", "", "", "", false
+	from := strings.TrimSpace(head[:start])
+	to := strings.TrimSpace(head[end:])
+	if from == "" || to == "" {
+		return "", "", "", "", false
+	}
+	if !hasLabel {
+		label = ""
+	}
+	return from, head[start:end], to, strings.TrimSpace(label), true
+}
+
+// erRelationSpan locates the relation token: the `--` or `..` connector plus
+// the cardinality glyphs on either side of it.
+func erRelationSpan(head string) (int, int, bool) {
+	connector := strings.Index(head, "--")
+	if connector < 0 {
+		connector = strings.Index(head, "..")
+	}
+	if connector < 0 {
+		return 0, 0, false
+	}
+	start := connector
+	for start > 0 && strings.ContainsRune(erCardinalityChars, rune(head[start-1])) {
+		start--
+	}
+	end := connector + 2
+	for end < len(head) && strings.ContainsRune(erCardinalityChars, rune(head[end])) {
+		end++
+	}
+	return start, end, true
 }

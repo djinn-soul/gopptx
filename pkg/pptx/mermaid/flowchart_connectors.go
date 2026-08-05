@@ -10,9 +10,8 @@ func generateFlowchartElements(flowchart *FlowchartDiagram, theme Theme) Diagram
 	if nodeCount == 0 {
 		return DiagramElements{Grouped: true}
 	}
-	isHorizontal := flowchart.Direction == FlowDirectionLR || flowchart.Direction == FlowDirectionRL
 	layout := defaultFlowchartLayout()
-	state := newFlowchartRenderState(layout, theme, isHorizontal, flowchart.Nodes)
+	state := newFlowchartRenderState(layout, theme, flowchart.Direction, flowchart.Nodes)
 	state.layoutNodes(flowchart.Subgraphs, flowchart.Connections)
 	state.addConnectors(flowchart.Connections)
 	return state.diagramElements()

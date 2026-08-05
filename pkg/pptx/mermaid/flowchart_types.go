@@ -5,6 +5,11 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+// diamondMinWidth is the narrowest a decision node may be drawn. A diamond
+// wastes its corners, so its label needs more width than a rectangle's.
+// 3.2 inches, in EMU so it stays a constant.
+const diamondMinWidth styling.Length = 2926080
+
 // FlowNode represents a node in a flowchart.
 type FlowNode struct {
 	ID    string
@@ -67,9 +72,12 @@ type flowchartBounds struct {
 }
 
 type flowchartRenderState struct {
-	layout          flowchartLayout
-	theme           Theme
-	isHorizontal    bool
+	layout       flowchartLayout
+	theme        Theme
+	direction    FlowDirection
+	isHorizontal bool
+	// isReversed marks RL and BT: the same ranking, read from the far end.
+	isReversed      bool
 	nodes           []FlowNode
 	nodeLookup      map[string]FlowNode
 	nodePositions   map[string]flowchartPoint
@@ -115,7 +123,7 @@ func defaultFlowchartLayout() flowchartLayout {
 func newFlowchartRenderState(
 	layout flowchartLayout,
 	theme Theme,
-	isHorizontal bool,
+	direction FlowDirection,
 	nodes []FlowNode,
 ) *flowchartRenderState {
 	lookup := make(map[string]FlowNode, len(nodes))
@@ -125,7 +133,9 @@ func newFlowchartRenderState(
 	return &flowchartRenderState{
 		layout:          layout,
 		theme:           theme,
-		isHorizontal:    isHorizontal,
+		direction:       direction,
+		isHorizontal:    direction == FlowDirectionLR || direction == FlowDirectionRL,
+		isReversed:      direction == FlowDirectionRL || direction == FlowDirectionBT,
 		nodes:           nodes,
 		nodeLookup:      lookup,
 		nodePositions:   make(map[string]flowchartPoint),

@@ -110,12 +110,16 @@ func parseMessageLine(line string) (Message, bool) {
 	}, true
 }
 
+// detectSequenceArrow finds the message arrow in a line.
+//
+// The tokens are tried longest first so that "-->>" is never mistaken for the
+// "-->" hiding inside it. Only ->> and -->> used to be recognised, so a diagram
+// using -x, -) or a plain -> had those messages silently dropped.
 func detectSequenceArrow(line string) (string, bool) {
-	if strings.Contains(line, "-->>") {
-		return "-->>", true
-	}
-	if strings.Contains(line, "->>") {
-		return "->>", true
+	for _, token := range []string{"-->>", "--x", "--)", arrowSolid, "->>", "-x", "-)", "->"} {
+		if strings.Contains(line, token) {
+			return token, true
+		}
 	}
 	return "", false
 }
@@ -151,16 +155,20 @@ func generateSequenceElements(diagram *SequenceDiagram, theme Theme) DiagramElem
 		}
 	}
 
-	messageYStart := layout.startY + layout.participantHeight + styling.Inches(0.3)
+	y := layout.startY + layout.participantHeight + styling.Inches(0.3)
 
-	for i, msg := range diagram.Messages {
-		y := messageYStart + styling.Length(i)*layout.messageSpacing
+	for _, msg := range diagram.Messages {
 		rendered, ok := sequenceMessageShapes(msg, participantX, y, layout, theme)
 		if !ok {
 			continue
 		}
-		shapesList = append(shapesList, rendered.arrow, rendered.text)
-		bounds.includeShape(rendered.arrow)
+		for _, s := range rendered.shapes {
+			shapesList = append(shapesList, s)
+			bounds.includeShape(s)
+		}
+		// A self-message occupies a loop rather than a single row, so the next
+		// message has to start below it instead of at a fixed stride.
+		y += rendered.height
 	}
 
 	return DiagramElements{
@@ -252,9 +260,11 @@ func sequenceLifeline(x styling.Length, layout sequenceLayout, theme Theme) shap
 		WithFill(shapes.NewShapeFill(theme.SecondaryStroke))
 }
 
+// sequenceRenderedMessage is everything one message draws, plus the vertical
+// room it needs before the next message can start.
 type sequenceRenderedMessage struct {
-	arrow shapes.Shape
-	text  shapes.Shape
+	shapes []shapes.Shape
+	height styling.Length
 }
 
 func sequenceMessageShapes(
@@ -269,20 +279,31 @@ func sequenceMessageShapes(
 	if !fromExists || !toExists {
 		return sequenceRenderedMessage{}, false
 	}
+	// A participant messaging itself has no horizontal span to draw an arrow
+	// across. Sizing one from the distance gave it cx=0, which PowerPoint
+	// rejects outright ("size must be > 0"), failing the whole deck rather than
+	// just the diagram.
+	if msg.From == msg.To {
+		return sequenceSelfMessageShapes(msg, fromX, y, layout, theme), true
+	}
 
 	arrowX, arrowWidth, arrowType := sequenceArrowGeometry(fromX, toX, layout.participantWidth)
-	arrow := shapes.NewShape(arrowType, arrowX, y, arrowWidth, styling.Inches(0.15)).
+	arrow := shapes.NewShape(arrowType, arrowX, y, arrowWidth, sequenceArrowThickness).
 		WithFill(shapes.NewShapeFill(theme.PrimaryStroke))
-	textShape := shapes.NewShape(
-		shapes.ShapeTypeRectangle,
-		arrowX,
-		y-styling.Inches(0.25),
-		arrowWidth,
-		styling.Inches(0.2),
-	).WithText(msg.Text).
+	textShape := sequenceMessageLabel(msg.Text, arrowX, y-styling.Inches(0.25), arrowWidth)
+	return sequenceRenderedMessage{
+		shapes: []shapes.Shape{arrow, textShape},
+		height: layout.messageSpacing,
+	}, true
+}
+
+// sequenceMessageLabel is the caption drawn with a message: text only, no box.
+func sequenceMessageLabel(text string, x, y, width styling.Length) shapes.Shape {
+	label := shapes.NewShape(shapes.ShapeTypeRectangle, x, y, width, styling.Inches(0.2)).
+		WithText(text).
 		WithAutoFit(shapes.TextAutoFitNormal).
 		WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
-	textShape.Line = nil
-	textShape.Fill = nil
-	return sequenceRenderedMessage{arrow: arrow, text: textShape}, true
+	label.Line = nil
+	label.Fill = nil
+	return label
 }
