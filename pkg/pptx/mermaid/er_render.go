@@ -118,12 +118,14 @@ func erRelationshipConnector(
 		return connector, shapes.Shape{}, false, true
 	}
 
-	midX := (geometry.startX + geometry.endX) / 2
-	midY := (geometry.startY + geometry.endY) / 2
+	labelX, labelY := relationLabelPosition(
+		geometry.startX, geometry.startY, geometry.endX, geometry.endY,
+		layout.labelWidth, layout.labelHeight,
+	)
 	labelShape := shapes.NewShape(
 		shapes.ShapeTypeRectangle,
-		midX-layout.labelWidth/2,
-		midY-layout.labelHeight/2,
+		labelX,
+		labelY,
 		layout.labelWidth,
 		layout.labelHeight,
 	).WithFill(shapes.NewShapeFill(theme.Background)).

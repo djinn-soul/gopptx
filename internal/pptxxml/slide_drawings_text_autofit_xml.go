@@ -22,6 +22,11 @@ func shapeTextSizeXML(shape ShapeSpec) string {
 }
 
 func autoFitShapeTextSizePt(shape ShapeSpec) int {
+	// An explicit size wins: a generated diagram sets one so its boxes share a
+	// font instead of each estimating its own from its own dimensions.
+	if shape.TextSizePt != nil && *shape.TextSizePt >= 1 {
+		return int(math.Round(*shape.TextSizePt))
+	}
 	chars := utf8.RuneCountInString(strings.TrimSpace(shape.Text))
 	if chars <= 0 {
 		return shapeTextDefaultPt

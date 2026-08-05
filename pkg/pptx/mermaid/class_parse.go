@@ -117,11 +117,18 @@ func parseClassInlineMember(line string) (string, string, bool) {
 }
 
 func parseClassRelationshipLine(line string) (ClassRelationship, bool) {
-	from, relType, to, label, found := splitClassRelationship(line)
+	parts, found := splitClassRelationship(line)
 	if !found {
 		return ClassRelationship{}, false
 	}
-	return ClassRelationship{From: from, To: to, Type: relType, Label: label}, true
+	return ClassRelationship{
+		From:            parts.from,
+		To:              parts.to,
+		Type:            parts.relType,
+		Label:           parts.label,
+		FromCardinality: parts.fromCardinality,
+		ToCardinality:   parts.toCardinality,
+	}, true
 }
 
 func parseSimpleClassDefinition(line string) (string, bool) {
@@ -140,21 +147,38 @@ func parseSimpleClassDefinition(line string) (string, bool) {
 // left a class called `Animal <|`. Finding the connector and growing outwards
 // over the decoration glyphs accepts every combination without an order to get
 // wrong.
-func splitClassRelationship(line string) (string, string, string, string, bool) {
+// classRelationParts is one parsed relation line.
+type classRelationParts struct {
+	from            string
+	relType         string
+	to              string
+	label           string
+	fromCardinality string
+	toCardinality   string
+}
+
+func splitClassRelationship(line string) (classRelationParts, bool) {
 	head, label, hasLabel := strings.Cut(line, ":")
 	start, end, ok := classRelationSpan(head)
 	if !ok {
-		return "", "", "", "", false
+		return classRelationParts{}, false
 	}
-	from := trimClassCardinality(head[:start])
-	to := trimClassCardinality(head[end:])
+	from, fromCardinality := splitClassCardinality(head[:start])
+	to, toCardinality := splitClassCardinality(head[end:])
 	if from == "" || to == "" {
-		return "", "", "", "", false
+		return classRelationParts{}, false
 	}
 	if !hasLabel {
 		label = ""
 	}
-	return from, head[start:end], to, strings.TrimSpace(label), true
+	return classRelationParts{
+		from:            from,
+		relType:         head[start:end],
+		to:              to,
+		label:           strings.TrimSpace(label),
+		fromCardinality: fromCardinality,
+		toCardinality:   toCardinality,
+	}, true
 }
 
 // classRelationSpan locates the relation token: the `--` or `..` connector plus
@@ -205,18 +229,22 @@ func isIdentifierByte(c byte) bool {
 	}
 }
 
-// trimClassCardinality drops the quoted multiplicity Mermaid allows beside a
-// class, so `Customer "1"` names the class Customer.
-func trimClassCardinality(part string) string {
+// splitClassCardinality separates a relation end into its class name and its
+// cardinality, so `Circle "1" --> "*" Point` keeps both halves. The cardinality
+// used to be dropped on the floor along with the quotes around it.
+func splitClassCardinality(part string) (string, string) {
 	trimmed := strings.TrimSpace(part)
-	if before, _, ok := strings.Cut(trimmed, `"`); ok {
-		// A leading quote means the cardinality came first: "1" Order.
-		if strings.TrimSpace(before) == "" {
-			if _, after, ok := strings.Cut(strings.TrimPrefix(trimmed, `"`), `"`); ok {
-				return strings.TrimSpace(after)
-			}
-		}
-		return strings.TrimSpace(before)
+	before, rest, ok := strings.Cut(trimmed, `"`)
+	if !ok {
+		return trimmed, ""
 	}
-	return trimmed
+	cardinality, after, closed := strings.Cut(rest, `"`)
+	if !closed {
+		return strings.TrimSpace(before), ""
+	}
+	// A leading quote means the cardinality came first: "1" Order.
+	if strings.TrimSpace(before) == "" {
+		return strings.TrimSpace(after), strings.TrimSpace(cardinality)
+	}
+	return strings.TrimSpace(before), strings.TrimSpace(cardinality)
 }

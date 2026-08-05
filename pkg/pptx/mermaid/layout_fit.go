@@ -12,6 +12,14 @@ const (
 	fitAreaY = 1.2
 	fitAreaW = 9.0
 	fitAreaH = 5.9
+
+	// diagramFontPt is the caption size every node in a diagram shares. Without
+	// it each box estimated its own size from its own dimensions, so a journey
+	// card came out at 26pt beside its own 10pt section header.
+	diagramFontPt = 11.0
+	// Shrinking the diagram shrinks its text with it, down to a floor that stays
+	// legible on a projector.
+	diagramFontMinPt = 7.0
 )
 
 type rawBounds struct {
@@ -157,7 +165,21 @@ func transformShape(
 		tf.MarginBottom = scaleLength(tf.MarginBottom, scale)
 		shape.TextFrame = &tf
 	}
+	if shape.Text != "" {
+		shape = shape.WithTextSize(diagramFontSizePt(shape, scale))
+	}
 	return shape
+}
+
+// diagramFontSizePt is the caption size for one shape once the diagram has been
+// scaled: the shared diagram size by default, or the generator's own choice
+// where it set one (a diagram title, say), scaled the same way.
+func diagramFontSizePt(shape shapes.Shape, scale float64) float64 {
+	base := diagramFontPt
+	if shape.TextSizePt != nil && *shape.TextSizePt >= 1 {
+		base = *shape.TextSizePt
+	}
+	return math.Max(base*scale, diagramFontMinPt)
 }
 
 func transformConnector(

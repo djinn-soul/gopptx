@@ -13,13 +13,14 @@ func parseMindmap(code string) *MindmapNode {
 			continue
 		}
 
-		// Parse node label and shape
-		_, label, shape := ParseNodeDef(cleanLine)
-
-		// Handle icons or other mindmap specific syntax (simplified)
-		if strings.Contains(label, "::icon") {
-			label = strings.Split(label, "::icon")[0]
+		// An "::icon(...)" line decorates the node above it rather than
+		// declaring one, so it must not become a node of its own.
+		if strings.HasPrefix(cleanLine, "::icon") {
+			continue
 		}
+
+		// Parse node label and shape
+		label, shape := parseMindmapNodeDef(cleanLine)
 
 		node := &MindmapNode{
 			Label: strings.TrimSpace(label),
@@ -31,6 +32,37 @@ func parseMindmap(code string) *MindmapNode {
 	}
 
 	return root
+}
+
+// parseMindmapNodeDef reads a mindmap node, including the two bracket forms the
+// shared flowchart parser has no equivalent for: `id))bang((` and `id)cloud(`.
+// Both used to fall through and keep their brackets in the label.
+func parseMindmapNodeDef(line string) (string, NodeShape) {
+	if label, ok := cutMindmapBrackets(line, "))", "(("); ok {
+		return label, NodeShapeMindmapBang
+	}
+	if label, ok := cutMindmapBrackets(line, ")", "("); ok {
+		return label, NodeShapeMindmapCloud
+	}
+	_, label, shape := ParseNodeDef(line)
+	if strings.Contains(label, "::icon") {
+		label = strings.Split(label, "::icon")[0]
+	}
+	return strings.TrimSpace(label), shape
+}
+
+// cutMindmapBrackets pulls the label out of an inverted bracket pair, where the
+// closing glyph opens the label and the opening glyph closes it.
+func cutMindmapBrackets(line, opener, closer string) (string, bool) {
+	start := strings.Index(line, opener)
+	if start < 0 {
+		return "", false
+	}
+	end := strings.LastIndex(line, closer)
+	if end <= start+len(opener)-1 {
+		return "", false
+	}
+	return strings.TrimSpace(line[start+len(opener) : end]), true
 }
 
 func parseMindmapLine(line string) (string, string, int, bool) {

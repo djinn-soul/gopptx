@@ -122,8 +122,13 @@ func pdfViaNative(
 }
 
 // renderNativePDFSlide paints one slide. Painting runs back to front:
-// background, then pictures, then vector content, and finally text, so a
-// full-bleed picture cannot hide the shapes and text drawn over it.
+// background, then the title and body placeholders, then pictures and the rest
+// of the shape tree.
+//
+// The placeholders go first because that is where PowerPoint puts them: a
+// layout emits the title before the shape tree, so a shape overlapping the
+// title area covers it. Painting them last instead drew the title on top of
+// diagrams that PowerPoint shows covering it.
 func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, total int, page pageSize) error {
 	pdf.AddPage()
 
@@ -131,6 +136,7 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
 		errs = append(errs, fmt.Errorf("slide %d background: %w", index, err))
 	}
+	renderNativePDFSlideText(pdf, slide, page)
 	// Pictures and shapes interleave by shape-tree order, so they are painted
 	// together. Drawing every picture before every shape put a picture behind a
 	// shape the deck had placed behind it: a white card over a photo hid the
@@ -141,7 +147,6 @@ func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, 
 	renderNativePDFSlideSmartArt(pdf, slide)
 	renderNativePDFSlideCharts(pdf, slide)
 	renderNativePDFSlideTable(pdf, slide)
-	renderNativePDFSlideText(pdf, slide, page)
 
 	if slide.ShowSlideNumber {
 		renderNativePDFSlideNumber(pdf, index, total, page)
@@ -295,15 +300,19 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 		pdf.ClearTransparency()
 	}
 
-	if rotated {
-		pdf.RotateReset()
-	}
 	// The outline is done; text decorations drawn below are lines too and must
 	// not inherit the shape's dash.
 	clearPDFLineDash(pdf)
 
+	// Text stays inside the rotation: a shape's caption turns with the shape in
+	// PowerPoint. Resetting before drawing it left rotated captions horizontal,
+	// which pushed a quadrant chart's y-axis label out over the plot area.
 	if s.Text != "" {
 		renderPDFShapeText(pdf, s, x, y, w, h)
+	}
+
+	if rotated {
+		pdf.RotateReset()
 	}
 
 	// Reset colors. The dash pattern is document-wide state in gopdf, so a

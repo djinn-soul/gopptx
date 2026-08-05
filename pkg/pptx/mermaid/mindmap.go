@@ -151,6 +151,11 @@ func mindmapShapeType(nodeShape NodeShape) string {
 		return shapes.ShapeTypeDiamond
 	case NodeShapeHexagon:
 		return shapes.ShapeTypeHexagon
+	case NodeShapeMindmapBang:
+		// Mermaid's "bang" is a burst; irregularSeal1 is PowerPoint's.
+		return shapes.ShapeTypeIrregularSeal1
+	case NodeShapeMindmapCloud:
+		return shapes.ShapeTypeCloud
 	default:
 		return shapes.ShapeTypeRectangle
 	}

@@ -11,9 +11,12 @@ import (
 // Shape geometry constants.
 const (
 	// Polygon vertex counts for regular polygons.
-	hexagonSides  = 6
 	pentagonSides = 5
 	octagonSides  = 8
+
+	// hexagonAdjustment is the OOXML hexagon preset's default adj value (25000
+	// of 100000), the fraction of the shorter side each end is cut back by.
+	hexagonAdjustment = 0.25
 
 	// Star point counts.
 	starPoints4  = 4
@@ -114,7 +117,7 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 			style,
 		)
 	case shapes.ShapeTypeHexagon:
-		pdf.Polygon(regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, hexagonSides, -math.Pi/hexagonSides), style)
+		pdf.Polygon(hexagonPoints(x, y, w, h), style)
 	case shapes.ShapeTypePentagon:
 		pdf.Polygon(regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, pentagonSides, -math.Pi/2), style)
 	case shapes.ShapeTypeOctagon:
@@ -197,6 +200,28 @@ func ellipsePoints(cx, cy, rx, ry float64, n int) []gopdf.Point {
 		pts[i] = gopdf.Point{X: cx + rx*math.Cos(a), Y: cy + ry*math.Sin(a)}
 	}
 	return pts
+}
+
+// hexagonPoints returns the vertices of the OOXML "hexagon" preset: a box with
+// its left and right ends cut back by adj x the shorter side.
+//
+// Drawing it as a regular hexagon inscribed in the box was wrong for any shape
+// that is not square — a wide flowchart node came out with long diagonal ends
+// where PowerPoint draws short ones.
+func hexagonPoints(x, y, w, h float64) []gopdf.Point {
+	inset := math.Min(w, h) * hexagonAdjustment
+	if inset > w/2 {
+		inset = w / 2
+	}
+	midY := y + h/2
+	return []gopdf.Point{
+		{X: x, Y: midY},
+		{X: x + inset, Y: y},
+		{X: x + w - inset, Y: y},
+		{X: x + w, Y: midY},
+		{X: x + w - inset, Y: y + h},
+		{X: x + inset, Y: y + h},
+	}
 }
 
 // regularPolygonPoints returns n evenly-spaced vertices of a polygon inscribed

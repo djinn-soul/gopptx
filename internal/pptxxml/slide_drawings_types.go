@@ -47,12 +47,15 @@ type ShapeSpec struct {
 	AltText      string
 	IsDecorative bool
 	TextFrame    *TextFrameSpec
-	Name         string
-	Adjustments  []ConnectorAdjustmentSpec
-	Effects      *ShapeEffectsSpec
-	RichFill     *RichShapeFillSpec
-	RichLine     *RichShapeLineSpec
-	RichShadow   *RichShapeShadowSpec
+	// TextSizePt pins the run size in points. Nil falls back to the estimate in
+	// autoFitShapeTextSizePt.
+	TextSizePt  *float64
+	Name        string
+	Adjustments []ConnectorAdjustmentSpec
+	Effects     *ShapeEffectsSpec
+	RichFill    *RichShapeFillSpec
+	RichLine    *RichShapeLineSpec
+	RichShadow  *RichShapeShadowSpec
 	// CustomGeometry replaces the preset geometry with an <a:custGeom> path.
 	// When it is set, Type is ignored.
 	CustomGeometry *CustomGeometrySpec

@@ -25,6 +25,9 @@ type Message struct {
 type SequenceDiagram struct {
 	Participants []Participant
 	Messages     []Message
+	// Events keeps every statement in source order, including the blocks,
+	// notes and activations that Messages alone cannot express.
+	Events []SequenceEvent
 }
 
 // renderSequence parses and renders a Mermaid sequence diagram into PowerPoint elements.
@@ -37,6 +40,7 @@ func parseSequence(code string) *SequenceDiagram {
 	lines := ParseLines(code)
 	var participants []Participant
 	var messages []Message
+	var events []SequenceEvent
 	participantMap := make(map[string]bool)
 
 	addParticipant := func(id, displayName string) {
@@ -62,12 +66,21 @@ func parseSequence(code string) *SequenceDiagram {
 			addParticipant(msg.From, msg.From)
 			addParticipant(msg.To, msg.To)
 			messages = append(messages, msg)
+			events = append(events, SequenceEvent{Kind: seqEventMessage, Message: msg})
+			continue
+		}
+
+		// A block, note or activation. Checked after messages so a message whose
+		// text happens to start with a keyword is still read as a message.
+		if event, ok := parseSequenceStatement(line); ok {
+			events = append(events, event)
 		}
 	}
 
 	return &SequenceDiagram{
 		Participants: participants,
 		Messages:     messages,
+		Events:       events,
 	}
 }
 
@@ -146,29 +159,39 @@ func generateSequenceElements(diagram *SequenceDiagram, theme Theme) DiagramElem
 	bounds := newSequenceBounds()
 
 	for i, p := range diagram.Participants {
-		x := layout.startX + styling.Length(i)*layout.hSpacing
-		participantX[p.ID] = x
+		participantX[p.ID] = layout.startX + styling.Length(i)*layout.hSpacing
+	}
 
-		for _, s := range sequenceParticipantShapes(p.DisplayName, x, layout, theme) {
+	messagesTop := layout.startY + layout.participantHeight + styling.Inches(0.3)
+	y := messagesTop
+
+	script := newSequenceScript(diagram.Participants, participantX, layout, theme)
+	for _, event := range diagram.Events {
+		y = script.consume(event, y)
+	}
+	script.finish(y)
+
+	// The lifelines can only be drawn once the script is laid out: a fixed
+	// height left them stopping short on any diagram with blocks or notes, with
+	// the closing participant boxes stranded in the middle of the messages.
+	layout.lifelineHeight = max(
+		y-(layout.startY+layout.participantHeight)+styling.Inches(0.3),
+		styling.Inches(1.0),
+	)
+	for _, p := range diagram.Participants {
+		for _, s := range sequenceParticipantShapes(p.DisplayName, participantX[p.ID], layout, theme) {
 			shapesList = append(shapesList, s)
 			bounds.includeShape(s)
 		}
 	}
 
-	y := layout.startY + layout.participantHeight + styling.Inches(0.3)
-
-	for _, msg := range diagram.Messages {
-		rendered, ok := sequenceMessageShapes(msg, participantX, y, layout, theme)
-		if !ok {
-			continue
-		}
-		for _, s := range rendered.shapes {
+	// Activation bars sit on the lifelines and so must paint before the arrows
+	// crossing them; the block frames are outlines drawn over everything.
+	for _, group := range [][]shapes.Shape{script.backdrops, script.messages, script.foreground} {
+		for _, s := range group {
 			shapesList = append(shapesList, s)
 			bounds.includeShape(s)
 		}
-		// A self-message occupies a loop rather than a single row, so the next
-		// message has to start below it instead of at a fixed stride.
-		y += rendered.height
 	}
 
 	return DiagramElements{

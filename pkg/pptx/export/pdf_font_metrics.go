@@ -133,6 +133,13 @@ const (
 	maxBaselineShiftFactor = 1.0
 )
 
+// baselineInternalLeadingFactor is the remaining gap between the baseline the
+// hhea/OS2 model predicts and where PowerPoint actually draws: PowerPoint pads
+// the top of the line box by part of the font's internal leading before the
+// ascent. Measured against PowerPoint's own PDF export at 8, 11 and 24pt, in
+// both top- and centre-anchored boxes, the offset is a constant 0.09 em.
+const baselineInternalLeadingFactor = 0.09
+
 // baselineShiftFactor is the extra multiple of the point size that must be added
 // to gopdf's own baseline placement to match PowerPoint's. PowerPoint centres
 // the font's ascent+descent inside the 1.2 em line box and puts the baseline at
@@ -145,7 +152,8 @@ func (m ttfLineMetrics) baselineShiftFactor() float64 {
 	descent := -m.Descender / m.UnitsPerEm
 	halfLeading := math.Max((powerPointLineBoxFactor-(ascent+descent))/2, 0)
 	gopdfBaseline := m.TypoAscender / m.UnitsPerEm
-	return clampFloat(halfLeading+ascent-gopdfBaseline, minBaselineShiftFactor, maxBaselineShiftFactor)
+	shift := halfLeading + ascent - gopdfBaseline + baselineInternalLeadingFactor
+	return clampFloat(shift, minBaselineShiftFactor, maxBaselineShiftFactor)
 }
 
 func clampFloat(v, lo, hi float64) float64 {

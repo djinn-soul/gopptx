@@ -11,6 +11,9 @@ import (
 type TimelineEvent struct {
 	Date   string
 	Events []string
+	// Section is the "section <name>" heading this entry falls under, empty
+	// when the timeline declares none.
+	Section string
 }
 
 // TimelineDiagram represents the parsed structure of a Mermaid timeline diagram.
@@ -28,20 +31,28 @@ func renderTimeline(code string, theme Theme) DiagramElements {
 func parseTimeline(code string) *TimelineDiagram {
 	lines := ParseLines(code)
 	timeline := &TimelineDiagram{}
-	var currentEvent *TimelineEvent
+	state := &timelineParseState{}
 
 	for _, line := range lines {
-		currentEvent = consumeTimelineLine(strings.TrimSpace(line), timeline, currentEvent)
+		state.current = consumeTimelineLine(strings.TrimSpace(line), timeline, state)
 	}
 
-	if currentEvent != nil {
-		timeline.Events = append(timeline.Events, *currentEvent)
+	if state.current != nil {
+		timeline.Events = append(timeline.Events, *state.current)
 	}
 
 	return timeline
 }
 
-func consumeTimelineLine(trimmed string, timeline *TimelineDiagram, currentEvent *TimelineEvent) *TimelineEvent {
+// timelineParseState carries what a line needs from the lines before it: the
+// entry being filled in, and the section heading currently in force.
+type timelineParseState struct {
+	current *TimelineEvent
+	section string
+}
+
+func consumeTimelineLine(trimmed string, timeline *TimelineDiagram, state *timelineParseState) *TimelineEvent {
+	currentEvent := state.current
 	if trimmed == "" {
 		return currentEvent
 	}
@@ -56,8 +67,15 @@ func consumeTimelineLine(trimmed string, timeline *TimelineDiagram, currentEvent
 		return currentEvent
 	}
 
+	// A "section" heading groups the entries that follow it. Without this it
+	// fell through to the event branch and was drawn as an event of its own.
+	if after, ok := strings.CutPrefix(lower, "section"); ok && strings.TrimSpace(after) != "" {
+		state.section = strings.TrimSpace(trimmed[len("section"):])
+		return currentEvent
+	}
+
 	if date, event, ok := splitTimelineEntry(trimmed); ok {
-		return consumeTimelineEntry(timeline, currentEvent, date, event)
+		return consumeTimelineEntry(timeline, state, date, event)
 	}
 
 	if currentEvent == nil {
@@ -66,7 +84,7 @@ func consumeTimelineLine(trimmed string, timeline *TimelineDiagram, currentEvent
 
 	if isLikelyTimelineDate(trimmed) {
 		timeline.Events = append(timeline.Events, *currentEvent)
-		return &TimelineEvent{Date: trimmed, Events: []string{}}
+		return &TimelineEvent{Date: trimmed, Events: []string{}, Section: state.section}
 	}
 
 	currentEvent.Events = append(currentEvent.Events, trimmed)
@@ -88,23 +106,37 @@ func splitTimelineEntry(trimmed string) (string, string, bool) {
 	return strings.TrimSpace(datePart), strings.TrimSpace(eventPart), true
 }
 
+// splitTimelineEvents splits the part after the date. Mermaid separates several
+// events on one line with a colon, so "2020 : Alpha : Beta" is two events, not
+// one event named "Alpha : Beta".
+func splitTimelineEvents(eventPart string) []string {
+	var events []string
+	for part := range strings.SplitSeq(eventPart, ":") {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			events = append(events, trimmed)
+		}
+	}
+	return events
+}
+
 func consumeTimelineEntry(
 	timeline *TimelineDiagram,
-	currentEvent *TimelineEvent,
+	state *timelineParseState,
 	date string,
 	event string,
 ) *TimelineEvent {
+	events := splitTimelineEvents(event)
 	if date != "" {
-		if currentEvent != nil {
-			timeline.Events = append(timeline.Events, *currentEvent)
+		if state.current != nil {
+			timeline.Events = append(timeline.Events, *state.current)
 		}
-		return &TimelineEvent{Date: date, Events: []string{event}}
+		return &TimelineEvent{Date: date, Events: events, Section: state.section}
 	}
 
-	if currentEvent != nil {
-		currentEvent.Events = append(currentEvent.Events, event)
+	if state.current != nil {
+		state.current.Events = append(state.current.Events, events...)
 	}
-	return currentEvent
+	return state.current
 }
 
 func isLikelyTimelineDate(trimmed string) bool {
@@ -133,7 +165,12 @@ func generateTimelineElements(timeline *TimelineDiagram, theme Theme) DiagramEle
 
 	shapesList = append(shapesList, timelineLineShape(totalWidth, lineY, layout, theme))
 
+	previousSection := ""
 	for i, event := range timeline.Events {
+		if event.Section != "" && event.Section != previousSection {
+			shapesList = append(shapesList, timelineSectionShape(event.Section, i, lineY, layout, theme))
+			previousSection = event.Section
+		}
 		shapesList = append(shapesList, timelineEventShapes(event, i, lineY, layout, theme)...)
 	}
 
@@ -208,6 +245,29 @@ func timelineEventShapes(
 		out = append(out, timelineEventBoxShape(x, y, layout.eventWidth, text, theme))
 	}
 	return out
+}
+
+// timelineSectionShape labels the band a run of entries belongs to, drawn above
+// the axis at the first entry of the section.
+func timelineSectionShape(
+	name string,
+	index int,
+	lineY styling.Length,
+	layout timelineLayout,
+	theme Theme,
+) shapes.Shape {
+	x := layout.startX + styling.Length(index)*(layout.eventWidth+layout.eventSpacing)
+	return shapes.NewShape(
+		shapes.ShapeTypeRectangle,
+		x,
+		lineY-styling.Inches(1.9),
+		layout.eventWidth,
+		styling.Inches(0.32),
+	).WithText(name).
+		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
+		WithLine(shapes.NewShapeLine(theme.SecondaryStroke, theme.LineWeight)).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.05), styling.Inches(0.02), styling.Inches(0.05), styling.Inches(0.02))
 }
 
 func timelineMarkerShape(x styling.Length, lineY styling.Length, layout timelineLayout, theme Theme) shapes.Shape {

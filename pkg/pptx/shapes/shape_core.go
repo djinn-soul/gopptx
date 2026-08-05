@@ -37,12 +37,16 @@ type Shape struct {
 	IsDecorative   bool
 	TextFrame      *TextFrame
 	TextParagraphs []text.Paragraph
-	Name           string
-	Adjustments    []ShapeAdjustment
-	Effects        *ShapeEffects
-	RichFill       *RichShapeFill
-	RichLine       *RichShapeLine
-	RichShadow     *RichShapeShadow
+	// TextSizePt pins the caption's font size in points. Left nil, the size is
+	// derived from the shape's box and label length, which is right for a lone
+	// shape but makes neighbouring boxes in a generated diagram disagree.
+	TextSizePt  *float64
+	Name        string
+	Adjustments []ShapeAdjustment
+	Effects     *ShapeEffects
+	RichFill    *RichShapeFill
+	RichLine    *RichShapeLine
+	RichShadow  *RichShapeShadow
 	// CustomGeometry carries a freeform path. When set it replaces Type as the
 	// shape geometry and is rendered as <a:custGeom>.
 	CustomGeometry *CustomGeometry
@@ -191,6 +195,16 @@ func (s Shape) WithTextWrap(wrap TextFrameWrap) Shape {
 	tf := s.cloneTextFrame()
 	tf.Wrap = wrap
 	s.TextFrame = &tf
+	return s
+}
+
+// WithTextSize pins the caption's font size in points, switching off the
+// size-from-box-and-label estimate. Sizes below 1pt are ignored.
+func (s Shape) WithTextSize(pt float64) Shape {
+	if pt < 1 {
+		return s
+	}
+	s.TextSizePt = &pt
 	return s
 }
 

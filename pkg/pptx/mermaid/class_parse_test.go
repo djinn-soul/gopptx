@@ -24,14 +24,15 @@ func TestClassParsesEveryRelationForm(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		from, relType, to, label, ok := splitClassRelationship(tt.line)
+		parts, ok := splitClassRelationship(tt.line)
 		if !ok {
 			t.Errorf("%q was not recognised as a relation", tt.line)
 			continue
 		}
-		if from != tt.from || to != tt.to || relType != tt.relType || label != tt.label {
+		if parts.from != tt.from || parts.to != tt.to || parts.relType != tt.relType || parts.label != tt.label {
 			t.Errorf("%q parsed as from=%q type=%q to=%q label=%q, want %q %q %q %q",
-				tt.line, from, relType, to, label, tt.from, tt.relType, tt.to, tt.label)
+				tt.line, parts.from, parts.relType, parts.to, parts.label,
+				tt.from, tt.relType, tt.to, tt.label)
 		}
 	}
 }
@@ -57,12 +58,12 @@ func TestClassLabelledRelationIsNotAMember(t *testing.T) {
 
 // An `o` ending a class name must not be mistaken for the aggregation marker.
 func TestClassNameEndingInOSurvives(t *testing.T) {
-	from, relType, to, _, ok := splitClassRelationship("Foo--Bar")
+	parts, ok := splitClassRelationship("Foo--Bar")
 	if !ok {
 		t.Fatal("relation not recognised")
 	}
-	if from != "Foo" || to != "Bar" || relType != "--" {
-		t.Errorf("parsed as from=%q type=%q to=%q", from, relType, to)
+	if parts.from != "Foo" || parts.to != "Bar" || parts.relType != "--" {
+		t.Errorf("parsed as from=%q type=%q to=%q", parts.from, parts.relType, parts.to)
 	}
 }
 
