@@ -7,6 +7,7 @@ package ink
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -117,7 +118,9 @@ func (p Pen) WithOpacity(opacity float64) Pen {
 	case opacity >= 1:
 		p.Transparency = fullyOpaque
 	default:
-		p.Transparency = uint8(maxTransparency - int(opacity*maxTransparency))
+		// Both guards above are exclusive, so the scaled value lands strictly
+		// inside 0..255 and the rounding cannot push it out.
+		p.Transparency = uint8(math.Round((1 - opacity) * maxTransparency))
 	}
 	return p
 }
@@ -225,9 +228,9 @@ func (a *Annotation) Clear() {
 	a.Strokes = nil
 }
 
-// Bounds returns the smallest box containing every stroke point, in EMU. It
-// returns zeros for an empty annotation.
-func (a *Annotation) Bounds() (x, y, cx, cy int64) {
+// Bounds returns the smallest box containing every stroke point as
+// x, y, cx, cy in EMU. It returns zeros for an empty annotation.
+func (a *Annotation) Bounds() (int64, int64, int64, int64) {
 	first := true
 	var minX, minY, maxX, maxY int64
 	for _, stroke := range a.Strokes {
@@ -250,9 +253,9 @@ func (a *Annotation) Bounds() (x, y, cx, cy int64) {
 	return minX, minY, maxX - minX, maxY - minY
 }
 
-// frame returns the placement used for the content part, falling back to the
-// stroke bounds when no explicit frame was set.
-func (a *Annotation) frame() (x, y, cx, cy int64) {
+// frame returns the placement used for the content part as x, y, cx, cy,
+// falling back to the stroke bounds when no explicit frame was set.
+func (a *Annotation) frame() (int64, int64, int64, int64) {
 	if a.CX.Emu() > 0 && a.CY.Emu() > 0 {
 		return a.X.Emu(), a.Y.Emu(), a.CX.Emu(), a.CY.Emu()
 	}

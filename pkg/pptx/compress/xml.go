@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-//nolint:gochecknoglobals // compiled once, immutable
+// Compiled once, immutable.
 var (
 	relationshipPattern   = regexp.MustCompile(`(?s)<Relationship\b[^>]*/>`)
 	overridePattern       = regexp.MustCompile(`(?s)<Override\b[^>]*/>`)

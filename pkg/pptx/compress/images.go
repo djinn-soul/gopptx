@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"math"
 	"strings"
 )
 
@@ -60,10 +61,7 @@ func scaleDown(img image.Image, maxDim int) (image.Image, bool) {
 	if w <= 0 || h <= 0 {
 		return img, false
 	}
-	longest := w
-	if h > longest {
-		longest = h
-	}
+	longest := max(w, h)
 	if longest <= maxDim {
 		return img, false
 	}
@@ -122,11 +120,26 @@ func averageBlock(src image.Image, x0, y0, x1, y1 int) color.RGBA {
 	if count == 0 {
 		return color.RGBA{}
 	}
-	const to8Bit = 257 // 16-bit channel -> 8-bit
 	return color.RGBA{
-		R: uint8(sr / count / to8Bit),
-		G: uint8(sg / count / to8Bit),
-		B: uint8(sb / count / to8Bit),
-		A: uint8(sa / count / to8Bit),
+		R: to8BitChannel(sr, count),
+		G: to8BitChannel(sg, count),
+		B: to8BitChannel(sb, count),
+		A: to8BitChannel(sa, count),
 	}
+}
+
+// to8BitChannel averages a run of 16-bit colour samples down to one 8-bit
+// channel. RGBA() promises samples of at most 0xffff, so the average can never
+// exceed 0xff once scaled; the clamp keeps that true for any caller that hands
+// back an out-of-range image.
+func to8BitChannel(sum, count uint64) uint8 {
+	const to8Bit = 257 // 16-bit channel -> 8-bit
+	if count == 0 {
+		return 0
+	}
+	scaled := sum / count / to8Bit
+	if scaled > math.MaxUint8 {
+		return math.MaxUint8
+	}
+	return uint8(scaled)
 }

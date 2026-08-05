@@ -101,21 +101,24 @@ type picReaderXML struct {
 				Cy int64 `xml:"cy,attr"`
 			} `xml:"ext"`
 		} `xml:"xfrm"`
-		EffectLst *struct {
-			OuterShdw  *struct{} `xml:"outerShdw"`
-			Reflection *struct{} `xml:"reflection"`
-			InnerShdw  *struct{} `xml:"innerShdw"`
-			Glow       *struct {
-				Rad *int `xml:"rad,attr"`
-			} `xml:"glow"`
-			SoftEdge *struct {
-				Rad *int `xml:"rad,attr"`
-			} `xml:"softEdge"`
-			Blur *struct {
-				Rad *int `xml:"rad,attr"`
-			} `xml:"blur"`
-		} `xml:"effectLst"`
+		EffectLst *picEffectListXML `xml:"effectLst"`
 	} `xml:"spPr"`
+}
+
+// picEffectListXML is the `<a:effectLst>` of a picture. Only the presence of
+// each effect and the radii the renderer needs are decoded.
+type picEffectListXML struct {
+	OuterShdw  *struct{}           `xml:"outerShdw"`
+	Reflection *struct{}           `xml:"reflection"`
+	InnerShdw  *struct{}           `xml:"innerShdw"`
+	Glow       *picEffectRadiusXML `xml:"glow"`
+	SoftEdge   *picEffectRadiusXML `xml:"softEdge"`
+	Blur       *picEffectRadiusXML `xml:"blur"`
+}
+
+// picEffectRadiusXML is an effect carrying a single radius attribute.
+type picEffectRadiusXML struct {
+	Rad *int `xml:"rad,attr"`
 }
 
 func parsePicElements(data []byte) []picRef {
@@ -170,27 +173,37 @@ func picRefFromXML(src *picReaderXML) (picRef, bool) {
 		ref.CropTop = cropFraction(src.BlipFill.SrcRect.T)
 		ref.CropBottom = cropFraction(src.BlipFill.SrcRect.B)
 	}
-	if src.SpPr.EffectLst != nil {
-		ref.Shadow = src.SpPr.EffectLst.OuterShdw != nil
-		ref.Reflection = src.SpPr.EffectLst.Reflection != nil
-		ref.InnerShadow = src.SpPr.EffectLst.InnerShdw != nil
-		ref.Glow = src.SpPr.EffectLst.Glow != nil
-		ref.SoftEdges = src.SpPr.EffectLst.SoftEdge != nil
-		if e := src.SpPr.EffectLst.Glow; e != nil && e.Rad != nil {
-			ref.GlowRadiusEmu = *e.Rad
-		}
-		if e := src.SpPr.EffectLst.SoftEdge; e != nil && e.Rad != nil {
-			ref.SoftEdgeRadiusEmu = *e.Rad
-		}
-		if e := src.SpPr.EffectLst.Blur; e != nil {
-			ref.Blur = true
-			if e.Rad != nil {
-				ref.BlurRadiusEmu = *e.Rad
-			}
-		}
-	}
+	applyPicEffects(&ref, src.SpPr.EffectLst)
 	ref.AltText, ref.IsDecorative = picAltText(src)
 	return ref, true
+}
+
+// applyPicEffects copies the decoded `<a:effectLst>` onto the picture. A nil
+// list leaves every effect off.
+func applyPicEffects(ref *picRef, effects *picEffectListXML) {
+	if effects == nil {
+		return
+	}
+	ref.Shadow = effects.OuterShdw != nil
+	ref.Reflection = effects.Reflection != nil
+	ref.InnerShadow = effects.InnerShdw != nil
+	ref.Glow = effects.Glow != nil
+	ref.SoftEdges = effects.SoftEdge != nil
+	ref.GlowRadiusEmu = picEffectRadius(effects.Glow)
+	ref.SoftEdgeRadiusEmu = picEffectRadius(effects.SoftEdge)
+	if effects.Blur != nil {
+		ref.Blur = true
+		ref.BlurRadiusEmu = picEffectRadius(effects.Blur)
+	}
+}
+
+// picEffectRadius is the effect's radius, or 0 when the effect or its
+// attribute is absent.
+func picEffectRadius(effect *picEffectRadiusXML) int {
+	if effect == nil || effect.Rad == nil {
+		return 0
+	}
+	return *effect.Rad
 }
 
 func resolvePicRelID(src *picReaderXML) string {

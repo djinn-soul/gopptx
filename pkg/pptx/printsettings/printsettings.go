@@ -33,6 +33,17 @@ const (
 	PrintOutline
 )
 
+// The slide counts PowerPoint offers for handout pages. They are the values
+// carried by PrintHandoutsN, not arbitrary numbers.
+const (
+	slidesPerHandout1 = 1
+	slidesPerHandout2 = 2
+	slidesPerHandout3 = 3
+	slidesPerHandout4 = 4
+	slidesPerHandout6 = 6
+	slidesPerHandout9 = 9
+)
+
 // XMLValue returns the ST_PrintWhat token for the prnWhat attribute.
 func (p PrintWhat) XMLValue() string {
 	switch p {
@@ -64,17 +75,17 @@ func (p PrintWhat) XMLValue() string {
 func (p PrintWhat) SlidesPerPage() int {
 	switch p {
 	case PrintHandouts1:
-		return 1
+		return slidesPerHandout1
 	case PrintHandouts2:
-		return 2
+		return slidesPerHandout2
 	case PrintHandouts3:
-		return 3
+		return slidesPerHandout3
 	case PrintHandouts4:
-		return 4
+		return slidesPerHandout4
 	case PrintHandouts6:
-		return 6
+		return slidesPerHandout6
 	case PrintHandouts9:
-		return 9
+		return slidesPerHandout9
 	case PrintSlides, PrintNotes, PrintOutline:
 		return 0
 	default:
@@ -86,17 +97,17 @@ func (p PrintWhat) SlidesPerPage() int {
 // Values outside {1,2,3,4,6,9} fall back to PrintHandouts1.
 func HandoutsPerPage(n int) PrintWhat {
 	switch n {
-	case 1:
+	case slidesPerHandout1:
 		return PrintHandouts1
-	case 2:
+	case slidesPerHandout2:
 		return PrintHandouts2
-	case 3:
+	case slidesPerHandout3:
 		return PrintHandouts3
-	case 4:
+	case slidesPerHandout4:
 		return PrintHandouts4
-	case 6:
+	case slidesPerHandout6:
 		return PrintHandouts6
-	case 9:
+	case slidesPerHandout9:
 		return PrintHandouts9
 	default:
 		return PrintHandouts1
