@@ -40,10 +40,12 @@ func TestBaselineShiftFactorIsRelativeToGopdfPlacement(t *testing.T) {
 	// Calibri: ascent 0.75 em, descent 0.25 em, so half-leading inside the
 	// 1.2 em line box is (1.2 - 1.0) / 2 = 0.1 em and the baseline sits at
 	// 0.85 em. gopdf's Cell() has already applied typoAscender (0.75 em), so the
-	// renderer adds the remaining 0.1 em.
+	// renderer adds the remaining 0.1 em, plus the 0.09 em of internal leading
+	// PowerPoint pads the top of the line box with (baselineInternalLeadingFactor).
 	got := calibriMetrics().baselineShiftFactor()
-	if math.Abs(got-0.1) > 0.0005 {
-		t.Fatalf("calibri baseline shift factor=%v want ~0.1", got)
+	want := 0.1 + baselineInternalLeadingFactor
+	if math.Abs(got-want) > 0.0005 {
+		t.Fatalf("calibri baseline shift factor=%v want ~%v", got, want)
 	}
 }
 

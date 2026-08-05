@@ -146,5 +146,51 @@ func classRelationshipConnector(
 	if idx, ok := state.shapeIndices[toID]; ok {
 		connector = connector.ConnectEnd(idx, geometry.endSite)
 	}
+	if label, ok := classRelationLabel(rel, geometry, theme); ok {
+		state.shapes = append(state.shapes, label)
+	}
 	return connector, marker, true
+}
+
+// classRelationLabel captions a relation with its role text and cardinalities,
+// which the parser read but nothing drew: "Shape <|-- Circle : extends" lost
+// the "extends" entirely.
+func classRelationLabel(
+	rel ClassRelationship,
+	geometry classConnectorGeometry,
+	theme Theme,
+) (shapes.Shape, bool) {
+	caption := classRelationCaption(rel)
+	if caption == "" {
+		return shapes.Shape{}, false
+	}
+
+	width := classRelationLabelWidth + styling.Length(len(caption))*classRelationLabelPerRune
+	height := styling.Inches(0.22)
+	x, y := relationLabelPosition(geometry.startX, geometry.startY, geometry.endX, geometry.endY, width, height)
+
+	label := shapes.NewShape(shapes.ShapeTypeRectangle, x, y, width, height).
+		WithFill(shapes.NewShapeFill(theme.Background)).
+		WithText(caption).
+		WithVerticalAnchor(shapes.TextAnchorMiddle).
+		WithAutoFit(shapes.TextAutoFitNormal).
+		WithTextMargins(styling.Inches(0.04), styling.Inches(0.01), styling.Inches(0.04), styling.Inches(0.01))
+	label.Line = nil
+	return label, true
+}
+
+// classRelationCaption joins the relation's role label with its cardinalities,
+// as "1 owns *".
+func classRelationCaption(rel ClassRelationship) string {
+	parts := make([]string, 0, 3)
+	if rel.FromCardinality != "" {
+		parts = append(parts, rel.FromCardinality)
+	}
+	if rel.Label != "" {
+		parts = append(parts, rel.Label)
+	}
+	if rel.ToCardinality != "" {
+		parts = append(parts, rel.ToCardinality)
+	}
+	return strings.Join(parts, " ")
 }

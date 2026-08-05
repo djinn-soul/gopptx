@@ -45,6 +45,21 @@ func createNodeShape(node *FlowNode, x, y, width, height styling.Length, theme T
 		shapeType = shapes.ShapeTypeEllipse
 	case NodeShapeHexagon:
 		shapeType = shapes.ShapeTypeHexagon
+	case NodeShapeSubroutine:
+		// No PowerPoint preset has the subroutine's double side bars; the
+		// flowchart process preset is the closest stock equivalent.
+		shapeType = shapes.ShapeTypeFlowChartPredefinedProcess
+	case NodeShapeCylinder:
+		shapeType = shapes.ShapeTypeCan
+	case NodeShapeParallelogram:
+		shapeType = shapes.ShapeTypeParallelogram
+	case NodeShapeTrapezoid:
+		shapeType = shapes.ShapeTypeTrapezoid
+	case NodeShapeAsymmetric:
+		shapeType = shapes.ShapeTypeHomePlate
+	case NodeShapeMindmapBang, NodeShapeMindmapCloud:
+		// Mindmap-only shapes; a flowchart never carries them.
+		shapeType = shapes.ShapeTypeRectangle
 	}
 
 	fillColor := theme.PrimaryFill

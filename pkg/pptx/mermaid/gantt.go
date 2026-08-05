@@ -2,6 +2,7 @@ package mermaid
 
 import (
 	"strings"
+	"time"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
@@ -14,6 +15,16 @@ type GanttTask struct {
 	Status   string
 	Start    string
 	Duration string
+	// Schedule holds the resolved dates. It is nil when the task carries no
+	// parsable date, in which case the bar falls back to even spacing.
+	Schedule *GanttSchedule
+}
+
+// GanttSchedule is one task's resolved position on the calendar.
+type GanttSchedule struct {
+	Start       time.Time
+	End         time.Time
+	IsMilestone bool
 }
 
 // GanttSection represents a section in a Gantt chart.
@@ -91,25 +102,60 @@ func parseGanttSectionName(trimmed string, lower string) (string, bool) {
 	return strings.TrimSpace(trimmed[7:]), true
 }
 
+// isGanttStatusTag reports whether a field is one of the leading keywords a
+// task may carry before its id.
+func isGanttStatusTag(field string) bool {
+	switch field {
+	case "done", "active", "crit", "milestone":
+		return true
+	default:
+		return false
+	}
+}
+
+// parseGanttTask reads "Name : [status,]... [id,] [start,] duration".
+//
+// The fields were previously assigned by position alone, so a task written
+// ":done, a1, 2026-01-01, 5d" took "done" for its id and "a1" for its start
+// date, which is what put task ids on the date axis.
 func parseGanttTask(trimmed string) (GanttTask, bool) {
 	taskName, taskDetails, ok := strings.Cut(trimmed, ":")
 	if !ok {
 		return GanttTask{}, false
 	}
 	task := GanttTask{Name: strings.TrimSpace(taskName)}
-	details := strings.Split(taskDetails, ",")
-	for i, detail := range details {
+
+	fields := make([]string, 0, 4)
+	for detail := range strings.SplitSeq(taskDetails, ",") {
 		detail = strings.TrimSpace(detail)
-		switch {
-		case i == len(details)-1:
-			task.Duration = detail
-		case i == 0:
-			task.ID = detail
-		case i == 1:
-			task.Start = detail
+		if detail == "" {
+			continue
 		}
+		if len(fields) == 0 && isGanttStatusTag(strings.ToLower(detail)) {
+			task.Status = appendGanttStatus(task.Status, strings.ToLower(detail))
+			continue
+		}
+		fields = append(fields, detail)
+	}
+
+	switch len(fields) {
+	case 0:
+	case 1:
+		task.Duration = fields[0]
+	case 2:
+		// "start, duration" — an id alone never appears without a duration.
+		task.Start, task.Duration = fields[0], fields[1]
+	default:
+		task.ID, task.Start, task.Duration = fields[0], fields[1], fields[2]
 	}
 	return task, true
+}
+
+func appendGanttStatus(existing, status string) string {
+	if existing == "" {
+		return status
+	}
+	return existing + " " + status
 }
 
 func ensureGanttSection(currentSection *GanttSection) *GanttSection {
@@ -135,16 +181,19 @@ func generateGanttElements(gantt *GanttDiagram, theme Theme) DiagramElements {
 		sectionHeight: styling.Inches(0.6),
 		axisHeight:    styling.Inches(0.35),
 	}
+	resolveGanttSchedule(gantt)
+	dateRange := ganttRangeOf(gantt)
+
 	axisY := layout.startY
 	currentY := axisY + layout.axisHeight + styling.Inches(0.1)
 	if gantt.Title != "" {
 		shapesList = append(shapesList, buildGanttTitleShape(gantt.Title, theme, layout))
 	}
 
-	shapesList = append(shapesList, buildGanttAxisShapes(gantt, theme, axisY, layout)...)
+	shapesList = append(shapesList, buildGanttAxisShapes(gantt, theme, axisY, layout, dateRange)...)
 
 	for _, section := range gantt.Sections {
-		sectionShapes, nextY := buildGanttSectionShapes(section, theme, currentY, layout)
+		sectionShapes, nextY := buildGanttSectionShapes(section, theme, currentY, layout, dateRange)
 		shapesList = append(shapesList, sectionShapes...)
 		currentY = nextY + styling.Inches(0.2)
 	}

@@ -15,6 +15,10 @@ type GitCommitInfo struct {
 	Label     string
 	IsMerge   bool
 	MergeFrom string
+	// Tag is the release name a commit carries, from `commit tag: "v1"`.
+	Tag string
+	// IsCherryPick marks a commit replayed from another branch.
+	IsCherryPick bool
 }
 
 // GitGraphDiagram represents the parsed structure of a Mermaid git graph.
@@ -49,18 +53,24 @@ func parseGitGraph(code string) *GitGraphDiagram {
 		}
 
 		switch {
+		case strings.HasPrefix(lower, "cherry-pick"):
+			// A cherry-pick replays a commit onto the current branch. It used to
+			// be ignored outright, so the branch came up a commit short.
+			diagram.Commits = append(diagram.Commits, GitCommitInfo{
+				Branch:       currentBranch,
+				X:            currentX,
+				Y:            diagram.Branches[currentBranch],
+				Label:        gitAttributeValue(trimmed, "id:"),
+				IsCherryPick: true,
+			})
+			currentX++
 		case strings.HasPrefix(lower, "commit"):
-			label := ""
-			if strings.Contains(trimmed, "id:") {
-				parts := strings.Split(trimmed, "id:")
-				label = strings.Trim(strings.TrimSpace(parts[1]), "\"")
-			}
-
 			diagram.Commits = append(diagram.Commits, GitCommitInfo{
 				Branch: currentBranch,
 				X:      currentX,
 				Y:      diagram.Branches[currentBranch],
-				Label:  label,
+				Label:  gitAttributeValue(trimmed, "id:"),
+				Tag:    gitAttributeValue(trimmed, "tag:"),
 			})
 			currentX++
 		case strings.HasPrefix(lower, "branch "):
@@ -85,6 +95,25 @@ func parseGitGraph(code string) *GitGraphDiagram {
 	}
 
 	return diagram
+}
+
+// gitAttributeValue reads a `key: "value"` attribute off a gitGraph statement.
+func gitAttributeValue(line, key string) string {
+	_, after, found := strings.Cut(line, key)
+	if !found {
+		return ""
+	}
+	value := strings.TrimSpace(after)
+	// Attributes may be chained: `commit id: "x" tag: "v1"`, so a quoted value
+	// ends at its closing quote rather than at the end of the line.
+	if quoted, _, ok := strings.Cut(strings.TrimPrefix(value, `"`), `"`); ok && strings.HasPrefix(value, `"`) {
+		return quoted
+	}
+	fields := strings.Fields(value)
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
 }
 
 func generateGitGraphElements(diagram *GitGraphDiagram, theme Theme) DiagramElements {
@@ -113,6 +142,12 @@ func generateGitGraphElements(diagram *GitGraphDiagram, theme Theme) DiagramElem
 
 		if commit.Label != "" {
 			shapesList = append(shapesList, gitgraphCommitLabel(commit.Label, x, y, theme))
+		}
+		if commit.Tag != "" {
+			shapesList = append(shapesList, gitgraphTagShape(commit.Tag, x, y, theme))
+		}
+		if commit.IsCherryPick {
+			shapesList = append(shapesList, gitgraphCherryPickMark(x, y, color, theme))
 		}
 
 		if connector, ok := gitgraphPrevBranchConnector(
@@ -237,6 +272,33 @@ func gitgraphCommitDot(x styling.Length, y styling.Length, color string, theme T
 		dotSize,
 	).WithFill(shapes.NewShapeFill(color)).
 		WithLine(shapes.NewShapeLine(theme.Background, theme.LineWeight))
+}
+
+// gitgraphTagShape is the release flag above a tagged commit, drawn as the
+// pennant Mermaid uses so it reads differently from a commit id.
+func gitgraphTagShape(tag string, x styling.Length, y styling.Length, theme Theme) shapes.Shape {
+	width := gitgraphLabelWidth(tag, 0.5, 1.4)
+	return shapes.NewShape(
+		shapes.ShapeTypeHomePlate,
+		x-width/2,
+		y-styling.Inches(0.5),
+		width,
+		styling.Inches(0.26),
+	).WithText(tag).
+		WithFill(shapes.NewShapeFill(theme.SecondaryFill)).
+		WithLine(shapes.NewShapeLine(theme.PrimaryStroke, theme.LineWeight)).
+		WithVerticalAnchor(shapes.TextAnchorMiddle).
+		WithAutoFit(shapes.TextAutoFitNormal)
+}
+
+// gitgraphCherryPickMark rings a replayed commit so it is distinguishable from
+// an ordinary one on the same branch.
+func gitgraphCherryPickMark(x, y styling.Length, color string, theme Theme) shapes.Shape {
+	size := styling.Inches(0.3)
+	shape := shapes.NewShape(shapes.ShapeTypeEllipse, x-size/2, y-size/2, size, size).
+		WithLine(shapes.NewShapeLine(color, theme.LineWeight*2))
+	shape.Fill = nil
+	return shape
 }
 
 func gitgraphCommitLabel(label string, x styling.Length, y styling.Length, theme Theme) shapes.Shape {

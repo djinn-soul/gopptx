@@ -69,6 +69,20 @@ const (
 	NodeShapeCircle NodeShape = "circle"
 	// NodeShapeHexagon represents a hexagonal node.
 	NodeShapeHexagon NodeShape = "hexagon"
+	// NodeShapeSubroutine represents a subroutine node, written A[[Text]].
+	NodeShapeSubroutine NodeShape = "subroutine"
+	// NodeShapeCylinder represents a database node, written A[(Text)].
+	NodeShapeCylinder NodeShape = "cylinder"
+	// NodeShapeParallelogram represents a parallelogram node, written A[/Text/].
+	NodeShapeParallelogram NodeShape = "parallelogram"
+	// NodeShapeTrapezoid represents a trapezoid node, written A[\Text\].
+	NodeShapeTrapezoid NodeShape = "trapezoid"
+	// NodeShapeAsymmetric represents an asymmetric node, written A>Text].
+	NodeShapeAsymmetric NodeShape = "asymmetric"
+	// NodeShapeMindmapBang represents a mindmap burst node, written A))Text((.
+	NodeShapeMindmapBang NodeShape = "mindmap_bang"
+	// NodeShapeMindmapCloud represents a mindmap cloud node, written A)Text(.
+	NodeShapeMindmapCloud NodeShape = "mindmap_cloud"
 )
 
 // ArrowStyle represents the style of an arrow in a connection.
@@ -83,6 +97,10 @@ const (
 	ArrowStyleDotted ArrowStyle = "dotted"
 	// ArrowStyleThick represents a thick arrow connection.
 	ArrowStyleThick ArrowStyle = "thick"
+	// ArrowStyleCircle represents a circle-ended connection, written A --o B.
+	ArrowStyleCircle ArrowStyle = "circle"
+	// ArrowStyleCross represents a cross-ended connection, written A --x B.
+	ArrowStyleCross ArrowStyle = "cross"
 )
 
 // FlowDirection represents the layout direction of a flowchart.

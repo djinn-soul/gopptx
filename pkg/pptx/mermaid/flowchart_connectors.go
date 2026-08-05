@@ -122,10 +122,18 @@ func (s *flowchartRenderState) connectorLine(style ArrowStyle) (styling.Length, 
 }
 
 func (s *flowchartRenderState) connectorEndArrow(style ArrowStyle) string {
-	if style == ArrowStyleOpen {
+	switch style {
+	case ArrowStyleOpen:
 		return shapes.ArrowTypeNone
+	case ArrowStyleCircle:
+		return shapes.ArrowTypeOval
+	case ArrowStyleCross:
+		// OOXML has no cross line ending; the open barb is the nearest preset
+		// and still reads as "not a plain arrow".
+		return shapes.ArrowTypeOpen
+	default:
+		return shapes.ArrowTypeTriangle
 	}
-	return shapes.ArrowTypeTriangle
 }
 
 func (s *flowchartRenderState) connectorLabelShape(

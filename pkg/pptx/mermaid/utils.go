@@ -6,10 +6,33 @@ import (
 )
 
 var (
-	themeInitRegex      = regexp.MustCompile(`(?i)%%\{init:\s*\{.*['"]theme['"]:\s*['"]([^'"]+)['"].*\}\s*\}%%`)
-	themeDirectiveRegex = regexp.MustCompile(`(?i)^\s*theme:\s*(\w+)`)
-	flowLabelArrowRegex = regexp.MustCompile(`^\s*(.+?)\s*--\s+(.+?)\s+-->\s*(.+?)\s*$`)
+	themeInitRegex          = regexp.MustCompile(`(?i)%%\{init:\s*\{.*['"]theme['"]:\s*['"]([^'"]+)['"].*\}\s*\}%%`)
+	themeDirectiveRegex     = regexp.MustCompile(`(?i)^\s*theme:\s*(\w+)`)
+	flowLabelArrowRegex     = regexp.MustCompile(`^\s*(.+?)\s*--\s+(.+?)\s+-->\s*(.+?)\s*$`)
+	flowLabelOpenRegex      = regexp.MustCompile(`^\s*(.+?)\s*--\s+(.+?)\s+---\s*(.+?)\s*$`)
+	flowLabelDottedRegex    = regexp.MustCompile(`^\s*(.+?)\s*-\.\s*(.+?)\s*\.->\s*(.+?)\s*$`)
+	flowLabelDottedOpenRe   = regexp.MustCompile(`^\s*(.+?)\s*-\.\s*(.+?)\s*\.-\s*(.+?)\s*$`)
+	flowLabelThickRegex     = regexp.MustCompile(`^\s*(.+?)\s*==\s*(.+?)\s*==>\s*(.+?)\s*$`)
+	flowLabelThickOpenRegex = regexp.MustCompile(`^\s*(.+?)\s*==\s*(.+?)\s*===\s*(.+?)\s*$`)
 )
+
+// labelledArrowForm is one "A <open> label <close> B" edge spelling, paired
+// with the plain token that carries the same line style.
+type labelledArrowForm struct {
+	pattern *regexp.Regexp
+	arrow   string
+}
+
+func labelledArrowForms() []labelledArrowForm {
+	return []labelledArrowForm{
+		{flowLabelArrowRegex, arrowSolid},
+		{flowLabelOpenRegex, arrowOpen},
+		{flowLabelDottedRegex, arrowDotted},
+		{flowLabelDottedOpenRe, arrowDottedOpen},
+		{flowLabelThickRegex, arrowThick},
+		{flowLabelThickOpenRegex, arrowThickOpen},
+	}
+}
 
 // DetectTheme identifies the theme from the Mermaid code.
 func DetectTheme(code string) string {
@@ -68,18 +91,26 @@ func ExtractDirection(header string) FlowDirection {
 // SplitConnection splits a line at a connection arrow and returns (from, arrow, rest, found).
 // Handles patterns like: "A --> B", "A -->|label| B", "A -- label --> B".
 func SplitConnection(line string) (string, string, string, bool) {
-	// Handle Mermaid's spaced label syntax first: A -- label --> B
-	// We normalize it into the standard label form consumed by ExtractArrowLabel.
-	if matches := flowLabelArrowRegex.FindStringSubmatch(line); len(matches) == 4 {
+	// Handle Mermaid's inline label syntaxes first — A -- label --> B, but also
+	// the dotted and thick spellings A -. label .-> B and A == label ==> B,
+	// which used to fall through to the plain token scan. That split them at the
+	// leading "--"/"=="" and folded the label into the node name, so "E -.text."
+	// became a node of its own.
+	// Each is normalised into the standard label form consumed by ExtractArrowLabel.
+	for _, form := range labelledArrowForms() {
+		matches := form.pattern.FindStringSubmatch(line)
+		if len(matches) != 4 {
+			continue
+		}
 		from := strings.TrimSpace(matches[1])
 		label := strings.TrimSpace(matches[2])
 		to := strings.TrimSpace(matches[3])
 		if from != "" && label != "" && to != "" {
-			return from, arrowSolid, "|" + label + "| " + to, true
+			return from, form.arrow, "|" + label + "| " + to, true
 		}
 	}
 
-	arrows := []string{arrowThick, arrowDotted, arrowSolid, arrowOpen, "->"}
+	arrows := flowArrowTokens()
 	for _, arrow := range arrows {
 		if before, after, ok := strings.Cut(line, arrow); ok {
 			from := strings.TrimSpace(before)
@@ -104,7 +135,7 @@ func ExtractArrowLabel(s string) (string, string) {
 
 	// Handle the alternative syntax: label --> target
 	// Split by the next arrow to extract label and remaining node
-	arrows := []string{arrowThick, arrowDotted, arrowSolid, arrowOpen, "->"}
+	arrows := flowArrowTokens()
 	for _, arrow := range arrows {
 		if before, after, ok := strings.Cut(s, arrow); ok {
 			label := strings.TrimSpace(before)
@@ -121,7 +152,15 @@ func ExtractArrowLabel(s string) (string, string) {
 // ParseNodeDef parses a node definition like "A[Text]" and returns (id, label, shape).
 func ParseNodeDef(s string) (string, string, NodeShape) {
 	s = strings.TrimSpace(s)
+	// A ":::class" suffix assigns a classDef; it is not part of the id, and an
+	// unbracketed "A:::hot" would otherwise be labelled with the class name.
+	if idx := strings.Index(s, ":::"); idx != -1 {
+		s = strings.TrimSpace(s[:idx])
+	}
 
+	// Longest opener first: "[[" and "[(" both start with "[", so testing "["
+	// first swallowed the inner bracket and left it inside the label, printing
+	// a subroutine node as the literal text "[Subroutine]".
 	bracketTypes := []struct {
 		open  string
 		close string
@@ -131,6 +170,13 @@ func ParseNodeDef(s string) (string, string, NodeShape) {
 		{"((", "))", NodeShapeCircle},
 		{"([", "])", NodeShapeStadium},
 		{"{{", "}}", NodeShapeHexagon},
+		{"[[", "]]", NodeShapeSubroutine},
+		{"[(", ")]", NodeShapeCylinder},
+		{"[/", "/]", NodeShapeParallelogram},
+		{"[\\", "\\]", NodeShapeTrapezoid},
+		{"[/", "\\]", NodeShapeTrapezoid}, // [/Text\] renders as a trapezoid
+		{"[\\", "/]", NodeShapeTrapezoid}, // [\Text/] is its inverted twin
+		{">", "]", NodeShapeAsymmetric},
 		{"[", "]", NodeShapeRectangle},
 		{"(", ")", NodeShapeRoundedRect},
 		{"{", "}", NodeShapeDiamond},
