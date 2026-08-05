@@ -14,9 +14,7 @@ func (s *flowchartRenderState) layoutByConnections(connections []FlowConnection)
 	depth := s.graphDepthMap(connections)
 	buckets, maxDepth := s.graphDepthBuckets(depth)
 	sortBuckets(buckets, maxDepth)
-	colMaxWidth := s.graphColumnMaxWidths(buckets, maxDepth)
-	colX := s.graphColumnPositions(colMaxWidth, maxDepth)
-	s.placeGraphBucketedNodes(buckets, colX, maxDepth)
+	s.placeGraphBucketedNodes(buckets, s.graphRankPositions(buckets, maxDepth), maxDepth)
 	return len(s.nodePositions) > 0
 }
 
@@ -67,65 +65,106 @@ func sortBuckets(buckets map[int][]string, maxDepth int) {
 	}
 }
 
-func (s *flowchartRenderState) graphColumnMaxWidths(
+// graphRankExtent is how much room one rank needs along the layout axis: the
+// widest node for a left-right graph, the tallest for a top-bottom one.
+func (s *flowchartRenderState) graphRankExtent(nodeIDs []string) styling.Length {
+	extent := styling.Length(0)
+	for _, nodeID := range nodeIDs {
+		node, ok := s.nodeLookup[nodeID]
+		if !ok {
+			continue
+		}
+		size := s.renderedNodeHeight(node.Shape)
+		if s.isHorizontal {
+			size = s.graphNodeWidth(node)
+		}
+		if size > extent {
+			extent = size
+		}
+	}
+	return extent
+}
+
+// graphNodeWidth is the width a node will actually be drawn at, diamonds
+// included, so ranks are spaced by what gets painted rather than by the label.
+func (s *flowchartRenderState) graphNodeWidth(node FlowNode) styling.Length {
+	width := s.calculateWidth(node.Label)
+	if node.Shape == NodeShapeDiamond && width < diamondMinWidth {
+		width = diamondMinWidth
+	}
+	return width
+}
+
+// graphRankPositions places each rank along the axis the direction asks for.
+//
+// The rank axis used to be hard-coded to x, so `flowchart TD` was laid out
+// left-to-right exactly like `flowchart LR` — the parsed Direction reached the
+// connector router but never the node placement.
+func (s *flowchartRenderState) graphRankPositions(
 	buckets map[int][]string,
 	maxDepth int,
 ) map[int]styling.Length {
-	colMaxWidth := make(map[int]styling.Length, maxDepth+1)
+	extents := make([]styling.Length, maxDepth+1)
 	for d := range maxDepth + 1 {
-		for _, nodeID := range buckets[d] {
-			node, ok := s.nodeLookup[nodeID]
-			if !ok {
-				continue
-			}
-			width := s.calculateWidth(node.Label)
-			if node.Shape == NodeShapeDiamond && width < styling.Inches(3.2) {
-				width = styling.Inches(3.2)
-			}
-			if width > colMaxWidth[d] {
-				colMaxWidth[d] = width
+		extent := s.graphRankExtent(buckets[d])
+		if extent == 0 {
+			extent = s.layout.baseNodeWidth
+			if !s.isHorizontal {
+				extent = s.layout.nodeHeight
 			}
 		}
+		extents[d] = extent
 	}
-	return colMaxWidth
-}
 
-func (s *flowchartRenderState) graphColumnPositions(
-	colMaxWidth map[int]styling.Length,
-	maxDepth int,
-) map[int]styling.Length {
-	colX := make(map[int]styling.Length, maxDepth+1)
-	nextX := s.layout.gridStartX
-	for d := range maxDepth + 1 {
-		colX[d] = nextX
-		colWidth := colMaxWidth[d]
-		if colWidth == 0 {
-			colWidth = s.layout.baseNodeWidth
-		}
-		nextX += colWidth + s.layout.hSpacing
+	gap := s.layout.hSpacing
+	next := s.layout.gridStartX
+	if !s.isHorizontal {
+		gap = s.layout.vSpacing
+		next = s.layout.gridStartY
 	}
-	return colX
+
+	// RL and BT are the same ranking read from the far end, so rank 0 goes last.
+	order := make([]int, 0, maxDepth+1)
+	for d := range maxDepth + 1 {
+		order = append(order, d)
+	}
+	if s.isReversed {
+		for i, j := 0, len(order)-1; i < j; i, j = i+1, j-1 {
+			order[i], order[j] = order[j], order[i]
+		}
+	}
+
+	positions := make(map[int]styling.Length, maxDepth+1)
+	for _, d := range order {
+		positions[d] = next
+		next += extents[d] + gap
+	}
+	return positions
 }
 
 func (s *flowchartRenderState) placeGraphBucketedNodes(
 	buckets map[int][]string,
-	colX map[int]styling.Length,
+	rankPos map[int]styling.Length,
 	maxDepth int,
 ) {
 	for d := range maxDepth + 1 {
-		for row, nodeID := range buckets[d] {
+		for index, nodeID := range buckets[d] {
 			node, ok := s.nodeLookup[nodeID]
 			if !ok {
 				continue
 			}
-			width := s.calculateWidth(node.Label)
-			x := colX[d]
-			y := s.layout.gridStartY + (stylingLengthFromInt(row) * s.layout.vSpacing)
-			s.addNodeShape(node, x, y, width)
+			x, y := s.graphNodeOrigin(rankPos[d], index)
+			s.addNodeShape(node, x, y, s.calculateWidth(node.Label))
 		}
 	}
 }
 
-func stylingLengthFromInt(v int) styling.Length {
-	return styling.Length(v)
+// graphNodeOrigin turns a rank offset and the node's position within that rank
+// into a point, swapping the axes for a top-bottom graph.
+func (s *flowchartRenderState) graphNodeOrigin(rank styling.Length, index int) (styling.Length, styling.Length) {
+	offset := styling.Length(index)
+	if s.isHorizontal {
+		return rank, s.layout.gridStartY + offset*s.layout.vSpacing
+	}
+	return s.layout.gridStartX + offset*s.layout.hSpacing, rank
 }
