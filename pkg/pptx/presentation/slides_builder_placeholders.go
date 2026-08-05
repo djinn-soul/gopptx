@@ -30,6 +30,14 @@ func (b *slidePartBuilder) mapImages(images []shapes.Image) ([]pptxxml.ImageRef,
 			AltText:      img.AltText,
 			IsDecorative: img.IsDecorative,
 			Crop:         mapToXMLCrop(img.Crop),
+
+			InnerShadow:    img.InnerShadow,
+			Glow:           img.Glow,
+			SoftEdges:      img.SoftEdges,
+			GlowSpec:       mapToXMLImageGlow(img.GlowSpec),
+			BlurSpec:       mapToXMLImageBlur(img.BlurSpec),
+			SoftEdgeSpec:   mapToXMLImageSoftEdge(img.SoftEdgeSpec),
+			ReflectionSpec: mapToXMLImageReflection(img.ReflectionSpec),
 		})
 		b.targets = append(b.targets, "../media/"+mediaName)
 	}
@@ -121,6 +129,14 @@ func (b *slidePartBuilder) applyPlaceholderImage(spec *pptxxml.PlaceholderOverri
 		Shadow:     o.Image.Shadow,
 		Reflection: o.Image.Reflection,
 		Crop:       mapToXMLCrop(o.Image.Crop),
+
+		InnerShadow:    o.Image.InnerShadow,
+		Glow:           o.Image.Glow,
+		SoftEdges:      o.Image.SoftEdges,
+		GlowSpec:       mapToXMLImageGlow(o.Image.GlowSpec),
+		BlurSpec:       mapToXMLImageBlur(o.Image.BlurSpec),
+		SoftEdgeSpec:   mapToXMLImageSoftEdge(o.Image.SoftEdgeSpec),
+		ReflectionSpec: mapToXMLImageReflection(o.Image.ReflectionSpec),
 	}
 	b.targets = append(b.targets, "../media/"+mediaName)
 }
@@ -160,6 +176,37 @@ func (b *slidePartBuilder) applyPlaceholderChart(
 		IsDecorative: chartSpec.IsDecorative,
 	}
 	return chartIdx + 1
+}
+
+func mapToXMLImageGlow(glow *shapes.ShapeGlow) *pptxxml.ShapeGlowSpec {
+	if glow == nil {
+		return nil
+	}
+	return &pptxxml.ShapeGlowSpec{Color: glow.Color, RadiusEmu: glow.RadiusEmu}
+}
+
+func mapToXMLImageBlur(blur *shapes.ShapeBlur) *pptxxml.ShapeBlurSpec {
+	if blur == nil {
+		return nil
+	}
+	return &pptxxml.ShapeBlurSpec{RadiusEmu: blur.RadiusEmu}
+}
+
+func mapToXMLImageSoftEdge(softEdge *shapes.ShapeSoftEdge) *pptxxml.ShapeSoftEdgeSpec {
+	if softEdge == nil {
+		return nil
+	}
+	return &pptxxml.ShapeSoftEdgeSpec{RadiusEmu: softEdge.RadiusEmu}
+}
+
+func mapToXMLImageReflection(reflection *shapes.ShapeReflection) *pptxxml.ShapeReflectionSpec {
+	if reflection == nil {
+		return nil
+	}
+	return &pptxxml.ShapeReflectionSpec{
+		BlurEmu:     reflection.BlurEmu,
+		DistanceEmu: reflection.DistanceEmu,
+	}
 }
 
 func mapToXMLCrop(crop shapes.ImageCrop) *pptxxml.ImageCropRef {

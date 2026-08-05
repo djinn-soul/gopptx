@@ -4,7 +4,6 @@ package export
 import (
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/signintech/gopdf"
 )
@@ -263,19 +262,6 @@ func drawChartLegend(pdf *gopdf.GoPdf, r chartRect, position string, entries []l
 			chartLabelFontSize, chartTextLeft,
 		)
 	}
-	pdf.SetTextColor(0, 0, 0)
-}
-
-// drawBarDataLabel draws a numeric value label near a bar top or line point.
-func drawBarDataLabel(pdf *gopdf.GoPdf, cx, labelY, value float64) {
-	label := strconv.FormatFloat(value, 'f', 1, 64)
-	label = strings.TrimSuffix(label, ".0")
-	pdf.SetTextColor(60, 60, 60)
-	drawChartLabel(
-		pdf, label,
-		cx, labelY+pdfLineHeight(chartLabelFontSize)/2,
-		chartLabelFontSize, chartTextCenter,
-	)
 	pdf.SetTextColor(0, 0, 0)
 }
 

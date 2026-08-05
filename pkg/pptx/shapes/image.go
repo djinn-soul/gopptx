@@ -40,6 +40,21 @@ type Image struct {
 	AltText      string
 	IsDecorative bool
 	Placeholder  *Placeholder
+
+	// InnerShadow draws the shadow inside the picture edges instead of outside.
+	InnerShadow bool
+	// Glow enables a glow halo with PowerPoint's default radius and color.
+	Glow bool
+	// SoftEdges feathers the picture border with the default radius.
+	SoftEdges bool
+	// GlowSpec overrides the default glow radius and color.
+	GlowSpec *ShapeGlow
+	// BlurSpec blurs the picture; nil means no blur.
+	BlurSpec *ShapeBlur
+	// SoftEdgeSpec overrides the default soft-edge radius.
+	SoftEdgeSpec *ShapeSoftEdge
+	// ReflectionSpec overrides the default reflection blur and distance.
+	ReflectionSpec *ShapeReflection
 }
 
 // NewImage creates an image placement.
@@ -75,6 +90,51 @@ func (img Image) WithShadow(enabled bool) Image {
 // WithReflection adds a reflection effect to the image.
 func (img Image) WithReflection(enabled bool) Image {
 	img.Reflection = enabled
+	return img
+}
+
+// WithInnerShadow adds an inner shadow effect to the image.
+func (img Image) WithInnerShadow(enabled bool) Image {
+	img.InnerShadow = enabled
+	return img
+}
+
+// WithGlow adds a glow effect with PowerPoint's default radius and color.
+func (img Image) WithGlow(enabled bool) Image {
+	img.Glow = enabled
+	return img
+}
+
+// WithSoftEdges feathers the image border with the default radius.
+func (img Image) WithSoftEdges(enabled bool) Image {
+	img.SoftEdges = enabled
+	return img
+}
+
+// WithGlowSpec sets detailed glow settings and enables the glow flag.
+func (img Image) WithGlowSpec(glow *ShapeGlow) Image {
+	img.Glow = glow != nil
+	img.GlowSpec = glow
+	return img
+}
+
+// WithBlurSpec blurs the image by the given radius. A nil spec removes the blur.
+func (img Image) WithBlurSpec(blur *ShapeBlur) Image {
+	img.BlurSpec = blur
+	return img
+}
+
+// WithSoftEdgeSpec sets detailed soft-edge settings and enables the flag.
+func (img Image) WithSoftEdgeSpec(softEdge *ShapeSoftEdge) Image {
+	img.SoftEdges = softEdge != nil
+	img.SoftEdgeSpec = softEdge
+	return img
+}
+
+// WithReflectionSpec sets detailed reflection settings and enables the flag.
+func (img Image) WithReflectionSpec(reflection *ShapeReflection) Image {
+	img.Reflection = reflection != nil
+	img.ReflectionSpec = reflection
 	return img
 }
 

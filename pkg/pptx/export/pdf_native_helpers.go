@@ -101,7 +101,7 @@ func renderPDFTable(pdf *gopdf.GoPdf, tab tables.Table) {
 			textY := tableCellStartY(cell, cellY, rowH, totalTextH)
 			for _, line := range lines {
 				pdf.SetX(tableCellTextX(pdf, cell, line, cellX, cw))
-				pdf.SetY(textY + fontBaselineShift(hint, fontSize))
+				pdf.SetY(textY + fontBaselineShift(pdf, hint, fontSize))
 				_ = pdf.Cell(nil, line)
 				textY += lineHeight
 				if textY > cellY+rowH-2 {

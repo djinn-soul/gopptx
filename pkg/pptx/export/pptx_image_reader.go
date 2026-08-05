@@ -31,6 +31,14 @@ type SlideImage struct {
 	Reflection   bool
 	AltText      string
 	IsDecorative bool
+
+	InnerShadow       bool
+	Glow              bool
+	SoftEdges         bool
+	Blur              bool
+	GlowRadiusEmu     int
+	SoftEdgeRadiusEmu int
+	BlurRadiusEmu     int
 }
 
 // extractSlideImages reads a PPTX file and returns images per slide (0-based).
@@ -94,6 +102,14 @@ func extractSlideImages(pptxPath string) ([][]SlideImage, error) {
 				Reflection:   pic.Reflection,
 				AltText:      pic.AltText,
 				IsDecorative: pic.IsDecorative,
+
+				InnerShadow:       pic.InnerShadow,
+				Glow:              pic.Glow,
+				SoftEdges:         pic.SoftEdges,
+				Blur:              pic.Blur,
+				GlowRadiusEmu:     pic.GlowRadiusEmu,
+				SoftEdgeRadiusEmu: pic.SoftEdgeRadiusEmu,
+				BlurRadiusEmu:     pic.BlurRadiusEmu,
 			})
 		}
 		result[i] = images

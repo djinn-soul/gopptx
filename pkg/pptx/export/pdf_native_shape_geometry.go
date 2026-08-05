@@ -81,6 +81,7 @@ func setPDFShapeStroke(pdf *gopdf.GoPdf, s shapes.Shape) bool {
 	}
 	pdf.SetLineWidth(strokeWidth)
 	pdf.SetStrokeColor(hexToRGB(s.Line.Color))
+	applyPDFLineDash(pdf, shapeLineDash(s), strokeWidth)
 	return true
 }
 
@@ -132,17 +133,17 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 			{X: x + w, Y: y + h}, {X: x, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeRightArrow:
-		pdf.Polygon(rightArrowPoints(x, y, w, h), style)
+		pdf.Polygon(rightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeLeftArrow:
-		pdf.Polygon(leftArrowPoints(x, y, w, h), style)
+		pdf.Polygon(leftArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeUpArrow:
-		pdf.Polygon(upArrowPoints(x, y, w, h), style)
+		pdf.Polygon(upArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeDownArrow:
-		pdf.Polygon(downArrowPoints(x, y, w, h), style)
+		pdf.Polygon(downArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeLeftRightArrow:
-		pdf.Polygon(leftRightArrowPoints(x, y, w, h), style)
+		pdf.Polygon(leftRightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeUpDownArrow:
-		pdf.Polygon(upDownArrowPoints(x, y, w, h), style)
+		pdf.Polygon(upDownArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeChevronArrow:
 		pdf.Polygon(chevronPoints(x, y, w, h), style)
 	case shapes.ShapeTypeStar4, shapes.ShapeTypeStar5, shapes.ShapeTypeStar6,

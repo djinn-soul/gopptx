@@ -42,7 +42,9 @@ func buildPDFStyledRuns(runs []text.Run, fittedSize int, defaultBold, defaultIta
 	}
 	out := make([]pdfStyledRun, 0, len(runs))
 	for _, run := range runs {
-		out = append(out, pdfStyledRunFromTextRun(run, fittedSize, defaultBold, defaultItalic))
+		// A small-caps run becomes several: its capitals and its small capitals
+		// are drawn at different sizes.
+		out = append(out, splitSmallCapsRun(pdfStyledRunFromTextRun(run, fittedSize, defaultBold, defaultItalic))...)
 	}
 	return out
 }
@@ -62,13 +64,19 @@ func pdfStyledRunFromTextRun(run text.Run, fittedSize int, defaultBold, defaultI
 		fontHint = inferCodeFontHint(run.Text)
 	}
 	styled := pdfStyledRun{
-		Text:     run.Text,
-		Bold:     run.Bold || defaultBold,
-		Italic:   run.Italic || defaultItalic,
-		Color:    color,
-		FontHint: fontHint,
-		Lang:     strings.TrimSpace(run.Lang),
-		SizePt:   size,
+		Text:          applyRunCapsTransform(run.Text, run.AllCaps),
+		Bold:          run.Bold || defaultBold,
+		Italic:        run.Italic || defaultItalic,
+		Color:         color,
+		FontHint:      fontHint,
+		Lang:          strings.TrimSpace(run.Lang),
+		SizePt:        size,
+		Underline:     normalizeDecoration(run.Underline),
+		Strikethrough: normalizeDecoration(run.Strikethrough),
+		Subscript:     run.Subscript,
+		Superscript:   run.Superscript,
+		// AllCaps is already folded into Text; only small caps changes the size.
+		SmallCaps: run.SmallCaps && !run.AllCaps,
 	}
 	if run.Highlight != "" {
 		r, g, b := hexToRGB(run.Highlight)

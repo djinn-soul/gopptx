@@ -32,6 +32,7 @@ func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 	r, g, b := hexToRGB(c.Line.Color)
 	pdf.SetStrokeColor(r, g, b)
 	pdf.SetFillColor(r, g, b)
+	applyPDFLineDash(pdf, c.Line.Dash, strokeW)
 
 	startAngle := math.Atan2(y2-y1, x2-x1)
 	endAngle := startAngle
@@ -64,6 +65,9 @@ func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 		pdf.Line(x1, y1, x2, y2)
 		labelX, labelY = connectorLabelPosition(labelX, labelY, endAngle, c.Label)
 	}
+
+	// PowerPoint dashes the connector body but draws its arrowheads solid.
+	clearPDFLineDash(pdf)
 
 	if shapes.NormalizeArrowType(c.StartArrow) != shapes.ArrowTypeNone {
 		drawPDFArrowhead(

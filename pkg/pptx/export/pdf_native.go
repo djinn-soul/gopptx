@@ -85,6 +85,9 @@ func pdfViaNative(
 	pdf.Start(gopdf.Config{
 		PageSize: gopdf.Rect{W: page.WidthPt, H: page.HeightPt},
 	})
+	// The document's font registry lives as long as the document does; dropping
+	// it here keeps a long-lived process from holding one per export.
+	defer releaseDocumentFonts(pdf)
 	if err := configureNativePDFFont(pdf, opts); err != nil {
 		return err
 	}
@@ -218,7 +221,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 			break
 		}
 		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign))
-		pdf.SetY(yPos + fontBaselineShift(slide.TitleFont, titleSize))
+		pdf.SetY(yPos + fontBaselineShift(pdf, slide.TitleFont, titleSize))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
 	}
@@ -292,13 +295,18 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 	if rotated {
 		pdf.RotateReset()
 	}
+	// The outline is done; text decorations drawn below are lines too and must
+	// not inherit the shape's dash.
+	clearPDFLineDash(pdf)
 
 	if s.Text != "" {
 		renderPDFShapeText(pdf, s, x, y, w, h)
 	}
 
-	// Reset colors
+	// Reset colors. The dash pattern is document-wide state in gopdf, so a
+	// dashed shape would otherwise leave every later stroke dashed too.
 	pdf.SetFillColor(255, 255, 255)
 	pdf.SetStrokeColor(0, 0, 0)
 	pdf.SetLineWidth(1)
+	clearPDFLineDash(pdf)
 }

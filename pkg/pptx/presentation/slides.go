@@ -93,14 +93,13 @@ func renderSlides(
 			layoutTarget = layoutTargetForMaster(layoutTarget, masterNum)
 		}
 
-		pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), slideXML)
 		commentTarget := ""
 		if len(commentsBySlide[i]) > 0 {
 			pw.AddPart(fmt.Sprintf("ppt/comments/comment%d.xml", num), pptxxml.CommentsXML(commentsBySlide[i]))
 			commentTarget = fmt.Sprintf("../comments/comment%d.xml", num)
 		}
 
-		pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), pptxxml.SlideRelationshipsWithAll(
+		relsXML := pptxxml.SlideRelationshipsWithAll(
 			layoutTarget,
 			builder.targets,
 			parts.chartRel,
@@ -110,7 +109,20 @@ func renderSlides(
 			notesTargets[num],
 			hyperlinks,
 			commentTarget,
-		))
+		)
+
+		inkParts := attachInk(
+			slideXML,
+			relsXML,
+			slideInkAnnotations(slide),
+			inkPartStartIndex(slides, i),
+		)
+		for path, content := range inkParts.Parts {
+			pw.AddPart(path, content)
+		}
+
+		pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), inkParts.SlideXML)
+		pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), inkParts.RelsXML)
 	}
 	return nil
 }

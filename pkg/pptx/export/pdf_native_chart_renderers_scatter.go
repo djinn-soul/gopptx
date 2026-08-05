@@ -3,7 +3,6 @@ package export
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/signintech/gopdf"
 )
@@ -41,13 +40,7 @@ func renderPieLike(
 
 		if opts.showDataLabels {
 			midAngle := (start + end) / 2
-			if opts.showCatName && i < len(categories) && categories[i] != "" {
-				drawPieSliceLabel(pdf, cx, cy, radius, midAngle, categories[i])
-			} else {
-				pct := frac * 100
-				label := strconv.FormatFloat(pct, 'f', 1, 64) + "%"
-				drawPieSliceLabel(pdf, cx, cy, radius, midAngle, label)
-			}
+			drawPieSliceLabel(pdf, cx, cy, radius, midAngle, pieSliceLabelText(opts, categories, i, v, total, frac))
 		}
 		start = end
 	}

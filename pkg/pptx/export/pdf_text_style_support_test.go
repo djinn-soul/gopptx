@@ -90,12 +90,13 @@ func TestParagraphTabStopsPtConvertsEMU(t *testing.T) {
 func TestResolvePDFFontAliasForRunUsesLangFallback(t *testing.T) {
 	t.Parallel()
 
-	setPDFFontAliases("SansAlias", "SerifAlias", "MonoAlias")
-	setPDFCJKAlias("CJKAlias")
-	if got := resolvePDFFontAliasForRun("", "ja-JP"); got != "CJKAlias" {
+	pdf := newTestPDF(t)
+	setPDFFontAliases(pdf, "SansAlias", "SerifAlias", "MonoAlias")
+	setPDFCJKAlias(pdf, "CJKAlias")
+	if got := resolvePDFFontAliasForRun(pdf, "", "ja-JP"); got != "CJKAlias" {
 		t.Fatalf("expected CJK alias for ja-JP, got %q", got)
 	}
-	if got := resolvePDFFontAliasForRun("Consolas", "ja-JP"); got != "MonoAlias" {
+	if got := resolvePDFFontAliasForRun(pdf, "Consolas", "ja-JP"); got != "MonoAlias" {
 		t.Fatalf("expected font hint to win over lang fallback, got %q", got)
 	}
 }

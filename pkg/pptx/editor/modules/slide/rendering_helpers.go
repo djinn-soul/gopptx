@@ -68,6 +68,25 @@ func RenderSlideImageRef(
 		Reflection:   img.Reflection,
 		AltText:      img.AltText,
 		IsDecorative: img.IsDecorative,
+
+		InnerShadow: img.InnerShadow,
+		Glow:        img.Glow,
+		SoftEdges:   img.SoftEdges,
+	}
+	if img.GlowSpec != nil {
+		ref.GlowSpec = &pptxxml.ShapeGlowSpec{Color: img.GlowSpec.Color, RadiusEmu: img.GlowSpec.RadiusEmu}
+	}
+	if img.BlurSpec != nil {
+		ref.BlurSpec = &pptxxml.ShapeBlurSpec{RadiusEmu: img.BlurSpec.RadiusEmu}
+	}
+	if img.SoftEdgeSpec != nil {
+		ref.SoftEdgeSpec = &pptxxml.ShapeSoftEdgeSpec{RadiusEmu: img.SoftEdgeSpec.RadiusEmu}
+	}
+	if img.ReflectionSpec != nil {
+		ref.ReflectionSpec = &pptxxml.ShapeReflectionSpec{
+			BlurEmu:     img.ReflectionSpec.BlurEmu,
+			DistanceEmu: img.ReflectionSpec.DistanceEmu,
+		}
 	}
 	if img.Crop != (shapes.ImageCrop{}) {
 		ref.Crop = &pptxxml.ImageCropRef{

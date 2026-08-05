@@ -7,6 +7,7 @@ import (
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/animations"
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
+	"github.com/djinn-soul/gopptx/pkg/pptx/ink"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/tables"
@@ -108,7 +109,10 @@ type SlideContent struct {
 	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
 	Comments             []SlideComment
-	Hidden               bool
+	// InkAnnotations holds pen strokes drawn on the slide. Each annotation
+	// becomes one InkML part plus a content-part reference in the shape tree.
+	InkAnnotations []*ink.Annotation
+	Hidden         bool
 }
 
 // SlideComment describes an author's comment on a slide.

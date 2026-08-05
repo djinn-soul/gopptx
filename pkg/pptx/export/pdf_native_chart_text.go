@@ -82,7 +82,7 @@ func drawChartLabel(pdf *gopdf.GoPdf, text string, x, y float64, size int, align
 	case chartTextLeft:
 	}
 	pdf.SetX(drawX)
-	pdf.SetY(y - pdfLineHeight(size)/2 + fontBaselineShift("", size))
+	pdf.SetY(y - pdfLineHeight(size)/2 + fontBaselineShift(pdf, "", size))
 	_ = pdf.Cell(nil, text)
 }
 

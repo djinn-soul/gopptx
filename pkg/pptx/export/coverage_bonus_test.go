@@ -125,7 +125,7 @@ func TestPDF_FontSelection(t *testing.T) {
 		t.Error("inferCodeFontHint failed for code block")
 	}
 
-	setPDFFontAliases("Arial", "Times", "Courier")
+	setPDFFontAliases(nil, "Arial", "Times", "Courier")
 }
 
 func TestPDF_FileBased(t *testing.T) {
