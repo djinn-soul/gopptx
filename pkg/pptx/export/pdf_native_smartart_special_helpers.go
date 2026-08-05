@@ -86,7 +86,7 @@ func drawSmartArtCenteredText(pdf *gopdf.GoPdf, text string, x, y, w, h float64,
 	for i, line := range lines {
 		lineW := measuredWidth(pdf, line)
 		pdf.SetX(x + max((w-lineW)/2, 0))
-		pdf.SetY(startY + float64(i)*lineH + fontBaselineShift("", fontSize))
+		pdf.SetY(startY + float64(i)*lineH + fontBaselineShift(pdf, "", fontSize))
 		_ = pdf.Cell(nil, line)
 	}
 	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
@@ -97,7 +97,7 @@ func drawSmartArtTopText(pdf *gopdf.GoPdf, text string, x, y, w float64, color s
 	pdf.SetTextColor(hexToRGB(color))
 	lineW := measuredWidth(pdf, text)
 	pdf.SetX(x + max((w-lineW)/2, 0))
-	pdf.SetY(y + fontBaselineShift("", fontSize))
+	pdf.SetY(y + fontBaselineShift(pdf, "", fontSize))
 	_ = pdf.Cell(nil, text)
 	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
@@ -108,7 +108,7 @@ func drawSmartArtVerticalText(pdf *gopdf.GoPdf, text string, cx, cy float64, col
 	lineW := measuredWidth(pdf, text)
 	pdf.Rotate(90, cx, cy)
 	pdf.SetX(cx - lineW/2)
-	pdf.SetY(cy + fontBaselineShift("", fontSize))
+	pdf.SetY(cy + fontBaselineShift(pdf, "", fontSize))
 	_ = pdf.Cell(nil, text)
 	pdf.RotateReset()
 	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")

@@ -136,9 +136,9 @@ func pdfLineHeight(fontSize int) float64 {
 // fontBaselineShift is the correction added to a line's top Y so that gopdf's
 // Cell() lands the baseline where PowerPoint puts it. gopdf already offsets by
 // OS/2 typoAscender, so only the remainder is applied here.
-func fontBaselineShift(fontHint string, fontSize int) float64 {
+func fontBaselineShift(pdf *gopdf.GoPdf, fontHint string, fontSize int) float64 {
 	if fontSize <= 0 {
 		fontSize = defaultFontSize
 	}
-	return float64(fontSize) * metricsForFontHint(fontHint).baselineShiftFactor()
+	return float64(fontSize) * metricsForFontHint(pdf, fontHint).baselineShiftFactor()
 }

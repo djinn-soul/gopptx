@@ -45,7 +45,13 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 	// A shape that does not shrink its text lets that text spill past the box,
 	// exactly as PowerPoint does; clipping it there dropped the tail of any
 	// caption longer than its shape.
-	clipToBox := shapeTextShrinksToFit(s)
+	//
+	// Clipping is also dropped when the box is too short for even one line,
+	// which is the shape of a diagram node: a 10pt label in a 15pt-tall box
+	// cannot shrink any further (the autofit floor is 10pt), and clipping it
+	// left the node drawn but empty. PowerPoint overflows there rather than
+	// blanking the shape.
+	clipToBox := shapeTextShrinksToFit(s) && shapeTextBoxFitsALine(layout, boxH)
 	yPos := startY
 	for _, line := range layout {
 		if clipToBox && yPos+line.lineHeight > boxY+boxH+0.5 {
@@ -66,6 +72,16 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
 
+// shapeTextBoxFitsALine reports whether the box has room for the first laid-out
+// line. When it does not, clipping would remove every line and the shape would
+// render empty.
+func shapeTextBoxFitsALine(layout []shapeParagraphLayoutLine, boxH float64) bool {
+	if len(layout) == 0 {
+		return true
+	}
+	return layout[0].lineHeight <= boxH+0.5
+}
+
 // shapeTextShrinksToFit reports whether the shape asked PowerPoint to shrink its
 // text on overflow.
 //
@@ -78,14 +94,25 @@ func shapeTextShrinksToFit(s shapes.Shape) bool {
 }
 
 // shapeParagraphNaturalSize is the size the runs ask for, with no fitting.
+//
+// defaultFontSize is the size of a run that states none — a fallback, not a
+// floor. Seeding the maximum with it rendered 10pt text at 18pt, and in a short
+// box that oversized line was then clipped away entirely.
 func shapeParagraphNaturalSize(paragraphs []text.Paragraph) int {
-	maxSize := defaultFontSize
+	maxSize := 0
 	for _, paragraph := range paragraphs {
 		for _, run := range paragraph.Runs {
-			if run.SizePt > maxSize {
-				maxSize = run.SizePt
+			size := run.SizePt
+			if size <= 0 {
+				size = defaultFontSize
+			}
+			if size > maxSize {
+				maxSize = size
 			}
 		}
+	}
+	if maxSize <= 0 {
+		return defaultFontSize
 	}
 	return maxSize
 }
@@ -228,17 +255,22 @@ func buildShapeParagraphPrefixRuns(
 	}}
 }
 
+// maxStyledRunsLineHeight is the height of a line, set by its tallest run.
+//
+// The default size is the fallback for a run that states no size of its own; it
+// is not a minimum for the line. Seeding the maximum with it gave every line a
+// 21.6pt floor, so a 10pt label in a 15pt-tall shape was taller than its box and
+// the shrink-to-fit clip dropped it before drawing a single line.
 func maxStyledRunsLineHeight(runs []pdfStyledRun) float64 {
-	maxHeight := pdfLineHeight(defaultFontSize)
+	maxHeight := 0.0
 	for _, run := range runs {
-		size := run.SizePt
-		if size <= 0 {
-			size = defaultFontSize
-		}
-		height := pdfLineHeight(size)
+		height := pdfLineHeight(runSizePt(run))
 		if height > maxHeight {
 			maxHeight = height
 		}
+	}
+	if maxHeight <= 0 {
+		return pdfLineHeight(defaultFontSize)
 	}
 	return maxHeight
 }

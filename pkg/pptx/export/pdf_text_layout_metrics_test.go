@@ -112,8 +112,7 @@ func TestReadTTFLineMetricsRejectsNonFont(t *testing.T) {
 }
 
 func TestMetricsForFontHintFallsBackForUnregisteredAlias(t *testing.T) {
-	resetPDFFontMetrics()
-	got := metricsForFontHint("Nonexistent Font")
+	got := metricsForFontHint(nil, "Nonexistent Font")
 	if got != fallbackLineMetrics {
 		t.Fatalf("unregistered hint metrics=%+v want fallback", got)
 	}

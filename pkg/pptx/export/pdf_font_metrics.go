@@ -6,7 +6,8 @@ import (
 	"errors"
 	"math"
 	"os"
-	"sync"
+
+	"github.com/signintech/gopdf"
 )
 
 // PowerPoint sizes its line box as a flat 1.2 x the point size, independent of
@@ -32,6 +33,18 @@ type ttfLineMetrics struct {
 	Descender    float64 // negative, as stored in hhea
 	LineGap      float64
 	TypoAscender float64
+
+	// Decoration and script metrics. Underline comes from the post table,
+	// the rest from OS/2. All are in font units; zero means the font did not
+	// state the value and the em-fraction accessors below substitute a default.
+	UnderlinePosition  float64 // negative: below the baseline
+	UnderlineThickness float64
+	StrikeoutPosition  float64 // positive: above the baseline
+	StrikeoutSize      float64
+	SubscriptSize      float64
+	SubscriptOffset    float64 // positive: below the baseline
+	SuperscriptSize    float64
+	SuperscriptOffset  float64 // positive: above the baseline
 }
 
 // fallbackLineMetrics approximates Calibri and is used when a font file cannot
@@ -42,6 +55,67 @@ var fallbackLineMetrics = ttfLineMetrics{ //nolint:gochecknoglobals // Immutable
 	Descender:    -512,
 	LineGap:      452,
 	TypoAscender: 1536,
+
+	UnderlinePosition:  -205, // -0.1 em
+	UnderlineThickness: 102,  // 0.05 em
+	StrikeoutPosition:  512,  // 0.25 em
+	StrikeoutSize:      102,  // 0.05 em
+	SubscriptSize:      1331, // 0.65 em
+	SubscriptOffset:    287,  // 0.14 em
+	SuperscriptSize:    1331, // 0.65 em
+	SuperscriptOffset:  819,  // 0.4 em
+}
+
+// emFraction converts a value in font units to a fraction of the em, falling
+// back to defaultEm when the font left the field at zero.
+func (m ttfLineMetrics) emFraction(value, defaultEm float64) float64 {
+	if m.UnitsPerEm <= 0 || value == 0 {
+		return defaultEm
+	}
+	return value / m.UnitsPerEm
+}
+
+// underlineOffsetFactor is how far below the baseline the underline sits, as a
+// fraction of the point size.
+func (m ttfLineMetrics) underlineOffsetFactor() float64 {
+	return -m.emFraction(m.UnderlinePosition, -0.1)
+}
+
+func (m ttfLineMetrics) underlineThicknessFactor() float64 {
+	return m.emFraction(m.UnderlineThickness, 0.05)
+}
+
+// strikeoutOffsetFactor is how far above the baseline the strike line sits.
+func (m ttfLineMetrics) strikeoutOffsetFactor() float64 {
+	return m.emFraction(m.StrikeoutPosition, 0.25)
+}
+
+func (m ttfLineMetrics) strikeoutThicknessFactor() float64 {
+	return m.emFraction(m.StrikeoutSize, 0.05)
+}
+
+func (m ttfLineMetrics) subscriptSizeFactor() float64 {
+	return m.emFraction(m.SubscriptSize, 0.65)
+}
+
+func (m ttfLineMetrics) subscriptOffsetFactor() float64 {
+	return m.emFraction(m.SubscriptOffset, 0.14)
+}
+
+func (m ttfLineMetrics) superscriptSizeFactor() float64 {
+	return m.emFraction(m.SuperscriptSize, 0.65)
+}
+
+func (m ttfLineMetrics) superscriptOffsetFactor() float64 {
+	return m.emFraction(m.SuperscriptOffset, 0.4)
+}
+
+// typoAscenderFactor is the baseline drop gopdf itself applies inside Cell().
+func (m ttfLineMetrics) typoAscenderFactor() float64 {
+	if m.UnitsPerEm <= 0 {
+		return 0
+	}
+	return m.TypoAscender / m.UnitsPerEm
 }
 
 // powerPointLineBoxFactor is the height of one line box at 100% line spacing,
@@ -78,39 +152,22 @@ func clampFloat(v, lo, hi float64) float64 {
 	return math.Min(math.Max(v, lo), hi)
 }
 
-//nolint:gochecknoglobals // Metrics are registered once per PDF font alias and read by every layout call.
-var (
-	pdfFontMetricsMu sync.RWMutex
-	pdfFontMetrics   = map[string]ttfLineMetrics{}
-)
-
-// registerPDFFontMetrics parses fontPath and stores its metrics under alias.
-// A parse failure is not fatal: the alias simply falls back to Calibri-like
-// metrics, matching how font registration itself degrades.
-func registerPDFFontMetrics(alias, fontPath string) {
+// registerPDFFontMetrics parses fontPath and stores its metrics under alias for
+// the document being written. A parse failure is not fatal: the alias simply
+// falls back to Calibri-like metrics, matching how font registration itself
+// degrades.
+func registerPDFFontMetrics(pdf *gopdf.GoPdf, alias, fontPath string) {
 	m, err := readTTFLineMetrics(fontPath)
 	if err != nil {
 		return
 	}
-	pdfFontMetricsMu.Lock()
-	pdfFontMetrics[alias] = m
-	pdfFontMetricsMu.Unlock()
+	documentFontsFor(pdf).putMetrics(alias, m)
 }
 
-// resetPDFFontMetrics drops every registered alias. Each export registers its
-// own fonts, so stale metrics must not leak between documents.
-func resetPDFFontMetrics() {
-	pdfFontMetricsMu.Lock()
-	pdfFontMetrics = map[string]ttfLineMetrics{}
-	pdfFontMetricsMu.Unlock()
-}
-
-// lookupPDFFontMetrics returns the metrics registered for alias, or the
-// Calibri-like fallback.
-func lookupPDFFontMetrics(alias string) ttfLineMetrics {
-	pdfFontMetricsMu.RLock()
-	m, ok := pdfFontMetrics[alias]
-	pdfFontMetricsMu.RUnlock()
+// lookupPDFFontMetrics returns the metrics registered for alias in this
+// document, or the Calibri-like fallback.
+func lookupPDFFontMetrics(pdf *gopdf.GoPdf, alias string) ttfLineMetrics {
+	m, ok := documentFontsFor(pdf).lookupMetrics(alias)
 	if !ok {
 		return fallbackLineMetrics
 	}
@@ -118,9 +175,9 @@ func lookupPDFFontMetrics(alias string) ttfLineMetrics {
 }
 
 // metricsForFontHint resolves a PPTX typeface hint to the metrics of the font
-// actually embedded for it.
-func metricsForFontHint(fontHint string) ttfLineMetrics {
-	return lookupPDFFontMetrics(resolvePDFFontAlias(fontHint))
+// actually embedded for it in this document.
+func metricsForFontHint(pdf *gopdf.GoPdf, fontHint string) ttfLineMetrics {
+	return lookupPDFFontMetrics(pdf, resolvePDFFontAlias(pdf, fontHint))
 }
 
 // TTF/OTF table offsets used below, in bytes from the start of each table.
@@ -134,6 +191,19 @@ const (
 	hheaDescenderOffset   = 6
 	hheaLineGapOffset     = 8
 	os2TypoAscenderOffset = 68
+
+	// post table: underline placement, in font units.
+	postUnderlinePositionOffset  = 8
+	postUnderlineThicknessOffset = 10
+
+	// OS/2 table: strike-through placement and the script metrics PowerPoint
+	// uses to draw subscript and superscript runs.
+	os2SubscriptYSizeOffset     = 12
+	os2SubscriptYOffsetOffset   = 16
+	os2SuperscriptYSizeOffset   = 20
+	os2SuperscriptYOffsetOffset = 24
+	os2StrikeoutSizeOffset      = 26
+	os2StrikeoutPositionOffset  = 28
 )
 
 var errFontTableMissing = errors.New("required font table missing")
@@ -177,22 +247,45 @@ func readTTFLineMetrics(fontPath string) (ttfLineMetrics, error) {
 		return ttfLineMetrics{}, errFontTableMissing
 	}
 
+	metrics := ttfLineMetrics{
+		UnitsPerEm: float64(upem),
+		Ascender:   float64(ascender),
+		Descender:  float64(descender),
+		LineGap:    float64(lineGap),
+	}
+	readTTFDecorationMetrics(data, tables, &metrics)
+	return metrics, nil
+}
+
+// readTTFDecorationMetrics fills in the optional post and OS/2 fields. Every one
+// of them is allowed to be missing: the em-fraction accessors substitute a
+// default, so a font without a post table still gets an underline.
+func readTTFDecorationMetrics(data []byte, tables map[string]uint32, metrics *ttfLineMetrics) {
+	if post, ok := tables["post"]; ok {
+		metrics.UnderlinePosition = readInt16OrZero(data, post+postUnderlinePositionOffset)
+		metrics.UnderlineThickness = readInt16OrZero(data, post+postUnderlineThicknessOffset)
+	}
+	os2, ok := tables["OS/2"]
+	if !ok {
+		return
+	}
 	// gopdf offsets its own baseline by OS/2 typoAscender. When OS/2 is absent
 	// or truncated it uses zero, so mirror that rather than guessing.
-	typoAscender := int16(0)
-	if os2, ok := tables["OS/2"]; ok {
-		if v, readErr := readInt16At(data, os2+os2TypoAscenderOffset); readErr == nil {
-			typoAscender = v
-		}
-	}
+	metrics.TypoAscender = readInt16OrZero(data, os2+os2TypoAscenderOffset)
+	metrics.SubscriptSize = readInt16OrZero(data, os2+os2SubscriptYSizeOffset)
+	metrics.SubscriptOffset = readInt16OrZero(data, os2+os2SubscriptYOffsetOffset)
+	metrics.SuperscriptSize = readInt16OrZero(data, os2+os2SuperscriptYSizeOffset)
+	metrics.SuperscriptOffset = readInt16OrZero(data, os2+os2SuperscriptYOffsetOffset)
+	metrics.StrikeoutSize = readInt16OrZero(data, os2+os2StrikeoutSizeOffset)
+	metrics.StrikeoutPosition = readInt16OrZero(data, os2+os2StrikeoutPositionOffset)
+}
 
-	return ttfLineMetrics{
-		UnitsPerEm:   float64(upem),
-		Ascender:     float64(ascender),
-		Descender:    float64(descender),
-		LineGap:      float64(lineGap),
-		TypoAscender: float64(typoAscender),
-	}, nil
+func readInt16OrZero(data []byte, offset uint32) float64 {
+	v, err := readInt16At(data, offset)
+	if err != nil {
+		return 0
+	}
+	return float64(v)
 }
 
 // parseSFNTTableDirectory maps table tags to their absolute byte offsets.

@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/signintech/gopdf"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
 // legendEntry describes one entry in a chart legend (series name + color).
@@ -17,13 +19,24 @@ type legendEntry struct {
 
 // chartSeriesOpts holds optional rendering hints for chart renderers.
 type chartSeriesOpts struct {
-	color              string   // hex color override; empty = use renderer default
-	minValue           *float64 // axis min override
-	maxValue           *float64 // axis max override
-	showLegend         bool
-	legendPosition     string // "r","l","t","b"
-	seriesName         string
-	showDataLabels     bool
+	color          string   // hex color override; empty = use renderer default
+	minValue       *float64 // axis min override
+	maxValue       *float64 // axis max override
+	showLegend     bool
+	legendPosition string // "r","l","t","b"
+	seriesName     string
+	showDataLabels bool
+	dataLabels     charts.DataLabelSettings // c:dLbls content and placement
+	// categories and valueTotal are filled in by the renderer just before it
+	// draws, so a data label can name its category or state its share of the
+	// series without every drawing helper having to carry them.
+	categories []string
+	valueTotal float64
+	// plot is the solved plot rect: data labels wrap against it and are kept
+	// inside it. hasPlot says whether the renderer has supplied it yet.
+	plot               chartRect
+	hasPlot            bool
+	labelWrapWidth     float64
 	showCatName        bool // explicitly show category names in data labels (Pie/Doughnut)
 	catAxisTitle       string
 	valAxisTitle       string
@@ -48,7 +61,7 @@ func categoryLabel(categories []string, i int) string {
 // Supported: "General"/empty → rounded integer; contains "%" → append "%";
 // starts with "$" → prepend "$". Anything else falls back to rounded integer.
 func formatTickValue(v float64, format string) string {
-	if format == "" || format == "General" {
+	if format == "" || format == chartGeneralNumberFormat {
 		return strconv.Itoa(int(math.Round(v)))
 	}
 	if strings.Contains(format, "%") {

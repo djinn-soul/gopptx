@@ -9,6 +9,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/fonts"
 	"github.com/djinn-soul/gopptx/pkg/pptx/handout"
+	"github.com/djinn-soul/gopptx/pkg/pptx/printsettings"
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 	"github.com/djinn-soul/gopptx/pkg/pptx/vba"
 )
@@ -35,6 +36,7 @@ type Metadata struct {
 	Masters       []*elements.SlideMaster
 	NotesMaster   *elements.NotesMaster
 	HandoutMaster *handout.HandoutMaster
+	PrintSettings *printsettings.Settings
 	Sections      []Section
 	RTL           bool
 	VBA           *vba.VBAProject

@@ -7,9 +7,9 @@ import (
 )
 
 func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
-	// Metrics are keyed by alias and every export registers its own fonts, so
-	// clear anything a previous export left behind.
-	resetPDFFontMetrics()
+	// Font aliases and metrics belong to this document, so the registry starts
+	// empty: nothing a previous export embedded is valid here.
+	startDocumentFonts(pdf)
 	sansAlias := ""
 	if tryNativePDFFonts(pdf, opts.NativeFontPaths, fontFamilySans) {
 		sansAlias = fontFamilySans
@@ -48,8 +48,8 @@ func configureNativePDFFont(pdf *gopdf.GoPdf, opts PDFOptions) error {
 	if tryNativePDFFonts(pdf, systemFontPathsForFamily(fontFamilyCJK), fontFamilyCJK) {
 		cjkAlias = fontFamilyCJK
 	}
-	setPDFFontAliases(sansAlias, serifAlias, monoAlias)
-	setPDFCJKAlias(cjkAlias)
+	setPDFFontAliases(pdf, sansAlias, serifAlias, monoAlias)
+	setPDFCJKAlias(pdf, cjkAlias)
 	return nil
 }
 
@@ -68,7 +68,7 @@ func tryNativePDFFonts(pdf *gopdf.GoPdf, fontPaths []string, alias string) bool 
 		}
 		if err := pdf.SetFont(alias, "", defaultFontSize); err == nil {
 			// The regular face supplies the line metrics for this alias.
-			registerPDFFontMetrics(alias, path)
+			registerPDFFontMetrics(pdf, alias, path)
 			return true
 		}
 	}

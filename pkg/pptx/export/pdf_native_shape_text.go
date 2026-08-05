@@ -65,7 +65,7 @@ func renderPDFShapeText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64) {
 			break
 		}
 		pdf.SetX(boxX)
-		pdf.SetY(yPos + fontBaselineShift(fontHint, fontSize))
+		pdf.SetY(yPos + fontBaselineShift(pdf, fontHint, fontSize))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
 		if i < len(lines)-1 {

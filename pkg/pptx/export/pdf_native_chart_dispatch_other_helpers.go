@@ -12,6 +12,7 @@ func renderPieChart(pdf *gopdf.GoPdf, c *charts.PieChart) {
 		c.Values, 0, c.Categories,
 		chartSeriesOpts{
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			showLegend:     c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			titleOverlay: c.TitleOverlay,
 		},
@@ -24,6 +25,7 @@ func renderDoughnutChart(pdf *gopdf.GoPdf, c *charts.DoughnutChart) {
 		c.Values, c.HoleSize, c.Categories,
 		chartSeriesOpts{
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			showLegend:     c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			titleOverlay: c.TitleOverlay,
 		},
@@ -38,6 +40,7 @@ func renderScatterChart(pdf *gopdf.GoPdf, c *charts.ScatterChart) {
 			color: c.LineColor, scatterStyle: c.ScatterStyle,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			titleOverlay:       c.TitleOverlay,

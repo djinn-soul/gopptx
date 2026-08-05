@@ -5,6 +5,8 @@ import (
 	"math"
 
 	"github.com/signintech/gopdf"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
 // drawHorizontalBarItem draws a single bar in a horizontal bar chart at row i.
@@ -26,7 +28,10 @@ func drawHorizontalBarItem(
 		if values[valueIndex] < 0 {
 			labelX = bx - 3
 		}
-		drawBarDataLabel(pdf, labelX, by+bh/2-3, values[valueIndex])
+		if dataLabelPosition(opts) == charts.DataLabelPositionInsideEnd {
+			labelX = bx + bw - dataLabelOutsideGapPt
+		}
+		drawChartDataLabel(pdf, opts, chartDataLabelAt(opts, valueIndex, values[valueIndex]), labelX, by+bh/2-3)
 	}
 }
 
@@ -50,15 +55,12 @@ func drawVerticalBarItem(
 	}
 	pdf.RectFromUpperLeftWithStyle(bx, barTop, bw, barH, "F")
 	if opts.showDataLabels {
-		labelY := barTop - 5
-		if v < 0 {
-			labelY = barTop + barH + 3
-		}
+		labelY := barLabelY(opts, barTop, barTop+barH, v < 0)
 		// Clamp: if the label would fall above the plot area, draw it inside the bar top.
 		if labelY < py {
-			labelY = barTop + 2
+			labelY = barTop + dataLabelInsideGapPt
 		}
-		drawBarDataLabel(pdf, bx+bw/2, labelY, v)
+		drawChartDataLabel(pdf, opts, chartDataLabelAt(opts, i, v), bx+bw/2, labelY)
 	}
 }
 
@@ -83,6 +85,7 @@ func renderBarLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
+	opts = withChartLabelData(opts, categories, values)
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -105,6 +108,7 @@ func renderBarLike(
 	}
 	layout := solveChartLayout(pdf, plotR, opts.titleOverlay, title, verticalAxis, horizontalAxis)
 	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+	opts = withChartPlotArea(opts, px, py, pw, ph)
 
 	barR, barG, barB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
@@ -170,6 +174,7 @@ func renderLineLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
+	opts = withChartLabelData(opts, categories, values)
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -191,6 +196,7 @@ func renderLineLike(
 		chartAxisSpec{Categories: categories},
 	)
 	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+	opts = withChartPlotArea(opts, px, py, pw, ph)
 
 	lineR, lineG, lineB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
@@ -225,7 +231,8 @@ func renderLineLike(
 			drawFilledCircle(pdf, pt.X, pt.Y, 2.5, lineR, lineG, lineB)
 		}
 		if opts.showDataLabels {
-			drawBarDataLabel(pdf, pt.X, pt.Y-8, values[i])
+			labelX, labelY := dataLabelPointAnchor(opts, pt.X, pt.Y)
+			drawChartDataLabel(pdf, opts, chartDataLabelAt(opts, i, values[i]), labelX, labelY)
 		}
 	}
 
@@ -261,6 +268,7 @@ func renderAreaLike(
 	if opts.showLegend {
 		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
 	}
+	opts = withChartLabelData(opts, categories, values)
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -282,6 +290,7 @@ func renderAreaLike(
 		chartAxisSpec{Categories: categories},
 	)
 	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+	opts = withChartPlotArea(opts, px, py, pw, ph)
 
 	areaR, areaG, areaB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {

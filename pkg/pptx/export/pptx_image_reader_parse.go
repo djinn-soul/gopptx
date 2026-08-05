@@ -26,6 +26,14 @@ type picRef struct {
 	Reflection   bool
 	AltText      string
 	IsDecorative bool
+
+	InnerShadow       bool
+	Glow              bool
+	SoftEdges         bool
+	Blur              bool
+	GlowRadiusEmu     int
+	SoftEdgeRadiusEmu int
+	BlurRadiusEmu     int
 }
 
 // decorativeExtURI is the OOXML extension URI that Office uses to mark a
@@ -96,6 +104,16 @@ type picReaderXML struct {
 		EffectLst *struct {
 			OuterShdw  *struct{} `xml:"outerShdw"`
 			Reflection *struct{} `xml:"reflection"`
+			InnerShdw  *struct{} `xml:"innerShdw"`
+			Glow       *struct {
+				Rad *int `xml:"rad,attr"`
+			} `xml:"glow"`
+			SoftEdge *struct {
+				Rad *int `xml:"rad,attr"`
+			} `xml:"softEdge"`
+			Blur *struct {
+				Rad *int `xml:"rad,attr"`
+			} `xml:"blur"`
 		} `xml:"effectLst"`
 	} `xml:"spPr"`
 }
@@ -155,6 +173,21 @@ func picRefFromXML(src *picReaderXML) (picRef, bool) {
 	if src.SpPr.EffectLst != nil {
 		ref.Shadow = src.SpPr.EffectLst.OuterShdw != nil
 		ref.Reflection = src.SpPr.EffectLst.Reflection != nil
+		ref.InnerShadow = src.SpPr.EffectLst.InnerShdw != nil
+		ref.Glow = src.SpPr.EffectLst.Glow != nil
+		ref.SoftEdges = src.SpPr.EffectLst.SoftEdge != nil
+		if e := src.SpPr.EffectLst.Glow; e != nil && e.Rad != nil {
+			ref.GlowRadiusEmu = *e.Rad
+		}
+		if e := src.SpPr.EffectLst.SoftEdge; e != nil && e.Rad != nil {
+			ref.SoftEdgeRadiusEmu = *e.Rad
+		}
+		if e := src.SpPr.EffectLst.Blur; e != nil {
+			ref.Blur = true
+			if e.Rad != nil {
+				ref.BlurRadiusEmu = *e.Rad
+			}
+		}
 	}
 	ref.AltText, ref.IsDecorative = picAltText(src)
 	return ref, true
