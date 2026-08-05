@@ -66,6 +66,39 @@ func splitOneStyledRun(run pdfStyledRun) []pdfStyledRun {
 	return tokens
 }
 
+// breakLongStyledRun splits a token that cannot fit its box on any line.
+//
+// It always returns at least one piece, so the caller can treat the last one as
+// the remainder to keep filling. A single rune wider than the box still gets
+// its own line rather than looping forever.
+func breakLongStyledRun(
+	pdf *gopdf.GoPdf,
+	run pdfStyledRun,
+	maxWidth float64,
+	tabStops []float64,
+) []pdfStyledRun {
+	pieces := make([]pdfStyledRun, 0, 2)
+	var b strings.Builder
+	flush := func() {
+		piece := run
+		piece.Text = b.String()
+		pieces = append(pieces, piece)
+		b.Reset()
+	}
+	for _, r := range run.Text {
+		candidate := run
+		candidate.Text = b.String() + string(r)
+		if b.Len() == 0 || measureStyledRunAdvance(pdf, candidate, 0, tabStops) <= maxWidth {
+			b.WriteRune(r)
+			continue
+		}
+		flush()
+		b.WriteRune(r)
+	}
+	flush()
+	return pieces
+}
+
 func wrapStyledRuns(pdf *gopdf.GoPdf, runs []pdfStyledRun, maxWidth float64, tabStops []float64) [][]pdfStyledRun {
 	tokens := splitStyledRunsForWrap(runs)
 	lines := make([][]pdfStyledRun, 0, 4)
@@ -86,8 +119,23 @@ func wrapStyledRuns(pdf *gopdf.GoPdf, runs []pdfStyledRun, maxWidth float64, tab
 		w := measureStyledRunAdvance(pdf, tok, lineW, tabStops)
 		if len(line) > 0 && lineW+w > maxWidth && !isWhitespaceOnlyRun(tok, false) {
 			pushLine()
+			w = measureStyledRunAdvance(pdf, tok, lineW, tabStops)
 		}
 		if len(line) == 0 && isWhitespaceOnlyRun(tok, true) {
+			continue
+		}
+		// A single token wider than the box has nowhere to wrap. The plain-text
+		// path splits it mid-word; without the same here, a long label such as
+		// [Subroutine] ran straight out of its node instead of breaking the way
+		// PowerPoint does.
+		if len(line) == 0 && w > maxWidth {
+			pieces := breakLongStyledRun(pdf, tok, maxWidth, tabStops)
+			for _, piece := range pieces[:len(pieces)-1] {
+				lines = append(lines, []pdfStyledRun{piece})
+			}
+			last := pieces[len(pieces)-1]
+			line = append(line, last)
+			lineW = measureStyledRunAdvance(pdf, last, 0, tabStops)
 			continue
 		}
 		line = append(line, tok)

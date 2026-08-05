@@ -92,8 +92,7 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 	case shapes.ShapeTypeRectangle:
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
 	case shapes.ShapeTypeRoundedRectangle:
-		radius := math.Min(w, h) * defaultRadiusFactor
-		_ = pdf.Rectangle(x, y, x+w, y+h, style, radius, 0)
+		drawRoundedRect(pdf, x, y, w, h, style)
 	case shapes.ShapeTypePie, shapes.ShapeTypePieWedge, shapes.ShapeTypeChord:
 		drawPieShape(pdf, s, x, y, w, h, style)
 	case shapes.ShapeTypeEllipse:

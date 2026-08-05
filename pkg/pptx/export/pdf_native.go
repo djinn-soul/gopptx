@@ -26,7 +26,10 @@ const (
 	defaultFontSize = 18
 
 	// Layout constants.
-	defaultRadiusFactor = 0.1
+	//
+	// PowerPoint's roundRect preset rounds by adj/100000 of the shorter side,
+	// and its default adj is 16667. 0.1 drew a noticeably tighter corner.
+	defaultRadiusFactor = 0.16667
 	minStrokeWidth      = 0.5
 
 	// nearZeroEpsilon is used for floating-point comparisons where a value
