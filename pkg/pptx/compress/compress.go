@@ -19,7 +19,7 @@ type part struct {
 
 // File compresses the PPTX at inPath and writes the result to outPath.
 func File(inPath, outPath string, opts Options) (Result, error) {
-	source, err := os.ReadFile(inPath) //nolint:gosec // caller-supplied package path
+	source, err := os.ReadFile(inPath)
 	if err != nil {
 		return Result{}, fmt.Errorf("read %s: %w", inPath, err)
 	}
@@ -27,6 +27,9 @@ func File(inPath, outPath string, opts Options) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	// The destination is the caller's own argument, not a value taken from the
+	// package being compressed, so there is nothing here to traverse out of.
+	//nolint:gosec // outPath is the caller's own argument
 	if err = os.WriteFile(outPath, out, 0o600); err != nil {
 		return Result{}, fmt.Errorf("write %s: %w", outPath, err)
 	}
@@ -265,8 +268,8 @@ func relsOwner(name string) string {
 // `ppt/media/image1.png`.
 func resolveTarget(owner, target string) string {
 	t := strings.TrimSpace(strings.ReplaceAll(target, "\\", "/"))
-	if strings.HasPrefix(t, "/") {
-		return strings.TrimPrefix(t, "/")
+	if rooted, ok := strings.CutPrefix(t, "/"); ok {
+		return rooted
 	}
 	base := path.Dir(normalizeName(owner))
 	if base == "." || base == "" {

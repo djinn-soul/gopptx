@@ -9,8 +9,8 @@ import (
 
 // PartSize is one part's uncompressed size.
 type PartSize struct {
-	Name  string
-	Bytes int64
+	Name  string `json:"name"`
+	Bytes int64  `json:"bytes"`
 }
 
 // Analysis reports where a package's bytes live, so a caller can tell whether
@@ -18,24 +18,24 @@ type PartSize struct {
 //
 //nolint:govet // Preserve public field order for source compatibility with positional literals.
 type Analysis struct {
-	TotalBytes  int64
-	MediaBytes  int64
-	SlideBytes  int64
-	ChartBytes  int64
-	ThemeBytes  int64
-	NotesBytes  int64
-	OtherBytes  int64
-	PartCount   int
-	ImageCount  int
-	SlideCount  int
-	LargestPart []PartSize
+	TotalBytes  int64      `json:"totalBytes"`
+	MediaBytes  int64      `json:"mediaBytes"`
+	SlideBytes  int64      `json:"slideBytes"`
+	ChartBytes  int64      `json:"chartBytes"`
+	ThemeBytes  int64      `json:"themeBytes"`
+	NotesBytes  int64      `json:"notesBytes"`
+	OtherBytes  int64      `json:"otherBytes"`
+	PartCount   int        `json:"partCount"`
+	ImageCount  int        `json:"imageCount"`
+	SlideCount  int        `json:"slideCount"`
+	LargestPart []PartSize `json:"largestPart"`
 }
 
 const largestPartsReported = 10
 
 // AnalyzeFile reads a PPTX from disk and reports its size breakdown.
 func AnalyzeFile(path string) (Analysis, error) {
-	data, err := os.ReadFile(path) //nolint:gosec // caller-supplied package path
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return Analysis{}, fmt.Errorf("read %s: %w", path, err)
 	}

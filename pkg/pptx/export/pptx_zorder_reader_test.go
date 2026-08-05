@@ -58,6 +58,6 @@ func TestParseSlideZOrderHandlesMissingTree(t *testing.T) {
 		t.Fatalf("order=%v want empty for a slide with no shape tree", order)
 	}
 	if order := parseSlideZOrder([]byte("not xml at all")); len(order) != 0 {
-		t.Fatalf("order=%v want empty for unparseable input", order)
+		t.Fatalf("order=%v want empty for unparsable input", order)
 	}
 }
