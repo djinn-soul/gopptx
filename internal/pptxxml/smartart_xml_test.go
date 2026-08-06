@@ -440,6 +440,59 @@ func TestSmartArtDataXMLRadialFillsHubAndKeepsDataTree(t *testing.T) {
 	}
 }
 
+// PowerPoint resolves a style by category and type together, and trusts a cached
+// drawing the data model still points at. Both used to leave a 3-D quick style
+// rendering as flat boxes.
+func TestSmartArtQuickStyleReachesTheSlide(t *testing.T) {
+	const threeD = "urn:microsoft.com/office/officeart/2005/8/quickstyle/3d1"
+
+	style := pptxxml.SmartArtStyleXML(threeD)
+	if !strings.Contains(style, "bevel") {
+		t.Fatal("expected the 3d1 style definition to carry its bevels")
+	}
+	if style == pptxxml.SmartArtStyleXML("") {
+		t.Fatal("expected 3d1 to differ from the default quick style")
+	}
+
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI:    "urn:microsoft.com/office/officeart/2005/8/layout/process1",
+		QuickStyleID: threeD,
+		ColorStyleID: "urn:microsoft.com/office/officeart/2005/8/colors/colorful1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Plan"}, {Text: "Build"}, {Text: "Ship"},
+		},
+	}
+	data := pptxxml.SmartArtDataXML(spec)
+
+	if !strings.Contains(data, `qsCatId="3D"`) {
+		t.Error("expected the 3-D quick style to carry its own category")
+	}
+	if !strings.Contains(data, `csCatId="colorful"`) {
+		t.Error("expected the colourful colour style to carry its own category")
+	}
+	if strings.Contains(data, "<dgm:extLst>") {
+		t.Error("expected the stale drawing cache to be unhooked so PowerPoint relays out")
+	}
+
+	// The default style is what the cached drawing was captured under, so it
+	// keeps the cache.
+	spec.QuickStyleID = ""
+	if !strings.Contains(pptxxml.SmartArtDataXML(spec), "<dgm:extLst>") {
+		t.Error("expected the default quick style to keep the drawing cache")
+	}
+}
+
+func TestSmartArtColorStyleDefinitionsUseTheirOwnAccents(t *testing.T) {
+	accent4 := pptxxml.SmartArtColorsXML("urn:microsoft.com/office/officeart/2005/8/colors/accent4_2")
+	if !strings.Contains(accent4, `<a:schemeClr val="accent4"`) {
+		t.Fatal("expected the accent4 colour style to be defined against accent4")
+	}
+	colorful := pptxxml.SmartArtColorsXML("urn:microsoft.com/office/officeart/2005/8/colors/colorful1")
+	if colorful == accent4 {
+		t.Fatal("expected a colourful colour style to differ from an accent one")
+	}
+}
+
 // structuralConnectionCount counts parent/child connections, which carry no type
 // attribute, unlike the presOf/presParOf connections of the layout cache.
 func structuralConnectionCount(xml string) int {

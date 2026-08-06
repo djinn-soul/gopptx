@@ -259,10 +259,8 @@ func (e *PresentationEditor) ChangeSmartArtLayout(slideIndex, shapeID int, newLa
 // SetSmartArtStyle updates the quick style and/or color style of an existing SmartArt.
 // Pass empty string to keep the existing value.
 //
-// colorStyle takes effect for the accent1..accent6 families, which are rendered
-// from the template's colour definitions. quickStyle only records the ID: the
-// package ships one style definition (simple1), so a different quick style ID
-// does not change how PowerPoint draws the diagram.
+// Both take effect: the style and colour definitions PowerPoint writes for each
+// of its 14 quick styles and 38 colour styles ship with the package.
 func (e *PresentationEditor) SetSmartArtStyle(slideIndex, shapeID int, quickStyle, colorStyle string) error {
 	if slideIndex < 0 || slideIndex >= len(e.slides) {
 		return fmt.Errorf("slide index %d out of range", slideIndex)

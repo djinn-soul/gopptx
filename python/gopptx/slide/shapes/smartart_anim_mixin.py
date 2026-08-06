@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from ... import ops
 from ...presentation.helpers import get_required_int
@@ -141,10 +141,10 @@ class SlideSmartArtAnimMixin:
     ) -> None:
         """Set SmartArt quick style and/or color style URIs.
 
-        ``color_style`` takes effect for the ``accent1``..``accent6`` families.
-        ``quick_style`` only records the URI: one style definition (``simple1``)
-        ships with the package, so a different quick style does not change how
-        PowerPoint draws the diagram.
+        Both take effect: the style and color definitions PowerPoint writes for
+        each of its 14 quick styles (``simple1``..``simple5``, ``3d1``..``3d9``)
+        and 38 color styles (``accent1_1``..``accent6_5``, ``colorful1``..
+        ``colorful5``, ``accent0_1``..``accent0_3``) ship with the package.
         """
         payload: dict[str, object] = {
             "slide_index": self.index,
@@ -185,6 +185,38 @@ class SlideSmartArtAnimMixin:
             payload["items"] = items or []
         self._presentation.execute(ops.OP_SET_SMART_ART_NODES, payload)
         self._invalidate_shape_and_text_caches_if_present()
+
+    def get_smartart(self, shape_id: int) -> dict[str, object]:
+        """Read back one SmartArt diagram.
+
+        Returns:
+            ``{"shape_id", "layout", "quick_style", "color_style", "nodes"}``,
+            where ``nodes`` is the nested tree ``add_smartart`` and
+            ``set_smartart_nodes`` accept.  The tree comes from the data model
+            PowerPoint draws from, so it reflects what the slide shows.
+        """
+        payload: dict[str, object] = {
+            "slide_index": self.index,
+            "shape_id": shape_id,
+        }
+        return self._presentation.execute(ops.OP_GET_SMART_ART, payload)
+
+    def list_smartart(self) -> list[dict[str, object]]:
+        """Read back every SmartArt diagram on the slide.
+
+        Returns:
+            A list of the same dicts ``get_smartart`` returns, one per diagram.
+        """
+        payload: dict[str, object] = {"slide_index": self.index}
+        result = self._presentation.execute(ops.OP_LIST_SMART_ART, payload)
+        diagrams = result.get("diagrams", [])
+        if not isinstance(diagrams, list):
+            return []
+        return [
+            cast("dict[str, object]", entry)
+            for entry in cast("list[object]", diagrams)
+            if isinstance(entry, dict)
+        ]
 
     def add_animation(
         self,

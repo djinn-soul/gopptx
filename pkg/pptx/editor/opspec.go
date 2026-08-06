@@ -159,6 +159,8 @@ const (
 	OpChangeSmartArtLayout           = "change_smartart_layout"
 	OpSetSmartArtStyle               = "set_smartart_style"
 	OpSetSmartArtNodes               = "set_smartart_nodes"
+	OpGetSmartArt                    = "get_smartart"
+	OpListSmartArt                   = "list_smartart"
 	OpListSlideImages                = "list_slide_images"
 	OpListSlideMedia                 = "list_slide_media"
 	OpExtractMedia                   = "extract_media"

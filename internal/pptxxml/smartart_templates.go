@@ -7,6 +7,7 @@ import (
 )
 
 //go:embed templates/smartart/*.xml templates/smartart/layouts/*/*.xml
+//go:embed templates/smartart/quickstyles/*.xml templates/smartart/colorstyles/*.xml
 var smartArtTemplateFS embed.FS
 
 const (
@@ -23,14 +24,28 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 		`loTypeId="`+Escape(layoutURIOrDefault(spec.LayoutURI))+`"`,
 		1,
 	)
+	quickStyleID := defaultQuickStyleID(spec.QuickStyleID)
+	colorStyleID := defaultColorStyleID(spec.ColorStyleID)
 	data = strings.Replace(data,
 		`qsTypeId="urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1"`,
-		`qsTypeId="`+Escape(defaultQuickStyleID(spec.QuickStyleID))+`"`,
+		`qsTypeId="`+Escape(quickStyleID)+`"`,
 		1,
 	)
 	data = strings.Replace(data,
 		`csTypeId="urn:microsoft.com/office/officeart/2005/8/colors/accent1_2"`,
-		`csTypeId="`+Escape(defaultColorStyleID(spec.ColorStyleID))+`"`,
+		`csTypeId="`+Escape(colorStyleID)+`"`,
+		1,
+	)
+	// The categories are part of how PowerPoint resolves a style, so they have to
+	// follow the style rather than stay on the template's own.
+	data = strings.Replace(data,
+		`qsCatId="simple"`,
+		`qsCatId="`+Escape(smartArtQuickStyleCategory(quickStyleID))+`"`,
+		1,
+	)
+	data = strings.Replace(data,
+		`csCatId="accent1"`,
+		`csCatId="`+Escape(smartArtColorCategory(colorStyleID))+`"`,
 		1,
 	)
 	orderedTexts := smartArtOrderedTextsForLayout(spec.LayoutURI, spec.Nodes)
@@ -41,8 +56,35 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 		data = injectSmartArtNodeTexts(data, orderedTexts)
 	}
 	data = pruneUnusedOrgChartPlaceholderBranches(data)
-	return data
+	return dropSmartArtDrawingCacheLink(data, quickStyleID)
 }
+
+// dropSmartArtDrawingCacheLink unhooks the cached drawing from the data model
+// when the diagram asks for a quick style the cache was not drawn with.
+//
+// The templates were captured under simple1, so their cache holds flat shapes.
+// PowerPoint trusts a cache the data model still points at — it drew a 3-D quick
+// style as flat boxes — but lays the diagram out again from the style definition
+// once that link is gone. The drawing part itself stays in the package for
+// readers that render the cache rather than recompute it.
+func dropSmartArtDrawingCacheLink(data, quickStyleID string) string {
+	if smartArtStyleName(quickStyleID) == smartArtTemplateQuickStyleName {
+		return data
+	}
+	start := strings.Index(data, "<dgm:extLst>")
+	if start < 0 {
+		return data
+	}
+	end := strings.Index(data[start:], "</dgm:extLst>")
+	if end < 0 {
+		return data
+	}
+	return data[:start] + data[start+end+len("</dgm:extLst>"):]
+}
+
+// smartArtTemplateQuickStyleName is the quick style the shipped templates — and
+// so their cached drawings — were captured under.
+const smartArtTemplateQuickStyleName = "simple1"
 
 func renderSmartArtLayoutFromTemplate(layoutURI string) string {
 	if v, ok := renderedLayoutCache.Load(layoutURI); ok {
@@ -68,14 +110,25 @@ func renderSmartArtStyleFromTemplate(quickStyleID string) string {
 		}
 		panic("renderedStyleCache contained non-string value")
 	}
-	style := mustTemplate("templates/smartart/quickStyle.xml")
-	s := strings.Replace(style,
-		`uniqueId="urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1"`,
-		`uniqueId="`+Escape(defaultQuickStyleID(quickStyleID))+`"`,
-		1,
-	)
+	s := smartArtStyleDefinition(defaultQuickStyleID(quickStyleID))
 	renderedStyleCache.Store(quickStyleID, s)
 	return s
+}
+
+// smartArtStyleDefinition returns the style definition PowerPoint itself writes
+// for a quick style. The effects that separate one quick style from another —
+// 3-D scenes, bevels, shadows — live in these definitions, so a style ID
+// stamped onto the shipped simple1 body used to change nothing on the slide.
+func smartArtStyleDefinition(quickStyleID string) string {
+	if xml, ok := smartArtStyleVariant("quickstyles", quickStyleID); ok {
+		return xml
+	}
+	style := mustTemplate("templates/smartart/quickStyle.xml")
+	return strings.Replace(style,
+		`uniqueId="urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1"`,
+		`uniqueId="`+Escape(quickStyleID)+`"`,
+		1,
+	)
 }
 
 func renderSmartArtColorsFromTemplate(colorStyleID string) string {
@@ -85,15 +138,39 @@ func renderSmartArtColorsFromTemplate(colorStyleID string) string {
 		}
 		panic("renderedColorsCache contained non-string value")
 	}
-	colors := mustTemplate("templates/smartart/colors.xml")
-	s := strings.Replace(colors,
-		`uniqueId="urn:microsoft.com/office/officeart/2005/8/colors/accent1_2"`,
-		`uniqueId="`+Escape(defaultColorStyleID(colorStyleID))+`"`,
-		1,
-	)
-	s = recolorSmartArtColorsToAccent(s, defaultColorStyleID(colorStyleID))
+	s := smartArtColorsDefinition(defaultColorStyleID(colorStyleID))
 	renderedColorsCache.Store(colorStyleID, s)
 	return s
+}
+
+// smartArtColorsDefinition returns the colour definition PowerPoint itself
+// writes for a colour style. Which accents a style uses, and how it cycles them
+// across nodes, is described here rather than by the style ID.
+func smartArtColorsDefinition(colorStyleID string) string {
+	if xml, ok := smartArtStyleVariant("colorstyles", colorStyleID); ok {
+		return xml
+	}
+	colors := mustTemplate("templates/smartart/colors.xml")
+	return strings.Replace(colors,
+		`uniqueId="urn:microsoft.com/office/officeart/2005/8/colors/accent1_2"`,
+		`uniqueId="`+Escape(colorStyleID)+`"`,
+		1,
+	)
+}
+
+// smartArtStyleVariant loads the definition whose file is named after the last
+// segment of the style URI, e.g. ".../quickstyle/3d1" -> "quickstyles/3d1.xml".
+func smartArtStyleVariant(dir, styleID string) (string, bool) {
+	name := styleID[strings.LastIndex(styleID, "/")+1:]
+	if name == "" || strings.ContainsAny(name, `\/.`) {
+		return "", false
+	}
+	path := "templates/smartart/" + dir + "/" + name + ".xml"
+	b, err := smartArtTemplateFS.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	return string(b), true
 }
 
 func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
@@ -122,43 +199,6 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 		}
 	}
 	return injectSmartArtDrawingTexts(drawing, textByModelID, hiddenPlaceholderModels, allowedDrawingModels)
-}
-
-// recolorSmartArtColorsToAccent points the colour definitions at the accent the
-// style ID names. The template is written entirely against accent1, so without
-// this an accent2..accent6 style changed the ID and nothing else: PowerPoint
-// reads the definitions, not the ID, and kept drawing the diagram in accent1.
-//
-// Only the accentN families are remapped. Other families (colourful, dark,
-// light) vary per style label and are left on the template's colours.
-func recolorSmartArtColorsToAccent(colors, colorStyleID string) string {
-	accent := smartArtAccentFromColorStyleID(colorStyleID)
-	if accent == "" || accent == "accent1" {
-		return colors
-	}
-	colors = strings.ReplaceAll(colors, `<a:schemeClr val="accent1"`, `<a:schemeClr val="`+accent+`"`)
-	return strings.ReplaceAll(colors, `<dgm:cat type="accent1"`, `<dgm:cat type="`+accent+`"`)
-}
-
-// smartArtAccentFromColorStyleID reads the accent out of IDs like
-// ".../colors/accent3_2", returning "" for families that name no accent.
-func smartArtAccentFromColorStyleID(colorStyleID string) string {
-	idx := strings.LastIndex(colorStyleID, "/")
-	if idx < 0 {
-		return ""
-	}
-	name := colorStyleID[idx+1:]
-	if !strings.HasPrefix(name, "accent") {
-		return ""
-	}
-	digits := strings.TrimPrefix(name, "accent")
-	if cut := strings.IndexByte(digits, '_'); cut >= 0 {
-		digits = digits[:cut]
-	}
-	if len(digits) != 1 || digits[0] < '1' || digits[0] > '6' {
-		return ""
-	}
-	return "accent" + digits
 }
 
 func preferOrderedNodeMapping(layoutURI string) bool {
