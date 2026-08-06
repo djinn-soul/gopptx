@@ -450,6 +450,8 @@ _.delete_smartart  # unused method (python\gopptx\slide\shapes\smartart_anim_mix
 _.change_smartart_layout  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
 _.set_smartart_style  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
 _.set_smartart_nodes  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
+_.get_smartart  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
+_.list_smartart  # unused method (python\gopptx\slide\shapes\smartart_anim_mixin.py)
 
 # Notes text model formatting properties and alignment methods
 _.font_size  # unused attribute (notes_text_model.py NotesParagraph/NotesRun)

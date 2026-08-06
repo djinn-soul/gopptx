@@ -112,6 +112,8 @@ func contentMediaAndStructureOps() []string {
 		OpChangeSmartArtLayout,
 		OpSetSmartArtStyle,
 		OpSetSmartArtNodes,
+		OpGetSmartArt,
+		OpListSmartArt,
 		OpSetSlideBackground,
 		OpGetSlideBackground,
 		OpSetSlideHeaderFooter,

@@ -120,10 +120,13 @@ func renderGeneratedSmartArtData(spec SmartArtSpec) string {
 	seq := smartArtDocIDSeed
 	docID := smartArtGeneratedID(&seq)
 
+	quickStyleID := defaultQuickStyleID(spec.QuickStyleID)
+	colorStyleID := defaultColorStyleID(spec.ColorStyleID)
 	points.WriteString(`<dgm:pt modelId="` + docID + `" type="doc"><dgm:prSet loTypeId="` +
 		Escape(layoutURIOrDefault(spec.LayoutURI)) + `" loCatId="" qsTypeId="` +
-		Escape(defaultQuickStyleID(spec.QuickStyleID)) + `" qsCatId="" csTypeId="` +
-		Escape(defaultColorStyleID(spec.ColorStyleID)) + `" csCatId="" phldr="0"/>` +
+		Escape(quickStyleID) + `" qsCatId="` + Escape(smartArtQuickStyleCategory(quickStyleID)) +
+		`" csTypeId="` + Escape(colorStyleID) +
+		`" csCatId="` + Escape(smartArtColorCategory(colorStyleID)) + `" phldr="0"/>` +
 		`<dgm:spPr/>` + smartArtEmptyTextBody() + `</dgm:pt>`)
 
 	var walk func(parentID string, nodes []SmartArtNodeSpec)
