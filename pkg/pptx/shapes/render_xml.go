@@ -36,6 +36,7 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		Adjustments:  toXMLShapeAdjustments(shape.Adjustments),
 		TextSizePt:   shape.TextSizePt,
 		Paragraphs:   textspec.ToXMLParagraphSpecs(shape.TextParagraphs, hyperlinkRIDs),
+		ZOrder:       shape.ZOrder,
 	}
 	if shape.CustomGeometry != nil && len(shape.CustomGeometry.Points) > 0 {
 		points := make([]pptxxml.CustomGeometryPointSpec, len(shape.CustomGeometry.Points))

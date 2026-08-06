@@ -30,6 +30,7 @@ func (b *slidePartBuilder) mapImages(images []shapes.Image) ([]pptxxml.ImageRef,
 			AltText:      img.AltText,
 			IsDecorative: img.IsDecorative,
 			Crop:         mapToXMLCrop(img.Crop),
+			ZOrder:       img.ZOrder,
 
 			InnerShadow:    img.InnerShadow,
 			Glow:           img.Glow,

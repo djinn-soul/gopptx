@@ -1,20 +1,77 @@
 package pptxxml
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
-func slideRenderImages(b *strings.Builder, images []ImageRef, nextID int) int {
+// slideRenderPictures writes the pictures and the custom shapes in paint order.
+//
+// A deck read from a PPTX records each element's position in the shape tree, and
+// that order is what PowerPoint paints from — a shape behind a picture has to be
+// written before it. Elements the caller built carry no order, so with none set
+// the emission stays as it was: every picture, then every shape.
+//
+// Element ids are allocated as before, independently of emission order: they
+// only have to be unique within the slide, and connectors resolve their anchors
+// through the returned shape ids.
+func slideRenderPictures(
+	b *strings.Builder,
+	images []ImageRef,
+	shapes []ShapeSpec,
+	nextID int,
+) ([]int, int) {
+	imageXMLParts := make([]string, len(images))
 	for i, image := range images {
-		b.WriteString(imageShape(image, nextID+i))
+		imageXMLParts[i] = imageShape(image, nextID+i)
 	}
-	return nextID + len(images)
-}
+	shapeIDs, shapeXMLParts := renderCustomShapeXMLConcurrently(shapes, nextID+len(images))
 
-func slideRenderShapes(b *strings.Builder, shapes []ShapeSpec, nextID int) ([]int, int) {
-	shapeIDs, shapeXMLParts := renderCustomShapeXMLConcurrently(shapes, nextID)
-	for _, part := range shapeXMLParts {
+	for _, part := range orderedTreeXML(images, shapes, imageXMLParts, shapeXMLParts) {
 		b.WriteString(part)
 	}
-	return shapeIDs, nextID + len(shapes)
+	return shapeIDs, nextID + len(images) + len(shapes)
+}
+
+// treeEntry is one element awaiting emission, with the tree position it claims.
+type treeEntry struct {
+	zOrder int
+	// pass keeps the pre-existing pictures-then-shapes order for ties and for
+	// the common case where nothing states a position.
+	pass int
+	xml  string
+}
+
+func orderedTreeXML(
+	images []ImageRef,
+	shapes []ShapeSpec,
+	imageXMLParts, shapeXMLParts []string,
+) []string {
+	entries := make([]treeEntry, 0, len(imageXMLParts)+len(shapeXMLParts))
+	ordered := false
+	for i, part := range imageXMLParts {
+		entries = append(entries, treeEntry{zOrder: images[i].ZOrder, pass: 0, xml: part})
+		ordered = ordered || images[i].ZOrder != 0
+	}
+	for i, part := range shapeXMLParts {
+		entries = append(entries, treeEntry{zOrder: shapes[i].ZOrder, pass: 1, xml: part})
+		ordered = ordered || shapes[i].ZOrder != 0
+	}
+
+	if ordered {
+		sort.SliceStable(entries, func(i, j int) bool {
+			if entries[i].zOrder != entries[j].zOrder {
+				return entries[i].zOrder < entries[j].zOrder
+			}
+			return entries[i].pass < entries[j].pass
+		})
+	}
+
+	parts := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		parts = append(parts, entry.xml)
+	}
+	return parts
 }
 
 func slideRenderConnectors(b *strings.Builder, connectors []ConnectorSpec, shapeIDs []int, nextID int) int {

@@ -202,8 +202,7 @@ func SlideWithLayout(
 		nextID++
 	}
 
-	nextID = slideRenderImages(&b, images, nextID)
-	shapeIDs, nextID := slideRenderShapes(&b, shapes, nextID)
+	shapeIDs, nextID := slideRenderPictures(&b, images, shapes, nextID)
 	nextID = slideRenderConnectors(&b, connectors, shapeIDs, nextID)
 
 	for _, sa := range smartArtFrames {

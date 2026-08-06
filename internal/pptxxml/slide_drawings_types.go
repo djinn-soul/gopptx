@@ -42,7 +42,10 @@ type ShapeSpec struct {
 	Text         string
 	// Paragraphs is the shape's full text body. When it carries anything it
 	// wins over Text, which holds only a single unstyled line.
-	Paragraphs   []ParagraphSpec
+	Paragraphs []ParagraphSpec
+	// ZOrder is the shape's position in the slide shape tree, as read from an
+	// existing deck. Zero on shapes the caller built.
+	ZOrder       int
 	RotationDeg  *int
 	Hyperlink    *HyperlinkSpec // Legacy: mapped to ClickAction
 	ClickAction  *HyperlinkSpec
