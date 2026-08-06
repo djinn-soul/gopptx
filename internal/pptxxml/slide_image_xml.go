@@ -21,6 +21,14 @@ type ImageRef struct {
 	Reflection   bool
 	AltText      string
 	IsDecorative bool
+
+	InnerShadow    bool
+	Glow           bool
+	SoftEdges      bool
+	GlowSpec       *ShapeGlowSpec
+	BlurSpec       *ShapeBlurSpec
+	SoftEdgeSpec   *ShapeSoftEdgeSpec
+	ReflectionSpec *ShapeReflectionSpec
 }
 
 // ImageCropRef defines cropping percentages (0-100000 range for OOXML).
@@ -40,6 +48,10 @@ const (
 	defaultReflectionStA    = 50000
 	defaultReflectionEndA   = 300
 	defaultReflectionEndPos = 35000
+	defaultGlowRadius       = 63500
+	defaultGlowColor        = "4472C4"
+	defaultGlowAlpha        = 35000
+	defaultSoftEdgeRadius   = 38100
 )
 
 func imageShape(image ImageRef, shapeID int) string {
@@ -50,7 +62,7 @@ func imageShape(image ImageRef, shapeID int) string {
 
 	descrAttr := imageDescriptionAttr(image)
 	srcRect := imageSrcRectXML(image.Crop)
-	effectsXML := imageEffectsXML(image.Shadow, image.Reflection)
+	effectsXML := imageEffectsXML(image)
 	xfrmAttrs := imageTransformAttrs(image.Rotation, image.FlipH, image.FlipV)
 
 	return `
@@ -124,12 +136,26 @@ func imageSrcRectXML(c *ImageCropRef) string {
 	return ""
 }
 
-func imageEffectsXML(shadow, reflection bool) string {
-	if !shadow && !reflection {
+// hasImageEffects reports whether any effect at all is configured, so the
+// `<a:effectLst>` wrapper can be skipped entirely.
+func hasImageEffects(image ImageRef) bool {
+	return image.Shadow || image.Reflection || image.InnerShadow || image.Glow || image.SoftEdges ||
+		image.GlowSpec != nil || image.BlurSpec != nil || image.SoftEdgeSpec != nil || image.ReflectionSpec != nil
+}
+
+// imageEffectsXML renders the picture's `<a:effectLst>`. Children are emitted
+// in the CT_EffectList sequence order PowerPoint requires: blur, glow,
+// innerShdw, outerShdw, reflection, softEdge.
+func imageEffectsXML(image ImageRef) string {
+	if !hasImageEffects(image) {
 		return ""
 	}
 	var b strings.Builder
 	b.WriteString("<a:effectLst>")
+	appendImageBlurXML(&b, image)
+	appendImageGlowXML(&b, image)
+	appendImageInnerShadowXML(&b, image)
+	shadow, reflection := image.Shadow, image.Reflection
 	if shadow {
 		b.WriteString(`<a:outerShdw blurRad="`)
 		b.WriteString(strconv.Itoa(defaultShadowBlurRad))
@@ -141,7 +167,21 @@ func imageEffectsXML(shadow, reflection bool) string {
 		b.WriteString(strconv.Itoa(defaultShadowAlpha))
 		b.WriteString(`"/></a:srgbClr></a:outerShdw>`)
 	}
-	if reflection {
+	if image.ReflectionSpec != nil {
+		b.WriteString(`<a:reflection blurRad="`)
+		b.WriteString(strconv.Itoa(image.ReflectionSpec.BlurEmu))
+		b.WriteString(`" dist="`)
+		b.WriteString(strconv.Itoa(image.ReflectionSpec.DistanceEmu))
+		b.WriteString(`" stA="`)
+		b.WriteString(strconv.Itoa(defaultReflectionStA))
+		b.WriteString(`" endA="`)
+		b.WriteString(strconv.Itoa(defaultReflectionEndA))
+		b.WriteString(`" endPos="`)
+		b.WriteString(strconv.Itoa(defaultReflectionEndPos))
+		b.WriteString(`" dir="`)
+		b.WriteString(strconv.Itoa(defaultShadowDir))
+		b.WriteString(`" sy="-100000" algn="bl" rotWithShape="0"/>`)
+	} else if reflection {
 		b.WriteString(`<a:reflection blurRad="`)
 		b.WriteString(strconv.Itoa(defaultReflectionBlur))
 		b.WriteString(`" stA="`)
@@ -154,6 +194,65 @@ func imageEffectsXML(shadow, reflection bool) string {
 		b.WriteString(strconv.Itoa(defaultShadowDir))
 		b.WriteString(`" sy="-100000" algn="bl" rotWithShape="0"/>`)
 	}
+	appendImageSoftEdgeXML(&b, image)
 	b.WriteString("</a:effectLst>")
 	return b.String()
+}
+
+func appendImageBlurXML(b *strings.Builder, image ImageRef) {
+	if image.BlurSpec == nil {
+		return
+	}
+	b.WriteString(`<a:blur rad="`)
+	b.WriteString(strconv.Itoa(image.BlurSpec.RadiusEmu))
+	b.WriteString(`" grow="1"/>`)
+}
+
+func appendImageGlowXML(b *strings.Builder, image ImageRef) {
+	if image.GlowSpec != nil {
+		b.WriteString(`<a:glow rad="`)
+		b.WriteString(strconv.Itoa(image.GlowSpec.RadiusEmu))
+		b.WriteString(`"><a:srgbClr val="`)
+		b.WriteString(Escape(image.GlowSpec.Color))
+		b.WriteString(`"/></a:glow>`)
+		return
+	}
+	if image.Glow {
+		b.WriteString(`<a:glow rad="`)
+		b.WriteString(strconv.Itoa(defaultGlowRadius))
+		b.WriteString(`"><a:srgbClr val="`)
+		b.WriteString(defaultGlowColor)
+		b.WriteString(`"><a:alpha val="`)
+		b.WriteString(strconv.Itoa(defaultGlowAlpha))
+		b.WriteString(`"/></a:srgbClr></a:glow>`)
+	}
+}
+
+func appendImageInnerShadowXML(b *strings.Builder, image ImageRef) {
+	if !image.InnerShadow {
+		return
+	}
+	b.WriteString(`<a:innerShdw blurRad="`)
+	b.WriteString(strconv.Itoa(defaultShadowBlurRad))
+	b.WriteString(`" dist="`)
+	b.WriteString(strconv.Itoa(defaultShadowDist))
+	b.WriteString(`" dir="`)
+	b.WriteString(strconv.Itoa(defaultShadowDir))
+	b.WriteString(`"><a:srgbClr val="000000"><a:alpha val="`)
+	b.WriteString(strconv.Itoa(defaultShadowAlpha))
+	b.WriteString(`"/></a:srgbClr></a:innerShdw>`)
+}
+
+func appendImageSoftEdgeXML(b *strings.Builder, image ImageRef) {
+	if image.SoftEdgeSpec != nil {
+		b.WriteString(`<a:softEdge rad="`)
+		b.WriteString(strconv.Itoa(image.SoftEdgeSpec.RadiusEmu))
+		b.WriteString(`"/>`)
+		return
+	}
+	if image.SoftEdges {
+		b.WriteString(`<a:softEdge rad="`)
+		b.WriteString(strconv.Itoa(defaultSoftEdgeRadius))
+		b.WriteString(`"/>`)
+	}
 }

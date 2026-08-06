@@ -10,9 +10,8 @@ func generateFlowchartElements(flowchart *FlowchartDiagram, theme Theme) Diagram
 	if nodeCount == 0 {
 		return DiagramElements{Grouped: true}
 	}
-	isHorizontal := flowchart.Direction == FlowDirectionLR || flowchart.Direction == FlowDirectionRL
 	layout := defaultFlowchartLayout()
-	state := newFlowchartRenderState(layout, theme, isHorizontal, flowchart.Nodes)
+	state := newFlowchartRenderState(layout, theme, flowchart.Direction, flowchart.Nodes)
 	state.layoutNodes(flowchart.Subgraphs, flowchart.Connections)
 	state.addConnectors(flowchart.Connections)
 	return state.diagramElements()
@@ -123,10 +122,18 @@ func (s *flowchartRenderState) connectorLine(style ArrowStyle) (styling.Length, 
 }
 
 func (s *flowchartRenderState) connectorEndArrow(style ArrowStyle) string {
-	if style == ArrowStyleOpen {
+	switch style {
+	case ArrowStyleOpen:
 		return shapes.ArrowTypeNone
+	case ArrowStyleCircle:
+		return shapes.ArrowTypeOval
+	case ArrowStyleCross:
+		// OOXML has no cross line ending; the open barb is the nearest preset
+		// and still reads as "not a plain arrow".
+		return shapes.ArrowTypeOpen
+	default:
+		return shapes.ArrowTypeTriangle
 	}
-	return shapes.ArrowTypeTriangle
 }
 
 func (s *flowchartRenderState) connectorLabelShape(

@@ -107,6 +107,8 @@ func NewPresentationEditorFromParts(ps *PartStore) (*PresentationEditor, error) 
 		presentationXML: string(presentationXMLBytes),
 		embeddedFontLst: extractEmbeddedFontLst(presentationXMLBytes),
 		imagePathCache:  make(map[string]imagePathCacheEntry),
+
+		existingModifyVerifier: extractModifyVerifierTag(string(presentationXMLBytes)),
 	}
 	slideSize, err := parsePresentationSlideSize(presentationXMLBytes)
 	if err != nil {

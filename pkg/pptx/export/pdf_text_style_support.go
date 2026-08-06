@@ -11,14 +11,22 @@ const defaultPDFTabStepPt = 36.0
 
 type pdfTextRenderOptions struct {
 	LineHeight float64
-	TabStops   []float64
+	// LineBoxPt is the height of the line's own box, which is LineHeight minus
+	// any paragraph spacing folded into it. It sets where the baseline sits
+	// inside the line; zero means the 100%-spacing default.
+	LineBoxPt float64
+	TabStops  []float64
 }
 
-func paragraphRenderedLineHeight(style text.ParagraphStyle, baseLineHeight float64) float64 {
+func paragraphRenderedLineHeight(
+	style text.ParagraphStyle,
+	baseLineHeight float64,
+	defaults paragraphSpacingDefaults,
+) float64 {
 	if style.LineSpacingPts > 0 {
 		return float64(style.LineSpacingPts)
 	}
-	return baseLineHeight * paragraphLineSpacingFactor(style)
+	return baseLineHeight * paragraphLineSpacingFactor(style, defaults)
 }
 
 func paragraphTabStopsPt(style text.ParagraphStyle) []float64 {
@@ -38,7 +46,9 @@ func buildPDFStyledRuns(runs []text.Run, fittedSize int, defaultBold, defaultIta
 	}
 	out := make([]pdfStyledRun, 0, len(runs))
 	for _, run := range runs {
-		out = append(out, pdfStyledRunFromTextRun(run, fittedSize, defaultBold, defaultItalic))
+		// A small-caps run becomes several: its capitals and its small capitals
+		// are drawn at different sizes.
+		out = append(out, splitSmallCapsRun(pdfStyledRunFromTextRun(run, fittedSize, defaultBold, defaultItalic))...)
 	}
 	return out
 }
@@ -58,13 +68,19 @@ func pdfStyledRunFromTextRun(run text.Run, fittedSize int, defaultBold, defaultI
 		fontHint = inferCodeFontHint(run.Text)
 	}
 	styled := pdfStyledRun{
-		Text:     run.Text,
-		Bold:     run.Bold || defaultBold,
-		Italic:   run.Italic || defaultItalic,
-		Color:    color,
-		FontHint: fontHint,
-		Lang:     strings.TrimSpace(run.Lang),
-		SizePt:   size,
+		Text:          applyRunCapsTransform(run.Text, run.AllCaps),
+		Bold:          run.Bold || defaultBold,
+		Italic:        run.Italic || defaultItalic,
+		Color:         color,
+		FontHint:      fontHint,
+		Lang:          strings.TrimSpace(run.Lang),
+		SizePt:        size,
+		Underline:     normalizeDecoration(run.Underline),
+		Strikethrough: normalizeDecoration(run.Strikethrough),
+		Subscript:     run.Subscript,
+		Superscript:   run.Superscript,
+		// AllCaps is already folded into Text; only small caps changes the size.
+		SmallCaps: run.SmallCaps && !run.AllCaps,
 	}
 	if run.Highlight != "" {
 		r, g, b := hexToRGB(run.Highlight)

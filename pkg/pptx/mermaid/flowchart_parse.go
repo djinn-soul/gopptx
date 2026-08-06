@@ -48,6 +48,15 @@ func newFlowchartParseState() *flowchartParseState {
 	}
 }
 
+// flowchartDirectives are styling and interaction statements. They configure
+// existing nodes rather than declaring one, so treating them as node
+// definitions drew a box holding the raw directive text.
+func flowchartDirectives() []string {
+	return []string{
+		"classDef", "class ", "style ", "linkStyle", "click ", "direction ", "accTitle", "accDescr",
+	}
+}
+
 func (s *flowchartParseState) consumeLine(line string) {
 	if after, ok := strings.CutPrefix(line, "subgraph"); ok {
 		s.currentSubgraph = &Subgraph{Name: strings.TrimSpace(after), Nodes: []string{}}
@@ -57,12 +66,24 @@ func (s *flowchartParseState) consumeLine(line string) {
 		s.finishCurrentSubgraph()
 		return
 	}
+	if isFlowchartDirective(line) {
+		return
+	}
 	if s.consumeConnection(line) {
 		return
 	}
 
 	id, label, shape := ParseNodeDef(line)
 	s.addNode(id, label, shape)
+}
+
+func isFlowchartDirective(line string) bool {
+	for _, directive := range flowchartDirectives() {
+		if strings.HasPrefix(line, directive) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *flowchartParseState) finishCurrentSubgraph() {
@@ -107,12 +128,16 @@ func (s *flowchartParseState) addNode(id, label string, shape NodeShape) {
 
 func parseArrowStyle(arrow string) ArrowStyle {
 	switch arrow {
-	case arrowThick:
+	case arrowThick, arrowThickOpen:
 		return ArrowStyleThick
-	case arrowDotted:
+	case arrowDotted, arrowDottedOpen:
 		return ArrowStyleDotted
 	case arrowOpen:
 		return ArrowStyleOpen
+	case arrowCircle:
+		return ArrowStyleCircle
+	case arrowCross:
+		return ArrowStyleCross
 	default:
 		return ArrowStyleArrow
 	}

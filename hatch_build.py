@@ -96,7 +96,15 @@ class CustomBuildHook(BuildHookInterface):
 
         try:
             subprocess.run(cmd, check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as exc:
+            # Re-emit what the compiler said. capture_output holds both streams,
+            # and exiting without printing them left pip reporting the build
+            # failure as "[0 lines of output]" -- so any Go compile error here
+            # was unexplainable from the pip-audit hook's output alone.
+            print(f"go build failed ({' '.join(cmd)}) -> exit {exc.returncode}", file=sys.stderr)
+            for stream in (exc.stdout, exc.stderr):
+                if stream:
+                    print(stream, file=sys.stderr, end="")
             sys.exit(1)
 
         build_data["artifacts"].append(f"python/gopptx/{lib_name}")

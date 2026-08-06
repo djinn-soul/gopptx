@@ -39,11 +39,20 @@ func firstRunFont(runs []elements.Run) string {
 	return runs[0].Font
 }
 
+// defaultBodyTextColor is the colour a body run gets when neither the run nor
+// the slide states one.
+//
+// It is black because that is what the OOXML default resolves to: a body
+// placeholder inherits the master's bodyStyle, whose fill is the tx1 scheme
+// colour. This used to be a grey (60,60,60) of its own invention, which left
+// every unstyled bullet in the deck lighter than PowerPoint draws it.
+var defaultBodyTextColor = [3]uint8{0, 0, 0} //nolint:gochecknoglobals // Immutable colour constant.
+
 func runTextColor(runs []elements.Run) (uint8, uint8, uint8) {
 	if len(runs) > 0 && runs[0].Color != "" {
 		return hexToRGB(runs[0].Color)
 	}
-	return 60, 60, 60
+	return defaultBodyTextColor[0], defaultBodyTextColor[1], defaultBodyTextColor[2]
 }
 
 func runTextStyle(runs []elements.Run, slide elements.SlideContent) (bool, bool) {
@@ -72,8 +81,8 @@ func styledLinePlain(line []pdfStyledRun) string {
 func buildBulletStyledRuns(runs []elements.Run, slide elements.SlideContent, fittedSize int) []pdfStyledRun {
 	out := buildPDFStyledRuns(runs, fittedSize, slide.ContentBold, slide.ContentItalic)
 	if len(out) > 0 {
-		// Default colour: ContentColor → slide default (60,60,60).
-		baseColor := [3]uint8{60, 60, 60}
+		// Default colour: ContentColor → the OOXML body default, black.
+		baseColor := defaultBodyTextColor
 		if slide.ContentColor != "" {
 			r, g, b := hexToRGB(slide.ContentColor)
 			baseColor = [3]uint8{r, g, b}
@@ -115,6 +124,12 @@ func buildBulletPrefixRuns(
 	if style.BulletColor != "" {
 		cr, cg, cb = hexToRGB(style.BulletColor)
 	}
+	if prefix == defaultBulletPrefix {
+		// A body placeholder's bullet character comes from the master's
+		// <a:buFont>, which is Arial in every Office theme. Drawing it in the
+		// paragraph's own font made the dot noticeably fatter than PowerPoint's.
+		fontHint = bulletGlyphFont
+	}
 	return []pdfStyledRun{
 		{
 			Text:     prefix,
@@ -126,6 +141,9 @@ func buildBulletPrefixRuns(
 		},
 	}
 }
+
+// bulletGlyphFont is the typeface a default bullet character is drawn in.
+const bulletGlyphFont = "Arial"
 
 // measureBulletsHeight computes the total rendered height of all bullets
 // to support vertical alignment pre-positioning.
@@ -146,7 +164,7 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)
 		renderedText := renderRunsPlain(runs)
-		gap := paragraphStartGap(i, prevSpaceAfter, style)
+		gap := paragraphStartGap(i, prevSpaceAfter, style, bodyPlaceholderSpacing())
 		total += gap
 		availableWidth := maxWidth - leftIndent - rightIndent
 		if availableWidth < 80 {
@@ -155,7 +173,10 @@ func measureBulletsHeight(pdf *gopdf.GoPdf, slide elements.SlideContent, maxWidt
 		fontSize = fitPDFTextToBoxWithMetrics(
 			pdf, renderedText, fontSize, minTextAutoFitSize, bold, italic, availableWidth, availH-total, fontHint,
 		)
-		lineHeight := math.Max(paragraphRenderedLineHeight(style, pdfLineHeight(fontSize)), 12)
+		lineHeight := math.Max(
+			paragraphRenderedLineHeight(style, pdfLineHeight(fontSize), bodyPlaceholderSpacing()),
+			12,
+		)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
 		lines := wrapStyledRuns(pdf, styledRuns, availableWidth, paragraphTabStopsPt(style))
 		total += float64(len(lines)) * lineHeight

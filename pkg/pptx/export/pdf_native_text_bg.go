@@ -10,6 +10,7 @@ import (
 	"github.com/signintech/gopdf"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/text"
 )
 
 const (
@@ -91,6 +92,11 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 		maxWidth = emuToPt(b[2])
 		maxY = yPos + emuToPt(b[3])
 	}
+	// The bounds above are the placeholder box; text sits inside its insets.
+	baseX += defaultTextInsetLRPt
+	yPos += defaultTextInsetTBPt
+	maxWidth -= 2 * defaultTextInsetLRPt
+	maxY -= defaultTextInsetTBPt
 	if slide.Table != nil {
 		tableTop := emuToPt(slide.Table.Y.Emu())
 		if tableTop > yPos {
@@ -123,15 +129,17 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 		bold, italic := runTextStyle(runs, slide)
 		fontHint := firstRunFont(runs)
 		prefix := bulletPrefix(style, i)
-		if prefix == "" {
-			// SlidesFromPPTX can lose explicit bullet-style metadata; preserve bullet intent.
+		if prefix == "" && text.NormalizeBulletStyle(style.BulletStyle) == "" {
+			// SlidesFromPPTX can lose explicit bullet-style metadata, and a body
+			// placeholder is bulleted by default, so an unset style still gets a
+			// bullet here. An explicit "none" is honoured.
 			prefix = defaultBulletPrefix
 		}
 		renderedText := renderRunsPlain(runs)
 		if strings.TrimSpace(fontHint) == "" {
 			fontHint = inferCodeFontHint(renderedText)
 		}
-		yPos += paragraphStartGap(i, prevSpaceAfter, style)
+		yPos += paragraphStartGap(i, prevSpaceAfter, style, bodyPlaceholderSpacing())
 		tabStops := paragraphTabStopsPt(style)
 		availableWidth := maxWidth - leftIndent - rightIndent
 		if availableWidth < 80 {
@@ -151,7 +159,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 		setPDFTextFontWithHint(pdf, fontSize, bold, italic, fontHint)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
 		lines := wrapStyledRuns(pdf, styledRuns, availableWidth, tabStops)
-		lineHeight := math.Max(paragraphRenderedLineHeight(style, pdfLineHeight(fontSize)), 12)
+		lineHeight := paragraphRenderedLineHeight(style, pdfLineHeight(fontSize), bodyPlaceholderSpacing())
 		for li, line := range lines {
 			if yPos+lineHeight > maxY {
 				setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
@@ -162,16 +170,20 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 			if li == 0 && prefix != "" {
 				prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
 				prefixX := lineX + hangingIndent
-				renderStyledLine(pdf, prefixRuns, prefixX, yPos, pdfTextRenderOptions{LineHeight: lineHeight})
+				renderStyledLine(pdf, prefixRuns, prefixX, yPos, pdfTextRenderOptions{
+					LineHeight: lineHeight,
+					LineBoxPt:  lineHeight,
+				})
 			}
 
 			align := elements.NormalizeTextAlign(style.Align)
 			if align == elements.TextAlignCenter || align == elements.TextAlignRight {
 				lineText := styledLinePlain(line)
-				lineX = alignedTextX(pdf, lineText, baseX+leftIndent, availableWidth, style.Align, fontHint)
+				lineX = alignedTextX(pdf, lineText, baseX+leftIndent, availableWidth, style.Align)
 			}
 			renderStyledLine(pdf, line, lineX, yPos, pdfTextRenderOptions{
 				LineHeight: lineHeight,
+				LineBoxPt:  lineHeight,
 				TabStops:   tabStops,
 			})
 			yPos += lineHeight

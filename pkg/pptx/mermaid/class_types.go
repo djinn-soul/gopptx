@@ -19,6 +19,10 @@ type ClassRelationship struct {
 	To    string
 	Type  string
 	Label string
+	// Cardinalities are the quoted multiplicities either end may carry, as in
+	// `Circle "1" --> "*" Point`.
+	FromCardinality string
+	ToCardinality   string
 }
 
 // ClassDiagram represents the parsed structure of a Mermaid class diagram.

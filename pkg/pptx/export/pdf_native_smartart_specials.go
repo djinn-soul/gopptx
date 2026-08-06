@@ -110,29 +110,41 @@ func renderSmartArtVerticalList(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
 }
 
 func renderSmartArtHorizontalBulletList(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
-	nodes := smartArtNodes(diagram)
+	nodes := smartArtEntries(diagram)
+	if len(nodes) == 0 {
+		return
+	}
 	x, y, w, _ := smartArtBounds(diagram)
-	boxW, boxH, gap := 184.0, 204.0, 26.0
+	boxH, gap := 204.0, 26.0
 	headerH := 76.0
-	leftStart := x + (w-(3*boxW+2*gap))/2
+	boxW := (w - gap*float64(len(nodes)-1)) / float64(len(nodes))
 	for i, node := range nodes {
-		left := leftStart + float64(i)*(boxW+gap)
+		left := x + float64(i)*(boxW+gap)
 		drawSmartArtRect(pdf, left, y+34, boxW, boxH, smartArtPanelFill, smartArtPanelFill, 0)
-		drawSmartArtRect(pdf, left, y+34, boxW, headerH, smartArtBlueFill, smartArtBlueFill, 0)
+		drawSmartArtRect(pdf, left, y+34, boxW, headerH, smartArtNodeColor(node, i), smartArtWhiteStroke, 0)
 		drawSmartArtCenteredText(pdf, node.Text, left+10, y+44, boxW-20, headerH-10, smartArtBlueText, 26)
+		drawSmartArtChildLines(pdf, node.Children, left+12, y+34+headerH+10, boxW-24, smartArtInkText, 16)
 	}
 }
 
 func renderSmartArtPictureAccentList(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
-	nodes := smartArtNodes(diagram)
+	nodes := smartArtEntries(diagram)
+	if len(nodes) == 0 {
+		return
+	}
 	x, y, w, _ := smartArtBounds(diagram)
-	boxW, boxH, gap := 154.0, 248.0, 30.0
-	leftStart := x + (w-(3*boxW+2*gap))/2 - 14
+	boxH, gap := 248.0, 30.0
+	// The entries share the frame's width rather than assuming three of them,
+	// which used to run a fourth entry off the edge of the slide.
+	boxW := (w - gap*float64(len(nodes)-1)) / float64(len(nodes))
 	for i, node := range nodes {
-		left := leftStart + float64(i)*(boxW+gap)
-		drawSmartArtRect(pdf, left, y+50, boxW, boxH, smartArtBlueFill, smartArtBlueFill, 0)
-		drawSmartArtRect(pdf, left-34, y+18, 56, 56, smartArtLightFill, smartArtWhiteStroke, 0)
-		drawSmartArtVerticalText(pdf, node.Text, left-14, y+96, smartArtInkText, 20)
+		left := x + float64(i)*(boxW+gap)
+		drawSmartArtRect(pdf, left+22, y+50, boxW-22, boxH, smartArtNodeColor(node, i), smartArtWhiteStroke, 0)
+		if !drawSmartArtNodeImage(pdf, node, left-12, y+18, 56, 56) {
+			drawSmartArtRect(pdf, left-12, y+18, 56, 56, smartArtLightFill, smartArtWhiteStroke, 0)
+		}
+		drawSmartArtVerticalText(pdf, node.Text, left+8, y+96, smartArtInkText, 20)
+		drawSmartArtChildLines(pdf, node.Children, left+36, y+70, boxW-46, smartArtBlueText, 14)
 	}
 }
 

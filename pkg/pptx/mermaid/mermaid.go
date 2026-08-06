@@ -87,9 +87,6 @@ func CreateDiagram(code string) (DiagramElements, error) {
 	default:
 		diagram = createPlaceholder(code, theme)
 	}
-	if diagramType == Journey {
-		return diagram, nil
-	}
 	return fitDiagramToSlide(diagram), nil
 }
 

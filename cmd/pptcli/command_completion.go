@@ -38,7 +38,7 @@ _pptcli_complete() {
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    local cmds="create md2ppt info validate merge completion version help"
+    local cmds="create md2ppt info validate compress merge completion version help"
     local global_flags="-h --help -version --version"
 
     case "${COMP_CWORD}" in
@@ -65,6 +65,11 @@ _pptcli_complete() {
             COMPREPLY=( $(compgen -W "-file" -- "${cur}") )
             return 0
             ;;
+        compress)
+            COMPREPLY=( $(compgen -W "-in -out -level -target-size -analyze -format \
+-remove-unused-media -remove-properties -remove-notes -remove-comments -optimize-xml" -- "${cur}") )
+            return 0
+            ;;
         merge)
             COMPREPLY=( $(compgen -W "-out" -- "${cur}") )
             return 0
@@ -84,6 +89,7 @@ _pptcli() {
     'md2ppt:Convert markdown to PPTX'
     'info:Show PPTX metadata'
     'validate:Validate PPTX package'
+    'compress:Shrink a PPTX package or analyze its size'
     'merge:Merge multiple presentations'
     'completion:Generate shell completion script'
     'version:Show version'
@@ -107,6 +113,12 @@ _pptcli() {
       ;;
     info|validate)
       _arguments '-file[input pptx file]'
+      ;;
+    compress)
+      _arguments '-in[input pptx file]' '-out[output pptx file]' \
+        '-level[compression level]:level:(light balanced maximum)' \
+        '-target-size[maximum output size in bytes]' '-analyze[report size breakdown]' \
+        '-format[output format]:format:(text json)'
       ;;
     merge)
       _arguments '-out[output pptx file]'

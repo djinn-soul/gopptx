@@ -1,3 +1,5 @@
+//go:generate go run ../../../cmd/gen_smartart_layouts ../../../internal/pptxxml/templates/smartart/layouts.json smartart.go smartart_layouts_gen.go smartart_layout_names_gen.go
+
 // Package smartart provides SmartArt (DiagramML) generation for presentations.
 //
 // SmartArt diagrams consist of 5 OOXML parts (data, layout, colors, quickStyle,
@@ -65,15 +67,10 @@ const (
 	PictureGrid   Layout = "urn:microsoft.com/office/officeart/2008/layout/PictureGrid"
 )
 
-// Name returns the human-readable name of the layout.
+// Name returns the layout's name as PowerPoint's gallery gives it, or the URI
+// itself for a layout the gallery does not list.
 func (l Layout) Name() string {
-	if name, ok := processLayoutName(l); ok {
-		return name
-	}
-	if name, ok := relationshipLayoutName(l); ok {
-		return name
-	}
-	if name, ok := matrixPictureLayoutName(l); ok {
+	if name, ok := layoutDisplayNames[l]; ok {
 		return name
 	}
 	return string(l)
@@ -102,6 +99,17 @@ type Node struct {
 	Text     string
 	Children []Node
 	Color    string // optional RGB hex override, e.g. "FF0000"
+
+	// ImagePath is an optional picture that fills this node's image
+	// placeholder, in the layouts that draw one.
+	ImagePath string
+
+	// ImageRelID and ImageData describe the picture a diagram read back from a
+	// deck already carries: the relationship it is stored under, and its bytes
+	// once the package has been opened. Renderers that draw the diagram
+	// themselves, rather than handing it to PowerPoint, need the bytes.
+	ImageRelID string
+	ImageData  []byte
 }
 
 // NewNode creates a Node with the given text.
@@ -118,6 +126,13 @@ func (n Node) WithChild(child Node) Node {
 // WithColor sets an optional RGB hex color on the node.
 func (n Node) WithColor(color string) Node {
 	n.Color = color
+	return n
+}
+
+// WithImage fills this node's image placeholder with a picture from disk. Only
+// the picture layouts draw such a placeholder; other layouts ignore it.
+func (n Node) WithImage(path string) Node {
+	n.ImagePath = path
 	return n
 }
 
@@ -231,7 +246,10 @@ func (n Node) toSpec() pptxxml.SmartArtNodeSpec {
 		children[i] = c.toSpec()
 	}
 	return pptxxml.SmartArtNodeSpec{
-		Text:     n.Text,
-		Children: children,
+		Text:       n.Text,
+		Children:   children,
+		Color:      n.Color,
+		ImagePath:  n.ImagePath,
+		ImageRelID: n.ImageRelID,
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/signintech/gopdf"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
 // legendEntry describes one entry in a chart legend (series name + color).
@@ -17,13 +19,24 @@ type legendEntry struct {
 
 // chartSeriesOpts holds optional rendering hints for chart renderers.
 type chartSeriesOpts struct {
-	color              string   // hex color override; empty = use renderer default
-	minValue           *float64 // axis min override
-	maxValue           *float64 // axis max override
-	showLegend         bool
-	legendPosition     string // "r","l","t","b"
-	seriesName         string
-	showDataLabels     bool
+	color          string   // hex color override; empty = use renderer default
+	minValue       *float64 // axis min override
+	maxValue       *float64 // axis max override
+	showLegend     bool
+	legendPosition string // "r","l","t","b"
+	seriesName     string
+	showDataLabels bool
+	dataLabels     charts.DataLabelSettings // c:dLbls content and placement
+	// categories and valueTotal are filled in by the renderer just before it
+	// draws, so a data label can name its category or state its share of the
+	// series without every drawing helper having to carry them.
+	categories []string
+	valueTotal float64
+	// plot is the solved plot rect: data labels wrap against it and are kept
+	// inside it. hasPlot says whether the renderer has supplied it yet.
+	plot               chartRect
+	hasPlot            bool
+	labelWrapWidth     float64
 	showCatName        bool // explicitly show category names in data labels (Pie/Doughnut)
 	catAxisTitle       string
 	valAxisTitle       string
@@ -48,7 +61,7 @@ func categoryLabel(categories []string, i int) string {
 // Supported: "General"/empty → rounded integer; contains "%" → append "%";
 // starts with "$" → prepend "$". Anything else falls back to rounded integer.
 func formatTickValue(v float64, format string) string {
-	if format == "" || format == "General" {
+	if format == "" || format == chartGeneralNumberFormat {
 		return strconv.Itoa(int(math.Round(v)))
 	}
 	if strings.Contains(format, "%") {
@@ -121,34 +134,60 @@ func minMax(values []float64) (float64, float64) {
 	return minV, maxV
 }
 
-// chartPlotRect returns the inner (x,y,w,h) of the chart plot area, reserving space
-// for axes, labels, and (optionally) a title. When titleOverlay is true the title
-// overlaps the chart body, so minimal top padding is applied.
-func chartPlotRect(r chartRect, titleOverlay bool) (float64, float64, float64, float64) {
-	leftPad := math.Max(36, r.w*0.08)
-	rightPad := math.Max(16, r.w*0.07)
-	topPad := math.Max(24, r.h*0.12)
-	if titleOverlay {
-		topPad = 4
+// Fallback padding used when no labels are supplied to measure against.
+const (
+	chartFallbackLeftPadPt   = 36.0
+	chartFallbackRightPadPt  = 12.0
+	chartFallbackTopPadPt    = 24.0
+	chartFallbackBottomPadPt = 26.0
+	chartOverlayTopPadPt     = 4.0
+	chartAxisTickPt          = 4.0
+
+	// chartMinLeftPadPt is the smallest gutter PowerPoint leaves between the
+	// chart edge and the plot area, regardless of how narrow the axis labels are.
+	chartMinLeftPadPt = 24.0
+)
+
+func widestChartLabel(pdf *gopdf.GoPdf, labels []string) float64 {
+	widest := 0.0
+	for _, label := range labels {
+		if w := chartLabelWidth(pdf, label, chartLabelFontSize); w > widest {
+			widest = w
+		}
 	}
-	bottomPad := math.Max(26, r.h*0.12)
-	return r.x + leftPad, r.y + topPad, r.w - leftPad - rightPad, r.h - topPad - bottomPad
+	return widest
 }
 
-func chartPlotRectHorizontal(r chartRect, titleOverlay bool) (float64, float64, float64, float64) {
-	leftPad := math.Max(18, r.w*0.03)
-	rightPad := math.Max(26, r.w*0.10)
-	topPad := math.Max(24, r.h*0.12)
-	if titleOverlay {
-		topPad = 4
+// chartLegendReservePt is how much width a side legend takes: its marker, the
+// widest entry name, and the clearance PowerPoint keeps either side of it.
+func chartLegendReservePt(pdf *gopdf.GoPdf, names []string) float64 {
+	widest := widestChartLabel(pdf, names)
+	if widest <= 0 {
+		return chartLegendFallbackWidthPt
 	}
-	bottomPad := math.Max(26, r.h*0.12)
-	return r.x + leftPad, r.y + topPad, r.w - leftPad - rightPad, r.h - topPad - bottomPad
+	reserve := chartLegendMarkerWPt + chartLegendMarkerGapPt + widest + chartLegendEdgeGapPt
+	return math.Min(math.Max(reserve, chartLegendMinWidthPt), chartLegendMaxWidthPt)
 }
 
-// chartRectWithLegendMargin shrinks the chart rect to make room for the legend.
-func chartRectWithLegendMargin(r chartRect, pos string) chartRect {
-	const legendW = 110
+const (
+	// chartLegendFallbackWidthPt is used when the entry names are not known at
+	// the point the plot area is sized.
+	chartLegendFallbackWidthPt = 70.0
+	chartLegendMarkerGapPt     = 4.0
+	chartLegendEdgeGapPt       = 12.0
+	chartLegendMinWidthPt      = 40.0
+	chartLegendMaxWidthPt      = 140.0
+)
+
+// chartRectWithLegendMargin shrinks the chart rect to leave room for the
+// legend.
+//
+// The side reserve is measured from the entry names rather than fixed at 110pt:
+// PowerPoint gives a legend only the width its labels need, and reserving more
+// than that squeezed the plot area and shifted every gridline, bar and label
+// left of where PowerPoint draws them.
+func chartRectWithLegendMargin(pdf *gopdf.GoPdf, r chartRect, pos string, names []string) chartRect {
+	legendW := chartLegendReservePt(pdf, names)
 	const legendH = 36
 	switch pos {
 	case "l":

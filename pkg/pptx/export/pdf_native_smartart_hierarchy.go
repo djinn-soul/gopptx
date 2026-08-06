@@ -57,7 +57,7 @@ func layoutSmartArtHierarchy(diagram smartart.SmartArt) ([]smartArtBox, []smartA
 				H:         boxH,
 				Text:      node.Node.Text,
 				ShapeType: shapesShapeRectangle,
-				Fill:      smartArtPalette(node.Depth),
+				Fill:      smartArtNodeColor(node.Node, node.Depth),
 			}
 			centers[nodeIndex] = [2]float64{bx + boxW/2, by + boxH/2}
 			if node.Parent >= 0 {

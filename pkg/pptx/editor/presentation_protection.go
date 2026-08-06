@@ -17,26 +17,49 @@ const (
 	protectionSpinCountEditor = 100000
 	protectionHashAlgSID      = 14
 	selfClosingTagSuffixLen   = 2
+	modifyVerifierTagPrefix   = "<p:modifyVerifier"
 )
 
-func rewritePresentationModifyVerifier(current string, password string) (string, error) {
+// SetModifyPassword sets the presentation's "password to modify". An empty
+// password removes the protection, discarding any verifier the opened package
+// carried; assigning to Metadata().Protection.ModifyPassword directly cannot
+// express that removal, because an empty value there means "unchanged".
+func (e *PresentationEditor) SetModifyPassword(password string) {
+	e.metadata.Protection.ModifyPassword = password
+	e.existingModifyVerifier = ""
+}
+
+// rewritePresentationModifyVerifier emits the p:modifyVerifier element for the
+// saved presentation.xml.
+//
+// preserved is the verifier the package already carried when it was opened. It
+// is re-emitted whenever no new password is supplied, because the element holds
+// only a salted hash: keeping a deck's "password to modify" across an
+// open/edit/save cycle never requires knowing the plaintext. Without it, every
+// save of an existing protected deck would silently drop the protection.
+// Clearing protection is therefore an explicit act — the caller sets an empty
+// password, which also drops preserved.
+func rewritePresentationModifyVerifier(current, password, preserved string) (string, error) {
 	if strings.TrimSpace(current) == "" {
 		return "", errors.New("missing presentation XML content")
 	}
 
-	source := removeSelfClosingTagByPrefix(current, "<p:modifyVerifier")
+	source := removeSelfClosingTagByPrefix(current, modifyVerifierTagPrefix)
 	password = strings.TrimSpace(password)
-	if password == "" {
+
+	verifier := strings.TrimSpace(preserved)
+	if password != "" {
+		salt := make([]byte, protectionSaltBytesEditor)
+		defer clear(salt)
+		if _, err := rand.Read(salt); err != nil {
+			return "", fmt.Errorf("generate protection salt: %w", err)
+		}
+		hash := protection.HashModifyPassword(password, salt, protectionSpinCountEditor)
+		verifier = buildModifyVerifierXML(base64.StdEncoding.EncodeToString(salt), hash)
+	}
+	if verifier == "" {
 		return source, nil
 	}
-
-	salt := make([]byte, protectionSaltBytesEditor)
-	defer clear(salt)
-	if _, err := rand.Read(salt); err != nil {
-		return "", fmt.Errorf("generate protection salt: %w", err)
-	}
-	hash := protection.HashModifyPassword(password, salt, protectionSpinCountEditor)
-	verifier := buildModifyVerifierXML(base64.StdEncoding.EncodeToString(salt), hash)
 
 	if notesStart := strings.Index(source, "<p:notesSz"); notesStart >= 0 {
 		if endRel := strings.Index(source[notesStart:], "/>"); endRel >= 0 {
@@ -52,6 +75,20 @@ func rewritePresentationModifyVerifier(current string, password string) (string,
 		return "", errors.New("presentation XML does not contain </p:presentation>")
 	}
 	return source[:endIdx] + verifier + "\n" + source[endIdx:], nil
+}
+
+// extractModifyVerifierTag returns the p:modifyVerifier element verbatim, or ""
+// when the presentation carries no write protection.
+func extractModifyVerifierTag(presentationXML string) string {
+	start := strings.Index(presentationXML, modifyVerifierTagPrefix)
+	if start < 0 {
+		return ""
+	}
+	endRel := strings.Index(presentationXML[start:], "/>")
+	if endRel < 0 {
+		return ""
+	}
+	return presentationXML[start : start+endRel+selfClosingTagSuffixLen]
 }
 
 func removeSelfClosingTagByPrefix(source, tagPrefix string) string {

@@ -31,7 +31,7 @@ func fitPDFTextToBoxWithMetrics(
 	}
 	for size > minSize {
 		setPDFTextFontWithHint(pdf, size, bold, italic, fontHint)
-		lines := wrapPDFTextWithMetrics(pdf, text, maxWidth, fontHint)
+		lines := wrapPDFTextWithMetrics(pdf, text, maxWidth)
 		textH := float64(len(lines)) * pdfLineHeight(size)
 		if textH <= maxHeight {
 			return size
@@ -41,7 +41,7 @@ func fitPDFTextToBoxWithMetrics(
 	return size
 }
 
-func wrapPDFTextWithMetrics(pdf *gopdf.GoPdf, text string, maxWidth float64, fontHint string) []string {
+func wrapPDFTextWithMetrics(pdf *gopdf.GoPdf, text string, maxWidth float64) []string {
 	raw := strings.TrimSpace(text)
 	if raw == "" {
 		return []string{""}
@@ -53,7 +53,7 @@ func wrapPDFTextWithMetrics(pdf *gopdf.GoPdf, text string, maxWidth float64, fon
 			lines = append(lines, "")
 			continue
 		}
-		lines = append(lines, wrapParagraph(pdf, paragraph, maxWidth, fontHint)...)
+		lines = append(lines, wrapParagraph(pdf, paragraph, maxWidth)...)
 	}
 	if len(lines) == 0 {
 		return []string{""}
@@ -61,7 +61,7 @@ func wrapPDFTextWithMetrics(pdf *gopdf.GoPdf, text string, maxWidth float64, fon
 	return lines
 }
 
-func wrapParagraph(pdf *gopdf.GoPdf, paragraph string, maxWidth float64, fontHint string) []string {
+func wrapParagraph(pdf *gopdf.GoPdf, paragraph string, maxWidth float64) []string {
 	words := strings.Fields(paragraph)
 	if len(words) == 0 {
 		return []string{""}
@@ -70,26 +70,26 @@ func wrapParagraph(pdf *gopdf.GoPdf, paragraph string, maxWidth float64, fontHin
 	current := words[0]
 	for _, word := range words[1:] {
 		candidate := current + " " + word
-		if measuredWidthWithMetrics(pdf, candidate, fontHint) <= maxWidth {
+		if measuredWidth(pdf, candidate) <= maxWidth {
 			current = candidate
 			continue
 		}
-		if measuredWidthWithMetrics(pdf, current, fontHint) > maxWidth {
-			lines = append(lines, breakLongToken(pdf, current, maxWidth, fontHint)...)
+		if measuredWidth(pdf, current) > maxWidth {
+			lines = append(lines, breakLongToken(pdf, current, maxWidth)...)
 		} else {
 			lines = append(lines, current)
 		}
 		current = word
 	}
-	if measuredWidthWithMetrics(pdf, current, fontHint) > maxWidth {
-		lines = append(lines, breakLongToken(pdf, current, maxWidth, fontHint)...)
+	if measuredWidth(pdf, current) > maxWidth {
+		lines = append(lines, breakLongToken(pdf, current, maxWidth)...)
 	} else {
 		lines = append(lines, current)
 	}
 	return lines
 }
 
-func breakLongToken(pdf *gopdf.GoPdf, token string, maxWidth float64, fontHint string) []string {
+func breakLongToken(pdf *gopdf.GoPdf, token string, maxWidth float64) []string {
 	if token == "" {
 		return []string{""}
 	}
@@ -97,7 +97,7 @@ func breakLongToken(pdf *gopdf.GoPdf, token string, maxWidth float64, fontHint s
 	var b strings.Builder
 	for _, r := range token {
 		next := b.String() + string(r)
-		if measuredWidthWithMetrics(pdf, next, fontHint) <= maxWidth || b.Len() == 0 {
+		if measuredWidth(pdf, next) <= maxWidth || b.Len() == 0 {
 			b.WriteRune(r)
 			continue
 		}
@@ -111,6 +111,10 @@ func breakLongToken(pdf *gopdf.GoPdf, token string, maxWidth float64, fontHint s
 	return parts
 }
 
+// measuredWidth returns the advance width of text under the font currently set
+// on pdf. gopdf sums the real hmtx advances (and, since fonts are registered
+// with UseKerning, the real kern pairs), so this is exact for the embedded face
+// and must not be scaled by correction factors.
 func measuredWidth(pdf *gopdf.GoPdf, text string) float64 {
 	w, err := pdf.MeasureTextWidth(text)
 	if err != nil {
@@ -119,120 +123,33 @@ func measuredWidth(pdf *gopdf.GoPdf, text string) float64 {
 	return w
 }
 
-func measuredWidthWithMetrics(pdf *gopdf.GoPdf, text string, fontHint string) float64 {
-	base := measuredWidth(pdf, text)
-	if base == math.MaxFloat64 || text == "" {
-		return base
-	}
-	profile := fontMetricProfile(fontHint)
-	kerning := kerningAdjustment(text, profile, base)
-	return (base * profile.WidthFactor) + kerning
-}
-
-type fontMetricsProfile struct {
-	WidthFactor      float64
-	SpaceFactor      float64
-	NarrowRuneFactor float64
-	WideRuneFactor   float64
-	KernPairFactor   float64
-}
-
-func fontMetricProfile(fontHint string) fontMetricsProfile {
-	name := strings.ToLower(strings.TrimSpace(fontHint))
-	switch {
-	case strings.Contains(name, "calibri"):
-		return fontMetricsProfile{
-			WidthFactor:      0.972,
-			SpaceFactor:      0.88,
-			NarrowRuneFactor: 0.78,
-			WideRuneFactor:   1.12,
-			KernPairFactor:   0.16,
-		}
-	case strings.Contains(name, "times"):
-		return fontMetricsProfile{
-			WidthFactor:      0.955,
-			SpaceFactor:      0.84,
-			NarrowRuneFactor: 0.74,
-			WideRuneFactor:   1.15,
-			KernPairFactor:   0.20,
-		}
-	case strings.Contains(name, "courier"), strings.Contains(name, "mono"), strings.Contains(name, "consolas"):
-		return fontMetricsProfile{
-			WidthFactor:      1.00,
-			SpaceFactor:      1.00,
-			NarrowRuneFactor: 1.00,
-			WideRuneFactor:   1.00,
-			KernPairFactor:   0,
-		}
-	default:
-		return fontMetricsProfile{
-			WidthFactor:      1.00,
-			SpaceFactor:      0.92,
-			NarrowRuneFactor: 0.82,
-			WideRuneFactor:   1.10,
-			KernPairFactor:   0.14,
-		}
-	}
-}
-
-func kerningAdjustment(text string, profile fontMetricsProfile, measured float64) float64 {
-	runes := []rune(text)
-	if len(runes) < 2 {
-		return 0
-	}
-	perRune := measured / math.Max(float64(len(runes)), 1)
-	adj := 0.0
-	for i, cur := range runes {
-		switch {
-		case cur == ' ':
-			adj += (profile.SpaceFactor - 1.0) * perRune
-		case isNarrowRune(cur):
-			adj += (profile.NarrowRuneFactor - 1.0) * perRune * 0.5
-		case isWideRune(cur):
-			adj += (profile.WideRuneFactor - 1.0) * perRune * 0.5
-		}
-		if i == 0 || profile.KernPairFactor == 0 {
-			continue
-		}
-		if isTightPair(runes[i-1], cur) {
-			adj -= perRune * profile.KernPairFactor
-		}
-	}
-	return adj
-}
-
-func isNarrowRune(r rune) bool {
-	return strings.ContainsRune("iljftI1|!:;.,'`", r)
-}
-
-func isWideRune(r rune) bool {
-	return strings.ContainsRune("MWQ@#%&8", r)
-}
-
-func isTightPair(prev, cur rune) bool {
-	return strings.ContainsRune("TAVWLYF", prev) && strings.ContainsRune("aoeu.,", cur)
-}
-
+// pdfLineHeight is the height of one line box at 100% line spacing. PowerPoint
+// uses a flat 1.2 x the point size here regardless of the font, so this takes no
+// font hint; only the baseline inside the box is font-dependent.
 func pdfLineHeight(fontSize int) float64 {
 	if fontSize <= 0 {
 		fontSize = defaultFontSize
 	}
-	return math.Max(float64(fontSize)*1.18, 12)
+	return float64(fontSize) * powerPointLineBoxFactor
 }
 
-func fontBaselineShift(fontHint string, fontSize int) float64 {
+// fontBaselineShift is the correction added to a line's top Y so that gopdf's
+// Cell() lands the baseline where PowerPoint puts it. gopdf already offsets by
+// OS/2 typoAscender, so only the remainder is applied here.
+func fontBaselineShift(pdf *gopdf.GoPdf, fontHint string, fontSize int) float64 {
+	return fontBaselineShiftInLineBox(pdf, fontHint, fontSize, 0)
+}
+
+// fontBaselineShiftInLineBox is fontBaselineShift for a line drawn into a box of
+// lineBoxPt points rather than the 1.2 em default, which is what a paragraph
+// with line spacing other than 100% gets. A lineBoxPt of zero means the default.
+func fontBaselineShiftInLineBox(pdf *gopdf.GoPdf, fontHint string, fontSize int, lineBoxPt float64) float64 {
 	if fontSize <= 0 {
 		fontSize = defaultFontSize
 	}
-	name := strings.ToLower(strings.TrimSpace(fontHint))
-	switch {
-	case strings.Contains(name, "calibri"):
-		return float64(fontSize) * 0.07
-	case strings.Contains(name, "times"):
-		return float64(fontSize) * 0.08
-	case strings.Contains(name, "mono"), strings.Contains(name, "courier"), strings.Contains(name, "consolas"):
-		return float64(fontSize) * 0.04
-	default:
-		return float64(fontSize) * 0.06
+	factor := powerPointLineBoxFactor
+	if lineBoxPt > 0 {
+		factor = lineBoxPt / float64(fontSize)
 	}
+	return float64(fontSize) * metricsForFontHint(pdf, fontHint).baselineShiftFactorInLineBox(factor)
 }

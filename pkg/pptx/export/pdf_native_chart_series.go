@@ -24,8 +24,6 @@ func renderStockLike(
 	if n == 0 {
 		return
 	}
-	px, py, pw, ph := chartPlotRect(r, opts.titleOverlay)
-
 	// Determine axis range from all OHLC values.
 	// Use niceAxisRange so the axis starts at 0 for non-negative data (matches PowerPoint default).
 	all := append(append([]float64{}, highVals[:n]...), lowVals[:n]...)
@@ -41,7 +39,17 @@ func renderStockLike(
 	}
 	rangeV := maxV - minV
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, r, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 	// Complete the box with top and right borders.
 	pdf.SetStrokeColor(30, 30, 30)
 	pdf.Line(px, py, px+pw, py)
@@ -90,9 +98,13 @@ func drawComboBarSeries(
 			if ci >= nCats {
 				break
 			}
-			subSlot := catSlot / float64(max(1, nBarSeries))
-			bw := math.Max(4, subSlot*0.85)
-			bx := px + catSlot*float64(ci) + subSlot*float64(si) + (subSlot-bw)/2
+			// All the bars of one category share the band PowerPoint's default
+			// gap width leaves them, centred in the category slot. Giving each
+			// series 85% of a full sub-slot instead drew a bar chart with almost
+			// no gaps between categories.
+			band := catSlot * chartBarBandFraction
+			bw := math.Max(4, band/float64(max(1, nBarSeries)))
+			bx := px + catSlot*float64(ci) + (catSlot-band)/2 + bw*float64(si)
 			valueY := py + ph*(maxV-v)/rangeV
 			barTop := math.Min(zeroY, valueY)
 			barH := math.Abs(zeroY - valueY)
@@ -116,17 +128,42 @@ func drawComboLineSeries(
 		if n < 1 {
 			continue
 		}
+		points := make([]gopdf.Point, 0, n)
 		for i := range n {
-			x := px + catSlot*(float64(i)+0.5)
-			y := py + ph - ((ls.Values[i]-minV)/rangeV)*(ph-4)
-			if i > 0 {
-				prevX := px + catSlot*(float64(i-1)+0.5)
-				prevY := py + ph - ((ls.Values[i-1]-minV)/rangeV)*(ph-4)
-				pdf.Line(prevX, prevY, x, y)
-			}
-			drawFilledCircle(pdf, x, y, 2.5, colR, colG, colB)
+			points = append(points, gopdf.Point{
+				X: px + catSlot*(float64(i)+0.5),
+				Y: chartValueY(ls.Values[i], minV, rangeV, py, ph),
+			})
+		}
+		// OOXML's <c:smooth> defaults to on, and a combo chart's line series
+		// almost never states it, so PowerPoint curves the line where this used
+		// to join the points with straight segments.
+		drawPoints := points
+		if len(points) >= 2 {
+			drawPoints = catmullRomPoints(points, chartSmoothSegments)
+		}
+		pdf.SetLineWidth(chartSeriesLineWidthPt)
+		for i := 1; i < len(drawPoints); i++ {
+			pdf.Line(drawPoints[i-1].X, drawPoints[i-1].Y, drawPoints[i].X, drawPoints[i].Y)
+		}
+		pdf.SetLineWidth(1)
+		for _, point := range points {
+			drawFilledCircle(pdf, point.X, point.Y, 2.5, colR, colG, colB)
 		}
 	}
+}
+
+// comboSeriesNames is every legend entry a combo chart will draw, which is what
+// its legend has to be wide enough for.
+func comboSeriesNames(barSeries, lineSeries []charts.Series) []string {
+	names := make([]string, 0, len(barSeries)+len(lineSeries))
+	for _, series := range barSeries {
+		names = append(names, series.Name)
+	}
+	for _, series := range lineSeries {
+		names = append(names, series.Name)
+	}
+	return names
 }
 
 // renderComboLike renders a combination bar+line chart with multiple series per type.
@@ -142,10 +179,8 @@ func renderComboLike(
 
 	plotR := r
 	if opts.showLegend {
-		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
+		plotR = chartRectWithLegendMargin(pdf, r, opts.legendPosition, comboSeriesNames(barSeries, lineSeries))
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
 	// Unified axis range across all series.
 	var allVals []float64
 	for _, s := range barSeries {
@@ -166,7 +201,17 @@ func renderComboLike(
 	}
 	rangeV := maxV - minV
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 
 	nCats := len(categories)
 	if nCats == 0 {

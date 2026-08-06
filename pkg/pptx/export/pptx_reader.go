@@ -8,8 +8,6 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/editor"
 	editorcommon "github.com/djinn-soul/gopptx/pkg/pptx/editor/common"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
-	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
 const (
@@ -25,18 +23,27 @@ const (
 // SlidesFromPPTX reads an existing PPTX file and extracts slide content
 // (title, bullets, shapes, embedded images) for the native PDF/HTML export pipeline.
 func SlidesFromPPTX(pptxPath string) (string, []elements.SlideContent, error) {
-	title, slides, _, err := slidesFromPPTXWithSize(pptxPath)
-	return title, slides, err
+	deck, err := readDeck(pptxPath)
+	return deck.Title, deck.Slides, err
 }
 
-// slidesFromPPTXWithSize is SlidesFromPPTX plus the deck's slide size in EMUs,
-// which the native PDF renderer needs to size its pages.
-func slidesFromPPTXWithSize(pptxPath string) (string, []elements.SlideContent, common.SlideSize, error) {
-	var slideSize common.SlideSize
+// deckContent is everything the native renderer needs from a PPTX: the slides,
+// the page geometry, and the shape-tree order the slides themselves cannot
+// carry.
+type deckContent struct {
+	Title      string
+	Slides     []elements.SlideContent
+	SlideSize  common.SlideSize
+	PaintOrder []slidePaintOrder
+}
+
+// readDeck reads a PPTX into slide content plus the paint order of each slide.
+func readDeck(pptxPath string) (deckContent, error) {
+	var deck deckContent
 
 	ed, err := editor.OpenPresentationEditor(pptxPath)
 	if err != nil {
-		return "", nil, slideSize, fmt.Errorf("open PPTX: %w", err)
+		return deck, fmt.Errorf("open PPTX: %w", err)
 	}
 	defer ed.Close()
 
@@ -44,7 +51,7 @@ func slidesFromPPTXWithSize(pptxPath string) (string, []elements.SlideContent, c
 	presTitle := ""
 	if meta != nil {
 		presTitle = meta.Title
-		slideSize = meta.SlideSize
+		deck.SlideSize = meta.SlideSize
 	}
 
 	// Read slide master's txStyles to resolve inherited title alignment/size.
@@ -68,21 +75,37 @@ func slidesFromPPTXWithSize(pptxPath string) (string, []elements.SlideContent, c
 		// Best-effort SmartArt extraction; continue without semantic diagrams when parsing fails.
 		slideSmartArt = nil
 	}
+	zOrders, err := extractSlideZOrder(pptxPath)
+	if err != nil {
+		// Best-effort: without paint order the renderer falls back to its
+		// layered order rather than failing the export.
+		zOrders = nil
+	}
 
 	slideMeta := ed.Slides()
-	slideContents := make([]elements.SlideContent, 0, len(slideMeta))
+	deck.Slides = make([]elements.SlideContent, 0, len(slideMeta))
+	deck.PaintOrder = make([]slidePaintOrder, 0, len(slideMeta))
+
+	theme := readDeckTheme(pptxPath)
+	shapeStyles := extractSlideShapeStyles(pptxPath, theme)
+	inherited := extractInheritedLooks(pptxPath, theme)
 
 	for _, sm := range slideMeta {
-		sc := extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt)
+		sc, order := extractSlideContent(
+			ed, sm, slideImages, slideCharts, slideSmartArt, zOrders, shapeStyles, theme,
+		)
 		applyMasterTitleDefaults(&sc, masterStyle)
-		slideContents = append(slideContents, sc)
+		applyInheritedLook(&sc, &order, inheritedLookFor(inherited, sm.Index))
+		deck.Slides = append(deck.Slides, sc)
+		deck.PaintOrder = append(deck.PaintOrder, order)
 	}
 
-	if presTitle == "" && len(slideContents) > 0 {
-		presTitle = slideContents[0].Title
+	if presTitle == "" && len(deck.Slides) > 0 {
+		presTitle = deck.Slides[0].Title
 	}
+	deck.Title = presTitle
 
-	return presTitle, slideContents, slideSize, nil
+	return deck, nil
 }
 
 // applyMasterTitleDefaults fills in title alignment and size from master txStyles
@@ -102,7 +125,10 @@ func extractSlideContent(
 	slideImages [][]SlideImage,
 	slideCharts [][]parsedChart,
 	slideSmartArt [][]parsedSmartArt,
-) elements.SlideContent {
+	zOrders []map[int]int,
+	shapeStyles []map[int]shapeThemeStyle,
+	theme deckTheme,
+) (elements.SlideContent, slidePaintOrder) {
 	editorShapes, err := ed.GetShapes(sm.Index)
 	if err != nil {
 		editorShapes = nil
@@ -111,25 +137,30 @@ func extractSlideContent(
 	sc := elements.SlideContent{Title: sm.Title, Hidden: sm.Hidden}
 	applySlideMetadata(&sc, ed, sm.Index)
 
-	shapeIndexByID := make(map[int]int)
-	connectorShapes := make([]editorcommon.Shape, 0)
-	chartShapeIDs := chartShapeIDSet(slideCharts, sm.Index)
-	smartArtShapeIDs := smartArtShapeIDSet(slideSmartArt, sm.Index)
+	ctx := newSlideReadContext(
+		ed, sm.Index,
+		slideTreeOrder(zOrders, sm.Index),
+		slideShapeStyles(shapeStyles, sm.Index),
+	)
+	ctx.chartShapeIDs = chartShapeIDSet(slideCharts, sm.Index)
+	ctx.smartArtShapeIDs = smartArtShapeIDSet(slideSmartArt, sm.Index)
 
+	connectorShapes := make([]editorcommon.Shape, 0)
 	for _, es := range editorShapes {
 		if isEditorConnector(es) {
 			connectorShapes = append(connectorShapes, es)
 			continue
 		}
-		processEditorShape(&sc, es, shapeIndexByID, chartShapeIDs, smartArtShapeIDs, ed, sm.Index)
+		processEditorShape(&sc, es, ctx)
 	}
 	for _, es := range connectorShapes {
-		connector, ok := editorShapeToConnector(es, shapeIndexByID)
+		connector, ok := editorShapeToConnector(es, ctx.shapeIndexByID)
 		if !ok {
-			appendReaderShape(&sc, shapeIndexByID, es)
+			appendReaderShape(&sc, ctx, es)
 			continue
 		}
 		sc.Connectors = append(sc.Connectors, connector)
+		ctx.ids.connectors = append(ctx.ids.connectors, es.ID)
 	}
 	foldGeneratedConnectorLabels(&sc)
 
@@ -138,9 +169,68 @@ func extractSlideContent(
 		applyParsedCharts(&sc, slideCharts[sm.Index])
 	}
 	if sm.Index < len(slideSmartArt) {
-		applyParsedSmartArt(&sc, slideSmartArt[sm.Index])
+		applyParsedSmartArt(&sc, slideSmartArt[sm.Index], theme)
 	}
-	return sc
+	applySlideImageZOrder(&sc, slideImages, ctx.treeOrder, sm.Index)
+	dropTitleDrawnAsShape(&sc)
+	return sc, ctx.paintOrder(slideCharts, slideSmartArt, sm.Index)
+}
+
+// dropTitleDrawnAsShape clears SlideContent.Title when the same text is already
+// on the slide as an ordinary shape.
+//
+// The slide's title comes from presentation metadata, which reports one whether
+// or not the deck uses a title placeholder. When it does, the placeholder is
+// consumed and never becomes a shape. When it does not — a deck that lays its
+// heading out as a plain text box — the text was rendered twice: once by the
+// shape at its real position, and once by the title renderer at the default
+// title position and size.
+func dropTitleDrawnAsShape(sc *elements.SlideContent) {
+	if sc.Title == "" {
+		return
+	}
+	// A consumed title placeholder records its geometry; without that the title
+	// did not come from a placeholder.
+	if b := sc.TitleBoundsEMU; b[2] > 0 || b[3] > 0 {
+		return
+	}
+	for _, shape := range sc.Shapes {
+		if strings.TrimSpace(shape.Text) == strings.TrimSpace(sc.Title) {
+			sc.Title = ""
+			return
+		}
+	}
+}
+
+// applySlideImageZOrder stamps each picture with its position in the slide
+// shape tree so the renderer can paint it in the order PowerPoint does.
+//
+// Shapes are stamped as they are read, in appendReaderShape: folding a
+// connector label back into its connector drops a shape from the slice, and
+// anything that stamped by slice position afterwards would then write each
+// following shape's order onto its neighbour.
+func applySlideImageZOrder(
+	sc *elements.SlideContent,
+	slideImages [][]SlideImage,
+	order map[int]int,
+	idx int,
+) {
+	if order == nil {
+		return
+	}
+	if idx >= len(slideImages) {
+		return
+	}
+	// Images were appended in the order extractSlideImages found them, so the
+	// two slices line up index for index.
+	for i, img := range slideImages[idx] {
+		if i >= len(sc.Images) {
+			break
+		}
+		if z, ok := order[img.ShapeID]; ok {
+			sc.Images[i].ZOrder = z
+		}
+	}
 }
 
 // applySlideMetadata reads background, header/footer, and notes from the editor.
@@ -165,10 +255,7 @@ func applySlideMetadata(sc *elements.SlideContent, ed *editor.PresentationEditor
 func processEditorShape(
 	sc *elements.SlideContent,
 	es editorcommon.Shape,
-	shapeIndexByID map[int]int,
-	chartShapeIDs, smartArtShapeIDs map[int]struct{},
-	ed *editor.PresentationEditor,
-	slideIdx int,
+	ctx *slideReadContext,
 ) {
 	lowerType := strings.ToLower(es.Type)
 	lowerName := strings.ToLower(strings.TrimSpace(es.Name))
@@ -180,68 +267,85 @@ func processEditorShape(
 		lowerType = lowerPhType
 	}
 	switch lowerType {
-	case "pic":
+	case shapeTreePicElement:
 		return
+	case groupShapeElement:
+		applyGroupShape(sc, es, ctx)
 	case "graphicframe":
-		applyGraphicFrame(sc, es, shapeIndexByID, chartShapeIDs, smartArtShapeIDs, ed, slideIdx)
+		applyGraphicFrame(sc, es, ctx)
 	case placeholderTitle, placeholderCtrTitle:
-		applyTitleShape(sc, es, lowerType)
+		applyTitleShape(sc, es, ctx, lowerType)
 	case placeholderBody, placeholderSubtitle, placeholderObject:
-		applyBodyShape(sc, es, shapeIndexByID)
+		applyBodyShape(sc, es, ctx)
 	default:
-		applyDefaultShape(sc, es, shapeIndexByID, lowerType, lowerName)
+		applyDefaultShape(sc, es, ctx, lowerType, lowerName)
 	}
 }
 
-func applyGraphicFrame(
-	sc *elements.SlideContent,
-	es editorcommon.Shape,
-	shapeIndexByID map[int]int,
-	chartShapeIDs, smartArtShapeIDs map[int]struct{},
-	ed *editor.PresentationEditor,
-	slideIdx int,
-) {
-	if _, ok := chartShapeIDs[es.ID]; ok {
+// applyGroupShape flattens a <p:grpSp> into the slide.
+//
+// A group paints its children, not itself, and the editor has already mapped
+// each child's geometry out of the group's child space onto the slide. Treating
+// the group as one shape drew nothing at all: it has no geometry of its own, so
+// every shape inside a group was missing from the export.
+//
+// The children keep the group's own position in the shape tree, so they paint
+// where the group does relative to everything around it, in their own order.
+func applyGroupShape(sc *elements.SlideContent, es editorcommon.Shape, ctx *slideReadContext) {
+	groupZ, hasZ := ctx.treeOrder[es.ID]
+	for _, child := range es.Shapes {
+		if hasZ {
+			ctx.treeOrder[child.ID] = groupZ
+		}
+		processEditorShape(sc, child, ctx)
+	}
+}
+
+func applyGraphicFrame(sc *elements.SlideContent, es editorcommon.Shape, ctx *slideReadContext) {
+	if _, ok := ctx.chartShapeIDs[es.ID]; ok {
 		return
 	}
-	if _, ok := smartArtShapeIDs[es.ID]; ok {
+	if _, ok := ctx.smartArtShapeIDs[es.ID]; ok {
 		return
 	}
-	if tbl := extractTableContent(ed, slideIdx, es); tbl != nil {
+	if tbl := extractTableContent(ctx.ed, ctx.slideIdx, es); tbl != nil {
 		// Keep the first table in Table; later ones would otherwise overwrite it.
 		if sc.Table == nil {
 			sc.Table = tbl
 		} else {
 			sc.Tables = append(sc.Tables, *tbl)
 		}
+		ctx.ids.tables = append(ctx.ids.tables, es.ID)
 		return
 	}
-	appendReaderShape(sc, shapeIndexByID, es)
+	appendReaderShape(sc, ctx, es)
 }
 
-func applyTitleShape(sc *elements.SlideContent, es editorcommon.Shape, lowerType string) {
+func applyTitleShape(sc *elements.SlideContent, es editorcommon.Shape, ctx *slideReadContext, lowerType string) {
 	if sc.Title == "" && es.Text != "" {
 		sc.Title = es.Text
 	}
 	applyTitleBounds(sc, es)
 	applyTitleSizeFromRuns(sc, es)
 	applyTitleAlignFromShape(sc, es)
+	ctx.ids.title = es.ID
 	if lowerType == placeholderCtrTitle && sc.Layout == "" {
 		sc.Layout = elements.SlideLayoutCenteredTitle
 	}
 }
 
-func applyBodyShape(sc *elements.SlideContent, es editorcommon.Shape, shapeIndexByID map[int]int) {
+func applyBodyShape(sc *elements.SlideContent, es editorcommon.Shape, ctx *slideReadContext) {
 	if consumeBodyPlaceholderAsBullets(sc, es) {
 		applyContentBounds(sc, es)
+		ctx.ids.body = es.ID
 		return
 	}
-	appendReaderShape(sc, shapeIndexByID, es)
+	appendReaderShape(sc, ctx, es)
 }
 
 func applyDefaultShape(
 	sc *elements.SlideContent, es editorcommon.Shape,
-	shapeIndexByID map[int]int, lowerType, lowerName string,
+	ctx *slideReadContext, lowerType, lowerName string,
 ) {
 	switch {
 	case isTitlePlaceholder(lowerType, lowerName):
@@ -251,46 +355,22 @@ func applyDefaultShape(
 		applyTitleBounds(sc, es)
 		applyTitleSizeFromRuns(sc, es)
 		applyTitleAlignFromShape(sc, es)
+		ctx.ids.title = es.ID
 	case isBodyPlaceholder(lowerType, lowerName):
-		applyBodyShape(sc, es, shapeIndexByID)
+		applyBodyShape(sc, es, ctx)
 	default:
-		appendReaderShape(sc, shapeIndexByID, es)
+		appendReaderShape(sc, ctx, es)
 	}
 }
 
-// attachSlideImages appends all embedded images for the given slide index.
-func attachSlideImages(sc *elements.SlideContent, slideImages [][]SlideImage, idx int) {
-	if idx >= len(slideImages) {
-		return
+func appendReaderShape(sc *elements.SlideContent, ctx *slideReadContext, es editorcommon.Shape) {
+	shape := editorShapeToShape(es)
+	applyShapeThemeStyle(&shape, ctx.shapeStyles[es.ID])
+	if z, ok := ctx.treeOrder[es.ID]; ok {
+		shape.ZOrder = z
 	}
-	for _, img := range slideImages[idx] {
-		sc.Images = append(sc.Images, shapes.Image{
-			Data:     img.Bytes,
-			Format:   img.Format,
-			X:        styling.Emu(img.X),
-			Y:        styling.Emu(img.Y),
-			CX:       styling.Emu(img.CX),
-			CY:       styling.Emu(img.CY),
-			Rotation: img.Rotation,
-			Crop: shapes.ImageCrop{
-				Left:   img.CropLeft,
-				Right:  img.CropRight,
-				Top:    img.CropTop,
-				Bottom: img.CropBottom,
-			},
-			FlipH:        img.FlipH,
-			FlipV:        img.FlipV,
-			Shadow:       img.Shadow,
-			Reflection:   img.Reflection,
-			AltText:      img.AltText,
-			IsDecorative: img.IsDecorative,
-		})
-	}
-}
-
-func appendReaderShape(sc *elements.SlideContent, shapeIndexByID map[int]int, es editorcommon.Shape) {
-	sc.Shapes = append(sc.Shapes, editorShapeToShape(es))
+	sc.Shapes = append(sc.Shapes, shape)
 	if es.ID > 0 {
-		shapeIndexByID[es.ID] = len(sc.Shapes)
+		ctx.shapeIndexByID[es.ID] = len(sc.Shapes)
 	}
 }

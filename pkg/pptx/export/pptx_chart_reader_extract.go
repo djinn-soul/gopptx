@@ -36,6 +36,14 @@ type parsedChart struct {
 	// explicit fixed axis bound in <c:scaling><c:min>/<c:max>. Nil means auto.
 	AxisMinValue *float64
 	AxisMaxValue *float64
+	// ShowLegend and LegendPosition mirror <c:legend>. The element is absent
+	// when the chart has no legend, so its presence is the flag.
+	ShowLegend     bool
+	LegendPosition string
+	// ShowValueGridlines and ShowCategoryGridlines mirror <c:majorGridlines> on
+	// the value and category axes. Presence is the flag, as with the legend.
+	ShowValueGridlines    bool
+	ShowCategoryGridlines bool
 }
 
 type chartFrameRef struct {
@@ -61,6 +69,10 @@ var (
 	reScalingBlock  = regexp.MustCompile(`(?s)<c:scaling\b.*?</c:scaling>`)
 	reScalingMin    = regexp.MustCompile(`<c:min val="([^"]+)"`)
 	reScalingMax    = regexp.MustCompile(`<c:max val="([^"]+)"`)
+	reLegendBlock   = regexp.MustCompile(`(?s)<c:legend\b.*?</c:legend>`)
+	reLegendPos     = regexp.MustCompile(`<c:legendPos val="([^"]+)"`)
+	reCatAxBlock    = regexp.MustCompile(`(?s)<c:catAx\b.*?</c:catAx>`)
+	reMajorGrid     = regexp.MustCompile(`<c:majorGridlines\s*/>|<c:majorGridlines\b[^>]*>`)
 )
 
 const (
@@ -169,8 +181,46 @@ func parseChartPart(chartXML []byte) parsedChart {
 		result.Series = append(result.Series, parseSeriesBlock(block))
 	}
 	applyChartAxisBounds(&result, raw)
+	applyChartLegend(&result, raw)
+	applyChartGridlines(&result, raw)
 	return result
 }
+
+// applyChartGridlines records which axes carry <c:majorGridlines>.
+//
+// This was previously unread, so every chart kept the model's constructor
+// default of "value gridlines on". That is wrong twice over: charts saved
+// without gridlines rendered with them, and — because the PPTX writer emits
+// c:majorGridlines from the same field — a read/modify/write round trip silently
+// added gridlines to a deck that had none.
+func applyChartGridlines(result *parsedChart, raw string) {
+	if valAx := reValAxBlock.FindString(raw); valAx != "" {
+		result.ShowValueGridlines = reMajorGrid.MatchString(valAx)
+	}
+	if catAx := reCatAxBlock.FindString(raw); catAx != "" {
+		result.ShowCategoryGridlines = reMajorGrid.MatchString(catAx)
+	}
+}
+
+// applyChartLegend records whether the chart part carries a <c:legend>. Without
+// this the native PDF renderer drew no legend for any chart read back from a
+// PPTX, and — because the legend is what reserves space beside the plot — also
+// stretched the plot area across the width PowerPoint gives to the legend.
+func applyChartLegend(result *parsedChart, raw string) {
+	legend := reLegendBlock.FindString(raw)
+	if legend == "" {
+		return
+	}
+	result.ShowLegend = true
+	result.LegendPosition = defaultChartLegendPosition
+	if m := reLegendPos.FindStringSubmatch(legend); len(m) >= minRegexMatchGroups {
+		result.LegendPosition = m[1]
+	}
+}
+
+// defaultChartLegendPosition matches the OOXML default for a c:legend that omits
+// c:legendPos.
+const defaultChartLegendPosition = "r"
 
 func applyChartAxisBounds(result *parsedChart, raw string) {
 	// Extract explicit axis bounds from <c:valAx><c:scaling><c:min>/<c:max>.

@@ -38,3 +38,35 @@ func stateTransitionShapes(
 	label := stateTransitionLabelShape(trans.Label, geom.startX, geom.startY, geom.endX, geom.endY, theme)
 	return connector, &label, true
 }
+
+// stateNoteConnector is the dashed, arrowless leader from a note to the state
+// it annotates.
+func stateNoteConnector(
+	note StateNode,
+	statePositions map[string]struct{ x, y styling.Length },
+	stateSizes map[string]struct{ w, h styling.Length },
+	stateShapeIndices map[string]int,
+	theme Theme,
+) (shapes.Connector, bool) {
+	notePos, noteExists := statePositions[note.ID]
+	targetPos, targetExists := statePositions[note.NoteTarget]
+	noteSize, noteSizeOK := stateSizes[note.ID]
+	targetSize, targetSizeOK := stateSizes[note.NoteTarget]
+	if !noteExists || !targetExists || !noteSizeOK || !targetSizeOK {
+		return shapes.Connector{}, false
+	}
+
+	geom := stateTransitionEndpoints(notePos, targetPos, noteSize.w, targetSize.w, noteSize.h, targetSize.h)
+	connector := shapes.NewConnector(shapes.ConnectorTypeStraight, geom.startX, geom.startY, geom.endX, geom.endY).
+		WithLine(shapes.NewShapeLine(stateNoteStroke, theme.LineWeight)).
+		WithDash(shapes.LineDashDash).
+		WithArrows(shapes.ArrowTypeNone, shapes.ArrowTypeNone)
+
+	if idx, ok := stateShapeIndices[note.ID]; ok {
+		connector = connector.ConnectStart(idx, geom.startSite)
+	}
+	if idx, ok := stateShapeIndices[note.NoteTarget]; ok {
+		connector = connector.ConnectEnd(idx, geom.endSite)
+	}
+	return connector, true
+}

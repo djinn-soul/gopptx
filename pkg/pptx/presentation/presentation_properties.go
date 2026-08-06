@@ -17,7 +17,7 @@ import (
 func addBasicPropertyFiles(
 	pw *pptxxml.PackageWriter,
 	meta Metadata,
-	_ []elements.SlideContent,
+	slides []elements.SlideContent,
 	slideCount, notesPartCount, chartPartCount, smartArtPartCount int,
 	notesParts []notes.RenderedNotesPart,
 	masterCount, notesThemeIndex int,
@@ -35,7 +35,7 @@ func addBasicPropertyFiles(
 	hasSections := len(xSections) > 0
 	hasCommentAuthors := len(authors) > 0
 
-	pw.AddPart("[Content_Types].xml", pptxxml.ContentTypes(
+	contentTypes := pptxxml.ContentTypes(
 		slideCount, mediaExtensions, chartPartCount, smartArtPartCount,
 		notes.SlideNumbers(notesParts), hasNotes,
 		len(meta.CustomXML), masterCount, notesThemeIndex, hasSections, commentSlideIndices,
@@ -44,21 +44,18 @@ func addBasicPropertyFiles(
 		hasVBA,
 		meta.HandoutMaster != nil,
 		len(meta.EmbeddedFonts) > 0,
-	))
-	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
-	pw.AddPart(
-		"ppt/_rels/presentation.xml.rels",
-		pptxxml.PresentationRelationships(
-			slideCount,
-			hasNotes,
-			len(meta.CustomXML),
-			masterCount,
-			hasSections,
-			hasCommentAuthors,
-			hasVBA,
-			meta.HandoutMaster != nil,
-			len(meta.EmbeddedFonts),
-		),
+	)
+	contentTypes = addInkContentTypes(contentTypes, slides)
+	presentationRels := pptxxml.PresentationRelationships(
+		slideCount,
+		hasNotes,
+		len(meta.CustomXML),
+		masterCount,
+		hasSections,
+		hasCommentAuthors,
+		hasVBA,
+		meta.HandoutMaster != nil,
+		len(meta.EmbeddedFonts),
 	)
 
 	var protInfo *pptxxml.ProtectionInfo
@@ -108,6 +105,25 @@ func addBasicPropertyFiles(
 		}
 		nextRid++
 	}
+
+	if meta.PrintSettings != nil && !meta.PrintSettings.IsDefault() {
+		pw.AddPart(pptxxml.PresPropsPartName, pptxxml.PresentationProps(meta.PrintSettings.PrnPrXML()))
+		contentTypes = pptxxml.WithContentTypeOverride(
+			contentTypes,
+			pptxxml.PresPropsPartName,
+			pptxxml.PresPropsContentType,
+		)
+		presentationRels = pptxxml.WithRelationship(
+			presentationRels,
+			"rId"+strconv.Itoa(nextRid),
+			pptxxml.PresPropsRelationshipType,
+			pptxxml.PresPropsRelationshipTarget,
+		)
+	}
+
+	pw.AddPart("[Content_Types].xml", contentTypes)
+	pw.AddPart("_rels/.rels", pptxxml.RootRelationships(meta.Protection.MarkAsFinal, meta.Protection.SignaturesEnabled))
+	pw.AddPart("ppt/_rels/presentation.xml.rels", presentationRels)
 
 	pw.AddPart(
 		"ppt/presentation.xml",

@@ -15,18 +15,33 @@ import (
 // PPTX slides default to 9144000×6858000 EMU (10×7.5 inches).
 // PDF uses 72 points/inch, so the slide page is 720×540 points.
 const (
-	ptPerInch       = 72.0
-	slideWidthPt    = 720.0 // 10 inches, the 4:3 default
-	slideHeightPt   = 540.0 // 7.5 inches
-	defaultFontSize = 14
+	ptPerInch     = 72.0
+	slideWidthPt  = 720.0 // 10 inches, the 4:3 default
+	slideHeightPt = 540.0 // 7.5 inches
+
+	// defaultFontSize is the size PowerPoint gives a run that states none. It is
+	// 18pt: measured off PowerPoint's own render of a text box whose a:rPr
+	// carries no sz, which came out at 17.95pt. It was 14pt here, which made
+	// every unsized run render a fifth too small.
+	defaultFontSize = 18
 
 	// Layout constants.
-	defaultRadiusFactor = 0.1
+	//
+	// PowerPoint's roundRect preset rounds by adj/100000 of the shorter side,
+	// and its default adj is 16667. 0.1 drew a noticeably tighter corner.
+	defaultRadiusFactor = 0.16667
 	minStrokeWidth      = 0.5
 
 	// nearZeroEpsilon is used for floating-point comparisons where a value
 	// is considered effectively zero (e.g. rotation angle, cursor boundary).
 	nearZeroEpsilon = 0.01
+
+	// Default text-frame insets from the OOXML a:bodyPr defaults: lIns and rIns
+	// are 91440 EMU (0.1in = 7.2pt), tIns and bIns are 45720 EMU (0.05in =
+	// 3.6pt). PowerPoint applies these whenever a shape omits them, so text
+	// starts 7.2pt inside its box rather than flush against the edge.
+	defaultTextInsetLRPt = 7.2
+	defaultTextInsetTBPt = 3.6
 )
 
 func emuToPt(emu int64) float64 {
@@ -65,6 +80,7 @@ func optionsPageSize(opts PDFOptions) pageSize {
 func pdfViaNative(
 	_ string,
 	slides []elements.SlideContent,
+	orders []slidePaintOrder,
 	outputPath string,
 	opts PDFOptions,
 	page pageSize,
@@ -73,6 +89,9 @@ func pdfViaNative(
 	pdf.Start(gopdf.Config{
 		PageSize: gopdf.Rect{W: page.WidthPt, H: page.HeightPt},
 	})
+	// The document's font registry lives as long as the document does; dropping
+	// it here keeps a long-lived process from holding one per export.
+	defer releaseDocumentFonts(pdf)
 	if err := configureNativePDFFont(pdf, opts); err != nil {
 		return err
 	}
@@ -85,12 +104,16 @@ func pdfViaNative(
 	}
 	visibleIndex := 0
 	var renderErrs []error
-	for _, slide := range slides {
+	for i, slide := range slides {
 		if slide.Hidden {
 			continue
 		}
 		visibleIndex++
-		if err := renderNativePDFSlide(pdf, slide, visibleIndex, totalVisible, page); err != nil {
+		order := newSlidePaintOrder()
+		if i < len(orders) {
+			order = orders[i]
+		}
+		if err := renderNativePDFSlide(pdf, slide, order, visibleIndex, totalVisible, page); err != nil {
 			renderErrs = append(renderErrs, err)
 		}
 	}
@@ -103,24 +126,30 @@ func pdfViaNative(
 	return errors.Join(renderErrs...)
 }
 
-// renderNativePDFSlide paints one slide. Painting runs back to front:
-// background, then pictures, then vector content, and finally text, so a
-// full-bleed picture cannot hide the shapes and text drawn over it.
-func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, total int, page pageSize) error {
+// renderNativePDFSlide paints one slide: the background, then every element of
+// the shape tree in the order the tree lists them, then the slide furniture.
+//
+// Everything between the background and the furniture goes through one paint
+// list. PowerPoint has a single back-to-front order over placeholders,
+// pictures, shapes, connectors, tables, charts and diagrams alike, so painting
+// them as fixed layers put a table over a shape the deck had placed in front of
+// it, and a chart over that table.
+func renderNativePDFSlide(
+	pdf *gopdf.GoPdf,
+	slide elements.SlideContent,
+	order slidePaintOrder,
+	index, total int,
+	page pageSize,
+) error {
 	pdf.AddPage()
 
 	var errs []error
 	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
 		errs = append(errs, fmt.Errorf("slide %d background: %w", index, err))
 	}
-	if err := renderNativePDFSlideImages(pdf, slide); err != nil {
+	for _, err := range buildSlidePaintList(pdf, slide, order, page).drawAll() {
 		errs = append(errs, fmt.Errorf("slide %d: %w", index, err))
 	}
-	renderNativePDFSlideShapes(pdf, slide)
-	renderNativePDFSlideSmartArt(pdf, slide)
-	renderNativePDFSlideCharts(pdf, slide)
-	renderNativePDFSlideTable(pdf, slide)
-	renderNativePDFSlideText(pdf, slide, page)
 
 	if slide.ShowSlideNumber {
 		renderNativePDFSlideNumber(pdf, index, total, page)
@@ -173,6 +202,11 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 		titleBoxW = page.WidthPt - 108
 		titleBoxH = 116.0
 	}
+	// The bounds above are the placeholder box; text sits inside its insets.
+	titleBoxX += defaultTextInsetLRPt
+	titleBoxY += defaultTextInsetTBPt
+	titleBoxW -= 2 * defaultTextInsetLRPt
+	titleBoxH -= 2 * defaultTextInsetTBPt
 	titleSize = fitPDFTitleSize(
 		pdf,
 		slide.Title,
@@ -189,16 +223,18 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 	} else {
 		pdf.SetTextColor(0, 0, 0)
 	}
-	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW, slide.TitleFont)
-	lineH := pdfLineHeight(titleSize)
+	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW)
+	// A title placeholder inherits the master's titleStyle, which spaces its
+	// lines at 90%. That tightens the line box, and with it the first baseline.
+	lineH := pdfLineHeight(titleSize) * titleDefaultLineSpacingFactor
 	totalTextH := float64(len(lines)) * lineH
 	yPos := titleBoxY + max(0, (titleBoxH-totalTextH)/2)
 	for _, line := range lines {
 		if yPos+lineH > titleBoxY+titleBoxH {
 			break
 		}
-		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign, slide.TitleFont))
-		pdf.SetY(yPos + fontBaselineShift(slide.TitleFont, titleSize))
+		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign))
+		pdf.SetY(yPos + fontBaselineShiftInLineBox(pdf, slide.TitleFont, titleSize, lineH))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
 	}
@@ -234,9 +270,8 @@ func alignedTextX(
 	boxX float64,
 	boxW float64,
 	align string,
-	fontHint string,
 ) float64 {
-	textW := measuredWidthWithMetrics(pdf, text, fontHint)
+	textW := measuredWidth(pdf, text)
 	switch elements.NormalizeTextAlign(align) {
 	case elements.TextAlignCenter:
 		return boxX + max((boxW-textW)/2, 0)
@@ -270,16 +305,25 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 		pdf.ClearTransparency()
 	}
 
-	if rotated {
-		pdf.RotateReset()
-	}
+	// The outline is done; text decorations drawn below are lines too and must
+	// not inherit the shape's dash.
+	clearPDFLineDash(pdf)
 
+	// Text stays inside the rotation: a shape's caption turns with the shape in
+	// PowerPoint. Resetting before drawing it left rotated captions horizontal,
+	// which pushed a quadrant chart's y-axis label out over the plot area.
 	if s.Text != "" {
 		renderPDFShapeText(pdf, s, x, y, w, h)
 	}
 
-	// Reset colors
+	if rotated {
+		pdf.RotateReset()
+	}
+
+	// Reset colors. The dash pattern is document-wide state in gopdf, so a
+	// dashed shape would otherwise leave every later stroke dashed too.
 	pdf.SetFillColor(255, 255, 255)
 	pdf.SetStrokeColor(0, 0, 0)
 	pdf.SetLineWidth(1)
+	clearPDFLineDash(pdf)
 }

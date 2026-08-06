@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
 
 func TestSmartArtDataXMLContainsOrderingAndDrawingLink(t *testing.T) {
@@ -30,11 +31,11 @@ func TestSmartArtDataXMLContainsOrderingAndDrawingLink(t *testing.T) {
 	if got := strings.Count(xml, `destOrd="`); got != cxnCount {
 		t.Fatalf("expected destOrd on all dgm:cxn entries, got %d of %d", got, cxnCount)
 	}
-	if !strings.Contains(xml, `<dsp:dataModelExt`) {
-		t.Fatal("expected SmartArt dataModelExt link in data XML")
-	}
-	if !strings.Contains(xml, `relId="rId6"`) {
-		t.Fatal("expected dataModelExt relId=rId6 in data XML")
+	// The cached drawing is deliberately left unhooked: it was captured from the
+	// template, so PowerPoint trusting it drew the template's styling and text
+	// sizes rather than the ones this diagram asks for.
+	if strings.Contains(xml, `<dsp:dataModelExt`) {
+		t.Fatal("expected the drawing cache to be unhooked from the data model")
 	}
 }
 
@@ -272,7 +273,7 @@ func TestSmartArtDataXMLHierarchyMapsBreadthFirstAcrossSiblingSlots(t *testing.T
 	}
 	if segment := pointSegmentByModelID(
 		xml,
-		"{E0E6B85D-D97A-48D1-81DC-C8C26276ADC3}",
+		"{CDF06D8C-2EB0-4B55-84B0-DB4ADA208865}",
 	); !strings.Contains(
 		segment,
 		"<a:t>Accounts</a:t>",
@@ -316,7 +317,7 @@ func TestSmartArtDataXMLHorizontalHierarchyMapsBreadthFirstAcrossSiblingSlots(t 
 		"{CE0AAF88-E00D-4698-B726-CFDB9A8B02FB}",
 	); !strings.Contains(
 		segment,
-		"<a:t>Engineering</a:t>",
+		"<a:t>Finance</a:t>",
 	) {
 		t.Fatal("expected first semantic child text in first horizontal hierarchy child slot")
 	}
@@ -325,13 +326,13 @@ func TestSmartArtDataXMLHorizontalHierarchyMapsBreadthFirstAcrossSiblingSlots(t 
 		"{1AEDA9FF-FEC4-4109-BC1E-C7FF7AA02EA0}",
 	); !strings.Contains(
 		segment,
-		"<a:t>Finance</a:t>",
+		"<a:t>Engineering</a:t>",
 	) {
 		t.Fatal("expected second semantic child text in second horizontal hierarchy child slot")
 	}
 	if segment := pointSegmentByModelID(
 		xml,
-		"{C44EB3FF-9224-4653-9878-10CB48172BED}",
+		"{88A38E3E-B1A9-4D56-B46C-71706701582B}",
 	); !strings.Contains(
 		segment,
 		"<a:t>Accounts</a:t>",
@@ -405,6 +406,216 @@ func TestSmartArtDataXMLOrgChartPrunesUnusedAssistantAndChildBranches(t *testing
 			t.Fatalf("expected %s to be pruned from org chart data", removed)
 		}
 	}
+}
+
+// A radial diagram's hub is a text slot like any other. When it was skipped it
+// stayed an unfilled placeholder, the pruner deleted it, and deleting it deleted
+// every parent/child connection with it — PowerPoint then drew a single node and
+// silently dropped the rest of the items.
+func TestSmartArtDataXMLRadialFillsHubAndKeepsDataTree(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/radial1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "North"},
+			{Text: "East"},
+			{Text: "South"},
+			{Text: "West"},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+
+	if segment := pointSegmentByModelID(
+		data,
+		"{FF425370-D8F1-471A-878E-62CB5FEA877F}",
+	); !strings.Contains(segment, "<a:t>North</a:t>") {
+		t.Fatal("expected first radial text in the hub slot")
+	}
+	for _, text := range []string{"East", "South", "West"} {
+		if !strings.Contains(data, "<a:t>"+text+"</a:t>") {
+			t.Fatalf("expected radial satellite text %q to survive", text)
+		}
+	}
+	if structuralConnectionCount(data) == 0 {
+		t.Fatal("expected the radial data tree to keep its parent/child connections")
+	}
+}
+
+// PowerPoint resolves a style by category and type together, and trusts a cached
+// drawing the data model still points at. Both used to leave a 3-D quick style
+// rendering as flat boxes.
+func TestSmartArtQuickStyleReachesTheSlide(t *testing.T) {
+	const threeD = "urn:microsoft.com/office/officeart/2005/8/quickstyle/3d1"
+
+	style := pptxxml.SmartArtStyleXML(threeD)
+	if !strings.Contains(style, "bevel") {
+		t.Fatal("expected the 3d1 style definition to carry its bevels")
+	}
+	if style == pptxxml.SmartArtStyleXML("") {
+		t.Fatal("expected 3d1 to differ from the default quick style")
+	}
+
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI:    "urn:microsoft.com/office/officeart/2005/8/layout/process1",
+		QuickStyleID: threeD,
+		ColorStyleID: "urn:microsoft.com/office/officeart/2005/8/colors/colorful1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Plan"}, {Text: "Build"}, {Text: "Ship"},
+		},
+	}
+	data := pptxxml.SmartArtDataXML(spec)
+
+	if !strings.Contains(data, `qsCatId="3D"`) {
+		t.Error("expected the 3-D quick style to carry its own category")
+	}
+	if !strings.Contains(data, `csCatId="colorful"`) {
+		t.Error("expected the colourful colour style to carry its own category")
+	}
+	if strings.Contains(data, "<dgm:extLst>") {
+		t.Error("expected the stale drawing cache to be unhooked so PowerPoint relays out")
+	}
+
+	spec.QuickStyleID = ""
+	if strings.Contains(pptxxml.SmartArtDataXML(spec), "<dgm:extLst>") {
+		t.Error("expected the cache to stay unhooked for the default quick style too")
+	}
+}
+
+// A colour set on a node used to be validated and then dropped on the way to
+// the XML, and the picture layouts had no way to fill the placeholders they
+// draw. A picture belongs on the presentation point that draws the placeholder;
+// written to the node's own point it bleeds onto the caption band instead.
+func TestSmartArtNodeColourAndPictureReachTheXML(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hList2",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Topic A", Color: "C00000", ImageRelID: "rId1"},
+			{Text: "Topic B"},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+
+	if !strings.Contains(data, `<a:srgbClr val="C00000"/>`) {
+		t.Error("expected the node's colour in the data XML")
+	}
+	if !strings.Contains(data, `r:embed="rId1"`) {
+		t.Error("expected the node's picture in the data XML")
+	}
+
+	segment := pointSegmentContainingText(data, "Topic A")
+	if strings.Contains(segment, "blipFill") {
+		t.Error("expected the picture on the image placeholder, not on the node's own point")
+	}
+	if !strings.Contains(segment, `<a:srgbClr val="C00000"/>`) {
+		t.Error("expected the colour on the node's own point")
+	}
+}
+
+// Slot filling walks the template's points; only a walk of both trees keeps a
+// child under the parent it was written for.
+func TestSmartArtNestedSpecKeepsChildrenUnderTheirParent(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hList1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Pillar A", Children: []pptxxml.SmartArtNodeSpec{{Text: "a1"}, {Text: "a2"}}},
+			{Text: "Pillar B", Children: []pptxxml.SmartArtNodeSpec{{Text: "b1"}}},
+		},
+	}
+
+	nodes, err := smartart.ParseDataModelNodes([]byte(pptxxml.SmartArtDataXML(spec)))
+	if err != nil {
+		t.Fatalf("ParseDataModelNodes failed: %v", err)
+	}
+	if len(nodes) != 2 {
+		t.Fatalf("expected two entries, got %d", len(nodes))
+	}
+	if len(nodes[0].Children) != 2 || nodes[0].Children[0].Text != "a1" {
+		t.Errorf("expected a1 and a2 under Pillar A, got %+v", nodes[0].Children)
+	}
+	if len(nodes[1].Children) != 1 || nodes[1].Children[0].Text != "b1" {
+		t.Errorf("expected b1 under Pillar B, got %+v", nodes[1].Children)
+	}
+}
+
+// Most layouts ship only their definition, so the data model is generated to
+// match the spec rather than poured into captured slots.
+func TestSmartArtLayoutOnlyTemplateGeneratesItsData(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/gear1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Alpha"}, {Text: "Beta"}, {Text: "Gamma"}, {Text: "Delta"},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+	for _, text := range []string{"Alpha", "Beta", "Gamma", "Delta"} {
+		if !strings.Contains(data, "<a:t>"+text+"</a:t>") {
+			t.Errorf("expected %q in the generated data model", text)
+		}
+	}
+	if !strings.Contains(data, "/layout/gear1") {
+		t.Error("expected the diagram to name the layout it was built for")
+	}
+
+	// There is no cache for these layouts, and the shared one describes another
+	// diagram, so an empty drawing is shipped rather than the wrong picture.
+	drawing := pptxxml.SmartArtDrawingXML(spec)
+	if strings.Contains(drawing, "<dsp:sp ") {
+		t.Error("expected no cached shapes for a layout that ships no drawing")
+	}
+}
+
+// The cached drawing was captured under the template's own quick style; left
+// alone it describes a different diagram from the one it ships with.
+func TestSmartArtQuickStyleIsBakedIntoTheDrawingCache(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/process1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Plan"}, {Text: "Build"}, {Text: "Ship"},
+		},
+	}
+
+	plain := pptxxml.SmartArtDrawingXML(spec)
+	if strings.Contains(plain, "<a:sp3d") {
+		t.Error("expected the default quick style to leave the cache flat")
+	}
+
+	spec.QuickStyleID = "urn:microsoft.com/office/officeart/2005/8/quickstyle/3d1"
+	styled := pptxxml.SmartArtDrawingXML(spec)
+	if !strings.Contains(styled, "<a:sp3d") || !strings.Contains(styled, "bevel") {
+		t.Error("expected the 3-D quick style's bevels in the cached shapes")
+	}
+	if !strings.Contains(styled, "<a:scene3d>") {
+		t.Error("expected the quick style's scene in the cached shapes")
+	}
+}
+
+func TestSmartArtColorStyleDefinitionsUseTheirOwnAccents(t *testing.T) {
+	accent4 := pptxxml.SmartArtColorsXML("urn:microsoft.com/office/officeart/2005/8/colors/accent4_2")
+	if !strings.Contains(accent4, `<a:schemeClr val="accent4"`) {
+		t.Fatal("expected the accent4 colour style to be defined against accent4")
+	}
+	colorful := pptxxml.SmartArtColorsXML("urn:microsoft.com/office/officeart/2005/8/colors/colorful1")
+	if colorful == accent4 {
+		t.Fatal("expected a colourful colour style to differ from an accent one")
+	}
+}
+
+// structuralConnectionCount counts parent/child connections, which carry no type
+// attribute, unlike the presOf/presParOf connections of the layout cache.
+func structuralConnectionCount(xml string) int {
+	count := 0
+	for _, segment := range strings.Split(xml, "<dgm:cxn ")[1:] {
+		attrs, _, found := strings.Cut(segment, ">")
+		if !found {
+			continue
+		}
+		if !strings.Contains(attrs, " type=") {
+			count++
+		}
+	}
+	return count
 }
 
 func pointSegmentContainingText(xml, text string) string {

@@ -24,7 +24,7 @@ func WritePresentationPackage(
 	}
 
 	chartParts := BuildChartParts(slides)
-	smartArtParts := BuildSmartArtParts(slides)
+	smartArtParts := BuildSmartArtParts(slides, mediaCatalog)
 	notesParts := notes.BuildRenderedNotesParts(slides)
 	effectiveMasters := getEffectiveMasters(meta)
 	masterCount := len(effectiveMasters)

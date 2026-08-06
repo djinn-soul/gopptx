@@ -97,8 +97,8 @@ func (s *flowchartRenderState) calculateWidth(label string) styling.Length {
 }
 
 func (s *flowchartRenderState) addNodeShape(node FlowNode, x, y, width styling.Length) {
-	if node.Shape == NodeShapeDiamond && width < styling.Inches(3.2) {
-		width = styling.Inches(3.2)
+	if node.Shape == NodeShapeDiamond && width < diamondMinWidth {
+		width = diamondMinWidth
 	}
 	nodeHeight := s.renderedNodeHeight(node.Shape)
 	s.nodePositions[node.ID] = flowchartPoint{x: x, y: y}

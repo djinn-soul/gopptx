@@ -57,9 +57,10 @@ class SlideSmartArtAnimMixin:
             items: Flat list of text items (for list/process/cycle layouts).
                 Ignored when ``nodes`` is provided.
             bounds: ``(left, top, width, height)`` in inches.
-            nodes: Nested node tree for hierarchy layouts (org chart, hierarchy).
-                Each node is a dict with ``"text"`` (str) and optional
-                ``"children"`` (list of the same shape).
+            nodes: Nested node tree.  Each node is a dict with ``"text"`` (str)
+                and optional ``"children"`` (list of the same shape),
+                ``"color"`` (RGB hex, e.g. ``"C00000"``) and ``"image"`` (path
+                to a picture, for the layouts that draw a picture placeholder).
 
         Returns:
             The shape ID of the inserted graphic frame.
@@ -139,7 +140,13 @@ class SlideSmartArtAnimMixin:
         quick_style: str | None = None,
         color_style: str | None = None,
     ) -> None:
-        """Set SmartArt quick style and/or color style URIs."""
+        """Set SmartArt quick style and/or color style URIs.
+
+        Both take effect: the style and color definitions PowerPoint writes for
+        each of its 14 quick styles (``simple1``..``simple5``, ``3d1``..``3d9``)
+        and 38 color styles (``accent1_1``..``accent6_5``, ``colorful1``..
+        ``colorful5``, ``accent0_1``..``accent0_3``) ship with the package.
+        """
         payload: dict[str, object] = {
             "slide_index": self.index,
             "shape_id": shape_id,
@@ -151,13 +158,32 @@ class SlideSmartArtAnimMixin:
         self._presentation.execute(ops.OP_SET_SMART_ART_STYLE, payload)
         self._invalidate_shape_and_text_caches_if_present()
 
-    def set_smartart_nodes(self, shape_id: int, items: list[str]) -> None:
-        """Replace SmartArt node text using a flat items list."""
+    def set_smartart_nodes(
+        self,
+        shape_id: int,
+        items: list[str] | None = None,
+        *,
+        nodes: list[dict[str, object]] | None = None,
+    ) -> None:
+        """Replace the SmartArt node tree.
+
+        Args:
+            shape_id: The shape ID of the SmartArt graphic frame.
+            items: Flat list of text items.  Ignored when ``nodes`` is provided.
+            nodes: Nested node tree, same shape as ``add_smartart``: each node
+                is a dict with ``"text"`` (str) and optional ``"children"``.
+                Layouts that draw a body under each entry -- picture accent
+                list, horizontal bullet list, accent process -- need this second
+                level to fill the body.
+        """
         payload: dict[str, object] = {
             "slide_index": self.index,
             "shape_id": shape_id,
-            "items": items,
         }
+        if nodes is not None:
+            payload["nodes"] = nodes
+        else:
+            payload["items"] = items or []
         self._presentation.execute(ops.OP_SET_SMART_ART_NODES, payload)
         self._invalidate_shape_and_text_caches_if_present()
 

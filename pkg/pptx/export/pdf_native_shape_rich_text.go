@@ -34,28 +34,34 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 	)
 	defer restoreOrientation()
 	paragraphs := normalizedShapeParagraphs(s)
-	fontSize := fitPDFShapeParagraphText(pdf, paragraphs, boxW, boxH)
+	fontSize := shapeParagraphNaturalSize(paragraphs)
+	if shapeTextShrinksToFit(s) {
+		fontSize = fitPDFShapeParagraphText(pdf, paragraphs, boxW, boxH)
+	}
 	layout, totalHeight := layoutShapeParagraphs(pdf, paragraphs, boxW, fontSize)
 	startY := shapeTextStartY(anchor, boxY, boxH, totalHeight)
 
 	pdf.SetTextColor(0, 0, 0)
+	// A shape that does not shrink its text lets that text spill past the box,
+	// exactly as PowerPoint does; clipping it there dropped the tail of any
+	// caption longer than its shape.
+	//
+	// Clipping is also dropped when the box is too short for even one line,
+	// which is the shape of a diagram node: a 10pt label in a 15pt-tall box
+	// cannot shrink any further (the autofit floor is 10pt), and clipping it
+	// left the node drawn but empty. PowerPoint overflows there rather than
+	// blanking the shape.
+	clipToBox := shapeTextShrinksToFit(s) && shapeTextBoxFitsALine(layout, boxH)
 	yPos := startY
 	for _, line := range layout {
-		if yPos+line.lineHeight > boxY+boxH+0.5 {
+		if clipToBox && yPos+line.lineHeight > boxY+boxH+0.5 {
 			break
 		}
 		lineX := boxX + line.xOffset
 		if elements.NormalizeTextAlign(line.align) == elements.TextAlignCenter ||
 			elements.NormalizeTextAlign(line.align) == elements.TextAlignRight {
 			lineText := styledLinePlain(line.runs)
-			lineX = alignedTextX(
-				pdf,
-				lineText,
-				boxX+line.xOffset,
-				line.availWidth,
-				line.align,
-				firstStyledFontHint(line.runs),
-			)
+			lineX = alignedTextX(pdf, lineText, boxX+line.xOffset, line.availWidth, line.align)
 		}
 		renderStyledLine(pdf, line.runs, lineX, yPos, pdfTextRenderOptions{
 			LineHeight: line.lineHeight,
@@ -66,19 +72,57 @@ func renderPDFShapeParagraphText(pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h fl
 	setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
 }
 
+// shapeTextBoxFitsALine reports whether the box has room for the first laid-out
+// line. When it does not, clipping would remove every line and the shape would
+// render empty.
+func shapeTextBoxFitsALine(layout []shapeParagraphLayoutLine, boxH float64) bool {
+	if len(layout) == 0 {
+		return true
+	}
+	return layout[0].lineHeight <= boxH+0.5
+}
+
+// shapeTextShrinksToFit reports whether the shape asked PowerPoint to shrink its
+// text on overflow.
+//
+// OOXML's default is noAutofit: PowerPoint renders text at its stated size and
+// lets it spill out of the shape. The renderer used to shrink unconditionally,
+// so a caption in a short box came out a third of its real size while PowerPoint
+// drew it full size across two lines.
+func shapeTextShrinksToFit(s shapes.Shape) bool {
+	return s.TextFrame != nil && s.TextFrame.AutoFit == shapes.TextAutoFitNormal
+}
+
+// shapeParagraphNaturalSize is the size the runs ask for, with no fitting.
+//
+// defaultFontSize is the size of a run that states none — a fallback, not a
+// floor. Seeding the maximum with it rendered 10pt text at 18pt, and in a short
+// box that oversized line was then clipped away entirely.
+func shapeParagraphNaturalSize(paragraphs []text.Paragraph) int {
+	maxSize := 0
+	for _, paragraph := range paragraphs {
+		for _, run := range paragraph.Runs {
+			size := run.SizePt
+			if size <= 0 {
+				size = defaultFontSize
+			}
+			if size > maxSize {
+				maxSize = size
+			}
+		}
+	}
+	if maxSize <= 0 {
+		return defaultFontSize
+	}
+	return maxSize
+}
+
 func fitPDFShapeParagraphText(
 	pdf *gopdf.GoPdf,
 	paragraphs []text.Paragraph,
 	boxW, boxH float64,
 ) int {
-	maxSize := defaultFontSize
-	for _, paragraph := range paragraphs {
-		for _, run := range paragraph.Runs {
-			if run.SizePt > maxSize {
-				maxSize = run.SizePt
-			}
-		}
-	}
+	maxSize := shapeParagraphNaturalSize(paragraphs)
 	low, high := minTextAutoFitSize, maxSize
 	bestSize := minTextAutoFitSize
 	for low <= high {
@@ -104,8 +148,8 @@ func layoutShapeParagraphs(
 	totalHeight := 0.0
 	prevSpaceAfter := 0.0
 	for idx, paragraph := range paragraphs {
-		style := elements.NormalizeParagraphStyle(paragraph.Style)
-		totalHeight += paragraphStartGap(idx, prevSpaceAfter, style)
+		style := shapeParagraphStyle(paragraph)
+		totalHeight += paragraphStartGap(idx, prevSpaceAfter, style, shapeTextSpacing())
 		levelIndent := float64(style.Level * 14)
 		leftIndent := emuToPt(style.LeftIndent.Emu())
 		rightIndent := emuToPt(style.RightIndent.Emu())
@@ -118,7 +162,7 @@ func layoutShapeParagraphs(
 		runs := buildShapeParagraphStyledRuns(paragraph.Runs, fittedSize)
 		prefixRuns := buildShapeParagraphPrefixRuns(style, idx, fittedSize, runs)
 		wrapped := wrapStyledRuns(pdf, runs, availWidth, tabStops)
-		lineHeight := paragraphRenderedLineHeight(style, maxStyledRunsLineHeight(runs))
+		lineHeight := paragraphRenderedLineHeight(style, maxStyledRunsLineHeight(runs), shapeTextSpacing())
 		if lineHeight < 12 {
 			lineHeight = 12
 		}
@@ -126,10 +170,11 @@ func layoutShapeParagraphs(
 			xOffset := levelIndent + leftIndent
 
 			if lineIdx == 0 && len(prefixRuns) > 0 {
+				// With a hanging indent the bullet sits in the hang. Without one
+				// it goes at the paragraph's own left edge: PowerPoint keeps the
+				// bullet inside the shape, so it must not be pulled out to the
+				// left of the text box.
 				prefixX := xOffset + hangingIndent
-				if hangingIndent == 0 {
-					prefixX = xOffset - 14
-				}
 				lines = append(lines, shapeParagraphLayoutLine{
 					runs:       prefixRuns,
 					xOffset:    prefixX,
@@ -154,6 +199,20 @@ func layoutShapeParagraphs(
 		totalHeight += prevSpaceAfter
 	}
 	return lines, totalHeight
+}
+
+// shapeParagraphStyle normalizes a paragraph belonging to shape text.
+//
+// NormalizeParagraphStyle defaults an unset bullet style to "bullet", which is
+// what a body placeholder wants but not what a shape wants: PowerPoint draws no
+// bullet on shape text unless the paragraph asks for one. Left alone, every
+// plain text box came out with a bullet stamped over its first letter.
+func shapeParagraphStyle(paragraph text.Paragraph) text.ParagraphStyle {
+	style := elements.NormalizeParagraphStyle(paragraph.Style)
+	if strings.TrimSpace(paragraph.Style.BulletStyle) == "" {
+		style.BulletStyle = text.BulletStyleNone
+	}
+	return style
 }
 
 func normalizedShapeParagraphs(s shapes.Shape) []text.Paragraph {
@@ -196,26 +255,22 @@ func buildShapeParagraphPrefixRuns(
 	}}
 }
 
+// maxStyledRunsLineHeight is the height of a line, set by its tallest run.
+//
+// The default size is the fallback for a run that states no size of its own; it
+// is not a minimum for the line. Seeding the maximum with it gave every line a
+// 21.6pt floor, so a 10pt label in a 15pt-tall shape was taller than its box and
+// the shrink-to-fit clip dropped it before drawing a single line.
 func maxStyledRunsLineHeight(runs []pdfStyledRun) float64 {
-	maxHeight := pdfLineHeight(defaultFontSize)
+	maxHeight := 0.0
 	for _, run := range runs {
-		size := run.SizePt
-		if size <= 0 {
-			size = defaultFontSize
-		}
-		height := pdfLineHeight(size)
+		height := pdfLineHeight(runSizePt(run))
 		if height > maxHeight {
 			maxHeight = height
 		}
 	}
-	return maxHeight
-}
-
-func firstStyledFontHint(runs []pdfStyledRun) string {
-	for _, run := range runs {
-		if strings.TrimSpace(run.FontHint) != "" {
-			return run.FontHint
-		}
+	if maxHeight <= 0 {
+		return pdfLineHeight(defaultFontSize)
 	}
-	return ""
+	return maxHeight
 }

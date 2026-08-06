@@ -8,25 +8,14 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-//nolint:gochecknoglobals // Alias values are runtime-configurable for renderer-level font fallback tuning.
-var (
-	pdfSansAlias  = fontFamilySans
-	pdfSerifAlias = fontFamilySans
-	pdfMonoAlias  = fontFamilySans
-	pdfCJKAlias   = fontFamilySans
-)
-
 const codeTokenHintThreshold = 2
 
-func setPDFFontAliases(sansAlias, serifAlias, monoAlias string) {
-	pdfSansAlias = fallbackAlias(sansAlias, fontFamilySans)
-	pdfSerifAlias = fallbackAlias(serifAlias, pdfSansAlias)
-	pdfMonoAlias = fallbackAlias(monoAlias, pdfSansAlias)
-	pdfCJKAlias = fallbackAlias(pdfCJKAlias, pdfSansAlias)
+func setPDFFontAliases(pdf *gopdf.GoPdf, sansAlias, serifAlias, monoAlias string) {
+	documentFontsFor(pdf).setGenericAliases(sansAlias, serifAlias, monoAlias)
 }
 
-func setPDFCJKAlias(alias string) {
-	pdfCJKAlias = fallbackAlias(alias, pdfSansAlias)
+func setPDFCJKAlias(pdf *gopdf.GoPdf, alias string) {
+	documentFontsFor(pdf).setCJKAlias(alias)
 }
 
 func fallbackAlias(value, fallback string) string {
@@ -58,33 +47,45 @@ func setPDFTextFontWithHintAndLang(
 	if size <= 0 {
 		size = defaultFontSize
 	}
-	_ = pdf.SetFont(resolvePDFFontAliasForRun(fontHint, lang), style, size)
+	// The typeface the run names is embedded on demand, so a deck set in
+	// Georgia is drawn in Georgia rather than in whichever serif the host
+	// happens to fall back to.
+	if alias := ensureNamedPDFFont(pdf, fontHint); alias != "" {
+		_ = pdf.SetFont(alias, style, size)
+		return
+	}
+	_ = pdf.SetFont(resolvePDFFontAliasForRun(pdf, fontHint, lang), style, size)
 }
 
-func resolvePDFFontAlias(fontHint string) string {
+func resolvePDFFontAlias(pdf *gopdf.GoPdf, fontHint string) string {
+	if alias := cachedNamedPDFFontAlias(pdf, fontHint); alias != "" {
+		return alias
+	}
+	sans, serif, mono, _ := documentFontsFor(pdf).genericAliases()
 	hint := strings.ToLower(strings.TrimSpace(fontHint))
 	switch {
 	case isMonospaceFontHint(hint):
-		return pdfMonoAlias
+		return mono
 	case isSerifFontHint(hint):
-		return pdfSerifAlias
+		return serif
 	default:
-		return pdfSansAlias
+		return sans
 	}
 }
 
-func resolvePDFFontAliasForRun(fontHint, lang string) string {
+func resolvePDFFontAliasForRun(pdf *gopdf.GoPdf, fontHint, lang string) string {
 	if hint := strings.TrimSpace(fontHint); hint != "" {
-		return resolvePDFFontAlias(hint)
+		return resolvePDFFontAlias(pdf, hint)
 	}
+	sans, _, _, cjk := documentFontsFor(pdf).genericAliases()
 	normalizedLang := strings.ToLower(strings.TrimSpace(lang))
 	switch {
 	case strings.HasPrefix(normalizedLang, "ja"),
 		strings.HasPrefix(normalizedLang, "zh"),
 		strings.HasPrefix(normalizedLang, "ko"):
-		return fallbackAlias(pdfCJKAlias, pdfSansAlias)
+		return fallbackAlias(cjk, sans)
 	default:
-		return pdfSansAlias
+		return sans
 	}
 }
 

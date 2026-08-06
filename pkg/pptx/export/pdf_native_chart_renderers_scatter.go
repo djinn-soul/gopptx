@@ -3,7 +3,6 @@ package export
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/signintech/gopdf"
 )
@@ -23,9 +22,14 @@ func renderPieLike(
 	if len(values) == 0 {
 		return
 	}
-	cx := r.x + r.w/2
-	cy := r.y + r.h/2 + 8
-	radius := math.Min(r.w, r.h) * 0.35
+	// The pie fills its plot area rather than a fixed fraction of the frame:
+	// PowerPoint draws a 360pt-tall chart's pie at a 154pt radius, which is half
+	// the height left once the top and bottom margins are taken off. The old
+	// 0.35 × min(w,h) drew it a fifth too small.
+	plot := piePlotRect(pdf, r, opts, categories)
+	cx := plot.x + plot.w/2
+	cy := plot.y + plot.h/2
+	radius := math.Min(plot.w, plot.h) / 2
 	total := sumFloat(values)
 	if total <= 0 {
 		return
@@ -41,13 +45,7 @@ func renderPieLike(
 
 		if opts.showDataLabels {
 			midAngle := (start + end) / 2
-			if opts.showCatName && i < len(categories) && categories[i] != "" {
-				drawPieSliceLabel(pdf, cx, cy, radius, midAngle, categories[i])
-			} else {
-				pct := frac * 100
-				label := strconv.FormatFloat(pct, 'f', 1, 64) + "%"
-				drawPieSliceLabel(pdf, cx, cy, radius, midAngle, label)
-			}
+			drawPieSliceLabel(pdf, cx, cy, radius, midAngle, pieSliceLabelText(opts, categories, i, v, total, frac))
 		}
 		start = end
 	}
@@ -60,6 +58,31 @@ func renderPieLike(
 		drawChartLegend(pdf, r, opts.legendPosition, entries)
 	}
 }
+
+// piePlotRect is the area a pie or doughnut is drawn into: the chart frame less
+// the legend, the title and the margins PowerPoint keeps around the plot.
+func piePlotRect(pdf *gopdf.GoPdf, r chartRect, opts chartSeriesOpts, names []string) chartRect {
+	if opts.showLegend {
+		r = chartRectWithLegendMargin(pdf, r, opts.legendPosition, names)
+	}
+	top := chartMinTopPadPt
+	if opts.titleOverlay {
+		top = chartOverlayTopPadPt
+	}
+	return chartRect{
+		x: r.x + piePlotSideMarginPt,
+		y: r.y + top,
+		w: math.Max(r.w-2*piePlotSideMarginPt, 1),
+		h: math.Max(r.h-top-piePlotBottomMarginPt, 1),
+	}
+}
+
+// piePlotSideMarginPt and piePlotBottomMarginPt are the clearance PowerPoint
+// leaves beside and below a pie, measured off its own export.
+const (
+	piePlotSideMarginPt   = 10.0
+	piePlotBottomMarginPt = 10.0
+)
 
 func clampHoleSize(pct int) int {
 	if pct < 10 {
@@ -83,10 +106,8 @@ func renderScatterLike(pdf *gopdf.GoPdf, title string, r chartRect, xs, ys, size
 
 	plotR := r
 	if opts.showLegend {
-		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
+		plotR = chartRectWithLegendMargin(pdf, r, opts.legendPosition, []string{opts.seriesName})
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
 	// Use XY-specific axis range (adds ~20% headroom) matching PowerPoint's auto-axis
 	// for scatter/bubble charts — ensures data points never sit on the axis edge.
 	minX, maxX := niceAxisRangeXY(xs[:n])
@@ -97,13 +118,28 @@ func renderScatterLike(pdf *gopdf.GoPdf, title string, r chartRect, xs, ys, size
 	if maxY <= minY {
 		maxY = minY + 1
 	}
+
+	// Both axes carry numeric tick labels here, so the plot area is sized around
+	// them; the ranges therefore have to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minY, MaxV: maxY, ValueFormat: opts.valueFormat},
+		chartAxisSpec{MinV: minX, MaxV: maxX, ValueFormat: opts.valueFormat},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
 	rangeX := maxX - minX
 	rangeY := maxY - minY
 
 	// Draw plot frame.
 	pdf.SetStrokeColor(30, 30, 30)
 	pdf.RectFromUpperLeftWithStyle(px, py, pw, ph, "D")
-	renderScatterAxes(pdf, px, py, pw, ph, minX, maxX, minY, maxY, rangeX, rangeY, opts)
+	renderScatterAxes(pdf, scatterAxisGeometry{
+		px: px, py: py, pw: pw, ph: ph,
+		minX: minX, maxX: maxX, minY: minY, maxY: maxY,
+		rangeX: rangeX, rangeY: rangeY,
+		densityX: layout.Horizontal, densityY: layout.Vertical,
+	}, opts)
 
 	ptR, ptG, ptB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
@@ -212,10 +248,7 @@ func renderRadarLike(
 		labelR := radius + 14
 		lx := cx + math.Cos(angle)*labelR
 		ly := cy + math.Sin(angle)*labelR
-		label := categoryLabel(categories, i)
-		pdf.SetX(lx - float64(len(label))*3)
-		pdf.SetY(ly - 4)
-		_ = pdf.Cell(nil, label)
+		drawChartLabel(pdf, categoryLabel(categories, i), lx, ly, chartLabelFontSize, chartTextCenter)
 	}
 	pdf.SetTextColor(0, 0, 0)
 

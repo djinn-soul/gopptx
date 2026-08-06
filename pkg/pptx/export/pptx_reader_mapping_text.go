@@ -61,8 +61,8 @@ func editorParagraphsToExportParagraphs(es editorcommon.Shape) []text.Paragraph 
 		out := make([]text.Paragraph, 0, len(es.Paragraphs))
 		for _, paragraph := range es.Paragraphs {
 			runs := editorRunsToExportRuns(paragraph.Runs)
-			style := editorParagraphToExportStyle(paragraph.Paragraph)
-			if len(runs) == 0 && reflect.DeepEqual(style, elements.DefaultParagraphStyle()) {
+			style := editorShapeParagraphToExportStyle(paragraph.Paragraph)
+			if len(runs) == 0 && reflect.DeepEqual(style, editorShapeParagraphToExportStyle(nil)) {
 				continue
 			}
 			out = append(out, text.Paragraph{
@@ -77,10 +77,25 @@ func editorParagraphsToExportParagraphs(es editorcommon.Shape) []text.Paragraph 
 	if len(es.Runs) > 0 || es.Paragraph != nil {
 		return []text.Paragraph{{
 			Runs:  editorRunsToExportRuns(es.Runs),
-			Style: editorParagraphToExportStyle(es.Paragraph),
+			Style: editorShapeParagraphToExportStyle(es.Paragraph),
 		}}
 	}
 	return nil
+}
+
+// editorShapeParagraphToExportStyle maps a paragraph belonging to shape text.
+//
+// The default paragraph style carries a bullet, which is right for a body
+// placeholder and wrong for a shape: PowerPoint marks shape text only when the
+// paragraph states a:buChar or a:buAutoNum. Reading a deck through the default
+// stamped a bullet over the first letter of every text box and every diagram
+// node, so an unstated bullet is left unset here for the renderer to skip.
+func editorShapeParagraphToExportStyle(paragraph *editorcommon.Paragraph) elements.ParagraphStyle {
+	style := editorParagraphToExportStyle(paragraph)
+	if paragraph == nil || paragraph.BulletStyle == nil {
+		style.BulletStyle = ""
+	}
+	return style
 }
 
 func editorParagraphToExportStyle(paragraph *editorcommon.Paragraph) elements.ParagraphStyle {

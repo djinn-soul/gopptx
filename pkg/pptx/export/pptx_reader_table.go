@@ -66,7 +66,7 @@ func extractTableContent(
 			applyTableCellBorders(&styledCell, cell)
 			if firstRow && rowIndex == 0 {
 				styledCell = styledCell.WithBold(true).WithBackgroundColor("4472C4")
-				styledCell.Color = "FFFFFF"
+				styledCell.Color = pdfTableHeaderText
 			} else if bandRow && rowIndex%2 == 1 {
 				styledCell = styledCell.WithBackgroundColor("D0D8E8")
 			}

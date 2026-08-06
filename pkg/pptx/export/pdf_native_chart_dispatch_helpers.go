@@ -6,6 +6,17 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
+// percentAxisMin and percentAxisMax pin a 100%-stacked chart's value axis.
+// PowerPoint gives such a chart a 0–100% axis exactly: the auto-range headroom
+// that suits real data would take it to 120% and leave a fifth of the plot
+// permanently empty.
+//
+//nolint:gochecknoglobals // Addressable constants for the by-pointer axis overrides.
+var (
+	percentAxisMin = 0.0
+	percentAxisMax = 100.0
+)
+
 func renderBarChart(pdf *gopdf.GoPdf, c *charts.BarChart) {
 	renderBarLike(pdf, c.Title,
 		chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
@@ -14,6 +25,7 @@ func renderBarChart(pdf *gopdf.GoPdf, c *charts.BarChart) {
 			color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -31,6 +43,7 @@ func renderBarHorizontalChart(pdf *gopdf.GoPdf, c *charts.BarHorizontalChart) {
 			color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -48,6 +61,7 @@ func renderBarStackedChart(pdf *gopdf.GoPdf, c *charts.BarStackedChart) {
 			color: c.BarColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -65,11 +79,13 @@ func renderBarStacked100Chart(pdf *gopdf.GoPdf, c *charts.BarStacked100Chart) {
 			color:      c.BarColor,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
 			titleOverlay:       c.TitleOverlay,
 			valueFormat:        "0%",
+			minValue:           &percentAxisMin, maxValue: &percentAxisMax,
 		},
 	)
 }
@@ -82,6 +98,7 @@ func renderLineChart(pdf *gopdf.GoPdf, c *charts.LineChart) {
 			color: c.LineColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -100,6 +117,7 @@ func renderLineMarkersChart(pdf *gopdf.GoPdf, c *charts.LineMarkersChart) {
 			color: c.LineColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -118,6 +136,7 @@ func renderLineStackedChart(pdf *gopdf.GoPdf, c *charts.LineStackedChart) {
 			color: c.LineColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -136,6 +155,7 @@ func renderAreaChart(pdf *gopdf.GoPdf, c *charts.AreaChart) {
 			color: c.AreaColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -153,6 +173,7 @@ func renderAreaStackedChart(pdf *gopdf.GoPdf, c *charts.AreaStackedChart) {
 			color: c.AreaColor, minValue: c.MinValue, maxValue: c.MaxValue,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
@@ -170,11 +191,13 @@ func renderAreaStacked100Chart(pdf *gopdf.GoPdf, c *charts.AreaStacked100Chart) 
 			color:      c.AreaColor,
 			showLegend: c.ShowLegend, legendPosition: c.LegendPosition, seriesName: c.SeriesName,
 			showDataLabels: c.ShowDataLabels,
+			dataLabels:     c.DataLabels,
 			catAxisTitle:   c.CategoryAxisTitle, valAxisTitle: c.ValueAxisTitle,
 			showMajorGridlines: c.ShowMajorGridlines,
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
 			titleOverlay:       c.TitleOverlay,
 			valueFormat:        "0%",
+			minValue:           &percentAxisMin, maxValue: &percentAxisMax,
 		},
 	)
 }

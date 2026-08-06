@@ -2,6 +2,7 @@ package pptxxml
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -30,6 +31,7 @@ type smartArtDataCxn struct {
 	destID     string
 	parTransID string
 	sibTransID string
+	srcOrd     int
 }
 
 func pruneUnusedOrgChartPlaceholderBranches(data string) string {
@@ -39,6 +41,10 @@ func pruneUnusedOrgChartPlaceholderBranches(data string) string {
 	}
 	cxns := parseSmartArtDataConnections(data)
 	removedDataIDs := initialOrgChartRemovedDataPointIDs(points)
+	if len(removedDataIDs) == 0 {
+		return data
+	}
+	keepAncestorsOfRetainedDataPoints(removedDataIDs, cxns)
 	if len(removedDataIDs) == 0 {
 		return data
 	}
@@ -80,9 +86,24 @@ func parseSmartArtDataConnections(data string) []smartArtDataCxn {
 			destID:     extractXMLAttr(raw, "destId"),
 			parTransID: extractXMLAttr(raw, "parTransId"),
 			sibTransID: extractXMLAttr(raw, "sibTransId"),
+			srcOrd:     smartArtCxnOrd(raw, "srcOrd"),
 		})
 	}
 	return out
+}
+
+// smartArtCxnOrd reads a connection ordinal attribute. Connections are stored in
+// arbitrary document order, so the ordinal is the only reliable sibling order.
+func smartArtCxnOrd(raw, attr string) int {
+	value := extractXMLAttr(raw, attr)
+	if value == "" {
+		return 0
+	}
+	ord, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return ord
 }
 
 func initialOrgChartRemovedDataPointIDs(points []smartArtDataPoint) map[string]struct{} {
@@ -100,6 +121,33 @@ func initialOrgChartRemovedDataPointIDs(points []smartArtDataPoint) map[string]s
 		out[point.modelID] = struct{}{}
 	}
 	return out
+}
+
+// keepAncestorsOfRetainedDataPoints re-instates empty placeholders that still
+// have a retained descendant. Dropping such a node deletes the connections that
+// attach its subtree to the document, which leaves the kept children orphaned
+// and the whole diagram unrenderable.
+func keepAncestorsOfRetainedDataPoints(
+	removedDataIDs map[string]struct{},
+	cxns []smartArtDataCxn,
+) {
+	changed := true
+	for changed {
+		changed = false
+		for _, cxn := range cxns {
+			if strings.HasPrefix(cxn.cxnType, "pres") || cxn.srcID == "" || cxn.destID == "" {
+				continue
+			}
+			if _, removeSrc := removedDataIDs[cxn.srcID]; !removeSrc {
+				continue
+			}
+			if _, removeDest := removedDataIDs[cxn.destID]; removeDest {
+				continue
+			}
+			delete(removedDataIDs, cxn.srcID)
+			changed = true
+		}
+	}
 }
 
 func expandRemovedOrgChartTransitionIDs(

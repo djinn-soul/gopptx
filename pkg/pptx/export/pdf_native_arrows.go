@@ -1,43 +1,46 @@
 //nolint:mnd // Arrow geometry uses fixed visual proportion constants for correct arrow shape rendering.
 package export
 
-import "github.com/signintech/gopdf"
+import (
+	"math"
 
-func rightArrowPoints(x, y, w, h float64) []gopdf.Point {
-	aw := w * 0.5
-	bw := w - aw
-	hh := h * 0.5
-	bh := h * 0.5
+	"github.com/signintech/gopdf"
+)
+
+func rightArrowPoints(x, y, w, h float64, geom arrowGeometry) []gopdf.Point {
+	bw := w - geom.head // where the head starts
+	shaftTop := y + (h-geom.shaft)/2
+	shaftBottom := shaftTop + geom.shaft
 	return []gopdf.Point{
-		{X: x, Y: y + (h-bh)/2},
-		{X: x + bw, Y: y + (h-bh)/2},
+		{X: x, Y: shaftTop},
+		{X: x + bw, Y: shaftTop},
 		{X: x + bw, Y: y},
-		{X: x + w, Y: y + hh},
+		{X: x + w, Y: y + h/2},
 		{X: x + bw, Y: y + h},
-		{X: x + bw, Y: y + h - (h-bh)/2},
-		{X: x, Y: y + h - (h-bh)/2},
+		{X: x + bw, Y: shaftBottom},
+		{X: x, Y: shaftBottom},
 	}
 }
 
-func leftArrowPoints(x, y, w, h float64) []gopdf.Point {
-	aw := w * 0.5
-	hh := h * 0.5
-	bh := h * 0.5
+func leftArrowPoints(x, y, w, h float64, geom arrowGeometry) []gopdf.Point {
+	aw := geom.head // where the head ends
+	shaftTop := y + (h-geom.shaft)/2
+	shaftBottom := shaftTop + geom.shaft
 	return []gopdf.Point{
-		{X: x + aw, Y: y + (h-bh)/2},
-		{X: x + w, Y: y + (h-bh)/2},
-		{X: x + w, Y: y + h - (h-bh)/2},
-		{X: x + aw, Y: y + h - (h-bh)/2},
+		{X: x + aw, Y: shaftTop},
+		{X: x + w, Y: shaftTop},
+		{X: x + w, Y: shaftBottom},
+		{X: x + aw, Y: shaftBottom},
 		{X: x + aw, Y: y + h},
-		{X: x, Y: y + hh},
+		{X: x, Y: y + h/2},
 		{X: x + aw, Y: y},
 	}
 }
 
-func upArrowPoints(x, y, w, h float64) []gopdf.Point {
-	sh := h * 0.5 // shaft height
-	lx := x + w*0.3
-	rx := x + w*0.7
+func upArrowPoints(x, y, w, h float64, geom arrowGeometry) []gopdf.Point {
+	sh := geom.head // head height, measured from the top
+	lx := x + (w-geom.shaft)/2
+	rx := lx + geom.shaft
 	return []gopdf.Point{
 		{X: lx, Y: y + h},
 		{X: rx, Y: y + h},
@@ -49,24 +52,25 @@ func upArrowPoints(x, y, w, h float64) []gopdf.Point {
 	}
 }
 
-func downArrowPoints(x, y, w, h float64) []gopdf.Point {
-	sh := h * 0.5 // shaft height
-	lx := x + w*0.3
-	rx := x + w*0.7
+func downArrowPoints(x, y, w, h float64, geom arrowGeometry) []gopdf.Point {
+	sh := h - geom.head // where the head starts
+	lx := x + (w-geom.shaft)/2
+	rx := lx + geom.shaft
 	return []gopdf.Point{
 		{X: lx, Y: y},
 		{X: rx, Y: y},
-		{X: rx, Y: y + sh},
-		{X: x + w, Y: y + sh},
+		{X: rx, Y: sh + y},
+		{X: x + w, Y: sh + y},
 		{X: x + w/2, Y: y + h},
-		{X: x, Y: y + sh},
-		{X: lx, Y: y + sh},
+		{X: x, Y: sh + y},
+		{X: lx, Y: sh + y},
 	}
 }
 
-func leftRightArrowPoints(x, y, w, h float64) []gopdf.Point {
-	hw := w * 0.3   // head width
-	shy := h * 0.25 // shaft half-height from centre
+func leftRightArrowPoints(x, y, w, h float64, geom arrowGeometry) []gopdf.Point {
+	// Both heads have to fit inside the width, so each takes at most half of it.
+	hw := math.Min(geom.head, w/2)
+	shy := geom.shaft / 2 // shaft half-height from centre
 	cy := y + h/2
 	return []gopdf.Point{
 		{X: x, Y: cy},
@@ -82,9 +86,9 @@ func leftRightArrowPoints(x, y, w, h float64) []gopdf.Point {
 	}
 }
 
-func upDownArrowPoints(x, y, w, h float64) []gopdf.Point {
-	hh := h * 0.3   // head height
-	shx := w * 0.25 // shaft half-width from centre
+func upDownArrowPoints(x, y, w, h float64, geom arrowGeometry) []gopdf.Point {
+	hh := math.Min(geom.head, h/2) // head height, one at each end
+	shx := geom.shaft / 2          // shaft half-width from centre
 	cx := x + w/2
 	return []gopdf.Point{
 		{X: cx, Y: y},

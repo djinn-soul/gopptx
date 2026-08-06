@@ -11,9 +11,12 @@ import (
 // Shape geometry constants.
 const (
 	// Polygon vertex counts for regular polygons.
-	hexagonSides  = 6
 	pentagonSides = 5
 	octagonSides  = 8
+
+	// hexagonAdjustment is the OOXML hexagon preset's default adj value (25000
+	// of 100000), the fraction of the shorter side each end is cut back by.
+	hexagonAdjustment = 0.25
 
 	// Star point counts.
 	starPoints4  = 4
@@ -81,6 +84,7 @@ func setPDFShapeStroke(pdf *gopdf.GoPdf, s shapes.Shape) bool {
 	}
 	pdf.SetLineWidth(strokeWidth)
 	pdf.SetStrokeColor(hexToRGB(s.Line.Color))
+	applyPDFLineDash(pdf, shapeLineDash(s), strokeWidth)
 	return true
 }
 
@@ -91,8 +95,7 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 	case shapes.ShapeTypeRectangle:
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
 	case shapes.ShapeTypeRoundedRectangle:
-		radius := math.Min(w, h) * defaultRadiusFactor
-		_ = pdf.Rectangle(x, y, x+w, y+h, style, radius, 0)
+		drawRoundedRect(pdf, x, y, w, h, style)
 	case shapes.ShapeTypePie, shapes.ShapeTypePieWedge, shapes.ShapeTypeChord:
 		drawPieShape(pdf, s, x, y, w, h, style)
 	case shapes.ShapeTypeEllipse:
@@ -114,7 +117,7 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 			style,
 		)
 	case shapes.ShapeTypeHexagon:
-		pdf.Polygon(regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, hexagonSides, -math.Pi/hexagonSides), style)
+		pdf.Polygon(hexagonPoints(x, y, w, h), style)
 	case shapes.ShapeTypePentagon:
 		pdf.Polygon(regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, pentagonSides, -math.Pi/2), style)
 	case shapes.ShapeTypeOctagon:
@@ -132,17 +135,17 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 			{X: x + w, Y: y + h}, {X: x, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeRightArrow:
-		pdf.Polygon(rightArrowPoints(x, y, w, h), style)
+		pdf.Polygon(rightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeLeftArrow:
-		pdf.Polygon(leftArrowPoints(x, y, w, h), style)
+		pdf.Polygon(leftArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeUpArrow:
-		pdf.Polygon(upArrowPoints(x, y, w, h), style)
+		pdf.Polygon(upArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeDownArrow:
-		pdf.Polygon(downArrowPoints(x, y, w, h), style)
+		pdf.Polygon(downArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeLeftRightArrow:
-		pdf.Polygon(leftRightArrowPoints(x, y, w, h), style)
+		pdf.Polygon(leftRightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeUpDownArrow:
-		pdf.Polygon(upDownArrowPoints(x, y, w, h), style)
+		pdf.Polygon(upDownArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeChevronArrow:
 		pdf.Polygon(chevronPoints(x, y, w, h), style)
 	case shapes.ShapeTypeStar4, shapes.ShapeTypeStar5, shapes.ShapeTypeStar6,
@@ -197,6 +200,28 @@ func ellipsePoints(cx, cy, rx, ry float64, n int) []gopdf.Point {
 		pts[i] = gopdf.Point{X: cx + rx*math.Cos(a), Y: cy + ry*math.Sin(a)}
 	}
 	return pts
+}
+
+// hexagonPoints returns the vertices of the OOXML "hexagon" preset: a box with
+// its left and right ends cut back by adj x the shorter side.
+//
+// Drawing it as a regular hexagon inscribed in the box was wrong for any shape
+// that is not square — a wide flowchart node came out with long diagonal ends
+// where PowerPoint draws short ones.
+func hexagonPoints(x, y, w, h float64) []gopdf.Point {
+	inset := math.Min(w, h) * hexagonAdjustment
+	if inset > w/2 {
+		inset = w / 2
+	}
+	midY := y + h/2
+	return []gopdf.Point{
+		{X: x, Y: midY},
+		{X: x + inset, Y: y},
+		{X: x + w - inset, Y: y},
+		{X: x + w, Y: midY},
+		{X: x + w - inset, Y: y + h},
+		{X: x + inset, Y: y + h},
+	}
 }
 
 // regularPolygonPoints returns n evenly-spaced vertices of a polygon inscribed

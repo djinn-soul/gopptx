@@ -8,11 +8,38 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
+// ooxmlDefaultTextFrame is the frame a:bodyPr describes when it states nothing:
+// lIns/rIns 91440 EMU (7.2pt), tIns/bIns 45720 EMU (3.6pt), anchor "t", square
+// wrap and no autofit.
+//
+// This deliberately does not reuse shapes.NewTextFrame(), which is the authoring
+// constructor and carries gopptx's own house defaults (0.05in on all four sides,
+// middle anchor, shape autofit). Those are a fine starting point for a deck being
+// built, but using them here made every imported shape render with half the
+// horizontal inset PowerPoint uses and vertically centred text PowerPoint puts at
+// the top.
+func ooxmlDefaultTextFrame() shapes.TextFrame {
+	return shapes.TextFrame{
+		MarginLeft:   styling.Emu(ooxmlDefaultInsetLREMU),
+		MarginRight:  styling.Emu(ooxmlDefaultInsetLREMU),
+		MarginTop:    styling.Emu(ooxmlDefaultInsetTBEMU),
+		MarginBottom: styling.Emu(ooxmlDefaultInsetTBEMU),
+		Anchor:       shapes.TextAnchorTop,
+		Wrap:         shapes.TextWrapSquare,
+		AutoFit:      shapes.TextAutoFitNone,
+	}
+}
+
+const (
+	ooxmlDefaultInsetLREMU = 91440
+	ooxmlDefaultInsetTBEMU = 45720
+)
+
 func editorTextFrameToExportTextFrame(frame *editorcommon.TextFrame) *shapes.TextFrame {
 	if frame == nil {
 		return nil
 	}
-	tf := shapes.NewTextFrame()
+	tf := ooxmlDefaultTextFrame()
 	has := applyExportTextFrameMargins(&tf, frame)
 	has = applyExportTextFrameAnchor(&tf, frame) || has
 	has = applyExportTextFrameWrap(&tf, frame) || has

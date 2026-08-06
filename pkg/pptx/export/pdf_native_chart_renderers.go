@@ -5,6 +5,8 @@ import (
 	"math"
 
 	"github.com/signintech/gopdf"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
 // drawHorizontalBarItem draws a single bar in a horizontal bar chart at row i.
@@ -26,8 +28,55 @@ func drawHorizontalBarItem(
 		if values[valueIndex] < 0 {
 			labelX = bx - 3
 		}
-		drawBarDataLabel(pdf, labelX, by+bh/2-3, values[valueIndex])
+		if dataLabelPosition(opts) == charts.DataLabelPositionInsideEnd {
+			labelX = bx + bw - dataLabelOutsideGapPt
+		}
+		drawChartDataLabel(pdf, opts, chartDataLabelAt(opts, valueIndex, values[valueIndex]), labelX, by+bh/2-3)
 	}
+}
+
+// chartSmoothSegments is how many straight segments each span of a smoothed
+// line is drawn with. Eight is enough that the curve reads as one at slide
+// sizes.
+const chartSmoothSegments = 8
+
+// chartSeriesLineWidthPt is how thick PowerPoint draws a line series: its
+// default series stroke is 28575 EMU. The renderer used to leave the line at
+// gopdf's 1pt default, which came out as a hairline beside PowerPoint's.
+const chartSeriesLineWidthPt = 2.25
+
+// chartValueY maps a data value onto the plot area.
+//
+// The full plot height is used: subtracting a few points from it, as this used
+// to, squashed the series so its topmost point fell short of the axis value it
+// was supposed to touch.
+func chartValueY(value, minV, rangeV, plotY, plotH float64) float64 {
+	if rangeV == 0 {
+		return plotY + plotH
+	}
+	return plotY + plotH - ((value-minV)/rangeV)*plotH
+}
+
+// chartBarBandFraction is how much of a category slot the bars fill.
+//
+// PowerPoint's default gap width is 150% of the bar band, so the band is
+// slot/(1+1.5) — measured bar for bar against its own export of a four-category
+// column chart.
+const chartBarBandFraction = 0.40
+
+// categoryPointX is where a line or area chart draws the point for category i.
+//
+// PowerPoint gives each category a slot of the plot width and puts its point in
+// the middle of it, the same slot a bar chart would centre its bar in — the
+// category labels line up under the points because of it. Spreading the points
+// from edge to edge instead stretched the series past its first and last
+// categories.
+func categoryPointX(px, pw float64, i, count int) float64 {
+	if count <= 0 {
+		return px
+	}
+	slot := pw / float64(count)
+	return px + slot*(float64(i)+0.5)
 }
 
 // drawVerticalBarItem draws a single bar in a vertical bar chart at column i.
@@ -39,7 +88,7 @@ func drawVerticalBarItem(
 	opts chartSeriesOpts,
 ) {
 	slot := pw / float64(nValues)
-	bw := math.Max(8, slot*0.40)
+	bw := math.Max(8, slot*chartBarBandFraction)
 	bx := px + slot*float64(i) + (slot-bw)/2
 	zeroY := py + ph*maxV/rangeV
 	valueY := py + ph*(maxV-v)/rangeV
@@ -50,15 +99,12 @@ func drawVerticalBarItem(
 	}
 	pdf.RectFromUpperLeftWithStyle(bx, barTop, bw, barH, "F")
 	if opts.showDataLabels {
-		labelY := barTop - 5
-		if v < 0 {
-			labelY = barTop + barH + 3
-		}
+		labelY := barLabelY(opts, barTop, barTop+barH, v < 0)
 		// Clamp: if the label would fall above the plot area, draw it inside the bar top.
 		if labelY < py {
-			labelY = barTop + 2
+			labelY = barTop + dataLabelInsideGapPt
 		}
-		drawBarDataLabel(pdf, bx+bw/2, labelY, v)
+		drawChartDataLabel(pdf, opts, chartDataLabelAt(opts, i, v), bx+bw/2, labelY)
 	}
 }
 
@@ -81,13 +127,9 @@ func renderBarLike(
 
 	plotR := r
 	if opts.showLegend {
-		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
+		plotR = chartRectWithLegendMargin(pdf, r, opts.legendPosition, []string{opts.seriesName})
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-	if horizontal {
-		px, py, pw, ph = chartPlotRectHorizontal(plotR, opts.titleOverlay)
-	}
-
+	opts = withChartLabelData(opts, categories, values)
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -100,15 +142,33 @@ func renderBarLike(
 	}
 	rangeV := maxV - minV
 
+	// The axis range has to be known before the plot rect, because the tick
+	// labels it produces are what the plot area is sized around.
+	valueAxis := chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat}
+	categoryAxis := chartAxisSpec{Categories: categories}
+	verticalAxis, horizontalAxis := valueAxis, categoryAxis
+	if horizontal {
+		verticalAxis, horizontalAxis = categoryAxis, valueAxis
+	}
+	layout := solveChartLayout(pdf, plotR, opts.titleOverlay, title, verticalAxis, horizontalAxis)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+	opts = withChartPlotArea(opts, px, py, pw, ph)
+
 	barR, barG, barB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
 		barR, barG, barB = hexToRGB(opts.color)
 	}
 
 	if horizontal {
-		drawHorizontalChartFrame(pdf, px, py, pw, ph, minV, maxV, categories, opts.showCatGridlines, opts.valueFormat)
+		drawHorizontalChartFrame(
+			pdf, px, py, pw, ph, minV, maxV, categories,
+			opts.showCatGridlines, opts.valueFormat, layout.Horizontal,
+		)
 	} else {
-		drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+		drawChartFrame(
+			pdf, px, py, pw, ph, minV, maxV,
+			opts.showMajorGridlines, opts.valueFormat, layout.Vertical,
+		)
 	}
 
 	for i, v := range values {
@@ -156,10 +216,9 @@ func renderLineLike(
 
 	plotR := r
 	if opts.showLegend {
-		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
+		plotR = chartRectWithLegendMargin(pdf, r, opts.legendPosition, []string{opts.seriesName})
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
+	opts = withChartLabelData(opts, categories, values)
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -172,28 +231,41 @@ func renderLineLike(
 	}
 	rangeV := maxV - minV
 
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+	opts = withChartPlotArea(opts, px, py, pw, ph)
+
 	lineR, lineG, lineB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
 		lineR, lineG, lineB = hexToRGB(opts.color)
 	}
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 	pdf.SetStrokeColor(lineR, lineG, lineB)
 	pdf.SetFillColor(lineR, lineG, lineB)
+	pdf.SetLineWidth(chartSeriesLineWidthPt)
+	defer pdf.SetLineWidth(1)
 
 	// Build the raw data points.
 	rawPts := make([]gopdf.Point, len(values))
 	for i, v := range values {
 		rawPts[i] = gopdf.Point{
-			X: px + (float64(i)*pw)/float64(len(values)-1),
-			Y: py + ph - ((v-minV)/rangeV)*(ph-4),
+			X: categoryPointX(px, pw, i, len(values)),
+			Y: chartValueY(v, minV, rangeV, py, ph),
 		}
 	}
 
 	// Draw connecting lines: straight or Catmull-Rom smooth.
 	drawPts := rawPts
 	if opts.smooth && len(rawPts) >= 2 {
-		drawPts = catmullRomPoints(rawPts, 8)
+		drawPts = catmullRomPoints(rawPts, chartSmoothSegments)
 	}
 	for i := 1; i < len(drawPts); i++ {
 		pdf.Line(drawPts[i-1].X, drawPts[i-1].Y, drawPts[i].X, drawPts[i].Y)
@@ -205,7 +277,8 @@ func renderLineLike(
 			drawFilledCircle(pdf, pt.X, pt.Y, 2.5, lineR, lineG, lineB)
 		}
 		if opts.showDataLabels {
-			drawBarDataLabel(pdf, pt.X, pt.Y-8, values[i])
+			labelX, labelY := dataLabelPointAnchor(opts, pt.X, pt.Y)
+			drawChartDataLabel(pdf, opts, chartDataLabelAt(opts, i, values[i]), labelX, labelY)
 		}
 	}
 
@@ -239,10 +312,9 @@ func renderAreaLike(
 
 	plotR := r
 	if opts.showLegend {
-		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
+		plotR = chartRectWithLegendMargin(pdf, r, opts.legendPosition, []string{opts.seriesName})
 	}
-	px, py, pw, ph := chartPlotRect(plotR, opts.titleOverlay)
-
+	opts = withChartLabelData(opts, categories, values)
 	minV, maxV := niceAxisRange(values)
 	if opts.minValue != nil {
 		minV = *opts.minValue
@@ -255,22 +327,34 @@ func renderAreaLike(
 	}
 	rangeV := maxV - minV
 
+	// The tick labels the axis range produces are what the plot area is sized
+	// around, so the range has to be resolved first.
+	layout := solveChartLayout(
+		pdf, plotR, opts.titleOverlay,
+		title,
+		chartAxisSpec{MinV: minV, MaxV: maxV, ValueFormat: opts.valueFormat},
+		chartAxisSpec{Categories: categories},
+	)
+	px, py, pw, ph := layout.X, layout.Y, layout.W, layout.H
+	opts = withChartPlotArea(opts, px, py, pw, ph)
+
 	areaR, areaG, areaB := uint8(79), uint8(129), uint8(189)
 	if opts.color != "" {
 		areaR, areaG, areaB = hexToRGB(opts.color)
 	}
 
-	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat)
+	drawChartFrame(pdf, px, py, pw, ph, minV, maxV, opts.showMajorGridlines, opts.valueFormat, layout.Vertical)
 
 	zeroY := py + ph*maxV/rangeV
+	firstX := categoryPointX(px, pw, 0, len(values))
+	lastX := categoryPointX(px, pw, len(values)-1, len(values))
 	pts := make([]gopdf.Point, 0, len(values)+2)
-	pts = append(pts, gopdf.Point{X: px, Y: zeroY})
+	pts = append(pts, gopdf.Point{X: firstX, Y: zeroY})
 	for i, v := range values {
-		x := px + (float64(i)*pw)/float64(len(values)-1)
-		y := py + ph - ((v-minV)/rangeV)*(ph-4)
-		pts = append(pts, gopdf.Point{X: x, Y: y})
+		x := categoryPointX(px, pw, i, len(values))
+		pts = append(pts, gopdf.Point{X: x, Y: chartValueY(v, minV, rangeV, py, ph)})
 	}
-	pts = append(pts, gopdf.Point{X: px + pw, Y: zeroY})
+	pts = append(pts, gopdf.Point{X: lastX, Y: zeroY})
 
 	// Darken fill colour slightly for the stroke outline.
 	strokeR := uint8(math.Max(0, float64(areaR)*0.7))

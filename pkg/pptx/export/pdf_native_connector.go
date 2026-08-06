@@ -32,12 +32,13 @@ func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 	r, g, b := hexToRGB(c.Line.Color)
 	pdf.SetStrokeColor(r, g, b)
 	pdf.SetFillColor(r, g, b)
+	applyPDFLineDash(pdf, c.Line.Dash, strokeW)
 
 	startAngle := math.Atan2(y2-y1, x2-x1)
 	endAngle := startAngle
 	labelX, labelY := (x1+x2)/2, (y1+y2)/2
-	startInset := connectorArrowInset(c.StartArrowLen, c.StartArrow)
-	endInset := connectorArrowInset(c.EndArrowLen, c.EndArrow)
+	startInset := connectorArrowInset(c.StartArrowLen, c.StartArrow, strokeW)
+	endInset := connectorArrowInset(c.EndArrowLen, c.EndArrow, strokeW)
 	x1, y1 = insetConnectorPoint(x1, y1, x2, y2, startInset)
 	x2, y2 = insetConnectorPoint(x2, y2, x1, y1, endInset)
 
@@ -65,6 +66,9 @@ func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 		labelX, labelY = connectorLabelPosition(labelX, labelY, endAngle, c.Label)
 	}
 
+	// PowerPoint dashes the connector body but draws its arrowheads solid.
+	clearPDFLineDash(pdf)
+
 	if shapes.NormalizeArrowType(c.StartArrow) != shapes.ArrowTypeNone {
 		drawPDFArrowhead(
 			pdf,
@@ -74,10 +78,13 @@ func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 			c.StartArrow,
 			c.StartArrowWidth,
 			c.StartArrowLen,
+			strokeW,
 		)
 	}
 	if shapes.NormalizeArrowType(c.EndArrow) != shapes.ArrowTypeNone {
-		drawPDFArrowhead(pdf, endTipX, endTipY, endAngle, c.EndArrow, c.EndArrowWidth, c.EndArrowLen)
+		drawPDFArrowhead(
+			pdf, endTipX, endTipY, endAngle, c.EndArrow, c.EndArrowWidth, c.EndArrowLen, strokeW,
+		)
 	}
 
 	if c.Label != "" {
@@ -91,11 +98,11 @@ func renderPDFConnector(pdf *gopdf.GoPdf, c shapes.Connector) {
 	pdf.SetLineWidth(1)
 }
 
-func connectorArrowInset(sizeToken string, arrowType string) float64 {
+func connectorArrowInset(sizeToken string, arrowType string, lineWidthPt float64) float64 {
 	if shapes.NormalizeArrowType(arrowType) == shapes.ArrowTypeNone {
 		return 0
 	}
-	_, length := arrowSizePt(shapes.ArrowSizeMedium, sizeToken)
+	_, length := arrowSizePt(shapes.ArrowSizeMedium, sizeToken, lineWidthPt)
 	return length * 0.6
 }
 
@@ -179,8 +186,9 @@ func drawPDFArrowhead(
 	arrowType string,
 	widthToken string,
 	lengthToken string,
+	lineWidthPt float64,
 ) {
-	halfWidth, length := arrowSizePt(widthToken, lengthToken)
+	halfWidth, length := arrowSizePt(widthToken, lengthToken, lineWidthPt)
 	left := gopdf.Point{
 		X: tipX - length*math.Cos(angle) + halfWidth*math.Sin(angle),
 		Y: tipY - length*math.Sin(angle) - halfWidth*math.Cos(angle),
@@ -193,6 +201,12 @@ func drawPDFArrowhead(
 		X: tipX - (length * 0.55 * math.Cos(angle)),
 		Y: tipY - (length * 0.55 * math.Sin(angle)),
 	}
+
+	// A closed head is filled, not stroked: outlining it with the connector's
+	// own pen grew the head by the line width on every side, which is why a 3pt
+	// connector ended in a head half again wider than PowerPoint's.
+	restorePen := beginArrowheadFill(pdf, arrowType)
+	defer restorePen()
 
 	switch shapes.NormalizeArrowType(arrowType) {
 	case shapes.ArrowTypeOpen:
@@ -218,20 +232,57 @@ func drawPDFArrowhead(
 	}
 }
 
-func arrowSizePt(widthToken string, lengthToken string) (float64, float64) {
-	halfWidth := 3.0
-	length := 6.0
+// Arrowhead geometry, in multiples of the connector's line width.
+//
+// PowerPoint sizes a head from the line it terminates — a medium head measures
+// 3 x the line width across and about 1.8 x along — with a floor so a head on a
+// hairline is still visible. Measured against PowerPoint's PDF export at 1, 2
+// and 3pt line widths. A fixed 6pt head, as this used to draw, was half again
+// too big on a 1pt connector and too small on a thick one.
+const (
+	arrowMediumWidthPerLine = 3.0
+	arrowMinWidthPt         = 6.0
+	// A head is very nearly as long as it is wide: measured 5.67pt long on a
+	// 6pt-wide head and 8.67 on a 9pt one.
+	arrowLengthPerWidth = 0.95
+	arrowSmallScale     = 2.0 / 3.0
+	arrowLargeScale     = 4.0 / 3.0
+)
+
+// beginArrowheadFill thins the pen so a filled head is not also outlined with
+// the connector's full line width. It returns the restore function.
+func beginArrowheadFill(pdf *gopdf.GoPdf, arrowType string) func() {
+	if shapes.NormalizeArrowType(arrowType) == shapes.ArrowTypeOpen {
+		return func() {}
+	}
+	pdf.SetLineWidth(arrowheadOutlinePt)
+	return func() {}
+}
+
+// arrowheadOutlinePt is the hairline the filled heads are drawn with, thin
+// enough not to change their measured size.
+const arrowheadOutlinePt = 0.1
+
+// arrowSizePt returns the half-width and length of an arrowhead on a line of
+// the given width.
+func arrowSizePt(widthToken string, lengthToken string, lineWidthPt float64) (float64, float64) {
+	if lineWidthPt <= 0 {
+		lineWidthPt = 1
+	}
+	width := math.Max(arrowMediumWidthPerLine*lineWidthPt, arrowMinWidthPt)
+	length := width * arrowLengthPerWidth
+
 	switch shapes.NormalizeArrowSize(widthToken) {
 	case shapes.ArrowSizeSmall:
-		halfWidth = 2.0
+		width *= arrowSmallScale
 	case shapes.ArrowSizeLarge:
-		halfWidth = 4.0
+		width *= arrowLargeScale
 	}
 	switch shapes.NormalizeArrowSize(lengthToken) {
 	case shapes.ArrowSizeSmall:
-		length = 4.0
+		length *= arrowSmallScale
 	case shapes.ArrowSizeLarge:
-		length = 8.0
+		length *= arrowLargeScale
 	}
-	return halfWidth, length
+	return width / 2, length
 }

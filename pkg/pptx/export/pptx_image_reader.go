@@ -9,11 +9,17 @@ import (
 	"strings"
 )
 
+const (
+	shapeTreePicElement = "pic"
+	groupShapeElement   = "grpsp"
+)
+
 const formatPNG = "png"
 
 // SlideImage holds image bytes and its position on the slide (in EMU).
 type SlideImage struct {
 	Bytes        []byte
+	ShapeID      int    // spTree shape id, used to recover paint order
 	Format       string // "png", "jpeg", "gif", "emf", etc.
 	X, Y         int64  // EMU offset
 	CX, CY       int64  // EMU size
@@ -28,6 +34,14 @@ type SlideImage struct {
 	Reflection   bool
 	AltText      string
 	IsDecorative bool
+
+	InnerShadow       bool
+	Glow              bool
+	SoftEdges         bool
+	Blur              bool
+	GlowRadiusEmu     int
+	SoftEdgeRadiusEmu int
+	BlurRadiusEmu     int
 }
 
 // extractSlideImages reads a PPTX file and returns images per slide (0-based).
@@ -74,6 +88,7 @@ func extractSlideImages(pptxPath string) ([][]SlideImage, error) {
 			}
 			images = append(images, SlideImage{
 				Bytes:        data,
+				ShapeID:      pic.ShapeID,
 				Format:       imageFormat(mediaPath),
 				X:            pic.X,
 				Y:            pic.Y,
@@ -90,6 +105,14 @@ func extractSlideImages(pptxPath string) ([][]SlideImage, error) {
 				Reflection:   pic.Reflection,
 				AltText:      pic.AltText,
 				IsDecorative: pic.IsDecorative,
+
+				InnerShadow:       pic.InnerShadow,
+				Glow:              pic.Glow,
+				SoftEdges:         pic.SoftEdges,
+				Blur:              pic.Blur,
+				GlowRadiusEmu:     pic.GlowRadiusEmu,
+				SoftEdgeRadiusEmu: pic.SoftEdgeRadiusEmu,
+				BlurRadiusEmu:     pic.BlurRadiusEmu,
 			})
 		}
 		result[i] = images

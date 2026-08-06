@@ -4,38 +4,70 @@ package export
 import (
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/signintech/gopdf"
 )
 
-// niceStep returns a human-readable tick interval for an axis of the given range,
-// matching PowerPoint's own "nice number" axis algorithm.
-// It picks the smallest step from {1,2,5,10,20,25,50,…} that gives 4–8 ticks.
+// maxChartAxisIntervals is how many gaps PowerPoint will put between value-axis
+// labels before it coarsens the interval.
+//
+// Ten, measured off PowerPoint's own renders: a chart whose data tops out at 9
+// gets an axis of 0–10 labelled every 1 (ten intervals), and one topping out at
+// 42 gets 0–45 labelled every 5 (nine). A cap of eight — what this used to
+// assume — cannot produce either.
+const maxChartAxisIntervals = 10
+
+// niceStep returns the tick interval PowerPoint gives an axis of this range: the
+// finest interval from {1, 2, 2.5, 5} × 10ⁿ that spans the range in no more than
+// maxChartAxisIntervals steps.
+//
+// The old rule asked for 4–8 ticks from a wider candidate set, which chose 20
+// where PowerPoint chooses 5.
 func niceStep(rangeV float64) float64 {
+	return niceStepWithin(rangeV, maxChartAxisIntervals)
+}
+
+// niceStepWithin is niceStep with an explicit interval budget, so an axis too
+// short to carry ten labels can ask for a coarser one.
+func niceStepWithin(rangeV float64, maxIntervals int) float64 {
 	if rangeV <= 0 {
 		return 1
 	}
-	// Scale candidates to the right magnitude.
-	magnitude := math.Pow(10, math.Floor(math.Log10(rangeV)))
-	for _, m := range []float64{0.1, 0.2, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100} {
-		step := m * magnitude
-		if step <= 0 {
-			continue
-		}
-		ticks := math.Ceil(rangeV / step)
-		if ticks >= 4 && ticks <= 8 {
-			return step
-		}
+	if maxIntervals < 1 {
+		maxIntervals = 1
 	}
-	// Fallback: divide range by 5.
-	return math.Ceil(rangeV/5.0) * (magnitude / 10.0)
+	// Start a decade below the range so a range of 1.05 can still be stepped by
+	// 0.1, and walk up until the interval count fits.
+	magnitude := math.Pow(10, math.Floor(math.Log10(rangeV))-1)
+	for range chartStepDecades {
+		for _, m := range niceStepMultipliers {
+			step := m * magnitude
+			if step <= 0 {
+				continue
+			}
+			if int(math.Ceil(rangeV/step-1e-9)) <= maxIntervals {
+				return step
+			}
+		}
+		magnitude *= 10
+	}
+	return rangeV / float64(maxIntervals)
 }
+
+// chartStepDecades bounds the walk in niceStepWithin. Three decades above the
+// range's own magnitude is far more than any budget of one interval needs.
+const chartStepDecades = 4
 
 // drawChartFrame draws the Y-axis, baseline, optional horizontal gridlines, and value
 // labels. showGridlines controls whether tick-lines cross the plot area. valueFormat is
 // applied to all Y-axis labels.
-func drawChartFrame(pdf *gopdf.GoPdf, x, y, w, h, minV, maxV float64, showGridlines bool, valueFormat string) {
+func drawChartFrame(
+	pdf *gopdf.GoPdf,
+	x, y, w, h, minV, maxV float64,
+	showGridlines bool,
+	valueFormat string,
+	density chartAxisTickDensity,
+) {
 	pdf.SetStrokeColor(30, 30, 30)
 	pdf.Line(x, y, x, y+h)
 	pdf.Line(x, y+h, x+w, y+h)
@@ -43,20 +75,27 @@ func drawChartFrame(pdf *gopdf.GoPdf, x, y, w, h, minV, maxV float64, showGridli
 	if rangeV <= 0 {
 		rangeV = 1
 	}
-	step := rangeV / 5.0
-	// Walk upward from minV in step increments, drawing gridline + label per tick.
-	for tick := minV; tick <= maxV+step*1e-9; tick = math.Round((tick+step)*1e9) / 1e9 {
+	previousLine := math.NaN()
+	for _, tick := range chartAxisTicks(minV, maxV, density) {
 		yLine := y + h - ((tick - minV) / rangeV * h)
 		if yLine < y-1 || yLine > y+h+1 {
 			continue
 		}
 		if showGridlines {
-			pdf.SetStrokeColor(90, 90, 90)
+			pdf.SetStrokeColor(chartGridlineGrey, chartGridlineGrey, chartGridlineGrey)
 			pdf.Line(x, yLine, x+w, yLine)
 		}
-		pdf.SetX(x - 28)
-		pdf.SetY(yLine - 3)
-		_ = pdf.Cell(nil, formatTickValue(tick, valueFormat))
+		drawChartAxisTick(pdf, x, yLine, chartAxisVertical)
+		if !math.IsNaN(previousLine) {
+			drawChartMinorTicks(pdf, previousLine, yLine, x, chartAxisVertical)
+		}
+		previousLine = yLine
+		// PowerPoint right-aligns value labels against the axis line.
+		drawChartLabel(
+			pdf, formatTickValue(tick, valueFormat),
+			x-chartAxisLabelGapPt-chartTickMarkPt, yLine,
+			chartLabelFontSize, chartTextRight,
+		)
 	}
 	// Prominent zero line when the range spans positive and negative values.
 	if minV < 0 && maxV > 0 {
@@ -72,11 +111,10 @@ func drawCategoryLabels(pdf *gopdf.GoPdf, x, y, w, h float64, categories []strin
 		return
 	}
 	slot := w / float64(count)
+	labelY := y + h + chartAxisLabelGapPt + pdfLineHeight(chartLabelFontSize)/2
 	for i := range count {
 		cx := x + slot*float64(i) + slot/2
-		pdf.SetX(cx - 6)
-		pdf.SetY(y + h + 8)
-		_ = pdf.Cell(nil, categoryLabel(categories, i))
+		drawChartLabel(pdf, categoryLabel(categories, i), cx, labelY, chartLabelFontSize, chartTextCenter)
 	}
 }
 
@@ -88,6 +126,7 @@ func drawHorizontalChartFrame(
 	categories []string,
 	showGridlines bool,
 	valueFormat string,
+	density chartAxisTickDensity,
 ) {
 	pdf.SetStrokeColor(30, 30, 30)
 	pdf.Line(x, y, x, y+h)
@@ -96,20 +135,22 @@ func drawHorizontalChartFrame(
 	if rangeV <= 0 {
 		rangeV = 1
 	}
-	step := rangeV / 5.0
-	// Draw vertical gridlines and X-axis labels at step positions.
-	for tick := minV; tick <= maxV+step*1e-9; tick = math.Round((tick+step)*1e9) / 1e9 {
+	// Draw vertical gridlines and X-axis labels at tick positions.
+	for _, tick := range chartAxisTicks(minV, maxV, density) {
 		xTick := x + ((tick - minV) / rangeV * w)
 		if xTick < x-1 || xTick > x+w+1 {
 			continue
 		}
 		if showGridlines {
-			pdf.SetStrokeColor(90, 90, 90)
+			pdf.SetStrokeColor(chartGridlineGrey, chartGridlineGrey, chartGridlineGrey)
 			pdf.Line(xTick, y, xTick, y+h)
 		}
-		pdf.SetX(xTick - 4)
-		pdf.SetY(y + h + 8)
-		_ = pdf.Cell(nil, formatTickValue(tick, valueFormat))
+		drawChartAxisTick(pdf, xTick, y+h, chartAxisHorizontal)
+		drawChartLabel(
+			pdf, formatTickValue(tick, valueFormat),
+			xTick, y+h+chartTickMarkPt+chartAxisLabelGapPt+pdfLineHeight(chartLabelFontSize)/2,
+			chartLabelFontSize, chartTextCenter,
+		)
 	}
 	if minV < 0 && maxV > 0 {
 		zeroX := x + ((0-minV)/rangeV)*w
@@ -124,9 +165,11 @@ func drawHorizontalChartFrame(
 	for i := range count {
 		// Match PowerPoint bar order for horizontal variants (last category at top).
 		cy := y + slot*float64(i) + slot/2
-		pdf.SetX(x - 18)
-		pdf.SetY(cy - 3)
-		_ = pdf.Cell(nil, categoryLabel(categories, count-1-i))
+		drawChartLabel(
+			pdf, categoryLabel(categories, count-1-i),
+			x-chartAxisLabelGapPt, cy,
+			chartLabelFontSize, chartTextRight,
+		)
 	}
 }
 
@@ -140,17 +183,32 @@ func fullBars(n int) []float64 {
 	return out
 }
 
+// chartAxisHeadroom is the padding PowerPoint leaves above the largest data
+// point before rounding the axis up to a whole number of steps.
+//
+// Five percent, and the step is chosen for the padded range first. Measured
+// against PowerPoint, all four of these now come out right:
+//
+//	data max 9   -> 10  (step 1)
+//	data max 30  -> 35  (step 5)
+//	data max 42  -> 45  (step 5)
+//	data max 500 -> 600 (step 100)
+//
+// The pair used to be unsolvable together because niceStep would not pick an
+// interval that needed more than eight ticks; it now allows ten, which is what
+// PowerPoint itself does.
+const chartAxisHeadroom = 1.05
+
 func niceAxisMax(value float64) float64 {
 	if value <= 0 {
 		return 1
 	}
-	if value <= 10 {
-		return math.Ceil(value)
+	padded := value * chartAxisHeadroom
+	step := niceStep(padded)
+	if step <= 0 {
+		return math.Ceil(padded)
 	}
-	if value <= 100 {
-		return math.Ceil(value/5.0) * 5.0
-	}
-	return math.Ceil(value/50.0) * 50.0
+	return math.Ceil(padded/step-1e-9) * step
 }
 
 // niceAxisRangeXY computes a pleasant [minV, maxV] with ~20% headroom above
@@ -198,41 +256,37 @@ func drawChartLegend(pdf *gopdf.GoPdf, r chartRect, position string, entries []l
 	if len(entries) == 0 {
 		return
 	}
+	// A legend at the side is centred against the chart, not hung from a fixed
+	// fraction of its height: PowerPoint puts a two-entry legend in the middle
+	// of the frame, where a 25% offset put it up by the plot's top gridline.
+	blockH := float64(len(entries)) * chartLegendRowPt
+	sideY := r.y + math.Max((r.h-blockH)/2, 0)
 	var x, y float64
 	switch position {
 	case "l":
-		x, y = r.x+4, r.y+r.h*0.25
+		x, y = r.x+4, sideY
 	case "t":
 		x, y = r.x+r.w/2-50, r.y+20
 	case "b":
 		x, y = r.x+r.w/2-50, r.y+r.h-28
 	default: // "r"
-		x, y = r.x+r.w-98, r.y+r.h*0.25
+		x, y = r.x+r.w-98, sideY
 	}
 	for i, entry := range entries {
-		ey := y + float64(i)*18
+		ey := y + float64(i)*chartLegendRowPt
 		pdf.SetFillColor(entry.R, entry.G, entry.B)
-		pdf.RectFromUpperLeftWithStyle(x, ey, 12, 8, "F")
+		pdf.RectFromUpperLeftWithStyle(x, ey, chartLegendMarkerWPt, chartLegendMarkerHPt, "F")
 		pdf.SetTextColor(40, 40, 40)
 		name := entry.Name
 		if name == "" {
 			name = "Series " + strconv.Itoa(i+1)
 		}
-		pdf.SetX(x + 16)
-		pdf.SetY(ey - 1)
-		_ = pdf.Cell(nil, name)
+		drawChartLabel(
+			pdf, name,
+			x+chartLegendMarkerWPt+4, ey+chartLegendMarkerHPt/2,
+			chartLabelFontSize, chartTextLeft,
+		)
 	}
-	pdf.SetTextColor(0, 0, 0)
-}
-
-// drawBarDataLabel draws a numeric value label near a bar top or line point.
-func drawBarDataLabel(pdf *gopdf.GoPdf, cx, labelY, value float64) {
-	label := strconv.FormatFloat(value, 'f', 1, 64)
-	label = strings.TrimSuffix(label, ".0")
-	pdf.SetTextColor(60, 60, 60)
-	pdf.SetX(cx - float64(len(label))*3)
-	pdf.SetY(labelY)
-	_ = pdf.Cell(nil, label)
 	pdf.SetTextColor(0, 0, 0)
 }
 
@@ -242,9 +296,7 @@ func drawPieSliceLabel(pdf *gopdf.GoPdf, cx, cy, radius, midAngle float64, text 
 	lx := cx + math.Cos(midAngle)*labelRadius
 	ly := cy + math.Sin(midAngle)*labelRadius
 	pdf.SetTextColor(40, 40, 40)
-	pdf.SetX(lx - float64(len(text))*3)
-	pdf.SetY(ly - 4)
-	_ = pdf.Cell(nil, text)
+	drawChartLabel(pdf, text, lx, ly, chartLabelFontSize, chartTextCenter)
 	pdf.SetTextColor(0, 0, 0)
 }
 
@@ -279,11 +331,17 @@ func catmullRomPoints(pts []gopdf.Point, segsPerInterval int) []gopdf.Point {
 }
 
 // drawFilledCircle draws a filled polygon approximating a circle.
+//
+// The segment count scales with the radius so the outline stays smooth: a fixed
+// 16 segments is fine for a 3pt line marker but visibly faceted on a bubble tens
+// of points across. Roughly one segment per 1.5pt of circumference, clamped so
+// small markers stay cheap and large bubbles stay round.
 func drawFilledCircle(pdf *gopdf.GoPdf, cx, cy, r float64, colR, colG, colB uint8) {
-	const steps = 16
+	steps := int(math.Round(2 * math.Pi * r / 1.5))
+	steps = min(max(steps, 16), 180)
 	pts := make([]gopdf.Point, 0, steps)
 	for i := range steps {
-		angle := 2 * math.Pi * float64(i) / steps
+		angle := 2 * math.Pi * float64(i) / float64(steps)
 		pts = append(pts, gopdf.Point{
 			X: cx + math.Cos(angle)*r,
 			Y: cy + math.Sin(angle)*r,

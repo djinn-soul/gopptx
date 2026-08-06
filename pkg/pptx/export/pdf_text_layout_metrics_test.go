@@ -1,34 +1,153 @@
 package export
 
-import "testing"
+import (
+	"math"
+	"os"
+	"path/filepath"
+	"testing"
+)
 
-func TestFontMetricProfileSelection(t *testing.T) {
-	t.Parallel()
-
-	calibri := fontMetricProfile("Calibri")
-	if calibri.WidthFactor >= 1.0 {
-		t.Fatalf("calibri width factor=%v want < 1.0", calibri.WidthFactor)
-	}
-
-	mono := fontMetricProfile("Consolas")
-	if mono.KernPairFactor != 0 {
-		t.Fatalf("monospace kern pair factor=%v want 0", mono.KernPairFactor)
+// calibriMetrics are Calibri's real hhea/OS-2 values, used so the derived
+// factors can be asserted without depending on a font file being installed.
+func calibriMetrics() ttfLineMetrics {
+	return ttfLineMetrics{
+		UnitsPerEm:   2048,
+		Ascender:     1536,
+		Descender:    -512,
+		LineGap:      452,
+		TypoAscender: 1536,
 	}
 }
 
-func TestKerningAdjustmentTightPairsAndSpaces(t *testing.T) {
+func TestLineHeightIsFontIndependent(t *testing.T) {
 	t.Parallel()
 
-	profile := fontMetricProfile("Calibri")
-	tight := kerningAdjustment("To", profile, 20)
-	plain := kerningAdjustment("oo", profile, 20)
-	if tight >= plain {
-		t.Fatalf("tight-pair kerning=%v should be smaller than plain=%v", tight, plain)
+	// Measured from PowerPoint's own render: 18pt Calibri, Segoe UI, Georgia,
+	// Verdana, Arial and Consolas all land on the same ~19.4pt pitch even though
+	// their hhea line heights span 1.14 to 1.33 em. So the line box is 1.2 x the
+	// point size for every font.
+	if got := pdfLineHeight(18); math.Abs(got-21.6) > 0.001 {
+		t.Fatalf("18pt line height=%v want 21.6", got)
+	}
+	if got := pdfLineHeight(44); math.Abs(got-52.8) > 0.001 {
+		t.Fatalf("44pt line height=%v want 52.8", got)
+	}
+}
+
+func TestBaselineShiftFactorIsRelativeToGopdfPlacement(t *testing.T) {
+	t.Parallel()
+
+	// Calibri: descent 0.25 em. PowerPoint hangs the line from the bottom of its
+	// box, so the baseline sits descent (plus baselineDescentPadFactor) above it:
+	// 1.2 - 0.26 = 0.94 em. gopdf's Cell() has already applied typoAscender
+	// (0.75 em for Calibri), so the renderer adds the remaining 0.19 em.
+	got := calibriMetrics().baselineShiftFactor()
+	want := powerPointLineBoxFactor - 0.25 - baselineDescentPadFactor - calibriMetrics().typoAscenderFactor()
+	if math.Abs(got-want) > 0.0005 {
+		t.Fatalf("calibri baseline shift factor=%v want ~%v", got, want)
+	}
+}
+
+// TestBaselineShiftFollowsLineBox pins the effect line spacing has on the first
+// baseline: a 90% line box lifts it by 0.12 em, which is what PowerPoint does
+// inside a body placeholder.
+func TestBaselineShiftFollowsLineBox(t *testing.T) {
+	t.Parallel()
+
+	m := calibriMetrics()
+	full := m.baselineShiftFactorInLineBox(powerPointLineBoxFactor)
+	tight := m.baselineShiftFactorInLineBox(powerPointLineBoxFactor * 0.9)
+	if diff := full - tight; math.Abs(diff-0.12) > 0.0005 {
+		t.Fatalf("90%% line box lifts the baseline by %v em, want 0.12", diff)
+	}
+}
+
+func TestLineMetricsFallBackWhenUnitsPerEmMissing(t *testing.T) {
+	t.Parallel()
+
+	var empty ttfLineMetrics
+	if empty.baselineShiftFactor() != fallbackLineMetrics.baselineShiftFactor() {
+		t.Fatalf("zero metrics baseline shift=%v want fallback", empty.baselineShiftFactor())
+	}
+}
+
+func TestReadTTFLineMetricsParsesRealFont(t *testing.T) {
+	t.Parallel()
+
+	path := findTestFontPath()
+	if path == "" {
+		t.Skip("no system font available to parse")
+	}
+	m, err := readTTFLineMetrics(path)
+	if err != nil {
+		t.Fatalf("readTTFLineMetrics(%q) error: %v", path, err)
+	}
+	if m.UnitsPerEm <= 0 {
+		t.Fatalf("unitsPerEm=%v want > 0", m.UnitsPerEm)
+	}
+	if m.Ascender <= 0 {
+		t.Fatalf("ascender=%v want > 0", m.Ascender)
+	}
+	if m.Descender > 0 {
+		t.Fatalf("descender=%v want <= 0 (hhea stores it negative)", m.Descender)
+	}
+	// Every mainstream UI font sits well inside this band; anything outside it
+	// means the table offsets were misread.
+	if f := (m.Ascender - m.Descender) / m.UnitsPerEm; f < 0.9 || f > 2.0 {
+		t.Fatalf("ascent+descent=%v em out of plausible range", f)
+	}
+}
+
+func TestLineMetricsClampJunkVerticalMetrics(t *testing.T) {
+	t.Parallel()
+
+	// A font claiming no descender at all would hang its baseline off the bottom
+	// of the line box.
+	junk := ttfLineMetrics{UnitsPerEm: 2048, Ascender: 2048, Descender: 0, LineGap: 0}
+	if got := junk.baselineShiftFactor(); got != maxBaselineShiftFactor {
+		t.Fatalf("junk baseline shift factor=%v want clamp to %v", got, maxBaselineShiftFactor)
 	}
 
-	withSpace := kerningAdjustment("a a", profile, 30)
-	noSpace := kerningAdjustment("aaa", profile, 30)
-	if withSpace >= noSpace {
-		t.Fatalf("space kerning=%v should be smaller than no-space=%v", withSpace, noSpace)
+	// ...and one claiming a 40 em descender must not drag it up off the slide.
+	deep := ttfLineMetrics{UnitsPerEm: 2048, Ascender: 1536, Descender: -81920}
+	if got := deep.baselineShiftFactor(); got != minBaselineShiftFactor {
+		t.Fatalf("deep-descender baseline shift factor=%v want clamp to %v", got, minBaselineShiftFactor)
 	}
+
+	// ...and one claiming a huge typoAscender must not drag it upward off it.
+	inverted := ttfLineMetrics{UnitsPerEm: 2048, Ascender: 1536, Descender: -512, TypoAscender: 81920}
+	if got := inverted.baselineShiftFactor(); got != minBaselineShiftFactor {
+		t.Fatalf("inverted baseline shift factor=%v want clamp to %v", got, minBaselineShiftFactor)
+	}
+}
+
+func TestReadTTFLineMetricsRejectsNonFont(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "not-a-font.ttf")
+	if err := os.WriteFile(path, []byte("nope"), 0o600); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+	if _, err := readTTFLineMetrics(path); err == nil {
+		t.Fatal("readTTFLineMetrics on a non-font returned no error")
+	}
+}
+
+func TestMetricsForFontHintFallsBackForUnregisteredAlias(t *testing.T) {
+	got := metricsForFontHint(nil, "Nonexistent Font")
+	if got != fallbackLineMetrics {
+		t.Fatalf("unregistered hint metrics=%+v want fallback", got)
+	}
+}
+
+// findTestFontPath reuses the renderer's own font search rather than repeating a
+// hard-coded path list, so the test cannot drift from production and skips
+// cleanly on a machine (or CI image) that ships none of these families.
+func findTestFontPath() string {
+	for _, family := range []string{fontFamilySans, fontFamilySerif, fontFamilyMono} {
+		if paths := systemFontPathsForFamily(family); len(paths) > 0 {
+			return paths[0]
+		}
+	}
+	return ""
 }
