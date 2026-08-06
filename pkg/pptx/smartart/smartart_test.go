@@ -114,14 +114,39 @@ func TestSmartArt_Validate(t *testing.T) {
 		wantErr bool
 	}{
 		{"Valid", NewSmartArt(BasicBlockList).AddNode(NewNode("A")), false},
+		// A layout whose template holds a row of peers takes any number of items:
+		// the data model is generated to match and PowerPoint lays it out from
+		// that, so an item count past the template's slots is not an error.
 		{
-			"VerticalBlockList Too Many Items",
+			"VerticalBlockList More Items Than Template Slots",
 			NewSmartArt(VerticalBlockList).AddItems([]string{"A", "B", "C", "D"}),
-			true,
+			false,
 		},
 		{
-			"AlternatingFlow Too Many Items",
+			"AlternatingFlow More Items Than Template Slots",
 			NewSmartArt(AlternatingFlow).AddItems([]string{"A", "B", "C", "D"}),
+			false,
+		},
+		// Depth is still fixed by the layout: this one draws a body under each
+		// entry, that one does not.
+		{
+			"PictureAccentList Second Level Supported",
+			NewSmartArt(PictureAccentList).AddNode(
+				NewNode("Topic").WithChild(NewNode("Detail")),
+			),
+			false,
+		},
+		{
+			"BasicProcess Second Level Unsupported",
+			NewSmartArt(BasicProcess).AddNode(
+				NewNode("Step").WithChild(NewNode("Detail")),
+			),
+			true,
+		},
+		// A hub layout has one absorbing root, so its slots are a real limit.
+		{
+			"BasicRadial Too Many Items",
+			NewSmartArt(BasicRadial).AddItems([]string{"A", "B", "C", "D", "E"}),
 			true,
 		},
 		{

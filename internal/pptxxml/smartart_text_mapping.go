@@ -19,6 +19,10 @@ func buildDrawingTextMapFromData(data string) map[string]string {
 
 	textByDrawingModelID := map[string]string{}
 	presNodes := parseSmartArtPresNodes(data)
+	// Ranking walks the nodes in document order: ranging over the map picked an
+	// arbitrary winner among equally scored shapes, so the same diagram could put
+	// its caption in a different shape from one run to the next.
+	orderedPresNodes := parseSmartArtPresNodesInOrder(data)
 
 	// Prefer one "best" presentation node per data node to avoid duplicate or
 	// connector-only labels stealing visible text slots.
@@ -28,14 +32,14 @@ func buildDrawingTextMapFromData(data string) map[string]string {
 		}
 		bestModelID := ""
 		bestScore := -1
-		for modelID, node := range presNodes {
+		for _, node := range orderedPresNodes {
 			if node.presAssocID != dataModelID {
 				continue
 			}
 			score := scoreSmartArtPresTextNode(node.presName)
 			if score > bestScore {
 				bestScore = score
-				bestModelID = modelID
+				bestModelID = node.modelID
 			}
 		}
 		if bestModelID != "" {
@@ -230,6 +234,16 @@ func scoreSmartArtPresTextNode(name string) int {
 		return 7
 	case strings.Contains(name, "parenttext"), strings.Contains(name, "roottext"):
 		return 10
+	// The hub of a radial diagram is a real text slot: it holds the first bullet.
+	// Without this it is skipped, left as an unfilled placeholder, and pruned.
+	case strings.Contains(name, "centershape"):
+		return 8
+	// A node's own caption belongs in its parent shape, not the narrow accent or
+	// description shape that shares the same data point.
+	case strings.Contains(name, "parentnode"):
+		return 9
+	case strings.Contains(name, "childnode"):
+		return 7
 	case strings.Contains(name, "node"):
 		return 8
 	case strings.Contains(name, "hierchild"), strings.Contains(name, "hierroot"):

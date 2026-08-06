@@ -15,6 +15,9 @@ const (
 
 func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 	data := mustTemplate(templatePathForLayout(spec.LayoutURI, "data.xml"))
+	if !smartArtSpecFitsTemplate(spec, data) {
+		return renderGeneratedSmartArtData(spec)
+	}
 	data = strings.Replace(data,
 		`loTypeId="urn:microsoft.com/office/officeart/2005/8/layout/default"`,
 		`loTypeId="`+Escape(layoutURIOrDefault(spec.LayoutURI))+`"`,
@@ -88,12 +91,20 @@ func renderSmartArtColorsFromTemplate(colorStyleID string) string {
 		`uniqueId="`+Escape(defaultColorStyleID(colorStyleID))+`"`,
 		1,
 	)
+	s = recolorSmartArtColorsToAccent(s, defaultColorStyleID(colorStyleID))
 	renderedColorsCache.Store(colorStyleID, s)
 	return s
 }
 
 func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 	drawing := mustTemplate(templatePathForLayout(spec.LayoutURI, "drawing.xml"))
+	templateData := mustTemplate(templatePathForLayout(spec.LayoutURI, "data.xml"))
+	if !smartArtSpecFitsTemplate(spec, templateData) {
+		// The cached drawing describes the template's shape, which this diagram
+		// has outgrown. PowerPoint lays it out from the data model instead; the
+		// stale cache is left as-is rather than filled with the wrong captions.
+		return clearSmartArtPlaceholderTextRuns(drawing)
+	}
 	data := renderSmartArtDataFromTemplate(spec)
 	orderedTexts := smartArtOrderedTextsForLayout(spec.LayoutURI, spec.Nodes)
 	textByModelID := buildDrawingTextMapFromData(data)
@@ -111,6 +122,43 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 		}
 	}
 	return injectSmartArtDrawingTexts(drawing, textByModelID, hiddenPlaceholderModels, allowedDrawingModels)
+}
+
+// recolorSmartArtColorsToAccent points the colour definitions at the accent the
+// style ID names. The template is written entirely against accent1, so without
+// this an accent2..accent6 style changed the ID and nothing else: PowerPoint
+// reads the definitions, not the ID, and kept drawing the diagram in accent1.
+//
+// Only the accentN families are remapped. Other families (colourful, dark,
+// light) vary per style label and are left on the template's colours.
+func recolorSmartArtColorsToAccent(colors, colorStyleID string) string {
+	accent := smartArtAccentFromColorStyleID(colorStyleID)
+	if accent == "" || accent == "accent1" {
+		return colors
+	}
+	colors = strings.ReplaceAll(colors, `<a:schemeClr val="accent1"`, `<a:schemeClr val="`+accent+`"`)
+	return strings.ReplaceAll(colors, `<dgm:cat type="accent1"`, `<dgm:cat type="`+accent+`"`)
+}
+
+// smartArtAccentFromColorStyleID reads the accent out of IDs like
+// ".../colors/accent3_2", returning "" for families that name no accent.
+func smartArtAccentFromColorStyleID(colorStyleID string) string {
+	idx := strings.LastIndex(colorStyleID, "/")
+	if idx < 0 {
+		return ""
+	}
+	name := colorStyleID[idx+1:]
+	if !strings.HasPrefix(name, "accent") {
+		return ""
+	}
+	digits := strings.TrimPrefix(name, "accent")
+	if cut := strings.IndexByte(digits, '_'); cut >= 0 {
+		digits = digits[:cut]
+	}
+	if len(digits) != 1 || digits[0] < '1' || digits[0] > '6' {
+		return ""
+	}
+	return "accent" + digits
 }
 
 func preferOrderedNodeMapping(layoutURI string) bool {

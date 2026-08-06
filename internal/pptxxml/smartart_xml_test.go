@@ -272,7 +272,7 @@ func TestSmartArtDataXMLHierarchyMapsBreadthFirstAcrossSiblingSlots(t *testing.T
 	}
 	if segment := pointSegmentByModelID(
 		xml,
-		"{E0E6B85D-D97A-48D1-81DC-C8C26276ADC3}",
+		"{CDF06D8C-2EB0-4B55-84B0-DB4ADA208865}",
 	); !strings.Contains(
 		segment,
 		"<a:t>Accounts</a:t>",
@@ -316,7 +316,7 @@ func TestSmartArtDataXMLHorizontalHierarchyMapsBreadthFirstAcrossSiblingSlots(t 
 		"{CE0AAF88-E00D-4698-B726-CFDB9A8B02FB}",
 	); !strings.Contains(
 		segment,
-		"<a:t>Engineering</a:t>",
+		"<a:t>Finance</a:t>",
 	) {
 		t.Fatal("expected first semantic child text in first horizontal hierarchy child slot")
 	}
@@ -325,13 +325,13 @@ func TestSmartArtDataXMLHorizontalHierarchyMapsBreadthFirstAcrossSiblingSlots(t 
 		"{1AEDA9FF-FEC4-4109-BC1E-C7FF7AA02EA0}",
 	); !strings.Contains(
 		segment,
-		"<a:t>Finance</a:t>",
+		"<a:t>Engineering</a:t>",
 	) {
 		t.Fatal("expected second semantic child text in second horizontal hierarchy child slot")
 	}
 	if segment := pointSegmentByModelID(
 		xml,
-		"{C44EB3FF-9224-4653-9878-10CB48172BED}",
+		"{88A38E3E-B1A9-4D56-B46C-71706701582B}",
 	); !strings.Contains(
 		segment,
 		"<a:t>Accounts</a:t>",
@@ -405,6 +405,55 @@ func TestSmartArtDataXMLOrgChartPrunesUnusedAssistantAndChildBranches(t *testing
 			t.Fatalf("expected %s to be pruned from org chart data", removed)
 		}
 	}
+}
+
+// A radial diagram's hub is a text slot like any other. When it was skipped it
+// stayed an unfilled placeholder, the pruner deleted it, and deleting it deleted
+// every parent/child connection with it — PowerPoint then drew a single node and
+// silently dropped the rest of the items.
+func TestSmartArtDataXMLRadialFillsHubAndKeepsDataTree(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/radial1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "North"},
+			{Text: "East"},
+			{Text: "South"},
+			{Text: "West"},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+
+	if segment := pointSegmentByModelID(
+		data,
+		"{FF425370-D8F1-471A-878E-62CB5FEA877F}",
+	); !strings.Contains(segment, "<a:t>North</a:t>") {
+		t.Fatal("expected first radial text in the hub slot")
+	}
+	for _, text := range []string{"East", "South", "West"} {
+		if !strings.Contains(data, "<a:t>"+text+"</a:t>") {
+			t.Fatalf("expected radial satellite text %q to survive", text)
+		}
+	}
+	if structuralConnectionCount(data) == 0 {
+		t.Fatal("expected the radial data tree to keep its parent/child connections")
+	}
+}
+
+// structuralConnectionCount counts parent/child connections, which carry no type
+// attribute, unlike the presOf/presParOf connections of the layout cache.
+func structuralConnectionCount(xml string) int {
+	count := 0
+	for _, segment := range strings.Split(xml, "<dgm:cxn ")[1:] {
+		attrs, _, found := strings.Cut(segment, ">")
+		if !found {
+			continue
+		}
+		if !strings.Contains(attrs, " type=") {
+			count++
+		}
+	}
+	return count
 }
 
 func pointSegmentContainingText(xml, text string) string {

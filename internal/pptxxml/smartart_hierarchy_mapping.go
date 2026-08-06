@@ -1,5 +1,7 @@
 package pptxxml
 
+import "sort"
+
 type smartArtTraversalNode struct {
 	text     string
 	children []SmartArtNodeSpec
@@ -86,7 +88,7 @@ func semanticDataModelIDsInBreadthFirstOrder(data string) []string {
 		pointByID[point.modelID] = point
 	}
 
-	childrenByParent := make(map[string][]string)
+	childrenByParent := make(map[string][]smartArtChildLink)
 	rootDocID := ""
 	for _, point := range points {
 		if point.isPres || point.pointType != smartArtDataPointDoc {
@@ -107,24 +109,43 @@ func semanticDataModelIDsInBreadthFirstOrder(data string) []string {
 		if !ok || destPoint.isPres || isSmartArtStructuralDataType(destPoint.pointType) {
 			continue
 		}
-		childrenByParent[cxn.srcID] = append(childrenByParent[cxn.srcID], cxn.destID)
+		childrenByParent[cxn.srcID] = append(childrenByParent[cxn.srcID], smartArtChildLink{
+			modelID: cxn.destID,
+			ord:     cxn.srcOrd,
+		})
 	}
+	sortSmartArtChildLinks(childrenByParent)
 
-	queue := append([]string(nil), childrenByParent[rootDocID]...)
+	queue := append([]smartArtChildLink(nil), childrenByParent[rootDocID]...)
 	if len(queue) == 0 {
 		return nil
 	}
 	out := make([]string, 0, len(queue))
 	seen := make(map[string]struct{}, len(queue))
 	for len(queue) > 0 {
-		modelID := queue[0]
+		link := queue[0]
 		queue = queue[1:]
-		if _, exists := seen[modelID]; exists {
+		if _, exists := seen[link.modelID]; exists {
 			continue
 		}
-		seen[modelID] = struct{}{}
-		out = append(out, modelID)
-		queue = append(queue, childrenByParent[modelID]...)
+		seen[link.modelID] = struct{}{}
+		out = append(out, link.modelID)
+		queue = append(queue, childrenByParent[link.modelID]...)
 	}
 	return out
+}
+
+// smartArtChildLink is one parent->child edge of the data tree, carrying the
+// ordinal that fixes sibling order.
+type smartArtChildLink struct {
+	modelID string
+	ord     int
+}
+
+func sortSmartArtChildLinks(childrenByParent map[string][]smartArtChildLink) {
+	for _, children := range childrenByParent {
+		sort.SliceStable(children, func(i, j int) bool {
+			return children[i].ord < children[j].ord
+		})
+	}
 }
