@@ -59,6 +59,7 @@ func cloneSlideContentSlices(content SlideContent) SlideContent {
 	content.Shapes = slices.Clone(content.Shapes)
 	content.Connectors = slices.Clone(content.Connectors)
 	content.Tables = slices.Clone(content.Tables)
+	content.Charts = slices.Clone(content.Charts)
 	content.Animations = slices.Clone(content.Animations)
 	content.SmartArtDiagrams = slices.Clone(content.SmartArtDiagrams)
 	content.PlaceholderOverrides = slices.Clone(content.PlaceholderOverrides)
