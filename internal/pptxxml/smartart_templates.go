@@ -15,6 +15,13 @@ const (
 )
 
 func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
+	// Most layouts ship only their definition: the slots a captured data model
+	// would describe are PowerPoint's to lay out, and generating the model to
+	// match the spec keeps every one of them usable without carrying a template
+	// per layout.
+	if !hasLayoutTemplateFile(spec.LayoutURI, "data.xml") {
+		return renderGeneratedSmartArtData(spec)
+	}
 	data := mustTemplate(templatePathForLayout(spec.LayoutURI, "data.xml"))
 	if !smartArtSpecFitsTemplate(spec, data) {
 		return renderGeneratedSmartArtData(spec)
@@ -114,77 +121,13 @@ func renderSmartArtLayoutFromTemplate(layoutURI string) string {
 	return s
 }
 
-func renderSmartArtStyleFromTemplate(quickStyleID string) string {
-	if v, ok := renderedStyleCache.Load(quickStyleID); ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-		panic("renderedStyleCache contained non-string value")
-	}
-	s := smartArtStyleDefinition(defaultQuickStyleID(quickStyleID))
-	renderedStyleCache.Store(quickStyleID, s)
-	return s
-}
-
-// smartArtStyleDefinition returns the style definition PowerPoint itself writes
-// for a quick style. The effects that separate one quick style from another —
-// 3-D scenes, bevels, shadows — live in these definitions, so a style ID
-// stamped onto the shipped simple1 body used to change nothing on the slide.
-func smartArtStyleDefinition(quickStyleID string) string {
-	if xml, ok := smartArtStyleVariant("quickstyles", quickStyleID); ok {
-		return xml
-	}
-	style := mustTemplate("templates/smartart/quickStyle.xml")
-	return strings.Replace(style,
-		`uniqueId="urn:microsoft.com/office/officeart/2005/8/quickstyle/simple1"`,
-		`uniqueId="`+Escape(quickStyleID)+`"`,
-		1,
-	)
-}
-
-func renderSmartArtColorsFromTemplate(colorStyleID string) string {
-	if v, ok := renderedColorsCache.Load(colorStyleID); ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-		panic("renderedColorsCache contained non-string value")
-	}
-	s := smartArtColorsDefinition(defaultColorStyleID(colorStyleID))
-	renderedColorsCache.Store(colorStyleID, s)
-	return s
-}
-
-// smartArtColorsDefinition returns the colour definition PowerPoint itself
-// writes for a colour style. Which accents a style uses, and how it cycles them
-// across nodes, is described here rather than by the style ID.
-func smartArtColorsDefinition(colorStyleID string) string {
-	if xml, ok := smartArtStyleVariant("colorstyles", colorStyleID); ok {
-		return xml
-	}
-	colors := mustTemplate("templates/smartart/colors.xml")
-	return strings.Replace(colors,
-		`uniqueId="urn:microsoft.com/office/officeart/2005/8/colors/accent1_2"`,
-		`uniqueId="`+Escape(colorStyleID)+`"`,
-		1,
-	)
-}
-
-// smartArtStyleVariant loads the definition whose file is named after the last
-// segment of the style URI, e.g. ".../quickstyle/3d1" -> "quickstyles/3d1.xml".
-func smartArtStyleVariant(dir, styleID string) (string, bool) {
-	name := styleID[strings.LastIndex(styleID, "/")+1:]
-	if name == "" || strings.ContainsAny(name, `\/.`) {
-		return "", false
-	}
-	path := "templates/smartart/" + dir + "/" + name + ".xml"
-	b, err := smartArtTemplateFS.ReadFile(path)
-	if err != nil {
-		return "", false
-	}
-	return string(b), true
-}
-
 func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
+	if !hasLayoutTemplateFile(spec.LayoutURI, "drawing.xml") {
+		// There is no cache to reuse for this layout, and the shared one
+		// describes a different diagram. An empty drawing says "nothing cached"
+		// rather than handing a reader the wrong picture.
+		return emptySmartArtDrawingXML()
+	}
 	drawing := mustTemplate(templatePathForLayout(spec.LayoutURI, "drawing.xml"))
 	templateData := mustTemplate(templatePathForLayout(spec.LayoutURI, "data.xml"))
 	if !smartArtSpecFitsTemplate(spec, templateData) {
@@ -209,7 +152,8 @@ func renderSmartArtDrawingFromTemplate(spec SmartArtSpec) string {
 			textByModelID = preferred
 		}
 	}
-	return injectSmartArtDrawingTexts(drawing, textByModelID, hiddenPlaceholderModels, allowedDrawingModels)
+	drawing = injectSmartArtDrawingTexts(drawing, textByModelID, hiddenPlaceholderModels, allowedDrawingModels)
+	return applySmartArtQuickStyleToDrawing(drawing, data, spec.QuickStyleID)
 }
 
 func preferOrderedNodeMapping(layoutURI string) bool {
@@ -255,13 +199,38 @@ func mustTemplate(path string) string {
 }
 
 func templatePathForLayout(layoutURI, fileName string) string {
-	if key, ok := layoutTemplateKey(layoutURI); ok {
-		candidate := "templates/smartart/layouts/" + key + "/" + fileName
-		if _, err := smartArtTemplateFS.ReadFile(candidate); err == nil {
-			return candidate
-		}
+	if path, ok := layoutTemplateFilePath(layoutURI, fileName); ok {
+		return path
 	}
 	return "templates/smartart/" + fileName
+}
+
+// hasLayoutTemplateFile reports whether the layout ships this file of its own,
+// rather than falling back to the shared one, which describes another diagram.
+func hasLayoutTemplateFile(layoutURI, fileName string) bool {
+	_, ok := layoutTemplateFilePath(layoutURI, fileName)
+	return ok
+}
+
+func layoutTemplateFilePath(layoutURI, fileName string) (string, bool) {
+	key, ok := layoutTemplateKey(layoutURI)
+	if !ok {
+		return "", false
+	}
+	candidate := "templates/smartart/layouts/" + key + "/" + fileName
+	if _, err := smartArtTemplateFS.ReadFile(candidate); err != nil {
+		return "", false
+	}
+	return candidate, true
+}
+
+// emptySmartArtDrawingXML is a valid drawing part with no shapes in it.
+func emptySmartArtDrawingXML() string {
+	return xmlHeader +
+		`<dsp:drawing xmlns:dsp="http://schemas.microsoft.com/office/drawing/2008/diagram"` +
+		` xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+		`<dsp:spTree><dsp:nvGrpSpPr><dsp:cNvPr id="0" name=""/><dsp:cNvGrpSpPr/></dsp:nvGrpSpPr>` +
+		`<dsp:grpSpPr/></dsp:spTree></dsp:drawing>`
 }
 
 func layoutTemplateKey(layoutURI string) (string, bool) {
@@ -274,7 +243,28 @@ func layoutTemplateKey(layoutURI string) (string, bool) {
 	if key, ok := layoutTemplateKeyDiagram(layoutURI); ok {
 		return key, true
 	}
+	// Every other layout is stored under the last segment of its URI, which is
+	// what PowerPoint names it by and is unique across the gallery.
+	if name := smartArtTemplateDirName(smartArtStyleName(layoutURI)); name != "" {
+		return name, true
+	}
 	return "", false
+}
+
+// smartArtTemplateDirName reduces a URI segment to a directory name that go:embed
+// will actually take. A few layouts are named with a space or a plus sign
+// ("Picture Frame", "chevronAccent+Icon"), and a directory named that way is
+// skipped by the embed patterns — the layout then silently falls back to the
+// shared template, which describes a different diagram.
+func smartArtTemplateDirName(segment string) string {
+	var b strings.Builder
+	for _, r := range segment {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '_', r == '-':
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func layoutTemplateKeyList(layoutURI string) (string, bool) {

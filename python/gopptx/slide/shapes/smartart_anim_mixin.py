@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from ... import ops
 from ...presentation.helpers import get_required_int
@@ -186,38 +186,6 @@ class SlideSmartArtAnimMixin:
             payload["items"] = items or []
         self._presentation.execute(ops.OP_SET_SMART_ART_NODES, payload)
         self._invalidate_shape_and_text_caches_if_present()
-
-    def get_smartart(self, shape_id: int) -> dict[str, object]:
-        """Read back one SmartArt diagram.
-
-        Returns:
-            ``{"shape_id", "layout", "quick_style", "color_style", "nodes"}``,
-            where ``nodes`` is the nested tree ``add_smartart`` and
-            ``set_smartart_nodes`` accept.  The tree comes from the data model
-            PowerPoint draws from, so it reflects what the slide shows.
-        """
-        payload: dict[str, object] = {
-            "slide_index": self.index,
-            "shape_id": shape_id,
-        }
-        return self._presentation.execute(ops.OP_GET_SMART_ART, payload)
-
-    def list_smartart(self) -> list[dict[str, object]]:
-        """Read back every SmartArt diagram on the slide.
-
-        Returns:
-            A list of the same dicts ``get_smartart`` returns, one per diagram.
-        """
-        payload: dict[str, object] = {"slide_index": self.index}
-        result = self._presentation.execute(ops.OP_LIST_SMART_ART, payload)
-        diagrams = result.get("diagrams", [])
-        if not isinstance(diagrams, list):
-            return []
-        return [
-            cast("dict[str, object]", entry)
-            for entry in cast("list[object]", diagrams)
-            if isinstance(entry, dict)
-        ]
 
     def add_animation(
         self,

@@ -1,3 +1,5 @@
+//go:generate go run ../../../cmd/gen_smartart_layouts ../../../internal/pptxxml/templates/smartart/layouts.json smartart.go smartart_layouts_gen.go smartart_layout_names_gen.go
+
 // Package smartart provides SmartArt (DiagramML) generation for presentations.
 //
 // SmartArt diagrams consist of 5 OOXML parts (data, layout, colors, quickStyle,
@@ -65,15 +67,10 @@ const (
 	PictureGrid   Layout = "urn:microsoft.com/office/officeart/2008/layout/PictureGrid"
 )
 
-// Name returns the human-readable name of the layout.
+// Name returns the layout's name as PowerPoint's gallery gives it, or the URI
+// itself for a layout the gallery does not list.
 func (l Layout) Name() string {
-	if name, ok := processLayoutName(l); ok {
-		return name
-	}
-	if name, ok := relationshipLayoutName(l); ok {
-		return name
-	}
-	if name, ok := matrixPictureLayoutName(l); ok {
+	if name, ok := layoutDisplayNames[l]; ok {
 		return name
 	}
 	return string(l)
@@ -249,9 +246,10 @@ func (n Node) toSpec() pptxxml.SmartArtNodeSpec {
 		children[i] = c.toSpec()
 	}
 	return pptxxml.SmartArtNodeSpec{
-		Text:      n.Text,
-		Children:  children,
-		Color:     n.Color,
-		ImagePath: n.ImagePath,
+		Text:       n.Text,
+		Children:   children,
+		Color:      n.Color,
+		ImagePath:  n.ImagePath,
+		ImageRelID: n.ImageRelID,
 	}
 }
