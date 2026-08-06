@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	editorchart "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/chart"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
@@ -50,11 +51,62 @@ func chartPartBySlide(parts []ChartPart) map[int][]ChartPart {
 	return bySlide
 }
 
+// chartEmbeddingRelID is the only relationship a generated chart part carries,
+// so it can be a fixed id.
+const chartEmbeddingRelID = "rId1"
+
+// ChartEmbeddingPartName is the workbook path for the nth generated chart.
+func ChartEmbeddingPartName(partNumber int) string {
+	return fmt.Sprintf("ppt/embeddings/Microsoft_Excel_Worksheet%d.xlsx", partNumber)
+}
+
+// hasEmbeddableData reports whether the chart's data is the category/value
+// shape the embedded workbook holds. Scatter, bubble and combo charts are not,
+// and keep their literal cached values with no workbook.
+func (p ChartPart) hasEmbeddableData() bool {
+	return len(p.spec.Categories) > 0 && len(p.spec.Categories) == len(p.spec.Values)
+}
+
+// ChartEmbeddingNumbers lists the chart parts that ship an embedded workbook,
+// by part number. The package manifest needs it before the parts are written.
+func ChartEmbeddingNumbers(parts []ChartPart) []int {
+	numbers := make([]int, 0, len(parts))
+	for _, part := range parts {
+		if part.hasEmbeddableData() {
+			numbers = append(numbers, part.partNumber)
+		}
+	}
+	return numbers
+}
+
+// writeChartFiles writes each chart part together with the workbook it was
+// built from: the .xlsx, the chart's .rels pointing at it, and the
+// <c:externalData> reference inside the chart. Without all three, "Edit Data"
+// on a generated chart finds no workbook to open.
 func writeChartFiles(pw *pptxxml.PackageWriter, parts []ChartPart) error {
 	for _, part := range parts {
-		path := fmt.Sprintf("ppt/charts/chart%d.xml", part.partNumber)
-		content := pptxxml.ChartPartXML(&part.spec)
-		pw.AddPart(path, content)
+		spec := part.spec
+
+		if part.hasEmbeddableData() {
+			workbook, err := editorchart.GenerateExcelForChart(spec.Categories, spec.Values)
+			if err != nil {
+				return fmt.Errorf("chart %d: generate embedded workbook: %w", part.partNumber, err)
+			}
+			spec.ExternalDataID = chartEmbeddingRelID
+			pw.AddBinaryPart(ChartEmbeddingPartName(part.partNumber), workbook)
+			pw.AddPart(
+				fmt.Sprintf("ppt/charts/_rels/chart%d.xml.rels", part.partNumber),
+				pptxxml.ChartRelationships(
+					chartEmbeddingRelID,
+					fmt.Sprintf("../embeddings/Microsoft_Excel_Worksheet%d.xlsx", part.partNumber),
+				),
+			)
+		}
+
+		pw.AddPart(
+			fmt.Sprintf("ppt/charts/chart%d.xml", part.partNumber),
+			pptxxml.ChartPartXML(&spec),
+		)
 	}
 	return nil
 }

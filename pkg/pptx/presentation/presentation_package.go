@@ -35,7 +35,7 @@ func WritePresentationPackage(
 	if err := addBasicPropertyFiles(
 		pw, meta, slides, slideCount, len(notesParts), ChartPartCount(chartParts), SmartArtPartCount(smartArtParts),
 		notesParts, masterCount, notesThemeIndex, mediaCatalog.ImageExtensions(),
-		authors, commentSlideIndices, hasVBA,
+		authors, commentSlideIndices, hasVBA, ChartEmbeddingNumbers(chartParts),
 	); err != nil {
 		return err
 	}

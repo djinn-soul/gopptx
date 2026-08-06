@@ -25,6 +25,7 @@ func addBasicPropertyFiles(
 	authors []comments.Author,
 	commentSlideIndices []int,
 	hasVBA bool,
+	chartEmbeddingNumbers []int,
 ) error {
 	hasNotes := notesPartCount > 0
 
@@ -46,6 +47,15 @@ func addBasicPropertyFiles(
 		len(meta.EmbeddedFonts) > 0,
 	)
 	contentTypes = addInkContentTypes(contentTypes, slides)
+	// Each chart that ships a workbook needs a content type for it, or
+	// PowerPoint refuses the package.
+	for _, number := range chartEmbeddingNumbers {
+		contentTypes = pptxxml.WithContentTypeOverride(
+			contentTypes,
+			ChartEmbeddingPartName(number),
+			pptxxml.ChartEmbeddingContentType,
+		)
+	}
 	presentationRels := pptxxml.PresentationRelationships(
 		slideCount,
 		hasNotes,

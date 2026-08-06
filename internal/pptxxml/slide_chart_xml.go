@@ -42,7 +42,23 @@ func ChartPartXML(chart *ChartSpec) string {
 
 // RenderChart renders a chart part to bytes.
 func RenderChart(chart *ChartSpec) []byte {
-	return withDisplayBlanksAs(renderChartBody(chart), chart.DisplayBlanksAs)
+	return withExternalData(
+		withDisplayBlanksAs(renderChartBody(chart), chart.DisplayBlanksAs),
+		chart.ExternalDataID,
+	)
+}
+
+// withExternalData names the embedded workbook the chart was built from.
+// Without it PowerPoint's "Edit Data" has nothing to open, even when the
+// package carries the .xlsx part. CT_ChartSpace puts <c:externalData> after
+// <c:chart>, so it goes just before the closing tag.
+func withExternalData(chartXML []byte, relID string) []byte {
+	if relID == "" {
+		return chartXML
+	}
+	const closeTag = "</c:chartSpace>"
+	node := `<c:externalData r:id="` + Escape(relID) + `"><c:autoUpdate val="0"/></c:externalData>` + "\n"
+	return []byte(strings.Replace(string(chartXML), closeTag, node+closeTag, 1))
 }
 
 // withDisplayBlanksAs inserts <c:dispBlanksAs> after <c:plotVisOnly>, the only
