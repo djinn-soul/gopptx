@@ -40,24 +40,14 @@ func validateLayoutConstraint(sa SmartArt, slideIndex int) error {
 		return nil
 	}
 
-	if constraint.maxItems > 0 {
-		if hasNestedChildren(sa.Nodes) {
-			return fmt.Errorf(
-				"slide %d: SmartArt layout %q only supports flat item lists",
-				slideIndex,
-				sa.Layout.Name(),
-			)
-		}
-		if len(sa.Nodes) > constraint.maxItems {
-			return fmt.Errorf(
-				"slide %d: SmartArt layout %q supports at most %d item(s), got %d",
-				slideIndex,
-				sa.Layout.Name(),
-				constraint.maxItems,
-				len(sa.Nodes),
-			)
-		}
-		return nil
+	if constraint.maxItems > 0 && len(sa.Nodes) > constraint.maxItems {
+		return fmt.Errorf(
+			"slide %d: SmartArt layout %q supports at most %d item(s), got %d",
+			slideIndex,
+			sa.Layout.Name(),
+			constraint.maxItems,
+			len(sa.Nodes),
+		)
 	}
 
 	if constraint.requireSingleRoot && len(sa.Nodes) != 1 {

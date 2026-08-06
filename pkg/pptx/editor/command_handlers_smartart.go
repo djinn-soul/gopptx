@@ -90,7 +90,8 @@ func handleSetSmartArtStyle(e *PresentationEditor, payload json.RawMessage) (any
 
 // handleSetSmartArtNodes replaces the node tree of an existing SmartArt.
 //
-// Payload: {"slide_index": N, "shape_id": N, "items": ["text1", ...]}.
+// Payload: {"slide_index": N, "shape_id": N, "items": ["text1", ...]} or
+// {"slide_index": N, "shape_id": N, "nodes": [{"text": "...", "children": [...]}]}.
 // Response: {"updated": true}.
 func handleSetSmartArtNodes(e *PresentationEditor, payload json.RawMessage) (any, error) {
 	p, err := ParseRawPayload(payload)
@@ -110,9 +111,14 @@ func handleSetSmartArtNodes(e *PresentationEditor, payload json.RawMessage) (any
 	if v.HasErrors() {
 		return nil, v.Error()
 	}
-	nodes := make([]smartart.Node, len(items))
-	for i, text := range items {
-		nodes[i] = smartart.NewNode(text)
+	// A nested tree is accepted here as it is on add_smartart: layouts that draw
+	// a body under each entry can only be filled from a second level.
+	nodes := parseSmartArtNodeList(p["nodes"])
+	if len(nodes) == 0 {
+		nodes = make([]smartart.Node, len(items))
+		for i, text := range items {
+			nodes[i] = smartart.NewNode(text)
+		}
 	}
 	if updateErr := e.SetSmartArtNodes(slideIndex, shapeID, nodes); updateErr != nil {
 		return nil, NewBridgeError(ErrCodeOpFailed, updateErr.Error())
