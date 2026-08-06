@@ -89,7 +89,12 @@ func addBasicPropertyFiles(
 	if hasVBA {
 		nextRid++
 	}
+	handoutRelID := ""
 	if meta.HandoutMaster != nil {
+		// The handout master relationship lands here in the rels file, and
+		// presentation.xml has to name that same rId in <p:handoutMasterIdLst>
+		// or PowerPoint never reaches the part.
+		handoutRelID = "rId" + strconv.Itoa(nextRid)
 		nextRid++
 	}
 
@@ -132,6 +137,7 @@ func addBasicPropertyFiles(
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
 			protInfo, xSections, meta.RTL, xmlFonts,
 			convertShowSettings(meta.ShowSettings),
+			handoutRelID,
 		),
 	)
 

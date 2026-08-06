@@ -145,6 +145,7 @@ func Presentation(
 	rtl bool, // Note: rtl="1" only enables UI direction; content elements (text, etc.) may need individual alignment.
 	embeddedFonts []EmbeddedFontRef,
 	show *ShowSettings,
+	handoutMasterRelID string,
 ) string {
 	_ = title
 	if masterCount < 1 {
@@ -183,6 +184,18 @@ func Presentation(
 		b.WriteString(strconv.Itoa(rid))
 		b.WriteString(`"/>
 </p:notesMasterIdLst>`)
+	}
+
+	// CT_Presentation orders the handout master list right after the notes
+	// master one. Without it the handout part is written and related but never
+	// declared, so PowerPoint uses its own built-in handout instead.
+	if handoutMasterRelID != "" {
+		b.WriteString(`
+<p:handoutMasterIdLst>
+<p:handoutMasterId r:id="`)
+		b.WriteString(Escape(handoutMasterRelID))
+		b.WriteString(`"/>
+</p:handoutMasterIdLst>`)
 	}
 
 	b.WriteString(`
