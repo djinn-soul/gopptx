@@ -15,9 +15,12 @@ import (
 const layoutsPerMaster = 6
 
 type slideParts struct {
-	title                pptxxml.TitleSpec
-	contentStyle         pptxxml.ContentStyleSpec
-	table                *pptxxml.TableSpec
+	title        pptxxml.TitleSpec
+	contentStyle pptxxml.ContentStyleSpec
+	// tables holds the slide's tables in order: SlideContent.Table first, then
+	// the SlideContent.Tables overflow the reader fills for slides that carry
+	// more than one.
+	tables               []pptxxml.TableSpec
 	imageRefs            []pptxxml.ImageRef
 	backgroundRID        string
 	transitionXML        string
@@ -60,7 +63,7 @@ func renderSlides(
 			elements.ToXMLBulletParagraphStyles(slide.BulletStyles),
 			elements.ToXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
 			parts.contentStyle,
-			parts.table,
+			parts.tables,
 			parts.chartFrame,
 			parts.imageRefs,
 			shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),

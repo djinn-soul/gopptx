@@ -120,7 +120,7 @@ func SlideWithContent(
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
 	contentStyle ContentStyleSpec,
-	table *TableSpec,
+	tables []TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
 	smartArtFrames []SmartArtFrame,
@@ -140,7 +140,7 @@ func SlideWithContent(
 		bulletStyles,
 		bulletRuns,
 		contentStyle,
-		table,
+		tables,
 		chart,
 		images,
 		nil,
@@ -167,7 +167,7 @@ func SlideWithLayout(
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
 	contentStyle ContentStyleSpec,
-	table *TableSpec,
+	tables []TableSpec,
 	chart *ChartFrame,
 	images []ImageRef,
 	shapes []ShapeSpec,
@@ -194,7 +194,7 @@ func SlideWithLayout(
 	b.WriteString(slideHeaderEndBodyXML(width, height))
 
 	nextID := slideRenderBaseElements(
-		&b, layoutMode, title, table, bullets, bulletStyles, bulletRuns, contentStyle, width, height,
+		&b, layoutMode, title, tables, bullets, bulletStyles, bulletRuns, contentStyle, width, height,
 	)
 
 	if chart != nil {
@@ -234,7 +234,7 @@ func slideRenderBaseElements(
 	b *strings.Builder,
 	layoutMode string,
 	title TitleSpec,
-	table *TableSpec,
+	tables []TableSpec,
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
@@ -257,8 +257,8 @@ func slideRenderBaseElements(
 			bulletRuns, contentStyle, nextID, width, height,
 		)
 	}
-	if table != nil {
-		b.WriteString(RenderTable(table, nextID))
+	for i := range tables {
+		b.WriteString(RenderTable(&tables[i], nextID))
 		nextID++
 	}
 	return nextID
