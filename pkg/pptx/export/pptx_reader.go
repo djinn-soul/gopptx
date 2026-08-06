@@ -91,7 +91,9 @@ func readDeck(pptxPath string) (deckContent, error) {
 	inherited := extractInheritedLooks(pptxPath, theme)
 
 	for _, sm := range slideMeta {
-		sc, order := extractSlideContent(ed, sm, slideImages, slideCharts, slideSmartArt, zOrders, shapeStyles)
+		sc, order := extractSlideContent(
+			ed, sm, slideImages, slideCharts, slideSmartArt, zOrders, shapeStyles, theme,
+		)
 		applyMasterTitleDefaults(&sc, masterStyle)
 		applyInheritedLook(&sc, &order, inheritedLookFor(inherited, sm.Index))
 		deck.Slides = append(deck.Slides, sc)
@@ -125,6 +127,7 @@ func extractSlideContent(
 	slideSmartArt [][]parsedSmartArt,
 	zOrders []map[int]int,
 	shapeStyles []map[int]shapeThemeStyle,
+	theme deckTheme,
 ) (elements.SlideContent, slidePaintOrder) {
 	editorShapes, err := ed.GetShapes(sm.Index)
 	if err != nil {
@@ -166,7 +169,7 @@ func extractSlideContent(
 		applyParsedCharts(&sc, slideCharts[sm.Index])
 	}
 	if sm.Index < len(slideSmartArt) {
-		applyParsedSmartArt(&sc, slideSmartArt[sm.Index])
+		applyParsedSmartArt(&sc, slideSmartArt[sm.Index], theme)
 	}
 	applySlideImageZOrder(&sc, slideImages, ctx.treeOrder, sm.Index)
 	dropTitleDrawnAsShape(&sc)

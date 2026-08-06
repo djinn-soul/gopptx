@@ -28,6 +28,48 @@ func smartArtNodes(diagram smartart.SmartArt) []smartart.Node {
 	return flattenSmartArtNodes(diagram.Nodes)
 }
 
+// smartArtEntries are the diagram's own entries, with their children left in
+// place. Layouts that draw a body under each entry need the tree: flattening it
+// turned every child into another entry, so a three-topic diagram was drawn with
+// six boxes running off the edge of its frame.
+func smartArtEntries(diagram smartart.SmartArt) []smartart.Node {
+	if len(diagram.Nodes) == 0 {
+		return nil
+	}
+	return diagram.Nodes
+}
+
+// drawSmartArtNodeImage paints a node's picture into the given box, and reports
+// whether there was one to paint.
+func drawSmartArtNodeImage(pdf *gopdf.GoPdf, node smartart.Node, x, y, w, h float64) bool {
+	if len(node.ImageData) == 0 {
+		return false
+	}
+	holder, err := gopdf.ImageHolderByBytes(node.ImageData)
+	if err != nil {
+		return false
+	}
+	if err := pdf.ImageByHolder(holder, x, y, &gopdf.Rect{W: w, H: h}); err != nil {
+		return false
+	}
+	return true
+}
+
+// drawSmartArtChildLines writes an entry's children as bullet lines inside its
+// body, which is where the layout puts them.
+func drawSmartArtChildLines(
+	pdf *gopdf.GoPdf,
+	children []smartart.Node,
+	x, y, w float64,
+	color string,
+	sizePt int,
+) {
+	lineHeight := pdfLineHeight(sizePt)
+	for i, child := range children {
+		drawSmartArtTopText(pdf, "• "+child.Text, x, y+float64(i)*lineHeight, w, color, sizePt)
+	}
+}
+
 func smartArtLayoutURI(diagram smartart.SmartArt) string {
 	return strings.ToLower(diagram.Layout.LayoutURI())
 }

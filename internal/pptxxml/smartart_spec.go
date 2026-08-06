@@ -5,6 +5,15 @@ type SmartArtNodeSpec struct {
 	ModelID  string
 	Text     string
 	Children []SmartArtNodeSpec
+
+	// Color is an optional RGB hex fill for this node alone, overriding the
+	// diagram's colour style.
+	Color string
+
+	// ImagePath is the picture requested for this node's image placeholder, and
+	// ImageRelID the relationship it resolves to once the package registers it.
+	ImagePath  string
+	ImageRelID string
 }
 
 // SmartArtSpec describes the internal representation of a SmartArt diagram

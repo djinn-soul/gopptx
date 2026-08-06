@@ -116,8 +116,11 @@ func injectTextIntoPointSegment(segment, text string) string {
 	)
 }
 
+// injectedSmartArtRunXML writes the run without a size. Pinning it to 18pt
+// stopped PowerPoint shrinking a caption to fit its shape, so a word too wide
+// for a small hierarchy node was split across two lines mid-word.
 func injectedSmartArtRunXML(escapedText string) string {
-	return `<a:r><a:rPr lang="en-US" sz="1800"/><a:t>` + escapedText + `</a:t></a:r>`
+	return `<a:r><a:rPr lang="en-US"/><a:t>` + escapedText + `</a:t></a:r>`
 }
 
 func clearSmartArtPlaceholderTextRuns(xml string) string {

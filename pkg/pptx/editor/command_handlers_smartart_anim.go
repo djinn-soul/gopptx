@@ -186,6 +186,12 @@ func parseSmartArtNodeList(raw any) []smartart.Node {
 		}
 		text, _ := m["text"].(string)
 		node := smartart.NewNode(text)
+		if color, ok := m["color"].(string); ok && color != "" {
+			node = node.WithColor(color)
+		}
+		if image, ok := m["image"].(string); ok && image != "" {
+			node = node.WithImage(image)
+		}
 		if children, hasChildren := m["children"]; hasChildren {
 			for _, child := range parseSmartArtNodeList(children) {
 				node = node.WithChild(child)

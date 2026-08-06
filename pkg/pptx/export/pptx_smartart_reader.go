@@ -95,6 +95,7 @@ func extractSlideSmartArt(pptxPath string) ([][]parsedSmartArt, error) {
 			if err != nil {
 				continue
 			}
+			attachSmartArtNodeImages(nodes, fileMap, dataPath)
 			quickStyle := extractSmartArtStyleID(fileMap, stylePath)
 			colorStyle := extractSmartArtStyleID(fileMap, colorPath)
 			if layoutURI == "" && len(nodes) == 0 {
@@ -167,7 +168,7 @@ func parseSmartArtFrames(slideXML []byte) []smartArtFrameRef {
 	return out
 }
 
-func applyParsedSmartArt(slide *elements.SlideContent, diagrams []parsedSmartArt) {
+func applyParsedSmartArt(slide *elements.SlideContent, diagrams []parsedSmartArt, theme deckTheme) {
 	for _, parsed := range diagrams {
 		diagram := smartart.NewSmartArt(smartart.CustomLayout(parsed.LayoutURI)).
 			Position(styling.Emu(parsed.X), styling.Emu(parsed.Y)).
@@ -184,11 +185,48 @@ func applyParsedSmartArt(slide *elements.SlideContent, diagrams []parsedSmartArt
 		if parsed.ColorStyle != "" {
 			diagram = diagram.WithColorStyle(parsed.ColorStyle)
 		}
-		for _, node := range parsed.Nodes {
+		for _, node := range resolveSmartArtNodeColors(parsed.Nodes, parsed.ColorStyle, theme) {
 			diagram = diagram.AddNode(node)
 		}
 		slide.SmartArtDiagrams = append(slide.SmartArtDiagrams, diagram)
 	}
+}
+
+// attachSmartArtNodeImages loads the bytes of each node picture. The pictures
+// are related from the diagram's own data part, so they are resolved against
+// that part's relationships rather than the slide's.
+func attachSmartArtNodeImages(nodes []smartart.Node, fileMap map[string]*zip.File, dataPath string) {
+	if !smartArtNodesReferenceImages(nodes) {
+		return
+	}
+	rels := readZipRelationships(fileMap, slideRelsPath(dataPath))
+	if len(rels) == 0 {
+		return
+	}
+	var walk func(items []smartart.Node)
+	walk = func(items []smartart.Node) {
+		for i := range items {
+			node := &items[i]
+			if node.ImageRelID != "" {
+				if target := rels[node.ImageRelID]; target != "" {
+					if data := readZipBytes(fileMap, resolveRelPath(dataPath, target)); data != nil {
+						node.ImageData = data
+					}
+				}
+			}
+			walk(node.Children)
+		}
+	}
+	walk(nodes)
+}
+
+func smartArtNodesReferenceImages(nodes []smartart.Node) bool {
+	for _, node := range nodes {
+		if node.ImageRelID != "" || smartArtNodesReferenceImages(node.Children) {
+			return true
+		}
+	}
+	return false
 }
 
 func extractSmartArtStyleID(fileMap map[string]*zip.File, partPath string) string {

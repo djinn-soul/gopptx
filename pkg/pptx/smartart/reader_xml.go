@@ -3,9 +3,15 @@ package smartart
 import "regexp"
 
 var (
-	reSmartArtNodeText   = regexp.MustCompile(`<a:t>([^<]*)</a:t>`)
-	reSmartArtUniqueID   = regexp.MustCompile(`uniqueId\s*=\s*["']([^"']+)["']`)
-	reSmartArtLayoutFull = regexp.MustCompile(`dgm:layoutDef[^>]*uniqueId\s*=\s*["']([^"']+)["']`)
+	reSmartArtNodeText = regexp.MustCompile(`<a:t>([^<]*)</a:t>`)
+	// A node's own fill sits in its shape properties, ahead of its text.
+	reSmartArtNodeFillColor = regexp.MustCompile(
+		`<dgm:spPr>\s*<a:solidFill>\s*<a:srgbClr val="([0-9A-Fa-f]{6})"`,
+	)
+	reSmartArtBlipEmbed   = regexp.MustCompile(`<a:blip[^>]*r:embed="([^"]+)"`)
+	reSmartArtPresAssocID = regexp.MustCompile(`presAssocID="([^"]+)"`)
+	reSmartArtUniqueID    = regexp.MustCompile(`uniqueId\s*=\s*["']([^"']+)["']`)
+	reSmartArtLayoutFull  = regexp.MustCompile(`dgm:layoutDef[^>]*uniqueId\s*=\s*["']([^"']+)["']`)
 )
 
 // ExtractLayoutURI reads the SmartArt layout URI from a layout part.

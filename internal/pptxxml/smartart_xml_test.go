@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
+	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
 
 func TestSmartArtDataXMLContainsOrderingAndDrawingLink(t *testing.T) {
@@ -30,11 +31,11 @@ func TestSmartArtDataXMLContainsOrderingAndDrawingLink(t *testing.T) {
 	if got := strings.Count(xml, `destOrd="`); got != cxnCount {
 		t.Fatalf("expected destOrd on all dgm:cxn entries, got %d of %d", got, cxnCount)
 	}
-	if !strings.Contains(xml, `<dsp:dataModelExt`) {
-		t.Fatal("expected SmartArt dataModelExt link in data XML")
-	}
-	if !strings.Contains(xml, `relId="rId6"`) {
-		t.Fatal("expected dataModelExt relId=rId6 in data XML")
+	// The cached drawing is deliberately left unhooked: it was captured from the
+	// template, so PowerPoint trusting it drew the template's styling and text
+	// sizes rather than the ones this diagram asks for.
+	if strings.Contains(xml, `<dsp:dataModelExt`) {
+		t.Fatal("expected the drawing cache to be unhooked from the data model")
 	}
 }
 
@@ -474,11 +475,66 @@ func TestSmartArtQuickStyleReachesTheSlide(t *testing.T) {
 		t.Error("expected the stale drawing cache to be unhooked so PowerPoint relays out")
 	}
 
-	// The default style is what the cached drawing was captured under, so it
-	// keeps the cache.
 	spec.QuickStyleID = ""
-	if !strings.Contains(pptxxml.SmartArtDataXML(spec), "<dgm:extLst>") {
-		t.Error("expected the default quick style to keep the drawing cache")
+	if strings.Contains(pptxxml.SmartArtDataXML(spec), "<dgm:extLst>") {
+		t.Error("expected the cache to stay unhooked for the default quick style too")
+	}
+}
+
+// A colour set on a node used to be validated and then dropped on the way to
+// the XML, and the picture layouts had no way to fill the placeholders they
+// draw. A picture belongs on the presentation point that draws the placeholder;
+// written to the node's own point it bleeds onto the caption band instead.
+func TestSmartArtNodeColourAndPictureReachTheXML(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hList2",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Topic A", Color: "C00000", ImageRelID: "rId1"},
+			{Text: "Topic B"},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+
+	if !strings.Contains(data, `<a:srgbClr val="C00000"/>`) {
+		t.Error("expected the node's colour in the data XML")
+	}
+	if !strings.Contains(data, `r:embed="rId1"`) {
+		t.Error("expected the node's picture in the data XML")
+	}
+
+	segment := pointSegmentContainingText(data, "Topic A")
+	if strings.Contains(segment, "blipFill") {
+		t.Error("expected the picture on the image placeholder, not on the node's own point")
+	}
+	if !strings.Contains(segment, `<a:srgbClr val="C00000"/>`) {
+		t.Error("expected the colour on the node's own point")
+	}
+}
+
+// Slot filling walks the template's points; only a walk of both trees keeps a
+// child under the parent it was written for.
+func TestSmartArtNestedSpecKeepsChildrenUnderTheirParent(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/hList1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Pillar A", Children: []pptxxml.SmartArtNodeSpec{{Text: "a1"}, {Text: "a2"}}},
+			{Text: "Pillar B", Children: []pptxxml.SmartArtNodeSpec{{Text: "b1"}}},
+		},
+	}
+
+	nodes, err := smartart.ParseDataModelNodes([]byte(pptxxml.SmartArtDataXML(spec)))
+	if err != nil {
+		t.Fatalf("ParseDataModelNodes failed: %v", err)
+	}
+	if len(nodes) != 2 {
+		t.Fatalf("expected two entries, got %d", len(nodes))
+	}
+	if len(nodes[0].Children) != 2 || nodes[0].Children[0].Text != "a1" {
+		t.Errorf("expected a1 and a2 under Pillar A, got %+v", nodes[0].Children)
+	}
+	if len(nodes[1].Children) != 1 || nodes[1].Children[0].Text != "b1" {
+		t.Errorf("expected b1 under Pillar B, got %+v", nodes[1].Children)
 	}
 }
 

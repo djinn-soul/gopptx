@@ -14,18 +14,26 @@ const (
 	defaultDataModelCapacity = 8
 	defaultTopLevelCapacity  = 4
 	minChildrenToSort        = 2
+	fillColorSubmatches      = 2
+	presentationPointType    = "pres"
 )
 
 type dataModel struct {
 	points      map[string]dataPoint
 	pointOrder  []string
 	connections []dataConnection
+
+	// imageRelByAssocID maps a node to the picture its placeholder is filled
+	// with. The picture hangs off the presentation point that draws the
+	// placeholder, not off the node itself, so it is collected separately.
+	imageRelByAssocID map[string]string
 }
 
 type dataPoint struct {
 	modelID   string
 	pointType string
 	text      string
+	color     string
 }
 
 type dataConnection struct {
@@ -64,9 +72,10 @@ func ParseDataModelNodes(dataXML []byte) ([]Node, error) {
 
 func parseDataModel(dataXML []byte) (dataModel, error) {
 	model := dataModel{
-		points:      make(map[string]dataPoint),
-		pointOrder:  make([]string, 0, defaultDataModelCapacity),
-		connections: make([]dataConnection, 0, defaultDataModelCapacity),
+		points:            make(map[string]dataPoint),
+		pointOrder:        make([]string, 0, defaultDataModelCapacity),
+		connections:       make([]dataConnection, 0, defaultDataModelCapacity),
+		imageRelByAssocID: make(map[string]string),
 	}
 
 	decoder := xml.NewDecoder(bytes.NewReader(dataXML))
@@ -88,16 +97,7 @@ func parseDataModel(dataXML []byte) (dataModel, error) {
 			if err := decoder.DecodeElement(&parsed, &start); err != nil {
 				return dataModel{}, err
 			}
-			point := dataPoint{
-				modelID:   parsed.ModelID,
-				pointType: strings.ToLower(strings.TrimSpace(parsed.Type)),
-				text:      extractPointText(parsed.Inner),
-			}
-			if point.modelID == "" {
-				continue
-			}
-			model.points[point.modelID] = point
-			model.pointOrder = append(model.pointOrder, point.modelID)
+			model.addPoint(parsed)
 		case "cxn":
 			var parsed connectionXML
 			if err := decoder.DecodeElement(&parsed, &start); err != nil {
@@ -128,6 +128,55 @@ func extractPointText(pointXML string) string {
 	return strings.Join(parts, "\n")
 }
 
+// addPoint records one data or presentation point. A presentation point carries
+// no text of its own, but it is where a node's picture hangs.
+func (m *dataModel) addPoint(parsed pointXML) {
+	point := dataPoint{
+		modelID:   parsed.ModelID,
+		pointType: strings.ToLower(strings.TrimSpace(parsed.Type)),
+		text:      extractPointText(parsed.Inner),
+		color:     extractPointFillColor(parsed.Inner),
+	}
+	if point.modelID == "" {
+		return
+	}
+	if point.pointType == presentationPointType {
+		if relID := extractPointImageRelID(parsed.Inner); relID != "" {
+			m.imageRelByAssocID[extractPresAssocID(parsed.Inner)] = relID
+		}
+	}
+	m.points[point.modelID] = point
+	m.pointOrder = append(m.pointOrder, point.modelID)
+}
+
+// extractPointFillColor reads a node's own fill, which a diagram sets when one
+// node is coloured apart from the rest.
+func extractPointFillColor(pointXML string) string {
+	match := reSmartArtNodeFillColor.FindStringSubmatch(pointXML)
+	if len(match) < fillColorSubmatches {
+		return ""
+	}
+	return strings.ToUpper(strings.TrimSpace(match[1]))
+}
+
+// extractPointImageRelID reads the picture a presentation point is filled with.
+func extractPointImageRelID(pointXML string) string {
+	match := reSmartArtBlipEmbed.FindStringSubmatch(pointXML)
+	if len(match) < fillColorSubmatches {
+		return ""
+	}
+	return match[1]
+}
+
+// extractPresAssocID reads the node a presentation point draws for.
+func extractPresAssocID(pointXML string) string {
+	match := reSmartArtPresAssocID.FindStringSubmatch(pointXML)
+	if len(match) < fillColorSubmatches {
+		return ""
+	}
+	return match[1]
+}
+
 func parseOrdinal(value string) int {
 	n, err := strconv.Atoi(strings.TrimSpace(value))
 	if err != nil {
@@ -136,7 +185,7 @@ func parseOrdinal(value string) int {
 	return n
 }
 
-func (m dataModel) semanticNodes() []Node {
+func (m *dataModel) semanticNodes() []Node {
 	childrenByParent := make(map[string][]orderedChild)
 	parentByChild := make(map[string]string)
 	topLevel := make([]orderedChild, 0, defaultTopLevelCapacity)
@@ -189,13 +238,15 @@ func (m dataModel) semanticNodes() []Node {
 	return nodes
 }
 
-func (m dataModel) buildNode(
+func (m *dataModel) buildNode(
 	modelID string,
 	childrenByParent map[string][]orderedChild,
 	path map[string]struct{},
 ) Node {
 	point := m.points[modelID]
 	node := NewNode(point.text)
+	node.Color = point.color
+	node.ImageRelID = m.imageRelByAssocID[modelID]
 	if _, seen := path[modelID]; seen {
 		return node
 	}

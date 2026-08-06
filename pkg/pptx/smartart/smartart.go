@@ -102,6 +102,17 @@ type Node struct {
 	Text     string
 	Children []Node
 	Color    string // optional RGB hex override, e.g. "FF0000"
+
+	// ImagePath is an optional picture that fills this node's image
+	// placeholder, in the layouts that draw one.
+	ImagePath string
+
+	// ImageRelID and ImageData describe the picture a diagram read back from a
+	// deck already carries: the relationship it is stored under, and its bytes
+	// once the package has been opened. Renderers that draw the diagram
+	// themselves, rather than handing it to PowerPoint, need the bytes.
+	ImageRelID string
+	ImageData  []byte
 }
 
 // NewNode creates a Node with the given text.
@@ -118,6 +129,13 @@ func (n Node) WithChild(child Node) Node {
 // WithColor sets an optional RGB hex color on the node.
 func (n Node) WithColor(color string) Node {
 	n.Color = color
+	return n
+}
+
+// WithImage fills this node's image placeholder with a picture from disk. Only
+// the picture layouts draw such a placeholder; other layouts ignore it.
+func (n Node) WithImage(path string) Node {
+	n.ImagePath = path
 	return n
 }
 
@@ -231,7 +249,9 @@ func (n Node) toSpec() pptxxml.SmartArtNodeSpec {
 		children[i] = c.toSpec()
 	}
 	return pptxxml.SmartArtNodeSpec{
-		Text:     n.Text,
-		Children: children,
+		Text:      n.Text,
+		Children:  children,
+		Color:     n.Color,
+		ImagePath: n.ImagePath,
 	}
 }
