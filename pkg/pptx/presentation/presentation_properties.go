@@ -121,19 +121,48 @@ func addBasicPropertyFiles(
 		nextRid++
 	}
 
-	if meta.PrintSettings != nil && !meta.PrintSettings.IsDefault() {
-		pw.AddPart(pptxxml.PresPropsPartName, pptxxml.PresentationProps(meta.PrintSettings.PrnPrXML()))
-		contentTypes = pptxxml.WithContentTypeOverride(
-			contentTypes,
-			pptxxml.PresPropsPartName,
+	// presProps, viewProps and tableStyles are parts PowerPoint writes into
+	// every deck and its own package validator lists as required. presProps used
+	// to appear only when print settings were set, and the other two never — yet
+	// every table gopptx emits names a table style that only tableStyles.xml can
+	// resolve.
+	printSettingsXML := ""
+	if meta.PrintSettings != nil {
+		printSettingsXML = meta.PrintSettings.PrnPrXML()
+	}
+	standardParts := []struct {
+		partName    string
+		content     string
+		contentType string
+		relType     string
+		relTarget   string
+	}{
+		{
+			pptxxml.PresPropsPartName, pptxxml.PresentationProps(printSettingsXML),
 			pptxxml.PresPropsContentType,
-		)
+			pptxxml.PresPropsRelationshipType, pptxxml.PresPropsRelationshipTarget,
+		},
+		{
+			pptxxml.ViewPropsPartName, pptxxml.ViewProps(),
+			pptxxml.ViewPropsContentType,
+			pptxxml.ViewPropsRelationshipType, pptxxml.ViewPropsRelationshipTarget,
+		},
+		{
+			pptxxml.TableStylesPartName, pptxxml.TableStyles(),
+			pptxxml.TableStylesContentType,
+			pptxxml.TableStylesRelationshipType, pptxxml.TableStylesRelationshipTarget,
+		},
+	}
+	for _, part := range standardParts {
+		pw.AddPart(part.partName, part.content)
+		contentTypes = pptxxml.WithContentTypeOverride(contentTypes, part.partName, part.contentType)
 		presentationRels = pptxxml.WithRelationship(
 			presentationRels,
 			"rId"+strconv.Itoa(nextRid),
-			pptxxml.PresPropsRelationshipType,
-			pptxxml.PresPropsRelationshipTarget,
+			part.relType,
+			part.relTarget,
 		)
+		nextRid++
 	}
 
 	pw.AddPart("[Content_Types].xml", contentTypes)

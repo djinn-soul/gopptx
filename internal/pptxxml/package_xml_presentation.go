@@ -229,6 +229,14 @@ func Presentation(
 	b.WriteString(`"/>
 <p:notesSz cx="6858000" cy="9144000"/>`)
 
+	if len(embeddedFonts) > 0 {
+		b.WriteString(EmbeddedFontsXML(embeddedFonts))
+	}
+
+	// CT_Presentation puts defaultTextStyle after the font list and before the
+	// modify verifier.
+	b.WriteString(DefaultTextStyleXML())
+
 	if protection != nil {
 		algSid := protection.HashAlgSID
 		if algSid == 0 {
@@ -246,10 +254,14 @@ func Presentation(
 		b.WriteString(`"/>`)
 	}
 
-	if len(embeddedFonts) > 0 {
-		b.WriteString(EmbeddedFontsXML(embeddedFonts))
+	if show != nil {
+		if xml := ShowPrXML(*show); xml != "" {
+			b.WriteString("\n")
+			b.WriteString(xml)
+		}
 	}
 
+	// The extension list closes CT_Presentation, so it goes last.
 	if len(sections) > 0 {
 		b.WriteString(`
 <p:extLst>
@@ -258,13 +270,6 @@ func Presentation(
 		b.WriteString(`
 </p:ext>
 </p:extLst>`)
-	}
-
-	if show != nil {
-		if xml := ShowPrXML(*show); xml != "" {
-			b.WriteString("\n")
-			b.WriteString(xml)
-		}
 	}
 
 	b.WriteString(`
