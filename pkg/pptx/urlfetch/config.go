@@ -58,6 +58,12 @@ type Config struct {
 	// AllowPrivateHosts disables the SSRF guard that blocks requests to
 	// loopback/private/link-local addresses. Must only be set to true in tests.
 	AllowPrivateHosts bool
+	// TitleSizePt sets the title font size in points on generated slides.
+	// Zero leaves the slide default.
+	TitleSizePt int
+	// ContentSizePt sets the body font size in points on generated slides.
+	// Zero leaves the slide default.
+	ContentSizePt int
 }
 
 // Web2PptConfig is a compatibility alias for Config.

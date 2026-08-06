@@ -34,8 +34,8 @@ func TestFontSizeHelpers(t *testing.T) {
 
 func TestThemeHelpers(t *testing.T) {
 	themes := pptx.AllThemes()
-	if len(themes) != 7 {
-		t.Errorf("expected 7 themes, got %d", len(themes))
+	if len(themes) != 8 {
+		t.Errorf("expected 8 themes, got %d", len(themes))
 	}
 
 	corporate := pptx.ThemeCorporate

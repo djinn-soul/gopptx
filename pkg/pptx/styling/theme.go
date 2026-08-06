@@ -50,12 +50,14 @@ const (
 	themeNameNature    = "Nature"
 	themeNameTech      = "Tech"
 	themeNameCarbon    = "Carbon"
+	themeNameOffice    = "Office"
 )
 
 // Font families shared across theme presets.
 const (
-	fontInter  = "Inter"
-	fontRoboto = "Roboto"
+	fontInter   = "Inter"
+	fontRoboto  = "Roboto"
+	fontCalibri = "Calibri"
 )
 
 // Palette colors repeated across presets that have no entry in colors.go.
@@ -68,6 +70,7 @@ const (
 	colorTechBlue50     = "E3F2FD"
 	colorDarkPurple     = "BB86FC"
 	colorDarkPink       = "CF6679"
+	colorOfficeSlate    = "44546A"
 )
 
 // Theme presets, parity with ppt-rs.
@@ -86,8 +89,8 @@ var (
 		},
 		Fonts: FontScheme{
 			Name:      themeNameCorporate,
-			MajorFont: "Calibri",
-			MinorFont: "Calibri",
+			MajorFont: fontCalibri,
+			MinorFont: fontCalibri,
 		},
 		Primary: "1565C0", Secondary: colorTechBlue700, Accent: "FF6F00",
 		Background: ColorWhite, Text: "212121", Light: colorTechBlue50, Dark: colorTechBlue900,
@@ -206,6 +209,26 @@ var (
 		Primary: ColorCarbonBlue60, Secondary: ColorCarbonBlue40, Accent: "24A148",
 		Background: ColorWhite, Text: "161616", Light: "E0E0E0", Dark: "161616",
 	}
+
+	// ThemeOffice is the Office theme PowerPoint itself starts a blank deck
+	// with: the colours and fonts a deck inherits when nobody picked a theme.
+	ThemeOffice = Theme{
+		Name: themeNameOffice,
+		Colors: ColorScheme{
+			Name: themeNameOffice,
+			Dk1:  "000000", Lt1: ColorWhite, Dk2: colorOfficeSlate, Lt2: "E7E6E6",
+			Accent1: "4472C4", Accent2: "ED7D31", Accent3: "A5A5A5",
+			Accent4: "FFC000", Accent5: "5B9BD5", Accent6: "70AD47",
+			Hlink: "0563C1", FolHlink: "954F72",
+		},
+		Fonts: FontScheme{
+			Name:      themeNameOffice,
+			MajorFont: "Calibri Light",
+			MinorFont: fontCalibri,
+		},
+		Primary: "4472C4", Secondary: colorOfficeSlate, Accent: "ED7D31",
+		Background: ColorWhite, Text: "000000", Light: "E7E6E6", Dark: colorOfficeSlate,
+	}
 )
 
 // AllThemes returns all available theme presets.
@@ -218,5 +241,6 @@ func AllThemes() []Theme {
 		ThemeNature,
 		ThemeTech,
 		ThemeCarbon,
+		ThemeOffice,
 	}
 }
