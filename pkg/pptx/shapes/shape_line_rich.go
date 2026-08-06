@@ -20,18 +20,25 @@ const (
 	LineDashStyleDot LineDashStyle = "dot"
 	// LineDashStyleDashDot is a dash-dot line.
 	LineDashStyleDashDot LineDashStyle = "dashDot"
-	// LineDashStyleDashDotDot is a dash-dot-dot line.
-	LineDashStyleDashDotDot LineDashStyle = "dashDotDot"
+	// LineDashStyleDashDotDot is a dash-dot-dot line. ST_PresetLineDashVal has no
+	// bare "dashDotDot" member — the dot-dot forms carry the lg/sys prefix — so
+	// this is the long form PowerPoint itself writes.
+	LineDashStyleDashDotDot LineDashStyle = "lgDashDotDot"
 	// LineDashStyleLongDash is a long dashed line.
 	LineDashStyleLongDash LineDashStyle = "lgDash"
 	// LineDashStyleLongDashDot is a long dash-dot line.
 	LineDashStyleLongDashDot LineDashStyle = "lgDashDot"
+	// LineDashStyleLongDashDotDot is a long dash-dot-dot line, the same token as
+	// LineDashStyleDashDotDot under its OOXML spelling.
+	LineDashStyleLongDashDotDot = LineDashStyleDashDotDot
 	// LineDashStyleSystemDash is a system dash line.
 	LineDashStyleSystemDash LineDashStyle = "sysDash"
 	// LineDashStyleSystemDot is a system dot line.
 	LineDashStyleSystemDot LineDashStyle = "sysDot"
 	// LineDashStyleSystemDashDot is a system dash-dot line.
 	LineDashStyleSystemDashDot LineDashStyle = "sysDashDot"
+	// LineDashStyleSystemDashDotDot is a system dash-dot-dot line.
+	LineDashStyleSystemDashDotDot LineDashStyle = "sysDashDotDot"
 )
 
 // IsValidLineDashStyle returns true if the dash style is valid.
@@ -39,7 +46,8 @@ func IsValidLineDashStyle(s LineDashStyle) bool {
 	switch s {
 	case LineDashStyleSolid, LineDashStyleDash, LineDashStyleDot, LineDashStyleDashDot,
 		LineDashStyleDashDotDot, LineDashStyleLongDash, LineDashStyleLongDashDot,
-		LineDashStyleSystemDash, LineDashStyleSystemDot, LineDashStyleSystemDashDot:
+		LineDashStyleSystemDash, LineDashStyleSystemDot, LineDashStyleSystemDashDot,
+		LineDashStyleSystemDashDotDot:
 		return true
 	}
 	return false

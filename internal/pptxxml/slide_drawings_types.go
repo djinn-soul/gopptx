@@ -144,11 +144,13 @@ type RichShapeFillSpec struct {
 type LineDashStyle string
 
 const (
-	LineDashStyleSolid       LineDashStyle = "solid"
-	LineDashStyleDash        LineDashStyle = "dash"
-	LineDashStyleDot         LineDashStyle = "dot"
-	LineDashStyleDashDot     LineDashStyle = "dashDot"
-	LineDashStyleDashDotDot  LineDashStyle = "dashDotDot"
+	LineDashStyleSolid   LineDashStyle = "solid"
+	LineDashStyleDash    LineDashStyle = "dash"
+	LineDashStyleDot     LineDashStyle = "dot"
+	LineDashStyleDashDot LineDashStyle = "dashDot"
+	// LineDashStyleDashDotDot is the dash-dot-dot preset. ST_PresetLineDashVal
+	// spells it "lgDashDotDot"; a bare "dashDotDot" is not a member.
+	LineDashStyleDashDotDot  LineDashStyle = "lgDashDotDot"
 	LineDashStyleLongDash    LineDashStyle = "lgDash"
 	LineDashStyleLongDashDot LineDashStyle = "lgDashDot"
 )
