@@ -190,14 +190,59 @@ func addBasicPropertyFiles(
 		pw.AddPart("_xmlsignatures/origin.sigs", pptxxml.SignatureOrigin())
 	}
 
-	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
-		Title: meta.Title, Subject: meta.Subject, Creator: meta.Creator, Description: meta.Description,
+	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(coreProperties(meta)))
+	pw.AddPart("docProps/app.xml", pptxxml.AppProperties(pptxxml.AppPropertiesInfo{
+		SlideCount:   slideCount,
+		NotesCount:   notesPartCount,
+		HiddenSlides: hiddenSlideCount(slides),
+		Width:        meta.SlideSize.Width,
+		Height:       meta.SlideSize.Height,
+		Application:  meta.AppProperties.Application,
+		AppVersion:   meta.AppProperties.AppVersion,
+		Company:      meta.AppProperties.Company,
+		Manager:      meta.AppProperties.Manager,
 	}))
-	pw.AddPart(
-		"docProps/app.xml",
-		pptxxml.AppProperties(slideCount, notesPartCount, meta.SlideSize.Width, meta.SlideSize.Height),
-	)
 	return nil
+}
+
+// coreProperties merges the top-level metadata fields with the fuller
+// CoreProperties struct, which the generator used to ignore entirely: the
+// top-level ones win when both are set, since they are the older API.
+func coreProperties(meta Metadata) pptxxml.CorePropertiesInfo {
+	core := meta.CoreProperties
+	pick := func(primary, secondary string) string {
+		if primary != "" {
+			return primary
+		}
+		return secondary
+	}
+	return pptxxml.CorePropertiesInfo{
+		Title:          pick(meta.Title, core.Title),
+		Subject:        pick(meta.Subject, core.Subject),
+		Creator:        pick(meta.Creator, core.Creator),
+		Description:    pick(meta.Description, core.Description),
+		Keywords:       core.Keywords,
+		Category:       core.Category,
+		ContentStatus:  core.ContentStatus,
+		Identifier:     core.Identifier,
+		Language:       core.Language,
+		Version:        core.Version,
+		LastModifiedBy: core.LastModifiedBy,
+		Revision:       core.Revision,
+		LastPrinted:    core.LastPrinted,
+		Created:        core.Created,
+		Modified:       core.Modified,
+	}
+}
+
+func hiddenSlideCount(slides []elements.SlideContent) int {
+	count := 0
+	for _, slide := range slides {
+		if slide.Hidden {
+			count++
+		}
+	}
+	return count
 }
 
 func convertSections(sections []Section, slideCount int) ([]pptxxml.Section, error) {

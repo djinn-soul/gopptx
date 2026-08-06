@@ -61,8 +61,20 @@ type Metadata struct {
 	SlideCount     int
 	CustomXML      []CustomXMLPart
 	CoreProperties CoreProperties
+	AppProperties  AppProperties
 	Protection     Protection
 	ShowSettings   ShowSettings
+}
+
+// AppProperties represents the writable part of docProps/app.xml. The
+// generator used to hardcode Application and emit neither Company nor Manager.
+type AppProperties struct {
+	// Application names the producer. Empty writes "gopptx".
+	Application string
+	// AppVersion is the producer version. Empty writes "1.0000".
+	AppVersion string
+	Company    string
+	Manager    string
 }
 
 // ShowMode defines the slide show presentation mode.

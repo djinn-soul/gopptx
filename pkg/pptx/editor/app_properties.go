@@ -80,12 +80,17 @@ func (e *PresentationEditor) renderAppProperties() []byte {
 
 	appXML, ok := e.parts.Get(common.AppPropsPath)
 	if !ok || len(bytes.TrimSpace(appXML)) == 0 {
-		appXML = []byte(pptxxml.AppProperties(
-			counts.slides,
-			counts.notes,
-			e.metadata.SlideSize.Width,
-			e.metadata.SlideSize.Height,
-		))
+		appXML = []byte(pptxxml.AppProperties(pptxxml.AppPropertiesInfo{
+			SlideCount:   counts.slides,
+			NotesCount:   counts.notes,
+			HiddenSlides: counts.hiddenSlides,
+			Width:        e.metadata.SlideSize.Width,
+			Height:       e.metadata.SlideSize.Height,
+			Application:  e.metadata.AppProperties.Application,
+			AppVersion:   e.metadata.AppProperties.AppVersion,
+			Company:      e.metadata.AppProperties.Company,
+			Manager:      e.metadata.AppProperties.Manager,
+		}))
 	}
 
 	patched := string(appXML)

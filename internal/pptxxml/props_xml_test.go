@@ -22,7 +22,7 @@ func TestCorePropertiesXML(t *testing.T) {
 }
 
 func TestAppPropertiesXML(t *testing.T) {
-	xml := AppProperties(5, 2, 100, 200)
+	xml := AppProperties(AppPropertiesInfo{SlideCount: 5, NotesCount: 2, Width: 100, Height: 200})
 	if !strings.Contains(xml, "<Slides>5</Slides>") {
 		t.Error("Slide count missing")
 	}
