@@ -285,6 +285,18 @@ func customShapeAltText(shape ShapeSpec) string {
 }
 
 func customShapeTextBody(shape ShapeSpec) string {
+	// A shape read from a PPTX carries its whole text body in Paragraphs; Text
+	// holds at most one flat line, and honouring only Text dropped every
+	// paragraph such a shape had.
+	if len(shape.Paragraphs) > 0 {
+		return `
+<p:txBody>
+` + TextBodyPrXML(shape.TextFrame) + `
+<a:lstStyle/>
+` + ParagraphsXML(shape.Paragraphs, ContentStyleSpec{SizePt: autoFitShapeTextSizePt(shape)}) + `
+</p:txBody>`
+	}
+
 	if strings.TrimSpace(shape.Text) == "" {
 		return `
 <p:txBody>

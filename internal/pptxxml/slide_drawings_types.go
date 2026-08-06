@@ -40,6 +40,9 @@ type ShapeSpec struct {
 	GradientFill *ShapeGradientFillSpec
 	Line         *ShapeLineSpec
 	Text         string
+	// Paragraphs is the shape's full text body. When it carries anything it
+	// wins over Text, which holds only a single unstyled line.
+	Paragraphs   []ParagraphSpec
 	RotationDeg  *int
 	Hyperlink    *HyperlinkSpec // Legacy: mapped to ClickAction
 	ClickAction  *HyperlinkSpec

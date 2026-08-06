@@ -6,8 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
-	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
-	"github.com/djinn-soul/gopptx/pkg/pptx/text"
+	"github.com/djinn-soul/gopptx/pkg/pptx/textspec"
 )
 
 func BuildSlideHyperlinkRels(
@@ -92,59 +91,9 @@ func ToXMLTextRunRows(rows [][]Run, hyperlinkRIDs map[*action.Hyperlink]string) 
 		if len(rows[i]) == 0 {
 			continue
 		}
-		runs := make([]pptxxml.TextRunSpec, 0, len(rows[i]))
-		for _, run := range rows[i] {
-			spec := pptxxml.TextRunSpec{
-				Text:           run.Text,
-				Bold:           run.Bold,
-				Italic:         run.Italic,
-				Underline:      run.Underline,
-				Strikethrough:  run.Strikethrough,
-				Subscript:      run.Subscript,
-				Superscript:    run.Superscript,
-				Color:          common.NormalizeHexColor(run.Color),
-				Highlight:      common.NormalizeHexColor(run.Highlight),
-				Font:           run.Font,
-				SizePt:         float64(run.SizePt),
-				Code:           run.Code,
-				AllCaps:        run.AllCaps,
-				SmallCaps:      run.SmallCaps,
-				OutlineColor:   common.NormalizeHexColor(run.OutlineColor),
-				OutlineWidthPt: run.OutlineWidthPt,
-				Lang:           run.Lang,
-			}
-			if run.Hyperlink != nil {
-				spec.Hyperlink = toXMLHyperlinkSpec(run.Hyperlink, hyperlinkRIDs)
-			}
-			if run.HoverAction != nil {
-				spec.HoverAction = toXMLHyperlinkSpec(run.HoverAction, hyperlinkRIDs)
-			}
-			runs = append(runs, spec)
-		}
-		out[i] = runs
+		out[i] = textspec.ToXMLRunSpecs(rows[i], hyperlinkRIDs)
 	}
 	return out
-}
-
-func toXMLHyperlinkSpec(h *action.Hyperlink, hyperlinkRIDs map[*action.Hyperlink]string) *pptxxml.HyperlinkSpec {
-	if h == nil {
-		return nil
-	}
-	spec := &pptxxml.HyperlinkSpec{
-		Tooltip:        h.Tooltip,
-		HighlightClick: h.HighlightClick,
-		History:        h.History,
-		EndSound:       h.EndSound,
-		Action:         h.ActionType(),
-	}
-	if rid, ok := hyperlinkRIDs[h]; ok {
-		spec.RelID = rid
-	}
-	if spec.RelID == "" && spec.Tooltip == "" && spec.Action == "" && spec.History == nil && spec.EndSound == nil &&
-		!spec.HighlightClick {
-		return nil
-	}
-	return spec
 }
 
 func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagraphSpec {
@@ -153,36 +102,9 @@ func ToXMLBulletParagraphStyles(styles []ParagraphStyle) []pptxxml.BulletParagra
 	}
 	out := make([]pptxxml.BulletParagraphSpec, len(styles))
 	for i, style := range styles {
-		out[i] = pptxxml.BulletParagraphSpec{
-			Align:          text.NormalizeTextAlign(style.Align),
-			SpaceBeforePt:  style.SpaceBeforePt,
-			SpaceAfterPt:   style.SpaceAfterPt,
-			LineSpacingPct: style.LineSpacingPct,
-			LineSpacingPts: style.LineSpacingPts,
-			BulletStyle:    text.NormalizeBulletStyle(style.BulletStyle),
-			BulletChar:     style.BulletChar,
-			BulletColor:    common.NormalizeHexColor(style.BulletColor),
-			BulletSize:     style.BulletSize,
-			TabStops:       convertTabStops(style.TabStops),
-			Level:          style.Level,
-			LeftIndent:     style.LeftIndent.Emu(),
-			RightIndent:    style.RightIndent.Emu(),
-			HangingIndent:  style.HangingIndent.Emu(),
-			RTL:            style.RTL,
-		}
+		out[i] = textspec.ToXMLParagraphStyleSpec(style)
 	}
 	return out
-}
-
-func convertTabStops(stops []styling.Length) []int64 {
-	if len(stops) == 0 {
-		return nil
-	}
-	converted := make([]int64, 0, len(stops))
-	for _, stop := range stops {
-		converted = append(converted, stop.Emu())
-	}
-	return converted
 }
 
 func ToXMLBackgroundSpec(bg *SlideBackground, imageRelID string) *pptxxml.SlideBackgroundSpec {
