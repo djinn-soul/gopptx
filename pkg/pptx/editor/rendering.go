@@ -67,6 +67,7 @@ func renderEditorSlideParts(
 		Underline: slide.TitleUnderline,
 		Align:     slide.TitleAlign,
 		Font:      slide.TitleFont,
+		Bounds:    slide.TitleBoundsEMU,
 	}
 	contentStyle := pptxxml.ContentStyleSpec{
 		SizePt:    slide.ContentSize,
@@ -75,6 +76,7 @@ func renderEditorSlideParts(
 		Italic:    slide.ContentItalic,
 		Underline: slide.ContentUnderline,
 		VAlign:    slide.ContentVAlign,
+		Bounds:    slide.ContentBoundsEMU,
 	}
 
 	slideXML := pptxxml.SlideWithLayout(

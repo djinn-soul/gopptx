@@ -30,6 +30,7 @@ func (b *slidePartBuilder) buildTitleSpec(slide elements.SlideContent) pptxxml.T
 		Underline: slide.TitleUnderline,
 		Align:     slide.TitleAlign,
 		Font:      slide.TitleFont,
+		Bounds:    slide.TitleBoundsEMU,
 	}
 }
 
@@ -41,6 +42,7 @@ func (b *slidePartBuilder) buildContentStyleSpec(slide elements.SlideContent) pp
 		Italic:    slide.ContentItalic,
 		Underline: slide.ContentUnderline,
 		VAlign:    slide.ContentVAlign,
+		Bounds:    slide.ContentBoundsEMU,
 	}
 }
 

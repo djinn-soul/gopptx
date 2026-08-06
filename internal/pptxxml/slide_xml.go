@@ -101,6 +101,9 @@ type TitleSpec struct {
 	Underline bool
 	Align     string
 	Font      string
+	// Bounds is the placeholder geometry (x, y, cx, cy in EMU) read from an
+	// existing deck. All zero means "use the layout default".
+	Bounds [4]int64
 }
 
 // ContentStyleSpec describes default content formatting.
@@ -111,6 +114,16 @@ type ContentStyleSpec struct {
 	Italic    bool
 	Underline bool
 	VAlign    string
+	// Bounds is the body placeholder geometry (x, y, cx, cy in EMU) read from an
+	// existing deck. All zero means "use the layout default".
+	Bounds [4]int64
+}
+
+// hasBounds reports whether placeholder geometry was actually stated. The
+// reader leaves all four values zero for a slide built through the API, and a
+// zero-sized placeholder is not something a caller can mean.
+func hasBounds(bounds [4]int64) bool {
+	return bounds[2] > 0 && bounds[3] > 0
 }
 
 // SlideWithContent renders a title+bullets slide with optional table, chart, and images.

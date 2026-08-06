@@ -8,7 +8,7 @@ import (
 const titleSideMarginCount = 2
 
 func titleShape(title TitleSpec, width, _ int64) string {
-	if width == 9144000 && title.SizePt == 0 && title.Color == "" && title.Font == "" &&
+	if !hasBounds(title.Bounds) && width == 9144000 && title.SizePt == 0 && title.Color == "" && title.Font == "" &&
 		!title.Bold && !title.Italic && !title.Underline && title.Align == "" {
 		return defaultTitleShapePrefix + Escape(title.Text) + defaultTitleShapeSuffix
 	}
@@ -17,6 +17,11 @@ func titleShape(title TitleSpec, width, _ int64) string {
 	y := int64(titleTopOffset)
 	cx := width - titleSideMarginCount*int64(margin)
 	cy := int64(titleHeightEmu)
+	// A slide read from a deck states where its title placeholder actually sits;
+	// falling back to the built-in layout would move it.
+	if hasBounds(title.Bounds) {
+		x, y, cx, cy = title.Bounds[0], title.Bounds[1], title.Bounds[2], title.Bounds[3]
+	}
 	align := title.Align
 	if align == "" {
 		align = "l"
@@ -31,6 +36,9 @@ func centeredTitleShape(title TitleSpec, width, height int64) string {
 	cy := int64(1371600)
 	x := margin
 	y := (height - cy) / 2
+	if hasBounds(title.Bounds) {
+		x, y, cx, cy = title.Bounds[0], title.Bounds[1], title.Bounds[2], title.Bounds[3]
+	}
 	align := title.Align
 	if align == "" {
 		align = dataLabelPosCenter
