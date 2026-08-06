@@ -51,7 +51,7 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 					H:         boxH,
 					Text:      node.Text,
 					ShapeType: shapeTypeForLinear(layoutURI),
-					Fill:      smartArtPalette(i),
+					Fill:      smartArtNodeColor(node, i),
 				},
 			)
 			if i > 0 {
@@ -83,7 +83,7 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 				H:         boxH,
 				Text:      node.Text,
 				ShapeType: shapeTypeForLinear(layoutURI),
-				Fill:      smartArtPalette(i),
+				Fill:      smartArtNodeColor(node, i),
 			},
 		)
 		if i > 0 {
@@ -126,7 +126,7 @@ func layoutSmartArtGrid(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLin
 			H:         boxH,
 			Text:      node.Text,
 			ShapeType: shapesShapeRectangle,
-			Fill:      smartArtPalette(row + col),
+			Fill:      smartArtNodeColor(node, row+col),
 		})
 	}
 	return boxes, nil
@@ -166,7 +166,7 @@ func layoutSmartArtPyramid(diagram smartart.SmartArt) ([]smartArtBox, []smartArt
 				H:         boxH - 6,
 				Text:      node.Text,
 				ShapeType: shapesShapeRectangle,
-				Fill:      smartArtPalette(i),
+				Fill:      smartArtNodeColor(node, i),
 			},
 		)
 	}
@@ -202,7 +202,7 @@ func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 				H:         boxH,
 				Text:      nodes[0].Text,
 				ShapeType: shapesShapeEllipse,
-				Fill:      smartArtPalette(0),
+				Fill:      smartArtNodeColor(nodes[0], 0),
 			},
 		}, nil
 	}
@@ -216,7 +216,7 @@ func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 			H:         boxH,
 			Text:      center.Text,
 			ShapeType: shapesShapeEllipse,
-			Fill:      smartArtPalette(0),
+			Fill:      smartArtNodeColor(center, 0),
 		},
 	)
 	orbit := nodes[1:]
@@ -233,7 +233,7 @@ func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 				H:         boxH,
 				Text:      node.Text,
 				ShapeType: shapesShapeEllipse,
-				Fill:      smartArtPalette(i + 1),
+				Fill:      smartArtNodeColor(node, i+1),
 			},
 		)
 		links = append(links, smartArtLink{StartX: cx, StartY: cy, EndX: bx + boxW/2, EndY: by + boxH/2})

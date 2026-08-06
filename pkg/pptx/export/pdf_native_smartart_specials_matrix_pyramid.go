@@ -94,6 +94,8 @@ func renderSmartArtPictureGrid(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
 		bx := left + float64(col)*(boxW+gapX)
 		by := y + 34 + float64(row)*(boxH+gapY+22)
 		drawSmartArtTopText(pdf, nodes[i].Text, bx, by-20, boxW, smartArtInkText, 20)
-		drawSmartArtRect(pdf, bx, by, boxW, boxH, smartArtLightFill, smartArtWhiteStroke, 0)
+		if !drawSmartArtNodeImage(pdf, nodes[i], bx, by, boxW, boxH) {
+			drawSmartArtRect(pdf, bx, by, boxW, boxH, smartArtLightFill, smartArtWhiteStroke, 0)
+		}
 	}
 }

@@ -48,29 +48,44 @@ func renderSmartArtDataFromTemplate(spec SmartArtSpec) string {
 		`csCatId="`+Escape(smartArtColorCategory(colorStyleID))+`"`,
 		1,
 	)
+	orderedNodes := smartArtOrderedNodesForLayout(spec.LayoutURI, spec.Nodes)
 	orderedTexts := smartArtOrderedTextsForLayout(spec.LayoutURI, spec.Nodes)
 	targetDataModelIDs := preferredDataModelIDsForLayout(spec.LayoutURI, data)
+
+	// A nested spec is placed by walking both trees together; the slot heuristics
+	// only know how to fill a flat list.
+	if slots := assignSmartArtSlots(spec, data); smartArtSpecHasChildren(spec.Nodes) && len(slots) > 0 {
+		orderedNodes = smartArtSlotNodes(slots)
+		orderedTexts = smartArtSlotTexts(slots)
+		targetDataModelIDs = smartArtSlotModelIDs(slots)
+	}
+
 	if len(targetDataModelIDs) > 0 {
 		data = injectSmartArtNodeTextsForModelIDs(data, targetDataModelIDs, orderedTexts)
 	} else {
+		targetDataModelIDs = placeholderDataModelIDsInOrder(data)
 		data = injectSmartArtNodeTexts(data, orderedTexts)
 	}
+	data = applySmartArtNodeProperties(
+		data,
+		smartArtNodePropertiesByModelID(orderedNodes, targetDataModelIDs),
+		smartArtPictureShapeNames(spec.LayoutURI),
+	)
 	data = pruneUnusedOrgChartPlaceholderBranches(data)
-	return dropSmartArtDrawingCacheLink(data, quickStyleID)
+	return dropSmartArtDrawingCacheLink(data)
 }
 
-// dropSmartArtDrawingCacheLink unhooks the cached drawing from the data model
-// when the diagram asks for a quick style the cache was not drawn with.
+// dropSmartArtDrawingCacheLink unhooks the cached drawing from the data model.
 //
-// The templates were captured under simple1, so their cache holds flat shapes.
-// PowerPoint trusts a cache the data model still points at — it drew a 3-D quick
-// style as flat boxes — but lays the diagram out again from the style definition
-// once that link is gone. The drawing part itself stays in the package for
-// readers that render the cache rather than recompute it.
-func dropSmartArtDrawingCacheLink(data, quickStyleID string) string {
-	if smartArtStyleName(quickStyleID) == smartArtTemplateQuickStyleName {
-		return data
-	}
+// PowerPoint trusts a cache the data model still points at, and the shipped
+// caches were captured from the templates: their shapes carry the template's
+// quick style and the text size that suited its placeholder captions. That cache
+// drew 3-D styles flat, and split real captions across lines mid-word rather
+// than shrinking them to fit. Unhooked, PowerPoint lays the
+// diagram out from the data, layout and style definitions and sizes the text
+// itself. The drawing part stays in the package for readers that render the
+// cache rather than recompute it.
+func dropSmartArtDrawingCacheLink(data string) string {
 	start := strings.Index(data, "<dgm:extLst>")
 	if start < 0 {
 		return data
@@ -81,10 +96,6 @@ func dropSmartArtDrawingCacheLink(data, quickStyleID string) string {
 	}
 	return data[:start] + data[start+end+len("</dgm:extLst>"):]
 }
-
-// smartArtTemplateQuickStyleName is the quick style the shipped templates — and
-// so their cached drawings — were captured under.
-const smartArtTemplateQuickStyleName = "simple1"
 
 func renderSmartArtLayoutFromTemplate(layoutURI string) string {
 	if v, ok := renderedLayoutCache.Load(layoutURI); ok {

@@ -73,6 +73,12 @@ func smartArtNodesResponse(nodes []smartart.Node) []any {
 	out := make([]any, 0, len(nodes))
 	for _, node := range nodes {
 		entry := map[string]any{"text": node.Text}
+		if node.Color != "" {
+			entry["color"] = node.Color
+		}
+		if node.ImageRelID != "" {
+			entry["has_image"] = true
+		}
 		if len(node.Children) > 0 {
 			entry["children"] = smartArtNodesResponse(node.Children)
 		}

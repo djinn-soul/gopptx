@@ -8,12 +8,23 @@ import (
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
+	"github.com/djinn-soul/gopptx/pkg/pptx/media"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 )
 
 type SmartArtPart struct {
 	slideIndex int
 	partNumber int
 	spec       pptxxml.SmartArtSpec
+	imageRels  []smartArtImageRel
+}
+
+// smartArtImageRel is one picture a diagram's data part points at. Node pictures
+// are related from the data part rather than from the slide, which is why a
+// diagram that uses them needs a rels file of its own.
+type smartArtImageRel struct {
+	relID     string
+	mediaName string
 }
 
 const (
@@ -29,18 +40,51 @@ func SmartArtPartCount(parts []SmartArtPart) int {
 	return len(parts)
 }
 
-func BuildSmartArtParts(slides []elements.SlideContent) []SmartArtPart {
+func BuildSmartArtParts(slides []elements.SlideContent, catalog *media.Catalog) []SmartArtPart {
 	out := make([]SmartArtPart, 0)
 	for i, slide := range slides {
 		for _, sa := range slide.SmartArtDiagrams {
+			spec := sa.ToSpec()
+			rels := resolveSmartArtNodeImages(spec.Nodes, catalog)
 			out = append(out, SmartArtPart{
 				slideIndex: i,
 				partNumber: len(out) + 1,
-				spec:       sa.ToSpec(),
+				spec:       spec,
+				imageRels:  rels,
 			})
 		}
 	}
 	return out
+}
+
+// resolveSmartArtNodeImages registers each node picture with the media catalog
+// and stamps the relationship it will be referenced by. Pictures that cannot be
+// read are skipped, leaving the node's placeholder empty rather than failing the
+// whole deck.
+func resolveSmartArtNodeImages(nodes []pptxxml.SmartArtNodeSpec, catalog *media.Catalog) []smartArtImageRel {
+	rels := make([]smartArtImageRel, 0)
+	byMediaName := map[string]string{}
+
+	var walk func(items []pptxxml.SmartArtNodeSpec)
+	walk = func(items []pptxxml.SmartArtNodeSpec) {
+		for i := range items {
+			node := &items[i]
+			if node.ImagePath != "" && catalog != nil {
+				if mediaName, err := catalog.RegisterImage(shapes.Image{Path: node.ImagePath}); err == nil {
+					relID, seen := byMediaName[mediaName]
+					if !seen {
+						relID = fmt.Sprintf("rId%d", len(rels)+1)
+						byMediaName[mediaName] = relID
+						rels = append(rels, smartArtImageRel{relID: relID, mediaName: mediaName})
+					}
+					node.ImageRelID = relID
+				}
+			}
+			walk(node.Children)
+		}
+	}
+	walk(nodes)
+	return rels
 }
 
 func smartArtPartBySlide(parts []SmartArtPart) map[int][]SmartArtPart {
@@ -59,7 +103,29 @@ func writeSmartArtFiles(pw *pptxxml.PackageWriter, parts []SmartArtPart) error {
 	for _, rendered := range renderedParts {
 		pw.AddPart(rendered.path, rendered.content)
 	}
+	for _, part := range parts {
+		if len(part.imageRels) == 0 {
+			continue
+		}
+		pw.AddPart(
+			fmt.Sprintf("ppt/diagrams/_rels/data%d.xml.rels", part.partNumber),
+			smartArtDataRelsXML(part.imageRels),
+		)
+	}
 	return nil
+}
+
+func smartArtDataRelsXML(rels []smartArtImageRel) string {
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+		`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
+	for _, rel := range rels {
+		b.WriteString(`<Relationship Id="` + rel.relID +
+			`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"` +
+			` Target="../media/` + rel.mediaName + `"/>`)
+	}
+	b.WriteString(`</Relationships>`)
+	return b.String()
 }
 
 type smartArtRenderedPart struct {

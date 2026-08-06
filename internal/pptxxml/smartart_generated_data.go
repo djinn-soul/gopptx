@@ -36,12 +36,6 @@ func smartArtSpecFitsTemplate(spec SmartArtSpec, data string) bool {
 	if len(capacityByParent[rootID]) < minSmartArtPeerRoots {
 		return true
 	}
-	// Slot filling walks the template's points, not the spec's tree, so a nested
-	// spec comes out reshuffled: a child could land in the next entry's slot and
-	// a sibling could be demoted under it. Generating the model keeps the tree.
-	if smartArtSpecHasChildren(spec.Nodes) {
-		return false
-	}
 	var fits func(nodes []SmartArtNodeSpec, slots []string) bool
 	fits = func(nodes []SmartArtNodeSpec, slots []string) bool {
 		if len(nodes) > len(slots) {
@@ -85,7 +79,10 @@ func smartArtTemplateCapacity(data string) (map[string][]string, string) {
 			rootID = point.modelID
 			continue
 		}
-		semantic[point.modelID] = !isSmartArtStructuralDataType(point.pointType)
+		// An assistant hangs off the side of an org chart rather than taking a
+		// child's place, so it is not a slot ordinary children can be poured into.
+		semantic[point.modelID] = !isSmartArtStructuralDataType(point.pointType) &&
+			point.pointType != smartArtDataPointAssistant
 	}
 
 	childrenByParent := make(map[string][]smartArtChildLink)
@@ -137,8 +134,8 @@ func renderGeneratedSmartArtData(spec SmartArtSpec) string {
 			sibTransID := smartArtGeneratedID(&seq)
 			cxnID := smartArtGeneratedID(&seq)
 
-			points.WriteString(`<dgm:pt modelId="` + nodeID + `"><dgm:prSet/><dgm:spPr/>` +
-				smartArtTextBody(node.Text) + `</dgm:pt>`)
+			points.WriteString(`<dgm:pt modelId="` + nodeID + `"><dgm:prSet/>` +
+				smartArtNodeShapeProperties(node) + smartArtTextBody(node.Text) + `</dgm:pt>`)
 			points.WriteString(smartArtTransitionPoint(parTransID, "parTrans", cxnID))
 			points.WriteString(smartArtTransitionPoint(sibTransID, "sibTrans", cxnID))
 

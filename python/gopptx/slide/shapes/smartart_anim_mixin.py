@@ -57,9 +57,10 @@ class SlideSmartArtAnimMixin:
             items: Flat list of text items (for list/process/cycle layouts).
                 Ignored when ``nodes`` is provided.
             bounds: ``(left, top, width, height)`` in inches.
-            nodes: Nested node tree for hierarchy layouts (org chart, hierarchy).
-                Each node is a dict with ``"text"`` (str) and optional
-                ``"children"`` (list of the same shape).
+            nodes: Nested node tree.  Each node is a dict with ``"text"`` (str)
+                and optional ``"children"`` (list of the same shape),
+                ``"color"`` (RGB hex, e.g. ``"C00000"``) and ``"image"`` (path
+                to a picture, for the layouts that draw a picture placeholder).
 
         Returns:
             The shape ID of the inserted graphic frame.

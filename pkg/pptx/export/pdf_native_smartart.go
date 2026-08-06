@@ -116,12 +116,20 @@ func layoutSmartArt(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
 	}
 }
 
-// smartArtPalette is the fill of the depth-th node.
-//
-// PowerPoint's default SmartArt style fills every node with the same accent
-// colour; the pastel rotation this used to return looked nothing like it.
+// smartArtPalette is the fill of a node the diagram gives no colour of its own.
 func smartArtPalette(_ int) string {
 	return smartArtNodeFill
+}
+
+// smartArtNodeColor is the fill a node is drawn with: its own colour when it has
+// one — set on the node, or resolved from the diagram's colour style when the
+// deck was read — and the default accent otherwise. Without this every diagram
+// exported in the same blue whatever colour style it asked for.
+func smartArtNodeColor(node smartart.Node, index int) string {
+	if node.Color != "" {
+		return node.Color
+	}
+	return smartArtPalette(index)
 }
 
 func flattenSmartArtNodes(nodes []smartart.Node) []smartart.Node {

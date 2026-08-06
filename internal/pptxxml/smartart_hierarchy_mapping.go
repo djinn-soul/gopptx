@@ -2,20 +2,28 @@ package pptxxml
 
 import "sort"
 
-type smartArtTraversalNode struct {
-	text     string
-	children []SmartArtNodeSpec
-}
-
 const (
-	smartArtDataPointDoc = "doc"
+	smartArtDataPointDoc       = "doc"
+	smartArtDataPointAssistant = "asst"
 )
 
-func smartArtOrderedTextsForLayout(layoutURI string, nodes []SmartArtNodeSpec) []string {
+// smartArtOrderedNodesForLayout flattens the spec into the order the layout's
+// slots are filled. Per-node properties travel with the node so that a colour or
+// a picture lands on the same point its text does.
+func smartArtOrderedNodesForLayout(layoutURI string, nodes []SmartArtNodeSpec) []SmartArtNodeSpec {
 	if prefersBreadthFirstSmartArtTextOrder(layoutURI) {
-		return flattenSmartArtNodeTextsBreadthFirst(nodes)
+		return flattenSmartArtNodesBreadthFirst(nodes)
 	}
-	return flattenSmartArtNodeTextsDepthFirst(nodes)
+	return flattenSmartArtNodesDepthFirst(nodes)
+}
+
+func smartArtOrderedTextsForLayout(layoutURI string, nodes []SmartArtNodeSpec) []string {
+	ordered := smartArtOrderedNodesForLayout(layoutURI, nodes)
+	out := make([]string, 0, len(ordered))
+	for _, node := range ordered {
+		out = append(out, node.Text)
+	}
+	return out
 }
 
 func prefersBreadthFirstSmartArtTextOrder(layoutURI string) bool {
@@ -28,12 +36,12 @@ func prefersBreadthFirstSmartArtTextOrder(layoutURI string) bool {
 	}
 }
 
-func flattenSmartArtNodeTextsDepthFirst(nodes []SmartArtNodeSpec) []string {
-	out := make([]string, 0, flattenSmartArtTextsInitCap)
+func flattenSmartArtNodesDepthFirst(nodes []SmartArtNodeSpec) []SmartArtNodeSpec {
+	out := make([]SmartArtNodeSpec, 0, flattenSmartArtTextsInitCap)
 	var walk func([]SmartArtNodeSpec)
 	walk = func(items []SmartArtNodeSpec) {
 		for _, n := range items {
-			out = append(out, n.Text)
+			out = append(out, n)
 			if len(n.Children) > 0 {
 				walk(n.Children)
 			}
@@ -43,22 +51,17 @@ func flattenSmartArtNodeTextsDepthFirst(nodes []SmartArtNodeSpec) []string {
 	return out
 }
 
-func flattenSmartArtNodeTextsBreadthFirst(nodes []SmartArtNodeSpec) []string {
+func flattenSmartArtNodesBreadthFirst(nodes []SmartArtNodeSpec) []SmartArtNodeSpec {
 	if len(nodes) == 0 {
 		return nil
 	}
-	out := make([]string, 0, flattenSmartArtTextsInitCap)
-	queue := make([]smartArtTraversalNode, 0, len(nodes))
-	for _, node := range nodes {
-		queue = append(queue, smartArtTraversalNode{text: node.Text, children: node.Children})
-	}
+	out := make([]SmartArtNodeSpec, 0, flattenSmartArtTextsInitCap)
+	queue := append([]SmartArtNodeSpec(nil), nodes...)
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		out = append(out, current.text)
-		for _, child := range current.children {
-			queue = append(queue, smartArtTraversalNode{text: child.Text, children: child.Children})
-		}
+		out = append(out, current)
+		queue = append(queue, current.Children...)
 	}
 	return out
 }
