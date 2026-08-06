@@ -289,7 +289,8 @@ func TestCreateWithMetadataEmitsMultipleMasters(t *testing.T) {
 	if !testutil.ZipHasFile(zr, "ppt/slideMasters/slideMaster2.xml") {
 		t.Fatalf("missing second slide master part")
 	}
-	if !testutil.ZipHasFile(zr, "ppt/slideLayouts/slideLayout7.xml") {
+	// Each master owns a block of eight layouts, so the second family starts at 9.
+	if !testutil.ZipHasFile(zr, "ppt/slideLayouts/slideLayout9.xml") {
 		t.Fatalf("missing second master layout family")
 	}
 
@@ -297,8 +298,8 @@ func TestCreateWithMetadataEmitsMultipleMasters(t *testing.T) {
 	if !strings.Contains(contentTypes, `/ppt/slideMasters/slideMaster2.xml`) {
 		t.Fatalf("missing content-types override for slideMaster2")
 	}
-	if !strings.Contains(contentTypes, `/ppt/slideLayouts/slideLayout7.xml`) {
-		t.Fatalf("missing content-types override for slideLayout7")
+	if !strings.Contains(contentTypes, `/ppt/slideLayouts/slideLayout9.xml`) {
+		t.Fatalf("missing content-types override for slideLayout9")
 	}
 
 	presentationRels := testutil.ReadZipFile(t, zr, "ppt/_rels/presentation.xml.rels")
@@ -307,7 +308,7 @@ func TestCreateWithMetadataEmitsMultipleMasters(t *testing.T) {
 	}
 
 	slide2Rels := testutil.ReadZipFile(t, zr, "ppt/slides/_rels/slide2.xml.rels")
-	if !strings.Contains(slide2Rels, `Target="../slideLayouts/slideLayout7.xml"`) {
+	if !strings.Contains(slide2Rels, `Target="../slideLayouts/slideLayout9.xml"`) {
 		t.Fatalf("slide2 should bind to second master layout family")
 	}
 }

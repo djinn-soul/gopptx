@@ -12,7 +12,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-const layoutsPerMaster = 6
+const layoutsPerMaster = pptxxml.LayoutsPerMaster
 
 type slideParts struct {
 	title        pptxxml.TitleSpec

@@ -99,10 +99,11 @@ func TestPresentationMultiMaster(t *testing.T) {
 	if !strings.Contains(xml, `id="2147483648"`) {
 		t.Error("missing first master ID")
 	}
-	if !strings.Contains(xml, `id="2147483655"`) {
+	// Master ids are allocated one block per master: the master plus its layouts.
+	if !strings.Contains(xml, `id="2147483657"`) {
 		t.Error("missing second master ID")
 	}
-	if !strings.Contains(xml, `id="2147483662"`) {
+	if !strings.Contains(xml, `id="2147483666"`) {
 		t.Error("missing third master ID")
 	}
 

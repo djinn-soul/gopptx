@@ -101,7 +101,12 @@ func textLevelStylesXML(levels []TextLevelStyle) string {
 	return b.String()
 }
 
-const imageRidStart = 8
+// The master's relationships run: one per layout, then the theme, then any
+// master images.
+const (
+	themeRidNumber = LayoutsPerMaster + 1
+	imageRidStart  = themeRidNumber + 1
+)
 
 // SlideMasterRelationships renders ppt/slideMasters/_rels/slideMasterN.xml.rels.
 // imageTargets are optional media paths for master images (e.g. "../media/image1.png").
@@ -116,7 +121,7 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 	b.Grow(slideMasterRelsGrowCap)
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`)
-	for i := 1; i <= 6; i++ {
+	for i := 1; i <= LayoutsPerMaster; i++ {
 		b.WriteString("\n<Relationship Id=\"rId")
 		b.WriteString(strconv.Itoa(i))
 		b.WriteString(
@@ -127,7 +132,7 @@ func SlideMasterRelationships(imageTargets []string, masterIndex int, themeIndex
 		b.WriteString(`"/>`)
 	}
 	b.WriteString(
-		"\n<Relationship Id=\"rId7\"" +
+		"\n<Relationship Id=\"rId" + strconv.Itoa(themeRidNumber) + "\"" +
 			" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme\"" +
 			" Target=\"../theme/theme",
 	)

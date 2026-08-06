@@ -34,6 +34,10 @@ func NormalizeSlideLayout(layout string) string {
 		return SlideLayoutTitleAndBigContent
 	case strings.ToLower(SlideLayoutTwoColumn), "twocolumn", "two-column", "two column":
 		return SlideLayoutTwoColumn
+	case strings.ToLower(SlideLayoutTitleAndVerticalText), "title and vertical text", "vertical_text":
+		return SlideLayoutTitleAndVerticalText
+	case strings.ToLower(SlideLayoutVerticalTitleAndText), "vertical title and text":
+		return SlideLayoutVerticalTitleAndText
 	default:
 		return normalized
 	}
@@ -51,6 +55,10 @@ func SlideLayoutXMLMode(layout string) string {
 		return "titleAndBigContent"
 	case SlideLayoutTwoColumn:
 		return "twoColumn"
+	case SlideLayoutTitleAndVerticalText:
+		return "titleAndVerticalText"
+	case SlideLayoutVerticalTitleAndText:
+		return "verticalTitleAndText"
 	default:
 		return "titleAndContent"
 	}
@@ -68,6 +76,10 @@ func SlideLayoutTarget(layout string) string {
 		return "../slideLayouts/slideLayout5.xml"
 	case SlideLayoutTwoColumn:
 		return "../slideLayouts/slideLayout6.xml"
+	case SlideLayoutTitleAndVerticalText:
+		return "../slideLayouts/slideLayout7.xml"
+	case SlideLayoutVerticalTitleAndText:
+		return "../slideLayouts/slideLayout8.xml"
 	default:
 		return "../slideLayouts/slideLayout1.xml"
 	}

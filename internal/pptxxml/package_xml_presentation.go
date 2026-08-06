@@ -163,9 +163,10 @@ func Presentation(
 	b.WriteString(`>
 <p:sldMasterIdLst>`)
 	for i := range masterCount {
-		// Keep IDs globally unique across masters + layout IDs (block size: 1 master + 6 layouts).
+		// Keep IDs globally unique across masters + layout IDs (block size: one
+		// master plus its layouts).
 		//nolint:mnd // OOXML master ID base
-		masterID := int64(2147483648) + int64(i*7)
+		masterID := int64(2147483648) + int64(i*(LayoutsPerMaster+1))
 		rid := i + 1
 		b.WriteString("\n<p:sldMasterId id=\"")
 		b.WriteString(strconv.FormatInt(masterID, 10))

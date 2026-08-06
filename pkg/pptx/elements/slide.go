@@ -21,6 +21,11 @@ const (
 	SlideLayoutCenteredTitle      = "centered_title"
 	SlideLayoutTitleAndBigContent = "title_and_big_content"
 	SlideLayoutTwoColumn          = "two_column"
+	// SlideLayoutTitleAndVerticalText and SlideLayoutVerticalTitleAndText are the
+	// two ST_SlideLayoutType layouts PowerPoint offers for vertically written
+	// text.
+	SlideLayoutTitleAndVerticalText = "title_and_vertical_text"
+	SlideLayoutVerticalTitleAndText = "vertical_title_and_text"
 
 	// SlideLayoutTitle starts the legacy/descriptive layout aliases.
 	SlideLayoutTitle          = "Title Slide"

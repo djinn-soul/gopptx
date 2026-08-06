@@ -12,6 +12,8 @@ const (
 	slideLayoutCenteredTitle   = "centeredTitle"
 	slideLayoutTitleBigContent = "titleAndBigContent"
 	slideLayoutTwoColumn       = "twoColumn"
+	slideLayoutTitleVertText   = "titleAndVerticalText"
+	slideLayoutVertTitleText   = "verticalTitleAndText"
 	slideBackgroundPicture     = "picture"
 	slideWithLayoutGrowCap     = 3072
 )
@@ -117,7 +119,14 @@ type ContentStyleSpec struct {
 	// Bounds is the body placeholder geometry (x, y, cx, cy in EMU) read from an
 	// existing deck. All zero means "use the layout default".
 	Bounds [4]int64
+	// TextVertical is the <a:bodyPr vert=""> value, set by the vertical-text
+	// layouts. Empty leaves the attribute off, i.e. horizontal text.
+	TextVertical string
 }
+
+// textVerticalEastAsian is the vert value PowerPoint's vertical-text layouts
+// write.
+const textVerticalEastAsian = "eaVert"
 
 // hasBounds reports whether placeholder geometry was actually stated. The
 // reader leaves all four values zero for a slide built through the API, and a
@@ -292,6 +301,12 @@ func slideRenderBullets(
 		nextID++
 	case slideLayoutTitleBigContent:
 		b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
+		nextID++
+	case slideLayoutTitleVertText, slideLayoutVertTitleText:
+		// The body of a vertical-text layout is written down the page, which is
+		// the bodyPr the layout itself states.
+		contentStyle.TextVertical = textVerticalEastAsian
+		b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
 		nextID++
 	case slideLayoutTwoColumn:
 		leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)

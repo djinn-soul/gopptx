@@ -206,7 +206,13 @@ func contentShapeAt(
 <p:txBody>
 <a:bodyPr wrap="square" rtlCol="0" anchor="`)
 	b.WriteString(Escape(vAlign))
-	b.WriteString(`"/>
+	b.WriteString(`"`)
+	if style.TextVertical != "" {
+		b.WriteString(` vert="`)
+		b.WriteString(Escape(style.TextVertical))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`/>
 <a:lstStyle/>`)
 
 	for i, bullet := range bullets {

@@ -25,9 +25,10 @@ func TestLayoutTargetForMaster(t *testing.T) {
 		expected   string
 	}{
 		{"../slideLayouts/slideLayout1.xml", 1, "../slideLayouts/slideLayout1.xml"},
-		{"../slideLayouts/slideLayout1.xml", 2, "../slideLayouts/slideLayout7.xml"},
-		{"../slideLayouts/slideLayout2.xml", 2, "../slideLayouts/slideLayout8.xml"},
-		{"../slideLayouts/slideLayout1.xml", 3, "../slideLayouts/slideLayout13.xml"},
+		// Each master owns a block of layoutsPerMaster layouts.
+		{"../slideLayouts/slideLayout1.xml", 2, "../slideLayouts/slideLayout9.xml"},
+		{"../slideLayouts/slideLayout2.xml", 2, "../slideLayouts/slideLayout10.xml"},
+		{"../slideLayouts/slideLayout1.xml", 3, "../slideLayouts/slideLayout17.xml"},
 		{"invalid", 2, "invalid"},
 	}
 	for _, tt := range tests {
