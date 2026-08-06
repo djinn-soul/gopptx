@@ -29,6 +29,12 @@ type PresentationEditor struct {
 	presentationXML string
 	embeddedFontLst string
 
+	// existingModifyVerifier is the p:modifyVerifier element the opened package
+	// carried. Save re-emits it unless a new password replaces it or the caller
+	// explicitly clears protection, so editing a protected deck cannot silently
+	// unprotect it.
+	existingModifyVerifier string
+
 	// Media inventory for deduplication (SHA-256 hex digest -> PartPath)
 	mediaInventory map[string]string
 	nextMediaNum   int

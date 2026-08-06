@@ -73,7 +73,7 @@ func handleSetModifyPassword(e *PresentationEditor, payload json.RawMessage) (an
 		},
 		v.Error,
 		func(request editorcommand.SetModifyPasswordRequest) (any, error) {
-			e.Metadata().Protection.ModifyPassword = request.Password
+			e.SetModifyPassword(request.Password)
 			return respUpdated, nil
 		},
 	)
