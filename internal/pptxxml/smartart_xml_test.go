@@ -538,6 +538,59 @@ func TestSmartArtNestedSpecKeepsChildrenUnderTheirParent(t *testing.T) {
 	}
 }
 
+// Most layouts ship only their definition, so the data model is generated to
+// match the spec rather than poured into captured slots.
+func TestSmartArtLayoutOnlyTemplateGeneratesItsData(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/gear1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Alpha"}, {Text: "Beta"}, {Text: "Gamma"}, {Text: "Delta"},
+		},
+	}
+
+	data := pptxxml.SmartArtDataXML(spec)
+	for _, text := range []string{"Alpha", "Beta", "Gamma", "Delta"} {
+		if !strings.Contains(data, "<a:t>"+text+"</a:t>") {
+			t.Errorf("expected %q in the generated data model", text)
+		}
+	}
+	if !strings.Contains(data, "/layout/gear1") {
+		t.Error("expected the diagram to name the layout it was built for")
+	}
+
+	// There is no cache for these layouts, and the shared one describes another
+	// diagram, so an empty drawing is shipped rather than the wrong picture.
+	drawing := pptxxml.SmartArtDrawingXML(spec)
+	if strings.Contains(drawing, "<dsp:sp ") {
+		t.Error("expected no cached shapes for a layout that ships no drawing")
+	}
+}
+
+// The cached drawing was captured under the template's own quick style; left
+// alone it describes a different diagram from the one it ships with.
+func TestSmartArtQuickStyleIsBakedIntoTheDrawingCache(t *testing.T) {
+	spec := pptxxml.SmartArtSpec{
+		LayoutURI: "urn:microsoft.com/office/officeart/2005/8/layout/process1",
+		Nodes: []pptxxml.SmartArtNodeSpec{
+			{Text: "Plan"}, {Text: "Build"}, {Text: "Ship"},
+		},
+	}
+
+	plain := pptxxml.SmartArtDrawingXML(spec)
+	if strings.Contains(plain, "<a:sp3d") {
+		t.Error("expected the default quick style to leave the cache flat")
+	}
+
+	spec.QuickStyleID = "urn:microsoft.com/office/officeart/2005/8/quickstyle/3d1"
+	styled := pptxxml.SmartArtDrawingXML(spec)
+	if !strings.Contains(styled, "<a:sp3d") || !strings.Contains(styled, "bevel") {
+		t.Error("expected the 3-D quick style's bevels in the cached shapes")
+	}
+	if !strings.Contains(styled, "<a:scene3d>") {
+		t.Error("expected the quick style's scene in the cached shapes")
+	}
+}
+
 func TestSmartArtColorStyleDefinitionsUseTheirOwnAccents(t *testing.T) {
 	accent4 := pptxxml.SmartArtColorsXML("urn:microsoft.com/office/officeart/2005/8/colors/accent4_2")
 	if !strings.Contains(accent4, `<a:schemeClr val="accent4"`) {

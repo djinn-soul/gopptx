@@ -1,0 +1,1058 @@
+[
+    {
+        "name": "Basic Block List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/default",
+        "key": "default",
+        "layoutOnly": false
+    },
+    {
+        "name": "Alternating Hexagons",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/AlternatingHexagons",
+        "key": "AlternatingHexagons",
+        "layoutOnly": true
+    },
+    {
+        "name": "Picture Caption List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pList1",
+        "key": "pList1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Lined List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/LinedList",
+        "key": "LinedList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Bullet List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/vList2",
+        "key": "vList2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Box List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/list1",
+        "key": "list1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Bracket List",
+        "uri": "urn:diagrams.loki3.com/BracketList",
+        "key": "BracketList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Varying Width List",
+        "uri": "urn:diagrams.loki3.com/VaryingWidthList",
+        "key": "VaryingWidthList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Tab List",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/TabList",
+        "key": "TabList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Horizontal Bullet List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hList1",
+        "key": "hList1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Square Accent List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/SquareAccentList",
+        "key": "SquareAccentList",
+        "layoutOnly": false
+    },
+    {
+        "name": "Picture Accent List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hList2",
+        "key": "hList2",
+        "layoutOnly": false
+    },
+    {
+        "name": "Bending Picture Accent List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/bList2",
+        "key": "bList2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Stacked List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hList9",
+        "key": "hList9",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Action List",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/VerticalActionList",
+        "key": "VerticalActionList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Increasing Circle Process",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/IncreasingCircleProcess",
+        "key": "IncreasingCircleProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Pie Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/PieProcess",
+        "key": "PieProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Detailed Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess7",
+        "key": "hProcess7",
+        "layoutOnly": true
+    },
+    {
+        "name": "Grouped List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/lProcess2",
+        "key": "lProcess2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Horizontal Picture List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pList2",
+        "key": "pList2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Continuous Picture List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hList7",
+        "key": "hList7",
+        "layoutOnly": true
+    },
+    {
+        "name": "Picture Strips",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/PictureStrips",
+        "key": "PictureStrips",
+        "layoutOnly": false
+    },
+    {
+        "name": "Vertical Picture List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/vList4",
+        "key": "vList4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Alternating Picture Blocks",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/AlternatingPictureBlocks",
+        "key": "AlternatingPictureBlocks",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Picture Accent List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/vList3",
+        "key": "vList3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Titled Picture Accent List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/PictureAccentList",
+        "key": "PictureAccentList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Block List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/vList5",
+        "key": "vList5",
+        "layoutOnly": false
+    },
+    {
+        "name": "Vertical Chevron List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/chevron2",
+        "key": "chevron2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Accent List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/VerticalAccentList",
+        "key": "VerticalAccentList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Arrow List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/vList6",
+        "key": "vList6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Trapezoid List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hList6",
+        "key": "hList6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Descending Block List",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/BlockDescendingList",
+        "key": "BlockDescendingList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Icon Circle Label List",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/IconCircleLabelList",
+        "key": "IconCircleLabelList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Table List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hList3",
+        "key": "hList3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Segmented Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/process4",
+        "key": "process4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Curved List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/VerticalCurvedList",
+        "key": "VerticalCurvedList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Pyramid List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pyramid2",
+        "key": "pyramid2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Target List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/target3",
+        "key": "target3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Hierarchy List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy3",
+        "key": "hierarchy3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Circle List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/VerticalCircleList",
+        "key": "VerticalCircleList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Table Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy4",
+        "key": "hierarchy4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Architecture Layout",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/architecture",
+        "key": "architecture",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/process1",
+        "key": "process1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Step Up Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/StepUpProcess",
+        "key": "StepUpProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Step Down Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/StepDownProcess",
+        "key": "StepDownProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Numbered Linear Arrow Process",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/NumberedLinearArrowProcess",
+        "key": "NumberedLinearArrowProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Accent Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/process3",
+        "key": "process3",
+        "layoutOnly": false
+    },
+    {
+        "name": "Picture Accent Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess10",
+        "key": "hProcess10",
+        "layoutOnly": true
+    },
+    {
+        "name": "Alternating Flow",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess4",
+        "key": "hProcess4",
+        "layoutOnly": false
+    },
+    {
+        "name": "Continuous Block Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess9",
+        "key": "hProcess9",
+        "layoutOnly": false
+    },
+    {
+        "name": "Increasing Arrows Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/IncreasingArrowsProcess",
+        "key": "IncreasingArrowsProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Interconnected Block Process",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/InterconnectedBlockProcess",
+        "key": "InterconnectedBlockProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Continuous Arrow Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess3",
+        "key": "hProcess3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Converging Text",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/ConvergingText",
+        "key": "ConvergingText",
+        "layoutOnly": true
+    },
+    {
+        "name": "Process Arrows",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess6",
+        "key": "hProcess6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bullet Timeline",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/BulletTimeline",
+        "key": "BulletTimeline",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bullet Timeline Inverted",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/BulletTimelineInverted",
+        "key": "BulletTimelineInverted",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circle Accent Timeline",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/CircleAccentTimeline",
+        "key": "CircleAccentTimeline",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Timeline",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hProcess11",
+        "key": "hProcess11",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circle Process",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/CircleProcess",
+        "key": "CircleProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Chevron Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/chevron1",
+        "key": "chevron1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Chevron Accent Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/chevronAccent+Icon",
+        "key": "chevronAccent+Icon",
+        "layoutOnly": true
+    },
+    {
+        "name": "Closed Chevron Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hChevron3",
+        "key": "hChevron3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Chevron List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/lProcess3",
+        "key": "lProcess3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Sub-Step Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/SubStepProcess",
+        "key": "SubStepProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Phased Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/PhasedProcess",
+        "key": "PhasedProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Random to Result Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/RandomtoResultProcess",
+        "key": "RandomtoResultProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/process2",
+        "key": "process2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Staggered Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/vProcess5",
+        "key": "vProcess5",
+        "layoutOnly": true
+    },
+    {
+        "name": "Process List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/lProcess1",
+        "key": "lProcess1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circle Arrow Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/layout/CircleArrowProcess",
+        "key": "CircleArrowProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Bending Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/process5",
+        "key": "process5",
+        "layoutOnly": true
+    },
+    {
+        "name": "Repeating Bending Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/bProcess3",
+        "key": "bProcess3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Bending Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/bProcess4",
+        "key": "bProcess4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Ascending Picture Accent Process",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/AscendingPictureAccentProcess",
+        "key": "AscendingPictureAccentProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Upward Arrow",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/arrow2",
+        "key": "arrow2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Descending Process",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/DescendingProcess",
+        "key": "DescendingProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circular Bending Process",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/bProcess2",
+        "key": "bProcess2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Equation",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/equation1",
+        "key": "equation1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Vertical Equation",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/equation2",
+        "key": "equation2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Funnel",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/funnel1",
+        "key": "funnel1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Gear",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/gear1",
+        "key": "gear1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Arrow Ribbon",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/arrow6",
+        "key": "arrow6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Opposing Arrows",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/arrow4",
+        "key": "arrow4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Converging Arrows",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/arrow5",
+        "key": "arrow5",
+        "layoutOnly": true
+    },
+    {
+        "name": "Diverging Arrows",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/arrow1",
+        "key": "arrow1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle2",
+        "key": "cycle2",
+        "layoutOnly": false
+    },
+    {
+        "name": "Text Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle1",
+        "key": "cycle1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Block Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle5",
+        "key": "cycle5",
+        "layoutOnly": false
+    },
+    {
+        "name": "Nondirectional Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle6",
+        "key": "cycle6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Continuous Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle3",
+        "key": "cycle3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Multidirectional Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle7",
+        "key": "cycle7",
+        "layoutOnly": true
+    },
+    {
+        "name": "Segmented Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle8",
+        "key": "cycle8",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Pie",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/chart3",
+        "key": "chart3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Hexagon Radial",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/HexagonRadial",
+        "key": "HexagonRadial",
+        "layoutOnly": true
+    },
+    {
+        "name": "Radial Cycle",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/radial6",
+        "key": "radial6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Radial",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/radial1",
+        "key": "radial1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Diverging Radial ",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/radial5",
+        "key": "radial5",
+        "layoutOnly": true
+    },
+    {
+        "name": "Radial Venn",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/radial3",
+        "key": "radial3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Cycle Matrix",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/cycle4",
+        "key": "cycle4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Radial Cluster",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/RadialCluster",
+        "key": "RadialCluster",
+        "layoutOnly": true
+    },
+    {
+        "name": "Organization Chart",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/orgChart1",
+        "key": "orgChart1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Picture Organization Chart",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pictureOrgChart+Icon",
+        "key": "pictureOrgChart+Icon",
+        "layoutOnly": true
+    },
+    {
+        "name": "Name and Title Organization Chart",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/NameandTitleOrganizationalChart",
+        "key": "NameandTitleOrganizationalChart",
+        "layoutOnly": true
+    },
+    {
+        "name": "Half Circle Organization Chart",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/HalfCircleOrganizationChart",
+        "key": "HalfCircleOrganizationChart",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circle Picture Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2009/layout/CirclePictureHierarchy",
+        "key": "CirclePictureHierarchy",
+        "layoutOnly": true
+    },
+    {
+        "name": "Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy1",
+        "key": "hierarchy1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Labeled Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy6",
+        "key": "hierarchy6",
+        "layoutOnly": true
+    },
+    {
+        "name": "Horizontal Organization Chart",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/HorizontalOrganizationChart",
+        "key": "HorizontalOrganizationChart",
+        "layoutOnly": true
+    },
+    {
+        "name": "Horizontal Multi-Level Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/HorizontalMultiLevelHierarchy",
+        "key": "HorizontalMultiLevelHierarchy",
+        "layoutOnly": true
+    },
+    {
+        "name": "Horizontal Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy2",
+        "key": "hierarchy2",
+        "layoutOnly": false
+    },
+    {
+        "name": "Horizontal Labeled Hierarchy",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/hierarchy5",
+        "key": "hierarchy5",
+        "layoutOnly": true
+    },
+    {
+        "name": "Balance",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/balance1",
+        "key": "balance1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circle Relationship",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/CircleRelationship",
+        "key": "CircleRelationship",
+        "layoutOnly": true
+    },
+    {
+        "name": "Hexagon Cluster",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/HexagonCluster",
+        "key": "HexagonCluster",
+        "layoutOnly": true
+    },
+    {
+        "name": "Opposing Ideas",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/OpposingIdeas",
+        "key": "OpposingIdeas",
+        "layoutOnly": true
+    },
+    {
+        "name": "Plus and Minus",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/PlusandMinus",
+        "key": "PlusandMinus",
+        "layoutOnly": true
+    },
+    {
+        "name": "Reverse List",
+        "uri": "urn:microsoft.com/office/officeart/2009/layout/ReverseList",
+        "key": "ReverseList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Counterbalance Arrows",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/arrow3",
+        "key": "arrow3",
+        "layoutOnly": true
+    },
+    {
+        "name": "Segmented Pyramid",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pyramid4",
+        "key": "pyramid4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Nested Target",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/target2",
+        "key": "target2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Converging Radial",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/radial4",
+        "key": "radial4",
+        "layoutOnly": true
+    },
+    {
+        "name": "Radial List",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/radial2",
+        "key": "radial2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Tabbed Arc",
+        "uri": "urn:diagrams.loki3.com/TabbedArc+Icon",
+        "key": "TabbedArc+Icon",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Target",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/target1",
+        "key": "target1",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Venn",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/venn1",
+        "key": "venn1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Linear Venn",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/venn3",
+        "key": "venn3",
+        "layoutOnly": false
+    },
+    {
+        "name": "Stacked Venn",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/venn2",
+        "key": "venn2",
+        "layoutOnly": false
+    },
+    {
+        "name": "Interconnected Rings",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/rings+Icon",
+        "key": "rings+Icon",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Matrix",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/matrix3",
+        "key": "matrix3",
+        "layoutOnly": false
+    },
+    {
+        "name": "Titled Matrix",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/matrix1",
+        "key": "matrix1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Grid Matrix",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/matrix2",
+        "key": "matrix2",
+        "layoutOnly": true
+    },
+    {
+        "name": "Basic Pyramid",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pyramid1",
+        "key": "pyramid1",
+        "layoutOnly": false
+    },
+    {
+        "name": "Inverted Pyramid",
+        "uri": "urn:microsoft.com/office/officeart/2005/8/layout/pyramid3",
+        "key": "pyramid3",
+        "layoutOnly": false
+    },
+    {
+        "name": "Accented Picture",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/AccentedPicture",
+        "key": "AccentedPicture",
+        "layoutOnly": true
+    },
+    {
+        "name": "Circular Picture Callout",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/CircularPictureCallout",
+        "key": "CircularPictureCallout",
+        "layoutOnly": true
+    },
+    {
+        "name": "Radial Picture List",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/RadialPictureList",
+        "key": "RadialPictureList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Snapshot Picture List",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/SnapshotPictureList",
+        "key": "SnapshotPictureList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Spiral Picture",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/SpiralPicture",
+        "key": "SpiralPicture",
+        "layoutOnly": true
+    },
+    {
+        "name": "Captioned Pictures",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/CaptionedPictures",
+        "key": "CaptionedPictures",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bending Picture Caption",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/BendingPictureCaption",
+        "key": "BendingPictureCaption",
+        "layoutOnly": true
+    },
+    {
+        "name": "Picture Frame",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/Picture Frame",
+        "key": "Picture Frame",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bending Picture Semi-Transparent Text",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/BendingPictureSemiTransparentText",
+        "key": "BendingPictureSemiTransparentText",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bending Picture Blocks",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/BendingPictureBlocks",
+        "key": "BendingPictureBlocks",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bending Picture Caption List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/BendingPictureCaptionList",
+        "key": "BendingPictureCaptionList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Titled Picture Blocks",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/TitledPictureBlocks",
+        "key": "TitledPictureBlocks",
+        "layoutOnly": true
+    },
+    {
+        "name": "Picture Grid",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/PictureGrid",
+        "key": "PictureGrid",
+        "layoutOnly": false
+    },
+    {
+        "name": "Picture Accent Blocks",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/PictureAccentBlocks",
+        "key": "PictureAccentBlocks",
+        "layoutOnly": true
+    },
+    {
+        "name": "Theme Picture Accent",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/ThemePictureAccent",
+        "key": "ThemePictureAccent",
+        "layoutOnly": true
+    },
+    {
+        "name": "Theme Picture Grid",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/ThemePictureGrid",
+        "key": "ThemePictureGrid",
+        "layoutOnly": true
+    },
+    {
+        "name": "Theme Picture Alternating Accent",
+        "uri": "urn:microsoft.com/office/officeart/2011/layout/ThemePictureAlternatingAccent",
+        "key": "ThemePictureAlternatingAccent",
+        "layoutOnly": true
+    },
+    {
+        "name": "Alternating Picture Circles",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/AlternatingPictureCircles",
+        "key": "AlternatingPictureCircles",
+        "layoutOnly": true
+    },
+    {
+        "name": "Title Picture Lineup",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/TitlePictureLineup",
+        "key": "TitlePictureLineup",
+        "layoutOnly": true
+    },
+    {
+        "name": "Picture Lineup",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/PictureLineup",
+        "key": "PictureLineup",
+        "layoutOnly": true
+    },
+    {
+        "name": "Framed Text Picture",
+        "uri": "urn:microsoft.com/office/officeart/2009/3/layout/FramedTextPicture",
+        "key": "FramedTextPicture",
+        "layoutOnly": true
+    },
+    {
+        "name": "Bubble Picture List",
+        "uri": "urn:microsoft.com/office/officeart/2008/layout/BubblePictureList",
+        "key": "BubblePictureList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Alternating Circle Process",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/AlternatingCircleProcess",
+        "key": "AlternatingCircleProcess",
+        "layoutOnly": true
+    },
+    {
+        "name": "Numbered Dots Horizontal",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/NumberedDotsHorizontal",
+        "key": "NumberedDotsHorizontal",
+        "layoutOnly": true
+    },
+    {
+        "name": "Numbered Dots Vertical",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/NumberedDotsVertical",
+        "key": "NumberedDotsVertical",
+        "layoutOnly": true
+    },
+    {
+        "name": "Small Dots Horizontal",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/SmallDotsHorizontal",
+        "key": "SmallDotsHorizontal",
+        "layoutOnly": true
+    },
+    {
+        "name": "Small Dots Vertical",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/SmallDotsVertical",
+        "key": "SmallDotsVertical",
+        "layoutOnly": true
+    },
+    {
+        "name": "Meet The Team",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/MeetTheTeam",
+        "key": "MeetTheTeam",
+        "layoutOnly": true
+    },
+    {
+        "name": "Meet The Team Card",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/MeetTheTeamCard",
+        "key": "MeetTheTeamCard",
+        "layoutOnly": true
+    },
+    {
+        "name": "Meet The Team Card Vertical",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/MeetTheTeamCardVertical",
+        "key": "MeetTheTeamCardVertical",
+        "layoutOnly": true
+    },
+    {
+        "name": "Meet The Team Oval",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/MeetTheTeamOval",
+        "key": "MeetTheTeamOval",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Side Line Numbered",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardSideLineNumbered",
+        "key": "TextCardSideLineNumbered",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Side Line Icon",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardSideLineIcon",
+        "key": "TextCardSideLineIcon",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Side Line Quote",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardSideLineQuote",
+        "key": "TextCardSideLineQuote",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Side Line Wide Image",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardSideLineWideImage",
+        "key": "TextCardSideLineWideImage",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Short Line",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardShortLine",
+        "key": "TextCardShortLine",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Short Line Number",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardShortLineNumber",
+        "key": "TextCardShortLineNumber",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Short Line Quote",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardShortLineQuote",
+        "key": "TextCardShortLineQuote",
+        "layoutOnly": true
+    },
+    {
+        "name": "Text Card Short Line Wide",
+        "uri": "urn:microsoft.com/office/officeart/2026/layout/TextCardShortLineWide",
+        "key": "TextCardShortLineWide",
+        "layoutOnly": true
+    },
+    {
+        "name": "Horizontal Action List",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/HorizontalActionList",
+        "key": "HorizontalActionList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Numbered Card List",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/NumberedTitleCardList",
+        "key": "NumberedTitleCardList",
+        "layoutOnly": true
+    },
+    {
+        "name": "Numbered Title List",
+        "uri": "urn:microsoft.com/office/officeart/2024/layout/NumberedTitleList",
+        "key": "NumberedTitleList",
+        "layoutOnly": true
+    }
+]

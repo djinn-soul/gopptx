@@ -18,6 +18,7 @@ from .shapes.shape_collection import ShapeCollection
 from .shapes.shape_mixin import SlideShapeMixin
 from .shapes.shape_proxy import ShapeProxy
 from .shapes.smartart_anim_mixin import SlideSmartArtAnimMixin
+from .shapes.smartart_node_mixin import SlideSmartArtNodeMixin
 from .slide_base import SlideBase
 from .tables.table_mixin import SlideTableMixin
 from .text.text_cache_mixin import SlideTextCacheMixin
@@ -40,6 +41,7 @@ class Slide(
     SlideTextMixin,
     SlideShapeBatchMixin,
     SlideSmartArtAnimMixin,
+    SlideSmartArtNodeMixin,
     SlidePictureMixin,
     SlideShapeMixin,
     SlideEquationMixin,

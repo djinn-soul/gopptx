@@ -35,6 +35,11 @@ func (e *PresentationEditor) SetSmartArtNodes(slideIndex, shapeID int, nodes []s
 	if err := sa.Validate(slideIndex); err != nil {
 		return err
 	}
+	// A picture named by a node has to be carried into the package and related
+	// from this diagram's data part before the XML can reference it.
+	if err := e.registerSmartArtNodeImages(sa.Nodes, refs.DataPath); err != nil {
+		return err
+	}
 
 	spec := sa.ToSpec()
 	e.parts.Set(refs.DataPath, []byte(pptxxml.SmartArtDataXML(spec)))

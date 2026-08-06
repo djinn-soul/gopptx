@@ -89,7 +89,11 @@ repos:
             "--ignore-words-list=nd,ot,tt,astroid,prSet,pres,lIns,fromT,userA,ser,initialY,currentY,defaultY,wantIn,effectiveness,flate,propertie,descripton,Hel,Beng,te,fPr",
             "--skip=./.venv,./uv.lock,./.git,./internal/pptxxml/templates/smartart",
           ]
-        exclude: ^uv\.lock$
+        # The SmartArt templates are captured from PowerPoint: the identifiers in
+        # them are Microsoft's ("DropPin"), not prose of ours to correct. The
+        # --skip above misses them because the paths handed to the hook carry no
+        # leading "./", so the exclusion is stated here as well.
+        exclude: ^(uv\.lock|internal/pptxxml/templates/smartart/.*)$
         priority: 11
 
   # --- Dependency Management (tiers 8-9 - after formatters) ---
