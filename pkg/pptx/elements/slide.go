@@ -89,27 +89,32 @@ type SlideContent struct {
 	// Tables holds any additional tables beyond Table. Slides read from a PPTX
 	// can carry several; Table keeps the first for backwards compatibility and
 	// the rest land here so exporters do not silently drop them.
-	Tables               []tables.Table
-	Chart                *charts.BarChart
-	BarHorizontal        *charts.BarHorizontalChart
-	BarStacked           *charts.BarStackedChart
-	BarStacked100        *charts.BarStacked100Chart
-	Line                 *charts.LineChart
-	LineMarkers          *charts.LineMarkersChart
-	LineStacked          *charts.LineStackedChart
-	Scatter              *charts.ScatterChart
-	Area                 *charts.AreaChart
-	AreaStacked          *charts.AreaStackedChart
-	AreaStacked100       *charts.AreaStacked100Chart
-	Pie                  *charts.PieChart
-	Pie3D                *charts.Pie3DChart
-	Doughnut             *charts.DoughnutChart
-	Bubble               *charts.BubbleChart
-	Radar                *charts.RadarChart
-	RadarFilled          *charts.RadarFilledChart
-	StockHLC             *charts.StockHLCChart
-	StockOHLC            *charts.StockOHLCChart
-	Combo                *charts.ComboChart
+	Tables         []tables.Table
+	Chart          *charts.BarChart
+	BarHorizontal  *charts.BarHorizontalChart
+	BarStacked     *charts.BarStackedChart
+	BarStacked100  *charts.BarStacked100Chart
+	Line           *charts.LineChart
+	LineMarkers    *charts.LineMarkersChart
+	LineStacked    *charts.LineStackedChart
+	Scatter        *charts.ScatterChart
+	Area           *charts.AreaChart
+	AreaStacked    *charts.AreaStackedChart
+	AreaStacked100 *charts.AreaStacked100Chart
+	Pie            *charts.PieChart
+	Pie3D          *charts.Pie3DChart
+	Doughnut       *charts.DoughnutChart
+	Bubble         *charts.BubbleChart
+	Radar          *charts.RadarChart
+	RadarFilled    *charts.RadarFilledChart
+	StockHLC       *charts.StockHLCChart
+	StockOHLC      *charts.StockOHLCChart
+	Combo          *charts.ComboChart
+	// Charts holds any additional charts beyond the typed fields above, the way
+	// Tables holds the tables beyond Table. A slide can carry several charts;
+	// the typed pointers are one per kind, so this is how a caller places two
+	// of the same kind, or more than one chart at all.
+	Charts               []charts.ChartDefinition
 	Animations           []animations.Animation
 	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent

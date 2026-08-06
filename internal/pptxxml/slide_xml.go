@@ -143,7 +143,7 @@ func SlideWithContent(
 	bulletRuns [][]TextRunSpec,
 	contentStyle ContentStyleSpec,
 	tables []TableSpec,
-	chart *ChartFrame,
+	charts []ChartFrame,
 	images []ImageRef,
 	smartArtFrames []SmartArtFrame,
 	background *SlideBackgroundSpec,
@@ -163,7 +163,7 @@ func SlideWithContent(
 		bulletRuns,
 		contentStyle,
 		tables,
-		chart,
+		charts,
 		images,
 		nil,
 		nil,
@@ -190,7 +190,7 @@ func SlideWithLayout(
 	bulletRuns [][]TextRunSpec,
 	contentStyle ContentStyleSpec,
 	tables []TableSpec,
-	chart *ChartFrame,
+	charts []ChartFrame,
 	images []ImageRef,
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
@@ -219,8 +219,8 @@ func SlideWithLayout(
 		&b, layoutMode, title, tables, bullets, bulletStyles, bulletRuns, contentStyle, width, height,
 	)
 
-	if chart != nil {
-		b.WriteString(chartFrameShape(chart, nextID))
+	for i := range charts {
+		b.WriteString(chartFrameShape(&charts[i], nextID))
 		nextID++
 	}
 

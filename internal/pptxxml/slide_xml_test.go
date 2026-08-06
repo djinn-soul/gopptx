@@ -138,7 +138,8 @@ func TestSlideRelationshipsWithMultiCharts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := SlideRelationshipsWithMultiCharts(
-				tt.layoutTarget, tt.imageTargets, tt.chartRel, nil, nil, tt.notesTarget, nil, tt.commentsTarget,
+				tt.layoutTarget, tt.imageTargets, oneChartRel(tt.chartRel), nil, nil,
+				tt.notesTarget, nil, tt.commentsTarget,
 			)
 			for _, s := range tt.contains {
 				if !strings.Contains(got, s) {

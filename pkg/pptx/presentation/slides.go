@@ -25,8 +25,8 @@ type slideParts struct {
 	backgroundRID        string
 	transitionXML        string
 	placeholders         []pptxxml.PlaceholderOverrideSpec
-	chartFrame           *pptxxml.ChartFrame
-	chartRel             *pptxxml.ChartRel
+	chartFrames          []pptxxml.ChartFrame
+	chartRels            []pptxxml.ChartRel
 	placeholderChartRels []pptxxml.ChartRel
 	smartArtFrames       []pptxxml.SmartArtFrame
 	smartArtRels         []pptxxml.SmartArtRel
@@ -64,7 +64,7 @@ func renderSlides(
 			elements.ToXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
 			parts.contentStyle,
 			parts.tables,
-			parts.chartFrame,
+			parts.chartFrames,
 			parts.imageRefs,
 			shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
 			shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes, hyperlinkRIDs),
@@ -105,7 +105,7 @@ func renderSlides(
 		relsXML := pptxxml.SlideRelationshipsWithAll(
 			layoutTarget,
 			builder.targets,
-			parts.chartRel,
+			parts.chartRels,
 
 			parts.placeholderChartRels,
 			parts.smartArtRels,

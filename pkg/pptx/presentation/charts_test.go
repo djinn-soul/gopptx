@@ -22,7 +22,7 @@ func TestBuildChartPartsEmitsPie3D(t *testing.T) {
 	if parts[0].spec.Kind != pptxxml.ChartKindThreeDPie {
 		t.Fatalf("chart kind = %q, want %q", parts[0].spec.Kind, pptxxml.ChartKindThreeDPie)
 	}
-	if !slideChartKindDefined(slide) {
-		t.Fatal("slideChartKindDefined = false for a slide carrying Pie3D")
+	if slideChartCount(slide) != 1 {
+		t.Fatalf("slideChartCount = %d for a slide carrying Pie3D, want 1", slideChartCount(slide))
 	}
 }

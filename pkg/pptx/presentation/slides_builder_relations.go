@@ -82,21 +82,21 @@ func (b *slidePartBuilder) addChartParts(
 		return nil
 	}
 
-	listIdx := 0
-	if slideChartKindDefined(slide) {
-		b.assignPrimaryChart(chartList[0], p)
-		listIdx = 1
+	// The slide's own charts come first in the list, then the placeholder ones.
+	slideCharts := slideChartCount(slide)
+	for listIdx := 0; listIdx < slideCharts && listIdx < len(chartList); listIdx++ {
+		b.appendSlideChart(chartList[listIdx], p)
 	}
-	return b.assignPlaceholderCharts(chartList, slide, listIdx, p)
+	return b.assignPlaceholderCharts(chartList, slide, slideCharts, p)
 }
 
-func (b *slidePartBuilder) assignPrimaryChart(chartPart ChartPart, p *slideParts) {
+func (b *slidePartBuilder) appendSlideChart(chartPart ChartPart, p *slideParts) {
 	rid := b.nextRID()
-	p.chartRel = &pptxxml.ChartRel{
+	p.chartRels = append(p.chartRels, pptxxml.ChartRel{
 		RID:    rid,
 		Target: fmt.Sprintf("../charts/chart%d.xml", chartPart.partNumber),
-	}
-	p.chartFrame = &pptxxml.ChartFrame{
+	})
+	p.chartFrames = append(p.chartFrames, pptxxml.ChartFrame{
 		RelID:        rid,
 		X:            chartPart.spec.X,
 		Y:            chartPart.spec.Y,
@@ -104,7 +104,7 @@ func (b *slidePartBuilder) assignPrimaryChart(chartPart ChartPart, p *slideParts
 		CY:           chartPart.spec.CY,
 		AltText:      chartPart.spec.AltText,
 		IsDecorative: chartPart.spec.IsDecorative,
-	}
+	})
 }
 
 func (b *slidePartBuilder) assignPlaceholderCharts(
@@ -127,10 +127,7 @@ func (b *slidePartBuilder) assignPlaceholderCharts(
 }
 
 func placeholderChartIndex(slide elements.SlideContent, listIdx int) int {
-	if slideChartKindDefined(slide) {
-		return listIdx - 1
-	}
-	return listIdx
+	return listIdx - slideChartCount(slide)
 }
 
 func validatePlaceholderChartTargets(rels []pptxxml.ChartRel, slideNumber int) error {
