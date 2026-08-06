@@ -81,12 +81,12 @@ func bigContentShape(
 	bulletRuns [][]TextRunSpec,
 	style ContentStyleSpec,
 	shapeID int,
-	_, _ int64,
+	width, _ int64,
 ) string {
-	margin := int64(457200)
+	margin := int64(defaultMargin)
 	x := margin
 	y := int64(1189200) // Lower top offset for big content
-	cx := int64(8230200)
+	cx := width - 2*margin
 	cy := int64(5668800) // Taller content area
 	return contentShapeAt(
 		shapeID,
