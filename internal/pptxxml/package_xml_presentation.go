@@ -156,7 +156,10 @@ func Presentation(
 	b.WriteString(`
 <p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
-		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1"`)
+		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" saveSubsetFonts="1"` +
+		// With autoCompressPictures absent PowerPoint applies its own default on
+		// save, which can re-encode images the caller supplied at full quality.
+		` autoCompressPictures="0"`)
 	if rtl {
 		b.WriteString(` rtl="1"`)
 	}

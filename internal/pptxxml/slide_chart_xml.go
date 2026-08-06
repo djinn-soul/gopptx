@@ -182,11 +182,16 @@ func chartPartEnvelope(
 <c:overlay val="` + boolToOneZero(legendOverlay) + `"/>
 </c:legend>`
 	}
+	// date1904 and roundedCorners are the two CT_ChartSpace defaults PowerPoint
+	// always writes. roundedCorners is the visible one: with the element absent
+	// PowerPoint rounds the chart frame.
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" `+
 		`xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" `+
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<c:date1904 val="0"/>
 <c:lang val="en-US"/>
+<c:roundedCorners val="0"/>
 <c:chart>
 <c:title>
 <c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p></c:rich></c:tx>
@@ -198,6 +203,7 @@ func chartPartEnvelope(
 </c:plotArea>
 %s
 `+plotVisOnlyElement+`
+<c:showDLblsOverMax val="0"/>
 </c:chart>
 </c:chartSpace>`, Escape(title), boolToOneZero(titleOverlay), plotXML, legend)
 }

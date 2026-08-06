@@ -24,6 +24,20 @@ func PresentationProps(prnPrXML string) string {
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
 		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`)
 	b.WriteString(prnPrXML)
+	// The three extensions Office writes into presProps by default. Cosmetic for
+	// rendering; without them a generated deck's presProps differs from one
+	// PowerPoint has round-tripped.
+	b.WriteString(`<p:extLst>` +
+		`<p:ext uri="{E76CE94A-603C-4142-B9EB-6D1370010A27}">` +
+		`<p14:discardImageEditData xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" val="0"/>` +
+		`</p:ext>` +
+		`<p:ext uri="{D31A062A-798A-4329-ABDD-BBA856620510}">` +
+		`<p14:defaultImageDpi xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" val="220"/>` +
+		`</p:ext>` +
+		`<p:ext uri="{FD5EFAAD-0ECE-453E-9831-46B23BE46B34}">` +
+		`<p15:chartTrackingRefBased xmlns:p15="http://schemas.microsoft.com/office/powerpoint/2012/main" val="1"/>` +
+		`</p:ext>` +
+		`</p:extLst>`)
 	b.WriteString(`</p:presentationPr>`)
 	return b.String()
 }
