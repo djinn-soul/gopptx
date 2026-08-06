@@ -95,9 +95,9 @@ func gopdfBaselineDropPt(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
 
 // runBaselineOffset is where one run's font wants its baseline, measured down
 // from the top of the line box.
-func runBaselineOffset(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
+func runBaselineOffset(pdf *gopdf.GoPdf, run pdfStyledRun, lineBoxPt float64) float64 {
 	size := effectiveRunSizePt(pdf, run)
-	return fontBaselineShift(pdf, run.FontHint, size) + gopdfBaselineDropPt(pdf, run)
+	return fontBaselineShiftInLineBox(pdf, run.FontHint, size, lineBoxPt) + gopdfBaselineDropPt(pdf, run)
 }
 
 // styledLineBaselineOffset is the single baseline every run of a line is drawn
@@ -105,10 +105,10 @@ func runBaselineOffset(pdf *gopdf.GoPdf, run pdfStyledRun) float64 {
 // on one baseline no matter how their fonts differ, so the deepest run's
 // baseline is the one the whole line adopts. Script runs are excluded: they are
 // offset from the line's baseline rather than defining it.
-func styledLineBaselineOffset(pdf *gopdf.GoPdf, line []pdfStyledRun) float64 {
+func styledLineBaselineOffset(pdf *gopdf.GoPdf, line []pdfStyledRun, lineBoxPt float64) float64 {
 	baseline, scriptBaseline := 0.0, 0.0
 	for _, run := range line {
-		offset := runBaselineOffset(pdf, run)
+		offset := runBaselineOffset(pdf, run, lineBoxPt)
 		if run.Subscript || run.Superscript {
 			scriptBaseline = math.Max(scriptBaseline, offset)
 			continue

@@ -8,28 +8,55 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-// niceStep returns a human-readable tick interval for an axis of the given range,
-// matching PowerPoint's own "nice number" axis algorithm.
-// It picks the smallest step from {1,2,5,10,20,25,50,…} that gives 4–8 ticks.
+// maxChartAxisIntervals is how many gaps PowerPoint will put between value-axis
+// labels before it coarsens the interval.
+//
+// Ten, measured off PowerPoint's own renders: a chart whose data tops out at 9
+// gets an axis of 0–10 labelled every 1 (ten intervals), and one topping out at
+// 42 gets 0–45 labelled every 5 (nine). A cap of eight — what this used to
+// assume — cannot produce either.
+const maxChartAxisIntervals = 10
+
+// niceStep returns the tick interval PowerPoint gives an axis of this range: the
+// finest interval from {1, 2, 2.5, 5} × 10ⁿ that spans the range in no more than
+// maxChartAxisIntervals steps.
+//
+// The old rule asked for 4–8 ticks from a wider candidate set, which chose 20
+// where PowerPoint chooses 5.
 func niceStep(rangeV float64) float64 {
+	return niceStepWithin(rangeV, maxChartAxisIntervals)
+}
+
+// niceStepWithin is niceStep with an explicit interval budget, so an axis too
+// short to carry ten labels can ask for a coarser one.
+func niceStepWithin(rangeV float64, maxIntervals int) float64 {
 	if rangeV <= 0 {
 		return 1
 	}
-	// Scale candidates to the right magnitude.
-	magnitude := math.Pow(10, math.Floor(math.Log10(rangeV)))
-	for _, m := range []float64{0.1, 0.2, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100} {
-		step := m * magnitude
-		if step <= 0 {
-			continue
-		}
-		ticks := math.Ceil(rangeV / step)
-		if ticks >= 4 && ticks <= 8 {
-			return step
-		}
+	if maxIntervals < 1 {
+		maxIntervals = 1
 	}
-	// Fallback: divide range by 5.
-	return math.Ceil(rangeV/5.0) * (magnitude / 10.0)
+	// Start a decade below the range so a range of 1.05 can still be stepped by
+	// 0.1, and walk up until the interval count fits.
+	magnitude := math.Pow(10, math.Floor(math.Log10(rangeV))-1)
+	for range chartStepDecades {
+		for _, m := range niceStepMultipliers {
+			step := m * magnitude
+			if step <= 0 {
+				continue
+			}
+			if int(math.Ceil(rangeV/step-1e-9)) <= maxIntervals {
+				return step
+			}
+		}
+		magnitude *= 10
+	}
+	return rangeV / float64(maxIntervals)
 }
+
+// chartStepDecades bounds the walk in niceStepWithin. Three decades above the
+// range's own magnitude is far more than any budget of one interval needs.
+const chartStepDecades = 4
 
 // drawChartFrame draws the Y-axis, baseline, optional horizontal gridlines, and value
 // labels. showGridlines controls whether tick-lines cross the plot area. valueFormat is
@@ -157,27 +184,20 @@ func fullBars(n int) []float64 {
 }
 
 // chartAxisHeadroom is the padding PowerPoint leaves above the largest data
-// point before rounding the axis to a nice number. Measured: a bar chart whose
-// data tops out at 30 gets an axis max of 35, which is ceil(30 * 1.1 / 5) * 5.
+// point before rounding the axis up to a whole number of steps.
 //
-// This is the largest remaining source of chart error, and it cannot be fixed by
-// tuning the constant alone. Three measured cases:
+// Five percent, and the step is chosen for the padded range first. Measured
+// against PowerPoint, all four of these now come out right:
 //
-//	data max 30  -> PowerPoint 35 (step 5)
-//	data max 42  -> PowerPoint 45 (step 5)
-//	data max 500 -> PowerPoint 600 (step 100)
+//	data max 9   -> 10  (step 1)
+//	data max 30  -> 35  (step 5)
+//	data max 42  -> 45  (step 5)
+//	data max 500 -> 600 (step 100)
 //
-// A 5% headroom reproduces all three, but only if the step is chosen first: at
-// 5% the 42 case pads to 44.1, and niceStep caps its tick count at 8, so it
-// returns 10 and rounds to 50 rather than PowerPoint's 45. PowerPoint used a
-// step of 5 there — ten labels — which niceStep will not pick.
-//
-// So the axis maximum and the tick step have to be solved jointly, and both
-// depend on how many labels the plot height can carry. That is the same
-// circularity solveChartLayout resolves for the plot rect, and closing it
-// properly means folding the axis range into that solver instead of computing it
-// up front. Until then the headroom stays at the value that scores best.
-const chartAxisHeadroom = 1.1
+// The pair used to be unsolvable together because niceStep would not pick an
+// interval that needed more than eight ticks; it now allows ten, which is what
+// PowerPoint itself does.
+const chartAxisHeadroom = 1.05
 
 func niceAxisMax(value float64) float64 {
 	if value <= 0 {
@@ -188,7 +208,7 @@ func niceAxisMax(value float64) float64 {
 	if step <= 0 {
 		return math.Ceil(padded)
 	}
-	return math.Ceil(padded/step) * step
+	return math.Ceil(padded/step-1e-9) * step
 }
 
 // niceAxisRangeXY computes a pleasant [minV, maxV] with ~20% headroom above
@@ -236,16 +256,21 @@ func drawChartLegend(pdf *gopdf.GoPdf, r chartRect, position string, entries []l
 	if len(entries) == 0 {
 		return
 	}
+	// A legend at the side is centred against the chart, not hung from a fixed
+	// fraction of its height: PowerPoint puts a two-entry legend in the middle
+	// of the frame, where a 25% offset put it up by the plot's top gridline.
+	blockH := float64(len(entries)) * chartLegendRowPt
+	sideY := r.y + math.Max((r.h-blockH)/2, 0)
 	var x, y float64
 	switch position {
 	case "l":
-		x, y = r.x+4, r.y+r.h*0.25
+		x, y = r.x+4, sideY
 	case "t":
 		x, y = r.x+r.w/2-50, r.y+20
 	case "b":
 		x, y = r.x+r.w/2-50, r.y+r.h-28
 	default: // "r"
-		x, y = r.x+r.w-98, r.y+r.h*0.25
+		x, y = r.x+r.w-98, sideY
 	}
 	for i, entry := range entries {
 		ey := y + float64(i)*chartLegendRowPt

@@ -43,20 +43,16 @@ type chartPlotLayout struct {
 }
 
 // chartLabelClearancePt is the gap kept between neighbouring axis labels before
-// dropping to a coarser tick interval. It is large — six times the label point
-// size — because PowerPoint spaces axis labels generously rather than packing in
-// as many as will physically fit; at a 10pt clearance the renderer picked a tick
-// step of 2 where PowerPoint uses 5. Sweeping it gave a clear optimum
-// (40pt -> 0.894 SSIM, 60pt -> 0.896, 80pt -> 0.891).
+// dropping to a coarser tick interval.
 //
-// PowerPoint does in fact label its vertical axis more finely than this allows —
-// measured at a 34.75pt pitch for 10pt text, against the ~72pt this produces. A
-// separate, tighter vertical clearance was tried and made fidelity worse
-// (0.896 -> 0.892), because the axis *maximum* is still wrong: drawing more
-// gridlines only multiplies that misalignment. Tick density and axis maximum
-// have to be solved together before the vertical clearance can be tightened.
-// See the axis-range note on niceAxisMax.
-const chartLabelClearancePt = 60.0
+// It used to be 60pt — six times the label size — as a way of forcing coarse
+// intervals while the axis *maximum* was still wrong: more gridlines only
+// multiplied that misalignment. With the maximum and the step now solved
+// together against PowerPoint's own ten-interval rule (see niceAxisMax), the
+// clearance is back to what it says it is: enough room that two labels do not
+// touch. Measured against PowerPoint, a 10pt vertical axis labels at a 34.75pt
+// pitch — roughly a label height plus this gap.
+const chartLabelClearancePt = 8.0
 
 // solveChartLayout resolves the plot area and the tick density of both axes.
 func solveChartLayout(
@@ -140,11 +136,11 @@ func chartPlotInsets(
 			// Half the last label overhangs the axis end, so reserve that much.
 			rightPad = math.Max(chartFallbackRightPadPt, widest/2+chartAxisLabelGapPt)
 			bottomPad = pdfLineHeight(chartLabelFontSize) +
-				chartAxisLabelGapPt + chartTickMarkPt
+				chartAxisLabelGapPt + chartTickMarkPt + chartCategoryLabelPadPt
 		}
 	}
 
-	topPad := math.Max(chartFallbackTopPadPt, r.h*chartTopPadFraction)
+	topPad := chartMinTopPadPt
 	if titleHeight > 0 {
 		// Reserve the title's real height plus the margin PowerPoint leaves under
 		// it, so a title that wrapped to two lines is not drawn over the plot.
@@ -159,9 +155,19 @@ func chartPlotInsets(
 }
 
 const (
-	chartTopPadFraction = 0.12
+	// chartMinTopPadPt is the gap PowerPoint leaves above the plot area.
+	// Measured at 40pt on both a 360pt chart with a one-line title and a 468pt
+	// chart with none, which is why it is a constant rather than the fraction of
+	// the chart height this used to scale by: at 12% a full-slide chart reserved
+	// 56pt and pushed its plot 16pt too low.
+	chartMinTopPadPt = 40.0
 
 	// chartTitleMarginPt is the gap PowerPoint leaves between the chart title and
 	// the top of the plot area.
 	chartTitleMarginPt = 8.0
+
+	// chartCategoryLabelPadPt is the clearance PowerPoint keeps below the
+	// category labels. Measured: a 25pt bottom inset against the 19pt the label
+	// line box, tick and gap account for.
+	chartCategoryLabelPadPt = 6.0
 )

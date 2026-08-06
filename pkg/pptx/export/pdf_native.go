@@ -80,6 +80,7 @@ func optionsPageSize(opts PDFOptions) pageSize {
 func pdfViaNative(
 	_ string,
 	slides []elements.SlideContent,
+	orders []slidePaintOrder,
 	outputPath string,
 	opts PDFOptions,
 	page pageSize,
@@ -103,12 +104,16 @@ func pdfViaNative(
 	}
 	visibleIndex := 0
 	var renderErrs []error
-	for _, slide := range slides {
+	for i, slide := range slides {
 		if slide.Hidden {
 			continue
 		}
 		visibleIndex++
-		if err := renderNativePDFSlide(pdf, slide, visibleIndex, totalVisible, page); err != nil {
+		order := newSlidePaintOrder()
+		if i < len(orders) {
+			order = orders[i]
+		}
+		if err := renderNativePDFSlide(pdf, slide, order, visibleIndex, totalVisible, page); err != nil {
 			renderErrs = append(renderErrs, err)
 		}
 	}
@@ -121,32 +126,30 @@ func pdfViaNative(
 	return errors.Join(renderErrs...)
 }
 
-// renderNativePDFSlide paints one slide. Painting runs back to front:
-// background, then the title and body placeholders, then pictures and the rest
-// of the shape tree.
+// renderNativePDFSlide paints one slide: the background, then every element of
+// the shape tree in the order the tree lists them, then the slide furniture.
 //
-// The placeholders go first because that is where PowerPoint puts them: a
-// layout emits the title before the shape tree, so a shape overlapping the
-// title area covers it. Painting them last instead drew the title on top of
-// diagrams that PowerPoint shows covering it.
-func renderNativePDFSlide(pdf *gopdf.GoPdf, slide elements.SlideContent, index, total int, page pageSize) error {
+// Everything between the background and the furniture goes through one paint
+// list. PowerPoint has a single back-to-front order over placeholders,
+// pictures, shapes, connectors, tables, charts and diagrams alike, so painting
+// them as fixed layers put a table over a shape the deck had placed in front of
+// it, and a chart over that table.
+func renderNativePDFSlide(
+	pdf *gopdf.GoPdf,
+	slide elements.SlideContent,
+	order slidePaintOrder,
+	index, total int,
+	page pageSize,
+) error {
 	pdf.AddPage()
 
 	var errs []error
 	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
 		errs = append(errs, fmt.Errorf("slide %d background: %w", index, err))
 	}
-	renderNativePDFSlideText(pdf, slide, page)
-	// Pictures and shapes interleave by shape-tree order, so they are painted
-	// together. Drawing every picture before every shape put a picture behind a
-	// shape the deck had placed behind it: a white card over a photo hid the
-	// photo entirely.
-	if err := renderNativePDFSlidePictureLayer(pdf, slide); err != nil {
+	for _, err := range buildSlidePaintList(pdf, slide, order, page).drawAll() {
 		errs = append(errs, fmt.Errorf("slide %d: %w", index, err))
 	}
-	renderNativePDFSlideSmartArt(pdf, slide)
-	renderNativePDFSlideCharts(pdf, slide)
-	renderNativePDFSlideTable(pdf, slide)
 
 	if slide.ShowSlideNumber {
 		renderNativePDFSlideNumber(pdf, index, total, page)
@@ -221,7 +224,9 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 		pdf.SetTextColor(0, 0, 0)
 	}
 	lines := wrapPDFTextWithMetrics(pdf, slide.Title, titleBoxW)
-	lineH := pdfLineHeight(titleSize)
+	// A title placeholder inherits the master's titleStyle, which spaces its
+	// lines at 90%. That tightens the line box, and with it the first baseline.
+	lineH := pdfLineHeight(titleSize) * titleDefaultLineSpacingFactor
 	totalTextH := float64(len(lines)) * lineH
 	yPos := titleBoxY + max(0, (titleBoxH-totalTextH)/2)
 	for _, line := range lines {
@@ -229,7 +234,7 @@ func renderPDFTitle(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSize
 			break
 		}
 		pdf.SetX(alignedTextX(pdf, line, titleBoxX, titleBoxW, slide.TitleAlign))
-		pdf.SetY(yPos + fontBaselineShift(pdf, slide.TitleFont, titleSize))
+		pdf.SetY(yPos + fontBaselineShiftInLineBox(pdf, slide.TitleFont, titleSize, lineH))
 		_ = pdf.Cell(nil, line)
 		yPos += lineH
 	}

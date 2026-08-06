@@ -6,6 +6,17 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/charts"
 )
 
+// percentAxisMin and percentAxisMax pin a 100%-stacked chart's value axis.
+// PowerPoint gives such a chart a 0–100% axis exactly: the auto-range headroom
+// that suits real data would take it to 120% and leave a fifth of the plot
+// permanently empty.
+//
+//nolint:gochecknoglobals // Addressable constants for the by-pointer axis overrides.
+var (
+	percentAxisMin = 0.0
+	percentAxisMax = 100.0
+)
+
 func renderBarChart(pdf *gopdf.GoPdf, c *charts.BarChart) {
 	renderBarLike(pdf, c.Title,
 		chartRectFromLength(c.X.Emu(), c.Y.Emu(), c.CX.Emu(), c.CY.Emu()),
@@ -74,6 +85,7 @@ func renderBarStacked100Chart(pdf *gopdf.GoPdf, c *charts.BarStacked100Chart) {
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
 			titleOverlay:       c.TitleOverlay,
 			valueFormat:        "0%",
+			minValue:           &percentAxisMin, maxValue: &percentAxisMax,
 		},
 	)
 }
@@ -185,6 +197,7 @@ func renderAreaStacked100Chart(pdf *gopdf.GoPdf, c *charts.AreaStacked100Chart) 
 			showCatGridlines:   c.ShowCategoryMajorGridlines,
 			titleOverlay:       c.TitleOverlay,
 			valueFormat:        "0%",
+			minValue:           &percentAxisMin, maxValue: &percentAxisMax,
 		},
 	)
 }

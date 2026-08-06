@@ -159,10 +159,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 		setPDFTextFontWithHint(pdf, fontSize, bold, italic, fontHint)
 		styledRuns := buildBulletStyledRuns(runs, slide, fontSize)
 		lines := wrapStyledRuns(pdf, styledRuns, availableWidth, tabStops)
-		lineHeight := math.Max(
-			paragraphRenderedLineHeight(style, pdfLineHeight(fontSize), bodyPlaceholderSpacing()),
-			12,
-		)
+		lineHeight := paragraphRenderedLineHeight(style, pdfLineHeight(fontSize), bodyPlaceholderSpacing())
 		for li, line := range lines {
 			if yPos+lineHeight > maxY {
 				setPDFTextFontWithHint(pdf, defaultFontSize, false, false, "")
@@ -173,7 +170,10 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 			if li == 0 && prefix != "" {
 				prefixRuns := buildBulletPrefixRuns(prefix, style, slide, fontSize, fontHint, runs)
 				prefixX := lineX + hangingIndent
-				renderStyledLine(pdf, prefixRuns, prefixX, yPos, pdfTextRenderOptions{LineHeight: lineHeight})
+				renderStyledLine(pdf, prefixRuns, prefixX, yPos, pdfTextRenderOptions{
+					LineHeight: lineHeight,
+					LineBoxPt:  lineHeight,
+				})
 			}
 
 			align := elements.NormalizeTextAlign(style.Align)
@@ -183,6 +183,7 @@ func renderPDFBullets(pdf *gopdf.GoPdf, slide elements.SlideContent, page pageSi
 			}
 			renderStyledLine(pdf, line, lineX, yPos, pdfTextRenderOptions{
 				LineHeight: lineHeight,
+				LineBoxPt:  lineHeight,
 				TabStops:   tabStops,
 			})
 			yPos += lineHeight

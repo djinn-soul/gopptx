@@ -158,9 +158,36 @@ func widestChartLabel(pdf *gopdf.GoPdf, labels []string) float64 {
 	return widest
 }
 
-// chartRectWithLegendMargin shrinks the chart rect to make room for the legend.
-func chartRectWithLegendMargin(r chartRect, pos string) chartRect {
-	const legendW = 110
+// chartLegendReservePt is how much width a side legend takes: its marker, the
+// widest entry name, and the clearance PowerPoint keeps either side of it.
+func chartLegendReservePt(pdf *gopdf.GoPdf, names []string) float64 {
+	widest := widestChartLabel(pdf, names)
+	if widest <= 0 {
+		return chartLegendFallbackWidthPt
+	}
+	reserve := chartLegendMarkerWPt + chartLegendMarkerGapPt + widest + chartLegendEdgeGapPt
+	return math.Min(math.Max(reserve, chartLegendMinWidthPt), chartLegendMaxWidthPt)
+}
+
+const (
+	// chartLegendFallbackWidthPt is used when the entry names are not known at
+	// the point the plot area is sized.
+	chartLegendFallbackWidthPt = 70.0
+	chartLegendMarkerGapPt     = 4.0
+	chartLegendEdgeGapPt       = 12.0
+	chartLegendMinWidthPt      = 40.0
+	chartLegendMaxWidthPt      = 140.0
+)
+
+// chartRectWithLegendMargin shrinks the chart rect to leave room for the
+// legend.
+//
+// The side reserve is measured from the entry names rather than fixed at 110pt:
+// PowerPoint gives a legend only the width its labels need, and reserving more
+// than that squeezed the plot area and shifted every gridline, bar and label
+// left of where PowerPoint draws them.
+func chartRectWithLegendMargin(pdf *gopdf.GoPdf, r chartRect, pos string, names []string) chartRect {
+	legendW := chartLegendReservePt(pdf, names)
 	const legendH = 36
 	switch pos {
 	case "l":

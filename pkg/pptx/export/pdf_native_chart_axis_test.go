@@ -40,17 +40,20 @@ func TestHorizontalBarGeometry_AllNegative(t *testing.T) {
 }
 
 func TestNiceStep(t *testing.T) {
+	// Expectations follow PowerPoint: the finest interval from {1,2,5}×10ⁿ that
+	// spans the range in at most ten steps. Measured by exporting sixteen bar
+	// charts through PowerPoint and reading their axis labels back.
 	cases := []struct {
 		rangeV float64
 		want   float64
 	}{
-		{30, 5},    // 0-30 → step=5 gives 6 ticks → match
-		{100, 20},  // 0-100 → step=20 gives 5 ticks
-		{6, 1},     // 0-6 → step=1 gives 6 ticks
-		{50, 10},   // 0-50 → step=10 gives 5 ticks
-		{250, 50},  // 0-250 → step=50 gives 5 ticks
-		{0.5, 0.1}, // 0-0.5 → step=0.1 gives 5 ticks
-		{27, 5},    // 0-27 → step=5 gives ceil(27/5)=6 ticks
+		{30, 5},     // ten steps of 3 is not a nice interval; 5 gives six
+		{100, 10},   // ten steps
+		{6, 1},      // six steps
+		{50, 5},     // ten steps
+		{250, 50},   // 25 is not an interval PowerPoint uses, so 50
+		{0.5, 0.05}, // ten steps
+		{27, 5},     // ceil(27/5) = six steps
 	}
 	for _, c := range cases {
 		got := niceStep(c.rangeV)

@@ -11,7 +11,11 @@ const defaultPDFTabStepPt = 36.0
 
 type pdfTextRenderOptions struct {
 	LineHeight float64
-	TabStops   []float64
+	// LineBoxPt is the height of the line's own box, which is LineHeight minus
+	// any paragraph spacing folded into it. It sets where the baseline sits
+	// inside the line; zero means the 100%-spacing default.
+	LineBoxPt float64
+	TabStops  []float64
 }
 
 func paragraphRenderedLineHeight(

@@ -37,15 +37,28 @@ func TestLineHeightIsFontIndependent(t *testing.T) {
 func TestBaselineShiftFactorIsRelativeToGopdfPlacement(t *testing.T) {
 	t.Parallel()
 
-	// Calibri: ascent 0.75 em, descent 0.25 em, so half-leading inside the
-	// 1.2 em line box is (1.2 - 1.0) / 2 = 0.1 em and the baseline sits at
-	// 0.85 em. gopdf's Cell() has already applied typoAscender (0.75 em), so the
-	// renderer adds the remaining 0.1 em, plus the 0.09 em of internal leading
-	// PowerPoint pads the top of the line box with (baselineInternalLeadingFactor).
+	// Calibri: descent 0.25 em. PowerPoint hangs the line from the bottom of its
+	// box, so the baseline sits descent (plus baselineDescentPadFactor) above it:
+	// 1.2 - 0.26 = 0.94 em. gopdf's Cell() has already applied typoAscender
+	// (0.75 em for Calibri), so the renderer adds the remaining 0.19 em.
 	got := calibriMetrics().baselineShiftFactor()
-	want := 0.1 + baselineInternalLeadingFactor
+	want := powerPointLineBoxFactor - 0.25 - baselineDescentPadFactor - calibriMetrics().typoAscenderFactor()
 	if math.Abs(got-want) > 0.0005 {
 		t.Fatalf("calibri baseline shift factor=%v want ~%v", got, want)
+	}
+}
+
+// TestBaselineShiftFollowsLineBox pins the effect line spacing has on the first
+// baseline: a 90% line box lifts it by 0.12 em, which is what PowerPoint does
+// inside a body placeholder.
+func TestBaselineShiftFollowsLineBox(t *testing.T) {
+	t.Parallel()
+
+	m := calibriMetrics()
+	full := m.baselineShiftFactorInLineBox(powerPointLineBoxFactor)
+	tight := m.baselineShiftFactorInLineBox(powerPointLineBoxFactor * 0.9)
+	if diff := full - tight; math.Abs(diff-0.12) > 0.0005 {
+		t.Fatalf("90%% line box lifts the baseline by %v em, want 0.12", diff)
 	}
 }
 
@@ -88,10 +101,17 @@ func TestReadTTFLineMetricsParsesRealFont(t *testing.T) {
 func TestLineMetricsClampJunkVerticalMetrics(t *testing.T) {
 	t.Parallel()
 
-	// A font claiming a 40 em ascender must not push its text off the slide.
-	junk := ttfLineMetrics{UnitsPerEm: 2048, Ascender: 81920, Descender: -81920, LineGap: 0}
+	// A font claiming no descender at all would hang its baseline off the bottom
+	// of the line box.
+	junk := ttfLineMetrics{UnitsPerEm: 2048, Ascender: 2048, Descender: 0, LineGap: 0}
 	if got := junk.baselineShiftFactor(); got != maxBaselineShiftFactor {
 		t.Fatalf("junk baseline shift factor=%v want clamp to %v", got, maxBaselineShiftFactor)
+	}
+
+	// ...and one claiming a 40 em descender must not drag it up off the slide.
+	deep := ttfLineMetrics{UnitsPerEm: 2048, Ascender: 1536, Descender: -81920}
+	if got := deep.baselineShiftFactor(); got != minBaselineShiftFactor {
+		t.Fatalf("deep-descender baseline shift factor=%v want clamp to %v", got, minBaselineShiftFactor)
 	}
 
 	// ...and one claiming a huge typoAscender must not drag it upward off it.
