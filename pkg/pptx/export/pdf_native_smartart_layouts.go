@@ -8,6 +8,15 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
 
+const (
+	// smartArtNodeGapFraction is how much of the frame width PowerPoint leaves
+	// between two process nodes for the arrow between them.
+	smartArtNodeGapFraction = 0.05
+	// smartArtNodeAspect is a node's height as a fraction of its width, measured
+	// off PowerPoint's render of a three-step process in a 9x2in frame.
+	smartArtNodeAspect = 0.45
+)
+
 func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
 	nodes := flattenSmartArtNodes(diagram.Nodes)
 	if len(nodes) == 0 {
@@ -28,9 +37,9 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 	boxes := make([]smartArtBox, 0, len(nodes))
 	links := make([]smartArtLink, 0, max(len(nodes)-1, 0))
 	if vertical {
-		boxH := math.Max(1, math.Min(46, (h-gap*float64(len(nodes)-1))/float64(len(nodes))))
-		boxW := math.Min(w, 230.0)
-		left := x + (w-boxW)/2
+		boxH := math.Max(1, (h-gap*float64(len(nodes)-1))/float64(len(nodes)))
+		boxW := w
+		left := x
 		for i, node := range nodes {
 			top := y + float64(i)*(boxH+gap)
 			boxes = append(
@@ -55,8 +64,13 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 		return boxes, links
 	}
 
-	boxW := math.Min(150, (w-gap*float64(len(nodes)-1))/float64(len(nodes)))
-	boxH := math.Min(h, 52.0)
+	// The nodes span the frame's width, with room between them for the arrow,
+	// and take a proportional slice of its height centred vertically — measured
+	// off PowerPoint's own render of a three-step process. Capping them at
+	// 150x52pt drew a row of small cards adrift in a frame PowerPoint fills.
+	gap = math.Max(gap, w*smartArtNodeGapFraction)
+	boxW := (w - gap*float64(len(nodes)-1)) / float64(len(nodes))
+	boxH := math.Min(h, boxW*smartArtNodeAspect)
 	top := y + (h-boxH)/2
 	for i, node := range nodes {
 		left := x + float64(i)*(boxW+gap)

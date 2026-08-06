@@ -3,16 +3,9 @@ package export
 
 import (
 	"github.com/signintech/gopdf"
-
-	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
 type chartRect struct{ x, y, w, h float64 }
-
-func renderNativePDFSlideCharts(pdf *gopdf.GoPdf, slide elements.SlideContent) {
-	renderBarAndLineCharts(pdf, slide)
-	renderOtherCharts(pdf, slide)
-}
 
 func chartRectFromLength(x, y, w, h int64) chartRect {
 	return chartRect{emuToPt(x), emuToPt(y), emuToPt(w), emuToPt(h)}

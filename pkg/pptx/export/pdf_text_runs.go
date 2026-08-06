@@ -197,7 +197,7 @@ func renderStyledLine(pdf *gopdf.GoPdf, line []pdfStyledRun, x, y float64, opts 
 	// Every run's font must be embedded before the shared baseline is derived
 	// from their metrics.
 	ensureStyledRunFonts(pdf, line...)
-	baseline := styledLineBaselineOffset(pdf, line)
+	baseline := styledLineBaselineOffset(pdf, line, opts.LineBoxPt)
 	for _, run := range line {
 		if run.Text == "" {
 			continue
@@ -227,7 +227,7 @@ func renderStyledLine(pdf *gopdf.GoPdf, line []pdfStyledRun, x, y float64, opts 
 // baseline its own font asks for.
 func renderPDFStyledRunText(pdf *gopdf.GoPdf, run pdfStyledRun, x, y float64) {
 	ensureStyledRunFonts(pdf, run)
-	renderPDFStyledRunTextOnBaseline(pdf, run, x, y, runBaselineOffset(pdf, run))
+	renderPDFStyledRunTextOnBaseline(pdf, run, x, y, runBaselineOffset(pdf, run, 0))
 }
 
 // renderPDFStyledRunTextOnBaseline draws a run with its baseline at

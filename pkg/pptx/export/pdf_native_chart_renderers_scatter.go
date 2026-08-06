@@ -22,9 +22,14 @@ func renderPieLike(
 	if len(values) == 0 {
 		return
 	}
-	cx := r.x + r.w/2
-	cy := r.y + r.h/2 + 8
-	radius := math.Min(r.w, r.h) * 0.35
+	// The pie fills its plot area rather than a fixed fraction of the frame:
+	// PowerPoint draws a 360pt-tall chart's pie at a 154pt radius, which is half
+	// the height left once the top and bottom margins are taken off. The old
+	// 0.35 × min(w,h) drew it a fifth too small.
+	plot := piePlotRect(pdf, r, opts, categories)
+	cx := plot.x + plot.w/2
+	cy := plot.y + plot.h/2
+	radius := math.Min(plot.w, plot.h) / 2
 	total := sumFloat(values)
 	if total <= 0 {
 		return
@@ -54,6 +59,31 @@ func renderPieLike(
 	}
 }
 
+// piePlotRect is the area a pie or doughnut is drawn into: the chart frame less
+// the legend, the title and the margins PowerPoint keeps around the plot.
+func piePlotRect(pdf *gopdf.GoPdf, r chartRect, opts chartSeriesOpts, names []string) chartRect {
+	if opts.showLegend {
+		r = chartRectWithLegendMargin(pdf, r, opts.legendPosition, names)
+	}
+	top := chartMinTopPadPt
+	if opts.titleOverlay {
+		top = chartOverlayTopPadPt
+	}
+	return chartRect{
+		x: r.x + piePlotSideMarginPt,
+		y: r.y + top,
+		w: math.Max(r.w-2*piePlotSideMarginPt, 1),
+		h: math.Max(r.h-top-piePlotBottomMarginPt, 1),
+	}
+}
+
+// piePlotSideMarginPt and piePlotBottomMarginPt are the clearance PowerPoint
+// leaves beside and below a pie, measured off its own export.
+const (
+	piePlotSideMarginPt   = 10.0
+	piePlotBottomMarginPt = 10.0
+)
+
 func clampHoleSize(pct int) int {
 	if pct < 10 {
 		return 10
@@ -76,7 +106,7 @@ func renderScatterLike(pdf *gopdf.GoPdf, title string, r chartRect, xs, ys, size
 
 	plotR := r
 	if opts.showLegend {
-		plotR = chartRectWithLegendMargin(r, opts.legendPosition)
+		plotR = chartRectWithLegendMargin(pdf, r, opts.legendPosition, []string{opts.seriesName})
 	}
 	// Use XY-specific axis range (adds ~20% headroom) matching PowerPoint's auto-axis
 	// for scatter/bubble charts — ensures data points never sit on the axis edge.

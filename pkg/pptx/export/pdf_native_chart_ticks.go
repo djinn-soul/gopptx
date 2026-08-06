@@ -47,26 +47,14 @@ func chartAxisTicks(minV, maxV float64, density chartAxisTickDensity) []float64 
 	return ticks
 }
 
-// chartAxisStep picks the tick interval. With a known density it takes the
-// finest "nice" interval whose tick count still fits; without one it falls back
-// to the fixed-band heuristic in niceStep.
+// chartAxisStep picks the tick interval: PowerPoint's own choice for the range,
+// coarsened when the axis is too short to carry that many labels.
 func chartAxisStep(rangeV float64, density chartAxisTickDensity) float64 {
-	limit := density.maxTicks()
-	if limit < minChartAxisTicks {
-		return niceStep(rangeV)
+	budget := maxChartAxisIntervals
+	if limit := density.maxTicks(); limit >= minChartAxisTicks && limit-1 < budget {
+		budget = limit - 1
 	}
-	magnitude := math.Pow(10, math.Floor(math.Log10(rangeV)))
-	// Ascending, so the first interval that fits is the finest one that fits.
-	for _, m := range niceStepMultipliers {
-		step := m * magnitude
-		if step <= 0 {
-			continue
-		}
-		if int(math.Ceil(rangeV/step))+1 <= limit {
-			return step
-		}
-	}
-	return niceStep(rangeV)
+	return niceStepWithin(rangeV, budget)
 }
 
 // minChartAxisTicks guards against a plot so small that the density calculation
@@ -74,10 +62,14 @@ func chartAxisStep(rangeV float64, density chartAxisTickDensity) float64 {
 const minChartAxisTicks = 3
 
 // niceStepMultipliers are the tick intervals PowerPoint chooses between, scaled
-// by the range's magnitude.
+// by the range's magnitude. Ascending, so the first that fits is the finest.
+//
+// One, two and five only: sixteen charts exported through PowerPoint, with data
+// maxima from 1 to 1234, produced intervals of 0.2, 0.5, 1, 2, 5, 10, 20, 50,
+// 100 and 200 and never a 2.5 or a 25.
 //
 //nolint:gochecknoglobals // Immutable lookup table shared by both step choosers.
-var niceStepMultipliers = []float64{0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100}
+var niceStepMultipliers = []float64{1, 2, 5}
 
 // chartAxisTickLabels renders the ticks for [minV,maxV] as their drawn strings.
 func chartAxisTickLabels(minV, maxV float64, valueFormat string, density chartAxisTickDensity) []string {

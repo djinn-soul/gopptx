@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-const shapeTreePicElement = "pic"
+const (
+	shapeTreePicElement = "pic"
+	groupShapeElement   = "grpsp"
+)
 
 const formatPNG = "png"
 

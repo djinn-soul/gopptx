@@ -137,8 +137,19 @@ func pdfLineHeight(fontSize int) float64 {
 // Cell() lands the baseline where PowerPoint puts it. gopdf already offsets by
 // OS/2 typoAscender, so only the remainder is applied here.
 func fontBaselineShift(pdf *gopdf.GoPdf, fontHint string, fontSize int) float64 {
+	return fontBaselineShiftInLineBox(pdf, fontHint, fontSize, 0)
+}
+
+// fontBaselineShiftInLineBox is fontBaselineShift for a line drawn into a box of
+// lineBoxPt points rather than the 1.2 em default, which is what a paragraph
+// with line spacing other than 100% gets. A lineBoxPt of zero means the default.
+func fontBaselineShiftInLineBox(pdf *gopdf.GoPdf, fontHint string, fontSize int, lineBoxPt float64) float64 {
 	if fontSize <= 0 {
 		fontSize = defaultFontSize
 	}
-	return float64(fontSize) * metricsForFontHint(pdf, fontHint).baselineShiftFactor()
+	factor := powerPointLineBoxFactor
+	if lineBoxPt > 0 {
+		factor = lineBoxPt / float64(fontSize)
+	}
+	return float64(fontSize) * metricsForFontHint(pdf, fontHint).baselineShiftFactorInLineBox(factor)
 }

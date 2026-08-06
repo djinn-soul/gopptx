@@ -30,7 +30,7 @@ func PDFWithOptions(title string, slides []elements.SlideContent, outputPath str
 	case PDFDriverAuto:
 		return pdfWithAutoDriver(title, slides, outputPath, opts)
 	case PDFDriverNative:
-		return pdfViaNative(title, slides, outputPath, opts, optionsPageSize(opts))
+		return pdfViaNative(title, slides, nil, outputPath, opts, optionsPageSize(opts))
 	case PDFDriverLibreOffice:
 		return pdfViaLibreOffice(title, slides, outputPath, opts)
 	case PDFDriverPowerPoint:
@@ -65,11 +65,14 @@ func PDFFromFileWithOptions(pptxPath, pdfPath string, opts PDFOptions) error {
 	case PDFDriverAuto:
 		return pdfFromFileWithAutoDriver(absPPTX, absPDF, opts)
 	case PDFDriverNative:
-		presTitle, slides, slideSize, readErr := slidesFromPPTXWithSize(absPPTX)
+		deck, readErr := readDeck(absPPTX)
 		if readErr != nil {
 			return fmt.Errorf("native (PPTX reader): %w", readErr)
 		}
-		return pdfViaNative(presTitle, slides, absPDF, opts, pageSizeFromEMU(slideSize.Width, slideSize.Height))
+		return pdfViaNative(
+			deck.Title, deck.Slides, deck.PaintOrder, absPDF, opts,
+			pageSizeFromEMU(deck.SlideSize.Width, deck.SlideSize.Height),
+		)
 	case PDFDriverLibreOffice:
 		return pdfFromFileViaLibreOffice(absPPTX, absPDF, opts)
 	case PDFDriverPowerPoint:
@@ -99,7 +102,7 @@ func pdfWithAutoDriver(title string, slides []elements.SlideContent, outputPath 
 	}
 
 	// Attempt 3: Native gopdf engine (experimental fallback)
-	nativeErr := pdfViaNative(title, slides, outputPath, opts, optionsPageSize(opts))
+	nativeErr := pdfViaNative(title, slides, nil, outputPath, opts, optionsPageSize(opts))
 	if nativeErr == nil {
 		return nil
 	}
@@ -129,10 +132,13 @@ func pdfFromFileWithAutoDriver(absPPTX, absPDF string, opts PDFOptions) error {
 	}
 
 	// Attempt 3: Native gopdf via PPTX reader (experimental fallback)
-	presTitle, slides, slideSize, readErr := slidesFromPPTXWithSize(absPPTX)
+	deck, readErr := readDeck(absPPTX)
 	var nativeErr error
 	if readErr == nil {
-		nativeErr = pdfViaNative(presTitle, slides, absPDF, opts, pageSizeFromEMU(slideSize.Width, slideSize.Height))
+		nativeErr = pdfViaNative(
+			deck.Title, deck.Slides, deck.PaintOrder, absPDF, opts,
+			pageSizeFromEMU(deck.SlideSize.Width, deck.SlideSize.Height),
+		)
 	}
 	if readErr == nil && nativeErr == nil {
 		return nil

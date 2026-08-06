@@ -120,8 +120,12 @@ func (m ttfLineMetrics) typoAscenderFactor() float64 {
 
 // powerPointLineBoxFactor is the height of one line box at 100% line spacing,
 // as a multiple of the point size. PowerPoint uses this same value for every
-// font; paragraph-level lnSpc scales the pitch between lines but not this box,
-// which is why the first baseline stays put when line spacing changes.
+// font.
+//
+// Paragraph line spacing scales this box, and with it the first baseline:
+// measured against PowerPoint, a body placeholder at 90% spacing draws its first
+// line 0.125 em higher than the same text in a 100%-spaced text box, at every
+// size from 8 to 40pt.
 const powerPointLineBoxFactor = 1.2
 
 // Sanity bound on the derived baseline. Fonts in the wild occasionally carry
@@ -133,26 +137,36 @@ const (
 	maxBaselineShiftFactor = 1.0
 )
 
-// baselineInternalLeadingFactor is the remaining gap between the baseline the
-// hhea/OS2 model predicts and where PowerPoint actually draws: PowerPoint pads
-// the top of the line box by part of the font's internal leading before the
-// ascent. Measured against PowerPoint's own PDF export at 8, 11 and 24pt, in
-// both top- and centre-anchored boxes, the offset is a constant 0.09 em.
-const baselineInternalLeadingFactor = 0.09
+// baselineDescentPadFactor is the sliver below the font's own descent that
+// PowerPoint keeps between the baseline and the bottom of the line box.
+// Measured at 0.01 em: it is what makes a 1.2 em Calibri line box put its
+// baseline 0.94 em down rather than 0.95.
+const baselineDescentPadFactor = 0.01
 
 // baselineShiftFactor is the extra multiple of the point size that must be added
-// to gopdf's own baseline placement to match PowerPoint's. PowerPoint centres
-// the font's ascent+descent inside the 1.2 em line box and puts the baseline at
-// the ascent; gopdf has already applied typoAscender.
+// to gopdf's own baseline placement to match PowerPoint's, for a line box at
+// 100% spacing.
 func (m ttfLineMetrics) baselineShiftFactor() float64 {
+	return m.baselineShiftFactorInLineBox(powerPointLineBoxFactor)
+}
+
+// baselineShiftFactorInLineBox is baselineShiftFactor for a line box of
+// lineBoxFactor ems, which is what a paragraph with line spacing other than
+// 100% draws into.
+//
+// PowerPoint hangs the line's text from the bottom of its box rather than
+// centring it: the baseline sits one descent above the bottom, and all of the
+// leading falls above the ascent. That is why tightening line spacing lifts the
+// first baseline as well as closing the gap between lines — a 90% body
+// placeholder starts 0.125 em higher than a 100% text box, which the old
+// centred model could not produce.
+func (m ttfLineMetrics) baselineShiftFactorInLineBox(lineBoxFactor float64) float64 {
 	if m.UnitsPerEm <= 0 {
-		return fallbackLineMetrics.baselineShiftFactor()
+		return fallbackLineMetrics.baselineShiftFactorInLineBox(lineBoxFactor)
 	}
-	ascent := m.Ascender / m.UnitsPerEm
 	descent := -m.Descender / m.UnitsPerEm
-	halfLeading := math.Max((powerPointLineBoxFactor-(ascent+descent))/2, 0)
 	gopdfBaseline := m.TypoAscender / m.UnitsPerEm
-	shift := halfLeading + ascent - gopdfBaseline + baselineInternalLeadingFactor
+	shift := lineBoxFactor - descent - baselineDescentPadFactor - gopdfBaseline
 	return clampFloat(shift, minBaselineShiftFactor, maxBaselineShiftFactor)
 }
 

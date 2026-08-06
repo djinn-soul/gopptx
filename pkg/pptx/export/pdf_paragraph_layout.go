@@ -32,6 +32,12 @@ const (
 	bodyDefaultSpaceBeforePt     = 10.0
 )
 
+// titleDefaultLineSpacingFactor is the line spacing a title placeholder
+// inherits from the Office theme's titleStyle (lnSpc spcPct 90000). Confirmed
+// against PowerPoint: a 44pt title in a centre-anchored placeholder sits 2.5pt
+// higher than the same text drawn at 100% spacing.
+const titleDefaultLineSpacingFactor = 0.9
+
 func bodyPlaceholderSpacing() paragraphSpacingDefaults {
 	return paragraphSpacingDefaults{
 		LineSpacingFactor: bodyDefaultLineSpacingFactor,
