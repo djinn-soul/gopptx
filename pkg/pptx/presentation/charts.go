@@ -96,6 +96,9 @@ func slideChartSpec(slide elements.SlideContent) (*pptxxml.ChartSpec, bool) {
 	if slide.Pie != nil {
 		return slide.Pie.ToChartSpec(), true
 	}
+	if slide.Pie3D != nil {
+		return slide.Pie3D.ToChartSpec(), true
+	}
 	if slide.Doughnut != nil {
 		return slide.Doughnut.ToChartSpec(), true
 	}
