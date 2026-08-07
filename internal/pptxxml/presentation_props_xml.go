@@ -14,9 +14,10 @@ const (
 )
 
 // PresentationProps renders `ppt/presProps.xml`. prnPrXML is the rendered
-// `<p:prnPr/>` element, or an empty string to write the part without print
-// settings.
-func PresentationProps(prnPrXML string) string {
+// `<p:prnPr/>` element and showPrXML the rendered `<p:showPr/>`; either may be
+// empty. CT_PresentationProperties orders print settings before show settings,
+// and it — not CT_Presentation — is where both live.
+func PresentationProps(prnPrXML, showPrXML string) string {
 	var b strings.Builder
 	b.WriteString(xmlHeader)
 	b.WriteString(`
@@ -24,6 +25,7 @@ func PresentationProps(prnPrXML string) string {
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
 		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">`)
 	b.WriteString(prnPrXML)
+	b.WriteString(showPrXML)
 	// The three extensions Office writes into presProps by default. Cosmetic for
 	// rendering; without them a generated deck's presProps differs from one
 	// PowerPoint has round-tripped.

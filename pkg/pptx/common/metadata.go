@@ -64,6 +64,8 @@ type Metadata struct {
 	AppProperties  AppProperties
 	Protection     Protection
 	ShowSettings   ShowSettings
+	// CustomShows are the named slide subsets the deck offers.
+	CustomShows []CustomShow
 }
 
 // AppProperties represents the writable part of docProps/app.xml. The
@@ -86,7 +88,20 @@ const (
 	ShowModeKiosk                   // Kiosk: full-screen, no controls
 )
 
-// ShowSettings controls how a presentation is shown (maps to p:showPr in presentation.xml).
+// SlideRangeKind selects which slides a show plays.
+type SlideRangeKind int
+
+const (
+	// SlideRangeAll plays every slide, the default.
+	SlideRangeAll SlideRangeKind = iota
+	// SlideRangeRange plays a contiguous run of slides.
+	SlideRangeRange
+	// SlideRangeCustom plays one of the presentation's custom shows.
+	SlideRangeCustom
+)
+
+// ShowSettings controls how a presentation is shown (maps to p:showPr, which
+// lives in presProps.xml).
 //
 //nolint:govet // Preserve public field order for source compatibility with positional literals.
 type ShowSettings struct {
@@ -95,6 +110,32 @@ type ShowSettings struct {
 	ShowScrollbar  bool     // Show scrollbar in browse mode
 	DisableTimings bool     // Ignore slide timings (useTimings="0")
 	HideAnimation  bool     // Suppress animations (showAnimation="0")
+	// DisableNarration plays the show without its recorded narration.
+	DisableNarration bool
+	// RangeKind selects all slides, a range, or a custom show.
+	RangeKind SlideRangeKind
+	// RangeStart and RangeEnd are 1-based, inclusive, and used when RangeKind
+	// is SlideRangeRange.
+	RangeStart int
+	RangeEnd   int
+	// CustomShowName names the show to play when RangeKind is SlideRangeCustom.
+	CustomShowName string
+	// PenColor is the annotation pen colour, as hex RGB.
+	PenColor string
+	// LaserColor is the laser-pointer colour, as hex RGB.
+	LaserColor string
+	// ShowMediaControls displays playback controls over media during the show.
+	ShowMediaControls bool
+}
+
+// CustomShow is a named subset of the deck's slides, played in its own order —
+// the feature PowerPoint calls a custom slide show.
+type CustomShow struct {
+	// Name is what PowerPoint lists in the custom-show picker.
+	Name string
+	// SlideIndices are 0-based indices into the presentation's slides, in the
+	// order the show plays them. A slide may appear more than once.
+	SlideIndices []int
 }
 
 // Protection defines write-protection and suggested read-only settings.

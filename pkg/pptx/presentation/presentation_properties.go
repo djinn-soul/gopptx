@@ -130,6 +130,13 @@ func addBasicPropertyFiles(
 	if meta.PrintSettings != nil {
 		printSettingsXML = meta.PrintSettings.PrnPrXML()
 	}
+	customShows, err := convertCustomShows(meta.CustomShows, slideCount, masterCount)
+	if err != nil {
+		return err
+	}
+	// p:showPr belongs to CT_PresentationProperties, so the show settings are
+	// written into presProps rather than presentation.xml.
+	showPrXML := pptxxml.ShowPrXML(convertShowSettings(meta.ShowSettings, customShows))
 	standardParts := []struct {
 		partName    string
 		content     string
@@ -138,7 +145,7 @@ func addBasicPropertyFiles(
 		relTarget   string
 	}{
 		{
-			pptxxml.PresPropsPartName, pptxxml.PresentationProps(printSettingsXML),
+			pptxxml.PresPropsPartName, pptxxml.PresentationProps(printSettingsXML, showPrXML),
 			pptxxml.PresPropsContentType,
 			pptxxml.PresPropsRelationshipType, pptxxml.PresPropsRelationshipTarget,
 		},
@@ -175,7 +182,7 @@ func addBasicPropertyFiles(
 			meta.Title, slideCount, hasNotes,
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
 			protInfo, xSections, meta.RTL, xmlFonts,
-			convertShowSettings(meta.ShowSettings),
+			customShows,
 			handoutRelID,
 		),
 	)
