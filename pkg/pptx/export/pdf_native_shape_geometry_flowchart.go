@@ -45,7 +45,7 @@ func drawPDFExtendedGeometry(
 	case shapes.ShapeTypeFlowChartConnector, shapes.ShapeTypeFlowChartOr,
 		shapes.ShapeTypeFlowChartSummingJunction, shapes.ShapeTypeDonut,
 		shapes.ShapeTypeNoSmoking, shapes.ShapeTypeBlockArc:
-		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
+		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2), style)
 	case shapes.ShapeTypeFlowChartExtract:
 		fl.polygon(pdf, []gopdf.Point{
 			{X: x + w/2, Y: y}, {X: x + w, Y: y + h}, {X: x, Y: y + h},

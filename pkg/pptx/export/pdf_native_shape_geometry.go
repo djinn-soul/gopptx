@@ -116,6 +116,16 @@ func (f flipState) polygon(pdf *gopdf.GoPdf, points []gopdf.Point, style string)
 	pdf.Polygon(f.points(points), style)
 }
 
+// polyline strokes an open path. The brackets, braces, arcs and connectors have
+// no interior to fill, and a closed polygon would draw a chord across their
+// ends, so they are stroked segment by segment instead.
+func (f flipState) polyline(pdf *gopdf.GoPdf, points []gopdf.Point) {
+	flipped := f.points(points)
+	for i := 1; i < len(flipped); i++ {
+		pdf.Line(flipped[i-1].X, flipped[i-1].Y, flipped[i].X, flipped[i].Y)
+	}
+}
+
 func (f flipState) points(points []gopdf.Point) []gopdf.Point {
 	if f.unflippedShape {
 		return points
@@ -133,10 +143,13 @@ func (f flipState) points(points []gopdf.Point) []gopdf.Point {
 	return out
 }
 
-func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per supported shape type.
+func drawPDFGeometry(
 	pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64, style string,
 ) {
 	fl := flipFor(s, x, y, w, h)
+	if drawPDFBasicArrowGeometry(pdf, fl, s, x, y, w, h, style) {
+		return
+	}
 	switch s.Type {
 	case shapes.ShapeTypeRectangle:
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
@@ -146,7 +159,7 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 		drawPieShape(pdf, s, x, y, w, h, style)
 	case shapes.ShapeTypeEllipse:
 		// gopdf Oval only strokes; use a polygon approximation so fill works.
-		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
+		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2), style)
 	case shapes.ShapeTypeTriangle:
 		fl.polygon(pdf,
 			[]gopdf.Point{{X: x + w/2, Y: y}, {X: x, Y: y + h}, {X: x + w, Y: y + h}},
@@ -180,18 +193,6 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 			{X: x + off, Y: y}, {X: x + w - off, Y: y},
 			{X: x + w, Y: y + h}, {X: x, Y: y + h},
 		}, style)
-	case shapes.ShapeTypeRightArrow:
-		fl.polygon(pdf, rightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
-	case shapes.ShapeTypeLeftArrow:
-		fl.polygon(pdf, leftArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
-	case shapes.ShapeTypeUpArrow:
-		fl.polygon(pdf, upArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
-	case shapes.ShapeTypeDownArrow:
-		fl.polygon(pdf, downArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
-	case shapes.ShapeTypeLeftRightArrow:
-		fl.polygon(pdf, leftRightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
-	case shapes.ShapeTypeUpDownArrow:
-		fl.polygon(pdf, upDownArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeChevronArrow:
 		fl.polygon(pdf, chevronPoints(x, y, w, h), style)
 	case shapes.ShapeTypeStar4, shapes.ShapeTypeStar5, shapes.ShapeTypeStar6,
@@ -205,13 +206,17 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 	case shapes.ShapeTypeWedgeEllipseCallout:
 		fl.polygon(pdf, wedgeEllipseCalloutPoints(x, y, w, h, calloutPolyRes), style)
 	case shapes.ShapeTypeCloudCallout, shapes.ShapeTypeCloud:
-		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
+		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2), style)
 	default:
 		// The presets that draw as a single outline live in their own tables; a
 		// rectangle is only the last resort.
 		if drawPDFExtendedGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
 			drawPDFCornerGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
-			drawPDFSolidGeometry(pdf, fl, s.Type, x, y, w, h, style) {
+			drawPDFSolidGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
+			drawPDFPolygonGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
+			drawPDFArrowGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
+			drawPDFCurveGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
+			drawPDFCalloutGeometry(pdf, fl, s.Type, x, y, w, h, style) {
 			return
 		}
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
@@ -246,7 +251,8 @@ func drawPDFStarShape(pdf *gopdf.GoPdf, fl flipState, shapeType string, x, y, w,
 }
 
 // ellipsePoints returns n evenly-spaced points on the perimeter of an ellipse.
-func ellipsePoints(cx, cy, rx, ry float64, n int) []gopdf.Point {
+func ellipsePoints(cx, cy, rx, ry float64) []gopdf.Point {
+	const n = calloutPolyRes
 	pts := make([]gopdf.Point, n)
 	for i := range n {
 		a := 2 * math.Pi * float64(i) / float64(n)
@@ -345,4 +351,34 @@ func wedgeEllipseCalloutPoints(x, y, w, h float64, n int) []gopdf.Point {
 	// Append tail tip below the ellipse.
 	pts = append(pts, gopdf.Point{X: cx - rx*0.3, Y: cy + ry + ry*0.5})
 	return pts
+}
+
+// drawPDFBasicArrowGeometry draws the four cardinal arrows and the two
+// double-headed ones, and reports whether it recognised the type. They are
+// split out of the main switch so it stays inside the complexity the linter
+// allows; their adjustments come off the shape rather than a preset default.
+func drawPDFBasicArrowGeometry(
+	pdf *gopdf.GoPdf,
+	fl flipState,
+	s shapes.Shape,
+	x, y, w, h float64,
+	style string,
+) bool {
+	switch s.Type {
+	case shapes.ShapeTypeRightArrow:
+		fl.polygon(pdf, rightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
+	case shapes.ShapeTypeLeftArrow:
+		fl.polygon(pdf, leftArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
+	case shapes.ShapeTypeUpArrow:
+		fl.polygon(pdf, upArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
+	case shapes.ShapeTypeDownArrow:
+		fl.polygon(pdf, downArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
+	case shapes.ShapeTypeLeftRightArrow:
+		fl.polygon(pdf, leftRightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
+	case shapes.ShapeTypeUpDownArrow:
+		fl.polygon(pdf, upDownArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
+	default:
+		return false
+	}
+	return true
 }
