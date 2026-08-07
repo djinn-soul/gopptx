@@ -78,9 +78,9 @@ func renderStockLike(
 	}
 	if opts.showLegend {
 		drawChartLegend(pdf, r, opts.legendPosition, []legendEntry{
-			{Name: "High", R: 30, G: 30, B: 30},
-			{Name: "Low", R: 90, G: 90, B: 90},
-			{Name: "Close", R: 60, G: 60, B: 60},
+			{Name: stockSeriesHigh, R: 30, G: 30, B: 30},
+			{Name: stockSeriesLow, R: 90, G: 90, B: 90},
+			{Name: stockSeriesClose, R: 60, G: 60, B: 60},
 		})
 	}
 }

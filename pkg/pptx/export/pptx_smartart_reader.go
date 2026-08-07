@@ -23,6 +23,7 @@ type parsedSmartArt struct {
 	QuickStyle   string
 	ColorStyle   string
 	Nodes        []smartart.Node
+	Drawing      []smartart.DrawingShape
 }
 
 type smartArtFrameRef struct {
@@ -113,6 +114,7 @@ func extractSlideSmartArt(pptxPath string) ([][]parsedSmartArt, error) {
 				QuickStyle:   quickStyle,
 				ColorStyle:   colorStyle,
 				Nodes:        nodes,
+				Drawing:      readSmartArtDrawingCache(fileMap, dataPath, dataXML),
 			})
 		}
 		out[idx] = row
@@ -184,6 +186,9 @@ func applyParsedSmartArt(slide *elements.SlideContent, diagrams []parsedSmartArt
 		}
 		if parsed.ColorStyle != "" {
 			diagram = diagram.WithColorStyle(parsed.ColorStyle)
+		}
+		if len(parsed.Drawing) > 0 {
+			diagram = diagram.WithDrawing(resolveSmartArtDrawingColors(parsed.Drawing, theme))
 		}
 		for _, node := range resolveSmartArtNodeColors(parsed.Nodes, parsed.ColorStyle, theme) {
 			diagram = diagram.AddNode(node)

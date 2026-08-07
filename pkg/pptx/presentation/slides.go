@@ -118,19 +118,52 @@ func renderSlides(
 			commentTarget,
 		)
 
-		inkParts := attachInk(
-			slideXML,
-			relsXML,
-			slideInkAnnotations(slide),
-			inkPartStartIndex(slides, i),
-		)
-		for path, content := range inkParts.Parts {
-			pw.AddPart(path, content)
+		if err := writeSlideWithAttachments(pw, slides, i, slideXML, relsXML); err != nil {
+			return err
 		}
-
-		pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), inkParts.SlideXML)
-		pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), inkParts.RelsXML)
 	}
+	return nil
+}
+
+// writeSlideWithAttachments adds the ink and media a slide carries, then writes
+// the slide and its relationships. Both attachments rewrite the shape tree they
+// are given, so they run in sequence over the same markup.
+func writeSlideWithAttachments(
+	pw *pptxxml.PackageWriter,
+	slides []elements.SlideContent,
+	index int,
+	slideXML, relsXML string,
+) error {
+	slide := slides[index]
+	num := index + 1
+
+	inkParts := attachInk(
+		slideXML,
+		relsXML,
+		slideInkAnnotations(slide),
+		inkPartStartIndex(slides, index),
+	)
+	for path, content := range inkParts.Parts {
+		pw.AddPart(path, content)
+	}
+
+	mediaParts, err := attachMedia(
+		inkParts.SlideXML,
+		inkParts.RelsXML,
+		slideMedia(slide),
+		mediaPartStartIndex(slides, index),
+		index,
+		len(slides),
+	)
+	if err != nil {
+		return err
+	}
+	for path, content := range mediaParts.Parts {
+		pw.AddBinaryPart(path, content)
+	}
+
+	pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), mediaParts.SlideXML)
+	pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), mediaParts.RelsXML)
 	return nil
 }
 

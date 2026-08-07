@@ -81,7 +81,7 @@ func applyExportTextFrameAnchor(tf *shapes.TextFrame, frame *editorcommon.TextFr
 		tf.Anchor = shapes.TextAnchorTop
 	case "b", anchorBottom:
 		tf.Anchor = shapes.TextAnchorBottom
-	case "ctr", "center", "middle":
+	case vAlignCenter, "center", "middle":
 		tf.Anchor = shapes.TextAnchorMiddle
 	default:
 		return false

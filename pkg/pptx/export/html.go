@@ -198,9 +198,36 @@ func renderSlideToWriter(w io.Writer, slide elements.SlideContent, index int, op
 		}
 	}
 
-	// Table Support
+	// Connectors, in their own SVG over the same coordinate space as the shapes.
+	if len(slide.Connectors) > 0 {
+		if err := writeString(w, renderConnectorsSVG(slide.Connectors)); err != nil {
+			return err
+		}
+	}
+
+	// SmartArt, drawn as its own SVG so a diagram is not interleaved with the
+	// slide's own shapes.
+	if diagramShapes := smartArtSVGShapes(slide); len(diagramShapes) > 0 {
+		if err := writeString(w, renderShapesSVG(diagramShapes)); err != nil {
+			return err
+		}
+	}
+
+	// Charts: plotted where the kind maps onto a simple plot, tabulated where it
+	// does not. Every chart on the slide appears one way or the other.
+	if err := renderChartsToWriter(w, slideHTMLCharts(slide)); err != nil {
+		return err
+	}
+
+	// Table Support. Both the single Table and the Tables list are drawn: only
+	// the first used to be, so every table after it vanished from the HTML.
 	if slide.Table != nil {
 		if err := renderTableToWriter(w, slide.Table); err != nil {
+			return err
+		}
+	}
+	for i := range slide.Tables {
+		if err := renderTableToWriter(w, &slide.Tables[i]); err != nil {
 			return err
 		}
 	}

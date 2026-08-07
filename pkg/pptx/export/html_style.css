@@ -40,6 +40,40 @@ body {
   z-index: 1; /* Above background, below text content (z-index 2) */
 }
 
+/* A chart sits in the content flow rather than overlaying the slide, so it is
+   readable next to the bullets it belongs with. */
+.slide-chart {
+  margin: 0.75em 0;
+  max-width: 100%;
+}
+
+.slide-chart figcaption {
+  font-weight: 600;
+  margin-bottom: 0.25em;
+}
+
+.chart-svg {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+}
+
+.chart-data {
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.chart-data th,
+.chart-data td {
+  border: 1px solid #ccc;
+  padding: 2px 8px;
+  text-align: right;
+}
+
+.chart-data th:first-child {
+  text-align: left;
+}
+
 .title-slide {
   justify-content: center;
   align-items: center;

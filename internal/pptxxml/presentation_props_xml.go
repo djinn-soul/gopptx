@@ -67,6 +67,47 @@ func WithContentTypeOverride(contentTypes, partName, contentType string) string 
 	return contentTypes[:idx] + entry + contentTypes[idx:]
 }
 
+// WithContentTypeDefault inserts a Default entry for a file extension into an
+// already rendered `[Content_Types].xml`, which is how media parts declare
+// their type.
+func WithContentTypeDefault(contentTypes, extension, contentType string) string {
+	if extension == "" || contentType == "" {
+		return contentTypes
+	}
+	if strings.Contains(contentTypes, `Extension="`+extension+`"`) {
+		return contentTypes
+	}
+	const closing = "</Types>"
+	idx := strings.LastIndex(contentTypes, closing)
+	if idx < 0 {
+		return contentTypes
+	}
+	entry := "\n<Default Extension=\"" + Escape(extension) +
+		"\" ContentType=\"" + Escape(contentType) + "\"/>"
+	return contentTypes[:idx] + entry + contentTypes[idx:]
+}
+
+// WithExternalRelationship inserts a Relationship whose target is outside the
+// package — a hosted video, say — which OPC marks with TargetMode="External".
+func WithExternalRelationship(rels, relID, relType, target string) string {
+	if relID == "" || relType == "" || target == "" {
+		return rels
+	}
+	if strings.Contains(rels, `Id="`+relID+`"`) {
+		return rels
+	}
+	const closing = "</Relationships>"
+	idx := strings.LastIndex(rels, closing)
+	if idx < 0 {
+		return rels
+	}
+	entry := "\n<Relationship Id=\"" + Escape(relID) +
+		"\" Type=\"" + Escape(relType) +
+		"\" Target=\"" + Escape(target) +
+		"\" TargetMode=\"External\"/>"
+	return rels[:idx] + entry + rels[idx:]
+}
+
 // WithRelationship inserts a Relationship entry into an already rendered
 // `.rels` document. The document is returned unchanged when the relationship ID
 // is already present or the closing tag is missing.

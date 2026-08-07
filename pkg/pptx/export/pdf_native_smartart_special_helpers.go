@@ -10,22 +10,47 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/smartart"
 )
 
+// The per-layout renderers draw from the same accent as the generic layouts.
+// They used to carry their own 4F81BD — the Office 2007 accent1 — so one deck
+// exported two different blues depending on which layout a diagram used.
 const (
-	smartArtBlueFill    = "4F81BD"
-	smartArtBlueText    = "FFFFFF"
+	smartArtBlueFill    = smartArtNodeFill
+	smartArtBlueText    = smartArtNodeTextColor
 	smartArtInkText     = "000000"
 	smartArtLightFill   = "C2CDE1"
 	smartArtPanelFill   = "D5DCEA"
 	smartArtWhiteStroke = "FFFFFF"
-	smartArtLineStroke  = "4F81BD"
+	smartArtLineStroke  = smartArtNodeFill
 )
+
+// The per-layout renderers below were calibrated against PowerPoint's render of
+// each layout in a large frame, and state their geometry in absolute points. A
+// diagram placed in a smaller frame therefore drew straight past its edges — a
+// stacked Venn 320pt across still drew 320pt across in a 2in frame.
+//
+// smartArtFitScale is the factor that brings a renderer's calibrated content
+// back inside the frame it was given. It never scales up: at or above the size
+// the layout was calibrated for, the geometry is used exactly as measured.
+func smartArtFitScale(frameW, frameH, contentW, contentH float64) float64 {
+	scale := 1.0
+	if contentW > 0 && frameW > 0 {
+		scale = math.Min(scale, frameW/contentW)
+	}
+	if contentH > 0 && frameH > 0 {
+		scale = math.Min(scale, frameH/contentH)
+	}
+	if scale <= 0 {
+		return 1
+	}
+	return scale
+}
 
 func smartArtBounds(diagram smartart.SmartArt) (float64, float64, float64, float64) {
 	return emuToPt(int64(diagram.X)), emuToPt(int64(diagram.Y)), emuToPt(int64(diagram.CX)), emuToPt(int64(diagram.CY))
 }
 
 func smartArtNodes(diagram smartart.SmartArt) []smartart.Node {
-	return flattenSmartArtNodes(diagram.Nodes)
+	return smartArtLayoutNodes(diagram.Nodes)
 }
 
 // smartArtEntries are the diagram's own entries, with their children left in
@@ -42,10 +67,16 @@ func smartArtEntries(diagram smartart.SmartArt) []smartart.Node {
 // drawSmartArtNodeImage paints a node's picture into the given box, and reports
 // whether there was one to paint.
 func drawSmartArtNodeImage(pdf *gopdf.GoPdf, node smartart.Node, x, y, w, h float64) bool {
-	if len(node.ImageData) == 0 {
+	return drawSmartArtImageBytes(pdf, node.ImageData, x, y, w, h)
+}
+
+// drawSmartArtImageBytes paints picture bytes into the given box, and reports
+// whether there was a picture to paint.
+func drawSmartArtImageBytes(pdf *gopdf.GoPdf, data []byte, x, y, w, h float64) bool {
+	if len(data) == 0 || w <= 0 || h <= 0 {
 		return false
 	}
-	holder, err := gopdf.ImageHolderByBytes(node.ImageData)
+	holder, err := gopdf.ImageHolderByBytes(data)
 	if err != nil {
 		return false
 	}

@@ -65,10 +65,14 @@ func ViewProps() string {
 
 // TableStyles renders ppt/tableStyles.xml, the part a table's
 // <a:tableStyleId> resolves against.
+//
+// The list is written as an open/close pair rather than a self-closing element:
+// the editor adds a style by splicing before </a:tblStyleLst>, and a
+// self-closing list gives it nowhere to splice.
 func TableStyles() string {
 	return xmlHeader + `
 <a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" def="` +
-		DefaultTableStyleGUID + `"/>`
+		DefaultTableStyleGUID + `"></a:tblStyleLst>`
 }
 
 // defaultTextStyleLevels is how many <a:lvlNpPr> levels a presentation states.

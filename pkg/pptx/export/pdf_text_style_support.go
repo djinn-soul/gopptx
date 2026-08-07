@@ -81,6 +81,7 @@ func pdfStyledRunFromTextRun(run text.Run, fittedSize int, defaultBold, defaultI
 		Superscript:   run.Superscript,
 		// AllCaps is already folded into Text; only small caps changes the size.
 		SmallCaps: run.SmallCaps && !run.AllCaps,
+		Link:      run.Hyperlink,
 	}
 	if run.Highlight != "" {
 		r, g, b := hexToRGB(run.Highlight)

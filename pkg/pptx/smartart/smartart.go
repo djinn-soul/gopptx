@@ -150,6 +150,11 @@ type SmartArt struct {
 	// Accessibility
 	AltText      string
 	IsDecorative bool
+
+	// Drawing is the layout PowerPoint cached for this diagram, read back from
+	// the deck's drawing part. It is empty for a diagram built in memory, which
+	// has never been laid out. See drawing_cache.go.
+	Drawing []DrawingShape
 }
 
 // NewSmartArt creates a SmartArt diagram with the given layout and default size.
@@ -166,6 +171,12 @@ func NewSmartArt(layout Layout) SmartArt {
 // NewSmartArtWithLayout creates a SmartArt diagram from any layout provider.
 func NewSmartArtWithLayout(layout LayoutProvider) SmartArt {
 	return NewSmartArt(CustomLayout(layout.LayoutURI()))
+}
+
+// WithDrawing attaches the cached layout read from a deck's drawing part.
+func (sa SmartArt) WithDrawing(shapes []DrawingShape) SmartArt {
+	sa.Drawing = shapes
+	return sa
 }
 
 // WithAltText sets the alternative text for accessibility.

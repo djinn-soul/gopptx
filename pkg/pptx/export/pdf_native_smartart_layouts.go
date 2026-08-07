@@ -15,10 +15,13 @@ const (
 	// smartArtNodeAspect is a node's height as a fraction of its width, measured
 	// off PowerPoint's render of a three-step process in a 9x2in frame.
 	smartArtNodeAspect = 0.45
+	// smartArtPyramidTierGap is the sliver of its slot a pyramid tier gives up
+	// so the tiers read as separate bands, in points.
+	smartArtPyramidTierGap = 6.0
 )
 
 func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
-	nodes := flattenSmartArtNodes(diagram.Nodes)
+	nodes := smartArtLayoutNodes(diagram.Nodes)
 	if len(nodes) == 0 {
 		return nil, nil
 	}
@@ -51,7 +54,8 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 					H:         boxH,
 					Text:      node.Text,
 					ShapeType: shapeTypeForLinear(layoutURI),
-					Fill:      smartArtNodeColor(node, i),
+					Fill:      smartArtNodeColor(node),
+					Image:     node.ImageData,
 				},
 			)
 			if i > 0 {
@@ -69,8 +73,14 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 	// off PowerPoint's own render of a three-step process. Capping them at
 	// 150x52pt drew a row of small cards adrift in a frame PowerPoint fills.
 	gap = math.Max(gap, w*smartArtNodeGapFraction)
-	boxW := (w - gap*float64(len(nodes)-1)) / float64(len(nodes))
-	boxH := math.Min(h, boxW*smartArtNodeAspect)
+	// The gaps alone can exceed the frame once a diagram has enough nodes, which
+	// left the boxes with a negative width and drew them inside out. Shrinking
+	// the gap keeps the row inside the frame however many nodes it holds.
+	if total := gap * float64(len(nodes)-1); total >= w {
+		gap = math.Max(0, (w-float64(len(nodes)))/float64(max(len(nodes)-1, 1)))
+	}
+	boxW := math.Max(1, (w-gap*float64(len(nodes)-1))/float64(len(nodes)))
+	boxH := math.Max(1, math.Min(h, boxW*smartArtNodeAspect))
 	top := y + (h-boxH)/2
 	for i, node := range nodes {
 		left := x + float64(i)*(boxW+gap)
@@ -83,7 +93,8 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 				H:         boxH,
 				Text:      node.Text,
 				ShapeType: shapeTypeForLinear(layoutURI),
-				Fill:      smartArtNodeColor(node, i),
+				Fill:      smartArtNodeColor(node),
+				Image:     node.ImageData,
 			},
 		)
 		if i > 0 {
@@ -97,7 +108,7 @@ func layoutSmartArtLinear(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 }
 
 func layoutSmartArtGrid(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
-	nodes := flattenSmartArtNodes(diagram.Nodes)
+	nodes := smartArtLayoutNodes(diagram.Nodes)
 	if len(nodes) == 0 {
 		return nil, nil
 	}
@@ -113,8 +124,8 @@ func layoutSmartArtGrid(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLin
 	cols := int(math.Ceil(math.Sqrt(float64(len(nodes)))))
 	rows := int(math.Ceil(float64(len(nodes)) / float64(cols)))
 	gap := 10.0
-	boxW := (w - gap*float64(max(cols-1, 0))) / float64(cols)
-	boxH := (h - gap*float64(max(rows-1, 0))) / float64(rows)
+	boxW := math.Max(1, (w-gap*float64(max(cols-1, 0)))/float64(cols))
+	boxH := math.Max(1, (h-gap*float64(max(rows-1, 0)))/float64(rows))
 	boxes := make([]smartArtBox, 0, len(nodes))
 	for i, node := range nodes {
 		col := i % cols
@@ -126,14 +137,15 @@ func layoutSmartArtGrid(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLin
 			H:         boxH,
 			Text:      node.Text,
 			ShapeType: shapesShapeRectangle,
-			Fill:      smartArtNodeColor(node, row+col),
+			Fill:      smartArtNodeColor(node),
+			Image:     node.ImageData,
 		})
 	}
 	return boxes, nil
 }
 
 func layoutSmartArtPyramid(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
-	nodes := flattenSmartArtNodes(diagram.Nodes)
+	nodes := smartArtLayoutNodes(diagram.Nodes)
 	if len(nodes) == 0 {
 		return nil, nil
 	}
@@ -148,6 +160,10 @@ func layoutSmartArtPyramid(diagram smartart.SmartArt) ([]smartArtBox, []smartArt
 	)
 	inverted := strings.Contains(strings.ToLower(diagram.Layout.LayoutURI()), "inverted")
 	boxH := h / float64(len(nodes))
+	// Each tier is drawn a little short of its slot so the tiers read as
+	// separate bands. A tall enough pyramid has slots thinner than that gap,
+	// which used to give the boxes a negative height.
+	tierGap := math.Min(smartArtPyramidTierGap, boxH/2)
 	boxes := make([]smartArtBox, 0, len(nodes))
 	for i, node := range nodes {
 		ratio := float64(i+1) / float64(len(nodes))
@@ -163,10 +179,11 @@ func layoutSmartArtPyramid(diagram smartart.SmartArt) ([]smartArtBox, []smartArt
 				X:         left,
 				Y:         top,
 				W:         boxW,
-				H:         boxH - 6,
+				H:         math.Max(1, boxH-tierGap),
 				Text:      node.Text,
 				ShapeType: shapesShapeRectangle,
-				Fill:      smartArtNodeColor(node, i),
+				Fill:      smartArtNodeColor(node),
+				Image:     node.ImageData,
 			},
 		)
 	}
@@ -174,7 +191,7 @@ func layoutSmartArtPyramid(diagram smartart.SmartArt) ([]smartArtBox, []smartArt
 }
 
 func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
-	nodes := flattenSmartArtNodes(diagram.Nodes)
+	nodes := smartArtLayoutNodes(diagram.Nodes)
 	if len(nodes) == 0 {
 		return nil, nil
 	}
@@ -202,7 +219,7 @@ func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 				H:         boxH,
 				Text:      nodes[0].Text,
 				ShapeType: shapesShapeEllipse,
-				Fill:      smartArtNodeColor(nodes[0], 0),
+				Fill:      smartArtNodeColor(nodes[0]),
 			},
 		}, nil
 	}
@@ -216,7 +233,7 @@ func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 			H:         boxH,
 			Text:      center.Text,
 			ShapeType: shapesShapeEllipse,
-			Fill:      smartArtNodeColor(center, 0),
+			Fill:      smartArtNodeColor(center),
 		},
 	)
 	orbit := nodes[1:]
@@ -233,7 +250,8 @@ func layoutSmartArtRadial(diagram smartart.SmartArt) ([]smartArtBox, []smartArtL
 				H:         boxH,
 				Text:      node.Text,
 				ShapeType: shapesShapeEllipse,
-				Fill:      smartArtNodeColor(node, i+1),
+				Fill:      smartArtNodeColor(node),
+				Image:     node.ImageData,
 			},
 		)
 		links = append(links, smartArtLink{StartX: cx, StartY: cy, EndX: bx + boxW/2, EndY: by + boxH/2})

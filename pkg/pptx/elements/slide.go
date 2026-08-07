@@ -83,9 +83,12 @@ type SlideContent struct {
 	Notes              string
 	NotesBody          []Paragraph
 	Images             []shapes.Image
-	Shapes             []shapes.Shape
-	Connectors         []shapes.Connector
-	Table              *tables.Table
+	// Media holds video and audio clips. The editor could insert media into an
+	// existing deck long before a generated one could carry any.
+	Media      []shapes.Media
+	Shapes     []shapes.Shape
+	Connectors []shapes.Connector
+	Table      *tables.Table
 	// Tables holds any additional tables beyond Table. Slides read from a PPTX
 	// can carry several; Table keeps the first for backwards compatibility and
 	// the rest land here so exporters do not silently drop them.

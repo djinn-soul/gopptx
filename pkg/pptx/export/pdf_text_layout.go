@@ -29,16 +29,36 @@ func fitPDFTextToBoxWithMetrics(
 	if minSize <= 0 {
 		minSize = minTextAutoFitSize
 	}
-	for size > minSize {
-		setPDFTextFontWithHint(pdf, size, bold, italic, fontHint)
-		lines := wrapPDFTextWithMetrics(pdf, text, maxWidth)
-		textH := float64(len(lines)) * pdfLineHeight(size)
-		if textH <= maxHeight {
-			return size
-		}
-		size--
+	if size <= minSize {
+		return size
 	}
-	return size
+
+	// Text only ever grows taller as the size goes up, so the largest size that
+	// fits can be found by bisection. Stepping down one point at a time re-wrapped
+	// the whole string for every size in between, which on a long paragraph cost
+	// tens of full layouts to answer one question.
+	fits := func(candidate int) bool {
+		setPDFTextFontWithHint(pdf, candidate, bold, italic, fontHint)
+		lines := wrapPDFTextWithMetrics(pdf, text, maxWidth)
+		return float64(len(lines))*pdfLineHeight(candidate) <= maxHeight
+	}
+	if fits(size) {
+		return size
+	}
+
+	best := minSize
+	for low, high := minSize, size-1; low <= high; {
+		mid := low + (high-low)/2
+		if fits(mid) {
+			best = mid
+			low = mid + 1
+			continue
+		}
+		high = mid - 1
+	}
+	// Leave the document on the size that was chosen, as the linear scan did.
+	setPDFTextFontWithHint(pdf, best, bold, italic, fontHint)
+	return best
 }
 
 func wrapPDFTextWithMetrics(pdf *gopdf.GoPdf, text string, maxWidth float64) []string {
@@ -89,21 +109,41 @@ func wrapParagraph(pdf *gopdf.GoPdf, paragraph string, maxWidth float64) []strin
 	return lines
 }
 
+// breakLongToken splits a token with no break opportunity in it — a long URL, or
+// a run of CJK, which carries no spaces at all — across as many lines as it
+// needs.
+//
+// The width of the line being built is accumulated one rune at a time rather
+// than re-measured from the start on every rune. Re-measuring made the cost
+// quadratic in the token's length, which a CJK paragraph pays in full because
+// the whole paragraph arrives here as a single token.
+//
+// Summing per-rune advances ignores kerning between the runes, which can only
+// make the sum slightly wider than the text really is, so a line breaks a hair
+// early rather than overflowing its box.
 func breakLongToken(pdf *gopdf.GoPdf, token string, maxWidth float64) []string {
 	if token == "" {
 		return []string{""}
 	}
 	parts := make([]string, 0, max(2, utf8.RuneCountInString(token)/12))
+	widths := make(map[rune]float64, 32)
 	var b strings.Builder
+	lineWidth := 0.0
 	for _, r := range token {
-		next := b.String() + string(r)
-		if measuredWidth(pdf, next) <= maxWidth || b.Len() == 0 {
+		width, seen := widths[r]
+		if !seen {
+			width = measuredWidth(pdf, string(r))
+			widths[r] = width
+		}
+		if b.Len() == 0 || lineWidth+width <= maxWidth {
 			b.WriteRune(r)
+			lineWidth += width
 			continue
 		}
 		parts = append(parts, b.String())
 		b.Reset()
 		b.WriteRune(r)
+		lineWidth = width
 	}
 	if b.Len() > 0 {
 		parts = append(parts, b.String())

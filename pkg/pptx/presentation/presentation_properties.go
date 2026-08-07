@@ -47,6 +47,7 @@ func addBasicPropertyFiles(
 		len(meta.EmbeddedFonts) > 0,
 	)
 	contentTypes = addInkContentTypes(contentTypes, slides)
+	contentTypes = addMediaContentTypes(contentTypes, slides)
 	// Each chart that ships a workbook needs a content type for it, or
 	// PowerPoint refuses the package.
 	for _, number := range chartEmbeddingNumbers {

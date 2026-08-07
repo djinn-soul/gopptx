@@ -92,6 +92,7 @@ func pdfViaNative(
 	// The document's font registry lives as long as the document does; dropping
 	// it here keeps a long-lived process from holding one per export.
 	defer releaseDocumentFonts(pdf)
+	setNativePDFDocumentInfo(pdf, title)
 	if err := configureNativePDFFont(pdf, opts); err != nil {
 		return err
 	}
@@ -149,6 +150,10 @@ func renderNativePDFSlide(
 	page pageSize,
 ) error {
 	pdf.AddPage()
+	// Anchor the page so links to this slide from anywhere in the deck resolve,
+	// and give it a bookmark so a viewer can navigate the deck.
+	pdf.SetAnchor(slidePDFAnchor(index))
+	pdf.AddOutline(slideOutlineTitle(slide, index))
 
 	var errs []error
 	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
@@ -326,6 +331,10 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 	if rotated {
 		pdf.RotateReset()
 	}
+
+	// The clickable area is the shape's box, whatever its geometry, which is
+	// what PowerPoint's own PDF export puts there.
+	addPDFHyperlink(pdf, shapeClickAction(s.ClickAction, s.Hyperlink), x, y, w, h)
 
 	// Reset colors. The dash pattern is document-wide state in gopdf, so a
 	// dashed shape would otherwise leave every later stroke dashed too.

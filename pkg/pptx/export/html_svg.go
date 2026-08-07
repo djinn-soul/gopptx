@@ -59,6 +59,26 @@ func renderShapesSVG(shapeList []shapes.Shape) string {
 	return sb.String()
 }
 
+// shapeTextColor is the colour the shape's first non-empty run states, or empty
+// when it states none.
+func shapeTextColor(s shapes.Shape) string {
+	for _, paragraph := range s.TextParagraphs {
+		for _, run := range paragraph.Runs {
+			if run.Text != "" && run.Color != "" {
+				return run.Color
+			}
+		}
+	}
+	return ""
+}
+
+func ensureHashOrDefault(color, fallback string) string {
+	if strings.TrimSpace(color) == "" {
+		return fallback
+	}
+	return ensureHash(color)
+}
+
 func ensureHash(color string) string {
 	if color == "" {
 		return ""
@@ -213,8 +233,11 @@ func renderShape(s shapes.Shape, index int) string {
 
 	// Text over shape
 	if s.Text != "" {
-		textColor := "#000000" // Default fallback; actual shape text extraction could be richer
-		fontSize := 14.0       // Arbitrary px for shape text fallback
+		// Black is only the fallback: a shape whose runs state a colour is drawn
+		// in it, which is what keeps white SmartArt captions readable on their
+		// accent-filled nodes instead of black-on-blue.
+		textColor := ensureHashOrDefault(shapeTextColor(s), "#000000")
+		fontSize := 14.0 // Arbitrary px for shape text fallback
 		textX := x + cx/2
 		textY := y + cy/2
 		escaped := html.EscapeString(s.Text)
