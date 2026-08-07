@@ -90,6 +90,25 @@ li {
   z-index: 2;
 }
 
+/* Speaker notes sit under the slide, quieter than its content. */
+.slide-notes {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #fafafa;
+  color: #555;
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+.slide-notes p {
+  margin: 0 0 8px 0;
+}
+
+.slide-notes p:last-child {
+  margin-bottom: 0;
+}
+
 pre {
   background-color: #f5f5f5;
   padding: 15px;

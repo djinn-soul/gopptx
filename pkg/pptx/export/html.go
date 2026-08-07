@@ -208,7 +208,49 @@ func renderSlideToWriter(w io.Writer, slide elements.SlideContent, index int, op
 	if err := writeString(w, "</div>\n"); err != nil { // content
 		return err
 	}
+
+	if err := renderNotesToWriter(w, slide, opts); err != nil {
+		return err
+	}
 	return writeString(w, "</div>\n") // slide
+}
+
+// renderNotesToWriter prints the slide's speaker notes, preferring the rich
+// NotesBody paragraphs over the flat Notes string when both are present.
+func renderNotesToWriter(w io.Writer, slide elements.SlideContent, opts HTMLOptions) error {
+	if !opts.IncludeNotes {
+		return nil
+	}
+	paragraphs := notesParagraphs(slide)
+	if len(paragraphs) == 0 {
+		return nil
+	}
+
+	if err := writeString(w, "<div class=\"slide-notes\">\n"); err != nil {
+		return err
+	}
+	for _, paragraph := range paragraphs {
+		if _, err := fmt.Fprintf(w, "<p>%s</p>\n", html.EscapeString(paragraph)); err != nil {
+			return err
+		}
+	}
+	return writeString(w, "</div>\n")
+}
+
+func notesParagraphs(slide elements.SlideContent) []string {
+	if len(slide.NotesBody) > 0 {
+		out := make([]string, 0, len(slide.NotesBody))
+		for _, paragraph := range slide.NotesBody {
+			if plain := elements.RunsToPlainText(paragraph.Runs); strings.TrimSpace(plain) != "" {
+				out = append(out, plain)
+			}
+		}
+		return out
+	}
+	if strings.TrimSpace(slide.Notes) == "" {
+		return nil
+	}
+	return strings.Split(slide.Notes, "\n")
 }
 
 func renderTableToWriter(w io.Writer, table *tables.Table) error {

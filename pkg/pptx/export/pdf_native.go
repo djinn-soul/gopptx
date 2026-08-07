@@ -78,7 +78,7 @@ func optionsPageSize(opts PDFOptions) pageSize {
 
 // pdfViaNative renders slides directly to PDF using gopdf drawing primitives.
 func pdfViaNative(
-	_ string,
+	title string,
 	slides []elements.SlideContent,
 	orders []slidePaintOrder,
 	outputPath string,
@@ -102,6 +102,10 @@ func pdfViaNative(
 			totalVisible++
 		}
 	}
+	if opts.IncludeFrontmatter {
+		renderPDFFrontmatter(pdf, title, totalVisible, page)
+	}
+
 	visibleIndex := 0
 	var renderErrs []error
 	for i, slide := range slides {
@@ -115,6 +119,9 @@ func pdfViaNative(
 		}
 		if err := renderNativePDFSlide(pdf, slide, order, visibleIndex, totalVisible, page); err != nil {
 			renderErrs = append(renderErrs, err)
+		}
+		if opts.IncludeNotes {
+			renderPDFNotesPage(pdf, slide, visibleIndex, page)
 		}
 	}
 
