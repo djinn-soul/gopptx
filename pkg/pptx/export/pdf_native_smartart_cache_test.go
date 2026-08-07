@@ -124,3 +124,48 @@ func TestRenderPDFSmartArtFromCacheReportsWhetherItDrew(t *testing.T) {
 		t.Error("drew a stale cache")
 	}
 }
+
+func TestCachedShapeAppliesStatedTextInsets(t *testing.T) {
+	cached := cachedNodeShape("Step")
+	tight := int64(45720) // 0.05in
+	cached.InsetLeft = &tight
+	cached.InsetTop = &tight
+
+	shape, ok := smartArtCachedShape(cachedDiagram([]smartart.DrawingShape{cached}, "Step"), cached)
+	if !ok {
+		t.Fatal("the cached shape was rejected")
+	}
+	if shape.TextFrame == nil {
+		t.Fatal("no text frame was built for a body that states insets")
+	}
+	if int64(shape.TextFrame.MarginLeft) != tight {
+		t.Errorf("MarginLeft = %d, want the stated %d", int64(shape.TextFrame.MarginLeft), tight)
+	}
+	if int64(shape.TextFrame.MarginTop) != tight {
+		t.Errorf("MarginTop = %d, want the stated %d", int64(shape.TextFrame.MarginTop), tight)
+	}
+	// The sides the body left unstated keep the OOXML defaults.
+	if int64(shape.TextFrame.MarginRight) != ooxmlDefaultInsetLREMU {
+		t.Errorf("MarginRight = %d, want the default %d",
+			int64(shape.TextFrame.MarginRight), ooxmlDefaultInsetLREMU)
+	}
+	if int64(shape.TextFrame.MarginBottom) != ooxmlDefaultInsetTBEMU {
+		t.Errorf("MarginBottom = %d, want the default %d",
+			int64(shape.TextFrame.MarginBottom), ooxmlDefaultInsetTBEMU)
+	}
+}
+
+func TestCachedShapeWithoutInsetsKeepsTheDefaults(t *testing.T) {
+	cached := cachedNodeShape("Step")
+	shape, ok := smartArtCachedShape(cachedDiagram([]smartart.DrawingShape{cached}, "Step"), cached)
+	if !ok {
+		t.Fatal("the cached shape was rejected")
+	}
+	if shape.TextFrame == nil {
+		t.Fatal("the anchor should still have built a text frame")
+	}
+	if int64(shape.TextFrame.MarginLeft) != ooxmlDefaultInsetLREMU {
+		t.Errorf("MarginLeft = %d, want the default %d",
+			int64(shape.TextFrame.MarginLeft), ooxmlDefaultInsetLREMU)
+	}
+}

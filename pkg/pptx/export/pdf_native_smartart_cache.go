@@ -103,6 +103,7 @@ func smartArtCachedShape(diagram smartart.SmartArt, cached smartart.DrawingShape
 		shape.RotationDeg = &rotation
 	}
 	shape = shape.WithVerticalAnchor(smartArtCachedAnchor(cached.Anchor))
+	shape = smartArtCachedInsets(shape, cached)
 	shape.TextParagraphs = smartArtCachedParagraphs(cached)
 	shape.Text = smartArtCachedPlainText(cached)
 	return shape, true
@@ -133,6 +134,31 @@ func smartArtCachedAdjustments(cached smartart.DrawingShape) []shapes.ShapeAdjus
 // what Shape carries.
 func smartArtCachedRotation(cached smartart.DrawingShape) int {
 	return int(math.Round(cached.RotationDeg))
+}
+
+// smartArtCachedInsets applies the text insets the cached body states, falling
+// back to the OOXML defaults per side. The cache was read for these and then
+// thrown away, so a node whose layout tightened its insets drew its caption at
+// the wrong offset.
+//
+// They are set even when the body states none, because the shape already has a
+// text frame by this point — setting the anchor creates one — and a fresh frame
+// defaults to 0.05in on every side, where OOXML puts 0.1in on the left and
+// right. Left alone, every cached caption sat too close to its box's sides.
+func smartArtCachedInsets(shape shapes.Shape, cached smartart.DrawingShape) shapes.Shape {
+	return shape.WithTextMargins(
+		styling.Emu(insetOrDefault(cached.InsetLeft, ooxmlDefaultInsetLREMU)),
+		styling.Emu(insetOrDefault(cached.InsetTop, ooxmlDefaultInsetTBEMU)),
+		styling.Emu(insetOrDefault(cached.InsetRight, ooxmlDefaultInsetLREMU)),
+		styling.Emu(insetOrDefault(cached.InsetBottom, ooxmlDefaultInsetTBEMU)),
+	)
+}
+
+func insetOrDefault(stated *int64, fallback int64) int64 {
+	if stated == nil {
+		return fallback
+	}
+	return *stated
 }
 
 func smartArtCachedAnchor(anchor string) shapes.TextFrameAnchor {
