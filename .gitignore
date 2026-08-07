@@ -307,3 +307,6 @@ web*
 # Tooling caches and local scratch work
 .serena/
 scratch/
+
+# Local-only parity notes: never commit
+PPT_RS_PARITY_2026-08-04.md
