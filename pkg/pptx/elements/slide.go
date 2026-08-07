@@ -170,6 +170,26 @@ func (s SlideContent) AddBullet(text string) SlideContent {
 	return s
 }
 
+// AddFormattedBullet appends one bullet, reading **bold**, *italic* and `code`
+// out of the text rather than leaving the markers as literal characters.
+func (s SlideContent) AddFormattedBullet(text string) SlideContent {
+	runs, styled := ParseInlineRuns(text)
+	if !styled {
+		return s.AddBullet(text)
+	}
+	return s.AddBulletRuns(runs)
+}
+
+// AddFormattedBulletWithStyle is AddFormattedBullet with explicit paragraph
+// styling.
+func (s SlideContent) AddFormattedBulletWithStyle(text string, style ParagraphStyle) SlideContent {
+	runs, styled := ParseInlineRuns(text)
+	if !styled {
+		return s.AddBulletWithStyle(text, style)
+	}
+	return s.AddBulletRunsWithStyle(runs, style)
+}
+
 // AddBulletWithStyle appends one bullet item with explicit styling.
 func (s SlideContent) AddBulletWithStyle(text string, style ParagraphStyle) SlideContent {
 	s.Bullets = append(s.Bullets, text)

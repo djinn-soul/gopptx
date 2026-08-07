@@ -72,6 +72,17 @@ func NormalizeRuns(runs []Run) []Run {
 	return text.NormalizeRuns(runs)
 }
 
+// ParseInlineRuns splits text on the inline markdown markers — **bold**,
+// *italic*, `code` — returning the runs and whether any formatting was found.
+func ParseInlineRuns(input string) ([]Run, bool) {
+	return text.ParseInlineRuns(input)
+}
+
+// HasInlineFormatting reports whether the text carries inline markers.
+func HasInlineFormatting(input string) bool {
+	return text.HasInlineFormatting(input)
+}
+
 func RunsToPlainText(runs []Run) string {
 	return text.RunsToPlainText(runs)
 }

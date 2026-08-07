@@ -9,11 +9,9 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 )
 
+// defaultInlineRunsCapacity is the run capacity the AST walker preallocates for
+// one line of inline content.
 const defaultInlineRunsCapacity = 4
-
-const (
-	boldMarkerLength = 2
-)
 
 // ParseOptions controls markdown-to-slide conversion behavior.
 type ParseOptions struct {
@@ -54,95 +52,9 @@ func SlidesFromMarkdownFile(markdownPath string) ([]elements.SlideContent, error
 	return SlidesFromMarkdownWithOptions(string(content), options)
 }
 
-func parseInlineTextRuns(text string) ([]elements.Run, bool) {
-	input := strings.TrimSpace(text)
-	if input == "" {
-		return nil, false
-	}
-
-	runs := make([]elements.Run, 0, defaultInlineRunsCapacity)
-	hasStyled := false
-	for i := 0; i < len(input); {
-		if run, nextI, handled := tryHandleRichRun(input, i); handled {
-			runs = append(runs, run)
-			hasStyled = true
-			i = nextI
-			continue
-		}
-
-		next := nextInlineMarkerOffset(input[i:])
-		if next < 0 {
-			runs = append(runs, elements.Run{Text: input[i:]})
-			break
-		}
-		if next == 0 {
-			runs = append(runs, elements.Run{Text: input[i : i+1]})
-			i++
-			continue
-		}
-		runs = append(runs, elements.Run{Text: input[i : i+next]})
-		i += next
-	}
-
-	return elements.NormalizeRuns(runs), hasStyled
-}
-
-func tryHandleRichRun(input string, i int) (elements.Run, int, bool) {
-	if input[i] == '`' {
-		return handleCodeRun(input, i)
-	}
-	if strings.HasPrefix(input[i:], "**") {
-		return handleBoldRun(input, i)
-	}
-	if input[i] == '*' {
-		return handleItalicRun(input, i)
-	}
-	return elements.Run{}, i, false
-}
-
-func handleCodeRun(input string, i int) (elements.Run, int, bool) {
-	closeIdx := strings.Index(input[i+1:], "`")
-	if closeIdx >= 0 {
-		end := i + 1 + closeIdx
-		if end > i+1 {
-			return elements.Run{Text: input[i+1 : end], Code: true}, end + 1, true
-		}
-	}
-	return elements.Run{}, i, false
-}
-
-func handleBoldRun(input string, i int) (elements.Run, int, bool) {
-	closeIdx := strings.Index(input[i+boldMarkerLength:], "**")
-	if closeIdx >= 0 {
-		end := i + boldMarkerLength + closeIdx
-		if end > i+boldMarkerLength {
-			return elements.Run{Text: input[i+boldMarkerLength : end], Bold: true}, end + boldMarkerLength, true
-		}
-	}
-	return elements.Run{}, i, false
-}
-
-func handleItalicRun(input string, i int) (elements.Run, int, bool) {
-	closeIdx := strings.Index(input[i+1:], "*")
-	if closeIdx >= 0 {
-		end := i + 1 + closeIdx
-		if end > i+1 {
-			return elements.Run{Text: input[i+1 : end], Italic: true}, end + 1, true
-		}
-	}
-	return elements.Run{}, i, false
-}
-
-func nextInlineMarkerOffset(input string) int {
-	next := -1
-	for _, marker := range []string{"`", "*"} {
-		idx := strings.Index(input, marker)
-		if idx < 0 {
-			continue
-		}
-		if next < 0 || idx < next {
-			next = idx
-		}
-	}
-	return next
+// parseInlineTextRuns splits a line on the inline markdown markers. The parser
+// itself now lives with the run model, so the plain generator path can reach it
+// too.
+func parseInlineTextRuns(line string) ([]elements.Run, bool) {
+	return elements.ParseInlineRuns(line)
 }
