@@ -310,10 +310,12 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 
 	renderPDFShapeEffects(pdf, s, x, y, w, h, hasFill)
 	softEdgesApplied := applyPDFShapeSoftEdges(pdf, s)
+	fillAlphaApplied := applyPDFShapeFillAlpha(pdf, s, softEdgesApplied)
 	if style != "" {
 		drawPDFGeometry(pdf, s, x, y, w, h, style)
 	}
-	if softEdgesApplied {
+	if softEdgesApplied || fillAlphaApplied {
+		// The text below must not inherit the fill's alpha.
 		pdf.ClearTransparency()
 	}
 

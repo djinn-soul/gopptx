@@ -1,7 +1,10 @@
 package export
 
 import (
+	"math"
 	"testing"
+
+	"github.com/signintech/gopdf"
 
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
 	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
@@ -167,5 +170,64 @@ func TestCachedShapeWithoutInsetsKeepsTheDefaults(t *testing.T) {
 	if int64(shape.TextFrame.MarginLeft) != ooxmlDefaultInsetLREMU {
 		t.Errorf("MarginLeft = %d, want the default %d",
 			int64(shape.TextFrame.MarginLeft), ooxmlDefaultInsetLREMU)
+	}
+}
+
+func TestCachedFillCarriesTheStatedOpacity(t *testing.T) {
+	// 40000 of 100000 is 40% opaque, so 60% transparent.
+	fill := smartArtCachedFill("4472C4", 40000)
+	if fill.Transparency == nil {
+		t.Fatal("a part-transparent fill came through opaque")
+	}
+	if math.Abs(*fill.Transparency-0.6) > 0.0001 {
+		t.Errorf("Transparency = %v, want 0.6", *fill.Transparency)
+	}
+}
+
+func TestCachedFillTreatsOmittedAlphaAsOpaque(t *testing.T) {
+	// OOXML omits a:alpha for an opaque colour, so the parser leaves zero.
+	if fill := smartArtCachedFill("4472C4", 0); fill.Transparency != nil {
+		t.Errorf("Transparency = %v, want nil for an omitted alpha", *fill.Transparency)
+	}
+	if fill := smartArtCachedFill("4472C4", 100000); fill.Transparency != nil {
+		t.Errorf("Transparency = %v, want nil for a fully opaque alpha", *fill.Transparency)
+	}
+}
+
+func TestFillAlphaIsAppliedAndDefersToSoftEdges(t *testing.T) {
+	pdf := newTestPDF(t)
+
+	translucent := shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100).
+		WithFill(shapes.NewShapeFill("4472C4").WithTransparency(0.5))
+	if !applyPDFShapeFillAlpha(pdf, translucent, false) {
+		t.Error("a translucent fill did not set any transparency")
+	}
+	pdf.ClearTransparency()
+
+	if applyPDFShapeFillAlpha(pdf, translucent, true) {
+		t.Error("the fill alpha overwrote the transparency soft edges had already set")
+	}
+
+	opaque := shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100).
+		WithFill(shapes.NewShapeFill("4472C4"))
+	if applyPDFShapeFillAlpha(pdf, opaque, false) {
+		t.Error("an opaque fill set a transparency")
+	}
+}
+
+// TestEffectsBlendModeIsAcceptedByGopdf guards the constant that silently
+// disabled every transparency in this package: gopdf rejects an unknown blend
+// mode, and the callers swallow that error.
+func TestEffectsBlendModeIsAcceptedByGopdf(t *testing.T) {
+	if _, err := gopdf.NewTransparency(0.5, shapeEffectsBlendMode); err != nil {
+		t.Fatalf("gopdf rejects shapeEffectsBlendMode %q: %v", shapeEffectsBlendMode, err)
+	}
+}
+
+func TestSoftEdgesActuallyApplyTransparency(t *testing.T) {
+	pdf := newTestPDF(t)
+	shape := shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100).WithSoftEdges(true)
+	if !applyPDFShapeSoftEdges(pdf, shape) {
+		t.Error("soft edges reported no transparency set")
 	}
 }

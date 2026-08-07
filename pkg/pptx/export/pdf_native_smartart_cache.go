@@ -89,7 +89,7 @@ func smartArtCachedShape(diagram smartart.SmartArt, cached smartart.DrawingShape
 		styling.Emu(cached.CY),
 	)
 	if hex := cached.Fill.SRGB; hex != "" && cached.PresetGeom != "" {
-		shape = shape.WithFill(shapes.NewShapeFill(hex))
+		shape = shape.WithFill(smartArtCachedFill(hex, cached.Fill.AlphaPct))
 	}
 	if hex := cached.Line.SRGB; hex != "" && cached.PresetGeom != "" && cached.LineWidthEMU > 0 {
 		shape = shape.WithLine(shapes.NewShapeLine(hex, styling.Emu(cached.LineWidthEMU)))
@@ -135,6 +135,23 @@ func smartArtCachedAdjustments(cached smartart.DrawingShape) []shapes.ShapeAdjus
 func smartArtCachedRotation(cached smartart.DrawingShape) int {
 	return int(math.Round(cached.RotationDeg))
 }
+
+// smartArtCachedFill is the node's fill, carrying the opacity the cache states.
+//
+// OOXML writes a:alpha in 1/100000 with 100000 meaning fully opaque, and omits
+// it entirely for an opaque colour — which is why zero here reads as opaque
+// rather than invisible. The cache was read for this and then dropped, so the
+// see-through fills a Venn or a layered diagram relies on painted solid.
+func smartArtCachedFill(hex string, alphaPct int) shapes.ShapeFill {
+	fill := shapes.NewShapeFill(hex)
+	if alphaPct <= 0 || alphaPct >= ooxmlFullyOpaqueAlpha {
+		return fill
+	}
+	return fill.WithTransparency(1 - float64(alphaPct)/ooxmlFullyOpaqueAlpha)
+}
+
+// ooxmlFullyOpaqueAlpha is the a:alpha value that means no transparency at all.
+const ooxmlFullyOpaqueAlpha = 100000
 
 // smartArtCachedInsets applies the text insets the cached body states, falling
 // back to the OOXML defaults per side. The cache was read for these and then
