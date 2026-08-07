@@ -207,11 +207,14 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 	case shapes.ShapeTypeCloudCallout, shapes.ShapeTypeCloud:
 		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
 	default:
-		// The flowchart family and the remaining single-polygon presets live in
-		// their own table; a rectangle is only the last resort.
-		if !drawPDFExtendedGeometry(pdf, fl, s.Type, x, y, w, h, style) {
-			pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
+		// The presets that draw as a single outline live in their own tables; a
+		// rectangle is only the last resort.
+		if drawPDFExtendedGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
+			drawPDFCornerGeometry(pdf, fl, s.Type, x, y, w, h, style) ||
+			drawPDFSolidGeometry(pdf, fl, s.Type, x, y, w, h, style) {
+			return
 		}
+		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
 	}
 }
 
