@@ -20,7 +20,7 @@ func addCodeBlock(slide *elements.SlideContent, lang string, code string) {
 	style := elements.DefaultParagraphStyle().WithNoBullet()
 	normalizedLang := strings.ToLower(strings.TrimSpace(lang))
 	if normalizedLang == "" {
-		normalizedLang = "text"
+		normalizedLang = LanguagePlainText
 	}
 	header := []elements.Run{
 		elements.NewRun("[" + strings.ToUpper(normalizedLang) + "]").

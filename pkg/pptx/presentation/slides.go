@@ -56,6 +56,10 @@ func renderSlides(
 			builder.ridNext,
 		)
 
+		// Code blocks are shapes with a highlighted text body, appended after
+		// the caller's own shapes so they paint on top of a background shape.
+		slideShapes := append(append([]shapes.Shape(nil), slide.Shapes...), codeBlockShapes(slide)...)
+
 		slideXML := pptxxml.SlideWithLayout(
 			elements.SlideLayoutXMLMode(slide.Layout),
 			parts.title,
@@ -66,8 +70,8 @@ func renderSlides(
 			parts.tables,
 			parts.chartFrames,
 			parts.imageRefs,
-			shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
-			shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes, hyperlinkRIDs),
+			shapes.ToXMLShapeSpecs(slideShapes, hyperlinkRIDs),
+			shapes.ToXMLConnectorSpecs(slide.Connectors, slideShapes, hyperlinkRIDs),
 			parts.placeholders,
 			parts.smartArtFrames,
 			elements.ToXMLBackgroundSpec(slide.Background, parts.backgroundRID),

@@ -114,7 +114,10 @@ type SlideContent struct {
 	// Tables holds the tables beyond Table. A slide can carry several charts;
 	// the typed pointers are one per kind, so this is how a caller places two
 	// of the same kind, or more than one chart at all.
-	Charts               []charts.ChartDefinition
+	Charts []charts.ChartDefinition
+	// CodeBlocks holds source listings placed at explicit coordinates, as
+	// opposed to code appended as bullets in the body placeholder.
+	CodeBlocks           []CodeBlock
 	Animations           []animations.Animation
 	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
