@@ -19,17 +19,21 @@ type ShapeAdjustment struct {
 type Shape struct {
 	// ZOrder is the shape's position in the slide shape tree. Lower paints
 	// first (further back). Zero for shapes not read from a PPTX.
-	ZOrder         int
-	Type           string
-	X              styling.Length
-	Y              styling.Length
-	CX             styling.Length
-	CY             styling.Length
-	Fill           *ShapeFill
-	Line           *ShapeLine
-	GradientFill   *ShapeGradientFill
-	Text           string
-	RotationDeg    *int
+	ZOrder       int
+	Type         string
+	X            styling.Length
+	Y            styling.Length
+	CX           styling.Length
+	CY           styling.Length
+	Fill         *ShapeFill
+	Line         *ShapeLine
+	GradientFill *ShapeGradientFill
+	Text         string
+	RotationDeg  *int
+	// FlipH and FlipV mirror the shape's geometry about its own centre, as
+	// a:xfrm states them. PowerPoint applies the flip before the rotation.
+	FlipH          bool
+	FlipV          bool
 	Hyperlink      *action.Hyperlink // Legacy: mapped to ClickAction
 	ClickAction    *action.Hyperlink
 	HoverAction    *action.Hyperlink

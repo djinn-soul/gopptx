@@ -88,9 +88,55 @@ func setPDFShapeStroke(pdf *gopdf.GoPdf, s shapes.Shape) bool {
 	return true
 }
 
+// flipState mirrors a shape's outline about its own centre. gopdf exposes no
+// coordinate transform — only Rotate — so a flip has to be applied to the points
+// themselves rather than to the graphics state.
+//
+// Only the asymmetric presets change under it: a rectangle or an ellipse is its
+// own mirror, but a chevron, an arrow or a flowchart card is not, and those used
+// to draw the wrong way round when a diagram's cached layout flipped them.
+type flipState struct {
+	H, V           bool
+	cx, cy         float64
+	unflippedShape bool
+}
+
+func flipFor(s shapes.Shape, x, y, w, h float64) flipState {
+	return flipState{
+		H:              s.FlipH,
+		V:              s.FlipV,
+		cx:             x + w/2,
+		cy:             y + h/2,
+		unflippedShape: !s.FlipH && !s.FlipV,
+	}
+}
+
+// polygon draws points with the shape's flip applied.
+func (f flipState) polygon(pdf *gopdf.GoPdf, points []gopdf.Point, style string) {
+	pdf.Polygon(f.points(points), style)
+}
+
+func (f flipState) points(points []gopdf.Point) []gopdf.Point {
+	if f.unflippedShape {
+		return points
+	}
+	out := make([]gopdf.Point, len(points))
+	for i, p := range points {
+		out[i] = p
+		if f.H {
+			out[i].X = 2*f.cx - p.X
+		}
+		if f.V {
+			out[i].Y = 2*f.cy - p.Y
+		}
+	}
+	return out
+}
+
 func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per supported shape type.
 	pdf *gopdf.GoPdf, s shapes.Shape, x, y, w, h float64, style string,
 ) {
+	fl := flipFor(s, x, y, w, h)
 	switch s.Type {
 	case shapes.ShapeTypeRectangle:
 		pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
@@ -100,99 +146,99 @@ func drawPDFGeometry( //nolint:funlen // Shape dispatch requires one branch per 
 		drawPieShape(pdf, s, x, y, w, h, style)
 	case shapes.ShapeTypeEllipse:
 		// gopdf Oval only strokes; use a polygon approximation so fill works.
-		pdf.Polygon(ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
+		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
 	case shapes.ShapeTypeTriangle:
-		pdf.Polygon(
+		fl.polygon(pdf,
 			[]gopdf.Point{{X: x + w/2, Y: y}, {X: x, Y: y + h}, {X: x + w, Y: y + h}},
 			style,
 		)
 	case shapes.ShapeTypeRightTriangle:
-		pdf.Polygon(
+		fl.polygon(pdf,
 			[]gopdf.Point{{X: x, Y: y}, {X: x + w, Y: y + h}, {X: x, Y: y + h}},
 			style,
 		)
 	case shapes.ShapeTypeDiamond:
-		pdf.Polygon(
+		fl.polygon(pdf,
 			[]gopdf.Point{{X: x + w/2, Y: y}, {X: x + w, Y: y + h/2}, {X: x + w/2, Y: y + h}, {X: x, Y: y + h/2}},
 			style,
 		)
 	case shapes.ShapeTypeHexagon:
-		pdf.Polygon(hexagonPoints(x, y, w, h), style)
+		fl.polygon(pdf, hexagonPoints(x, y, w, h), style)
 	case shapes.ShapeTypePentagon:
-		pdf.Polygon(regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, pentagonSides, -math.Pi/2), style)
+		fl.polygon(pdf, regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, pentagonSides, -math.Pi/2), style)
 	case shapes.ShapeTypeOctagon:
-		pdf.Polygon(regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, octagonSides, -math.Pi/octagonSides), style)
+		fl.polygon(pdf, regularPolygonPoints(x+w/2, y+h/2, w/2, h/2, octagonSides, -math.Pi/octagonSides), style)
 	case shapes.ShapeTypeParallelogram:
 		off := w * shapeOffsetRatio
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x + off, Y: y}, {X: x + w, Y: y},
 			{X: x + w - off, Y: y + h}, {X: x, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeTrapezoid:
 		off := w * shapeOffsetRatio
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x + off, Y: y}, {X: x + w - off, Y: y},
 			{X: x + w, Y: y + h}, {X: x, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeRightArrow:
-		pdf.Polygon(rightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
+		fl.polygon(pdf, rightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeLeftArrow:
-		pdf.Polygon(leftArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
+		fl.polygon(pdf, leftArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeUpArrow:
-		pdf.Polygon(upArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
+		fl.polygon(pdf, upArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeDownArrow:
-		pdf.Polygon(downArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
+		fl.polygon(pdf, downArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeLeftRightArrow:
-		pdf.Polygon(leftRightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
+		fl.polygon(pdf, leftRightArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, w, h)), style)
 	case shapes.ShapeTypeUpDownArrow:
-		pdf.Polygon(upDownArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
+		fl.polygon(pdf, upDownArrowPoints(x, y, w, h, arrowGeometryFor(s.Adjustments, h, w)), style)
 	case shapes.ShapeTypeChevronArrow:
-		pdf.Polygon(chevronPoints(x, y, w, h), style)
+		fl.polygon(pdf, chevronPoints(x, y, w, h), style)
 	case shapes.ShapeTypeStar4, shapes.ShapeTypeStar5, shapes.ShapeTypeStar6,
 		shapes.ShapeTypeStar7, shapes.ShapeTypeStar8, shapes.ShapeTypeStar10,
 		shapes.ShapeTypeStar12, shapes.ShapeTypeStar16, shapes.ShapeTypeStar24, shapes.ShapeTypeStar32:
-		drawPDFStarShape(pdf, s.Type, x, y, w, h, style)
+		drawPDFStarShape(pdf, fl, s.Type, x, y, w, h, style)
 	case shapes.ShapeTypeHeart:
-		pdf.Polygon(heartPoints(x, y, w, h, calloutPolyRes), style)
+		fl.polygon(pdf, heartPoints(x, y, w, h, calloutPolyRes), style)
 	case shapes.ShapeTypeWedgeRectCallout, shapes.ShapeTypeWedgeRRectCallout:
-		pdf.Polygon(wedgeRectCalloutPoints(x, y, w, h), style)
+		fl.polygon(pdf, wedgeRectCalloutPoints(x, y, w, h), style)
 	case shapes.ShapeTypeWedgeEllipseCallout:
-		pdf.Polygon(wedgeEllipseCalloutPoints(x, y, w, h, calloutPolyRes), style)
+		fl.polygon(pdf, wedgeEllipseCalloutPoints(x, y, w, h, calloutPolyRes), style)
 	case shapes.ShapeTypeCloudCallout, shapes.ShapeTypeCloud:
-		pdf.Polygon(ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
+		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
 	default:
 		// The flowchart family and the remaining single-polygon presets live in
 		// their own table; a rectangle is only the last resort.
-		if !drawPDFExtendedGeometry(pdf, s.Type, x, y, w, h, style) {
+		if !drawPDFExtendedGeometry(pdf, fl, s.Type, x, y, w, h, style) {
 			pdf.RectFromUpperLeftWithStyle(x, y, w, h, style)
 		}
 	}
 }
 
 // drawPDFStarShape renders n-pointed star shapes; extracted to reduce drawPDFGeometry cyclomatic complexity.
-func drawPDFStarShape(pdf *gopdf.GoPdf, shapeType string, x, y, w, h float64, style string) {
+func drawPDFStarShape(pdf *gopdf.GoPdf, fl flipState, shapeType string, x, y, w, h float64, style string) {
 	cx, cy, rx, ry := x+w/2, y+h/2, w/2, h/2
 	switch shapeType {
 	case shapes.ShapeTypeStar5:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints5, starInnerRatio5, -math.Pi/2), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints5, starInnerRatio5, -math.Pi/2), style)
 	case shapes.ShapeTypeStar4:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints4, starInnerRatio4, -math.Pi/starPoints4), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints4, starInnerRatio4, -math.Pi/starPoints4), style)
 	case shapes.ShapeTypeStar6:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints6, starInnerRatio6, -math.Pi/starPoints6), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints6, starInnerRatio6, -math.Pi/starPoints6), style)
 	case shapes.ShapeTypeStar7:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints7, starInnerRatio7, -math.Pi/2), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints7, starInnerRatio7, -math.Pi/2), style)
 	case shapes.ShapeTypeStar8:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints8, starInnerRatio8, -math.Pi/starPoints8), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints8, starInnerRatio8, -math.Pi/starPoints8), style)
 	case shapes.ShapeTypeStar10:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints10, starInnerRatio10, -math.Pi/starPoints10), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints10, starInnerRatio10, -math.Pi/starPoints10), style)
 	case shapes.ShapeTypeStar12:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints12, starInnerRatio12, -math.Pi/starPoints12), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints12, starInnerRatio12, -math.Pi/starPoints12), style)
 	case shapes.ShapeTypeStar16:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints16, starInnerRatio16, -math.Pi/starPoints16), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints16, starInnerRatio16, -math.Pi/starPoints16), style)
 	case shapes.ShapeTypeStar24:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints24, starInnerRatio24, -math.Pi/starPoints24), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints24, starInnerRatio24, -math.Pi/starPoints24), style)
 	case shapes.ShapeTypeStar32:
-		pdf.Polygon(starPoints(cx, cy, rx, ry, starPoints32, starInnerRatio32, -math.Pi/starPoints32), style)
+		fl.polygon(pdf, starPoints(cx, cy, rx, ry, starPoints32, starInnerRatio32, -math.Pi/starPoints32), style)
 	}
 }
 

@@ -21,6 +21,7 @@ import (
 // recognised the type.
 func drawPDFExtendedGeometry(
 	pdf *gopdf.GoPdf,
+	fl flipState,
 	shapeType string,
 	x, y, w, h float64,
 	style string,
@@ -36,53 +37,53 @@ func drawPDFExtendedGeometry(
 	case shapes.ShapeTypeFlowChartAlternateProcess, shapes.ShapeTypeFlowChartTerminator:
 		drawRoundedRect(pdf, x, y, w, h, style)
 	case shapes.ShapeTypeFlowChartDecision, shapes.ShapeTypeFlowChartSort:
-		pdf.Polygon(diamondPoints(x, y, w, h), style)
+		fl.polygon(pdf, diamondPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartInputOutput:
-		pdf.Polygon(flowParallelogramPoints(x, y, w, h), style)
+		fl.polygon(pdf, flowParallelogramPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartPreparation:
-		pdf.Polygon(hexagonPoints(x, y, w, h), style)
+		fl.polygon(pdf, hexagonPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartConnector, shapes.ShapeTypeFlowChartOr,
 		shapes.ShapeTypeFlowChartSummingJunction, shapes.ShapeTypeDonut,
 		shapes.ShapeTypeNoSmoking, shapes.ShapeTypeBlockArc:
-		pdf.Polygon(ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
+		fl.polygon(pdf, ellipsePoints(x+w/2, y+h/2, w/2, h/2, calloutPolyRes), style)
 	case shapes.ShapeTypeFlowChartExtract:
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x + w/2, Y: y}, {X: x + w, Y: y + h}, {X: x, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeFlowChartMerge:
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x, Y: y}, {X: x + w, Y: y}, {X: x + w/2, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeFlowChartCollate:
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x, Y: y}, {X: x + w, Y: y}, {X: x, Y: y + h}, {X: x + w, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeFlowChartOffpageConnector:
-		pdf.Polygon(offpageConnectorPoints(x, y, w, h), style)
+		fl.polygon(pdf, offpageConnectorPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartCard, shapes.ShapeTypeFlowChartPunchedCard:
-		pdf.Polygon(clippedCornerPoints(x, y, w, h), style)
+		fl.polygon(pdf, clippedCornerPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartManualInput:
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x, Y: y + h*flowManualInputSlope}, {X: x + w, Y: y},
 			{X: x + w, Y: y + h}, {X: x, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeFlowChartManualOperation:
-		pdf.Polygon([]gopdf.Point{
+		fl.polygon(pdf, []gopdf.Point{
 			{X: x, Y: y}, {X: x + w, Y: y},
 			{X: x + w - w*flowTrapezoidInset, Y: y + h}, {X: x + w*flowTrapezoidInset, Y: y + h},
 		}, style)
 	case shapes.ShapeTypeFlowChartDocument, shapes.ShapeTypeFlowChartMultidocument:
-		pdf.Polygon(flowDocumentPoints(x, y, w, h), style)
+		fl.polygon(pdf, flowDocumentPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartDelay, shapes.ShapeTypeFlowChartDisplay:
-		pdf.Polygon(flowDelayPoints(x, y, w, h), style)
+		fl.polygon(pdf, flowDelayPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartMagneticDisk, shapes.ShapeTypeFlowChartDirectAccessStorage,
 		shapes.ShapeTypeFlowChartMagneticDrum, shapes.ShapeTypeCan:
-		pdf.Polygon(cylinderPoints(x, y, w, h), style)
+		fl.polygon(pdf, cylinderPoints(x, y, w, h), style)
 	case shapes.ShapeTypeFlowChartStoredData, shapes.ShapeTypeFlowChartOnlineStorage,
 		shapes.ShapeTypeFlowChartSequentialAccessStorage, shapes.ShapeTypeFlowChartMagneticTape:
-		pdf.Polygon(flowStoredDataPoints(x, y, w, h), style)
+		fl.polygon(pdf, flowStoredDataPoints(x, y, w, h), style)
 	case shapes.ShapeTypePlus, shapes.ShapeTypeMathPlus:
-		pdf.Polygon(crossPoints(x, y, w, h), style)
+		fl.polygon(pdf, crossPoints(x, y, w, h), style)
 	case shapes.ShapeTypeMathMinus:
 		bar := h * mathBarThickness
 		pdf.RectFromUpperLeftWithStyle(x, y+(h-bar)/2, w, bar, style)

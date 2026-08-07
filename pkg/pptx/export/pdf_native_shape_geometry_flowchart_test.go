@@ -84,12 +84,12 @@ func TestFlowchartPresetsAreRecognised(t *testing.T) {
 		shapes.ShapeTypeMathMinus,
 	}
 	for _, shapeType := range recognised {
-		if !drawPDFExtendedGeometry(pdf, shapeType, 0, 0, 100, 50, "D") {
+		if !drawPDFExtendedGeometry(pdf, flipState{unflippedShape: true}, shapeType, 0, 0, 100, 50, "D") {
 			t.Errorf("%s fell through to the rectangle fallback", shapeType)
 		}
 	}
 
-	if drawPDFExtendedGeometry(pdf, "notAPresetAtAll", 0, 0, 100, 50, "D") {
+	if drawPDFExtendedGeometry(pdf, flipState{unflippedShape: true}, "notAPresetAtAll", 0, 0, 100, 50, "D") {
 		t.Error("an unknown preset claimed to be drawn")
 	}
 }

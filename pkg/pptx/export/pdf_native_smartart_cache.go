@@ -95,6 +95,10 @@ func smartArtCachedShape(diagram smartart.SmartArt, cached smartart.DrawingShape
 		shape = shape.WithLine(shapes.NewShapeLine(hex, styling.Emu(cached.LineWidthEMU)))
 	}
 	shape.Adjustments = smartArtCachedAdjustments(cached)
+	// The cache states a mirrored shape as a flip rather than as mirrored
+	// geometry, so an arrow or chevron drew the wrong way round without this.
+	shape.FlipH = cached.FlipH
+	shape.FlipV = cached.FlipV
 	if rotation := smartArtCachedRotation(cached); rotation != 0 {
 		shape.RotationDeg = &rotation
 	}
