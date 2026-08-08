@@ -1,6 +1,6 @@
 // Package urlfetch converts web pages or raw HTML into PPTX presentations.
 //
-// It is a Go port of ppt-rs/src/web2ppt with improvements:
+// It converts fetched web pages into slides, with:
 // HTML tables are rendered as real PPTX tables rather than summary bullets.
 package urlfetch
 

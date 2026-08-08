@@ -1,6 +1,6 @@
 package styling
 
-// Color constants for convenience, parity with ppt-rs.
+// Color constants for convenience.
 const (
 	ColorRed       = "FF0000"
 	ColorGreen     = "00FF00"

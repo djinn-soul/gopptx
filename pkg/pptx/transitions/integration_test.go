@@ -106,7 +106,7 @@ func TestSlideTransitionRejectsMalformedCustomXML(t *testing.T) {
 	}
 }
 
-func TestTransitionParityFixturesAgainstPptRsFragments(t *testing.T) {
+func TestTransitionParityFixturesAgainstReferenceFragments(t *testing.T) {
 	entries := loadTransitionParityFixture(t)
 	if len(entries) == 0 {
 		t.Fatalf("transition parity fixture is empty")
@@ -122,7 +122,7 @@ func TestTransitionParityFixturesAgainstPptRsFragments(t *testing.T) {
 			continue
 		}
 		if !strings.Contains(slideXML, entry.XML) {
-			t.Fatalf("transition %q missing expected ppt-rs XML fragment %q", entry.Transition, entry.XML)
+			t.Fatalf("transition %q missing expected reference XML fragment %q", entry.Transition, entry.XML)
 		}
 	}
 }

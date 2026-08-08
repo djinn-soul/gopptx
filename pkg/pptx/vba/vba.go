@@ -1,8 +1,6 @@
 // Package vba provides types and helpers for embedding VBA macro projects in
 // macro-enabled PowerPoint presentations (.pptm).
 //
-// Ported from ppt-rs src/parts/vba_macro.rs.
-//
 // A VBA project is stored as a Compound File Binary (CFB) blob at
 // ppt/vbaProject.bin inside the OOXML package. gopptx treats this blob as
 // opaque: it can preserve an existing blob from an opened .pptm file or embed

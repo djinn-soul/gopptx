@@ -75,7 +75,7 @@ const (
 	colorOfficeSlate    = "44546A"
 )
 
-// Theme presets, parity with ppt-rs.
+// Theme presets.
 //
 //nolint:gochecknoglobals // theme presets
 var (

@@ -33,7 +33,6 @@ with Presentation.new("Quarterly Update") as pres:
 - [Throughput and batching](#throughput-and-batching)
 - [Architecture](#architecture)
 - [Documentation map](#documentation-map)
-- [Comparison with other libraries](#comparison-with-other-libraries)
 - [Development](#development)
 - [License](#license)
 
@@ -373,35 +372,12 @@ generated from it. See [Bridge operations](docs/reference/bridge-operations.md).
 | [Python `Presentation` API](docs/reference/python-presentation-api.md) | All 208 methods, grouped |
 | [Go API](docs/reference/go-api.md) | Packages, types and constructors |
 | [Bridge operations](docs/reference/bridge-operations.md) | All 179 JSON operations |
-| [Feature matrix](docs/reference/feature-matrix.md) | Honest comparison against ppt-rs and python-pptx |
+| [Feature matrix](docs/reference/feature-matrix.md) | Honest comparison against python-pptx |
 
 **Examples**
 
 - [`examples/`](examples/) — 96 runnable Go and Python programs
 - [Showcase](docs/showcase/usages/index.md) — 30 annotated recipes, simple → complex, with screenshots
-
----
-
-## Comparison with other libraries
-
-| | gopptx | python-pptx | ppt-rs |
-|---|---|---|---|
-| Language | Go + Python | Python | Rust |
-| Create decks | ✅ | ✅ | ✅ |
-| Read and edit existing decks | ✅ | ✅ | partial |
-| Chart types | 24, with embedded data workbook | 15+ | 21 |
-| Shape presets | ~200 | full MSO enum | 124 |
-| SmartArt | ✅ author and edit | ❌ | ❌ |
-| Mermaid diagrams | ✅ native | ❌ | ❌ |
-| Markdown / HTML / URL import | ✅ | ❌ | ✅ |
-| PDF export | ✅ native + LibreOffice + COM | ❌ | vector PDF |
-| Markdown export | ❌ | ❌ | ✅ |
-| MCP server | ❌ | ❌ | ✅ |
-| Cross-language bridge | ✅ JSON over C ABI | n/a | ❌ |
-
-Gaps are tracked honestly, not marketed away — see the
-[feature matrix](docs/reference/feature-matrix.md) for the current, verified list of what gopptx
-does not do.
 
 ---
 

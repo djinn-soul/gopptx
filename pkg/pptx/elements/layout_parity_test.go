@@ -10,7 +10,7 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
-func TestSlideLayoutParityFixturesAgainstPptRsLayoutDemo(t *testing.T) {
+func TestSlideLayoutParityFixturesAgainstReferenceLayoutDemo(t *testing.T) {
 	slides := []pptx.SlideContent{
 		pptx.NewSlide("Welcome to Layout Demo").WithTitleOnlyLayout(),
 		pptx.NewSlide("Centered Title Slide").WithCenteredTitleLayout(),
@@ -106,7 +106,7 @@ func TestSlideLayoutParityFixturesAgainstPptRsLayoutDemo(t *testing.T) {
 		}
 		reference := testutil.ReadZipFile(t, testutil.FixtureZipReader(t, "layout_demo.pptx"), tc.referenceSlide)
 		ours := testutil.ReadZipFile(t, zr, tc.generatedSlide)
-		testutil.AssertContainsTokens(t, "ppt-rs layout fixture "+tc.referenceSlide, reference, tc.tokens)
+		testutil.AssertContainsTokens(t, "reference layout fixture "+tc.referenceSlide, reference, tc.tokens)
 		testutil.AssertContainsTokens(t, "gopptx layout parity "+tc.generatedSlide, ours, tc.tokens)
 	}
 }

@@ -174,9 +174,8 @@ If a check is environment-dependent, include details in the PR description.
   is worse than no sample — most of the documentation defects found in this repository were
   snippets nobody executed.
 - Wrap coordinates in `Inches()` / `Point()` / `Emu()` in every sample.
-- When you close a gap listed in `PPT_RS_PARITY_2026-08-04.md`, update that document **and**
-  `docs/reference/feature-matrix.md`. When you find a new gap, record it there rather than
-  leaving the comparison flattering.
+- When you close a gap listed in `docs/reference/feature-matrix.md`, update that document. When
+  you find a new gap, record it there rather than leaving the comparison flattering.
 - `docs/reference/python-presentation-api.md` is written from introspection of the installed
   `Presentation` class. Regenerate it rather than hand-editing entries.
 

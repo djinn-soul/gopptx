@@ -1,6 +1,6 @@
 package styling
 
-// Font size presets in points, parity with ppt-rs.
+// Font size presets in points.
 const (
 	FontSizeTitle    = 44
 	FontSizeSubtitle = 32

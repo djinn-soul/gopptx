@@ -1,37 +1,35 @@
 # Feature matrix
 
-An honest account of what gopptx does, what it does not, and how it compares to the two
-libraries people usually weigh it against: **python-pptx** (the Python default) and
-**ppt-rs** (the Rust equivalent, vendored in this repo for parity work).
+An honest account of what gopptx does, what it does not, and how it compares to the library
+people usually weigh it against: **python-pptx**, the Python default.
 
 Verification method: public API and type names, plus the OOXML each feature actually emits —
-not documentation claims from either side. The gap list below is maintained against
-`PPT_RS_PARITY_2026-08-04.md`, which records the full audit.
+not documentation claims from either side.
 
 ## At a glance
 
-| | gopptx | python-pptx | ppt-rs |
-|---|---|---|---|
-| Language | Go + Python | Python | Rust |
-| Create decks | ✅ | ✅ | ✅ |
-| Read and edit existing decks | ✅ full shape tree | ✅ | partial |
-| Chart types | **24**, with embedded data workbook | 15+ | 21 |
-| Shape presets | **~200** — 206 Go constants over 203 distinct OOXML `prst` values; 202 members in the Python `ShapeType` enum | full MSO enum | 124 |
-| Tables incl. merge/split, custom styles | ✅ | partial | ✅ |
-| SmartArt | ✅ author, edit, restyle | ❌ | ❌ |
-| Mermaid diagrams | ✅ native | ❌ | ❌ |
-| Markdown / HTML / URL import | ✅ | ❌ | ✅ |
-| PDF export | ✅ native Go + LibreOffice + PowerPoint COM | ❌ | vector PDF |
-| HTML export | ✅ incl. notes | ❌ | ✅ |
-| Markdown export | ❌ | ❌ | ✅ |
-| PDF import | ❌ | ❌ | ✅ |
-| Image (PNG/JPEG) export | ❌ from the library | ❌ | ✅ |
-| MCP server | ❌ | ❌ | ✅ |
-| Low-level OPC package API | ✅ `pkg/pptx/opc` | ✅ | ✅ |
-| Package validation and repair | ✅ | ❌ | ✅ |
-| Package compression / size analysis | ✅ | ❌ | ✅ |
-| Cross-language bridge | ✅ JSON over a C ABI | n/a | ❌ |
-| Batch execution | ✅ | n/a | ❌ |
+| | gopptx | python-pptx |
+|---|---|---|
+| Language | Go + Python | Python |
+| Create decks | ✅ | ✅ |
+| Read and edit existing decks | ✅ full shape tree | ✅ |
+| Chart types | **24**, with embedded data workbook | 15+ |
+| Shape presets | **~200** — 206 Go constants over 203 distinct OOXML `prst` values; 202 members in the Python `ShapeType` enum | full MSO enum |
+| Tables incl. merge/split, custom styles | ✅ | partial |
+| SmartArt | ✅ author, edit, restyle | ❌ |
+| Mermaid diagrams | ✅ native | ❌ |
+| Markdown / HTML / URL import | ✅ | ❌ |
+| PDF export | ✅ native Go + LibreOffice + PowerPoint COM | ❌ |
+| HTML export | ✅ incl. notes | ❌ |
+| Markdown export | ❌ | ❌ |
+| PDF import | ❌ | ❌ |
+| Image (PNG/JPEG) export | ❌ from the library | ❌ |
+| MCP server | ❌ | ❌ |
+| Low-level OPC package API | ✅ `pkg/pptx/opc` | ✅ |
+| Package validation and repair | ✅ | ❌ |
+| Package compression / size analysis | ✅ | ❌ |
+| Cross-language bridge | ✅ JSON over a C ABI | n/a |
+| Batch execution | ✅ | n/a |
 
 ## By area
 
@@ -42,7 +40,7 @@ not documentation claims from either side. The gap list below is maintained agai
 | Shapes | ~200 presets, freeforms, groups, connectors with auto-routing, gradient/pattern/picture fills, shadows, glow, soft edges, rotation, flips, z-order |
 | Tables | Rows, columns, merge, split, sizing, borders, banding, built-in and custom styles; overflow tables beyond the first are written |
 | Charts | 24 types, combo, **multiple charts per slide**, embedded Excel workbook so data stays editable, axes, legends, labels, trendlines, error bars |
-| Images | Local, bytes, base64, URL, natural-size placement, crops, effects (a superset of ppt-rs — inner shadow, glow, soft edges, blur, reflection) |
+| Images | Local, bytes, base64, URL, natural-size placement, crops, effects (inner shadow, glow, soft edges, blur, reflection) |
 | Media | Video, audio, online video and OLE on both the editor and generator paths |
 | Diagrams | SmartArt generated from the data model — every layout PowerPoint offers, node-level edits, quick styles, colour styles — and native Mermaid |
 | Layouts | Every generated layout carries a `p:sldLayout/@type`; the vertical-text layouts ship |
@@ -60,10 +58,10 @@ Four things, all verified absent in the current tree rather than inferred:
 
 | Missing | Detail | Workaround |
 |---|---|---|
-| **PPTX → Markdown export** | No exporter. ppt-rs has `export/md.rs`. | Read the deck and format the text yourself; `list_shapes` and `get_shape_runs` give you the content. |
-| **PDF → PPTX import** | Export only. ppt-rs has `Presentation::from_pdf`. | None in-library. |
+| **PPTX → Markdown export** | No exporter. | Read the deck and format the text yourself; `list_shapes` and `get_shape_runs` give you the content. |
+| **PDF → PPTX import** | Export only; there is no PDF reader. | None in-library. |
 | **Image (PNG/JPEG) export and thumbnails** | The library renders to PDF and HTML but not to raster images. | Drive PowerPoint or LibreOffice externally — see [the screenshot pipeline](../guides/pptx-png-export.md) — or rasterise the exported PDF with `pypdfium2`. |
-| **MCP server** | ppt-rs ships a `ppt_mcp` binary exposing presentation tools over the Model Context Protocol. | The JSON bridge is a stable contract; an MCP wrapper over it would be thin. |
+| **MCP server** | No binary exposing presentation tools over the Model Context Protocol. | The JSON bridge is a stable contract; an MCP wrapper over it would be thin. |
 
 ## Known rough edges
 
@@ -88,7 +86,7 @@ Not missing features — things that work but will surprise you.
 
 - **Two languages, one engine.** Python gets Go's performance and Go's exact output bytes.
 - **Batching.** Write-heavy Python workloads cross the FFI boundary once per batch.
-- **SmartArt and Mermaid.** Neither comparator authors SmartArt at all.
+- **SmartArt and Mermaid.** python-pptx does not author SmartArt at all.
 - **PDF fidelity.** Three drivers, including a pure-Go renderer that needs no external process,
   graded against PowerPoint's own output.
 - **Editing depth.** The editor exposes the full shape tree — 179 operations — over a stable
@@ -96,10 +94,8 @@ Not missing features — things that work but will surprise you.
 
 ## Keeping this page honest
 
-`PPT_RS_PARITY_2026-08-04.md` in the repository root is the long-form audit: 11 verification
-passes over all 156 ppt-rs source files, including element-level, attribute-level, OPC-identity
-and numeric-defaults diffs. It listed 37 gaps. All but the four above have since been closed —
-that is what most of the recent commit history is.
+Entries here are verified against the tree: element-level, attribute-level, OPC-identity and
+numeric-defaults checks on the OOXML that gopptx actually writes.
 
-When you close a gap, update both that document and this table. When you find a new one, record
-it here rather than leaving the comparison flattering.
+When you close a gap, update this table. When you find a new one, record it here rather than
+leaving the comparison flattering.
