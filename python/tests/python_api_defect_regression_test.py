@@ -53,7 +53,10 @@ def test_office_preset_names_still_accepted(name: str) -> None:
 
 
 def test_unknown_theme_name_is_rejected_and_lists_the_alternatives() -> None:
-    with Presentation.new("Theme") as pres, pytest.raises(gopptx.GopptxError) as excinfo:
+    with (
+        Presentation.new("Theme") as pres,
+        pytest.raises(gopptx.GopptxError) as excinfo,
+    ):
         pres.apply_theme("NotATheme")
     assert "accepted names are" in str(excinfo.value)
 
@@ -81,7 +84,15 @@ def test_validate_returns_a_list_and_no_false_orphans(tmp_path) -> None:
 
 @pytest.mark.parametrize(
     "name",
-    ["ChartType", "PDFOptions", "HTMLOptions", "SlideLayoutType", "Inches", "Point", "Emu"],
+    [
+        "ChartType",
+        "PDFOptions",
+        "HTMLOptions",
+        "SlideLayoutType",
+        "Inches",
+        "Point",
+        "Emu",
+    ],
 )
 def test_types_are_reachable_from_the_package_root(name: str) -> None:
     assert hasattr(gopptx, name)

@@ -80,7 +80,7 @@ live in `result.results`, one entry per command, in request order.
 `"ok": true` at the envelope level, because the batch operation itself worked. Always inspect
 each entry.
 
-A malformed batch payload — not a failing command, but an unparseable request — fails the outer
+A malformed batch payload — not a failing command, but an unparsable request — fails the outer
 envelope with `INVALID_PAYLOAD`.
 
 ## Constraints
