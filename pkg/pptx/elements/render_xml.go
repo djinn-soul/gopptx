@@ -6,6 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/shapes"
 	"github.com/djinn-soul/gopptx/pkg/pptx/textspec"
 )
 
@@ -54,12 +55,7 @@ func BuildSlideHyperlinkRels(
 	}
 
 	for _, shape := range slide.Shapes {
-		if shape.ClickAction != nil {
-			addHyperlink(shape.ClickAction)
-		} else if shape.Hyperlink != nil {
-			addHyperlink(shape.Hyperlink)
-		}
-		addHyperlink(shape.HoverAction)
+		addShapeHyperlinks(shape, addHyperlink)
 	}
 	for _, connector := range slide.Connectors {
 		addHyperlink(connector.ClickAction)
@@ -194,4 +190,26 @@ func MapNotesMasterToSpec(master *NotesMaster, backgroundRID string) *pptxxml.No
 		spec.Background = ToXMLBackgroundSpec(master.Background, backgroundRID)
 	}
 	return spec
+}
+
+// addShapeHyperlinks registers every link one shape can carry: its own click
+// and hover actions, and the links on the runs of its rich text.
+//
+// The rich-text runs were missed entirely before, yet the renderer hands them
+// the rID map to look themselves up in, so each link emitted an <a:hlinkClick>
+// with no r:id and did nothing.
+func addShapeHyperlinks(shape shapes.Shape, addHyperlink func(*action.Hyperlink)) {
+	if shape.ClickAction != nil {
+		addHyperlink(shape.ClickAction)
+	} else if shape.Hyperlink != nil {
+		addHyperlink(shape.Hyperlink)
+	}
+	addHyperlink(shape.HoverAction)
+
+	for _, paragraph := range shape.TextParagraphs {
+		for i := range paragraph.Runs {
+			addHyperlink(paragraph.Runs[i].Hyperlink)
+			addHyperlink(paragraph.Runs[i].HoverAction)
+		}
+	}
 }
