@@ -21,41 +21,22 @@ func StandardThemePresets() map[string]styling.Theme {
 	}
 }
 
-// ResolveThemePreset resolves a preset name to a concrete theme.
+// ResolveThemePreset resolves a theme name to a concrete theme.
+//
+// Both the Office preset names ("facet", "ion") and the gopptx theme names
+// ("Corporate", "Dark") are accepted; styling.ResolveTheme owns the mapping.
 func ResolveThemePreset(name string) (styling.Theme, bool) {
-	switch normalizeThemePresetName(name) {
-	case "office2013", "office":
-		return styling.ThemeCorporate, true
-	case "facet":
-		return styling.ThemeModern, true
-	case "integral":
-		return styling.ThemeTech, true
-	case "ion":
-		return styling.ThemeDark, true
-	case "retrospect":
-		return styling.ThemeVibrant, true
-	case "slice":
-		return styling.ThemeNature, true
-	case "wisp":
-		return styling.ThemeCarbon, true
-	default:
-		return styling.Theme{}, false
-	}
+	return styling.ResolveTheme(name)
 }
 
 // SetGlobalThemePreset applies a preset to the package theme part.
 func (e *PresentationEditor) SetGlobalThemePreset(name string) error {
 	theme, ok := ResolveThemePreset(name)
 	if !ok {
-		return fmt.Errorf("unknown theme preset %q", name)
+		return fmt.Errorf(
+			"unknown theme preset %q; accepted names are %s",
+			name, strings.Join(styling.ThemeNames(), ", "),
+		)
 	}
 	return e.ApplyTheme(theme)
-}
-
-func normalizeThemePresetName(name string) string {
-	normalized := strings.ToLower(strings.TrimSpace(name))
-	normalized = strings.ReplaceAll(normalized, " ", "")
-	normalized = strings.ReplaceAll(normalized, "-", "")
-	normalized = strings.ReplaceAll(normalized, "_", "")
-	return normalized
 }

@@ -23,13 +23,9 @@ class PresentationSectionMixin(PresentationMixinBase):
             "list[dict[str, object]]",
             raw_sections if isinstance(raw_sections, list) else [],
         )
+        # execute() supplies the name/guid/slide_ids aliases; only `id`, which
+        # is not a bridge field at all, has to be derived here.
         for section in sections:
-            if "Name" in section and "name" not in section:
-                section["name"] = section["Name"]
-            if "GUID" in section and "guid" not in section:
-                section["guid"] = section["GUID"]
-            if "SlideIDs" in section and "slide_ids" not in section:
-                section["slide_ids"] = section["SlideIDs"]
             if "id" not in section and "name" in section:
                 section["id"] = section["name"]
         return cast("list[Section]", sections)

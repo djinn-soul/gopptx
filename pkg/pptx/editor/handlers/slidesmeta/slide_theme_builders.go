@@ -29,23 +29,14 @@ func BuildSlideContent(
 }
 
 // ResolveThemeByName returns a built-in theme by its public name.
+//
+// Accepts both the gopptx theme names ("Corporate", "Dark") and the Office
+// preset names ("facet", "ion"), so apply_theme and set_global_theme_preset
+// take the same vocabulary. styling.ResolveTheme owns the mapping.
 func ResolveThemeByName(name string) (styling.Theme, error) {
-	switch name {
-	case "Corporate":
-		return styling.ThemeCorporate, nil
-	case "Modern":
-		return styling.ThemeModern, nil
-	case "Vibrant":
-		return styling.ThemeVibrant, nil
-	case "Dark":
-		return styling.ThemeDark, nil
-	case "Nature":
-		return styling.ThemeNature, nil
-	case "Tech":
-		return styling.ThemeTech, nil
-	case "Carbon":
-		return styling.ThemeCarbon, nil
-	default:
+	theme, ok := styling.ResolveTheme(name)
+	if !ok {
 		return styling.Theme{}, fmt.Errorf("%w: %q", ErrUnknownThemeName, name)
 	}
+	return theme, nil
 }

@@ -144,7 +144,13 @@ class PresentationRuntimeMixin:
                     return {}
                 if not isinstance(result, dict):
                     raise GopptxError("Invalid response payload type")
-                return cast("dict[str, object]", result)
+                # Handlers that marshal Go structs without JSON tags return
+                # PascalCase keys ("ID", "RelID") while tagged ones return
+                # snake_case ("code", "path"), so which convention a caller had
+                # to use depended on the operation. Aliasing every response
+                # here gives one convention everywhere; the original keys are
+                # kept, so existing PascalCase callers are unaffected.
+                return cast("dict[str, object]", with_key_aliases(result))
             finally:
                 self._lib.deck_free_string(res_ptr)  # type: ignore[attr-defined]
 
@@ -199,10 +205,9 @@ class PresentationRuntimeMixin:
         with self._lock:
             if self._slides_metadata_cache is not None:
                 return self._slides_metadata_cache
+            # execute() already aliased the keys.
             slides = self.execute(ops.OP_LIST_SLIDES, {}).get("slides", [])
-            self._slides_metadata_cache = cast(
-                "list[SlideMetadata]", with_key_aliases(slides)
-            )
+            self._slides_metadata_cache = cast("list[SlideMetadata]", slides)
             return self._slides_metadata_cache
 
     def invalidate_cache(self) -> None:
