@@ -32,6 +32,10 @@ const (
 	SolarizedGreen   = "859900" // comments
 )
 
+// LanguagePlainText is the language name for source with no lexer: it renders
+// unhighlighted rather than being analysed.
+const LanguagePlainText = "text"
+
 // TokenType represents the type of a syntax token.
 type TokenType int
 
@@ -107,7 +111,7 @@ func (h *syntaxHighlighter) Tokenize(code string) []Token {
 func (h *syntaxHighlighter) getLexer(code string) chroma.Lexer {
 	// Map common language names to Chroma lexers
 	lang := h.lang
-	if lang == "" || lang == "text" || lang == "plain" {
+	if lang == "" || lang == LanguagePlainText || lang == "plain" {
 		return nil
 	}
 

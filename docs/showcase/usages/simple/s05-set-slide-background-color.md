@@ -31,9 +31,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.constants import ConnectorType, ShapeType
-from gopptx.schemas import Inches
+from gopptx import ConnectorType, Inches, Presentation, ShapeType
 
 with Presentation.new("S05 Set Slide Background Color") as p:
     slide = p.slides[0]

@@ -1,7 +1,7 @@
 // examples/04-text-styling/main.go demonstrates text formatting features.
 //
 // Shows how to apply slide-level text styling (bold, italic, underline, size, color)
-// to titles and content, matching the legacy ppt-rs behavior.
+// to titles and content, matching the legacy CLI behavior.
 //
 // Run with: go run ./examples/04-text-styling/main.go
 package main

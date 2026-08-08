@@ -274,6 +274,15 @@ linters:
       - path: '^(?:pkg[\\/]pptx|internal[\\/]pptxxml|examples)[\\/].*\.go$'
         text: "fieldalignment:"
         linters: [govet]
+      # The cgo bridge declares no structs of its own: cgo synthesises one
+      # argument struct per //export'd function and attributes it to the export
+      # line, so fieldalignment reports a layout that only the exported C
+      # signatures decide. There is no source to reorder, and reordering the C
+      # ABI to satisfy the linter would break every caller of the bindings.
+      # fieldalignment stays active for the hand-written binding code.
+      - path: '^bindings[\\/]c[\\/]bridge\.go$'
+        text: "fieldalignment:"
+        linters: [govet]
       # The path-level compatibility rule above supersedes older per-struct
       # fieldalignment annotations. They remain useful documentation if a file
       # later moves out of the schema/API domains.

@@ -39,7 +39,7 @@ func runLegacyFlags(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	slides := []pptx.SlideContent{
-		pptx.NewSlide("Welcome").AddBullet("Ported from ppt-rs").AddBullet("Go baseline ready"),
+		pptx.NewSlide("Welcome").AddBullet("Legacy flags supported").AddBullet("Go baseline ready"),
 		pptx.NewSlide("Next Steps").AddBullet("Add markdown parser").AddBullet("Add tables/charts/images"),
 	}
 	data, err := pptx.CreateWithSlides("Go PPTX", slides)

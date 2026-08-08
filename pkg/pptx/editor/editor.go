@@ -150,14 +150,69 @@ func (e *PresentationEditor) Slides() []common.SlideMetadata {
 	return out
 }
 
-// Validate performs a structural validation check on the underlying parts.
+// Validate performs a structural validation check on the package as it would
+// be saved.
+//
+// The manifest parts — presentation.xml, its relationships, [Content_Types] —
+// are rebuilt from editor state at save time rather than mutated on every edit,
+// so e.parts still holds whatever was opened. Validating that directly reported
+// every slide added since as an orphan: the slide part existed but the stale
+// relationships did not mention it, even though the file written moments later
+// referenced it correctly. Validation therefore runs against the same part set
+// Save would emit.
 func (e *PresentationEditor) Validate() []structural.Issue {
 	if e == nil || e.parts == nil {
 		return nil
 	}
-	v := structural.NewValidator(e.parts)
+	v := structural.NewValidator(e.validationProvider())
 	v.AddChecker(&logical.Checker{})
 	return v.Validate()
+}
+
+// validationProvider returns e.parts with the save-time manifest layered over
+// it. If the manifest cannot be built, the raw parts are validated instead —
+// whatever is wrong with them will surface as an ordinary issue.
+func (e *PresentationEditor) validationProvider() structural.PartProvider {
+	vbaProject, hasVBA := editorslide.VbaProjectFromMetadata(e.metadata.VBA)
+	updated, err := e.collectUpdatedParts(vbaProject, hasVBA)
+	if err != nil || len(updated) == 0 {
+		return e.parts
+	}
+	return overlayParts{base: e.parts, overlay: updated}
+}
+
+// overlayParts presents a base part set with some parts replaced or added.
+type overlayParts struct {
+	base    structural.PartProvider
+	overlay map[string][]byte
+}
+
+func (o overlayParts) Has(path string) bool {
+	if _, ok := o.overlay[path]; ok {
+		return true
+	}
+	return o.base.Has(path)
+}
+
+func (o overlayParts) Get(path string) ([]byte, bool) {
+	if data, ok := o.overlay[path]; ok {
+		return data, true
+	}
+	return o.base.Get(path)
+}
+
+func (o overlayParts) Keys() []string {
+	keys := o.base.Keys()
+	seen := make(map[string]bool, len(keys))
+	for _, k := range keys {
+		seen[k] = true
+	}
+	for k := range o.overlay {
+		if !seen[k] {
+			keys = append(keys, k)
+		}
+	}
+	return keys
 }
 
 // Repair attempts to automatically fix structural issues in the presentation.

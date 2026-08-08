@@ -9,6 +9,24 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
+// WithContentSize sets the content font size in points.
+func (b *SlideBuilder) WithContentSize(size int) *SlideBuilder {
+	b.content = b.content.WithContentSize(size)
+	return b
+}
+
+// WithContentUnderline sets whether the content is underlined.
+func (b *SlideBuilder) WithContentUnderline(underline bool) *SlideBuilder {
+	b.content = b.content.WithContentUnderline(underline)
+	return b
+}
+
+// WithContentVAlign sets the vertical alignment of the main content (t|ctr|b).
+func (b *SlideBuilder) WithContentVAlign(align string) *SlideBuilder {
+	b.content = b.content.WithContentVAlign(align)
+	return b
+}
+
 // WithDefaultBulletStyle sets the base style for new bullets.
 func (b *SlideBuilder) WithDefaultBulletStyle(style ParagraphStyle) *SlideBuilder {
 	b.content = b.content.WithDefaultBulletStyle(style)
@@ -228,23 +246,5 @@ func (b *SlideBuilder) WithTitleFont(font string) *SlideBuilder {
 // WithTitleItalic sets whether the title is italic.
 func (b *SlideBuilder) WithTitleItalic(italic bool) *SlideBuilder {
 	b.content = b.content.WithTitleItalic(italic)
-	return b
-}
-
-// WithTitleOnlyLayout sets the layout to title_only.
-func (b *SlideBuilder) WithTitleOnlyLayout() *SlideBuilder {
-	b.content = b.content.WithTitleOnlyLayout()
-	return b
-}
-
-// WithTitleSize sets the title font size in points.
-func (b *SlideBuilder) WithTitleSize(size int) *SlideBuilder {
-	b.content = b.content.WithTitleSize(size)
-	return b
-}
-
-// WithTitleUnderline sets whether the title is underlined.
-func (b *SlideBuilder) WithTitleUnderline(underline bool) *SlideBuilder {
-	b.content = b.content.WithTitleUnderline(underline)
 	return b
 }

@@ -6,8 +6,26 @@ import (
 	"strings"
 )
 
+// LayoutsPerMaster is how many slide layouts each master ships.
+const LayoutsPerMaster = 8
+
+const layoutsPerMaster = LayoutsPerMaster
+
+// ST_SlideLayoutType values. PowerPoint classifies a layout in the New Slide
+// gallery by this attribute and matches placeholders through it; a layout
+// without one is unclassified whatever its name says.
 const (
-	layoutsPerMaster = 6
+	LayoutTypeTitle          = "title"
+	LayoutTypeObject         = "obj"
+	LayoutTypeTwoObject      = "twoObj"
+	LayoutTypeSectionHeader  = "secHead"
+	LayoutTypeTitleOnly      = "titleOnly"
+	LayoutTypeBlank          = "blank"
+	LayoutTypeVerticalText   = "vertTx"
+	LayoutTypeVerticalTitle  = "vertTitleAndTx"
+	LayoutTypeObjectAndText  = "objTx"
+	LayoutTypePictureAndText = "picTx"
+	LayoutTypeCustom         = "cust"
 )
 
 // ColorSchemeSpec defines the 12 colors in a theme.
@@ -85,39 +103,51 @@ func SlideLayout() string {
 
 // SlideLayoutTitleAndContent renders a title-and-content layout.
 func SlideLayoutTitleAndContent() string {
-	return slideLayout("Title and Content")
+	return slideLayout("Title and Content", LayoutTypeObject)
 }
 
 // SlideLayoutTitleOnly renders a title-only layout.
 func SlideLayoutTitleOnly() string {
-	return slideLayout("Title Only")
+	return slideLayout("Title Only", LayoutTypeTitleOnly)
 }
 
 // SlideLayoutBlank renders a blank layout.
 func SlideLayoutBlank() string {
-	return slideLayout("Blank")
+	return slideLayout("Blank", LayoutTypeBlank)
 }
 
 // SlideLayoutCenteredTitle renders a centered-title layout.
 func SlideLayoutCenteredTitle() string {
-	return slideLayout("Centered Title")
+	return slideLayout("Centered Title", LayoutTypeTitle)
 }
 
 // SlideLayoutTitleAndBigContent renders a title-and-big-content layout.
 func SlideLayoutTitleAndBigContent() string {
-	return slideLayout("Title and Big Content")
+	return slideLayout("Title and Big Content", LayoutTypeObject)
 }
 
 // SlideLayoutTwoColumn renders a two-column layout.
 func SlideLayoutTwoColumn() string {
-	return slideLayout("Two Column")
+	return slideLayout("Two Column", LayoutTypeTwoObject)
 }
 
-func slideLayout(name string) string {
+// SlideLayoutTitleAndVerticalText renders a title with a vertically written
+// body.
+func SlideLayoutTitleAndVerticalText() string {
+	return slideLayout("Title and Vertical Text", LayoutTypeVerticalText)
+}
+
+// SlideLayoutVerticalTitleAndText renders a vertically written title and body.
+func SlideLayoutVerticalTitleAndText() string {
+	return slideLayout("Vertical Title and Text", LayoutTypeVerticalTitle)
+}
+
+func slideLayout(name, layoutType string) string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ` +
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ` +
-		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" preserve="1">
+		`xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="` +
+		Escape(layoutType) + `" preserve="1">
 <p:cSld name="` + Escape(name) + `">
 <p:spTree>
 <p:nvGrpSpPr>
@@ -139,6 +169,19 @@ func slideLayout(name string) string {
 <a:masterClrMapping/>
 </p:clrMapOvr>
 </p:sldLayout>`
+}
+
+// slideLayoutIDListXML names every layout of one master, in relationship order.
+func slideLayoutIDListXML(layoutIDBase int64) string {
+	var b strings.Builder
+	for i := range LayoutsPerMaster {
+		b.WriteString("\n<p:sldLayoutId id=\"")
+		b.WriteString(strconv.FormatInt(layoutIDBase+int64(i), 10))
+		b.WriteString(`" r:id="rId`)
+		b.WriteString(strconv.Itoa(i + 1))
+		b.WriteString(`"/>`)
+	}
+	return b.String()
 }
 
 func slideLayoutPartName(layoutIndex, masterIndex int) string {
@@ -178,8 +221,9 @@ func SlideMaster(spec *SlideMasterSpec) string {
 		// PowerPoint-authored packages mark additional master families as preserved.
 		masterAttrs = ` preserve="1"`
 	}
-	// Allocate in blocks to avoid overlap with master IDs across multiple masters.
-	layoutIDBase := int64(2147483649 + (masterIndex-1)*7)
+	// Allocate in blocks to avoid overlap with master IDs across multiple
+	// masters: one master id plus its layouts.
+	layoutIDBase := int64(2147483649 + (masterIndex-1)*(LayoutsPerMaster+1))
 
 	footerXML := ""
 	if spec != nil && spec.FooterText != "" {
@@ -248,13 +292,7 @@ func SlideMaster(spec *SlideMasterSpec) string {
 </p:cSld>
 <p:clrMap bg1="` + bg1 + `" tx1="` + tx1 + `" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" ` +
 		`accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
-<p:sldLayoutIdLst>
-<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase, 10) + `" r:id="rId1"/>
-<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+1, 10) + `" r:id="rId2"/>
-<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+2, 10) + `" r:id="rId3"/>
-<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+3, 10) + `" r:id="rId4"/>
-<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+4, 10) + `" r:id="rId5"/>
-<p:sldLayoutId id="` + strconv.FormatInt(layoutIDBase+5, 10) + `" r:id="rId6"/>
+<p:sldLayoutIdLst>` + slideLayoutIDListXML(layoutIDBase) + `
 </p:sldLayoutIdLst>` + txStylesXML(spec) + `
 </p:sldMaster>`
 }

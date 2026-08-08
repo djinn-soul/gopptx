@@ -41,6 +41,16 @@ type PDFOptions struct {
 	// in-memory slides, which carry no size of their own. Zero means 4:3.
 	// Exports that read a PPTX take the size from the file and ignore this.
 	SlideSize common.SlideSize
+
+	// IncludeNotes adds a page of speaker notes after each slide that has any.
+	// No export path could emit notes before, so they were lost on the way out
+	// even though the model carries them. Native renderer only: the external
+	// converters render whatever PowerPoint would print.
+	IncludeNotes bool
+
+	// IncludeFrontmatter opens the document with a title page. Native renderer
+	// only, same reason.
+	IncludeFrontmatter bool
 }
 
 // DefaultConverterTimeout bounds external converter runs. LibreOffice and the

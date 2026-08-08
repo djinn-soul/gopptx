@@ -19,6 +19,14 @@ func SlideRelationshipsWithLayout(layoutTarget string, imageTargets []string, ch
 	return SlideRelationshipsWithLayoutAndNotes(layoutTarget, imageTargets, chartRel, "")
 }
 
+// oneChartRel adapts the single-chart callers to the list form.
+func oneChartRel(chartRel *ChartRel) []ChartRel {
+	if chartRel == nil {
+		return nil
+	}
+	return []ChartRel{*chartRel}
+}
+
 // HyperlinkRel describes a hyperlink relationship for slide rels.
 type HyperlinkRel struct {
 	RID      string
@@ -33,21 +41,21 @@ func SlideRelationshipsWithLayoutAndNotes(
 	chartRel *ChartRel,
 	notesTarget string,
 ) string {
-	return SlideRelationshipsWithHyperlinks(layoutTarget, imageTargets, chartRel, notesTarget, nil)
+	return SlideRelationshipsWithHyperlinks(layoutTarget, imageTargets, oneChartRel(chartRel), notesTarget, nil)
 }
 
 // SlideRelationshipsWithHyperlinks extends slide relationships to include hyperlinks.
 func SlideRelationshipsWithHyperlinks(
 	layoutTarget string,
 	imageTargets []string,
-	chartRel *ChartRel,
+	chartRels []ChartRel,
 	notesTarget string,
 	hyperlinks []HyperlinkRel,
 ) string {
 	return SlideRelationshipsWithMultiCharts(
 		layoutTarget,
 		imageTargets,
-		chartRel,
+		chartRels,
 		nil,
 		nil,
 		notesTarget,
@@ -60,7 +68,7 @@ func SlideRelationshipsWithHyperlinks(
 func SlideRelationshipsWithMultiCharts(
 	layoutTarget string,
 	imageTargets []string,
-	chartRel *ChartRel,
+	chartRels []ChartRel,
 	placeholderCharts []ChartRel,
 	smartArtRels []SmartArtRel,
 	notesTarget string,
@@ -70,7 +78,7 @@ func SlideRelationshipsWithMultiCharts(
 	return SlideRelationshipsWithAll(
 		layoutTarget,
 		imageTargets,
-		chartRel,
+		chartRels,
 		placeholderCharts,
 		smartArtRels,
 		notesTarget,
@@ -83,7 +91,7 @@ func SlideRelationshipsWithMultiCharts(
 func SlideRelationshipsWithAll(
 	layoutTarget string,
 	imageTargets []string,
-	chartRel *ChartRel,
+	chartRels []ChartRel,
 	placeholderCharts []ChartRel,
 	smartArtRels []SmartArtRel,
 	notesTarget string,
@@ -93,7 +101,7 @@ func SlideRelationshipsWithAll(
 	var b strings.Builder
 	writeSlideRelsHeader(&b, layoutTarget)
 	maxRID := appendImageRelationships(&b, imageTargets)
-	maxRID = appendPrimaryChartRelationship(&b, chartRel, maxRID)
+	maxRID = appendChartRelationships(&b, chartRels, maxRID)
 	maxRID = appendPlaceholderChartRelationships(&b, placeholderCharts, maxRID)
 	maxRID = appendSmartArtRelationships(&b, smartArtRels, maxRID)
 	maxRID = appendHyperlinkRelationships(&b, hyperlinks, maxRID)
@@ -129,16 +137,18 @@ func appendImageRelationships(b *strings.Builder, imageTargets []string) int {
 	return maxRID
 }
 
-func appendPrimaryChartRelationship(b *strings.Builder, chartRel *ChartRel, maxRID int) int {
-	if chartRel == nil {
-		return maxRID
+// appendChartRelationships writes one relationship per chart placed directly on
+// the slide. A slide can hold several, the same way it can hold several tables.
+func appendChartRelationships(b *strings.Builder, chartRels []ChartRel, maxRID int) int {
+	for _, chartRel := range chartRels {
+		b.WriteString("\n<Relationship Id=\"")
+		b.WriteString(FastEscapeRID(chartRel.RID))
+		b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
+		b.WriteString(Escape(chartRel.Target))
+		b.WriteString("\"/>")
+		maxRID = max(maxRID, ridNumber(chartRel.RID))
 	}
-	b.WriteString("\n<Relationship Id=\"")
-	b.WriteString(FastEscapeRID(chartRel.RID))
-	b.WriteString("\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"")
-	b.WriteString(Escape(chartRel.Target))
-	b.WriteString("\"/>")
-	return max(maxRID, ridNumber(chartRel.RID))
+	return maxRID
 }
 
 func appendPlaceholderChartRelationships(b *strings.Builder, placeholderCharts []ChartRel, maxRID int) int {

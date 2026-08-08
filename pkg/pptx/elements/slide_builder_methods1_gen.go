@@ -39,6 +39,12 @@ func (b *SlideBuilder) AddBulletWithStyle(text string, style ParagraphStyle) *Sl
 	return b
 }
 
+// AddCodeBlock appends a code block to the slide.
+func (b *SlideBuilder) AddCodeBlock(block CodeBlock) *SlideBuilder {
+	b.content = b.content.AddCodeBlock(block)
+	return b
+}
+
 // AddComment appends a comment from the specified author.
 func (b *SlideBuilder) AddComment(authorName, text string) *SlideBuilder {
 	b.content = b.content.AddComment(authorName, text)
@@ -48,6 +54,18 @@ func (b *SlideBuilder) AddComment(authorName, text string) *SlideBuilder {
 // AddConnector adds a connector to the slide.
 func (b *SlideBuilder) AddConnector(connector shapes.Connector) *SlideBuilder {
 	b.content = b.content.AddConnector(connector)
+	return b
+}
+
+// AddFormattedBullet appends one bullet, reading **bold**, *italic* and `code`
+func (b *SlideBuilder) AddFormattedBullet(text string) *SlideBuilder {
+	b.content = b.content.AddFormattedBullet(text)
+	return b
+}
+
+// AddFormattedBulletWithStyle is AddFormattedBullet with explicit paragraph
+func (b *SlideBuilder) AddFormattedBulletWithStyle(text string, style ParagraphStyle) *SlideBuilder {
+	b.content = b.content.AddFormattedBulletWithStyle(text, style)
 	return b
 }
 
@@ -228,23 +246,5 @@ func (b *SlideBuilder) WithContentColor(color string) *SlideBuilder {
 // WithContentItalic sets whether the content is italic.
 func (b *SlideBuilder) WithContentItalic(italic bool) *SlideBuilder {
 	b.content = b.content.WithContentItalic(italic)
-	return b
-}
-
-// WithContentSize sets the content font size in points.
-func (b *SlideBuilder) WithContentSize(size int) *SlideBuilder {
-	b.content = b.content.WithContentSize(size)
-	return b
-}
-
-// WithContentUnderline sets whether the content is underlined.
-func (b *SlideBuilder) WithContentUnderline(underline bool) *SlideBuilder {
-	b.content = b.content.WithContentUnderline(underline)
-	return b
-}
-
-// WithContentVAlign sets the vertical alignment of the main content (t|ctr|b).
-func (b *SlideBuilder) WithContentVAlign(align string) *SlideBuilder {
-	b.content = b.content.WithContentVAlign(align)
 	return b
 }

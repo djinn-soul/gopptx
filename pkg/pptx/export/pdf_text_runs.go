@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/signintech/gopdf"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 )
 
 type pdfStyledRun struct {
@@ -26,6 +28,9 @@ type pdfStyledRun struct {
 	Subscript      bool
 	Superscript    bool
 	SmallCaps      bool
+	// Link is the run's click action, carried through wrapping so the drawn
+	// text can be covered with a link annotation where it lands.
+	Link *action.Hyperlink
 }
 
 func splitStyledRunsForWrap(runs []pdfStyledRun) []pdfStyledRun {
@@ -219,6 +224,9 @@ func renderStyledLine(pdf *gopdf.GoPdf, line []pdfStyledRun, x, y float64, opts 
 			renderPDFStyledRunHighlight(pdf, run, cursorX, y, advance, lineHeight)
 		}
 		renderPDFStyledRunTextOnBaseline(pdf, run, cursorX, y, baseline)
+		// The clickable area is the run's own box on this line, so a link that
+		// wrapped is clickable on every line it runs across.
+		addPDFHyperlink(pdf, run.Link, cursorX, y, advance, lineHeight)
 		cursorX += advance
 	}
 }

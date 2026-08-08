@@ -25,6 +25,7 @@ func addBasicPropertyFiles(
 	authors []comments.Author,
 	commentSlideIndices []int,
 	hasVBA bool,
+	chartEmbeddingNumbers []int,
 ) error {
 	hasNotes := notesPartCount > 0
 
@@ -46,6 +47,16 @@ func addBasicPropertyFiles(
 		len(meta.EmbeddedFonts) > 0,
 	)
 	contentTypes = addInkContentTypes(contentTypes, slides)
+	contentTypes = addMediaContentTypes(contentTypes, slides)
+	// Each chart that ships a workbook needs a content type for it, or
+	// PowerPoint refuses the package.
+	for _, number := range chartEmbeddingNumbers {
+		contentTypes = pptxxml.WithContentTypeOverride(
+			contentTypes,
+			ChartEmbeddingPartName(number),
+			pptxxml.ChartEmbeddingContentType,
+		)
+	}
 	presentationRels := pptxxml.PresentationRelationships(
 		slideCount,
 		hasNotes,
@@ -79,7 +90,11 @@ func addBasicPropertyFiles(
 	if includeNotesMaster {
 		nextRid++
 	}
-	nextRid += len(meta.CustomXML) * customXMLRelationshipPairCount
+	// One presentation-level relationship per custom XML item. The itemProps
+	// part each item also carries is related from that item's own .rels, not
+	// from presentation.xml.rels, so reserving a pair here ran the counter past
+	// every relationship written after it — the handout master's among them.
+	nextRid += len(meta.CustomXML)
 	if hasSections {
 		nextRid++
 	}
@@ -89,7 +104,12 @@ func addBasicPropertyFiles(
 	if hasVBA {
 		nextRid++
 	}
+	handoutRelID := ""
 	if meta.HandoutMaster != nil {
+		// The handout master relationship lands here in the rels file, and
+		// presentation.xml has to name that same rId in <p:handoutMasterIdLst>
+		// or PowerPoint never reaches the part.
+		handoutRelID = "rId" + strconv.Itoa(nextRid)
 		nextRid++
 	}
 
@@ -106,19 +126,55 @@ func addBasicPropertyFiles(
 		nextRid++
 	}
 
-	if meta.PrintSettings != nil && !meta.PrintSettings.IsDefault() {
-		pw.AddPart(pptxxml.PresPropsPartName, pptxxml.PresentationProps(meta.PrintSettings.PrnPrXML()))
-		contentTypes = pptxxml.WithContentTypeOverride(
-			contentTypes,
-			pptxxml.PresPropsPartName,
+	// presProps, viewProps and tableStyles are parts PowerPoint writes into
+	// every deck and its own package validator lists as required. presProps used
+	// to appear only when print settings were set, and the other two never — yet
+	// every table gopptx emits names a table style that only tableStyles.xml can
+	// resolve.
+	printSettingsXML := ""
+	if meta.PrintSettings != nil {
+		printSettingsXML = meta.PrintSettings.PrnPrXML()
+	}
+	customShows, err := convertCustomShows(meta.CustomShows, slideCount, masterCount)
+	if err != nil {
+		return err
+	}
+	// p:showPr belongs to CT_PresentationProperties, so the show settings are
+	// written into presProps rather than presentation.xml.
+	showPrXML := pptxxml.ShowPrXML(convertShowSettings(meta.ShowSettings, customShows))
+	standardParts := []struct {
+		partName    string
+		content     string
+		contentType string
+		relType     string
+		relTarget   string
+	}{
+		{
+			pptxxml.PresPropsPartName, pptxxml.PresentationProps(printSettingsXML, showPrXML),
 			pptxxml.PresPropsContentType,
-		)
+			pptxxml.PresPropsRelationshipType, pptxxml.PresPropsRelationshipTarget,
+		},
+		{
+			pptxxml.ViewPropsPartName, pptxxml.ViewProps(),
+			pptxxml.ViewPropsContentType,
+			pptxxml.ViewPropsRelationshipType, pptxxml.ViewPropsRelationshipTarget,
+		},
+		{
+			pptxxml.TableStylesPartName, pptxxml.TableStyles(),
+			pptxxml.TableStylesContentType,
+			pptxxml.TableStylesRelationshipType, pptxxml.TableStylesRelationshipTarget,
+		},
+	}
+	for _, part := range standardParts {
+		pw.AddPart(part.partName, part.content)
+		contentTypes = pptxxml.WithContentTypeOverride(contentTypes, part.partName, part.contentType)
 		presentationRels = pptxxml.WithRelationship(
 			presentationRels,
 			"rId"+strconv.Itoa(nextRid),
-			pptxxml.PresPropsRelationshipType,
-			pptxxml.PresPropsRelationshipTarget,
+			part.relType,
+			part.relTarget,
 		)
+		nextRid++
 	}
 
 	pw.AddPart("[Content_Types].xml", contentTypes)
@@ -131,7 +187,8 @@ func addBasicPropertyFiles(
 			meta.Title, slideCount, hasNotes,
 			meta.SlideSize.Width, meta.SlideSize.Height, masterCount,
 			protInfo, xSections, meta.RTL, xmlFonts,
-			convertShowSettings(meta.ShowSettings),
+			customShows,
+			handoutRelID,
 		),
 	)
 
@@ -145,14 +202,59 @@ func addBasicPropertyFiles(
 		pw.AddPart("_xmlsignatures/origin.sigs", pptxxml.SignatureOrigin())
 	}
 
-	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(pptxxml.CorePropertiesInfo{
-		Title: meta.Title, Subject: meta.Subject, Creator: meta.Creator, Description: meta.Description,
+	pw.AddPart("docProps/core.xml", pptxxml.CoreProperties(coreProperties(meta)))
+	pw.AddPart("docProps/app.xml", pptxxml.AppProperties(pptxxml.AppPropertiesInfo{
+		SlideCount:   slideCount,
+		NotesCount:   notesPartCount,
+		HiddenSlides: hiddenSlideCount(slides),
+		Width:        meta.SlideSize.Width,
+		Height:       meta.SlideSize.Height,
+		Application:  meta.AppProperties.Application,
+		AppVersion:   meta.AppProperties.AppVersion,
+		Company:      meta.AppProperties.Company,
+		Manager:      meta.AppProperties.Manager,
 	}))
-	pw.AddPart(
-		"docProps/app.xml",
-		pptxxml.AppProperties(slideCount, notesPartCount, meta.SlideSize.Width, meta.SlideSize.Height),
-	)
 	return nil
+}
+
+// coreProperties merges the top-level metadata fields with the fuller
+// CoreProperties struct, which the generator used to ignore entirely: the
+// top-level ones win when both are set, since they are the older API.
+func coreProperties(meta Metadata) pptxxml.CorePropertiesInfo {
+	core := meta.CoreProperties
+	pick := func(primary, secondary string) string {
+		if primary != "" {
+			return primary
+		}
+		return secondary
+	}
+	return pptxxml.CorePropertiesInfo{
+		Title:          pick(meta.Title, core.Title),
+		Subject:        pick(meta.Subject, core.Subject),
+		Creator:        pick(meta.Creator, core.Creator),
+		Description:    pick(meta.Description, core.Description),
+		Keywords:       core.Keywords,
+		Category:       core.Category,
+		ContentStatus:  core.ContentStatus,
+		Identifier:     core.Identifier,
+		Language:       core.Language,
+		Version:        core.Version,
+		LastModifiedBy: core.LastModifiedBy,
+		Revision:       core.Revision,
+		LastPrinted:    core.LastPrinted,
+		Created:        core.Created,
+		Modified:       core.Modified,
+	}
+}
+
+func hiddenSlideCount(slides []elements.SlideContent) int {
+	count := 0
+	for _, slide := range slides {
+		if slide.Hidden {
+			count++
+		}
+	}
+	return count
 }
 
 func convertSections(sections []Section, slideCount int) ([]pptxxml.Section, error) {

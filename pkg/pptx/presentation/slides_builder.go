@@ -76,14 +76,22 @@ func (b *slidePartBuilder) buildBaseSlideParts(slide elements.SlideContent) (*sl
 }
 
 func (b *slidePartBuilder) addSlideTable(slide elements.SlideContent, p *slideParts) error {
-	if slide.Table == nil {
-		return nil
+	if slide.Table != nil {
+		spec, err := slide.Table.ToTableSpec(b.num)
+		if err != nil {
+			return err
+		}
+		p.tables = append(p.tables, *spec)
 	}
-	spec, err := slide.Table.ToTableSpec(b.num)
-	if err != nil {
-		return err
+	// Tables carries every table beyond the first. It exists so a slide read
+	// from a deck with several tables does not lose them on the way back out.
+	for i := range slide.Tables {
+		spec, err := slide.Tables[i].ToTableSpec(b.num)
+		if err != nil {
+			return err
+		}
+		p.tables = append(p.tables, *spec)
 	}
-	p.table = spec
 	return nil
 }
 

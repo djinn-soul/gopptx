@@ -8,17 +8,19 @@
 package main
 
 import (
-	"github.com/djinn-soul/gopptx/pkg/pptx"
+	"os"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/urlfetch"
 )
 
 func main() {
-	slides, err := pptx.SlidesFromURL("https://raw.githubusercontent.com/djinn-soul/gopptx/main/README.md")
+	// URLToPPTX fetches the page and returns a finished deck.
+	data, err := urlfetch.URLToPPTX("https://example.com")
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = pptx.CreateWithSlides("C02 URL Fetch to Slides", slides)
-	if err != nil {
+	if err := os.WriteFile("c02-go.pptx", data, 0o600); err != nil {
 		panic(err)
 	}
 }

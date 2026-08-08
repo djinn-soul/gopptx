@@ -2,6 +2,8 @@ package editor
 
 import (
 	"encoding/json"
+
+	"github.com/djinn-soul/gopptx/pkg/pptx/validation/structural"
 )
 
 // handleDuplicateSlideAfter clones a slide and appends it immediately after.
@@ -33,6 +35,11 @@ func handleDuplicateSlideAfter(e *PresentationEditor, payload json.RawMessage) (
 // Response: {"issues": [...], "issue_count": N}.
 func handleValidate(e *PresentationEditor, _ json.RawMessage) (any, error) {
 	issues := e.Validate()
+	if issues == nil {
+		// A nil slice marshals to JSON null, so a clean deck answered "no
+		// issues" with a value clients had to special-case. Always send a list.
+		issues = []structural.Issue{}
+	}
 	return map[string]any{
 		"issues":      issues,
 		"issue_count": len(issues),

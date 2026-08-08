@@ -63,6 +63,9 @@ func contentShape(
 	y := int64(contentTopOffset) // Fixed top offset
 	cx := width - 2*int64(margin)
 	cy := int64(contentHeightEmu) // Fixed height
+	if hasBounds(style.Bounds) {
+		x, y, cx, cy = style.Bounds[0], style.Bounds[1], style.Bounds[2], style.Bounds[3]
+	}
 	return contentShapeAt(
 		shapeID,
 		"Content",
@@ -81,13 +84,16 @@ func bigContentShape(
 	bulletRuns [][]TextRunSpec,
 	style ContentStyleSpec,
 	shapeID int,
-	_, _ int64,
+	width, _ int64,
 ) string {
-	margin := int64(457200)
+	margin := int64(defaultMargin)
 	x := margin
 	y := int64(1189200) // Lower top offset for big content
-	cx := int64(8230200)
+	cx := width - 2*margin
 	cy := int64(5668800) // Taller content area
+	if hasBounds(style.Bounds) {
+		x, y, cx, cy = style.Bounds[0], style.Bounds[1], style.Bounds[2], style.Bounds[3]
+	}
 	return contentShapeAt(
 		shapeID,
 		"Content",
@@ -200,7 +206,13 @@ func contentShapeAt(
 <p:txBody>
 <a:bodyPr wrap="square" rtlCol="0" anchor="`)
 	b.WriteString(Escape(vAlign))
-	b.WriteString(`"/>
+	b.WriteString(`"`)
+	if style.TextVertical != "" {
+		b.WriteString(` vert="`)
+		b.WriteString(Escape(style.TextVertical))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`/>
 <a:lstStyle/>`)
 
 	for i, bullet := range bullets {

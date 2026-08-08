@@ -3,7 +3,6 @@
 // Provides digital signature metadata and XML generation for the
 // `_xmlsignatures/` package part per the OOXML digital signature spec.
 //
-// This is an exact port of the ppt-rs Rust implementation.
 
 package digitalsig
 

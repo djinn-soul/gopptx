@@ -30,8 +30,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.schemas import Inches
+from gopptx import Inches, Presentation
 
 with Presentation.new("S04 Insert an Image") as p:
     p.add_image(

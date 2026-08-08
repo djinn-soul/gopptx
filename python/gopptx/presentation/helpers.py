@@ -88,10 +88,20 @@ def json_loads(raw: bytes) -> object:
     return cast("object", json.loads(raw.decode("utf-8")))
 
 
+# Split points for snake_case: after a lowercase run, and between an acronym
+# and a following capitalised word. The trailing negative lookahead keeps a
+# pluralised acronym together, so "SlideIDs" becomes "slide_ids" rather than
+# "slide_i_ds".
+_SNAKE_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])(?!.?s$)")
+
+
 def snake_case(name: str) -> str:
-    """Convert CamelCase to snake_case."""
-    s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+    """Convert CamelCase to snake_case.
+
+    Handles acronyms the way the bridge emits them: "RelID" -> "rel_id",
+    "SlideIDs" -> "slide_ids", "GUID" -> "guid", "AltText" -> "alt_text".
+    """
+    return _SNAKE_BOUNDARY.sub("_", name).lower()
 
 
 def get_required_int(result: dict[str, object], key: str) -> int:

@@ -21,6 +21,9 @@ type ImageRef struct {
 	Reflection   bool
 	AltText      string
 	IsDecorative bool
+	// ZOrder is the picture's position in the slide shape tree, as read from an
+	// existing deck. Zero on pictures the caller built.
+	ZOrder int
 
 	InnerShadow    bool
 	Glow           bool

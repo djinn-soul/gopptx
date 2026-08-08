@@ -63,8 +63,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation, ShapeType
-from gopptx.schemas import Inches
+from gopptx import Inches, Presentation, ShapeType
 
 with Presentation.new("I04 Grouped Content Slide") as p:
     p.update_slide(0, layout="blank")

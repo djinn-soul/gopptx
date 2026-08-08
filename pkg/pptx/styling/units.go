@@ -18,6 +18,25 @@ const (
 	fontSizeMultiplier = 100
 )
 
+// Slide margins, so a caller placing content with Grid or Stack does not have
+// to invent one. These are the values the generator's own layouts use.
+const (
+	// Margin is the standard half-inch slide margin.
+	Margin Length = 457200
+	// MarginSmall is a quarter inch.
+	MarginSmall Length = 228600
+	// MarginLarge is one inch.
+	MarginLarge Length = 914400
+)
+
+// Standard slide sizes in EMU.
+const (
+	SlideWidth4x3   Length = 9144000
+	SlideHeight4x3  Length = 6858000
+	SlideWidth16x9  Length = 12192000
+	SlideHeight16x9 Length = 6858000
+)
+
 // Inches converts inches to Length (EMU) with overflow protection.
 func Inches(value float64) Length {
 	return clampToLength(value * emuPerInch)

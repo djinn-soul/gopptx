@@ -13,20 +13,20 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/internal/testutil"
 )
 
-func TestBasicParityFixtureAgainstPptRsSimpleDeck(t *testing.T) {
+func TestBasicParityFixtureAgainstReferenceSimpleDeck(t *testing.T) {
 	reference := testutil.ReadAllSlidesXML(t, testutil.FixtureZipReader(t, "simple.pptx"))
 	ours := generatedAllSlidesXML(t, []pptx.SlideContent{
 		pptx.NewSlide("Welcome").
 			AddBullet("Hello, World!").
 			AddBullet("This is a simple presentation").
-			AddBullet("Created with ppt-rs templates"),
+			AddBullet("Created with gopptx templates"),
 		pptx.NewSlide("Features").
 			AddBullet("Easy to use API").
 			AddBullet("Multiple templates").
 			AddBullet("Theme support"),
 		pptx.NewSlide("Conclusion").
-			AddBullet("Try ppt-rs today!").
-			AddBullet("Visit github.com/yingkitw/ppt-rs"),
+			AddBullet("Try gopptx today!").
+			AddBullet("Visit github.com/djinn-soul/gopptx"),
 	})
 
 	tokens := []string{
@@ -38,11 +38,11 @@ func TestBasicParityFixtureAgainstPptRsSimpleDeck(t *testing.T) {
 		`<a:t>Easy to use API</a:t>`,
 		`<a:t>Theme support</a:t>`,
 	}
-	testutil.AssertContainsTokens(t, "ppt-rs simple fixture", reference, tokens)
+	testutil.AssertContainsTokens(t, "reference simple fixture", reference, tokens)
 	testutil.AssertContainsTokens(t, "gopptx basic parity deck", ours, tokens)
 }
 
-func TestLayoutParityFixtureAgainstPptRsDeck(t *testing.T) {
+func TestLayoutParityFixtureAgainstReferenceDeck(t *testing.T) {
 	reference := testutil.ReadAllSlidesXML(t, testutil.FixtureZipReader(t, "layout_demo.pptx"))
 	ours := generatedAllSlidesXML(t, []pptx.SlideContent{
 		pptx.NewSlide("Welcome to Layout Demo").WithTitleOnlyLayout(),
@@ -94,11 +94,11 @@ func TestLayoutParityFixtureAgainstPptRsDeck(t *testing.T) {
 		`<a:srgbClr val="C0504D"/>`,
 		`sz="2000"`,
 	}
-	testutil.AssertContainsTokens(t, "ppt-rs layout fixture", reference, tokens)
+	testutil.AssertContainsTokens(t, "reference layout fixture", reference, tokens)
 	testutil.AssertContainsTokens(t, "gopptx layout parity deck", ours, tokens)
 }
 
-func TestTextFormattingParityFixtureAgainstPptRsProfessionalDeck(t *testing.T) {
+func TestTextFormattingParityFixtureAgainstReferenceProfessionalDeck(t *testing.T) {
 	reference := testutil.ReadAllSlidesXML(t, testutil.FixtureZipReader(t, "professional.pptx"))
 	ours := generatedAllSlidesXML(t, []pptx.SlideContent{
 		pptx.NewSlide("Text Parity").AddBulletRuns([]pptx.Run{
@@ -115,11 +115,11 @@ func TestTextFormattingParityFixtureAgainstPptRsProfessionalDeck(t *testing.T) {
 		`<a:srgbClr val="003366"/>`,
 		`<a:srgbClr val="FF6600"/>`,
 	}
-	testutil.AssertContainsTokens(t, "ppt-rs professional fixture", reference, tokens)
+	testutil.AssertContainsTokens(t, "reference professional fixture", reference, tokens)
 	testutil.AssertContainsTokens(t, "gopptx text-format parity deck", ours, tokens)
 }
 
-func TestBulletStylesParityFixtureAgainstPptRsDeck(t *testing.T) {
+func TestBulletStylesParityFixtureAgainstReferenceDeck(t *testing.T) {
 	reference := testutil.ReadAllSlidesXML(t, testutil.FixtureZipReader(t, "bullet_styles.pptx"))
 	ours := generatedAllSlidesXML(t, []pptx.SlideContent{
 		pptx.NewSlide("Bullet Styles").
@@ -137,11 +137,11 @@ func TestBulletStylesParityFixtureAgainstPptRsDeck(t *testing.T) {
 		`<a:pPr lvl="1" marL="1371600" indent="-914400">`,
 		`<a:buChar char="`,
 	}
-	testutil.AssertContainsTokens(t, "ppt-rs bullet fixture", reference, tokens)
+	testutil.AssertContainsTokens(t, "reference bullet fixture", reference, tokens)
 	testutil.AssertContainsTokens(t, "gopptx bullet parity deck", ours, tokens)
 }
 
-func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T) {
+func TestTextEnhancementsParityFixtureAgainstReferenceComprehensiveDemo(t *testing.T) {
 	reference := testutil.ReadZipFile(
 		t,
 		testutil.FixtureZipReader(t, "comprehensive_demo.pptx"),
@@ -162,7 +162,7 @@ func TestTextEnhancementsParityFixtureAgainstPptRsComprehensiveDemo(t *testing.T
 		`baseline="30000"`,
 		`<a:buChar char="`,
 	}
-	testutil.AssertContainsTokens(t, "ppt-rs text-enhancement fixture", reference, tokens)
+	testutil.AssertContainsTokens(t, "reference text-enhancement fixture", reference, tokens)
 	testutil.AssertContainsTokens(t, "gopptx text-enhancement parity deck", ours, tokens)
 }
 
@@ -174,7 +174,7 @@ func emfFixtureBytes() []byte {
 	return data
 }
 
-func TestImageFormatParityCasesFromPptRsExamples(t *testing.T) {
+func TestImageFormatParityCasesFromReferenceExamples(t *testing.T) {
 	cases := []struct {
 		name string
 		ext  string

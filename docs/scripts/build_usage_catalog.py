@@ -341,7 +341,7 @@ def generate_pptx(entry: UsageEntry) -> None:
         with Presentation.new(f"{entry.id} {entry.title}") as pres:
             _build_c07_presentation(pres)
             pres.save(str(out_path))
-            pres.save_as_pdf(str(pdf_path), options=PDFOptions(driver="native"))
+            pres.export_pdf(str(pdf_path), options=PDFOptions(driver="native"))
         return
 
     with Presentation.new(f"{entry.id} {entry.title}") as pres:
@@ -500,7 +500,7 @@ def python_code(entry: UsageEntry) -> str:
             "    build_pipeline_slide(p.slides[0])\n"
             '    build_targets_slide(p.add_slide("Distribution Targets"))\n'
             "    p.save(str(pptx_path))\n"
-            '    p.save_as_pdf(str(pdf_path), options=PDFOptions(driver="native"))\n'
+            '    p.export_pdf(str(pdf_path), options=PDFOptions(driver="native"))\n'
         )
     bullet_list = ",\n        ".join([f'"{b}"' for b in entry.bullets])
     return (

@@ -40,15 +40,24 @@ func TestValidator_MissingParts(t *testing.T) {
 	v := NewValidator(m)
 	issues := v.Validate()
 
-	missingCount := 0
+	// The four parts without which the package is not a package are errors; the
+	// parts PowerPoint merely expects are warnings.
+	missingErrors, missingWarnings := 0, 0
 	for _, issue := range issues {
-		if issue.Code == CodeMissingPart {
-			missingCount++
+		if issue.Code != CodeMissingPart {
+			continue
 		}
+		if issue.Severity == SeverityError {
+			missingErrors++
+			continue
+		}
+		missingWarnings++
 	}
-	parts := requiredParts
-	if missingCount != len(parts) {
-		t.Errorf("expected %d missing part issues, got %d", len(parts), missingCount)
+	if missingErrors != len(requiredParts) {
+		t.Errorf("expected %d missing required-part errors, got %d", len(requiredParts), missingErrors)
+	}
+	if missingWarnings != len(standardRequiredParts) {
+		t.Errorf("expected %d missing standard-part warnings, got %d", len(standardRequiredParts), missingWarnings)
 	}
 }
 

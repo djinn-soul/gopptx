@@ -26,15 +26,16 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("C04 Clone Duplicate Slide") as p:
     p.add_slide("Original")
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 1.5, text="Original content")
+    p.slides[0].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(1.5), text="Original content")
 
+    # duplicate() inserts the copy into the deck and returns it — do not
+    # pass the result back to add_slide().
     cloned = p.slides[0].duplicate()
     cloned.title = "Cloned Copy"
-    p.add_slide(cloned)
 
     p.save("docs/assets/pptx/usage/c04-python.pptx")
 ```

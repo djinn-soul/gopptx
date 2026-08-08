@@ -24,11 +24,11 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("I02 Speaker Notes Support") as p:
     slide = p.add_slide("Speaker Notes Support")
-    slide.add_textbox(0.8, 2.0, 8.0, 2.0, text="Present with confidence\nUse notes for key points")
+    slide.add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(2.0), text="Present with confidence\nUse notes for key points")
     slide.notes = "Remember to emphasize the benefits of automation."
     p.save("docs/assets/pptx/usage/i02-python.pptx")
 ```

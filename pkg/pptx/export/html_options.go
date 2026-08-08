@@ -21,6 +21,10 @@ type HTMLOptions struct {
 	IncludeNavigation bool
 	// Display the slide number overlay
 	IncludeSlideNumbers bool
+	// IncludeNotes prints the speaker notes under each slide. No export path
+	// could emit notes at all before, so a deck's notes were lost on the way to
+	// HTML even though the model carried them.
+	IncludeNotes bool
 }
 
 // DefaultHTMLOptions returns the standard configuration for HTML export.

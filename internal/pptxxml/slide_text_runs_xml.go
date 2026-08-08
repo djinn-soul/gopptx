@@ -37,6 +37,22 @@ type TextRunSpec struct {
 	HoverAction    *HyperlinkSpec // Hover action
 }
 
+// ParagraphSpec is one paragraph: its own formatting plus its runs. Bullets in
+// a placeholder arrive as parallel slices; a shape's text body arrives as these.
+type ParagraphSpec struct {
+	Style BulletParagraphSpec
+	Runs  []TextRunSpec
+}
+
+// ParagraphsXML renders a sequence of paragraphs into a text body.
+func ParagraphsXML(paragraphs []ParagraphSpec, contentStyle ContentStyleSpec) string {
+	var b strings.Builder
+	for _, p := range paragraphs {
+		b.WriteString(bulletParagraphRuns(p.Runs, p.Style, contentStyle))
+	}
+	return b.String()
+}
+
 func bulletRunsAt(allRuns [][]TextRunSpec, index int) []TextRunSpec {
 	if len(allRuns) == 0 || index < 0 || index >= len(allRuns) {
 		return nil

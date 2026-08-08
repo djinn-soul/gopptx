@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// MediaFormat models ppt-rs media format variants for editor media insertion.
+// MediaFormat models the media format variants supported by editor media insertion.
 type MediaFormat string
 
 const (

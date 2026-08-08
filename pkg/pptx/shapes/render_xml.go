@@ -6,6 +6,7 @@ import (
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/action"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
+	"github.com/djinn-soul/gopptx/pkg/pptx/textspec"
 )
 
 func ToXMLShapeSpecs(shapes []Shape, hyperlinkRIDs map[*action.Hyperlink]string) []pptxxml.ShapeSpec {
@@ -34,6 +35,8 @@ func toXMLShapeSpec(shape Shape, hyperlinkRIDs map[*action.Hyperlink]string) ppt
 		Name:         shape.Name,
 		Adjustments:  toXMLShapeAdjustments(shape.Adjustments),
 		TextSizePt:   shape.TextSizePt,
+		Paragraphs:   textspec.ToXMLParagraphSpecs(shape.TextParagraphs, hyperlinkRIDs),
+		ZOrder:       shape.ZOrder,
 	}
 	if shape.CustomGeometry != nil && len(shape.CustomGeometry.Points) > 0 {
 		points := make([]pptxxml.CustomGeometryPointSpec, len(shape.CustomGeometry.Points))

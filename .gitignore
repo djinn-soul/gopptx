@@ -47,7 +47,11 @@ testdata/
 pkg/pptx/*.pptx
 issues
 bindings/c/build
-architecture
+# Anchored: a bare "architecture" matches that name at any depth, which hid
+# docs/architecture/*.md — three of them referenced from the mkdocs nav, so the
+# strict docs build failed in CI while passing locally — and the SmartArt
+# "architecture" layout template.
+/architecture/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -307,3 +311,6 @@ web*
 # Tooling caches and local scratch work
 .serena/
 scratch/
+
+# Local-only parity notes: never commit
+PPT_RS_PARITY_2026-08-04.md

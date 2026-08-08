@@ -2,7 +2,6 @@ package pptxxml
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -42,7 +41,23 @@ func ChartPartXML(chart *ChartSpec) string {
 
 // RenderChart renders a chart part to bytes.
 func RenderChart(chart *ChartSpec) []byte {
-	return withDisplayBlanksAs(renderChartBody(chart), chart.DisplayBlanksAs)
+	return withExternalData(
+		withDisplayBlanksAs(renderChartBody(chart), chart.DisplayBlanksAs),
+		chart.ExternalDataID,
+	)
+}
+
+// withExternalData names the embedded workbook the chart was built from.
+// Without it PowerPoint's "Edit Data" has nothing to open, even when the
+// package carries the .xlsx part. CT_ChartSpace puts <c:externalData> after
+// <c:chart>, so it goes just before the closing tag.
+func withExternalData(chartXML []byte, relID string) []byte {
+	if relID == "" {
+		return chartXML
+	}
+	const closeTag = "</c:chartSpace>"
+	node := `<c:externalData r:id="` + Escape(relID) + `"><c:autoUpdate val="0"/></c:externalData>` + "\n"
+	return []byte(strings.Replace(string(chartXML), closeTag, node+closeTag, 1))
 }
 
 // withDisplayBlanksAs inserts <c:dispBlanksAs> after <c:plotVisOnly>, the only
@@ -166,11 +181,16 @@ func chartPartEnvelope(
 <c:overlay val="` + boolToOneZero(legendOverlay) + `"/>
 </c:legend>`
 	}
+	// date1904 and roundedCorners are the two CT_ChartSpace defaults PowerPoint
+	// always writes. roundedCorners is the visible one: with the element absent
+	// PowerPoint rounds the chart frame.
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" `+
 		`xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" `+
 		`xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<c:date1904 val="0"/>
 <c:lang val="en-US"/>
+<c:roundedCorners val="0"/>
 <c:chart>
 <c:title>
 <c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-US"/><a:t>%s</a:t></a:r></a:p></c:rich></c:tx>
@@ -182,42 +202,24 @@ func chartPartEnvelope(
 </c:plotArea>
 %s
 `+plotVisOnlyElement+`
+<c:showDLblsOverMax val="0"/>
 </c:chart>
 </c:chartSpace>`, Escape(title), boolToOneZero(titleOverlay), plotXML, legend)
 }
 
 func chartSeriesXML(chart *ChartSpec) string {
-	seriesName := chart.SeriesName
+	bound := chartIsWorkbookBound(chart)
 	var b strings.Builder
 	b.WriteString(`
 <c:ser>
 <c:idx val="0"/>
-<c:order val="0"/>
-<c:tx><c:v>` + Escape(seriesName) + `</c:v></c:tx>
-<c:spPr><a:solidFill><a:srgbClr val="` + Escape(chart.Color) + `"/></a:solidFill></c:spPr>
-<c:cat><c:strLit>`)
-
+<c:order val="0"/>`)
+	writeChartSeriesName(&b, chart.SeriesName, bound)
 	b.WriteString(`
-<c:ptCount val="`)
-	b.WriteString(strconv.Itoa(len(chart.Categories)))
-	b.WriteString(`"/>`)
-	for i, category := range chart.Categories {
-		b.WriteString(`
-<c:pt idx="`)
-		b.WriteString(strconv.Itoa(i))
-		b.WriteString(`"><c:v>`)
-		b.WriteString(Escape(category))
-		b.WriteString(`</c:v></c:pt>`)
-	}
+<c:spPr><a:solidFill><a:srgbClr val="` + Escape(chart.Color) + `"/></a:solidFill></c:spPr>`)
+	writeChartCategories(&b, chart.Categories, bound)
+	writeChartValues(&b, chart.Values, bound)
 	b.WriteString(`
-</c:strLit></c:cat>
-<c:val><c:numLit>`)
-
-	b.WriteString(`
-<c:formatCode>General</c:formatCode>`)
-	writeNumericPoints(&b, chart.Values)
-	b.WriteString(`
-	</c:numLit></c:val>
 </c:ser>`)
 	return b.String()
 }

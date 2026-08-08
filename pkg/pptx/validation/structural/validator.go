@@ -75,6 +75,12 @@ func (v *Validator) Validate() []Issue {
 	v.checkContentTypes()
 	v.checkNamespaces()
 	v.checkEmptyElements()
+	v.checkStandardParts()
+	v.checkChartPackages()
+	v.checkSlideMasters()
+	v.checkNotesAndHandoutMasters()
+	v.checkMasterIDUniqueness()
+	v.checkThemePart()
 
 	for _, c := range v.checkers {
 		v.issues = append(v.issues, c.Check(v.provider)...)

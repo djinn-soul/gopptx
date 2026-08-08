@@ -42,9 +42,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.constants import ConnectorType, ShapeType
-from gopptx.schemas import Inches
+from gopptx import ConnectorType, Inches, Presentation, ShapeType
 
 with Presentation.new("S06 Add Basic Shapes") as p:
     slide = p.slides[0]

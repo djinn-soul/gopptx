@@ -23,13 +23,13 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("I03 Headers and Footers") as p:
     slide = p.add_slide("Headers and Footers")
     slide.header = "Company Presentation"
     slide.footer = "Confidential - 2023"
-    slide.add_textbox(0.8, 2.0, 8.0, 2.0, text="Headers provide context\nFooters add metadata")
+    slide.add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(2.0), text="Headers provide context\nFooters add metadata")
     p.save("docs/assets/pptx/usage/i03-python.pptx")
 ```
 

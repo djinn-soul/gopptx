@@ -78,7 +78,7 @@ func optionsPageSize(opts PDFOptions) pageSize {
 
 // pdfViaNative renders slides directly to PDF using gopdf drawing primitives.
 func pdfViaNative(
-	_ string,
+	title string,
 	slides []elements.SlideContent,
 	orders []slidePaintOrder,
 	outputPath string,
@@ -92,6 +92,7 @@ func pdfViaNative(
 	// The document's font registry lives as long as the document does; dropping
 	// it here keeps a long-lived process from holding one per export.
 	defer releaseDocumentFonts(pdf)
+	setNativePDFDocumentInfo(pdf, title)
 	if err := configureNativePDFFont(pdf, opts); err != nil {
 		return err
 	}
@@ -102,6 +103,10 @@ func pdfViaNative(
 			totalVisible++
 		}
 	}
+	if opts.IncludeFrontmatter {
+		renderPDFFrontmatter(pdf, title, totalVisible, page)
+	}
+
 	visibleIndex := 0
 	var renderErrs []error
 	for i, slide := range slides {
@@ -115,6 +120,9 @@ func pdfViaNative(
 		}
 		if err := renderNativePDFSlide(pdf, slide, order, visibleIndex, totalVisible, page); err != nil {
 			renderErrs = append(renderErrs, err)
+		}
+		if opts.IncludeNotes {
+			renderPDFNotesPage(pdf, slide, visibleIndex, page)
 		}
 	}
 
@@ -142,6 +150,10 @@ func renderNativePDFSlide(
 	page pageSize,
 ) error {
 	pdf.AddPage()
+	// Anchor the page so links to this slide from anywhere in the deck resolve,
+	// and give it a bookmark so a viewer can navigate the deck.
+	pdf.SetAnchor(slidePDFAnchor(index))
+	pdf.AddOutline(slideOutlineTitle(slide, index))
 
 	var errs []error
 	if err := renderPDFBackground(pdf, slide.Background, page); err != nil {
@@ -298,10 +310,12 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 
 	renderPDFShapeEffects(pdf, s, x, y, w, h, hasFill)
 	softEdgesApplied := applyPDFShapeSoftEdges(pdf, s)
+	fillAlphaApplied := applyPDFShapeFillAlpha(pdf, s, softEdgesApplied)
 	if style != "" {
 		drawPDFGeometry(pdf, s, x, y, w, h, style)
 	}
-	if softEdgesApplied {
+	if softEdgesApplied || fillAlphaApplied {
+		// The text below must not inherit the fill's alpha.
 		pdf.ClearTransparency()
 	}
 
@@ -319,6 +333,10 @@ func renderPDFShape(pdf *gopdf.GoPdf, s shapes.Shape) {
 	if rotated {
 		pdf.RotateReset()
 	}
+
+	// The clickable area is the shape's box, whatever its geometry, which is
+	// what PowerPoint's own PDF export puts there.
+	addPDFHyperlink(pdf, shapeClickAction(s.ClickAction, s.Hyperlink), x, y, w, h)
 
 	// Reset colors. The dash pattern is document-wide state in gopdf, so a
 	// dashed shape would otherwise leave every later stroke dashed too.

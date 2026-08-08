@@ -21,6 +21,11 @@ const (
 	SlideLayoutCenteredTitle      = "centered_title"
 	SlideLayoutTitleAndBigContent = "title_and_big_content"
 	SlideLayoutTwoColumn          = "two_column"
+	// SlideLayoutTitleAndVerticalText and SlideLayoutVerticalTitleAndText are the
+	// two ST_SlideLayoutType layouts PowerPoint offers for vertically written
+	// text.
+	SlideLayoutTitleAndVerticalText = "title_and_vertical_text"
+	SlideLayoutVerticalTitleAndText = "vertical_title_and_text"
 
 	// SlideLayoutTitle starts the legacy/descriptive layout aliases.
 	SlideLayoutTitle          = "Title Slide"
@@ -78,33 +83,44 @@ type SlideContent struct {
 	Notes              string
 	NotesBody          []Paragraph
 	Images             []shapes.Image
-	Shapes             []shapes.Shape
-	Connectors         []shapes.Connector
-	Table              *tables.Table
+	// Media holds video and audio clips. The editor could insert media into an
+	// existing deck long before a generated one could carry any.
+	Media      []shapes.Media
+	Shapes     []shapes.Shape
+	Connectors []shapes.Connector
+	Table      *tables.Table
 	// Tables holds any additional tables beyond Table. Slides read from a PPTX
 	// can carry several; Table keeps the first for backwards compatibility and
 	// the rest land here so exporters do not silently drop them.
-	Tables               []tables.Table
-	Chart                *charts.BarChart
-	BarHorizontal        *charts.BarHorizontalChart
-	BarStacked           *charts.BarStackedChart
-	BarStacked100        *charts.BarStacked100Chart
-	Line                 *charts.LineChart
-	LineMarkers          *charts.LineMarkersChart
-	LineStacked          *charts.LineStackedChart
-	Scatter              *charts.ScatterChart
-	Area                 *charts.AreaChart
-	AreaStacked          *charts.AreaStackedChart
-	AreaStacked100       *charts.AreaStacked100Chart
-	Pie                  *charts.PieChart
-	Pie3D                *charts.Pie3DChart
-	Doughnut             *charts.DoughnutChart
-	Bubble               *charts.BubbleChart
-	Radar                *charts.RadarChart
-	RadarFilled          *charts.RadarFilledChart
-	StockHLC             *charts.StockHLCChart
-	StockOHLC            *charts.StockOHLCChart
-	Combo                *charts.ComboChart
+	Tables         []tables.Table
+	Chart          *charts.BarChart
+	BarHorizontal  *charts.BarHorizontalChart
+	BarStacked     *charts.BarStackedChart
+	BarStacked100  *charts.BarStacked100Chart
+	Line           *charts.LineChart
+	LineMarkers    *charts.LineMarkersChart
+	LineStacked    *charts.LineStackedChart
+	Scatter        *charts.ScatterChart
+	Area           *charts.AreaChart
+	AreaStacked    *charts.AreaStackedChart
+	AreaStacked100 *charts.AreaStacked100Chart
+	Pie            *charts.PieChart
+	Pie3D          *charts.Pie3DChart
+	Doughnut       *charts.DoughnutChart
+	Bubble         *charts.BubbleChart
+	Radar          *charts.RadarChart
+	RadarFilled    *charts.RadarFilledChart
+	StockHLC       *charts.StockHLCChart
+	StockOHLC      *charts.StockOHLCChart
+	Combo          *charts.ComboChart
+	// Charts holds any additional charts beyond the typed fields above, the way
+	// Tables holds the tables beyond Table. A slide can carry several charts;
+	// the typed pointers are one per kind, so this is how a caller places two
+	// of the same kind, or more than one chart at all.
+	Charts []charts.ChartDefinition
+	// CodeBlocks holds source listings placed at explicit coordinates, as
+	// opposed to code appended as bullets in the body placeholder.
+	CodeBlocks           []CodeBlock
 	Animations           []animations.Animation
 	SmartArtDiagrams     []smartart.SmartArt
 	PlaceholderOverrides []shapes.PlaceholderContent
@@ -158,6 +174,26 @@ func (s SlideContent) AddBullet(text string) SlideContent {
 	s.BulletRuns = append(s.BulletRuns, nil)
 	s.BulletStyles = append(s.BulletStyles, s.DefaultBulletStyle)
 	return s
+}
+
+// AddFormattedBullet appends one bullet, reading **bold**, *italic* and `code`
+// out of the text rather than leaving the markers as literal characters.
+func (s SlideContent) AddFormattedBullet(text string) SlideContent {
+	runs, styled := ParseInlineRuns(text)
+	if !styled {
+		return s.AddBullet(text)
+	}
+	return s.AddBulletRuns(runs)
+}
+
+// AddFormattedBulletWithStyle is AddFormattedBullet with explicit paragraph
+// styling.
+func (s SlideContent) AddFormattedBulletWithStyle(text string, style ParagraphStyle) SlideContent {
+	runs, styled := ParseInlineRuns(text)
+	if !styled {
+		return s.AddBulletWithStyle(text, style)
+	}
+	return s.AddBulletRunsWithStyle(runs, style)
 }
 
 // AddBulletWithStyle appends one bullet item with explicit styling.

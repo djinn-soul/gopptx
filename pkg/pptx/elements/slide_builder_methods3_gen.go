@@ -6,6 +6,24 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/transitions"
 )
 
+// WithTitleOnlyLayout sets the layout to title_only.
+func (b *SlideBuilder) WithTitleOnlyLayout() *SlideBuilder {
+	b.content = b.content.WithTitleOnlyLayout()
+	return b
+}
+
+// WithTitleSize sets the title font size in points.
+func (b *SlideBuilder) WithTitleSize(size int) *SlideBuilder {
+	b.content = b.content.WithTitleSize(size)
+	return b
+}
+
+// WithTitleUnderline sets whether the title is underlined.
+func (b *SlideBuilder) WithTitleUnderline(underline bool) *SlideBuilder {
+	b.content = b.content.WithTitleUnderline(underline)
+	return b
+}
+
 // WithTransition sets the transition for the slide.
 func (b *SlideBuilder) WithTransition(t transitions.SlideTransition) *SlideBuilder {
 	b.content = b.content.WithTransition(t)

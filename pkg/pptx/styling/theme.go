@@ -1,5 +1,7 @@
 package styling
 
+import "strings"
+
 // ColorScheme represents a set of 12 theme colors.
 type ColorScheme struct {
 	Name     string
@@ -50,12 +52,14 @@ const (
 	themeNameNature    = "Nature"
 	themeNameTech      = "Tech"
 	themeNameCarbon    = "Carbon"
+	themeNameOffice    = "Office"
 )
 
 // Font families shared across theme presets.
 const (
-	fontInter  = "Inter"
-	fontRoboto = "Roboto"
+	fontInter   = "Inter"
+	fontRoboto  = "Roboto"
+	fontCalibri = "Calibri"
 )
 
 // Palette colors repeated across presets that have no entry in colors.go.
@@ -68,9 +72,10 @@ const (
 	colorTechBlue50     = "E3F2FD"
 	colorDarkPurple     = "BB86FC"
 	colorDarkPink       = "CF6679"
+	colorOfficeSlate    = "44546A"
 )
 
-// Theme presets, parity with ppt-rs.
+// Theme presets.
 //
 //nolint:gochecknoglobals // theme presets
 var (
@@ -86,8 +91,8 @@ var (
 		},
 		Fonts: FontScheme{
 			Name:      themeNameCorporate,
-			MajorFont: "Calibri",
-			MinorFont: "Calibri",
+			MajorFont: fontCalibri,
+			MinorFont: fontCalibri,
 		},
 		Primary: "1565C0", Secondary: colorTechBlue700, Accent: "FF6F00",
 		Background: ColorWhite, Text: "212121", Light: colorTechBlue50, Dark: colorTechBlue900,
@@ -206,6 +211,26 @@ var (
 		Primary: ColorCarbonBlue60, Secondary: ColorCarbonBlue40, Accent: "24A148",
 		Background: ColorWhite, Text: "161616", Light: "E0E0E0", Dark: "161616",
 	}
+
+	// ThemeOffice is the Office theme PowerPoint itself starts a blank deck
+	// with: the colours and fonts a deck inherits when nobody picked a theme.
+	ThemeOffice = Theme{
+		Name: themeNameOffice,
+		Colors: ColorScheme{
+			Name: themeNameOffice,
+			Dk1:  "000000", Lt1: ColorWhite, Dk2: colorOfficeSlate, Lt2: "E7E6E6",
+			Accent1: "4472C4", Accent2: "ED7D31", Accent3: "A5A5A5",
+			Accent4: "FFC000", Accent5: "5B9BD5", Accent6: "70AD47",
+			Hlink: "0563C1", FolHlink: "954F72",
+		},
+		Fonts: FontScheme{
+			Name:      themeNameOffice,
+			MajorFont: "Calibri Light",
+			MinorFont: fontCalibri,
+		},
+		Primary: "4472C4", Secondary: colorOfficeSlate, Accent: "ED7D31",
+		Background: ColorWhite, Text: "000000", Light: "E7E6E6", Dark: colorOfficeSlate,
+	}
 )
 
 // AllThemes returns all available theme presets.
@@ -218,5 +243,72 @@ func AllThemes() []Theme {
 		ThemeNature,
 		ThemeTech,
 		ThemeCarbon,
+		ThemeOffice,
 	}
+}
+
+// ResolveTheme returns the built-in theme a name refers to.
+//
+// Callers arrive with two vocabularies, so both are accepted: the gopptx theme
+// names ("Corporate", "Dark") that AllThemes reports and the exported THEME_*
+// constants carry, and the Office preset names ("facet", "ion") a deck author
+// recognises. Matching ignores case, spaces, hyphens and underscores.
+//
+// This is the single place that maps a name to a theme; every operation taking
+// a theme name resolves through it, so the two vocabularies cannot drift apart
+// or end up reachable from only one entry point.
+func ResolveTheme(name string) (Theme, bool) {
+	switch NormalizeThemeName(name) {
+	// gopptx theme names.
+	case "corporate":
+		return ThemeCorporate, true
+	case "modern":
+		return ThemeModern, true
+	case "vibrant":
+		return ThemeVibrant, true
+	case "dark":
+		return ThemeDark, true
+	case "nature":
+		return ThemeNature, true
+	case "tech":
+		return ThemeTech, true
+	case "carbon":
+		return ThemeCarbon, true
+	// Office preset names.
+	case "office", "office2013":
+		return ThemeOffice, true
+	case "facet":
+		return ThemeModern, true
+	case "integral":
+		return ThemeTech, true
+	case "ion":
+		return ThemeDark, true
+	case "retrospect":
+		return ThemeVibrant, true
+	case "slice":
+		return ThemeNature, true
+	case "wisp":
+		return ThemeCarbon, true
+	default:
+		return Theme{}, false
+	}
+}
+
+// ThemeNames returns every name ResolveTheme accepts, for error messages and
+// discovery. gopptx names come first, then the Office preset names.
+func ThemeNames() []string {
+	return []string{
+		themeNameCorporate, themeNameModern, themeNameVibrant, themeNameDark,
+		themeNameNature, themeNameTech, themeNameCarbon, themeNameOffice,
+		"office2013", "facet", "integral", "ion", "retrospect", "slice", "wisp",
+	}
+}
+
+// NormalizeThemeName folds a theme name to its lookup form.
+func NormalizeThemeName(name string) string {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	normalized = strings.ReplaceAll(normalized, " ", "")
+	normalized = strings.ReplaceAll(normalized, "-", "")
+	normalized = strings.ReplaceAll(normalized, "_", "")
+	return normalized
 }

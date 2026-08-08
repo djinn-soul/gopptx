@@ -88,7 +88,7 @@ func TestSlideMasterWithoutTxStyles(t *testing.T) {
 }
 
 func TestPresentationMultiMaster(t *testing.T) {
-	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil, nil)
+	xml := pptxxml.Presentation("Test", 2, false, 12192000, 6858000, 3, nil, nil, false, nil, nil, "")
 
 	// Should have 3 master IDs
 	if count := strings.Count(xml, "sldMasterId"); count != 2+3 {
@@ -99,10 +99,11 @@ func TestPresentationMultiMaster(t *testing.T) {
 	if !strings.Contains(xml, `id="2147483648"`) {
 		t.Error("missing first master ID")
 	}
-	if !strings.Contains(xml, `id="2147483655"`) {
+	// Master ids are allocated one block per master: the master plus its layouts.
+	if !strings.Contains(xml, `id="2147483657"`) {
 		t.Error("missing second master ID")
 	}
-	if !strings.Contains(xml, `id="2147483662"`) {
+	if !strings.Contains(xml, `id="2147483666"`) {
 		t.Error("missing third master ID")
 	}
 
@@ -153,6 +154,7 @@ func TestPresentationModifyVerifierUsesPowerPointFields(t *testing.T) {
 		false,
 		nil,
 		nil,
+		"",
 	)
 
 	if !strings.Contains(xml, `cryptProviderType="rsaAES"`) {
@@ -201,6 +203,7 @@ func TestPresentationHiddenSlidesDoNotEmitShowOnSlideRefs(t *testing.T) {
 		false,
 		nil,
 		nil,
+		"",
 	)
 
 	if strings.Contains(xml, ` show="0"`) {

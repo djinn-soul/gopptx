@@ -18,6 +18,8 @@ func addLayoutFiles(pw *pptxxml.PackageWriter, masterCount int) {
 		pptxxml.SlideLayoutCenteredTitle(),
 		pptxxml.SlideLayoutTitleAndBigContent(),
 		pptxxml.SlideLayoutTwoColumn(),
+		pptxxml.SlideLayoutTitleAndVerticalText(),
+		pptxxml.SlideLayoutVerticalTitleAndText(),
 	}
 	for masterNum := 1; masterNum <= masterCount; masterNum++ {
 		for i, xml := range layoutXMLs {

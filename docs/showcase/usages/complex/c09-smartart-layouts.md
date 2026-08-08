@@ -34,14 +34,15 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.constants import SMARTART_PROCESS
+from gopptx import Inches, Presentation
+from gopptx.smartart import SMARTART_BASIC_PROCESS
 
 with Presentation.new("C09 SmartArt") as p:
     p.add_slide("SmartArt Layout")
     p.slides[0].add_smartart(
-        SMARTART_PROCESS,
+        SMARTART_BASIC_PROCESS,
         ["Process step 1", "Process step 2", "Process step 3", "Process step 4"],
+        bounds=(Inches(0.8), Inches(1.6), Inches(8.4), Inches(4.0)),
     )
     p.save("docs/assets/pptx/usage/c09-python.pptx")
 ```

@@ -25,14 +25,14 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("C10 Protection") as p:
     p.add_slide("Protected Content")
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 1.5, text="Sensitive information")
+    p.slides[0].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(1.5), text="Sensitive information")
 
     p.set_modify_password("secret123")
-    p.set_mark_as_final(False)
+    p.set_mark_as_final(final=True)   # `final` is keyword-only
     p.save("docs/assets/pptx/usage/c10-python.pptx")
 ```
 

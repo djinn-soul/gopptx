@@ -198,9 +198,36 @@ func renderSlideToWriter(w io.Writer, slide elements.SlideContent, index int, op
 		}
 	}
 
-	// Table Support
+	// Connectors, in their own SVG over the same coordinate space as the shapes.
+	if len(slide.Connectors) > 0 {
+		if err := writeString(w, renderConnectorsSVG(slide.Connectors)); err != nil {
+			return err
+		}
+	}
+
+	// SmartArt, drawn as its own SVG so a diagram is not interleaved with the
+	// slide's own shapes.
+	if diagramShapes := smartArtSVGShapes(slide); len(diagramShapes) > 0 {
+		if err := writeString(w, renderShapesSVG(diagramShapes)); err != nil {
+			return err
+		}
+	}
+
+	// Charts: plotted where the kind maps onto a simple plot, tabulated where it
+	// does not. Every chart on the slide appears one way or the other.
+	if err := renderChartsToWriter(w, slideHTMLCharts(slide)); err != nil {
+		return err
+	}
+
+	// Table Support. Both the single Table and the Tables list are drawn: only
+	// the first used to be, so every table after it vanished from the HTML.
 	if slide.Table != nil {
 		if err := renderTableToWriter(w, slide.Table); err != nil {
+			return err
+		}
+	}
+	for i := range slide.Tables {
+		if err := renderTableToWriter(w, &slide.Tables[i]); err != nil {
 			return err
 		}
 	}
@@ -208,7 +235,49 @@ func renderSlideToWriter(w io.Writer, slide elements.SlideContent, index int, op
 	if err := writeString(w, "</div>\n"); err != nil { // content
 		return err
 	}
+
+	if err := renderNotesToWriter(w, slide, opts); err != nil {
+		return err
+	}
 	return writeString(w, "</div>\n") // slide
+}
+
+// renderNotesToWriter prints the slide's speaker notes, preferring the rich
+// NotesBody paragraphs over the flat Notes string when both are present.
+func renderNotesToWriter(w io.Writer, slide elements.SlideContent, opts HTMLOptions) error {
+	if !opts.IncludeNotes {
+		return nil
+	}
+	paragraphs := notesParagraphs(slide)
+	if len(paragraphs) == 0 {
+		return nil
+	}
+
+	if err := writeString(w, "<div class=\"slide-notes\">\n"); err != nil {
+		return err
+	}
+	for _, paragraph := range paragraphs {
+		if _, err := fmt.Fprintf(w, "<p>%s</p>\n", html.EscapeString(paragraph)); err != nil {
+			return err
+		}
+	}
+	return writeString(w, "</div>\n")
+}
+
+func notesParagraphs(slide elements.SlideContent) []string {
+	if len(slide.NotesBody) > 0 {
+		out := make([]string, 0, len(slide.NotesBody))
+		for _, paragraph := range slide.NotesBody {
+			if plain := elements.RunsToPlainText(paragraph.Runs); strings.TrimSpace(plain) != "" {
+				out = append(out, plain)
+			}
+		}
+		return out
+	}
+	if strings.TrimSpace(slide.Notes) == "" {
+		return nil
+	}
+	return strings.Split(slide.Notes, "\n")
 }
 
 func renderTableToWriter(w io.Writer, table *tables.Table) error {

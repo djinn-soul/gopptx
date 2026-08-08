@@ -3,6 +3,7 @@ package presentation
 import (
 	"crypto/rand"
 	"fmt"
+	"strconv"
 
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	"github.com/djinn-soul/gopptx/pkg/pptx/common"
@@ -25,7 +26,6 @@ const (
 	guidVariantNibble                  = 0x80
 	maxAuthorInitialRunes              = 2
 	authorColorPaletteSize             = 10
-	customXMLRelationshipPairCount     = 2
 )
 
 type Metadata struct {
@@ -58,17 +58,63 @@ func GetSlideSize16x9() SlideSize {
 	return common.GetSlideSize16x9()
 }
 
-func convertShowSettings(s common.ShowSettings) *pptxxml.ShowSettings {
-	if !s.Loop && s.Mode == common.ShowModePresent && !s.DisableTimings && !s.HideAnimation {
-		return nil
+// convertShowSettings maps the public show settings onto the XML ones,
+// resolving the named custom show to the id the XML refers to it by.
+func convertShowSettings(s common.ShowSettings, shows []pptxxml.CustomShow) pptxxml.ShowSettings {
+	out := pptxxml.ShowSettings{
+		Loop:              s.Loop,
+		Mode:              pptxxml.ShowMode(s.Mode),
+		ShowScrollbar:     s.ShowScrollbar,
+		DisableTimings:    s.DisableTimings,
+		HideAnimation:     s.HideAnimation,
+		DisableNarration:  s.DisableNarration,
+		RangeKind:         pptxxml.SlideRangeKind(s.RangeKind),
+		RangeStart:        s.RangeStart,
+		RangeEnd:          s.RangeEnd,
+		PenColor:          common.NormalizeHexColor(s.PenColor),
+		LaserColor:        common.NormalizeHexColor(s.LaserColor),
+		ShowMediaControls: s.ShowMediaControls,
 	}
-	return &pptxxml.ShowSettings{
-		Loop:           s.Loop,
-		Mode:           pptxxml.ShowMode(s.Mode),
-		ShowScrollbar:  s.ShowScrollbar,
-		DisableTimings: s.DisableTimings,
-		HideAnimation:  s.HideAnimation,
+	if s.PenColor == "" {
+		out.PenColor = ""
 	}
+	if s.LaserColor == "" {
+		out.LaserColor = ""
+	}
+	if s.RangeKind == common.SlideRangeCustom {
+		for _, show := range shows {
+			if show.Name == s.CustomShowName {
+				out.CustomShowID = show.ID
+				break
+			}
+		}
+	}
+	return out
+}
+
+// convertCustomShows resolves each show's slide indices to the relationship ids
+// presentation.xml.rels gives those slides.
+func convertCustomShows(shows []common.CustomShow, slideCount, masterCount int) ([]pptxxml.CustomShow, error) {
+	if len(shows) == 0 {
+		return nil, nil
+	}
+	if masterCount < 1 {
+		masterCount = 1
+	}
+	out := make([]pptxxml.CustomShow, 0, len(shows))
+	for i, show := range shows {
+		relIDs := make([]string, 0, len(show.SlideIndices))
+		for _, idx := range show.SlideIndices {
+			if idx < 0 || idx >= slideCount {
+				return nil, fmt.Errorf(
+					"custom show %q references slide index %d outside [0,%d)", show.Name, idx, slideCount)
+			}
+			// Slide relationships follow the masters and the theme.
+			relIDs = append(relIDs, "rId"+strconv.Itoa(masterCount+1+idx+1))
+		}
+		out = append(out, pptxxml.CustomShow{Name: show.Name, ID: i, SlideRelIDs: relIDs})
+	}
+	return out, nil
 }
 
 func generateGUID() (string, error) {

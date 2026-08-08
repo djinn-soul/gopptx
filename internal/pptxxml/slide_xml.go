@@ -12,6 +12,8 @@ const (
 	slideLayoutCenteredTitle   = "centeredTitle"
 	slideLayoutTitleBigContent = "titleAndBigContent"
 	slideLayoutTwoColumn       = "twoColumn"
+	slideLayoutTitleVertText   = "titleAndVerticalText"
+	slideLayoutVertTitleText   = "verticalTitleAndText"
 	slideBackgroundPicture     = "picture"
 	slideWithLayoutGrowCap     = 3072
 )
@@ -101,6 +103,9 @@ type TitleSpec struct {
 	Underline bool
 	Align     string
 	Font      string
+	// Bounds is the placeholder geometry (x, y, cx, cy in EMU) read from an
+	// existing deck. All zero means "use the layout default".
+	Bounds [4]int64
 }
 
 // ContentStyleSpec describes default content formatting.
@@ -111,6 +116,23 @@ type ContentStyleSpec struct {
 	Italic    bool
 	Underline bool
 	VAlign    string
+	// Bounds is the body placeholder geometry (x, y, cx, cy in EMU) read from an
+	// existing deck. All zero means "use the layout default".
+	Bounds [4]int64
+	// TextVertical is the <a:bodyPr vert=""> value, set by the vertical-text
+	// layouts. Empty leaves the attribute off, i.e. horizontal text.
+	TextVertical string
+}
+
+// textVerticalEastAsian is the vert value PowerPoint's vertical-text layouts
+// write.
+const textVerticalEastAsian = "eaVert"
+
+// hasBounds reports whether placeholder geometry was actually stated. The
+// reader leaves all four values zero for a slide built through the API, and a
+// zero-sized placeholder is not something a caller can mean.
+func hasBounds(bounds [4]int64) bool {
+	return bounds[2] > 0 && bounds[3] > 0
 }
 
 // SlideWithContent renders a title+bullets slide with optional table, chart, and images.
@@ -120,8 +142,8 @@ func SlideWithContent(
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
 	contentStyle ContentStyleSpec,
-	table *TableSpec,
-	chart *ChartFrame,
+	tables []TableSpec,
+	charts []ChartFrame,
 	images []ImageRef,
 	smartArtFrames []SmartArtFrame,
 	background *SlideBackgroundSpec,
@@ -140,8 +162,8 @@ func SlideWithContent(
 		bulletStyles,
 		bulletRuns,
 		contentStyle,
-		table,
-		chart,
+		tables,
+		charts,
 		images,
 		nil,
 		nil,
@@ -167,8 +189,8 @@ func SlideWithLayout(
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
 	contentStyle ContentStyleSpec,
-	table *TableSpec,
-	chart *ChartFrame,
+	tables []TableSpec,
+	charts []ChartFrame,
 	images []ImageRef,
 	shapes []ShapeSpec,
 	connectors []ConnectorSpec,
@@ -194,16 +216,15 @@ func SlideWithLayout(
 	b.WriteString(slideHeaderEndBodyXML(width, height))
 
 	nextID := slideRenderBaseElements(
-		&b, layoutMode, title, table, bullets, bulletStyles, bulletRuns, contentStyle, width, height,
+		&b, layoutMode, title, tables, bullets, bulletStyles, bulletRuns, contentStyle, width, height,
 	)
 
-	if chart != nil {
-		b.WriteString(chartFrameShape(chart, nextID))
+	for i := range charts {
+		b.WriteString(chartFrameShape(&charts[i], nextID))
 		nextID++
 	}
 
-	nextID = slideRenderImages(&b, images, nextID)
-	shapeIDs, nextID := slideRenderShapes(&b, shapes, nextID)
+	shapeIDs, nextID := slideRenderPictures(&b, images, shapes, nextID)
 	nextID = slideRenderConnectors(&b, connectors, shapeIDs, nextID)
 
 	for _, sa := range smartArtFrames {
@@ -234,7 +255,7 @@ func slideRenderBaseElements(
 	b *strings.Builder,
 	layoutMode string,
 	title TitleSpec,
-	table *TableSpec,
+	tables []TableSpec,
 	bullets []string,
 	bulletStyles []BulletParagraphSpec,
 	bulletRuns [][]TextRunSpec,
@@ -257,8 +278,8 @@ func slideRenderBaseElements(
 			bulletRuns, contentStyle, nextID, width, height,
 		)
 	}
-	if table != nil {
-		b.WriteString(RenderTable(table, nextID))
+	for i := range tables {
+		b.WriteString(RenderTable(&tables[i], nextID))
 		nextID++
 	}
 	return nextID
@@ -280,6 +301,12 @@ func slideRenderBullets(
 		nextID++
 	case slideLayoutTitleBigContent:
 		b.WriteString(bigContentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
+		nextID++
+	case slideLayoutTitleVertText, slideLayoutVertTitleText:
+		// The body of a vertical-text layout is written down the page, which is
+		// the bodyPr the layout itself states.
+		contentStyle.TextVertical = textVerticalEastAsian
+		b.WriteString(contentShape(bullets, bulletStyles, bulletRuns, contentStyle, nextID, width, height))
 		nextID++
 	case slideLayoutTwoColumn:
 		leftBullets, rightBullets := splitBulletsForTwoColumns(bullets)

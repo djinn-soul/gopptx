@@ -1,8 +1,6 @@
 package editor
 
 import (
-	"errors"
-
 	"github.com/djinn-soul/gopptx/internal/pptxxml"
 	editorslide "github.com/djinn-soul/gopptx/pkg/pptx/editor/modules/slide"
 	"github.com/djinn-soul/gopptx/pkg/pptx/elements"
@@ -15,8 +13,6 @@ const (
 	cropFractionToOOXML      = 100000
 )
 
-var errNoSlideTable = errors.New("slide has no table")
-
 func renderEditorSlideParts(
 	e *PresentationEditor,
 	slide elements.SlideContent,
@@ -25,12 +21,9 @@ func renderEditorSlideParts(
 	existingNotesTarget string,
 	width, height int64,
 ) (string, string, error) {
-	tableSpec, err := renderEditorTableSpec(slide, slideNumber)
-	if err != nil && !errors.Is(err, errNoSlideTable) {
+	tableSpecs, err := renderEditorTableSpecs(slide, slideNumber)
+	if err != nil {
 		return "", "", err
-	}
-	if errors.Is(err, errNoSlideTable) {
-		tableSpec = nil
 	}
 
 	imageRefs, imageTargets, err := e.renderSlideImages(slide.Images, slideNumber)
@@ -74,6 +67,7 @@ func renderEditorSlideParts(
 		Underline: slide.TitleUnderline,
 		Align:     slide.TitleAlign,
 		Font:      slide.TitleFont,
+		Bounds:    slide.TitleBoundsEMU,
 	}
 	contentStyle := pptxxml.ContentStyleSpec{
 		SizePt:    slide.ContentSize,
@@ -82,6 +76,7 @@ func renderEditorSlideParts(
 		Italic:    slide.ContentItalic,
 		Underline: slide.ContentUnderline,
 		VAlign:    slide.ContentVAlign,
+		Bounds:    slide.ContentBoundsEMU,
 	}
 
 	slideXML := pptxxml.SlideWithLayout(
@@ -91,7 +86,7 @@ func renderEditorSlideParts(
 		elements.ToXMLBulletParagraphStyles(slide.BulletStyles),
 		elements.ToXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
 		contentStyle,
-		tableSpec,
+		tableSpecs,
 		nil, // chartFrame
 		imageRefs,
 		shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
@@ -154,11 +149,25 @@ func (e *PresentationEditor) renderSlideImageRef(
 	)
 }
 
-func renderEditorTableSpec(slide elements.SlideContent, slideNumber int) (*pptxxml.TableSpec, error) {
-	if slide.Table == nil {
-		return nil, errNoSlideTable
+// renderEditorTableSpecs returns every table on the slide: Table first, then the
+// Tables overflow a slide read from a multi-table deck carries.
+func renderEditorTableSpecs(slide elements.SlideContent, slideNumber int) ([]pptxxml.TableSpec, error) {
+	specs := make([]pptxxml.TableSpec, 0, 1+len(slide.Tables))
+	if slide.Table != nil {
+		spec, err := slide.Table.ToTableSpec(slideNumber)
+		if err != nil {
+			return nil, err
+		}
+		specs = append(specs, *spec)
 	}
-	return slide.Table.ToTableSpec(slideNumber)
+	for i := range slide.Tables {
+		spec, err := slide.Tables[i].ToTableSpec(slideNumber)
+		if err != nil {
+			return nil, err
+		}
+		specs = append(specs, *spec)
+	}
+	return specs, nil
 }
 
 func (e *PresentationEditor) registerEditorImage(pathValue string, data []byte, format string) (string, error) {

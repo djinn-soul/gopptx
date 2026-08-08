@@ -136,7 +136,7 @@ func TestSlideRelationships_Internal(t *testing.T) {
 	xml := SlideRelationshipsWithMultiCharts(
 		"../layout.xml",
 		[]string{"media/img1.png"},
-		&ChartRel{RID: "rId2", Target: "charts/chart1.xml"},
+		[]ChartRel{{RID: "rId2", Target: "charts/chart1.xml"}},
 		[]ChartRel{{RID: "rId3", Target: "charts/chart2.xml"}},
 		[]SmartArtRel{{RID: "rId4", Type: "urn:sa", Target: "smartArt/sa1.xml"}},
 		"notes/note1.xml",

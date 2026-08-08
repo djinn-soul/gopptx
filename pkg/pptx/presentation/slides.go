@@ -12,18 +12,21 @@ import (
 	"github.com/djinn-soul/gopptx/pkg/pptx/styling"
 )
 
-const layoutsPerMaster = 6
+const layoutsPerMaster = pptxxml.LayoutsPerMaster
 
 type slideParts struct {
-	title                pptxxml.TitleSpec
-	contentStyle         pptxxml.ContentStyleSpec
-	table                *pptxxml.TableSpec
+	title        pptxxml.TitleSpec
+	contentStyle pptxxml.ContentStyleSpec
+	// tables holds the slide's tables in order: SlideContent.Table first, then
+	// the SlideContent.Tables overflow the reader fills for slides that carry
+	// more than one.
+	tables               []pptxxml.TableSpec
 	imageRefs            []pptxxml.ImageRef
 	backgroundRID        string
 	transitionXML        string
 	placeholders         []pptxxml.PlaceholderOverrideSpec
-	chartFrame           *pptxxml.ChartFrame
-	chartRel             *pptxxml.ChartRel
+	chartFrames          []pptxxml.ChartFrame
+	chartRels            []pptxxml.ChartRel
 	placeholderChartRels []pptxxml.ChartRel
 	smartArtFrames       []pptxxml.SmartArtFrame
 	smartArtRels         []pptxxml.SmartArtRel
@@ -53,6 +56,10 @@ func renderSlides(
 			builder.ridNext,
 		)
 
+		// Code blocks are shapes with a highlighted text body, appended after
+		// the caller's own shapes so they paint on top of a background shape.
+		slideShapes := append(append([]shapes.Shape(nil), slide.Shapes...), codeBlockShapes(slide)...)
+
 		slideXML := pptxxml.SlideWithLayout(
 			elements.SlideLayoutXMLMode(slide.Layout),
 			parts.title,
@@ -60,11 +67,11 @@ func renderSlides(
 			elements.ToXMLBulletParagraphStyles(slide.BulletStyles),
 			elements.ToXMLTextRunRows(slide.BulletRuns, hyperlinkRIDs),
 			parts.contentStyle,
-			parts.table,
-			parts.chartFrame,
+			parts.tables,
+			parts.chartFrames,
 			parts.imageRefs,
-			shapes.ToXMLShapeSpecs(slide.Shapes, hyperlinkRIDs),
-			shapes.ToXMLConnectorSpecs(slide.Connectors, slide.Shapes, hyperlinkRIDs),
+			shapes.ToXMLShapeSpecs(slideShapes, hyperlinkRIDs),
+			shapes.ToXMLConnectorSpecs(slide.Connectors, slideShapes, hyperlinkRIDs),
 			parts.placeholders,
 			parts.smartArtFrames,
 			elements.ToXMLBackgroundSpec(slide.Background, parts.backgroundRID),
@@ -102,7 +109,7 @@ func renderSlides(
 		relsXML := pptxxml.SlideRelationshipsWithAll(
 			layoutTarget,
 			builder.targets,
-			parts.chartRel,
+			parts.chartRels,
 
 			parts.placeholderChartRels,
 			parts.smartArtRels,
@@ -111,19 +118,52 @@ func renderSlides(
 			commentTarget,
 		)
 
-		inkParts := attachInk(
-			slideXML,
-			relsXML,
-			slideInkAnnotations(slide),
-			inkPartStartIndex(slides, i),
-		)
-		for path, content := range inkParts.Parts {
-			pw.AddPart(path, content)
+		if err := writeSlideWithAttachments(pw, slides, i, slideXML, relsXML); err != nil {
+			return err
 		}
-
-		pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), inkParts.SlideXML)
-		pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), inkParts.RelsXML)
 	}
+	return nil
+}
+
+// writeSlideWithAttachments adds the ink and media a slide carries, then writes
+// the slide and its relationships. Both attachments rewrite the shape tree they
+// are given, so they run in sequence over the same markup.
+func writeSlideWithAttachments(
+	pw *pptxxml.PackageWriter,
+	slides []elements.SlideContent,
+	index int,
+	slideXML, relsXML string,
+) error {
+	slide := slides[index]
+	num := index + 1
+
+	inkParts := attachInk(
+		slideXML,
+		relsXML,
+		slideInkAnnotations(slide),
+		inkPartStartIndex(slides, index),
+	)
+	for path, content := range inkParts.Parts {
+		pw.AddPart(path, content)
+	}
+
+	mediaParts, err := attachMedia(
+		inkParts.SlideXML,
+		inkParts.RelsXML,
+		slideMedia(slide),
+		mediaPartStartIndex(slides, index),
+		index,
+		len(slides),
+	)
+	if err != nil {
+		return err
+	}
+	for path, content := range mediaParts.Parts {
+		pw.AddBinaryPart(path, content)
+	}
+
+	pw.AddPart(fmt.Sprintf("ppt/slides/slide%d.xml", num), mediaParts.SlideXML)
+	pw.AddPart(fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", num), mediaParts.RelsXML)
 	return nil
 }
 

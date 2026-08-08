@@ -40,6 +40,12 @@ type ShapeSpec struct {
 	GradientFill *ShapeGradientFillSpec
 	Line         *ShapeLineSpec
 	Text         string
+	// Paragraphs is the shape's full text body. When it carries anything it
+	// wins over Text, which holds only a single unstyled line.
+	Paragraphs []ParagraphSpec
+	// ZOrder is the shape's position in the slide shape tree, as read from an
+	// existing deck. Zero on shapes the caller built.
+	ZOrder       int
 	RotationDeg  *int
 	Hyperlink    *HyperlinkSpec // Legacy: mapped to ClickAction
 	ClickAction  *HyperlinkSpec
@@ -144,11 +150,13 @@ type RichShapeFillSpec struct {
 type LineDashStyle string
 
 const (
-	LineDashStyleSolid       LineDashStyle = "solid"
-	LineDashStyleDash        LineDashStyle = "dash"
-	LineDashStyleDot         LineDashStyle = "dot"
-	LineDashStyleDashDot     LineDashStyle = "dashDot"
-	LineDashStyleDashDotDot  LineDashStyle = "dashDotDot"
+	LineDashStyleSolid   LineDashStyle = "solid"
+	LineDashStyleDash    LineDashStyle = "dash"
+	LineDashStyleDot     LineDashStyle = "dot"
+	LineDashStyleDashDot LineDashStyle = "dashDot"
+	// LineDashStyleDashDotDot is the dash-dot-dot preset. ST_PresetLineDashVal
+	// spells it "lgDashDotDot"; a bare "dashDotDot" is not a member.
+	LineDashStyleDashDotDot  LineDashStyle = "lgDashDotDot"
 	LineDashStyleLongDash    LineDashStyle = "lgDash"
 	LineDashStyleLongDashDot LineDashStyle = "lgDashDot"
 )

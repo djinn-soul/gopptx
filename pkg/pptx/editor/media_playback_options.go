@@ -8,7 +8,7 @@ import (
 
 const defaultPlaybackVolume = 100
 
-// VideoPlaybackOptions mirrors ppt-rs generator video playback options.
+// VideoPlaybackOptions holds the generator video playback options.
 type VideoPlaybackOptions struct {
 	AutoPlay        bool
 	LoopPlayback    bool
@@ -65,7 +65,7 @@ func (o VideoPlaybackOptions) WithAltText(altText string) VideoPlaybackOptions {
 	return o
 }
 
-// AudioPlaybackOptions mirrors ppt-rs generator audio playback options.
+// AudioPlaybackOptions holds the generator audio playback options.
 type AudioPlaybackOptions struct {
 	AutoPlay         bool
 	LoopPlayback     bool

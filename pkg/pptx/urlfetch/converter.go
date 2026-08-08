@@ -47,6 +47,7 @@ func (c *Converter) Convert(content *WebContent, opts *ConversionOptions) ([]byt
 			slides[i] = slides[i].WithSlideNumber(true)
 		}
 	}
+	c.applyFontSizes(slides)
 
 	creator := ""
 	if opts != nil && opts.Author != nil {
@@ -54,6 +55,22 @@ func (c *Converter) Convert(content *WebContent, opts *ConversionOptions) ([]byt
 	}
 
 	return presentationCreateWithMetadata(title, creator, slides)
+}
+
+// applyFontSizes applies the configured title and body sizes, which the config
+// exposes so a caller can fit a dense page without post-processing the deck.
+func (c *Converter) applyFontSizes(slides []elements.SlideContent) {
+	if c.cfg.TitleSizePt <= 0 && c.cfg.ContentSizePt <= 0 {
+		return
+	}
+	for i := range slides {
+		if c.cfg.TitleSizePt > 0 {
+			slides[i].TitleSize = c.cfg.TitleSizePt
+		}
+		if c.cfg.ContentSizePt > 0 {
+			slides[i].ContentSize = c.cfg.ContentSizePt
+		}
+	}
 }
 
 // buildSlides constructs the slide list from extracted web content.

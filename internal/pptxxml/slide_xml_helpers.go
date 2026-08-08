@@ -55,6 +55,10 @@ func normalizeSlideLayoutMode(layout string) string {
 		return slideLayoutTitleBigContent
 	case slideLayoutTwoColumn, "two_column", "two-column", "twocolumn":
 		return slideLayoutTwoColumn
+	case slideLayoutTitleVertText, "title_and_vertical_text", "title-and-vertical-text", "titleandverticaltext":
+		return slideLayoutTitleVertText
+	case slideLayoutVertTitleText, "vertical_title_and_text", "vertical-title-and-text", "verticaltitleandtext":
+		return slideLayoutVertTitleText
 	default:
 		return slideLayoutTitleAndContent
 	}

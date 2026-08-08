@@ -1,6 +1,7 @@
 package export
 
 import (
+	"math"
 	"strings"
 
 	"github.com/signintech/gopdf"
@@ -17,6 +18,10 @@ type smartArtBox struct {
 	Text       string
 	ShapeType  string
 	Fill       string
+	// Image is the node's picture, in the picture layouts that carry one. The
+	// generic layouts used to drop it, so a picture diagram exported as a row of
+	// empty coloured boxes.
+	Image []byte
 }
 
 type smartArtLink struct {
@@ -25,6 +30,11 @@ type smartArtLink struct {
 }
 
 func renderPDFSmartArt(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
+	// The layout PowerPoint itself computed beats anything guessed from the
+	// layout URI, so the cache is drawn whenever the deck carries one.
+	if renderPDFSmartArtFromCache(pdf, diagram) {
+		return
+	}
 	if renderPDFSmartArtSpecial(pdf, diagram) {
 		return
 	}
@@ -33,9 +43,57 @@ func renderPDFSmartArt(pdf *gopdf.GoPdf, diagram smartart.SmartArt) {
 		renderPDFConnector(pdf, smartArtLinkConnector(link))
 	}
 	for _, box := range boxes {
-		renderPDFShape(pdf, smartArtNodeShape(box))
+		renderPDFSmartArtBox(pdf, box)
 	}
 }
+
+// renderPDFSmartArtBox draws one node. A node with a picture gets the picture in
+// the top of its box and its caption underneath, which is how the picture
+// layouts arrange the two; a node without one is drawn as a plain captioned
+// shape.
+func renderPDFSmartArtBox(pdf *gopdf.GoPdf, box smartArtBox) {
+	if len(box.Image) == 0 {
+		renderPDFShape(pdf, smartArtNodeShape(box))
+		return
+	}
+	frame := box
+	frame.Text = ""
+	renderPDFShape(pdf, smartArtNodeShape(frame))
+
+	inset := math.Min(smartArtPictureInsetPt, math.Min(box.W, box.H)*smartArtPictureMaxInsetFraction)
+	pictureH := (box.H - 2*inset) * smartArtPictureHeightFraction
+	drawn := drawSmartArtImageBytes(
+		pdf, box.Image,
+		box.X+inset, box.Y+inset,
+		box.W-2*inset, pictureH,
+	)
+	captionY := box.Y + inset
+	captionH := box.H - 2*inset
+	if drawn {
+		captionY += pictureH + inset
+		captionH -= pictureH + inset
+	}
+	if box.Text == "" || captionH <= 0 {
+		return
+	}
+	drawSmartArtCenteredText(
+		pdf, box.Text,
+		box.X+inset, captionY,
+		box.W-2*inset, captionH,
+		smartArtNodeTextColor, smartArtNodeMaxTextPt,
+	)
+}
+
+const (
+	// smartArtPictureInsetPt is the margin a node keeps around its picture.
+	smartArtPictureInsetPt = 6.0
+	// smartArtPictureHeightFraction is how much of a node's inner height the
+	// picture takes, leaving the rest for the caption.
+	smartArtPictureHeightFraction = 0.6
+	// smartArtPictureMaxInsetFraction caps the margin on a small node, so the
+	// picture never loses more of the box to its margin than it keeps.
+	smartArtPictureMaxInsetFraction = 0.25
+)
 
 // smartArtLinkConnector is the arrow PowerPoint draws between the nodes of a
 // process or hierarchy: a solid accent-coloured line with a head on it, not the
@@ -116,30 +174,53 @@ func layoutSmartArt(diagram smartart.SmartArt) ([]smartArtBox, []smartArtLink) {
 	}
 }
 
-// smartArtPalette is the fill of a node the diagram gives no colour of its own.
-func smartArtPalette(_ int) string {
-	return smartArtNodeFill
-}
-
 // smartArtNodeColor is the fill a node is drawn with: its own colour when it has
 // one — set on the node, or resolved from the diagram's colour style when the
 // deck was read — and the default accent otherwise. Without this every diagram
 // exported in the same blue whatever colour style it asked for.
-func smartArtNodeColor(node smartart.Node, index int) string {
+//
+// The fallback deliberately does not vary by node. PowerPoint's default SmartArt
+// colour style is accent1-based and paints every node the same accent; only the
+// "colorful" styles spread the palette, and those are resolved per node when the
+// deck is read (see resolveSmartArtNodeColors). Cycling here would tint the
+// default style's nodes a colour the diagram never asked for.
+func smartArtNodeColor(node smartart.Node) string {
 	if node.Color != "" {
 		return node.Color
 	}
-	return smartArtPalette(index)
+	return smartArtNodeFill
 }
 
-func flattenSmartArtNodes(nodes []smartart.Node) []smartart.Node {
+// smartArtLayoutNodes are the entries a flat layout draws a box for: the
+// diagram's own top-level nodes, each carrying its descendants' text as further
+// lines of its caption.
+//
+// This used to breadth-first flatten the tree, which promoted every child to an
+// entry of its own: a three-topic diagram with two sub-points each was drawn as
+// nine boxes rather than three. PowerPoint puts a node's children inside the
+// node, as the second and later lines of its text, and only the hierarchy
+// layouts give a child a box of its own.
+func smartArtLayoutNodes(nodes []smartart.Node) []smartart.Node {
 	out := make([]smartart.Node, 0, len(nodes))
-	queue := append([]smartart.Node(nil), nodes...)
-	for len(queue) > 0 {
-		node := queue[0]
-		queue = queue[1:]
-		out = append(out, node)
-		queue = append(queue, node.Children...)
+	for _, node := range nodes {
+		entry := node
+		entry.Text = strings.Join(smartArtNodeTextLines(node), "\n")
+		entry.Children = nil
+		out = append(out, entry)
 	}
 	return out
+}
+
+// smartArtNodeTextLines is a node's own text followed by its descendants', in
+// the order the diagram lists them. Empty captions are dropped so a node with no
+// text of its own does not open its box with a blank line.
+func smartArtNodeTextLines(node smartart.Node) []string {
+	lines := make([]string, 0, 1+len(node.Children))
+	if text := strings.TrimSpace(node.Text); text != "" {
+		lines = append(lines, text)
+	}
+	for _, child := range node.Children {
+		lines = append(lines, smartArtNodeTextLines(child)...)
+	}
+	return lines
 }

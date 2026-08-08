@@ -21,7 +21,7 @@ func main() {
 	slides := []elements.SlideContent{
 		elements.NewSlide("HTML Export Demo").
 			AddBullet("This presentation was exported to HTML via gopptx.").
-			AddBullet("It mimics the ppt-rs export style."),
+			AddBullet("It uses the built-in HTML export style."),
 		elements.NewSlide("Visual Content").
 			AddShape(shapes.NewShape(shapes.ShapeTypeRectangle, 1000000, 1000000, 3000000, 1000000).
 				WithText("This is a shape text.")).

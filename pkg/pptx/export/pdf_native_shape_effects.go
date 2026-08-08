@@ -8,14 +8,19 @@ import (
 )
 
 const (
-	shapeShadowOffsetPt         = 3.0
-	shapeShadowAlpha            = 0.22
-	shapeGlowAlpha              = 0.20
-	shapeReflectionAlpha        = 0.22
-	shapeReflectionGapPt        = 2.0
-	shapeReflectionHeight       = 0.28
-	shapeSoftEdgesAlpha         = 0.85
-	shapeEffectsBlendMode       = "Normal"
+	shapeShadowOffsetPt   = 3.0
+	shapeShadowAlpha      = 0.22
+	shapeGlowAlpha        = 0.20
+	shapeReflectionAlpha  = 0.22
+	shapeReflectionGapPt  = 2.0
+	shapeReflectionHeight = 0.28
+	shapeSoftEdgesAlpha   = 0.85
+	// gopdf names its blend modes with the PDF dictionary spelling, slash and
+	// all. This read "Normal", which no blend mode matches, so every call that
+	// used it failed and returned the zero transparency — silently, because the
+	// error is swallowed. Soft edges, shadows, glows, reflections and the
+	// translucent Venn circles were all being dropped on that.
+	shapeEffectsBlendMode       = "/Normal"
 	shapeDefaultAccentR   uint8 = 68
 	shapeDefaultAccentG   uint8 = 114
 	shapeDefaultAccentB   uint8 = 196
@@ -26,6 +31,29 @@ func applyPDFShapeSoftEdges(pdf *gopdf.GoPdf, s shapes.Shape) bool {
 		return false
 	}
 	alpha, err := gopdf.NewTransparency(shapeSoftEdgesAlpha, shapeEffectsBlendMode)
+	if err != nil {
+		return false
+	}
+	_ = pdf.SetTransparency(alpha)
+	return true
+}
+
+// applyPDFShapeFillAlpha makes a part-transparent fill actually paint that way,
+// and reports whether it set anything the caller has to clear.
+//
+// ShapeFill has carried a Transparency since long before this, and the native
+// renderer ignored it: a fill the deck asked to show through painted solid.
+// Soft edges already own the transparency state when they are on, so the fill's
+// own alpha defers to them rather than overwriting it.
+func applyPDFShapeFillAlpha(pdf *gopdf.GoPdf, s shapes.Shape, softEdgesApplied bool) bool {
+	if softEdgesApplied || s.Fill == nil || s.Fill.Transparency == nil {
+		return false
+	}
+	opacity := 1 - *s.Fill.Transparency
+	if opacity >= 1 || opacity < 0 {
+		return false
+	}
+	alpha, err := gopdf.NewTransparency(opacity, shapeEffectsBlendMode)
 	if err != nil {
 		return false
 	}

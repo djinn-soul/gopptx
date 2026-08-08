@@ -151,7 +151,7 @@ func ContentTypes(
 <Override PartName="/ppt/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/>`)
 	}
 
-	for i := 1; i <= masterCount*6; i++ {
+	for i := 1; i <= masterCount*LayoutsPerMaster; i++ {
 		b.WriteString(`
 <Override PartName="/ppt/slideLayouts/slideLayout`)
 		writeInt(i)

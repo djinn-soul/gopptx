@@ -55,10 +55,14 @@ class PresentationPropertiesMixin(PresentationMixinBase):
 
         Returns:
             List of issue dicts with keys: code, severity, path, description,
-            repairable.
+            repairable. Empty when the package is clean.
         """
         result = self.execute(ops.OP_VALIDATE, {})
-        return cast("list[dict[str, object]]", result.get("issues", []))
+        # `or []` rather than a dict default: an older bridge sends JSON null
+        # for "no issues", which get() would hand back untouched and break the
+        # documented list return type.
+        issues: object = result.get("issues") or []
+        return cast("list[dict[str, object]]", issues)
 
     def repair(self) -> dict[str, object]:
         """Attempt to automatically repair structural issues.
