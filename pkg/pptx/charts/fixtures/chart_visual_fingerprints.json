@@ -1,35 +1,35 @@
 [
     {
         "chart": "area",
-        "fingerprint": "c63550ff839ccbbdbfd6f65f8b967cfd46b26e0e310063a86f044f887c7ff79c"
+        "fingerprint": "4b8b3cbf79d7c0fb646db01298464acaf435e487ba446076118ab49e3f700463"
     },
     {
         "chart": "areaStacked",
-        "fingerprint": "532c1ee8c0da321da9abd96eeee02363c875fc7332f3e64533e75a2e5868e3b1"
+        "fingerprint": "b28cdd2773480858e1ce70c1dd96b3d59bf23e8e3085a2e4ab223440dd7df2df"
     },
     {
         "chart": "areaStacked100",
-        "fingerprint": "21c427a213c8c39baa0402c1f58ee81474b56c84207e630bc7fdbc5c3b7078c3"
+        "fingerprint": "9250c31e6e67cd62680f8a960582bd5eb64d08cd0c94f64e5b5b28934edf12d5"
     },
     {
         "chart": "bar",
-        "fingerprint": "c46a64a4ea84968361d4fd122da052ed50b147f603dcbf91180c0262055114bb"
+        "fingerprint": "ee1f2e5b26928349e4888d777ed7c1f4d3b662b99601c373e86b98a447d82f07"
     },
     {
         "chart": "barHorizontal",
-        "fingerprint": "9aadb713e5911286eb3097dae4441c31bd24f965c87ae484df25f66156787627"
+        "fingerprint": "ba12d173bdb55d0362f3f58f195147a18a78b67ba0492e40cbb1db223b67348a"
     },
     {
         "chart": "barStacked",
-        "fingerprint": "3128e5198ebef60b57e729ea2abcb26f4390d9253c3944cafd26bc79afcdbbe3"
+        "fingerprint": "4265d0e1d934b563cad7a626ee2238899b4c696737ee73fcb9520c77ff8d75da"
     },
     {
         "chart": "barStacked100",
-        "fingerprint": "516e9b9a642021507cc0b016a0d65535b089b9dab20d03e84c2c4136ce959c4b"
+        "fingerprint": "8e21835bae20874466d27a678da4ce35851299f58a86e570fa78f1cf4330ac73"
     },
     {
         "chart": "barStyled",
-        "fingerprint": "4195fc55bdbeee728fde7ba45d3030d5c426ef731c3d57d354b390182a448c25"
+        "fingerprint": "31b75c930aa918bedd1c7371e3c9317300795129b5de3f04b6d75e324d495e36"
     },
     {
         "chart": "bubble",
@@ -49,19 +49,19 @@
     },
     {
         "chart": "line",
-        "fingerprint": "373fbbe0b7b5ce629d2fdeebb6deb4dfb86b9ebcb11538f4f1787b68cc9d91f1"
+        "fingerprint": "9dee1412191d7bdf4eeb823b15f6079e3dcb0c9bffea8c13396b813eb7e80f70"
     },
     {
         "chart": "lineMarkers",
-        "fingerprint": "f97d73aa80661b00dfbaadd39cbe1a9dfda5c6f443b366d1a08e4996cb97671e"
+        "fingerprint": "01cc03c71c36e82c2d5e069815c8269718b866b18c8627ba05372e1154963fd3"
     },
     {
         "chart": "lineStacked",
-        "fingerprint": "882b8450fa33b1746a7422313b590f3c64fec69f8742bcb70710c25ec8ba3ece"
+        "fingerprint": "a20a6ff5830782fa731a55495d1fc876841b4898c43bcf6cdfd3ae7aef8542ea"
     },
     {
         "chart": "lineStyled",
-        "fingerprint": "bf09fd7936f4c25f89b740173e6283cb365f884c38bebe7ca1a3b6c68e8a678d"
+        "fingerprint": "9b6b8529c414a7b2107118aff8f8e735784597c96417c0a739ce82d9cc7f5607"
     },
     {
         "chart": "pie",
