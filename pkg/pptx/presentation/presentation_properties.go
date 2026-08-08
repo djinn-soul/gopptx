@@ -90,7 +90,11 @@ func addBasicPropertyFiles(
 	if includeNotesMaster {
 		nextRid++
 	}
-	nextRid += len(meta.CustomXML) * customXMLRelationshipPairCount
+	// One presentation-level relationship per custom XML item. The itemProps
+	// part each item also carries is related from that item's own .rels, not
+	// from presentation.xml.rels, so reserving a pair here ran the counter past
+	// every relationship written after it — the handout master's among them.
+	nextRid += len(meta.CustomXML)
 	if hasSections {
 		nextRid++
 	}

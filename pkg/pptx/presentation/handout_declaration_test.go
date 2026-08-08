@@ -87,3 +87,36 @@ func TestNoHandoutMasterIdListWithoutHandout(t *testing.T) {
 		t.Fatal("handoutMasterIdLst emitted for a deck with no handout master")
 	}
 }
+
+// TestHandoutMasterIDSurvivesCustomXML pins the relationship arithmetic against
+// custom XML. The rels file writes one presentation-level relationship per
+// custom XML item, and the ID bookkeeping used to reserve two, so the handout
+// master's declared rId pointed one past its own relationship for every item
+// present — leaving PowerPoint with a handout declaration it cannot resolve.
+func TestHandoutMasterIDSurvivesCustomXML(t *testing.T) {
+	meta := Metadata{
+		Metadata: common.Metadata{
+			Title: "Handout+CustomXML",
+			CustomXML: []common.CustomXMLPart{
+				{RootElement: "one", Namespace: "urn:gopptx:test:one", Content: "<a/>"},
+				{RootElement: "two", Namespace: "urn:gopptx:test:two", Content: "<b/>"},
+			},
+		},
+		HandoutMaster: handout.New(),
+	}
+	parts := buildPackageParts(t, meta, []elements.SlideContent{elements.NewSlide("S1")})
+
+	presentationXML := parts["ppt/presentation.xml"]
+	idMatch := regexp.MustCompile(`<p:handoutMasterId r:id="(rId\d+)"/>`).FindStringSubmatch(presentationXML)
+	if idMatch == nil {
+		t.Fatalf("no p:handoutMasterId element: %s", presentationXML)
+	}
+
+	rels := parts["ppt/_rels/presentation.xml.rels"]
+	relPattern := regexp.MustCompile(
+		`Id="` + idMatch[1] + `"[^>]*Target="handoutMasters/handoutMaster1\.xml"`,
+	)
+	if !relPattern.MatchString(rels) {
+		t.Fatalf("declared %s does not target the handout master with custom XML present:\n%s", idMatch[1], rels)
+	}
+}

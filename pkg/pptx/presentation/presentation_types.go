@@ -26,7 +26,6 @@ const (
 	guidVariantNibble                  = 0x80
 	maxAuthorInitialRunes              = 2
 	authorColorPaletteSize             = 10
-	customXMLRelationshipPairCount     = 2
 )
 
 type Metadata struct {
