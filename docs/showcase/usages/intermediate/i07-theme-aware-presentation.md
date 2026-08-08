@@ -29,14 +29,17 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("I07 Theme Aware") as p:
-    p.apply_theme("corporate")
+    # Accepted: the gopptx theme names (Corporate, Modern, Vibrant, Dark,
+    # Nature, Tech, Carbon, Office) and the Office presets (office, facet,
+    # integral, ion, retrospect, slice, wisp). Case and separators are ignored.
+    p.apply_theme("Corporate")
     p.add_slide("Title Slide")
     p.slides[0].title = "Company Q4 Results"
     p.add_slide("Agenda")
-    p.slides[1].add_textbox(0.8, 2.0, 8.0, 2.0, text="Revenue growth\nCost reduction\nFuture plans")
+    p.slides[1].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(2.0), text="Revenue growth\nCost reduction\nFuture plans")
     p.save("docs/assets/pptx/usage/i07-python.pptx")
 ```
 

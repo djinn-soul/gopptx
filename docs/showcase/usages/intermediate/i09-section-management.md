@@ -29,21 +29,22 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("I09 Sections") as p:
     p.add_slide("Introduction")
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 1.5, text="Welcome")
+    p.slides[0].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(1.5), text="Welcome")
 
     p.add_slide("Overview")
-    p.slides[1].add_textbox(0.8, 2.0, 8.0, 1.5, text="Agenda")
-
-    p.add_section("Main Content")
+    p.slides[1].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(1.5), text="Agenda")
 
     p.add_slide("Details")
-    p.slides[2].add_textbox(0.8, 2.0, 8.0, 1.5, text="Deep dive")
+    p.slides[2].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(1.5), text="Deep dive")
 
     p.add_slide("Summary")
+
+    # A section names a set of slides, so it takes their indices.
+    p.add_section("Main Content", [2, 3])
     p.save("docs/assets/pptx/usage/i09-python.pptx")
 ```
 

@@ -149,7 +149,7 @@ import json
 from gopptx import Presentation, ShapeType
 from gopptx.constants import SIZE_16X9_HEIGHT, SIZE_16X9_WIDTH
 from gopptx.presentation.theme import get_theme
-from gopptx.schemas import Inches
+from gopptx import Inches
 
 DECK_JSON = """
 {

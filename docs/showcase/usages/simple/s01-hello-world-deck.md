@@ -10,13 +10,17 @@ package main
 import "github.com/djinn-soul/gopptx/pkg/pptx"
 
 func main() {
-	pres := &gopptx.Presentation{Title: "S01 Hello World"}
-	slide := pres.AddSlide()
-	slide.Title = "Hello World Deck"
+	slide := pptx.NewSlideBuilder("Hello World Deck")
 	slide.AddBullet("Create a new deck")
 	slide.AddBullet("Add first slide")
 	slide.AddBullet("Save PPTX output")
-	_ = pres.Save("s01-go.pptx")
+
+	err := pptx.NewPresentationBuilder("S01 Hello World").
+		AddSlide(slide.Build()).
+		WriteToFile("s01-go.pptx")
+	if err != nil {
+		panic(err)
+	}
 }
 ```
 

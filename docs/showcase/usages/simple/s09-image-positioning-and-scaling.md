@@ -49,8 +49,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.schemas import Inches
+from gopptx import Inches, Presentation
 
 with Presentation.new("S09 Image Positioning and Scaling") as p:
     p.update_slide(0, layout="blank")

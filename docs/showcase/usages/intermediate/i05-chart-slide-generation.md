@@ -30,16 +30,17 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import ChartType, Inches, Presentation
 
 with Presentation.new("I05 Chart Slide") as p:
-    p.add_slide("Chart Slide")
+    slide = p.add_slide("Chart Slide")
     p.add_chart(
-        0,
-        "bar",
+        slide.index,
+        ChartType.COLUMN,
+        ["Q1", "Q2", "Q3", "Q4"],
+        [150000, 180000, 220000, 290000],
         title="Quarterly Revenue",
-        categories=["Q1", "Q2", "Q3", "Q4"],
-        values=[150000, 180000, 220000, 290000],
+        bounds=(Inches(0.8), Inches(1.6), Inches(8.0), Inches(4.4)),
     )
     p.save("docs/assets/pptx/usage/i05-python.pptx")
 ```

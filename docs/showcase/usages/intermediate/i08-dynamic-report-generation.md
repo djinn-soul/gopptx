@@ -39,7 +39,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 metrics = [
     {"name": "Revenue", "value": 1250000, "unit": "USD"},
@@ -50,7 +50,7 @@ metrics = [
 with Presentation.new("I08 Dynamic Report") as p:
     p.add_slide("Dynamic Report")
     text = "\n".join(f"{m['name']}: {m['value']:,} {m['unit']}" for m in metrics)
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 3.0, text=text)
+    p.slides[0].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(3.0), text=text)
     p.save("docs/assets/pptx/usage/i08-python.pptx")
 ```
 

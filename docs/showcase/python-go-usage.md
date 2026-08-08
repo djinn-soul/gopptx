@@ -30,7 +30,7 @@ with Presentation.new("Team Weekly Update") as pres:
 Python source references:
 
 - `python/gopptx/presentation/runtime_lifecycle.py`
-- `docs/guides/python-workflows.md`
+- `docs/guides/python-library.md`
 
 ## Go Usage
 
@@ -57,7 +57,7 @@ func main() {
 Go source references:
 
 - `pkg/pptx/presentation_builder.go`
-- `docs/guides/go-workflows.md`
+- `docs/guides/go-library.md`
 
 ## Output
 

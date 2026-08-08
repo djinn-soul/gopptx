@@ -1,13 +1,28 @@
 # Examples
 
-Task-focused examples and smoke demos for `gopptx`.
+96 task-focused, runnable examples for `gopptx`. Most directories carry both a Go program and a
+Python equivalent, so you can compare the two APIs on the same task.
+
+For a curated "where do I start" view, see [the examples map](../docs/examples-map.md); for
+narrated recipes with screenshots, see [the showcase](../docs/showcase/usages/index.md).
 
 ## Quick Start
 
-- Run any example from repo root:
-  - `go run ./examples/<example-folder>/<file>.go`
-- Generated decks are written to:
-  - `examples/output/`
+```bash
+# Go — from the repository root
+go run ./examples/01-basic-pptx-generation
+
+# Python — build the shared library first
+task build:go
+uv run python examples/01-basic-pptx-generation/main.py
+```
+
+Generated decks are written to `examples/output/`; rendered screenshots, where a topic has them,
+to `examples/output/png/`.
+
+> **Coordinates are EMU** — 914 400 per inch. Examples use `Inches()` / `styling.Inches()` for
+> this reason. A shape placed at a raw `(40, 120, 600, 220)` is smaller than a pixel and will
+> look like it was never added.
 
 ## Sequential Index
 
@@ -105,6 +120,8 @@ Task-focused examples and smoke demos for `gopptx`.
 92. `77-background-api` - What: Configure slide backgrounds (solid/gradient/picture) - Run: `go run ./examples/77-background-api/main.go`
 93. `78-enum-api` - What: Reference and validate enum constants by category - Run: `go run ./examples/78-enum-api/main.go`
 94. `79-document-infra` - What: Demonstrate document infrastructure APIs (sections/comments/reorder/z-order) - Run: `go run ./examples/79-document-infra/main.go`; `uv run python examples/79-document-infra/main.py`
+95. `80-chart-types-python-export` - What: Export every chart type from Go and Python - Run: `go run ./examples/80-chart-types-python-export`; `uv run python examples/80-chart-types-python-export/main.py`
+96. `81-native-pdf-showcase` - What: Exercise the native Go PDF renderer across shapes, text, tables, charts and SmartArt - Run: `go run ./examples/81-native-pdf-showcase/main.go`
 
 ## Python Examples
 

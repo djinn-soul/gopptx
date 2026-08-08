@@ -5,11 +5,11 @@ Build a deck from scratch with one slide and one shape.
 ## Code
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 with Presentation.new("Basic Generation") as pres:
     pres.add_slide("Hello World")
-    pres.add_shape(0, "rect", (1, 1, 2, 1), text="Basic Shape")
+    pres.add_shape(0, "rect", (Inches(1), Inches(1), Inches(2), Inches(1)), text="Basic Shape")
     pres.save("basic_generation.pptx")
 ```
 

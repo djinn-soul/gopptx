@@ -30,8 +30,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.schemas import Inches
+from gopptx import Inches, Presentation
 
 with Presentation.new("S07 Styled Text Formatting") as p:
     slide = p.add_slide("Styled Text Formatting")

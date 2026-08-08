@@ -28,16 +28,18 @@ func main() {
 **Python code**
 
 ```python
-import os
-from gopptx import Presentation
+from gopptx import HTMLOptions, Inches, PDFOptions, Presentation
 
 with Presentation.new("C07 Export Pipeline") as p:
     p.add_slide("Export Demo")
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 2.0, text="PDF export\nHTML export")
+    p.slides[0].add_textbox(
+        Inches(0.8), Inches(2.0), Inches(8.0), Inches(2.0),
+        text="PDF export\nHTML export",
+    )
 
     p.save("docs/assets/pptx/usage/c07-python.pptx")
-    p.export_pdf("c07.pdf")
-    p.export_html("c07")
+    p.export_pdf("c07.pdf", PDFOptions(driver="auto"))
+    p.export_html("c07.html", HTMLOptions(embed_images=True))
 ```
 
 **Download PPTX:** [c07-python.pptx](../../../assets/pptx/usage/c07-python.pptx)

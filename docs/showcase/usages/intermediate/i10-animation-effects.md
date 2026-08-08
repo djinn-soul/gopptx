@@ -31,16 +31,16 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 from gopptx.transitions import TRANSITION_FADE
 
 with Presentation.new("I10 Animation") as p:
     p.add_slide("Intro")
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 1.5, text="Animated content")
+    p.slides[0].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(1.5), text="Animated content")
 
     p.add_slide("Main Point")
     slide2 = p.slides[1]
-    slide2.add_textbox(0.8, 2.0, 8.0, 2.0, text="First item\nSecond item")
+    slide2.add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(2.0), text="First item\nSecond item")
     slide2.set_transition(TRANSITION_FADE, duration_ms=500)
     p.save("docs/assets/pptx/usage/i10-python.pptx")
 ```

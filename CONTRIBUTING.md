@@ -21,7 +21,7 @@ Before diving in, please read this guide — it keeps the review cycle short for
 | Tool | Version |
 |---|---|
 | Git | any recent |
-| Go | `1.25.9` (from `go.mod`) |
+| Go | `1.25.12` (from `go.mod`) |
 | Python | `3.10+` (from `pyproject.toml`) |
 | Docker | recommended — used for the container workflow and docs builds |
 | PowerShell | required on Windows for `scripts/build_python.ps1` |
@@ -71,6 +71,55 @@ scripts/      Build and smoke-test scripts
 - Do not add empty `try/catch` (or `recover`) blocks.
 - Keep entry points stable; isolate new logic into focused modules.
 - No source file should exceed ~400 lines of code.
+- Never silence a warning, lint or type error to go green — fix the cause or migrate the callers.
+
+---
+
+## Things That Will Bite You
+
+### Go declarations are the source of truth
+
+Parts of the Python surface are **generated**, not written:
+
+| Generated | From |
+|---|---|
+| `python/gopptx/_ops_constants.py`, `ops.pyi` | `pkg/pptx/editor/opspec.go` |
+| The `ChartType` enum | `XLChartType` in `pkg/pptx/enums` |
+| The `ShapeType` enum | The shape preset declarations |
+| The slide builder surface | `elements.SlideContent` |
+| `python/gopptx/gopptx.h` | `bindings/c/bridge.go` (cgo) |
+
+Edit the Go source and run `task generate`. Never hand-edit a generated file — `task
+check:generated` fails the build when they drift.
+
+`python/gopptx/__init__.pyi` is not generated but is checked: a stub-parity test fails if its
+`__all__` and the runtime `__all__` disagree. Update both together.
+
+### Stage the cgo header with the bridge
+
+Any change to `bindings/c/bridge.go` regenerates `python/gopptx/gopptx.h`. Stage both together
+or the pre-commit hooks fail with a confusing error.
+
+### Rebuild the shared library after Go changes
+
+The Python package binds a compiled library. Go edits have no effect in Python until:
+
+```bash
+task build:go
+```
+
+### Geometry is EMU
+
+914 400 per inch. A shape at `(40, 120, 600, 220)` is smaller than a pixel — the file saves,
+PowerPoint opens it, and nothing is visible. Use `Inches()` / `Point()` / `Emu()` in examples,
+tests and docs. This is the single most common defect in contributed samples.
+
+### Verify by rendering, not only by testing
+
+A deck can pass every structural test and still be one PowerPoint refuses to open, or one that
+opens blank. For anything touching output bytes, open the result in real PowerPoint. For PDF
+changes, rasterise with `pypdfium2` and compare — LibreOffice drops clips and substitutes
+fonts, so it disagrees with itself.
 
 ---
 
@@ -121,7 +170,22 @@ If a check is environment-dependent, include details in the PR description.
 - Update `README.md` when onboarding steps or usage change.
 - Update API/architecture docs when command contracts change.
 - Prefer concise, runnable examples.
-- Keep examples aligned with current CLI/API behavior.
+- **Run every code sample you add.** A sample that does not compile or raises on the first call
+  is worse than no sample — most of the documentation defects found in this repository were
+  snippets nobody executed.
+- Wrap coordinates in `Inches()` / `Point()` / `Emu()` in every sample.
+- When you close a gap listed in `PPT_RS_PARITY_2026-08-04.md`, update that document **and**
+  `docs/reference/feature-matrix.md`. When you find a new gap, record it there rather than
+  leaving the comparison flattering.
+- `docs/reference/python-presentation-api.md` is written from introspection of the installed
+  `Presentation` class. Regenerate it rather than hand-editing entries.
+
+### Building the docs
+
+```bash
+task docs:serve      # http://localhost:8000
+task docs:build      # strict; fails on broken links
+```
 
 ---
 

@@ -38,7 +38,7 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 scenes = [
     {"title": "Opening", "content": "The journey begins", "visual": "scene1.png"},
@@ -50,7 +50,7 @@ scenes = [
 with Presentation.new("C08 Storyboard") as p:
     for scene in scenes:
         p.add_slide(scene["title"])
-        p.slides[-1].add_textbox(0.8, 2.0, 8.0, 2.0, text=scene["content"])
+        p.slides[-1].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(2.0), text=scene["content"])
     p.save("docs/assets/pptx/usage/c08-python.pptx")
 ```
 

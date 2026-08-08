@@ -40,20 +40,23 @@ func main() {
 **Python code**
 
 ```python
-from gopptx import Presentation
-from gopptx.schemas import Inches
+from gopptx import Inches, Presentation
 
 with Presentation.new("I01 Project Status Table") as p:
     p.add_slide("Project Status Table")
-    p.add_table(
+    # add_table_from_rows infers the row and column counts from the data.
+    # add_table() itself needs explicit `rows` and `cols`.
+    p.add_table_from_rows(
         0,
         [
             ["Workstream", "Owner", "Status"],
             ["Docs revamp", "Design Ops", "Ready"],
             ["Usage catalog", "Docs Team", "Queued"],
         ],
+        bounds=(Inches(0.8), Inches(1.6), Inches(7.8), Inches(2.4)),
         column_widths=[Inches(2.6), Inches(2.6), Inches(2.6)],
-        header=True,
+        first_row=True,
+        band_row=True,
     )
     p.save("docs/assets/pptx/usage/i01-python.pptx")
 ```

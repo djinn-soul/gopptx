@@ -65,7 +65,7 @@ func main() {
 
 ```python
 from jinja2 import Template
-from gopptx import Presentation
+from gopptx import Inches, Presentation
 
 template = Template("""
 Title: {{ title }}
@@ -85,7 +85,7 @@ data = {
 with Presentation.new("C06 Jinja2") as p:
     content = template.render(**data)
     p.add_slide("Rendered")
-    p.slides[0].add_textbox(0.8, 2.0, 8.0, 3.0, text=content)
+    p.slides[0].add_textbox(Inches(0.8), Inches(2.0), Inches(8.0), Inches(3.0), text=content)
     p.save("docs/assets/pptx/usage/c06-python.pptx")
 ```
 

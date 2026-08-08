@@ -129,12 +129,12 @@ nav:
   - Guides:
       - Python Library Guide: guides/python-library.md
       - Go Library Guide: guides/go-library.md
-      - Python Workflows: guides/python-workflows.md
-      - Go Workflows: guides/go-workflows.md
       - Batch Execution: guides/batch-execution.md
+      - Export (PDF, HTML, Compression): guides/export.md
       - Screenshot Pipeline (PPTX -> PNG): guides/pptx-png-export.md
   - Reference:
       - API Overview: api-reference.md
+      - Feature Matrix: reference/feature-matrix.md
       - Python Presentation API: reference/python-presentation-api.md
       - Go API Reference: reference/go-api.md
       - Go Slides Reference: reference/go-slides.md
@@ -152,5 +152,8 @@ nav:
   - Advanced:
       - C Bridge Guidance: architecture/cbridge-guidance.md
       - Batch Execute Envelope: architecture/batch_execute_envelope.md
+      - Performance Audit (2026-07): architecture/performance-audit-2026-07.md
+      - Port Analysis - Bun/Zig to Rust: architecture/bun-zig-to-rust-port-analysis.md
+      - Port Guide - Go to Zig: architecture/go-to-zig-porting-guide.md
   - Help:
       - Troubleshooting: troubleshooting.md
