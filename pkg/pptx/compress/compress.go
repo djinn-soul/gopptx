@@ -7,9 +7,14 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 )
+
+// outputFileMode is the permission the compressed package is written with:
+// owner read/write, matching what the previous os.WriteFile call used.
+const outputFileMode = 0o600
 
 // part is one entry of the source package held in memory.
 type part struct {
@@ -19,6 +24,9 @@ type part struct {
 
 // File compresses the PPTX at inPath and writes the result to outPath.
 func File(inPath, outPath string, opts Options) (Result, error) {
+	inPath = filepath.Clean(inPath)
+	outPath = filepath.Clean(outPath)
+
 	source, err := os.ReadFile(inPath)
 	if err != nil {
 		return Result{}, fmt.Errorf("read %s: %w", inPath, err)
@@ -27,10 +35,7 @@ func File(inPath, outPath string, opts Options) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	// The destination is the caller's own argument, not a value taken from the
-	// package being compressed, so there is nothing here to traverse out of.
-	//nolint:gosec // outPath is the caller's own argument
-	if err = os.WriteFile(outPath, out, 0o600); err != nil {
+	if err = writeFileInDir(outPath, out); err != nil {
 		return Result{}, fmt.Errorf("write %s: %w", outPath, err)
 	}
 	return result, nil
@@ -276,4 +281,34 @@ func resolveTarget(owner, target string) string {
 		return path.Clean(t)
 	}
 	return path.Clean(base + "/" + t)
+}
+
+// writeFileInDir writes data to path, opening the containing directory as a
+// root first so the create cannot escape it.
+//
+// The destination is the caller's own argument, so there was never a traversal
+// to defend against here — but a plain os.WriteFile on a caller-supplied path
+// is indistinguishable, to a static analyser, from one built out of untrusted
+// input. Going through os.Root states the containment in the code instead of
+// in a waiver comment, which is what Go added os.Root for.
+func writeFileInDir(path string, data []byte) error {
+	dir, file := filepath.Split(path)
+	if dir == "" {
+		dir = "."
+	}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+
+	out, err := root.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, outputFileMode)
+	if err != nil {
+		return err
+	}
+	if _, err = out.Write(data); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
 }

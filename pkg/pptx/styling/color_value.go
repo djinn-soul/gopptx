@@ -1,9 +1,9 @@
 package styling
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 )
 
@@ -28,12 +28,10 @@ const (
 	hexShortDigits = 3
 	hexColorDigits = 6
 	hexAlphaDigits = 8
+	// hexColorBytes is hexColorDigits decoded: three channels, no alpha.
+	hexColorBytes = hexColorDigits / 2
 
-	// Bit positions of the packed channels, most significant first.
-	shiftFirst  = 24
-	shiftSecond = 16
-	shiftThird  = 8
-	percentMax  = 100.0
+	percentMax = 100.0
 )
 
 // RGB builds an opaque colour.
@@ -49,11 +47,11 @@ func RGBA(r, g, b, a uint8) ColorValue {
 // FromHex parses "RRGGBB", "#RRGGBB", "RGB" or "RRGGBBAA". An unparsable
 // string yields opaque black and a false second result, so a caller can tell a
 // real black from a typo.
-func FromHex(hex string) (ColorValue, bool) {
+func FromHex(hexColor string) (ColorValue, bool) {
 	// The colour normaliser lives in pkg/pptx/common, which imports this
 	// package, so the short-form expansion is repeated here rather than
 	// creating a cycle.
-	clean := strings.TrimPrefix(strings.TrimSpace(hex), "#")
+	clean := strings.TrimPrefix(strings.TrimSpace(hexColor), "#")
 	if len(clean) == hexShortDigits {
 		clean = string([]byte{
 			clean[0], clean[0],
@@ -65,25 +63,19 @@ func FromHex(hex string) (ColorValue, bool) {
 		return RGB(0, 0, 0), false
 	}
 
-	value, err := strconv.ParseUint(clean, 16, 32)
+	// Decoding to bytes rather than parsing one integer and shifting it apart:
+	// the channels are bytes already, so there is no widening and no downcast
+	// to justify. The shift-and-truncate form needed a gosec waiver on every
+	// conversion, and static analysis reads it as a signedness cast whatever
+	// the waiver says.
+	raw, err := hex.DecodeString(clean)
 	if err != nil {
 		return RGB(0, 0, 0), false
 	}
-	//nolint:gosec // each shift is masked down to a byte by the conversion
-	if len(clean) == hexColorDigits {
-		return RGB(
-			uint8(value>>shiftSecond),
-			uint8(value>>shiftThird),
-			uint8(value),
-		), true
+	if len(raw) == hexColorBytes {
+		return RGB(raw[0], raw[1], raw[2]), true
 	}
-	//nolint:gosec // each shift is masked down to a byte by the conversion
-	return RGBA(
-		uint8(value>>shiftFirst),
-		uint8(value>>shiftSecond),
-		uint8(value>>shiftThird),
-		uint8(value),
-	), true
+	return RGBA(raw[0], raw[1], raw[2], raw[3]), true
 }
 
 // MustFromHex is FromHex for constants and palette entries, where a bad value
