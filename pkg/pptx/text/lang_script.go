@@ -164,6 +164,13 @@ func LanguageToScript(langTag string) string {
 		lang = lang[:dash]
 	}
 
+	// A tag that states its script outranks the primary language's default.
+	// Kurdish is the case that exposed this: ku defaults to Arabic, so ku-Latn
+	// — an unambiguous statement that this text is Latin — was answered Arab.
+	if script := explicitScriptSubtag(normalized); script != "" {
+		return script
+	}
+
 	if lang == "zh" {
 		// Mainland China and Singapore use simplified characters; everywhere
 		// else that writes Chinese uses traditional.
@@ -177,9 +184,53 @@ func LanguageToScript(langTag string) string {
 
 // IsRTLLanguage reports whether a BCP-47 language tag is written right to left.
 func IsRTLLanguage(langTag string) bool {
+	// An explicit script settles the direction on its own: ku-Latn is Kurdish
+	// written in Latin letters and reads left to right, whatever the primary
+	// subtag's usual script would be.
+	if script := explicitScriptSubtag(strings.ReplaceAll(strings.TrimSpace(langTag), "_", "-")); script != "" {
+		return rtlScripts[script]
+	}
 	_, ok := rtlLanguages[primaryLanguageSubtag(langTag)]
 	return ok
 }
+
+// rtlScripts are the ISO 15924 codes written right to left, for tags that name
+// their script outright.
+//
+//nolint:gochecknoglobals // immutable lookup table
+var rtlScripts = map[string]bool{
+	ScriptCodeArabic: true,
+	ScriptCodeHebrew: true,
+	ScriptCodeThaana: true,
+	ScriptCodeSyriac: true,
+}
+
+// explicitScriptSubtag returns the ISO 15924 code a tag states for itself, or
+// an empty string when it states none.
+//
+// BCP-47 puts the script second and spells it as four letters — "ku-Latn",
+// "zh-Hans", "sr-Cyrl" — which is exactly the code this package uses, so it
+// only has to be found and cased canonically. A two-letter second subtag is a
+// region, not a script, and is left alone.
+func explicitScriptSubtag(normalizedTag string) string {
+	parts := strings.Split(normalizedTag, "-")
+	if len(parts) < 2 {
+		return ""
+	}
+	candidate := parts[1]
+	if len(candidate) != scriptSubtagLength {
+		return ""
+	}
+	for _, r := range candidate {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
+			return ""
+		}
+	}
+	return strings.ToUpper(candidate[:1]) + strings.ToLower(candidate[1:])
+}
+
+// scriptSubtagLength is the length BCP-47 gives a script subtag.
+const scriptSubtagLength = 4
 
 // RTLDefaultFont returns the font PowerPoint defaults to for a right-to-left
 // language, or "" when the tag is not one.
