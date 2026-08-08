@@ -122,7 +122,7 @@ def main() -> None:
         add_chart_surface_reference(prs)
 
         prs.save(str(PPTX_PATH))
-        pdf_output = prs.save_as_pdf(str(PDF_PATH), PDFOptions(driver="native"))
+        pdf_output = prs.export_pdf(str(PDF_PATH), PDFOptions(driver="native"))
 
     print(f"Saved PPTX: {PPTX_PATH}")
     print(f"Saved PDF: {pdf_output}")

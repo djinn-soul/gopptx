@@ -45,9 +45,21 @@ class HTMLOptions:
 
 
 class PresentationExportMixin(PresentationMixinBase):
-    """Mixin providing PDF and HTML export methods."""
+    """Mixin providing PDF and HTML export methods.
 
-    def save_as_pdf(
+    The naming rule across the presentation API is:
+
+    * ``save`` / ``save_*`` write a format PowerPoint itself reads back — the
+      package (``save``) or its flat-XML form (``save_flat_xml``).
+    * ``export_*`` convert the deck into a foreign format that gopptx cannot
+      reopen — PDF and HTML.
+
+    PDF export was originally spelled ``save_as_pdf``, which put a conversion
+    under the ``save`` prefix and did not match its own bridge operation
+    (``export_pdf``) or its HTML sibling. It remains as a deprecated alias.
+    """
+
+    def export_pdf(
         self,
         output_path: str | None = None,
         options: PDFOptions | None = None,
@@ -78,6 +90,33 @@ class PresentationExportMixin(PresentationMixinBase):
             payload["font_paths"] = opts.font_paths
         result = self.execute(ops.OP_EXPORT_PDF, payload)
         return str(result.get("output_path", output_path or "presentation.pdf"))
+
+    def save_as_pdf(
+        self,
+        output_path: str | None = None,
+        options: PDFOptions | None = None,
+    ) -> str:
+        """Export the presentation to a PDF file.
+
+        .. deprecated::
+            Use :meth:`export_pdf`. This name put a format conversion under the
+            ``save`` prefix, where every other member writes something
+            PowerPoint can reopen, and disagreed with both its own bridge
+            operation and :meth:`export_html`.
+
+        Args:
+            output_path: Destination path for the PDF file.
+            options: Optional :class:`PDFOptions` controlling the export driver.
+
+        Returns:
+            Absolute path to the written PDF file.
+        """
+        warnings.warn(
+            "save_as_pdf() is deprecated; use export_pdf(), which matches export_html().",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.export_pdf(output_path, options)
 
     def export_html(
         self,

@@ -150,7 +150,10 @@ class PresentationRuntimeMixin:
                 # to use depended on the operation. Aliasing every response
                 # here gives one convention everywhere; the original keys are
                 # kept, so existing PascalCase callers are unaffected.
-                return cast("dict[str, object]", with_key_aliases(result))
+                return cast(
+                    "dict[str, object]",
+                    with_key_aliases(cast("dict[str, object]", result)),
+                )
             finally:
                 self._lib.deck_free_string(res_ptr)  # type: ignore[attr-defined]
 

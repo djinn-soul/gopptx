@@ -61,7 +61,7 @@ class PresentationPropertiesMixin(PresentationMixinBase):
         # `or []` rather than a dict default: an older bridge sends JSON null
         # for "no issues", which get() would hand back untouched and break the
         # documented list return type.
-        issues = result.get("issues") or []
+        issues: object = result.get("issues") or []
         return cast("list[dict[str, object]]", issues)
 
     def repair(self) -> dict[str, object]:
