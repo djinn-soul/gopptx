@@ -90,3 +90,40 @@ func TestTransitionOptions_RejectUnsupportedDirection(t *testing.T) {
 		t.Fatalf("expected push/right to be valid, got: %v", err)
 	}
 }
+
+// TestCalculateShapeIDs_CountsOverflowTablesAndCharts guards the ID arithmetic
+// against the overflow collections. The renderer emits a shape-tree entry for
+// every table in Tables and every chart in Charts, so each one has to push the
+// shapes that follow it along by one; counting only Table and the primary chart
+// left an animation pointing at a table, a chart, or nothing at all.
+func TestCalculateShapeIDs_CountsOverflowTablesAndCharts(t *testing.T) {
+	base := NewSlide("ShapeOnly").
+		AddShape(shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100))
+
+	withTables := NewSlide("Tables").
+		AddShape(shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100))
+	withTables.Tables = []tables.Table{
+		tables.NewTable([]styling.Length{styling.Inches(1)}).AddRow([]string{"a"}),
+		tables.NewTable([]styling.Length{styling.Inches(1)}).AddRow([]string{"b"}),
+	}
+
+	withCharts := NewSlide("Charts").
+		AddShape(shapes.NewShape(shapes.ShapeTypeRectangle, 0, 0, 100, 100))
+	withCharts.Charts = []charts.ChartDefinition{
+		charts.BarChart{Categories: []string{"a"}, Values: []float64{1}},
+	}
+
+	baseIDs := CalculateShapeIDs(base)
+	tableIDs := CalculateShapeIDs(withTables)
+	chartIDs := CalculateShapeIDs(withCharts)
+
+	if len(baseIDs) != 1 || len(tableIDs) != 1 || len(chartIDs) != 1 {
+		t.Fatalf("expected one shape id each: base=%v tables=%v charts=%v", baseIDs, tableIDs, chartIDs)
+	}
+	if tableIDs[0] != baseIDs[0]+2 {
+		t.Errorf("two overflow tables moved the shape id to %d, want %d", tableIDs[0], baseIDs[0]+2)
+	}
+	if chartIDs[0] != baseIDs[0]+1 {
+		t.Errorf("one overflow chart moved the shape id to %d, want %d", chartIDs[0], baseIDs[0]+1)
+	}
+}

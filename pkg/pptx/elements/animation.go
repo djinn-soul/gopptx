@@ -34,10 +34,16 @@ func CalculateShapeIDs(s SlideContent) []int {
 		}
 	}
 
-	// Primary chart object occupies one shape slot.
+	// Every table and chart the renderer emits takes a shape-tree ID, so the
+	// overflow collections have to be counted too. Counting only Table and the
+	// primary chart left every later ID short, and an animation then targeted a
+	// table, a chart, or an ID that does not exist, rather than its own shape.
+	nextID += len(s.Tables)
+
 	if hasPrimaryChart(s) {
 		nextID++
 	}
+	nextID += len(s.Charts)
 
 	// Calculate base IDs for each pool
 	imageStartID := nextID
