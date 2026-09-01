@@ -179,7 +179,7 @@ pillow==12.3.0
     #   gopptx
     #   imageio
     #   scikit-image
-pip==26.1.2
+pip==26.2
     # via
     #   gopptx
     #   pip-api
